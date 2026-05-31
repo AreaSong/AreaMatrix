@@ -28,7 +28,6 @@ struct AdvancedSettingsRecoveryToolsSection: View {
 struct AdvancedSettingsKeyValueRow: View {
     let label: String
     let value: String
-
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 16) {
             Text(label)
@@ -47,7 +46,6 @@ struct AdvancedSettingsKeyValueRow: View {
 struct AdvancedSettingsInlineBanner: View {
     let error: AdvancedSettingsError
     let tint: Color
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label(error.message, systemImage: "exclamationmark.triangle")
@@ -66,12 +64,10 @@ struct AdvancedSettingsInlineBanner: View {
 struct AdvancedSettingsSection<Content: View>: View {
     let title: String
     private let content: Content
-
     init(title: String, @ViewBuilder content: () -> Content) {
         self.title = title
         self.content = content()
     }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
@@ -86,7 +82,6 @@ struct AdvancedRootOverviewConfirmationSheet: View {
     let status: RootOverviewFileStatus
     let onCancel: () -> Void
     let onEnable: () -> Void
-
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Enable root AREAMATRIX.md?")
@@ -160,7 +155,6 @@ private struct AISettingsLoadFailureView: View {
     let error: AISettingsError
     let retry: () -> Void
     let openLog: () -> Void
-
     var body: some View {
         AISettingsInlineBanner(error: error, tint: .red) {
             Button("Retry", action: retry)
@@ -172,7 +166,6 @@ private struct AISettingsLoadFailureView: View {
 private struct AISettingsFeatureRow: View {
     let row: AISettingsFeatureRowSnapshot
     var isOn: Binding<Bool>
-
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             Toggle(row.feature.title, isOn: isOn)
@@ -194,7 +187,6 @@ private struct AISettingsFeatureRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
     }
-
     private var accessibilityLabel: String {
         [
             row.feature.title,
@@ -210,11 +202,12 @@ struct AISettingsPane: View {
     @StateObject private var model: AISettingsModel
     @State private var isLocalModelStatusPresented = false
     @State private var isRemoteConfigPresented = false
+    @State private var isPrivacyRulesPresented = false
     @State private var isCallLogPresented = false
+    @State private var returnsToPrivacyRulesAfterRemoteConfig = false
     init(repoPath: String) {
         _model = StateObject(wrappedValue: AISettingsModel(repoPath: repoPath))
     }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
@@ -234,11 +227,24 @@ struct AISettingsPane: View {
         .sheet(isPresented: $isRemoteConfigPresented) {
             RemoteModelConfigSheet(
                 model: RemoteProviderConfigModel(repoPath: model.repoPath),
-                onOpenPrivacyRules: model.openPrivacyRulesEntry
+                onOpenPrivacyRules: openPrivacyRules
             ) {
                 isRemoteConfigPresented = false
-                Task { await model.load() }
+                Task {
+                    await model.load()
+                    if returnsToPrivacyRulesAfterRemoteConfig {
+                        returnsToPrivacyRulesAfterRemoteConfig = false
+                        isPrivacyRulesPresented = true
+                    }
+                }
             }
+        }
+        .sheet(isPresented: $isPrivacyRulesPresented) {
+            AIPrivacyRulesView(
+                model: model,
+                onConfigureRemoteAI: configureRemoteAIFromPrivacyRules,
+                onClose: closePrivacyRules
+            )
         }
         .sheet(isPresented: $isCallLogPresented) { AICallLogView(repoPath: model.repoPath) { isCallLogPresented = false } }
     }
@@ -267,7 +273,6 @@ struct AISettingsPane: View {
         .padding(.vertical, 18)
         .overlay(alignment: .bottom) { Divider() }
     }
-
     @ViewBuilder
     private var bodyContent: some View {
         switch model.loadState {
@@ -279,7 +284,6 @@ struct AISettingsPane: View {
             loadedContent
         }
     }
-
     private var loadedContent: some View {
         VStack(alignment: .leading, spacing: 22) {
             feedbackBanner
@@ -291,7 +295,6 @@ struct AISettingsPane: View {
             safetySection
         }
     }
-
     @ViewBuilder
     private var feedbackBanner: some View {
         if let error = model.saveError {
@@ -317,7 +320,6 @@ struct AISettingsPane: View {
             }
         }
     }
-
     private var statusSection: some View {
         AdvancedSettingsSection(title: "AI features") {
             Toggle("Enable AI features", isOn: aiEnabledBinding)
@@ -328,7 +330,6 @@ struct AISettingsPane: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
-
     private var providerSection: some View {
         AdvancedSettingsSection(title: "Providers") {
             AdvancedSettingsKeyValueRow(label: "Local model", value: localModelLabel)
@@ -349,7 +350,6 @@ struct AISettingsPane: View {
             }
         }
     }
-
     private var featureSection: some View {
         AdvancedSettingsSection(title: "Feature toggles") {
             ForEach(featureRows) { row in
@@ -358,15 +358,14 @@ struct AISettingsPane: View {
             }
         }
     }
-
     private var privacySection: some View {
         AdvancedSettingsSection(title: "Privacy") {
             AdvancedSettingsKeyValueRow(label: "Privacy rules", value: privacyRulesLabel)
             AdvancedSettingsKeyValueRow(label: "Remote AI", value: remoteScopeLabel)
-            Button("Manage privacy rules", action: model.openPrivacyRulesEntry)
+            Button("Manage privacy rules", action: openPrivacyRules)
+                .accessibilityIdentifier("S3-09-C3-01-manage-privacy-rules")
         }
     }
-
     private var logSection: some View {
         AdvancedSettingsSection(title: "Log") {
             Button("View AI call log") { model.openCallLogEntry(); isCallLogPresented = true }
@@ -376,7 +375,6 @@ struct AISettingsPane: View {
                 .foregroundStyle(.secondary)
         }
     }
-
     private var safetySection: some View {
         AdvancedSettingsSection(title: "Safety") {
             Button("Pause all AI", action: pauseAllAI)
@@ -388,11 +386,9 @@ struct AISettingsPane: View {
                 .foregroundStyle(.secondary)
         }
     }
-
     private var writesDisabled: Bool {
         model.isSaving || !model.isLoaded
     }
-
     private var statusText: String {
         guard let config = model.snapshot?.config else {
             return "Loading AI settings..."
@@ -405,28 +401,23 @@ struct AISettingsPane: View {
         }
         return "Local AI is enabled. Files stay on this device."
     }
-
     private var localModelLabel: String {
         guard let config = model.snapshot?.config else { return "Loading" }
         return config.localAIEnabled ? "Ready for C3-01 route" : "Not installed"
     }
-
     private var remoteModelLabel: String {
         guard let config = model.snapshot?.config else { return "Loading" }
         return config.remoteAIAllowed ? "Configured by S3-03" : "Off"
     }
-
     private var privacyRulesLabel: String {
         guard let config = model.snapshot?.config else { return "Loading" }
         guard config.privacyGateEnabled else { return "Off" }
         return config.privacyPolicyRef ?? "Default gate enabled"
     }
-
     private var remoteScopeLabel: String {
         guard let config = model.snapshot?.config else { return "Loading" }
         return config.remoteAIAllowed ? "Allowed for selected features" : "Remote AI is not configured"
     }
-
     private var featureRows: [AISettingsFeatureRowSnapshot] {
         guard let snapshot = model.snapshot else { return [] }
         let toggles = Dictionary(uniqueKeysWithValues: snapshot.config.featureToggles.map { ($0.feature, $0) })
@@ -447,14 +438,12 @@ struct AISettingsPane: View {
             set: { enabled in Task { await model.setAIEnabled(enabled) } }
         )
     }
-
     private var providerPreferenceBinding: Binding<AISettingsProviderPreference> {
         Binding(
             get: { model.snapshot?.config.providerPreference ?? .localFirst },
             set: { preference in Task { await model.setProviderPreference(preference) } }
         )
     }
-
     private func featureBinding(_ feature: AISettingsFeatureKind) -> Binding<Bool> {
         Binding(
             get: {
@@ -463,38 +452,28 @@ struct AISettingsPane: View {
             set: { enabled in Task { await model.setFeature(feature, enabled: enabled) } }
         )
     }
-
     private func isFeatureEditable(_ row: AISettingsFeatureRowSnapshot) -> Bool {
         model.snapshot?.config.aiEnabled == true && row.disabledReason != "AI is off"
     }
-
     private func remoteScopeText(_ capability: AISettingsCapabilitySnapshot) -> String {
         if capability.remoteAllowed { return "Remote scope allowed" }
         return "Remote scope blocked"
     }
-
-    private func retryLoad() {
-        Task { await model.load() }
+    private func retryLoad() { Task { await model.load() } }
+    private func retrySave() { Task { await model.retrySave() } }
+    private func retryPause() { Task { await model.retryPause() } }
+    private func pauseAllAI() { Task { await model.pauseAllAI() } }
+    private func openLocalModelStatus() { model.openLocalModelStatusEntry(); isLocalModelStatusPresented = true }
+    private func openRemoteConfig() { model.openRemoteConfigurationEntry(); isRemoteConfigPresented = true }
+    private func openPrivacyRules() {
+        model.openPrivacyRulesEntry()
+        isRemoteConfigPresented = false
+        isPrivacyRulesPresented = true
     }
-
-    private func retrySave() {
-        Task { await model.retrySave() }
-    }
-
-    private func retryPause() {
-        Task { await model.retryPause() }
-    }
-
-    private func pauseAllAI() {
-        Task { await model.pauseAllAI() }
-    }
-
-    private func openLocalModelStatus() {
-        model.openLocalModelStatusEntry()
-        isLocalModelStatusPresented = true
-    }
-
-    private func openRemoteConfig() {
-        model.openRemoteConfigurationEntry(); isRemoteConfigPresented = true
+    private func closePrivacyRules() { isPrivacyRulesPresented = false; Task { await model.load() } }
+    private func configureRemoteAIFromPrivacyRules() {
+        returnsToPrivacyRulesAfterRemoteConfig = true
+        isPrivacyRulesPresented = false
+        openRemoteConfig()
     }
 }

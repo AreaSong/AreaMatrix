@@ -327,3 +327,148 @@ private struct DisableRemoteAIConfirmationSheet: View {
         .frame(width: 520)
     }
 }
+
+struct AIPrivacyRulesView: View {
+    @ObservedObject var model: AISettingsModel
+    let onConfigureRemoteAI: () -> Void
+    let onClose: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            header
+            Divider()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    bodyContent
+                }
+                .padding(24)
+            }
+            Divider()
+            footer
+        }
+        .frame(width: 560, height: 520)
+        .task {
+            if !model.isLoaded {
+                await model.load()
+            }
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("AI Privacy Rules")
+                .font(.title2.weight(.semibold))
+                .accessibilityAddTraits(.isHeader)
+            Text(model.repoPath)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .textSelection(.enabled)
+        }
+        .padding(24)
+    }
+
+    @ViewBuilder
+    private var bodyContent: some View {
+        switch model.loadState {
+        case .loading:
+            ProgressView("Loading privacy rules...")
+        case let .failed(error):
+            AISettingsInlineBanner(error: error, tint: .red) {
+                Button("Retry", action: retryLoad)
+                Button("Back to AI settings", action: onClose)
+            }
+        case .loaded:
+            loadedContent
+        }
+    }
+
+    private var loadedContent: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            feedbackBanner
+            AdvancedSettingsSection(title: "Remote AI privacy gate") {
+                AdvancedSettingsKeyValueRow(label: "Status", value: remoteGateStatus)
+                AdvancedSettingsKeyValueRow(label: "Remote provider", value: remoteProviderStatus)
+                AdvancedSettingsKeyValueRow(label: "Privacy policy", value: privacyPolicyStatus)
+                Text(
+                    "This control only updates the C3-01 privacy gate. Provider credentials, connection tests, " +
+                        "scope, and disabling remote provider remain in S3-03."
+                )
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 10) {
+                    Button("Allow remote AI after provider consent", action: allowRemoteGate)
+                        .disabled(model.isSaving)
+                        .accessibilityIdentifier("S3-09-C3-01-allow-remote-ai-after-provider-consent")
+                    Button("Block remote AI with privacy gate", action: blockRemoteGate)
+                        .disabled(model.isSaving || model.snapshot?.config.privacyGateEnabled == false)
+                        .accessibilityIdentifier("S3-09-C3-01-block-remote-ai-privacy-gate")
+                }
+                Button("Configure remote AI", action: onConfigureRemoteAI)
+                    .accessibilityIdentifier("S3-09-C3-01-configure-remote-ai")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var feedbackBanner: some View {
+        if let error = model.saveError {
+            AISettingsInlineBanner(error: error, tint: .red) {
+                if model.hasRetryableSave {
+                    Button("Retry save", action: retrySave)
+                    Button("Revert changes", action: model.revertChanges)
+                }
+            }
+        } else if let feedback = model.actionFeedback {
+            switch feedback {
+            case let .success(message):
+                Label(message, systemImage: "checkmark.circle")
+                    .foregroundStyle(.green)
+            case let .failed(error):
+                AISettingsInlineBanner(error: error, tint: .orange) {
+                    Button("Configure remote AI", action: onConfigureRemoteAI)
+                }
+            }
+        }
+    }
+
+    private var footer: some View {
+        HStack {
+            if model.isSaving {
+                ProgressView()
+                    .controlSize(.small)
+                    .accessibilityLabel("Saving remote AI privacy gate")
+            }
+            Spacer()
+            Button("Close", action: onClose)
+        }
+        .padding(16)
+    }
+
+    private var remoteGateStatus: String {
+        model.snapshot?.config.privacyGateEnabled == true ? "Remote AI allowed" : "Remote AI blocked"
+    }
+
+    private var remoteProviderStatus: String {
+        model.snapshot?.config.remoteAIAllowed == true ? "Configured by S3-03" : "Configure remote AI required"
+    }
+
+    private var privacyPolicyStatus: String {
+        guard let config = model.snapshot?.config else { return "Loading" }
+        return config.privacyPolicyRef ?? "Default gate policy"
+    }
+
+    private func retryLoad() { Task { await model.load() } }
+    private func retrySave() { Task { await model.retrySave() } }
+    private func allowRemoteGate() {
+        Task {
+            let result = await model.allowRemoteAIAfterProviderConsent()
+            if result == .needsRemoteConfiguration {
+                onConfigureRemoteAI()
+            }
+        }
+    }
+    private func blockRemoteGate() { Task { await model.blockRemoteAIWithPrivacyGate() } }
+}

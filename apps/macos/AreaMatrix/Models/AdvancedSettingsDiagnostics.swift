@@ -70,6 +70,13 @@ enum AISettingsActionFeedback: Equatable {
     case failed(AISettingsError)
 }
 
+enum AISettingsPrivacyGateUpdateResult: Equatable {
+    case saved
+    case unchanged
+    case needsRemoteConfiguration
+    case failed
+}
+
 @MainActor
 final class AISettingsModel: ObservableObject {
     enum LoadState: Equatable {
@@ -90,6 +97,8 @@ final class AISettingsModel: ObservableObject {
     private let errorMapper: any CoreErrorMapping
     private var savedSnapshot: AISettingsSnapshot?
     private var pendingSave: AISettingsConfigSnapshot?
+    private var pendingSaveFailureMessage = "AI settings could not be saved."
+    private var pendingSavePreservesSnapshot = false
     private var pendingPause: AISettingsConfigSnapshot?
 
     init(
@@ -179,7 +188,11 @@ final class AISettingsModel: ObservableObject {
 
     func retrySave() async {
         guard let pendingSave else { return }
-        await persist(pendingSave, failureMessage: "AI settings could not be saved.")
+        await persist(
+            pendingSave,
+            failureMessage: pendingSaveFailureMessage,
+            preserveSavedSnapshotOnFailure: pendingSavePreservesSnapshot
+        )
     }
 
     func retryPause() async {
@@ -190,6 +203,8 @@ final class AISettingsModel: ObservableObject {
     func revertChanges() {
         snapshot = savedSnapshot
         pendingSave = nil
+        pendingSaveFailureMessage = "AI settings could not be saved."
+        pendingSavePreservesSnapshot = false
         pendingPause = nil
         saveError = nil
         actionFeedback = nil
@@ -211,16 +226,36 @@ final class AISettingsModel: ObservableObject {
         actionFeedback = .success("AI call log is handled by S3-05.")
     }
 
+    func allowRemoteAIAfterProviderConsent() async -> AISettingsPrivacyGateUpdateResult {
+        guard let config = editableConfig() else { return .failed }
+        guard config.remoteAIAllowed else {
+            actionFeedback = .failed(AISettingsError(
+                message: "Remote AI requires provider consent.",
+                recovery: "Configure remote AI before allowing the privacy gate.",
+                detail: "S3-03 owns provider setup, API key storage, connection verification, and remote scope."
+            ))
+            return .needsRemoteConfiguration
+        }
+        return await setPrivacyGateEnabled(true, successMessage: "Remote AI privacy gate is allowed.")
+    }
+
+    func blockRemoteAIWithPrivacyGate() async -> AISettingsPrivacyGateUpdateResult {
+        await setPrivacyGateEnabled(false, successMessage: "Remote AI is blocked by the privacy gate.")
+    }
+
     private func editableConfig() -> AISettingsConfigSnapshot? {
         snapshot?.config.normalized()
     }
 
+    @discardableResult
     private func persist(
         _ config: AISettingsConfigSnapshot,
         failureMessage: String,
-        restoreOnFailure: Bool = false
-    ) async {
-        guard !isSaving else { return }
+        restoreOnFailure: Bool = false,
+        preserveSavedSnapshotOnFailure: Bool = false,
+        successMessage: String? = nil
+    ) async -> Bool {
+        guard !isSaving else { return false }
         isSaving = true
         saveError = nil
         actionFeedback = nil
@@ -229,20 +264,33 @@ final class AISettingsModel: ObservableObject {
             snapshot = updated
             savedSnapshot = updated
             pendingSave = nil
+            pendingSaveFailureMessage = "AI settings could not be saved."
+            pendingSavePreservesSnapshot = false
             pendingPause = nil
-            actionFeedback = restoreOnFailure ? .success("AI paused.") : nil
+            actionFeedback = successMessage.map(AISettingsActionFeedback.success) ??
+                (restoreOnFailure ? .success("AI paused.") : nil)
+            isSaving = false
+            return true
         } catch {
             let mapped = await settingsError(for: error, message: failureMessage, fallbackRecovery: "Retry save")
             if restoreOnFailure {
                 snapshot = savedSnapshot
                 pendingPause = config
+            } else if preserveSavedSnapshotOnFailure {
+                snapshot = savedSnapshot
+                pendingSave = config
+                pendingSaveFailureMessage = failureMessage
+                pendingSavePreservesSnapshot = true
             } else if let current = snapshot {
                 snapshot = current.withPendingConfig(config)
                 pendingSave = config
+                pendingSaveFailureMessage = failureMessage
+                pendingSavePreservesSnapshot = false
             }
             saveError = mapped
         }
         isSaving = false
+        return false
     }
 
     private func settingsError(for error: Error, message: String, fallbackRecovery: String) async -> AISettingsError {
@@ -255,6 +303,22 @@ final class AISettingsModel: ObservableObject {
             )
         }
         return AISettingsError(message: message, recovery: fallbackRecovery, detail: error.localizedDescription)
+    }
+
+    private func setPrivacyGateEnabled(
+        _ enabled: Bool,
+        successMessage: String
+    ) async -> AISettingsPrivacyGateUpdateResult {
+        guard var config = editableConfig() else { return .failed }
+        guard config.privacyGateEnabled != enabled else { return .unchanged }
+        config.privacyGateEnabled = enabled
+        let saved = await persist(
+            config,
+            failureMessage: "Remote AI privacy gate could not be updated.",
+            preserveSavedSnapshotOnFailure: true,
+            successMessage: successMessage
+        )
+        return saved ? .saved : .failed
     }
 }
 
