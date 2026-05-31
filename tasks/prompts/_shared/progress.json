@@ -12794,14 +12794,34 @@
     "4-2/task-69": {
       "attempts": 2,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260531_123354/phase-4/4-2-task-69-copy-attempt-2.log",
+      "git_branch": "codex/areamatrix-task-loop-20260501_132850",
+      "git_changed_files": [
+        ".codex/task-loop-logs/20260531_123354/phase-4/4-2-task-69-copy-attempt-2.log",
+        ".codex/task-loop-logs/20260531_123354/phase-4/4-2-task-69-verify-attempt-2.log",
+        ".codex/task-loop-runs/20260531_123354/summary.json",
+        ".codex/task-loop-runs/index.json",
+        "apps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift",
+        "apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift",
+        "apps/macos/AreaMatrix/Models/MainExternalCreatedFileActions.swift",
+        "apps/macos/AreaMatrix/Models/MainFileListModel.swift",
+        "apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift",
+        "apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift",
+        "apps/macos/AreaMatrix/Views/Main/SmartListManagementSheet+Sections.swift",
+        "apps/macos/AreaMatrixTests/MainListIntegrationFilterTests.swift",
+        "tasks/prompts/_shared/progress.json"
+      ],
+      "git_checkpoint_status": "committed",
+      "git_commit": "cf49052c8f48310acf73171f9c776b76f8fbbfc7",
+      "git_push_status": "not_requested",
+      "git_remote": "",
       "note": "自动执行验收通过：attempt=2",
       "risk": "High",
       "run_id": "20260531_123354",
       "status": "completed",
-      "updated_at": "2026-05-31T16:49:05.376785+00:00",
+      "updated_at": "2026-05-31T16:49:05.639799+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260531_123354/phase-4/4-2-task-69-verify-attempt-2.log"
     }
   },
-  "updated_at": "2026-05-31T15:04:50.506759+00:00",
+  "updated_at": "2026-05-31T16:49:05.639808+00:00",
   "version": 1
 }
