@@ -30,10 +30,12 @@ final class MainFileListModel: ObservableObject {
             if !semanticPrivacyGateState.isCurrent(for: searchState.request) {
                 semanticPrivacyGateState = .idle
             }
+            if !semanticFallbackState.isCurrent(for: searchState.request) { semanticFallbackState = .idle }
         }
     }
     @Published var semanticIndexBuildState = SemanticIndexBuildState.idle
     @Published var semanticPrivacyGateState = SemanticPrivacyGateState.idle
+    @Published var semanticFallbackState = SemanticFallbackState.idle
     @Published var searchFacetsState = MainSearchFacetsState.idle
     @Published var tagFilterRegistryState = TagFilterRegistryState.idle
     @Published var selectedFileNoteWriteBlock: MainDetailNoteWriteBlock?
@@ -77,6 +79,7 @@ final class MainFileListModel: ObservableObject {
     let errorMapper: any CoreErrorMapping
     let searchQuerying: any CoreSearchQuerying
     let semanticSearching: any CoreSemanticSearching
+    let semanticFallbackReader: any CoreSemanticFallbackStatusReading
     let searchFiltering: any CoreSearchFiltering
     let commandIndexer: any CoreCommandIndexing
     let diagnosticsCollector: any CoreDiagnosticsCollecting
@@ -95,6 +98,7 @@ final class MainFileListModel: ObservableObject {
         fileDetailer: any CoreFileDetailing,
         searchQuerying: any CoreSearchQuerying = CoreBridge(),
         semanticSearching: any CoreSemanticSearching = CoreBridge(),
+        semanticFallbackReader: any CoreSemanticFallbackStatusReading = CoreBridge(),
         searchFiltering: any CoreSearchFiltering = CoreBridge(),
         commandIndexer: any CoreCommandIndexing = CoreBridge(),
         fileRenamer: any CoreFileRenaming = CoreBridge(),
@@ -124,6 +128,7 @@ final class MainFileListModel: ObservableObject {
         self.fileDetailer = fileDetailer
         self.searchQuerying = searchQuerying
         self.semanticSearching = semanticSearching
+        self.semanticFallbackReader = semanticFallbackReader
         self.searchFiltering = searchFiltering
         self.commandIndexer = commandIndexer
         self.fileRenamer = fileRenamer

@@ -107,6 +107,7 @@ enum CoreBridgeBoundary: String, CaseIterable, Equatable {
     case searchFiles = "search_files"
     case semanticSearch = "semantic_search"
     case buildEmbeddingIndex = "build_embedding_index"
+    case getAiFallbackStatus = "get_ai_fallback_status"
     case listFilterFacets = "list_filter_facets"
     case saveClassifierRule = "save_classifier_rule"
     case createSavedSearch = "create_saved_search"

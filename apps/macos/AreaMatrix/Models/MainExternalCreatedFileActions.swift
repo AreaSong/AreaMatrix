@@ -59,6 +59,42 @@ enum SemanticPrivacyGateState: Equatable {
     }
 }
 
+enum SemanticFallbackState: Equatable {
+    case idle
+    case loading(request: SearchQueryRequestSnapshot)
+    case loaded(request: SearchQueryRequestSnapshot, status: AiFallbackStatus)
+    case failed(request: SearchQueryRequestSnapshot, CoreErrorMappingSnapshot)
+
+    var status: AiFallbackStatus? {
+        guard case let .loaded(_, status) = self else { return nil }
+        return status
+    }
+
+    var errorMapping: CoreErrorMappingSnapshot? {
+        guard case let .failed(_, mapping) = self else { return nil }
+        return mapping
+    }
+
+    var isLoading: Bool {
+        guard case .loading = self else { return false }
+        return true
+    }
+
+    func isCurrent(for request: SearchQueryRequestSnapshot?) -> Bool {
+        guard let request else { return self == .idle }
+        return self.request == request
+    }
+
+    private var request: SearchQueryRequestSnapshot? {
+        switch self {
+        case .idle:
+            nil
+        case let .loading(request), let .loaded(request, _), let .failed(request, _):
+            request
+        }
+    }
+}
+
 extension MainFileListModel {
     func searchPage(for request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
         switch request.mode {
@@ -91,6 +127,32 @@ extension MainFileListModel {
 
     func clearSemanticPrivacyGate() {
         semanticPrivacyGateState = .idle
+    }
+
+    func loadSemanticFallbackStatus(for request: SearchQueryRequestSnapshot) async {
+        guard request.mode == .semantic else {
+            semanticFallbackState = .idle
+            return
+        }
+        guard searchState.page?.semanticPage?.fallbackReason != nil else {
+            semanticFallbackState = .idle
+            return
+        }
+
+        semanticFallbackState = .loading(request: request)
+        let fallbackRequest = semanticFallbackRequest(for: request)
+        do {
+            let status = try await semanticFallbackReader.semanticFallbackStatus(
+                repoPath: repoPath,
+                request: fallbackRequest
+            )
+            guard searchState.request == request else { return }
+            semanticFallbackState = .loaded(request: request, status: status)
+        } catch {
+            let mappedError = await mapCoreError(error)
+            guard searchState.request == request else { return }
+            semanticFallbackState = .failed(request: request, mappedError)
+        }
     }
 
     private func ensureSemanticPrivacyGate(for request: SearchQueryRequestSnapshot) async -> Bool {
@@ -163,6 +225,114 @@ extension MainFileListModel {
             return nil
         }
         return value.trimmingCharacters(in: CharacterSet(charactersIn: ".")).lowercased()
+    }
+
+    private func semanticFallbackRequest(for request: SearchQueryRequestSnapshot) -> AiFallbackStatusRequest {
+        let semanticPage = searchState.page?.semanticPage
+        let providerError = semanticProviderError(for: semanticPage?.fallbackReason)
+        return AiFallbackStatusRequest(
+            operation: .semanticSearch,
+            route: semanticPage?.route.map(AiCallLogRoute.init(snapshotRoute:)),
+            providerError: providerError,
+            providerErrorCode: semanticProviderErrorCode(for: providerError),
+            privacyDecision: privacyDecision(for: semanticPage?.fallbackReason),
+            privacySkippedReason: privacySkippedReason(for: semanticPage?.fallbackReason),
+            categorySkippedReason: nil,
+            semanticFallbackReason: semanticPage?.fallbackReason.map(SemanticSearchFallbackReason.init(snapshotReason:)),
+            callLogStatus: semanticCallLogStatus(for: semanticPage?.fallbackReason),
+            callLogId: semanticPage?.callLogID,
+            privacyRuleId: semanticPage?.privacyRuleID,
+            retryAfter: nil
+        )
+    }
+
+    private func semanticProviderError(for reason: SemanticSearchFallbackReasonSnapshot?) -> AiFallbackProviderErrorKind? {
+        switch reason {
+        case .providerUnavailable:
+            .providerUnavailable
+        case .rateLimited:
+            .rateLimited
+        case .timeout:
+            .timeout
+        case .callLogUnavailable:
+            .callLogUnavailable
+        case .aiDisabled, .featureDisabled, .privacyRule, .semanticIndexNotReady, .noEligibleInput,
+                .normalSearchUnavailable, nil:
+            nil
+        }
+    }
+
+    private func semanticProviderErrorCode(for providerError: AiFallbackProviderErrorKind?) -> String? {
+        switch providerError {
+        case .providerUnavailable:
+            "ProviderUnavailable"
+        case .rateLimited:
+            "RateLimited"
+        case .timeout:
+            "Timeout"
+        case .callLogUnavailable:
+            "CallLogUnavailable"
+        case .localModelNotReady, .remoteNotConfigured, .remoteFailed, .internalFailure, nil:
+            nil
+        }
+    }
+
+    private func privacyDecision(for reason: SemanticSearchFallbackReasonSnapshot?) -> AiPrivacyDecision? {
+        reason == .privacyRule ? .skipped : nil
+    }
+
+    private func privacySkippedReason(for reason: SemanticSearchFallbackReasonSnapshot?) -> AiPrivacySkippedReason? {
+        reason == .privacyRule ? .privacyRule : nil
+    }
+
+    private func semanticCallLogStatus(for reason: SemanticSearchFallbackReasonSnapshot?) -> AiCallLogStatus? {
+        switch reason {
+        case .privacyRule:
+            .skipped
+        case .providerUnavailable, .rateLimited, .timeout, .callLogUnavailable, .aiDisabled, .featureDisabled,
+                .semanticIndexNotReady, .noEligibleInput, .normalSearchUnavailable:
+            .failed
+        case nil:
+            nil
+        }
+    }
+}
+
+extension AiCallLogRoute {
+    init(snapshotRoute: SemanticSearchRouteSnapshot) {
+        switch snapshotRoute {
+        case .local:
+            self = .local
+        case .remote:
+            self = .remote
+        }
+    }
+}
+
+extension SemanticSearchFallbackReason {
+    init(snapshotReason: SemanticSearchFallbackReasonSnapshot) {
+        switch snapshotReason {
+        case .aiDisabled:
+            self = .aiDisabled
+        case .featureDisabled:
+            self = .featureDisabled
+        case .providerUnavailable:
+            self = .providerUnavailable
+        case .privacyRule:
+            self = .privacyRule
+        case .semanticIndexNotReady:
+            self = .semanticIndexNotReady
+        case .callLogUnavailable:
+            self = .callLogUnavailable
+        case .noEligibleInput:
+            self = .noEligibleInput
+        case .normalSearchUnavailable:
+            self = .normalSearchUnavailable
+        case .rateLimited:
+            self = .rateLimited
+        case .timeout:
+            self = .timeout
+        }
     }
 }
 

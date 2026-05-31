@@ -49,6 +49,16 @@ extension MainRepositoryContentView {
         }
     }
 
+    func semanticCallLogSheet(_ route: SemanticSearchCallLogRoute) -> some View {
+        AIClassificationCallLogDetailSheet(
+            repoPath: opening.config.repoPath,
+            callLogID: route.callLogID,
+            feature: .semanticSearch
+        ) {
+            semanticCallLogRoute = nil
+        }
+    }
+
     @ViewBuilder
     var semanticIndexRecoveryActions: some View {
         if let ruleID = fileListModel.semanticPrivacyGateState.matchedRuleID {
@@ -110,10 +120,158 @@ extension MainRepositoryContentView {
             Text("Semantic matches (\(page.semanticTotalCount))  Normal search matches (\(page.normalTotalCount))")
             semanticIndexBuildText
             semanticPrivacyGateDetail
+            semanticFallbackStatusDetail
         }
         .font(.callout)
         .foregroundStyle(.secondary)
-        .accessibilityIdentifier("S3-08-C3-09-semantic-privacy-gate")
+        .accessibilityIdentifier("S3-08-C3-10-ai-fallback")
+    }
+
+    @ViewBuilder
+    private var semanticFallbackStatusDetail: some View {
+        switch fileListModel.semanticFallbackState {
+        case .idle:
+            EmptyView()
+        case .loading:
+            Text("Resolving AI status...")
+                .accessibilityIdentifier("S3-08-C3-10-resolving-fallback-status")
+        case let .loaded(_, status):
+            VStack(alignment: .leading, spacing: 6) {
+                Text(status.title)
+                    .fontWeight(.semibold)
+                Text(status.message)
+                HStack(spacing: 10) {
+                    if status.retryable {
+                        semanticFallbackActionButton(.retry, status: status)
+                    } else if let retryDisabledReason = status.retryDisabledReason {
+                        Text(retryDisabledReason)
+                            .font(.caption)
+                    }
+                    ForEach(semanticFallbackActions(for: status), id: \.self) { action in
+                        semanticFallbackActionButton(action, status: status)
+                    }
+                }
+            }
+            .accessibilityIdentifier("S3-08-C3-10-fallback-status")
+        case let .failed(_, error):
+            HStack(spacing: 10) {
+                Text("AI fallback status could not be loaded: \(error.userMessage)")
+                Button("Use normal search") {
+                    searchMode = .normal
+                    Task { await rerunCurrentSearch(mode: .normal) }
+                }
+            }
+            .accessibilityIdentifier("S3-08-C3-10-fallback-status-error")
+        }
+    }
+
+    private func semanticFallbackActions(for status: AiFallbackStatus) -> [AiFallbackAction] {
+        [
+            status.primaryAction == .retry ? nil : status.primaryAction,
+            status.secondaryAction,
+            status.nonAiFallbackAction
+        ].compactMap { $0 }.reduce(into: []) { actions, action in
+            if semanticFallbackActionIsVisible(action), !actions.contains(action) {
+                actions.append(action)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func semanticFallbackActionButton(_ action: AiFallbackAction, status: AiFallbackStatus) -> some View {
+        if semanticFallbackActionIsVisible(action) {
+            Button(semanticFallbackActionTitle(action)) {
+                performSemanticFallbackAction(action, status: status)
+            }
+            .disabled(semanticFallbackActionIsDisabled(action, status: status))
+            .accessibilityIdentifier("S3-08-C3-10-action-\(semanticFallbackActionID(action))")
+        }
+    }
+
+    private func semanticFallbackActionIsVisible(_ action: AiFallbackAction) -> Bool {
+        switch action {
+        case .retry, .retryLater, .openAiSettings, .configureRemoteAi, .viewPrivacyRule, .viewCallLog,
+             .buildSemanticIndex, .useNormalSearch:
+            true
+        case .openLocalModelStatus, .classifyManually:
+            false
+        }
+    }
+
+    private func semanticFallbackActionIsDisabled(_ action: AiFallbackAction, status: AiFallbackStatus) -> Bool {
+        switch action {
+        case .retry:
+            !status.retryable
+        case .retryLater:
+            true
+        case .viewPrivacyRule:
+            status.privacyRuleId?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false
+        case .viewCallLog:
+            status.callLogId == nil
+        case .buildSemanticIndex:
+            fileListModel.semanticIndexBuildState.isBuilding || fileListModel.semanticPrivacyGateState.isChecking
+        case .openAiSettings, .configureRemoteAi, .useNormalSearch:
+            false
+        case .openLocalModelStatus, .classifyManually:
+            true
+        }
+    }
+
+    private func performSemanticFallbackAction(_ action: AiFallbackAction, status: AiFallbackStatus) {
+        switch action {
+        case .retry:
+            Task { await fileListModel.retrySearch() }
+        case .openAiSettings, .configureRemoteAi:
+            onOpenAISettings()
+        case .viewPrivacyRule:
+            if let ruleID = status.privacyRuleId?.trimmingCharacters(in: .whitespacesAndNewlines), !ruleID.isEmpty {
+                semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
+            }
+        case .viewCallLog:
+            if let callLogID = status.callLogId {
+                semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
+            }
+        case .buildSemanticIndex:
+            Task {
+                await fileListModel.refreshSemanticPrivacyGateForCurrentSearch()
+                isSemanticIndexConfirmationPresented = true
+            }
+        case .useNormalSearch:
+            searchMode = .normal
+            Task { await rerunCurrentSearch(mode: .normal) }
+        case .retryLater, .openLocalModelStatus, .classifyManually:
+            break
+        }
+    }
+
+    private func semanticFallbackActionTitle(_ action: AiFallbackAction) -> String {
+        switch action {
+        case .retry: "Retry"
+        case .retryLater: "Retry later"
+        case .openAiSettings: "Open AI settings"
+        case .openLocalModelStatus: "Open local model status"
+        case .configureRemoteAi: "Configure remote AI"
+        case .viewPrivacyRule: "View privacy rule"
+        case .viewCallLog: "View call log"
+        case .buildSemanticIndex: "Build semantic index"
+        case .useNormalSearch: "Use normal search"
+        case .classifyManually: "Classify manually"
+        }
+    }
+
+    private func semanticFallbackActionID(_ action: AiFallbackAction) -> String {
+        switch action {
+        case .retry: "retry"
+        case .retryLater: "retry-later"
+        case .openAiSettings: "open-ai-settings"
+        case .openLocalModelStatus: "open-local-model-status"
+        case .configureRemoteAi: "configure-remote-ai"
+        case .viewPrivacyRule: "view-privacy-rule"
+        case .viewCallLog: "view-call-log"
+        case .buildSemanticIndex: "build-semantic-index"
+        case .useNormalSearch: "use-normal-search"
+        case .classifyManually: "classify-manually"
+        }
     }
 
     @ViewBuilder
@@ -171,6 +329,11 @@ extension MainRepositoryContentView {
             mode: mode
         )
     }
+}
+
+struct SemanticSearchCallLogRoute: Identifiable, Equatable {
+    var callLogID: Int64
+    var id: Int64 { callLogID }
 }
 
 extension SmartListManagementSheet {

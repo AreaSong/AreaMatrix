@@ -13,12 +13,7 @@ enum MainListVisibleFileFiltering {
     }
 }
 
-enum SearchDateFilterPreset {
-    case any
-    case last7Days
-    case last30Days
-    case thisYear
-}
+enum SearchDateFilterPreset { case any, last7Days, last30Days, thisYear }
 
 enum SearchFilterDateField {
     case imported
@@ -378,12 +373,14 @@ extension MainFileListModel {
             let page = try await searchPage(for: request)
             guard generation == searchGeneration else { return }
             applySearchPage(page, request: request)
+            if request.mode == .semantic { await loadSemanticFallbackStatus(for: request) }
         } catch {
             let mappedError = await mapCoreError(error)
             guard generation == searchGeneration else { return }
             searchState = .failed(request: request, mappedError)
             pendingSearchDestination = nil
             isLoading = false
+            if request.mode == .semantic { semanticFallbackState = .failed(request: request, mappedError) }
         }
     }
 
@@ -394,7 +391,6 @@ extension MainFileListModel {
         errorMapping = nil
         isLoading = false
     }
-
 }
 
 extension MainFileListModel {
@@ -461,6 +457,7 @@ extension MainFileListModel {
             searchFacetsState = .failed(request: request, mappedError)
         }
     }
+
 }
 
 extension FileEntrySnapshot {

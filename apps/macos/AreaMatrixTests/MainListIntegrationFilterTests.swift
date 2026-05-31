@@ -210,6 +210,45 @@ final class MainListIntegrationFilterTests: XCTestCase {
         XCTAssertNil(model.errorMapping)
         XCTAssertFalse(model.isLoading)
     }
+
+    @MainActor
+    func testS308SemanticSearchLoadsC310FallbackStatusFromCore() async {
+        let tree = RepositoryTreeNodeSnapshot.integrationFilterFixtureTree()
+        guard let row = tree.sidebarRow(id: "docs/contracts") else {
+            return XCTFail("expected docs/contracts sidebar row")
+        }
+        let fallback = MainListRecordingSemanticFallbackReader(status: .s308SemanticIndexNotReady())
+        let model = MainFileListModel(
+            opening: .integrationFilterFixture(repoPath: "/tmp/repo", currentCategoryFiles: []),
+            fileLister: MainListRecordingFileLister(results: []),
+            fileDetailer: MainListRecordingFileDetailer(results: []),
+            semanticSearching: MainListRecordingSemanticSearcher(page: .s308SemanticFallbackFixture()),
+            semanticFallbackReader: fallback,
+            errorMapper: MainListRecordingErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
+        )
+
+        await model.runSearch(
+            query: "客户合同",
+            scope: .current,
+            sort: .relevance,
+            sidebarRow: row,
+            filters: .empty,
+            mode: .semantic
+        )
+        let requests = await fallback.recordedRequests()
+
+        XCTAssertEqual(requests.first?.repoPath, "/tmp/repo")
+        XCTAssertEqual(requests.first?.request.operation, .semanticSearch)
+        XCTAssertEqual(requests.first?.request.route, .remote)
+        XCTAssertNil(requests.first?.request.providerError)
+        XCTAssertNil(requests.first?.request.providerErrorCode)
+        XCTAssertEqual(requests.first?.request.semanticFallbackReason, .semanticIndexNotReady)
+        XCTAssertEqual(requests.first?.request.callLogStatus, .failed)
+        XCTAssertEqual(requests.first?.request.callLogId, 308)
+        XCTAssertEqual(model.semanticFallbackState.status?.primaryAction, .buildSemanticIndex)
+        XCTAssertEqual(model.semanticFallbackState.status?.nonAiFallbackAction, .useNormalSearch)
+        XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.getAiFallbackStatus))
+    }
 }
 
 private extension RepositoryOpeningResult {
@@ -300,6 +339,11 @@ struct MainListSearchRequestRecord: Equatable {
     var request: SearchQueryRequestSnapshot
 }
 
+struct MainListFallbackRequestRecord: Equatable {
+    var repoPath: String
+    var request: AiFallbackStatusRequest
+}
+
 struct MainListSmartListRequestRecord: Equatable {
     var repoPath: String
     var savedSearchID: Int64
@@ -368,6 +412,43 @@ actor MainListRecordingSearchQuerying: CoreSearchQuerying {
     }
 }
 
+actor MainListRecordingSemanticSearcher: CoreSemanticSearching {
+    private let page: SearchResultPageSnapshot
+
+    init(page: SearchResultPageSnapshot) {
+        self.page = page
+    }
+
+    func semanticSearch(repoPath _: String, request _: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
+        page
+    }
+
+    func buildEmbeddingIndex(
+        repoPath _: String,
+        request _: SearchQueryRequestSnapshot
+    ) async throws -> SemanticIndexBuildReportSnapshot {
+        throw CoreError.Internal(message: "S3-08 C3-10 test does not build the semantic index")
+    }
+}
+
+actor MainListRecordingSemanticFallbackReader: CoreSemanticFallbackStatusReading {
+    private let status: AiFallbackStatus
+    private var requests: [MainListFallbackRequestRecord] = []
+
+    init(status: AiFallbackStatus) {
+        self.status = status
+    }
+
+    func semanticFallbackStatus(repoPath: String, request: AiFallbackStatusRequest) async throws -> AiFallbackStatus {
+        requests.append(MainListFallbackRequestRecord(repoPath: repoPath, request: request))
+        return status
+    }
+
+    func recordedRequests() -> [MainListFallbackRequestRecord] {
+        requests
+    }
+}
+
 private extension SearchResultPageSnapshot {
     static func mainSearchFixture(
         query: String,
@@ -393,6 +474,52 @@ private extension SearchResultPageSnapshot {
             },
             diagnostics: [],
             indexStatus: indexStatus
+        )
+    }
+
+    static func s308SemanticFallbackFixture() -> SearchResultPageSnapshot {
+        SearchResultPageSnapshot(
+            query: "客户合同",
+            totalCount: 0,
+            results: [],
+            diagnostics: [],
+            indexStatus: .unavailable,
+            semanticPage: SemanticSearchResultPageSnapshot(
+                query: "客户合同",
+                semanticTotalCount: 0,
+                normalTotalCount: 0,
+                semanticMatches: [],
+                normalMatches: [],
+                dedupedNormalCount: 0,
+                indexStatus: .notReady,
+                route: .remote,
+                fallbackReason: .semanticIndexNotReady,
+                fallbackMessage: "Semantic index is not ready",
+                callLogID: 308,
+                privacyRuleID: nil,
+                lowConfidence: false
+            )
+        )
+    }
+}
+
+private extension AiFallbackStatus {
+    static func s308SemanticIndexNotReady() -> AiFallbackStatus {
+        AiFallbackStatus(
+            operation: .semanticSearch,
+            kind: .semanticIndexNotReady,
+            category: .unavailable,
+            title: "Semantic index is not ready",
+            message: "Semantic index is not ready yet.",
+            retryable: false,
+            retryDisabledReason: "Build the semantic index or use normal search.",
+            primaryAction: .buildSemanticIndex,
+            secondaryAction: .viewCallLog,
+            nonAiFallbackAction: .useNormalSearch,
+            route: .remote,
+            callLogId: 308,
+            privacyRuleId: nil,
+            retryAfter: nil
         )
     }
 }

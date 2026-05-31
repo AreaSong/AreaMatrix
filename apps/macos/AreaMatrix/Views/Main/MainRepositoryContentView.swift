@@ -2,7 +2,6 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 enum MainRepositoryContentState: Equatable { case empty, list }
-
 struct MainRepositoryContentView: View {
     let opening: RepositoryOpeningResult
     let state: MainRepositoryContentState
@@ -53,6 +52,7 @@ struct MainRepositoryContentView: View {
     @State var isSidebarTagsFilterPresented = false
     @State var isSemanticIndexConfirmationPresented = false
     @State var semanticPrivacyRuleRoute: AIClassificationPrivacyRuleRoute?
+    @State var semanticCallLogRoute: SemanticSearchCallLogRoute?
     @State var savedSearchesBySidebarID: [String: SavedSearchSnapshot] = [:]
     @State var smartListLoadError: CoreErrorMappingSnapshot?
     @State var smartListManagementRoute: SmartListManagementRoute?
@@ -270,6 +270,7 @@ extension MainRepositoryContentView {
         .sheet(item: actionDestinationBinding, content: actionRoutingSheet)
         .sheet(item: searchDestinationBinding, content: searchRoutingSheet)
         .sheet(item: $semanticPrivacyRuleRoute, content: semanticPrivacyRuleSheet)
+        .sheet(item: $semanticCallLogRoute, content: semanticCallLogSheet)
         .sheet(item: $pendingBatchAddTagsRoute, content: batchAddTagsRoutingSheet)
         .sheet(item: $pendingBatchChangeCategoryRoute, content: batchChangeCategoryRoutingSheet)
         .sheet(item: $pendingBatchDeleteRoute, content: batchDeleteRoutingSheet)
