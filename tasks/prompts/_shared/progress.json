@@ -12914,14 +12914,29 @@
     "4-2/task-73": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260531_123354/phase-4/4-2-task-73-copy-attempt-1.log",
+      "git_branch": "codex/areamatrix-task-loop-20260501_132850",
+      "git_changed_files": [
+        ".codex/task-loop-logs/20260531_123354/phase-4/4-2-task-73-copy-attempt-1.log",
+        ".codex/task-loop-logs/20260531_123354/phase-4/4-2-task-73-verify-attempt-1.log",
+        ".codex/task-loop-runs/20260531_123354/summary.json",
+        ".codex/task-loop-runs/index.json",
+        "apps/macos/AreaMatrix/Features/AI/AIPrivacyRulesView.swift",
+        "apps/macos/AreaMatrix/Features/AI/AISummaryMetadataReader.swift",
+        "apps/macos/AreaMatrixTests/S309RemoteProviderConfigPageFeatureTests.swift",
+        "tasks/prompts/_shared/progress.json"
+      ],
+      "git_checkpoint_status": "committed",
+      "git_commit": "d35192f5080c2a1ad2b1500ba9550593c893137d",
+      "git_push_status": "not_requested",
+      "git_remote": "",
       "note": "自动执行验收通过：attempt=1",
       "risk": "High",
       "run_id": "20260531_123354",
       "status": "completed",
-      "updated_at": "2026-05-31T22:19:24.258071+00:00",
+      "updated_at": "2026-05-31T22:19:24.452048+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260531_123354/phase-4/4-2-task-73-verify-attempt-1.log"
     }
   },
-  "updated_at": "2026-05-31T21:43:18.806750+00:00",
+  "updated_at": "2026-05-31T22:19:24.452050+00:00",
   "version": 1
 }
