@@ -19,6 +19,59 @@ extension MainRepositoryContentView {
         }
     }
 
+    var semanticPrivacyGateText: String {
+        switch fileListModel.semanticPrivacyGateState {
+        case .idle:
+            "Privacy rules: not checked yet"
+        case .checking:
+            "Privacy rules: checking..."
+        case let .allowed(_, report):
+            "Privacy rules: allowed. Sent fields: \(privacySentFields(report.sentFields))"
+        case let .blocked(_, report):
+            "Privacy rules: blocked. \(report.message) Sent fields: \(privacySentFields(report.sentFields))"
+        case let .failed(_, error):
+            "Privacy rules could not be checked: \(error.userMessage)"
+        }
+    }
+
+    var semanticIndexConfirmationMessage: String {
+        [
+            "AreaMatrix will build a semantic index for searchable files.",
+            "Local indexing keeps file content on this device.",
+            "Remote indexing is used only when remote AI is explicitly enabled and allowed for Semantic search.",
+            semanticPrivacyGateText
+        ].joined(separator: " ")
+    }
+
+    func semanticPrivacyRuleSheet(_ route: AIClassificationPrivacyRuleRoute) -> some View {
+        AIClassificationPrivacyRuleReferenceSheet(repoPath: opening.config.repoPath, ruleID: route.ruleID) {
+            semanticPrivacyRuleRoute = nil
+        }
+    }
+
+    @ViewBuilder
+    var semanticIndexRecoveryActions: some View {
+        if let ruleID = fileListModel.semanticPrivacyGateState.matchedRuleID {
+            Button("View privacy rule") {
+                semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
+            }
+            .accessibilityIdentifier("S3-08-C3-09-view-privacy-rule")
+        }
+        switch fileListModel.semanticPrivacyGateState {
+        case .blocked, .failed:
+            Button("Retry privacy check") {
+                Task { await fileListModel.refreshSemanticPrivacyGateForCurrentSearch() }
+            }
+            Button("Use normal search") {
+                isSemanticIndexConfirmationPresented = false
+                searchMode = .normal
+                Task { await rerunCurrentSearch(mode: .normal) }
+            }
+        case .idle, .checking, .allowed:
+            EmptyView()
+        }
+    }
+
     func semanticStatusText(_ page: SemanticSearchResultPageSnapshot) -> String {
         var parts = ["Semantic index: \(page.indexStatus.displayName)"]
         if let route = page.route { parts.append(route.rawValue) }
@@ -56,19 +109,55 @@ extension MainRepositoryContentView {
             }
             Text("Semantic matches (\(page.semanticTotalCount))  Normal search matches (\(page.normalTotalCount))")
             semanticIndexBuildText
+            semanticPrivacyGateDetail
         }
         .font(.callout)
         .foregroundStyle(.secondary)
-        .accessibilityIdentifier("S3-08-C3-08-semantic-search-banner")
+        .accessibilityIdentifier("S3-08-C3-09-semantic-privacy-gate")
+    }
+
+    @ViewBuilder
+    private var semanticPrivacyGateDetail: some View {
+        switch fileListModel.semanticPrivacyGateState {
+        case .idle:
+            EmptyView()
+        case .checking:
+            Text("Checking privacy rules before semantic indexing...")
+        case let .allowed(_, report):
+            Text("Privacy gate allowed semantic indexing. Sent fields: \(privacySentFields(report.sentFields))")
+        case let .blocked(_, report):
+            HStack(spacing: 10) {
+                Text("Privacy gate blocked semantic indexing. \(report.message)")
+                if let ruleID = fileListModel.semanticPrivacyGateState.matchedRuleID {
+                    Button("View privacy rule") {
+                        semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
+                    }
+                }
+                Button("Retry privacy check") {
+                    Task { await fileListModel.refreshSemanticPrivacyGateForCurrentSearch() }
+                }
+            }
+        case let .failed(_, error):
+            HStack(spacing: 10) {
+                Text("Privacy gate check failed: \(error.userMessage)")
+                Button("Retry privacy check") {
+                    Task { await fileListModel.refreshSemanticPrivacyGateForCurrentSearch() }
+                }
+            }
+        }
     }
 
     @ViewBuilder
     private func semanticBuildIndexButton(_ page: SemanticSearchResultPageSnapshot) -> some View {
         if page.canBuildIndex {
             Button("Build semantic index") {
-                isSemanticIndexConfirmationPresented = true
+                Task {
+                    await fileListModel.refreshSemanticPrivacyGateForCurrentSearch()
+                    isSemanticIndexConfirmationPresented = true
+                }
             }
-            .disabled(fileListModel.semanticIndexBuildState.isBuilding)
+            .disabled(fileListModel.semanticIndexBuildState.isBuilding || fileListModel.semanticPrivacyGateState.isChecking)
+            .accessibilityIdentifier("S3-08-C3-09-build-semantic-index-privacy-check")
         }
     }
 

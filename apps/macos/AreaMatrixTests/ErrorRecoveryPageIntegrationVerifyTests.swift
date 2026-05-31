@@ -3,6 +3,68 @@ import XCTest
 
 final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
     @MainActor
+    func testS308C309SemanticIndexChecksPrivacyRulesBeforeCoreBuild() async {
+        let request = SearchQueryRequestSnapshot.s308SemanticPrivacyFixture()
+        let semantic = S308PrivacySemanticSearcher()
+        let privacy = S308PrivacyRulesBridge(report: .s308Allowed())
+        let model = MainFileListModel(
+            opening: .initDoneFixture(repoPath: "/tmp/repo", fileCount: 0),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(.deleteFixture(
+                id: 680,
+                name: "invoice.pdf",
+                storageMode: "Copied"
+            ))),
+            semanticSearching: semantic,
+            aiPrivacyRules: privacy,
+            errorMapper: S308PrivacyErrorMapper()
+        )
+        model.searchState = .loaded(request: request, page: .s308SemanticPrivacyPage(route: .remote))
+
+        await model.buildSemanticIndexForCurrentSearch()
+
+        let privacyRequests = await privacy.requests()
+        let indexRequests = await semantic.indexRequests()
+        XCTAssertEqual(privacyRequests.loadCount, 1)
+        XCTAssertEqual(privacyRequests.evaluations.first?.feature, .semanticSearch)
+        XCTAssertEqual(privacyRequests.evaluations.first?.route, .remote)
+        XCTAssertEqual(privacyRequests.evaluations.first?.context.repoRelativePath, "finance/invoices")
+        XCTAssertEqual(privacyRequests.evaluations.first?.context.fileName, "客户合同")
+        XCTAssertEqual(privacyRequests.evaluations.first?.context.category, "finance")
+        XCTAssertEqual(privacyRequests.evaluations.first?.context.extension, "pdf")
+        XCTAssertEqual(privacyRequests.evaluations.first?.context.tags, ["confidential"])
+        XCTAssertEqual(indexRequests, [request])
+        XCTAssertTrue(model.semanticPrivacyGateState.allowsIndexBuild)
+    }
+
+    @MainActor
+    func testS308C309PrivacyRuleBlockPreventsSemanticIndexBuild() async {
+        let request = SearchQueryRequestSnapshot.s308SemanticPrivacyFixture()
+        let semantic = S308PrivacySemanticSearcher()
+        let privacy = S308PrivacyRulesBridge(report: .s308Blocked())
+        let model = MainFileListModel(
+            opening: .initDoneFixture(repoPath: "/tmp/repo", fileCount: 0),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(.deleteFixture(
+                id: 681,
+                name: "confidential.pdf",
+                storageMode: "Copied"
+            ))),
+            semanticSearching: semantic,
+            aiPrivacyRules: privacy,
+            errorMapper: S308PrivacyErrorMapper()
+        )
+        model.searchState = .loaded(request: request, page: .s308SemanticPrivacyPage(route: .remote))
+
+        await model.buildSemanticIndexForCurrentSearch()
+
+        let indexRequests = await semantic.indexRequests()
+        XCTAssertEqual(indexRequests, [])
+        XCTAssertEqual(model.semanticPrivacyGateState.matchedRuleID, "rule-confidential")
+        XCTAssertFalse(model.semanticIndexBuildState.isBuilding)
+    }
+
+    @MainActor
     func testS132PageIntegrationConnectsStartupRecoveryMappingEntryExitAndTreeState() async throws {
         let mapping = CoreErrorMappingSnapshot.s132IntegrationMapping(
             userMessage: "Startup recovery could not finish",
@@ -201,6 +263,82 @@ private actor S132IntegrationErrorMapper: CoreErrorMapping {
     }
 }
 
+private actor S308PrivacySemanticSearcher: CoreSemanticSearching {
+    private var recordedIndexRequests: [SearchQueryRequestSnapshot] = []
+
+    func semanticSearch(repoPath _: String, request _: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
+        throw CoreError.Internal(message: "S3-08 C3-09 test does not execute semantic search")
+    }
+
+    func buildEmbeddingIndex(
+        repoPath _: String,
+        request: SearchQueryRequestSnapshot
+    ) async throws -> SemanticIndexBuildReportSnapshot {
+        recordedIndexRequests.append(request)
+        return SemanticIndexBuildReportSnapshot(
+            status: .ready,
+            route: .remote,
+            totalCount: 1,
+            processedCount: 1,
+            skippedCount: 0,
+            failedCount: 0,
+            privacySkippedCount: 0,
+            providerName: "OpenAI",
+            callLogID: 680,
+            fallbackReason: nil,
+            message: nil
+        )
+    }
+
+    func indexRequests() -> [SearchQueryRequestSnapshot] {
+        recordedIndexRequests
+    }
+}
+
+private actor S308PrivacyRulesBridge: CoreAIPrivacyEvaluating {
+    struct Requests: Equatable {
+        var loadCount = 0
+        var evaluations: [AiPrivacyEvaluationRequest] = []
+    }
+
+    private let report: AiPrivacyEvaluationReport
+    private var recorded = Requests()
+
+    init(report: AiPrivacyEvaluationReport) {
+        self.report = report
+    }
+
+    func loadAIPrivacyRules(repoPath _: String) async throws -> AiPrivacyRulesSnapshot {
+        recorded.loadCount += 1
+        return .s308PrivacyRules()
+    }
+
+    func evaluateAIPrivacy(
+        repoPath _: String,
+        request: AiPrivacyEvaluationRequest
+    ) async throws -> AiPrivacyEvaluationReport {
+        recorded.evaluations.append(request)
+        return report
+    }
+
+    func requests() -> Requests {
+        recorded
+    }
+}
+
+private struct S308PrivacyErrorMapper: CoreErrorMapping {
+    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .config,
+            userMessage: "Semantic privacy rules could not be checked.",
+            severity: .high,
+            suggestedAction: "Retry privacy check.",
+            recoverability: .retryable,
+            rawContext: "S3-08 C3-09"
+        )
+    }
+}
+
 private extension CoreErrorMappingSnapshot {
     static func s132IntegrationMapping(
         userMessage: String,
@@ -215,6 +353,115 @@ private extension CoreErrorMappingSnapshot {
             suggestedAction: "Retry startup recovery before opening the repository.",
             recoverability: recoverability,
             rawContext: rawContext
+        )
+    }
+}
+
+private extension SearchQueryRequestSnapshot {
+    static func s308SemanticPrivacyFixture() -> SearchQueryRequestSnapshot {
+        var filters = SearchFilterStateSnapshot.empty
+        filters.category = "finance"
+        filters.fileKind = ".pdf"
+        filters.tags = [" confidential ", ""]
+        return SearchQueryRequestSnapshot(
+            query: "客户合同",
+            scope: .current,
+            currentPath: "finance/invoices",
+            category: nil,
+            filters: filters,
+            sort: .relevance,
+            limit: 50,
+            offset: 0,
+            mode: .semantic
+        )
+    }
+}
+
+private extension SearchResultPageSnapshot {
+    static func s308SemanticPrivacyPage(route: SemanticSearchRouteSnapshot) -> SearchResultPageSnapshot {
+        let semanticPage = SemanticSearchResultPageSnapshot(
+            query: "客户合同",
+            semanticTotalCount: 0,
+            normalTotalCount: 0,
+            semanticMatches: [],
+            normalMatches: [],
+            dedupedNormalCount: 0,
+            indexStatus: .notReady,
+            route: route,
+            fallbackReason: .semanticIndexNotReady,
+            fallbackMessage: nil,
+            callLogID: nil,
+            privacyRuleID: nil,
+            lowConfidence: false
+        )
+        return SearchResultPageSnapshot(
+            query: "客户合同",
+            totalCount: 0,
+            results: [],
+            diagnostics: [],
+            indexStatus: .unavailable,
+            semanticPage: semanticPage
+        )
+    }
+}
+
+private extension AiPrivacyRulesSnapshot {
+    static func s308PrivacyRules() -> AiPrivacyRulesSnapshot {
+        AiPrivacyRulesSnapshot(
+            privacyGateEnabled: true,
+            rules: [],
+            remoteAllowedFields: [
+                AiPrivacyFieldState(field: .fileName, allowRemote: true, lastMatchedCount: 0),
+                AiPrivacyFieldState(field: .repoRelativePath, allowRemote: true, lastMatchedCount: 0),
+                AiPrivacyFieldState(field: .`extension`, allowRemote: true, lastMatchedCount: 0)
+            ],
+            providerScope: AiPrivacyProviderScopeSnapshot(
+                providerConfigured: true,
+                providerVerified: true,
+                remoteProviderEnabled: true,
+                featureScope: [.semanticSearch]
+            ),
+            updatedAt: 1_700_000_300,
+            remoteBlockedByDefault: true
+        )
+    }
+}
+
+private extension AiPrivacyEvaluationReport {
+    static func s308Allowed() -> AiPrivacyEvaluationReport {
+        AiPrivacyEvaluationReport(
+            decision: .allowed,
+            skippedReason: nil,
+            providerGateReason: nil,
+            matchedRules: [],
+            matchedFieldType: nil,
+            allowedFields: [.fileName, .repoRelativePath, .`extension`],
+            blockedFields: [.extractedTextExcerpt],
+            sentFields: [.fileName, .repoRelativePath],
+            message: "Privacy rules allow semantic index metadata."
+        )
+    }
+
+    static func s308Blocked() -> AiPrivacyEvaluationReport {
+        AiPrivacyEvaluationReport(
+            decision: .skipped,
+            skippedReason: .privacyRule,
+            providerGateReason: nil,
+            matchedRules: [
+                AiPrivacyRuleMatch(
+                    ruleId: "rule-confidential",
+                    name: "Block confidential",
+                    kind: .keyword,
+                    pattern: "confidential",
+                    appliesTo: .remoteAi,
+                    matchedField: .fileName
+                )
+            ],
+            matchedFieldType: .fileName,
+            allowedFields: [],
+            blockedFields: [.fileName, .repoRelativePath, .extractedTextExcerpt],
+            sentFields: [],
+            message: "A privacy rule blocked semantic index input."
         )
     }
 }

@@ -25,8 +25,15 @@ final class MainFileListModel: ObservableObject {
     @Published var aiTagBatchSuggestionState = AITagBatchSuggestionState.idle
     @Published var tagSuggestionPresentationRequest: TagSuggestionPresentationRequest?
     @Published var detailTagUndoToast: DetailTagUndoToast?
-    @Published var searchState = MainSearchState.idle
+    @Published var searchState = MainSearchState.idle {
+        didSet {
+            if !semanticPrivacyGateState.isCurrent(for: searchState.request) {
+                semanticPrivacyGateState = .idle
+            }
+        }
+    }
     @Published var semanticIndexBuildState = SemanticIndexBuildState.idle
+    @Published var semanticPrivacyGateState = SemanticPrivacyGateState.idle
     @Published var searchFacetsState = MainSearchFacetsState.idle
     @Published var tagFilterRegistryState = TagFilterRegistryState.idle
     @Published var selectedFileNoteWriteBlock: MainDetailNoteWriteBlock?

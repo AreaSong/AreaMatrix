@@ -52,6 +52,7 @@ struct MainRepositoryContentView: View {
     @State var isSearchFiltersPresented = false
     @State var isSidebarTagsFilterPresented = false
     @State var isSemanticIndexConfirmationPresented = false
+    @State var semanticPrivacyRuleRoute: AIClassificationPrivacyRuleRoute?
     @State var savedSearchesBySidebarID: [String: SavedSearchSnapshot] = [:]
     @State var smartListLoadError: CoreErrorMappingSnapshot?
     @State var smartListManagementRoute: SmartListManagementRoute?
@@ -100,6 +101,7 @@ struct MainRepositoryContentView: View {
         batchRenamer: any CoreBatchRenaming = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         tagStore: any CoreTagCRUD = CoreBridge(),
+        aiPrivacyRules: any CoreAIPrivacyEvaluating = CoreBridge(),
         undoActionStore: any CoreUndoActionLogging = CoreBridge(),
         redoActionStore: any CoreRedoActionLogging = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
@@ -147,6 +149,7 @@ struct MainRepositoryContentView: View {
             batchCategoryChanger: batchCategoryChanger,
             iCloudConflictResolver: iCloudConflictResolver,
             tagStore: tagStore,
+            aiPrivacyRules: aiPrivacyRules,
             undoActionStore: undoActionStore,
             redoActionStore: redoActionStore,
             changeLogLister: changeLogLister,
@@ -256,20 +259,17 @@ extension MainRepositoryContentView {
         } message: {
             Text("Save or discard the AI summary draft before switching files.")
         }
-        .confirmationDialog(
-            "Build semantic index?",
-            isPresented: $isSemanticIndexConfirmationPresented,
-            titleVisibility: .visible
-        ) {
-            Button("Start index build") {
-                Task { await fileListModel.buildSemanticIndexForCurrentSearch() }
-            }
+        .confirmationDialog("Build semantic index?", isPresented: $isSemanticIndexConfirmationPresented, titleVisibility: .visible) {
+            Button("Start index build") { Task { await fileListModel.buildSemanticIndexForCurrentSearch() } }
+            .disabled(!fileListModel.semanticPrivacyGateState.allowsIndexBuild)
+            semanticIndexRecoveryActions
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("AreaMatrix will build a semantic index for searchable files. Local indexing keeps file content on this device.")
+            Text(semanticIndexConfirmationMessage)
         }
         .sheet(item: actionDestinationBinding, content: actionRoutingSheet)
         .sheet(item: searchDestinationBinding, content: searchRoutingSheet)
+        .sheet(item: $semanticPrivacyRuleRoute, content: semanticPrivacyRuleSheet)
         .sheet(item: $pendingBatchAddTagsRoute, content: batchAddTagsRoutingSheet)
         .sheet(item: $pendingBatchChangeCategoryRoute, content: batchChangeCategoryRoutingSheet)
         .sheet(item: $pendingBatchDeleteRoute, content: batchDeleteRoutingSheet)
