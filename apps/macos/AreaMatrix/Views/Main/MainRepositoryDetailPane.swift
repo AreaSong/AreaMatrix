@@ -314,31 +314,13 @@ extension MainRepositoryDetailPane {
         detailStatusSection
         DetailTagSection(
             file: detail,
+            repoPath: repoPath,
             state: detailTagEditorState,
             suggestionState: detailTagSuggestionState,
             suggestionPresentationRequest: tagSuggestionPresentationRequest,
             undoToast: detailTagUndoToast,
             disabledReason: writeActionDisabledReason(detail.id),
-            onLoadTags: tagActions.onLoadTags,
-            onRetryTags: tagActions.onRetryTags,
-            onAddTag: tagActions.onAddTag,
-            onRemoveTag: tagActions.onRemoveTag,
-            onLoadSuggestions: tagActions.onLoadSuggestions,
-            onRetrySuggestions: tagActions.onRetrySuggestions,
-            onToggleSuggestion: tagActions.onToggleSuggestion,
-            onSelectAllSuggestions: tagActions.onSelectAllSuggestions,
-            onClearSuggestions: tagActions.onClearSuggestions,
-            onStartEditingSuggestions: tagActions.onStartEditingSuggestions,
-            onCancelEditingSuggestions: tagActions.onCancelEditingSuggestions,
-            onEditSuggestionDisplayName: tagActions.onEditSuggestionDisplayName,
-            onEditSuggestionSlug: tagActions.onEditSuggestionSlug,
-            onRegenerateSuggestionSlug: tagActions.onRegenerateSuggestionSlug,
-            onApplySuggestions: tagActions.onApplySuggestions,
-            onApplyEditedSuggestions: tagActions.onApplyEditedSuggestions,
-            onRetryFailedSuggestions: tagActions.onRetryFailedSuggestions,
-            onSuggestionPresentationConsumed: tagActions.onSuggestionPresentationConsumed,
-            onUndoTagChange: tagActions.onUndoTagChange,
-            onDismissUndoToast: tagActions.onDismissTagUndoToast
+            tagActions: tagActions
         )
         metadataRows(for: detail)
     }

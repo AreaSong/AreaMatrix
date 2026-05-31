@@ -148,6 +148,111 @@ final class S304PageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(requests.first?.pagination.limit, 100)
     }
 
+    @MainActor
+    func testS307C307AITagSuggestionSkipsDisableAllSubmitActions() {
+        let states = [
+            AITagSuggestionState.loaded(
+                fileID: 707,
+                s307AITagReport(fileID: 707, status: .skipped, skippedReason: .privacyRule),
+                []
+            ),
+            .loaded(fileID: 708, s307AITagReport(fileID: 708, status: .noSuggestion), []),
+            .loaded(fileID: 709, s307AITagReport(
+                fileID: 709,
+                suggestions: [s307AITagSuggestion(id: "s3-07-low", slug: "maybe", confidence: 0.55)]
+            ), [])
+        ]
+
+        for state in states {
+            XCTAssertFalse(state.hasHighConfidenceApplyCandidates)
+            XCTAssertFalse(state.canApplySelectedSuggestions)
+            XCTAssertFalse(state.canEditSelectedSuggestions)
+            XCTAssertEqual(AITagSuggestionAction.selectedApplyItems(in: state), [])
+        }
+    }
+
+    @MainActor
+    func testS307C307AcceptHighConfidenceExcludesPreviouslySelectedLowConfidence() {
+        let report = s307AITagReport(fileID: 707, suggestions: [
+            s307AITagSuggestion(id: "s3-07-finance", slug: "finance", confidence: 0.91, selectedByDefault: false),
+            s307AITagSuggestion(id: "s3-07-low", slug: "maybe", confidence: 0.42, selectedByDefault: false)
+        ])
+        let lowSelected = AITagSuggestionState.loaded(fileID: 707, report, ["s3-07-low"])
+        let highConfidenceOnly = AITagSuggestionAction.selectingHighConfidence(in: lowSelected)
+
+        XCTAssertEqual(highConfidenceOnly.selectedIDs, ["s3-07-finance"])
+        XCTAssertEqual(
+            AITagSuggestionAction.selectedApplyItems(in: highConfidenceOnly).map(\.suggestionId),
+            ["s3-07-finance"]
+        )
+    }
+
+    @MainActor
+    func testS307C307AITagSuggestionUsesCoreBridgeAndAppliesOnlyReviewedTags() async {
+        let file = FileEntrySnapshot.detailMetaFixture(id: 707, currentName: "invoice.pdf")
+        let bridge = S307AITagBridge(s307AITagReport(fileID: file.id, suggestions: [
+            s307AITagSuggestion(id: "s3-07-finance", slug: "finance", confidence: 0.91),
+            s307AITagSuggestion(id: "s3-07-low", slug: "maybe", confidence: 0.42, selectedByDefault: false)
+        ]))
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
+            tagStore: DetailTagRecordingStore(listResults: [.success(.s207Fixture(fileID: file.id, values: ["client"]))]),
+            aiTagSuggestionStore: bridge,
+            changeLogLister: DetailLogRecordingChangeLister(entries: [.s223Applied()]),
+            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+        )
+
+        await model.selectFiles([file.id])
+        await model.loadSelectedFileTags()
+        await model.loadSelectedFileAITagSuggestions()
+        let undoState = await model.applySelectedFileAITagSuggestions()
+        let requests = await bridge.requests()
+
+        XCTAssertEqual(requests.suggest.first?.fileId, file.id)
+        XCTAssertEqual(requests.suggest.first?.candidateTags, ["client"])
+        XCTAssertEqual(requests.apply.first?.fileId, file.id)
+        XCTAssertEqual(requests.apply.first?.confirmed, true)
+        XCTAssertEqual(requests.apply.first?.callLogId, 7_707)
+        XCTAssertEqual(requests.apply.first?.suggestions.map(\.suggestionId), ["s3-07-finance"])
+        XCTAssertEqual(model.aiTagSuggestionState.appliedReport?.appliedCount, 1)
+        XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["finance"])
+        XCTAssertNil(undoState)
+    }
+
+    @MainActor
+    func testS307C307SingleRowAddImmediatelyAppliesThroughCoreBridge() async {
+        let file = FileEntrySnapshot.detailMetaFixture(id: 710, currentName: "invoice-single-add.pdf")
+        let bridge = S307AITagBridge(s307AITagReport(fileID: file.id, suggestions: [
+            s307AITagSuggestion(id: "s3-07-finance", slug: "finance", confidence: 0.91, selectedByDefault: false),
+            s307AITagSuggestion(id: "s3-07-low", slug: "maybe", confidence: 0.42, selectedByDefault: false)
+        ]))
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
+            tagStore: DetailTagRecordingStore(listResults: [.success(.s207Fixture(fileID: file.id, values: []))]),
+            aiTagSuggestionStore: bridge,
+            changeLogLister: DetailLogRecordingChangeLister(entries: [.s223Applied()]),
+            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+        )
+
+        await model.selectFiles([file.id])
+        await model.loadSelectedFileAITagSuggestions()
+        let undoState = await model.applySelectedFileAITagSuggestion("s3-07-finance")
+        let requests = await bridge.requests()
+
+        XCTAssertEqual(model.aiTagSuggestionState.selectedIDs, [])
+        XCTAssertEqual(requests.apply.count, 1)
+        XCTAssertEqual(requests.apply.first?.fileId, file.id)
+        XCTAssertEqual(requests.apply.first?.confirmed, true)
+        XCTAssertEqual(requests.apply.first?.suggestions.map(\.suggestionId), ["s3-07-finance"])
+        XCTAssertEqual(model.aiTagSuggestionState.appliedReport?.appliedCount, 1)
+        XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["finance"])
+        XCTAssertNil(undoState)
+    }
+
 }
 
 private enum S304CategoryMoveRequest: Equatable {

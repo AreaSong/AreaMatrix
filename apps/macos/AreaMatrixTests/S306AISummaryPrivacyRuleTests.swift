@@ -336,6 +336,120 @@ private func s306Report(
     .s306(reason, providerGateReason: providerGateReason, fields: fields)
 }
 
+actor S307AITagBridge: CoreAITagSuggestionManaging {
+    private let report: AiTagSuggestionReport
+    private var suggestRequests: [AiTagSuggestionRequest] = []
+    private var applyRequests: [ApplyAiTagSuggestionsRequest] = []
+
+    init(_ report: AiTagSuggestionReport) {
+        self.report = report
+    }
+
+    func suggestTagsWithAI(repoPath: String, request: AiTagSuggestionRequest) async throws -> AiTagSuggestionReport {
+        XCTAssertEqual(repoPath, "/tmp/repo")
+        suggestRequests.append(request)
+        return report
+    }
+
+    func applyAITagSuggestions(
+        repoPath: String,
+        request: ApplyAiTagSuggestionsRequest
+    ) async throws -> AiTagSuggestionApplyReport {
+        XCTAssertEqual(repoPath, "/tmp/repo")
+        applyRequests.append(request)
+        return s307ApplyReport(fileID: request.fileId)
+    }
+
+    func requests() -> (suggest: [AiTagSuggestionRequest], apply: [ApplyAiTagSuggestionsRequest]) {
+        (suggestRequests, applyRequests)
+    }
+}
+
+func s307AITagReport(
+    fileID: Int64,
+    status: AiTagSuggestionReportStatus = .suggested,
+    skippedReason: AiTagSuggestionSkipReason? = nil,
+    suggestions: [AiTagSuggestion] = []
+) -> AiTagSuggestionReport {
+    AiTagSuggestionReport(
+        fileId: fileID,
+        status: status,
+        suggestions: suggestions,
+        route: status == .suggested ? .local : nil,
+        modelName: status == .suggested ? "Local tags model" : nil,
+        generatedAt: status == .suggested ? 1_700_000_300 : nil,
+        usedContext: status == .suggested ? [.fileName, .tagRegistry] : [],
+        skippedReason: skippedReason,
+        privacyRuleId: skippedReason == .privacyRule ? "rule-confidential" : nil,
+        callLogId: 7_707,
+        requiresUserConfirmation: true,
+        confidenceThreshold: 0.8,
+        contentsRead: status == .suggested,
+        aiUsed: status == .suggested,
+        networkUsed: false
+    )
+}
+
+func s307AITagSuggestion(
+    id: String,
+    slug: String,
+    confidence: Float,
+    selectedByDefault: Bool = true
+) -> AiTagSuggestion {
+    AiTagSuggestion(
+        suggestionId: id,
+        slug: slug,
+        displayName: slug.prefix(1).uppercased() + slug.dropFirst(),
+        confidence: confidence,
+        reason: "S3-07 C3-07 local tag suggestion.",
+        status: .suggested,
+        mergeAction: .createTag,
+        matchedExistingSlug: nil,
+        selectedByDefault: selectedByDefault,
+        disabledReason: nil
+    )
+}
+
+func s307ApplyReport(fileID: Int64) -> AiTagSuggestionApplyReport {
+    let tag = s307Tag("finance")
+    return AiTagSuggestionApplyReport(
+        fileId: fileID,
+        requestedCount: 1,
+        appliedCount: 1,
+        skippedCount: 0,
+        failedCount: 0,
+        itemResults: [
+            AiTagSuggestionApplyItemResult(
+                suggestionId: "s3-07-finance",
+                slug: "finance",
+                status: .applied,
+                error: nil
+            )
+        ],
+        tagSet: TagSet(
+            fileId: fileID,
+            fileTags: [tag],
+            availableTags: [tag],
+            recentTags: [tag],
+            updatedAt: 1_700_000_350
+        ),
+        undoToken: nil,
+        callLogId: 7_707,
+        refreshTargets: ["tags", "change_log", "undo_actions", "ai_call_log"]
+    )
+}
+
+func s307Tag(_ value: String) -> TagRecord {
+    TagRecord(
+        value: value,
+        label: value.prefix(1).uppercased() + value.dropFirst(),
+        fileCount: 1,
+        selected: true,
+        disabled: false,
+        updatedAt: 1_700_000_350
+    )
+}
+
 private extension AiPrivacyRulesSnapshot {
     static func s306PrivacyRules() -> AiPrivacyRulesSnapshot {
         AiPrivacyRulesSnapshot(

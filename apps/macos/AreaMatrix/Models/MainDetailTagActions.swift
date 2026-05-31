@@ -243,9 +243,18 @@ extension MainFileListModel {
     }
 
     func clearStaleDetailTagSuggestions() {
-        guard detailTagSuggestionState.fileID != selection.singleFileID else { return }
-        detailTagSuggestionState = .idle
-        tagSuggestionPresentationRequest = nil
+        let selectedFileID = selection.singleFileID
+        if detailTagSuggestionState.fileID != selectedFileID {
+            detailTagSuggestionState = .idle
+            tagSuggestionPresentationRequest = nil
+        }
+        if aiTagSuggestionState.fileID != selectedFileID {
+            aiTagSuggestionState = .idle
+        }
+        let selectedBatchFileIDs = selection.multipleFileIDs
+        if selectedBatchFileIDs.isEmpty || aiTagBatchSuggestionState.fileIDs != selectedBatchFileIDs {
+            aiTagBatchSuggestionState = .idle
+        }
     }
 
     func loadTagFilterRegistry(activeFileID: Int64?) async {
@@ -381,7 +390,7 @@ extension MainFileListModel {
         }
     }
 
-    private func loadSuggestionUndoState(undoToken: String?) async -> BatchTagUndoState? {
+    func loadSuggestionUndoState(undoToken: String?) async -> BatchTagUndoState? {
         guard let token = undoToken?.trimmingCharacters(in: .whitespacesAndNewlines),
               !token.isEmpty else { return nil }
         let result = await BatchTagUndoAction.loadAction(

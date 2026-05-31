@@ -21,6 +21,8 @@ final class MainFileListModel: ObservableObject {
     @Published var detailExternalCreateSyncState = MainDetailExternalCreateSyncState.idle
     @Published var detailTagEditorState = DetailTagEditorState.notLoaded
     @Published var detailTagSuggestionState = DetailTagSuggestionState.idle
+    @Published var aiTagSuggestionState = AITagSuggestionState.idle
+    @Published var aiTagBatchSuggestionState = AITagBatchSuggestionState.idle
     @Published var tagSuggestionPresentationRequest: TagSuggestionPresentationRequest?
     @Published var detailTagUndoToast: DetailTagUndoToast?
     @Published var searchState = MainSearchState.idle
@@ -57,6 +59,7 @@ final class MainFileListModel: ObservableObject {
     let batchCategoryChanger: any CoreBatchCategoryChanging
     let iCloudConflictResolver: any ICloudConflictResolving
     let tagStore: any CoreTagCRUD
+    let aiTagSuggestionStore: any CoreAITagSuggestionManaging
     let undoActionStore: any CoreUndoActionLogging
     let redoActionStore: any CoreRedoActionLogging
     let changeLogLister: any CoreChangeLogListing
@@ -90,6 +93,7 @@ final class MainFileListModel: ObservableObject {
         batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         tagStore: any CoreTagCRUD = CoreBridge(),
+        aiTagSuggestionStore: any CoreAITagSuggestionManaging = CoreBridge(),
         undoActionStore: any CoreUndoActionLogging = CoreBridge(),
         redoActionStore: any CoreRedoActionLogging = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
@@ -115,6 +119,7 @@ final class MainFileListModel: ObservableObject {
         self.batchCategoryChanger = batchCategoryChanger
         self.iCloudConflictResolver = iCloudConflictResolver
         self.tagStore = tagStore
+        self.aiTagSuggestionStore = aiTagSuggestionStore
         self.undoActionStore = undoActionStore
         self.redoActionStore = redoActionStore
         self.changeLogLister = changeLogLister

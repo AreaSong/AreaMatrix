@@ -46,6 +46,194 @@ enum MainDetailNoteWriteBlock: Equatable {
     }
 }
 
+struct AITagBatchSuggestionReview: Equatable {
+    var files: [FileEntrySnapshot]
+    var reports: [Int64: AiTagSuggestionReport]
+    var selectedIDsByFileID: [Int64: Set<String>]
+    var loadFailures: [Int64: CoreErrorMappingSnapshot]
+    var applyReports: [Int64: AiTagSuggestionApplyReport] = [:]
+    var applyFailures: [Int64: CoreErrorMappingSnapshot] = [:]
+
+    var selectedFileCount: Int {
+        selectedIDsByFileID.filter { !$0.value.isEmpty }.count
+    }
+
+    var selectedTagCount: Int {
+        selectedIDsByFileID.values.reduce(0) { $0 + $1.count }
+    }
+
+    var lowConfidenceExcludedCount: Int {
+        reports.values.reduce(0) { count, report in
+            count + report.suggestions.filter {
+                AITagSuggestionAction.canApply($0) &&
+                    $0.confidence < report.confidenceThreshold &&
+                    selectedIDsByFileID[report.fileId]?.contains($0.suggestionId) != true
+            }.count
+        }
+    }
+
+    var duplicateCount: Int {
+        reports.values.reduce(0) { count, report in
+            count + report.suggestions.filter { $0.status == .alreadyApplied }.count
+        }
+    }
+
+    var invalidCount: Int {
+        reports.values.reduce(0) { count, report in
+            count + report.suggestions.filter { $0.status == .invalid || $0.status == .blocked }.count
+        }
+    }
+
+    var appliedFileCount: Int {
+        applyReports.values.filter { $0.appliedCount > 0 || $0.skippedCount > 0 }.count
+    }
+
+    var failedFileCount: Int {
+        applyFailures.count + applyReports.values.filter { $0.failedCount > 0 }.count
+    }
+
+    var appliedTagCount: Int64 {
+        applyReports.values.reduce(Int64(0)) { $0 + $1.appliedCount }
+    }
+
+    var failedTagCount: Int64 {
+        applyReports.values.reduce(Int64(applyFailures.count)) { $0 + $1.failedCount }
+    }
+
+    var canApply: Bool {
+        selectedTagCount > 0 && invalidCount == 0
+    }
+
+    func applyItems(fileID: Int64) -> [ApplyAiTagSuggestionItem] {
+        guard let report = reports[fileID], let selected = selectedIDsByFileID[fileID] else { return [] }
+        return report.suggestions.compactMap { suggestion in
+            guard selected.contains(suggestion.suggestionId), AITagSuggestionAction.canApply(suggestion) else {
+                return nil
+            }
+            return ApplyAiTagSuggestionItem(suggestion: suggestion, editedByUser: false)
+        }
+    }
+}
+
+enum AITagBatchSuggestionState: Equatable {
+    case idle
+    case loading(AITagBatchSuggestionReview)
+    case reviewing(AITagBatchSuggestionReview)
+    case confirming(AITagBatchSuggestionReview)
+    case applying(AITagBatchSuggestionReview)
+    case applied(AITagBatchSuggestionReview)
+
+    var review: AITagBatchSuggestionReview? {
+        switch self {
+        case let .loading(review), let .reviewing(review), let .confirming(review),
+             let .applying(review), let .applied(review):
+            review
+        case .idle:
+            nil
+        }
+    }
+
+    var isLoading: Bool {
+        if case .loading = self { return true }
+        return false
+    }
+
+    var isApplying: Bool {
+        if case .applying = self { return true }
+        return false
+    }
+
+    var isConfirming: Bool {
+        if case .confirming = self { return true }
+        return false
+    }
+
+    var canApplySelectedSuggestions: Bool {
+        review?.canApply == true && !isLoading && !isApplying
+    }
+
+    var hasHighConfidenceApplyCandidates: Bool {
+        guard let review else { return false }
+        return review.reports.values.contains { report in
+            report.suggestions.contains {
+                AITagSuggestionAction.canApply($0) && $0.confidence >= report.confidenceThreshold
+            }
+        }
+    }
+
+    var fileIDs: Set<Int64> {
+        Set(review?.files.map(\.id) ?? [])
+    }
+}
+
+struct AITagBatchSuggestionActions {
+    let load: ([FileEntrySnapshot]) -> Void
+    let retry: () -> Void
+    let toggle: (Int64, String) -> Void
+    let selectHighConfidence: () -> Void
+    let clearSelection: () -> Void
+    let confirm: () -> Void
+    let cancelConfirmation: () -> Void
+    let apply: () -> Void
+    let cancel: () -> Void
+}
+
+extension AITagBatchSuggestionActions {
+    static var noop: AITagBatchSuggestionActions {
+        AITagBatchSuggestionActions(
+            load: { _ in }, retry: {}, toggle: { _, _ in },
+            selectHighConfidence: {}, clearSelection: {}, confirm: {},
+            cancelConfirmation: {}, apply: {}, cancel: {}
+        )
+    }
+}
+
+enum AITagBatchSuggestionAction {
+    static func initialReview(
+        files: [FileEntrySnapshot],
+        reports: [Int64: AiTagSuggestionReport],
+        loadFailures: [Int64: CoreErrorMappingSnapshot] = [:]
+    ) -> AITagBatchSuggestionReview {
+        AITagBatchSuggestionReview(
+            files: files,
+            reports: reports,
+            selectedIDsByFileID: reports.mapValues(AITagSuggestionAction.initialSelection),
+            loadFailures: loadFailures
+        )
+    }
+
+    static func selectingHighConfidence(in state: AITagBatchSuggestionState) -> AITagBatchSuggestionState {
+        guard var review = state.review else { return state }
+        for report in review.reports.values {
+            let ids = report.suggestions.compactMap {
+                AITagSuggestionAction.canApply($0) && $0.confidence >= report.confidenceThreshold ?
+                    $0.suggestionId : nil
+            }
+            review.selectedIDsByFileID[report.fileId, default: []].formUnion(ids)
+        }
+        return .reviewing(review)
+    }
+
+    static func toggling(
+        fileID: Int64,
+        suggestionID: String,
+        in state: AITagBatchSuggestionState
+    ) -> AITagBatchSuggestionState {
+        guard var review = state.review,
+              review.reports[fileID]?.suggestions.contains(where: {
+                  $0.suggestionId == suggestionID && AITagSuggestionAction.canApply($0)
+              }) == true else { return state }
+        review.selectedIDsByFileID[fileID, default: []].formSymmetricDifference([suggestionID])
+        return .reviewing(review)
+    }
+
+    static func clearingSelection(in state: AITagBatchSuggestionState) -> AITagBatchSuggestionState {
+        guard var review = state.review else { return state }
+        review.selectedIDsByFileID = review.selectedIDsByFileID.mapValues { _ in [] }
+        return .reviewing(review)
+    }
+}
+
 enum MainDetailNoteState: Equatable {
     case notLoaded
     case loading(fileID: Int64)
