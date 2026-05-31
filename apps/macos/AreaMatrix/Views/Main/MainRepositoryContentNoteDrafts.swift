@@ -186,6 +186,7 @@ extension MainRepositoryContentView {
             detailTagUndoToast: fileListModel.detailTagUndoToast,
             detailTabRequest: fileListModel.detailTabRequest,
             selectedImportProgressRow: selectedImportProgressRow,
+            semanticDetail: semanticDetailPresentationForSelectedFile,
             repoPath: opening.config.repoPath,
             batchTagStore: fileListModel.tagStore,
             batchTagUndoStore: fileListModel.undoActionStore,
@@ -227,6 +228,11 @@ extension MainRepositoryContentView {
             noteModel: detailNoteModel
         )
         .frame(minWidth: 220, idealWidth: 260, maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private var semanticDetailPresentationForSelectedFile: SemanticSearchDetailPresentation? {
+        guard let fileID = selectedFileIDs.first, selectedFileIDs.count == 1 else { return nil }
+        return fileListModel.searchState.page?.semanticPage?.detailPresentation(for: fileID)
     }
 
     @ViewBuilder

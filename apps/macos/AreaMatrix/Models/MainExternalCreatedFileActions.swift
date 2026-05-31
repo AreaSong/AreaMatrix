@@ -4,11 +4,38 @@ enum SemanticIndexBuildState: Equatable {
     case idle
     case building(request: SearchQueryRequestSnapshot)
     case completed(request: SearchQueryRequestSnapshot, report: SemanticIndexBuildReportSnapshot)
+    case canceled(request: SearchQueryRequestSnapshot)
     case failed(request: SearchQueryRequestSnapshot, CoreErrorMappingSnapshot)
 
     var isBuilding: Bool {
         if case .building = self { return true }
         return false
+    }
+
+    var canCancel: Bool {
+        if case .building = self { return true }
+        return false
+    }
+
+    var canPause: Bool {
+        if case .building = self { return true }
+        return false
+    }
+
+    var canResume: Bool {
+        if case let .completed(_, report) = self, report.status == .paused { return true }
+        return false
+    }
+
+    var canRetryFailedItems: Bool {
+        switch self {
+        case let .completed(_, report):
+            return report.failedCount > 0 || report.status == .partial || report.status == .failed
+        case .canceled, .failed:
+            return true
+        case .idle, .building:
+            return false
+        }
     }
 }
 
@@ -108,13 +135,51 @@ extension MainFileListModel {
     func buildSemanticIndexForCurrentSearch() async {
         guard let request = searchState.request, request.mode == .semantic else { return }
         guard await ensureSemanticPrivacyGate(for: request) else { return }
+        cancelActiveSemanticIndexBuild()
+        semanticIndexBuildGeneration += 1
+        let generation = semanticIndexBuildGeneration
+        let task = semanticIndexBuildTask(for: request)
+        semanticIndexBuildTask = task
         semanticIndexBuildState = .building(request: request)
+        semanticIndexControlState = .idle
         do {
-            let report = try await semanticSearching.buildEmbeddingIndex(repoPath: repoPath, request: request)
+            let report = try await task.value
+            guard semanticIndexBuildIsCurrent(generation: generation, request: request) else { return }
+            semanticIndexBuildTask = nil
             semanticIndexBuildState = .completed(request: request, report: report)
+        } catch is CancellationError {
+            guard semanticIndexBuildIsCurrent(generation: generation, request: request) else { return }
+            semanticIndexBuildTask = nil
+            semanticIndexBuildState = .canceled(request: request)
         } catch {
+            guard semanticIndexBuildIsCurrent(generation: generation, request: request) else { return }
+            semanticIndexBuildTask = nil
             semanticIndexBuildState = .failed(request: request, await mapCoreError(error))
         }
+    }
+
+    func cancelActiveSemanticIndexBuild() {
+        semanticIndexBuildTask?.cancel()
+        semanticIndexBuildTask = nil
+    }
+
+    private func semanticIndexBuildTask(
+        for request: SearchQueryRequestSnapshot
+    ) -> Task<SemanticIndexBuildReportSnapshot, Error> {
+        let repoPath = repoPath
+        let semanticSearching = semanticSearching
+        return Task {
+            let report = try await semanticSearching.buildEmbeddingIndex(repoPath: repoPath, request: request)
+            try Task.checkCancellation()
+            return report
+        }
+    }
+
+    private func semanticIndexBuildIsCurrent(
+        generation: Int,
+        request: SearchQueryRequestSnapshot
+    ) -> Bool {
+        semanticIndexBuildGeneration == generation && searchState.request == request
     }
 
     func refreshSemanticPrivacyGateForCurrentSearch() async {

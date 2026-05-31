@@ -217,6 +217,10 @@
 		0A0000000000000000000740 /* AISummaryMetadataReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000741 /* AISummaryMetadataReader.swift */; };
 		0A000000000000000000073C /* S306PageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000073D /* S306PageIntegrationVerifyTests.swift */; };
 		0A000000000000000000073E /* S306AISummaryPrivacyRuleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000073F /* S306AISummaryPrivacyRuleTests.swift */; };
+		0A0000000000000000000742 /* SemanticSearchPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000743 /* SemanticSearchPresentation.swift */; };
+		0A0000000000000000000744 /* SemanticIndexBuildControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000745 /* SemanticIndexBuildControls.swift */; };
+		0A0000000000000000000746 /* SemanticSearchResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000747 /* SemanticSearchResultsView.swift */; };
+		0A0000000000000000000748 /* S308PageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000749 /* S308PageIntegrationVerifyTests.swift */; };
 		0A00000000000000000001A0 /* ImportBatchNamingOptionsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001A1 /* ImportBatchNamingOptionsSection.swift */; };
 		0A00000000000000000001B2 /* ImportFolderPreviewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001B3 /* ImportFolderPreviewModel.swift */; };
 		0A00000000000000000001B4 /* ImportFolderScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001B5 /* ImportFolderScanner.swift */; };
@@ -408,6 +412,10 @@
 		0A0000000000000000000741 /* AISummaryMetadataReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AISummaryMetadataReader.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000073D /* S306PageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S306PageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000073F /* S306AISummaryPrivacyRuleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S306AISummaryPrivacyRuleTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000743 /* SemanticSearchPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/SemanticSearchPresentation.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000745 /* SemanticIndexBuildControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/SemanticIndexBuildControls.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000747 /* SemanticSearchResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/SemanticSearchResultsView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000749 /* S308PageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S308PageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002DD /* ICloudConflictMinimalValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalValidationTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002DF /* ICloudConflictMinimalPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ICloudConflictMinimalResolution.swift; sourceTree = SOURCE_ROOT; };
@@ -692,6 +700,7 @@
 				0A0000000000000000000321 /* DetailTagSection.swift */,
 				0A0000000000000000000313 /* SearchFiltersPopover.swift */,
 				0A0000000000000000000615 /* SearchFilterChipsBar.swift */,
+				0A0000000000000000000747 /* SemanticSearchResultsView.swift */,
 				0A000000000000000000024F /* MainRepositoryContentNoteDrafts.swift */,
 				0A00000000000000000002D1 /* MainRepositoryContentCategoryMoveRefresh.swift */,
 				0A00000000000000000002D3 /* MainRepositoryContentActionRouting.swift */,
@@ -887,6 +896,8 @@
 				0A0000000000000000000311 /* MainFileListDiagnosticsActions.swift */,
 				0A0000000000000000000221 /* MainDetailExternalCreateSyncState.swift */,
 				0A0000000000000000000227 /* MainExternalCreatedFileActions.swift */,
+				0A0000000000000000000743 /* SemanticSearchPresentation.swift */,
+				0A0000000000000000000745 /* SemanticIndexBuildControls.swift */,
 				0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */,
 				0A0000000000000000000147 /* MainLoadingState.swift */,
 					0A000000000000000000014D /* StartupRecoveryModels.swift */,
@@ -978,6 +989,7 @@
 				0A0000000000000000000737 /* S304PageIntegrationVerifyTests.swift */,
 				0A000000000000000000073D /* S306PageIntegrationVerifyTests.swift */,
 				0A000000000000000000073F /* S306AISummaryPrivacyRuleTests.swift */,
+				0A0000000000000000000749 /* S308PageIntegrationVerifyTests.swift */,
 				0A0000000000000000000295 /* ClassifierSettingsPageFeatureTests.swift */,
 				0A0000000000000000000299 /* ClassifierSettingsRecoveryTests.swift */,
 				0A0000000000000000000525 /* ClassifierRuleEditorCoreBridgeTests.swift */,
@@ -1245,6 +1257,7 @@
 				0A0000000000000000000210 /* DetailLogTabView.swift in Sources */,
 				0A0000000000000000000224 /* DetailExternalCreateSyncStatusView.swift in Sources */,
 				0A0000000000000000000248 /* DetailNoteTabView.swift in Sources */,
+				0A0000000000000000000746 /* SemanticSearchResultsView.swift in Sources */,
 				0A0000000000000000000320 /* DetailTagSection.swift in Sources */,
 				0A000000000000000000024E /* MainRepositoryContentNoteDrafts.swift in Sources */,
 				0A0000000000000000000312 /* SearchFiltersPopover.swift in Sources */,
@@ -1316,6 +1329,8 @@
 				0A0000000000000000000310 /* MainFileListDiagnosticsActions.swift in Sources */,
 				0A0000000000000000000220 /* MainDetailExternalCreateSyncState.swift in Sources */,
 				0A0000000000000000000226 /* MainExternalCreatedFileActions.swift in Sources */,
+				0A0000000000000000000742 /* SemanticSearchPresentation.swift in Sources */,
+				0A0000000000000000000744 /* SemanticIndexBuildControls.swift in Sources */,
 				0A0000000000000000000158 /* MainRepoExternalRemovalActions.swift in Sources */,
 				0A0000000000000000000162 /* MainRepoErrorActions.swift in Sources */,
 			);
@@ -1402,6 +1417,7 @@
 					0A0000000000000000000736 /* S304PageIntegrationVerifyTests.swift in Sources */,
 					0A000000000000000000073C /* S306PageIntegrationVerifyTests.swift in Sources */,
 					0A000000000000000000073E /* S306AISummaryPrivacyRuleTests.swift in Sources */,
+					0A0000000000000000000748 /* S308PageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000294 /* ClassifierSettingsPageFeatureTests.swift in Sources */,
 					0A0000000000000000000298 /* ClassifierSettingsRecoveryTests.swift in Sources */,
 					0A0000000000000000000524 /* ClassifierRuleEditorCoreBridgeTests.swift in Sources */,

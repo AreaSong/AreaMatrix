@@ -31,11 +31,15 @@ final class MainFileListModel: ObservableObject {
                 semanticPrivacyGateState = .idle
             }
             if !semanticFallbackState.isCurrent(for: searchState.request) { semanticFallbackState = .idle }
+            if !semanticIndexControlState.isCurrent(for: searchState.request) { semanticIndexControlState = .idle }
         }
     }
     @Published var semanticIndexBuildState = SemanticIndexBuildState.idle
     @Published var semanticPrivacyGateState = SemanticPrivacyGateState.idle
     @Published var semanticFallbackState = SemanticFallbackState.idle
+    @Published var semanticIndexControlState = SemanticIndexBuildControlState.idle
+    @Published var semanticPagingState = SemanticSearchPagingState.idle
+    @Published var showFoldedSemanticDuplicates = false
     @Published var searchFacetsState = MainSearchFacetsState.idle
     @Published var tagFilterRegistryState = TagFilterRegistryState.idle
     @Published var selectedFileNoteWriteBlock: MainDetailNoteWriteBlock?
@@ -91,6 +95,8 @@ final class MainFileListModel: ObservableObject {
     var tagFilterRegistryGeneration = 0
     var searchGeneration = 0
     var searchFacetsGeneration = 0
+    var semanticIndexBuildGeneration = 0
+    var semanticIndexBuildTask: Task<SemanticIndexBuildReportSnapshot, Error>?
 
     init(
         opening: RepositoryOpeningResult,

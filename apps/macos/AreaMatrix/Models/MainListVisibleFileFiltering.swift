@@ -332,6 +332,9 @@ extension MainFileListModel {
         activeSmartListSearch = nil
         clearSearchFacets()
         semanticIndexBuildState = .idle
+        semanticIndexControlState = .idle
+        semanticPagingState = .idle
+        showFoldedSemanticDuplicates = false
         errorMapping = nil
         isLoading = false
         clearDetail()
@@ -364,6 +367,8 @@ extension MainFileListModel {
         activeSmartListSearch = nil
 
         searchState = .loading(request: request, previousPage: previousPage)
+        semanticPagingState = .idle
+        showFoldedSemanticDuplicates = false
         pendingSearchDestination = nil
         isLoading = true
         errorMapping = nil
@@ -390,6 +395,65 @@ extension MainFileListModel {
         pendingSearchDestination = nil
         errorMapping = nil
         isLoading = false
+    }
+
+    func applySemanticPage(
+        _ semanticPage: SemanticSearchResultPageSnapshot,
+        to page: SearchResultPageSnapshot,
+        request: SearchQueryRequestSnapshot
+    ) {
+        let updatedPage = page.replacingSemanticPage(semanticPage)
+        files = updatedPage.results.map(\.file)
+        searchState = .loaded(request: request, page: updatedPage)
+        isLoading = false
+    }
+
+    func toggleFoldedSemanticDuplicates() {
+        showFoldedSemanticDuplicates.toggle()
+    }
+
+    func loadMoreSemanticMatches(_ group: SemanticSearchResultGroup) async {
+        guard let request = searchState.request,
+              let page = searchState.page,
+              let semanticPage = page.semanticPage else { return }
+        let offset = group == .semantic ? Int64(semanticPage.semanticMatches.count) : Int64(semanticPage.normalMatches.count)
+        let nextRequest = SearchQueryRequestSnapshot(
+            query: request.query,
+            scope: request.scope,
+            currentPath: request.currentPath,
+            category: request.category,
+            filters: request.filters,
+            sort: request.sort,
+            limit: request.limit,
+            offset: offset,
+            mode: request.mode
+        )
+        semanticPagingState = SemanticSearchPagingState(
+            loadingGroup: group,
+            semanticError: group == .normal ? semanticPagingState.semanticError : nil,
+            normalError: group == .semantic ? semanticPagingState.normalError : nil
+        )
+        do {
+            let nextPage = try await searchPage(for: nextRequest)
+            guard let nextSemanticPage = nextPage.semanticPage else { return }
+            let merged = semanticPage.mergingPage(nextSemanticPage, group: group)
+            applySemanticPage(merged, to: page, request: request)
+            semanticPagingState = .idle
+        } catch {
+            let mappedError = await mapCoreError(error)
+            switch group {
+            case .semantic:
+                semanticPagingState = SemanticSearchPagingState(
+                    semanticError: mappedError,
+                    normalError: semanticPagingState.normalError
+                )
+            case .normal:
+                semanticPagingState = SemanticSearchPagingState(
+                    semanticError: semanticPagingState.semanticError,
+                    normalError: mappedError
+                )
+            }
+        }
     }
 }
 

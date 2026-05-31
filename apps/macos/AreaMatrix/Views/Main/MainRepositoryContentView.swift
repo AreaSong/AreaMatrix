@@ -263,9 +263,30 @@ extension MainRepositoryContentView {
             Button("Start index build") { Task { await fileListModel.buildSemanticIndexForCurrentSearch() } }
             .disabled(!fileListModel.semanticPrivacyGateState.allowsIndexBuild)
             semanticIndexRecoveryActions
+            Button("Back") {}
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(semanticIndexConfirmationMessage)
+        }
+        .confirmationDialog(
+            "Cancel semantic index build?",
+            isPresented: Binding(
+                get: {
+                    if case .cancelConfirm = fileListModel.semanticIndexControlState { return true }
+                    return false
+                },
+                set: { if !$0 { fileListModel.keepBuildingSemanticIndexForCurrentSearch() } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Cancel index build", role: .destructive) {
+                Task { await fileListModel.cancelSemanticIndexBuildForCurrentSearch() }
+            }
+            Button("Keep building", role: .cancel) {
+                fileListModel.keepBuildingSemanticIndexForCurrentSearch()
+            }
+        } message: {
+            Text(semanticIndexCancelConfirmationMessage)
         }
         .sheet(item: actionDestinationBinding, content: actionRoutingSheet)
         .sheet(item: searchDestinationBinding, content: searchRoutingSheet)

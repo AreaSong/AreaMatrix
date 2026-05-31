@@ -93,6 +93,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             tagSuggestionPresentationRequest: model.tagSuggestionPresentationRequest,
             detailTagUndoToast: model.detailTagUndoToast, detailTabRequest: model.detailTabRequest,
             selectedImportProgressRow: nil,
+            semanticDetail: nil,
             repoPath: "/tmp/repo",
             batchTagStore: model.tagStore, batchTagUndoStore: model.undoActionStore,
             batchTagErrorMapper: model.errorMapper,

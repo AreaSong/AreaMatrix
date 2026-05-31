@@ -229,6 +229,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             detailTagUndoToast: model.detailTagUndoToast,
             detailTabRequest: model.detailTabRequest,
             selectedImportProgressRow: nil,
+            semanticDetail: nil,
             repoPath: "/tmp/s125-repo",
             batchTagStore: model.tagStore,
             batchTagUndoStore: model.undoActionStore,

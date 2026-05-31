@@ -16,6 +16,7 @@ struct MainRepositoryDetailPane: View {
     let detailTagUndoToast: DetailTagUndoToast?
     let detailTabRequest: MainDetailTabRequest?
     let selectedImportProgressRow: ImportProgressListRow?
+    let semanticDetail: SemanticSearchDetailPresentation?
     let repoPath: String
     let batchTagStore: any CoreTagCRUD
     let batchTagUndoStore: any CoreUndoActionLogging
@@ -242,6 +243,7 @@ extension MainRepositoryDetailPane {
                 Text(detail.currentName)
                     .font(.headline)
                     .textSelection(.enabled)
+                semanticSearchDetailBanner
                 Picker("Detail tab", selection: Binding(get: { selectedTab }, set: requestDetailTabChange)) {
                     ForEach(DetailPaneTab.allCases) { tab in
                         Text(tab.title).tag(tab)
@@ -323,6 +325,34 @@ extension MainRepositoryDetailPane {
             tagActions: tagActions
         )
         metadataRows(for: detail)
+    }
+
+    @ViewBuilder
+    private var semanticSearchDetailBanner: some View {
+        if let semanticDetail {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(semanticDetail.title)
+                    .font(.callout.weight(.semibold))
+                Text("Relevance \(semanticDetail.relevance)  \(semanticDetail.routeLabel)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                DisclosureGroup("Why this matched") {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(semanticDetail.matchedReason)
+                        Text(semanticDetail.whyThisMatched)
+                        if semanticDetail.alsoMatchedNormalSearch {
+                            Text("Also matched normal search")
+                        }
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                }
+            }
+            .padding(10)
+            .background(Color.blue.opacity(0.08))
+            .accessibilityIdentifier("S3-08-semantic-detail-explanation")
+        }
     }
 
     private func detailFileActions(for detail: FileEntrySnapshot) -> some View {

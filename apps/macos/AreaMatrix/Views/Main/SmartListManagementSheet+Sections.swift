@@ -10,12 +10,39 @@ extension MainRepositoryContentView {
         switch fileListModel.semanticIndexBuildState {
         case .idle:
             EmptyView()
-        case .building:
-            Text("Building semantic index...")
+        case let .building(request):
+            Text("Building semantic index... \(semanticBuildProgressText(for: request))")
         case let .completed(_, report):
-            Text("Semantic index \(report.status.displayName.lowercased()): \(report.processedCount)/\(report.totalCount) processed")
+            Text(semanticCompletedIndexText(report))
+        case .canceled:
+            Text("Semantic index build canceled.")
         case let .failed(_, error):
             Text("Semantic index could not be built: \(error.userMessage)")
+        }
+    }
+
+    private func semanticBuildProgressText(for request: SearchQueryRequestSnapshot) -> String {
+        guard let page = fileListModel.searchState.page?.semanticPage else { return "" }
+        let processed = max(0, page.semanticTotalCount - page.dedupedNormalCount)
+        let total = max(page.semanticTotalCount + page.normalTotalCount, Int64(1))
+        let percent = min(100, Int((Double(processed) / Double(total)) * 100))
+        return "\(percent)%  \(processed)/\(total) processed for \(request.query)"
+    }
+
+    private func semanticCompletedIndexText(_ report: SemanticIndexBuildReportSnapshot) -> String {
+        switch report.status {
+        case .canceled:
+            return "Semantic index build canceled."
+        case .paused:
+            return "Semantic index build paused."
+        case .partial:
+            return "Semantic index partially built: \(report.processedCount)/\(report.totalCount) processed, \(report.failedCount) failed"
+        case .failed:
+            return "Semantic index could not be built."
+        case .ready:
+            return "Semantic index ready: \(report.processedCount)/\(report.totalCount) processed"
+        case .notReady, .building:
+            return "Semantic index \(report.status.displayName.lowercased()): \(report.processedCount)/\(report.totalCount) processed"
         }
     }
 
@@ -40,6 +67,15 @@ extension MainRepositoryContentView {
             "Local indexing keeps file content on this device.",
             "Remote indexing is used only when remote AI is explicitly enabled and allowed for Semantic search.",
             semanticPrivacyGateText
+        ].joined(separator: " ")
+    }
+
+    var semanticIndexCancelConfirmationMessage: String {
+        [
+            "AreaMatrix will stop processing remaining files.",
+            "Already committed local index fragments can still be used.",
+            "Uncommitted temporary index data will be cleaned up.",
+            "Remote queues will stop and no more content will be sent."
         ].joined(separator: " ")
     }
 
@@ -77,8 +113,18 @@ extension MainRepositoryContentView {
                 searchMode = .normal
                 Task { await rerunCurrentSearch(mode: .normal) }
             }
+            semanticCallLogRecoveryButton
         case .idle, .checking, .allowed:
-            EmptyView()
+            semanticCallLogRecoveryButton
+        }
+    }
+
+    @ViewBuilder
+    private var semanticCallLogRecoveryButton: some View {
+        if let callLogID = fileListModel.searchState.page?.semanticPage?.callLogID {
+            Button("View call log") {
+                semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
+            }
         }
     }
 
@@ -116,9 +162,12 @@ extension MainRepositoryContentView {
                     Task { await rerunCurrentSearch(mode: .normal) }
                 }
                 semanticBuildIndexButton(page)
+                semanticBuildLifecycleControls
             }
-            Text("Semantic matches (\(page.semanticTotalCount))  Normal search matches (\(page.normalTotalCount))")
+            Text("Semantic matches (\(page.semanticTotalCount))")
+            Text("Normal search matches (\(page.normalTotalCount))")
             semanticIndexBuildText
+            semanticCancelStatusText
             semanticPrivacyGateDetail
             semanticFallbackStatusDetail
         }
@@ -209,7 +258,9 @@ extension MainRepositoryContentView {
         case .viewCallLog:
             status.callLogId == nil
         case .buildSemanticIndex:
-            fileListModel.semanticIndexBuildState.isBuilding || fileListModel.semanticPrivacyGateState.isChecking
+            fileListModel.semanticIndexBuildState.isBuilding ||
+                fileListModel.semanticIndexControlState.isCanceling ||
+                fileListModel.semanticPrivacyGateState.isChecking
         case .openAiSettings, .configureRemoteAi, .useNormalSearch:
             false
         case .openLocalModelStatus, .classifyManually:
@@ -306,6 +357,79 @@ extension MainRepositoryContentView {
     }
 
     @ViewBuilder
+    private var semanticBuildLifecycleControls: some View {
+        if fileListModel.semanticIndexBuildState.canPause {
+            Button("Pause index build") {
+                Task { await fileListModel.pauseSemanticIndexBuildForCurrentSearch() }
+            }
+            .disabled(fileListModel.semanticIndexControlState.isCanceling)
+            .accessibilityIdentifier("S3-08-pause-index-build")
+        }
+        if fileListModel.semanticIndexBuildState.canCancel {
+            Button("Cancel index build") {
+                fileListModel.requestCancelSemanticIndexBuildForCurrentSearch()
+            }
+            .disabled(fileListModel.semanticIndexControlState.isCanceling)
+            .accessibilityIdentifier("S3-08-cancel-index-build")
+        }
+        if fileListModel.semanticIndexBuildState.canResume {
+            Button("Resume index build") {
+                Task { await fileListModel.resumeSemanticIndexBuildForCurrentSearch() }
+            }
+            .accessibilityIdentifier("S3-08-resume-index-build")
+        }
+        if fileListModel.semanticIndexBuildState.canRetryFailedItems {
+            Button("Retry failed items") {
+                Task { await fileListModel.retryFailedSemanticIndexItemsForCurrentSearch() }
+            }
+            .disabled(fileListModel.semanticIndexControlState.isCanceling)
+            .accessibilityIdentifier("S3-08-retry-failed-items")
+        }
+    }
+
+    @ViewBuilder
+    private var semanticCancelStatusText: some View {
+        switch fileListModel.semanticIndexControlState {
+        case .canceling:
+            Text("Canceling semantic index build...")
+        case .canceled:
+            Text("Semantic index build canceled.")
+            HStack(spacing: 10) {
+                Button("Retry index build") {
+                    Task { await fileListModel.retryFailedSemanticIndexItemsForCurrentSearch() }
+                }
+                Button("View call log") {
+                    if let callLogID = fileListModel.searchState.page?.semanticPage?.callLogID {
+                        semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
+                    }
+                }
+            }
+        case let .cancelFailed(_, error):
+            HStack(spacing: 10) {
+                Text("Semantic index build could not be canceled. \(error.userMessage)")
+                Button("Retry cancel") {
+                    Task { await fileListModel.cancelSemanticIndexBuildForCurrentSearch() }
+                }
+                Button("View call log") {
+                    if let callLogID = fileListModel.searchState.page?.semanticPage?.callLogID {
+                        semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
+                    }
+                }
+            }
+        case let .pauseFailed(_, error):
+            HStack(spacing: 10) {
+                Text("Semantic index build could not be paused. \(error.userMessage)")
+                Button("Use normal search") {
+                    searchMode = .normal
+                    Task { await rerunCurrentSearch(mode: .normal) }
+                }
+            }
+        case .idle, .cancelConfirm:
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder
     private func semanticBuildIndexButton(_ page: SemanticSearchResultPageSnapshot) -> some View {
         if page.canBuildIndex {
             Button("Build semantic index") {
@@ -314,7 +438,11 @@ extension MainRepositoryContentView {
                     isSemanticIndexConfirmationPresented = true
                 }
             }
-            .disabled(fileListModel.semanticIndexBuildState.isBuilding || fileListModel.semanticPrivacyGateState.isChecking)
+            .disabled(
+                fileListModel.semanticIndexBuildState.isBuilding ||
+                    fileListModel.semanticIndexControlState.isCanceling ||
+                    fileListModel.semanticPrivacyGateState.isChecking
+            )
             .accessibilityIdentifier("S3-08-C3-09-build-semantic-index-privacy-check")
         }
     }

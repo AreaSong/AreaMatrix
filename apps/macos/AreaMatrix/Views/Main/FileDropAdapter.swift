@@ -194,9 +194,37 @@ extension MainRepositoryContentView {
     var fileTable: some View {
         VStack(spacing: 8) {
             ImportProgressTableView(rows: importProgressRows, selection: $selectedImportProgressIDs)
-            fileTableContent
+            if let semanticPage = fileListModel.searchState.page?.semanticPage {
+                semanticResultsContent(semanticPage)
+            } else {
+                fileTableContent
+            }
         }
         .overlay { emptyListOverlay }
+    }
+
+    private func semanticResultsContent(_ page: SemanticSearchResultPageSnapshot) -> some View {
+        SemanticSearchResultsView(
+            page: page,
+            selectedFileIDs: $selectedFileIDs,
+            showFoldedDuplicates: fileListModel.showFoldedSemanticDuplicates,
+            pagingState: fileListModel.semanticPagingState,
+            onToggleDuplicates: fileListModel.toggleFoldedSemanticDuplicates,
+            onLoadMoreSemantic: {
+                Task { await fileListModel.loadMoreSemanticMatches(.semantic) }
+            },
+            onLoadMoreNormal: {
+                Task { await fileListModel.loadMoreSemanticMatches(.normal) }
+            },
+            onRetrySemanticPage: {
+                Task { await fileListModel.loadMoreSemanticMatches(.semantic) }
+            },
+            onRetryNormalPage: {
+                Task { await fileListModel.loadMoreSemanticMatches(.normal) }
+            },
+            contextMenu: { selection in AnyView(contextMenu(for: selection)) },
+            onPrimaryAction: { selection in selectedFileIDs = selection }
+        )
     }
 
     private var fileTableContent: some View {
