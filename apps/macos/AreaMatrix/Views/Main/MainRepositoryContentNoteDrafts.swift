@@ -83,6 +83,7 @@ extension MainRepositoryContentView {
     var searchTaskKey: String {
         [
             filterText,
+            searchMode.rawValue,
             searchScope.rawValue,
             searchSort.rawValue,
             effectiveSearchFilters.taskKey,
@@ -114,6 +115,9 @@ extension MainRepositoryContentView {
     func searchMatchText(for fileID: Int64) -> String {
         guard let result = fileListModel.searchState.page?.results.first(where: { $0.file.id == fileID }) else {
             return "-"
+        }
+        if let semantic = fileListModel.searchState.page?.semanticPage?.result(for: fileID) {
+            return semanticMatchText(semantic)
         }
         if let noteSnippet = result.noteSnippet, !noteSnippet.isEmpty {
             return "Note: \(noteSnippet)"
@@ -265,6 +269,7 @@ extension MainRepositoryContentView {
         [
             fileListModel.searchBannerContextText(for: request),
             "范围：\(request.scope.bannerDisplayName)",
+            "模式：\(request.mode.displayName)",
             "结果：\(searchResultCountText)",
             "过滤：\(searchActiveFilterCount)"
         ].joined(separator: "  ")
@@ -280,6 +285,9 @@ extension MainRepositoryContentView {
 
     private var searchResultCountText: String {
         guard let page = fileListModel.searchState.page else { return "-" }
+        if let semanticPage = page.semanticPage {
+            return "\(semanticPage.semanticTotalCount) semantic / \(semanticPage.normalTotalCount) normal"
+        }
         return "\(page.totalCount)"
     }
 
@@ -349,6 +357,8 @@ extension MainRepositoryContentView {
             Text("Search failed: \(error.userMessage)")
                 .font(.callout)
                 .foregroundStyle(.secondary)
+        } else if let semanticPage = fileListModel.searchState.page?.semanticPage {
+            semanticBannerDetail(semanticPage)
         } else if fileListModel.searchState.indexStatus == .unavailable {
             HStack(spacing: 10) {
                 Text("Search index unavailable")
@@ -359,7 +369,7 @@ extension MainRepositoryContentView {
             .font(.callout)
             .foregroundStyle(.secondary)
         } else if fileListModel.searchState.isLoading {
-            Text("Searching...")
+            Text(searchLoadingText)
                 .font(.callout)
                 .foregroundStyle(.secondary)
         } else if let diagnostic = fileListModel.searchState.page?.diagnostics.first {
@@ -387,6 +397,7 @@ extension MainRepositoryContentView {
 
     func clearSearch() {
         filterText = ""
+        searchMode = .normal
         searchFilters = .empty
         fileListModel.clearSearch()
         selectedFileIDs = []
@@ -397,6 +408,7 @@ extension MainRepositoryContentView {
 
     func beginCommandFindSearch() {
         fileListModel.enterSearch(context: .commandFind)
+        searchMode = .normal
         searchScope = .all
         isSearchFieldFocused = true
     }

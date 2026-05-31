@@ -118,12 +118,10 @@ enum MainSearchState: Equatable {
     var isActive: Bool {
         request != nil
     }
-
     var isLoading: Bool {
         if case .loading = self { return true }
         return false
     }
-
     var request: SearchQueryRequestSnapshot? {
         switch self {
         case .idle:
@@ -132,7 +130,6 @@ enum MainSearchState: Equatable {
             request
         }
     }
-
     var page: SearchResultPageSnapshot? {
         switch self {
         case let .loaded(_, page):
@@ -143,12 +140,10 @@ enum MainSearchState: Equatable {
             nil
         }
     }
-
     var errorMapping: CoreErrorMappingSnapshot? {
         if case let .failed(_, mapping) = self { return mapping }
         return nil
     }
-
     var indexStatus: SearchIndexStatusSnapshot? {
         page?.indexStatus
     }
@@ -304,7 +299,8 @@ extension MainFileListModel {
         scope: SearchScopeSnapshot,
         sort: SearchSortSnapshot,
         sidebarRow: RepositorySidebarRowSnapshot,
-        filters: SearchFilterStateSnapshot
+        filters: SearchFilterStateSnapshot,
+        mode: SearchModeSnapshot = .normal
     ) async {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuery.isEmpty || !filters.isEmpty else {
@@ -317,7 +313,8 @@ extension MainFileListModel {
             scope: scope,
             sort: sort,
             sidebarRow: sidebarRow,
-            filters: filters
+            filters: filters,
+            mode: mode
         )
         activeSmartListSearch = nil
         await loadSearch(request)
@@ -339,6 +336,7 @@ extension MainFileListModel {
         smartListFilterDraft = nil
         activeSmartListSearch = nil
         clearSearchFacets()
+        semanticIndexBuildState = .idle
         errorMapping = nil
         isLoading = false
         clearDetail()
@@ -377,7 +375,7 @@ extension MainFileListModel {
         diagnosticsState = .idle
 
         do {
-            let page = try await searchQuerying.searchFiles(repoPath: repoPath, request: request)
+            let page = try await searchPage(for: request)
             guard generation == searchGeneration else { return }
             applySearchPage(page, request: request)
         } catch {
@@ -396,6 +394,7 @@ extension MainFileListModel {
         errorMapping = nil
         isLoading = false
     }
+
 }
 
 extension MainFileListModel {

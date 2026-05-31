@@ -89,6 +89,22 @@ enum SearchIndexStatusSnapshot: Equatable {
     case unavailable
 }
 
+enum SearchModeSnapshot: String, CaseIterable, Equatable, Identifiable {
+    case normal
+    case semantic
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .normal:
+            "Normal"
+        case .semantic:
+            "Semantic"
+        }
+    }
+}
+
 struct SearchQueryRequestSnapshot: Equatable {
     var query: String
     var scope: SearchScopeSnapshot
@@ -98,6 +114,7 @@ struct SearchQueryRequestSnapshot: Equatable {
     var sort: SearchSortSnapshot
     var limit: Int64
     var offset: Int64
+    var mode: SearchModeSnapshot
 
     init(
         query: String,
@@ -107,7 +124,8 @@ struct SearchQueryRequestSnapshot: Equatable {
         filters: SearchFilterStateSnapshot,
         sort: SearchSortSnapshot,
         limit: Int64,
-        offset: Int64
+        offset: Int64,
+        mode: SearchModeSnapshot = .normal
     ) {
         self.query = query
         self.scope = scope
@@ -117,6 +135,7 @@ struct SearchQueryRequestSnapshot: Equatable {
         self.sort = sort
         self.limit = limit
         self.offset = offset
+        self.mode = mode
     }
 
     static func pageFeature(
@@ -124,7 +143,8 @@ struct SearchQueryRequestSnapshot: Equatable {
         scope: SearchScopeSnapshot,
         sort: SearchSortSnapshot,
         sidebarRow: RepositorySidebarRowSnapshot,
-        filters: SearchFilterStateSnapshot
+        filters: SearchFilterStateSnapshot,
+        mode: SearchModeSnapshot = .normal
     ) -> SearchQueryRequestSnapshot {
         SearchQueryRequestSnapshot(
             query: query,
@@ -134,7 +154,8 @@ struct SearchQueryRequestSnapshot: Equatable {
             filters: filters,
             sort: sort,
             limit: 50,
-            offset: 0
+            offset: 0,
+            mode: mode
         )
     }
 
@@ -208,6 +229,7 @@ struct SearchResultPageSnapshot: Equatable {
     var results: [SearchFileResultSnapshot]
     var diagnostics: [SearchQueryDiagnosticSnapshot]
     var indexStatus: SearchIndexStatusSnapshot
+    var semanticPage: SemanticSearchResultPageSnapshot? = nil
 
     var hasDiagnosticError: Bool {
         diagnostics.contains(where: \.isError)

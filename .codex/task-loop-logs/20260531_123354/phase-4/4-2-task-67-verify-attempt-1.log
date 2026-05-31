@@ -1,0 +1,73 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-67`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-67-s3-08-c3-08-semantic-search.md`
+- 实现范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S3-08 页面中的 C3-08 功能点
+- 结果：通过
+- 证据：task 限定 C3-08，control map 中 S3-08 绑定 C3-08/C3-09/C3-10，但本 task 对应 `4-2/task-67`；实现只接入 `semanticSearch`、`buildEmbeddingIndex`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-3-control-map.md:16`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift:148`
+
+- 项目：读取并对齐页面规格、Core API、UDL、C3-08 能力规格
+- 结果：通过
+- 证据：S3-08 要求语义/普通结果分组、fallback、索引状态；Core API/UDL 已有 `semantic_search` 与 `build_embedding_index`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-3-ai/S3-08-semantic-search-results.md:27`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3497`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:115`
+
+- 项目：只接入 C3-08 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreSemanticSearching` 通过 `CoreBridge` 调用真实 UniFFI `AreaMatrix.semanticSearch` 与 `AreaMatrix.buildEmbeddingIndex`，UI 状态进入 `MainSearchState` 和 `SemanticIndexBuildState`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift:149`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainExternalCreatedFileActions.swift:16`
+
+- 项目：用户可见触发与验收
+- 结果：通过
+- 证据：工具栏提供 `Semantic` 模式，搜索 task 传入 `.semantic`；banner 显示 `Semantic matches` / `Normal search matches`、索引状态、低置信度、fallback、普通搜索回退和构建索引入口
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:209`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SmartListManagementSheet+Sections.swift:47`
+
+- 项目：没有 mock-only / fixture-only 伪闭环
+- 结果：通过
+- 证据：生产路径调用真实 CoreBridge；fixture 仅存在于 XCTest 替身中
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift:151`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ImportSingleFilePreflightTests.swift:267`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，未触碰 `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。CoreBridge、snapshot 映射、model 状态和 SwiftUI 展示分层清楚；无视图直接调用 UniFFI。
+- 注释 / rustdoc / 文档同步：通过。本 task 未改 Rust public API；Swift 代码无额外低价值注释。
+- 错误处理与边界处理：通过。`semanticSearch` / `buildEmbeddingIndex` 使用 `throws`，UI 通过 `mapCoreError` 进入失败状态。
+- 测试与验证覆盖：通过。新增 XCTest 覆盖 semantic 模式路由、普通搜索不被错误调用、索引构建需用户动作后触发。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未发现 mock-only 或静态成功态。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-67`
+- 通过：`prompt doctor` OK，`git diff --check` 通过，macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 显示 `BUILD SUCCEEDED`
+- 失败：无
+- 缺失：未运行额外 UI smoke；manifest 本 task 只要求 `./dev check task 4-2/task-67`
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。runner 的 progress / summary / Git checkpoint 收口发生在 verify PASS 之后，当前 `in_progress` 记录不作为本次验收失败依据。
+
+VERIFY_RESULT: PASS

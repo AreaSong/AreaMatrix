@@ -26,6 +26,7 @@ final class MainFileListModel: ObservableObject {
     @Published var tagSuggestionPresentationRequest: TagSuggestionPresentationRequest?
     @Published var detailTagUndoToast: DetailTagUndoToast?
     @Published var searchState = MainSearchState.idle
+    @Published var semanticIndexBuildState = SemanticIndexBuildState.idle
     @Published var searchFacetsState = MainSearchFacetsState.idle
     @Published var tagFilterRegistryState = TagFilterRegistryState.idle
     @Published var selectedFileNoteWriteBlock: MainDetailNoteWriteBlock?
@@ -68,6 +69,7 @@ final class MainFileListModel: ObservableObject {
     let externalChangesSyncer: any CoreExternalChangesSyncing
     let errorMapper: any CoreErrorMapping
     let searchQuerying: any CoreSearchQuerying
+    let semanticSearching: any CoreSemanticSearching
     let searchFiltering: any CoreSearchFiltering
     let commandIndexer: any CoreCommandIndexing
     let diagnosticsCollector: any CoreDiagnosticsCollecting
@@ -85,6 +87,7 @@ final class MainFileListModel: ObservableObject {
         fileLister: any CoreFileListing,
         fileDetailer: any CoreFileDetailing,
         searchQuerying: any CoreSearchQuerying = CoreBridge(),
+        semanticSearching: any CoreSemanticSearching = CoreBridge(),
         searchFiltering: any CoreSearchFiltering = CoreBridge(),
         commandIndexer: any CoreCommandIndexing = CoreBridge(),
         fileRenamer: any CoreFileRenaming = CoreBridge(),
@@ -113,6 +116,7 @@ final class MainFileListModel: ObservableObject {
         self.fileLister = fileLister
         self.fileDetailer = fileDetailer
         self.searchQuerying = searchQuerying
+        self.semanticSearching = semanticSearching
         self.searchFiltering = searchFiltering
         self.commandIndexer = commandIndexer
         self.fileRenamer = fileRenamer

@@ -46,10 +46,12 @@ struct MainRepositoryContentView: View {
     @State var restoreSearchFocusAfterPalette = false
     @State var filterText: String = ""
     @State var searchScope: SearchScopeSnapshot = .all
+    @State var searchMode: SearchModeSnapshot = .normal
     @State var searchSort: SearchSortSnapshot = .newestImported
     @State var searchFilters: SearchFilterStateSnapshot = .empty
     @State var isSearchFiltersPresented = false
     @State var isSidebarTagsFilterPresented = false
+    @State var isSemanticIndexConfirmationPresented = false
     @State var savedSearchesBySidebarID: [String: SavedSearchSnapshot] = [:]
     @State var smartListLoadError: CoreErrorMappingSnapshot?
     @State var smartListManagementRoute: SmartListManagementRoute?
@@ -89,6 +91,7 @@ struct MainRepositoryContentView: View {
         fileLister: any CoreFileListing = CoreBridge(),
         fileDetailer: any CoreFileDetailing = CoreBridge(),
         searchQuerying: any CoreSearchQuerying = CoreBridge(),
+        semanticSearching: any CoreSemanticSearching = CoreBridge(),
         searchFiltering: any CoreSearchFiltering = CoreBridge(),
         commandIndexer: any CoreCommandIndexing = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
@@ -136,6 +139,7 @@ struct MainRepositoryContentView: View {
             fileLister: fileLister,
             fileDetailer: fileDetailer,
             searchQuerying: searchQuerying,
+            semanticSearching: semanticSearching,
             searchFiltering: searchFiltering,
             commandIndexer: commandIndexer,
             fileCategoryMover: fileCategoryMover,
@@ -172,12 +176,8 @@ extension MainRepositoryContentView {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .overlay(alignment: .center) {
-            dropOverlay
-        }
-        .overlay(alignment: .bottomTrailing) {
-            batchTagUndoToastOverlay.padding(18)
-        }
+        .overlay(alignment: .center) { dropOverlay }
+        .overlay(alignment: .bottomTrailing) { batchTagUndoToastOverlay.padding(18) }
         .task(id: selectedSidebarID) {
             guard state == .list else { return }
             if await restoreSelectedSavedSearchIfNeeded() {
@@ -190,15 +190,9 @@ extension MainRepositoryContentView {
             }
             searchScope = selectedSidebarRow.categoryForFileList == nil ? .all : .current
             let focusedFileID = pendingMovedFileFocusID
-            if let focusedFileID {
-                selectedFileIDs = [focusedFileID]
-            } else {
-                selectedFileIDs = []
-            }
+            selectedFileIDs = focusedFileID.map { [$0] } ?? []
             await fileListModel.loadCurrentCategory(selectedSidebarRow.categoryForFileList, focusingOn: focusedFileID)
-            if pendingMovedFileFocusID == focusedFileID {
-                pendingMovedFileFocusID = nil
-            }
+            if pendingMovedFileFocusID == focusedFileID { pendingMovedFileFocusID = nil }
         }
         .task(id: opening.config.repoPath) {
             guard state == .list else { return }
@@ -222,7 +216,8 @@ extension MainRepositoryContentView {
                 scope: searchScope,
                 sort: searchSort,
                 sidebarRow: selectedSidebarRow,
-                filters: effectiveSearchFilters
+                filters: effectiveSearchFilters,
+                mode: searchMode
             )
         }
         .task(id: searchFacetsTaskKey) {
@@ -260,6 +255,18 @@ extension MainRepositoryContentView {
             }
         } message: {
             Text("Save or discard the AI summary draft before switching files.")
+        }
+        .confirmationDialog(
+            "Build semantic index?",
+            isPresented: $isSemanticIndexConfirmationPresented,
+            titleVisibility: .visible
+        ) {
+            Button("Start index build") {
+                Task { await fileListModel.buildSemanticIndexForCurrentSearch() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("AreaMatrix will build a semantic index for searchable files. Local indexing keeps file content on this device.")
         }
         .sheet(item: actionDestinationBinding, content: actionRoutingSheet)
         .sheet(item: searchDestinationBinding, content: searchRoutingSheet)
@@ -332,6 +339,14 @@ extension MainRepositoryContentView {
                     fileListModel.enterSearch(context: .toolbar)
                 }
                 .accessibilityIdentifier("S2-01-search-field")
+            Picker("Mode", selection: $searchMode) {
+                ForEach(SearchModeSnapshot.allCases) { mode in
+                    Text(mode.displayName).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 170)
+            .accessibilityIdentifier("S3-08-C3-08-search-mode")
             Picker("Scope", selection: $searchScope) {
                 ForEach(SearchScopeSnapshot.allCases) { scope in
                     Text(scope.displayName).tag(scope)

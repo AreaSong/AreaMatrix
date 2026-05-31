@@ -1,5 +1,89 @@
 import SwiftUI
 
+extension MainRepositoryContentView {
+    var searchLoadingText: String {
+        searchMode == .semantic ? "Searching semantically..." : "Searching..."
+    }
+
+    @ViewBuilder
+    var semanticIndexBuildText: some View {
+        switch fileListModel.semanticIndexBuildState {
+        case .idle:
+            EmptyView()
+        case .building:
+            Text("Building semantic index...")
+        case let .completed(_, report):
+            Text("Semantic index \(report.status.displayName.lowercased()): \(report.processedCount)/\(report.totalCount) processed")
+        case let .failed(_, error):
+            Text("Semantic index could not be built: \(error.userMessage)")
+        }
+    }
+
+    func semanticStatusText(_ page: SemanticSearchResultPageSnapshot) -> String {
+        var parts = ["Semantic index: \(page.indexStatus.displayName)"]
+        if let route = page.route { parts.append(route.rawValue) }
+        if page.lowConfidence { parts.append("Low confidence results") }
+        if let fallback = page.fallbackReason { parts.append(page.fallbackMessage ?? fallback.rawValue) }
+        if page.dedupedNormalCount > 0 { parts.append("\(page.dedupedNormalCount) duplicate normal matches folded") }
+        return parts.joined(separator: "  ")
+    }
+
+    func semanticMatchText(_ presentation: SemanticResultPresentation) -> String {
+        switch presentation {
+        case let .semantic(match):
+            let fields = match.usedFields.map(\.rawValue).joined(separator: ", ")
+            let duplicate = match.alsoMatchedNormalSearch ? " | Also matched normal search" : ""
+            return "Semantic | \(String(format: "%.2f", match.relevance)) | \(match.matchedReason) | \(fields)\(duplicate)"
+        case let .normal(match):
+            if let noteSnippet = match.result.noteSnippet, !noteSnippet.isEmpty {
+                return "Normal | - | Note: \(noteSnippet)"
+            }
+            guard let first = match.result.matches.first else { return "Normal | - | Match" }
+            return "Normal | - | \(first.kindDisplayName): \(first.fieldDisplayName) - \(first.snippet)"
+        }
+    }
+
+    @ViewBuilder
+    func semanticBannerDetail(_ page: SemanticSearchResultPageSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                Text(semanticStatusText(page))
+                Button("Use normal search") {
+                    searchMode = .normal
+                    Task { await rerunCurrentSearch(mode: .normal) }
+                }
+                semanticBuildIndexButton(page)
+            }
+            Text("Semantic matches (\(page.semanticTotalCount))  Normal search matches (\(page.normalTotalCount))")
+            semanticIndexBuildText
+        }
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        .accessibilityIdentifier("S3-08-C3-08-semantic-search-banner")
+    }
+
+    @ViewBuilder
+    private func semanticBuildIndexButton(_ page: SemanticSearchResultPageSnapshot) -> some View {
+        if page.canBuildIndex {
+            Button("Build semantic index") {
+                isSemanticIndexConfirmationPresented = true
+            }
+            .disabled(fileListModel.semanticIndexBuildState.isBuilding)
+        }
+    }
+
+    func rerunCurrentSearch(mode: SearchModeSnapshot) async {
+        await fileListModel.runSearch(
+            query: filterText,
+            scope: searchScope,
+            sort: searchSort,
+            sidebarRow: selectedSidebarRow,
+            filters: effectiveSearchFilters,
+            mode: mode
+        )
+    }
+}
+
 extension SmartListManagementSheet {
     @ViewBuilder
     var content: some View {

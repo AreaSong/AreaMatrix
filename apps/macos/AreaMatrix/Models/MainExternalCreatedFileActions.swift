@@ -1,5 +1,39 @@
 import Foundation
 
+enum SemanticIndexBuildState: Equatable {
+    case idle
+    case building(request: SearchQueryRequestSnapshot)
+    case completed(request: SearchQueryRequestSnapshot, report: SemanticIndexBuildReportSnapshot)
+    case failed(request: SearchQueryRequestSnapshot, CoreErrorMappingSnapshot)
+
+    var isBuilding: Bool {
+        if case .building = self { return true }
+        return false
+    }
+}
+
+extension MainFileListModel {
+    func searchPage(for request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
+        switch request.mode {
+        case .normal:
+            try await searchQuerying.searchFiles(repoPath: repoPath, request: request)
+        case .semantic:
+            try await semanticSearching.semanticSearch(repoPath: repoPath, request: request)
+        }
+    }
+
+    func buildSemanticIndexForCurrentSearch() async {
+        guard let request = searchState.request, request.mode == .semantic else { return }
+        semanticIndexBuildState = .building(request: request)
+        do {
+            let report = try await semanticSearching.buildEmbeddingIndex(repoPath: repoPath, request: request)
+            semanticIndexBuildState = .completed(request: request, report: report)
+        } catch {
+            semanticIndexBuildState = .failed(request: request, await mapCoreError(error))
+        }
+    }
+}
+
 extension OnboardingModel {
     @MainActor
     func consumePendingExternalCreatedFileSignals() {

@@ -13,6 +13,14 @@ protocol CoreAISettingsUpdating: Sendable {
     func updateAISettings(repoPath: String, newConfig: AISettingsConfigSnapshot) async throws -> AISettingsSnapshot
 }
 
+protocol CoreSemanticSearching: Sendable {
+    func semanticSearch(repoPath: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot
+    func buildEmbeddingIndex(
+        repoPath: String,
+        request: SearchQueryRequestSnapshot
+    ) async throws -> SemanticIndexBuildReportSnapshot
+}
+
 enum AISettingsProviderPreference: String, CaseIterable, Equatable, Identifiable {
     case localFirst, localOnly, remoteFirst
 
@@ -132,6 +140,48 @@ extension CoreBridge: CoreAISettingsLoading, CoreAISettingsUpdating {
             try AISettingsSnapshot(coreSnapshot: updateAiConfig(
                 repoPath: repoPath,
                 newConfig: AiConfig(snapshot: newConfig)
+            ))
+        }.value
+    }
+}
+
+extension CoreBridge: CoreSemanticSearching {
+    func semanticSearch(repoPath: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
+        let corePage = try await Task.detached(priority: .userInitiated) {
+            try AreaMatrix.semanticSearch(
+                repoPath: repoPath,
+                query: request.query,
+                filter: SearchFilter(request),
+                pagination: SearchPagination(limit: request.limit, offset: request.offset)
+            )
+        }.value
+
+        var semanticMatches: [SemanticSearchMatchSnapshot] = []
+        for match in corePage.semanticMatches {
+            let file = await makeFileEntrySnapshot(from: match.result.entry, repoPath: repoPath)
+            semanticMatches.append(SemanticSearchMatchSnapshot(coreMatch: match, file: file))
+        }
+
+        var normalMatches: [SemanticNormalSearchMatchSnapshot] = []
+        for match in corePage.normalMatches {
+            let file = await makeFileEntrySnapshot(from: match.result.entry, repoPath: repoPath)
+            normalMatches.append(SemanticNormalSearchMatchSnapshot(coreMatch: match, file: file))
+        }
+        return SearchResultPageSnapshot(
+            coreSemanticPage: corePage,
+            semanticMatches: semanticMatches,
+            normalMatches: normalMatches
+        )
+    }
+
+    func buildEmbeddingIndex(
+        repoPath: String,
+        request: SearchQueryRequestSnapshot
+    ) async throws -> SemanticIndexBuildReportSnapshot {
+        try await Task.detached(priority: .userInitiated) {
+            try SemanticIndexBuildReportSnapshot(coreReport: AreaMatrix.buildEmbeddingIndex(
+                repoPath: repoPath,
+                scope: SemanticIndexScope(request)
             ))
         }.value
     }
