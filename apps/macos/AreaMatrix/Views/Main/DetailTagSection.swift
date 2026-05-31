@@ -151,7 +151,11 @@ struct DetailTagSection: View {
 
     private func presentSuggestionsIfNeeded(_ request: TagSuggestionPresentationRequest?) {
         guard let request, request.fileID == file.id else { return }
-        openSuggestions()
+        if request.source == .importResult {
+            openAISuggestions()
+        } else {
+            openSuggestions()
+        }
         tagActions.onSuggestionPresentationConsumed(request)
     }
 

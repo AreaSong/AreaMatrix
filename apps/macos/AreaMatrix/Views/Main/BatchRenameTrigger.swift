@@ -193,3 +193,116 @@ struct BatchRenameTrigger: View {
             }
     }
 }
+
+struct BatchAITagSuggestionTrigger: View {
+    let repoPath: String
+    let selectedFiles: [FileEntrySnapshot]
+    let selectedCount: Int
+    let disabledReason: String?
+    let state: AITagBatchSuggestionState
+    let actions: AITagBatchSuggestionActions
+    let onOpenAISettings: () -> Void
+
+    @State private var isPresented = false
+
+    var body: some View {
+        Button("AI tag suggestions...") {
+            isPresented = true
+            actions.load(selectedFiles)
+        }
+        .disabled(openDisabledReason != nil)
+        .help(openDisabledReason ?? "Review AI suggested tags for selected files")
+        .sheet(isPresented: $isPresented) {
+            BatchAITagSuggestionSheet(
+                repoPath: repoPath,
+                selectedFiles: selectedFiles,
+                state: state,
+                actions: actions,
+                onOpenAISettings: onOpenAISettings,
+                onClose: { isPresented = false }
+            )
+        }
+        .accessibilityIdentifier("S3-07-C3-07-open-batch-ai-tag-suggestions")
+    }
+
+    private var openDisabledReason: String? {
+        if selectedCount < 2 { return "Select at least two files" }
+        return disabledReason
+    }
+}
+
+struct BatchAITagSuggestionSheet: View {
+    let repoPath: String
+    let selectedFiles: [FileEntrySnapshot]
+    let state: AITagBatchSuggestionState
+    let actions: AITagBatchSuggestionActions
+    let onOpenAISettings: () -> Void
+    let onClose: () -> Void
+    @State var callLogRoute: BatchAITagCallLogRoute?
+    @State var privacyRuleRoute: AIClassificationPrivacyRuleRoute?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Review suggested tags for \(selectedFiles.count) files")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+            Text("Review before adding tags. AI suggestions are not applied until you accept them.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            content
+            actionBar
+        }
+        .padding(16)
+        .frame(width: 720, alignment: .topLeading)
+        .confirmationDialog(
+            confirmationTitle,
+            isPresented: Binding(
+                get: { state.isConfirming },
+                set: { if !$0 { actions.cancelConfirmation() } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Apply tags", action: actions.apply)
+            Button("Cancel", role: .cancel, action: actions.cancelConfirmation)
+        } message: {
+            Text(confirmationMessage)
+        }
+        .sheet(item: $callLogRoute) { route in
+            AIClassificationCallLogDetailSheet(
+                repoPath: repoPath,
+                callLogID: route.callLogID,
+                feature: .tags
+            ) {
+                callLogRoute = nil
+            }
+        }
+        .sheet(item: $privacyRuleRoute) { route in
+            AIClassificationPrivacyRuleReferenceSheet(repoPath: repoPath, ruleID: route.ruleID) {
+                privacyRuleRoute = nil
+            }
+        }
+        .accessibilityIdentifier("S3-07-C3-07-batch-ai-tag-suggestions")
+    }
+
+    var actionBar: some View {
+        HStack {
+            Button("Accept high confidence") {
+                actions.selectHighConfidence()
+                actions.confirm()
+            }
+            .disabled(!state.hasHighConfidenceApplyCandidates || state.isApplying || state.isLoading || isAIBlocked)
+            Button("Accept selected", action: actions.confirm)
+                .disabled(!state.canApplySelectedSuggestions || isAIBlocked)
+            Button("Reject selected", action: actions.clearSelection)
+                .disabled(state.review?.selectedTagCount == 0 || state.isApplying || state.isLoading || isAIBlocked)
+            if case .applied = state {
+                Button("Retry apply", action: actions.confirm)
+                    .disabled(!state.canApplySelectedSuggestions)
+            }
+            Button("Cancel") {
+                actions.cancel()
+                onClose()
+            }
+        }
+    }
+}

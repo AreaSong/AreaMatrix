@@ -111,75 +111,8 @@ struct BatchDeletePreviewTable: View {
     }
 }
 
-struct BatchAITagSuggestionTrigger: View {
-    let selectedFiles: [FileEntrySnapshot]
-    let selectedCount: Int
-    let disabledReason: String?
-    let state: AITagBatchSuggestionState
-    let actions: AITagBatchSuggestionActions
-
-    @State private var isPresented = false
-
-    var body: some View {
-        Button("AI tag suggestions...") {
-            isPresented = true
-            actions.load(selectedFiles)
-        }
-        .disabled(openDisabledReason != nil)
-        .help(openDisabledReason ?? "Review AI suggested tags for selected files")
-        .sheet(isPresented: $isPresented) {
-            BatchAITagSuggestionSheet(
-                selectedFiles: selectedFiles,
-                state: state,
-                actions: actions,
-                onClose: { isPresented = false }
-            )
-        }
-        .accessibilityIdentifier("S3-07-C3-07-open-batch-ai-tag-suggestions")
-    }
-
-    private var openDisabledReason: String? {
-        if selectedCount < 2 { return "Select at least two files" }
-        return disabledReason
-    }
-}
-
-private struct BatchAITagSuggestionSheet: View {
-    let selectedFiles: [FileEntrySnapshot]
-    let state: AITagBatchSuggestionState
-    let actions: AITagBatchSuggestionActions
-    let onClose: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Review suggested tags for \(selectedFiles.count) files")
-                .font(.headline)
-                .accessibilityAddTraits(.isHeader)
-            Text("Review before adding tags. AI suggestions are not applied until you accept them.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            content
-            actionBar
-        }
-        .padding(16)
-        .frame(width: 720, alignment: .topLeading)
-        .confirmationDialog(
-            confirmationTitle,
-            isPresented: Binding(
-                get: { state.isConfirming },
-                set: { if !$0 { actions.cancelConfirmation() } }
-            ),
-            titleVisibility: .visible
-        ) {
-            Button("Apply tags", action: actions.apply)
-            Button("Cancel", role: .cancel, action: actions.cancelConfirmation)
-        } message: {
-            Text(confirmationMessage)
-        }
-        .accessibilityIdentifier("S3-07-C3-07-batch-ai-tag-suggestions")
-    }
-
-    @ViewBuilder private var content: some View {
+extension BatchAITagSuggestionSheet {
+    @ViewBuilder var content: some View {
         if state.isLoading {
             ProgressView("Loading suggested tags...")
         } else if let review = state.review {
@@ -190,31 +123,13 @@ private struct BatchAITagSuggestionSheet: View {
         }
     }
 
-    private var actionBar: some View {
-        HStack {
-            Button("Accept high confidence") {
-                actions.selectHighConfidence()
-                actions.confirm()
-            }
-            .disabled(!state.hasHighConfidenceApplyCandidates || state.isApplying || state.isLoading)
-            Button("Accept selected", action: actions.confirm)
-                .disabled(!state.canApplySelectedSuggestions)
-            Button("Reject selected", action: actions.clearSelection)
-                .disabled(state.review?.selectedTagCount == 0 || state.isApplying || state.isLoading)
-            if case .applied = state {
-                Button("Retry apply", action: actions.confirm)
-                    .disabled(!state.canApplySelectedSuggestions)
-            }
-            Button("Cancel") {
-                actions.cancel()
-                onClose()
-            }
-        }
-    }
-
-    private func reviewContent(_ review: AITagBatchSuggestionReview) -> some View {
+    func reviewContent(_ review: AITagBatchSuggestionReview) -> some View {
         VStack(alignment: .leading, spacing: 12) {
+            if let reason = aiOffReason(in: review) {
+                aiOffNotice(reason)
+            }
             impactSummary(review)
+            rejectedFeedbackSummary(review)
             HStack(alignment: .top, spacing: 16) {
                 fileList(review)
                     .frame(width: 230, alignment: .topLeading)
@@ -224,7 +139,7 @@ private struct BatchAITagSuggestionSheet: View {
         }
     }
 
-    private func impactSummary(_ review: AITagBatchSuggestionReview) -> some View {
+    func impactSummary(_ review: AITagBatchSuggestionReview) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("\(review.selectedFileCount) files will receive \(review.selectedTagCount) tags.")
             Text("Low confidence tags are excluded.")
@@ -242,7 +157,18 @@ private struct BatchAITagSuggestionSheet: View {
         .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
     }
 
-    private func fileList(_ review: AITagBatchSuggestionReview) -> some View {
+    func rejectedFeedbackSummary(_ review: AITagBatchSuggestionReview) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(review.rejectedFeedback) { feedback in
+                Label(feedback.message, systemImage: "checkmark.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityIdentifier("S3-07-C3-07-batch-reject-feedback")
+    }
+
+    func fileList(_ review: AITagBatchSuggestionReview) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Files").font(.caption).foregroundStyle(.secondary)
             ForEach(review.files) { file in
@@ -257,7 +183,7 @@ private struct BatchAITagSuggestionSheet: View {
         }
     }
 
-    private func suggestionList(_ review: AITagBatchSuggestionReview) -> some View {
+    func suggestionList(_ review: AITagBatchSuggestionReview) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(review.files) { file in
                 if let report = review.reports[file.id] {
@@ -267,7 +193,7 @@ private struct BatchAITagSuggestionSheet: View {
         }
     }
 
-    private func reportSection(
+    func reportSection(
         file: FileEntrySnapshot,
         report: AiTagSuggestionReport,
         review: AITagBatchSuggestionReview
@@ -277,11 +203,15 @@ private struct BatchAITagSuggestionSheet: View {
             Text("Confidence threshold: \(percent(report.confidenceThreshold))% - \(routeLabel(report.route))")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            Text("Used fields: \(usedContextText(report.usedContext))")
+                .font(.caption)
+                .foregroundStyle(.secondary)
             if report.suggestions.isEmpty {
                 Text(report.skippedReason.map(skipReasonText) ?? "No tag suggestions for this file.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            reportTraceLinks(report)
             ForEach(report.suggestions, id: \.suggestionId) { suggestion in
                 suggestionRow(suggestion, fileID: file.id, review: review)
             }
@@ -289,18 +219,24 @@ private struct BatchAITagSuggestionSheet: View {
         .padding(.bottom, 6)
     }
 
-    private func suggestionRow(
+    func suggestionRow(
         _ suggestion: AiTagSuggestion,
         fileID: Int64,
         review: AITagBatchSuggestionReview
     ) -> some View {
         let selected = review.selectedIDsByFileID[fileID]?.contains(suggestion.suggestionId) == true
+        let canAdd = AITagSuggestionAction.canApply(suggestion)
+        let draft = review.editSessionsByFileID[fileID]?.drafts.first { $0.suggestionID == suggestion.suggestionId }
         return VStack(alignment: .leading, spacing: 3) {
             HStack {
                 Button(selected ? "Reject" : "Add") {
                     actions.toggle(fileID, suggestion.suggestionId)
                 }
-                .disabled(!AITagSuggestionAction.canApply(suggestion) || state.isApplying)
+                .disabled(state.isApplying || (!selected && !canAdd))
+                Button("Edit") {
+                    actions.startEditing(fileID, suggestion.suggestionId)
+                }
+                .disabled(state.isApplying || suggestion.status == .alreadyApplied)
                 Text(suggestion.displayName).font(.callout.weight(.semibold))
                 Text("\(percent(suggestion.confidence))%").font(.caption)
                 Text(candidateStatusText(suggestion)).foregroundStyle(.secondary)
@@ -308,10 +244,80 @@ private struct BatchAITagSuggestionSheet: View {
             Text("Reason: \(suggestion.reason)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            Text(mergeText(suggestion))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if let draft {
+                editRow(draft, fileID: fileID)
+            }
         }
     }
 
-    @ViewBuilder private func resultSummary(_ review: AITagBatchSuggestionReview) -> some View {
+    func editRow(_ draft: AITagSuggestionEditDraft, fileID: Int64) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            TextField("Display name", text: Binding(
+                get: { draft.displayName },
+                set: { actions.editDisplayName(fileID, draft.suggestionID, $0) }
+            ))
+            HStack {
+                TextField("Slug", text: Binding(
+                    get: { draft.slug },
+                    set: { actions.editSlug(fileID, draft.suggestionID, $0) }
+                ))
+                Button("Regenerate") {
+                    actions.regenerateSlug(fileID, draft.suggestionID)
+                }
+                Button("Cancel edit") {
+                    actions.cancelEditing(fileID)
+                }
+            }
+            if draft.status.preventsApply {
+                Text(draft.status.message ?? draft.status.label)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+        }
+        .disabled(state.isApplying)
+    }
+
+    func aiOffNotice(_ reason: AiTagSuggestionSkipReason) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(skipReasonText(reason))
+                .font(.subheadline.weight(.semibold))
+            Text("AI tag suggestions are not generated while this setting is off.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack {
+                Button("Open AI settings", action: onOpenAISettings)
+                Button("Close") {
+                    actions.cancel()
+                    onClose()
+                }
+            }
+        }
+        .padding(10)
+        .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    @ViewBuilder func reportTraceLinks(_ report: AiTagSuggestionReport) -> some View {
+        HStack {
+            if let ruleID = privacyRuleID(for: report) {
+                Button("View privacy rule") {
+                    privacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
+                }
+                .buttonStyle(.link)
+                .accessibilityIdentifier("S3-07-C3-09-view-batch-privacy-rule")
+            }
+            if let callLogID = report.callLogId {
+                Button("View AI call") {
+                    callLogRoute = BatchAITagCallLogRoute(callLogID: callLogID)
+                }
+                .buttonStyle(.link)
+            }
+        }
+    }
+
+    @ViewBuilder func resultSummary(_ review: AITagBatchSuggestionReview) -> some View {
         if case .applied = state {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Applied to \(review.appliedFileCount) files, failed on \(review.failedFileCount) files.")
@@ -324,70 +330,5 @@ private struct BatchAITagSuggestionSheet: View {
                 }
             }
         }
-    }
-
-    private var confirmationTitle: String {
-        "Apply suggested tags to \(state.review?.selectedFileCount ?? 0) files?"
-    }
-
-    private var confirmationMessage: String {
-        "AreaMatrix will add \(state.review?.selectedTagCount ?? 0) reviewed tags. " +
-            "Low confidence tags are excluded, and existing tags will not be duplicated."
-    }
-
-    private func fileStatus(_ file: FileEntrySnapshot, review: AITagBatchSuggestionReview) -> String {
-        if review.applyFailures[file.id] != nil || (review.applyReports[file.id]?.failedCount ?? 0) > 0 {
-            return "failed"
-        }
-        if review.applyReports[file.id] != nil { return "accepted" }
-        return (review.selectedIDsByFileID[file.id]?.isEmpty == false) ? "pending" : "rejected"
-    }
-
-    private func routeLabel(_ route: AiTagSuggestionRoute?) -> String {
-        switch route {
-        case .local:
-            return "Local"
-        case .remote:
-            return "Remote"
-        case nil:
-            return "No provider"
-        }
-    }
-
-    private func candidateStatusText(_ suggestion: AiTagSuggestion) -> String {
-        if let reason = suggestion.disabledReason { return reason }
-        switch suggestion.status {
-        case .suggested:
-            return "Suggested"
-        case .lowConfidence:
-            return "Low confidence"
-        case .alreadyApplied:
-            return "Already applied"
-        case .invalid:
-            return "Invalid"
-        case .blocked:
-            return "Blocked"
-        }
-    }
-
-    private func skipReasonText(_ reason: AiTagSuggestionSkipReason) -> String {
-        switch reason {
-        case .aiDisabled:
-            return "AI tag suggestions are off"
-        case .featureDisabled:
-            return "Auto tags are off"
-        case .providerUnavailable:
-            return "AI provider is unavailable"
-        case .privacyRule:
-            return "Skipped by privacy rule"
-        case .noEligibleInput:
-            return "No eligible tag context"
-        case .callLogUnavailable:
-            return "AI call log is unavailable"
-        }
-    }
-
-    private func percent(_ value: Float) -> Int {
-        Int((min(max(value, 0), 1) * 100).rounded())
     }
 }

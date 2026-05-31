@@ -107,3 +107,130 @@ struct DeleteFileConfirmSheet: View {
         return operation == .moveToTrash && !isTrashAvailable
     }
 }
+
+extension BatchAITagSuggestionSheet {
+    var confirmationTitle: String {
+        "Apply suggested tags to \(state.review?.selectedFileCount ?? 0) files?"
+    }
+
+    var confirmationMessage: String {
+        "AreaMatrix will add \(state.review?.selectedTagCount ?? 0) reviewed tags. " +
+            "Low confidence tags are excluded, and existing tags will not be duplicated."
+    }
+
+    var isAIBlocked: Bool {
+        guard let review = state.review else { return false }
+        return aiOffReason(in: review) != nil
+    }
+
+    func fileStatus(_ file: FileEntrySnapshot, review: AITagBatchSuggestionReview) -> String {
+        if review.applyFailures[file.id] != nil || (review.applyReports[file.id]?.failedCount ?? 0) > 0 {
+            return "failed"
+        }
+        if review.applyReports[file.id] != nil { return "accepted" }
+        return (review.selectedIDsByFileID[file.id]?.isEmpty == false) ? "pending" : "rejected"
+    }
+
+    func routeLabel(_ route: AiTagSuggestionRoute?) -> String {
+        switch route {
+        case .local:
+            return "Local"
+        case .remote:
+            return "Remote"
+        case nil:
+            return "No provider"
+        }
+    }
+
+    func aiOffReason(in review: AITagBatchSuggestionReview) -> AiTagSuggestionSkipReason? {
+        review.reports.values.compactMap { report in
+            switch report.skippedReason {
+            case .aiDisabled, .featureDisabled:
+                report.skippedReason
+            case .providerUnavailable, .privacyRule, .noEligibleInput, .callLogUnavailable, nil:
+                nil
+            }
+        }.first
+    }
+
+    func privacyRuleID(for report: AiTagSuggestionReport) -> String? {
+        guard report.skippedReason == .privacyRule else { return nil }
+        return normalizedAITagPrivacyRuleID(from: report.privacyRuleId)
+    }
+
+    func usedContextText(_ fields: [AiTagSuggestionInputField]) -> String {
+        fields.isEmpty ? "none" : fields.map(aiTagInputFieldText).joined(separator: ", ")
+    }
+
+    func aiTagInputFieldText(_ field: AiTagSuggestionInputField) -> String {
+        switch field {
+        case .fileName:
+            return "filename"
+        case .repoRelativePath:
+            return "repo-relative path"
+        case .extractedTextExcerpt:
+            return "extracted text"
+        case .aiSummary:
+            return "AI summary"
+        case .noteSummary:
+            return "note summary"
+        case .existingTags:
+            return "existing tags"
+        case .tagRegistry:
+            return "tag registry"
+        }
+    }
+
+    func mergeText(_ suggestion: AiTagSuggestion) -> String {
+        switch suggestion.mergeAction {
+        case .createTag:
+            return "Will create tag \(suggestion.slug)"
+        case .useExistingTag:
+            return "Will use existing tag \(suggestion.matchedExistingSlug ?? suggestion.slug)"
+        case .mergeWithExistingTag:
+            return "Merge with existing tag \(suggestion.matchedExistingSlug ?? suggestion.slug)"
+        }
+    }
+
+    func candidateStatusText(_ suggestion: AiTagSuggestion) -> String {
+        if let reason = suggestion.disabledReason { return reason }
+        switch suggestion.status {
+        case .suggested:
+            return "Suggested"
+        case .lowConfidence:
+            return "Low confidence"
+        case .alreadyApplied:
+            return "Already applied"
+        case .invalid:
+            return "Invalid"
+        case .blocked:
+            return "Blocked"
+        }
+    }
+
+    func skipReasonText(_ reason: AiTagSuggestionSkipReason) -> String {
+        switch reason {
+        case .aiDisabled:
+            return "AI tag suggestions are off"
+        case .featureDisabled:
+            return "Auto tags are off"
+        case .providerUnavailable:
+            return "AI provider is unavailable"
+        case .privacyRule:
+            return "Skipped by privacy rule"
+        case .noEligibleInput:
+            return "No eligible tag context"
+        case .callLogUnavailable:
+            return "AI call log is unavailable"
+        }
+    }
+
+    func percent(_ value: Float) -> Int {
+        Int((min(max(value, 0), 1) * 100).rounded())
+    }
+}
+
+struct BatchAITagCallLogRoute: Identifiable {
+    let callLogID: Int64
+    var id: Int64 { callLogID }
+}

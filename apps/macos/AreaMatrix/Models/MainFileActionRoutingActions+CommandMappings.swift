@@ -64,393 +64,179 @@ extension CommandTargetActionSnapshot {
     }
 }
 
-extension MainFileListModel {
-    func loadSelectedFileAITagSuggestions() async {
-        guard let fileID = selection.singleFileID else { return }
-        await loadAITagSuggestions(fileID: fileID)
-    }
-
-    func retrySelectedFileAITagSuggestions() async {
-        guard let fileID = selection.singleFileID else { return }
-        await loadAITagSuggestions(fileID: fileID)
-    }
-
-    func toggleSelectedFileAITagSuggestion(_ suggestionID: String) {
-        aiTagSuggestionState = AITagSuggestionAction.toggling(suggestionID, in: aiTagSuggestionState)
-    }
-
-    func applySelectedFileAITagSuggestion(_ suggestionID: String) async -> BatchTagUndoState? {
-        guard let item = AITagSuggestionAction.applyItem(suggestionID: suggestionID, in: aiTagSuggestionState) else {
-            return nil
-        }
-        return await applyAITagSuggestions([item])
-    }
-
-    func selectHighConfidenceAITagSuggestions() {
-        aiTagSuggestionState = AITagSuggestionAction.selectingHighConfidence(in: aiTagSuggestionState)
-    }
-
-    func clearSelectedFileAITagSuggestions() {
-        aiTagSuggestionState = AITagSuggestionAction.clearingSelection(in: aiTagSuggestionState)
-    }
-
-    func startEditingSelectedFileAITagSuggestions() {
-        aiTagSuggestionState = AITagSuggestionAction.startingEdit(
-            in: aiTagSuggestionState,
-            disabledReason: selectedAITagSuggestionDisabledReason()
-        )
-    }
-
-    func cancelEditingSelectedFileAITagSuggestions() {
-        aiTagSuggestionState = AITagSuggestionAction.cancelingEdit(in: aiTagSuggestionState)
-    }
-
-    func updateSelectedFileAITagSuggestionDisplayName(suggestionID: String, displayName: String) {
-        aiTagSuggestionState = AITagSuggestionAction.updatingDisplayName(
-            suggestionID: suggestionID,
-            displayName: displayName,
-            in: aiTagSuggestionState,
-            disabledReason: selectedAITagSuggestionDisabledReason()
-        )
-    }
-
-    func updateSelectedFileAITagSuggestionSlug(suggestionID: String, slug: String) {
-        aiTagSuggestionState = AITagSuggestionAction.updatingSlug(
-            suggestionID: suggestionID,
-            slug: slug,
-            in: aiTagSuggestionState,
-            disabledReason: selectedAITagSuggestionDisabledReason()
-        )
-    }
-
-    func regenerateSelectedFileAITagSuggestionSlug(suggestionID: String) {
-        aiTagSuggestionState = AITagSuggestionAction.regeneratingSlug(
-            suggestionID: suggestionID,
-            in: aiTagSuggestionState,
-            disabledReason: selectedAITagSuggestionDisabledReason()
-        )
-    }
-
-    func applySelectedFileAITagSuggestions() async -> BatchTagUndoState? {
-        await applyAITagSuggestions(AITagSuggestionAction.selectedApplyItems(in: aiTagSuggestionState))
-    }
-
-    func applyEditedSelectedFileAITagSuggestions() async -> BatchTagUndoState? {
-        let items = AITagSuggestionAction.editedItems(in: aiTagSuggestionState)
-        guard aiTagSuggestionState.editSession?.canApply == true else { return nil }
-        return await applyAITagSuggestions(items, editedSession: aiTagSuggestionState.editSession)
-    }
-
-    func retryFailedSelectedFileAITagSuggestions() async -> BatchTagUndoState? {
-        let items = AITagSuggestionAction.retryFailedItems(in: aiTagSuggestionState)
-        return await applyAITagSuggestions(items, editedSession: aiTagSuggestionState.editSession)
-    }
-
-    var aiTagBatchSuggestionActions: AITagBatchSuggestionActions {
-        AITagBatchSuggestionActions(
-            load: { [weak self] files in Task { await self?.loadBatchAITagSuggestions(files: files) } },
-            retry: { [weak self] in Task { await self?.retryBatchAITagSuggestions() } },
-            toggle: { [weak self] fileID, suggestionID in
-                self?.toggleBatchAITagSuggestion(fileID: fileID, suggestionID: suggestionID)
-            },
-            selectHighConfidence: { [weak self] in self?.selectHighConfidenceBatchAITagSuggestions() },
-            clearSelection: { [weak self] in self?.clearBatchAITagSuggestions() },
-            confirm: { [weak self] in self?.confirmBatchAITagSuggestions() },
-            cancelConfirmation: { [weak self] in self?.cancelBatchAITagSuggestionConfirmation() },
-            apply: { [weak self] in Task { await self?.applyBatchAITagSuggestions() } },
-            cancel: { [weak self] in self?.cancelBatchAITagSuggestions() }
-        )
-    }
-
-    func loadBatchAITagSuggestions(files: [FileEntrySnapshot]) async {
-        let selectedIDs = selection.multipleFileIDs
-        let selectedFiles = files.filter { selectedIDs.contains($0.id) }
-        guard selectedFiles.count > 1 else { return }
-
-        aiTagBatchSuggestionState = .loading(AITagBatchSuggestionAction.initialReview(files: selectedFiles, reports: [:]))
-        let review = await loadBatchAITagSuggestionReports(files: selectedFiles, selectedIDs: selectedIDs)
-        guard selection.multipleFileIDs == selectedIDs else { return }
-        aiTagBatchSuggestionState = .reviewing(review)
-    }
-
-    func retryBatchAITagSuggestions() async {
-        guard let files = aiTagBatchSuggestionState.review?.files, !files.isEmpty else { return }
-        await loadBatchAITagSuggestions(files: files)
-    }
-
-    func toggleBatchAITagSuggestion(fileID: Int64, suggestionID: String) {
-        aiTagBatchSuggestionState = AITagBatchSuggestionAction.toggling(
-            fileID: fileID,
-            suggestionID: suggestionID,
-            in: aiTagBatchSuggestionState
-        )
-    }
-
-    func selectHighConfidenceBatchAITagSuggestions() {
-        aiTagBatchSuggestionState = AITagBatchSuggestionAction.selectingHighConfidence(in: aiTagBatchSuggestionState)
-    }
-
-    func clearBatchAITagSuggestions() {
-        aiTagBatchSuggestionState = AITagBatchSuggestionAction.clearingSelection(in: aiTagBatchSuggestionState)
-    }
-
-    func confirmBatchAITagSuggestions() {
-        guard let review = aiTagBatchSuggestionState.review, review.canApply else { return }
-        aiTagBatchSuggestionState = .confirming(review)
-    }
-
-    func cancelBatchAITagSuggestionConfirmation() {
-        guard case let .confirming(review) = aiTagBatchSuggestionState else { return }
-        aiTagBatchSuggestionState = .reviewing(review)
-    }
-
-    func applyBatchAITagSuggestions() async {
-        guard case var .confirming(review) = aiTagBatchSuggestionState else { return }
-        let selectedIDs = selection.multipleFileIDs
-        guard selectedIDs == Set(review.files.map(\.id)), review.canApply else { return }
-
-        aiTagBatchSuggestionState = .applying(review)
-        review.applyReports = [:]
-        review.applyFailures = [:]
-        for file in review.files {
-            let result = await applyBatchAITagSuggestions(fileID: file.id, review: review)
-            if let applyReport = result.applyReport {
-                review.applyReports[file.id] = applyReport
-                review.selectedIDsByFileID[file.id] = failedSuggestionIDs(in: applyReport)
-            }
-            if let failure = result.failure {
-                review.applyFailures[file.id] = failure
-            }
-        }
-        guard selection.multipleFileIDs == selectedIDs else { return }
-        aiTagBatchSuggestionState = .applied(review)
-        await loadSelectedFileChangeLog()
-    }
-
-    func cancelBatchAITagSuggestions() {
-        aiTagBatchSuggestionState = .idle
-    }
-
-    private func loadBatchAITagSuggestionReports(
+enum AITagBatchSuggestionAction {
+    static func initialReview(
         files: [FileEntrySnapshot],
-        selectedIDs: Set<Int64>
-    ) async -> AITagBatchSuggestionReview {
-        var reports: [Int64: AiTagSuggestionReport] = [:]
-        var failures: [Int64: CoreErrorMappingSnapshot] = [:]
-        for file in files {
-            do {
-                reports[file.id] = try await suggestAITagsWithPrivacyGate(fileID: file.id, file: file, candidateTags: [])
-            } catch {
-                failures[file.id] = await mapCoreError(error)
+        reports: [Int64: AiTagSuggestionReport],
+        loadFailures: [Int64: CoreErrorMappingSnapshot] = [:]
+    ) -> AITagBatchSuggestionReview {
+        AITagBatchSuggestionReview(
+            files: files,
+            reports: reports,
+            selectedIDsByFileID: reports.mapValues(AITagSuggestionAction.initialSelection),
+            loadFailures: loadFailures
+        )
+    }
+
+    static func selectingHighConfidence(in state: AITagBatchSuggestionState) -> AITagBatchSuggestionState {
+        guard var review = state.review else { return state }
+        for report in review.reports.values {
+            let ids = report.suggestions.compactMap {
+                AITagSuggestionAction.canApply($0) && $0.confidence >= report.confidenceThreshold ?
+                    $0.suggestionId : nil
             }
-            guard selection.multipleFileIDs == selectedIDs else {
-                return AITagBatchSuggestionAction.initialReview(files: files, reports: reports, loadFailures: failures)
-            }
+            review.selectedIDsByFileID[report.fileId, default: []].formUnion(ids)
         }
-        return AITagBatchSuggestionAction.initialReview(files: files, reports: reports, loadFailures: failures)
+        return .reviewing(review)
     }
 
-    private func applyBatchAITagSuggestions(
+    static func toggling(
         fileID: Int64,
-        review: AITagBatchSuggestionReview
-    ) async -> (applyReport: AiTagSuggestionApplyReport?, failure: CoreErrorMappingSnapshot?) {
-        guard let report = review.reports[fileID] else { return (nil, nil) }
-        let items = review.applyItems(fileID: fileID)
-        guard !items.isEmpty, writeActionDisabledReason(fileID: fileID) == nil else { return (nil, nil) }
-
-        do {
-            let applyReport = try await aiTagSuggestionStore.applyAITagSuggestions(
-                repoPath: repoPath,
-                request: ApplyAiTagSuggestionsRequest(
-                    fileId: fileID,
-                    suggestions: items,
-                    callLogId: report.callLogId,
-                    privacyRuleId: report.privacyRuleId,
-                    confirmed: true
-                )
-            )
-            return (applyReport, nil)
-        } catch {
-            return (nil, await mapCoreError(error))
+        suggestionID: String,
+        in state: AITagBatchSuggestionState
+    ) -> AITagBatchSuggestionState {
+        guard var review = state.review,
+              let suggestion = review.reports[fileID]?.suggestions.first(where: {
+                  $0.suggestionId == suggestionID
+              }) else { return state }
+        var selected = review.selectedIDsByFileID[fileID, default: []]
+        if selected.contains(suggestionID) {
+            return rejectingSelection([suggestionID], fileID: fileID, in: state)
+        } else if AITagSuggestionAction.canApply(suggestion) {
+            selected.insert(suggestionID)
         }
+        review.selectedIDsByFileID[fileID] = selected
+        review.editSessionsByFileID[fileID] = nil
+        return .reviewing(review)
     }
 
-    private func failedSuggestionIDs(in report: AiTagSuggestionApplyReport) -> Set<String> {
-        Set(report.itemResults.compactMap { $0.status == .failed ? $0.suggestionId : nil })
-    }
-
-    private func loadAITagSuggestions(fileID: Int64) async {
-        let previous = aiTagSuggestionState.report
-        aiTagSuggestionState = .loading(fileID: fileID, previous: previous)
-        do {
-            let report = try await suggestAITagsWithPrivacyGate(
-                fileID: fileID,
-                file: selectedFileDetail ?? cachedFile(id: fileID),
-                candidateTags: detailTagEditorState.tagSet?.allKnownTags.map(\.value) ?? []
-            )
-            guard selection.singleFileID == fileID else { return }
-            aiTagSuggestionState = .loaded(
-                fileID: fileID,
-                report,
-                AITagSuggestionAction.initialSelection(in: report)
-            )
-        } catch {
-            let mapping = await mapCoreError(error)
-            guard selection.singleFileID == fileID else { return }
-            aiTagSuggestionState = .failed(fileID: fileID, mapping, previous: previous)
+    static func clearingSelection(in state: AITagBatchSuggestionState) -> AITagBatchSuggestionState {
+        guard var review = state.review else { return state }
+        for fileID in Array(review.selectedIDsByFileID.keys) {
+            guard let report = review.reports[fileID] else { continue }
+            let visibleIDs = Set(report.suggestions.map(\.suggestionId))
+            let idsToReject = review.selectedIDsByFileID[fileID, default: []].intersection(visibleIDs)
+            guard !idsToReject.isEmpty else { continue }
+            review = rejectingSelection(idsToReject, fileID: fileID, in: review)
         }
+        return .reviewing(review)
     }
 
-    private func suggestAITagsWithPrivacyGate(
+    static func rejectingSelection(
+        _ rejectedIDs: Set<String>,
         fileID: Int64,
-        file: FileEntrySnapshot?,
-        candidateTags: [String]
-    ) async throws -> AiTagSuggestionReport {
-        let privacyPolicyRef = try await aiTagPrivacyPolicyRef(fileID: fileID, file: file)
-        return try await aiTagSuggestionStore.suggestTagsWithAI(
-            repoPath: repoPath,
-            request: AiTagSuggestionRequest(
-                fileId: fileID,
-                candidateTags: candidateTags,
-                privacyPolicyRef: privacyPolicyRef
-            )
-        )
+        in state: AITagBatchSuggestionState
+    ) -> AITagBatchSuggestionState {
+        guard let review = state.review else { return state }
+        return .reviewing(rejectingSelection(rejectedIDs, fileID: fileID, in: review))
     }
 
-    private func aiTagPrivacyPolicyRef(fileID: Int64, file: FileEntrySnapshot?) async throws -> String? {
-        let snapshot = try await aiPrivacyRules.loadAIPrivacyRules(repoPath: repoPath)
-        let report = try await aiPrivacyRules.evaluateAIPrivacy(
-            repoPath: repoPath,
-            request: aiTagPrivacyEvaluationRequest(fileID: fileID, file: file, snapshot: snapshot)
-        )
-        guard report.skippedReason == .privacyRule || report.skippedReason == .fieldRule else { return nil }
-        let ruleID = report.matchedRules.first?.ruleId.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let ruleID, !ruleID.isEmpty else { return "block:privacy-rule" }
-        return "block:\(ruleID)"
-    }
-
-    private func aiTagPrivacyEvaluationRequest(
+    static func startingEdit(
         fileID: Int64,
-        file: FileEntrySnapshot?,
-        snapshot: AiPrivacyRulesSnapshot
-    ) -> AiPrivacyEvaluationRequest {
-        AiPrivacyEvaluationRequest(
-            feature: .autoTags,
-            route: .remote,
-            requestedFields: [
-                .fileName, .repoRelativePath, .`extension`, .extractedTextExcerpt,
-                .aiSummary, .noteSummary, .tagCategoryContext
-            ],
-            privacyGateEnabled: snapshot.privacyGateEnabled,
-            providerScope: snapshot.providerScope,
-            rules: snapshot.rules.map(AiPrivacyRuleInput.init(summaryRule:)),
-            remoteAllowedFields: snapshot.remoteAllowedFields.map(AiPrivacyFieldRule.init(state:)),
-            context: aiTagPrivacyContext(fileID: fileID, file: file)
-        )
+        suggestionID: String,
+        in state: AITagBatchSuggestionState,
+        disabledReason: String?
+    ) -> AITagBatchSuggestionState {
+        guard var review = state.review, let report = review.reports[fileID] else { return state }
+        review.selectedIDsByFileID[fileID, default: []].insert(suggestionID)
+        let selected = review.selectedIDsByFileID[fileID] ?? []
+        let singleState = AITagSuggestionState.loaded(fileID: fileID, report, selected)
+        guard let session = AITagSuggestionAction.startingEdit(
+            in: singleState,
+            disabledReason: disabledReason
+        ).editSession else { return state }
+        review.editSessionsByFileID[fileID] = session
+        return .reviewing(review)
     }
 
-    private func aiTagPrivacyContext(fileID: Int64, file: FileEntrySnapshot?) -> AiPrivacyEvaluationContext {
-        AiPrivacyEvaluationContext(
-            fileId: fileID,
-            repoRelativePath: file?.path,
-            fileName: file?.currentName,
-            category: file?.category,
-            extension: file.flatMap { aiTagFileExtension($0.currentName) },
-            tags: detailTagEditorState.tagSet?.fileTags.map(\.value) ?? []
-        )
+    static func cancelingEdit(fileID: Int64, in state: AITagBatchSuggestionState) -> AITagBatchSuggestionState {
+        guard var review = state.review else { return state }
+        review.editSessionsByFileID[fileID] = nil
+        return .reviewing(review)
     }
 
-    private func aiTagFileExtension(_ filename: String) -> String? {
-        let value = (filename as NSString).pathExtension.trimmingCharacters(in: .whitespacesAndNewlines)
-        return value.isEmpty ? nil : value.lowercased()
-    }
-
-    private func applyAITagSuggestions(
-        _ suggestions: [ApplyAiTagSuggestionItem],
-        editedSession: AITagSuggestionEditSession? = nil
-    ) async -> BatchTagUndoState? {
-        guard let fileID = selection.singleFileID,
-              writeActionDisabledReason(fileID: fileID) == nil,
-              let report = aiTagSuggestionState.report,
-              !suggestions.isEmpty else { return nil }
-
-        let previousTagSet = detailTagEditorState.tagSet
-        if let editedSession {
-            aiTagSuggestionState = .applyingEdited(fileID: fileID, report: report, session: editedSession)
-        } else {
-            aiTagSuggestionState = .applying(fileID: fileID, report: report, selectedIDs: aiTagSuggestionState.selectedIDs)
-        }
-        detailTagEditorState = .loading(fileID: fileID, previous: previousTagSet)
-
-        do {
-            let applyReport = try await aiTagSuggestionStore.applyAITagSuggestions(
-                repoPath: repoPath,
-                request: ApplyAiTagSuggestionsRequest(
-                    fileId: fileID,
-                    suggestions: suggestions,
-                    callLogId: report.callLogId,
-                    privacyRuleId: report.privacyRuleId,
-                    confirmed: true
-                )
+    static func updatingDisplayName(
+        fileID: Int64,
+        suggestionID: String,
+        displayName: String,
+        in state: AITagBatchSuggestionState,
+        disabledReason: String?
+    ) -> AITagBatchSuggestionState {
+        updatingEditSession(fileID: fileID, in: state, disabledReason: disabledReason) { singleState in
+            AITagSuggestionAction.updatingDisplayName(
+                suggestionID: suggestionID,
+                displayName: displayName,
+                in: singleState,
+                disabledReason: disabledReason
             )
-            guard selection.singleFileID == fileID else { return nil }
-            applyAITagSuggestionSuccess(report: report, applyReport: applyReport, editedSession: editedSession)
-            await loadChangeLog(fileID: fileID)
-            return await loadSuggestionUndoState(undoToken: applyReport.undoToken)
-        } catch {
-            let mapping = await mapCoreError(error)
-            guard selection.singleFileID == fileID else { return nil }
-            applyAITagSuggestionFailure(
-                mapping: mapping,
-                report: report,
-                editedSession: editedSession,
-                previousTagSet: previousTagSet,
-                submittedSlugs: suggestions.map(\.slug)
+        }
+    }
+
+    static func updatingSlug(
+        fileID: Int64,
+        suggestionID: String,
+        slug: String,
+        in state: AITagBatchSuggestionState,
+        disabledReason: String?
+    ) -> AITagBatchSuggestionState {
+        updatingEditSession(fileID: fileID, in: state, disabledReason: disabledReason) { singleState in
+            AITagSuggestionAction.updatingSlug(
+                suggestionID: suggestionID,
+                slug: slug,
+                in: singleState,
+                disabledReason: disabledReason
             )
-            return nil
         }
     }
 
-    private func applyAITagSuggestionSuccess(
-        report: AiTagSuggestionReport,
-        applyReport: AiTagSuggestionApplyReport,
-        editedSession: AITagSuggestionEditSession?
-    ) {
-        detailTagEditorState = .loaded(fileID: applyReport.fileId, TagSetSnapshot(coreTagSet: applyReport.tagSet))
-        if let editedSession {
-            aiTagSuggestionState = .editApplied(
-                fileID: applyReport.fileId,
-                report,
-                applyReport,
-                AITagSuggestionAction.sessionAfterApply(editedSession, report: applyReport)
+    static func regeneratingSlug(
+        fileID: Int64,
+        suggestionID: String,
+        in state: AITagBatchSuggestionState,
+        disabledReason: String?
+    ) -> AITagBatchSuggestionState {
+        updatingEditSession(fileID: fileID, in: state, disabledReason: disabledReason) { singleState in
+            AITagSuggestionAction.regeneratingSlug(
+                suggestionID: suggestionID,
+                in: singleState,
+                disabledReason: disabledReason
             )
-        } else {
-            aiTagSuggestionState = .applied(fileID: applyReport.fileId, report, applyReport, aiTagSuggestionState.selectedIDs)
         }
     }
 
-    private func applyAITagSuggestionFailure(
-        mapping: CoreErrorMappingSnapshot,
-        report: AiTagSuggestionReport,
-        editedSession: AITagSuggestionEditSession?,
-        previousTagSet: TagSetSnapshot?,
-        submittedSlugs: [String]
-    ) {
-        if let editedSession {
-            aiTagSuggestionState = .editing(fileID: report.fileId, report, editedSession)
-        } else {
-            aiTagSuggestionState = .failed(fileID: report.fileId, mapping, previous: report)
-        }
-        detailTagEditorState = .failed(
-            fileID: report.fileId,
-            operation: .applySuggestions(submittedSlugs),
-            mapping,
-            previous: previousTagSet
-        )
+    private static func updatingEditSession(
+        fileID: Int64,
+        in state: AITagBatchSuggestionState,
+        disabledReason: String?,
+        update: (AITagSuggestionState) -> AITagSuggestionState
+    ) -> AITagBatchSuggestionState {
+        guard var review = state.review,
+              let report = review.reports[fileID],
+              let session = review.editSessionsByFileID[fileID] else { return state }
+        let updated = update(.editing(fileID: fileID, report, session))
+        guard let updatedSession = updated.editSession else { return state }
+        review.editSessionsByFileID[fileID] = updatedSession
+        return .reviewing(review)
     }
 
-    private func selectedAITagSuggestionDisabledReason() -> String? {
-        guard let fileID = selection.singleFileID else { return "Select a file before reviewing AI tag suggestions." }
-        return writeActionDisabledReason(fileID: fileID)?.rawValue
+    private static func rejectingSelection(
+        _ rejectedIDs: Set<String>,
+        fileID: Int64,
+        in review: AITagBatchSuggestionReview
+    ) -> AITagBatchSuggestionReview {
+        guard let report = review.reports[fileID] else { return review }
+        let visibleIDs = Set(report.suggestions.map(\.suggestionId))
+        let idsToReject = rejectedIDs.intersection(visibleIDs)
+        guard !idsToReject.isEmpty else { return review }
+        var next = review
+        next.reports[fileID] = report.hidingSuggestions(idsToReject)
+        next.selectedIDsByFileID[fileID, default: []].subtract(idsToReject)
+        next.editSessionsByFileID[fileID] = nil
+        next.rejectedFeedback.append(AITagSuggestionRejectedFeedback(
+            fileID: fileID,
+            rejectedIDs: idsToReject,
+            callLogID: report.callLogId
+        ))
+        return next
     }
 }

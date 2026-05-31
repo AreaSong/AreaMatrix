@@ -59,6 +59,7 @@ final class MainFileListModel: ObservableObject {
     let batchCategoryChanger: any CoreBatchCategoryChanging
     let iCloudConflictResolver: any ICloudConflictResolving
     let tagStore: any CoreTagCRUD
+    let aiSettingsLoader: any CoreAISettingsLoading
     let aiTagSuggestionStore: any CoreAITagSuggestionManaging
     let aiPrivacyRules: any CoreAIPrivacyEvaluating
     let undoActionStore: any CoreUndoActionLogging
@@ -94,6 +95,7 @@ final class MainFileListModel: ObservableObject {
         batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         tagStore: any CoreTagCRUD = CoreBridge(),
+        aiSettingsLoader: any CoreAISettingsLoading = CoreBridge(),
         aiTagSuggestionStore: any CoreAITagSuggestionManaging = CoreBridge(),
         aiPrivacyRules: any CoreAIPrivacyEvaluating = CoreBridge(),
         undoActionStore: any CoreUndoActionLogging = CoreBridge(),
@@ -121,6 +123,7 @@ final class MainFileListModel: ObservableObject {
         self.batchCategoryChanger = batchCategoryChanger
         self.iCloudConflictResolver = iCloudConflictResolver
         self.tagStore = tagStore
+        self.aiSettingsLoader = aiSettingsLoader
         self.aiTagSuggestionStore = aiTagSuggestionStore
         self.aiPrivacyRules = aiPrivacyRules
         self.undoActionStore = undoActionStore

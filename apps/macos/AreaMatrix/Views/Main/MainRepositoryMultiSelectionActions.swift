@@ -47,11 +47,13 @@ struct MainRepositoryMultiSelectionActions: View {
                 onUndoStateChange: tagActions.onBatchTagUndoStateChange
             )
             BatchAITagSuggestionTrigger(
+                repoPath: repoPath,
                 selectedFiles: summary.files,
                 selectedCount: summary.selectedCount,
                 disabledReason: batchAddTagsDisabledReason,
                 state: tagActions.aiBatchSuggestionState,
-                actions: tagActions.aiBatchActions
+                actions: tagActions.aiBatchActions,
+                onOpenAISettings: tagActions.onOpenAISettings
             )
             BatchChangeCategoryTrigger(
                 repoPath: repoPath,

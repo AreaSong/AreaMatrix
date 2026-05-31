@@ -1,0 +1,82 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-66`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-66-s3-07-page-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖
+- 结果：通过
+- 证据：manifest 中 `4-2/task-64` 覆盖 C3-07，`4-2/task-65` 覆盖 C3-09，`4-2/task-66` 依赖二者；control map 声明 S3-07 仅绑定 C3-07/C3-09。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-4.md`、`docs/architecture/stage-3-control-map.md`
+
+- 项目：页面入口、状态、退出、错误态、CoreBridge 闭环
+- 结果：通过
+- 证据：single 入口在 Tags 区打开 AI suggestions sheet；batch 入口在多选动作区；C3-07 经 `CoreBridge.suggestTagsWithAI` / `applyAITagSuggestions`；C3-09 经 `loadAIPrivacyRules` / `evaluateAIPrivacy`；single/batch apply 均传 `confirmed: true`；失败、loading、AI off、privacy skipped、partial failure、retry apply 均有 UI 状态。
+- 涉及文件：`DetailTagSection.swift`、`MainFileDeleteActions.swift`、`MainFileListExternalSyncActions.swift`、`CoreTagCRUD.swift`、`CoreRemoteProviderConfiguring.swift`
+
+- 项目：移除 mock / fixture / 硬编码最终态
+- 结果：通过
+- 证据：生产路径调用真实 CoreBridge 协议实现；fixture actor 仅存在于 `AreaMatrixTests`；生产触达文件未发现 `try!`、强制解包、`print()` 或测试专用分支命中。
+- 涉及文件：`apps/macos/AreaMatrix/**`、`apps/macos/AreaMatrixTests/**`
+
+- 项目：不新增 control map 外功能
+- 结果：通过
+- 证据：S3-07 control map 仅声明 C3-07/C3-09；当前实现集中在 AI tag suggestion、privacy gate、tag apply、call log/privacy rule 跳转；`core/src/**` 无 diff。
+- 涉及文件：`docs/architecture/stage-3-control-map.md`、`apps/macos/AreaMatrix/**`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均存在且包含本页实现和测试。
+- 涉及文件：`apps/macos/AreaMatrix`、`apps/macos/AreaMatrixTests`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出。
+- 涉及文件：`core/src/**`
+
+- 项目：任务要求验证
+- 结果：通过
+- 证据：`./dev check task 4-2/task-66` 退出码 0；`doctor: OK`，`git diff --check` 通过，`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`。
+- 涉及文件：task validation
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，S3-07 single/batch 状态拆在 model action、state、view、bridge 层，未发现单次脚本式实现；关键触达文件均未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Rust public API；UDL/Core API 已包含 C3-07/C3-09 合同，Swift 经 CoreBridge 消费。
+- 错误处理与边界处理：通过，AI off 不进入隐私评估或生成；provider/privacy gate 在生成前检查；apply 失败进入 failed/partial failure 状态并保留 retry。
+- 测试与验证覆盖：通过，S3-07 single、batch、AI off、Auto tags off、低置信排除、拒绝、编辑合并、批量确认、部分失败、provider gate 均有 XCTest 证据；task-scoped build 验证通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，mock/fixture 仅在测试中；生产路径使用 CoreBridge 与真实 UDL 生成绑定。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-2/task-66`
+- 哪些通过：prompt doctor、diff check、macOS build 均通过
+- 哪些失败：无
+- 哪些缺失：未运行 `./dev check all`、`./dev test macos`；本 task manifest 只要求 `./dev check task 4-2/task-66`，validation-driver 对 page integration task 的 task gate 为 macOS build gate。xcodebuild 输出有 CoreSimulator/FSEvents 环境警告，但最终 build 成功。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前 verify 阶段发现的 `progress.json` / task-loop summary 修改属于 runner 状态文件；按本验收时序规则，不因 runner checkpoint 尚未收口而阻断。当前未发现 `core/src/**` 触碰、真实闭环缺失、mock-only、验证失败或工程质量阻塞。
+
+VERIFY_RESULT: PASS

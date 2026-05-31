@@ -88,6 +88,7 @@ enum AITagSuggestionState: Equatable {
     case idle
     case loading(fileID: Int64, previous: AiTagSuggestionReport?)
     case loaded(fileID: Int64, AiTagSuggestionReport, Set<String>)
+    case rejected(fileID: Int64, AiTagSuggestionReport, AITagSuggestionRejectedFeedback)
     case editing(fileID: Int64, AiTagSuggestionReport, AITagSuggestionEditSession)
     case applying(fileID: Int64, report: AiTagSuggestionReport, selectedIDs: Set<String>)
     case applyingEdited(fileID: Int64, report: AiTagSuggestionReport, session: AITagSuggestionEditSession)
@@ -99,8 +100,8 @@ enum AITagSuggestionState: Equatable {
 extension AITagSuggestionState {
     var report: AiTagSuggestionReport? {
         switch self {
-        case let .loaded(_, report, _), let .loading(_, report?), let .editing(_, report, _),
-             let .applying(_, report, _), let .applyingEdited(_, report, _),
+        case let .loaded(_, report, _), let .rejected(_, report, _), let .loading(_, report?),
+             let .editing(_, report, _), let .applying(_, report, _), let .applyingEdited(_, report, _),
              let .applied(_, report, _, _), let .editApplied(_, report, _, _),
              let .failed(_, _, report?):
             report
@@ -115,7 +116,7 @@ extension AITagSuggestionState {
             selected
         case let .editing(_, _, session), let .applyingEdited(_, _, session), let .editApplied(_, _, _, session):
             session.selectedIDs
-        case .idle, .loading, .failed:
+        case .idle, .loading, .rejected, .failed:
             []
         }
     }
@@ -129,7 +130,7 @@ extension AITagSuggestionState {
         switch self {
         case .applying, .applyingEdited:
             true
-        case .idle, .loading, .loaded, .editing, .applied, .editApplied, .failed:
+        case .idle, .loading, .loaded, .rejected, .editing, .applied, .editApplied, .failed:
             false
         }
     }
@@ -143,7 +144,7 @@ extension AITagSuggestionState {
         switch self {
         case let .applied(_, _, report, _), let .editApplied(_, _, report, _):
             report
-        case .idle, .loading, .loaded, .editing, .applying, .applyingEdited, .failed:
+        case .idle, .loading, .loaded, .rejected, .editing, .applying, .applyingEdited, .failed:
             nil
         }
     }
@@ -152,15 +153,20 @@ extension AITagSuggestionState {
         switch self {
         case let .editing(_, _, session), let .applyingEdited(_, _, session), let .editApplied(_, _, _, session):
             session
-        case .idle, .loading, .loaded, .applying, .applied, .failed:
+        case .idle, .loading, .loaded, .rejected, .applying, .applied, .failed:
             nil
         }
     }
 
+    var rejectedFeedback: AITagSuggestionRejectedFeedback? {
+        guard case let .rejected(_, _, feedback) = self else { return nil }
+        return feedback
+    }
+
     var fileID: Int64? {
         switch self {
-        case let .loading(fileID, _), let .loaded(fileID, _, _), let .editing(fileID, _, _),
-             let .applying(fileID, _, _), let .applyingEdited(fileID, _, _),
+        case let .loading(fileID, _), let .loaded(fileID, _, _), let .rejected(fileID, _, _),
+             let .editing(fileID, _, _), let .applying(fileID, _, _), let .applyingEdited(fileID, _, _),
              let .applied(fileID, _, _, _), let .editApplied(fileID, _, _, _), let .failed(fileID, _, _):
             fileID
         case .idle:
@@ -182,6 +188,23 @@ extension AITagSuggestionState {
 
     var canEditSelectedSuggestions: Bool {
         !AITagSuggestionAction.selectedApplyItems(in: self).isEmpty
+    }
+}
+
+struct AITagSuggestionRejectedFeedback: Equatable, Identifiable {
+    var fileID: Int64
+    var rejectedIDs: Set<String>
+    var callLogID: Int64?
+
+    var id: String {
+        "\(fileID)-\(rejectedIDs.sorted().joined(separator: ","))-\(callLogID ?? -1)"
+    }
+
+    var message: String {
+        if rejectedIDs.count == 1 {
+            return "Suggestion rejected. Feedback recorded for this review."
+        }
+        return "\(rejectedIDs.count) suggestions rejected. Feedback recorded for this review."
     }
 }
 
@@ -250,6 +273,9 @@ enum AITagSuggestionAction {
             return state
         }
         var selected = state.selectedIDs
+        if selected.contains(suggestionID) {
+            return rejectingSelection([suggestionID], in: state)
+        }
         selected.formSymmetricDifference([suggestionID])
         return .loaded(fileID: report.fileId, report, selected)
     }
@@ -263,8 +289,20 @@ enum AITagSuggestionAction {
     }
 
     static func clearingSelection(in state: AITagSuggestionState) -> AITagSuggestionState {
+        rejectingSelection(state.selectedIDs, in: state)
+    }
+
+    static func rejectingSelection(_ rejectedIDs: Set<String>, in state: AITagSuggestionState) -> AITagSuggestionState {
         guard let report = state.report else { return state }
-        return .loaded(fileID: report.fileId, report, [])
+        let visibleIDs = Set(report.suggestions.map(\.suggestionId))
+        let idsToReject = rejectedIDs.intersection(visibleIDs)
+        guard !idsToReject.isEmpty else { return state }
+        let feedback = AITagSuggestionRejectedFeedback(
+            fileID: report.fileId,
+            rejectedIDs: idsToReject,
+            callLogID: report.callLogId
+        )
+        return .rejected(fileID: report.fileId, report.hidingSuggestions(idsToReject), feedback)
     }
 
     static func updatingDisplayName(
@@ -443,5 +481,13 @@ extension ApplyAiTagSuggestionItem {
             editedByUser: editedByUser,
             mergeTargetSlug: suggestion.matchedExistingSlug
         )
+    }
+}
+
+extension AiTagSuggestionReport {
+    func hidingSuggestions(_ hiddenIDs: Set<String>) -> AiTagSuggestionReport {
+        var next = self
+        next.suggestions.removeAll { hiddenIDs.contains($0.suggestionId) }
+        return next
     }
 }

@@ -189,6 +189,12 @@ extension AITagSuggestionsPanel {
                 ForEach(report.suggestions, id: \.suggestionId, content: suggestionRow)
                 if let applyReport = state.appliedReport { applySummary(applyReport) }
             }
+            if let feedback = state.rejectedFeedback {
+                Label(feedback.message, systemImage: "checkmark.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("S3-07-C3-07-reject-feedback")
+            }
             traceLinks(report)
         }
     }
