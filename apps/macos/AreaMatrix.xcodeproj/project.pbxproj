@@ -206,6 +206,12 @@
 		0A0000000000000000000716 /* RemoteProviderConfigModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000717 /* RemoteProviderConfigModel.swift */; };
 		0A0000000000000000000718 /* RemoteModelConfigSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000719 /* RemoteModelConfigSheet.swift */; };
 		0A000000000000000000074A /* AIPrivacyRulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000074B /* AIPrivacyRulesView.swift */; };
+		0A000000000000000000074E /* AIPrivacyRulesSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000074F /* AIPrivacyRulesSupport.swift */; };
+		0A0000000000000000000750 /* AIPrivacyRulesEditorComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000751 /* AIPrivacyRulesEditorComponents.swift */; };
+		0A000000000000000000075A /* AIPrivacyRulesSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000075B /* AIPrivacyRulesSections.swift */; };
+		0A0000000000000000000754 /* AIPrivacyRulesRegistryReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000755 /* AIPrivacyRulesRegistryReader.swift */; };
+		0A0000000000000000000756 /* AIPrivacyRemoteProviderStateModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000757 /* AIPrivacyRemoteProviderStateModel.swift */; };
+		0A0000000000000000000758 /* AIPrivacyRulesRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000759 /* AIPrivacyRulesRoute.swift */; };
 		0A0000000000000000000728 /* AIClassificationSuggestionPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */; };
 		0A000000000000000000072A /* AIClassificationPrivacyRuleReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000072B /* AIClassificationPrivacyRuleReference.swift */; };
 		0A0000000000000000000730 /* AIClassificationCallLogDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000731 /* AIClassificationCallLogDetail.swift */; };
@@ -219,6 +225,7 @@
 		0A000000000000000000073C /* S306PageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000073D /* S306PageIntegrationVerifyTests.swift */; };
 		0A000000000000000000073E /* S306AISummaryPrivacyRuleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000073F /* S306AISummaryPrivacyRuleTests.swift */; };
 		0A000000000000000000074C /* S309RemoteProviderConfigPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000074D /* S309RemoteProviderConfigPageFeatureTests.swift */; };
+		0A0000000000000000000752 /* S309PageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000753 /* S309PageIntegrationVerifyTests.swift */; };
 		0A0000000000000000000742 /* SemanticSearchPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000743 /* SemanticSearchPresentation.swift */; };
 		0A0000000000000000000744 /* SemanticIndexBuildControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000745 /* SemanticIndexBuildControls.swift */; };
 		0A0000000000000000000746 /* SemanticSearchResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000747 /* SemanticSearchResultsView.swift */; };
@@ -403,6 +410,12 @@
 		0A0000000000000000000717 /* RemoteProviderConfigModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteProviderConfigModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000719 /* RemoteModelConfigSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteModelConfigSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000074B /* AIPrivacyRulesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesView.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000074F /* AIPrivacyRulesSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000751 /* AIPrivacyRulesEditorComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesEditorComponents.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000075B /* AIPrivacyRulesSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesSections.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000755 /* AIPrivacyRulesRegistryReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesRegistryReader.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000757 /* AIPrivacyRemoteProviderStateModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRemoteProviderStateModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000759 /* AIPrivacyRulesRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesRoute.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000072B /* AIClassificationPrivacyRuleReference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationPrivacyRuleReference.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000731 /* AIClassificationCallLogDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationCallLogDetail.swift; sourceTree = SOURCE_ROOT; };
@@ -416,6 +429,7 @@
 		0A000000000000000000073D /* S306PageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S306PageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000073F /* S306AISummaryPrivacyRuleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S306AISummaryPrivacyRuleTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000074D /* S309RemoteProviderConfigPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S309RemoteProviderConfigPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000753 /* S309PageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S309PageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000743 /* SemanticSearchPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/SemanticSearchPresentation.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000745 /* SemanticIndexBuildControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/SemanticIndexBuildControls.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000747 /* SemanticSearchResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/SemanticSearchResultsView.swift; sourceTree = SOURCE_ROOT; };
@@ -778,6 +792,12 @@
 				0A0000000000000000000725 /* RemoteProviderProbeRuntime.swift */,
 				0A0000000000000000000719 /* RemoteModelConfigSheet.swift */,
 				0A000000000000000000074B /* AIPrivacyRulesView.swift */,
+				0A000000000000000000074F /* AIPrivacyRulesSupport.swift */,
+				0A0000000000000000000751 /* AIPrivacyRulesEditorComponents.swift */,
+				0A000000000000000000075B /* AIPrivacyRulesSections.swift */,
+				0A0000000000000000000755 /* AIPrivacyRulesRegistryReader.swift */,
+				0A0000000000000000000757 /* AIPrivacyRemoteProviderStateModel.swift */,
+				0A0000000000000000000759 /* AIPrivacyRulesRoute.swift */,
 				0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */,
 				0A0000000000000000000735 /* AIClassificationSuggestionPanel+Apply.swift */,
 				0A000000000000000000072B /* AIClassificationPrivacyRuleReference.swift */,
@@ -996,6 +1016,7 @@
 				0A000000000000000000073F /* S306AISummaryPrivacyRuleTests.swift */,
 				0A0000000000000000000749 /* S308PageIntegrationVerifyTests.swift */,
 				0A000000000000000000074D /* S309RemoteProviderConfigPageFeatureTests.swift */,
+				0A0000000000000000000753 /* S309PageIntegrationVerifyTests.swift */,
 				0A0000000000000000000295 /* ClassifierSettingsPageFeatureTests.swift */,
 				0A0000000000000000000299 /* ClassifierSettingsRecoveryTests.swift */,
 				0A0000000000000000000525 /* ClassifierRuleEditorCoreBridgeTests.swift */,
@@ -1252,6 +1273,12 @@
 				0A00000000000000000002AE /* AboutSettingsPane.swift in Sources */,
 				0A0000000000000000000718 /* RemoteModelConfigSheet.swift in Sources */,
 				0A000000000000000000074A /* AIPrivacyRulesView.swift in Sources */,
+				0A000000000000000000074E /* AIPrivacyRulesSupport.swift in Sources */,
+				0A0000000000000000000750 /* AIPrivacyRulesEditorComponents.swift in Sources */,
+				0A000000000000000000075A /* AIPrivacyRulesSections.swift in Sources */,
+				0A0000000000000000000754 /* AIPrivacyRulesRegistryReader.swift in Sources */,
+				0A0000000000000000000756 /* AIPrivacyRemoteProviderStateModel.swift in Sources */,
+				0A0000000000000000000758 /* AIPrivacyRulesRoute.swift in Sources */,
 				0A0000000000000000000728 /* AIClassificationSuggestionPanel.swift in Sources */,
 				0A000000000000000000072A /* AIClassificationPrivacyRuleReference.swift in Sources */,
 				0A0000000000000000000730 /* AIClassificationCallLogDetail.swift in Sources */,
@@ -1423,10 +1450,11 @@
 					0A0000000000000000000726 /* RemoteProviderProbeRuntimeTests.swift in Sources */,
 					0A0000000000000000000736 /* S304PageIntegrationVerifyTests.swift in Sources */,
 					0A000000000000000000073C /* S306PageIntegrationVerifyTests.swift in Sources */,
-					0A000000000000000000073E /* S306AISummaryPrivacyRuleTests.swift in Sources */,
-					0A0000000000000000000748 /* S308PageIntegrationVerifyTests.swift in Sources */,
-					0A000000000000000000074C /* S309RemoteProviderConfigPageFeatureTests.swift in Sources */,
-					0A0000000000000000000294 /* ClassifierSettingsPageFeatureTests.swift in Sources */,
+				0A000000000000000000073E /* S306AISummaryPrivacyRuleTests.swift in Sources */,
+				0A0000000000000000000748 /* S308PageIntegrationVerifyTests.swift in Sources */,
+				0A000000000000000000074C /* S309RemoteProviderConfigPageFeatureTests.swift in Sources */,
+				0A0000000000000000000752 /* S309PageIntegrationVerifyTests.swift in Sources */,
+				0A0000000000000000000294 /* ClassifierSettingsPageFeatureTests.swift in Sources */,
 					0A0000000000000000000298 /* ClassifierSettingsRecoveryTests.swift in Sources */,
 					0A0000000000000000000524 /* ClassifierRuleEditorCoreBridgeTests.swift in Sources */,
 					0A000000000000000000029E /* IntegrationsSettingsPageFeatureTests.swift in Sources */,

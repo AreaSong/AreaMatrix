@@ -161,7 +161,8 @@ final class S309RemoteProviderConfigPageFeatureTests: XCTestCase {
         await model.evaluate(repoRelativePath: "finance/private/q1.pdf")
         let requests = await bridge.requests()
 
-        XCTAssertEqual(requests.evaluations.count, 1)
+        XCTAssertEqual(requests.evaluations.count, 4)
+        XCTAssertEqual(requests.evaluations.map(\.feature), AiFeatureKind.s309Cases)
         XCTAssertEqual(requests.evaluations[0].route, .remote)
         XCTAssertEqual(requests.evaluations[0].context.repoRelativePath, "finance/private/q1.pdf")
         XCTAssertEqual(requests.evaluations[0].requestedFields, [.fileName, .repoRelativePath, .extension])

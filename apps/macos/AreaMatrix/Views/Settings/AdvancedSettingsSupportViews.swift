@@ -202,9 +202,9 @@ struct AISettingsPane: View {
     @StateObject private var model: AISettingsModel
     @State private var isLocalModelStatusPresented = false
     @State private var isRemoteConfigPresented = false
-    @State private var isPrivacyRulesPresented = false
     @State private var isCallLogPresented = false
     @State private var returnsToPrivacyRulesAfterRemoteConfig = false
+    @State private var privacyRulesRoute: AIPrivacyRulesRoute?
     init(repoPath: String) {
         _model = StateObject(wrappedValue: AISettingsModel(repoPath: repoPath))
     }
@@ -232,15 +232,13 @@ struct AISettingsPane: View {
                 isRemoteConfigPresented = false
                 Task {
                     await model.load()
-                    if returnsToPrivacyRulesAfterRemoteConfig {
-                        returnsToPrivacyRulesAfterRemoteConfig = false
-                        isPrivacyRulesPresented = true
-                    }
+                    if returnsToPrivacyRulesAfterRemoteConfig { openPrivacyRules() }
                 }
             }
         }
-        .sheet(isPresented: $isPrivacyRulesPresented) {
-            AIPrivacyRulesView(
+        .sheet(item: $privacyRulesRoute) { route in
+            AIPrivacyRulesRouteView(
+                route: route,
                 model: model,
                 onConfigureRemoteAI: configureRemoteAIFromPrivacyRules,
                 onClose: closePrivacyRules
@@ -468,12 +466,12 @@ struct AISettingsPane: View {
     private func openPrivacyRules() {
         model.openPrivacyRulesEntry()
         isRemoteConfigPresented = false
-        isPrivacyRulesPresented = true
+        privacyRulesRoute = AIPrivacyRulesRoute(repoPath: model.repoPath)
     }
-    private func closePrivacyRules() { isPrivacyRulesPresented = false; Task { await model.load() } }
+    private func closePrivacyRules() { privacyRulesRoute = nil; Task { await model.load() } }
     private func configureRemoteAIFromPrivacyRules() {
         returnsToPrivacyRulesAfterRemoteConfig = true
-        isPrivacyRulesPresented = false
+        privacyRulesRoute = nil
         openRemoteConfig()
     }
 }

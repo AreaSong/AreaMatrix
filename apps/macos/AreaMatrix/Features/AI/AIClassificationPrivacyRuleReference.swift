@@ -1,5 +1,4 @@
 import SwiftUI
-
 enum AIClassificationPrivacyRuleReferenceState: Equatable {
     case idle
     case loading
@@ -7,7 +6,6 @@ enum AIClassificationPrivacyRuleReferenceState: Equatable {
     case notFound(String)
     case failed(AISettingsError)
 }
-
 struct AIClassificationPrivacyRuleReference: Equatable {
     var ruleID: String
     var name: String
@@ -146,6 +144,7 @@ struct AISummaryPrivacySkip: Equatable {
     var skippedReason: AiPrivacySkippedReason?
     var providerGateReason: AiPrivacyProviderGateReason?
     var ruleID: String?
+    var matchedField: AiPrivacyInputField?
     var sentFields: [AiPrivacyInputField]
 
     init(report: AiPrivacyEvaluationReport) {
@@ -154,6 +153,7 @@ struct AISummaryPrivacySkip: Equatable {
         skippedReason = report.skippedReason
         providerGateReason = report.providerGateReason
         ruleID = report.matchedRules.first?.ruleId
+        matchedField = report.matchedFieldType
         sentFields = report.sentFields
     }
 
@@ -162,6 +162,7 @@ struct AISummaryPrivacySkip: Equatable {
         message = aiSummarySkipReasonLabel(summaryReason)
         providerGateReason = summaryReason == .providerUnavailable ? .providerNotConfigured : nil
         ruleID = nil
+        matchedField = nil
         sentFields = []
         switch summaryReason {
         case .privacyRule:

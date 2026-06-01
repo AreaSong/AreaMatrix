@@ -158,7 +158,7 @@ extension AIClassificationSuggestionPanel {
                 Text("Privacy rule: \(ruleID)")
                     .foregroundStyle(.secondary)
                 Button("View privacy rule") {
-                    privacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
+                    privacyRuleRoute = s309PrivacyRuleRoute(ruleID: ruleID)
                 }
                 .buttonStyle(.link)
                 .accessibilityIdentifier("S3-04-C3-09-view-privacy-rule")

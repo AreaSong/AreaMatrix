@@ -321,7 +321,7 @@ extension AiPrivacyRulesSnapshot {
         )
     }
 
-    fileprivate func applyingPrivacyGateRequest(_ request: AiPrivacyRulesUpdateRequest) -> AiPrivacyRulesSnapshot {
+    func applyingPrivacyGateRequest(_ request: AiPrivacyRulesUpdateRequest) -> AiPrivacyRulesSnapshot {
         AiPrivacyRulesSnapshot(
             privacyGateEnabled: request.privacyGateEnabled,
             rules: request.rules.map(AiPrivacyRuleRecord.init(input:)),
@@ -333,7 +333,7 @@ extension AiPrivacyRulesSnapshot {
     }
 }
 
-private extension AiPrivacyRuleRecord {
+extension AiPrivacyRuleRecord {
     static func s303RuleRecord() -> AiPrivacyRuleRecord {
         AiPrivacyRuleRecord(
             ruleId: "rule-confidential",
@@ -363,7 +363,7 @@ private extension AiPrivacyRuleRecord {
     }
 }
 
-private extension AiPrivacyFieldState {
+extension AiPrivacyFieldState {
     init(rule: AiPrivacyFieldRule) {
         self.init(field: rule.field, allowRemote: rule.allowRemote, lastMatchedCount: 0)
     }

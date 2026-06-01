@@ -145,7 +145,7 @@ struct AIClassificationSuggestionPanel: View {
     var onOpenAISettings: () -> Void = {}
     var onOpenLocalModelStatus: () -> Void = {}
     var onConfigureRemoteAI: () -> Void = {}
-    @State var privacyRuleRoute: AIClassificationPrivacyRuleRoute?
+    @State var privacyRuleRoute: AIPrivacyRulesRoute?
     @State var rememberRule = false
     @State var rejectedFeedback: AIClassificationSuggestionRejectedFeedback?
     @State var showApplyConfirmation = false
@@ -179,10 +179,7 @@ struct AIClassificationSuggestionPanel: View {
         .background(.background)
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))
         .sheet(item: $privacyRuleRoute) { route in
-            AIClassificationPrivacyRuleReferenceSheet(
-                repoPath: model.repoPath,
-                ruleID: route.ruleID
-            ) {
+            AIPrivacyRulesRouteSheet(repoPath: model.repoPath, focus: route.focus) {
                 privacyRuleRoute = nil
             }
         }
@@ -272,10 +269,7 @@ struct AIClassificationSuggestionPanel: View {
         case .configureRemoteAi:
             onConfigureRemoteAI()
         case .viewPrivacyRule:
-            if let ruleID = model.fallbackStatus?.privacyRuleId?.trimmingCharacters(in: .whitespacesAndNewlines),
-               !ruleID.isEmpty {
-                privacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
-            }
+            privacyRuleRoute = s309PrivacyRuleRoute(ruleID: model.fallbackStatus?.privacyRuleId)
         case .viewCallLog:
             if let callLogID = model.fallbackStatus?.callLogId {
                 onViewCall(callLogID)
@@ -285,6 +279,12 @@ struct AIClassificationSuggestionPanel: View {
         case .retryLater, .buildSemanticIndex, .useNormalSearch:
             break
         }
+    }
+
+    func s309PrivacyRuleRoute(ruleID: String?) -> AIPrivacyRulesRoute? {
+        let normalizedRuleID = ruleID?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !normalizedRuleID.isEmpty else { return nil }
+        return AIPrivacyRulesRoute(repoPath: model.repoPath, focus: .rule(ruleID: normalizedRuleID))
     }
 
     func isFallbackActionDisabled(_ action: AiFallbackAction) -> Bool {

@@ -19,6 +19,7 @@ struct AISummaryEditorNotice: Equatable {
     var capability: String
     var opensAISettings: Bool
     var privacyRuleID: String?
+    var privacyField: AiPrivacyInputField?
     var reason: AISummaryEditorGateReason
 }
 
@@ -43,6 +44,7 @@ extension AISummaryEditorNotice {
             capability: "C3-06",
             opensAISettings: true,
             privacyRuleID: nil,
+            privacyField: nil,
             reason: .aiDisabled
         )
     }
@@ -55,6 +57,7 @@ extension AISummaryEditorNotice {
             capability: "C3-06",
             opensAISettings: true,
             privacyRuleID: nil,
+            privacyField: nil,
             reason: .featureDisabled
         )
     }
@@ -67,6 +70,7 @@ extension AISummaryEditorNotice {
             capability: "C3-06",
             opensAISettings: true,
             privacyRuleID: nil,
+            privacyField: nil,
             reason: .providerUnavailable
         )
     }
@@ -79,6 +83,7 @@ extension AISummaryEditorNotice {
             capability: "C3-06",
             opensAISettings: true,
             privacyRuleID: nil,
+            privacyField: nil,
             reason: .remoteScopeNotAllowed
         )
     }

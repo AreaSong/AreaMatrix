@@ -49,7 +49,7 @@ struct AISummaryEditor: View {
     private let onBackToDetail: () -> Void
     @StateObject private var model: AISummaryEditorModel
     @State private var confirmation: AISummaryConfirmation?
-    @State private var privacyRuleRoute: AIClassificationPrivacyRuleRoute?
+    @State private var privacyRuleRoute: AIPrivacyRulesRoute?
     @State private var callLogRoute: AISummaryCallLogRoute?
     @FocusState private var isEditorFocused: Bool
     init(
@@ -95,7 +95,7 @@ struct AISummaryEditor: View {
             Text(confirmation?.message ?? "")
         }
         .sheet(item: $privacyRuleRoute) { route in
-            AIClassificationPrivacyRuleReferenceSheet(repoPath: repoPath, ruleID: route.ruleID) {
+            AIPrivacyRulesRouteSheet(repoPath: repoPath, focus: route.focus) {
                 privacyRuleRoute = nil
             }
         }
@@ -177,11 +177,12 @@ struct AISummaryEditor: View {
         if notice.opensAISettings {
             Button("Open AI settings", action: onOpenAISettings)
                 .accessibilityIdentifier("S3-06-\(notice.capability)-open-ai-settings")
-        } else if let ruleID = notice.privacyRuleID {
+        } else if let route = notice.s309PrivacyRulesRoute(repoPath: repoPath),
+                  let suffix = notice.s309PrivacyRulesRouteAccessibilitySuffix {
             Button("View privacy rule") {
-                privacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
+                privacyRuleRoute = route
             }
-            .accessibilityIdentifier("S3-06-C3-09-view-privacy-rule-\(ruleID)")
+            .accessibilityIdentifier("S3-06-\(notice.capability)-view-\(suffix)")
         }
     }
 
@@ -205,9 +206,14 @@ struct AISummaryEditor: View {
                     Text("Sent fields: \(privacySentFields(privacySkip.sentFields))")
                     if let ruleID = privacySkip.ruleID {
                         Button("View privacy rule") {
-                            privacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
+                            privacyRuleRoute = AIPrivacyRulesRoute(repoPath: repoPath, focus: .rule(ruleID: ruleID))
                         }
                             .accessibilityIdentifier("S3-06-C3-09-view-privacy-rule-\(ruleID)")
+                    } else if let field = privacySkip.matchedField {
+                        Button("View privacy rule") {
+                            privacyRuleRoute = AIPrivacyRulesRoute(repoPath: repoPath, focus: .field(field))
+                        }
+                            .accessibilityIdentifier("S3-06-C3-09-view-privacy-field-\(field)")
                     }
                 }
                 if let callLogID = provenance.callLogID {

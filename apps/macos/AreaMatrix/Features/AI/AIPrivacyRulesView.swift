@@ -2,110 +2,22 @@ import Combine
 import Foundation
 import SwiftUI
 
-enum AIPrivacyRemoteProviderLoadState: Equatable {
-    case loading, loaded, failed(AISettingsError)
-}
-
-enum AIPrivacyRulesLoadState: Equatable {
-    case loading, loaded, failed(AISettingsError)
-}
-
-@MainActor
-final class AIPrivacyRemoteProviderStateModel: ObservableObject {
-    @Published private(set) var loadState: AIPrivacyRemoteProviderLoadState = .loading
-    @Published private(set) var snapshot: RemoteProviderConfigState?
-
-    let repoPath: String
-    private let providerReader: any CoreRemoteProviderConfiguring
-    private let errorMapper: any CoreErrorMapping
-
-    init(
-        repoPath: String,
-        providerReader: any CoreRemoteProviderConfiguring = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
-    ) {
-        self.repoPath = repoPath
-        self.providerReader = providerReader
-        self.errorMapper = errorMapper
-    }
-
-    var allowsPrivacyGateEnable: Bool {
-        guard let snapshot else { return false }
-        return snapshot.providerConfigured && snapshot.providerVerified &&
-            snapshot.remoteProviderEnabled && !snapshot.featureScope.isEmpty
-    }
-
-    var providerStatusText: String {
-        switch loadState {
-        case .loading: "Loading remote provider..."
-        case .failed: "Remote provider state unavailable"
-        case .loaded: loadedProviderStatusText
-        }
-    }
-
-    var verifiedStatusText: String {
-        guard let snapshot else { return "Loading" }
-        return snapshot.providerVerified ? "Connection tested" : "Connection test required"
-    }
-
-    var enabledStatusText: String {
-        guard let snapshot else { return "Loading" }
-        return snapshot.remoteProviderEnabled ? "Remote provider enabled" : "Remote provider disabled"
-    }
-
-    var featureScopeText: String {
-        guard let snapshot else { return "Loading" }
-        guard !snapshot.featureScope.isEmpty else { return "No remote usage scope selected" }
-        return snapshot.featureScope.map(\.title).joined(separator: ", ")
-    }
-
-    func load() async {
-        loadState = .loading
-        do {
-            snapshot = try await providerReader.loadRemoteProviderConfig(repoPath: repoPath)
-            loadState = .loaded
-        } catch {
-            snapshot = nil
-            loadState = await .failed(providerError(for: error))
-        }
-    }
-
-    private var loadedProviderStatusText: String {
-        guard let snapshot else { return "Remote provider state unavailable" }
-        if !snapshot.providerConfigured { return "Configure remote AI required" }
-        if !snapshot.providerVerified { return "Remote provider needs connection test." }
-        if !snapshot.remoteProviderEnabled { return "Remote provider is disabled in AI settings." }
-        if snapshot.featureScope.isEmpty { return "Remote scope is not selected." }
-        return "Configured by S3-03"
-    }
-
-    private func providerError(for error: Error) async -> AISettingsError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
-            return AISettingsError(
-                message: "Remote provider state could not be loaded.",
-                recovery: mapping.suggestedAction.isEmpty ? "Retry or configure remote AI." : mapping.suggestedAction,
-                detail: mapping.userMessage
-            )
-        }
-        return AISettingsError(
-            message: "Remote provider state could not be loaded.",
-            recovery: "Retry or configure remote AI.",
-            detail: error.localizedDescription
-        )
-    }
-}
-
 struct AIPrivacyRulesView: View {
     @ObservedObject var model: AISettingsModel
-    @StateObject private var providerModel: AIPrivacyRemoteProviderStateModel
-    @StateObject private var privacyModel: AIPrivacyRulesModel
-    @State private var draftKind = AiPrivacyRuleKind.folder
-    @State private var draftPattern = ""
-    @State private var draftAppliesTo = AiPrivacyRuleAppliesTo.remoteAi
-    @State private var testPath = "finance/private/q1.pdf"
-    @State private var deletionCandidate: AiPrivacyRuleRecord?
+    @StateObject var providerModel: AIPrivacyRemoteProviderStateModel
+    @StateObject var privacyModel: AIPrivacyRulesModel
+    @State var editorMode = AIPrivacyRuleEditorMode.hidden
+    @State var editorDraft = AIPrivacyRuleEditorDraft()
+    @State var pendingExitAction: AIPrivacyRuleExitAction?
+    @State private var isTemplateSheetPresented = false
+    @State private var selectedTemplates: Set<AIPrivacyRuleTemplate> = []
+    @State var testFileContext = AIPrivacyRuleTestFileContext(repoRelativePath: "", category: nil, tags: [])
+    @State var deletionCandidate: AiPrivacyRuleRecord?
+    @State private var pendingFocus: AIPrivacyRulesRouteFocus?
+    @State private var consumedFocus: AIPrivacyRulesRouteFocus?
 
+    let registry: AIPrivacyRuleRegistrySnapshot
+    let initialFocus: AIPrivacyRulesRouteFocus?
     let onConfigureRemoteAI: () -> Void
     let onClose: () -> Void
 
@@ -113,13 +25,18 @@ struct AIPrivacyRulesView: View {
         model: AISettingsModel,
         providerModel: AIPrivacyRemoteProviderStateModel? = nil,
         privacyModel: AIPrivacyRulesModel? = nil,
+        registry: AIPrivacyRuleRegistrySnapshot = .unavailable,
+        initialFocus: AIPrivacyRulesRouteFocus? = nil,
         onConfigureRemoteAI: @escaping () -> Void,
         onClose: @escaping () -> Void
     ) {
         self.model = model
         _providerModel = StateObject(wrappedValue: providerModel ??
             AIPrivacyRemoteProviderStateModel(repoPath: model.repoPath))
-        _privacyModel = StateObject(wrappedValue: privacyModel ?? AIPrivacyRulesModel(repoPath: model.repoPath))
+        _privacyModel = StateObject(wrappedValue: privacyModel ??
+            AIPrivacyRulesModel(repoPath: model.repoPath, settingsSync: model))
+        self.registry = registry
+        self.initialFocus = initialFocus
         self.onConfigureRemoteAI = onConfigureRemoteAI
         self.onClose = onClose
     }
@@ -128,25 +45,57 @@ struct AIPrivacyRulesView: View {
         VStack(alignment: .leading, spacing: 0) {
             header
             Divider()
-            ScrollView { VStack(alignment: .leading, spacing: 18) { bodyContent }.padding(24) }
+            ScrollViewReader { proxy in
+                ScrollView { VStack(alignment: .leading, spacing: 18) { bodyContent }.padding(24) }
+                    .onChange(of: pendingFocus) { _, focus in scrollToFocus(focus, proxy: proxy) }
+            }
             Divider()
             footer
         }
-        .frame(width: 720, height: 660)
+        .frame(width: 760, height: 700)
         .task { await loadPage() }
+        .sheet(isPresented: $isTemplateSheetPresented) {
+            AIPrivacyRuleTemplatesSheet(
+                selectedTemplates: $selectedTemplates,
+                isSaving: privacyModel.isSaving,
+                onCancel: closeTemplates,
+                onAdd: addSelectedTemplates
+            )
+        }
         .alert("Delete privacy rule?", isPresented: deleteConfirmation) {
             Button("Cancel", role: .cancel) { deletionCandidate = nil }
             Button("Delete rule", role: .destructive) { confirmDeleteRule() }
         } message: {
-            Text("Future AI calls may no longer skip content that matched this rule. This will not delete files.")
+            Text(
+                "Future AI calls may no longer skip content that matched this rule. " +
+                    "This will not delete files, existing AI results, tags, summaries, notes, or call logs."
+            )
+        }
+        .confirmationDialog(
+            "You have unsaved changes.",
+            isPresented: unsavedExitConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Cancel", role: .cancel) { pendingExitAction = nil }
+            Button("Discard changes", role: .destructive, action: discardPendingExit)
+            Button("Save changes") { Task { await saveDraftAndContinuePendingExit() } }
+                .disabled(!editorDraft.canSave(registry: registry) || privacyModel.isSaving)
+        } message: {
+            Text("Save or discard the privacy rule edit before leaving.")
         }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("AI Privacy Rules").font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
             Text(model.repoPath).font(.caption).foregroundStyle(.secondary)
                 .lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+            Text(
+                "Privacy rules are checked before AI uses file metadata or extracted text. " +
+                    "Remote AI is blocked by default for matching rules."
+            )
+            .font(.callout)
+            .foregroundStyle(.secondary)
         }
         .padding(24)
     }
@@ -154,9 +103,13 @@ struct AIPrivacyRulesView: View {
     @ViewBuilder
     private var bodyContent: some View {
         switch model.loadState {
-        case .loading: ProgressView("Loading privacy rules...")
+        case .loading:
+            ProgressView("Loading privacy rules...")
         case let .failed(error):
-            AISettingsInlineBanner(error: error, tint: .red) { Button("Retry", action: retryLoad) }
+            AISettingsInlineBanner(error: error, tint: .red) {
+                Button("Retry", action: retryLoad)
+                Button("Back to AI settings", action: requestClose)
+            }
         case .loaded:
             loadedContent
         }
@@ -178,6 +131,12 @@ struct AIPrivacyRulesView: View {
             AdvancedSettingsKeyValueRow(label: "Provider verified", value: providerModel.verifiedStatusText)
             AdvancedSettingsKeyValueRow(label: "Remote provider enabled", value: providerModel.enabledStatusText)
             AdvancedSettingsKeyValueRow(label: "Feature scope", value: providerModel.featureScopeText)
+            Text(
+                "This is a privacy gate, not the provider disable page. Blocking here does not delete " +
+                    "Keychain credentials, provider configuration, local AI settings, summaries, tags, or call logs."
+            )
+            .font(.callout)
+            .foregroundStyle(.secondary)
             HStack(spacing: 10) {
                 Button("Allow remote AI after provider consent", action: allowRemoteGate)
                     .disabled(allowRemoteGateDisabled)
@@ -194,9 +153,13 @@ struct AIPrivacyRulesView: View {
     @ViewBuilder
     private var privacyRulesContent: some View {
         switch privacyModel.loadState {
-        case .loading: ProgressView("Loading privacy rules...")
+        case .loading:
+            ProgressView("Loading privacy rules...")
         case let .failed(error):
-            AISettingsInlineBanner(error: error, tint: .red) { Button("Retry", action: retryPrivacyRules) }
+            AISettingsInlineBanner(error: error, tint: .red) {
+                Button("Retry", action: retryPrivacyRules)
+                Button("Back to AI settings", action: requestClose)
+            }
         case .loaded:
             privacyRulesLoadedContent
         }
@@ -211,79 +174,13 @@ struct AIPrivacyRulesView: View {
         }
     }
 
-    private var fieldSection: some View {
-        AdvancedSettingsSection(title: "Remote allowed fields") {
-            if !privacyModel.canEditRemoteFields {
-                Text("Remote AI is blocked.").font(.callout).foregroundStyle(.secondary)
-            }
-            ForEach(privacyModel.fields, id: \.field) { field in
-                Toggle(isOn: fieldBinding(field)) {
-                    Text("\(aiPrivacyInputFieldLabel(field.field)) - \(field.lastMatchedCount) recent matches")
-                }
-                .disabled(!privacyModel.canEditRemoteFields)
-            }
-        }
-    }
-
-    private var ruleListSection: some View {
-        AdvancedSettingsSection(title: "Privacy rules") {
-            if privacyModel.rules.isEmpty { Text("No AI privacy rules yet. Remote AI is still off by default.") }
-            ForEach(privacyModel.rules, id: \.ruleId) { rule in
-                HStack {
-                    Text(rule.enabled ? "Enabled" : "Disabled").frame(width: 70, alignment: .leading)
-                    Text("\(rule.kind.s309Label): \(rule.pattern)")
-                    Spacer()
-                    Text("\(rule.appliesTo.s309Label), \(rule.matchCount) files").foregroundStyle(.secondary)
-                    Button(rule.enabled ? "Disable" : "Enable") { toggleRule(rule) }
-                    Button("Delete...") { deletionCandidate = rule }
-                }
-                .font(.callout)
-            }
-        }
-    }
-
-    private var ruleEditorSection: some View {
-        AdvancedSettingsSection(title: "Add rule") {
-            Picker("Type", selection: $draftKind) {
-                ForEach(AiPrivacyRuleKind.s309Cases, id: \.self) { Text($0.s309Label).tag($0) }
-            }
-            TextField("Pattern", text: $draftPattern).textFieldStyle(.roundedBorder)
-            Picker("Applies to", selection: $draftAppliesTo) {
-                Text("Remote AI").tag(AiPrivacyRuleAppliesTo.remoteAi)
-                Text("Local and remote AI").tag(AiPrivacyRuleAppliesTo.localAndRemoteAi)
-            }
-            .pickerStyle(.segmented)
-            HStack {
-                Button("Save rule", action: saveDraftRule)
-                    .disabled(!draftIsValid || privacyModel.isSaving)
-                    .accessibilityIdentifier("S3-09-C3-09-save-rule")
-                Text(draftValidationMessage).font(.caption).foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var testRulesSection: some View {
-        AdvancedSettingsSection(title: "Test rules") {
-            TextField("Test repo-relative path", text: $testPath).textFieldStyle(.roundedBorder)
-            Button("Test rules", action: testRules)
-                .disabled(privacyModel.isEvaluating || testPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .accessibilityIdentifier("S3-09-C3-09-test-rules")
-            if let report = privacyModel.evaluation {
-                Text("\(report.decision.s309Label): \(report.message)")
-                Text("Sent fields: \(privacySentFields(report.sentFields))")
-                    .font(.caption).foregroundStyle(.secondary)
-                if !report.matchedRules.isEmpty {
-                    Text("Matched by \(report.matchedRules.map(\.name).joined(separator: ", "))")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-            }
-        }
-    }
-
     @ViewBuilder
     private var feedbackBanner: some View {
         if let error = privacyModel.saveError {
-            AISettingsInlineBanner(error: error, tint: .red) { Button("Retry", action: retryPrivacyRules) }
+            AISettingsInlineBanner(error: error, tint: .red) {
+                Button("Retry save") { Task { await privacyModel.retrySave() } }
+                Button("Revert changes", action: privacyModel.revertPendingSave)
+            }
         } else if let feedback = privacyModel.feedback {
             Label(feedback, systemImage: "checkmark.circle").foregroundStyle(.green)
         }
@@ -305,7 +202,7 @@ struct AIPrivacyRulesView: View {
                 ProgressView().controlSize(.small).accessibilityLabel("Saving AI privacy rules")
             }
             Spacer()
-            Button("Close", action: onClose)
+            Button("Close", action: requestClose)
         }
         .padding(16)
     }
@@ -318,21 +215,38 @@ struct AIPrivacyRulesView: View {
         privacyModel.isSaving || !providerModel.allowsPrivacyGateEnable
     }
 
-    private var draftIsValid: Bool {
-        !draftPattern.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !draftPattern.hasPrefix("/")
-    }
-
-    private var draftValidationMessage: String {
-        if draftPattern.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "Pattern is required." }
-        if draftPattern.hasPrefix("/") { return "Use a path relative to the AreaMatrix repository root." }
-        return "Ready to save."
-    }
-
     private var deleteConfirmation: Binding<Bool> {
         Binding(get: { deletionCandidate != nil }, set: { if !$0 { deletionCandidate = nil } })
     }
 
-    private func fieldBinding(_ field: AiPrivacyFieldState) -> Binding<Bool> {
+    private var unsavedExitConfirmation: Binding<Bool> {
+        Binding(get: { pendingExitAction != nil }, set: { if !$0 { pendingExitAction = nil } })
+    }
+
+    var testPath: Binding<String> {
+        Binding(get: { testFileContext.repoRelativePath }, set: { testFileContext.repoRelativePath = $0 })
+    }
+
+    var testCategoryBinding: Binding<String> {
+        Binding(
+            get: { testFileContext.category ?? "" },
+            set: { testFileContext.category = cleanOptionalText($0) }
+        )
+    }
+
+    var testTagsBinding: Binding<String> {
+        Binding(
+            get: { testFileContext.tags.joined(separator: ", ") },
+            set: { value in
+                testFileContext.tags = value
+                    .split(separator: ",")
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+            }
+        )
+    }
+
+    func fieldBinding(_ field: AiPrivacyFieldState) -> Binding<Bool> {
         Binding(
             get: { field.allowRemote },
             set: { allow in Task { await privacyModel.setField(field.field, allowRemote: allow) } }
@@ -343,21 +257,20 @@ struct AIPrivacyRulesView: View {
         if !model.isLoaded { await model.load() }
         await providerModel.load()
         await privacyModel.load()
+        applyInitialFocusIfNeeded()
     }
 
-    private func retryLoad() {
-        Task { await loadPage() }
-    }
+    private func retryLoad() { Task { await loadPage() } }
 
-    private func retryProviderLoad() {
-        Task { await providerModel.load() }
-    }
+    private func retryProviderLoad() { Task { await providerModel.load() } }
 
-    private func retryPrivacyRules() {
-        Task { await privacyModel.load() }
-    }
+    private func retryPrivacyRules() { Task { await privacyModel.load() } }
 
     private func allowRemoteGate() {
+        guard providerModel.allowsPrivacyGateEnable else {
+            onConfigureRemoteAI()
+            return
+        }
         Task { await privacyModel.setPrivacyGate(true) }
     }
 
@@ -365,19 +278,43 @@ struct AIPrivacyRulesView: View {
         Task { await privacyModel.setPrivacyGate(false) }
     }
 
-    private func toggleRule(_ rule: AiPrivacyRuleRecord) {
+    func toggleRule(_ rule: AiPrivacyRuleRecord) {
         Task { await privacyModel.setRuleEnabled(rule, enabled: !rule.enabled) }
     }
 
-    private func saveDraftRule() {
-        Task {
-            let didSave = await privacyModel.addRule(kind: draftKind, pattern: draftPattern, appliesTo: draftAppliesTo)
-            if didSave { draftPattern = "" }
+    func beginAddRule() {
+        transitionFromDirtyEditor(or: .openAddEditor) {
+            editorDraft = AIPrivacyRuleEditorDraft()
+            editorMode = .visible
         }
     }
 
-    private func testRules() {
-        Task { await privacyModel.evaluate(repoRelativePath: testPath) }
+    func beginEditRule(_ rule: AiPrivacyRuleRecord) {
+        transitionFromDirtyEditor(or: .switchRule(rule)) {
+            editorDraft = AIPrivacyRuleEditorDraft(record: rule)
+            editorMode = .visible
+        }
+    }
+
+    func cancelEditor() {
+        transitionFromDirtyEditor(or: .cancelEditor) {
+            editorDraft = AIPrivacyRuleEditorDraft()
+            editorMode = .hidden
+        }
+    }
+
+    func saveDraftRule() {
+        Task {
+            let didSave = await privacyModel.saveRule(editorDraft.input)
+            if didSave {
+                editorDraft = AIPrivacyRuleEditorDraft()
+                editorMode = .hidden
+            }
+        }
+    }
+
+    func testRules() {
+        Task { await privacyModel.evaluate(context: testFileContext) }
     }
 
     private func confirmDeleteRule() {
@@ -385,80 +322,95 @@ struct AIPrivacyRulesView: View {
         self.deletionCandidate = nil
         Task { await privacyModel.deleteRule(deletionCandidate) }
     }
-}
 
-extension AiPrivacyRuleInput {
-    init(s309Record record: AiPrivacyRuleRecord) {
-        self.init(
-            ruleId: record.ruleId,
-            name: record.name,
-            kind: record.kind,
-            pattern: record.pattern,
-            appliesTo: record.appliesTo,
-            enabled: record.enabled,
-            description: record.description
-        )
-    }
-}
-
-extension AiPrivacyRulesSnapshot {
-    var ruleInputs: [AiPrivacyRuleInput] {
-        rules.map(AiPrivacyRuleInput.init(s309Record:))
+    private func requestClose() {
+        transitionFromDirtyEditor(or: .close, action: onClose)
     }
 
-    var fieldRules: [AiPrivacyFieldRule] {
-        remoteAllowedFields.map(AiPrivacyFieldRule.init(state:))
+    func openTemplates() {
+        selectedTemplates = []
+        isTemplateSheetPresented = true
     }
 
-    func s309EvaluationRequest(repoRelativePath: String) -> AiPrivacyEvaluationRequest {
-        AiPrivacyEvaluationRequest(
-            feature: .autoSummaries,
-            route: .remote,
-            requestedFields: remoteAllowedFields.map(\.field),
-            privacyGateEnabled: privacyGateEnabled,
-            providerScope: providerScope,
-            rules: ruleInputs,
-            remoteAllowedFields: fieldRules,
-            context: AiPrivacyEvaluationContext(
-                fileId: nil,
-                repoRelativePath: repoRelativePath,
-                fileName: (repoRelativePath as NSString).lastPathComponent,
-                category: nil,
-                extension: (repoRelativePath as NSString).pathExtension,
-                tags: []
-            )
-        )
+    private func closeTemplates() {
+        selectedTemplates = []
+        isTemplateSheetPresented = false
     }
-}
 
-extension AiPrivacyRuleKind {
-    static let s309Cases: [AiPrivacyRuleKind] = [.folder, .category, .keyword, .extension, .tag]
-    var s309Label: String {
-        switch self {
-        case .folder: "Folder"
-        case .category: "Category"
-        case .keyword: "Keyword"
-        case .extension: "Extension"
-        case .tag: "Tag"
+    private func addSelectedTemplates() {
+        Task {
+            let inputs = AIPrivacyRuleTemplate.allCases
+                .filter { selectedTemplates.contains($0) }
+                .map(\.ruleInput)
+            let didAdd = await privacyModel.addRules(inputs)
+            if didAdd { closeTemplates() }
         }
     }
-}
 
-extension AiPrivacyRuleAppliesTo {
-    var s309Label: String {
-        switch self {
-        case .remoteAi: "Remote AI"
-        case .localAndRemoteAi: "Local and remote AI"
+    private func transitionFromDirtyEditor(or pending: AIPrivacyRuleExitAction, action: () -> Void) {
+        guard editorMode == .visible, editorDraft.hasChanges else {
+            action()
+            return
+        }
+        pendingExitAction = pending
+    }
+
+    private func discardPendingExit() {
+        guard let action = pendingExitAction else { return }
+        pendingExitAction = nil
+        editorDraft = AIPrivacyRuleEditorDraft()
+        editorMode = .hidden
+        performExitAction(action)
+    }
+
+    private func saveDraftAndContinuePendingExit() async {
+        guard let action = pendingExitAction else { return }
+        let didSave = await privacyModel.saveRule(editorDraft.input)
+        guard didSave else { return }
+        pendingExitAction = nil
+        editorDraft = AIPrivacyRuleEditorDraft()
+        editorMode = .hidden
+        performExitAction(action)
+    }
+
+    private func performExitAction(_ action: AIPrivacyRuleExitAction) {
+        switch action {
+        case .close:
+            onClose()
+        case .cancelEditor:
+            break
+        case .openAddEditor:
+            editorDraft = AIPrivacyRuleEditorDraft()
+            editorMode = .visible
+        case let .switchRule(rule):
+            editorDraft = AIPrivacyRuleEditorDraft(record: rule)
+            editorMode = .visible
         }
     }
-}
 
-private extension AiPrivacyDecision {
-    var s309Label: String {
-        switch self {
-        case .allowed: "Allowed"
-        case .denied: "Denied"
-        case .skipped: "Skipped"
+    private func cleanOptionalText(_ value: String) -> String? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    func isFocused(ruleID: String) -> Bool {
+        pendingFocus?.matches(ruleID: ruleID) == true
+    }
+
+    func isFocused(field: AiPrivacyInputField) -> Bool {
+        pendingFocus?.matches(field: field) == true
+    }
+
+    private func applyInitialFocusIfNeeded() {
+        guard consumedFocus != initialFocus else { return }
+        consumedFocus = initialFocus
+        pendingFocus = initialFocus
+    }
+
+    private func scrollToFocus(_ focus: AIPrivacyRulesRouteFocus?, proxy: ScrollViewProxy) {
+        guard let focus else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            proxy.scrollTo(focus.targetID, anchor: .center)
         }
     }
 }

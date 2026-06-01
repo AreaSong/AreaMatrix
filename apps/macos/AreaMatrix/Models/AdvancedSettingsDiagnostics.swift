@@ -78,6 +78,11 @@ enum AISettingsPrivacyGateUpdateResult: Equatable {
 }
 
 @MainActor
+protocol AIPrivacyGateSettingsSynchronizing: AnyObject {
+    func syncPrivacyGateFromPrivacyRules(_ enabled: Bool) async -> AISettingsError?
+}
+
+@MainActor
 final class AISettingsModel: ObservableObject {
     enum LoadState: Equatable {
         case loading
@@ -243,6 +248,26 @@ final class AISettingsModel: ObservableObject {
         await setPrivacyGateEnabled(false, successMessage: "Remote AI is blocked by the privacy gate.")
     }
 
+    func syncPrivacyGateFromPrivacyRules(_ enabled: Bool) async -> AISettingsError? {
+        if !isLoaded {
+            await load()
+        }
+        if case let .failed(error) = loadState {
+            return error
+        }
+        let result = await setPrivacyGateEnabled(enabled, successMessage: privacyGateSyncSuccess(enabled))
+        switch result {
+        case .saved, .unchanged:
+            return nil
+        case .needsRemoteConfiguration, .failed:
+            return saveError ?? AISettingsError(
+                message: "AI settings privacy summary could not be refreshed.",
+                recovery: "Retry save before returning to AI settings.",
+                detail: "C3-01 privacy gate state did not sync after the S3-09 privacy rules save."
+            )
+        }
+    }
+
     private func editableConfig() -> AISettingsConfigSnapshot? {
         snapshot?.config.normalized()
     }
@@ -320,7 +345,13 @@ final class AISettingsModel: ObservableObject {
         )
         return saved ? .saved : .failed
     }
+
+    private func privacyGateSyncSuccess(_ enabled: Bool) -> String {
+        enabled ? "Remote AI privacy gate is allowed." : "Remote AI is blocked by the privacy gate."
+    }
 }
+
+extension AISettingsModel: AIPrivacyGateSettingsSynchronizing {}
 
 struct BundleAppVersionReader: AppVersionReading {
     func appVersion() -> String {

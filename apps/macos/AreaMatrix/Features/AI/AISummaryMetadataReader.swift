@@ -23,6 +23,7 @@ final class AIPrivacyRulesModel: ObservableObject {
     @Published private(set) var saveError: AISettingsError?
     @Published private(set) var feedback: String?
     @Published private(set) var evaluation: AiPrivacyEvaluationReport?
+    @Published private(set) var featureEvaluations: [AIPrivacyRuleFeatureEvaluation] = []
     @Published private(set) var isSaving = false
     @Published private(set) var isEvaluating = false
 
@@ -30,17 +31,25 @@ final class AIPrivacyRulesModel: ObservableObject {
     private let rulesManager: any CoreAIPrivacyRulesManaging
     private let evaluator: any CoreAIPrivacyEvaluating
     private let errorMapper: any CoreErrorMapping
+    private weak var settingsSync: (any AIPrivacyGateSettingsSynchronizing)?
+    private var savedSnapshot: AiPrivacyRulesSnapshot?
+    private var pendingSaveRequest: AiPrivacyRulesUpdateRequest?
+    private var pendingSaveSuccess = ""
+    private var pendingSaveFailureMessage = "AI privacy rules could not be saved."
+    private var pendingSnapshotOnFailure: AiPrivacyRulesSnapshot?
 
     init(
         repoPath: String,
         rulesManager: any CoreAIPrivacyRulesManaging = CoreBridge(),
         evaluator: any CoreAIPrivacyEvaluating = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        errorMapper: any CoreErrorMapping = CoreBridge(),
+        settingsSync: (any AIPrivacyGateSettingsSynchronizing)? = nil
     ) {
         self.repoPath = repoPath
         self.rulesManager = rulesManager
         self.evaluator = evaluator
         self.errorMapper = errorMapper
+        self.settingsSync = settingsSync
     }
 
     var rules: [AiPrivacyRuleRecord] {
@@ -58,12 +67,16 @@ final class AIPrivacyRulesModel: ObservableObject {
     func load() async {
         loadState = .loading
         do {
-            snapshot = try await rulesManager.loadAIPrivacyRules(repoPath: repoPath)
+            let loaded = try await rulesManager.loadAIPrivacyRules(repoPath: repoPath)
+            snapshot = loaded
+            savedSnapshot = loaded
             saveError = nil
+            clearPendingSave()
             loadState = .loaded
         } catch {
             let error = await privacyError(for: error, message: "AI privacy rules could not be loaded.")
             snapshot = nil
+            savedSnapshot = nil
             loadState = .failed(error)
         }
     }
@@ -71,25 +84,52 @@ final class AIPrivacyRulesModel: ObservableObject {
     @discardableResult
     func setPrivacyGate(_ enabled: Bool) async -> Bool {
         guard let snapshot, snapshot.privacyGateEnabled != enabled else { return false }
-        return await save(snapshot, gate: enabled, rules: snapshot.ruleInputs, success: gateSuccess(enabled))
+        return await save(
+            snapshot,
+            gate: enabled,
+            rules: snapshot.ruleInputs,
+            success: gateSuccess(enabled),
+            failureMessage: "Remote AI privacy gate could not be updated."
+        )
     }
 
-    func setField(_ field: AiPrivacyInputField, allowRemote: Bool) async {
-        guard let snapshot else { return }
+    @discardableResult
+    func setField(_ field: AiPrivacyInputField, allowRemote: Bool) async -> Bool {
+        guard let snapshot else { return false }
         let fields = snapshot.remoteAllowedFields.map {
             AiPrivacyFieldRule(field: $0.field, allowRemote: $0.field == field ? allowRemote : $0.allowRemote)
         }
-        _ = await save(snapshot, gate: snapshot.privacyGateEnabled, rules: snapshot.ruleInputs, fields: fields)
+        let pendingSnapshot = AiPrivacyRulesSnapshot(
+            privacyGateEnabled: snapshot.privacyGateEnabled,
+            rules: snapshot.rules,
+            remoteAllowedFields: fields.map { fieldRule in AiPrivacyFieldState(
+                field: fieldRule.field,
+                allowRemote: fieldRule.allowRemote,
+                lastMatchedCount: snapshot.remoteAllowedFields.first { fieldState in
+                    fieldState.field == fieldRule.field
+                }?.lastMatchedCount ?? 0
+            ) },
+            providerScope: snapshot.providerScope,
+            updatedAt: snapshot.updatedAt,
+            remoteBlockedByDefault: snapshot.remoteBlockedByDefault
+        )
+        return await save(
+            snapshot,
+            gate: snapshot.privacyGateEnabled,
+            rules: snapshot.ruleInputs,
+            fields: fields,
+            success: "Remote allowed fields saved.",
+            failureMessage: "Privacy field settings could not be saved.",
+            pendingSnapshotOnFailure: pendingSnapshot
+        )
     }
 
-    func setRuleEnabled(_ record: AiPrivacyRuleRecord, enabled: Bool) async {
-        guard let snapshot else { return }
-        let rules = snapshot.rules.map { rule -> AiPrivacyRuleInput in
-            var input = AiPrivacyRuleInput(s309Record: rule)
-            if rule.ruleId == record.ruleId { input.enabled = enabled }
-            return input
-        }
-        _ = await save(snapshot, gate: snapshot.privacyGateEnabled, rules: rules, success: "Privacy rule saved.")
+    @discardableResult
+    func setRuleEnabled(_ record: AiPrivacyRuleRecord, enabled: Bool) async -> Bool {
+        guard let snapshot else { return false }
+        var input = AiPrivacyRuleInput(s309Record: record)
+        input.enabled = enabled
+        return await saveRule(input, base: snapshot, success: "Privacy rule saved.")
     }
 
     @discardableResult
@@ -97,8 +137,7 @@ final class AIPrivacyRulesModel: ObservableObject {
         guard let snapshot else { return false }
         let trimmed = pattern.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
-        var rules = snapshot.ruleInputs
-        rules.append(AiPrivacyRuleInput(
+        return await saveRule(AiPrivacyRuleInput(
             ruleId: nil,
             name: "\(kind.s309Label) \(trimmed)",
             kind: kind,
@@ -106,29 +145,78 @@ final class AIPrivacyRulesModel: ObservableObject {
             appliesTo: appliesTo,
             enabled: true,
             description: nil
-        ))
-        return await save(snapshot, gate: snapshot.privacyGateEnabled, rules: rules, success: "Privacy rule added.")
+        ), base: snapshot, success: "Privacy rule added.")
     }
 
-    func deleteRule(_ record: AiPrivacyRuleRecord) async {
-        guard let snapshot else { return }
+    @discardableResult
+    func saveRule(_ input: AiPrivacyRuleInput) async -> Bool {
+        guard let snapshot else { return false }
+        let success = input.ruleId == nil ? "Privacy rule added." : "Privacy rule saved."
+        return await saveRule(input, base: snapshot, success: success)
+    }
+
+    @discardableResult
+    func addRules(_ inputs: [AiPrivacyRuleInput]) async -> Bool {
+        guard let snapshot, !inputs.isEmpty else { return false }
+        return await save(
+            snapshot,
+            gate: snapshot.privacyGateEnabled,
+            rules: snapshot.ruleInputs + inputs,
+            success: "Recommended privacy rules added."
+        )
+    }
+
+    @discardableResult
+    func deleteRule(_ record: AiPrivacyRuleRecord) async -> Bool {
+        guard let snapshot else { return false }
         let rules = snapshot.rules.filter { $0.ruleId != record.ruleId }.map(AiPrivacyRuleInput.init(s309Record:))
-        _ = await save(snapshot, gate: snapshot.privacyGateEnabled, rules: rules, success: "Privacy rule deleted.")
+        return await save(snapshot, gate: snapshot.privacyGateEnabled, rules: rules, success: "Privacy rule deleted.")
     }
 
-    func evaluate(repoRelativePath: String) async {
+    @discardableResult
+    func retrySave() async -> Bool {
+        guard let pendingSaveRequest else { return false }
+        return await persist(
+            request: pendingSaveRequest,
+            success: pendingSaveSuccess,
+            failureMessage: pendingSaveFailureMessage,
+            pendingSnapshotOnFailure: pendingSnapshotOnFailure
+        )
+    }
+
+    func revertPendingSave() {
+        snapshot = savedSnapshot
+        saveError = nil
+        feedback = nil
+        clearPendingSave()
+    }
+
+    func evaluate(context: AIPrivacyRuleTestFileContext) async {
         guard let snapshot, !isEvaluating else { return }
+        guard !context.isEmpty else { return }
         isEvaluating = true
         defer { isEvaluating = false }
         do {
-            evaluation = try await evaluator.evaluateAIPrivacy(
-                repoPath: repoPath,
-                request: snapshot.s309EvaluationRequest(repoRelativePath: repoRelativePath)
-            )
+            var evaluations: [AIPrivacyRuleFeatureEvaluation] = []
+            for request in snapshot.s309EvaluationRequests(context: context) {
+                let report = try await evaluator.evaluateAIPrivacy(repoPath: repoPath, request: request)
+                evaluations.append(AIPrivacyRuleFeatureEvaluation(feature: request.feature, report: report))
+            }
+            featureEvaluations = evaluations
+            evaluation = featureEvaluations.first { $0.feature == .autoSummaries }?.report
+                ?? featureEvaluations.first?.report
             saveError = nil
         } catch {
             saveError = await privacyError(for: error, message: "AI privacy rules could not be tested.")
         }
+    }
+
+    func evaluate(repoRelativePath: String) async {
+        await evaluate(context: AIPrivacyRuleTestFileContext(
+            repoRelativePath: repoRelativePath,
+            category: nil,
+            tags: []
+        ))
     }
 
     private func save(
@@ -136,7 +224,43 @@ final class AIPrivacyRulesModel: ObservableObject {
         gate: Bool,
         rules: [AiPrivacyRuleInput],
         fields: [AiPrivacyFieldRule]? = nil,
-        success: String = "Remote allowed fields saved."
+        success: String = "Remote allowed fields saved.",
+        failureMessage: String = "AI privacy rules could not be saved.",
+        pendingSnapshotOnFailure: AiPrivacyRulesSnapshot? = nil
+    ) async -> Bool {
+        await persist(
+            request: AiPrivacyRulesUpdateRequest(
+                privacyGateEnabled: gate,
+                rules: rules,
+                remoteAllowedFields: fields ?? base.fieldRules,
+                providerScope: base.providerScope,
+                confirmed: true
+            ),
+            success: success,
+            failureMessage: failureMessage,
+            pendingSnapshotOnFailure: pendingSnapshotOnFailure
+        )
+    }
+
+    private func saveRule(
+        _ input: AiPrivacyRuleInput,
+        base: AiPrivacyRulesSnapshot,
+        success: String
+    ) async -> Bool {
+        var rules = base.ruleInputs
+        if let ruleID = input.ruleId, let index = rules.firstIndex(where: { $0.ruleId == ruleID }) {
+            rules[index] = input
+        } else {
+            rules.append(input)
+        }
+        return await save(base, gate: base.privacyGateEnabled, rules: rules, success: success)
+    }
+
+    private func persist(
+        request: AiPrivacyRulesUpdateRequest,
+        success: String,
+        failureMessage: String,
+        pendingSnapshotOnFailure: AiPrivacyRulesSnapshot?
     ) async -> Bool {
         guard !isSaving else { return false }
         isSaving = true
@@ -144,24 +268,42 @@ final class AIPrivacyRulesModel: ObservableObject {
         do {
             snapshot = try await rulesManager.updateAIPrivacyRules(
                 repoPath: repoPath,
-                request: AiPrivacyRulesUpdateRequest(
-                    privacyGateEnabled: gate,
-                    rules: rules,
-                    remoteAllowedFields: fields ?? base.fieldRules,
-                    providerScope: base.providerScope,
-                    confirmed: true
-                )
+                request: request
             )
+            if let syncError = await settingsSync?.syncPrivacyGateFromPrivacyRules(request.privacyGateEnabled) {
+                throw AIPrivacyRulesSettingsSyncError.syncFailed(syncError)
+            }
+            savedSnapshot = snapshot
             saveError = nil
             feedback = success
+            clearPendingSave()
             return true
         } catch {
-            saveError = await privacyError(for: error, message: "AI privacy rules could not be saved.")
+            if let pendingSnapshotOnFailure {
+                snapshot = pendingSnapshotOnFailure
+            } else {
+                snapshot = savedSnapshot ?? snapshot
+            }
+            pendingSaveRequest = request
+            pendingSaveSuccess = success
+            pendingSaveFailureMessage = failureMessage
+            self.pendingSnapshotOnFailure = pendingSnapshotOnFailure
+            saveError = await privacyError(for: error, message: failureMessage)
             return false
         }
     }
 
+    private func clearPendingSave() {
+        pendingSaveRequest = nil
+        pendingSaveSuccess = ""
+        pendingSaveFailureMessage = "AI privacy rules could not be saved."
+        pendingSnapshotOnFailure = nil
+    }
+
     private func privacyError(for error: Error, message: String) async -> AISettingsError {
+        if let syncError = error as? AIPrivacyRulesSettingsSyncError {
+            return syncError.error
+        }
         if let coreError = error as? CoreError {
             let mapping = await errorMapper.mapCoreError(coreError)
             return AISettingsError(message: message, recovery: mapping.suggestedAction, detail: mapping.userMessage)
@@ -171,6 +313,17 @@ final class AIPrivacyRulesModel: ObservableObject {
 
     private func gateSuccess(_ enabled: Bool) -> String {
         enabled ? "Remote AI privacy gate allowed." : "Remote AI blocked by privacy gate."
+    }
+}
+
+private enum AIPrivacyRulesSettingsSyncError: Error {
+    case syncFailed(AISettingsError)
+
+    var error: AISettingsError {
+        switch self {
+        case let .syncFailed(error):
+            return error
+        }
     }
 }
 

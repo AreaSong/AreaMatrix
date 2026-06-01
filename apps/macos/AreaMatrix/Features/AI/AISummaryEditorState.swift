@@ -256,7 +256,8 @@ final class AISummaryEditorModel: ObservableObject {
             reason: reason,
             opensAISettings: false,
             capability: "C3-09",
-            privacyRuleID: skip.ruleID
+            privacyRuleID: skip.ruleID,
+            privacyField: skip.matchedField
         )
     }
 
@@ -478,7 +479,8 @@ final class AISummaryEditorModel: ObservableObject {
         reason: AISummaryEditorGateReason,
         opensAISettings: Bool,
         capability: String = "C3-06",
-        privacyRuleID: String? = nil
+        privacyRuleID: String? = nil,
+        privacyField: AiPrivacyInputField? = nil
     ) -> AISummaryEditorNotice {
         AISummaryEditorNotice(
             title: title,
@@ -487,6 +489,7 @@ final class AISummaryEditorModel: ObservableObject {
             capability: capability,
             opensAISettings: opensAISettings,
             privacyRuleID: privacyRuleID,
+            privacyField: privacyField,
             reason: reason
         )
     }
