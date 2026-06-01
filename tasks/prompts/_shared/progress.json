@@ -12974,14 +12974,30 @@
     "4-2/task-76": {
       "attempts": 2,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260601_122037/phase-4/4-2-task-76-copy-attempt-2.log",
+      "git_branch": "codex/areamatrix-task-loop-20260501_132850",
+      "git_changed_files": [
+        ".codex/task-loop-logs/20260601_122037/phase-4/4-2-task-76-copy-attempt-2.log",
+        ".codex/task-loop-logs/20260601_122037/phase-4/4-2-task-76-verify-attempt-2.log",
+        ".codex/task-loop-runs/20260601_122037/summary.json",
+        ".codex/task-loop-runs/index.json",
+        "apps/macos/AreaMatrix/Models/SemanticSearchPresentation.swift",
+        "apps/macos/AreaMatrix/Views/Main/SemanticSearchResultsView.swift",
+        "apps/macos/AreaMatrix/Views/Main/SmartListManagementSheet+Sections.swift",
+        "apps/macos/AreaMatrixTests/S308PageIntegrationVerifyTests.swift",
+        "tasks/prompts/_shared/progress.json"
+      ],
+      "git_checkpoint_status": "committed",
+      "git_commit": "17709da8aba4d47279d8a4188e526f7c312ea288",
+      "git_push_status": "not_requested",
+      "git_remote": "",
       "note": "自动执行验收通过：attempt=2",
       "risk": "High",
       "run_id": "20260601_122037",
       "status": "completed",
-      "updated_at": "2026-06-01T06:32:56.638767+00:00",
+      "updated_at": "2026-06-01T06:32:56.850865+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260601_122037/phase-4/4-2-task-76-verify-attempt-2.log"
     }
   },
-  "updated_at": "2026-06-01T05:43:19.843110+00:00",
+  "updated_at": "2026-06-01T06:32:56.850871+00:00",
   "version": 1
 }
