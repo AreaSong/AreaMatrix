@@ -171,6 +171,7 @@ extension MainRepositoryContentView {
             SemanticSearchFallbackStatusRegion(
                 page: page,
                 state: fileListModel.semanticFallbackState,
+                repoPath: opening.config.repoPath,
                 isIndexBuildBusy: fileListModel.semanticIndexBuildState.isBuilding ||
                     fileListModel.semanticIndexControlState.isCanceling,
                 isPrivacyGateChecking: fileListModel.semanticPrivacyGateState.isChecking,
@@ -186,8 +187,10 @@ extension MainRepositoryContentView {
         switch action {
         case .retry:
             Task { await fileListModel.retrySearch() }
-        case .openAiSettings, .configureRemoteAi:
+        case .openAiSettings:
             onOpenAISettings()
+        case .openLocalModelStatus, .configureRemoteAi:
+            break
         case .viewPrivacyRule:
             let ruleID = fileListModel.semanticFallbackState.status?.privacyRuleId ??
                 fileListModel.searchState.page?.semanticPage?.privacyRuleID
@@ -208,7 +211,7 @@ extension MainRepositoryContentView {
         case .useNormalSearch:
             searchMode = .normal
             Task { await rerunCurrentSearch(mode: .normal) }
-        case .retryLater, .openLocalModelStatus, .classifyManually:
+        case .retryLater, .classifyManually:
             break
         }
     }

@@ -148,10 +148,10 @@ struct SemanticSearchFallbackStatus {
 
     func isVisible(_ action: AiFallbackAction) -> Bool {
         switch action {
-        case .retry, .retryLater, .openAiSettings, .configureRemoteAi, .viewPrivacyRule, .viewCallLog,
-             .buildSemanticIndex, .useNormalSearch:
+        case .retry, .retryLater, .openAiSettings, .openLocalModelStatus, .configureRemoteAi,
+             .viewPrivacyRule, .viewCallLog, .buildSemanticIndex, .useNormalSearch:
             true
-        case .openLocalModelStatus, .classifyManually:
+        case .classifyManually:
             false
         }
     }

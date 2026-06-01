@@ -68,11 +68,35 @@ struct SemanticSearchResultsView: View {
 struct SemanticSearchFallbackStatusRegion: View {
     let page: SemanticSearchResultPageSnapshot
     let state: SemanticFallbackState
+    let repoPath: String?
     let isIndexBuildBusy: Bool
     let isPrivacyGateChecking: Bool
     let onAction: (AiFallbackAction) -> Void
+    @State private var recoverySheet: SemanticSearchFallbackRecoverySheet?
+
+    init(
+        page: SemanticSearchResultPageSnapshot,
+        state: SemanticFallbackState,
+        repoPath: String? = nil,
+        isIndexBuildBusy: Bool,
+        isPrivacyGateChecking: Bool,
+        onAction: @escaping (AiFallbackAction) -> Void
+    ) {
+        self.page = page
+        self.state = state
+        self.repoPath = repoPath
+        self.isIndexBuildBusy = isIndexBuildBusy
+        self.isPrivacyGateChecking = isPrivacyGateChecking
+        self.onAction = onAction
+    }
 
     var body: some View {
+        fallbackContent
+            .sheet(item: $recoverySheet, content: recoverySheetContent)
+    }
+
+    @ViewBuilder
+    private var fallbackContent: some View {
         switch presentation {
         case .none:
             EmptyView()
@@ -145,10 +169,43 @@ struct SemanticSearchFallbackStatusRegion: View {
     ) -> some View {
         if status.isVisible(presentation.action) {
             Button(presentation.title) {
-                onAction(presentation.action)
+                performAction(presentation.action)
             }
             .disabled(isDisabled(presentation.action, status: status))
             .accessibilityIdentifier("S3-10-C3-08-action-\(presentation.accessibilityID)")
+        }
+    }
+
+    private func performAction(_ action: AiFallbackAction) {
+        switch action {
+        case .openLocalModelStatus where hasRepoPath:
+            recoverySheet = .localModelStatus
+        case .configureRemoteAi where hasRepoPath:
+            recoverySheet = .remoteConfig
+        default:
+            onAction(action)
+        }
+    }
+
+    private var hasRepoPath: Bool {
+        repoPath?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    }
+
+    @ViewBuilder
+    private func recoverySheetContent(_ sheet: SemanticSearchFallbackRecoverySheet) -> some View {
+        if let repoPath = repoPath?.trimmingCharacters(in: .whitespacesAndNewlines), !repoPath.isEmpty {
+            switch sheet {
+            case .localModelStatus:
+                LocalModelStatusView(model: LocalModelStatusModel(repoPath: repoPath)) {
+                    recoverySheet = nil
+                }
+            case .remoteConfig:
+                RemoteModelConfigSheet(model: RemoteProviderConfigModel(repoPath: repoPath)) {
+                    recoverySheet = nil
+                }
+            }
+        } else {
+            EmptyView()
         }
     }
 
@@ -164,9 +221,9 @@ struct SemanticSearchFallbackStatusRegion: View {
             status.callLogID == nil
         case .buildSemanticIndex:
             isIndexBuildBusy || isPrivacyGateChecking || !status.canBuildSemanticIndex
-        case .openAiSettings, .configureRemoteAi, .useNormalSearch:
+        case .openAiSettings, .openLocalModelStatus, .configureRemoteAi, .useNormalSearch:
             false
-        case .openLocalModelStatus, .classifyManually:
+        case .classifyManually:
             true
         }
     }
@@ -177,6 +234,12 @@ private enum SemanticSearchFallbackPresentation {
     case resolving
     case status(SemanticSearchFallbackStatus)
     case coreStatusError(CoreErrorMappingSnapshot)
+}
+
+private enum SemanticSearchFallbackRecoverySheet: String, Identifiable {
+    case localModelStatus, remoteConfig
+
+    var id: String { rawValue }
 }
 
 private struct SemanticSearchGroupView: View {
