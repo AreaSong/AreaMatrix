@@ -123,12 +123,16 @@ struct AIClassificationSuggestionRouteView: View {
 
 private enum AIClassificationRecoverySheet: String, Identifiable {
     case localModelStatus, remoteConfig
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 }
 
 private struct AIClassificationCallLogRoute: Identifiable, Equatable {
     var callLogID: Int64
-    var id: Int64 { callLogID }
+    var id: Int64 {
+        callLogID
+    }
 }
 
 struct AIClassificationSuggestionPanel: View {
@@ -457,7 +461,9 @@ private struct AIFallbackStatusRegion: View {
 
 struct AIClassificationPrivacyRuleRoute: Identifiable, Equatable {
     var ruleID: String
-    var id: String { ruleID }
+    var id: String {
+        ruleID
+    }
 }
 
 struct AISuggestionConfidenceBadge: View {
@@ -473,7 +479,15 @@ struct AISuggestionConfidenceBadge: View {
             .accessibilityLabel(label)
     }
 
-    private var label: String { lowConfidence ? "Low confidence \(percent)%" : "Confidence \(percent)%" }
-    private var percent: Int { Int((min(max(confidence, 0), 1) * 100).rounded()) }
-    private var lowConfidence: Bool { confidence < 0.6 }
+    private var label: String {
+        lowConfidence ? "Low confidence \(percent)%" : "Confidence \(percent)%"
+    }
+
+    private var percent: Int {
+        Int((min(max(confidence, 0), 1) * 100).rounded())
+    }
+
+    private var lowConfidence: Bool {
+        confidence < 0.6
+    }
 }

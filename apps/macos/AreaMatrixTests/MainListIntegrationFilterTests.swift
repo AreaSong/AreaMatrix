@@ -419,7 +419,8 @@ actor MainListRecordingSemanticSearcher: CoreSemanticSearching {
         self.page = page
     }
 
-    func semanticSearch(repoPath _: String, request _: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
+    func semanticSearch(repoPath _: String,
+                        request _: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
         page
     }
 

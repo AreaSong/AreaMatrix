@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 
 enum MainListVisibleFileFiltering {
@@ -113,10 +114,12 @@ enum MainSearchState: Equatable {
     var isActive: Bool {
         request != nil
     }
+
     var isLoading: Bool {
         if case .loading = self { return true }
         return false
     }
+
     var request: SearchQueryRequestSnapshot? {
         switch self {
         case .idle:
@@ -125,6 +128,7 @@ enum MainSearchState: Equatable {
             request
         }
     }
+
     var page: SearchResultPageSnapshot? {
         switch self {
         case let .loaded(_, page):
@@ -135,10 +139,12 @@ enum MainSearchState: Equatable {
             nil
         }
     }
+
     var errorMapping: CoreErrorMappingSnapshot? {
         if case let .failed(_, mapping) = self { return mapping }
         return nil
     }
+
     var indexStatus: SearchIndexStatusSnapshot? {
         page?.indexStatus
     }
@@ -416,7 +422,8 @@ extension MainFileListModel {
         guard let request = searchState.request,
               let page = searchState.page,
               let semanticPage = page.semanticPage else { return }
-        let offset = group == .semantic ? Int64(semanticPage.semanticMatches.count) : Int64(semanticPage.normalMatches.count)
+        let offset = group == .semantic ? Int64(semanticPage.semanticMatches.count) :
+            Int64(semanticPage.normalMatches.count)
         let nextRequest = SearchQueryRequestSnapshot(
             query: request.query,
             scope: request.scope,
@@ -521,7 +528,6 @@ extension MainFileListModel {
             searchFacetsState = .failed(request: request, mappedError)
         }
     }
-
 }
 
 extension FileEntrySnapshot {

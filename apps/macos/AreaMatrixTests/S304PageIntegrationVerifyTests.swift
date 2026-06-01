@@ -33,7 +33,10 @@ final class S304PageIntegrationVerifyTests: XCTestCase {
         ])
         XCTAssertEqual(model.selectedFileDetail, corrected)
         XCTAssertEqual(model.pendingActionDestination?.pageID, "S3-04")
-        XCTAssertEqual(model.pendingActionDestination?.aiClassificationReturnContext?.appliedCategory, "finance/invoices")
+        XCTAssertEqual(
+            model.pendingActionDestination?.aiClassificationReturnContext?.appliedCategory,
+            "finance/invoices"
+        )
     }
 
     @MainActor
@@ -122,7 +125,7 @@ final class S304PageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testViewAICallLoadsClassificationLogDetailThroughCoreBridgeContract() async throws {
+    func testViewAICallLoadsClassificationLogDetailThroughCoreBridgeContract() async {
         let record = s304CallLogRecord(id: 304)
         let lister = S304CallLogLister(page: AiCallLogPage(
             totalCount: 1,
@@ -147,7 +150,6 @@ final class S304PageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(requests.first?.filter.feature, .classification)
         XCTAssertEqual(requests.first?.pagination.limit, 100)
     }
-
 }
 
 private enum S304CategoryMoveRequest: Equatable {

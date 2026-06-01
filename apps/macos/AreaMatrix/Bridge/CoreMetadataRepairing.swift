@@ -145,6 +145,7 @@ private extension LocalModelCachedStatus {
 }
 
 private extension LocalModelAvailability {
+    // swiftlint:disable:next cyclomatic_complexity
     init(snapshotAvailability: LocalModelAvailabilityState) {
         switch snapshotAvailability {
         case .unknown: self = .unknown

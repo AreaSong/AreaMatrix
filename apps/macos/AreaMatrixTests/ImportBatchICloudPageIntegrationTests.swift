@@ -275,7 +275,9 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
 extension MainRepositoryDetailPaneTagActions {
     static var noop: MainRepositoryDetailPaneTagActions {
         let noAction: () -> Void = {}; let noStringAction: (String) -> Void = { _ in }
-        let noEditAction: (String, String) -> Void = { _, _ in }; let noBatchAction: (BatchTagUndoState) -> Void = { _ in }
+        let noEditAction: (String, String) -> Void = { _, _ in }; let noBatchAction: (BatchTagUndoState)
+            -> Void = { _ in
+            }
         return MainRepositoryDetailPaneTagActions(
             aiSuggestionState: .idle, aiBatchSuggestionState: .idle, onLoadTags: noAction, onRetryTags: noAction,
             onAddTag: noStringAction, onRemoveTag: noStringAction,
@@ -288,7 +290,8 @@ extension MainRepositoryDetailPaneTagActions {
             onLoadAISuggestions: noAction, onRetryAISuggestions: noAction,
             onToggleAISuggestion: noStringAction, onApplySingleAISuggestion: noStringAction,
             onSelectHighConfidenceAISuggestions: noAction,
-            onClearAISuggestions: noAction, onStartEditingAISuggestions: noAction, onCancelEditingAISuggestions: noAction,
+            onClearAISuggestions: noAction, onStartEditingAISuggestions: noAction,
+            onCancelEditingAISuggestions: noAction,
             onEditAISuggestionDisplayName: noEditAction, onEditAISuggestionSlug: noEditAction,
             onRegenerateAISuggestionSlug: noStringAction, onApplyAISuggestions: noAction,
             onApplyEditedAISuggestions: noAction, onRetryFailedAISuggestions: noAction,

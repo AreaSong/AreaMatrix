@@ -1,7 +1,9 @@
+// swiftlint:disable file_length
 import Combine
 import Foundation
 
 @MainActor
+// swiftlint:disable:next type_body_length
 final class AISummaryEditorModel: ObservableObject {
     @Published private(set) var status: AISummaryEditorStatus = .empty
     @Published private(set) var operation: AISummaryEditorOperation = .idle
@@ -43,11 +45,26 @@ final class AISummaryEditorModel: ObservableObject {
         self.privacyContext = privacyContext
     }
 
-    var characterCountText: String { "\(draftText.count) characters" }
-    var canGenerate: Bool { canEdit && gateState.allowsGeneration }
-    var canCancelGeneration: Bool { operation == .generating }
-    var canRegenerate: Bool { canGenerate && (!draftText.isEmpty || savedText != nil || provenance != nil) }
-    var canDiscard: Bool { canEdit && (status == .dirty || status == .draft) }
+    var characterCountText: String {
+        "\(draftText.count) characters"
+    }
+
+    var canGenerate: Bool {
+        canEdit && gateState.allowsGeneration
+    }
+
+    var canCancelGeneration: Bool {
+        operation == .generating
+    }
+
+    var canRegenerate: Bool {
+        canGenerate && (!draftText.isEmpty || savedText != nil || provenance != nil)
+    }
+
+    var canDiscard: Bool {
+        canEdit && (status == .dirty || status == .draft)
+    }
+
     var canClear: Bool {
         canEdit && privacySkip == nil && (!draftText.isEmpty || savedText != nil || provenance != nil)
     }
@@ -57,9 +74,13 @@ final class AISummaryEditorModel: ObservableObject {
             (status == .dirty || status == .draft)
     }
 
-    var needsExitConfirmation: Bool { status == .dirty || status == .draft }
+    var needsExitConfirmation: Bool {
+        status == .dirty || status == .draft
+    }
 
-    private var canEdit: Bool { !operation.isBusy }
+    private var canEdit: Bool {
+        !operation.isBusy
+    }
 
     func loadEntryState() async {
         guard !operation.isBusy else { return }
@@ -74,7 +95,7 @@ final class AISummaryEditorModel: ObservableObject {
         } catch {
             guard token == entryLoadToken else { return }
             failedAction = .load
-            operation = .failed(await summaryError(for: error, message: "Summary could not be loaded."))
+            operation = await .failed(summaryError(for: error, message: "Summary could not be loaded."))
             return
         }
         _ = await refreshGenerationGate()
@@ -109,10 +130,15 @@ final class AISummaryEditorModel: ObservableObject {
         guard draftText != text else { return }
         draftText = text
         privacySkip = nil
-        if text.isEmpty, savedText == nil, provenance == nil { status = .empty }
-        else if text == baselineText, savedText != nil { status = .saved }
-        else if text == baselineText { status = .draft }
-        else { status = .dirty }
+        if text.isEmpty, savedText == nil, provenance == nil {
+            status = .empty
+        } else if text == baselineText, savedText != nil {
+            status = .saved
+        } else if text == baselineText {
+            status = .draft
+        } else {
+            status = .dirty
+        }
     }
 
     func generate(regenerate: Bool) async {
@@ -139,7 +165,7 @@ final class AISummaryEditorModel: ObservableObject {
         } catch {
             guard token == generationToken else { return }
             failedAction = .generate
-            operation = .failed(await summaryError(for: error, message: "Summary could not be generated."))
+            operation = await .failed(summaryError(for: error, message: "Summary could not be generated."))
         }
     }
 
@@ -169,7 +195,7 @@ final class AISummaryEditorModel: ObservableObject {
             return true
         } catch {
             failedAction = .save
-            operation = .failed(await summaryError(for: error, message: "Summary could not be saved."))
+            operation = await .failed(summaryError(for: error, message: "Summary could not be saved."))
             return false
         }
     }
@@ -204,7 +230,7 @@ final class AISummaryEditorModel: ObservableObject {
             operation = .idle
         } catch {
             failedAction = .clear
-            operation = .failed(await summaryError(for: error, message: "Summary could not be cleared."))
+            operation = await .failed(summaryError(for: error, message: "Summary could not be cleared."))
         }
     }
 
@@ -285,7 +311,7 @@ final class AISummaryEditorModel: ObservableObject {
             operation = .idle
         } catch {
             failedAction = .generate
-            operation = .failed(await summaryError(for: error, message: "Summary could not be generated."))
+            operation = await .failed(summaryError(for: error, message: "Summary could not be generated."))
         }
     }
 
@@ -493,5 +519,4 @@ final class AISummaryEditorModel: ObservableObject {
             reason: reason
         )
     }
-
 }

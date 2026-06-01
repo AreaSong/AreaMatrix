@@ -322,7 +322,7 @@ private enum AIPrivacyRulesSettingsSyncError: Error {
     var error: AISettingsError {
         switch self {
         case let .syncFailed(error):
-            return error
+            error
         }
     }
 }

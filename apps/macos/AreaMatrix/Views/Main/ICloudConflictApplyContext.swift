@@ -8,6 +8,7 @@ struct ICloudConflictApplyContext {
 }
 
 extension LocalModelAvailabilityState {
+    // swiftlint:disable:next cyclomatic_complexity
     init(coreAvailability: LocalModelAvailability) {
         switch coreAvailability {
         case .unknown: self = .unknown

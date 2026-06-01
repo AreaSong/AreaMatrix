@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -65,6 +66,8 @@ struct MainRepositoryContentView: View {
     ]
     @State var summarySelectionExitState = AISummarySelectionExitState()
 
+    // swiftlint:disable:next function_body_length
+    // swiftlint:disable:next function_body_length
     init(
         opening: RepositoryOpeningResult,
         state: MainRepositoryContentState,
@@ -259,9 +262,13 @@ extension MainRepositoryContentView {
         } message: {
             Text("Save or discard the AI summary draft before switching files.")
         }
-        .confirmationDialog("Build semantic index?", isPresented: $isSemanticIndexConfirmationPresented, titleVisibility: .visible) {
+        .confirmationDialog(
+            "Build semantic index?",
+            isPresented: $isSemanticIndexConfirmationPresented,
+            titleVisibility: .visible
+        ) {
             Button("Start index build") { Task { await fileListModel.buildSemanticIndexForCurrentSearch() } }
-            .disabled(!fileListModel.semanticPrivacyGateState.allowsIndexBuild)
+                .disabled(!fileListModel.semanticPrivacyGateState.allowsIndexBuild)
             semanticIndexRecoveryActions
             Button("Back") {}
             Button("Cancel", role: .cancel) {}

@@ -410,8 +410,11 @@ struct AITagSuggestionsPanel: View {
                 .font(.caption).foregroundStyle(.secondary)
             Text("File: \(file.currentName)")
             Text("Current path: \(file.path)").foregroundStyle(.secondary)
-            Text("Existing tags: \(existingTags.isEmpty ? "none" : existingTags.map(\.displayName).joined(separator: ", "))")
-                .font(.caption).foregroundStyle(.secondary)
+            Text(
+                // swiftlint:disable:next line_length
+                "Existing tags: \(existingTags.isEmpty ? "none" : existingTags.map(\.displayName).joined(separator: ", "))"
+            )
+            .font(.caption).foregroundStyle(.secondary)
             content
             actions
         }
@@ -457,7 +460,7 @@ struct AITagSuggestionsPanel: View {
         }
     }
 
-    @ViewBuilder func traceLinks(_ report: AiTagSuggestionReport) -> some View {
+    func traceLinks(_ report: AiTagSuggestionReport) -> some View {
         HStack {
             if report.skippedReason == .aiDisabled || report.skippedReason == .featureDisabled {
                 Button("Open AI settings", action: onOpenAISettings)
@@ -489,5 +492,7 @@ func normalizedAITagPrivacyRuleID(from rawRuleID: String?) -> String? {
 
 private struct AITagCallLogRoute: Identifiable {
     let callLogID: Int64
-    var id: Int64 { callLogID }
+    var id: Int64 {
+        callLogID
+    }
 }

@@ -150,7 +150,10 @@ final class S307AITagSuggestionPageFeatureTests: XCTestCase {
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
-            tagStore: DetailTagRecordingStore(listResults: [.success(.s207Fixture(fileID: file.id, values: ["client"]))]),
+            tagStore: DetailTagRecordingStore(listResults: [.success(.s207Fixture(
+                fileID: file.id,
+                values: ["client"]
+            ))]),
             aiSettingsLoader: S307AISettingsLoader(),
             aiTagSuggestionStore: bridge,
             aiPrivacyRules: privacy,
@@ -170,7 +173,7 @@ final class S307AITagSuggestionPageFeatureTests: XCTestCase {
         XCTAssertEqual(privacyRequests.evaluations.first?.feature, .autoTags)
         XCTAssertEqual(requests.apply.first?.fileId, file.id)
         XCTAssertEqual(requests.apply.first?.confirmed, true)
-        XCTAssertEqual(requests.apply.first?.callLogId, 7_707)
+        XCTAssertEqual(requests.apply.first?.callLogId, 7707)
         XCTAssertEqual(requests.apply.first?.suggestions.map(\.suggestionId), ["s3-07-finance"])
         XCTAssertEqual(model.aiTagSuggestionState.appliedReport?.appliedCount, 1)
         XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["finance"])

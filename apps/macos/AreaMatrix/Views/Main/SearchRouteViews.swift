@@ -70,6 +70,7 @@ struct AISummaryEditor: View {
             privacyContext: privacyContext
         ))
     }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
@@ -208,12 +209,12 @@ struct AISummaryEditor: View {
                         Button("View privacy rule") {
                             privacyRuleRoute = AIPrivacyRulesRoute(repoPath: repoPath, focus: .rule(ruleID: ruleID))
                         }
-                            .accessibilityIdentifier("S3-06-C3-09-view-privacy-rule-\(ruleID)")
+                        .accessibilityIdentifier("S3-06-C3-09-view-privacy-rule-\(ruleID)")
                     } else if let field = privacySkip.matchedField {
                         Button("View privacy rule") {
                             privacyRuleRoute = AIPrivacyRulesRoute(repoPath: repoPath, focus: .field(field))
                         }
-                            .accessibilityIdentifier("S3-06-C3-09-view-privacy-field-\(field)")
+                        .accessibilityIdentifier("S3-06-C3-09-view-privacy-field-\(field)")
                     }
                 }
                 if let callLogID = provenance.callLogID {
@@ -229,6 +230,7 @@ struct AISummaryEditor: View {
             .accessibilityIdentifier(model.privacySkip == nil ? "S3-06-C3-06-provenance" : "S3-06-C3-09-privacy-skip")
         }
     }
+
     private func provenanceTitle(_ provenance: AISummaryProvenance) -> String {
         if model.privacySkip == nil {
             return provenance.route.map(aiSummaryRouteLabel) ?? "Draft"
@@ -236,7 +238,9 @@ struct AISummaryEditor: View {
         return model.status.label
     }
 
-    private var callLogCapability: String { model.privacySkip == nil ? "C3-06" : "C3-09" }
+    private var callLogCapability: String {
+        model.privacySkip == nil ? "C3-06" : "C3-09"
+    }
 
     private var editor: some View {
         TextEditor(text: Binding(get: { model.draftText }, set: model.updateDraft))
@@ -320,7 +324,9 @@ struct AISummaryEditor: View {
         }
     }
 
-    private var saveTitle: String { model.operation == .saving ? "Saving summary..." : "Save" }
+    private var saveTitle: String {
+        model.operation == .saving ? "Saving summary..." : "Save"
+    }
 
     private func performConfirmedAction() {
         let action = confirmation

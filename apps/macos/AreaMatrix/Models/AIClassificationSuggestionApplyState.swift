@@ -141,12 +141,30 @@ final class AICallLogModel: ObservableObject {
         return page
     }
 
-    var records: [AiCallLogRecord] { page?.records ?? [] }
-    var selectedRecord: AiCallLogRecord? { records.first { selectedRecordIDs.contains($0.id) } }
-    var isLoading: Bool { if case .loading = state { return true }; return false }
-    var hasLoadedRecords: Bool { !(page?.records.isEmpty ?? true) }
-    var canMutate: Bool { !isLoading && !isMutating && hasLoadedRecords }
-    var deleteDisabledReason: String? { selectedRecordIDs.isEmpty ? "Select log entries to delete" : nil }
+    var records: [AiCallLogRecord] {
+        page?.records ?? []
+    }
+
+    var selectedRecord: AiCallLogRecord? {
+        records.first { selectedRecordIDs.contains($0.id) }
+    }
+
+    var isLoading: Bool {
+        if case .loading = state { return true }; return false
+    }
+
+    var hasLoadedRecords: Bool {
+        !(page?.records.isEmpty ?? true)
+    }
+
+    var canMutate: Bool {
+        !isLoading && !isMutating && hasLoadedRecords
+    }
+
+    var deleteDisabledReason: String? {
+        selectedRecordIDs.isEmpty ? "Select log entries to delete" : nil
+    }
+
     var hasActiveFilters: Bool {
         featureFilter != nil ||
             routeFilter != nil ||
@@ -170,6 +188,7 @@ final class AICallLogModel: ObservableObject {
     }
 
     var emptyStateDescription: String {
+        // swiftlint:disable:next line_length
         hasActiveFilters ? "Adjust the current filters or clear them." : "AI is off by default or has not been used yet."
     }
 
@@ -204,7 +223,7 @@ final class AICallLogModel: ObservableObject {
             state = .loaded(loaded)
         } catch {
             selectedRecordIDs = []
-            state = .failed(await callLogError(for: error))
+            state = await .failed(callLogError(for: error))
         }
     }
 
@@ -315,6 +334,7 @@ final class AICallLogModel: ObservableObject {
     }
 }
 
+// swiftlint:disable:next type_name
 enum AIClassificationSuggestionRuleReturnStatus: Equatable {
     case cancelled
     case saved

@@ -31,7 +31,7 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(model.draftText, "Previously saved AI summary.")
         XCTAssertEqual(model.provenance?.route, .remote)
         XCTAssertEqual(model.provenance?.modelName, "Remote summary provider")
-        XCTAssertEqual(model.provenance?.callLogID, 8_708)
+        XCTAssertEqual(model.provenance?.callLogID, 8708)
         XCTAssertFalse(model.needsExitConfirmation)
         XCTAssertTrue(model.canRegenerate)
         XCTAssertTrue(model.canClear)
@@ -44,8 +44,8 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
     func testS306SummaryPrivacyAndProvenanceStayOnDeclaredCoreBridgePath() async {
         let privacy = S306IntegrationPrivacyBridge()
         let summary = S306IntegrationSummaryBridge(drafts: [
-            .s306IntegrationDraft(fileID: 706, text: "Initial AI summary.", draftID: "draft-a", callLogID: 1_706),
-            .s306IntegrationDraft(fileID: 706, text: "Regenerated AI summary.", draftID: "draft-b", callLogID: 2_706)
+            .s306IntegrationDraft(fileID: 706, text: "Initial AI summary.", draftID: "draft-a", callLogID: 1706),
+            .s306IntegrationDraft(fileID: 706, text: "Regenerated AI summary.", draftID: "draft-b", callLogID: 2706)
         ])
         let model = s306IntegrationModel(fileID: 706, summary: summary, privacy: privacy)
 
@@ -57,7 +57,7 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
 
         XCTAssertEqual(model.status, .saved)
         XCTAssertEqual(model.draftText, "Initial AI summary.")
-        XCTAssertEqual(model.provenance?.callLogID, 1_706)
+        XCTAssertEqual(model.provenance?.callLogID, 1706)
 
         await model.clear()
 
@@ -65,9 +65,9 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
         let events = await summary.events()
         XCTAssertEqual(routes, [.remote, .remote])
         XCTAssertEqual(events, [
-            .generate(regenerate: false),
-            .save(text: "Initial AI summary.", edited: false, callLogID: 1_706),
-            .generate(regenerate: true),
+            .generate(regenerate: false, privacyPolicyRef: nil),
+            .save(text: "Initial AI summary.", edited: false, callLogID: 1706),
+            .generate(regenerate: true, privacyPolicyRef: nil),
             .clear(confirmed: true)
         ])
         XCTAssertEqual(model.status, .empty)
@@ -76,9 +76,14 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS306PrivacyGateFailureDoesNotDiscardDraftOrCallSummaryCore() async {
+    func testS306PrivacyGateFailurePreservesDraftAndRecordsSkippedSummaryTrace() async {
         let summary = S306IntegrationSummaryBridge(drafts: [
-            .s306IntegrationDraft(fileID: 712, text: "Initial AI summary.", draftID: "draft-a", callLogID: 1_712)
+            .s306IntegrationDraft(fileID: 712, text: "Initial AI summary.", draftID: "draft-a", callLogID: 1712),
+            .s306IntegrationPrivacySkippedDraft(
+                fileID: 712,
+                privacyRuleID: "block:rule-confidential",
+                callLogID: 9712
+            )
         ])
         let model = s306IntegrationModel(fileID: 712, summary: summary)
         await model.generate(regenerate: false)
@@ -97,8 +102,14 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
         }
         XCTAssertEqual(notice.capability, "C3-09")
         XCTAssertEqual(blocked.draftText, "Keep this draft.")
+        XCTAssertEqual(blocked.status, .skipped(.privacyRule))
+        XCTAssertEqual(blocked.privacySkip?.sentFields, [])
+        XCTAssertEqual(blocked.provenance?.callLogID, 9712)
         let events = await summary.events()
-        XCTAssertEqual(events, [.generate(regenerate: false)])
+        XCTAssertEqual(events, [
+            .generate(regenerate: false, privacyPolicyRef: nil),
+            .generate(regenerate: true, privacyPolicyRef: "block:rule-confidential")
+        ])
     }
 
     @MainActor
@@ -117,13 +128,13 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(notice.reason, .callLogUnavailable)
         XCTAssertEqual(model.draftText, "")
         let events = await summary.events()
-        XCTAssertEqual(events, [.generate(regenerate: false)])
+        XCTAssertEqual(events, [.generate(regenerate: false, privacyPolicyRef: nil)])
     }
 
     @MainActor
     func testS306ExitConfirmationSavesDiscardsOrKeepsDraftUntilUserChooses() async {
         let summary = S306IntegrationSummaryBridge(drafts: [
-            .s306IntegrationDraft(fileID: 707, text: "Saved AI summary.", draftID: "draft-exit", callLogID: 1_707)
+            .s306IntegrationDraft(fileID: 707, text: "Saved AI summary.", draftID: "draft-exit", callLogID: 1707)
         ])
         let model = s306IntegrationModel(fileID: 707, summary: summary)
         let exitController = AISummaryEditorExitController()
@@ -141,8 +152,8 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(model.status, .dirty)
         let eventsBeforeSave = await summary.events()
         XCTAssertEqual(eventsBeforeSave, [
-            .generate(regenerate: false),
-            .save(text: "Saved AI summary.", edited: false, callLogID: 1_707)
+            .generate(regenerate: false, privacyPolicyRef: nil),
+            .save(text: "Saved AI summary.", edited: false, callLogID: 1707)
         ])
 
         let saveResult = await exitController.saveChanges()
@@ -163,9 +174,9 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(model.draftText, "Dirty exit draft.")
         let eventsAfterDiscard = await summary.events()
         XCTAssertEqual(eventsAfterDiscard, [
-            .generate(regenerate: false),
-            .save(text: "Saved AI summary.", edited: false, callLogID: 1_707),
-            .save(text: "Dirty exit draft.", edited: true, callLogID: 1_707)
+            .generate(regenerate: false, privacyPolicyRef: nil),
+            .save(text: "Saved AI summary.", edited: false, callLogID: 1707),
+            .save(text: "Dirty exit draft.", edited: true, callLogID: 1707)
         ])
     }
 
@@ -223,7 +234,7 @@ private func s306IntegrationModel(
 
 private enum S306IntegrationSummaryEvent: Equatable {
     case load
-    case generate(regenerate: Bool)
+    case generate(regenerate: Bool, privacyPolicyRef: String?)
     case save(text: String, edited: Bool, callLogID: Int64?)
     case clear(confirmed: Bool)
 }
@@ -244,7 +255,10 @@ private actor S306IntegrationSummaryBridge: CoreAISummaryManaging {
     }
 
     func generateAISummary(repoPath _: String, request: AiSummaryGenerationRequest) async throws -> AiSummaryDraft {
-        recorded.append(.generate(regenerate: request.regenerateExisting))
+        recorded.append(.generate(
+            regenerate: request.regenerateExisting,
+            privacyPolicyRef: request.privacyPolicyRef
+        ))
         guard !drafts.isEmpty else { throw CoreError.Internal(message: "missing S3-06 draft") }
         return drafts.removeFirst()
     }
@@ -275,7 +289,6 @@ private actor S306IntegrationSummaryBridge: CoreAISummaryManaging {
         recorded
     }
 }
-
 
 private actor S306IntegrationPrivacyBridge: CoreAIPrivacyEvaluating {
     private let report: AiPrivacyEvaluationReport
@@ -339,7 +352,7 @@ private extension AISummarySavedSnapshot {
             generatedAt: 1_700_000_000,
             usedContext: [.fileName, .extractedTextExcerpt],
             privacyRuleID: nil,
-            callLogID: 8_000 + fileID,
+            callLogID: 8000 + fileID,
             editedByUser: false,
             characterCount: Int64(text.count)
         )
@@ -425,6 +438,28 @@ private extension AiSummaryDraft {
             skippedReason: reason,
             privacyRuleId: nil,
             callLogId: nil,
+            requiresUserSave: false,
+            characterCount: 0
+        )
+    }
+
+    static func s306IntegrationPrivacySkippedDraft(
+        fileID: Int64,
+        privacyRuleID: String,
+        callLogID: Int64
+    ) -> AiSummaryDraft {
+        AiSummaryDraft(
+            fileId: fileID,
+            draftId: nil,
+            status: .skipped,
+            summaryText: nil,
+            route: nil,
+            modelName: nil,
+            generatedAt: nil,
+            usedContext: [],
+            skippedReason: .privacyRule,
+            privacyRuleId: privacyRuleID,
+            callLogId: callLogID,
             requiresUserSave: false,
             characterCount: 0
         )

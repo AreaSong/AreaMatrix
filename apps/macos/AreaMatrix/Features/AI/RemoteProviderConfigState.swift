@@ -1,4 +1,6 @@
 import Combine
+
+// swiftlint:disable file_length
 import Foundation
 
 enum RemoteProviderKindState: String, CaseIterable, Equatable, Identifiable {
@@ -378,11 +380,11 @@ final class RemotePrivacyGateModel: ObservableObject {
     func retryPending(providerConfig: RemoteProviderConfigState?) async -> Bool {
         switch pendingAction {
         case .enable:
-            return await enablePrivacyGate(providerConfig: providerConfig)
+            await enablePrivacyGate(providerConfig: providerConfig)
         case .disable:
-            return await disablePrivacyGate(providerConfig: providerConfig)
+            await disablePrivacyGate(providerConfig: providerConfig)
         case nil:
-            return false
+            false
         }
     }
 
@@ -407,7 +409,13 @@ final class RemotePrivacyGateModel: ObservableObject {
                 repoPath: repoPath,
                 request: base.privacyGateUpdateRequest(enabled: enabled, providerConfig: providerConfig)
             )
-            return handleUpdatedSnapshot(updated, expectedGate: enabled, action: action, message: message, recovery: recovery)
+            return handleUpdatedSnapshot(
+                updated,
+                expectedGate: enabled,
+                action: action,
+                message: message,
+                recovery: recovery
+            )
         } catch {
             failure = await privacyError(for: error, message: message, recovery: recovery)
             pendingAction = action

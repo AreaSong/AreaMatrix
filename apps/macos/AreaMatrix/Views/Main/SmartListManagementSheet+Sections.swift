@@ -36,12 +36,14 @@ extension MainRepositoryContentView {
         case .paused:
             "Semantic index build paused."
         case .partial:
+            // swiftlint:disable:next line_length
             "Semantic index partially built: \(report.processedCount)/\(report.totalCount) processed, \(report.failedCount) failed"
         case .failed:
             "Semantic index could not be built."
         case .ready:
             "Semantic index ready: \(report.processedCount)/\(report.totalCount) processed"
         case .notReady, .building:
+            // swiftlint:disable:next line_length
             "Semantic index \(report.status.displayName.lowercased()): \(report.processedCount)/\(report.totalCount) processed"
         }
     }
@@ -142,6 +144,7 @@ extension MainRepositoryContentView {
         case let .semantic(match):
             let fields = match.usedFields.map(\.rawValue).joined(separator: ", ")
             let duplicate = match.alsoMatchedNormalSearch ? " | Also matched normal search" : ""
+            // swiftlint:disable:next line_length
             return "Semantic | \(String(format: "%.2f", match.relevance)) | \(match.matchedReason) | \(fields)\(duplicate)"
         case let .normal(match):
             if let noteSnippet = match.result.noteSnippet, !noteSnippet.isEmpty {

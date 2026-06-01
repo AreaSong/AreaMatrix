@@ -212,6 +212,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
     }
 
     @MainActor
+    // swiftlint:disable:next function_body_length
     private func makeDetailPaneBody(model: MainFileListModel) -> String {
         let detailPane = MainRepositoryDetailPane(
             selection: model.selection,

@@ -204,8 +204,6 @@ struct SemanticSearchFallbackStatusRegion: View {
                     recoverySheet = nil
                 }
             }
-        } else {
-            EmptyView()
         }
     }
 
@@ -239,7 +237,9 @@ private enum SemanticSearchFallbackPresentation {
 private enum SemanticSearchFallbackRecoverySheet: String, Identifiable {
     case localModelStatus, remoteConfig
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 }
 
 private struct SemanticSearchGroupView: View {

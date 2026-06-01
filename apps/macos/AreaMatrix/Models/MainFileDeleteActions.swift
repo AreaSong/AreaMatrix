@@ -226,7 +226,7 @@ extension MainFileListModel {
             feature: .autoTags,
             route: .remote,
             requestedFields: [
-                .fileName, .repoRelativePath, .`extension`, .extractedTextExcerpt,
+                .fileName, .repoRelativePath, .extension, .extractedTextExcerpt,
                 .aiSummary, .noteSummary, .tagCategoryContext
             ],
             privacyGateEnabled: snapshot.privacyGateEnabled,
@@ -298,6 +298,6 @@ extension MainFileListModel {
 }
 
 private struct AITagPrivacyGateResult {
-    var privacyPolicyRef: String? = nil
-    var blockedReport: AiTagSuggestionReport? = nil
+    var privacyPolicyRef: String?
+    var blockedReport: AiTagSuggestionReport?
 }

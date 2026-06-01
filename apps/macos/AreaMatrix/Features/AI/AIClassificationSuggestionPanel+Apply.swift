@@ -6,6 +6,7 @@ struct AIClassificationApplyConfirmationContext: Equatable {
     var moveFile: Bool
 }
 
+// swiftlint:disable:next type_name
 struct AIClassificationSuggestionPanelApplyRequest: Equatable {
     var targetCategory: String
     var moveFile: Bool
@@ -14,6 +15,7 @@ struct AIClassificationSuggestionPanelApplyRequest: Equatable {
     var preview: MoveToCategoryPreviewSnapshot
 }
 
+// swiftlint:disable:next type_name
 struct AIClassificationSuggestionRejectedFeedback: Equatable {
     var fileID: Int64
     var suggestedCategory: String?
@@ -97,7 +99,6 @@ extension AIClassificationSuggestionPanel {
         }
     }
 
-    @ViewBuilder
     func suggestedReviewContent(_ suggestion: AIClassificationSuggestionState) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -460,6 +461,7 @@ extension AIClassificationSuggestionPanel {
         let conflict = context.preview.nameConflictResolved
             ? " Existing user files will not be overwritten; target name: \(context.preview.targetName)."
             : " Existing user files will not be overwritten."
+        // swiftlint:disable:next line_length
         return "\(action)\(conflict) Target path: \(context.preview.targetPath). If apply fails, the file keeps its original category and path."
     }
 

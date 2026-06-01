@@ -330,7 +330,7 @@ func s307AITagReport(
         usedContext: status == .suggested ? [.fileName, .tagRegistry] : [],
         skippedReason: skippedReason,
         privacyRuleId: skippedReason == .privacyRule ? "rule-confidential" : nil,
-        callLogId: 7_707,
+        callLogId: 7707,
         requiresUserConfirmation: true,
         confidenceThreshold: 0.8,
         contentsRead: status == .suggested,
@@ -388,7 +388,7 @@ func s307ApplyReport(fileID: Int64) -> AiTagSuggestionApplyReport {
             updatedAt: 1_700_000_350
         ),
         undoToken: nil,
-        callLogId: 7_707,
+        callLogId: 7707,
         refreshTargets: ["tags", "change_log", "undo_actions", "ai_call_log"]
     )
 }
@@ -423,7 +423,7 @@ func s307BatchApplyReport(
             updatedAt: 1_700_000_350
         ),
         undoToken: nil,
-        callLogId: 7_707,
+        callLogId: 7707,
         refreshTargets: ["tags", "change_log", "undo_actions", "ai_call_log"]
     )
 }

@@ -3,6 +3,7 @@ import XCTest
 
 final class S309PageIntegrationVerifyTests: XCTestCase {
     @MainActor
+    // swiftlint:disable:next function_body_length
     func testS309FullPageFlowKeepsC301C303C309OnDeclaredBridgePaths() async {
         let settingsStore = S309IntegrationAISettingsStore(snapshot: .s309IntegrationReady(repoPath: "/tmp/s309"))
         let settingsModel = AISettingsModel(

@@ -468,7 +468,9 @@ struct LocalModelFeatureStatusState: Equatable, Identifiable {
     var available: Bool
     var unavailableReason: String?
 
-    var id: String { feature.rawValue }
+    var id: String {
+        feature.rawValue
+    }
 }
 
 struct LocalModelCachedStatusState: Equatable {

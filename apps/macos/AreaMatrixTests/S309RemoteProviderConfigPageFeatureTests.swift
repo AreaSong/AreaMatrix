@@ -171,6 +171,7 @@ final class S309RemoteProviderConfigPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    // swiftlint:disable:next function_parameter_count
     private func assertProviderStatus(
         _ snapshot: RemoteProviderConfigState,
         status: String,

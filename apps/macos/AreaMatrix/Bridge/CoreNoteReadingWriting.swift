@@ -277,7 +277,9 @@ enum AISummaryConfirmation {
 
 struct AISummaryCallLogRoute: Identifiable, Equatable {
     var callLogID: Int64
-    var id: Int64 { callLogID }
+    var id: Int64 {
+        callLogID
+    }
 }
 
 protocol CoreAIPrivacyEvaluating: Sendable {

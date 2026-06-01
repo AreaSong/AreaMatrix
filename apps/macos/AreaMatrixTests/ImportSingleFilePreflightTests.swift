@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 @testable import AreaMatrix
 import Foundation
 import XCTest
@@ -234,13 +235,17 @@ private actor ImportSingleFileStaticFileLoader: ImportBatchCoreFileLoading {
         return files
     }
 
-    func recordedRequests() -> [ImportSingleFileFileLoadRequest] { requests }
+    func recordedRequests() -> [ImportSingleFileFileLoadRequest] {
+        requests
+    }
 }
 
 private actor S308Detailer: CoreFileDetailing {
     let file: FileEntrySnapshot
 
-    init(file: FileEntrySnapshot) { self.file = file }
+    init(file: FileEntrySnapshot) {
+        self.file = file
+    }
 
     func getFile(repoPath _: String, fileID _: Int64) async throws -> FileEntrySnapshot {
         file
@@ -258,10 +263,18 @@ private actor S308NormalSearcher: CoreSearchQuerying {
 
     func searchFiles(repoPath _: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
         recorded.append(request)
-        return SearchResultPageSnapshot(query: request.query, totalCount: 0, results: [], diagnostics: [], indexStatus: .ready)
+        return SearchResultPageSnapshot(
+            query: request.query,
+            totalCount: 0,
+            results: [],
+            diagnostics: [],
+            indexStatus: .ready
+        )
     }
 
-    func requests() -> [SearchQueryRequestSnapshot] { recorded }
+    func requests() -> [SearchQueryRequestSnapshot] {
+        recorded
+    }
 }
 
 private actor S308SemanticSearcher: CoreSemanticSearching {
@@ -273,7 +286,8 @@ private actor S308SemanticSearcher: CoreSemanticSearching {
         self.page = page
     }
 
-    func semanticSearch(repoPath _: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
+    func semanticSearch(repoPath _: String,
+                        request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
         semanticSearchRequests.append(request)
         return page
     }
@@ -286,8 +300,13 @@ private actor S308SemanticSearcher: CoreSemanticSearching {
         return .s308Report()
     }
 
-    func semanticRequests() -> [SearchQueryRequestSnapshot] { semanticSearchRequests }
-    func indexRequests() -> [SearchQueryRequestSnapshot] { indexBuildRequests }
+    func semanticRequests() -> [SearchQueryRequestSnapshot] {
+        semanticSearchRequests
+    }
+
+    func indexRequests() -> [SearchQueryRequestSnapshot] {
+        indexBuildRequests
+    }
 }
 
 private struct S308ErrorMapper: CoreErrorMapping {
@@ -403,7 +422,11 @@ private extension SearchResultPageSnapshot {
         let normalResult = SearchFileResultSnapshot(
             file: normalFile,
             score: 1,
-            matches: [SearchMatchSnapshot(fieldDisplayName: "Name", kindDisplayName: "Exact", snippet: normalFile.currentName)],
+            matches: [SearchMatchSnapshot(
+                fieldDisplayName: "Name",
+                kindDisplayName: "Exact",
+                snippet: normalFile.currentName
+            )],
             noteSnippet: nil
         )
         let semanticPage = SemanticSearchResultPageSnapshot.s308Fixture(

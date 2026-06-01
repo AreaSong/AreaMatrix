@@ -51,7 +51,9 @@ struct AISettingsFeatureRowSnapshot: Identifiable, Equatable {
     var remoteScope: String
     var disabledReason: String?
 
-    var id: String { feature.rawValue }
+    var id: String {
+        feature.rawValue
+    }
 }
 
 @MainActor
@@ -264,6 +266,7 @@ final class LocalModelStatusModel: ObservableObject {
         return LocalModelStatusError(message: message, recovery: fallbackRecovery, detail: error.localizedDescription)
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     private static func statusDetail(for availability: LocalModelAvailabilityState) -> String {
         switch availability {
         case .unknown: "Local model status has not been checked yet."

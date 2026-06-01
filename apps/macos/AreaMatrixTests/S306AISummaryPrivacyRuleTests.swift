@@ -100,6 +100,7 @@ final class S306AISummaryPrivacyRuleTests: XCTestCase {
 
     @MainActor
     func testS306PrivacyRulesCreateSkippedSummaryCallLogTrace() async {
+        // swiftlint:disable:next large_tuple
         let cases: [(Int64, AiPrivacySkippedReason, String, AISummaryEditorStatus)] = [
             (621, .privacyRule, "block:rule-confidential", .skipped(.privacyRule)),
             (640, .fieldRule, "block:privacy-rule", .skipped(.noEligibleInput))
@@ -123,6 +124,7 @@ final class S306AISummaryPrivacyRuleTests: XCTestCase {
     @MainActor
     func testS306PrivacyBlocksWithoutSummaryLogWhenNoCallShouldBeRecorded() async {
         let gate = s306Report(.providerNotVerified, providerGateReason: .providerNotVerified)
+        // swiftlint:disable:next large_tuple
         let cases: [(Int64, AiPrivacyEvaluationReport, AISummaryEditorStatus, AiPrivacySkippedReason)] = [
             (630, gate, .unavailable(.providerUnavailable), .providerNotVerified),
             (641, s306Report(.noEligibleInput), .skipped(.noEligibleInput), .noEligibleInput)
@@ -156,6 +158,7 @@ private func s306Model(
     privacyContext: AISummaryPrivacyContext = AISummaryPrivacyContext(),
     summary: S306PrivacySummaryBridge = S306PrivacySummaryBridge(),
     mapper: (any CoreErrorMapping)? = nil
+    // swiftlint:disable:next large_tuple
 ) -> (AISummaryEditorModel, S306PrivacySummaryBridge, S306PrivacyRulesBridge) {
     let privacy = S306PrivacyRulesBridge(report: report)
     let model = AISummaryEditorModel(
@@ -241,7 +244,7 @@ private actor S306PrivacyRulesBridge: CoreAIPrivacyEvaluating {
     }
 
     func loadAIPrivacyRules(repoPath _: String) async throws -> AiPrivacyRulesSnapshot {
-        return .s306PrivacyRules()
+        .s306PrivacyRules()
     }
 
     func evaluateAIPrivacy(

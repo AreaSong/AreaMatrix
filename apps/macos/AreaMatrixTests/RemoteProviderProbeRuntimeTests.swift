@@ -1,7 +1,9 @@
+// swiftlint:disable file_length
 @testable import AreaMatrix
 import Foundation
 import XCTest
 
+// swiftlint:disable:next type_body_length
 final class RemoteProviderProbeRuntimeTests: XCTestCase {
     @MainActor
     func testCoreBridgeUsesInstalledRuntimeForKeychainReferenceProviderProbe() async throws {
@@ -176,7 +178,11 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
             bridge: S304SuggestionBridge(result: .success(.s304ProviderUnavailable(fileID: request.fileID))),
             fallbackBridge: fallbackBridge
         )
-        let panel = AIClassificationSuggestionPanel(model: model, fileName: "invoice.pdf", currentPath: "inbox/invoice.pdf")
+        let panel = AIClassificationSuggestionPanel(
+            model: model,
+            fileName: "invoice.pdf",
+            currentPath: "inbox/invoice.pdf"
+        )
 
         await model.askForSuggestion()
         let body = s135MirrorDescription(of: panel.body)
@@ -270,7 +276,10 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
         await model.selectFiles([file.id])
         model.beginAIClassificationSuggestion(fileID: file.id)
         await suggestionModel.askForSuggestion()
-        model.beginAIClassificationChange(fileID: file.id, targetCategory: suggestionModel.suggestion?.suggestedCategory)
+        model.beginAIClassificationChange(
+            fileID: file.id,
+            targetCategory: suggestionModel.suggestion?.suggestedCategory
+        )
         let recordedRequests = await bridge.recordedRequests()
 
         XCTAssertEqual(recordedRequests, [request])

@@ -207,7 +207,7 @@ enum AITagBatchSuggestionAction {
     private static func updatingEditSession(
         fileID: Int64,
         in state: AITagBatchSuggestionState,
-        disabledReason: String?,
+        disabledReason _: String?,
         update: (AITagSuggestionState) -> AITagSuggestionState
     ) -> AITagBatchSuggestionState {
         guard var review = state.review,

@@ -109,9 +109,9 @@ struct AIPrivacyRuleEditorDraft: Equatable {
     var hasChanges: Bool {
         originalRuleID == nil
             ? !pattern.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                kind != .folder || appliesTo != .remoteAi || !description.isEmpty || !enabled
+            kind != .folder || appliesTo != .remoteAi || !description.isEmpty || !enabled
             : kind != originalKind || trimmedPattern != originalPattern || appliesTo != originalAppliesTo ||
-                trimmedDescription != originalDescription || enabled != originalEnabled
+            trimmedDescription != originalDescription || enabled != originalEnabled
     }
 
     var input: AiPrivacyRuleInput {
@@ -175,7 +175,9 @@ enum AIPrivacyRuleTemplate: String, CaseIterable, Identifiable {
     case secretsAndKeyFiles
     case confidentialKeywords
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     var title: String {
         switch self {

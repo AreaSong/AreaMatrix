@@ -1,4 +1,6 @@
 import Foundation
+
+// swiftlint:disable file_length
 import SwiftUI
 
 enum SearchFilterChipKind: String, Equatable {
@@ -230,6 +232,7 @@ extension MainRepositoryContentView {
         .frame(minWidth: 220, idealWidth: 260, maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)
     }
 
+    // swiftlint:disable:next identifier_name
     private var semanticDetailPresentationForSelectedFile: SemanticSearchDetailPresentation? {
         guard let fileID = selectedFileIDs.first, selectedFileIDs.count == 1 else { return nil }
         return fileListModel.searchState.page?.semanticPage?.detailPresentation(for: fileID)

@@ -134,11 +134,11 @@ extension BatchAITagSuggestionSheet {
     func routeLabel(_ route: AiTagSuggestionRoute?) -> String {
         switch route {
         case .local:
-            return "Local"
+            "Local"
         case .remote:
-            return "Remote"
+            "Remote"
         case nil:
-            return "No provider"
+            "No provider"
         }
     }
 
@@ -165,30 +165,30 @@ extension BatchAITagSuggestionSheet {
     func aiTagInputFieldText(_ field: AiTagSuggestionInputField) -> String {
         switch field {
         case .fileName:
-            return "filename"
+            "filename"
         case .repoRelativePath:
-            return "repo-relative path"
+            "repo-relative path"
         case .extractedTextExcerpt:
-            return "extracted text"
+            "extracted text"
         case .aiSummary:
-            return "AI summary"
+            "AI summary"
         case .noteSummary:
-            return "note summary"
+            "note summary"
         case .existingTags:
-            return "existing tags"
+            "existing tags"
         case .tagRegistry:
-            return "tag registry"
+            "tag registry"
         }
     }
 
     func mergeText(_ suggestion: AiTagSuggestion) -> String {
         switch suggestion.mergeAction {
         case .createTag:
-            return "Will create tag \(suggestion.slug)"
+            "Will create tag \(suggestion.slug)"
         case .useExistingTag:
-            return "Will use existing tag \(suggestion.matchedExistingSlug ?? suggestion.slug)"
+            "Will use existing tag \(suggestion.matchedExistingSlug ?? suggestion.slug)"
         case .mergeWithExistingTag:
-            return "Merge with existing tag \(suggestion.matchedExistingSlug ?? suggestion.slug)"
+            "Merge with existing tag \(suggestion.matchedExistingSlug ?? suggestion.slug)"
         }
     }
 
@@ -211,17 +211,17 @@ extension BatchAITagSuggestionSheet {
     func skipReasonText(_ reason: AiTagSuggestionSkipReason) -> String {
         switch reason {
         case .aiDisabled:
-            return "AI tag suggestions are off"
+            "AI tag suggestions are off"
         case .featureDisabled:
-            return "Auto tags are off"
+            "Auto tags are off"
         case .providerUnavailable:
-            return "AI provider is unavailable"
+            "AI provider is unavailable"
         case .privacyRule:
-            return "Skipped by privacy rule"
+            "Skipped by privacy rule"
         case .noEligibleInput:
-            return "No eligible tag context"
+            "No eligible tag context"
         case .callLogUnavailable:
-            return "AI call log is unavailable"
+            "AI call log is unavailable"
         }
     }
 
@@ -232,5 +232,7 @@ extension BatchAITagSuggestionSheet {
 
 struct BatchAITagCallLogRoute: Identifiable {
     let callLogID: Int64
-    var id: Int64 { callLogID }
+    var id: Int64 {
+        callLogID
+    }
 }

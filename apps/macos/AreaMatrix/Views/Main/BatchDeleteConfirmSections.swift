@@ -299,7 +299,7 @@ extension BatchAITagSuggestionSheet {
         .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
     }
 
-    @ViewBuilder func reportTraceLinks(_ report: AiTagSuggestionReport) -> some View {
+    func reportTraceLinks(_ report: AiTagSuggestionReport) -> some View {
         HStack {
             if let ruleID = privacyRuleID(for: report) {
                 Button("View privacy rule") {

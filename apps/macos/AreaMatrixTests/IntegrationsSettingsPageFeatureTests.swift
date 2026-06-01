@@ -206,6 +206,7 @@ extension AiFallbackStatus {
         )
     }
 
+    // swiftlint:disable:next function_parameter_count
     static func s304RecoveryStatus(
         kind: AiFallbackKind,
         category: AiFallbackCategory,

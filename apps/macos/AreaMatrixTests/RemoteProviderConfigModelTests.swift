@@ -1,6 +1,7 @@
 @testable import AreaMatrix
 import XCTest
 
+// swiftlint:disable:next type_body_length
 final class RemoteProviderConfigModelTests: XCTestCase {
     @MainActor
     func testEnableUsesKeychainReferenceAndVerifiedToken() async {

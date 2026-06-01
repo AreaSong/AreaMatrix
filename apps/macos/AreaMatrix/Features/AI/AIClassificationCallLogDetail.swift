@@ -43,7 +43,7 @@ struct AICallLogView: View {
             actions
         }
         .padding(20)
-        .frame(width: 1_080, height: 680, alignment: .topLeading)
+        .frame(width: 1080, height: 680, alignment: .topLeading)
         .task { await model.load() }
         .confirmationDialog(confirmationTitle, isPresented: confirmationBinding, titleVisibility: .visible) {
             Button("Cancel", role: .cancel) { confirmation = nil }
@@ -238,7 +238,9 @@ struct AICallLogView: View {
 
 private enum AICallLogConfirmation: String, Identifiable {
     case clearAll, deleteSelected
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 }
 
 private struct AICallLogHeaderRow: View {
@@ -261,7 +263,9 @@ private struct AICallLogHeaderRow: View {
 
 private struct AICallLogRow: View {
     let record: AiCallLogRecord
-    private var row: AICallLogRowPresentation { AICallLogRowPresentation(record: record) }
+    private var row: AICallLogRowPresentation {
+        AICallLogRowPresentation(record: record)
+    }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -348,7 +352,7 @@ final class AIClassificationCallLogDetailModel: ObservableObject {
                 state = .notFound(callLogID)
             }
         } catch {
-            state = .failed(await callLogError(for: error))
+            state = await .failed(callLogError(for: error))
         }
     }
 

@@ -28,7 +28,9 @@ protocol CoreSemanticFallbackStatusReading: Sendable {
 enum AISettingsProviderPreference: String, CaseIterable, Equatable, Identifiable {
     case localFirst, localOnly, remoteFirst
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     var label: String {
         switch self {
@@ -42,7 +44,9 @@ enum AISettingsProviderPreference: String, CaseIterable, Equatable, Identifiable
 enum AISettingsFeatureKind: String, CaseIterable, Equatable, Identifiable {
     case classificationSuggestions, autoSummaries, autoTags, semanticSearch
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     var title: String {
         switch self {
@@ -75,7 +79,9 @@ struct AISettingsCapabilitySnapshot: Equatable, Identifiable {
     var remoteAllowed: Bool
     var disabledReason: String?
 
-    var id: String { feature.rawValue }
+    var id: String {
+        feature.rawValue
+    }
 }
 
 struct AISettingsConfigSnapshot: Equatable {
@@ -150,7 +156,8 @@ extension CoreBridge: CoreAISettingsLoading, CoreAISettingsUpdating {
 }
 
 extension CoreBridge: CoreSemanticSearching {
-    func semanticSearch(repoPath: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
+    func semanticSearch(repoPath: String,
+                        request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
         let corePage = try await Task.detached(priority: .userInitiated) {
             try AreaMatrix.semanticSearch(
                 repoPath: repoPath,
@@ -225,7 +232,7 @@ extension AISettingsConfigSnapshot {
             featureToggles.first { $0.feature == feature } ??
                 AISettingsFeatureConfigSnapshot(feature: feature, enabled: false, allowRemote: false)
         }
-        if !config.remoteAIAllowed && config.providerPreference == .remoteFirst {
+        if !config.remoteAIAllowed, config.providerPreference == .remoteFirst {
             config.providerPreference = .localFirst
         }
         return config
@@ -269,7 +276,7 @@ extension AISettingsCapabilitySnapshot {
         if !config.aiEnabled { return "AI is off" }
         if !toggle.enabled { return "Feature is off" }
         if config.localAIEnabled { return nil }
-        if config.remoteAIAllowed && toggle.allowRemote && config.privacyGateEnabled { return nil }
+        if config.remoteAIAllowed, toggle.allowRemote, config.privacyGateEnabled { return nil }
         return "No AI route is enabled"
     }
 }

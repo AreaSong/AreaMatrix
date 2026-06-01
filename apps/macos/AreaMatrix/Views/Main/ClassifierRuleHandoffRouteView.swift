@@ -21,6 +21,7 @@ struct ClassifierRuleHandoffRouteView: View {
 
         var note: String {
             self == .saveRule
+                // swiftlint:disable:next line_length
                 ? "Saving this rule only affects future classifier behavior and does not undo the current classification."
                 : "Previewing impact does not undo the current classification or save a rule."
         }

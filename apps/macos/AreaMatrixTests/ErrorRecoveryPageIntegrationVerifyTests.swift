@@ -266,7 +266,8 @@ private actor S132IntegrationErrorMapper: CoreErrorMapping {
 private actor S308PrivacySemanticSearcher: CoreSemanticSearching {
     private var recordedIndexRequests: [SearchQueryRequestSnapshot] = []
 
-    func semanticSearch(repoPath _: String, request _: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
+    func semanticSearch(repoPath _: String,
+                        request _: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
         throw CoreError.Internal(message: "S3-08 C3-09 test does not execute semantic search")
     }
 
@@ -413,7 +414,7 @@ private extension AiPrivacyRulesSnapshot {
             remoteAllowedFields: [
                 AiPrivacyFieldState(field: .fileName, allowRemote: true, lastMatchedCount: 0),
                 AiPrivacyFieldState(field: .repoRelativePath, allowRemote: true, lastMatchedCount: 0),
-                AiPrivacyFieldState(field: .`extension`, allowRemote: true, lastMatchedCount: 0)
+                AiPrivacyFieldState(field: .extension, allowRemote: true, lastMatchedCount: 0)
             ],
             providerScope: AiPrivacyProviderScopeSnapshot(
                 providerConfigured: true,
@@ -435,7 +436,7 @@ private extension AiPrivacyEvaluationReport {
             providerGateReason: nil,
             matchedRules: [],
             matchedFieldType: nil,
-            allowedFields: [.fileName, .repoRelativePath, .`extension`],
+            allowedFields: [.fileName, .repoRelativePath, .extension],
             blockedFields: [.extractedTextExcerpt],
             sentFields: [.fileName, .repoRelativePath],
             message: "Privacy rules allow semantic index metadata."

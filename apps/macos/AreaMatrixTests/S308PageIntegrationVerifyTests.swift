@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 @testable import AreaMatrix
 import XCTest
 
@@ -79,6 +80,7 @@ final class S308PageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
+    // swiftlint:disable:next function_body_length
     func testS308IndexLifecycleCancelsActiveCoreBuildAndKeepsLaterReportOutOfPage() async {
         let tree = RepositoryTreeNodeSnapshot.s308Tree()
         guard let row = tree.sidebarRow(id: "finance/invoices") else {

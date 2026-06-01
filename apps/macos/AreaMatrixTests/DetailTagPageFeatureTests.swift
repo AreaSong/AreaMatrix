@@ -483,5 +483,4 @@ final class DetailTagPageFeatureTests: XCTestCase {
         XCTAssertNotNil(model.detailTagSuggestionState.editSession)
         XCTAssertNotNil(model.detailTagEditorState.failure)
     }
-
 }

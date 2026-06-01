@@ -30,11 +30,11 @@ enum SemanticIndexBuildState: Equatable {
     var canRetryFailedItems: Bool {
         switch self {
         case let .completed(_, report):
-            return report.failedCount > 0 || report.status == .partial || report.status == .failed
+            report.failedCount > 0 || report.status == .partial || report.status == .failed
         case .canceled, .failed:
-            return true
+            true
         case .idle, .building:
-            return false
+            false
         }
     }
 }
@@ -154,7 +154,7 @@ extension MainFileListModel {
         } catch {
             guard semanticIndexBuildIsCurrent(generation: generation, request: request) else { return }
             semanticIndexBuildTask = nil
-            semanticIndexBuildState = .failed(request: request, await mapCoreError(error))
+            semanticIndexBuildState = await .failed(request: request, mapCoreError(error))
         }
     }
 
@@ -258,7 +258,7 @@ extension MainFileListModel {
             feature: .semanticSearch,
             route: semanticPrivacyRouteForCurrentPage(),
             requestedFields: [
-                .fileName, .repoRelativePath, .`extension`, .extractedTextExcerpt,
+                .fileName, .repoRelativePath, .extension, .extractedTextExcerpt,
                 .aiSummary, .noteSummary, .tagCategoryContext
             ],
             privacyGateEnabled: snapshot.privacyGateEnabled,
@@ -292,7 +292,7 @@ extension MainFileListModel {
         return value.trimmingCharacters(in: CharacterSet(charactersIn: ".")).lowercased()
     }
 
-    private func semanticFallbackRequest(for request: SearchQueryRequestSnapshot) -> AiFallbackStatusRequest {
+    private func semanticFallbackRequest(for _: SearchQueryRequestSnapshot) -> AiFallbackStatusRequest {
         let semanticPage = searchState.page?.semanticPage
         let providerError = semanticProviderError(for: semanticPage?.fallbackReason)
         return AiFallbackStatusRequest(
@@ -303,7 +303,8 @@ extension MainFileListModel {
             privacyDecision: privacyDecision(for: semanticPage?.fallbackReason),
             privacySkippedReason: privacySkippedReason(for: semanticPage?.fallbackReason),
             categorySkippedReason: nil,
-            semanticFallbackReason: semanticPage?.fallbackReason.map(SemanticSearchFallbackReason.init(snapshotReason:)),
+            semanticFallbackReason: semanticPage?.fallbackReason
+                .map(SemanticSearchFallbackReason.init(snapshotReason:)),
             callLogStatus: semanticCallLogStatus(for: semanticPage?.fallbackReason),
             callLogId: semanticPage?.callLogID,
             privacyRuleId: semanticPage?.privacyRuleID,
@@ -311,7 +312,8 @@ extension MainFileListModel {
         )
     }
 
-    private func semanticProviderError(for reason: SemanticSearchFallbackReasonSnapshot?) -> AiFallbackProviderErrorKind? {
+    private func semanticProviderError(for reason: SemanticSearchFallbackReasonSnapshot?)
+        -> AiFallbackProviderErrorKind? {
         switch reason {
         case .providerUnavailable:
             .providerUnavailable
@@ -322,7 +324,7 @@ extension MainFileListModel {
         case .callLogUnavailable:
             .callLogUnavailable
         case .aiDisabled, .featureDisabled, .privacyRule, .semanticIndexNotReady, .noEligibleInput,
-                .normalSearchUnavailable, nil:
+             .normalSearchUnavailable, nil:
             nil
         }
     }
@@ -355,7 +357,7 @@ extension MainFileListModel {
         case .privacyRule:
             .skipped
         case .providerUnavailable, .rateLimited, .timeout, .callLogUnavailable, .aiDisabled, .featureDisabled,
-                .semanticIndexNotReady, .noEligibleInput, .normalSearchUnavailable:
+             .semanticIndexNotReady, .noEligibleInput, .normalSearchUnavailable:
             .failed
         case nil:
             nil

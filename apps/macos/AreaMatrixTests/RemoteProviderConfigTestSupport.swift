@@ -234,7 +234,7 @@ extension AiPrivacyEvaluationReport {
             providerGateReason: nil,
             matchedRules: [],
             matchedFieldType: nil,
-            allowedFields: [.fileName, .repoRelativePath, .`extension`],
+            allowedFields: [.fileName, .repoRelativePath, .extension],
             blockedFields: [],
             sentFields: [.fileName, .repoRelativePath],
             message: "Privacy rules allow this AI request."

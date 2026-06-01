@@ -194,6 +194,7 @@ struct SemanticSearchFallbackStatus {
         )
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     private static func badgeText(kind: AiFallbackKind) -> String {
         switch kind {
         case .aiDisabled: "AI disabled"

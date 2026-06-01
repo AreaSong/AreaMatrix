@@ -284,7 +284,11 @@ private actor S305CallLogClearer: CoreAICallLogClearing {
 
     func clearAICallLog(repoPath _: String, request: AiCallLogClearRequest) async throws -> AiCallLogClearReport {
         recordedRequests.append(request)
-        return AiCallLogClearReport(deletedCount: Int64(request.entryIds.count), remainingCount: 0, clearedAt: 1_700_000_100)
+        return AiCallLogClearReport(
+            deletedCount: Int64(request.entryIds.count),
+            remainingCount: 0,
+            clearedAt: 1_700_000_100
+        )
     }
 
     func requests() -> [AiCallLogClearRequest] {

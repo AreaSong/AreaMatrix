@@ -190,7 +190,10 @@ extension MainFileListModel {
         let selectedFiles = files.filter { selectedIDs.contains($0.id) }
         guard selectedFiles.count > 1 else { return }
 
-        aiTagBatchSuggestionState = .loading(AITagBatchSuggestionAction.initialReview(files: selectedFiles, reports: [:]))
+        aiTagBatchSuggestionState = .loading(AITagBatchSuggestionAction.initialReview(
+            files: selectedFiles,
+            reports: [:]
+        ))
         let review = await loadBatchAITagSuggestionReports(files: selectedFiles, selectedIDs: selectedIDs)
         guard selection.multipleFileIDs == selectedIDs else { return }
         aiTagBatchSuggestionState = .reviewing(review)
@@ -308,7 +311,11 @@ extension MainFileListModel {
         var failures: [Int64: CoreErrorMappingSnapshot] = [:]
         for file in files {
             do {
-                reports[file.id] = try await suggestAITagsWithPrivacyGate(fileID: file.id, file: file, candidateTags: [])
+                reports[file.id] = try await suggestAITagsWithPrivacyGate(
+                    fileID: file.id,
+                    file: file,
+                    candidateTags: []
+                )
             } catch {
                 failures[file.id] = await mapCoreError(error)
             }
@@ -340,7 +347,7 @@ extension MainFileListModel {
             )
             return (applyReport, nil)
         } catch {
-            return (nil, await mapCoreError(error))
+            return await (nil, mapCoreError(error))
         }
     }
 

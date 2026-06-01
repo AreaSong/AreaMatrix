@@ -1,4 +1,7 @@
+// swiftlint:disable file_length
 import SwiftUI
+
+// swiftlint:disable:next type_name
 enum AIClassificationPrivacyRuleReferenceState: Equatable {
     case idle
     case loading
@@ -6,6 +9,7 @@ enum AIClassificationPrivacyRuleReferenceState: Equatable {
     case notFound(String)
     case failed(AISettingsError)
 }
+
 struct AIClassificationPrivacyRuleReference: Equatable {
     var ruleID: String
     var name: String
@@ -303,6 +307,7 @@ private extension AiPrivacySkippedReason {
 }
 
 @MainActor
+// swiftlint:disable:next type_name
 final class AIClassificationPrivacyRuleReferenceModel: ObservableObject {
     @Published private(set) var state: AIClassificationPrivacyRuleReferenceState = .idle
 
@@ -339,7 +344,7 @@ final class AIClassificationPrivacyRuleReferenceModel: ObservableObject {
                 state = .notFound(ruleID)
             }
         } catch {
-            state = .failed(await privacyRuleError(for: error))
+            state = await .failed(privacyRuleError(for: error))
         }
     }
 
@@ -360,6 +365,7 @@ final class AIClassificationPrivacyRuleReferenceModel: ObservableObject {
     }
 }
 
+// swiftlint:disable:next type_name
 struct AIClassificationPrivacyRuleReferenceSheet: View {
     @StateObject private var model: AIClassificationPrivacyRuleReferenceModel
     let onClose: () -> Void

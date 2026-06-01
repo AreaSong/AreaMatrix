@@ -118,9 +118,17 @@ final class AISettingsModel: ObservableObject {
         self.errorMapper = errorMapper
     }
 
-    var isLoaded: Bool { loadState == .loaded }
-    var hasRetryableSave: Bool { pendingSave != nil && !isSaving }
-    var hasRetryablePause: Bool { pendingPause != nil && !isSaving }
+    var isLoaded: Bool {
+        loadState == .loaded
+    }
+
+    var hasRetryableSave: Bool {
+        pendingSave != nil && !isSaving
+    }
+
+    var hasRetryablePause: Bool {
+        pendingPause != nil && !isSaving
+    }
 
     func load() async {
         loadState = .loading
@@ -136,7 +144,7 @@ final class AISettingsModel: ObservableObject {
         } catch {
             snapshot = nil
             savedSnapshot = nil
-            loadState = .failed(await settingsError(
+            loadState = await .failed(settingsError(
                 for: error,
                 message: "AI settings could not be loaded.",
                 fallbackRecovery: "Retry"
@@ -158,7 +166,7 @@ final class AISettingsModel: ObservableObject {
 
     func setProviderPreference(_ preference: AISettingsProviderPreference) async {
         guard var config = editableConfig(), config.providerPreference != preference else { return }
-        if preference == .remoteFirst && !config.remoteAIAllowed {
+        if preference == .remoteFirst, !config.remoteAIAllowed {
             actionFeedback = .failed(AISettingsError(
                 message: "Remote AI requires explicit setup.",
                 recovery: "Use Configure remote AI before selecting Remote first.",

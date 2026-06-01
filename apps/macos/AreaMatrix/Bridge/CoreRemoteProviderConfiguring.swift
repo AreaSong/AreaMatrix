@@ -31,6 +31,7 @@ protocol CoreAIClassificationSuggesting: Sendable {
     ) async throws -> AIClassificationSuggestionState
 }
 
+// swiftlint:disable:next type_name
 protocol CoreAIClassificationFallbackStatusReading: Sendable {
     func classificationFallbackStatus(
         repoPath: String,
@@ -78,6 +79,7 @@ enum AIClassificationSuggestionRouteState: Equatable {
     }
 }
 
+// swiftlint:disable:next type_name
 enum AIClassificationSuggestionContextFieldState: Equatable {
     case fileName
     case `extension`
@@ -94,6 +96,7 @@ enum AIClassificationSuggestionContextFieldState: Equatable {
     }
 }
 
+// swiftlint:disable:next type_name
 enum AIClassificationSuggestionSkipReasonState: Equatable {
     case aiDisabled
     case featureDisabled
@@ -106,7 +109,7 @@ enum AIClassificationSuggestionSkipReasonState: Equatable {
 struct AIClassificationSuggestionRequestState: Equatable {
     var fileID: Int64
     var contextPolicy: AIClassificationContextPolicyState
-    var privacyPolicyRef: String? = nil
+    var privacyPolicyRef: String?
 }
 
 struct AIClassificationSuggestionState: Equatable {

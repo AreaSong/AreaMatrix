@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import SwiftUI
 
 struct MainRepositoryDetailPane: View {
@@ -76,7 +77,10 @@ extension MainRepositoryDetailPane {
         }
         .confirmationDialog(
             "Save AI summary changes?",
-            isPresented: Binding(get: { pendingSummaryExitTab != nil }, set: { if !$0 { pendingSummaryExitTab = nil } }),
+            isPresented: Binding(
+                get: { pendingSummaryExitTab != nil },
+                set: { if !$0 { pendingSummaryExitTab = nil } }
+            ),
             titleVisibility: .visible
         ) {
             Button("Cancel", role: .cancel) { pendingSummaryExitTab = nil }
@@ -306,7 +310,7 @@ extension MainRepositoryDetailPane {
             tagSet.fileTags.map(\.value)
         case let .failed(fileID, _, _, tagSet?) where fileID == detail.id:
             tagSet.fileTags.map(\.value)
-        case .notLoaded, .loading(_, _), .loaded(_, _), .failed(_, _, _, _):
+        case .notLoaded, .loading, .loaded, .failed:
             []
         }
     }

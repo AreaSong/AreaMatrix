@@ -2,6 +2,7 @@ import Combine
 import Foundation
 import SwiftUI
 
+// swiftlint:disable:next type_body_length
 struct AIPrivacyRulesView: View {
     @ObservedObject var model: AISettingsModel
     @StateObject var providerModel: AIPrivacyRemoteProviderStateModel
@@ -260,11 +261,17 @@ struct AIPrivacyRulesView: View {
         applyInitialFocusIfNeeded()
     }
 
-    private func retryLoad() { Task { await loadPage() } }
+    private func retryLoad() {
+        Task { await loadPage() }
+    }
 
-    private func retryProviderLoad() { Task { await providerModel.load() } }
+    private func retryProviderLoad() {
+        Task { await providerModel.load() }
+    }
 
-    private func retryPrivacyRules() { Task { await privacyModel.load() } }
+    private func retryPrivacyRules() {
+        Task { await privacyModel.load() }
+    }
 
     private func allowRemoteGate() {
         guard providerModel.allowsPrivacyGateEnable else {

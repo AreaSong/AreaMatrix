@@ -69,7 +69,9 @@ struct RemoteProviderProbeRuntimeInstaller: RemoteProviderProbeRuntimeInstalling
             exit 0
         fi
 
-        credential="$(/usr/bin/security find-generic-password -s 'AreaMatrix.RemoteAI' -a "$account" -w 2>/dev/null || true)"
+        credential="$(
+            /usr/bin/security find-generic-password -s 'AreaMatrix.RemoteAI' -a "$account" -w 2>/dev/null || true
+        )"
         if [ -z "$credential" ]; then
             printf 'ConnectionFailed\n'
             exit 0

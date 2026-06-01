@@ -34,6 +34,7 @@ final class MainFileListModel: ObservableObject {
             if !semanticIndexControlState.isCurrent(for: searchState.request) { semanticIndexControlState = .idle }
         }
     }
+
     @Published var semanticIndexBuildState = SemanticIndexBuildState.idle
     @Published var semanticPrivacyGateState = SemanticPrivacyGateState.idle
     @Published var semanticFallbackState = SemanticFallbackState.idle

@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 import SwiftUI
 
@@ -224,7 +225,9 @@ struct AITagSuggestionEditDraft: Equatable, Identifiable {
     var slug: String
     var slugEdited: Bool
     var status: TagSuggestionEditRowStatus
-    var id: String { suggestionID }
+    var id: String {
+        suggestionID
+    }
 
     var applyItem: ApplyAiTagSuggestionItem {
         let cleanName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -242,9 +245,17 @@ struct AITagSuggestionEditDraft: Equatable, Identifiable {
 struct AITagSuggestionEditSession: Equatable {
     var selectedIDs: Set<String>
     var drafts: [AITagSuggestionEditDraft]
-    var attentionCount: Int { drafts.filter(\.status.preventsApply).count }
-    var canApply: Bool { !drafts.isEmpty && drafts.allSatisfy { !$0.status.preventsApply } }
-    var applyItems: [ApplyAiTagSuggestionItem] { canApply ? drafts.map(\.applyItem) : [] }
+    var attentionCount: Int {
+        drafts.filter(\.status.preventsApply).count
+    }
+
+    var canApply: Bool {
+        !drafts.isEmpty && drafts.allSatisfy { !$0.status.preventsApply }
+    }
+
+    var applyItems: [ApplyAiTagSuggestionItem] {
+        canApply ? drafts.map(\.applyItem) : []
+    }
 }
 
 enum AITagSuggestionAction {
@@ -373,7 +384,11 @@ enum AITagSuggestionAction {
         guard let report = state.report, var session = state.editSession,
               let index = session.drafts.firstIndex(where: { $0.suggestionID == suggestionID }) else { return state }
         update(&session.drafts[index])
-        return .editing(fileID: report.fileId, report, validated(session, report: report, disabledReason: disabledReason))
+        return .editing(
+            fileID: report.fileId,
+            report,
+            validated(session, report: report, disabledReason: disabledReason)
+        )
     }
 
     static func applyingEdited(in state: AITagSuggestionState) -> AITagSuggestionState {
@@ -447,9 +462,9 @@ enum AITagSuggestionAction {
 
     private static func rowStatus(for result: AiTagSuggestionApplyItemResult) -> TagSuggestionEditRowStatus {
         switch result.status {
-        case .applied: return .applied
-        case .alreadyAdded: return .alreadyAdded(result.error ?? "Already applied")
-        case .failed: return .failed(result.error ?? "A suggestion could not be applied.")
+        case .applied: .applied
+        case .alreadyAdded: .alreadyAdded(result.error ?? "Already applied")
+        case .failed: .failed(result.error ?? "A suggestion could not be applied.")
         }
     }
 

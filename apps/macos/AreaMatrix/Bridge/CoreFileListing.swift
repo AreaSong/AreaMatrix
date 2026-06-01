@@ -93,7 +93,9 @@ enum SearchModeSnapshot: String, CaseIterable, Equatable, Identifiable {
     case normal
     case semantic
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     var displayName: String {
         switch self {
@@ -229,7 +231,7 @@ struct SearchResultPageSnapshot: Equatable {
     var results: [SearchFileResultSnapshot]
     var diagnostics: [SearchQueryDiagnosticSnapshot]
     var indexStatus: SearchIndexStatusSnapshot
-    var semanticPage: SemanticSearchResultPageSnapshot? = nil
+    var semanticPage: SemanticSearchResultPageSnapshot?
 
     var hasDiagnosticError: Bool {
         diagnostics.contains(where: \.isError)
