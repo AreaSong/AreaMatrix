@@ -1,0 +1,86 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-78`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-78-s3-10-page-integration-verify.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- 禁止触碰范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：依赖 page-feature task 覆盖 C3-04、C3-08、C3-10
+- 结果：通过
+- 证据：manifest 中 `4-2/task-78` 依赖 `4-2/task-75/76/77`，control map 中 S3-10 对应 `C3-04, C3-08, C3-10`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:6425`
+
+- 项目：C3-04 分类建议 fallback 接入真实 CoreBridge
+- 结果：通过
+- 证据：`AIClassificationSuggestionPanelModel.askForSuggestion()` 调用 `suggestCategoryWithAI`，失败/跳过后调用 `classificationFallbackStatus`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/RemoteProviderConfigState.swift:150`
+
+- 项目：C3-08 语义搜索 fallback 接入真实 CoreBridge
+- 结果：通过
+- 证据：semantic search 走 `semanticSearching.semanticSearch`，fallback reason 存在时加载 `semanticFallbackStatus`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainListVisibleFileFiltering.swift:377`
+
+- 项目：C3-10 fallback status 接入真实 CoreBridge
+- 结果：通过
+- 证据：CoreBridge 封装 `getAiFallbackStatus`；分类与语义搜索各自通过协议消费该 Core 能力
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRemoteProviderConfiguring.swift:218`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift:194`
+
+- 项目：页面状态、入口、退出、错误态、CoreBridge 调用闭环
+- 结果：通过
+- 证据：分类 fallback 提供 Retry、AI 设置、本地模型、远程配置、隐私规则、调用日志、手动分类；语义 fallback 提供 Retry、设置/日志/隐私规则、构建索引、普通搜索回退
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift:242`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SmartListManagementSheet+Sections.swift:186`
+
+- 项目：移除 mock、fixture、硬编码状态伪闭环
+- 结果：通过
+- 证据：生产路径默认注入 `CoreBridge()`，测试中的 recording bridge 仅存在于 XCTest；未发现生产路径用 fixture 伪造 S3-10 完成
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:101`
+
+- 项目：不新增 control map 外能力
+- 结果：通过
+- 证据：实现集中在 S3-10 声明的 C3-04、C3-08、C3-10 fallback/导航/恢复动作，没有新增未声明 Core 能力
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-3-control-map.md:18`
+
+- 项目：Expected New Paths 与 Forbidden Touches
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 已存在；`git status --short -- core/src apps/macos/AreaMatrix apps/macos/AreaMatrixTests core/area_matrix.udl` 无输出，未发现 `core/src/**` 被触碰
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，分类与语义搜索各自通过 View + Model + CoreBridge 协议分层接入，未见视图直接调用 UniFFI。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Core public API；`docs/api/core-api.md` 与 `core/area_matrix.udl` 均包含 `get_ai_fallback_status`、`semantic_search`、`build_embedding_index`、`suggest_category_with_ai`。
+- 错误处理与边界处理：通过，fallback reader 失败会映射为可展示状态；语义索引构建前检查隐私 gate。
+- 测试与验证覆盖：通过，存在 S3-04/S3-08/S3-10 相关 XCTest 覆盖，且本次 manifest 验证命令通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现生产路径 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-78`
+- 通过：`prompt doctor` 通过，显示 `tasks: 637`、`manifests: 637`、`high risk tasks: 633`
+- 通过：`git diff --check`
+- 通过：`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO`，最终输出 `** BUILD SUCCEEDED **`
+- 未运行：`./dev test macos`，本 task manifest 未要求，且本轮按 task-scoped validation 不扩大门禁。
+- 当前工作区：仅看到 runner 收口相关 `summary.json`、`progress.json` 脏改动；这类进度文件按本 verify 阶段规则不阻断。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS
