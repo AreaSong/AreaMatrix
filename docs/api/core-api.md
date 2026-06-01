@@ -29,6 +29,9 @@ namespace area_matrix {
     void init_logging(string level);
 
     [Throws=CoreError]
+    BindingContractReport inspect_binding_contract(BindingContractRequest request);
+
+    [Throws=CoreError]
     RepoPathValidation validate_repo_path(string repo_path);
 
     [Throws=CoreError]
@@ -419,6 +422,42 @@ dictionary RepoConfig {
     boolean enable_keyword_rules;
     boolean fallback_to_inbox;
     boolean allow_replace_during_import;
+};
+
+dictionary BindingContractRequest {
+    BindingTargetPlatform target_platform;
+    i64 binding_version;
+};
+
+dictionary BindingApiContract {
+    string name;
+    string capability;
+    BindingSupportStatus status;
+    string? reason;
+};
+
+dictionary BindingTypeMapping {
+    string rust_type;
+    string udl_type;
+    string target_type;
+    BindingSupportStatus status;
+    string? reason;
+};
+
+dictionary BindingMissingCapability {
+    string capability;
+    string label;
+    BindingSupportStatus status;
+    string reason;
+};
+
+dictionary BindingContractReport {
+    BindingTargetPlatform target_platform;
+    i64 binding_version;
+    string core_version;
+    sequence<BindingApiContract> supported_apis;
+    sequence<BindingTypeMapping> type_mappings;
+    sequence<BindingMissingCapability> missing_capabilities;
 };
 
 dictionary AiFeatureConfig {
@@ -1862,6 +1901,8 @@ enum RepoPathIssue {
     "ICloudPath", "UnfinishedScanSession"
 };
 enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
+enum BindingTargetPlatform { "Swift", "Kotlin", "Python" };
+enum BindingSupportStatus { "Supported", "Limited", "Missing" };
 enum AiProviderPreference { "LocalFirst", "LocalOnly", "RemoteFirst" };
 enum AiFeatureKind {
     "ClassificationSuggestions", "AutoSummaries", "AutoTags", "SemanticSearch"
@@ -2107,6 +2148,13 @@ interface CoreError {
 | `enum E` | `enum E` | `enum E` | `enum class E` |
 | `struct S` | `dictionary S` | `struct S` | `data class S` |
 | `Result<T, E>` | `[Throws=E] T` | `func() throws -> T` | `@Throws fun ... ` |
+| `BindingTargetPlatform` | `enum BindingTargetPlatform` | `enum BindingTargetPlatform` | `enum class BindingTargetPlatform` |
+| `BindingSupportStatus` | `enum BindingSupportStatus` | `enum BindingSupportStatus` | `enum class BindingSupportStatus` |
+| `BindingContractRequest` | `dictionary BindingContractRequest` | `BindingContractRequest` | `data class BindingContractRequest` |
+| `BindingApiContract` | `dictionary BindingApiContract` | `BindingApiContract` | `data class BindingApiContract` |
+| `BindingTypeMapping` | `dictionary BindingTypeMapping` | `BindingTypeMapping` | `data class BindingTypeMapping` |
+| `BindingMissingCapability` | `dictionary BindingMissingCapability` | `BindingMissingCapability` | `data class BindingMissingCapability` |
+| `BindingContractReport` | `dictionary BindingContractReport` | `BindingContractReport` | `data class BindingContractReport` |
 
 ---
 
@@ -2116,6 +2164,7 @@ interface CoreError {
 |---|---|---|---|
 | `get_version()` | meta | × | — |
 | `init_logging(level)` | meta | √ | Config |
+| `inspect_binding_contract(request)` | ffi | √ | Config / Internal |
 | `validate_repo_path(repo)` | repo | √ | InvalidPath / PermissionDenied / ICloudPlaceholder |
 | `validate_initialized_repo_path(repo)` | repo | √ | InvalidPath / PermissionDenied / ICloudPlaceholder / RepoNotInitialized |
 | `init_repo(path, options)` | repo | √ | Io / Config / PermissionDenied |
@@ -2279,6 +2328,43 @@ do {
 `level`：`"trace" | "debug" | "info" | "warn" | "error"`。
 
 应用最早调用，避免初始化中间状态丢日志。
+
+---
+
+## ffi API
+
+### `inspect_binding_contract(request: BindingContractRequest) throws -> BindingContractReport`
+
+```swift
+let report = try AreaMatrix.inspectBindingContract(
+    request: BindingContractRequest(
+        targetPlatform: .swift,
+        bindingVersion: 1
+    )
+)
+print(report.coreVersion)
+```
+
+C4-01 的平台中立 UniFFI 合同检查入口，服务 `S4-X-02 platform-differences`
+的能力矩阵状态展示。返回 `BindingContractReport`：
+
+- `target_platform`：请求检查的绑定家族。
+- `binding_version`：请求的稳定绑定合同版本。
+- `core_version`：AreaMatrix Core crate 版本。
+- `supported_apis`：当前绑定可直接消费的公开 API。
+- `type_mappings`：Rust / UDL / target-language 类型映射。
+- `missing_capabilities`：当前绑定在该版本下缺失或受限的能力。
+
+副作用边界：
+
+- 只读检查，不读取 repo、不触碰文件系统、不生成绑定代码。
+- 不执行平台 UI API，不推断平台能力，不补相邻 Stage 4 能力。
+- 页面需要的状态必须来自结构化 report，而不是 UI 自己猜测。
+
+错误：
+
+- `Config`：`binding_version` 不在支持范围内。
+- `Internal`：报告无法暴露最小 API / type mapping 面。
 
 ---
 

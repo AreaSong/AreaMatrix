@@ -23,6 +23,7 @@ mod classifier_rules;
 pub mod classify;
 mod command_index;
 pub mod config;
+mod cross_platform_ffi;
 pub mod db;
 pub mod domain;
 pub mod error;
@@ -118,6 +119,10 @@ pub use classifier_rules::{save_classifier_rule, ClassifierRule};
 pub use command_index::{
     list_command_targets, CommandIndex, CommandIndexContext, CommandTarget, CommandTargetAction,
     CommandTargetGroup, CommandTargetKind,
+};
+pub use cross_platform_ffi::{
+    BindingApiContract, BindingContractReport, BindingContractRequest, BindingMissingCapability,
+    BindingSupportStatus, BindingTargetPlatform, BindingTypeMapping,
 };
 pub use domain::*;
 pub use error::{

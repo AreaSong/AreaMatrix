@@ -5,6 +5,9 @@ namespace area_matrix {
     void init_logging(string level);
 
     [Throws=CoreError]
+    BindingContractReport inspect_binding_contract(BindingContractRequest request);
+
+    [Throws=CoreError]
     RepoPathValidation validate_repo_path(string repo_path);
 
     [Throws=CoreError]
@@ -395,6 +398,42 @@ dictionary RepoConfig {
     boolean enable_keyword_rules;
     boolean fallback_to_inbox;
     boolean allow_replace_during_import;
+};
+
+dictionary BindingContractRequest {
+    BindingTargetPlatform target_platform;
+    i64 binding_version;
+};
+
+dictionary BindingApiContract {
+    string name;
+    string capability;
+    BindingSupportStatus status;
+    string? reason;
+};
+
+dictionary BindingTypeMapping {
+    string rust_type;
+    string udl_type;
+    string target_type;
+    BindingSupportStatus status;
+    string? reason;
+};
+
+dictionary BindingMissingCapability {
+    string capability;
+    string label;
+    BindingSupportStatus status;
+    string reason;
+};
+
+dictionary BindingContractReport {
+    BindingTargetPlatform target_platform;
+    i64 binding_version;
+    string core_version;
+    sequence<BindingApiContract> supported_apis;
+    sequence<BindingTypeMapping> type_mappings;
+    sequence<BindingMissingCapability> missing_capabilities;
 };
 
 dictionary AiFeatureConfig {
@@ -1838,6 +1877,8 @@ enum RepoPathIssue {
     "ICloudPath", "UnfinishedScanSession"
 };
 enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
+enum BindingTargetPlatform { "Swift", "Kotlin", "Python" };
+enum BindingSupportStatus { "Supported", "Limited", "Missing" };
 enum AiProviderPreference { "LocalFirst", "LocalOnly", "RemoteFirst" };
 enum AiFeatureKind {
     "ClassificationSuggestions", "AutoSummaries", "AutoTags", "SemanticSearch"

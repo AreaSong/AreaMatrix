@@ -6,9 +6,9 @@ use crate::{
     ai_call_log, ai_classification_suggestion, ai_fallback, ai_privacy_rules, ai_settings,
     ai_summary, ai_tags_suggestion, batch_category, batch_delete, batch_rename as batch_rename_mod,
     classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules, classify,
-    db, icloud_conflicts, import_conflict_batch, local_model_status, note, recovery, redo,
-    remote_provider_config, repair, repo_init, repo_path, repo_scan, storage, sync, tree,
-    AiCallLogClearReport, AiCallLogClearRequest, AiCallLogFilter, AiCallLogPage,
+    cross_platform_ffi, db, icloud_conflicts, import_conflict_batch, local_model_status, note,
+    recovery, redo, remote_provider_config, repair, repo_init, repo_path, repo_scan, storage, sync,
+    tree, AiCallLogClearReport, AiCallLogClearRequest, AiCallLogFilter, AiCallLogPage,
     AiCallLogPagination, AiCategorySuggestion, AiCategorySuggestionRequest, AiConfig,
     AiConfigSnapshot, AiFallbackStatus, AiFallbackStatusRequest, AiPrivacyEvaluationReport,
     AiPrivacyEvaluationRequest, AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest,
@@ -17,23 +17,40 @@ use crate::{
     AiTagSuggestionRequest, ApplyAiTagSuggestionsRequest, ApplyTagSuggestionsRequest,
     BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
     BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
-    BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
-    ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
-    ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleUpdate,
-    ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry,
-    FileFilter, ICloudConflictPair, ICloudConflictPreviewReport, ICloudConflictResolution,
-    ICloudConflictResolveReport, ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
-    ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
-    LocalModelFolderLocation, LocalModelFolderRequest, LocalModelStatusRequest,
-    LocalModelStatusSnapshot, MoveToCategoryPreview, RecoveryReport, RedoActionRecord,
-    RedoActionResult, ReindexReport, RemoteProviderConfigSnapshot, RemoteProviderDisableRequest,
-    RemoteProviderEnableRequest, RemoteProviderTestRequest, RemoteProviderTestResult,
-    RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation, RuleImpactReport,
-    ScanSession, SyncResult, TagSuggestionApplyReport, TagSuggestionReport, TagSuggestionRequest,
+    BatchRenameRule, BindingContractReport, BindingContractRequest, ChangeFilter, ChangeLogEntry,
+    ClassifierCorrectionResult, ClassifierImpactPreviewRequest, ClassifierRule,
+    ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot,
+    ClassifierRuleUpdate, ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot,
+    ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ICloudConflictPreviewReport,
+    ICloudConflictResolution, ICloudConflictResolveReport, ImportConflictBatchApplyReport,
+    ImportConflictBatchApplyRequest, ImportConflictBatchPreviewReport,
+    ImportConflictBatchPreviewRequest, ImportOptions, LocalModelFolderLocation,
+    LocalModelFolderRequest, LocalModelStatusRequest, LocalModelStatusSnapshot,
+    MoveToCategoryPreview, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
+    RemoteProviderConfigSnapshot, RemoteProviderDisableRequest, RemoteProviderEnableRequest,
+    RemoteProviderTestRequest, RemoteProviderTestResult, RepairOptions, RepairReport, RepoConfig,
+    RepoInitOptions, RepoPathValidation, RuleImpactReport, ScanSession, SyncResult,
+    TagSuggestionApplyReport, TagSuggestionReport, TagSuggestionRequest,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
     Err(CoreError::internal("internal error"))
+}
+
+/// Inspects the cross-platform UniFFI contract surface for Stage 4 shells.
+///
+/// The report is read-only and lets S4-X-02 render supported APIs, type
+/// mappings, and missing capability gaps without guessing from UI state.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` when the requested binding version is
+/// outside the supported contract range, and `CoreError::Internal { message }`
+/// when the report cannot expose the minimum API and type-mapping surface.
+pub fn inspect_binding_contract(
+    request: BindingContractRequest,
+) -> CoreResult<BindingContractReport> {
+    cross_platform_ffi::inspect_binding_contract(request)
 }
 
 /// Returns the AreaMatrix core crate version.
