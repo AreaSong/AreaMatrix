@@ -77,6 +77,11 @@ pub fn init_logging(level: String) -> CoreResult<()> {
 /// create `.areamatrix/`, initialize a database, move user files, or trigger
 /// iCloud placeholder downloads.
 ///
+/// The C4-02 mobile repository connection contract reuses the same surface
+/// after the platform layer has granted access to an iOS security-scoped URL or
+/// provider path. Core receives only the authorized filesystem path; picker,
+/// bookmark, and cloud-permission lifecycles stay outside the Rust boundary.
+///
 /// # Errors
 ///
 /// Returns `CoreError::InvalidPath { path }` for empty or metadata-internal paths,
@@ -132,6 +137,11 @@ pub fn validate_initialized_repo_path(repo_path: String) -> CoreResult<RepoPathV
 /// creates a root-level `AREAMATRIX.md` for an empty repository. `README.md`
 /// remains user content and is never created or overwritten by this API.
 ///
+/// For C4-02, mobile shells call this only after the shared init/adopt
+/// confirmation pages have converted a [`RepoPathValidation`] recommendation
+/// into explicit user consent. The API does not bypass those pages and does not
+/// perform iOS security-scoped bookmark or cloud-provider permission work.
+///
 /// # Errors
 ///
 /// Returns `CoreError::InvalidPath { path }` for empty paths or `.areamatrix` internals,
@@ -146,6 +156,10 @@ pub fn init_repo(repo_path: String, options: RepoInitOptions) -> CoreResult<()> 
 ///
 /// C1-02 requires this API to read the `repo_config` state created by
 /// [`init_repo`] for an empty repository.
+///
+/// C4-02 uses the same configuration snapshot after a mobile shell has
+/// validated or initialized the selected repository. Loading config is read-only
+/// and does not refresh platform permissions or create metadata.
 ///
 /// # Errors
 ///
