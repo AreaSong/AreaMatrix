@@ -81,6 +81,7 @@ struct RemoteProviderTestResultState: Equatable {
 final class AIClassificationSuggestionPanelModel: ObservableObject {
     @Published private(set) var state: AIClassificationSuggestionPanelState = .idle
     @Published private(set) var fallbackStatus: AiFallbackStatus?
+    @Published private(set) var isResolvingFallbackStatus = false
 
     let repoPath: String
     let request: AIClassificationSuggestionRequestState
@@ -113,7 +114,7 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
     }
 
     var canAskForSuggestion: Bool {
-        !state.isLoading
+        !state.isLoading && !isResolvingFallbackStatus
     }
 
     var statusText: String {
@@ -150,14 +151,19 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
         guard canAskForSuggestion else { return }
         state = .loading
         fallbackStatus = nil
+        isResolvingFallbackStatus = false
         do {
             let suggestion = try await suggester.suggestCategoryWithAI(repoPath: repoPath, request: request)
-            fallbackStatus = await loadFallbackStatus(for: suggestion)
             state = .loaded(suggestion)
+            isResolvingFallbackStatus = suggestion.fallbackStatusRequest != nil
+            fallbackStatus = await loadFallbackStatus(for: suggestion)
+            isResolvingFallbackStatus = false
         } catch {
             let mappedError = await suggestionError(for: error)
+            isResolvingFallbackStatus = true
             let fallback = await loadFallbackStatus(for: error)
             fallbackStatus = fallback
+            isResolvingFallbackStatus = false
             state = .failed(mappedError, fallback)
         }
     }

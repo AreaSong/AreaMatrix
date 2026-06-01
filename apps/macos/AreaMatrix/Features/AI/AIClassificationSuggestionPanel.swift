@@ -169,6 +169,8 @@ struct AIClassificationSuggestionPanel: View {
             }
             if let fallbackStatus = model.fallbackStatus {
                 fallbackContent(fallbackStatus)
+            } else if model.isResolvingFallbackStatus {
+                fallbackContent(.s310ResolvingClassificationStatus)
             }
             if let failure = model.failure {
                 failureContent(failure)
@@ -203,6 +205,7 @@ struct AIClassificationSuggestionPanel: View {
             .disabled(!model.canAskForSuggestion)
             .accessibilityIdentifier("S3-04-C3-04-ask-ai-suggestion")
             Button("Classify manually", action: onClassifyManually)
+                .disabled(model.isResolvingFallbackStatus)
             Spacer()
         }
     }
@@ -214,26 +217,15 @@ struct AIClassificationSuggestionPanel: View {
     }
 
     private func fallbackContent(_ status: AiFallbackStatus) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(status.message)
-                .foregroundStyle(.secondary)
-            HStack {
-                if status.retryable {
-                    Button(actionTitle(for: .retry)) {
-                        Task { await model.retryFallbackSuggestion() }
-                    }
-                    .accessibilityIdentifier("S3-04-C3-10-retry")
-                } else if let retryDisabledReason = status.retryDisabledReason {
-                    Text(retryDisabledReason)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                ForEach(fallbackActions(for: status), id: \.self) { action in
-                    fallbackActionButton(action)
-                }
-            }
-        }
-        .accessibilityIdentifier("S3-04-C3-10-fallback-status")
+        AIFallbackStatusRegion(
+            status: status,
+            isResolving: model.isResolvingFallbackStatus,
+            actionTitle: actionTitle(for:),
+            actionID: actionAccessibilitySuffix(for:),
+            isActionDisabled: isFallbackActionDisabled(_:),
+            isActionVisible: isFallbackActionVisible(_:),
+            onAction: performFallbackAction(_:)
+        )
     }
 
     private func failureContent(_ failure: AISettingsError) -> some View {
@@ -245,17 +237,6 @@ struct AIClassificationSuggestionPanel: View {
                 .font(.caption)
         }
         .accessibilityIdentifier("S3-04-C3-04-error")
-    }
-
-    @ViewBuilder
-    private func fallbackActionButton(_ action: AiFallbackAction?) -> some View {
-        if let action, isFallbackActionVisible(action) {
-            Button(actionTitle(for: action)) {
-                performFallbackAction(action)
-            }
-            .disabled(isFallbackActionDisabled(action))
-            .accessibilityIdentifier("S3-04-C3-10-action-\(actionAccessibilitySuffix(for: action))")
-        }
     }
 
     func performFallbackAction(_ action: AiFallbackAction) {
@@ -304,23 +285,11 @@ struct AIClassificationSuggestionPanel: View {
 
     private func isFallbackActionVisible(_ action: AiFallbackAction) -> Bool {
         switch action {
-        case .retry, .openAiSettings, .openLocalModelStatus, .configureRemoteAi, .viewPrivacyRule,
+        case .retry, .retryLater, .openAiSettings, .openLocalModelStatus, .configureRemoteAi, .viewPrivacyRule,
              .viewCallLog, .classifyManually:
             true
-        case .retryLater, .buildSemanticIndex, .useNormalSearch:
+        case .buildSemanticIndex, .useNormalSearch:
             false
-        }
-    }
-
-    private func fallbackActions(for status: AiFallbackStatus) -> [AiFallbackAction] {
-        [
-            status.primaryAction == .retry ? nil : status.primaryAction,
-            status.secondaryAction,
-            status.nonAiFallbackAction
-        ].compactMap { $0 }.reduce(into: []) { actions, action in
-            if isFallbackActionVisible(action), !actions.contains(action) {
-                actions.append(action)
-            }
         }
     }
 
@@ -332,7 +301,7 @@ struct AIClassificationSuggestionPanel: View {
         case .openLocalModelStatus: "Open local model status"
         case .configureRemoteAi: "Configure remote AI"
         case .viewPrivacyRule: "View privacy rule"
-        case .viewCallLog: "View AI call"
+        case .viewCallLog: "View call log"
         case .buildSemanticIndex: "Build semantic index"
         case .useNormalSearch: "Use normal search"
         case .classifyManually: "Classify manually"
@@ -351,6 +320,137 @@ struct AIClassificationSuggestionPanel: View {
         case .buildSemanticIndex: "build-semantic-index"
         case .useNormalSearch: "use-normal-search"
         case .classifyManually: "classify-manually"
+        }
+    }
+}
+
+private extension AiFallbackStatus {
+    static let s310ResolvingClassificationStatus = AiFallbackStatus(
+        operation: .classificationSuggestion,
+        kind: .internalFailure,
+        category: .unavailable,
+        title: "Resolving AI status...",
+        message: "AreaMatrix is mapping the AI category fallback reason.",
+        retryable: false,
+        retryDisabledReason: "Recovery actions are disabled until status mapping completes.",
+        primaryAction: .retry,
+        secondaryAction: nil,
+        nonAiFallbackAction: .classifyManually,
+        route: nil,
+        callLogId: nil,
+        privacyRuleId: nil,
+        retryAfter: nil
+    )
+}
+
+private struct AIFallbackStatusRegion: View {
+    var status: AiFallbackStatus
+    var isResolving: Bool
+    var actionTitle: (AiFallbackAction) -> String
+    var actionID: (AiFallbackAction) -> String
+    var isActionDisabled: (AiFallbackAction) -> Bool
+    var isActionVisible: (AiFallbackAction) -> Bool
+    var onAction: (AiFallbackAction) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                reasonBadge
+                Text(isResolving ? "Resolving AI status..." : status.title)
+                    .font(.subheadline.weight(.semibold))
+            }
+            Text(isResolving ? resolvingMessage : status.message)
+                .foregroundStyle(.secondary)
+            actionRow
+        }
+        .padding(10)
+        .background(.quaternary.opacity(0.35))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("S3-10-C3-04-ai-fallback")
+    }
+
+    private var reasonBadge: some View {
+        Text(isResolving ? "Resolving" : badgeText)
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(badgeTint.opacity(0.14))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .accessibilityIdentifier("S3-10-C3-04-reason-badge")
+    }
+
+    private var actionRow: some View {
+        HStack(spacing: 10) {
+            if isResolving {
+                resolvingActionButton(.retry)
+                resolvingActionButton(.classifyManually)
+            } else {
+                if status.retryable {
+                    actionButton(.retry)
+                } else if let retryDisabledReason = status.retryDisabledReason {
+                    Text(retryDisabledReason)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(fallbackActions, id: \.self, content: actionButton(_:))
+            }
+        }
+    }
+
+    private var fallbackActions: [AiFallbackAction] {
+        [
+            status.primaryAction == .retry ? nil : status.primaryAction,
+            status.secondaryAction,
+            status.nonAiFallbackAction
+        ].compactMap { $0 }.reduce(into: []) { actions, action in
+            if isActionVisible(action), !actions.contains(action) {
+                actions.append(action)
+            }
+        }
+    }
+
+    private func actionButton(_ action: AiFallbackAction) -> some View {
+        Button(actionTitle(action)) {
+            onAction(action)
+        }
+        .disabled(isActionDisabled(action))
+        .accessibilityIdentifier("S3-10-C3-04-action-\(actionID(action))")
+    }
+
+    private func resolvingActionButton(_ action: AiFallbackAction) -> some View {
+        Button(actionTitle(action)) {}
+            .disabled(true)
+            .accessibilityIdentifier("S3-10-C3-04-action-\(actionID(action))-resolving")
+    }
+
+    private var resolvingMessage: String {
+        "AreaMatrix is mapping the AI category fallback reason. Recovery actions are disabled until it completes."
+    }
+
+    private var badgeText: String {
+        switch status.kind {
+        case .aiDisabled: "AI disabled"
+        case .featureDisabled: "Feature disabled"
+        case .localModelNotReady: "Local not ready"
+        case .remoteNotConfigured: "Remote not configured"
+        case .remoteFailed: "Remote failed"
+        case .providerUnavailable: "Provider unavailable"
+        case .privacySkipped: "Privacy skipped"
+        case .noEligibleInput: "No eligible input"
+        case .callLogUnavailable: "Call log unavailable"
+        case .rateLimited: "Rate limited"
+        case .timeout: "Timeout"
+        case .internalFailure: "Internal failure"
+        case .semanticIndexNotReady, .normalSearchUnavailable: "Not available"
+        }
+    }
+
+    private var badgeTint: Color {
+        switch status.category {
+        case .skipped: .blue
+        case .disabled, .unavailable: .orange
+        case .error: .red
         }
     }
 }

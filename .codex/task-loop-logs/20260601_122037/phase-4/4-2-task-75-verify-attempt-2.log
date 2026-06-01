@@ -1,0 +1,81 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-75`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/RemoteProviderConfigState.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RemoteProviderProbeRuntimeTests.swift`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S3-10 页面中的 C3-04 功能点
+- 结果：通过
+- 证据：S3-10 fallback 区域标识为 `S3-10-C3-04-ai-fallback`，并隐藏 `buildSemanticIndex` / `useNormalSearch`，没有接入 C3-08 语义搜索动作。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift:219`
+
+- 项目：读取页面规格、control map、Core API、C3-04 能力规格
+- 结果：通过
+- 证据：S3-10 要求 `AIFallbackStatusRegion`、reason/action matrix、分类手动回退；control map 声明 S3-10 包含 C3-04/C3-08/C3-10，本 task 只覆盖 C3-04。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md:38`
+
+- 项目：接入 C3-04 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：生产默认依赖 `CoreBridge()`，`askForSuggestion()` 调用 `suggestCategoryWithAI`，fallback request 固定 `operation: .classificationSuggestion` 且 `semanticFallbackReason: nil`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/RemoteProviderConfigState.swift:92`
+
+- 项目：不实现同页其他能力
+- 结果：通过
+- 证据：新增测试断言 fallback request 为 `.classificationSuggestion`、`semanticFallbackReason == nil`，且不暴露 `.buildSemanticIndex` / `.useNormalSearch`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RemoteProviderProbeRuntimeTests.swift:171`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：变更落在 `apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift:1`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src core/area_matrix.udl` 无输出；未触碰 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：完成标准
+- 结果：通过
+- 证据：用户可触发 `Retry`、`Classify manually`、设置/本地模型/远程配置、隐私规则、调用日志动作；无生产 mock，测试替身仅在 XCTest 内使用。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift:242`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，相关文件均不超过 500 行；状态、视图、CoreBridge adapter 分层清楚。
+- 注释 / rustdoc / 文档同步：通过，本 task 没新增 public Rust API；UDL/Core API 已存在对应合同。
+- 错误处理与边界处理：通过，CoreError 经 mapper 转用户错误，fallback 读取失败降级为手动分类，不静默吞错。
+- 测试与验证覆盖：通过，新增 XCTest 覆盖隐私跳过、provider unavailable、C3-04-only fallback、非 AI 回退。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径默认 `CoreBridge()`，测试 mock 未进入产品路径。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-75`
+- 通过：`prompt doctor` OK；`git diff --check` OK；`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 结束为 `BUILD SUCCEEDED`
+- 失败：无
+- 缺失：未发现本 task manifest 要求内的缺失验证；另有 `progress.json` 和 `.codex/task-loop-runs/` 本地 runner 状态，不作为本 verify 阶段阻断项。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

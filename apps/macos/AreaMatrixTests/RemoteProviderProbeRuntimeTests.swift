@@ -136,6 +136,11 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
         )
         let body = s135MirrorDescription(of: panel.body)
 
+        XCTAssertEqual(model.fallbackStatus?.kind, .privacySkipped)
+        XCTAssertEqual(model.fallbackStatus?.primaryAction, .viewPrivacyRule)
+        XCTAssertEqual(model.fallbackStatus?.secondaryAction, .viewCallLog)
+        XCTAssertEqual(model.fallbackStatus?.nonAiFallbackAction, .classifyManually)
+        XCTAssertTrue(body.contains("Skipped by privacy rule"))
         XCTAssertTrue(body.contains("View privacy rule"))
         XCTAssertTrue(body.contains("Classify manually"))
         XCTAssertFalse(panel.isFallbackActionDisabled(.viewPrivacyRule))
@@ -160,6 +165,35 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
         XCTAssertEqual(model.statusText, "AI provider is unavailable")
         XCTAssertEqual(model.acceptDisabledReason, "Retry before accepting this suggestion.")
         XCTAssertEqual(model.fallbackStatus?.retryable, true)
+    }
+
+    @MainActor
+    func testS310C304FallbackRegionUsesClassificationSuggestionStatusOnly() async {
+        let request = AIClassificationSuggestionRequestState(fileID: 410, contextPolicy: .fileNameOnly)
+        let fallbackBridge = S304FallbackBridge(status: .s304ProviderUnavailable(callLogID: 731))
+        let model = s304SuggestionModel(
+            request: request,
+            bridge: S304SuggestionBridge(result: .success(.s304ProviderUnavailable(fileID: request.fileID))),
+            fallbackBridge: fallbackBridge
+        )
+        let panel = AIClassificationSuggestionPanel(model: model, fileName: "invoice.pdf", currentPath: "inbox/invoice.pdf")
+
+        await model.askForSuggestion()
+        let body = s135MirrorDescription(of: panel.body)
+        let fallbackRequests = await fallbackBridge.recordedRequests()
+
+        XCTAssertEqual(fallbackRequests.first?.operation, .classificationSuggestion)
+        XCTAssertEqual(fallbackRequests.first?.semanticFallbackReason, nil)
+        XCTAssertEqual(model.fallbackStatus?.kind, .providerUnavailable)
+        XCTAssertEqual(model.fallbackStatus?.primaryAction, .retry)
+        XCTAssertEqual(model.fallbackStatus?.secondaryAction, .viewCallLog)
+        XCTAssertEqual(model.fallbackStatus?.nonAiFallbackAction, .classifyManually)
+        XCTAssertTrue(body.contains("Retry"))
+        XCTAssertTrue(body.contains("Classify manually"))
+        XCTAssertFalse(panel.isFallbackActionDisabled(.retry))
+        XCTAssertFalse(panel.isFallbackActionDisabled(.viewCallLog))
+        XCTAssertNotEqual(model.fallbackStatus?.primaryAction, .buildSemanticIndex)
+        XCTAssertNotEqual(model.fallbackStatus?.nonAiFallbackAction, .useNormalSearch)
     }
 
     @MainActor
