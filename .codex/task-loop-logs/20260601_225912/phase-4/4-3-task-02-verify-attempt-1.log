@@ -1,0 +1,95 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-02`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-02-c4-01-implementation.md`
+- 核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止范围：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：Exact Docs / Manifest 对齐
+  - 结果：通过
+  - 证据：C4-01 规格定义输入、输出、DB/FS 无变化、错误码和验收标准；control map 将 `S4-X-02` 绑定到 `C4-01`。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md:11`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:27`
+
+- 项目：只实现 C4-01，不顺手实现其他 C* 能力
+  - 结果：通过
+  - 证据：实现集中在 `cross_platform_ffi`，报告 API 标记为 `C4-01`，并显式声明不执行相邻 Stage 4 能力。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/cross_platform_ffi.rs:99`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/cross_platform_ffi.rs:144`
+
+- 项目：输入、输出、DB/文件系统变化和错误映射
+  - 结果：通过
+  - 证据：`BindingContractRequest` 包含 `target_platform` 和 `binding_version`；`BindingContractReport` 输出 supported APIs、type mappings、missing capabilities；无 repo/FS/DB 访问；无效版本映射 `Config`，报告缺失映射 `Internal`。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/cross_platform_ffi.rs:73`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/cross_platform_ffi.rs:82`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/cross_platform_ffi.rs:128`
+
+- 项目：Core 不依赖平台 UI API
+  - 结果：通过
+  - 证据：实现只使用 Rust/serde/CoreError，文档和 rustdoc 明确不查询平台 UI API、不生成绑定、不触碰文件系统。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/cross_platform_ffi.rs:3`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/cross_platform_ffi.rs:101`
+
+- 项目：桥接/UDL 可调用
+  - 结果：通过
+  - 证据：`api.rs` 暴露 `inspect_binding_contract`，UDL 定义 request/report 及相关 dictionary。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:40`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:403`
+
+- 项目：最小测试支撑且不做页面接入
+  - 结果：通过
+  - 证据：集成测试覆盖 Swift/Kotlin/Python 报告、错误路径、docs/UDL/control map 对齐和 scope 边界；未发现 `apps/**` 修改。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/cross_platform_ffi_contract_api.rs:36`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/cross_platform_ffi_contract_api.rs:85`
+
+- 项目：Expected New Paths
+  - 结果：通过
+  - 证据：`core/src/cross_platform_ffi.rs`、`core/area_matrix.udl`、`core/tests/cross_platform_ffi_contract_api.rs` 均已落地并被验证命令覆盖。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/cross_platform_ffi.rs:1`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:403`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/cross_platform_ffi_contract_api.rs:1`
+
+- 项目：Forbidden Touches
+  - 结果：通过
+  - 证据：`git status --short` 仅显示 runner/progress 状态文件变更，未显示 `apps/**` 变更。
+  - 涉及文件：`apps/**`
+
+- 项目：完成标准 - 核心行为可测试或桥接调用验证
+  - 结果：通过
+  - 证据：`cargo test --test cross_platform_ffi_contract_api -- --nocapture` 通过 4 个测试。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/cross_platform_ffi_contract_api.rs:36`
+
+- 项目：完成标准 - 未触碰用户文件安全边界之外行为
+  - 结果：通过
+  - 证据：实现无 repo path 输入、无 DB、无文件系统读写；Core API 文档也声明只读检查。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2358`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C4-01 类型、校验、报告构造拆分清楚，无跨模块大改。
+- 注释 / rustdoc / 文档同步：通过，public API 和类型有 rustdoc，Core API/UDL/测试均对齐。
+- 错误处理与边界处理：通过，无效版本返回 `CoreError::Config`，报告不完整返回 `CoreError::Internal`。
+- 测试与验证覆盖：通过，任务级验证已跑，覆盖正常路径、目标平台差异、无效版本和文档/UDL 对齐。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现 mock-only 或页面占位；该能力本身是静态合同报告，未伪造外部业务闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-02`
+- 通过：`prompt doctor` OK，`git diff --check` OK，`cargo test --test cross_platform_ffi_contract_api -- --nocapture` 4 passed。
+- 失败：无
+- 缺失：未运行 `./dev check all` / `./dev check core`，原因是当前为普通 atomic Core task，manifest 指定门禁为 `./dev check task 4-3/task-02`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
