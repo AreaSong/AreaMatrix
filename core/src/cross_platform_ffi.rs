@@ -96,6 +96,22 @@ pub struct BindingContractReport {
     pub missing_capabilities: Vec<BindingMissingCapability>,
 }
 
+impl BindingContractReport {
+    /// Validates that the report has the minimum FFI contract surface.
+    ///
+    /// This check is deterministic and side-effect free. It does not inspect a
+    /// repository, open a database, touch the filesystem, generate bindings, or
+    /// call platform-specific APIs.
+    ///
+    /// # Errors
+    ///
+    /// Returns `CoreError::Internal { message }` when required API, type
+    /// mapping, or capability fields are missing or report a fake success.
+    pub fn validate(&self) -> CoreResult<()> {
+        validate_contract_report(self)
+    }
+}
+
 /// Returns the C4-01 cross-platform FFI contract report.
 ///
 /// The report is read-only and platform neutral. It describes the current UDL
@@ -121,7 +137,7 @@ pub fn inspect_binding_contract(
         type_mappings: type_mappings(&request.target_platform),
         missing_capabilities: missing_capabilities(&request.target_platform),
     };
-    validate_report(&report)?;
+    validate_contract_report(&report)?;
     Ok(report)
 }
 
@@ -129,16 +145,63 @@ fn validate_binding_version(binding_version: i64) -> CoreResult<()> {
     if (MIN_BINDING_VERSION..=MAX_BINDING_VERSION).contains(&binding_version) {
         Ok(())
     } else {
-        Err(CoreError::config("unsupported binding contract version"))
+        Err(CoreError::config(format!(
+            "unsupported binding contract version: {binding_version}; supported range is \
+             {MIN_BINDING_VERSION}..={MAX_BINDING_VERSION}"
+        )))
     }
 }
 
-fn validate_report(report: &BindingContractReport) -> CoreResult<()> {
-    if report.supported_apis.is_empty() || report.type_mappings.is_empty() {
-        Err(CoreError::internal("binding contract report is incomplete"))
-    } else {
-        Ok(())
+fn validate_contract_report(report: &BindingContractReport) -> CoreResult<()> {
+    if report.core_version.trim().is_empty() {
+        return Err(incomplete_report("core_version"));
     }
+    validate_supported_apis(&report.supported_apis)?;
+    validate_type_mappings(&report.type_mappings)?;
+    validate_missing_capabilities(&report.missing_capabilities)
+}
+
+fn validate_supported_apis(apis: &[BindingApiContract]) -> CoreResult<()> {
+    if apis.is_empty() {
+        return Err(incomplete_report("supported_apis"));
+    }
+    if apis
+        .iter()
+        .any(|api| api.name.trim().is_empty() || api.capability.trim().is_empty())
+    {
+        return Err(incomplete_report("supported_apis"));
+    }
+    Ok(())
+}
+
+fn validate_type_mappings(mappings: &[BindingTypeMapping]) -> CoreResult<()> {
+    if mappings.is_empty() {
+        return Err(incomplete_report("type_mappings"));
+    }
+    if mappings.iter().any(|mapping| {
+        mapping.rust_type.trim().is_empty()
+            || mapping.udl_type.trim().is_empty()
+            || mapping.target_type.trim().is_empty()
+    }) {
+        return Err(incomplete_report("type_mappings"));
+    }
+    Ok(())
+}
+
+fn validate_missing_capabilities(capabilities: &[BindingMissingCapability]) -> CoreResult<()> {
+    if capabilities.iter().any(|capability| {
+        capability.capability.trim().is_empty()
+            || capability.label.trim().is_empty()
+            || capability.reason.trim().is_empty()
+            || matches!(capability.status, BindingSupportStatus::Supported)
+    }) {
+        return Err(incomplete_report("missing_capabilities"));
+    }
+    Ok(())
+}
+
+fn incomplete_report(field: &str) -> CoreError {
+    CoreError::internal(format!("binding contract report is incomplete: {field}"))
 }
 
 fn supported_apis() -> Vec<BindingApiContract> {
@@ -218,4 +281,84 @@ fn missing_capabilities(target_platform: &BindingTargetPlatform) -> Vec<BindingM
         });
     }
     capabilities
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn base_report() -> BindingContractReport {
+        BindingContractReport {
+            target_platform: BindingTargetPlatform::Swift,
+            binding_version: 1,
+            core_version: "0.1.0".to_owned(),
+            supported_apis: vec![BindingApiContract {
+                name: "inspect_binding_contract".to_owned(),
+                capability: "C4-01".to_owned(),
+                status: BindingSupportStatus::Supported,
+                reason: None,
+            }],
+            type_mappings: vec![BindingTypeMapping {
+                rust_type: "Result<T, CoreError>".to_owned(),
+                udl_type: "[Throws=CoreError] T".to_owned(),
+                target_type: "throws".to_owned(),
+                status: BindingSupportStatus::Supported,
+                reason: None,
+            }],
+            missing_capabilities: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn validate_contract_report_rejects_empty_required_sections() {
+        let mut report = base_report();
+        report.supported_apis.clear();
+        assert!(matches!(
+            validate_contract_report(&report),
+            Err(CoreError::Internal { message }) if message.contains("supported_apis")
+        ));
+
+        let mut report = base_report();
+        report.type_mappings.clear();
+        assert!(matches!(
+            validate_contract_report(&report),
+            Err(CoreError::Internal { message }) if message.contains("type_mappings")
+        ));
+    }
+
+    #[test]
+    fn validate_contract_report_rejects_blank_fields_and_fake_supported_gaps() {
+        let mut report = base_report();
+        report.core_version = " ".to_owned();
+        assert!(matches!(
+            validate_contract_report(&report),
+            Err(CoreError::Internal { message }) if message.contains("core_version")
+        ));
+
+        let mut report = base_report();
+        report.supported_apis[0].name.clear();
+        assert!(matches!(
+            validate_contract_report(&report),
+            Err(CoreError::Internal { message }) if message.contains("supported_apis")
+        ));
+
+        let mut report = base_report();
+        report.type_mappings[0].target_type.clear();
+        assert!(matches!(
+            validate_contract_report(&report),
+            Err(CoreError::Internal { message }) if message.contains("type_mappings")
+        ));
+
+        let mut report = base_report();
+        report.missing_capabilities.push(BindingMissingCapability {
+            capability: "C4-01".to_owned(),
+            label: "Kotlin packaging".to_owned(),
+            status: BindingSupportStatus::Supported,
+            reason: "fake success".to_owned(),
+        });
+        assert!(matches!(
+            validate_contract_report(&report),
+            Err(CoreError::Internal { message }) if message.contains("missing_capabilities")
+        ));
+    }
 }
