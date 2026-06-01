@@ -65,6 +65,120 @@ struct SemanticSearchResultsView: View {
     }
 }
 
+struct SemanticSearchFallbackStatusRegion: View {
+    let page: SemanticSearchResultPageSnapshot
+    let state: SemanticFallbackState
+    let isIndexBuildBusy: Bool
+    let isPrivacyGateChecking: Bool
+    let onAction: (AiFallbackAction) -> Void
+
+    var body: some View {
+        switch presentation {
+        case .none:
+            EmptyView()
+        case .resolving:
+            Text("Resolving AI status...")
+                .accessibilityIdentifier("S3-10-C3-08-resolving-fallback-status")
+        case let .status(status):
+            statusContent(status)
+        case let .coreStatusError(error):
+            HStack(spacing: 10) {
+                Text("AI fallback status could not be loaded: \(error.userMessage)")
+                let status = SemanticSearchFallbackStatus.fromSemanticPage(page)
+                fallbackActionButton(status.presentation(for: .useNormalSearch), status: status)
+            }
+            .accessibilityIdentifier("S3-10-C3-08-fallback-status-error")
+        }
+    }
+
+    private var presentation: SemanticSearchFallbackPresentation {
+        if case .loading = state { return .resolving }
+        if let status = state.status, status.operation == .semanticSearch { return .status(.fromCoreStatus(status)) }
+        if let error = state.errorMapping {
+            return .coreStatusError(error)
+        }
+        guard page.fallbackReason != nil else { return .none }
+        return .status(.fromSemanticPage(page))
+    }
+
+    private func statusContent(_ status: SemanticSearchFallbackStatus) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(status.badge)
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(status.badgeTint.opacity(0.14))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .accessibilityIdentifier("S3-10-C3-08-reason-badge")
+                Text(status.title)
+                    .fontWeight(.semibold)
+            }
+            Text(status.message)
+            actionRow(status)
+        }
+        .padding(10)
+        .background(.quaternary.opacity(0.35))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("S3-10-C3-08-fallback-status")
+    }
+
+    private func actionRow(_ status: SemanticSearchFallbackStatus) -> some View {
+        HStack(spacing: 10) {
+            if status.retryable {
+                fallbackActionButton(status.presentation(for: .retry), status: status)
+            } else if let retryDisabledReason = status.retryDisabledReason {
+                Text(retryDisabledReason)
+                    .font(.caption)
+            }
+            ForEach(status.actionPresentations) { action in
+                fallbackActionButton(action, status: status)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func fallbackActionButton(
+        _ presentation: SemanticSearchFallbackActionPresentation,
+        status: SemanticSearchFallbackStatus
+    ) -> some View {
+        if status.isVisible(presentation.action) {
+            Button(presentation.title) {
+                onAction(presentation.action)
+            }
+            .disabled(isDisabled(presentation.action, status: status))
+            .accessibilityIdentifier("S3-10-C3-08-action-\(presentation.accessibilityID)")
+        }
+    }
+
+    private func isDisabled(_ action: AiFallbackAction, status: SemanticSearchFallbackStatus) -> Bool {
+        switch action {
+        case .retry:
+            !status.retryable
+        case .retryLater:
+            true
+        case .viewPrivacyRule:
+            status.privacyRuleID?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false
+        case .viewCallLog:
+            status.callLogID == nil
+        case .buildSemanticIndex:
+            isIndexBuildBusy || isPrivacyGateChecking || !status.canBuildSemanticIndex
+        case .openAiSettings, .configureRemoteAi, .useNormalSearch:
+            false
+        case .openLocalModelStatus, .classifyManually:
+            true
+        }
+    }
+}
+
+private enum SemanticSearchFallbackPresentation {
+    case none
+    case resolving
+    case status(SemanticSearchFallbackStatus)
+    case coreStatusError(CoreErrorMappingSnapshot)
+}
+
 private struct SemanticSearchGroupView: View {
     let title: String
     let count: Int64

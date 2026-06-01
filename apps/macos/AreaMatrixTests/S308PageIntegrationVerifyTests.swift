@@ -4,9 +4,9 @@ import XCTest
 final class S308PageIntegrationVerifyTests: XCTestCase {
     @MainActor
     func testS308PresentationKeepsSemanticAndNormalGroupsWithDuplicateExpansion() {
-        let semanticFile = FileEntrySnapshot.s308PageFile(id: 8_701, name: "invoice_0426.pdf")
-        let duplicateFile = FileEntrySnapshot.s308PageFile(id: 8_702, name: "invoice_notes.txt")
-        let normalOnlyFile = FileEntrySnapshot.s308PageFile(id: 8_703, name: "payment_notes.txt")
+        let semanticFile = FileEntrySnapshot.s308PageFile(id: 8701, name: "invoice_0426.pdf")
+        let duplicateFile = FileEntrySnapshot.s308PageFile(id: 8702, name: "invoice_notes.txt")
+        let normalOnlyFile = FileEntrySnapshot.s308PageFile(id: 8703, name: "payment_notes.txt")
         let page = SemanticSearchResultPageSnapshot.s308Page(
             semanticMatches: [
                 .s308Page(result: .s308PageResult(file: semanticFile), alsoMatchedNormalSearch: true)
@@ -26,7 +26,10 @@ final class S308PageIntegrationVerifyTests: XCTestCase {
 
         XCTAssertEqual(page.semanticRows().map(\.matchSource), ["Semantic"])
         XCTAssertEqual(page.normalRows(showFoldedDuplicates: false).map(\.file.id), [normalOnlyFile.id])
-        XCTAssertEqual(page.normalRows(showFoldedDuplicates: true).map(\.file.id), [duplicateFile.id, normalOnlyFile.id])
+        XCTAssertEqual(
+            page.normalRows(showFoldedDuplicates: true).map(\.file.id),
+            [duplicateFile.id, normalOnlyFile.id]
+        )
         XCTAssertEqual(page.semanticRows().first?.relevance, "0.91")
         XCTAssertEqual(page.semanticRows().first?.matchedReason, "filename and summary match invoice")
         XCTAssertEqual(page.semanticRows().first?.whyThisMatched.contains("File name"), true)
@@ -40,9 +43,9 @@ final class S308PageIntegrationVerifyTests: XCTestCase {
         guard let row = tree.sidebarRow(id: "finance/invoices") else {
             return XCTFail("expected finance invoices sidebar row")
         }
-        let firstSemantic = FileEntrySnapshot.s308PageFile(id: 8_704, name: "invoice_a.pdf")
-        let nextSemantic = FileEntrySnapshot.s308PageFile(id: 8_705, name: "invoice_b.pdf")
-        let normalFile = FileEntrySnapshot.s308PageFile(id: 8_706, name: "invoice_notes.txt")
+        let firstSemantic = FileEntrySnapshot.s308PageFile(id: 8704, name: "invoice_a.pdf")
+        let nextSemantic = FileEntrySnapshot.s308PageFile(id: 8705, name: "invoice_b.pdf")
+        let normalFile = FileEntrySnapshot.s308PageFile(id: 8706, name: "invoice_notes.txt")
         let searcher = S308PagedSemanticSearcher(pages: [
             .s308SearchPage(semantic: [firstSemantic], normal: [normalFile], semanticTotalCount: 2),
             .s308SearchPage(semantic: [nextSemantic], normal: [], semanticTotalCount: 2)
@@ -85,7 +88,7 @@ final class S308PageIntegrationVerifyTests: XCTestCase {
         let model = MainFileListModel(
             opening: .s308PageOpening(tree: tree),
             fileLister: S308PageLister(),
-            fileDetailer: S308PageDetailer(file: .s308PageFile(id: 8_707)),
+            fileDetailer: S308PageDetailer(file: .s308PageFile(id: 8707)),
             searchQuerying: S308PageNormalSearcher(),
             semanticSearching: searcher,
             errorMapper: S308PageErrorMapper()
@@ -139,6 +142,64 @@ final class S308PageIntegrationVerifyTests: XCTestCase {
         let cancellationCount = await searcher.observedCancellationCount()
         XCTAssertEqual(cancellationCount, 1)
     }
+
+    @MainActor
+    func testS310C308SemanticFallbackUsesSemanticSearchOutputWithoutWaitingForC310Reader() {
+        let page = SemanticSearchResultPageSnapshot.s308Page(
+            semanticMatches: [],
+            normalMatches: [],
+            indexStatus: .notReady,
+            fallbackReason: .semanticIndexNotReady,
+            fallbackMessage: "Semantic index is not ready yet."
+        )
+        let status = SemanticSearchFallbackStatus.fromSemanticPage(page)
+        let region = SemanticSearchFallbackStatusRegion(
+            page: page,
+            state: .idle,
+            isIndexBuildBusy: false,
+            isPrivacyGateChecking: false,
+            onAction: { _ in }
+        )
+        let body = s135MirrorDescription(of: region.body)
+
+        XCTAssertEqual(status.primaryAction, .buildSemanticIndex)
+        XCTAssertEqual(status.nonAiFallbackAction, .useNormalSearch)
+        XCTAssertEqual(status.actions, [.buildSemanticIndex, .useNormalSearch])
+        XCTAssertTrue(status.canBuildSemanticIndex)
+        XCTAssertTrue(body.contains("Semantic index is not ready"))
+        XCTAssertTrue(body.contains("Build semantic index"))
+        XCTAssertTrue(body.contains("Use normal search"))
+        XCTAssertFalse(body.contains("Classify manually"))
+    }
+
+    @MainActor
+    func testS310C308ProviderFallbackKeepsNormalSearchAndCallLogActions() {
+        let page = SemanticSearchResultPageSnapshot.s308Page(
+            semanticMatches: [],
+            normalMatches: [],
+            indexStatus: .failed,
+            fallbackReason: .providerUnavailable,
+            fallbackMessage: "Remote AI could not be reached. Your files were not changed."
+        )
+        let status = SemanticSearchFallbackStatus.fromSemanticPage(page)
+        let region = SemanticSearchFallbackStatusRegion(
+            page: page,
+            state: .idle,
+            isIndexBuildBusy: false,
+            isPrivacyGateChecking: false,
+            onAction: { _ in }
+        )
+        let body = s135MirrorDescription(of: region.body)
+
+        XCTAssertEqual(status.title, "Remote AI could not be reached")
+        XCTAssertTrue(status.retryable)
+        XCTAssertEqual(status.actions, [.viewCallLog, .useNormalSearch])
+        XCTAssertFalse(status.canBuildSemanticIndex)
+        XCTAssertTrue(body.contains("Retry"))
+        XCTAssertTrue(body.contains("View call log"))
+        XCTAssertTrue(body.contains("Use normal search"))
+        XCTAssertFalse(body.contains("Classify manually"))
+    }
 }
 
 private actor S308PagedSemanticSearcher: CoreSemanticSearching {
@@ -149,7 +210,10 @@ private actor S308PagedSemanticSearcher: CoreSemanticSearching {
         self.pages = pages
     }
 
-    func semanticSearch(repoPath _: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
+    func semanticSearch(
+        repoPath _: String,
+        request: SearchQueryRequestSnapshot
+    ) async throws -> SearchResultPageSnapshot {
         recordedRequests.append(request)
         return pages.removeFirst()
     }
@@ -176,7 +240,8 @@ private actor S308DelayedSemanticSearcher: CoreSemanticSearching {
         self.page = page
     }
 
-    func semanticSearch(repoPath _: String, request _: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
+    func semanticSearch(repoPath _: String,
+                        request _: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
         page
     }
 
@@ -273,7 +338,8 @@ private extension FileEntrySnapshot {
 }
 
 private extension SearchFileResultSnapshot {
-    static func s308PageResult(file: FileEntrySnapshot, snippet: String = "filename contains invoice") -> SearchFileResultSnapshot {
+    static func s308PageResult(file: FileEntrySnapshot,
+                               snippet: String = "filename contains invoice") -> SearchFileResultSnapshot {
         SearchFileResultSnapshot(
             file: file,
             score: 1,
@@ -363,7 +429,9 @@ private extension SemanticSearchResultPageSnapshot {
         normalMatches: [SemanticNormalSearchMatchSnapshot],
         dedupedNormalCount: Int64 = 0,
         semanticTotalCount: Int64? = nil,
-        indexStatus: SemanticIndexStatusSnapshot = .ready
+        indexStatus: SemanticIndexStatusSnapshot = .ready,
+        fallbackReason: SemanticSearchFallbackReasonSnapshot? = nil,
+        fallbackMessage: String? = nil
     ) -> SemanticSearchResultPageSnapshot {
         SemanticSearchResultPageSnapshot(
             query: "invoice",
@@ -374,8 +442,8 @@ private extension SemanticSearchResultPageSnapshot {
             dedupedNormalCount: dedupedNormalCount,
             indexStatus: indexStatus,
             route: .local,
-            fallbackReason: nil,
-            fallbackMessage: nil,
+            fallbackReason: fallbackReason,
+            fallbackMessage: fallbackMessage,
             callLogID: 308,
             privacyRuleID: nil,
             lowConfidence: false
