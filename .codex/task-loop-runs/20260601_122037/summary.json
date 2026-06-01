@@ -35,6 +35,71 @@
     "4-2/task-75": {
       "attempts": 2,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260601_122037/phase-4/4-2-task-75-copy-attempt-2.log",
+      "git": {
+        "attempts": 2,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260601_122037/phase-4/4-2-task-75-copy-attempt-2.log",
+          ".codex/task-loop-logs/20260601_122037/phase-4/4-2-task-75-verify-attempt-2.log",
+          ".codex/task-loop-runs/20260601_122037/",
+          ".codex/task-loop-runs/index.json",
+          "apps/macos/AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift",
+          "apps/macos/AreaMatrix/Features/AI/RemoteProviderConfigState.swift",
+          "apps/macos/AreaMatrixTests/RemoteProviderProbeRuntimeTests.swift",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "2ee9156bb20714f1fbd9a1233892eed3403c57fd",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260601_122037/phase-4/4-2-task-75-copy-attempt-2.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/macos/AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift",
+          "M\tapps/macos/AreaMatrix/Features/AI/RemoteProviderConfigState.swift",
+          "M\tapps/macos/AreaMatrixTests/RemoteProviderProbeRuntimeTests.swift",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "final_log_files": [
+          ".codex/task-loop-logs/20260601_122037/phase-4/4-2-task-75-copy-attempt-2.log",
+          ".codex/task-loop-logs/20260601_122037/phase-4/4-2-task-75-verify-attempt-2.log"
+        ],
+        "label": "4-2/task-75",
+        "mode": "commit",
+        "phase": "phase-4",
+        "pre_checkpoint_changed_files": [
+          ".codex/task-loop-runs/20260601_122037/",
+          ".codex/task-loop-runs/index.json",
+          "apps/macos/AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift",
+          "apps/macos/AreaMatrix/Features/AI/RemoteProviderConfigState.swift",
+          "apps/macos/AreaMatrixTests/RemoteProviderProbeRuntimeTests.swift",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260601_122037",
+        "skipped_log_files": [],
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260601_122037/phase-4/4-2-task-75-copy-attempt-2.log",
+          "A\t.codex/task-loop-logs/20260601_122037/phase-4/4-2-task-75-verify-attempt-2.log",
+          "A\t.codex/task-loop-runs/20260601_122037/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/macos/AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift",
+          "M\tapps/macos/AreaMatrix/Features/AI/RemoteProviderConfigState.swift",
+          "M\tapps/macos/AreaMatrixTests/RemoteProviderProbeRuntimeTests.swift",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/index.json",
+          " M apps/macos/AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift",
+          " M apps/macos/AreaMatrix/Features/AI/RemoteProviderConfigState.swift",
+          " M apps/macos/AreaMatrixTests/RemoteProviderProbeRuntimeTests.swift",
+          " M tasks/prompts/_shared/progress.json",
+          "?? .codex/task-loop-runs/20260601_122037/"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260601_122037/summary.json",
+        "task_name": "4-2-task-75",
+        "updated_at": "2026-06-01T05:43:19.841283+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260601_122037/phase-4/4-2-task-75-verify-attempt-2.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-4",
       "risk": "High",
@@ -49,7 +114,7 @@
     "retries": 1,
     "task_count": 637
   },
-  "updated_at": "2026-06-01T05:43:19.644929+00:00",
+  "updated_at": "2026-06-01T05:43:19.848175+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
