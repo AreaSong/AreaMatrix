@@ -1,0 +1,79 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-04`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-04-c4-01-validation.md`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐成功和失败路径测试
+- 结果：通过
+- 证据：`core/tests/cross_platform_ffi_contract_api.rs` 覆盖 Swift/Kotlin/Python 成功报告、非法 binding version 失败；`core/tests/cross_platform_ffi_contract_failure_edge.rs` 覆盖越界版本、空 report section、fake supported missing capability。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/cross_platform_ffi_contract_api.rs`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/cross_platform_ffi_contract_failure_edge.rs`
+
+- 项目：Core API / UDL / Rust 实现一致
+- 结果：通过
+- 证据：Rust API `inspect_binding_contract` 存在；UDL 声明 `BindingContractReport inspect_binding_contract(BindingContractRequest request);`；Core API 文档和 UDL 均包含 request/report/type mapping/status 枚举。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:50`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/cross_platform_ffi.rs:128`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:8`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:32`
+
+- 项目：不新增业务功能，只补验证与必要 fixture
+- 结果：通过
+- 证据：C4-01 实现为只读 binding contract report；代码注释明确不 inspect repo、不 touch filesystem、不 generate bindings、不执行相邻 Stage 4 capability。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/cross_platform_ffi.rs:115`
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：任务要求的验证命令已实际运行并通过，无无法运行项。
+- 涉及文件：无
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均有 C4-01 相关落地。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/cross_platform_ffi.rs`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/cross_platform_ffi_contract_api.rs`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only` 仅显示 `.codex/task-loop-runs/20260601_225912/summary.json` 和 `tasks/prompts/_shared/progress.json`，未涉及 `apps/**`。
+- 涉及文件：无 `apps/**`
+
+- 项目：Validation 命令
+- 结果：通过
+- 证据：`./dev check task 4-3/task-04` exit 0；doctor OK；diff check OK；targeted tests 4 + 3 全部通过。
+- 涉及文件：验证命令输出
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C4-01 独立在 `cross_platform_ffi.rs`，API wrapper 和 re-export 清晰。
+- 注释 / rustdoc / 文档同步：通过，public API 和 report validation 有 rustdoc，UDL / Core API / capability spec 对齐。
+- 错误处理与边界处理：通过，非法版本返回 `CoreError::Config`，不完整 report 返回 `CoreError::Internal`。
+- 测试与验证覆盖：通过，成功路径、失败路径、文档/UDL/API 对齐和用户文件无副作用均有测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现 mock-only 闭环；report 是当前平台能力说明所需的结构化 contract surface。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-04`
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`；`git diff --check`；`cargo test --test cross_platform_ffi_contract_api -- --nocapture`；`cargo test --test cross_platform_ffi_contract_failure_edge -- --nocapture`
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS
