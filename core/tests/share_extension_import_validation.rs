@@ -145,11 +145,7 @@ fn assert_imported_share_entry(entry: &FileEntry, source_path: &str) {
     assert_eq!(entry.availability_status, FileAvailabilityStatus::Available);
 }
 
-fn assert_import_detail_matches_share_import(
-    detail: &Value,
-    source_path: &str,
-    entry: &FileEntry,
-) {
+fn assert_import_detail_matches_share_import(detail: &Value, source_path: &str, entry: &FileEntry) {
     assert_eq!(detail["source"], source_path);
     assert_eq!(detail["mode"], "copied");
     assert_eq!(detail["category"], "inbox");
