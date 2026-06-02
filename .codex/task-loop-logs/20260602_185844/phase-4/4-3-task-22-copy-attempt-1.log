@@ -1,0 +1,42 @@
+一、执行结论
+
+- 已完成
+
+二、执行范围
+
+- 单任务：`4-3/task-22`
+- 修改文件：
+  - [share_extension_import_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/share_extension_import_implementation.rs:1)
+- 未触碰 `apps/**`。工作树中原有 `.codex/task-loop-runs/.../summary.json` 与 `tasks/prompts/_shared/progress.json` 变更未处理、未修改。
+
+三、完成情况
+
+- 只实现/验证 C4-05：通过现有 `import_file` 的 `StorageMode::Copied` Core 路径完成 share staged import，没有实现同阶段其他 C*。
+- 输入/输出/DB/文件系统变化：新增测试覆盖 app group staged file 导入，验证返回 `FileEntry`、写入 `files/change_log`、复制到 repo、staging 清空。
+- Core 平台边界：没有引入 iOS / UI / Share Extension API；deferred ticket 仍按合同归平台层持有，主 App 后续调用同一 Core import 合同继续。
+- 最小测试支撑：已补 `core/tests/share_extension_import_implementation.rs`。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+- 结构清晰，使用临时目录和真实 DB / 文件系统路径，不是 mock-only 或硬编码通过态。
+- 没有新增依赖；没有改 UDL / Core API，因为合同阶段已有 `import_file` / `predict_category` 对齐。
+- 测试显式检查 change log 不包含 payload 内容，降低外部 App 内容入日志风险。
+- 失败边界的更完整覆盖属于后续 `4-3/task-23 failure-edge`，本任务未越界提前实现。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+cargo test --test share_extension_import_implementation -- --nocapture
+./dev check task 4-3/task-22
+```
+
+`./dev check task 4-3/task-22` 执行了 prompt doctor、diff check、`share_extension_import_contract_api` 和 `share_extension_import_implementation` targeted tests，均通过。
+
+六、风险与后续
+
+剩余风险：本任务只覆盖 C4-05 implementation 成功闭环与 deferred 继续语义；权限、非法输入、IO/DB 回滚等失败矩阵仍按拆分进入 `4-3/task-23`。
+
+建议下一个任务：`4-3/task-23 C4-05 failure-edge`。
