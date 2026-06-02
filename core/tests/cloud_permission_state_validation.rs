@@ -52,7 +52,10 @@ fn file_snapshot(paths: &[PathBuf]) -> Vec<(PathBuf, Vec<u8>)> {
 }
 
 fn assert_no_probe_side_effects(repo: &Path, before: &[(PathBuf, Vec<u8>)]) {
-    let paths = before.iter().map(|(path, _)| path.clone()).collect::<Vec<_>>();
+    let paths = before
+        .iter()
+        .map(|(path, _)| path.clone())
+        .collect::<Vec<_>>();
     assert_eq!(file_snapshot(&paths), before);
     assert!(!repo.join(".areamatrix").exists());
     assert!(!repo.join("AREAMATRIX.md").exists());
