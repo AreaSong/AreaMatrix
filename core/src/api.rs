@@ -835,6 +835,13 @@ pub fn resume_scan_session(repo_path: String, scan_session_id: i64) -> CoreResul
 /// security-scoped bookmark refresh, URL materialization, and Extension
 /// timeout handling stay in the platform layer.
 ///
+/// C4-06 files-import reuses this read-only preview surface after the iOS
+/// Files provider or document picker has granted access and exposed a display
+/// filename. Provider browsing, security-scoped access lifetime, iCloud
+/// placeholder download orchestration, and multi-file progress stay in the
+/// platform layer; Core only predicts a category/name from the authorized
+/// filename and repository classifier rules.
+///
 /// # Errors
 ///
 /// Returns `CoreError::Config { reason }` when the repository path, filename, YAML syntax,
@@ -923,6 +930,17 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// Extension must defer, the platform-owned ticket records queued,
 /// needs-review, or permission-expired takeover state and the main app later
 /// calls this same Core import contract.
+///
+/// C4-06 files-import reuses `StorageMode::Copied` import semantics for iOS
+/// Files provider selections after the platform layer has granted access to a
+/// readable file URL. Core receives only the authorized path plus
+/// [`ImportOptions`]; it does not open the document picker, retain
+/// security-scoped bookmarks, trigger provider downloads, move source files, or
+/// perform C4-21 replace confirmation. `S4-IOS-07` can derive its preview and
+/// result states from [`predict_category`], [`ImportOptions`], the returned
+/// [`FileEntry`], and structured `ICloudPlaceholder`, `PermissionDenied`,
+/// `DuplicateFile`, and `Conflict` errors. Cancelled selections stay in the
+/// platform sheet and must not call this API.
 ///
 /// # Errors
 ///

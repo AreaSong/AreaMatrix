@@ -2201,7 +2201,7 @@ interface CoreError {
 | `get_latest_scan_session(repo)` | repo | √ | Db |
 | `resume_scan_session(repo, id)` | repo | √ | Io / Db |
 | `predict_category(repo, name)` | classify | √ | Config / Classify |
-| `import_file(repo, src, options)` | storage | √ | Io / Db / DuplicateFile / InvalidPath |
+| `import_file(repo, src, options)` | storage | √ | Io / Db / DuplicateFile / Conflict / InvalidPath / ICloudPlaceholder / PermissionDenied |
 | `delete_file(repo, file_id)` | storage | √ | Io / Db / FileNotFound / PermissionDenied / Internal |
 | `remove_index_entry(repo, file_id)` | storage | √ | Db / FileNotFound / PermissionDenied / Internal |
 | `rename_file(repo, file_id, new_name)` | storage | √ | Io / Db / Config / InvalidPath / Conflict / FileNotFound / PermissionDenied |
@@ -3902,13 +3902,15 @@ func importDroppedFile(_ url: URL) async {
         await showAlert("文件名不允许：\(p)")
     } catch CoreError.ICloudPlaceholder(let p) {
         await showICloudDownloadPrompt(path: p)
+    } catch CoreError.PermissionDenied(let p) {
+        await showAlert("没有读取或写入权限：\(p)")
     } catch {
         await showAlert("导入失败：\(error.localizedDescription)")
     }
 }
 ```
 
-可能抛：`Io` / `Db` / `DuplicateFile` / `Conflict` / `InvalidPath` / `ICloudPlaceholder` / `Internal`。
+可能抛：`Io` / `Db` / `DuplicateFile` / `Conflict` / `InvalidPath` / `ICloudPlaceholder` / `PermissionDenied` / `Internal`。
 
 `ImportOptions.destination` 语义：
 
