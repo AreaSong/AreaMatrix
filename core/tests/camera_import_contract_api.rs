@@ -7,9 +7,8 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-16-c4-04-contract-api.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md"
-);
+const CAPABILITY_SPEC: &str =
+    include_str!("../../docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md");
 const CONTROL_MAP: &str = include_str!("../../docs/architecture/stage-4-control-map.md");
 const CAMERA_PAGE: &str =
     include_str!("../../docs/ux/page-specs/stage-4-multiplatform/S4-IOS-03-camera-import.md");
@@ -73,7 +72,10 @@ fn camera_import_contract_exposes_mobile_copy_inputs_outputs_and_errors() {
         imported_photo.source_path.as_deref(),
         Some("/tmp/areamatrix-camera/photo.jpg")
     );
-    assert_eq!(imported_photo.availability_status, FileAvailabilityStatus::Available);
+    assert_eq!(
+        imported_photo.availability_status,
+        FileAvailabilityStatus::Available
+    );
 
     let documented_errors = [
         CoreError::permission_denied("camera temp file is unreadable"),

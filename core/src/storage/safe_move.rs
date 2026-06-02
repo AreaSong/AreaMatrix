@@ -27,7 +27,7 @@ impl StagingFileGuard {
 
     fn create(repo: &Path, prefix: &str, cleanup: StagingCleanup) -> CoreResult<Self> {
         let staging_dir = repo.join(AREA_MATRIX_DIR).join(STAGING_DIR);
-        fs::create_dir_all(&staging_dir).map_err(hash::map_io_error)?;
+        fs::create_dir_all(&staging_dir).map_err(map_staging_dir_error)?;
         Ok(Self {
             path: staging_dir.join(format!("{}-{}", prefix, uuid::Uuid::new_v4())),
             cleanup,
@@ -160,6 +160,13 @@ fn copy_to_new_destination(current_path: &Path, destination: &Path) -> CoreResul
         return Err(CoreError::io("io error"));
     }
     Ok(())
+}
+
+fn map_staging_dir_error(error: std::io::Error) -> CoreError {
+    match error.kind() {
+        std::io::ErrorKind::AlreadyExists => CoreError::io("io error"),
+        _ => hash::map_io_error(error),
+    }
 }
 
 #[cfg(test)]

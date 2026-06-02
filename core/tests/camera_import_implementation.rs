@@ -125,10 +125,7 @@ fn camera_import_implementation_copies_platform_temp_photo_into_repo() {
     assert_eq!(entry.storage_mode, StorageMode::Copied);
     assert_eq!(entry.origin, FileOrigin::Imported);
     assert_eq!(entry.source_path.as_deref(), Some(source_path.as_str()));
-    assert_eq!(
-        entry.availability_status,
-        FileAvailabilityStatus::Available
-    );
+    assert_eq!(entry.availability_status, FileAvailabilityStatus::Available);
     assert_eq!(
         fs::read(repo.path().join(&entry.path)).expect("read copied repo photo"),
         b"captured photo bytes"
@@ -143,13 +140,14 @@ fn camera_import_implementation_copies_platform_temp_photo_into_repo() {
     let files = list_files(path_string(repo.path()), empty_filter()).expect("list mobile library");
     assert_eq!(files, vec![entry.clone()]);
 
-    let (status, storage_mode, source_path_db): (String, String, Option<String>) = open_db(repo.path())
-        .query_row(
-            "SELECT status, storage_mode, source_path FROM files WHERE id = ?1",
-            [entry.id],
-            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
-        )
-        .expect("read imported camera file row");
+    let (status, storage_mode, source_path_db): (String, String, Option<String>) =
+        open_db(repo.path())
+            .query_row(
+                "SELECT status, storage_mode, source_path FROM files WHERE id = ?1",
+                [entry.id],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .expect("read imported camera file row");
     assert_eq!(status, "active");
     assert_eq!(storage_mode, "copied");
     assert_eq!(source_path_db.as_deref(), Some(source_path.as_str()));
@@ -222,7 +220,10 @@ fn camera_import_implementation_db_failure_keeps_temp_and_existing_repo_files() 
     assert_eq!(row_count(repo.path(), "files", Some("active")), 1);
     assert_eq!(row_count(repo.path(), "files", Some("staging")), 0);
     assert_eq!(row_count(repo.path(), "change_log", None), 1);
-    assert!(!repo.path().join("photos/Photo 2026-04-29 1130_1.jpg").exists());
+    assert!(!repo
+        .path()
+        .join("photos/Photo 2026-04-29 1130_1.jpg")
+        .exists());
     assert_eq!(staging_entries(repo.path()), Vec::<PathBuf>::new());
 }
 
