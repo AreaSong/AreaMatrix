@@ -335,6 +335,9 @@ namespace area_matrix {
     [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
+    // C4-07 mobile-detail composes get_file + list_changes + read_note.
+    // FileEntry.availability_status lets S4-IOS-05 route Missing to S4-X-06
+    // without platform-side metadata inference.
     [Throws=CoreError]
     sequence<ChangeLogEntry> list_changes(string repo_path, ChangeFilter filter);
 

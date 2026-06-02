@@ -1485,11 +1485,13 @@ pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileE
 /// and must not be hidden behind this entry point.
 ///
 /// C4-03 allows a mobile list row to open a Core-backed detail record from
-/// `S4-IOS-02`; C4-07 owns the mobile detail aggregation for log and note
-/// panes, so this contract stays limited to the base [`FileEntry`] metadata.
-/// The returned [`FileEntry::availability_status`] mirrors the list payload so
-/// detail consumers can keep a missing row visible without platform-side
-/// filesystem inference.
+/// `S4-IOS-02`; C4-07 composes this API with [`list_changes`] and
+/// [`read_note`] for `S4-IOS-05` mobile-file-detail. This contract stays
+/// limited to base [`FileEntry`] metadata and intentionally does not introduce
+/// a separate detail DTO. The returned [`FileEntry::availability_status`]
+/// mirrors the list payload so detail consumers can keep a missing row visible
+/// without platform-side filesystem inference and route the missing state to
+/// `S4-X-06` rather than inferring it from the filesystem.
 ///
 /// # Errors
 ///
@@ -1518,8 +1520,10 @@ pub fn get_file(repo_path: String, file_id: i64) -> CoreResult<FileEntry> {
 /// hidden behind this query entry point.
 ///
 /// C4-03/C4-07 mobile consumers can lazily request a small `limit`/`offset`
-/// page for visible detail timelines. The API remains a read-only metadata
-/// query and does not trigger filesystem rescan or sync repair.
+/// page for visible detail timelines. In C4-07, `S4-IOS-05` uses `file_id` to
+/// load the Log segment without blocking the Meta segment. The API remains a
+/// read-only metadata query and does not trigger filesystem rescan, sync
+/// repair, conflict resolution, or missing-file recovery.
 ///
 /// # Errors
 ///
@@ -1802,6 +1806,11 @@ pub fn apply_tag_suggestions(
 /// `Some(markdown)` when a note exists and `None` when the file has no note.
 /// This API must not create note rows, write sidecar files, insert change-log
 /// entries, or mutate user files.
+///
+/// C4-07 reuses this as the lazy Note segment query for `S4-IOS-05`. Mobile
+/// callers can show the empty-note state from `None` and isolate note read
+/// failures to the Note segment; note editing remains with the existing
+/// `write_note` contract and is not added to the C4-07 contract-api task.
 ///
 /// # Errors
 ///
