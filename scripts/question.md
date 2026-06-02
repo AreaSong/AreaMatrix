@@ -312,6 +312,44 @@ verify FAIL
 
 **事故结论**：这是自动化控制逻辑事故，不是业务代码事故。下一步应该修 runner，而不是继续要求 Codex 更努力地改项目。
 
+### 8.2 task-scoped vs repo-wide 验证问题
+
+> 2026-06-02 复盘：task-79 执行报告暴露的第二类验证失败。
+
+| 字段 | 内容 |
+|------|------|
+| **定级** | P1 / Sev-2，验证范围越界导致合格任务无法通过 |
+| **事故名称** | `./dev check all` 全仓库验证阻塞了 scope 内已完成的 task |
+| **直接原因** | task-79 只修改了 `S306PageIntegrationVerifyTests.swift`，该文件 SwiftFormat lint ✅、XCTest ✅、doctor ✅、audit ✅ 全部通过。但 `./dev check all` 检查整个仓库，47/300 个**无关文件**存在预存 SwiftFormat 格式债，这些文件在 task-79 的 Forbidden Touches 中，task 无权修改 |
+| **根因** | verify 门禁只有一个粒度：全仓库。缺少 task-scope 验证层，无法区分"task 自身完成度"和"仓库整体健康度" |
+| **影响** | task-79 实质已完成但被判定 FAIL → 触发无意义的 repair retry → copy 阶段自我报告"未完成"（因为知道 Forbidden 路径的 lint 自己修不了）→ 仍进入 verify → 循环 |
+
+**当前只有一层验证**：
+
+```
+task 修改完成 → ./dev check all（全仓库）→ FAIL → retry
+```
+
+**应该是两层验证**：
+
+```
+task 修改完成
+  → Layer 1: task-scope 验证（只检查 expected_paths 内的文件）
+     ├─ PASS → task 标记完成，进入 checkpoint
+     └─ FAIL → repair retry（这是 task 自身的问题）
+  → Layer 2: repo-wide 质量门禁（全仓库健康度，独立运行）
+     ├─ 不阻塞单个 task 的完成判定
+     ├─ 作为 phase 级别或 milestone 级别的 gate
+     └─ 失败时生成独立的 quality-debt repair task
+```
+
+**与 8.1 的区别**：
+- 8.1 是**失败类型**未分流（环境问题 vs 代码问题）
+- 8.2 是**验证范围**未分层（task scope vs repo scope）
+- 两者共同指向同一个 runner 缺陷：verify 只有一条路、一个粒度
+
+**事故结论**：task 级别的 verify 应该只验证 task 自身 scope 内的文件；仓库级质量门禁应独立为 phase/milestone gate，不阻塞单个 task 的完成判定。此设计已纳入 AreaFlow 功能 #7（验证失败分流）和 #24（失败归因 Skill）的需求输入。
+
 ---
 
 ## 9. 讨论结论：AreaFlow 独立产品
