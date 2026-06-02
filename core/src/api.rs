@@ -1408,6 +1408,11 @@ pub fn restore_file(_repo_path: String, _file_id: i64) -> CoreResult<FileEntry> 
 /// tag filtering, smart lists, and single-file detail aggregation belong to
 /// later capabilities and must not be hidden behind this entry point.
 ///
+/// C4-03 reuses this query for `S4-IOS-02` mobile-library rows. Mobile callers
+/// must use the documented `limit` and `offset` fields instead of loading the
+/// entire repository, and missing-file recovery stays with C4-18 rather than
+/// this list contract.
+///
 /// # Errors
 ///
 /// Returns `CoreError::RepoNotInitialized { path }` when the repository metadata is
@@ -1428,6 +1433,10 @@ pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileE
 /// rename, or overwrite user files. File preview, Quick Look, OCR metadata,
 /// change-log aggregation, and note aggregation belong to adjacent capabilities
 /// and must not be hidden behind this entry point.
+///
+/// C4-03 allows a mobile list row to open a Core-backed detail record from
+/// `S4-IOS-02`; C4-07 owns the mobile detail aggregation for log and note
+/// panes, so this contract stays limited to the base [`FileEntry`] metadata.
 ///
 /// # Errors
 ///
@@ -1454,6 +1463,10 @@ pub fn get_file(repo_path: String, file_id: i64) -> CoreResult<FileEntry> {
 /// rollback, and batch revert behavior belong to Stage 2 and must not be
 /// hidden behind this query entry point.
 ///
+/// C4-03/C4-07 mobile consumers can lazily request a small `limit`/`offset`
+/// page for visible detail timelines. The API remains a read-only metadata
+/// query and does not trigger filesystem rescan or sync repair.
+///
 /// # Errors
 ///
 /// Returns `CoreError::RepoNotInitialized { path }` when repository metadata is missing
@@ -1476,6 +1489,11 @@ pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<C
 ///
 /// Virtual smart lists, search result trees, and Stage 2 tree projections remain
 /// outside this API boundary.
+///
+/// C4-03 mobile-library uses this tree snapshot for compact category browsing.
+/// Mobile shells must keep large-repository list data paginated through
+/// [`list_files`]; this tree contract does not add search, sync, or recovery
+/// actions.
 ///
 /// # Errors
 ///
