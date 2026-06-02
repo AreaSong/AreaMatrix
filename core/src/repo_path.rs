@@ -322,8 +322,21 @@ fn is_area_matrix_metadata_dir(entry: &fs::DirEntry) -> CoreResult<bool> {
 }
 
 fn is_inside_area_matrix(path: &Path) -> bool {
-    path.components()
+    if path
+        .components()
         .any(|component| component.as_os_str() == AREA_MATRIX_DIR)
+    {
+        return true;
+    }
+
+    let components = path_components(path);
+    if !is_windows_shaped_path(path, &components) {
+        return false;
+    }
+
+    components
+        .iter()
+        .any(|component| component.eq_ignore_ascii_case(AREA_MATRIX_DIR))
 }
 
 fn has_icloud_placeholder_marker(path: &Path) -> bool {
