@@ -263,9 +263,12 @@ fn share_extension_import_failure_recovery_permission_denied_maps_and_keeps_payl
 
     fs::set_permissions(&source, original_permissions).expect("restore source permissions");
 
-    assert_eq!(
-        result,
-        Err(CoreError::permission_denied("permission denied"))
+    assert!(
+        matches!(
+            result,
+            Err(CoreError::PermissionDenied { path }) if path == path_string(&source)
+        ),
+        "permission error should carry the share payload path"
     );
     assert_eq!(
         fs::read(&source).expect("share payload remains readable after permission restore"),

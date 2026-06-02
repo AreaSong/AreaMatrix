@@ -202,9 +202,12 @@ fn camera_import_failure_recovery_permission_denied_maps_and_leaves_no_half_prod
 
     fs::set_permissions(&source, original_permissions).expect("restore source permissions");
 
-    assert_eq!(
-        result,
-        Err(CoreError::permission_denied("permission denied"))
+    assert!(
+        matches!(
+            result,
+            Err(CoreError::PermissionDenied { path }) if path == path_string(&source)
+        ),
+        "permission error should carry the camera temp source path"
     );
     assert_eq!(
         fs::read(&source).expect("camera temp source remains readable after restore"),

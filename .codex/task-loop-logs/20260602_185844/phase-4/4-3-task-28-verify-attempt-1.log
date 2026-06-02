@@ -1,0 +1,68 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-28`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-28-c4-06-failure-edge.md`
+- 验收代码范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰范围：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：`files_import_failure_recovery_*` 覆盖 cancel 空态、empty repo/source、非法文件名、iCloud placeholder、permission denied、staging IO、DB trigger 失败、Duplicate Ask；`map_core_error` 验证 recoverability/severity。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/files_import_failure_recovery.rs:178`、`:199`、`:231`、`:267`、`:312`、`:337`、`:377`
+
+- 项目：失败不留下半成品
+- 结果：通过
+- 证据：测试断言失败后 `files.active=0`、`files.staging=0`、`change_log=0`、staging 为空、final 文件不存在；DB 失败后可 retry 成功。实现侧有 `StagingFileGuard`、`FinalFileGuard`、`DbStagingRowGuard`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/files_import_failure_recovery.rs:110`、`:337`；`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:31`、`:40`、`:43`；`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/safe_move.rs:47`、`:99`
+
+- 项目：隐私/AI/远程调用默认关闭、密钥不入日志
+- 结果：通过
+- 证据：C4-06 本身无远程 AI 调用；空态测试确认 `ai_enabled=false`、`remote_provider_config` 为空、无 `ai_call_log` 表。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/files_import_failure_recovery.rs:178`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：duplicate Ask 返回 `DuplicateFile`，iCloud/permission/IO/DB 均返回结构化 `CoreError`；未发现 mock-only 或硬编码通过态。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/validate.rs:12`、`:110`；`/Users/as/Ai-Project/project/AreaMatrix/core/tests/files_import_failure_recovery.rs:377`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`PreparedImport`、staging/final/db guard 分层清楚。
+- 注释 / rustdoc / 文档同步：通过，UDL/Core API/Error Codes 与 `CoreError`、`import_file` 对齐。
+- 错误处理与边界处理：通过，路径、权限、placeholder、IO、DB、duplicate 均显式返回。
+- 测试与验证覆盖：通过，任务验证 fresh 运行通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试走真实 temp repo、SQLite、文件系统路径。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-28`
+- 通过：prompt doctor、git diff check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test files_import_contract_api -- --nocapture`，4 passed
+- 通过：`cargo test --test files_import_failure_recovery -- --nocapture`，8 passed
+- 通过：`cargo test --test files_import_implementation -- --nocapture`，6 passed
+- 失败：无
+- 缺失：未运行 `./dev check all`，manifest 未要求，且本任务验收边界不需要宽门禁。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前 `apps/**` 无 git 脏改动，未发现 Forbidden Touches 违规。`progress.json` 与 task-loop summary 属 runner 状态/收口材料，不作为本 verify 阶段阻断项。
+
+VERIFY_RESULT: PASS

@@ -178,9 +178,12 @@ fn files_import_implementation_icloud_placeholder_returns_structured_error() {
         files_import_options(Some("Remote Report.pdf")),
     );
 
-    assert_eq!(
-        result,
-        Err(CoreError::icloud_placeholder("icloud placeholder"))
+    assert!(
+        matches!(
+            result,
+            Err(CoreError::ICloudPlaceholder { path }) if path == path_string(&placeholder)
+        ),
+        "iCloud placeholder error should carry the selected provider path"
     );
     assert_eq!(
         fs::read(&placeholder).expect("read provider placeholder marker"),
@@ -214,9 +217,12 @@ fn files_import_implementation_permission_denied_keeps_repo_and_source_unchanged
 
     fs::set_permissions(&selected, original_permissions).expect("restore selected file reads");
 
-    assert_eq!(
-        result,
-        Err(CoreError::permission_denied("permission denied"))
+    assert!(
+        matches!(
+            result,
+            Err(CoreError::PermissionDenied { path }) if path == path_string(&selected)
+        ),
+        "permission error should carry the selected provider path"
     );
     assert_eq!(
         fs::read(&selected).expect("read restored selected file"),
@@ -273,8 +279,12 @@ fn files_import_implementation_name_conflict_keep_both_uses_numbered_name() {
 
     let mut options = files_import_options(Some("Shared Name.pdf"));
     options.duplicate_strategy = DuplicateStrategy::KeepBoth;
-    let first_entry = import_file(path_string(repo.path()), path_string(&first), options.clone())
-        .expect("import first named files-provider selection");
+    let first_entry = import_file(
+        path_string(repo.path()),
+        path_string(&first),
+        options.clone(),
+    )
+    .expect("import first named files-provider selection");
     let second_entry = import_file(path_string(repo.path()), path_string(&second), options)
         .expect("import second named files-provider selection");
 
