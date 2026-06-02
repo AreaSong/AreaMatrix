@@ -90,10 +90,12 @@ pub struct CloudStorageState {
 ///
 /// # Errors
 ///
-/// Returns `CoreError::ICloudPlaceholder { path }` when the repository path
-/// itself is a visible placeholder, `CoreError::PermissionDenied { path }` when
-/// metadata or directory listing is blocked, and `CoreError::Io { message }`
-/// for other filesystem inspection failures.
+/// Returns `CoreError::InvalidPath { path }` when the input is empty or points
+/// inside AreaMatrix metadata, `CoreError::ICloudPlaceholder { path }` when the
+/// repository path itself is a visible placeholder,
+/// `CoreError::PermissionDenied { path }` when metadata or directory listing is
+/// blocked, and `CoreError::Io { message }` for other filesystem inspection
+/// failures.
 pub(crate) fn detect_cloud_storage_state(repo_path: String) -> CoreResult<CloudStorageState> {
     let path = Path::new(&repo_path);
     validate_path(path, &repo_path)?;
@@ -106,7 +108,7 @@ pub(crate) fn detect_cloud_storage_state(repo_path: String) -> CoreResult<CloudS
 
 fn validate_path(path: &Path, repo_path: &str) -> CoreResult<()> {
     if repo_path.trim().is_empty() {
-        return Err(CoreError::io("repository path is required"));
+        return Err(CoreError::invalid_path("repository path is required"));
     }
     if path.components().any(|component| {
         component
@@ -114,7 +116,7 @@ fn validate_path(path: &Path, repo_path: &str) -> CoreResult<()> {
             .to_string_lossy()
             .eq_ignore_ascii_case(".areamatrix")
     }) {
-        return Err(CoreError::io(
+        return Err(CoreError::invalid_path(
             "cloud state detection requires a repository root, not .areamatrix metadata",
         ));
     }
@@ -230,7 +232,9 @@ mod tests {
     #[test]
     fn provider_kind_detects_icloud_and_onedrive_path_markers() {
         assert_eq!(
-            provider_kind(Path::new("/Users/me/Library/Mobile Documents/com~apple~CloudDocs/Repo")),
+            provider_kind(Path::new(
+                "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/Repo"
+            )),
             CloudStorageProviderKind::ICloudDrive
         );
         assert_eq!(

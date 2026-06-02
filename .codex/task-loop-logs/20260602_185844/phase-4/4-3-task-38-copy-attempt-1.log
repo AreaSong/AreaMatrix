@@ -1,0 +1,48 @@
+一、执行结论
+
+- 已完成：`4-3/task-38` C4-08 failure-edge 已补齐并通过验证。
+
+二、执行范围
+
+- 单任务：`4-3/task-38`
+- 修改文件：
+  - [cloud_permission_state.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/cloud_permission_state.rs:93)：空路径 / `.areamatrix` 内部路径改为明确 `InvalidPath`，并补 rustdoc 错误说明。
+  - [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1663)：同步 public API 错误说明。
+  - [cloud_permission_state_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/cloud_permission_state_failure_recovery.rs:61)：新增 failure-edge 测试。
+  - `core/src/lib.rs`、既有 C4-08 测试文件有 `cargo fmt` 产生的格式化调整。
+- 未修改 `core/area_matrix.udl`，因为 FFI 合同未变。
+- 未触碰 `apps/**`，Forbidden Touches 检查为空。
+
+三、完成情况
+
+- 空态：空目录只读返回 `Local / NoRisk / Accessible`，不创建 `.areamatrix`。
+- 非法输入：空路径和 `.areamatrix` 内部路径明确返回 `InvalidPath`。
+- 权限：目录读取权限阻断返回 `PermissionDenied`，映射为用户操作恢复。
+- IO/DB：非目录返回 `Io`；C4-08 不读 DB，测试证明损坏 DB 不被读取、修复或改写。
+- 错误码映射：测试覆盖 `InvalidPath`、`ICloudPlaceholder`、`PermissionDenied`、`Io` 的 `ErrorKind` 和 recoverability。
+- 用户文件安全：测试断言 `README.md`、普通用户文件、损坏 DB 内容不被改写，不产生 `generated` / `staging` 半成品。
+- 隐私/AI/远程调用：C4-08 无 AI/网络路径；测试验证 provider summary / reasons 不泄露密钥形态内容。
+
+四、工程质量
+
+实现仍保持平台中立、只读探测：只做路径形状、metadata、目录可读性检查，不调用 iCloud/OneDrive SDK，不触发下载，不写 DB。新增测试是集成测试，不是 mock-only 或硬编码通过态；错误没有吞掉或静默降级。
+
+五、验证情况
+
+已通过：
+
+```bash
+cargo test --test cloud_permission_state_failure_recovery -- --nocapture
+cargo test --test cloud_permission_state_implementation -- --nocapture
+cargo test --test cloud_permission_state_contract_api -- --nocapture
+./dev check task 4-3/task-38
+```
+
+`./dev check task 4-3/task-38` 通过了 `doctor`、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`，以及 C4-08 三个 targeted tests：`5 + 7 + 4` 个测试全绿。
+
+六、风险与后续
+
+剩余风险：权限测试为 `#[cfg(unix)]`，覆盖当前 macOS/Linux 权限语义；Windows ACL 细节后续由 Windows 平台任务覆盖。工作树中原本已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 修改，本任务没有把它们作为交付改动处理。
+
+建议下一个任务：`4-3/task-39` C4-08 validation。
+

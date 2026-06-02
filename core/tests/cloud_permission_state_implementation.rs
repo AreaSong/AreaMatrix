@@ -14,9 +14,9 @@ fn path_string(path: &Path) -> String {
 }
 
 fn create_nested_repo(root: &Path, components: &[&str]) -> PathBuf {
-    let repo = components.iter().fold(root.to_path_buf(), |path, component| {
-        path.join(component)
-    });
+    let repo = components
+        .iter()
+        .fold(root.to_path_buf(), |path, component| path.join(component));
     fs::create_dir_all(&repo).expect("create nested cloud repository path");
     repo
 }
@@ -51,7 +51,10 @@ fn cloud_permission_state_implementation_detects_local_repo_read_only() {
     assert_eq!(state.repo_path, path_string(repo.path()));
     assert_eq!(state.provider_kind, CloudStorageProviderKind::Local);
     assert_eq!(state.risk, CloudStorageRiskLevel::NoRisk);
-    assert_eq!(state.placeholder_state, CloudPlaceholderState::NotPlaceholder);
+    assert_eq!(
+        state.placeholder_state,
+        CloudPlaceholderState::NotPlaceholder
+    );
     assert_eq!(state.permission_state, CloudPermissionState::Accessible);
     assert_eq!(
         state.status_summary,
@@ -69,7 +72,12 @@ fn cloud_permission_state_implementation_detects_icloud_risk_without_downloads()
     let root = tempfile::tempdir().expect("create temporary root");
     let repo = create_nested_repo(
         root.path(),
-        &["Library", "Mobile Documents", "com~apple~CloudDocs", "AreaMatrix"],
+        &[
+            "Library",
+            "Mobile Documents",
+            "com~apple~CloudDocs",
+            "AreaMatrix",
+        ],
     );
     fs::write(repo.join("report.txt"), "cloud backed\n").expect("write cloud-backed file");
     let before = snapshot(&repo);
@@ -79,11 +87,12 @@ fn cloud_permission_state_implementation_detects_icloud_risk_without_downloads()
 
     assert_eq!(state.provider_kind, CloudStorageProviderKind::ICloudDrive);
     assert_eq!(state.risk, CloudStorageRiskLevel::Medium);
-    assert_eq!(state.placeholder_state, CloudPlaceholderState::NotPlaceholder);
+    assert_eq!(
+        state.placeholder_state,
+        CloudPlaceholderState::NotPlaceholder
+    );
     assert_eq!(state.permission_state, CloudPermissionState::Accessible);
-    assert!(state
-        .status_summary
-        .contains("iCloud Drive path detected"));
+    assert!(state.status_summary.contains("iCloud Drive path detected"));
     assert_eq!(state.risk_reasons.len(), 2);
     assert!(state
         .risk_reasons
@@ -107,7 +116,10 @@ fn cloud_permission_state_implementation_detects_onedrive_risk_without_sdk_state
 
     assert_eq!(state.provider_kind, CloudStorageProviderKind::OneDrive);
     assert_eq!(state.risk, CloudStorageRiskLevel::Medium);
-    assert_eq!(state.placeholder_state, CloudPlaceholderState::NotPlaceholder);
+    assert_eq!(
+        state.placeholder_state,
+        CloudPlaceholderState::NotPlaceholder
+    );
     assert_eq!(state.permission_state, CloudPermissionState::Accessible);
     assert!(state.status_summary.contains("OneDrive path detected"));
     assert_eq!(state.risk_reasons.len(), 2);

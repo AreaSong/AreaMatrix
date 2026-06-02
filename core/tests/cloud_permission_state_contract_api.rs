@@ -55,7 +55,10 @@ fn cloud_permission_state_contract_exports_signature_outputs_and_errors() {
     };
     assert_eq!(state.provider_kind, CloudStorageProviderKind::ICloudDrive);
     assert_eq!(state.risk, CloudStorageRiskLevel::Medium);
-    assert_eq!(state.placeholder_state, CloudPlaceholderState::NotPlaceholder);
+    assert_eq!(
+        state.placeholder_state,
+        CloudPlaceholderState::NotPlaceholder
+    );
     assert_eq!(state.permission_state, CloudPermissionState::Accessible);
     assert_eq!(state.risk_reasons.len(), 1);
 
@@ -78,7 +81,10 @@ fn cloud_permission_state_contract_returns_structured_local_state_without_writes
     assert_eq!(state.repo_path, path_string(repo.path()));
     assert_eq!(state.provider_kind, CloudStorageProviderKind::Local);
     assert_eq!(state.risk, CloudStorageRiskLevel::NoRisk);
-    assert_eq!(state.placeholder_state, CloudPlaceholderState::NotPlaceholder);
+    assert_eq!(
+        state.placeholder_state,
+        CloudPlaceholderState::NotPlaceholder
+    );
     assert_eq!(state.permission_state, CloudPermissionState::Accessible);
     assert!(state.risk_reasons.is_empty());
     assert!(!state.can_retry);

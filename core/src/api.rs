@@ -5,27 +5,26 @@ use std::path::PathBuf;
 use crate::{
     ai_call_log, ai_classification_suggestion, ai_fallback, ai_privacy_rules, ai_settings,
     ai_summary, ai_tags_suggestion, batch_category, batch_delete, batch_rename as batch_rename_mod,
-    classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules,
-    cloud_permission_state, classify, cross_platform_ffi, db, icloud_conflicts,
-    import_conflict_batch, local_model_status, note, recovery, redo, remote_provider_config, repair,
-    repo_init, repo_path, repo_scan, storage, sync, tree, AiCallLogClearReport,
-    AiCallLogClearRequest, AiCallLogFilter, AiCallLogPage, AiCallLogPagination,
-    AiCategorySuggestion, AiCategorySuggestionRequest, AiConfig, AiConfigSnapshot,
-    AiFallbackStatus, AiFallbackStatusRequest, AiPrivacyEvaluationReport,
-    AiPrivacyEvaluationRequest, AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest,
-    AiSummaryClearReport, AiSummaryClearRequest, AiSummaryDraft, AiSummaryGenerationRequest,
-    AiSummarySaveReport, AiSummarySaveRequest, AiTagSuggestionApplyReport,
-    AiTagSuggestionReport, AiTagSuggestionRequest, ApplyAiTagSuggestionsRequest,
-    ApplyTagSuggestionsRequest, BatchCategoryChangeReport, BatchCategoryPreviewReport,
-    BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport,
-    BatchRenameReport, BatchRenameRule, BindingContractReport, BindingContractRequest,
-    ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult, ClassifierImpactPreviewRequest,
-    ClassifierRule, ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest,
-    ClassifierRuleEditorSnapshot, ClassifierRuleUpdate, ClassifyResult, CloudStorageState,
-    CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter,
-    ICloudConflictPair, ICloudConflictPreviewReport, ICloudConflictResolution,
-    ICloudConflictResolveReport, ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
-    ImportConflictBatchPreviewReport,
+    classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules, classify,
+    cloud_permission_state, cross_platform_ffi, db, icloud_conflicts, import_conflict_batch,
+    local_model_status, note, recovery, redo, remote_provider_config, repair, repo_init, repo_path,
+    repo_scan, storage, sync, tree, AiCallLogClearReport, AiCallLogClearRequest, AiCallLogFilter,
+    AiCallLogPage, AiCallLogPagination, AiCategorySuggestion, AiCategorySuggestionRequest,
+    AiConfig, AiConfigSnapshot, AiFallbackStatus, AiFallbackStatusRequest,
+    AiPrivacyEvaluationReport, AiPrivacyEvaluationRequest, AiPrivacyRulesSnapshot,
+    AiPrivacyRulesUpdateRequest, AiSummaryClearReport, AiSummaryClearRequest, AiSummaryDraft,
+    AiSummaryGenerationRequest, AiSummarySaveReport, AiSummarySaveRequest,
+    AiTagSuggestionApplyReport, AiTagSuggestionReport, AiTagSuggestionRequest,
+    ApplyAiTagSuggestionsRequest, ApplyTagSuggestionsRequest, BatchCategoryChangeReport,
+    BatchCategoryPreviewReport, BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport,
+    BatchRenamePreviewReport, BatchRenameReport, BatchRenameRule, BindingContractReport,
+    BindingContractRequest, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
+    ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
+    ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleUpdate,
+    ClassifyResult, CloudStorageState, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent,
+    FileEntry, FileFilter, ICloudConflictPair, ICloudConflictPreviewReport,
+    ICloudConflictResolution, ICloudConflictResolveReport, ImportConflictBatchApplyReport,
+    ImportConflictBatchApplyRequest, ImportConflictBatchPreviewReport,
     ImportConflictBatchPreviewRequest, ImportOptions, LocalModelFolderLocation,
     LocalModelFolderRequest, LocalModelStatusRequest, LocalModelStatusSnapshot,
     MoveToCategoryPreview, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
@@ -1661,8 +1660,9 @@ pub fn resolve_icloud_conflict(
 ///
 /// # Errors
 ///
-/// Returns `CoreError::ICloudPlaceholder { path }` when the repository path or
-/// required metadata is still a visible cloud placeholder,
+/// Returns `CoreError::InvalidPath { path }` when the input is empty or points
+/// inside AreaMatrix metadata, `CoreError::ICloudPlaceholder { path }` when the
+/// repository path or required metadata is still a visible cloud placeholder,
 /// `CoreError::PermissionDenied { path }` when metadata or directory listing is
 /// blocked, and `CoreError::Io { message }` for other read-only filesystem
 /// inspection failures.
