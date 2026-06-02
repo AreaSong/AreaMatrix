@@ -159,7 +159,10 @@ fn linux_repo_connect_failure_permission_denied_does_not_suggest_permission_muta
 
     let error = result.expect_err("readonly Linux adopt should fail");
     let mapping = assert_error_kind(error, ErrorKind::PermissionDenied).to_error_mapping();
-    assert_eq!(mapping.recoverability, ErrorRecoverability::UserActionRequired);
+    assert_eq!(
+        mapping.recoverability,
+        ErrorRecoverability::UserActionRequired
+    );
     assert!(!mapping.suggested_action.contains("chmod"));
     assert!(!mapping.suggested_action.contains("sudo"));
     assert_eq!(validation.recommended_mode, None);

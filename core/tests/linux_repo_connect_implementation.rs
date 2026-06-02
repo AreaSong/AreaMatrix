@@ -164,7 +164,7 @@ fn linux_repo_connect_adopts_non_empty_local_directory_without_touching_user_fil
 #[test]
 fn linux_repo_connect_keeps_local_folder_risk_state_structured_and_read_only() {
     let root = tempfile::tempdir().expect("create Linux risk-state root");
-    let missing_network = root.path().join("//server/share/AreaMatrix");
+    let missing_network = PathBuf::from("//server/share/AreaMatrix");
     let missing_local = root.path().join("AreaMatrix");
 
     let network = validate_repo_path(path_string(&missing_network))

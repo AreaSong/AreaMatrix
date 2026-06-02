@@ -15,9 +15,8 @@ const CAPABILITY_SPEC: &str = include_str!(
 const CONTROL_MAP: &str = include_str!("../../docs/architecture/stage-4-control-map.md");
 const LINUX_CHOOSE_REPO_PAGE: &str =
     include_str!("../../docs/ux/page-specs/stage-4-multiplatform/S4-LNX-01-choose-repo.md");
-const LOCAL_FOLDER_NOTICE_PAGE: &str = include_str!(
-    "../../docs/ux/page-specs/stage-4-multiplatform/S4-LNX-03-local-folder-notice.md"
-);
+const LOCAL_FOLDER_NOTICE_PAGE: &str =
+    include_str!("../../docs/ux/page-specs/stage-4-multiplatform/S4-LNX-03-local-folder-notice.md");
 const INIT_CONFIRM_PAGE: &str = include_str!(
     "../../docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md"
 );

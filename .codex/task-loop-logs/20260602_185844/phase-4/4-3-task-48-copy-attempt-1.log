@@ -1,0 +1,15 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-3/task-48`。本次实际修改仅在 Expected New Paths 内：
+
+- [linux_repo_connect_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/linux_repo_connect_contract_api.rs:15)：rustfmt 格式修正。
+- [linux_repo_connect_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/linux_repo_connect_failure_recovery.rs:159)：rustfmt 格式修正。
+- [linux_repo_connect_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/linux_repo_connect_implementation.rs:167)：把 network-shaped 测试路径从 `root.path().join("//...")` 改为 `PathBuf::from("//...")`，消除 clippy 阻断且保留测试语义。
+
+三、完成情况：C4-10 failure-edge 证据已覆盖非法输入、权限、IO/DB 映射、adopt 失败回滚、用户文件不变、AI/remote 默认关闭且不含密钥标记。未触碰 `apps/**`。工作区另有执行前已存在的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 脏改动，我未处理它们。
+
+四、工程质量：没有新增依赖，没有修改 public API / UDL / Core 业务逻辑；修复的是测试质量与格式问题。现有 failure tests 继续证明不吞错、不静默降级、不建议 `sudo/chmod`，并验证失败不留下 `.areamatrix/` 半成品。
+
+五、验证情况：`./dev check task 4-3/task-48` 已通过。包含 prompt doctor、diff check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`，以及 targeted tests：`linux_repo_connect_contract_api` 5 passed、`linux_repo_connect_failure_recovery` 6 passed、`linux_repo_connect_implementation` 3 passed。
+
+六、风险与后续：剩余风险是远端 CI 未在本轮运行，且工作区仍有两处非本任务既有脏改动。建议下一个任务继续 `4-3/task-49`，补齐 C4-10 validation 汇总证据。
