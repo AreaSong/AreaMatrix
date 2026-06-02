@@ -65,7 +65,11 @@ fn write_repo_file(repo: &Path, relative_path: &str, bytes: &[u8]) {
 
 fn insert_file_row(repo: &Path, relative_path: &str, write_backing_file: bool) -> i64 {
     if write_backing_file {
-        write_repo_file(repo, relative_path, b"filesystem bytes are not detail metadata");
+        write_repo_file(
+            repo,
+            relative_path,
+            b"filesystem bytes are not detail metadata",
+        );
     }
 
     let current_name = relative_path
@@ -95,7 +99,12 @@ fn insert_change(repo: &Path, file_id: i64, action: &str, occurred_at: i64) {
         .execute(
             "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
              VALUES (?1, ?2, ?3, ?4)",
-            params![file_id, action, r#"{"source":"c4-07-validation"}"#, occurred_at],
+            params![
+                file_id,
+                action,
+                r#"{"source":"c4-07-validation"}"#,
+                occurred_at
+            ],
         )
         .expect("insert mobile detail change-log row");
 }
@@ -138,7 +147,12 @@ fn mobile_detail_validation_proves_ui_ready_segments_without_writes() {
     let file_id = insert_file_row(repo.path(), "docs/report.pdf", true);
     insert_change(repo.path(), file_id, "imported", 100);
     insert_change(repo.path(), file_id, "edited_note", 200);
-    insert_note(repo.path(), file_id, "docs/report.pdf", "Reviewed from C4-07 validation.");
+    insert_note(
+        repo.path(),
+        file_id,
+        "docs/report.pdf",
+        "Reviewed from C4-07 validation.",
+    );
     let before_counts = metadata_counts(repo.path());
     let before_file = fs::read(repo.path().join("docs/report.pdf")).expect("read file before");
     let before_note =
@@ -178,7 +192,10 @@ fn mobile_detail_validation_covers_missing_and_structured_failures() {
         missing_entry.availability_status,
         FileAvailabilityStatus::Missing
     );
-    assert_eq!(read_note(path_string(repo.path()), missing_file_id), Ok(None));
+    assert_eq!(
+        read_note(path_string(repo.path()), missing_file_id),
+        Ok(None)
+    );
     assert!(matches!(
         get_file(path_string(repo.path()), 99_999),
         Err(CoreError::FileNotFound { .. })

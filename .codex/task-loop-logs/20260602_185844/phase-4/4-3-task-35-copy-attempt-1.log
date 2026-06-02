@@ -1,0 +1,54 @@
+一、执行结论
+
+已完成。C4-07 可以作为后续 `4-3/task-112` / `S4-IOS-05 + C4-07` page-feature task 的真实 Core 依赖。
+
+二、执行范围
+
+单任务：`4-3/task-35`。
+
+本轮修改文件：
+- [core/tests/mobile_detail_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/mobile_detail_validation.rs:66)：仅执行 `rustfmt` 换行格式修复，解除 `cargo fmt --check` 阻断。
+
+工作区另有执行前已存在的本地改动，未处理、未回滚：
+- `.codex/task-loop-runs/20260602_185844/summary.json`
+- `tasks/prompts/_shared/progress.json`
+
+三、完成情况
+
+核对结果：
+- capability spec / Core API / UDL / Rust / 测试已交叉检查。
+- C4-07 文档定义为 `get_file` + `list_changes` + `read_note`，输入 `file_id`，输出 metadata / log / note，DB 只读、文件系统无写入。
+- Control map 中 `S4-IOS-05` 仅绑定 `C4-07`，能力意图是 `detail/log/note query`。
+- Core 实现中 `get_file` 返回 `availability_status`，`list_changes` 支持日志分页懒加载，`read_note` 只读返回 `Option<String>`。
+- 未实现 control map 之外能力；未接入 iOS UI，未触碰 `apps/**`。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+代码结构清晰，本轮没有改产品实现、没有新增依赖、没有新增 mock-only / 硬编码通过态。  
+`core/tests/mobile_detail_validation.rs` 覆盖了 metadata/log/note 成功路径、Missing 状态、`FileNotFound`、非法 filter 的结构化失败，以及无写入验证。
+
+五、验证情况
+
+已运行并通过：
+- `./dev check task 4-3/task-35`
+
+关键证据：
+- `prompt doctor`: OK，637 tasks / 637 manifests。
+- `git diff --check`: PASS。
+- `cargo fmt --all -- --check`: 初次失败于 `mobile_detail_validation.rs` 格式；rustfmt 修复后 PASS。
+- `cargo clippy --all-targets --all-features -- -D warnings`: PASS。
+- `cargo test --test mobile_detail_contract_api`: 4 passed。
+- `cargo test --test mobile_detail_failure_recovery`: 8 passed。
+- `cargo test --test mobile_detail_implementation`: 3 passed。
+- `cargo test --test mobile_detail_validation`: 3 passed。
+
+无法运行项：
+- 必需验证无无法运行项。
+- 辅助查看进程的 `ps` 被沙箱拒绝：`operation not permitted`，不属于 task validation。
+
+六、风险与后续
+
+剩余风险：远端 CI / review / Git checkpoint 未在本轮执行；当前仍有既有 task-loop 状态文件本地改动。  
+回滚思路：如需回滚本轮变更，只撤销 [core/tests/mobile_detail_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/mobile_detail_validation.rs:66) 的格式化 diff。  
+建议下一个任务：继续 `4-3/task-112`，接入 `S4-IOS-05 + C4-07` 页面功能点。
