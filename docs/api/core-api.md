@@ -381,6 +381,9 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    CloudStorageState detect_cloud_storage_state(string repo_path);
+
+    [Throws=CoreError]
     ImportConflictBatchPreviewReport preview_import_conflict_batch(
         string repo_path,
         ImportConflictBatchPreviewRequest request
@@ -1713,6 +1716,18 @@ dictionary ICloudConflictResolveReport {
     string change_log_action;
 };
 
+dictionary CloudStorageState {
+    string repo_path;
+    CloudStorageProviderKind provider_kind;
+    CloudStorageRiskLevel risk;
+    CloudPlaceholderState placeholder_state;
+    CloudPermissionState permission_state;
+    string status_summary;
+    sequence<string> risk_reasons;
+    boolean can_retry;
+    boolean requires_reconnect;
+};
+
 dictionary ImportConflictBatchPreviewRequest {
     string import_session_id;
     sequence<string> conflict_ids;
@@ -2065,6 +2080,10 @@ enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ICloudConflictVersionRole { "Original", "ConflictedCopy" };
 enum ICloudConflictPreviewStatus { "Available", "MetadataOnly", "Unavailable" };
 enum ICloudConflictResolution { "KeepBoth", "KeepOriginal", "KeepConflictedCopy" };
+enum CloudStorageProviderKind { "Local", "ICloudDrive", "OneDrive", "Unknown" };
+enum CloudStorageRiskLevel { "NoRisk", "Low", "Medium", "High", "Unknown" };
+enum CloudPlaceholderState { "NotPlaceholder", "Placeholder", "Unknown" };
+enum CloudPermissionState { "Accessible", "PermissionDenied", "AccessExpired", "Unknown" };
 enum ImportConflictBatchConflictType { "DuplicateHash", "SameNameDifferentContent" };
 enum ImportConflictBatchStrategy { "Skip", "KeepBoth", "Replace", "AskPerItem" };
 enum ImportConflictBatchPreviewStatus {
@@ -2246,6 +2265,7 @@ interface CoreError {
 | `list_icloud_conflicts(repo)` | query | √ | ICloudPlaceholder / PermissionDenied / Io / Db |
 | `preview_conflict_versions(repo, conflict_id)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |
 | `resolve_icloud_conflict(repo, conflict_id, resolution)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |
+| `detect_cloud_storage_state(repo)` | cloud | √ | ICloudPlaceholder / PermissionDenied / Io |
 | `preview_import_conflict_batch(repo, request)` | conflict | √ | Conflict / FileNotFound / PermissionDenied / StagingRecoveryRequired / Io / Db |
 | `apply_import_conflict_batch(repo, request, preview_token)` | conflict | √ | Conflict / FileNotFound / PermissionDenied / StagingRecoveryRequired / Io / Db |
 | `read_note(repo, file_id)` | note | √ | Io |
@@ -5818,6 +5838,59 @@ S2-20 可以从本合同得到成功后应移除 Needs Review 的状态、保留
 Undo toast token 和失败时继续保持 unresolved 的判断依据。本合同没有引入
 control map 之外的页面能力；S1-36 仍只消费 `list_icloud_conflicts`，S2-20
 消费 preview / resolve。
+
+### `detect_cloud_storage_state(repoPath) throws -> CloudStorageState`
+
+```swift
+let state = try AreaMatrix.detectCloudStorageState(repoPath: repoPath)
+switch state.providerKind {
+case .iCloudDrive:
+    iCloudPermissionView.render(state)
+case .oneDrive:
+    oneDriveNoticeDialog.render(state)
+default:
+    break
+}
+```
+
+C4-08 的云盘权限状态入口，服务 `S4-IOS-06 icloud-permission`、
+`S4-WIN-03 onedrive-notice`，并为 `S4-IOS-01 connect-repo` 的云盘分支提供
+结构化提示。输入只包含已经由平台层授权或尝试恢复的 `repoPath`。
+
+输出 `CloudStorageState`：
+
+- `repo_path`：本次探测的资料库路径。
+- `provider_kind`：`Local`、`ICloudDrive`、`OneDrive` 或 `Unknown`。
+- `risk`：`NoRisk`、`Low`、`Medium`、`High` 或 `Unknown`，供页面选择提示强度和按钮禁用状态。
+- `placeholder_state`：`NotPlaceholder`、`Placeholder` 或 `Unknown`。
+- `permission_state`：`Accessible`、`PermissionDenied`、`AccessExpired` 或 `Unknown`。
+- `status_summary`：脱敏、可显示的状态摘要，不包含 SDK 原始输出或系统隐私细节。
+- `risk_reasons`：结构化风险原因列表，UI 不需要解析 `status_summary`。
+- `can_retry`：是否可以直接重试同一只读检测。
+- `requires_reconnect`：是否需要平台层重新获取目录访问权限。
+
+副作用边界：
+
+- Core 只做平台中立的只读探测：路径形状、基础 metadata、目录可读性和可见占位符 marker。
+- 不写 DB、不写 last cloud state、不移动、不删除、不重命名、不覆盖用户文件。
+- 不触发 iCloud placeholder 下载，不调用 iCloud / OneDrive SDK，不打开系统设置，不修改云盘同步策略。
+- iOS security-scoped bookmark、iCloud 是否登录、OneDrive 客户端同步状态、下载触发和设置跳转都属于平台层。
+- 同步冲突、Replace、manual rescan、watcher health、missing-file recovery 仍由各自 Stage 4 能力覆盖。
+
+错误：
+
+- `ICloudPlaceholder`：资料库路径或关键 metadata 仍是可见云端占位符。
+- `PermissionDenied`：metadata 或目录读取被权限阻断。
+- `Io`：其他只读文件系统探测失败，例如路径不存在、不是目录或 metadata 不可读。
+
+页面消费状态：
+
+- S4-IOS-06 可以从 `provider_kind`、`placeholder_state`、`permission_state`、`can_retry` 和
+  `requires_reconnect` 区分 iCloud 不可用、权限失效、占位符未下载和重试路径。
+- S4-WIN-03 可以从 `provider_kind = OneDrive`、`risk`、`status_summary` 和
+  `risk_reasons` 渲染 OneDrive 风险提示、Unknown 状态和继续前确认文案。
+- S4-IOS-01 可以把云盘问题路由到 S4-IOS-06，而不是在连接页硬猜平台状态。
+- 本合同不新增 control map 之外的页面能力。
 
 ### `preview_import_conflict_batch(repoPath, request) throws -> ImportConflictBatchPreviewReport`
 

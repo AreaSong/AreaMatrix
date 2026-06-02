@@ -360,6 +360,9 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    CloudStorageState detect_cloud_storage_state(string repo_path);
+
+    [Throws=CoreError]
     ImportConflictBatchPreviewReport preview_import_conflict_batch(
         string repo_path,
         ImportConflictBatchPreviewRequest request
@@ -1692,6 +1695,18 @@ dictionary ICloudConflictResolveReport {
     string change_log_action;
 };
 
+dictionary CloudStorageState {
+    string repo_path;
+    CloudStorageProviderKind provider_kind;
+    CloudStorageRiskLevel risk;
+    CloudPlaceholderState placeholder_state;
+    CloudPermissionState permission_state;
+    string status_summary;
+    sequence<string> risk_reasons;
+    boolean can_retry;
+    boolean requires_reconnect;
+};
+
 dictionary ImportConflictBatchPreviewRequest {
     string import_session_id;
     sequence<string> conflict_ids;
@@ -2044,6 +2059,10 @@ enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ICloudConflictVersionRole { "Original", "ConflictedCopy" };
 enum ICloudConflictPreviewStatus { "Available", "MetadataOnly", "Unavailable" };
 enum ICloudConflictResolution { "KeepBoth", "KeepOriginal", "KeepConflictedCopy" };
+enum CloudStorageProviderKind { "Local", "ICloudDrive", "OneDrive", "Unknown" };
+enum CloudStorageRiskLevel { "NoRisk", "Low", "Medium", "High", "Unknown" };
+enum CloudPlaceholderState { "NotPlaceholder", "Placeholder", "Unknown" };
+enum CloudPermissionState { "Accessible", "PermissionDenied", "AccessExpired", "Unknown" };
 enum ImportConflictBatchConflictType { "DuplicateHash", "SameNameDifferentContent" };
 enum ImportConflictBatchStrategy { "Skip", "KeepBoth", "Replace", "AskPerItem" };
 enum ImportConflictBatchPreviewStatus {

@@ -20,6 +20,7 @@ mod classifier_correction;
 mod classifier_impact;
 mod classifier_rule_editor;
 mod classifier_rules;
+mod cloud_permission_state;
 pub mod classify;
 mod command_index;
 pub mod config;
@@ -116,6 +117,10 @@ pub use classifier_rule_editor::{
     ClassifierRuleRecord, ClassifierRuleUpdate,
 };
 pub use classifier_rules::{save_classifier_rule, ClassifierRule};
+pub use cloud_permission_state::{
+    CloudPermissionState, CloudPlaceholderState, CloudStorageProviderKind, CloudStorageRiskLevel,
+    CloudStorageState,
+};
 pub use command_index::{
     list_command_targets, CommandIndex, CommandIndexContext, CommandTarget, CommandTargetAction,
     CommandTargetGroup, CommandTargetKind,

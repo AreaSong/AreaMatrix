@@ -5,25 +5,27 @@ use std::path::PathBuf;
 use crate::{
     ai_call_log, ai_classification_suggestion, ai_fallback, ai_privacy_rules, ai_settings,
     ai_summary, ai_tags_suggestion, batch_category, batch_delete, batch_rename as batch_rename_mod,
-    classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules, classify,
-    cross_platform_ffi, db, icloud_conflicts, import_conflict_batch, local_model_status, note,
-    recovery, redo, remote_provider_config, repair, repo_init, repo_path, repo_scan, storage, sync,
-    tree, AiCallLogClearReport, AiCallLogClearRequest, AiCallLogFilter, AiCallLogPage,
-    AiCallLogPagination, AiCategorySuggestion, AiCategorySuggestionRequest, AiConfig,
-    AiConfigSnapshot, AiFallbackStatus, AiFallbackStatusRequest, AiPrivacyEvaluationReport,
+    classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules,
+    cloud_permission_state, classify, cross_platform_ffi, db, icloud_conflicts,
+    import_conflict_batch, local_model_status, note, recovery, redo, remote_provider_config, repair,
+    repo_init, repo_path, repo_scan, storage, sync, tree, AiCallLogClearReport,
+    AiCallLogClearRequest, AiCallLogFilter, AiCallLogPage, AiCallLogPagination,
+    AiCategorySuggestion, AiCategorySuggestionRequest, AiConfig, AiConfigSnapshot,
+    AiFallbackStatus, AiFallbackStatusRequest, AiPrivacyEvaluationReport,
     AiPrivacyEvaluationRequest, AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest,
     AiSummaryClearReport, AiSummaryClearRequest, AiSummaryDraft, AiSummaryGenerationRequest,
-    AiSummarySaveReport, AiSummarySaveRequest, AiTagSuggestionApplyReport, AiTagSuggestionReport,
-    AiTagSuggestionRequest, ApplyAiTagSuggestionsRequest, ApplyTagSuggestionsRequest,
-    BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
-    BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
-    BatchRenameRule, BindingContractReport, BindingContractRequest, ChangeFilter, ChangeLogEntry,
-    ClassifierCorrectionResult, ClassifierImpactPreviewRequest, ClassifierRule,
-    ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot,
-    ClassifierRuleUpdate, ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot,
-    ExternalEvent, FileEntry, FileFilter, ICloudConflictPair, ICloudConflictPreviewReport,
-    ICloudConflictResolution, ICloudConflictResolveReport, ImportConflictBatchApplyReport,
-    ImportConflictBatchApplyRequest, ImportConflictBatchPreviewReport,
+    AiSummarySaveReport, AiSummarySaveRequest, AiTagSuggestionApplyReport,
+    AiTagSuggestionReport, AiTagSuggestionRequest, ApplyAiTagSuggestionsRequest,
+    ApplyTagSuggestionsRequest, BatchCategoryChangeReport, BatchCategoryPreviewReport,
+    BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport,
+    BatchRenameReport, BatchRenameRule, BindingContractReport, BindingContractRequest,
+    ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult, ClassifierImpactPreviewRequest,
+    ClassifierRule, ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest,
+    ClassifierRuleEditorSnapshot, ClassifierRuleUpdate, ClassifyResult, CloudStorageState,
+    CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter,
+    ICloudConflictPair, ICloudConflictPreviewReport, ICloudConflictResolution,
+    ICloudConflictResolveReport, ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
+    ImportConflictBatchPreviewReport,
     ImportConflictBatchPreviewRequest, ImportOptions, LocalModelFolderLocation,
     LocalModelFolderRequest, LocalModelStatusRequest, LocalModelStatusSnapshot,
     MoveToCategoryPreview, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
@@ -1645,6 +1647,27 @@ pub fn resolve_icloud_conflict(
     resolution: ICloudConflictResolution,
 ) -> CoreResult<ICloudConflictResolveReport> {
     icloud_conflicts::resolve_icloud_conflict(repo_path, conflict_id, resolution)
+}
+
+/// Detects C4-08 cloud storage provider, risk, placeholder, and permission state.
+///
+/// `S4-IOS-06 icloud-permission`, `S4-WIN-03 onedrive-notice`, and the cloud
+/// branch of `S4-IOS-01 connect-repo` use this read-only contract to render
+/// provider-specific recovery or notice state from structured fields. Core
+/// inspects only the authorized repository path and basic filesystem metadata;
+/// security-scoped bookmarks, iCloud availability, OneDrive client state,
+/// settings links, SDK calls, provider downloads, and reconnect UI remain in
+/// the platform layer.
+///
+/// # Errors
+///
+/// Returns `CoreError::ICloudPlaceholder { path }` when the repository path or
+/// required metadata is still a visible cloud placeholder,
+/// `CoreError::PermissionDenied { path }` when metadata or directory listing is
+/// blocked, and `CoreError::Io { message }` for other read-only filesystem
+/// inspection failures.
+pub fn detect_cloud_storage_state(repo_path: String) -> CoreResult<CloudStorageState> {
+    cloud_permission_state::detect_cloud_storage_state(repo_path)
 }
 
 /// Previews C2-17 import conflict batch decisions without mutating staging or files.
