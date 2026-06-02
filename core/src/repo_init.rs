@@ -107,8 +107,9 @@ fn init_adopt_existing_inner(
 ) -> CoreResult<()> {
     create_metadata_staging(repo_path, init_dir, options)?;
     commit_metadata_staging(repo, init_dir, rollback)?;
+    repo_scan::start_adopt_scan(repo)?;
     rollback.mark_complete();
-    repo_scan::start_adopt_scan(repo)
+    Ok(())
 }
 
 fn create_metadata_staging(

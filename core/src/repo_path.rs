@@ -49,7 +49,7 @@ fn validate_repo_path_with_requirement(
     repo_path: String,
     initialization_requirement: InitializationRequirement,
 ) -> CoreResult<RepoPathValidation> {
-    if repo_path.is_empty() {
+    if repo_path.trim().is_empty() {
         return Err(CoreError::invalid_path("invalid path"));
     }
 
@@ -416,28 +416,34 @@ fn platform_path_kind(
     if windows_shaped && (raw.starts_with("\\\\") || raw.starts_with("//")) {
         return PlatformPathKind::NetworkShare;
     }
-    if components.iter().any(is_icloud_component) {
+    if components
+        .iter()
+        .any(|component| is_icloud_component(component))
+    {
         return PlatformPathKind::ICloudDrive;
     }
-    if components.iter().any(is_onedrive_component) {
+    if components
+        .iter()
+        .any(|component| is_onedrive_component(component))
+    {
         return PlatformPathKind::OneDrive;
     }
     PlatformPathKind::Local
 }
 
-fn is_icloud_component(component: &String) -> bool {
+fn is_icloud_component(component: &str) -> bool {
     let component = component.to_ascii_lowercase();
     component == "mobile documents"
         || component == "icloud drive"
         || component.starts_with("com~apple~clouddocs")
 }
 
-fn is_onedrive_component(component: &String) -> bool {
+fn is_onedrive_component(component: &str) -> bool {
     let component = component.to_ascii_lowercase();
     component.contains("onedrive") || component.contains("one drive")
 }
 
-fn is_windows_reserved_name(component: &String) -> bool {
+fn is_windows_reserved_name(component: &str) -> bool {
     let stem = windows_component_stem(component);
     matches!(
         stem.as_str(),

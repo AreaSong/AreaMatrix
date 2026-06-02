@@ -1,0 +1,53 @@
+**一、执行结论**
+
+已完成。
+
+**二、执行范围**
+
+单任务：`4-3/task-43`，仅修改 Core 允许路径：
+
+- [core/src/repo_init.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_init.rs:108)
+- [core/src/repo_path.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_path.rs:52)
+- [core/tests/windows_repo_connect_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/windows_repo_connect_failure_recovery.rs:68)
+- [core/tests/windows_repo_connect_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/windows_repo_connect_implementation.rs:33) 仅 rustfmt 格式化
+
+未修改 `apps/**`。未修改 `core/area_matrix.udl`，现有 UDL 已包含 C4-09 所需合同字段和错误变体。
+
+**三、完成情况**
+
+核对清单均已覆盖：
+
+- 空态 / 非法输入 / 权限 / IO / DB 错误 / 错误码映射：新增 failure-recovery 测试覆盖。
+- 写入失败不留半成品：`AdoptExisting` 现在只有 adopt scan 成功后才 `mark_complete()`；scan 失败会触发 rollback 清理 `.areamatrix/`。
+- 隐私 / AI / 远程调用：测试确认默认 `ai_enabled=false`，未生成 AI call log，配置中无 key/token/secret 标记。
+- 未吞错：失败路径返回结构化 `CoreError`，不静默降级。
+
+完成标准已满足：C4-09 failure-edge 有明确返回、测试证据和用户文件安全保证；高风险 adopt scan 失败具备 rollback 证据。
+
+**四、工程质量**
+
+代码改动很小：`repo_path` 补空白路径判断和 clippy 清理；`repo_init` 调整完成标记顺序。新增测试使用临时目录，不触碰真实用户文件，不新增依赖，不引入 mock-only 或硬编码通过态。
+
+**五、验证情况**
+
+已运行并通过：
+
+```bash
+./dev check task 4-3/task-43
+```
+
+最终验证包含：
+
+- prompt doctor：OK
+- `git diff --check`：OK
+- `cargo fmt --all -- --check`：OK
+- `cargo clippy --all-targets --all-features -- -D warnings`：OK
+- `windows_repo_connect_contract_api`：6 passed
+- `windows_repo_connect_failure_recovery`：8 passed
+- `windows_repo_connect_implementation`：5 passed
+
+**六、风险与后续**
+
+剩余风险：未跑全仓库 `./dev check all`，因为本任务要求以 `./dev check task 4-3/task-43` 为验证上限。当前工作树里 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是开始前已有本地状态改动，我未触碰。
+
+建议下一个任务：`4-3/task-44`，继续做 C4-09 validation。

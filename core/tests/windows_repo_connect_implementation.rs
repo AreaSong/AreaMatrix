@@ -43,7 +43,12 @@ fn empty_filter() -> FileFilter {
 fn snapshot_files(paths: &[PathBuf]) -> Vec<(PathBuf, Vec<u8>)> {
     paths
         .iter()
-        .map(|path| (path.clone(), fs::read(path).expect("read user file snapshot")))
+        .map(|path| {
+            (
+                path.clone(),
+                fs::read(path).expect("read user file snapshot"),
+            )
+        })
         .collect()
 }
 
@@ -214,7 +219,10 @@ fn windows_repo_connect_classifies_unc_and_mixed_separators_without_sdk_side_eff
     assert_eq!(onedrive.platform_path_kind, PlatformPathKind::OneDrive);
     assert_eq!(
         onedrive.issues,
-        vec![RepoPathIssue::OneDrivePath, RepoPathIssue::WindowsCaseInsensitive]
+        vec![
+            RepoPathIssue::OneDrivePath,
+            RepoPathIssue::WindowsCaseInsensitive
+        ]
     );
     assert!(!onedrive_repo.join(".areamatrix").exists());
 }
