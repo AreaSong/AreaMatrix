@@ -146,16 +146,15 @@ fn assert_imported_files_entry(entry: &FileEntry, source_path: &str) {
     assert_eq!(entry.availability_status, FileAvailabilityStatus::Available);
 }
 
-fn assert_import_detail_matches_files_import(
-    detail: &Value,
-    source_path: &str,
-    entry: &FileEntry,
-) {
+fn assert_import_detail_matches_files_import(detail: &Value, source_path: &str, entry: &FileEntry) {
     assert_eq!(detail["source"].as_str(), Some(source_path));
     assert_eq!(detail["mode"].as_str(), Some("copied"));
     assert_eq!(detail["category"].as_str(), Some("inbox"));
     assert_eq!(detail["destination"].as_str(), Some("auto_classify"));
-    assert_eq!(detail["requested_name"].as_str(), Some("Files Statement.pdf"));
+    assert_eq!(
+        detail["requested_name"].as_str(),
+        Some("Files Statement.pdf")
+    );
     assert_eq!(detail["final_path"].as_str(), Some(entry.path.as_str()));
     assert_eq!(detail["name_conflict_resolved"].as_bool(), Some(false));
     assert!(
@@ -328,7 +327,12 @@ fn assert_task_docs_and_testing_alignment() {
 
     assert_files_page_alignment();
     assert_replace_page_alignment();
-    for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`", "关键测试场景"] {
+    for fragment in [
+        "Rust 单元测试",
+        "集成测试目录",
+        "`core/tests/`",
+        "关键测试场景",
+    ] {
         assert_contains(TESTING_DOC, fragment);
     }
 }
