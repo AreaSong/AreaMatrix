@@ -13542,14 +13542,28 @@
     "4-3/task-21": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260602_185844/phase-4/4-3-task-21-copy-attempt-1.log",
+      "git_branch": "codex/areamatrix-task-loop-20260501_132850",
+      "git_changed_files": [
+        ".codex/task-loop-logs/20260602_185844/phase-4/4-3-task-21-copy-attempt-1.log",
+        ".codex/task-loop-logs/20260602_185844/phase-4/4-3-task-21-verify-attempt-1.log",
+        ".codex/task-loop-runs/20260602_185844/summary.json",
+        ".codex/task-loop-runs/index.json",
+        "core/src/api.rs",
+        "core/tests/share_extension_import_contract_api.rs",
+        "tasks/prompts/_shared/progress.json"
+      ],
+      "git_checkpoint_status": "committed",
+      "git_commit": "3856e0944b8c6834690548e6726d3dbb222c3a94",
+      "git_push_status": "not_requested",
+      "git_remote": "",
       "note": "自动执行验收通过：attempt=1",
       "risk": "High",
       "run_id": "20260602_185844",
       "status": "completed",
-      "updated_at": "2026-06-02T11:28:19.681044+00:00",
+      "updated_at": "2026-06-02T11:28:19.874979+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260602_185844/phase-4/4-3-task-21-verify-attempt-1.log"
     }
   },
-  "updated_at": "2026-06-02T11:09:16.904837+00:00",
+  "updated_at": "2026-06-02T11:28:19.874981+00:00",
   "version": 1
 }
