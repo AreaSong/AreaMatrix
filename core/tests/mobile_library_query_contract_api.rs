@@ -78,7 +78,10 @@ fn mobile_library_query_contract_exports_existing_query_signatures_and_page_inpu
     };
     assert_eq!(entry.storage_mode, StorageMode::Indexed);
     assert_eq!(entry.origin, FileOrigin::External);
-    assert_eq!(entry.source_path.as_deref(), Some("/provider/docs/report.pdf"));
+    assert_eq!(
+        entry.source_path.as_deref(),
+        Some("/provider/docs/report.pdf")
+    );
 
     let change = ChangeLogEntry {
         id: 7,

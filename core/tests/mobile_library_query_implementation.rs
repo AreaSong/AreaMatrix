@@ -1,7 +1,4 @@
-use std::{
-    fs,
-    path::Path,
-};
+use std::{fs, path::Path};
 
 use area_matrix_core::{
     get_file, init_repo, list_changes, list_files, list_tree_json, ChangeFilter, CoreError,

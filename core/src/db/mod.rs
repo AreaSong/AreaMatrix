@@ -305,6 +305,7 @@ pub(crate) fn update_config(repo_path: String, new_config: RepoConfig) -> CoreRe
 }
 
 pub(crate) fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileEntry>> {
+    validate_file_filter(&filter)?;
     let repo = PathBuf::from(repo_path);
     let connection = open_repo_connection(&repo)?;
     let limit = filter.limit.clamp(0, 1000);
@@ -377,8 +378,8 @@ fn collect_file_entries(rows: &mut Rows<'_>) -> CoreResult<Vec<FileEntry>> {
             hash_sha256: row
                 .get(6)
                 .map_err(|error| CoreError::db(error.to_string()))?,
-            storage_mode: storage_mode_from_db(&storage_mode_value)?,
-            origin: origin_from_db(&origin_value)?,
+            storage_mode: metadata_storage_mode_from_db(&storage_mode_value)?,
+            origin: metadata_origin_from_db(&origin_value)?,
             source_path: row
                 .get(9)
                 .map_err(|error| CoreError::db(error.to_string()))?,
@@ -391,6 +392,23 @@ fn collect_file_entries(rows: &mut Rows<'_>) -> CoreResult<Vec<FileEntry>> {
         });
     }
     Ok(files)
+}
+
+fn validate_file_filter(filter: &FileFilter) -> CoreResult<()> {
+    if let (Some(after), Some(before)) = (filter.imported_after, filter.imported_before) {
+        if after > before {
+            return Err(CoreError::db("file list imported time range is invalid"));
+        }
+    }
+    Ok(())
+}
+
+fn metadata_storage_mode_from_db(value: &str) -> CoreResult<StorageMode> {
+    storage_mode_from_db(value).map_err(|_| CoreError::db("database error"))
+}
+
+fn metadata_origin_from_db(value: &str) -> CoreResult<FileOrigin> {
+    origin_from_db(value).map_err(|_| CoreError::db("database error"))
 }
 
 pub(crate) fn ensure_initialized(repo_path: &Path) -> CoreResult<()> {
@@ -413,7 +431,7 @@ pub(crate) fn ensure_initialized_readable(repo_path: &Path) -> CoreResult<()> {
     if &header == SQLITE_HEADER {
         Ok(())
     } else {
-        Err(CoreError::db("database error"))
+        Err(CoreError::db("file is not a database"))
     }
 }
 
