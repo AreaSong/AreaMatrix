@@ -829,6 +829,12 @@ pub fn resume_scan_session(repo_path: String, scan_session_id: i64) -> CoreResul
 /// Camera permission prompts, capture cancellation, retake flow, thumbnail
 /// generation, and temporary-file lifetime management remain outside Core.
 ///
+/// C4-05 share-extension-import reuses this read-only preview surface after
+/// the Share Extension has parsed an `NSExtensionItem` and derived a safe
+/// candidate filename. Share-sheet parsing, app-group queue persistence,
+/// security-scoped bookmark refresh, URL materialization, and Extension
+/// timeout handling stay in the platform layer.
+///
 /// # Errors
 ///
 /// Returns `CoreError::Config { reason }` when the repository path, filename, YAML syntax,
@@ -906,6 +912,17 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// the committed [`FileEntry`] so mobile consumers can refresh the library row,
 /// show the copied storage mode, and route duplicate or name-conflict states
 /// without adding a camera-specific Core API.
+///
+/// C4-05 share-extension-import reuses `StorageMode::Copied` import semantics
+/// after the platform has materialized a share payload into a Core-readable app
+/// group staged file. Core receives only that staged file path plus
+/// [`ImportOptions`]; it does not parse `NSExtensionItem`, store the deferred
+/// import ticket, open the main app, resolve security-scoped permissions, or
+/// log external app payload bytes. A successful call returns the committed
+/// [`FileEntry`] so `S4-IOS-04` can render completed imports. When the
+/// Extension must defer, the platform-owned ticket records queued,
+/// needs-review, or permission-expired takeover state and the main app later
+/// calls this same Core import contract.
 ///
 /// # Errors
 ///

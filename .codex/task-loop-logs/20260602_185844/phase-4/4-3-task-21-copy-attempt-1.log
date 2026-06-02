@@ -1,0 +1,38 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-3/task-21`。修改文件：
+
+- [api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:829)：补充 C4-05 在 `predict_category` / `import_file` 上的合同边界。
+- [share_extension_import_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/share_extension_import_contract_api.rs:1)：新增 C4-05 contract-api 契约测试。
+
+三、完成情况
+
+核对清单均完成：已读取 C4-05 能力规格、Stage 4 control map、Core API、错误码；确认 API 仍使用规格声明的 `predict_category` / `import_file`，不新增 control map 外能力；deferred import ticket 明确为平台层/主 App 接管状态，不在当前 Core 合同中提前实现；S4-IOS-04 可从合同得到已完成导入的 `FileEntry`，queued / needs-review / permission-expired 状态由平台 ticket 记录后再调用同一 Core import 合同。
+
+完成标准满足：C4-05 Core API 合同已可供后续 implementation task 实现；未引入额外页面能力。未触碰 `apps/**`。
+
+四、工程质量
+
+结构清晰，改动集中在 public rustdoc 与契约测试，没有业务实现、mock-only、硬编码通过态或相邻能力扩展。错误边界锁定为 `PermissionDenied` / `InvalidPath` / `Io`，并明确不记录外部 app payload 内容、不由 Core 处理 Extension timeout 或 deferred ticket 持久化。未新增依赖。
+
+五、验证情况
+
+已运行：
+
+```bash
+./dev check task 4-3/task-21
+```
+
+最终通过：`prompt doctor` OK、`git diff --check` OK、`cargo test --test share_extension_import_contract_api -- --nocapture` 4 个测试全通过。
+
+中间两次失败是新增契约测试的 rustdoc 跨行字符串断言过窄，已修正为稳定短片段后重新验证通过。
+
+六、风险与后续
+
+剩余风险：当前只完成合同/API 层，未实现 share extension staged import 的真实行为、失败回滚和 validation 覆盖，这些属于后续拆分任务。
+
+建议下一个任务：`4-3/task-22`，实现 C4-05 的最小 Core 行为闭环。
