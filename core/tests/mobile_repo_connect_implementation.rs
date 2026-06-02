@@ -142,7 +142,10 @@ fn mobile_repo_connect_non_empty_directory_adopts_without_modifying_user_files()
         list_files(path_string(repo.path()), empty_filter()).expect("list adopted mobile files");
     files.sort_by(|left, right| left.path.cmp(&right.path));
     assert_eq!(
-        files.iter().map(|file| file.path.as_str()).collect::<Vec<_>>(),
+        files
+            .iter()
+            .map(|file| file.path.as_str())
+            .collect::<Vec<_>>(),
         vec!["README.md", "docs/spec.txt"]
     );
     for file in files {
