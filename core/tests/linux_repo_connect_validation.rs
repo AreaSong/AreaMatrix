@@ -6,8 +6,8 @@ use std::{
 use area_matrix_core::{
     get_latest_scan_session, init_repo, list_files, load_config, validate_repo_path, CoreError,
     CoreResult, ErrorKind, ErrorRecoverability, FileFilter, FileOrigin, OverviewOutput,
-    PlatformPathKind, RepoConfig, RepoInitMode, RepoInitOptions, RepoPathIssue,
-    RepoPathValidation, ScanSessionKind, ScanSessionStatus, StorageMode,
+    PlatformPathKind, RepoConfig, RepoInitMode, RepoInitOptions, RepoPathIssue, RepoPathValidation,
+    ScanSessionKind, ScanSessionStatus, StorageMode,
 };
 use pretty_assertions::assert_eq;
 
@@ -105,7 +105,10 @@ fn linux_repo_connect_validation_proves_create_and_adopt_paths_are_ui_ready() {
     assert_eq!(config.default_mode, StorageMode::Copied);
     assert_eq!(config.overview_output, OverviewOutput::GeneratedOnly);
     assert!(empty_repo.path().join(".areamatrix/index.db").is_file());
-    assert!(empty_repo.path().join(".areamatrix/generated/root.md").is_file());
+    assert!(empty_repo
+        .path()
+        .join(".areamatrix/generated/root.md")
+        .is_file());
     assert!(!empty_repo.path().join("README.md").exists());
     assert!(!empty_repo.path().join("AREAMATRIX.md").exists());
 
@@ -192,7 +195,10 @@ fn linux_repo_connect_validation_covers_failures_without_user_file_mutation() {
     let blank_error = blank_result.expect_err("blank Linux path is invalid");
     let mapping = blank_error.to_error_mapping();
     assert_eq!(mapping.kind, ErrorKind::InvalidPath);
-    assert_eq!(mapping.recoverability, ErrorRecoverability::UserActionRequired);
+    assert_eq!(
+        mapping.recoverability,
+        ErrorRecoverability::UserActionRequired
+    );
     assert!(!mapping.user_message.is_empty());
     assert!(!mapping.suggested_action.contains("sudo"));
     assert!(!mapping.suggested_action.contains("chmod"));
