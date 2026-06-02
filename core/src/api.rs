@@ -83,6 +83,13 @@ pub fn init_logging(level: String) -> CoreResult<()> {
 /// provider path. Core receives only the authorized filesystem path; picker,
 /// bookmark, and cloud-permission lifecycles stay outside the Rust boundary.
 ///
+/// The C4-10 Linux repository connection contract also reuses this read-only
+/// surface. Linux shells can route from `platform_path_kind`, read/write flags,
+/// `recommended_mode`, and `issues` to local-folder, init, or adopt confirmation
+/// pages without parsing error text. Core does not run or recommend sudo/chmod;
+/// path pickers, mount details, file-manager integration, and sync-provider
+/// setup stay outside the Rust boundary.
+///
 /// # Errors
 ///
 /// Returns `CoreError::InvalidPath { path }` for empty or metadata-internal paths,
@@ -142,6 +149,11 @@ pub fn validate_initialized_repo_path(repo_path: String) -> CoreResult<RepoPathV
 /// confirmation pages have converted a [`RepoPathValidation`] recommendation
 /// into explicit user consent. The API does not bypass those pages and does not
 /// perform iOS security-scoped bookmark or cloud-provider permission work.
+///
+/// For C4-10, Linux shells call this only after local-folder, init, or adopt
+/// confirmation pages have converted the [`RepoPathValidation`] result into
+/// explicit user consent. The API does not bypass those pages, does not
+/// adjust POSIX permissions, and does not configure third-party sync or mount options.
 ///
 /// # Errors
 ///
