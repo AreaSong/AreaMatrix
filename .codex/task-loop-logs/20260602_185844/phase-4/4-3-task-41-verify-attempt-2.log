@@ -1,0 +1,75 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-41`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-41-c4-09-contract-api.md`
+- Manifest 章节：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:7675`
+- 实际覆盖文件：
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/domain.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_path.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/validate_repo_path_contract.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/windows_repo_connect_contract_api.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取 C4-09 能力规格、Stage 4 control map、Core API 和错误码。
+- 结果：通过
+- 证据：C4-09 文档声明 API 为 `validate_repo_path`、`init_repo`、`load_config`，错误码为 `InvalidPath`、`PermissionDenied`、`Config`；control map 将 C4-09 绑定到 `S4-WIN-01`、`S4-X-04`、`S4-X-05`；Core API 和 UDL 均包含对应函数、类型和错误。
+- 涉及文件：`docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md:9`、`docs/architecture/stage-4-control-map.md:16`、`docs/api/core-api.md:2400`、`core/area_matrix.udl:11`
+
+- 项目：确认 API 名称、输入、输出、错误码、权限/隐私边界与能力规格一致。
+- 结果：通过
+- 证据：`RepoPathValidation` 增加 `is_onedrive_path`、`platform_path_kind`、`is_case_sensitive_path`；`RepoPathIssue` 增加 `OneDrivePath`、`WindowsReservedName`、`WindowsCaseInsensitive`；`PlatformPathKind` 暴露 `OneDrive` 和 `NetworkShare`。Core API 明确只读检查、不触发 iCloud 下载、不调用 OneDrive SDK、不修改 OneDrive 设置。
+- 涉及文件：`docs/api/core-api.md:996`、`docs/api/core-api.md:2418`、`core/area_matrix.udl:975`、`core/src/domain.rs:62`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力。
+- 结果：通过
+- 证据：改动限定在 `core/**`、`core/area_matrix.udl`、`docs/api/core-api.md`；`apps/**` 无 diff。`repo_path.rs` 只做路径形状、保留名、OneDrive/iCloud/NetworkShare 分类和只读 metadata 检查，未实现 Windows shell extension、OneDrive SDK、同步控制或 Windows UI。
+- 涉及文件：`core/src/repo_path.rs:345`、`core/tests/windows_repo_connect_contract_api.rs:285`
+
+- 项目：记录当前页面消费方是否能从合同中得到所需状态。
+- 结果：通过
+- 证据：`windows_repo_connect_contract_api.rs` 读取并断言 `S4-WIN-01`、`S4-X-04`、`S4-X-05` 所需状态；合同能提供 OneDrive 风险、Windows case-insensitive 状态、非空目录 `AdoptExisting` 推荐、路径类型和不可变更用户文件边界。
+- 涉及文件：`core/tests/windows_repo_connect_contract_api.rs:238`、`docs/ux/page-specs/stage-4-multiplatform/S4-WIN-01-choose-repo.md:73`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`repo_path.rs` 将平台路径分类拆为 `classify_platform_path`、`path_components`、`platform_path_kind`、`is_windows_reserved_name` 等小函数，逻辑边界清楚。
+- 注释 / rustdoc / 文档同步：通过。新增 public Rust 类型字段有 rustdoc；Core API 文档和 UDL 同步。
+- 错误处理与边界处理：通过。空路径、`.areamatrix` 内部路径、iCloud placeholder、Windows reserved name、权限和 IO 错误均显式处理；非空目录只返回 `AdoptExisting`，不写用户文件。
+- 测试与验证覆盖：通过。新增 `core/tests/windows_repo_connect_contract_api.rs` 覆盖签名、错误、Windows-shaped 路径、OneDrive、reserved name、页面消费状态和 scope 边界。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试使用真实 tempdir 和实际 `validate_repo_path`，不是 mock-only 或静态通过态。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-41`
+- 通过项：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`: OK，637 tasks / 637 manifests
+  - `git diff --check`: 通过，无 whitespace 错误
+  - `cargo test --test windows_repo_connect_contract_api -- --nocapture`: 6 passed，0 failed
+- 失败项：无
+- 缺失项：无。本 task manifest 只要求 `./dev check task 4-3/task-41`，未扩大到 `./dev check all`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+- 当前 `progress.json` 和 task-loop summary 仍记录 `in_progress`，但按 verify-ready 时序规则，这不是本验收阻断项；若本轮 PASS 后 runner 收口失败，应归因到 runner checkpoint 阶段。
+
+VERIFY_RESULT: PASS

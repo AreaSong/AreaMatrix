@@ -982,6 +982,9 @@ dictionary RepoPathValidation {
     boolean is_initialized;
     boolean is_inside_area_matrix;
     boolean is_icloud_path;
+    boolean is_onedrive_path;
+    PlatformPathKind platform_path_kind;
+    boolean is_case_sensitive_path;
     boolean has_unfinished_scan_session;
     RepoInitMode? recommended_mode;
     sequence<RepoPathIssue> issues;
@@ -1894,8 +1897,10 @@ enum RepoInitMode { "CreateEmpty", "AdoptExisting" };
 enum RepoPathIssue {
     "MissingPath", "NotDirectory", "NotReadable", "NotWritable",
     "NonEmptyDirectory", "AlreadyInitialized", "InsideAreaMatrix",
-    "ICloudPath", "UnfinishedScanSession"
+    "ICloudPath", "OneDrivePath", "WindowsReservedName",
+    "WindowsCaseInsensitive", "UnfinishedScanSession"
 };
+enum PlatformPathKind { "Local", "ICloudDrive", "OneDrive", "NetworkShare", "Unknown" };
 enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
 enum BindingTargetPlatform { "Swift", "Kotlin", "Python" };
 enum BindingSupportStatus { "Supported", "Limited", "Missing" };

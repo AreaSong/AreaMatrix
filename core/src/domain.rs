@@ -61,8 +61,29 @@ pub enum RepoPathIssue {
     InsideAreaMatrix,
     /// The path appears to be managed by iCloud.
     ICloudPath,
+    /// The path appears to be managed by OneDrive.
+    OneDrivePath,
+    /// A Windows path component uses a reserved device name.
+    WindowsReservedName,
+    /// A Windows-shaped path has case-insensitive comparison semantics.
+    WindowsCaseInsensitive,
     /// A previous adopt or reindex scan did not finish cleanly.
     UnfinishedScanSession,
+}
+
+/// Platform-neutral classification of a repository path location.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum PlatformPathKind {
+    /// No cloud or network marker was detected.
+    Local,
+    /// iCloud Drive or CloudDocs-managed path.
+    ICloudDrive,
+    /// OneDrive-managed path.
+    OneDrive,
+    /// Windows UNC or network-share style path.
+    NetworkShare,
+    /// Core cannot identify the location type from path shape alone.
+    Unknown,
 }
 
 /// Where generated overview output is written.
@@ -205,6 +226,12 @@ pub struct RepoPathValidation {
     pub is_inside_area_matrix: bool,
     /// Whether the path appears to be managed by iCloud.
     pub is_icloud_path: bool,
+    /// Whether the path appears to be managed by OneDrive.
+    pub is_onedrive_path: bool,
+    /// Platform-neutral location classification for UI routing and risk copy.
+    pub platform_path_kind: PlatformPathKind,
+    /// Whether callers should treat path comparison as case-sensitive.
+    pub is_case_sensitive_path: bool,
     /// Whether the latest scan session is still running, paused, failed, or interrupted.
     pub has_unfinished_scan_session: bool,
     /// Suggested initialization mode when the path is eligible.

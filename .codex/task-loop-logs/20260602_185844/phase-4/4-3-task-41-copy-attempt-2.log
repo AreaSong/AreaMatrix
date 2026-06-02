@@ -1,0 +1,39 @@
+一、执行结论
+
+- 已完成。
+
+二、执行范围
+
+- 单任务：`4-3/task-41`
+- 本轮 repair 修改文件：
+  - [docs/api/core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md)
+  - [core/tests/windows_repo_connect_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/windows_repo_connect_contract_api.rs)
+- 未触碰 `apps/**`。
+
+三、完成情况
+
+- 已补齐 Core API 文档中的 `RepoPathValidation` 字段：`is_onedrive_path`、`platform_path_kind`、`is_case_sensitive_path`。
+- 已补齐 `RepoPathIssue` 的 Windows/OneDrive 枚举项，以及 `PlatformPathKind` 枚举。
+- 已在 `validate_repo_path` 输出说明中写明 OneDrive、平台路径类型、大小写敏感性和 OneDrive 副作用边界。
+- 已补 targeted test 断言，确保 `docs/api/core-api.md` 与 UDL/Rust 合同同步。
+- 完成标准满足：C4-09 合同现在可被后续 implementation task 直接依赖，未引入 control map 之外页面能力。
+
+四、工程质量
+
+- 这是合同/文档同步修复，没有新增业务逻辑、mock-only、硬编码通过态或相邻 OneDrive SDK / shell extension 能力。
+- 文档与 UDL/Rust 字段已对齐；测试新增的是合同漂移断言。
+- 错误码和只读副作用边界保持不变，并补充了“不调用 OneDrive SDK、不读取/修改 OneDrive 同步状态”的隐私/权限边界。
+
+五、验证情况
+
+- 已运行：`./dev check task 4-3/task-41`
+- 通过：
+  - `prompt doctor`: OK
+  - `git diff --check`: OK
+  - `cargo test --test windows_repo_connect_contract_api -- --nocapture`: 6 passed
+- 未运行宽门禁：按 manifest 和 retry 要求，本 task 验证上限就是 `./dev check task 4-3/task-41`，未升级到 `./dev check all` / `cargo test --workspace`。
+
+六、风险与后续
+
+- 剩余风险：本地 CI、review、Git checkpoint 未在本轮执行；工作树中仍有上次尝试留下的 core/UDL/test 和 task-loop/progress 变更，我未回退。
+- 建议下一个任务：进入 `4-3/task-41` verify-ready 验收；通过后再推进 `4-3/task-42` implementation。

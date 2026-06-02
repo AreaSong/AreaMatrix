@@ -1003,6 +1003,9 @@ dictionary RepoPathValidation {
     boolean is_initialized;
     boolean is_inside_area_matrix;
     boolean is_icloud_path;
+    boolean is_onedrive_path;
+    PlatformPathKind platform_path_kind;
+    boolean is_case_sensitive_path;
     boolean has_unfinished_scan_session;
     RepoInitMode? recommended_mode;
     sequence<RepoPathIssue> issues;
@@ -1915,8 +1918,10 @@ enum RepoInitMode { "CreateEmpty", "AdoptExisting" };
 enum RepoPathIssue {
     "MissingPath", "NotDirectory", "NotReadable", "NotWritable",
     "NonEmptyDirectory", "AlreadyInitialized", "InsideAreaMatrix",
-    "ICloudPath", "UnfinishedScanSession"
+    "ICloudPath", "OneDrivePath", "WindowsReservedName",
+    "WindowsCaseInsensitive", "UnfinishedScanSession"
 };
+enum PlatformPathKind { "Local", "ICloudDrive", "OneDrive", "NetworkShare", "Unknown" };
 enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
 enum BindingTargetPlatform { "Swift", "Kotlin", "Python" };
 enum BindingSupportStatus { "Supported", "Limited", "Missing" };
@@ -2418,9 +2423,14 @@ case nil:
 - `isInitialized`：目录下是否已有 `.areamatrix/` 元数据。
 - `isInsideAreaMatrix`：选择位置是否为 `.areamatrix/` 或其子路径。
 - `isIcloudPath`：是否疑似 iCloud 管理路径。
+- `isOnedrivePath`：是否疑似 OneDrive 管理路径；UI 用它进入 OneDrive 风险确认，不控制同步。
+- `platformPathKind`：平台无关的位置类型，取值为 `Local`、`ICloudDrive`、`OneDrive`、
+  `NetworkShare` 或 `Unknown`。
+- `isCaseSensitivePath`：路径比较是否应按大小写敏感处理；Windows-shaped 路径默认返回 `false`。
 - `hasUnfinishedScanSession`：是否存在未完成的 adopt / reindex scan session。
 - `recommendedMode`：路径可用于初始化时推荐 `CreateEmpty` 或 `AdoptExisting`，不可用时为 `nil`。
-- `issues`：结构化问题列表，UI 不需要解析错误字符串即可展示风险。
+- `issues`：结构化问题列表，UI 不需要解析错误字符串即可展示风险；Windows / OneDrive
+  场景会包含 `OneDrivePath`、`WindowsReservedName` 或 `WindowsCaseInsensitive`。
 
 错误：
 
@@ -2435,6 +2445,7 @@ case nil:
 - 只读检查：metadata、权限、子项数量、`.areamatrix/` 探测、scan session 状态读取。
 - 不创建、不删除、不移动、不重命名、不覆盖任何文件。
 - 不触发 iCloud 占位符下载。
+- 不调用 OneDrive SDK，不读取 OneDrive 客户端同步状态，不修改 OneDrive 同步设置。
 - 不执行 `init_repo`，非空目录只返回 `AdoptExisting` 推荐和结构化风险。
 
 ### `validate_initialized_repo_path(repoPath: String) throws -> RepoPathValidation`
