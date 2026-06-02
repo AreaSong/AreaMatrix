@@ -4,8 +4,8 @@ use std::{
 };
 
 use area_matrix_core::{
-    get_file, init_repo, list_changes, read_note, ChangeFilter, CoreError,
-    FileAvailabilityStatus, FileOrigin, OverviewOutput, RepoInitMode, RepoInitOptions, StorageMode,
+    get_file, init_repo, list_changes, read_note, ChangeFilter, CoreError, FileAvailabilityStatus,
+    FileOrigin, OverviewOutput, RepoInitMode, RepoInitOptions, StorageMode,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
@@ -54,7 +54,11 @@ fn insert_mobile_file(
     write_backing_file: bool,
 ) -> i64 {
     if write_backing_file {
-        write_repo_file(repo, relative_path, b"physical bytes deliberately differ from metadata");
+        write_repo_file(
+            repo,
+            relative_path,
+            b"physical bytes deliberately differ from metadata",
+        );
     }
 
     let current_name = relative_path
