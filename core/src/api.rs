@@ -824,6 +824,11 @@ pub fn resume_scan_session(repo_path: String, scan_session_id: i64) -> CoreResul
 /// category/name pair. It must not create repository metadata, touch the
 /// database, import files, or move user content.
 ///
+/// C4-04 camera-import reuses this read-only preview surface after the
+/// platform layer has captured a photo and generated a candidate filename.
+/// Camera permission prompts, capture cancellation, retake flow, thumbnail
+/// generation, and temporary-file lifetime management remain outside Core.
+///
 /// # Errors
 ///
 /// Returns `CoreError::Config { reason }` when the repository path, filename, YAML syntax,
@@ -892,6 +897,15 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// Its allowed filesystem side effects are limited to generated markdown under
 /// `.areamatrix/generated/` and, only when explicitly configured,
 /// `AREAMATRIX.md`; `README.md` remains user-authored content.
+///
+/// C4-04 camera-import reuses `StorageMode::Copied` import semantics for a
+/// platform-saved temporary photo path. Core receives only the authorized
+/// filesystem path plus [`ImportOptions`]; it does not request camera
+/// permissions, drive the capture UI, delete photos outside AreaMatrix-owned
+/// staging, or clean up the final repository file. A successful call returns
+/// the committed [`FileEntry`] so mobile consumers can refresh the library row,
+/// show the copied storage mode, and route duplicate or name-conflict states
+/// without adding a camera-specific Core API.
 ///
 /// # Errors
 ///

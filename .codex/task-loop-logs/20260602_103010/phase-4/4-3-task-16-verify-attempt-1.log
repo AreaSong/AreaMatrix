@@ -1,0 +1,91 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-16`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/camera_import_contract_api.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取 C4-04 能力规格、control map、Core API、错误码
+- 结果：通过
+- 证据：4 份 Exact Docs 均存在并已核对；C4-04 规格声明 `import_file`、`predict_category`、`ImportOptions`、`FileEntry` 和 `PermissionDenied/InvalidPath/Io/Db`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md`
+
+- 项目：API 名称、输入、输出、错误码、权限/隐私边界一致
+- 结果：通过
+- 证据：UDL 已暴露 `predict_category(repo_path, filename)` 和 `import_file(repo_path, source_path, ImportOptions)`；Rust public API rustdoc 明确相机权限、取消、临时文件生命周期在平台层，Core 只接收授权文件路径和 `ImportOptions`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:148`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:827`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:901`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+- 结果：通过
+- 证据：实际 diff 仅为 `core/src/api.rs` rustdoc 补充和新增合同测试；`core/area_matrix.udl` 无本轮 diff；未新增相机专属 Core API，未实现业务导入新路径
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:827`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/camera_import_contract_api.rs:28`
+
+- 项目：记录当前页面消费方是否能从合同中得到所需状态
+- 结果：通过
+- 证据：测试核对 S4-IOS-03 需要的复制导入、冲突状态、取消不写 repo、成功后库内可见；API rustdoc 说明返回 `FileEntry` 供 mobile library 刷新、显示 copied storage mode、路由重复或同名冲突
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/camera_import_contract_api.rs:157`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:905`
+
+- 项目：C4-04 Core API 合同可被后续 implementation task 直接实现
+- 结果：通过
+- 证据：合同测试编译期校验 `predict_category` 与 `import_file` 函数签名，并核对 `ImportOptions`、`FileEntry`、错误类型和 UDL/Core API 文档片段
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/camera_import_contract_api.rs:28`
+
+- 项目：合同未引入 control map 之外页面能力
+- 结果：通过
+- 证据：control map 仅声明 `S4-IOS-03 camera-import -> C4-04 camera staged import`；实现未新增 OCR、自动摘要或 camera-specific API
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/camera_import_contract_api.rs:118`
+
+- 项目：Expected New Paths 落地
+- 结果：通过
+- 证据：`core/src/**` 有 `api.rs` 合同补充，`core/tests/**` 有新增 `camera_import_contract_api.rs`，`core/area_matrix.udl` 已存在并声明所需桥接 API
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:827`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/camera_import_contract_api.rs:1`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:148`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short apps` 和 `git diff --name-only -- apps` 均无输出，未触碰 `apps/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+- 项目：任务要求验证
+- 结果：通过
+- 证据：`./dev check task 4-3/task-16` 退出码 0；`doctor: OK`，`git diff --check` 无问题，`cargo test --test camera_import_contract_api -- --nocapture` 4 tests passed
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/camera_import_contract_api.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，证据：本轮仅补 public API rustdoc 和合同测试，未引入复杂控制流或新抽象。
+- 注释 / rustdoc / 文档同步：通过，证据：`predict_category` 与 `import_file` rustdoc 说明 C4-04 平台/Core 分界和错误边界，测试核对 docs、UDL、Core API 对齐。
+- 错误处理与边界处理：通过，证据：合同覆盖 `PermissionDenied`、`InvalidPath`、`Io`、`Db`，并明确 Core 不处理相机权限、不清理最终 repo 文件、不删除用户已有文件。
+- 测试与验证覆盖：通过，证据：目标合同测试 4/4 通过，manifest 验证命令新鲜运行通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，证据：当前 task 是 contract-api，不要求业务实现；新增测试是合同一致性测试，不以 mock 闭环冒充实现闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-3/task-16`
+- 哪些通过：prompt doctor、git diff check、`cargo test --test camera_import_contract_api -- --nocapture`
+- 哪些失败：无
+- 哪些缺失：无；普通 atomic Core contract task 不要求 `./dev check all` 或全 workspace Rust gate
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
