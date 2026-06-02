@@ -1,0 +1,64 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-20`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-20-c4-04-integration-verify.md`
+- 核对范围：`docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md`、`docs/architecture/stage-4-control-map.md`、`docs/api/core-api.md`、`docs/ux/page-specs/stage-4-multiplatform/S4-IOS-03-camera-import.md`、`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：16
+- 未覆盖项数：0
+- 通过项数：16
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：C4-04 spec 要求 `import_file` / `predict_category`、平台临时照片路径输入、FileEntry 输出和 `PermissionDenied` / `InvalidPath` / `Io` / `Db` 错误；Core API 与 UDL 均暴露 `predict_category`、`import_file`、`ImportOptions`、`FileEntry`；Rust `api.rs` 明确 C4-04 复用 copied import 和只读分类预览；`camera_import_*` 测试覆盖 contract / implementation / failure / validation。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md:7`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3842`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:149`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:827`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:901`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/camera_import_validation.rs:289`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：S4-IOS-03 需要拍照取消不进入 sheet、临时照片不可读、导入失败、重复内容、同名冲突、复制进 repo、不删除临时结果；测试覆盖取消无 DB/change_log、成功复制后移动端可 list、DB 失败回滚、重复 skip 保留已有 repo 文件、临时源仍归平台层。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-4-multiplatform/S4-IOS-03-camera-import.md:60`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/camera_import_validation.rs:161`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/camera_import_validation.rs:205`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/camera_import_validation.rs:248`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 只把 S4-IOS-03 绑定到 C4-04；Rust API 注释明确不新增 camera-specific Core API，不处理相机权限、capture UI、临时文件生命周期、OCR 或自动摘要。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:11`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:827`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:901`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮未编辑文件。当前 tracked diff 仅有 task-loop `progress.json` 中 `4-3/task-20` in_progress 记录，且 `.codex/task-loop-runs/20260602_185844/summary.json` 为 runner 状态文件；`git diff --name-only -- apps core docs/... task-20... phase-4.md` 无输出，未触碰 `apps/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json:13516`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`core/src/storage/import.rs` 使用 `PreparedImport`、staging guard、DB staging guard、final guard、replacement guard 串起真实导入路径，不是 mock-only 或脚本化实现。
+- 注释 / rustdoc / 文档同步：通过。`core/src/api.rs` 对 `predict_category` 和 `import_file` 有 C4-04 rustdoc，说明平台边界、错误和副作用；docs / UDL / Rust / 测试有一致性测试锁定。
+- 错误处理与边界处理：通过。失败路径覆盖 `InvalidPath`、`PermissionDenied`、`Io`、`Db`、duplicate skip；DB 失败回滚 final file，不删除平台临时源或既有 repo 文件。
+- 测试与验证覆盖：通过。`./dev check task 4-3/task-20` fresh 通过，包含 doctor、diff check、fmt、clippy 和 17 个 C4-04 targeted tests。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现调用真实 `import_file` / `predict_category`、真实 DB、真实文件系统、真实 change_log；未发现 C4-04 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-3/task-20`
+- 哪些通过：`prompt_pipeline.py doctor` 通过；`git diff --check` 通过；`cargo fmt --all -- --check` 通过；`cargo clippy --all-targets --all-features -- -D warnings` 通过；`camera_import_contract_api` 4/4 通过；`camera_import_failure_recovery` 5/5 通过；`camera_import_implementation` 4/4 通过；`camera_import_validation` 4/4 通过。
+- 哪些失败：无
+- 哪些缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C4-04 可以作为后续 `S4-IOS-03 + C4-04` page-feature task 的真实 Core 依赖。
+
+VERIFY_RESULT: PASS
