@@ -65,7 +65,9 @@ fn open_db(repo: &Path) -> Connection {
 
 fn row_count(repo: &Path, table: &str) -> i64 {
     open_db(repo)
-        .query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| row.get(0))
+        .query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| {
+            row.get(0)
+        })
         .expect("count rows")
 }
 
