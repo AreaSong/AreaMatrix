@@ -78,6 +78,7 @@ fn import_index_file_contract_exposes_documented_outputs() {
         storage_mode: StorageMode::Indexed,
         origin: FileOrigin::Imported,
         source_path: Some("/external/source/invoice.pdf".to_owned()),
+        availability_status: area_matrix_core::FileAvailabilityStatus::Available,
         imported_at: 10,
         updated_at: 10,
     };

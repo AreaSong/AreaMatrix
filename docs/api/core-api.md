@@ -1644,6 +1644,7 @@ dictionary FileEntry {
     StorageMode storage_mode;
     FileOrigin origin;
     string? source_path;
+    FileAvailabilityStatus availability_status;
     i64 imported_at;
     i64 updated_at;
 };
@@ -1894,6 +1895,7 @@ dictionary ErrorMapping {
 
 enum StorageMode { "Moved", "Copied", "Indexed" };
 enum FileOrigin { "Imported", "Adopted", "External" };
+enum FileAvailabilityStatus { "Available", "Missing" };
 enum RepoInitMode { "CreateEmpty", "AdoptExisting" };
 enum RepoPathIssue {
     "MissingPath", "NotDirectory", "NotReadable", "NotWritable",
@@ -4152,7 +4154,10 @@ let recent = try AreaMatrix.listFiles(
 print("got \(recent.count) files")
 ```
 
-按 `imported_at DESC` 排序。`limit > 1000` 自动 clamp。
+按 `imported_at DESC` 排序。`limit > 1000` 自动 clamp。每个返回的
+`FileEntry.availability_status` 会结构化标记 backing file 是否 `Missing`，供
+S4-IOS-02 显示状态徽标和保留缺失文件行；该查询仍然只读，不触发 rescan、recovery
+或 metadata 写入。
 
 ### `search_files(repoPath, query, filter, sort, pagination) throws -> SearchResultPage`
 
@@ -5597,6 +5602,8 @@ detailView.show(entry)
 ```
 
 文件不存在抛 `FileNotFound`。
+返回的 `FileEntry.availability_status` 与 `list_files` 一致；缺失物理文件的 active
+metadata 行仍返回 `FileAvailabilityStatus.Missing`，恢复动作由 C4-18 / C4-07 后续入口处理。
 
 ### `list_changes(repoPath, filter) throws -> [ChangeLogEntry]`
 

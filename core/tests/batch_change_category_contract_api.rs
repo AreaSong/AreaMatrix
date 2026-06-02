@@ -115,6 +115,7 @@ fn batch_change_category_contract_exposes_signatures_inputs_outputs_and_errors()
         storage_mode: StorageMode::Copied,
         origin: FileOrigin::Imported,
         source_path: Some("/tmp/a.pdf".to_owned()),
+        availability_status: area_matrix_core::FileAvailabilityStatus::Available,
         imported_at: 100,
         updated_at: 200,
     };

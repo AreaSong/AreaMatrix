@@ -283,8 +283,7 @@ fn mobile_library_query_failure_permission_denied_is_explicit_and_non_mutating()
     let before_counts = metadata_counts(repo.path());
     let before_file = fs::read(repo.path().join("docs/secret.pdf")).expect("read user file");
     let before_staging = relative_directory_entries(repo.path(), &metadata_dir.join("staging"));
-    let before_generated =
-        relative_directory_entries(repo.path(), &metadata_dir.join("generated"));
+    let before_generated = relative_directory_entries(repo.path(), &metadata_dir.join("generated"));
 
     let mut denied_permissions = original_permissions.clone();
     denied_permissions.set_mode(0o000);
@@ -325,8 +324,7 @@ fn mobile_library_query_failure_tree_io_error_is_explicit_and_non_mutating() {
     let before_counts = metadata_counts(repo.path());
     let before_file = fs::read(repo.path().join("docs/io.pdf")).expect("read user file");
     let before_staging = relative_directory_entries(repo.path(), &metadata_dir.join("staging"));
-    let before_generated =
-        relative_directory_entries(repo.path(), &metadata_dir.join("generated"));
+    let before_generated = relative_directory_entries(repo.path(), &metadata_dir.join("generated"));
 
     let error = list_tree_json(path_string(repo.path()), "en".to_owned())
         .expect_err("tree classifier IO failure must not be silently defaulted");

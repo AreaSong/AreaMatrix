@@ -2,7 +2,7 @@ use std::{fs, path::Path};
 
 use area_matrix_core::{
     get_file, init_repo, list_changes, list_files, list_tree_json, ChangeFilter, CoreError,
-    FileFilter, OverviewOutput, RepoInitMode, RepoInitOptions, StorageMode,
+    FileAvailabilityStatus, FileFilter, OverviewOutput, RepoInitMode, RepoInitOptions, StorageMode,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
@@ -186,6 +186,10 @@ fn mobile_library_query_implementation_paginates_rows_and_opens_core_detail() {
     assert_eq!(detail.path, "docs/middle.pdf");
     assert_eq!(detail.current_name, "middle.pdf");
     assert_eq!(detail.storage_mode, StorageMode::Copied);
+    assert_eq!(
+        detail.availability_status,
+        FileAvailabilityStatus::Available
+    );
 
     let tree = parse_tree(
         &list_tree_json(path_string(repo.path()), "en".to_owned()).expect("list mobile tree"),
@@ -265,12 +269,17 @@ fn mobile_library_query_implementation_preserves_missing_rows_for_recovery_entry
     assert_eq!(files.len(), 1);
     assert_eq!(files[0].id, missing_id);
     assert_eq!(files[0].path, "docs/missing.pdf");
+    assert_eq!(
+        files[0].availability_status,
+        FileAvailabilityStatus::Missing
+    );
     assert!(!repo.path().join(&files[0].path).exists());
 
     let detail =
         get_file(path_string(repo.path()), missing_id).expect("open missing metadata detail");
     assert_eq!(detail.id, missing_id);
     assert_eq!(detail.current_name, "missing.pdf");
+    assert_eq!(detail.availability_status, FileAvailabilityStatus::Missing);
 
     let changes =
         list_changes(path_string(repo.path()), default_change_filter()).expect("list missing log");

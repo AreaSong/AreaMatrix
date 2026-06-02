@@ -33,6 +33,7 @@ fn get_file_detail_contract_api_exposes_callable_signature_input_and_output() {
         storage_mode: StorageMode::Copied,
         origin: FileOrigin::Imported,
         source_path: Some("/tmp/report.pdf".to_owned()),
+        availability_status: area_matrix_core::FileAvailabilityStatus::Available,
         imported_at: 100,
         updated_at: 110,
     };

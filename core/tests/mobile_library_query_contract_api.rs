@@ -1,6 +1,6 @@
 use area_matrix_core::{
     get_file, list_changes, list_files, list_tree_json, ChangeFilter, ChangeLogEntry, CoreError,
-    CoreResult, FileEntry, FileFilter, FileOrigin, StorageMode,
+    CoreResult, FileAvailabilityStatus, FileEntry, FileFilter, FileOrigin, StorageMode,
 };
 use pretty_assertions::assert_eq;
 
@@ -73,6 +73,7 @@ fn mobile_library_query_contract_exports_existing_query_signatures_and_page_inpu
         storage_mode: StorageMode::Indexed,
         origin: FileOrigin::External,
         source_path: Some("/provider/docs/report.pdf".to_owned()),
+        availability_status: FileAvailabilityStatus::Missing,
         imported_at: 1_777_300_000,
         updated_at: 1_777_300_900,
     };
@@ -82,6 +83,7 @@ fn mobile_library_query_contract_exports_existing_query_signatures_and_page_inpu
         entry.source_path.as_deref(),
         Some("/provider/docs/report.pdf")
     );
+    assert_eq!(entry.availability_status, FileAvailabilityStatus::Missing);
 
     let change = ChangeLogEntry {
         id: 7,
@@ -155,6 +157,8 @@ fn mobile_library_query_docs_core_api_and_udl_stay_aligned() {
         "StorageMode storage_mode;",
         "FileOrigin origin;",
         "string? source_path;",
+        "FileAvailabilityStatus availability_status;",
+        "enum FileAvailabilityStatus { \"Available\", \"Missing\" };",
         "dictionary ChangeLogEntry",
     ] {
         assert_contains(CORE_API, fragment);
@@ -167,6 +171,7 @@ fn mobile_library_query_docs_core_api_and_udl_stay_aligned() {
         "| `list_changes(repo, filter)` | query | √ | Db |",
         "| `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |",
         "按 `imported_at DESC` 排序。`limit > 1000` 自动 clamp。",
+        "`FileEntry.availability_status` 会结构化标记 backing file 是否 `Missing`",
         "单条 `list_files`（limit ≤ 50）",
     ] {
         assert_contains(CORE_API, fragment);
@@ -207,6 +212,7 @@ fn mobile_library_query_documents_consumer_state_without_adjacent_capabilities()
 
     for fragment in [
         "C4-03 reuses this query for `S4-IOS-02` mobile-library rows.",
+        "availability status",
         "must use the documented `limit` and `offset` fields",
         "missing-file recovery stays with C4-18",
         "C4-03 allows a mobile list row to open a Core-backed detail record",

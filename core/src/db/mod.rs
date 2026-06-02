@@ -9,8 +9,8 @@ use std::{
 use rusqlite::{params, Connection, OptionalExtension, Rows, Transaction};
 
 use crate::{
-    config, CoreError, CoreResult, FileEntry, FileFilter, FileOrigin, OverviewOutput, RepoConfig,
-    StorageMode,
+    config, CoreError, CoreResult, FileAvailabilityStatus, FileEntry, FileFilter, FileOrigin,
+    OverviewOutput, RepoConfig, StorageMode,
 };
 
 mod ai_call_log;
@@ -333,7 +333,7 @@ pub(crate) fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Ve
             filter.imported_before,
         ])
         .map_err(|error| CoreError::db(error.to_string()))?;
-    collect_file_entries(&mut rows)
+    collect_file_entries(&repo, &mut rows)
 }
 
 fn list_files_status_clause(include_deleted: Option<bool>) -> &'static str {
@@ -344,7 +344,7 @@ fn list_files_status_clause(include_deleted: Option<bool>) -> &'static str {
     }
 }
 
-fn collect_file_entries(rows: &mut Rows<'_>) -> CoreResult<Vec<FileEntry>> {
+fn collect_file_entries(repo: &Path, rows: &mut Rows<'_>) -> CoreResult<Vec<FileEntry>> {
     let mut files = Vec::new();
     while let Some(row) = rows
         .next()
@@ -356,7 +356,7 @@ fn collect_file_entries(rows: &mut Rows<'_>) -> CoreResult<Vec<FileEntry>> {
         let origin_value: String = row
             .get(8)
             .map_err(|error| CoreError::db(error.to_string()))?;
-        files.push(FileEntry {
+        let mut entry = FileEntry {
             id: row
                 .get(0)
                 .map_err(|error| CoreError::db(error.to_string()))?,
@@ -389,9 +389,40 @@ fn collect_file_entries(rows: &mut Rows<'_>) -> CoreResult<Vec<FileEntry>> {
             updated_at: row
                 .get(11)
                 .map_err(|error| CoreError::db(error.to_string()))?,
-        });
+            availability_status: FileAvailabilityStatus::Available,
+        };
+        apply_availability_status(repo, &mut entry);
+        files.push(entry);
     }
     Ok(files)
+}
+
+pub(crate) fn with_availability_status(repo: &Path, mut entry: FileEntry) -> FileEntry {
+    apply_availability_status(repo, &mut entry);
+    entry
+}
+
+fn apply_availability_status(repo: &Path, entry: &mut FileEntry) {
+    entry.availability_status = if entry_backing_file_is_missing(repo, entry) {
+        FileAvailabilityStatus::Missing
+    } else {
+        FileAvailabilityStatus::Available
+    };
+}
+
+fn entry_backing_file_is_missing(repo: &Path, entry: &FileEntry) -> bool {
+    let path = entry_backing_path(repo, entry);
+    matches!(path.try_exists(), Ok(false))
+}
+
+fn entry_backing_path(repo: &Path, entry: &FileEntry) -> PathBuf {
+    if matches!(entry.storage_mode, StorageMode::Copied | StorageMode::Moved) {
+        return repo.join(&entry.path);
+    }
+    if let Some(source_path) = &entry.source_path {
+        return PathBuf::from(source_path);
+    }
+    repo.join(&entry.path)
 }
 
 fn validate_file_filter(filter: &FileFilter) -> CoreResult<()> {

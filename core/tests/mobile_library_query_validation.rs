@@ -2,7 +2,8 @@ use std::{fs, path::Path};
 
 use area_matrix_core::{
     get_file, init_repo, list_changes, list_files, list_tree_json, ChangeFilter, ChangeLogEntry,
-    CoreError, CoreResult, FileEntry, FileFilter, OverviewOutput, RepoInitMode, RepoInitOptions,
+    CoreError, CoreResult, FileAvailabilityStatus, FileEntry, FileFilter, OverviewOutput,
+    RepoInitMode, RepoInitOptions,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
@@ -161,11 +162,26 @@ fn mobile_library_query_validation_proves_paginated_ui_ready_queries() {
             .collect::<Vec<_>>(),
         vec!["missing.pdf", "middle.pdf"]
     );
+    assert_eq!(
+        files[0].availability_status,
+        FileAvailabilityStatus::Missing
+    );
     assert!(!repo.path().join(&files[0].path).exists());
 
     let detail = get_file(path_string(repo.path()), middle_id).expect("get Core-backed detail");
     assert_eq!(detail.id, middle_id);
     assert_eq!(detail.current_name, "middle.pdf");
+    assert_eq!(
+        detail.availability_status,
+        FileAvailabilityStatus::Available
+    );
+
+    let missing_detail =
+        get_file(path_string(repo.path()), missing_id).expect("get missing row detail");
+    assert_eq!(
+        missing_detail.availability_status,
+        FileAvailabilityStatus::Missing
+    );
 
     let changes = list_changes(path_string(repo.path()), default_change_filter(2, 0))
         .expect("list first change page");
@@ -303,6 +319,8 @@ fn assert_core_api_udl_and_rust_alignment() {
         "i64 offset;",
         "dictionary ChangeFilter",
         "dictionary FileEntry",
+        "FileAvailabilityStatus availability_status;",
+        "enum FileAvailabilityStatus { \"Available\", \"Missing\" };",
         "dictionary ChangeLogEntry",
         "Db(string message);",
         "RepoNotInitialized(string path);",
@@ -314,6 +332,8 @@ fn assert_core_api_udl_and_rust_alignment() {
     for fragment in [
         "### `list_files(repoPath, filter) throws -> [FileEntry]`",
         "### `get_file(repoPath, fileId) throws -> FileEntry`",
+        "`FileEntry.availability_status` 会结构化标记 backing file 是否 `Missing`",
+        "active\nmetadata 行仍返回 `FileAvailabilityStatus.Missing`",
         "### `list_changes(repoPath, filter) throws -> [ChangeLogEntry]`",
         "### `list_tree_json(repoPath, locale) throws -> String`",
         "按 `imported_at DESC` 排序。`limit > 1000` 自动 clamp。",
@@ -329,6 +349,7 @@ fn assert_core_api_udl_and_rust_alignment() {
         "pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<ChangeLogEntry>>",
         "pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String>",
         "C4-03 reuses this query for `S4-IOS-02` mobile-library rows.",
+        "availability status",
         "must use the documented `limit` and `offset` fields",
         "missing-file recovery stays with C4-18",
         "C4-07 owns the mobile detail aggregation",

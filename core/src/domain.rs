@@ -24,6 +24,15 @@ pub enum FileOrigin {
     External,
 }
 
+/// Read-only availability of the file behind a metadata row.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum FileAvailabilityStatus {
+    /// The backing file is present or its availability is owned by another platform capability.
+    Available,
+    /// The metadata row is retained but the backing file is missing from its expected location.
+    Missing,
+}
+
 /// Repository initialization mode.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum RepoInitMode {
@@ -284,6 +293,8 @@ pub struct FileEntry {
     pub origin: FileOrigin,
     /// Optional original source path.
     pub source_path: Option<String>,
+    /// Read-only file availability status for list/detail consumers.
+    pub availability_status: FileAvailabilityStatus,
     /// Unix timestamp for initial import.
     pub imported_at: i64,
     /// Unix timestamp for last update.

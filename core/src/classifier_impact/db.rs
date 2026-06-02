@@ -2,7 +2,7 @@ use std::path::Path;
 
 use rusqlite::{params, Connection, OpenFlags};
 
-use crate::{CoreError, CoreResult, FileEntry, FileOrigin, StorageMode};
+use crate::{CoreError, CoreResult, FileAvailabilityStatus, FileEntry, FileOrigin, StorageMode};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const INDEX_DB_FILE: &str = "index.db";
@@ -41,6 +41,7 @@ fn file_entry_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<FileEntry> {
         storage_mode: storage_mode_from_db(&storage_mode)?,
         origin: origin_from_db(&origin)?,
         source_path: row.get(9)?,
+        availability_status: FileAvailabilityStatus::Available,
         imported_at: row.get(10)?,
         updated_at: row.get(11)?,
     })

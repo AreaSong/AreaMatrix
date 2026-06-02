@@ -1410,8 +1410,9 @@ pub fn restore_file(_repo_path: String, _file_id: i64) -> CoreResult<FileEntry> 
 ///
 /// C4-03 reuses this query for `S4-IOS-02` mobile-library rows. Mobile callers
 /// must use the documented `limit` and `offset` fields instead of loading the
-/// entire repository, and missing-file recovery stays with C4-18 rather than
-/// this list contract.
+/// entire repository. The returned [`FileEntry::availability_status`] gives UI
+/// consumers a structured availability status for `Missing` badges, while
+/// missing-file recovery stays with C4-18 rather than this list contract.
 ///
 /// # Errors
 ///
@@ -1437,6 +1438,9 @@ pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileE
 /// C4-03 allows a mobile list row to open a Core-backed detail record from
 /// `S4-IOS-02`; C4-07 owns the mobile detail aggregation for log and note
 /// panes, so this contract stays limited to the base [`FileEntry`] metadata.
+/// The returned [`FileEntry::availability_status`] mirrors the list payload so
+/// detail consumers can keep a missing row visible without platform-side
+/// filesystem inference.
 ///
 /// # Errors
 ///
@@ -1446,7 +1450,8 @@ pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileE
 /// be read.
 pub fn get_file(repo_path: String, file_id: i64) -> CoreResult<FileEntry> {
     let repo = PathBuf::from(repo_path);
-    db::get_active_file_by_id(&repo, file_id)
+    let entry = db::get_active_file_by_id(&repo, file_id)?;
+    Ok(db::with_availability_status(&repo, entry))
 }
 
 /// Lists change-log entries from repository metadata.
