@@ -1,0 +1,42 @@
+一、执行结论
+
+- 已完成。上次验收失败的范围外修改已清除，`docs/api/core-api.md` 当前无 diff。
+- 当前 task validation 已通过，可进入只读验收。
+
+二、执行范围
+
+- 单任务：`4-3/task-34`
+- 修改文件清单：
+  - [core/tests/mobile_detail_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/mobile_detail_validation.rs)：调整断言，不再依赖 task 范围外的 API 文档新增内容。
+  - [docs/api/core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md)：仅撤回上次越界 diff，最终无保留修改。
+
+三、完成情况
+
+- 补齐测试覆盖成功和失败路径：通过，现有 4 个 targeted test binary 共 18 个测试通过。
+- Core API / UDL / Rust 实现一致性：通过，测试继续锁定 `get_file`、`list_changes`、`read_note` 签名与实现证据。
+- 不新增业务功能：通过，本轮只修复验收范围问题和测试断言。
+- 记录无法运行验证：无无法运行项。
+- Forbidden Touches：未触碰，`apps/**` tracked / untracked 检查均无输出。
+
+四、工程质量
+
+- 代码结构清晰，未新增业务逻辑、依赖、mock-only、硬编码通过态或一次性脚本。
+- 注释 / rustdoc / 文档同步：本轮不保留 docs 修改，避免 task scope 扩散。
+- 错误处理与边界处理仍由现有 C4-07 tests 覆盖 Missing、FileNotFound、Db、Io、PermissionDenied 和无写入断言。
+
+五、验证情况
+
+- 已运行：`./dev check task 4-3/task-34`
+- 通过：
+  - `doctor: OK`
+  - `git diff --check`
+  - `mobile_detail_contract_api`: 4 passed
+  - `mobile_detail_failure_recovery`: 8 passed
+  - `mobile_detail_implementation`: 3 passed
+  - `mobile_detail_validation`: 3 passed
+- 未运行：`./dev check all` / `./dev check core` / `cargo test --workspace`，原因是当前 manifest 只要求 `./dev check task 4-3/task-34`，且 retry 规则禁止无授权升级宽门禁。
+
+六、风险与后续
+
+- 剩余风险：工作区仍有 task-loop 本地状态文件变更：`.codex/task-loop-runs/20260602_185844/summary.json`、`tasks/prompts/_shared/progress.json`。它们不是本轮功能修复内容。
+- 建议下一个任务：运行本任务 verify-ready 只读验收，确认范围问题已解除。
