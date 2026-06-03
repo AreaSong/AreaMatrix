@@ -205,8 +205,8 @@ fn sync_conflict_detect_documents_consumers_and_scope_boundaries() {
         "User-facing severity for prioritizing conflict review.",
         "One affected file/version entry inside a sync conflict.",
         "Sync conflict row returned by C4-15 detection.",
-        "contract entry point exists so UDL, bindings, and downstream page work",
-        "implementation task must replace",
+        "Detects C4-15 sync conflicts without resolving any version.",
+        "safely inspects file",
         "conflict-state metadata writes",
     ] {
         assert_contains(SYNC_CONFLICT_RS, fragment);

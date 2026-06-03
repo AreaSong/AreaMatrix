@@ -1,8 +1,11 @@
 //! C4-15 sync conflict detection contract types and entry point.
 
+mod implementation;
+mod paths;
+
 use serde::{Deserialize, Serialize};
 
-use crate::{CoreError, CoreResult};
+use crate::CoreResult;
 
 /// Lifecycle state for a detected sync conflict.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -98,21 +101,21 @@ pub struct SyncConflict {
     pub summary: Option<String>,
 }
 
-/// Detects unresolved C4-15 sync conflicts without resolving them.
+/// Detects C4-15 sync conflicts without resolving any version.
 ///
-/// This contract entry point exists so UDL, bindings, and downstream page work
-/// can compile against the Stage 4 shape. The implementation task must replace
-/// this unavailable metadata result with real conflict-state inspection and
-/// conflict-state metadata writes.
+/// The detector reads initialized repository metadata, safely inspects file
+/// metadata and hashes, and refreshes AreaMatrix-owned conflict-state metadata.
+/// The conflict-state metadata writes are limited to AreaMatrix-owned database
+/// rows and do not mutate repository user files.
+/// It never chooses a winning version and never mutates user files.
 ///
 /// # Errors
 ///
-/// Returns `CoreError::Db { message }` until C4-15 conflict-state metadata
-/// inspection and writes are implemented. Future implementations may also
-/// return `CoreError::Io { message }` or `CoreError::Conflict { path }`
-/// according to the public Core API contract.
-pub(crate) fn detect_sync_conflicts(_repo_path: String) -> CoreResult<Vec<SyncConflict>> {
-    Err(CoreError::db(
-        "sync conflict detection metadata is unavailable",
-    ))
+/// Returns `CoreError::Db { message }` when conflict-state metadata or file
+/// metadata rows cannot be read or refreshed, `CoreError::Io { message }` for
+/// safe filesystem metadata/hash inspection failures, and
+/// `CoreError::Conflict { path }` when a conflict state cannot be bound to a
+/// stable conflict id.
+pub(crate) fn detect_sync_conflicts(repo_path: String) -> CoreResult<Vec<SyncConflict>> {
+    implementation::detect_sync_conflicts(repo_path)
 }

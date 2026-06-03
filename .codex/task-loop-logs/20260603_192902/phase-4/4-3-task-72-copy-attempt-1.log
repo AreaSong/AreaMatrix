@@ -1,0 +1,62 @@
+一、执行结论
+
+已完成 `4-3/task-72`。
+
+二、执行范围
+
+单任务：只实现 C4-15 `detect_sync_conflicts` Core 行为。  
+修改/新增文件：
+
+- `core/src/sync_conflict_detect.rs`
+- `core/src/sync_conflict_detect/implementation.rs`
+- `core/src/sync_conflict_detect/paths.rs`
+- `core/src/db/mod.rs`
+- `core/src/db/sync_conflicts.rs`
+- `core/tests/sync_conflict_detect_contract_api.rs`
+- `core/tests/sync_conflict_detect_implementation.rs`
+
+未修改 `apps/**`。`core/area_matrix.udl` 已有签名和类型，未改。
+
+三、完成情况
+
+核对清单全部完成：
+
+- 只实现 C4-15，未实现 C4-16 resolve、C4-21 replace confirm 或页面接入。
+- 按规格实现 `detect_sync_conflicts(repo_path) -> Vec<SyncConflict>`，返回 conflict id、类型、严重度、状态、affected files、version count、provider、detected_at、summary。
+- 写入/刷新 `repo_config.sync_conflict_state` 作为 conflict state metadata。
+- 文件系统只读探测：读取 metadata/hash，不删除、不移动、不覆盖、不 Trash。
+- Rust Core 不依赖平台 UI API。
+- 补了最小实现测试。
+
+完成标准：
+
+- C4-15 可通过桥接导出的 Rust API 调用验证。
+- 未触碰用户文件安全边界之外的行为。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+代码拆成合同入口、实现编排、路径/hash helper、DB helper，避免单文件过长。新增逻辑走真实 SQLite repo metadata 和真实文件 metadata/hash，没有 mock-only、硬编码通过态或一次性脚本逻辑。错误路径显式映射到 `Db`、`Io`、`Conflict`；缺失版本、同名不同内容、watcher modified 触发的 concurrent modification 都有测试覆盖。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-3/task-72
+```
+
+通过内容：
+
+- prompt doctor：PASS
+- git diff check：PASS
+- `cargo test --test sync_conflict_detect_contract_api -- --nocapture`：3 passed
+- `cargo test --test sync_conflict_detect_implementation -- --nocapture`：5 passed
+
+过程中曾有两次验证失败：旧 contract 测试还断言 contract 阶段占位文案、实现测试误用 `ImportResult.file` 字段。两处都已在允许范围内修正，最终验证通过。无必需验证项无法运行。
+
+六、风险与后续
+
+剩余风险：当前 C4-15 是最小检测闭环，冲突来源主要来自 `files` 元数据、真实文件状态、provider conflicted copy 命名和 watcher health 里的 modified sample；更复杂的远端 snapshot、实时协同编辑、解决策略仍属于后续任务。
+
+建议下一个任务：继续 `4-3/task-73`，处理 C4-15 failure-edge / validation 方向，补更细的失败路径和边界验证。

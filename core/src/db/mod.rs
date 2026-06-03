@@ -35,6 +35,7 @@ mod saved_search;
 mod scan;
 mod staging_recovery;
 mod sync;
+mod sync_conflicts;
 mod tags;
 mod undo;
 pub(crate) use ai_call_log::{
@@ -110,6 +111,9 @@ pub(crate) use staging_recovery::{
     delete_staging_file_row, list_protected_staging_paths, list_staging_file_rows, StagingFileRow,
 };
 pub(crate) use sync::*;
+pub(crate) use sync_conflicts::{
+    list_active_sync_conflict_files, replace_sync_conflict_state, ActiveSyncConflictFile,
+};
 pub(crate) use tags::{
     add_tag_row, apply_ai_tag_suggestion_rows, apply_tag_suggestion_rows, batch_add_tags_rows,
     list_tag_set, load_tag_suggestion_snapshot, remove_tag_row, AiTagSuggestionApplyProvenance,
@@ -489,6 +493,38 @@ pub(crate) fn with_write_transaction<T>(
     tx.commit()
         .map_err(|error| CoreError::db(error.to_string()))?;
     Ok(result)
+}
+
+pub(crate) fn load_repo_config_record(
+    repo_path: &Path,
+    key: &str,
+) -> CoreResult<Option<(String, i64)>> {
+    let connection = open_repo_connection(repo_path)?;
+    connection
+        .query_row(
+            "SELECT value, updated_at FROM repo_config WHERE key = ?1",
+            params![key],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .optional()
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
+pub(crate) fn upsert_repo_config_record(
+    tx: &Transaction<'_>,
+    key: &str,
+    value: &str,
+    updated_at: i64,
+) -> CoreResult<()> {
+    tx.execute(
+        "INSERT INTO repo_config (key, value, updated_at) \
+         VALUES (?1, ?2, ?3) \
+         ON CONFLICT(key) DO UPDATE SET \
+             value = excluded.value, updated_at = excluded.updated_at",
+        params![key, value, updated_at],
+    )
+    .map(|_| ())
+    .map_err(|error| CoreError::db(error.to_string()))
 }
 
 fn configure_connection(connection: &Connection) -> CoreResult<()> {
