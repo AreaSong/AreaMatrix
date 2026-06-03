@@ -106,7 +106,10 @@ fn desktop_import_flow_implementation_previews_category_then_commits_copy() {
     assert_eq!(entry.category, "desktop");
     assert_eq!(entry.storage_mode, StorageMode::Copied);
     assert_eq!(entry.origin, FileOrigin::Imported);
-    assert_eq!(entry.source_path.as_deref(), Some(path_string(&source).as_str()));
+    assert_eq!(
+        entry.source_path.as_deref(),
+        Some(path_string(&source).as_str())
+    );
     assert_eq!(
         fs::read(repo.path().join(&entry.path)).expect("read copied repo file"),
         b"desktop copy bytes"
@@ -145,7 +148,10 @@ fn desktop_import_flow_implementation_commits_move_and_index_modes() {
 
     assert_eq!(moved.path, "desktop/imports/move.txt");
     assert_eq!(moved.storage_mode, StorageMode::Moved);
-    assert_eq!(moved.source_path.as_deref(), Some(move_source_path.as_str()));
+    assert_eq!(
+        moved.source_path.as_deref(),
+        Some(move_source_path.as_str())
+    );
     assert!(
         !move_source.exists(),
         "desktop moved import consumes the picker source path"
@@ -157,7 +163,10 @@ fn desktop_import_flow_implementation_commits_move_and_index_modes() {
 
     assert_eq!(indexed.path, index_source_path);
     assert_eq!(indexed.storage_mode, StorageMode::Indexed);
-    assert_eq!(indexed.source_path.as_deref(), Some(index_source_path.as_str()));
+    assert_eq!(
+        indexed.source_path.as_deref(),
+        Some(index_source_path.as_str())
+    );
     assert_eq!(
         fs::read(&index_source).expect("read indexed external source"),
         b"index bytes"

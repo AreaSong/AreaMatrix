@@ -1,0 +1,61 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-63`
+- Task 文件：[task-63-c4-13-failure-edge.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-63-c4-13-failure-edge.md:1)
+- Manifest 章节：[phase-4.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:8329)
+- Core 范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：0
+- 通过项数：11
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 空态、非法输入：通过。`desktop_import_flow_failure_recovery_empty_invalid_inputs_return_explicit_errors` 断言空 source 和非法文件名返回 `InvalidPath`，且无 DB/FS 半成品。证据：[desktop_import_flow_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/desktop_import_flow_failure_recovery.rs:107)
+- 权限错误：通过。权限受阻时返回 `PermissionDenied`，不显示成功状态，不创建目标目录。证据：[desktop_import_flow_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/desktop_import_flow_failure_recovery.rs:204)
+- IO/DB 错误和错误码映射：通过。DB 触发器强制失败覆盖 `Db`，`map_core_error` 覆盖 `DuplicateFile`、`Conflict`、`PermissionDenied`、`InvalidPath`、`Db`、`Io`。证据：[desktop_import_flow_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/desktop_import_flow_failure_recovery.rs:132) 和 [error.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/error.rs:437)
+- 失败不留下半成品：通过。copy 失败删除最终文件和 staging，move 失败恢复源文件，冲突保留源与既有文件。证据：[desktop_import_flow_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/desktop_import_flow_failure_recovery.rs:133)
+- 隐私/AI/远程调用：通过，不适用且未越界。C4-13 实现复用 `predict_category` / `import_file`，没有远程 AI、密钥或网络调用；桌面平台权限、Trash 检测留在平台层。证据：[api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:968)
+- 不吞错、不静默降级：通过。`StorageMode::Moved` 明确不得被 UI 静默降级，失败必须返回错误且不能写成功状态。证据：[api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:973)
+- C4-13 明确返回和用户文件安全：通过。`import_file` 返回结构化错误，测试验证 `DuplicateFile` 不生成成功导入。证据：[desktop_import_flow_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/desktop_import_flow_implementation.rs:184)
+- 高风险回滚/恢复说明：通过。实现有 staging、final、DB row、replacement guard；文档定义失败 import 不留 DB/final 半成品。证据：[safe_move.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/safe_move.rs:13) 和 [transactional-import.md](/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/transactional-import.md:42)
+- Expected New Paths：通过。`core/src/**` 有真实 import/rollback 实现，`core/area_matrix.udl` 有 C4-13 contract 注释，`core/tests/**` 有新增 failure recovery 测试。证据：[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:156)
+- Forbidden Touches：通过。`git diff -- apps` 为空，当前状态没有 `apps/**` 修改。
+- Validation：通过。`./dev check task 4-3/task-63` exit 0。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。导入主路径拆分为 prepare、stage、duplicate、destination、promote、overview，核心文件 `storage/import.rs` 491 行，未超过当前标准阈值。
+- 注释 / rustdoc / 文档同步：通过。`api.rs` 和 UDL 对 C4-13 的边界、错误、Replace/C4-21 关系有明确说明；contract test 校验 docs、Core API、UDL 对齐。证据：[desktop_import_flow_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/desktop_import_flow_contract_api.rs:139)
+- 错误处理与边界处理：通过。输入校验、IO 映射、DB rollback、staging/final guard、replacement recoverability 都有真实路径。证据：[validate.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/validate.rs:12)
+- 测试与验证覆盖：通过。新增 failure recovery 测试 6 项，implementation 测试 3 项，contract 测试 4 项均通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试使用临时目录、真实 SQLite、真实 `import_file`，DB 失败用 SQLite trigger 注入，未发现 C4-13 路径 mock-only 或硬编码成功态。
+
+六、阻塞项
+
+- 未发现阻塞项。
+- 非阻塞说明：`.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 仍显示 `in_progress`，属于 verify 发生在 runner 收口前的状态，不作为本次验收 blocker。
+- 非阻塞说明：`core/tests/desktop_import_flow_failure_recovery.rs` 当前未跟踪但路径属于 manifest 允许的 `core/tests/**`，且已被验证命令实际执行。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-63`，通过。
+- 通过内容：prompt doctor OK；`git diff --check` OK；`cargo fmt --all -- --check` OK；`cargo clippy --all-targets --all-features -- -D warnings` OK。
+- 通过测试：`desktop_import_flow_contract_api` 4 passed；`desktop_import_flow_failure_recovery` 6 passed；`desktop_import_flow_implementation` 3 passed。
+- 失败：无。
+- 缺失：无必需验证缺失。未运行 `./dev check all`，因为 manifest 只要求 task-level gate，且该 atomic Core task 不应默认扩大到全量门禁。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

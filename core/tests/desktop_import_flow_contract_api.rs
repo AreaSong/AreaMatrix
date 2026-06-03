@@ -74,7 +74,10 @@ fn desktop_import_flow_contract_exposes_page_ready_inputs_outputs_and_errors() {
         duplicate_strategy: DuplicateStrategy::KeepBoth,
     };
     assert_eq!(copy_options.mode, StorageMode::Copied);
-    assert_eq!(copy_options.destination, ImportDestination::SelectedDirectory);
+    assert_eq!(
+        copy_options.destination,
+        ImportDestination::SelectedDirectory
+    );
     assert_eq!(
         copy_options.target_directory.as_deref(),
         Some("docs/projects")
