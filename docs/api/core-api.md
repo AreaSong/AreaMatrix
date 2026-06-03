@@ -178,6 +178,11 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    ImportResult import_file_with_result(
+        string repo_path, string source_path, ImportOptions options
+    );
+
+    [Throws=CoreError]
     void delete_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
@@ -1023,6 +1028,12 @@ dictionary ImportOptions {
     string? override_category;
     string? override_filename;
     DuplicateStrategy duplicate_strategy;
+};
+
+dictionary ImportResult {
+    FileEntry entry;
+    ImportSourceRemovalStatus source_removal_status;
+    string? source_removal_failure;
 };
 
 dictionary FileFilter {
@@ -1959,6 +1970,7 @@ dictionary ErrorMapping {
 };
 
 enum StorageMode { "Moved", "Copied", "Indexed" };
+enum ImportSourceRemovalStatus { "NotRequested", "Removed", "Retained" };
 enum FileOrigin { "Imported", "Adopted", "External" };
 enum FileAvailabilityStatus { "Available", "Missing" };
 enum RepoInitMode { "CreateEmpty", "AdoptExisting" };
@@ -2281,6 +2293,7 @@ interface CoreError {
 | `resume_scan_session(repo, id)` | repo | √ | Io / Db |
 | `predict_category(repo, name)` | classify | √ | Config / Classify |
 | `import_file(repo, src, options)` | storage | √ | Io / Db / DuplicateFile / Conflict / InvalidPath / ICloudPlaceholder / PermissionDenied |
+| `import_file_with_result(repo, src, options)` | storage | √ | Io / Db / DuplicateFile / Conflict / InvalidPath / ICloudPlaceholder / PermissionDenied |
 | `delete_file(repo, file_id)` | storage | √ | Io / Db / FileNotFound / PermissionDenied / Internal |
 | `remove_index_entry(repo, file_id)` | storage | √ | Db / FileNotFound / PermissionDenied / Internal |
 | `rename_file(repo, file_id, new_name)` | storage | √ | Io / Db / Config / InvalidPath / Conflict / FileNotFound / PermissionDenied |
@@ -3999,6 +4012,10 @@ func importDroppedFile(_ url: URL) async {
 
 可能抛：`Io` / `Db` / `DuplicateFile` / `Conflict` / `InvalidPath` / `ICloudPlaceholder` / `PermissionDenied` / `Internal`。
 
+桌面 Windows / Linux 导入页面需要展示 Move 后源文件处理结果时，应使用
+`import_file_with_result`。`import_file` 保留为兼容入口，只返回已提交的
+`FileEntry`。
+
 `ImportOptions.destination` 语义：
 
 | destination | 使用字段 | 目标规则 |
@@ -4006,6 +4023,44 @@ func importDroppedFile(_ url: URL) async {
 | `AutoClassify` | `override_category` 可选 | 根据 classifier 推断；低置信或无命中进 `inbox/` |
 | `SelectedDirectory` | `target_directory` 必填 | 放入用户显式 drop 的目录，不再自动分类 |
 | `Category` | `override_category` 必填 | 放入指定系统分类目录，必要时创建 `<slug>/` |
+
+### `import_file_with_result(repoPath, sourcePath, options) throws -> ImportResult`
+
+```swift
+let result = try AreaMatrix.importFileWithResult(
+    repoPath: repoPath,
+    sourcePath: url.path,
+    options: options
+)
+
+switch result.sourceRemovalStatus {
+case .removed:
+    showResult("Imported")
+case .retained:
+    showResult("Imported, original retained")
+    showDetails(result.sourceRemovalFailure)
+case .notRequested:
+    showResult("Imported")
+}
+```
+
+C4-13 desktop-import-flow 的 Windows / Linux 页面使用该入口作为最终提交
+API。它复用 `import_file` 的真实事务式导入路径，返回：
+
+- `entry`：成功写入 FS 和 DB 的 active `FileEntry`。
+- `source_removal_status`：`NotRequested` / `Removed` / `Retained`。
+- `source_removal_failure`：源文件移除失败时的结构化原因。
+
+`StorageMode::Moved` 的执行顺序是：先 copy-to-staging、写入 repository
+final 文件、写 DB、写导入日志、刷新生成概览，再尝试移除原始 source。
+如果最后的 source removal 失败，不回滚已安全导入的 repository 文件；
+结果必须标记 `Retained`，UI 显示 `Imported, original retained`，并且不得把
+该项标记为完整 Move。
+
+Replace 仍属于 C4-21 / `S4-X-09`，Trash / Recycle Bin 能力检测、文件夹批量、
+拖拽入口和多项进度仍由平台/UI 层处理。
+
+可能抛：`Io` / `Db` / `DuplicateFile` / `Conflict` / `InvalidPath` / `ICloudPlaceholder` / `PermissionDenied` / `Internal`。
 
 ### `delete_file(repoPath, fileId) throws`
 

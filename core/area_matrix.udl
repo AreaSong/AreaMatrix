@@ -153,13 +153,21 @@ namespace area_matrix {
     [Throws=CoreError]
     ClassifyResult predict_category(string repo_path, string filename);
 
-    // C4-13 desktop-import-flow reuses import_file for the final committed
-    // single-item import. Desktop shells derive result state from FileEntry,
-    // ImportOptions, and structured DuplicateFile/Conflict/PermissionDenied/
-    // InvalidPath errors. Replace confirmation belongs to C4-21/S4-X-09; this
-    // entry point does not add a desktop-only replace or platform Trash API.
+    // C4-13 desktop-import-flow uses import_file_with_result for the final
+    // committed single-item desktop import result. import_file remains the
+    // backwards-compatible FileEntry entry point for existing Stage 1 callers.
+    // The desktop result includes source removal status so Move can report
+    // Imported, original retained without parsing errors or rolling back a
+    // safely committed repository file. Replace confirmation belongs to
+    // C4-21/S4-X-09; this entry point does not add a desktop-only replace or
+    // platform Trash API.
     [Throws=CoreError]
     FileEntry import_file(
+        string repo_path, string source_path, ImportOptions options
+    );
+
+    [Throws=CoreError]
+    ImportResult import_file_with_result(
         string repo_path, string source_path, ImportOptions options
     );
 
@@ -1021,6 +1029,12 @@ dictionary ImportOptions {
     // the committed strategy token after that confirmation, not the preview or
     // platform Trash capability contract.
     DuplicateStrategy duplicate_strategy;
+};
+
+dictionary ImportResult {
+    FileEntry entry;
+    ImportSourceRemovalStatus source_removal_status;
+    string? source_removal_failure;
 };
 
 dictionary FileFilter {
@@ -1957,6 +1971,7 @@ dictionary ErrorMapping {
 };
 
 enum StorageMode { "Moved", "Copied", "Indexed" };
+enum ImportSourceRemovalStatus { "NotRequested", "Removed", "Retained" };
 enum FileOrigin { "Imported", "Adopted", "External" };
 enum FileAvailabilityStatus { "Available", "Missing" };
 enum RepoInitMode { "CreateEmpty", "AdoptExisting" };

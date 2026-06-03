@@ -14,7 +14,7 @@ mod staging_row;
 mod validate;
 
 pub(crate) use delete::{delete_file, remove_index_entry};
-pub(crate) use import::import_file;
+pub(crate) use import::{import_file, import_file_with_result};
 pub(crate) use move_to_category::{
     correct_repo_owned_file_category, move_to_category, preview_move_to_category,
 };

@@ -4,9 +4,9 @@ use std::{
 };
 
 use area_matrix_core::{
-    import_file, init_repo, list_files, predict_category, CoreError, DuplicateStrategy, FileFilter,
-    FileOrigin, ImportDestination, ImportOptions, OverviewOutput, RepoInitMode, RepoInitOptions,
-    StorageMode,
+    import_file, import_file_with_result, init_repo, list_files, predict_category, CoreError,
+    DuplicateStrategy, FileFilter, FileOrigin, ImportDestination, ImportOptions,
+    ImportSourceRemovalStatus, OverviewOutput, RepoInitMode, RepoInitOptions, StorageMode,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -95,13 +95,19 @@ fn desktop_import_flow_implementation_previews_category_then_commits_copy() {
     assert_eq!(preview.category, "docs");
     assert_eq!(preview.suggested_name, "Desktop Report.pdf");
 
-    let entry = import_file(
+    let result = import_file_with_result(
         path_string(repo.path()),
         path_string(&source),
         desktop_options(StorageMode::Copied, DuplicateStrategy::KeepBoth),
     )
     .expect("commit desktop copied import");
+    let entry = result.entry;
 
+    assert_eq!(
+        result.source_removal_status,
+        ImportSourceRemovalStatus::NotRequested
+    );
+    assert_eq!(result.source_removal_failure, None);
     assert_eq!(entry.path, "desktop/imports/Desktop Report.pdf");
     assert_eq!(entry.category, "desktop");
     assert_eq!(entry.storage_mode, StorageMode::Copied);
@@ -133,19 +139,26 @@ fn desktop_import_flow_implementation_commits_move_and_index_modes() {
     let (_index_root, index_source) = source_file("index.txt", b"index bytes");
     let index_source_path = path_string(&index_source);
 
-    let moved = import_file(
+    let moved_result = import_file_with_result(
         path_string(repo.path()),
         move_source_path.clone(),
         desktop_options(StorageMode::Moved, DuplicateStrategy::KeepBoth),
     )
     .expect("commit desktop moved import");
-    let indexed = import_file(
+    let moved = moved_result.entry;
+    let indexed_result = import_file_with_result(
         path_string(repo.path()),
         index_source_path.clone(),
         desktop_options(StorageMode::Indexed, DuplicateStrategy::KeepBoth),
     )
     .expect("commit desktop indexed import");
+    let indexed = indexed_result.entry;
 
+    assert_eq!(
+        moved_result.source_removal_status,
+        ImportSourceRemovalStatus::Removed
+    );
+    assert_eq!(moved_result.source_removal_failure, None);
     assert_eq!(moved.path, "desktop/imports/move.txt");
     assert_eq!(moved.storage_mode, StorageMode::Moved);
     assert_eq!(
@@ -161,6 +174,11 @@ fn desktop_import_flow_implementation_commits_move_and_index_modes() {
         b"move bytes"
     );
 
+    assert_eq!(
+        indexed_result.source_removal_status,
+        ImportSourceRemovalStatus::NotRequested
+    );
+    assert_eq!(indexed_result.source_removal_failure, None);
     assert_eq!(indexed.path, index_source_path);
     assert_eq!(indexed.storage_mode, StorageMode::Indexed);
     assert_eq!(

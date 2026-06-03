@@ -1,6 +1,7 @@
 use area_matrix_core::{
-    import_file, predict_category, ClassifyResult, CoreError, CoreResult, DuplicateStrategy,
-    FileAvailabilityStatus, FileEntry, FileOrigin, ImportDestination, ImportOptions, StorageMode,
+    import_file, import_file_with_result, predict_category, ClassifyResult, CoreError, CoreResult,
+    DuplicateStrategy, FileAvailabilityStatus, FileEntry, FileOrigin, ImportDestination,
+    ImportOptions, ImportResult, ImportSourceRemovalStatus, StorageMode,
 };
 use pretty_assertions::assert_eq;
 
@@ -58,9 +59,11 @@ fn normalize_text(text: &str) -> String {
 fn desktop_import_flow_contract_exports_existing_import_and_preview_signatures() {
     fn assert_predict(_: fn(String, String) -> CoreResult<ClassifyResult>) {}
     fn assert_import(_: fn(String, String, ImportOptions) -> CoreResult<FileEntry>) {}
+    fn assert_import_result(_: fn(String, String, ImportOptions) -> CoreResult<ImportResult>) {}
 
     assert_predict(predict_category);
     assert_import(import_file);
+    assert_import_result(import_file_with_result);
 }
 
 #[test]
@@ -124,6 +127,20 @@ fn desktop_import_flow_contract_exposes_page_ready_inputs_outputs_and_errors() {
         imported_file.availability_status,
         FileAvailabilityStatus::Available
     );
+    let import_result = ImportResult {
+        entry: imported_file.clone(),
+        source_removal_status: ImportSourceRemovalStatus::Retained,
+        source_removal_failure: Some("permission denied".to_owned()),
+    };
+    assert_eq!(import_result.entry, imported_file);
+    assert_eq!(
+        import_result.source_removal_status,
+        ImportSourceRemovalStatus::Retained
+    );
+    assert_eq!(
+        import_result.source_removal_failure.as_deref(),
+        Some("permission denied")
+    );
 
     let documented_errors = [
         CoreError::DuplicateFile {
@@ -152,9 +169,11 @@ fn desktop_import_flow_docs_core_api_and_udl_stay_aligned() {
         "- S4-LNX-05 import-flow",
         "- `predict_category`",
         "- `import_file`",
+        "- `import_file_with_result`",
         "平台 file picker 返回路径和 ImportOptions。",
-        "导入结果和冲突状态。",
+        "导入结果、冲突状态、Move 源文件移除状态。",
         "Copy/Move/Index 按配置执行。",
+        "source_removal_status = Retained",
         "- `DuplicateFile`",
         "- `Conflict`",
         "- `PermissionDenied`",
@@ -179,6 +198,7 @@ fn desktop_import_flow_docs_core_api_and_udl_stay_aligned() {
     for fragment in [
         "ClassifyResult predict_category(string repo_path, string filename);",
         "FileEntry import_file(",
+        "ImportResult import_file_with_result(",
         "string repo_path, string source_path, ImportOptions options",
         "dictionary ImportOptions",
         "StorageMode mode;",
@@ -188,11 +208,16 @@ fn desktop_import_flow_docs_core_api_and_udl_stay_aligned() {
         "string? override_filename;",
         "DuplicateStrategy duplicate_strategy;",
         "dictionary FileEntry",
+        "dictionary ImportResult",
+        "FileEntry entry;",
+        "ImportSourceRemovalStatus source_removal_status;",
+        "string? source_removal_failure;",
         "StorageMode storage_mode;",
         "FileOrigin origin;",
         "string? source_path;",
         "FileAvailabilityStatus availability_status;",
         "enum StorageMode { \"Moved\", \"Copied\", \"Indexed\" };",
+        "enum ImportSourceRemovalStatus { \"NotRequested\", \"Removed\", \"Retained\" };",
         "enum ImportDestination { \"AutoClassify\", \"SelectedDirectory\", \"Category\" };",
         "enum DuplicateStrategy { \"Skip\", \"Overwrite\", \"KeepBoth\", \"Ask\" };",
     ] {
@@ -202,6 +227,7 @@ fn desktop_import_flow_docs_core_api_and_udl_stay_aligned() {
 
     for fragment in [
         "| `import_file(repo, src, options)` | storage | √ | Io / Db / DuplicateFile / Conflict / InvalidPath / ICloudPlaceholder / PermissionDenied |",
+        "| `import_file_with_result(repo, src, options)` | storage | √ | Io / Db / DuplicateFile / Conflict / InvalidPath / ICloudPlaceholder / PermissionDenied |",
         "可能抛：`Io` / `Db` / `DuplicateFile` / `Conflict` / `InvalidPath` / `ICloudPlaceholder` / `PermissionDenied` / `Internal`。",
     ] {
         assert_contains(CORE_API, fragment);
@@ -224,6 +250,7 @@ fn desktop_import_flow_documents_consumer_state_without_adjacent_capabilities() 
         "Windows drag and drop。",
         "Core transactional import API。",
         "Duplicate and name conflict detection。",
+        "Move result：imported、source removed、source retained、source removal failure reason。",
         "Move preflight：源文件可读、源位置可删除/移动、目标可写、staging 可用。",
         "Windows Recycle Bin integration for Replace。",
         "Recycle Bin availability and move-to-bin preflight。",
@@ -239,6 +266,7 @@ fn desktop_import_flow_documents_consumer_state_without_adjacent_capabilities() 
         "Drag and drop。",
         "Core transactional import API。",
         "Duplicate/conflict detection。",
+        "Move result：imported、source removed、source retained、source removal failure reason。",
         "Move preflight：源文件可读、源目录可 unlink/rename、目标可写、staging 可用、same-mount / cross-mount 判断。",
         "freedesktop Trash 能力检测。",
         "Move-to-trash preflight。",
@@ -266,12 +294,17 @@ fn desktop_import_flow_documents_consumer_state_without_adjacent_capabilities() 
         "Trash/Recycle Bin capability",
         "multi-item progress stay in the desktop shell",
         "`S4-WIN-05` and `S4-LNX-05` can show as suggested category state",
-        "C4-13 desktop-import-flow reuses this same import contract",
+        "C4-13 desktop-import-flow keeps this same import contract available",
+        "should use [`import_file_with_result`]",
+        "Imports one source file and returns desktop-ready result state.",
+        "C4-13 uses this wrapper for `S4-WIN-05` and `S4-LNX-05`",
+        "ImportSourceRemovalStatus::Retained",
+        "Imported, original retained",
         "Desktop shells pass the picker or drop source path plus",
         "folder recursion, batching, drag-and-drop",
         "Trash/Recycle Bin availability checks remain outside Core",
         "`StorageMode::Copied` is the safe default",
-        "`StorageMode::Moved` keeps the Stage 1 transactional move contract",
+        "`StorageMode::Moved` first commits",
         "`DuplicateStrategy::Overwrite` is only valid after the separate C4-21",
         "this API does not perform that confirmation",
         "or add a desktop-only replace capability",
@@ -284,8 +317,10 @@ fn desktop_import_flow_documents_consumer_state_without_adjacent_capabilities() 
         "C4-13 desktop-import-flow reuses predict_category for read-only",
         "does not expand folders",
         "detect Trash/Recycle Bin support",
-        "C4-13 desktop-import-flow reuses import_file for the final committed",
-        "Desktop shells derive result state from FileEntry,",
+        "C4-13 desktop-import-flow uses import_file_with_result for the final",
+        "backwards-compatible FileEntry entry point",
+        "source removal status",
+        "Imported, original retained",
         "Replace confirmation belongs to C4-21/S4-X-09",
         "does not add a desktop-only replace or platform Trash API",
         "Overwrite is the committed strategy token after that confirmation",

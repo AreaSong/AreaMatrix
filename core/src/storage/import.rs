@@ -4,7 +4,7 @@ use serde_json::{json, Value};
 
 use crate::{
     db, overview, CoreError, CoreResult, DuplicateStrategy, FileEntry, FileOrigin,
-    ImportDestination, ImportOptions, StorageMode,
+    ImportDestination, ImportOptions, ImportResult, ImportSourceRemovalStatus, StorageMode,
 };
 
 use super::{
@@ -13,7 +13,7 @@ use super::{
     hash,
     import_target::{resolve_import_target, ImportTarget},
     replacement_trash::ReplacementFileGuard,
-    safe_move::{move_recoverable_file, move_source_to_staging, FinalFileGuard, StagingFileGuard},
+    safe_move::{move_recoverable_file, remove_imported_source, FinalFileGuard, StagingFileGuard},
     staging_row::DbStagingRowGuard,
     validate,
 };
@@ -23,6 +23,14 @@ pub(crate) fn import_file(
     source_path: String,
     options: ImportOptions,
 ) -> CoreResult<FileEntry> {
+    Ok(import_file_with_result(repo_path, source_path, options)?.entry)
+}
+
+pub(crate) fn import_file_with_result(
+    repo_path: String,
+    source_path: String,
+    options: ImportOptions,
+) -> CoreResult<ImportResult> {
     let prepared = PreparedImport::new(repo_path, source_path, options)?;
     if matches!(prepared.options.mode, StorageMode::Indexed) {
         return import_indexed_file(prepared);
@@ -62,7 +70,12 @@ pub(crate) fn import_file(
         guard.disarm();
     }
     destination.disarm();
-    Ok(entry)
+    let source_removal = finalize_source_removal(&prepared);
+    Ok(ImportResult {
+        entry,
+        source_removal_status: source_removal.status,
+        source_removal_failure: source_removal.failure,
+    })
 }
 
 struct PreparedImport {
@@ -141,19 +154,20 @@ struct IndexedImportCommit {
     replacement_rollback: Option<ReplacementDbRollback>,
 }
 
+struct SourceRemovalOutcome {
+    status: ImportSourceRemovalStatus,
+    failure: Option<String>,
+}
+
 fn stage_source(prepared: &PreparedImport) -> CoreResult<StagedImport> {
     let staging_guard = match prepared.options.mode {
         StorageMode::Copied => StagingFileGuard::create_for_copy(&prepared.repo)?,
-        StorageMode::Moved => {
-            StagingFileGuard::create_for_move(&prepared.repo, prepared.source.clone())?
-        }
+        StorageMode::Moved => StagingFileGuard::create_for_move(&prepared.repo)?,
         StorageMode::Indexed => return Err(CoreError::internal("internal error")),
     };
     let hashed_copy = match prepared.options.mode {
-        StorageMode::Copied => hash::copy_and_hash(&prepared.source, staging_guard.path())?,
-        StorageMode::Moved => {
-            move_source_to_staging(&prepared.source, staging_guard.path())?;
-            hash::hash_file(staging_guard.path())?
+        StorageMode::Copied | StorageMode::Moved => {
+            hash::copy_and_hash(&prepared.source, staging_guard.path())?
         }
         StorageMode::Indexed => return Err(CoreError::internal("internal error")),
     };
@@ -188,7 +202,7 @@ fn check_duplicate(
     dedup::resolve_duplicate(&prepared.options.duplicate_strategy, None)
 }
 
-fn import_indexed_file(prepared: PreparedImport) -> CoreResult<FileEntry> {
+fn import_indexed_file(prepared: PreparedImport) -> CoreResult<ImportResult> {
     let fingerprint = hash::hash_file(&prepared.source)?;
     let duplicate_resolution = check_duplicate(&prepared, &fingerprint.hash_sha256)?;
 
@@ -213,7 +227,50 @@ fn import_indexed_file(prepared: PreparedImport) -> CoreResult<FileEntry> {
     if let Some(guard) = &mut commit.replacement_guard {
         guard.disarm();
     }
-    Ok(entry)
+    Ok(ImportResult {
+        entry,
+        source_removal_status: ImportSourceRemovalStatus::NotRequested,
+        source_removal_failure: None,
+    })
+}
+
+fn finalize_source_removal(prepared: &PreparedImport) -> SourceRemovalOutcome {
+    if !matches!(prepared.options.mode, StorageMode::Moved) {
+        return SourceRemovalOutcome {
+            status: ImportSourceRemovalStatus::NotRequested,
+            failure: None,
+        };
+    }
+    match remove_imported_source(&prepared.source) {
+        Ok(()) => SourceRemovalOutcome {
+            status: ImportSourceRemovalStatus::Removed,
+            failure: None,
+        },
+        Err(error) => SourceRemovalOutcome {
+            status: ImportSourceRemovalStatus::Retained,
+            failure: Some(source_removal_failure_reason(error)),
+        },
+    }
+}
+
+fn source_removal_failure_reason(error: CoreError) -> String {
+    match error {
+        CoreError::PermissionDenied { path }
+        | CoreError::InvalidPath { path }
+        | CoreError::FileNotFound { path }
+        | CoreError::ICloudPlaceholder { path }
+        | CoreError::Conflict { path } => path,
+        CoreError::Io { message }
+        | CoreError::Db { message }
+        | CoreError::Internal { message }
+        | CoreError::RepoNotInitialized { path: message } => message,
+        CoreError::StagingRecoveryRequired { path } => path,
+        CoreError::Config { reason }
+        | CoreError::Validation { reason }
+        | CoreError::Classify { reason } => reason,
+        CoreError::DuplicateFile { existing_path } => existing_path,
+        CoreError::ExpiredAction { action_id } => action_id,
+    }
 }
 
 fn finish_overview_regeneration(

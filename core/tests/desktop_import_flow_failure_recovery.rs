@@ -4,9 +4,10 @@ use std::{
 };
 
 use area_matrix_core::{
-    import_file, init_repo, map_core_error, CoreError, DuplicateStrategy, ErrorKind,
-    ErrorMappingInput, ErrorRecoverability, ErrorSeverity, ImportDestination, ImportOptions,
-    OverviewOutput, RepoInitMode, RepoInitOptions, StorageMode,
+    import_file, import_file_with_result, init_repo, map_core_error, CoreError, DuplicateStrategy,
+    ErrorKind, ErrorMappingInput, ErrorRecoverability, ErrorSeverity, ImportDestination,
+    ImportOptions, ImportSourceRemovalStatus, OverviewOutput, RepoInitMode, RepoInitOptions,
+    StorageMode,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -236,6 +237,55 @@ fn desktop_import_flow_failure_recovery_permission_denied_has_no_success_state()
     );
     assert!(!repo.path().join("desktop").exists());
     assert_no_committed_import(repo.path());
+}
+
+#[cfg(unix)]
+#[test]
+fn desktop_import_flow_failure_recovery_move_source_removal_failure_returns_retained_result() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let repo = initialized_repo();
+    let (source_root, source) = source_file("retained.pdf", b"retained desktop bytes");
+    let source_root_path = source_root.path().to_path_buf();
+    let original_permissions = fs::metadata(&source_root_path)
+        .expect("read source root metadata")
+        .permissions();
+    let mut blocked_permissions = original_permissions.clone();
+    blocked_permissions.set_mode(0o500);
+    fs::set_permissions(&source_root_path, blocked_permissions)
+        .expect("block source directory removal");
+
+    let result = import_file_with_result(
+        path_string(repo.path()),
+        path_string(&source),
+        desktop_options(StorageMode::Moved, DuplicateStrategy::KeepBoth),
+    )
+    .expect("commit move import while retaining source after removal failure");
+
+    fs::set_permissions(&source_root_path, original_permissions)
+        .expect("restore source directory permissions");
+
+    assert_eq!(
+        result.source_removal_status,
+        ImportSourceRemovalStatus::Retained
+    );
+    assert_eq!(
+        result.source_removal_failure.as_deref(),
+        Some("permission denied")
+    );
+    assert_eq!(
+        fs::read(&source).expect("source remains after removal failure"),
+        b"retained desktop bytes"
+    );
+    assert_eq!(result.entry.path, "desktop/imports/retained.pdf");
+    assert_eq!(
+        fs::read(repo.path().join(&result.entry.path)).expect("read retained imported file"),
+        b"retained desktop bytes"
+    );
+    assert_eq!(file_count(repo.path(), "active"), 1);
+    assert_eq!(file_count(repo.path(), "staging"), 0);
+    assert_eq!(change_log_count(repo.path()), 1);
+    assert_eq!(staging_entries(repo.path()), Vec::<PathBuf>::new());
 }
 
 #[test]

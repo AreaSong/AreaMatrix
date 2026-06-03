@@ -4,9 +4,10 @@ use std::{
 };
 
 use area_matrix_core::{
-    import_file, init_repo, list_files, predict_category, ClassifyResult, CoreError, CoreResult,
-    DuplicateStrategy, FileAvailabilityStatus, FileEntry, FileFilter, FileOrigin,
-    ImportDestination, ImportOptions, OverviewOutput, RepoInitMode, RepoInitOptions, StorageMode,
+    import_file, import_file_with_result, init_repo, list_files, predict_category, ClassifyResult,
+    CoreError, CoreResult, DuplicateStrategy, FileAvailabilityStatus, FileEntry, FileFilter,
+    FileOrigin, ImportDestination, ImportOptions, ImportResult, ImportSourceRemovalStatus,
+    OverviewOutput, RepoInitMode, RepoInitOptions, StorageMode,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -147,7 +148,9 @@ fn assert_contains_normalized(haystack: &str, needle: &str) {
 }
 
 fn normalize_text(text: &str) -> String {
-    text.replace("///", "").replace("//", "").split_whitespace()
+    text.replace("///", "")
+        .replace("//", "")
+        .split_whitespace()
         .collect::<Vec<_>>()
         .join(" ")
 }
@@ -165,13 +168,19 @@ fn desktop_import_flow_validation_proves_ui_ready_copy_success_path() {
     assert_eq!(preview.suggested_name, "Desktop Report.pdf");
     assert_eq!(metadata_counts(repo.path()), (0, 0, 0));
 
-    let entry = import_file(
+    let result = import_file_with_result(
         path_string(repo.path()),
         source_path.clone(),
         desktop_options(StorageMode::Copied, DuplicateStrategy::KeepBoth),
     )
     .expect("import desktop picker source with safe copy default");
+    let entry = result.entry;
 
+    assert_eq!(
+        result.source_removal_status,
+        ImportSourceRemovalStatus::NotRequested
+    );
+    assert_eq!(result.source_removal_failure, None);
     assert_eq!(
         fs::read(&source).expect("read desktop picker source after copy import"),
         source_before
@@ -203,11 +212,7 @@ fn assert_imported_copy_entry(entry: &FileEntry, source_path: &str) {
     assert_eq!(entry.availability_status, FileAvailabilityStatus::Available);
 }
 
-fn assert_import_detail_matches_desktop_copy(
-    detail: &Value,
-    source_path: &str,
-    entry: &FileEntry,
-) {
+fn assert_import_detail_matches_desktop_copy(detail: &Value, source_path: &str, entry: &FileEntry) {
     assert_eq!(detail["source"].as_str(), Some(source_path));
     assert_eq!(detail["mode"].as_str(), Some("copied"));
     assert_eq!(detail["category"].as_str(), Some("desktop"));
@@ -232,28 +237,43 @@ fn desktop_import_flow_validation_proves_move_and_index_modes() {
     let (_index_scope, index_source) = desktop_selection("index.txt", b"index validation bytes");
     let index_source_path = path_string(&index_source);
 
-    let moved = import_file(
+    let moved_result = import_file_with_result(
         path_string(repo.path()),
         move_source_path.clone(),
         desktop_options(StorageMode::Moved, DuplicateStrategy::KeepBoth),
     )
     .expect("commit desktop move import after platform confirmation");
-    let indexed = import_file(
+    let moved = moved_result.entry;
+    let indexed_result = import_file_with_result(
         path_string(repo.path()),
         index_source_path.clone(),
         desktop_options(StorageMode::Indexed, DuplicateStrategy::KeepBoth),
     )
     .expect("commit desktop indexed import");
+    let indexed = indexed_result.entry;
 
+    assert_eq!(
+        moved_result.source_removal_status,
+        ImportSourceRemovalStatus::Removed
+    );
+    assert_eq!(moved_result.source_removal_failure, None);
     assert!(!move_source.exists());
     assert_eq!(moved.path, "desktop/imports/move.txt");
     assert_eq!(moved.storage_mode, StorageMode::Moved);
-    assert_eq!(moved.source_path.as_deref(), Some(move_source_path.as_str()));
+    assert_eq!(
+        moved.source_path.as_deref(),
+        Some(move_source_path.as_str())
+    );
     assert_eq!(
         fs::read(repo.path().join(&moved.path)).expect("read moved desktop repo file"),
         b"move validation bytes"
     );
 
+    assert_eq!(
+        indexed_result.source_removal_status,
+        ImportSourceRemovalStatus::NotRequested
+    );
+    assert_eq!(indexed_result.source_removal_failure, None);
     assert_eq!(indexed.path, index_source_path);
     assert_eq!(indexed.storage_mode, StorageMode::Indexed);
     assert_eq!(
@@ -326,9 +346,11 @@ fn assert_duplicate_error_preserves_state(
 fn desktop_import_flow_validation_locks_core_api_udl_rust_and_test_evidence() {
     fn assert_predict(_: fn(String, String) -> CoreResult<ClassifyResult>) {}
     fn assert_import(_: fn(String, String, ImportOptions) -> CoreResult<FileEntry>) {}
+    fn assert_import_result(_: fn(String, String, ImportOptions) -> CoreResult<ImportResult>) {}
 
     assert_predict(predict_category);
     assert_import(import_file);
+    assert_import_result(import_file_with_result);
 
     assert_task_docs_and_testing_alignment();
     assert_core_api_udl_and_rust_alignment();
@@ -353,11 +375,15 @@ fn assert_task_docs_and_testing_alignment() {
         "- S4-LNX-05 import-flow",
         "- `predict_category`",
         "- `import_file`",
+        "- `import_file_with_result`",
         "平台 file picker 返回路径和 ImportOptions。",
+        "导入结果、冲突状态、Move 源文件移除状态。",
         "Copy/Move/Index 按配置执行。",
+        "source_removal_status = Retained",
         "Replace 必须走 S4-X-09。",
         "平台 Trash 不可用时禁止 destructive 路径。",
         "导入失败不显示成功状态。",
+        "完整 Move。",
     ] {
         assert_contains(CAPABILITY_SPEC, fragment);
     }
@@ -372,7 +398,12 @@ fn assert_task_docs_and_testing_alignment() {
     }
 
     assert_desktop_page_alignment();
-    for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`", "关键测试场景"] {
+    for fragment in [
+        "Rust 单元测试",
+        "集成测试目录",
+        "`core/tests/`",
+        "关键测试场景",
+    ] {
         assert_contains(TESTING_DOC, fragment);
     }
 }
@@ -382,6 +413,9 @@ fn assert_desktop_page_alignment() {
         "Windows file/folder picker。",
         "Core transactional import API。",
         "Move preflight：源文件可读、源位置可删除/移动、目标可写、staging 可用。",
+        "Move result：imported、source removed、source retained、source removal failure reason。",
+        "Move 执行顺序：先 staging/copy 到 repo、写 DB、写入导入日志，再移除源文件；移除源文件失败时不得回滚已安全导入的 repo 文件",
+        "Imported, original retained",
         "同名不同内容默认保留两份。",
         "成功导入后文件系统和 DB 都可见。",
     ] {
@@ -393,6 +427,8 @@ fn assert_desktop_page_alignment() {
         "Core transactional import API。",
         "Move preflight：源文件可读、源目录可 unlink/rename、目标可写、staging 可用、same-mount / cross-mount 判断。",
         "Move preflight：必须确认源文件可读、源目录允许 unlink/rename、目标 repo 可写、staging 可用；跨挂载时必须走 copy-to-staging 再 remove original",
+        "Move result：imported、source removed、source retained、source removal failure reason。",
+        "Move 源文件移除失败：保留已安全导入的 repo 文件，结果标记 `Imported, original retained`",
         "同名冲突默认保留两份。",
         "导入失败：不留下最终目录半成品；staging recovery 状态必须可被下次启动恢复或清理。",
     ] {
@@ -413,6 +449,7 @@ fn assert_core_api_udl_and_rust_alignment() {
     for fragment in [
         "ClassifyResult predict_category(string repo_path, string filename);",
         "FileEntry import_file(",
+        "ImportResult import_file_with_result(",
         "string repo_path, string source_path, ImportOptions options",
         "dictionary ImportOptions",
         "StorageMode mode;",
@@ -422,11 +459,16 @@ fn assert_core_api_udl_and_rust_alignment() {
         "string? override_filename;",
         "DuplicateStrategy duplicate_strategy;",
         "dictionary FileEntry",
+        "dictionary ImportResult",
+        "FileEntry entry;",
+        "ImportSourceRemovalStatus source_removal_status;",
+        "string? source_removal_failure;",
         "StorageMode storage_mode;",
         "FileOrigin origin;",
         "string? source_path;",
         "FileAvailabilityStatus availability_status;",
         "enum StorageMode { \"Moved\", \"Copied\", \"Indexed\" };",
+        "enum ImportSourceRemovalStatus { \"NotRequested\", \"Removed\", \"Retained\" };",
         "enum DuplicateStrategy { \"Skip\", \"Overwrite\", \"KeepBoth\", \"Ask\" };",
         "InvalidPath(string path);",
         "PermissionDenied(string path);",
@@ -443,7 +485,10 @@ fn assert_core_api_behavior_docs() {
     for fragment in [
         "### `predict_category(repoPath: String, filename: String) throws -> ClassifyResult`",
         "### `import_file(repoPath, sourcePath, options) throws -> FileEntry`",
+        "### `import_file_with_result(repoPath, sourcePath, options) throws -> ImportResult`",
         "无写入副作用：只读取 `.areamatrix/classifier.yaml`",
+        "Imported, original retained",
+        "source_removal_status",
         "可能抛：`Io` / `Db` / `DuplicateFile` / `Conflict` / `InvalidPath` / `ICloudPlaceholder` / `PermissionDenied` / `Internal`。",
     ] {
         assert_contains(CORE_API, fragment);
@@ -454,15 +499,20 @@ fn assert_rust_api_docs() {
     for fragment in [
         "pub fn predict_category(repo_path: String, filename: String) -> CoreResult<ClassifyResult>",
         "pub fn import_file(",
+        "pub fn import_file_with_result(",
         "C4-13 desktop-import-flow reuses this read-only preview surface",
         "Windows and Linux import dialogs",
         "Directory expansion, platform permission preflight",
         "Trash/Recycle Bin capability",
-        "C4-13 desktop-import-flow reuses this same import contract",
+        "C4-13 desktop-import-flow keeps this same import contract available",
+        "should use [`import_file_with_result`]",
+        "ImportSourceRemovalStatus::Retained",
+        "Imported, original retained",
         "folder recursion, batching, drag-and-drop",
         "`StorageMode::Copied` is the safe default",
         "`DuplicateStrategy::Overwrite` is only valid after the separate C4-21",
         "must surface an error instead of a success state",
+        "storage::import_file_with_result(repo_path, source_path, options)",
         "storage::import_file(repo_path, source_path, options)",
     ] {
         assert_contains_normalized(API_RS, fragment);
@@ -492,6 +542,7 @@ fn assert_existing_test_layers_are_present() {
         "desktop_import_flow_failure_recovery_db_failure_restores_moved_source",
         "desktop_import_flow_failure_recovery_conflict_keeps_source_and_existing_files",
         "desktop_import_flow_failure_recovery_permission_denied_has_no_success_state",
+        "desktop_import_flow_failure_recovery_move_source_removal_failure_returns_retained_result",
         "desktop_import_flow_failure_recovery_maps_error_codes_without_string_parsing",
     ] {
         assert_contains(FAILURE_TEST, fragment);

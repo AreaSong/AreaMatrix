@@ -26,7 +26,7 @@ use crate::{
     ICloudConflictPreviewReport, ICloudConflictResolution, ICloudConflictResolveReport,
     ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
     ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
-    LocalModelFolderLocation, LocalModelFolderRequest, LocalModelStatusRequest,
+    ImportResult, LocalModelFolderLocation, LocalModelFolderRequest, LocalModelStatusRequest,
     LocalModelStatusSnapshot, MoveToCategoryPreview, PlatformWatcherHealthSignal,
     PlatformWatcherSnapshot, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
     RemoteProviderConfigSnapshot, RemoteProviderDisableRequest, RemoteProviderEnableRequest,
@@ -965,23 +965,24 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// `DuplicateFile`, and `Conflict` errors. Cancelled selections stay in the
 /// platform sheet and must not call this API.
 ///
-/// C4-13 desktop-import-flow reuses this same import contract for
-/// `S4-WIN-05` and `S4-LNX-05`. Desktop shells pass the picker or drop source
-/// path plus [`ImportOptions`] for a single committed item; folder recursion,
-/// batching, drag-and-drop, Explorer/Nautilus integration, platform permission
-/// preflight, and Trash/Recycle Bin availability checks remain outside Core.
-/// `StorageMode::Copied` is the safe default. `StorageMode::Moved` keeps the
-/// Stage 1 transactional move contract and must not be silently downgraded by
-/// the UI; source-impact confirmation and per-item progress are platform/UI
-/// responsibilities. `DuplicateStrategy::KeepBoth`, `Skip`, and `Ask` expose
-/// duplicate or same-name state through the returned [`FileEntry`] or
-/// structured `DuplicateFile` / `Conflict` errors. `DuplicateStrategy::Overwrite`
-/// is only valid after the separate C4-21 / `S4-X-09` replace confirmation has
-/// proven a recoverable old-file path; this API does not perform that
-/// confirmation, detect platform Trash support, or add a desktop-only replace
-/// capability. A failed desktop import must surface an error instead of a
-/// success state and must not leave active file rows or final destination
-/// half-products.
+/// C4-13 desktop-import-flow keeps this same import contract available for
+/// existing callers, but `S4-WIN-05` and `S4-LNX-05` should use
+/// [`import_file_with_result`] when they need Move source-removal state.
+/// Desktop shells pass the picker or drop source path plus [`ImportOptions`]
+/// for a single committed item; folder recursion, batching, drag-and-drop,
+/// Explorer/Nautilus integration, platform permission preflight, and
+/// Trash/Recycle Bin availability checks remain outside Core.
+/// `StorageMode::Copied` is the safe default. `StorageMode::Moved` must not be
+/// silently downgraded by the UI; source-impact confirmation and per-item
+/// progress are platform/UI responsibilities. `DuplicateStrategy::KeepBoth`,
+/// `Skip`, and `Ask` expose duplicate or same-name state through the returned
+/// [`FileEntry`] or structured `DuplicateFile` / `Conflict` errors.
+/// `DuplicateStrategy::Overwrite` is only valid after the separate C4-21 /
+/// `S4-X-09` replace confirmation has proven a recoverable old-file path; this
+/// API does not perform that confirmation, detect platform Trash support, or
+/// add a desktop-only replace capability. A failed pre-commit desktop import
+/// must surface an error instead of a success state and must not leave active
+/// file rows or final destination half-products.
 ///
 /// # Errors
 ///
@@ -1001,6 +1002,40 @@ pub fn import_file(
     options: ImportOptions,
 ) -> CoreResult<FileEntry> {
     storage::import_file(repo_path, source_path, options)
+}
+
+/// Imports one source file and returns desktop-ready result state.
+///
+/// C4-13 uses this wrapper for `S4-WIN-05` and `S4-LNX-05` after the desktop
+/// shell has completed picker/drop parsing, Move confirmation, and platform
+/// preflight. It reuses the same transactional repository import path as
+/// [`import_file`] and adds only the source-removal outcome required by desktop
+/// result pages. `StorageMode::Copied` and `StorageMode::Indexed` return
+/// `ImportSourceRemovalStatus::NotRequested`. `StorageMode::Moved` first commits
+/// the repository file, database row, change log, and generated overview; only
+/// after those writes are safe does Core try to remove the original source.
+///
+/// If post-commit source removal fails, the API still returns the committed
+/// [`FileEntry`] with `ImportSourceRemovalStatus::Retained` plus a structured
+/// failure reason. That lets Windows and Linux show `Imported, original
+/// retained` without rolling back the already-safe repository file or marking
+/// the item as fully moved. Replace confirmation, Trash/Recycle Bin detection,
+/// folder batching, drag-and-drop, and multi-item progress remain outside this
+/// entry point and continue to belong to their own Stage 4 tasks.
+///
+/// # Errors
+///
+/// Returns the same pre-commit errors as [`import_file`]: invalid paths, missing
+/// or unreadable sources, duplicate or name conflicts, unavailable iCloud
+/// placeholders, permission failures, IO failures, database failures, and
+/// internal errors. Pre-commit failures do not create active file rows or final
+/// destination half-products.
+pub fn import_file_with_result(
+    repo_path: String,
+    source_path: String,
+    options: ImportOptions,
+) -> CoreResult<ImportResult> {
+    storage::import_file_with_result(repo_path, source_path, options)
 }
 
 /// Moves a repo-owned file entry to the system Trash and soft-deletes metadata.

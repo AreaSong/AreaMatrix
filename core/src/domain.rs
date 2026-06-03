@@ -257,6 +257,28 @@ pub struct ImportOptions {
     pub duplicate_strategy: DuplicateStrategy,
 }
 
+/// Final source-file outcome for a committed import.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum ImportSourceRemovalStatus {
+    /// Copy or index mode did not request source removal.
+    NotRequested,
+    /// Move mode removed the original source after repository commit.
+    Removed,
+    /// Move mode committed the repository file but could not remove the original source.
+    Retained,
+}
+
+/// Structured result returned by desktop import flows.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ImportResult {
+    /// Active file entry created or replaced by the import.
+    pub entry: FileEntry,
+    /// Source-file outcome after the repository file and metadata are safe.
+    pub source_removal_status: ImportSourceRemovalStatus,
+    /// Failure reason when `source_removal_status` is `Retained`.
+    pub source_removal_failure: Option<String>,
+}
+
 /// Filter used when listing files.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct FileFilter {
