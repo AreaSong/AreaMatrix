@@ -7,27 +7,28 @@ use crate::{
     ai_summary, ai_tags_suggestion, batch_category, batch_delete, batch_rename as batch_rename_mod,
     classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules, classify,
     cloud_permission_state, cross_platform_ffi, db, icloud_conflicts, import_conflict_batch,
-    local_model_status, note, recovery, redo, remote_provider_config, repair, repo_init, repo_path,
-    repo_scan, storage, sync, tree, AiCallLogClearReport, AiCallLogClearRequest, AiCallLogFilter,
-    AiCallLogPage, AiCallLogPagination, AiCategorySuggestion, AiCategorySuggestionRequest,
-    AiConfig, AiConfigSnapshot, AiFallbackStatus, AiFallbackStatusRequest,
-    AiPrivacyEvaluationReport, AiPrivacyEvaluationRequest, AiPrivacyRulesSnapshot,
-    AiPrivacyRulesUpdateRequest, AiSummaryClearReport, AiSummaryClearRequest, AiSummaryDraft,
-    AiSummaryGenerationRequest, AiSummarySaveReport, AiSummarySaveRequest,
-    AiTagSuggestionApplyReport, AiTagSuggestionReport, AiTagSuggestionRequest,
-    ApplyAiTagSuggestionsRequest, ApplyTagSuggestionsRequest, BatchCategoryChangeReport,
-    BatchCategoryPreviewReport, BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport,
-    BatchRenamePreviewReport, BatchRenameReport, BatchRenameRule, BindingContractReport,
-    BindingContractRequest, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
-    ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
-    ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleUpdate,
-    ClassifyResult, CloudStorageState, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent,
-    FileEntry, FileFilter, ICloudConflictPair, ICloudConflictPreviewReport,
-    ICloudConflictResolution, ICloudConflictResolveReport, ImportConflictBatchApplyReport,
-    ImportConflictBatchApplyRequest, ImportConflictBatchPreviewReport,
-    ImportConflictBatchPreviewRequest, ImportOptions, LocalModelFolderLocation,
-    LocalModelFolderRequest, LocalModelStatusRequest, LocalModelStatusSnapshot,
-    MoveToCategoryPreview, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
+    local_model_status, note, platform_watcher_status, recovery, redo, remote_provider_config,
+    repair, repo_init, repo_path, repo_scan, storage, sync, tree, AiCallLogClearReport,
+    AiCallLogClearRequest, AiCallLogFilter, AiCallLogPage, AiCallLogPagination,
+    AiCategorySuggestion, AiCategorySuggestionRequest, AiConfig, AiConfigSnapshot,
+    AiFallbackStatus, AiFallbackStatusRequest, AiPrivacyEvaluationReport,
+    AiPrivacyEvaluationRequest, AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest,
+    AiSummaryClearReport, AiSummaryClearRequest, AiSummaryDraft, AiSummaryGenerationRequest,
+    AiSummarySaveReport, AiSummarySaveRequest, AiTagSuggestionApplyReport, AiTagSuggestionReport,
+    AiTagSuggestionRequest, ApplyAiTagSuggestionsRequest, ApplyTagSuggestionsRequest,
+    BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
+    BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
+    BatchRenameRule, BindingContractReport, BindingContractRequest, ChangeFilter, ChangeLogEntry,
+    ClassifierCorrectionResult, ClassifierImpactPreviewRequest, ClassifierRule,
+    ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot,
+    ClassifierRuleUpdate, ClassifyResult, CloudStorageState, CoreError, CoreResult,
+    DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter, ICloudConflictPair,
+    ICloudConflictPreviewReport, ICloudConflictResolution, ICloudConflictResolveReport,
+    ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
+    ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
+    LocalModelFolderLocation, LocalModelFolderRequest, LocalModelStatusRequest,
+    LocalModelStatusSnapshot, MoveToCategoryPreview, PlatformWatcherHealthSignal,
+    PlatformWatcherSnapshot, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
     RemoteProviderConfigSnapshot, RemoteProviderDisableRequest, RemoteProviderEnableRequest,
     RemoteProviderTestRequest, RemoteProviderTestResult, RepairOptions, RepairReport, RepoConfig,
     RepoInitOptions, RepoPathValidation, RuleImpactReport, ScanSession, SyncResult,
@@ -1959,4 +1960,31 @@ pub fn get_fs_event_cursor(repo_path: String) -> CoreResult<Option<i64>> {
 /// Returns `CoreError::RepoNotInitialized { path }`, `CoreError::InvalidPath { path }`, or `CoreError::Db { message }`.
 pub fn set_fs_event_cursor(repo_path: String, last_event_id: i64) -> CoreResult<()> {
     sync::set_fs_event_cursor(repo_path, last_event_id)
+}
+
+/// Records platform watcher health for Windows and Linux watcher-status pages.
+///
+/// C4-12 accepts a sanitized watcher health signal from the platform layer and
+/// returns a normalized [`PlatformWatcherSnapshot`] for `S4-WIN-04` and
+/// `S4-LNX-04`. The snapshot carries watcher lifecycle status, backend,
+/// watched path, latest event/sync timestamps, pending count, optional watch
+/// count, structured health reasons, and a display-safe error summary.
+///
+/// The platform layer owns ReadDirectoryChangesW/inotify startup, restart,
+/// debouncing, path reveal, diagnostics export, and event capture. Core must
+/// not start platform watchers, open Explorer/file managers, trigger manual
+/// rescan, inspect user file contents, or move/delete/rename/overwrite user
+/// files from this contract. Manual rescan remains C4-19 and must route through
+/// the `S4-X-07` confirmation flow before any indexing write.
+///
+/// # Errors
+///
+/// Returns `CoreError::Db { message }` when the health signal is invalid or
+/// watcher health metadata is unavailable, and `CoreError::Io { message }` for
+/// later AreaMatrix-owned metadata I/O failures.
+pub fn record_watcher_health(
+    repo_path: String,
+    signal: PlatformWatcherHealthSignal,
+) -> CoreResult<PlatformWatcherSnapshot> {
+    platform_watcher_status::record_watcher_health(repo_path, signal)
 }

@@ -411,6 +411,11 @@ namespace area_matrix {
     [Throws=CoreError]
     void set_fs_event_cursor(string repo_path, i64 last_event_id);
 
+    [Throws=CoreError]
+    PlatformWatcherSnapshot record_watcher_health(
+        string repo_path, PlatformWatcherHealthSignal signal
+    );
+
     ErrorMapping map_core_error(ErrorMappingInput input);
 };
 
@@ -1895,6 +1900,48 @@ dictionary SyncResult {
     sequence<string> errors;
 };
 
+dictionary PlatformWatcherEventSample {
+    string path;
+    ExternalEventKind kind;
+    i64 fs_event_id;
+    i64? occurred_at;
+};
+
+dictionary PlatformWatcherHealthSignal {
+    PlatformWatcherBackend backend;
+    PlatformWatcherStatus status;
+    string watched_path;
+    i64? last_event_id;
+    i64? last_event_at;
+    i64? last_sync_event_id;
+    i64? last_sync_at;
+    i64? last_rescan_at;
+    i64 pending_event_count;
+    i64? watch_count;
+    string? error_summary;
+    sequence<PlatformWatcherHealthReason> health_reasons;
+    sequence<PlatformWatcherEventSample> recent_events;
+    i64 reported_at;
+};
+
+dictionary PlatformWatcherSnapshot {
+    string repo_path;
+    PlatformWatcherBackend backend;
+    PlatformWatcherStatus status;
+    string watched_path;
+    i64? last_event_id;
+    i64? last_event_at;
+    i64? last_sync_event_id;
+    i64? last_sync_at;
+    i64? last_rescan_at;
+    i64 pending_event_count;
+    i64? watch_count;
+    string? error_summary;
+    sequence<PlatformWatcherHealthReason> health_reasons;
+    sequence<PlatformWatcherEventSample> recent_events;
+    i64 reported_at;
+};
+
 dictionary ErrorMappingInput {
     ErrorKind kind;
     string? path;
@@ -2098,6 +2145,12 @@ enum ImportConflictBatchResultStatus {
     "Skipped", "KeptBoth", "Replaced", "QueuedForPerItem", "Pending", "Failed"
 };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
+enum PlatformWatcherBackend { "ReadDirectoryChangesW", "Inotify", "Unknown" };
+enum PlatformWatcherStatus { "Starting", "Running", "Paused", "Error", "Unavailable" };
+enum PlatformWatcherHealthReason {
+    "PermissionDenied", "PathMissing", "BackendUnavailable", "DatabaseLocked",
+    "LimitExceeded", "NetworkMount", "CloudSyncNoise", "Unknown"
+};
 enum BatchMutationStatus { "Added", "AlreadyHadTag", "Failed" };
 enum TagSuggestionSource { "FileName", "Path", "SourceFolder", "ExistingTagPattern" };
 enum TagSuggestionMatch { "Strong", "Weak" };
@@ -2181,6 +2234,8 @@ interface CoreError {
 | `BindingTypeMapping` | `dictionary BindingTypeMapping` | `BindingTypeMapping` | `data class BindingTypeMapping` |
 | `BindingMissingCapability` | `dictionary BindingMissingCapability` | `BindingMissingCapability` | `data class BindingMissingCapability` |
 | `BindingContractReport` | `dictionary BindingContractReport` | `BindingContractReport` | `data class BindingContractReport` |
+| `PlatformWatcherHealthSignal` | `dictionary PlatformWatcherHealthSignal` | `PlatformWatcherHealthSignal` | `data class PlatformWatcherHealthSignal` |
+| `PlatformWatcherSnapshot` | `dictionary PlatformWatcherSnapshot` | `PlatformWatcherSnapshot` | `data class PlatformWatcherSnapshot` |
 
 ---
 
@@ -2278,6 +2333,7 @@ interface CoreError {
 | `sync_external_changes(repo, events)` | sync | √ | Db |
 | `get_fs_event_cursor(repo)` | sync | √ | Db |
 | `set_fs_event_cursor(repo, id)` | sync | √ | Db |
+| `record_watcher_health(repo, signal)` | sync/watcher | √ | Db / Io |
 
 ---
 
@@ -6102,6 +6158,79 @@ try AreaMatrix.setFsEventCursor(repoPath: repoPath, lastEventId: lastBatch.maxEv
 ```
 
 每批 sync 完成后保存 cursor，断电后下次启动差量重放。
+
+### `record_watcher_health(repoPath, signal) throws -> PlatformWatcherSnapshot`
+
+```swift
+let snapshot = try AreaMatrix.recordWatcherHealth(
+    repoPath: repoPath,
+    signal: PlatformWatcherHealthSignal(
+        backend: .readDirectoryChangesW,
+        status: .running,
+        watchedPath: repoPath,
+        lastEventId: lastEventId,
+        lastEventAt: lastEventAt,
+        lastSyncEventId: cursor,
+        lastSyncAt: lastSyncAt,
+        lastRescanAt: lastRescanAt,
+        pendingEventCount: pendingEvents.count,
+        watchCount: activeWatchCount,
+        errorSummary: nil,
+        healthReasons: [],
+        recentEvents: recentSamples,
+        reportedAt: now
+    )
+)
+```
+
+C4-12 的平台 watcher 状态入口，服务 `S4-WIN-04 watcher-status` 和
+`S4-LNX-04 watcher-status`。输入是平台层已经去抖、过滤并脱敏后的 watcher health
+signal；Core 不启动 ReadDirectoryChangesW / inotify，不重建 watcher，也不直接读取平台
+watcher backend。
+
+输入 `PlatformWatcherHealthSignal`：
+
+- `backend`：`ReadDirectoryChangesW`、`Inotify` 或 `Unknown`。
+- `status`：`Starting`、`Running`、`Paused`、`Error` 或 `Unavailable`。
+- `watched_path`：当前平台服务监听路径，用于页面显示和诊断。
+- `last_event_id` / `last_event_at`：最近 watcher 事件 id 和时间。
+- `last_sync_event_id` / `last_sync_at`：最近成功同步到 Core metadata 的事件 id 和时间。
+- `last_rescan_at`：最近一次手动重扫完成时间，若未知则为空。
+- `pending_event_count`：等待同步的事件数量。
+- `watch_count`：平台 backend 暴露的 watch 数量，Linux inotify 页面可用。
+- `error_summary`：脱敏、可显示的错误摘要，不包含用户文件内容或 SDK 原始输出。
+- `health_reasons`：结构化原因，例如 `PermissionDenied`、`PathMissing`、
+  `DatabaseLocked`、`LimitExceeded`、`NetworkMount`、`CloudSyncNoise`。
+- `recent_events`：最多 5 条诊断事件样本，只包含路径、kind、event id 和可选时间。
+- `reported_at`：平台采集该 signal 的 Unix 时间。
+
+输出 `PlatformWatcherSnapshot`：返回同一组结构化字段，并补上 `repo_path`，供 Windows/Linux
+watcher status 页面渲染状态卡、禁用条件、错误摘要和诊断预览。
+
+副作用边界：
+
+- 本合同只记录 AreaMatrix-owned watcher health metadata；不得移动、删除、重命名或覆盖用户文件。
+- 不触发 `sync_external_changes`，不推进 fs event cursor；事件失败不应推进 cursor。
+- 不启动手动 rescan，不调用 `reindex_from_filesystem`，`Run rescan now` 必须进入
+  `S4-X-07 rescan-confirm`，由 C4-19 处理确认和扫描。
+- 不打开 Explorer / 文件管理器，不导出诊断包；这些动作属于平台层或独立能力。
+- 不读取用户文件正文，不触发 iCloud/OneDrive 下载，不修改系统 watcher/inotify 设置。
+
+错误：
+
+- `Db`：health signal 无效、watcher health metadata 不可读写、DB locked 或 schema 不可用。
+- `Io`：后续实现读取或写入 AreaMatrix-owned metadata 时发生文件系统错误。
+
+页面消费状态：
+
+- S4-WIN-04 可以从 `status`、`backend = ReadDirectoryChangesW`、`watched_path`、
+  `last_event_at`、`pending_event_count`、`last_rescan_at` 和 `error_summary` 渲染
+  Running / Starting / Paused / Error / Unavailable、Path missing、OneDrive 事件噪声和恢复动作。
+- S4-LNX-04 可以从 `backend = Inotify`、`watch_count`、`health_reasons` 和
+  `error_summary` 渲染 limit exceeded、network mount、permission denied 等状态。
+- 两个平台的 `Run rescan now` 只能根据 snapshot 判断入口可用性；真正执行必须先进入
+  S4-X-07，不由 C4-12 直接触发。
+- 本合同不新增 control map 之外的页面能力。
 
 ---
 

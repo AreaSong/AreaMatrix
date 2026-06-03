@@ -395,6 +395,11 @@ namespace area_matrix {
     [Throws=CoreError]
     void set_fs_event_cursor(string repo_path, i64 last_event_id);
 
+    [Throws=CoreError]
+    PlatformWatcherSnapshot record_watcher_health(
+        string repo_path, PlatformWatcherHealthSignal signal
+    );
+
     ErrorMapping map_core_error(ErrorMappingInput input);
 };
 
@@ -1879,6 +1884,48 @@ dictionary SyncResult {
     sequence<string> errors;
 };
 
+dictionary PlatformWatcherEventSample {
+    string path;
+    ExternalEventKind kind;
+    i64 fs_event_id;
+    i64? occurred_at;
+};
+
+dictionary PlatformWatcherHealthSignal {
+    PlatformWatcherBackend backend;
+    PlatformWatcherStatus status;
+    string watched_path;
+    i64? last_event_id;
+    i64? last_event_at;
+    i64? last_sync_event_id;
+    i64? last_sync_at;
+    i64? last_rescan_at;
+    i64 pending_event_count;
+    i64? watch_count;
+    string? error_summary;
+    sequence<PlatformWatcherHealthReason> health_reasons;
+    sequence<PlatformWatcherEventSample> recent_events;
+    i64 reported_at;
+};
+
+dictionary PlatformWatcherSnapshot {
+    string repo_path;
+    PlatformWatcherBackend backend;
+    PlatformWatcherStatus status;
+    string watched_path;
+    i64? last_event_id;
+    i64? last_event_at;
+    i64? last_sync_event_id;
+    i64? last_sync_at;
+    i64? last_rescan_at;
+    i64 pending_event_count;
+    i64? watch_count;
+    string? error_summary;
+    sequence<PlatformWatcherHealthReason> health_reasons;
+    sequence<PlatformWatcherEventSample> recent_events;
+    i64 reported_at;
+};
+
 dictionary ErrorMappingInput {
     ErrorKind kind;
     string? path;
@@ -2082,6 +2129,12 @@ enum ImportConflictBatchResultStatus {
     "Skipped", "KeptBoth", "Replaced", "QueuedForPerItem", "Pending", "Failed"
 };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
+enum PlatformWatcherBackend { "ReadDirectoryChangesW", "Inotify", "Unknown" };
+enum PlatformWatcherStatus { "Starting", "Running", "Paused", "Error", "Unavailable" };
+enum PlatformWatcherHealthReason {
+    "PermissionDenied", "PathMissing", "BackendUnavailable", "DatabaseLocked",
+    "LimitExceeded", "NetworkMount", "CloudSyncNoise", "Unknown"
+};
 enum BatchMutationStatus { "Added", "AlreadyHadTag", "Failed" };
 enum TagSuggestionSource { "FileName", "Path", "SourceFolder", "ExistingTagPattern" };
 enum TagSuggestionMatch { "Strong", "Weak" };

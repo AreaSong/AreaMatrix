@@ -33,6 +33,7 @@ mod import_conflict_batch;
 mod local_model_status;
 mod note;
 pub mod overview;
+mod platform_watcher_status;
 mod recovery;
 mod redo;
 mod remote_provider_config;
@@ -145,6 +146,10 @@ pub use local_model_status::{
     LocalModelAvailability, LocalModelCachedStatus, LocalModelFeatureStatus,
     LocalModelFolderLocation, LocalModelFolderRequest, LocalModelRecommendedAction,
     LocalModelStatusRequest, LocalModelStatusSnapshot,
+};
+pub use platform_watcher_status::{
+    PlatformWatcherBackend, PlatformWatcherEventSample, PlatformWatcherHealthReason,
+    PlatformWatcherHealthSignal, PlatformWatcherSnapshot, PlatformWatcherStatus,
 };
 pub use redo::{
     list_redo_actions, redo_action, RedoActionRecord, RedoActionResult, RedoActionStatus,
