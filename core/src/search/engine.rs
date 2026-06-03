@@ -37,7 +37,13 @@ pub(super) fn search_files(
 
     let total_count =
         i64::try_from(ranked.len()).map_err(|error| crate::CoreError::db(error.to_string()))?;
-    let results = page_results(ranked, pagination)?;
+    let results = page_results(ranked, pagination)?
+        .into_iter()
+        .map(|mut result| {
+            result.entry = crate::db::with_availability_status(&repo, result.entry);
+            result
+        })
+        .collect();
 
     Ok(SearchResultPage {
         query: parsed.raw,

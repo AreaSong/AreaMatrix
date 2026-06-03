@@ -1,0 +1,45 @@
+一、执行结论
+
+已完成 `4-3/task-52`。
+
+二、执行范围
+
+单任务：C4-11 `desktop-main-query` Core implementation。
+
+修改文件：
+- [core/src/search/engine.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/search/engine.rs:40)
+- [core/tests/desktop_main_query_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/desktop_main_query_implementation.rs:1)
+
+未触碰 `apps/**`。当前 worktree 里仍有既有脏文件 `.codex/task-loop-runs/20260603_085846/summary.json` 和 `tasks/prompts/_shared/progress.json`，本任务未修改或回滚它们。
+
+三、完成情况
+
+- 只实现 C4-11：通过，未实现相邻 C* 能力。
+- 输入/输出/DB/文件系统/错误映射：通过，复用 `list_files`、`get_file`、`list_tree_json`、`search_files`；DB 只读，文件系统仅做只读存在性状态判断，无写入。
+- Rust Core 不依赖平台 UI API：通过。
+- 最小测试支撑：已新增 C4-11 implementation targeted test，不做页面接入。
+- 完成标准：C4-11 可被测试验证；未触碰用户文件安全边界外行为。
+
+四、工程质量
+
+实现保持在现有查询链路内：`search_files` 返回结果现在补齐 `FileEntry.availability_status`，让搜索结果与列表/详情一致支持缺失文件状态。新增测试从 `init_repo` 起步，用真实 SQLite metadata 和仓库 fixture 验证桌面主窗口组合查询、缺失文件状态、大列表分页，以及查询后 DB/用户文件不变。未新增依赖、无 mock-only、无硬编码通过态。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+cd core && cargo test --test desktop_main_query_implementation -- --nocapture
+./dev check task 4-3/task-52
+```
+
+`./dev check task 4-3/task-52` 新鲜通过，包含：
+- prompt doctor: OK
+- git diff --check: OK
+- `desktop_main_query_contract_api`: 3 passed
+- `desktop_main_query_implementation`: 3 passed
+
+六、风险与后续
+
+剩余风险：未运行宽门禁，这是本 task 明确要求的验证上限；当前证据覆盖 C4-11 atomic Core implementation。建议下一个任务进入 `4-3/task-53`，补 C4-11 failure-edge 的失败路径和边界验证。
+
