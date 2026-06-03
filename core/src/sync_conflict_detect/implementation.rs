@@ -48,6 +48,10 @@ struct SourceState {
 }
 
 pub(super) fn detect_sync_conflicts(repo_path: String) -> CoreResult<Vec<SyncConflict>> {
+    detect_sync_conflicts_inner(repo_path).map_err(normalize_metadata_error)
+}
+
+fn detect_sync_conflicts_inner(repo_path: String) -> CoreResult<Vec<SyncConflict>> {
     let repo = initialized_repo_path(&repo_path)?;
     let detected_at = chrono::Utc::now().timestamp();
     let source = load_source_state(&repo)?;
@@ -408,12 +412,16 @@ fn persist_conflict_state(
 
 fn normalize_metadata_error(error: CoreError) -> CoreError {
     match error {
-        CoreError::Io { .. } | CoreError::PermissionDenied { .. } => {
-            CoreError::io("sync conflict state metadata unavailable")
+        CoreError::Io { .. }
+        | CoreError::FileNotFound { .. }
+        | CoreError::ICloudPlaceholder { .. }
+        | CoreError::InvalidPath { .. }
+        | CoreError::PermissionDenied { .. } => {
+            CoreError::io("sync conflict metadata inspection failed without mutating user files")
         }
-        CoreError::RepoNotInitialized { .. } => {
-            CoreError::db("sync conflict state requires initialized metadata")
-        }
+        CoreError::Config { .. } | CoreError::RepoNotInitialized { .. } => CoreError::db(
+            "sync conflict state requires initialized metadata and no partial state was written",
+        ),
         other => other,
     }
 }
