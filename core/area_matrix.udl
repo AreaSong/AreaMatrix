@@ -145,9 +145,19 @@ namespace area_matrix {
     [Throws=CoreError]
     ReindexReport resume_scan_session(string repo_path, i64 scan_session_id);
 
+    // C4-13 desktop-import-flow reuses predict_category for read-only
+    // Windows/Linux import preview state after the platform picker, drop
+    // adapter, or optional shell entry has produced safe display names. Core
+    // does not expand folders, run platform permission preflight, detect
+    // Trash/Recycle Bin support, or manage multi-item progress here.
     [Throws=CoreError]
     ClassifyResult predict_category(string repo_path, string filename);
 
+    // C4-13 desktop-import-flow reuses import_file for the final committed
+    // single-item import. Desktop shells derive result state from FileEntry,
+    // ImportOptions, and structured DuplicateFile/Conflict/PermissionDenied/
+    // InvalidPath errors. Replace confirmation belongs to C4-21/S4-X-09; this
+    // entry point does not add a desktop-only replace or platform Trash API.
     [Throws=CoreError]
     FileEntry import_file(
         string repo_path, string source_path, ImportOptions options
@@ -1006,6 +1016,10 @@ dictionary ImportOptions {
     string? target_directory;
     string? override_category;
     string? override_filename;
+    // C4-13 desktop import dialogs keep Replace hidden or disabled until the
+    // separate C4-21/S4-X-09 confirmation proves recoverability. Overwrite is
+    // the committed strategy token after that confirmation, not the preview or
+    // platform Trash capability contract.
     DuplicateStrategy duplicate_strategy;
 };
 

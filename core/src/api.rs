@@ -856,6 +856,15 @@ pub fn resume_scan_session(repo_path: String, scan_session_id: i64) -> CoreResul
 /// platform layer; Core only predicts a category/name from the authorized
 /// filename and repository classifier rules.
 ///
+/// C4-13 desktop-import-flow reuses this read-only preview surface for
+/// Windows and Linux import dialogs after the platform picker, drag-and-drop
+/// adapter, or optional shell entry has produced display names. Directory
+/// expansion, platform permission preflight, Trash/Recycle Bin capability
+/// checks, and multi-item progress stay in the desktop shell. Core only reads
+/// the repository classifier rules and returns a [`ClassifyResult`] that
+/// `S4-WIN-05` and `S4-LNX-05` can show as suggested category state before the
+/// final [`import_file`] call.
+///
 /// # Errors
 ///
 /// Returns `CoreError::Config { reason }` when the repository path, filename, YAML syntax,
@@ -955,6 +964,24 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// [`FileEntry`], and structured `ICloudPlaceholder`, `PermissionDenied`,
 /// `DuplicateFile`, and `Conflict` errors. Cancelled selections stay in the
 /// platform sheet and must not call this API.
+///
+/// C4-13 desktop-import-flow reuses this same import contract for
+/// `S4-WIN-05` and `S4-LNX-05`. Desktop shells pass the picker or drop source
+/// path plus [`ImportOptions`] for a single committed item; folder recursion,
+/// batching, drag-and-drop, Explorer/Nautilus integration, platform permission
+/// preflight, and Trash/Recycle Bin availability checks remain outside Core.
+/// `StorageMode::Copied` is the safe default. `StorageMode::Moved` keeps the
+/// Stage 1 transactional move contract and must not be silently downgraded by
+/// the UI; source-impact confirmation and per-item progress are platform/UI
+/// responsibilities. `DuplicateStrategy::KeepBoth`, `Skip`, and `Ask` expose
+/// duplicate or same-name state through the returned [`FileEntry`] or
+/// structured `DuplicateFile` / `Conflict` errors. `DuplicateStrategy::Overwrite`
+/// is only valid after the separate C4-21 / `S4-X-09` replace confirmation has
+/// proven a recoverable old-file path; this API does not perform that
+/// confirmation, detect platform Trash support, or add a desktop-only replace
+/// capability. A failed desktop import must surface an error instead of a
+/// success state and must not leave active file rows or final destination
+/// half-products.
 ///
 /// # Errors
 ///
