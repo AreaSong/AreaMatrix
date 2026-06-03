@@ -12,7 +12,10 @@ pub(crate) fn upsert_platform_watcher_health(
     repo_path: &Path,
     serialized_snapshot: &str,
 ) -> CoreResult<()> {
-    let mut connection = super::open_repo_connection(repo_path)?;
+    super::ensure_config_storage_writable(repo_path)?;
+
+    let mut connection =
+        super::open_repo_connection(repo_path).map_err(super::map_update_open_error)?;
     let tx = connection
         .transaction()
         .map_err(|error| CoreError::db(error.to_string()))?;

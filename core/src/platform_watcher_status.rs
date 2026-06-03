@@ -259,6 +259,9 @@ fn invalid_signal(field: &str) -> CoreError {
 fn normalize_metadata_error(error: CoreError) -> CoreError {
     match error {
         CoreError::Io { .. } => CoreError::io("watcher health metadata io unavailable"),
+        CoreError::PermissionDenied { .. } => {
+            CoreError::io("watcher health metadata io unavailable: permission denied")
+        }
         CoreError::Db { message } => CoreError::Db { message },
         _ => CoreError::db("watcher health metadata is unavailable"),
     }
