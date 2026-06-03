@@ -1,0 +1,45 @@
+一、执行结论
+
+已完成 `4-3/task-53`。
+
+二、执行范围
+
+单任务：C4-11 `desktop-main-query` failure-edge。
+
+修改文件：
+- [core/tests/desktop_main_query_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/desktop_main_query_failure_recovery.rs) 新增失败边界测试
+- [core/tests/desktop_main_query_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/desktop_main_query_implementation.rs) 仅 `cargo fmt` 格式化
+
+未触碰 `apps/**`。`tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260603_103922/` 是本轮开始前已有的本地状态，未纳入本任务改动。
+
+三、完成情况
+
+核对清单：
+- 空态：已覆盖空 repo 返回空 list/search/tree，且不写 DB、不写文件。
+- 非法输入：已覆盖 list filter 反向时间范围、非法 search current path、无效 file id 的明确失败。
+- 权限 / IO / DB：已覆盖 DB 损坏、tree IO 错误、错误映射中的 `PermissionDenied` / `Io` / `Db`。
+- 半成品：测试用 metadata/user paths/staging/generated snapshot 证明失败后无 DB、用户文件、staging、generated 变化。
+- 隐私 / AI / 远程：测试证明查询不会创建 `.areamatrix/ai`、`remote`、`secrets`。
+- 未使用吞错或静默降级：失败路径均通过 `CoreError` / `ErrorMapping` 显式断言。
+
+四、工程质量
+
+新增测试连接真实 Core API、真实 SQLite metadata 和 tempdir 文件系统，没有 mock-only、硬编码通过态或一次性脚本。未新增依赖，未改 UDL/API 形状，未改生产代码。
+
+五、验证情况
+
+已运行并通过：
+- `cargo test --test desktop_main_query_failure_recovery -- --nocapture`：7 passed
+- `cargo test --test desktop_main_query_contract_api -- --nocapture`：3 passed
+- `cargo fmt --all -- --check`
+- `git diff --check`
+- `./dev check task 4-3/task-53`：通过；包含 doctor OK、diff check、fmt、clippy，以及 C4-11 targeted tests：
+  - `desktop_main_query_contract_api` 3 passed
+  - `desktop_main_query_failure_recovery` 7 passed
+  - `desktop_main_query_implementation` 3 passed
+
+六、风险与后续
+
+剩余风险：未运行 `cargo test --workspace` 或 `./dev check all`，因为本 atomic task 的验证上限是 `./dev check task 4-3/task-53`，且该命令已通过。
+
+建议下一个任务：继续 `4-3/task-54`，做 C4-11 validation 证据收口。

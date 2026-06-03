@@ -90,7 +90,11 @@ fn insert_desktop_file(
         .next()
         .expect("fixture path has a filename");
     if write_file {
-        write_repo_file(repo, relative_path, format!("content-{imported_at}").as_bytes());
+        write_repo_file(
+            repo,
+            relative_path,
+            format!("content-{imported_at}").as_bytes(),
+        );
     }
 
     let connection = open_db(repo);
@@ -171,7 +175,9 @@ fn file_rows(connection: &Connection) -> Vec<(i64, String, String, String, Strin
 
 fn count_rows(connection: &Connection, table: &str) -> i64 {
     connection
-        .query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| row.get(0))
+        .query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| {
+            row.get(0)
+        })
         .expect("count metadata rows")
 }
 
@@ -195,7 +201,12 @@ fn desktop_main_query_implementation_composes_shared_read_only_snapshot() {
     let report_id = insert_desktop_file(repo.path(), "docs/report.pdf", "docs", 20, true);
     let invoice_id = insert_desktop_file(repo.path(), "finance/invoice.txt", "finance", 30, true);
     insert_note(repo.path(), report_id, "desktop shared query note");
-    insert_change(repo.path(), invoice_id, "renamed", r#"{"to":"desktop-window"}"#);
+    insert_change(
+        repo.path(),
+        invoice_id,
+        "renamed",
+        r#"{"to":"desktop-window"}"#,
+    );
     let before = metadata_snapshot(repo.path());
     let before_report = file_bytes(repo.path(), "docs/report.pdf");
     let before_invoice = file_bytes(repo.path(), "finance/invoice.txt");
@@ -214,7 +225,10 @@ fn desktop_main_query_implementation_composes_shared_read_only_snapshot() {
 
     let detail = get_file(path_string(repo.path()), report_id).expect("get selected detail");
     assert_eq!(detail.id, report_id);
-    assert_eq!(detail.availability_status, FileAvailabilityStatus::Available);
+    assert_eq!(
+        detail.availability_status,
+        FileAvailabilityStatus::Available
+    );
 
     let search = search_files(
         path_string(repo.path()),
@@ -236,7 +250,10 @@ fn desktop_main_query_implementation_composes_shared_read_only_snapshot() {
 
     assert_eq!(metadata_snapshot(repo.path()), before);
     assert_eq!(file_bytes(repo.path(), "docs/report.pdf"), before_report);
-    assert_eq!(file_bytes(repo.path(), "finance/invoice.txt"), before_invoice);
+    assert_eq!(
+        file_bytes(repo.path(), "finance/invoice.txt"),
+        before_invoice
+    );
 }
 
 #[test]
