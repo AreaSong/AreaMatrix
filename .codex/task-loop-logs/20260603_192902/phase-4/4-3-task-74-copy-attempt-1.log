@@ -1,0 +1,40 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-3/task-74`。  
+修改文件清单：
+
+- [core/tests/sync_conflict_detect_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_conflict_detect_validation.rs:52)
+- [core/tests/support/sync_conflict_detect_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/support/sync_conflict_detect_validation.rs:15)
+
+三、完成情况
+
+核对清单已满足：补齐 C4-15 validation 集成测试，覆盖同名不同内容、并发修改、缺失版本成功路径，以及 DB 写入失败、冲突 ID 不稳定等失败路径；测试中交叉锁定 Core API / UDL / Rust 实现 / 既有 contract、implementation、failure 测试一致性；未新增业务功能，只新增测试与 fixture helper。
+
+完成标准已满足：C4-15 现在有 targeted validation 测试证明可进入 UI 接入。未触碰 `apps/**`，也未修改 `core/src/**` 或 `core/area_matrix.udl`。
+
+四、工程质量
+
+测试使用真实 `init_repo` / `import_file` / `record_watcher_health` / `detect_sync_conflicts` 路径，不是 mock-only 或硬编码通过态。新增文件按 helper 拆分，主测试文件 416 行、support 182 行，函数长度检查无超过 50 行项。错误和边界路径验证了失败不删除、不移动、不覆盖用户文件，不推进 cursor，不写 change log，DB 写失败时保留旧 conflict state。
+
+五、验证情况
+
+已运行并通过：
+
+- `cargo test --test sync_conflict_detect_validation -- --nocapture`：4 passed
+- `./dev check task 4-3/task-74`：通过；包含 `prompt doctor`、`git diff --check`、以及 C4-15 的 4 个 targeted test binary：
+  - `sync_conflict_detect_contract_api`：3 passed
+  - `sync_conflict_detect_failure_recovery`：4 passed
+  - `sync_conflict_detect_implementation`：5 passed
+  - `sync_conflict_detect_validation`：4 passed
+
+未运行：未跑 `cargo test --workspace` / clippy / `./dev check all`，因为本 task 明确要求普通 atomic Core task 以 `./dev check task 4-3/task-74` 为验证上限。
+
+六、风险与后续
+
+剩余风险：本地仍有执行前已存在的无关改动 `.codex/task-loop-runs/20260603_192902/summary.json` 和 `tasks/prompts/_shared/progress.json`，我未触碰。CI / Git evidence 还未完成，不把本地验证等同于合并就绪。
+
+建议下一个任务：继续 `4-3/task-75`，也就是 C4-15 integration verify。

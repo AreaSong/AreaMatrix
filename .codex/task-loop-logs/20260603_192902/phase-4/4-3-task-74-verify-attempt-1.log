@@ -1,0 +1,82 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-74`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-74-c4-15-validation.md`
+- Manifest：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:8656`
+- 核验代码：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 只读验收：未修改文件
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐成功和失败路径测试  
+  结果：通过  
+  证据：`./dev check task 4-3/task-74` 运行 4 个 targeted test binary，合计 16 tests 全部通过；新增 validation 测试覆盖成功路径、DB 写失败、unstable conflict id、API/UDL/Rust 对齐。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_conflict_detect_validation.rs:52`
+
+- 项目：Core API / UDL / Rust 实现一致  
+  结果：通过  
+  证据：API 入口在 `api.rs:1657`，UDL 函数在 `area_matrix.udl:370`，`SyncConflict` 字段在 `area_matrix.udl:1704`，Rust 类型与 re-export 在 `sync_conflict_detect.rs:79` 和 `lib.rs:169`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1657`
+
+- 项目：不新增业务功能，只补验证与 fixture  
+  结果：通过  
+  证据：当前业务代码和 UDL 无新脏改；新增文件仅为 `core/tests/sync_conflict_detect_validation.rs` 与 support fixture，均在 Expected New Paths 内。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/support/sync_conflict_detect_validation.rs:1`
+
+- 项目：记录无法运行的验证及原因  
+  结果：通过  
+  证据：必需验证命令已运行且通过，无需记录失败原因。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-74-c4-15-validation.md:33`
+
+- 项目：C4-15 足够进入 UI 接入  
+  结果：通过  
+  证据：Core API 文档明确 S4-X-03 / S4-X-01 消费字段，测试验证 list 长度、NeedsReview、affected files、version_count、state metadata。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:5873`
+
+- 项目：Expected New Paths  
+  结果：通过  
+  证据：`core/src/**`、`core/area_matrix.udl` 存在；`core/tests/**` 下新增 validation 测试已落地。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:8670`
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git status --short apps` 无 tracked / untracked task 变更；仅存在 ignored DerivedData/Generated 等，不构成本 task 触碰。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:8675`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。实现拆分为入口、路径检查、DB state 写入和冲突构造；相关文件均未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。公开 API 有 rustdoc 和 `# Errors`，Core API/UDL/能力规格一致。
+- 错误处理与边界处理：通过。DB、IO、Conflict 错误路径有显式映射；失败路径测试确认不删除文件、不覆盖 prior state。
+- 测试与验证覆盖：通过。contract、implementation、failure、validation 四层 targeted tests 均通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试使用真实 temp repo、SQLite metadata、文件系统读写 fixture；未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+- 说明：当前 `progress.json` 和 `.codex/task-loop-runs/.../summary.json` 仅记录 task-loop 对 `4-3/task-74` 的 `in_progress` runner 状态；按本验收 prompt 的收口时序规则，不作为 verify 阶段阻塞。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-74`，通过，exit 0。
+- 通过内容：prompt doctor OK；`git diff --check` OK；`sync_conflict_detect_contract_api` 3/3；`sync_conflict_detect_failure_recovery` 4/4；`sync_conflict_detect_implementation` 5/5；`sync_conflict_detect_validation` 4/4。
+- 失败：无 task validation 失败。
+- 缺失：无 manifest-required 验证缺失。未运行 `./dev check all`、workspace 全量 test、fmt/clippy broad gate 和远端 CI，因为本 task manifest 与 validation-driver 对普通 atomic Core task 的上限是 `./dev check task 4-3/task-74`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
