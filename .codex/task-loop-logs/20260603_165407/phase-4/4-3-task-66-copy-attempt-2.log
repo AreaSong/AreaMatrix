@@ -1,0 +1,39 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-3/task-66` repair retry。
+
+本次 repair 实际修改：
+- [cloud_permission_state_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/cloud_permission_state_implementation.rs:96)
+- [cloud_permission_state_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/cloud_permission_state_contract_api.rs:231)
+- [cloud_permission_state_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/cloud_permission_state_validation.rs:287)
+
+三、完成情况
+
+- 修复了 iCloud / OneDrive 风险原因数量断言：iCloud 为 2，OneDrive 为 3。
+- 修复了 C4-08 既有 contract / validation 测试中对 rustdoc 文案的旧片段断言，使其匹配当前 C4-14 扩展后的合同边界。
+- C4-14 合同仍只暴露 OneDrive 风险状态、推荐动作和确认状态字段，没有实现相邻能力。
+- 未触碰 `apps/**`，`git diff --name-only -- apps` 无输出。
+
+四、工程质量
+
+代码结构保持测试级小改动，没有引入新抽象、依赖、mock-only、硬编码通过态或一次性脚本。rustdoc / Core API / UDL 的合同断言已与当前实现一致；错误处理与文件系统边界未改动，仍保持只读探测、不写 DB、不修改用户文件、不调用 OneDrive SDK。
+
+五、验证情况
+
+已运行并通过：
+- `cargo test --test cloud_permission_state_implementation -- --nocapture`：4 passed
+- `cargo test --test cloud_permission_state_contract_api -- --nocapture`：5 passed
+- `cargo test --test cloud_permission_state_validation -- --nocapture`：3 passed
+- `./dev check task 4-3/task-66`：通过；包含 `doctor: OK`、`git diff --check`、`cargo test --test onedrive_risk_state_contract_api -- --nocapture`，4 passed
+
+未运行宽门禁：`./dev check all`、`./dev check core`、`cargo test --workspace`。当前 manifest 只要求 `./dev check task 4-3/task-66`，retry 规则也禁止无依据升级验证等级。
+
+六、风险与后续
+
+剩余风险：未做全量 CI / workspace 测试，属于 manifest 外范围。当前工作区仍有 task-loop / 前序 attempt 产生的其他 task 相关改动与本地进度/日志文件，未做 Git checkpoint。
+
+建议下一个任务：进入 `4-3/task-66` 的 verify-ready 验收。

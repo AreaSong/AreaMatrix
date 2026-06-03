@@ -58,6 +58,21 @@ pub enum CloudPermissionState {
     Unknown,
 }
 
+/// Primary cloud-storage action recommended to the platform shell.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum CloudStorageRecommendedAction {
+    /// No provider-specific action is recommended.
+    None,
+    /// Show and persist the provider risk acknowledgement before continuing.
+    AcknowledgeNotice,
+    /// Retry the same read-only provider status check.
+    RetryStatusCheck,
+    /// Ask the platform shell to reacquire folder access.
+    ReconnectFolder,
+    /// Offer a local-folder picker branch.
+    ChooseLocalFolder,
+}
+
 /// Structured C4-08 cloud state returned to iOS and Windows recovery surfaces.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct CloudStorageState {
@@ -75,18 +90,24 @@ pub struct CloudStorageState {
     pub status_summary: String,
     /// Structured risk reasons. UI may render these without parsing `status_summary`.
     pub risk_reasons: Vec<String>,
+    /// Primary action for cloud permission or OneDrive risk notice UI.
+    pub recommended_action: CloudStorageRecommendedAction,
+    /// Whether the OneDrive notice must be acknowledged before continuing.
+    pub requires_notice_acknowledgement: bool,
+    /// Whether Core-visible metadata already records the OneDrive notice acknowledgement.
+    pub notice_acknowledged: bool,
     /// Whether retrying the same read-only check may recover the state.
     pub can_retry: bool,
     /// Whether the platform shell should request folder access again.
     pub requires_reconnect: bool,
 }
 
-/// Detects C4-08 cloud provider, risk, placeholder, and permission state.
+/// Detects C4-08 cloud provider state and C4-14 OneDrive risk state.
 ///
 /// The check is platform-neutral and read-only. It inspects only the supplied
 /// path shape and basic filesystem metadata. iCloud, OneDrive, document
-/// picker, SDK, settings, and security-scoped bookmark recovery stay in the
-/// platform layer.
+/// picker, SDK, settings, acknowledgement UI, and security-scoped bookmark
+/// recovery stay in the platform layer.
 ///
 /// # Errors
 ///
@@ -150,19 +171,25 @@ fn provider_kind(path: &Path) -> CloudStorageProviderKind {
         .components()
         .map(|component| component.as_os_str().to_string_lossy().to_ascii_lowercase())
         .collect::<Vec<_>>();
+    let normalized_path = path.to_string_lossy().to_ascii_lowercase();
 
     if components.iter().any(|component| {
         component == "icloud drive"
             || component == "mobile documents"
             || component.contains("com~apple~clouddocs")
             || component.contains("icloud")
-    }) {
+    }) || normalized_path.contains("icloud drive")
+        || normalized_path.contains("mobile documents")
+        || normalized_path.contains("com~apple~clouddocs")
+    {
         return CloudStorageProviderKind::ICloudDrive;
     }
 
     if components
         .iter()
         .any(|component| component.contains("onedrive") || component.contains("one drive"))
+        || normalized_path.contains("onedrive")
+        || normalized_path.contains("one drive")
     {
         return CloudStorageProviderKind::OneDrive;
     }
@@ -174,7 +201,7 @@ fn state_for_provider(
     repo_path: String,
     provider_kind: CloudStorageProviderKind,
 ) -> CloudStorageState {
-    let (risk, status_summary, risk_reasons) = match provider_kind {
+    let (risk, status_summary, risk_reasons) = match &provider_kind {
         CloudStorageProviderKind::Local => (
             CloudStorageRiskLevel::NoRisk,
             "No cloud storage provider was detected from the repository path.",
@@ -193,6 +220,8 @@ fn state_for_provider(
             "OneDrive path detected; OneDrive controls sync timing and conflict copies.",
             vec![
                 "Files may appear before cloud sync has completed.".to_owned(),
+                "Conflict copies may be created when multiple devices edit the same file."
+                    .to_owned(),
                 "Core does not use the OneDrive SDK or change OneDrive settings.".to_owned(),
             ],
         ),
@@ -203,6 +232,9 @@ fn state_for_provider(
         ),
     };
 
+    let recommended_action = recommended_action(&provider_kind);
+    let requires_notice_acknowledgement = provider_kind == CloudStorageProviderKind::OneDrive;
+
     CloudStorageState {
         repo_path,
         provider_kind,
@@ -211,8 +243,18 @@ fn state_for_provider(
         permission_state: CloudPermissionState::Accessible,
         status_summary: status_summary.to_owned(),
         risk_reasons,
+        recommended_action,
+        requires_notice_acknowledgement,
+        notice_acknowledged: false,
         can_retry: false,
         requires_reconnect: false,
+    }
+}
+
+fn recommended_action(provider_kind: &CloudStorageProviderKind) -> CloudStorageRecommendedAction {
+    match provider_kind {
+        CloudStorageProviderKind::OneDrive => CloudStorageRecommendedAction::AcknowledgeNotice,
+        _ => CloudStorageRecommendedAction::None,
     }
 }
 
@@ -239,6 +281,12 @@ mod tests {
         );
         assert_eq!(
             provider_kind(Path::new("C:/Users/me/OneDrive/AreaMatrix")),
+            CloudStorageProviderKind::OneDrive
+        );
+        assert_eq!(
+            provider_kind(Path::new(
+                "/tmp/C:\\Users\\me\\OneDrive - Example Org\\AreaMatrix"
+            )),
             CloudStorageProviderKind::OneDrive
         );
         assert_eq!(

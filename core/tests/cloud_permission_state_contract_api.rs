@@ -2,7 +2,8 @@ use std::{fs, path::Path};
 
 use area_matrix_core::{
     detect_cloud_storage_state, CloudPermissionState, CloudPlaceholderState,
-    CloudStorageProviderKind, CloudStorageRiskLevel, CloudStorageState, CoreError, CoreResult,
+    CloudStorageProviderKind, CloudStorageRecommendedAction, CloudStorageRiskLevel,
+    CloudStorageState, CoreError, CoreResult,
 };
 use pretty_assertions::assert_eq;
 
@@ -50,6 +51,9 @@ fn cloud_permission_state_contract_exports_signature_outputs_and_errors() {
         permission_state: CloudPermissionState::Accessible,
         status_summary: "iCloud Drive path detected".to_owned(),
         risk_reasons: vec!["iCloud may expose placeholder files.".to_owned()],
+        recommended_action: CloudStorageRecommendedAction::None,
+        requires_notice_acknowledgement: false,
+        notice_acknowledged: false,
         can_retry: false,
         requires_reconnect: false,
     };
@@ -151,12 +155,16 @@ fn cloud_permission_state_docs_core_api_and_udl_stay_aligned() {
         "CloudPlaceholderState placeholder_state;",
         "CloudPermissionState permission_state;",
         "sequence<string> risk_reasons;",
+        "CloudStorageRecommendedAction recommended_action;",
+        "boolean requires_notice_acknowledgement;",
+        "boolean notice_acknowledged;",
         "boolean can_retry;",
         "boolean requires_reconnect;",
         "enum CloudStorageProviderKind { \"Local\", \"ICloudDrive\", \"OneDrive\", \"Unknown\" };",
         "enum CloudStorageRiskLevel { \"NoRisk\", \"Low\", \"Medium\", \"High\", \"Unknown\" };",
         "enum CloudPlaceholderState { \"NotPlaceholder\", \"Placeholder\", \"Unknown\" };",
         "enum CloudPermissionState { \"Accessible\", \"PermissionDenied\", \"AccessExpired\", \"Unknown\" };",
+        "\"AcknowledgeNotice\"",
     ] {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
@@ -220,7 +228,8 @@ fn cloud_permission_state_documents_consumers_and_scope_boundaries() {
         "provider-specific recovery or notice state from structured fields",
         "inspects only the authorized repository path",
         "security-scoped bookmarks, iCloud availability, OneDrive client state",
-        "settings links, SDK calls, provider downloads, and reconnect UI remain in",
+        "settings links, SDK calls, provider downloads, acknowledgement persistence",
+        "and reconnect UI remain in",
         "the platform layer",
     ] {
         assert_contains(API_RS, fragment);
@@ -235,7 +244,8 @@ fn cloud_permission_state_documents_consumers_and_scope_boundaries() {
         "Structured C4-08 cloud state returned to iOS and Windows recovery surfaces.",
         "platform-neutral and read-only",
         "iCloud, OneDrive, document",
-        "picker, SDK, settings, and security-scoped bookmark recovery stay in the",
+        "picker, SDK, settings, acknowledgement UI, and security-scoped bookmark",
+        "recovery stay in the",
         "platform layer",
     ] {
         assert_contains(CLOUD_PERMISSION_RS, fragment);

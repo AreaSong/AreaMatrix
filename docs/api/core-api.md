@@ -1743,6 +1743,9 @@ dictionary CloudStorageState {
     CloudPermissionState permission_state;
     string status_summary;
     sequence<string> risk_reasons;
+    CloudStorageRecommendedAction recommended_action;
+    boolean requires_notice_acknowledgement;
+    boolean notice_acknowledged;
     boolean can_retry;
     boolean requires_reconnect;
 };
@@ -2148,6 +2151,9 @@ enum CloudStorageProviderKind { "Local", "ICloudDrive", "OneDrive", "Unknown" };
 enum CloudStorageRiskLevel { "NoRisk", "Low", "Medium", "High", "Unknown" };
 enum CloudPlaceholderState { "NotPlaceholder", "Placeholder", "Unknown" };
 enum CloudPermissionState { "Accessible", "PermissionDenied", "AccessExpired", "Unknown" };
+enum CloudStorageRecommendedAction {
+    "None", "AcknowledgeNotice", "RetryStatusCheck", "ReconnectFolder", "ChooseLocalFolder"
+};
 enum ImportConflictBatchConflictType { "DuplicateHash", "SameNameDifferentContent" };
 enum ImportConflictBatchStrategy { "Skip", "KeepBoth", "Replace", "AskPerItem" };
 enum ImportConflictBatchPreviewStatus {
@@ -5975,9 +5981,10 @@ default:
 }
 ```
 
-C4-08 的云盘权限状态入口，服务 `S4-IOS-06 icloud-permission`、
-`S4-WIN-03 onedrive-notice`，并为 `S4-IOS-01 connect-repo` 的云盘分支提供
-结构化提示。输入只包含已经由平台层授权或尝试恢复的 `repoPath`。
+C4-08 的云盘权限状态入口，也是 C4-14 的 OneDrive 风险状态合同。服务
+`S4-IOS-06 icloud-permission`、`S4-WIN-03 onedrive-notice`，并为
+`S4-IOS-01 connect-repo` 和 `S4-WIN-01 choose-repo` 的云盘分支提供结构化提示。
+输入只包含已经由平台层授权或尝试恢复的 `repoPath`。
 
 输出 `CloudStorageState`：
 
@@ -5988,13 +5995,20 @@ C4-08 的云盘权限状态入口，服务 `S4-IOS-06 icloud-permission`、
 - `permission_state`：`Accessible`、`PermissionDenied`、`AccessExpired` 或 `Unknown`。
 - `status_summary`：脱敏、可显示的状态摘要，不包含 SDK 原始输出或系统隐私细节。
 - `risk_reasons`：结构化风险原因列表，UI 不需要解析 `status_summary`。
+- `recommended_action`：`None`、`AcknowledgeNotice`、`RetryStatusCheck`、`ReconnectFolder`
+  或 `ChooseLocalFolder`。OneDrive 路径默认返回 `AcknowledgeNotice`，用于提示首次继续前
+  必须完成风险确认；平台 UI 仍负责按钮、Explorer reveal 和 watcher route。
+- `requires_notice_acknowledgement`：OneDrive 风险提示是否必须在继续打开、初始化或接管前
+  被用户确认。
+- `notice_acknowledged`：Core-visible metadata 中是否已经记录该 repo 的 OneDrive 风险提示确认。
+  当前合同只定义读取状态；确认写入和 DB 细节由后续 C4-14 implementation task 实现。
 - `can_retry`：是否可以直接重试同一只读检测。
 - `requires_reconnect`：是否需要平台层重新获取目录访问权限。
 
 副作用边界：
 
 - Core 只做平台中立的只读探测：路径形状、基础 metadata、目录可读性和可见占位符 marker。
-- 不写 DB、不写 last cloud state、不移动、不删除、不重命名、不覆盖用户文件。
+- 合同检测本身不写 DB、不写 last cloud state、不移动、不删除、不重命名、不覆盖用户文件。
 - 不触发 iCloud placeholder 下载，不调用 iCloud / OneDrive SDK，不打开系统设置，不修改云盘同步策略。
 - iOS security-scoped bookmark、iCloud 是否登录、OneDrive 客户端同步状态、下载触发和设置跳转都属于平台层。
 - 同步冲突、Replace、manual rescan、watcher health、missing-file recovery 仍由各自 Stage 4 能力覆盖。
@@ -6010,7 +6024,11 @@ C4-08 的云盘权限状态入口，服务 `S4-IOS-06 icloud-permission`、
 - S4-IOS-06 可以从 `provider_kind`、`placeholder_state`、`permission_state`、`can_retry` 和
   `requires_reconnect` 区分 iCloud 不可用、权限失效、占位符未下载和重试路径。
 - S4-WIN-03 可以从 `provider_kind = OneDrive`、`risk`、`status_summary` 和
-  `risk_reasons` 渲染 OneDrive 风险提示、Unknown 状态和继续前确认文案。
+  `risk_reasons` 渲染 OneDrive 风险提示、Unknown 状态和继续前确认文案，并从
+  `recommended_action = AcknowledgeNotice`、`requires_notice_acknowledgement`、
+  `notice_acknowledged` 判断首次选择和已连接说明态。
+- S4-WIN-01 可以从 OneDrive path validation 路由到 S4-WIN-03，并在进入 init/adopt/open
+  前等待 C4-14 notice acknowledgement；它不直接控制 OneDrive 同步。
 - S4-IOS-01 可以把云盘问题路由到 S4-IOS-06，而不是在连接页硬猜平台状态。
 - 本合同不新增 control map 之外的页面能力。
 

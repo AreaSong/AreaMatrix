@@ -122,7 +122,7 @@ fn cloud_permission_state_implementation_detects_onedrive_risk_without_sdk_state
     );
     assert_eq!(state.permission_state, CloudPermissionState::Accessible);
     assert!(state.status_summary.contains("OneDrive path detected"));
-    assert_eq!(state.risk_reasons.len(), 2);
+    assert_eq!(state.risk_reasons.len(), 3);
     assert!(state
         .risk_reasons
         .iter()

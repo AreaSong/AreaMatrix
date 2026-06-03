@@ -1744,6 +1744,9 @@ dictionary CloudStorageState {
     CloudPermissionState permission_state;
     string status_summary;
     sequence<string> risk_reasons;
+    CloudStorageRecommendedAction recommended_action;
+    boolean requires_notice_acknowledgement;
+    boolean notice_acknowledged;
     boolean can_retry;
     boolean requires_reconnect;
 };
@@ -2149,6 +2152,9 @@ enum CloudStorageProviderKind { "Local", "ICloudDrive", "OneDrive", "Unknown" };
 enum CloudStorageRiskLevel { "NoRisk", "Low", "Medium", "High", "Unknown" };
 enum CloudPlaceholderState { "NotPlaceholder", "Placeholder", "Unknown" };
 enum CloudPermissionState { "Accessible", "PermissionDenied", "AccessExpired", "Unknown" };
+enum CloudStorageRecommendedAction {
+    "None", "AcknowledgeNotice", "RetryStatusCheck", "ReconnectFolder", "ChooseLocalFolder"
+};
 enum ImportConflictBatchConflictType { "DuplicateHash", "SameNameDifferentContent" };
 enum ImportConflictBatchStrategy { "Skip", "KeepBoth", "Replace", "AskPerItem" };
 enum ImportConflictBatchPreviewStatus {

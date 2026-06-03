@@ -1738,15 +1738,18 @@ pub fn resolve_icloud_conflict(
     icloud_conflicts::resolve_icloud_conflict(repo_path, conflict_id, resolution)
 }
 
-/// Detects C4-08 cloud storage provider, risk, placeholder, and permission state.
+/// Detects C4-08 cloud storage provider state and C4-14 OneDrive risk state.
 ///
 /// `S4-IOS-06 icloud-permission`, `S4-WIN-03 onedrive-notice`, and the cloud
 /// branch of `S4-IOS-01 connect-repo` use this read-only contract to render
 /// provider-specific recovery or notice state from structured fields. Core
 /// inspects only the authorized repository path and basic filesystem metadata;
 /// security-scoped bookmarks, iCloud availability, OneDrive client state,
-/// settings links, SDK calls, provider downloads, and reconnect UI remain in
-/// the platform layer.
+/// settings links, SDK calls, provider downloads, acknowledgement persistence,
+/// and reconnect UI remain in the platform layer. `S4-WIN-03` can use
+/// `recommended_action`, `requires_notice_acknowledgement`, and
+/// `notice_acknowledged` to render the OneDrive confirmation state without
+/// parsing display text.
 ///
 /// # Errors
 ///

@@ -247,6 +247,9 @@ fn assert_core_api_udl_and_rust_alignment() {
         "CloudPlaceholderState placeholder_state;",
         "CloudPermissionState permission_state;",
         "sequence<string> risk_reasons;",
+        "CloudStorageRecommendedAction recommended_action;",
+        "boolean requires_notice_acknowledgement;",
+        "boolean notice_acknowledged;",
         "boolean can_retry;",
         "boolean requires_reconnect;",
         "enum CloudStorageProviderKind { \"Local\", \"ICloudDrive\", \"OneDrive\", \"Unknown\" };",
@@ -266,6 +269,9 @@ fn assert_core_api_udl_and_rust_alignment() {
         "C4-08 的云盘权限状态入口",
         "不写 DB、不写 last cloud state",
         "不触发 iCloud placeholder 下载，不调用 iCloud / OneDrive SDK",
+        "`recommended_action`",
+        "`requires_notice_acknowledgement`",
+        "`notice_acknowledged`",
         concat!(
             "| `detect_cloud_storage_state(repo)` | cloud | √ | ",
             "ICloudPlaceholder / PermissionDenied / Io |",
@@ -278,7 +284,9 @@ fn assert_core_api_udl_and_rust_alignment() {
         "pub fn detect_cloud_storage_state(repo_path: String) -> CoreResult<CloudStorageState>",
         "provider-specific recovery or notice state from structured fields",
         "security-scoped bookmarks, iCloud availability, OneDrive client state",
-        "provider downloads, and reconnect UI remain in",
+        "acknowledgement persistence",
+        "provider downloads, acknowledgement persistence",
+        "and reconnect UI remain in",
     ] {
         assert_contains(API_RS, fragment);
     }

@@ -119,8 +119,8 @@ pub use classifier_rule_editor::{
 };
 pub use classifier_rules::{save_classifier_rule, ClassifierRule};
 pub use cloud_permission_state::{
-    CloudPermissionState, CloudPlaceholderState, CloudStorageProviderKind, CloudStorageRiskLevel,
-    CloudStorageState,
+    CloudPermissionState, CloudPlaceholderState, CloudStorageProviderKind,
+    CloudStorageRecommendedAction, CloudStorageRiskLevel, CloudStorageState,
 };
 pub use command_index::{
     list_command_targets, CommandIndex, CommandIndexContext, CommandTarget, CommandTargetAction,
