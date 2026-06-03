@@ -27,6 +27,7 @@ mod local_model_status;
 mod move_to_category;
 mod note;
 mod overview;
+mod platform_watcher_status;
 mod redo;
 mod remote_provider_config;
 mod rename;
@@ -88,6 +89,7 @@ pub(crate) use overview::{
     list_overview_node_files, list_overview_node_summaries, list_overview_recent_changes,
     OverviewChangeRow, OverviewFileRow, OverviewNodeSummary,
 };
+pub(crate) use platform_watcher_status::upsert_platform_watcher_health;
 pub(crate) use redo::{clear_redo_stack_in_tx, execute_redo_action_row, list_redo_action_rows};
 pub(crate) use remote_provider_config::{
     load_remote_provider_config_record, load_remote_provider_test_record,

@@ -1,8 +1,10 @@
 //! C4-12 platform watcher status contract types and entry point.
 
+use std::path::PathBuf;
+
 use serde::{Deserialize, Serialize};
 
-use crate::{CoreError, CoreResult, ExternalEventKind};
+use crate::{db, CoreError, CoreResult, ExternalEventKind};
 
 const MAX_STATUS_TEXT_LEN: usize = 512;
 const MAX_RECENT_EVENTS: usize = 5;
@@ -145,14 +147,59 @@ pub struct PlatformWatcherSnapshot {
 /// # Errors
 ///
 /// Returns `CoreError::Db { message }` when the signal is invalid or watcher
-/// health metadata is not available. Later implementation may return
-/// `CoreError::Io { message }` for AreaMatrix-owned metadata I/O failures.
+/// health metadata is unavailable. Returns `CoreError::Io { message }` for
+/// AreaMatrix-owned metadata I/O failures.
 pub(crate) fn record_watcher_health(
     repo_path: String,
     signal: PlatformWatcherHealthSignal,
 ) -> CoreResult<PlatformWatcherSnapshot> {
     validate_signal(&repo_path, &signal)?;
-    Err(CoreError::db("watcher health metadata is unavailable"))
+    let snapshot = snapshot_from_signal(repo_path, signal);
+    let serialized = serde_json::to_string(&snapshot)
+        .map_err(|_| CoreError::db("watcher health metadata is invalid"))?;
+    db::upsert_platform_watcher_health(&PathBuf::from(&snapshot.repo_path), &serialized)
+        .map_err(normalize_metadata_error)?;
+    Ok(snapshot)
+}
+
+fn snapshot_from_signal(
+    repo_path: String,
+    signal: PlatformWatcherHealthSignal,
+) -> PlatformWatcherSnapshot {
+    let PlatformWatcherHealthSignal {
+        backend,
+        status,
+        watched_path,
+        last_event_id,
+        last_event_at,
+        last_sync_event_id,
+        last_sync_at,
+        last_rescan_at,
+        pending_event_count,
+        watch_count,
+        error_summary,
+        health_reasons,
+        recent_events,
+        reported_at,
+    } = signal;
+
+    PlatformWatcherSnapshot {
+        repo_path,
+        backend,
+        status,
+        watched_path,
+        last_event_id,
+        last_event_at,
+        last_sync_event_id,
+        last_sync_at,
+        last_rescan_at,
+        pending_event_count,
+        watch_count,
+        error_summary,
+        health_reasons,
+        recent_events,
+        reported_at,
+    }
 }
 
 fn validate_signal(repo_path: &str, signal: &PlatformWatcherHealthSignal) -> CoreResult<()> {
@@ -207,4 +254,12 @@ fn validate_optional_non_negative(field: &str, value: Option<i64>) -> CoreResult
 
 fn invalid_signal(field: &str) -> CoreError {
     CoreError::db(format!("watcher health signal is invalid: {field}"))
+}
+
+fn normalize_metadata_error(error: CoreError) -> CoreError {
+    match error {
+        CoreError::Io { .. } => CoreError::io("watcher health metadata io unavailable"),
+        CoreError::Db { message } => CoreError::Db { message },
+        _ => CoreError::db("watcher health metadata is unavailable"),
+    }
 }

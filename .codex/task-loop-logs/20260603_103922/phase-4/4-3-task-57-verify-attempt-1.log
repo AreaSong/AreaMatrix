@@ -1,0 +1,88 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-57`
+- Task 文件：[task-57-c4-12-implementation.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-57-c4-12-implementation.md:1)
+- 实现范围：[platform_watcher_status.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/platform_watcher_status.rs:1)、[db/platform_watcher_status.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/platform_watcher_status.rs:1)、[api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1965)、[area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:399)、[platform_watcher_status_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/platform_watcher_status_implementation.rs:1)
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只实现 C4-12，不顺手实现其他 C* 能力
+- 结果：通过
+- 证据：变更集中在 `platform_watcher_status`、DB helper 和对应测试；`apps/**` 无 diff，无其他 Stage 4 能力实现。
+- 涉及文件：[core/src/platform_watcher_status.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/platform_watcher_status.rs:140)
+
+- 项目：输入、输出、DB/文件系统变化和错误映射
+- 结果：通过
+- 证据：`record_watcher_health` 校验 health signal，返回 `PlatformWatcherSnapshot`，写入 `repo_config` 的 `platform_watcher_health`，无 cursor 推进；错误映射到 `Db` / `Io`。
+- 涉及文件：[core/src/platform_watcher_status.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/platform_watcher_status.rs:152)、[core/src/db/platform_watcher_status.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/platform_watcher_status.rs:11)
+
+- 项目：Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：Core 只消费平台层传入的结构化 signal，不启动 ReadDirectoryChangesW/inotify，不打开文件管理器，不触发 rescan。
+- 涉及文件：[core/src/platform_watcher_status.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/platform_watcher_status.rs:140)
+
+- 项目：最小测试支撑，不做页面接入
+- 结果：通过
+- 证据：新增 implementation 集成测试覆盖持久化、更新、非法 signal、未初始化 repo；未修改 `apps/**`。
+- 涉及文件：[core/tests/platform_watcher_status_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/platform_watcher_status_implementation.rs:70)
+
+- 项目：C4-12 核心行为可被测试或桥接调用验证
+- 结果：通过
+- 证据：UDL 暴露 `record_watcher_health` 与相关字典/枚举；Rust API 公开同名函数；targeted tests 已通过。
+- 涉及文件：[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:399)、[core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1985)
+
+- 项目：未触碰用户文件安全边界之外行为
+- 结果：通过
+- 证据：测试确认记录 watcher health 后 cursor 保持 `Some(41)`，用户 `README.md` 字节不变；实现只写 AreaMatrix-owned metadata。
+- 涉及文件：[core/tests/platform_watcher_status_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/platform_watcher_status_implementation.rs:70)
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl` 已有合同/实现，`core/tests/**` 新增实现测试。
+- 涉及文件：[core/tests/platform_watcher_status_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/platform_watcher_status_implementation.rs:1)
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- apps` 无输出，`apps/**` 无未跟踪文件。
+- 涉及文件：`apps/**`
+
+- 项目：Manifest 验证
+- 结果：通过
+- 证据：`./dev check task 4-3/task-57` exit 0。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，核心逻辑拆为 signal 校验、snapshot 构造、metadata upsert；文件长度符合阈值。
+- 注释 / rustdoc / 文档同步：通过，新增 public API 具备 rustdoc，UDL 与 Core API 文档字段一致。
+- 错误处理与边界处理：通过，生产路径未发现 `unwrap` / `expect` / `panic`；非法 signal 不落库，未初始化 repo 返回 `Db`。
+- 测试与验证覆盖：通过，覆盖正常记录、更新、非法输入、缺失 metadata；manifest task gate 已通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，实现连接真实 SQLite repo_config 写入，不是空壳或 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-57`
+- 通过：`prompt_pipeline.py doctor` OK；`git diff --check` OK；`platform_watcher_status_contract_api` 4/4 passed；`platform_watcher_status_implementation` 4/4 passed。
+- 失败：无
+- 缺失：无必需验证缺失；未额外运行 `./dev check all`，因为本 task manifest 指定 atomic Core task gate 为 `./dev check task 4-3/task-57`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
