@@ -284,8 +284,8 @@ fn assert_core_api_udl_and_rust_alignment() {
         "pub fn detect_cloud_storage_state(repo_path: String) -> CoreResult<CloudStorageState>",
         "provider-specific recovery or notice state from structured fields",
         "security-scoped bookmarks, iCloud availability, OneDrive client state",
-        "acknowledgement persistence",
-        "provider downloads, acknowledgement persistence",
+        "acknowledgement UI",
+        "provider downloads, acknowledgement UI",
         "and reconnect UI remain in",
     ] {
         assert_contains(API_RS, fragment);

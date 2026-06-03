@@ -1745,8 +1745,8 @@ pub fn resolve_icloud_conflict(
 /// provider-specific recovery or notice state from structured fields. Core
 /// inspects only the authorized repository path and basic filesystem metadata;
 /// security-scoped bookmarks, iCloud availability, OneDrive client state,
-/// settings links, SDK calls, provider downloads, acknowledgement persistence,
-/// and reconnect UI remain in the platform layer. `S4-WIN-03` can use
+/// settings links, SDK calls, provider downloads, acknowledgement UI, and
+/// reconnect UI remain in the platform layer. `S4-WIN-03` can use
 /// `recommended_action`, `requires_notice_acknowledgement`, and
 /// `notice_acknowledged` to render the OneDrive confirmation state without
 /// parsing display text.
@@ -1761,6 +1761,27 @@ pub fn resolve_icloud_conflict(
 /// inspection failures.
 pub fn detect_cloud_storage_state(repo_path: String) -> CoreResult<CloudStorageState> {
     cloud_permission_state::detect_cloud_storage_state(repo_path)
+}
+
+/// Persists the C4-14 OneDrive risk notice acknowledgement.
+///
+/// `S4-WIN-03 onedrive-notice` calls this only after the user has explicitly
+/// confirmed the OneDrive warning. The API writes only Core-visible repository
+/// metadata (`repo_config`) for an already initialized repository, then returns
+/// the refreshed [`CloudStorageState`]. It does not create a repository, move,
+/// rename, delete, overwrite, reindex, trigger downloads, call the OneDrive
+/// SDK, or change cloud sync settings.
+///
+/// # Errors
+///
+/// Returns `CoreError::InvalidPath { path }` when the input is empty or points
+/// inside AreaMatrix metadata, `CoreError::ICloudPlaceholder { path }` when the
+/// repository path or required metadata is still a visible cloud placeholder,
+/// `CoreError::PermissionDenied { path }` when metadata, directory listing, or
+/// acknowledgement persistence is blocked, and `CoreError::Io { message }` for
+/// missing initialized metadata or other acknowledgement persistence failures.
+pub fn acknowledge_onedrive_risk_notice(repo_path: String) -> CoreResult<CloudStorageState> {
+    cloud_permission_state::acknowledge_onedrive_risk_notice(repo_path)
 }
 
 /// Previews C2-17 import conflict batch decisions without mutating staging or files.

@@ -1,10 +1,18 @@
 //! C4-08 cloud storage permission and placeholder state contract.
 
-use std::{fs, io, path::Path};
+use std::{
+    fs, io,
+    path::{Path, PathBuf},
+};
 
+use rusqlite::{Connection, ErrorCode, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
 use crate::{CoreError, CoreResult};
+
+const AREA_MATRIX_DIR: &str = ".areamatrix";
+const INDEX_DB_FILE: &str = "index.db";
+const ONEDRIVE_NOTICE_ACK_KEY: &str = "onedrive_risk_notice_acknowledged";
 
 /// Cloud storage provider inferred from an authorized repository path.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -124,7 +132,45 @@ pub(crate) fn detect_cloud_storage_state(repo_path: String) -> CoreResult<CloudS
     ensure_inspectable_directory(path)?;
 
     let provider_kind = provider_kind(path);
-    Ok(state_for_provider(repo_path, provider_kind))
+    let notice_acknowledged = notice_acknowledged(path, &provider_kind)?;
+    Ok(state_for_provider(
+        repo_path,
+        provider_kind,
+        notice_acknowledged,
+    ))
+}
+
+/// Persists the C4-14 OneDrive notice acknowledgement and returns refreshed state.
+///
+/// The acknowledgement is stored only in initialized repository metadata. This
+/// keeps the notice flow from implicitly creating `.areamatrix/` during
+/// choose-repo or adopt preflight screens.
+///
+/// # Errors
+///
+/// Returns `CoreError::InvalidPath { path }` when the input is empty or points
+/// inside AreaMatrix metadata, `CoreError::ICloudPlaceholder { path }` when the
+/// repository path itself is a visible placeholder,
+/// `CoreError::PermissionDenied { path }` when metadata, directory listing, or
+/// DB writing is blocked, and `CoreError::Io { message }` for missing
+/// initialized metadata or other acknowledgement persistence failures.
+pub(crate) fn acknowledge_onedrive_risk_notice(repo_path: String) -> CoreResult<CloudStorageState> {
+    let path = Path::new(&repo_path);
+    validate_path(path, &repo_path)?;
+    reject_placeholder_path(path, &repo_path)?;
+    ensure_inspectable_directory(path)?;
+
+    let provider_kind = provider_kind(path);
+    if provider_kind == CloudStorageProviderKind::OneDrive {
+        persist_onedrive_notice_acknowledgement(path)?;
+    }
+
+    let notice_acknowledged = notice_acknowledged(path, &provider_kind)?;
+    Ok(state_for_provider(
+        repo_path,
+        provider_kind,
+        notice_acknowledged,
+    ))
 }
 
 fn validate_path(path: &Path, repo_path: &str) -> CoreResult<()> {
@@ -200,6 +246,7 @@ fn provider_kind(path: &Path) -> CloudStorageProviderKind {
 fn state_for_provider(
     repo_path: String,
     provider_kind: CloudStorageProviderKind,
+    notice_acknowledged: bool,
 ) -> CloudStorageState {
     let (risk, status_summary, risk_reasons) = match &provider_kind {
         CloudStorageProviderKind::Local => (
@@ -232,8 +279,9 @@ fn state_for_provider(
         ),
     };
 
-    let recommended_action = recommended_action(&provider_kind);
-    let requires_notice_acknowledgement = provider_kind == CloudStorageProviderKind::OneDrive;
+    let recommended_action = recommended_action(&provider_kind, notice_acknowledged);
+    let requires_notice_acknowledgement =
+        provider_kind == CloudStorageProviderKind::OneDrive && !notice_acknowledged;
 
     CloudStorageState {
         repo_path,
@@ -245,16 +293,118 @@ fn state_for_provider(
         risk_reasons,
         recommended_action,
         requires_notice_acknowledgement,
-        notice_acknowledged: false,
+        notice_acknowledged,
         can_retry: false,
         requires_reconnect: false,
     }
 }
 
-fn recommended_action(provider_kind: &CloudStorageProviderKind) -> CloudStorageRecommendedAction {
-    match provider_kind {
-        CloudStorageProviderKind::OneDrive => CloudStorageRecommendedAction::AcknowledgeNotice,
+fn recommended_action(
+    provider_kind: &CloudStorageProviderKind,
+    notice_acknowledged: bool,
+) -> CloudStorageRecommendedAction {
+    match (provider_kind, notice_acknowledged) {
+        (CloudStorageProviderKind::OneDrive, false) => {
+            CloudStorageRecommendedAction::AcknowledgeNotice
+        }
         _ => CloudStorageRecommendedAction::None,
+    }
+}
+
+fn notice_acknowledged(path: &Path, provider_kind: &CloudStorageProviderKind) -> CoreResult<bool> {
+    if provider_kind != &CloudStorageProviderKind::OneDrive {
+        return Ok(false);
+    }
+    load_onedrive_notice_acknowledgement(path)
+}
+
+fn load_onedrive_notice_acknowledgement(repo_path: &Path) -> CoreResult<bool> {
+    let Some(db_path) = existing_notice_db_path(repo_path)? else {
+        return Ok(false);
+    };
+
+    let connection = Connection::open(&db_path).map_err(map_notice_metadata_db_error)?;
+    let value = connection
+        .query_row(
+            "SELECT value FROM repo_config WHERE key = ?1",
+            [ONEDRIVE_NOTICE_ACK_KEY],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()
+        .map_err(map_notice_metadata_db_error)?;
+    value
+        .as_deref()
+        .map(parse_notice_acknowledgement)
+        .unwrap_or(Ok(false))
+}
+
+fn persist_onedrive_notice_acknowledgement(repo_path: &Path) -> CoreResult<()> {
+    let Some(db_path) = existing_notice_db_path(repo_path)? else {
+        return Err(CoreError::io(
+            "OneDrive notice acknowledgement requires initialized repository metadata",
+        ));
+    };
+
+    let connection = Connection::open(&db_path).map_err(map_notice_metadata_db_error)?;
+    connection
+        .execute(
+            "INSERT INTO repo_config (key, value, updated_at) \
+             VALUES (?1, 'true', strftime('%s', 'now')) \
+             ON CONFLICT(key) DO UPDATE SET \
+             value = excluded.value, updated_at = excluded.updated_at",
+            [ONEDRIVE_NOTICE_ACK_KEY],
+        )
+        .map_err(map_notice_metadata_db_error)?;
+    Ok(())
+}
+
+fn existing_notice_db_path(repo_path: &Path) -> CoreResult<Option<PathBuf>> {
+    let db_path = repo_path.join(AREA_MATRIX_DIR).join(INDEX_DB_FILE);
+    match fs::metadata(&db_path) {
+        Ok(metadata) if metadata.is_file() => Ok(Some(db_path)),
+        Ok(_) => Err(CoreError::io(
+            "OneDrive notice acknowledgement metadata is not a database file",
+        )),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(map_notice_metadata_io_error(&db_path, error)),
+    }
+}
+
+fn map_notice_metadata_io_error(path: &Path, error: io::Error) -> CoreError {
+    if error.kind() == io::ErrorKind::PermissionDenied {
+        return CoreError::permission_denied(path.to_string_lossy().into_owned());
+    }
+    CoreError::io(format!(
+        "OneDrive notice acknowledgement metadata is unavailable: {error}"
+    ))
+}
+
+fn map_notice_metadata_db_error(error: rusqlite::Error) -> CoreError {
+    if matches!(
+        error,
+        rusqlite::Error::SqliteFailure(
+            rusqlite::ffi::Error {
+                code: ErrorCode::PermissionDenied | ErrorCode::ReadOnly,
+                ..
+            },
+            _
+        )
+    ) {
+        return CoreError::permission_denied("OneDrive notice acknowledgement metadata");
+    }
+
+    CoreError::io(format!(
+        "OneDrive notice acknowledgement metadata is unavailable: {error}"
+    ))
+}
+
+fn parse_notice_acknowledgement(value: &str) -> CoreResult<bool> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "1" | "true" | "acknowledged" => Ok(true),
+        "0" | "false" | "" => Ok(false),
+        _ => Err(CoreError::io(
+            "OneDrive notice acknowledgement metadata is invalid",
+        )),
     }
 }
 

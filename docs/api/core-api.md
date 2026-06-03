@@ -389,6 +389,9 @@ namespace area_matrix {
     CloudStorageState detect_cloud_storage_state(string repo_path);
 
     [Throws=CoreError]
+    CloudStorageState acknowledge_onedrive_risk_notice(string repo_path);
+
+    [Throws=CoreError]
     ImportConflictBatchPreviewReport preview_import_conflict_batch(
         string repo_path,
         ImportConflictBatchPreviewRequest request
@@ -2345,6 +2348,7 @@ interface CoreError {
 | `preview_conflict_versions(repo, conflict_id)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |
 | `resolve_icloud_conflict(repo, conflict_id, resolution)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |
 | `detect_cloud_storage_state(repo)` | cloud | √ | ICloudPlaceholder / PermissionDenied / Io |
+| `acknowledge_onedrive_risk_notice(repo)` | cloud | √ | ICloudPlaceholder / PermissionDenied / Io |
 | `preview_import_conflict_batch(repo, request)` | conflict | √ | Conflict / FileNotFound / PermissionDenied / StagingRecoveryRequired / Io / Db |
 | `apply_import_conflict_batch(repo, request, preview_token)` | conflict | √ | Conflict / FileNotFound / PermissionDenied / StagingRecoveryRequired / Io / Db |
 | `read_note(repo, file_id)` | note | √ | Io |
@@ -6001,7 +6005,7 @@ C4-08 的云盘权限状态入口，也是 C4-14 的 OneDrive 风险状态合同
 - `requires_notice_acknowledgement`：OneDrive 风险提示是否必须在继续打开、初始化或接管前
   被用户确认。
 - `notice_acknowledged`：Core-visible metadata 中是否已经记录该 repo 的 OneDrive 风险提示确认。
-  当前合同只定义读取状态；确认写入和 DB 细节由后续 C4-14 implementation task 实现。
+  C4-14 通过 `acknowledge_onedrive_risk_notice` 在已初始化 repo 的 `repo_config` 中持久化该状态。
 - `can_retry`：是否可以直接重试同一只读检测。
 - `requires_reconnect`：是否需要平台层重新获取目录访问权限。
 
@@ -6031,6 +6035,41 @@ C4-08 的云盘权限状态入口，也是 C4-14 的 OneDrive 风险状态合同
   前等待 C4-14 notice acknowledgement；它不直接控制 OneDrive 同步。
 - S4-IOS-01 可以把云盘问题路由到 S4-IOS-06，而不是在连接页硬猜平台状态。
 - 本合同不新增 control map 之外的页面能力。
+
+### `acknowledge_onedrive_risk_notice(repoPath) throws -> CloudStorageState`
+
+```swift
+let state = try AreaMatrix.acknowledgeOnedriveRiskNotice(repoPath: repoPath)
+precondition(state.noticeAcknowledged)
+```
+
+C4-14 的 OneDrive 风险提示确认写入入口。`S4-WIN-03 onedrive-notice` 只能在用户已经明确确认
+OneDrive 风险文案后调用；调用成功后返回刷新后的 `CloudStorageState`，其中
+`notice_acknowledged = true`、`requires_notice_acknowledgement = false`、
+`recommended_action = None`。
+
+输入只包含已初始化资料库根路径。Core 会复用 `detect_cloud_storage_state` 的平台中立路径检查，
+只在 `provider_kind = OneDrive` 时写入 `repo_config` key
+`onedrive_risk_notice_acknowledged = true`；非 OneDrive 路径不写该 key，只返回当前刷新状态。
+
+副作用边界：
+
+- 只写 `.areamatrix/index.db` 中的 `repo_config` 元数据，不写用户文件。
+- 不自动创建 `.areamatrix/`、不初始化 repo、不 reindex、不移动、不删除、不重命名、不覆盖用户文件。
+- 不触发 iCloud placeholder 下载，不调用 iCloud / OneDrive SDK，不打开系统设置，不修改云盘同步策略。
+- UI 仍负责确认复选框、文案展示、Explorer reveal、进入 watcher 状态页和后续导航。
+
+错误：
+
+- `ICloudPlaceholder`：资料库路径或关键 metadata 仍是可见云端占位符。
+- `PermissionDenied`：metadata、目录读取或 acknowledgement 写入被权限阻断。
+- `Io`：路径不是目录、metadata 缺失、repo 尚未初始化、SQLite 写入或其他只读 / metadata 探测失败。
+
+页面消费状态：
+
+- S4-WIN-03 调用成功后可直接用返回的 `CloudStorageState` 切换到已确认说明态。
+- S4-WIN-01 在 init/adopt/open 前可用 `notice_acknowledged` 判断是否允许继续。
+- 本合同不新增 control map 之外的页面能力，也不实现企业 OneDrive 管理集成。
 
 ### `preview_import_conflict_batch(repoPath, request) throws -> ImportConflictBatchPreviewReport`
 

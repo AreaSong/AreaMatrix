@@ -1,9 +1,9 @@
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    detect_cloud_storage_state, CloudPermissionState, CloudPlaceholderState,
-    CloudStorageProviderKind, CloudStorageRecommendedAction, CloudStorageRiskLevel,
-    CloudStorageState, CoreError, CoreResult,
+    acknowledge_onedrive_risk_notice, detect_cloud_storage_state, CloudPermissionState,
+    CloudPlaceholderState, CloudStorageProviderKind, CloudStorageRecommendedAction,
+    CloudStorageRiskLevel, CloudStorageState, CoreError, CoreResult,
 };
 use pretty_assertions::assert_eq;
 
@@ -39,7 +39,9 @@ fn assert_contains(haystack: &str, needle: &str) {
 #[test]
 fn onedrive_risk_state_contract_exports_page_ready_state() {
     fn assert_detect(_: fn(String) -> CoreResult<CloudStorageState>) {}
+    fn assert_acknowledge(_: fn(String) -> CoreResult<CloudStorageState>) {}
     assert_detect(detect_cloud_storage_state);
+    assert_acknowledge(acknowledge_onedrive_risk_notice);
 
     let state = CloudStorageState {
         repo_path: "C:\\Users\\me\\OneDrive\\AreaMatrix".to_owned(),
@@ -133,7 +135,9 @@ fn onedrive_risk_state_docs_api_udl_and_control_map_stay_aligned() {
         "# C4-14 onedrive-risk-state",
         "- S4-WIN-03 onedrive-notice",
         "- `detect_cloud_storage_state`",
+        "- `acknowledge_onedrive_risk_notice`",
         "OneDrive risk state、placeholder state、recommended action。",
+        "用户确认后返回已刷新的 OneDrive risk state。",
         "可记录用户已确认提示。",
         "只读探测。",
         "- `PermissionDenied`",
@@ -155,6 +159,7 @@ fn onedrive_risk_state_docs_api_udl_and_control_map_stay_aligned() {
 
     for fragment in [
         "CloudStorageState detect_cloud_storage_state(string repo_path);",
+        "CloudStorageState acknowledge_onedrive_risk_notice(string repo_path);",
         "dictionary CloudStorageState",
         "CloudStorageProviderKind provider_kind;",
         "CloudStorageRiskLevel risk;",
@@ -176,11 +181,13 @@ fn onedrive_risk_state_docs_api_udl_and_control_map_stay_aligned() {
 
     for fragment in [
         "也是 C4-14 的 OneDrive 风险状态合同",
+        "### `acknowledge_onedrive_risk_notice(repoPath) throws -> CloudStorageState`",
+        "C4-14 的 OneDrive 风险提示确认写入入口。",
         "`recommended_action`",
         "`requires_notice_acknowledgement`",
         "`notice_acknowledged`",
         "OneDrive 路径默认返回 `AcknowledgeNotice`",
-        "当前合同只定义读取状态；确认写入和 DB 细节由后续 C4-14 implementation task 实现。",
+        "C4-14 通过 `acknowledge_onedrive_risk_notice` 在已初始化 repo 的 `repo_config` 中持久化该状态。",
         "S4-WIN-01 可以从 OneDrive path validation 路由到 S4-WIN-03",
         "本合同不新增 control map 之外的页面能力。",
     ] {
@@ -220,7 +227,8 @@ fn onedrive_risk_state_documents_consumers_and_scope_boundaries() {
         "recommended_action",
         "requires_notice_acknowledgement",
         "notice_acknowledged",
-        "acknowledgement persistence",
+        "acknowledgement UI",
+        "Persists the C4-14 OneDrive risk notice acknowledgement.",
     ] {
         assert_contains(API_RS, fragment);
     }
@@ -231,6 +239,7 @@ fn onedrive_risk_state_documents_consumers_and_scope_boundaries() {
         "Whether the OneDrive notice must be acknowledged before continuing.",
         "Detects C4-08 cloud provider state and C4-14 OneDrive risk state.",
         "acknowledgement UI",
+        "Persists the C4-14 OneDrive notice acknowledgement and returns refreshed state.",
     ] {
         assert_contains(CLOUD_PERMISSION_RS, fragment);
     }

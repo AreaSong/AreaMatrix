@@ -386,6 +386,9 @@ namespace area_matrix {
     CloudStorageState detect_cloud_storage_state(string repo_path);
 
     [Throws=CoreError]
+    CloudStorageState acknowledge_onedrive_risk_notice(string repo_path);
+
+    [Throws=CoreError]
     ImportConflictBatchPreviewReport preview_import_conflict_batch(
         string repo_path,
         ImportConflictBatchPreviewRequest request
