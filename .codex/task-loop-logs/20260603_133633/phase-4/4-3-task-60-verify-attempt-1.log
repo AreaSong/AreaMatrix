@@ -1,0 +1,65 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-60`
+- 任务文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-60-c4-12-integration-verify.md`
+- 验收对象：C4-12 `platform-watcher-status`
+- 对应代码路径：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4/4 个任务核对项，2/2 个完成标准，5/5 个工程质量项
+- 未覆盖项数：0
+- 通过项数：11
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：C4-12 spec 要求 `record_watcher_health`、watcher 状态、last sync、error summary、cursor/health metadata、Db/Io 错误；Core API 和 UDL 均声明 `record_watcher_health(repo_path, signal) -> PlatformWatcherSnapshot` 及 `PlatformWatcherHealthSignal/Snapshot` 字段；Rust 入口 `record_watcher_health` 已连接到 `platform_watcher_status::record_watcher_health`，实现校验 signal、序列化 snapshot 并写入 repo_config；测试覆盖 contract、implementation、failure recovery、validation 四个 test binary。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md:8`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:6162`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:399`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1985`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/platform_watcher_status.rs:152`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/platform_watcher_status_validation.rs:202`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：Windows 页面要求 Running/Starting/Paused/Error/Unavailable、last event、pending events、last rescan、OneDrive 噪声、错误恢复；Linux 页面要求 backend/watch count、limit exceeded、network mount、permission denied、rescan running。Core snapshot 字段覆盖这些消费字段，错误原因用 `PlatformWatcherHealthReason` 结构化表达，副作用明确限制为记录 AreaMatrix-owned watcher health metadata，不触发 rescan、不推进 cursor、不读写用户文件。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-4-multiplatform/S4-WIN-04-watcher-status.md:25`、`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-4-multiplatform/S4-LNX-04-watcher-status.md:25`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:6207`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:6210`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/platform_watcher_status.rs:72`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 中 S4-WIN-04/S4-LNX-04 绑定 C4-12 和 C4-19；本 task 只实现 C4-12 watcher health snapshot，未实现 C4-19 manual rescan，API 文档明确 `Run rescan now` 必须进入 S4-X-07，由 C4-19 处理；代码检索未发现 C4-12 入口调用 `reindex_from_filesystem`、启动 ReadDirectoryChangesW/inotify、打开文件管理器或导出诊断包。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:19`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:24`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:6214`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1973`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮未执行修复或 formatter 写入命令。验收后 `git status --short` 仅显示 runner 状态文件 `.codex/task-loop-runs/20260603_133633/summary.json` 和 `tasks/prompts/_shared/progress.json` 已存在脏改动；`git diff -- apps`、`git diff --cached -- apps`、`git status --short apps` 均无输出，未发现 Forbidden Touches。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**` 无改动
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C4-12 独立在 `core/src/platform_watcher_status.rs`，DB 写入独立在 `core/src/db/platform_watcher_status.rs`，API 层只转发，边界清楚。
+- 注释 / rustdoc / 文档同步：通过。public 类型和 API 有 rustdoc，Core API、UDL、capability spec 和 UX 页面字段一致。
+- 错误处理与边界处理：通过。非法 signal 返回 `CoreError::Db`，metadata 权限问题映射 `Io`，测试证明失败不覆盖 snapshot、不推进 cursor、不改用户文件。
+- 测试与验证覆盖：通过。contract、implementation、failure recovery、validation 四组测试共 16 个测试全部通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接真实 repo 初始化、SQLite `repo_config` 持久化和 cursor API，不是 mock-only 或静态通过态。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-60`
+- 通过：`prompt_pipeline.py doctor`，637 tasks / 637 manifests；`git diff --check`；`cargo fmt --all -- --check`；`cargo clippy --all-targets --all-features -- -D warnings`；`cargo test --test platform_watcher_status_contract_api` 4 passed；`cargo test --test platform_watcher_status_failure_recovery` 5 passed；`cargo test --test platform_watcher_status_implementation` 4 passed；`cargo test --test platform_watcher_status_validation` 3 passed。
+- 失败：无
+- 缺失：无。未运行 `./dev check all`，因为本 task manifest 指定验证为 `./dev check task 4-3/task-60`，validation-driver 对 core integration verify 的要求已由该命令覆盖 targeted tests + Core quality gate。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C4-12 可以作为后续 S4-WIN-04 / S4-LNX-04 page-feature task 的真实 Core 依赖。
+VERIFY_RESULT: PASS
