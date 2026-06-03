@@ -8,30 +8,33 @@ use crate::{
     classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules, classify,
     cloud_permission_state, cross_platform_ffi, db, icloud_conflicts, import_conflict_batch,
     local_model_status, note, platform_watcher_status, recovery, redo, remote_provider_config,
-    repair, repo_init, repo_path, repo_scan, storage, sync, sync_conflict_detect, tree,
-    AiCallLogClearReport, AiCallLogClearRequest, AiCallLogFilter, AiCallLogPage,
-    AiCallLogPagination, AiCategorySuggestion, AiCategorySuggestionRequest, AiConfig,
-    AiConfigSnapshot, AiFallbackStatus, AiFallbackStatusRequest, AiPrivacyEvaluationReport,
-    AiPrivacyEvaluationRequest, AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest,
-    AiSummaryClearReport, AiSummaryClearRequest, AiSummaryDraft, AiSummaryGenerationRequest,
-    AiSummarySaveReport, AiSummarySaveRequest, AiTagSuggestionApplyReport, AiTagSuggestionReport,
-    AiTagSuggestionRequest, ApplyAiTagSuggestionsRequest, ApplyTagSuggestionsRequest,
-    BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
-    BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
-    BatchRenameRule, BindingContractReport, BindingContractRequest, ChangeFilter, ChangeLogEntry,
-    ClassifierCorrectionResult, ClassifierImpactPreviewRequest, ClassifierRule,
-    ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot,
-    ClassifierRuleUpdate, ClassifyResult, CloudStorageState, CoreError, CoreResult,
-    DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter, ICloudConflictPair,
-    ICloudConflictPreviewReport, ICloudConflictResolution, ICloudConflictResolveReport,
-    ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
-    ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
-    ImportResult, LocalModelFolderLocation, LocalModelFolderRequest, LocalModelStatusRequest,
-    LocalModelStatusSnapshot, MoveToCategoryPreview, PlatformWatcherHealthSignal,
-    PlatformWatcherSnapshot, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
-    RemoteProviderConfigSnapshot, RemoteProviderDisableRequest, RemoteProviderEnableRequest,
-    RemoteProviderTestRequest, RemoteProviderTestResult, RepairOptions, RepairReport, RepoConfig,
-    RepoInitOptions, RepoPathValidation, RuleImpactReport, ScanSession, SyncConflict, SyncResult,
+    repair, repo_init, repo_path, repo_scan, storage, sync, sync_conflict_detect,
+    sync_conflict_resolve, tree, AiCallLogClearReport, AiCallLogClearRequest, AiCallLogFilter,
+    AiCallLogPage, AiCallLogPagination, AiCategorySuggestion, AiCategorySuggestionRequest,
+    AiConfig, AiConfigSnapshot, AiFallbackStatus, AiFallbackStatusRequest,
+    AiPrivacyEvaluationReport, AiPrivacyEvaluationRequest, AiPrivacyRulesSnapshot,
+    AiPrivacyRulesUpdateRequest, AiSummaryClearReport, AiSummaryClearRequest, AiSummaryDraft,
+    AiSummaryGenerationRequest, AiSummarySaveReport, AiSummarySaveRequest,
+    AiTagSuggestionApplyReport, AiTagSuggestionReport, AiTagSuggestionRequest,
+    ApplyAiTagSuggestionsRequest, ApplyTagSuggestionsRequest, BatchCategoryChangeReport,
+    BatchCategoryPreviewReport, BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport,
+    BatchRenamePreviewReport, BatchRenameReport, BatchRenameRule, BindingContractReport,
+    BindingContractRequest, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
+    ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
+    ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleUpdate,
+    ClassifyResult, CloudStorageState, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent,
+    FileEntry, FileFilter, ICloudConflictPair, ICloudConflictPreviewReport,
+    ICloudConflictResolution, ICloudConflictResolveReport, ImportConflictBatchApplyReport,
+    ImportConflictBatchApplyRequest, ImportConflictBatchPreviewReport,
+    ImportConflictBatchPreviewRequest, ImportOptions, ImportResult, LocalModelFolderLocation,
+    LocalModelFolderRequest, LocalModelStatusRequest, LocalModelStatusSnapshot,
+    MoveToCategoryPreview, PlatformWatcherHealthSignal, PlatformWatcherSnapshot, RecoveryReport,
+    RedoActionRecord, RedoActionResult, ReindexReport, RemoteProviderConfigSnapshot,
+    RemoteProviderDisableRequest, RemoteProviderEnableRequest, RemoteProviderTestRequest,
+    RemoteProviderTestResult, RepairOptions, RepairReport, RepoConfig, RepoInitOptions,
+    RepoPathValidation, RuleImpactReport, ScanSession, SyncConflict,
+    SyncConflictResolutionPreviewReport, SyncConflictResolutionRequest,
+    SyncConflictResolutionStrategy, SyncConflictResolveReport, SyncResult,
     TagSuggestionApplyReport, TagSuggestionReport, TagSuggestionRequest,
 };
 
@@ -1675,6 +1678,59 @@ pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String> {
 /// review.
 pub fn detect_sync_conflicts(repo_path: String) -> CoreResult<Vec<SyncConflict>> {
     sync_conflict_detect::detect_sync_conflicts(repo_path)
+}
+
+/// Previews a C4-16 sync conflict resolution plan without mutating files.
+///
+/// `S4-X-01 sync-conflict` consumes this contract after the user chooses
+/// `Keep both`, `Use existing version`, or `Use incoming version`. The preview
+/// exposes per-version file impact, affected DB record ids, canonical and
+/// retained paths, planned change-log action, and whether `S4-X-09
+/// replace-confirm` is required. `Keep both` remains the default safe strategy.
+/// This entry point must not mark a conflict resolved, write change log rows,
+/// move files, rename files, overwrite files, Trash versions, or bypass
+/// replace confirmation.
+///
+/// # Errors
+///
+/// Returns `CoreError::Conflict { path }` when the conflict id is missing,
+/// stale, or cannot be bound to a stable conflict state,
+/// `CoreError::PermissionDenied { path }` when required Trash/Recycle Bin,
+/// metadata, or permission preflight is blocked, `CoreError::Io { message }`
+/// for safe filesystem inspection failures, and `CoreError::Db { message }`
+/// for conflict-state or change-log preflight reads.
+pub fn preview_sync_conflict_resolution(
+    repo_path: String,
+    conflict_id: String,
+    resolution: SyncConflictResolutionStrategy,
+) -> CoreResult<SyncConflictResolutionPreviewReport> {
+    sync_conflict_resolve::preview_sync_conflict_resolution(repo_path, conflict_id, resolution)
+}
+
+/// Resolves one C4-16 sync conflict after preview and required confirmation.
+///
+/// `S4-X-01 sync-conflict` calls this only after a fresh preview. Requests that
+/// use `Use incoming version` must first complete `S4-X-09 replace-confirm`;
+/// Core receives that result as `replace_confirmed` and the preview token.
+/// Successful resolution must leave all non-discarded versions visible or move
+/// discarded versions only to Trash/Recycle Bin or a documented Core safety
+/// backup, then update conflict state and write change log. Failure must leave
+/// the conflict unresolved and must not silently delete or hide any version.
+///
+/// # Errors
+///
+/// Returns `CoreError::Conflict { path }` when the preview token, conflict id,
+/// version set, or conflict state is stale, `CoreError::PermissionDenied {
+/// path }` when replace confirmation, Trash/Recycle Bin, metadata, or
+/// permissions block the selected strategy, `CoreError::Io { message }` for
+/// filesystem or rollback failures, and `CoreError::Db { message }` for
+/// conflict-state or change-log write failures.
+pub fn resolve_sync_conflict(
+    repo_path: String,
+    conflict_id: String,
+    resolution: SyncConflictResolutionRequest,
+) -> CoreResult<SyncConflictResolveReport> {
+    sync_conflict_resolve::resolve_sync_conflict(repo_path, conflict_id, resolution)
 }
 
 /// Lists iCloud conflicted copy pairs without resolving them.

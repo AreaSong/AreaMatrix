@@ -1,0 +1,54 @@
+一、执行结论
+
+已完成 `4-3/task-76: C4-16 contract-api`。
+
+二、执行范围
+
+单任务执行。修改/新增文件：
+
+- `core/src/sync_conflict_resolve.rs`
+- `core/src/api.rs`
+- `core/src/lib.rs`
+- `core/area_matrix.udl`
+- `core/tests/sync_conflict_resolve_contract_api.rs`
+- `docs/api/core-api.md`
+
+说明：`docs/api/core-api.md` 是本 task 的 Exact Doc，当前缺 C4-16 合同；我做了最小源事实同步，未改 manifest 或 `apps/**`。
+
+三、完成情况
+
+核对清单已完成：
+
+- 已读取 C4-16 能力规格、Stage 4 control map、Core API、错误码。
+- API 名称、输入、输出、错误码、权限/隐私边界已对齐：新增 `preview_sync_conflict_resolution`、`resolve_sync_conflict`，错误边界为 `Conflict / PermissionDenied / Io / Db`。
+- 只补合同、类型、桥接声明和文档缺口；没有实现真实冲突解决、Trash、DB 写入、change log 写入或 C4-21 平台能力检测。
+- 页面消费方已记录：S4-X-01 可得到 impact summary、按钮状态、change log action、受影响 record、保留/Trash 路径；S4-X-09 可得到 replace plan。
+
+完成标准：
+
+- C4-16 Core API 合同已可供后续 implementation task 直接实现。
+- 未引入 control map 之外的页面能力。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+代码结构按 C4-15 相邻模式新增独立合同模块，public Rust 类型均有 rustdoc。当前入口只做合同级输入/确认边界检查并返回结构化错误，不伪造成功态，不移动/删除/覆盖用户文件，不写 DB，不写 change log。
+
+不存在 mock-only 闭环、硬编码通过态或一次性脚本实现；测试锁定的是合同/API/UDL/文档一致性和“未实现前不能假成功”的边界。
+
+五、验证情况
+
+已运行：
+
+- `cargo fmt`
+- `cargo test --test sync_conflict_resolve_contract_api -- --nocapture`：通过，4/4。
+- `./dev check task 4-3/task-76`：通过。
+  - `prompt doctor`：OK
+  - `git diff --check`：OK
+  - targeted Core test：`sync_conflict_resolve_contract_api` 4/4 通过
+
+六、风险与后续
+
+剩余风险：本任务只落合同，不实现真实 resolution transaction；真实文件/DB/change log/Trash 语义仍需后续 implementation、failure-edge、validation task 覆盖。
+
+建议下一个任务：继续 `4-3/task-77`，实现 C4-16 的真实 conflict resolution 路径，并重点验证失败保持 unresolved、UseIncoming 必须经过 S4-X-09、所有丢弃版本只进入 Trash/安全备份。

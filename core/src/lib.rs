@@ -47,6 +47,7 @@ mod semantic_search;
 pub mod storage;
 pub mod sync;
 mod sync_conflict_detect;
+mod sync_conflict_resolve;
 mod tags;
 pub mod tree;
 pub mod undo;
@@ -169,6 +170,10 @@ pub use semantic_search::{
 pub use sync_conflict_detect::{
     SyncConflict, SyncConflictAffectedFile, SyncConflictFileRole, SyncConflictSeverity,
     SyncConflictStatus, SyncConflictType,
+};
+pub use sync_conflict_resolve::{
+    SyncConflictReplacePlan, SyncConflictResolutionPreviewReport, SyncConflictResolutionRequest,
+    SyncConflictResolutionStrategy, SyncConflictResolveReport, SyncConflictVersionImpact,
 };
 pub use tags::{
     add_tag, apply_tag_suggestions, batch_add_tags, list_tags, remove_tag, suggest_tags_for_file,

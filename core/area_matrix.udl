@@ -371,6 +371,20 @@ namespace area_matrix {
     sequence<SyncConflict> detect_sync_conflicts(string repo_path);
 
     [Throws=CoreError]
+    SyncConflictResolutionPreviewReport preview_sync_conflict_resolution(
+        string repo_path,
+        string conflict_id,
+        SyncConflictResolutionStrategy resolution
+    );
+
+    [Throws=CoreError]
+    SyncConflictResolveReport resolve_sync_conflict(
+        string repo_path,
+        string conflict_id,
+        SyncConflictResolutionRequest resolution
+    );
+
+    [Throws=CoreError]
     sequence<ICloudConflictPair> list_icloud_conflicts(string repo_path);
 
     [Throws=CoreError]
@@ -1714,6 +1728,72 @@ dictionary SyncConflict {
     string? summary;
 };
 
+dictionary SyncConflictVersionImpact {
+    string path;
+    i64? file_id;
+    SyncConflictFileRole role;
+    boolean will_keep;
+    boolean will_be_canonical;
+    boolean will_remain_user_visible;
+    boolean will_move_to_trash;
+    string? recovery_target;
+    string? reason;
+};
+
+dictionary SyncConflictReplacePlan {
+    string old_path;
+    string new_path;
+    string? old_hash_sha256;
+    string? new_hash_sha256;
+    i64? affected_file_id;
+    string? backup_target;
+    string database_update;
+    string change_log_action;
+    string recovery_note;
+};
+
+dictionary SyncConflictResolutionPreviewReport {
+    string conflict_id;
+    SyncConflictResolutionStrategy resolution;
+    SyncConflictResolutionStrategy default_resolution;
+    SyncConflictStatus status_after;
+    sequence<SyncConflictVersionImpact> version_impacts;
+    sequence<string> kept_paths;
+    sequence<string> retained_paths;
+    sequence<string> planned_trash_paths;
+    sequence<i64> affected_file_ids;
+    string? canonical_path;
+    string change_log_action;
+    boolean destructive;
+    boolean requires_replace_confirmation;
+    boolean trash_required;
+    boolean trash_available;
+    boolean can_apply;
+    string? blocked_reason;
+    string? preview_token;
+    SyncConflictReplacePlan? replace_plan;
+};
+
+dictionary SyncConflictResolutionRequest {
+    SyncConflictResolutionStrategy strategy;
+    string preview_token;
+    boolean replace_confirmed;
+    string? replace_confirmation_id;
+};
+
+dictionary SyncConflictResolveReport {
+    string conflict_id;
+    SyncConflictResolutionStrategy resolution;
+    SyncConflictStatus status;
+    sequence<string> kept_paths;
+    sequence<string> retained_paths;
+    sequence<string> trashed_paths;
+    sequence<i64> affected_file_ids;
+    string change_log_action;
+    string? undo_token;
+    i64? resolved_at;
+};
+
 dictionary ICloudConflictPair {
     string conflict_id;
     string? original_path;
@@ -2182,6 +2262,7 @@ enum SyncConflictSeverity { "Low", "Medium", "High" };
 enum SyncConflictFileRole {
     "Existing", "Incoming", "ConflictCopy", "Missing", "Unknown"
 };
+enum SyncConflictResolutionStrategy { "KeepBoth", "UseExisting", "UseIncoming" };
 enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ICloudConflictVersionRole { "Original", "ConflictedCopy" };
 enum ICloudConflictPreviewStatus { "Available", "MetadataOnly", "Unavailable" };

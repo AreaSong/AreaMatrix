@@ -374,6 +374,20 @@ namespace area_matrix {
     sequence<SyncConflict> detect_sync_conflicts(string repo_path);
 
     [Throws=CoreError]
+    SyncConflictResolutionPreviewReport preview_sync_conflict_resolution(
+        string repo_path,
+        string conflict_id,
+        SyncConflictResolutionStrategy resolution
+    );
+
+    [Throws=CoreError]
+    SyncConflictResolveReport resolve_sync_conflict(
+        string repo_path,
+        string conflict_id,
+        SyncConflictResolutionRequest resolution
+    );
+
+    [Throws=CoreError]
     sequence<ICloudConflictPair> list_icloud_conflicts(string repo_path);
 
     [Throws=CoreError]
@@ -1713,6 +1727,72 @@ dictionary SyncConflict {
     string? summary;
 };
 
+dictionary SyncConflictVersionImpact {
+    string path;
+    i64? file_id;
+    SyncConflictFileRole role;
+    boolean will_keep;
+    boolean will_be_canonical;
+    boolean will_remain_user_visible;
+    boolean will_move_to_trash;
+    string? recovery_target;
+    string? reason;
+};
+
+dictionary SyncConflictReplacePlan {
+    string old_path;
+    string new_path;
+    string? old_hash_sha256;
+    string? new_hash_sha256;
+    i64? affected_file_id;
+    string? backup_target;
+    string database_update;
+    string change_log_action;
+    string recovery_note;
+};
+
+dictionary SyncConflictResolutionPreviewReport {
+    string conflict_id;
+    SyncConflictResolutionStrategy resolution;
+    SyncConflictResolutionStrategy default_resolution;
+    SyncConflictStatus status_after;
+    sequence<SyncConflictVersionImpact> version_impacts;
+    sequence<string> kept_paths;
+    sequence<string> retained_paths;
+    sequence<string> planned_trash_paths;
+    sequence<i64> affected_file_ids;
+    string? canonical_path;
+    string change_log_action;
+    boolean destructive;
+    boolean requires_replace_confirmation;
+    boolean trash_required;
+    boolean trash_available;
+    boolean can_apply;
+    string? blocked_reason;
+    string? preview_token;
+    SyncConflictReplacePlan? replace_plan;
+};
+
+dictionary SyncConflictResolutionRequest {
+    SyncConflictResolutionStrategy strategy;
+    string preview_token;
+    boolean replace_confirmed;
+    string? replace_confirmation_id;
+};
+
+dictionary SyncConflictResolveReport {
+    string conflict_id;
+    SyncConflictResolutionStrategy resolution;
+    SyncConflictStatus status;
+    sequence<string> kept_paths;
+    sequence<string> retained_paths;
+    sequence<string> trashed_paths;
+    sequence<i64> affected_file_ids;
+    string change_log_action;
+    string? undo_token;
+    i64? resolved_at;
+};
+
 dictionary ICloudConflictPair {
     string conflict_id;
     string? original_path;
@@ -2181,6 +2261,7 @@ enum SyncConflictSeverity { "Low", "Medium", "High" };
 enum SyncConflictFileRole {
     "Existing", "Incoming", "ConflictCopy", "Missing", "Unknown"
 };
+enum SyncConflictResolutionStrategy { "KeepBoth", "UseExisting", "UseIncoming" };
 enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ICloudConflictVersionRole { "Original", "ConflictedCopy" };
 enum ICloudConflictPreviewStatus { "Available", "MetadataOnly", "Unavailable" };
@@ -2298,6 +2379,12 @@ interface CoreError {
 | `SyncConflictSeverity` | `enum SyncConflictSeverity` | `enum SyncConflictSeverity` | `enum class SyncConflictSeverity` |
 | `SyncConflictStatus` | `enum SyncConflictStatus` | `enum SyncConflictStatus` | `enum class SyncConflictStatus` |
 | `SyncConflictFileRole` | `enum SyncConflictFileRole` | `enum SyncConflictFileRole` | `enum class SyncConflictFileRole` |
+| `SyncConflictResolutionStrategy` | `enum SyncConflictResolutionStrategy` | `enum SyncConflictResolutionStrategy` | `enum class SyncConflictResolutionStrategy` |
+| `SyncConflictVersionImpact` | `dictionary SyncConflictVersionImpact` | `SyncConflictVersionImpact` | `data class SyncConflictVersionImpact` |
+| `SyncConflictReplacePlan` | `dictionary SyncConflictReplacePlan` | `SyncConflictReplacePlan` | `data class SyncConflictReplacePlan` |
+| `SyncConflictResolutionPreviewReport` | `dictionary SyncConflictResolutionPreviewReport` | `SyncConflictResolutionPreviewReport` | `data class SyncConflictResolutionPreviewReport` |
+| `SyncConflictResolutionRequest` | `dictionary SyncConflictResolutionRequest` | `SyncConflictResolutionRequest` | `data class SyncConflictResolutionRequest` |
+| `SyncConflictResolveReport` | `dictionary SyncConflictResolveReport` | `SyncConflictResolveReport` | `data class SyncConflictResolveReport` |
 
 ---
 
@@ -2386,6 +2473,8 @@ interface CoreError {
 | `list_changes(repo, filter)` | query | √ | Db |
 | `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |
 | `detect_sync_conflicts(repo)` | sync/conflict | √ | Db / Io / Conflict |
+| `preview_sync_conflict_resolution(repo, conflict_id, resolution)` | sync/conflict | √ | Conflict / PermissionDenied / Io / Db |
+| `resolve_sync_conflict(repo, conflict_id, resolution)` | sync/conflict | √ | Conflict / PermissionDenied / Io / Db |
 | `list_icloud_conflicts(repo)` | query | √ | ICloudPlaceholder / PermissionDenied / Io / Db |
 | `preview_conflict_versions(repo, conflict_id)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |
 | `resolve_icloud_conflict(repo, conflict_id, resolution)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |
@@ -5923,6 +6012,136 @@ let needsReview = conflicts.filter { $0.status == .needsReview }
 - S4-X-01 不能从本合同得到解决策略、impact summary、Trash/Recycle Bin 可用性、
   Replace plan、change log 写入结果或 Undo token；这些属于 C4-16 / C4-21。
 - 本合同不新增 control map 之外的页面能力。
+
+### `preview_sync_conflict_resolution(repoPath, conflictId, resolution) throws -> SyncConflictResolutionPreviewReport`
+
+```swift
+let preview = try await Task.detached(priority: .userInitiated) {
+    try AreaMatrix.previewSyncConflictResolution(
+        repoPath: repoPath,
+        conflictId: conflict.conflictId,
+        resolution: .keepBoth
+    )
+}.value
+let requiresConfirm = preview.requiresReplaceConfirmation
+```
+
+`preview_sync_conflict_resolution` 是 C4-16 的多端同步冲突解决预览入口，服务
+`S4-X-01 sync-conflict` 和 `S4-X-09 replace-confirm`。输入是已初始化资料库根路径、
+C4-15 返回的稳定 `conflict_id`，以及用户当前选择的
+`SyncConflictResolutionStrategy`：
+
+- `KeepBoth`：默认安全策略，所有版本继续留在用户可见位置。
+- `UseExisting`：canonical path 继续指向 existing，incoming 仍以 conflict copy
+  或自动编号路径保留为用户可见文件。
+- `UseIncoming`：incoming 将成为 canonical path；必须先进入 S4-X-09 二次确认。
+
+输出为 `SyncConflictResolutionPreviewReport`：
+
+- `conflict_id` / `resolution` / `default_resolution`：回显冲突和当前策略，
+  `default_resolution` 必须为 `KeepBoth`。
+- `status_after`：成功 apply 后的目标状态，成功时为 `Resolved`。
+- `version_impacts`：逐版本文件影响，包含 path、可选 file id、role、是否保留、
+  是否 canonical、是否仍用户可见、是否计划进入 Trash/Recycle Bin 和恢复目标。
+- `kept_paths` / `retained_paths` / `planned_trash_paths`：页面 impact summary
+  所需的保留、非 canonical 保留和计划 Trash 路径。
+- `affected_file_ids` / `canonical_path`：DB record 影响和解决后的 canonical path。
+- `change_log_action`：计划写入的 change-log action。
+- `destructive` / `requires_replace_confirmation` / `trash_required` /
+  `trash_available` / `can_apply` / `blocked_reason`：按钮可用性和二次确认状态。
+- `preview_token`：后续 `resolve_sync_conflict` 绑定同一预览所需的 token。
+- `replace_plan`：`UseIncoming` 等可能替换 canonical version 的策略必须返回，
+  供 S4-X-09 展示 old/new path、hash、affected record、backup target、
+  database update、change log 和 recovery note。
+
+副作用边界：
+
+- 只读取 conflict state、C4-15 affected file metadata、Trash/Recycle Bin preflight
+  和必要的 change-log/DB 可写性预检。
+- 不标记 resolved，不写 change log，不写 undo，不推进 fs event cursor。
+- 不移动、不删除、不重命名、不覆盖、不 Trash、不隐藏任何用户文件或冲突副本。
+- 不触发 iCloud/OneDrive 下载、平台 reveal/open、AI/网络、manual rescan 或
+  `sync_external_changes`。
+- 不实现内容级 merge，也不新增 control map 之外的页面能力。
+
+错误：
+
+- `Conflict`：`conflict_id` 不存在、过期、版本集合已变化，或 preview token
+  无法安全绑定。
+- `PermissionDenied`：Trash/Recycle Bin、metadata、版本路径或 DB/change-log
+  preflight 被权限阻断；`UseIncoming` 缺少 S4-X-09 必要条件时也必须阻断。
+- `Io`：安全 metadata、hash、Trash/Recycle Bin preflight 或路径解析失败。
+- `Db`：conflict state、file records 或 change-log preflight 读取失败。
+
+页面消费状态：
+
+- S4-X-01 可以从 preview 得到策略 impact summary、按钮可用性、change log 类型、
+  受影响 record、canonical/retained/Trash 路径和是否需要 S4-X-09。
+- S4-X-09 可以从 `replace_plan` 得到二次确认所需的 old/new file、hash、record id、
+  backup target、database update、change log 和 recovery note。
+- S4-X-01 / S4-X-09 不能从本合同得到平台 reveal/open 对象、QuickLook 预览、
+  内容级 diff、自动合并、云盘 SDK 操作或相邻导入冲突批量能力。
+
+### `resolve_sync_conflict(repoPath, conflictId, resolution) throws -> SyncConflictResolveReport`
+
+```swift
+let report = try await Task.detached(priority: .userInitiated) {
+    try AreaMatrix.resolveSyncConflict(
+        repoPath: repoPath,
+        conflictId: conflict.conflictId,
+        resolution: SyncConflictResolutionRequest(
+            strategy: .keepBoth,
+            previewToken: preview.previewToken ?? "",
+            replaceConfirmed: false,
+            replaceConfirmationId: nil
+        )
+    )
+}.value
+```
+
+`resolve_sync_conflict` 是 C4-16 的执行入口，只能在用户完成 preview，且破坏性
+策略完成 S4-X-09 replace-confirm 后调用。`SyncConflictResolutionRequest`
+包含 `strategy`、`preview_token`、`replace_confirmed` 和可选
+`replace_confirmation_id`。
+
+输出 `SyncConflictResolveReport`：
+
+- `conflict_id`：已解决冲突 ID。
+- `resolution`：实际应用的策略。
+- `status`：最终冲突状态，成功时为 `Resolved`。
+- `kept_paths` / `retained_paths` / `trashed_paths`：解决后仍保留、仍用户可见但非
+  canonical、以及进入 Trash/Recycle Bin 的路径。
+- `affected_file_ids`：被更新或保留为普通可见文件的 record ids。
+- `change_log_action`：实际写入的 change-log action。
+- `undo_token`：Trash/Recycle Bin 操作可撤销时返回。
+- `resolved_at`：解决时间戳。
+
+副作用边界：
+
+- `KeepBoth` 不删除、不覆盖任何版本；只能保留/新增普通可见 file record，
+  关闭 conflict state 并写 change log。
+- `UseExisting` 不删除 incoming；existing 保持 canonical，incoming 继续以
+  conflict copy 或自动编号路径保留为用户可见文件。
+- `UseIncoming` 必须先有 S4-X-09 二次确认；existing 只能进入 Trash/Recycle Bin
+  或文档明确的 Core safety backup，不允许永久删除或隐藏归档。
+- 成功后写 conflict state 和 change log；必要时写 undo action。
+- 任一阶段失败必须保持 conflict unresolved；不得清除 `NeedsReview`，不得把失败项
+  当作成功，也不得留下无法解释的最终目录半成品。
+- 不实现内容级 merge、导入冲突批量策略、通用 batch delete/rename、平台
+  QuickLook、云盘 SDK 集成或相邻 C4-21 平台能力检测。
+
+错误：
+
+- `Conflict`：preview token 过期、conflict state 或版本集合已变化，或 requested
+  resolution 不再安全。
+- `PermissionDenied`：replace confirmation 缺失、Trash/Recycle Bin 不可用、
+  metadata 或版本路径权限不足。
+- `Io`：文件移动、Trash/Recycle Bin、路径解析或失败回滚出错。
+- `Db`：conflict state、file records、change log 或 undo action 写入失败。
+
+S4-X-01 可以从执行报告移除 `NeedsReview` 行、刷新版本卡片、展示 kept/retained/
+Trash 路径、change-log action 和 Undo toast。解决失败时 UI 必须继续展示该冲突
+为 unresolved。本合同没有引入 control map 之外的页面能力。
 
 ### `list_icloud_conflicts(repoPath) throws -> [ICloudConflictPair]`
 
