@@ -1,0 +1,65 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-75`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-75-c4-15-integration-verify.md`
+- 核查范围：`docs/**`、`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**`，当前未发现 staged 或 unstaged diff
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：`detect_sync_conflicts(repo_path)` 已在 Core API、UDL、Rust API、实现和测试中对齐；UDL 定义 `sequence<SyncConflict> detect_sync_conflicts(string repo_path)`；Rust public API 委托真实实现；测试覆盖 contract、implementation、failure、validation 四层。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:374`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:371`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1676`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/sync_conflict_detect/implementation.rs:50`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：输出包含 `conflict_id`、类型、严重性、`NeedsReview` 状态、主路径、受影响文件、版本数、来源、检测时间和 summary；实现写入 `sync_conflict_state`，但不选择版本、不写 change log、不推进 fs event cursor、不移动/删除/覆盖用户文件；测试验证入口列表、Review 基础 metadata、失败保留 prior state。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:5887`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:5900`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/sync_conflict_detect.rs:104`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_conflict_detect_validation.rs:53`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：Control map 仅把 C4-15 绑定到 S4-X-01 和 S4-X-03；API 文档明确 C4-16 resolve、C4-21 replace confirm、S4-X-09 二次确认不属于本合同；实现只检测并刷新 conflict state。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:26`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:28`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:5908`
+
+- 项目：不得修改文件，只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮未执行写入或修复操作；仅执行读取、diff 检查和验证命令。当前工作区已有运行状态类脏文件：`.codex/task-loop-runs/20260603_192902/summary.json`、`tasks/prompts/_shared/progress.json`，不属于 `apps/**` Forbidden Touches，也不作为通过证据。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260603_192902/summary.json`、`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C4-15 拆分为 contract types、implementation、paths、DB metadata 存取，主要实现文件 427 行，符合文件长度阈值。
+- 注释 / rustdoc / 文档同步：通过，public API 和公开类型有 rustdoc，Core API 与 UDL 字段对齐。
+- 错误处理与边界处理：通过，InvalidPath / PermissionDenied / FileNotFound 等归一到文档声明的 Io / Db / Conflict；DB 写失败保留 prior state。
+- 测试与验证覆盖：通过，`./dev check task 4-3/task-75` 已跑 doctor、diff check、fmt、clippy 和 4 个 targeted Rust test binaries，全部通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，实现读取真实 repo metadata、文件 metadata/hash、watcher health 和 DB config state；未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-75`
+- 通过：`prompt doctor` OK，637 tasks / 637 manifests；`git diff --check` 通过；`cargo fmt --all -- --check` 通过；`cargo clippy --all-targets --all-features -- -D warnings` 通过。
+- 通过：`sync_conflict_detect_contract_api` 3 tests passed；`sync_conflict_detect_failure_recovery` 4 tests passed；`sync_conflict_detect_implementation` 5 tests passed；`sync_conflict_detect_validation` 4 tests passed。
+- 失败：无
+- 缺失：无；本 task manifest 要求的验证命令已执行。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C4-15 可以作为后续 S4-X-03 / S4-X-01 page-feature task 的真实 Core 依赖。
+VERIFY_RESULT: PASS

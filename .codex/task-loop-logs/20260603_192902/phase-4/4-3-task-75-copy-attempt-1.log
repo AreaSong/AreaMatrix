@@ -1,0 +1,56 @@
+一、执行结论
+
+已完成。`4-3/task-75` 作为只读 integration verify 通过，C4-15 `detect_sync_conflicts(repo_path)` 可以作为后续 page-feature task 的真实 Core 依赖。
+
+二、执行范围
+
+单任务：`4-3/task-75: C4-15 integration-verify`。
+
+修改文件清单：本轮未修改产品实现、文档、UDL、测试或 `apps/**`。工作树中仍有两项开始前已存在的本地状态改动：
+
+- `.codex/task-loop-runs/20260603_192902/summary.json`
+- `tasks/prompts/_shared/progress.json`
+
+三、完成情况
+
+核对清单结果：
+
+- 已交叉检查 capability spec、Core API、UDL、Rust 实现和测试。
+- 已确认 S4-X-03 需要的 conflict count/status、列表字段、错误入口，以及 S4-X-01 需要的 conflict id、affected files、version count、severity、source metadata 均由 C4-15 合同覆盖。
+- 已确认 C4-16 resolve、C4-21 replace confirm、change log、Undo、Trash/Recycle Bin、二次确认不属于 C4-15，本实现没有越界实现这些能力。
+- 未触碰 `Forbidden Touches`: `apps/**`。
+
+四、工程质量
+
+代码结构清晰：C4-15 类型在 `core/src/sync_conflict_detect.rs`，实现拆在 `implementation.rs` / `paths.rs`，DB metadata 写入在 `db/sync_conflicts.rs`。生产路径未发现 `unwrap()` / `expect()` / `panic!()` 命中；测试中的 `expect` 都有明确上下文。
+
+C4-15 的允许副作用仅是刷新 AreaMatrix-owned `sync_conflict_state` metadata；测试覆盖了不改用户文件、不写 change log、不推进 fs event cursor、DB 写失败保留旧状态、歧义冲突不写状态、权限错误可重试。未发现占位、硬编码通过态、mock-only 或一次性实现。
+
+五、验证情况
+
+已运行：
+
+```bash
+./dev check task 4-3/task-75
+```
+
+结果：通过，退出码 0。
+
+关键证据：
+
+- `prompt_pipeline.py doctor`: OK，tasks 637 / manifests 637。
+- `git diff --check`: 通过。
+- `cargo fmt --all -- --check`: 通过。
+- `cargo clippy --all-targets --all-features -- -D warnings`: 通过。
+- `sync_conflict_detect_contract_api`: 3 passed。
+- `sync_conflict_detect_failure_recovery`: 4 passed。
+- `sync_conflict_detect_implementation`: 5 passed。
+- `sync_conflict_detect_validation`: 4 passed。
+
+未运行：未额外运行 `./dev check all` 或全 workspace 测试，因为本任务 manifest 验证上限是 `./dev check task 4-3/task-75`，且该命令已按 Core integration verify 自动包含必要的 targeted tests、fmt 和 clippy。
+
+六、风险与后续
+
+剩余风险：未做 UI 真机验证，因为本任务是 Core integration verify，`apps/**` 明确禁止触碰；后续 UI 接入由 S4-X-01 / S4-X-03 page-feature task 验收。
+
+建议下一个任务：`4-3/task-76`，即 C4-16 `sync-conflict-resolve` contract/API，对齐冲突解决能力合同。
