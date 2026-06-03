@@ -1,0 +1,76 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-51`
+- 对应文件路径：`core/src/api.rs`、`core/src/search.rs`、`core/area_matrix.udl`、`core/tests/desktop_main_query_contract_api.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：6（核对清单 4/4，完成标准 2/2）
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取 C4-11 能力规格、control map、Core API、错误码
+- 结果：通过
+- 证据：C4-11 规格定义 API 为 `list_files`、`get_file`、`list_tree_json`、`search_files`，输入为 repo path/filter/pagination，输出为桌面主窗口数据，DB 只读、文件系统无写入，错误码含 `Db` / `RepoNotInitialized`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md:8`
+
+- 项目：API 名称、输入、输出、错误码、权限/隐私边界一致
+- 结果：通过
+- 证据：UDL 暴露四个复用查询入口；Rust rustdoc 明确分页、只读、不得平台侧扫描 repo，不引入 watcher/import/recovery 行为；CoreError/UDL 包含 `Db` 与 `RepoNotInitialized`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:262`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1479`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/search.rs:329`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/error.rs:256`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+- 结果：通过
+- 证据：diff 仅追加 C4-11 合同注释和合同测试，未新增业务实现、未修改 `apps/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/desktop_main_query_contract_api.rs:32`
+
+- 项目：记录页面消费方是否能从合同得到所需状态
+- 结果：通过
+- 证据：测试覆盖 Windows/Linux 主窗口消费状态、control map 绑定和 Core API/UDL 对齐；页面中的 watcher、import、recovery、platform status 仍留在相邻能力，不纳入 C4-11。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/desktop_main_query_contract_api.rs:198`
+
+- 项目：C4-11 Core API 合同可被后续 implementation task 直接实现
+- 结果：通过
+- 证据：签名编译测试约束 `list_files/get_file/list_tree_json/search_files` 的 Rust 类型、分页输入和输出结构。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/desktop_main_query_contract_api.rs:33`
+
+- 项目：合同没有引入 control map 之外的页面能力
+- 结果：通过
+- 证据：control map 仅将 C4-11 绑定到 `S4-WIN-02`、`S4-LNX-02` 的 desktop query；未发现新增 `apps/**` 或其他页面能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:17`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，新增测试 260 行，未新增复杂生产逻辑或相邻能力实现。
+- 注释 / rustdoc / 文档同步：通过，Rust public API rustdoc 和 UDL 注释说明 C4-11 边界。
+- 错误处理与边界处理：通过，本 task 为合同任务；错误枚举和合同测试覆盖 `Db` / `RepoNotInitialized`。
+- 测试与验证覆盖：通过，task-scoped 验证命令已通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现 mock-only 或硬编码完成态；测试为合同一致性测试。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-51`
+- 通过：`prompt doctor` OK；`git diff --check` OK；`cargo test --test desktop_main_query_contract_api -- --nocapture` 通过，3 tests passed。
+- 失败：无。
+- 缺失：无。未运行 `./dev check all`，因为当前 manifest 指定普通 atomic Core task 使用 `./dev check task 4-3/task-51`，validation-driver 不要求默认扩大到全量门禁。
+- Forbidden Touches：未发现 `apps/**` diff。
+- 工作区备注：`tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260603_085846/summary.json` 属于 runner 进行中的收口上下文；按本 verify prompt，不因 `in_progress` / checkpoint 尚未写入而判定失败。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS

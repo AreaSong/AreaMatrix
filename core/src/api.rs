@@ -1476,6 +1476,12 @@ pub fn restore_file(_repo_path: String, _file_id: i64) -> CoreResult<FileEntry> 
 /// consumers a structured availability status for `Missing` badges, while
 /// missing-file recovery stays with C4-18 rather than this list contract.
 ///
+/// C4-11 reuses the same paginated metadata query for `S4-WIN-02` and
+/// `S4-LNX-02` desktop main-window rows. Desktop shells must not scan the
+/// repository directly to assemble the main list; `FileFilter::limit` and
+/// `FileFilter::offset` carry the page request, and adjacent watcher, import,
+/// conflict, and recovery actions remain outside this contract.
+///
 /// # Errors
 ///
 /// Returns `CoreError::RepoNotInitialized { path }` when the repository metadata is
@@ -1505,6 +1511,11 @@ pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileE
 /// mirrors the list payload so detail consumers can keep a missing row visible
 /// without platform-side filesystem inference and route the missing state to
 /// `S4-X-06` rather than inferring it from the filesystem.
+///
+/// C4-11 desktop main-window consumers use this detail query after selecting a
+/// row from [`list_files`] or [`search_files`]. It returns the same base
+/// metadata shape and does not add platform-side preview, watcher, rescan, or
+/// recovery behavior.
 ///
 /// # Errors
 ///
@@ -1565,6 +1576,10 @@ pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<C
 /// Mobile shells must keep large-repository list data paginated through
 /// [`list_files`]; this tree contract does not add search, sync, or recovery
 /// actions.
+///
+/// C4-11 desktop main-window consumers may use the same tree snapshot for the
+/// Windows and Linux sidebar. The platform UI remains responsible for native
+/// rendering and virtualization; Core only returns the read-only tree JSON.
 ///
 /// # Errors
 ///

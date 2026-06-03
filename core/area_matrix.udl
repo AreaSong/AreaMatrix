@@ -259,6 +259,10 @@ namespace area_matrix {
     [Throws=CoreError]
     FileEntry restore_file(string repo_path, i64 file_id);
 
+    // C4-11 desktop-main-query reuses list_files, get_file, list_tree_json,
+    // and search_files for S4-WIN-02/S4-LNX-02 main-window state. Desktop
+    // shells page through FileFilter.limit/offset and must not scan the repo
+    // directly or hide watcher/import/recovery behavior behind this query set.
     [Throws=CoreError]
     sequence<FileEntry> list_files(string repo_path, FileFilter filter);
 
@@ -341,6 +345,7 @@ namespace area_matrix {
     [Throws=CoreError]
     sequence<ChangeLogEntry> list_changes(string repo_path, ChangeFilter filter);
 
+    // C4-11 also uses this read-only tree JSON for desktop sidebar state.
     [Throws=CoreError]
     string list_tree_json(string repo_path, string locale);
 
