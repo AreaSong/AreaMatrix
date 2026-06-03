@@ -46,6 +46,7 @@ pub mod search;
 mod semantic_search;
 pub mod storage;
 pub mod sync;
+mod sync_conflict_detect;
 mod tags;
 pub mod tree;
 pub mod undo;
@@ -164,6 +165,10 @@ pub use semantic_search::{
     build_embedding_index, semantic_search, SemanticIndexBuildReport, SemanticIndexScope,
     SemanticIndexStatus, SemanticNormalSearchMatch, SemanticSearchFallbackReason,
     SemanticSearchInputField, SemanticSearchMatch, SemanticSearchResultPage, SemanticSearchRoute,
+};
+pub use sync_conflict_detect::{
+    SyncConflict, SyncConflictAffectedFile, SyncConflictFileRole, SyncConflictSeverity,
+    SyncConflictStatus, SyncConflictType,
 };
 pub use tags::{
     add_tag, apply_tag_suggestions, batch_add_tags, list_tags, remove_tag, suggest_tags_for_file,

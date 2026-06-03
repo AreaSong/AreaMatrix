@@ -8,10 +8,10 @@ use crate::{
     classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules, classify,
     cloud_permission_state, cross_platform_ffi, db, icloud_conflicts, import_conflict_batch,
     local_model_status, note, platform_watcher_status, recovery, redo, remote_provider_config,
-    repair, repo_init, repo_path, repo_scan, storage, sync, tree, AiCallLogClearReport,
-    AiCallLogClearRequest, AiCallLogFilter, AiCallLogPage, AiCallLogPagination,
-    AiCategorySuggestion, AiCategorySuggestionRequest, AiConfig, AiConfigSnapshot,
-    AiFallbackStatus, AiFallbackStatusRequest, AiPrivacyEvaluationReport,
+    repair, repo_init, repo_path, repo_scan, storage, sync, sync_conflict_detect, tree,
+    AiCallLogClearReport, AiCallLogClearRequest, AiCallLogFilter, AiCallLogPage,
+    AiCallLogPagination, AiCategorySuggestion, AiCategorySuggestionRequest, AiConfig,
+    AiConfigSnapshot, AiFallbackStatus, AiFallbackStatusRequest, AiPrivacyEvaluationReport,
     AiPrivacyEvaluationRequest, AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest,
     AiSummaryClearReport, AiSummaryClearRequest, AiSummaryDraft, AiSummaryGenerationRequest,
     AiSummarySaveReport, AiSummarySaveRequest, AiTagSuggestionApplyReport, AiTagSuggestionReport,
@@ -31,7 +31,7 @@ use crate::{
     PlatformWatcherSnapshot, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
     RemoteProviderConfigSnapshot, RemoteProviderDisableRequest, RemoteProviderEnableRequest,
     RemoteProviderTestRequest, RemoteProviderTestResult, RepairOptions, RepairReport, RepoConfig,
-    RepoInitOptions, RepoPathValidation, RuleImpactReport, ScanSession, SyncResult,
+    RepoInitOptions, RepoPathValidation, RuleImpactReport, ScanSession, SyncConflict, SyncResult,
     TagSuggestionApplyReport, TagSuggestionReport, TagSuggestionRequest,
 };
 
@@ -1652,6 +1652,29 @@ pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<C
 /// config cannot be inspected.
 pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String> {
     tree::list_tree_json(repo_path, locale)
+}
+
+/// Detects C4-15 sync conflicts without resolving any version.
+///
+/// `S4-X-03 sync-conflict-entry` consumes this non-resolving list for conflict
+/// count, latest detection state, row badges, and Review routing.
+/// `S4-X-01 sync-conflict` consumes the same rows as its conflict summary and
+/// affected-version metadata before C4-16 resolution builds impact plans. Core
+/// may inspect persisted external events and safe file metadata, and it may
+/// write or refresh conflict-state metadata for detected conflicts. This entry
+/// point must not choose a winning version, mark conflicts resolved, advance
+/// sync cursors, trigger rescan, download cloud placeholders, or
+/// move/delete/rename/overwrite user files.
+///
+/// # Errors
+///
+/// Returns `CoreError::Db { message }` for unavailable, unreadable, or
+/// unwritable conflict-state metadata, `CoreError::Io { message }` for safe
+/// metadata inspection failures, and `CoreError::Conflict { path }` when
+/// snapshots or event state cannot be bound to a stable conflict without user
+/// review.
+pub fn detect_sync_conflicts(repo_path: String) -> CoreResult<Vec<SyncConflict>> {
+    sync_conflict_detect::detect_sync_conflicts(repo_path)
 }
 
 /// Lists iCloud conflicted copy pairs without resolving them.

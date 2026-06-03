@@ -368,6 +368,9 @@ namespace area_matrix {
     string list_tree_json(string repo_path, string locale);
 
     [Throws=CoreError]
+    sequence<SyncConflict> detect_sync_conflicts(string repo_path);
+
+    [Throws=CoreError]
     sequence<ICloudConflictPair> list_icloud_conflicts(string repo_path);
 
     [Throws=CoreError]
@@ -1688,6 +1691,29 @@ dictionary MoveToCategoryPreview {
     boolean will_move_file;
 };
 
+dictionary SyncConflictAffectedFile {
+    string path;
+    i64? file_id;
+    SyncConflictFileRole role;
+    i64? size_bytes;
+    i64? modified_at;
+    string? hash_sha256;
+    string? source_platform;
+};
+
+dictionary SyncConflict {
+    string conflict_id;
+    SyncConflictType conflict_type;
+    SyncConflictSeverity severity;
+    SyncConflictStatus status;
+    string primary_path;
+    sequence<SyncConflictAffectedFile> affected_files;
+    i64 version_count;
+    string? source_provider;
+    i64? detected_at;
+    string? summary;
+};
+
 dictionary ICloudConflictPair {
     string conflict_id;
     string? original_path;
@@ -2146,6 +2172,15 @@ enum CommandTargetKind {
 enum CommandTargetAction {
     "Navigate", "OpenSheet", "OpenConfirmation", "RunSmartList",
     "FocusFile", "OpenSearch", "LowRiskAction"
+};
+enum SyncConflictStatus { "NeedsReview", "Resolved" };
+enum SyncConflictType {
+    "SameNameDifferentContent", "ConcurrentModification", "MetadataMismatch",
+    "MissingVersion", "Unknown"
+};
+enum SyncConflictSeverity { "Low", "Medium", "High" };
+enum SyncConflictFileRole {
+    "Existing", "Incoming", "ConflictCopy", "Missing", "Unknown"
 };
 enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ICloudConflictVersionRole { "Original", "ConflictedCopy" };

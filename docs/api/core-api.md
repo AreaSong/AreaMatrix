@@ -371,6 +371,9 @@ namespace area_matrix {
     string list_tree_json(string repo_path, string locale);
 
     [Throws=CoreError]
+    sequence<SyncConflict> detect_sync_conflicts(string repo_path);
+
+    [Throws=CoreError]
     sequence<ICloudConflictPair> list_icloud_conflicts(string repo_path);
 
     [Throws=CoreError]
@@ -1687,6 +1690,29 @@ dictionary MoveToCategoryPreview {
     boolean will_move_file;
 };
 
+dictionary SyncConflictAffectedFile {
+    string path;
+    i64? file_id;
+    SyncConflictFileRole role;
+    i64? size_bytes;
+    i64? modified_at;
+    string? hash_sha256;
+    string? source_platform;
+};
+
+dictionary SyncConflict {
+    string conflict_id;
+    SyncConflictType conflict_type;
+    SyncConflictSeverity severity;
+    SyncConflictStatus status;
+    string primary_path;
+    sequence<SyncConflictAffectedFile> affected_files;
+    i64 version_count;
+    string? source_provider;
+    i64? detected_at;
+    string? summary;
+};
+
 dictionary ICloudConflictPair {
     string conflict_id;
     string? original_path;
@@ -2146,6 +2172,15 @@ enum CommandTargetAction {
     "Navigate", "OpenSheet", "OpenConfirmation", "RunSmartList",
     "FocusFile", "OpenSearch", "LowRiskAction"
 };
+enum SyncConflictStatus { "NeedsReview", "Resolved" };
+enum SyncConflictType {
+    "SameNameDifferentContent", "ConcurrentModification", "MetadataMismatch",
+    "MissingVersion", "Unknown"
+};
+enum SyncConflictSeverity { "Low", "Medium", "High" };
+enum SyncConflictFileRole {
+    "Existing", "Incoming", "ConflictCopy", "Missing", "Unknown"
+};
 enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ICloudConflictVersionRole { "Original", "ConflictedCopy" };
 enum ICloudConflictPreviewStatus { "Available", "MetadataOnly", "Unavailable" };
@@ -2257,6 +2292,12 @@ interface CoreError {
 | `BindingContractReport` | `dictionary BindingContractReport` | `BindingContractReport` | `data class BindingContractReport` |
 | `PlatformWatcherHealthSignal` | `dictionary PlatformWatcherHealthSignal` | `PlatformWatcherHealthSignal` | `data class PlatformWatcherHealthSignal` |
 | `PlatformWatcherSnapshot` | `dictionary PlatformWatcherSnapshot` | `PlatformWatcherSnapshot` | `data class PlatformWatcherSnapshot` |
+| `SyncConflict` | `dictionary SyncConflict` | `SyncConflict` | `data class SyncConflict` |
+| `SyncConflictAffectedFile` | `dictionary SyncConflictAffectedFile` | `SyncConflictAffectedFile` | `data class SyncConflictAffectedFile` |
+| `SyncConflictType` | `enum SyncConflictType` | `enum SyncConflictType` | `enum class SyncConflictType` |
+| `SyncConflictSeverity` | `enum SyncConflictSeverity` | `enum SyncConflictSeverity` | `enum class SyncConflictSeverity` |
+| `SyncConflictStatus` | `enum SyncConflictStatus` | `enum SyncConflictStatus` | `enum class SyncConflictStatus` |
+| `SyncConflictFileRole` | `enum SyncConflictFileRole` | `enum SyncConflictFileRole` | `enum class SyncConflictFileRole` |
 
 ---
 
@@ -2344,6 +2385,7 @@ interface CoreError {
 | `get_file(repo, file_id)` | query | √ | FileNotFound |
 | `list_changes(repo, filter)` | query | √ | Db |
 | `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |
+| `detect_sync_conflicts(repo)` | sync/conflict | √ | Db / Io / Conflict |
 | `list_icloud_conflicts(repo)` | query | √ | ICloudPlaceholder / PermissionDenied / Io / Db |
 | `preview_conflict_versions(repo, conflict_id)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |
 | `resolve_icloud_conflict(repo, conflict_id, resolution)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |
@@ -5828,6 +5870,60 @@ snake_case 以配合 Swift `JSONDecoder.KeyDecodingStrategy.convertFromSnakeCase
 overview，不移动、重命名、删除或修改用户文件。虚拟智能列表、搜索结果树和
 Stage 2 tree projection 不属于本接口。详见 [../modules/tree-scan.md](../modules/tree-scan.md)。
 
+### `detect_sync_conflicts(repoPath) throws -> [SyncConflict]`
+
+```swift
+let conflicts = try await Task.detached(priority: .userInitiated) {
+    try AreaMatrix.detectSyncConflicts(repoPath: repoPath)
+}.value
+let needsReview = conflicts.filter { $0.status == .needsReview }
+```
+
+`detect_sync_conflicts` 是 C4-15 的多端同步冲突检测入口，服务
+`S4-X-03 sync-conflict-entry` 和 `S4-X-01 sync-conflict`。输入只暴露已授权
+且已初始化的 `repoPath`；能力规格中的 external events 和 metadata snapshots
+由 Core 从已持久化 watcher/import/cloud/conflict state 中读取，不作为 UDL 参数传入。
+
+输出为 `SyncConflict` 列表：
+
+- `conflict_id`：稳定冲突 ID，供 Review 和后续 C4-16 resolve 绑定。
+- `conflict_type`：`SameNameDifferentContent`、`ConcurrentModification`、
+  `MetadataMismatch`、`MissingVersion` 或 `Unknown`。
+- `severity`：`Low`、`Medium` 或 `High`，供入口排序、徽标和错误摘要使用。
+- `status`：当前只声明 `NeedsReview` / `Resolved`；检测入口不得把 Later 当作 resolved。
+- `primary_path`：入口行和详情 banner 使用的主路径。
+- `affected_files`：一个或多个 `SyncConflictAffectedFile`，包含 path、可选 file id、
+  role、size、modified time、hash 和 source platform。
+- `version_count`：Core 当前能识别的版本数量。
+- `source_provider` / `detected_at` / `summary`：用于来源、最近检测时间和可访问性摘要。
+
+副作用边界：
+
+- 读取 AreaMatrix metadata、已持久化 sync/import/cloud 状态和安全文件 metadata。
+- 写入或刷新 conflict state metadata，用于保存检测到的冲突状态、稳定冲突 ID、
+  severity、affected files 和 detected_at。
+- 不选择任一版本，不标记 resolved，不写 change log，不写 undo，不推进 fs event cursor。
+- 不触发 `sync_external_changes`、manual rescan、iCloud/OneDrive 下载、平台 reveal/open 或 AI/网络。
+- 不删除、不移动、不重命名、不覆盖、不 Trash、不隐藏任何用户文件或冲突副本。
+- 不实现 C4-16 resolve、C4-21 replace confirm、S4-X-09 二次确认或平台差异 UI。
+
+错误：
+
+- `Db`：conflict state metadata 读取/写入、watcher/import/cloud metadata、
+  snapshot 绑定或 schema 访问失败。
+- `Io`：安全 metadata inspection、路径解析或文件状态读取失败。
+- `Conflict`：外部事件和 metadata snapshot 无法稳定绑定到同一个冲突 ID，必须继续用户 review。
+
+页面消费状态：
+
+- S4-X-03 可以从列表长度、`status = NeedsReview`、`detected_at`、`conflict_type`、
+  `severity`、`primary_path` 和 `summary` 渲染 banner、Needs Review 列表、错误态和重试入口。
+- S4-X-01 可以从 `conflict_id`、`affected_files`、`version_count`、
+  `source_provider` 和 `severity` 展示冲突摘要与版本卡片的基础 metadata。
+- S4-X-01 不能从本合同得到解决策略、impact summary、Trash/Recycle Bin 可用性、
+  Replace plan、change log 写入结果或 Undo token；这些属于 C4-16 / C4-21。
+- 本合同不新增 control map 之外的页面能力。
+
 ### `list_icloud_conflicts(repoPath) throws -> [ICloudConflictPair]`
 
 ```swift
@@ -6408,6 +6504,7 @@ public actor CoreBridge {
 - `resume_scan_session`（可能继续全扫）
 - `recover_on_startup`（启动时）
 - `list_tree_json`（大库）
+- `detect_sync_conflicts`（可能读写 conflict metadata 并扫描文件 metadata）
 - `list_icloud_conflicts`（扫描 iCloud conflicted copy）
 - `preview_move_to_category`（目标路径和同名冲突预检）
 - `move_to_category`（可能移动 repo-owned 文件）
