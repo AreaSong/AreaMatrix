@@ -1,0 +1,68 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-55`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-55-c4-11-integration-verify.md`
+- Manifest 章节：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:8092`
+- 实际验收文件：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：capability spec / Core API / UDL / Rust 实现 / 测试交叉检查
+- 结果：通过
+- 证据：C4-11 spec 定义 `list_files`、`get_file`、`list_tree_json`、`search_files`，只读、无文件写入，错误码含 `Db`、`RepoNotInitialized`；UDL 暴露同一组接口；Rust public API 已落地并转入真实实现；C4-11 三组测试覆盖合同、实现、失败恢复。
+- 涉及文件：`docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md:8`、`core/area_matrix.udl:262`、`core/src/api.rs:1479`、`core/src/search.rs:329`、`core/tests/desktop_main_query_contract_api.rs:32`、`core/tests/desktop_main_query_implementation.rs:197`、`core/tests/desktop_main_query_failure_recovery.rs:208`
+
+- 项目：消费页面状态、错误、副作用覆盖
+- 结果：通过
+- 证据：Windows/Linux 主窗口均要求只读 refresh、列表、详情、搜索入口、DB locked/缺失文件状态；测试覆盖空库、未初始化、DB 损坏、tree IO 错误、缺失文件状态、分页、无远程 AI/secret 副作用。
+- 涉及文件：`docs/ux/page-specs/stage-4-multiplatform/S4-WIN-02-main-window.md:72`、`docs/ux/page-specs/stage-4-multiplatform/S4-LNX-02-main-window.md:65`、`core/tests/desktop_main_query_failure_recovery.rs:235`、`core/tests/desktop_main_query_failure_recovery.rs:273`、`core/tests/desktop_main_query_failure_recovery.rs:311`、`core/tests/desktop_main_query_failure_recovery.rs:446`
+
+- 项目：没有实现 control map 之外能力
+- 结果：通过
+- 证据：control map 仅把 `S4-WIN-02`、`S4-LNX-02` 绑定到 C4-11 desktop query；Rust/UDL 注释明确 watcher、import、conflict、recovery、rescan 不藏入该查询能力。
+- 涉及文件：`docs/architecture/stage-4-control-map.md:17`、`docs/architecture/stage-4-control-map.md:22`、`core/src/api.rs:1479`、`core/src/api.rs:1515`、`core/area_matrix.udl:262`
+
+- 项目：Expected New Paths / Forbidden Touches / 工作区边界
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在；`git status --short` 仅显示 task-loop 收口态的 `.codex/task-loop-runs/.../summary.json` 与 `tasks/prompts/_shared/progress.json` 为 in_progress 记录；无 staged 文件、无未跟踪文件、未触碰 `apps/**`。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-4.md:8104`、`tasks/prompts/_shared/manifests/phase-4.md:8108`、`tasks/prompts/_shared/manifests/phase-4.md:8113`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。查询入口保持在 Core 层，`list_files` 走 DB metadata 查询，`search_files` 走 search engine，`list_tree_json` 走 tree 模块，未引入平台 API。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc 和 `# Errors`，Core API、UDL、capability spec、control map 有测试保持对齐。
+- 错误处理与边界处理：通过。失败测试覆盖 `RepoNotInitialized`、`Db`、`Io`、`InvalidPath`、`FileNotFound` 映射与只读不变性。
+- 测试与验证覆盖：通过。manifest 验证命令已 fresh 运行并通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现测试使用真实 temp repo、SQLite metadata、文件读写夹具验证业务路径；未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-55`
+- 通过：prompt doctor、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test desktop_main_query_contract_api -- --nocapture`，3/3 passed
+- 通过：`cargo test --test desktop_main_query_failure_recovery -- --nocapture`，7/7 passed
+- 通过：`cargo test --test desktop_main_query_implementation -- --nocapture`，3/3 passed
+- 失败：无
+- 缺失：无；本 task manifest 未要求 `./dev check all`
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C4-11 可以作为后续 Windows/Linux main-window page-feature task 的真实 Core 依赖。
+
+VERIFY_RESULT: PASS
