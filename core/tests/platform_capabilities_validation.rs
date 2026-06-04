@@ -38,7 +38,12 @@ fn assert_contains(haystack: &str, needle: &str) {
 fn file_snapshot(paths: &[PathBuf]) -> Vec<(PathBuf, Vec<u8>)> {
     paths
         .iter()
-        .map(|path| (path.clone(), fs::read(path).expect("read validation file snapshot")))
+        .map(|path| {
+            (
+                path.clone(),
+                fs::read(path).expect("read validation file snapshot"),
+            )
+        })
         .collect()
 }
 
@@ -64,7 +69,10 @@ fn assert_ui_ready_row_invariants(matrix: &PlatformCapabilities) {
     for (name, row) in capability_rows(matrix) {
         match row.status {
             PlatformCapabilityStatus::Available => {
-                assert!(row.ui_enabled, "{name} available rows must enable dependent UI");
+                assert!(
+                    row.ui_enabled,
+                    "{name} available rows must enable dependent UI"
+                );
                 if row.requires_permission {
                     assert_non_empty_reason(name, row);
                 }
@@ -107,16 +115,15 @@ fn platform_capabilities_validation_proves_ui_ready_success_matrices() {
     ];
 
     for (platform, version) in cases {
-        let matrix =
-            get_platform_capabilities(platform, version.to_owned()).expect("valid matrix");
+        let matrix = get_platform_capabilities(platform, version.to_owned()).expect("valid matrix");
 
         assert_eq!(matrix.platform, platform);
         assert_eq!(matrix.app_version, version);
         assert_ui_ready_row_invariants(&matrix);
     }
 
-    let ios = get_platform_capabilities(PlatformId::Ios, "4.0.0-ios".to_owned())
-        .expect("iOS matrix");
+    let ios =
+        get_platform_capabilities(PlatformId::Ios, "4.0.0-ios".to_owned()).expect("iOS matrix");
     assert_eq!(ios.watcher.status, PlatformCapabilityStatus::Limited);
     assert!(!ios.watcher.ui_enabled);
     assert_eq!(ios.trash.status, PlatformCapabilityStatus::NotAvailable);
