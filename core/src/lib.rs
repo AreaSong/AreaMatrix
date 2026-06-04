@@ -31,6 +31,7 @@ pub mod error;
 mod icloud_conflicts;
 mod import_conflict_batch;
 mod local_model_status;
+mod missing_file_recovery;
 mod note;
 pub mod overview;
 mod platform_capabilities;
@@ -149,6 +150,10 @@ pub use local_model_status::{
     LocalModelAvailability, LocalModelCachedStatus, LocalModelFeatureStatus,
     LocalModelFolderLocation, LocalModelFolderRequest, LocalModelRecommendedAction,
     LocalModelStatusRequest, LocalModelStatusSnapshot,
+};
+pub use missing_file_recovery::{
+    MissingFileReason, MissingFileRecoveryReport, MissingFileRecoveryStatus,
+    MissingFileRelinkRequest, MissingFileRemoveRecordRequest, MissingFileState,
 };
 pub use platform_capabilities::{
     PlatformCapabilities, PlatformCapabilityStatus, PlatformCapabilitySupport, PlatformId,

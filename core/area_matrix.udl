@@ -362,6 +362,19 @@ namespace area_matrix {
     [Throws=CoreError]
     FileEntry get_file(string repo_path, i64 file_id);
 
+    [Throws=CoreError]
+    MissingFileState get_missing_file_state(string repo_path, i64 file_id);
+
+    [Throws=CoreError]
+    MissingFileRecoveryReport relink_missing_file(
+        string repo_path, MissingFileRelinkRequest request
+    );
+
+    [Throws=CoreError]
+    MissingFileRecoveryReport remove_missing_file_record(
+        string repo_path, MissingFileRemoveRecordRequest request
+    );
+
     // C4-07 mobile-detail composes get_file + list_changes + read_note.
     // FileEntry.availability_status lets S4-IOS-05 route Missing to S4-X-06
     // without platform-side metadata inference.
@@ -1714,6 +1727,44 @@ dictionary FileEntry {
     i64 updated_at;
 };
 
+dictionary MissingFileState {
+    i64 file_id;
+    string relative_path;
+    string? last_known_path;
+    i64? last_seen_at;
+    MissingFileReason reason;
+    string? expected_hash_sha256;
+    boolean can_locate;
+    boolean can_try_again;
+    boolean can_remove_record;
+    boolean remove_record_requires_confirmation;
+    boolean can_run_rescan;
+    string? rescan_disabled_reason;
+};
+
+dictionary MissingFileRelinkRequest {
+    i64 file_id;
+    string new_path;
+    boolean confirmed;
+};
+
+dictionary MissingFileRemoveRecordRequest {
+    i64 file_id;
+    boolean confirmed;
+};
+
+dictionary MissingFileRecoveryReport {
+    i64 file_id;
+    MissingFileRecoveryStatus status;
+    string? previous_path;
+    string? current_path;
+    boolean hash_matched;
+    boolean record_removed;
+    boolean file_deleted;
+    string? change_log_action;
+    string? message;
+};
+
 dictionary MoveToCategoryPreview {
     i64 file_id;
     string from_category;
@@ -2287,6 +2338,13 @@ enum SyncConflictFileRole {
     "Existing", "Incoming", "ConflictCopy", "Missing", "Unknown"
 };
 enum SyncConflictResolutionStrategy { "KeepBoth", "UseExisting", "UseIncoming" };
+enum MissingFileReason {
+    "PathMissing", "PermissionDenied", "CloudPlaceholder",
+    "ExternalVolumeDisconnected", "Unknown"
+};
+enum MissingFileRecoveryStatus {
+    "Missing", "Present", "Relinked", "HashMismatch", "RecordRemoved", "Blocked"
+};
 enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ICloudConflictVersionRole { "Original", "ConflictedCopy" };
 enum ICloudConflictPreviewStatus { "Available", "MetadataOnly", "Unavailable" };

@@ -370,6 +370,19 @@ namespace area_matrix {
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
+    MissingFileState get_missing_file_state(string repo_path, i64 file_id);
+
+    [Throws=CoreError]
+    MissingFileRecoveryReport relink_missing_file(
+        string repo_path, MissingFileRelinkRequest request
+    );
+
+    [Throws=CoreError]
+    MissingFileRecoveryReport remove_missing_file_record(
+        string repo_path, MissingFileRemoveRecordRequest request
+    );
+
+    [Throws=CoreError]
     sequence<ChangeLogEntry> list_changes(string repo_path, ChangeFilter filter);
 
     [Throws=CoreError]
@@ -1713,6 +1726,44 @@ dictionary FileEntry {
     i64 updated_at;
 };
 
+dictionary MissingFileState {
+    i64 file_id;
+    string relative_path;
+    string? last_known_path;
+    i64? last_seen_at;
+    MissingFileReason reason;
+    string? expected_hash_sha256;
+    boolean can_locate;
+    boolean can_try_again;
+    boolean can_remove_record;
+    boolean remove_record_requires_confirmation;
+    boolean can_run_rescan;
+    string? rescan_disabled_reason;
+};
+
+dictionary MissingFileRelinkRequest {
+    i64 file_id;
+    string new_path;
+    boolean confirmed;
+};
+
+dictionary MissingFileRemoveRecordRequest {
+    i64 file_id;
+    boolean confirmed;
+};
+
+dictionary MissingFileRecoveryReport {
+    i64 file_id;
+    MissingFileRecoveryStatus status;
+    string? previous_path;
+    string? current_path;
+    boolean hash_matched;
+    boolean record_removed;
+    boolean file_deleted;
+    string? change_log_action;
+    string? message;
+};
+
 dictionary MoveToCategoryPreview {
     i64 file_id;
     string from_category;
@@ -2286,6 +2337,13 @@ enum SyncConflictFileRole {
     "Existing", "Incoming", "ConflictCopy", "Missing", "Unknown"
 };
 enum SyncConflictResolutionStrategy { "KeepBoth", "UseExisting", "UseIncoming" };
+enum MissingFileReason {
+    "PathMissing", "PermissionDenied", "CloudPlaceholder",
+    "ExternalVolumeDisconnected", "Unknown"
+};
+enum MissingFileRecoveryStatus {
+    "Missing", "Present", "Relinked", "HashMismatch", "RecordRemoved", "Blocked"
+};
 enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ICloudConflictVersionRole { "Original", "ConflictedCopy" };
 enum ICloudConflictPreviewStatus { "Available", "MetadataOnly", "Unavailable" };
@@ -2499,6 +2557,9 @@ interface CoreError {
 | `list_redo_actions(repo)` | redo | √ | Db / Io |
 | `redo_action(repo, action_id)` | redo | √ | Conflict / FileNotFound / ExpiredAction / PermissionDenied / Db / Io |
 | `get_file(repo, file_id)` | query | √ | FileNotFound |
+| `get_missing_file_state(repo, file_id)` | recovery | √ | FileNotFound / PermissionDenied / Db |
+| `relink_missing_file(repo, request)` | recovery | √ | FileNotFound / PermissionDenied / Db |
+| `remove_missing_file_record(repo, request)` | recovery | √ | FileNotFound / PermissionDenied / Db |
 | `list_changes(repo, filter)` | query | √ | Db |
 | `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |
 | `detect_sync_conflicts(repo)` | sync/conflict | √ | Db / Io / Conflict |
@@ -5977,6 +6038,89 @@ detailView.show(entry)
 文件不存在抛 `FileNotFound`。
 返回的 `FileEntry.availability_status` 与 `list_files` 一致；缺失物理文件的 active
 metadata 行仍返回 `FileAvailabilityStatus.Missing`，恢复动作由 C4-18 / C4-07 后续入口处理。
+
+### `get_missing_file_state(repoPath, fileId) throws -> MissingFileState`
+
+```swift
+let state = try AreaMatrix.getMissingFileState(repoPath: repoPath, fileId: entry.id)
+recoverySheet.show(state)
+```
+
+`get_missing_file_state` 是 C4-18 的缺失文件恢复状态入口，服务
+`S4-X-06 missing-file-recovery`。它只读取 AreaMatrix metadata，返回页面需要的
+相对路径、最后已知位置、最后见到时间、缺失原因、期望 hash、`Locate File` /
+`Try Again` / `Remove Record...` / `Run Rescan...` 可用性，以及 remove-record
+确认要求。
+
+错误与副作用边界：
+
+- `FileNotFound`：`fileId` 无效、没有 active row，或目标 row 不是可恢复的缺失文件。
+- `PermissionDenied`：metadata 或最后已知路径的只读检查被权限阻断。
+- `Db`：恢复状态 metadata 无法读取。
+- 该入口不做全库 rescan，不打开平台 picker，不触发 iCloud/Files/OneDrive 下载，
+  不删除记录，不写 change log，不移动、重命名、覆盖或删除用户文件。
+
+页面消费状态：
+
+- S4-X-06 可以从 `relative_path`、`last_known_path`、`last_seen_at` 和 `reason`
+  渲染摘要区与缺失原因。
+- S4-X-06 可以从 `expected_hash_sha256` 判断后续 relink 是否必须做 hash 校验。
+- S4-X-06 可以从 `can_locate`、`can_try_again`、`can_remove_record`、
+  `remove_record_requires_confirmation`、`can_run_rescan` 和
+  `rescan_disabled_reason` 决定按钮显示、禁用原因和是否路由到 S4-X-07。
+- 本合同不新增 control map 之外的页面能力。
+
+### `relink_missing_file(repoPath, request) throws -> MissingFileRecoveryReport`
+
+```swift
+let report = try AreaMatrix.relinkMissingFile(
+    repoPath: repoPath,
+    request: MissingFileRelinkRequest(
+        fileId: entry.id,
+        newPath: pickedUrl.path,
+        confirmed: true
+    )
+)
+```
+
+`relink_missing_file` 是 C4-18 的用户定位后重新关联入口。平台层负责 picker、授权、
+权限恢复和用户取消；Core 只接收已授权的新路径。后续 implementation 必须先用
+metadata 中的期望 hash 校验选中文件；hash 匹配才可更新 file path 并写 change log。
+hash 不匹配必须保持原记录为 missing，并通过 `status = HashMismatch` 和
+`hash_matched = false` 给页面显示，不能覆盖、移动或直接关联。
+
+错误与副作用边界：
+
+- `FileNotFound`：`fileId` 无效、目标 row 不存在，或 `new_path` 为空 / 不存在。
+- `PermissionDenied`：缺少 relink 确认，或 Core 无权只读检查选中路径。
+- `Db`：metadata 更新或 change-log 写入失败。
+- Relink 不删除、不移动、不覆盖用户选择的新文件，也不删除旧路径上的任何文件。
+- 用户取消 picker 不应调用本 API；若调用方传入未确认 request，必须返回
+  `PermissionDenied` 且不修改 DB 或文件系统。
+
+### `remove_missing_file_record(repoPath, request) throws -> MissingFileRecoveryReport`
+
+```swift
+let report = try AreaMatrix.removeMissingFileRecord(
+    repoPath: repoPath,
+    request: MissingFileRemoveRecordRequest(fileId: entry.id, confirmed: true)
+)
+assert(report.fileDeleted == false)
+```
+
+`remove_missing_file_record` 是 C4-18 的危险动作入口。它只能移除 AreaMatrix metadata
+记录并写 change log，不能删除、移动、重命名、覆盖、Trash 或下载任何用户文件。调用前
+S4-X-06 必须完成二次确认，确认文案必须说明只删除记录、不删除磁盘文件。
+
+错误与副作用边界：
+
+- `PermissionDenied`：缺少二次确认。
+- `FileNotFound`：`fileId` 无效、目标 row 不存在，或目标 row 已不可移除。
+- `Db`：metadata 删除或 change-log 写入失败。
+- 成功报告必须保持 `record_removed = true`、`file_deleted = false`，并提供
+  `change_log_action` 让页面刷新列表和日志。
+- 该入口不实现 S4-X-07 rescan、不创建 sync conflict、不处理 Replace，也不新增
+  control map 之外的页面能力。
 
 ### `list_changes(repoPath, filter) throws -> [ChangeLogEntry]`
 

@@ -7,15 +7,15 @@ use crate::{
     ai_summary, ai_tags_suggestion, batch_category, batch_delete, batch_rename as batch_rename_mod,
     classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules, classify,
     cloud_permission_state, cross_platform_ffi, db, icloud_conflicts, import_conflict_batch,
-    local_model_status, note, platform_capabilities, platform_watcher_status, recovery, redo,
-    remote_provider_config, repair, repo_init, repo_path, repo_scan, storage, sync,
-    sync_conflict_detect, sync_conflict_resolve, tree, AiCallLogClearReport, AiCallLogClearRequest,
-    AiCallLogFilter, AiCallLogPage, AiCallLogPagination, AiCategorySuggestion,
-    AiCategorySuggestionRequest, AiConfig, AiConfigSnapshot, AiFallbackStatus,
-    AiFallbackStatusRequest, AiPrivacyEvaluationReport, AiPrivacyEvaluationRequest,
-    AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest, AiSummaryClearReport,
-    AiSummaryClearRequest, AiSummaryDraft, AiSummaryGenerationRequest, AiSummarySaveReport,
-    AiSummarySaveRequest, AiTagSuggestionApplyReport, AiTagSuggestionReport,
+    local_model_status, missing_file_recovery, note, platform_capabilities,
+    platform_watcher_status, recovery, redo, remote_provider_config, repair, repo_init, repo_path,
+    repo_scan, storage, sync, sync_conflict_detect, sync_conflict_resolve, tree,
+    AiCallLogClearReport, AiCallLogClearRequest, AiCallLogFilter, AiCallLogPage,
+    AiCallLogPagination, AiCategorySuggestion, AiCategorySuggestionRequest, AiConfig,
+    AiConfigSnapshot, AiFallbackStatus, AiFallbackStatusRequest, AiPrivacyEvaluationReport,
+    AiPrivacyEvaluationRequest, AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest,
+    AiSummaryClearReport, AiSummaryClearRequest, AiSummaryDraft, AiSummaryGenerationRequest,
+    AiSummarySaveReport, AiSummarySaveRequest, AiTagSuggestionApplyReport, AiTagSuggestionReport,
     AiTagSuggestionRequest, ApplyAiTagSuggestionsRequest, ApplyTagSuggestionsRequest,
     BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
     BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
@@ -28,12 +28,14 @@ use crate::{
     ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
     ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
     ImportResult, LocalModelFolderLocation, LocalModelFolderRequest, LocalModelStatusRequest,
-    LocalModelStatusSnapshot, MoveToCategoryPreview, PlatformCapabilities, PlatformId,
-    PlatformWatcherHealthSignal, PlatformWatcherSnapshot, RecoveryReport, RedoActionRecord,
-    RedoActionResult, ReindexReport, RemoteProviderConfigSnapshot, RemoteProviderDisableRequest,
-    RemoteProviderEnableRequest, RemoteProviderTestRequest, RemoteProviderTestResult,
-    RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation, RuleImpactReport,
-    ScanSession, SyncConflict, SyncConflictResolutionPreviewReport, SyncConflictResolutionRequest,
+    LocalModelStatusSnapshot, MissingFileRecoveryReport, MissingFileRelinkRequest,
+    MissingFileRemoveRecordRequest, MissingFileState, MoveToCategoryPreview, PlatformCapabilities,
+    PlatformId, PlatformWatcherHealthSignal, PlatformWatcherSnapshot, RecoveryReport,
+    RedoActionRecord, RedoActionResult, ReindexReport, RemoteProviderConfigSnapshot,
+    RemoteProviderDisableRequest, RemoteProviderEnableRequest, RemoteProviderTestRequest,
+    RemoteProviderTestResult, RepairOptions, RepairReport, RepoConfig, RepoInitOptions,
+    RepoPathValidation, RuleImpactReport, ScanSession, SyncConflict,
+    SyncConflictResolutionPreviewReport, SyncConflictResolutionRequest,
     SyncConflictResolutionStrategy, SyncConflictResolveReport, SyncResult,
     TagSuggestionApplyReport, TagSuggestionReport, TagSuggestionRequest,
 };
@@ -1618,6 +1620,64 @@ pub fn get_file(repo_path: String, file_id: i64) -> CoreResult<FileEntry> {
     let repo = PathBuf::from(repo_path);
     let entry = db::get_active_file_by_id(&repo, file_id)?;
     Ok(db::with_availability_status(&repo, entry))
+}
+
+/// Returns the C4-18 missing-file recovery state for S4-X-06.
+///
+/// The state gives page consumers the last known path, missing reason, relink
+/// hash expectation, remove-record confirmation requirement, and rescan route
+/// availability. It does not scan the whole repository, trigger manual rescan,
+/// open a platform picker, delete metadata, or mutate user files.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` when the file id is invalid or
+/// no active missing-file row exists, `CoreError::PermissionDenied { path }`
+/// when recovery metadata cannot be inspected, and `CoreError::Db { message }`
+/// when metadata cannot be read.
+pub fn get_missing_file_state(repo_path: String, file_id: i64) -> CoreResult<MissingFileState> {
+    missing_file_recovery::get_missing_file_state(repo_path, file_id)
+}
+
+/// Relinks one missing-file record to a user-selected matching path.
+///
+/// The platform layer owns the picker and access recovery. Core receives only
+/// an authorized path and later implementation must verify the selected file
+/// hash before updating metadata. A hash mismatch must leave the missing
+/// record unchanged and return a report the UI can render; this entry point
+/// must never overwrite, move, delete, trash, or download user files.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` when the file id or selected path
+/// is invalid, `CoreError::PermissionDenied { path }` when confirmation or
+/// access is missing, and `CoreError::Db { message }` when metadata or
+/// change-log persistence fails.
+pub fn relink_missing_file(
+    repo_path: String,
+    request: MissingFileRelinkRequest,
+) -> CoreResult<MissingFileRecoveryReport> {
+    missing_file_recovery::relink_missing_file(repo_path, request)
+}
+
+/// Removes only the AreaMatrix metadata record for a missing file.
+///
+/// S4-X-06 must gather explicit confirmation before calling this API. A
+/// successful later implementation removes only the AreaMatrix record, writes a
+/// change-log entry, and reports `file_deleted = false`; it must not remove,
+/// trash, move, rename, overwrite, or download any user file.
+///
+/// # Errors
+///
+/// Returns `CoreError::PermissionDenied { path }` when confirmation is missing,
+/// `CoreError::FileNotFound { path }` when the file id is invalid or no longer
+/// removable, and `CoreError::Db { message }` when metadata or change-log
+/// persistence fails.
+pub fn remove_missing_file_record(
+    repo_path: String,
+    request: MissingFileRemoveRecordRequest,
+) -> CoreResult<MissingFileRecoveryReport> {
+    missing_file_recovery::remove_missing_file_record(repo_path, request)
 }
 
 /// Lists change-log entries from repository metadata.
