@@ -1,0 +1,75 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-84`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-84-c4-17-validation.md`
+- 相关实现与验证路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/platform_capabilities.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/platform_capabilities_validation.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐测试覆盖成功和失败路径
+- 结果：通过
+- 证据：`core/tests/platform_capabilities_validation.rs:100` 覆盖 macOS/iOS/Windows/Linux 成功矩阵；`core/tests/platform_capabilities_validation.rs:141` 覆盖 Unknown、空版本、非法字符、超长版本等失败路径，并校验无文件/DB 副作用。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/platform_capabilities_validation.rs`
+
+- 项目：验证 Core API / UDL / Rust 实现一致
+- 结果：通过
+- 证据：`core/src/api.rs:61` 暴露 `get_platform_capabilities` public API；`core/area_matrix.udl:11` 声明 UniFFI 方法；`core/area_matrix.udl:498` 和 `core/area_matrix.udl:505` 声明返回结构；`core/src/platform_capabilities.rs:81` 实现同名能力入口。
+- 涉及文件：上述 API、UDL、Rust 文件
+
+- 项目：不新增业务功能，只补验证与必要测试 fixture
+- 结果：通过
+- 证据：当前新增路径为 `core/tests/platform_capabilities_validation.rs`；生产实现保持表驱动、只读、无 repo/DB/文件/网络探测，见 `core/src/platform_capabilities.rs:69` 到 `core/src/platform_capabilities.rs:91`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/platform_capabilities_validation.rs`
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：必需验证已运行并通过，无无法运行项。
+- 涉及文件：无
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C4-17 实现为清晰的 table-driven matrix，按平台拆分能力行，生产文件 294 行，未超 500 行。
+- 注释 / rustdoc / 文档同步：通过，public 类型与 API 有 rustdoc；UDL、Core API、能力规格与 control map 被验证测试锁定。
+- 错误处理与边界处理：通过，非法 platform/app version 映射 `CoreError::Config`；无生产路径 `unwrap/expect/panic` 处理可恢复错误。
+- 测试与验证覆盖：通过，contract、implementation、failure、validation 四个 targeted test binary 均通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，当前能力是文档定义的结构化能力矩阵合同；测试验证无 repo/DB/文件/网络探测和无副作用。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-84`
+- 通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：OK，tasks 637，manifests 637，high risk tasks 633
+  - `git diff --check`：通过
+  - `cargo test --test platform_capabilities_contract_api -- --nocapture`：5 passed
+  - `cargo test --test platform_capabilities_failure_recovery -- --nocapture`：5 passed
+  - `cargo test --test platform_capabilities_implementation -- --nocapture`：5 passed
+  - `cargo test --test platform_capabilities_validation -- --nocapture`：3 passed
+- 失败：无
+- 缺失：无
+- Forbidden Touches：未发现 `apps/**` 修改；当前 dirty paths 为 task-loop summary/progress 和 `core/tests/platform_capabilities_validation.rs`，未触碰禁止路径。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
