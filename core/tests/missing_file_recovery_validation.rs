@@ -373,9 +373,7 @@ fn assert_consumer_scope_alignment() {
         assert_contains(MISSING_FILE_PAGE, fragment);
     }
 
-    for fragment in ["本合同不新增 control map 之外的页面能力。"] {
-        assert_contains(CORE_API, fragment);
-    }
+    assert_contains(CORE_API, "本合同不新增 control map 之外的页面能力。");
 }
 
 fn assert_existing_test_layers_are_present() {
