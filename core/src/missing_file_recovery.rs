@@ -240,12 +240,14 @@ pub(crate) fn relink_missing_file(
     db::relink_missing_file_record(
         &repo,
         &entry,
-        &candidate.relative_path,
-        &candidate.current_name,
-        &candidate.category,
-        candidate.source_path.as_deref(),
-        candidate.size_bytes,
-        &detail,
+        db::MissingFileRelinkUpdate {
+            relative_path: &candidate.relative_path,
+            current_name: &candidate.current_name,
+            category: &candidate.category,
+            source_path: candidate.source_path.as_deref(),
+            size_bytes: candidate.size_bytes,
+            detail: &detail,
+        },
     )?;
     Ok(relinked_report(
         entry.id,

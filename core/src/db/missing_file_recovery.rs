@@ -18,6 +18,15 @@ pub(crate) struct MissingFileRecoveryEntry {
     pub(crate) updated_at: i64,
 }
 
+pub(crate) struct MissingFileRelinkUpdate<'a> {
+    pub(crate) relative_path: &'a str,
+    pub(crate) current_name: &'a str,
+    pub(crate) category: &'a str,
+    pub(crate) source_path: Option<&'a str>,
+    pub(crate) size_bytes: i64,
+    pub(crate) detail: &'a Value,
+}
+
 pub(crate) fn load_missing_file_recovery_entry(
     repo_path: &Path,
     file_id: i64,
@@ -40,14 +49,9 @@ pub(crate) fn load_missing_file_recovery_entry(
 pub(crate) fn relink_missing_file_record(
     repo_path: &Path,
     entry: &MissingFileRecoveryEntry,
-    new_relative_path: &str,
-    new_current_name: &str,
-    new_category: &str,
-    new_source_path: Option<&str>,
-    size_bytes: i64,
-    detail: &Value,
+    update: MissingFileRelinkUpdate<'_>,
 ) -> CoreResult<()> {
-    let detail_json = detail_json(detail)?;
+    let detail_json = detail_json(update.detail)?;
     let mut connection = open_repo_connection(repo_path).map_err(map_recovery_open_error)?;
     let tx = connection
         .transaction()
@@ -64,11 +68,11 @@ pub(crate) fn relink_missing_file_record(
              WHERE id = ?1 AND status = 'active'",
             params![
                 entry.id,
-                new_relative_path,
-                new_current_name,
-                new_category,
-                size_bytes,
-                new_source_path,
+                update.relative_path,
+                update.current_name,
+                update.category,
+                update.size_bytes,
+                update.source_path,
             ],
         )
         .map_err(|error| CoreError::db(error.to_string()))?;

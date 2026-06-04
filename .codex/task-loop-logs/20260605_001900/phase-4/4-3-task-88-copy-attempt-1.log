@@ -1,0 +1,56 @@
+一、执行结论
+
+已完成 `4-3/task-88: C4-18 failure-edge`。
+
+二、执行范围
+
+单任务执行，未触碰 `apps/**`，未修改 `core/area_matrix.udl`。
+
+修改文件清单：
+
+- `core/tests/missing_file_recovery_failure_recovery.rs`
+- `core/src/db/missing_file_recovery.rs`
+- `core/src/db/mod.rs`
+- `core/src/missing_file_recovery.rs`
+
+另有既存脏改未触碰：`.codex/task-loop-runs/20260605_001900/summary.json`、`tasks/prompts/_shared/progress.json`。
+
+三、完成情况
+
+核对清单已覆盖：
+
+- 空态、非法输入、未确认操作、权限阻断、DB 损坏、change_log 写失败、错误码映射。
+- Relink / Remove record 的失败路径证明不会删除、移动、覆盖用户文件，也不会留下 metadata 半成品。
+- 验证了不创建 `.areamatrix/ai`、`.areamatrix/remote`、`.areamatrix/secrets`、`ai_call_log`，generated 状态不被 C4-18 改写。
+- 失败均显式返回 `FileNotFound` / `PermissionDenied` / `Db`，没有吞错或静默降级。
+
+完成标准已满足：C4-18 失败路径有明确返回、测试证据和用户文件安全保证；DB 写失败通过事务回滚保持可重试状态。
+
+四、工程质量
+
+新增 failure-edge 测试文件控制在 499 行，覆盖 9 个失败/边界场景。  
+为通过 Core quality gate，把 `relink_missing_file_record` 的 8 参数内部 helper 收束为 `MissingFileRelinkUpdate`，只影响 crate 内部调用，不改变 public API / UDL / 文档合同。无新增依赖、无 mock-only、无硬编码通过态。
+
+五、验证情况
+
+已通过：
+
+```bash
+CARGO_TARGET_DIR=/private/tmp/areamatrix-task-88-target-final ./dev check task 4-3/task-88
+```
+
+该命令实际通过：
+
+- prompt doctor
+- git diff --check
+- cargo fmt --all -- --check
+- cargo clippy --all-targets --all-features -- -D warnings
+- missing_file_recovery_contract_api：4 passed
+- missing_file_recovery_failure_recovery：9 passed
+- missing_file_recovery_implementation：4 passed
+
+六、风险与后续
+
+剩余风险：权限测试在 Unix 下启用；在高权限环境中会自动跳过不可模拟的 chmod 阻断分支，这是现有测试模式。产品路径仍由自动化覆盖了普通本地权限场景。  
+建议下一个任务：继续 `4-3/task-89` 的 C4-18 validation / integration verify。
+
