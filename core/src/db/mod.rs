@@ -24,6 +24,7 @@ mod icloud_conflicts;
 mod import;
 mod import_conflicts;
 mod local_model_status;
+mod missing_file_recovery;
 mod move_to_category;
 mod note;
 mod overview;
@@ -78,6 +79,10 @@ pub(crate) use import_conflicts::{
     ImportConflictReplacement, ImportConflictRow, ImportConflictStatus,
 };
 pub(crate) use local_model_status::update_local_model_status_record;
+pub(crate) use missing_file_recovery::{
+    load_missing_file_recovery_entry, mark_missing_file_record_removed, relink_missing_file_record,
+    MissingFileRecoveryEntry,
+};
 pub(crate) use move_to_category::{
     batch_update_category_metadata_only_in_tx, batch_update_category_repo_owned_in_tx,
     correct_file_category_metadata_only, correct_repo_owned_file_category,

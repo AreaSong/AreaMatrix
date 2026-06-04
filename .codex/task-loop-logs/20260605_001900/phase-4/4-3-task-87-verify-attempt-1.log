@@ -1,0 +1,80 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-87`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/missing_file_recovery.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/missing_file_recovery/filesystem.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/missing_file_recovery.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/missing_file_recovery_implementation.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/missing_file_recovery_contract_api.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：13
+- 未覆盖项数：0
+- 通过项数：13
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只实现 C4-18，不顺手实现同阶段其他 C* 能力
+- 结果：通过
+- 证据：实现集中在 `missing_file_recovery`、DB helper 和对应测试；未发现 `apps/**` 改动；rescan 明确保持 `can_run_rescan = false`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/missing_file_recovery.rs:136`
+
+- 项目：按能力规格落实输入、输出、DB/文件系统变化和错误映射
+- 结果：通过
+- 证据：`get_missing_file_state` 读取 active metadata 并确认 backing file 缺失；`relink_missing_file` 校验确认、路径和 hash；`remove_missing_file_record` 要求确认并写 `removed_from_index`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/missing_file_recovery.rs:136`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/missing_file_recovery.rs:174`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/missing_file_recovery.rs:221`
+
+- 项目：保持 Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：Core 只接收 repo path、file id、new path、confirmed，不调用 picker/UI/平台 API
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/missing_file_recovery/filesystem.rs:55`
+
+- 项目：补最小测试支撑，不做页面接入
+- 结果：通过
+- 证据：新增 implementation 测试覆盖 missing state、hash match relink、hash mismatch、remove record；未改 `apps/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/missing_file_recovery_implementation.rs:129`
+
+- 项目：C4-18 核心行为可被测试或桥接调用验证
+- 结果：通过
+- 证据：UDL 暴露三项 API；`./dev check task 4-3/task-87` 跑过 contract 与 implementation test，共 8 个测试通过
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:365`
+
+- 项目：未触碰用户文件安全边界之外的行为
+- 结果：通过
+- 证据：Relink 只读取并 hash 用户选择文件，不移动/删除/覆盖；Remove record 报告 `file_deleted = false`，测试确认 unrelated 文件保留
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/missing_file_recovery.rs:184`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/missing_file_recovery_implementation.rs:247`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，核心类型/API、filesystem helper、DB helper 分层清楚，文件均低于 500 行
+- 注释 / rustdoc / 文档同步：通过，公共 API wrapper 和核心函数有 rustdoc；Core API 与 UDL 已包含 C4-18 合同
+- 错误处理与边界处理：通过，未确认返回 `PermissionDenied`，缺失记录/路径返回 `FileNotFound`，DB 持久化失败返回 `Db`
+- 测试与验证覆盖：通过，覆盖正常路径、hash mismatch、metadata-only remove、只读 state 查询和 contract 对齐
+- 占位、硬编码、mock-only、一次性实现检查：通过，原先 metadata unavailable 空壳已被真实 DB / FS 行为替代
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-3/task-87`
+- 哪些通过：`prompt doctor` 通过；`git diff --check` 通过；`cargo test --test missing_file_recovery_contract_api -- --nocapture` 4/4 通过；`cargo test --test missing_file_recovery_implementation -- --nocapture` 4/4 通过
+- 哪些失败：无
+- 哪些缺失：未运行 broad `./dev check all`，因为当前 manifest 仅要求 task-scoped gate，且 validation-driver 规则不要求普通 atomic Core task 扩大到全量门禁
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前实现满足 C4-18 missing-file-recovery 的核心行为、文件安全边界、API/UDL/测试一致性与 task-scoped 验证要求。
+
+VERIFY_RESULT: PASS

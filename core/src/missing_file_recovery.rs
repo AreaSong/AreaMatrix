@@ -1,8 +1,20 @@
 //! C4-18 missing-file recovery contract types and entry points.
 
-use serde::{Deserialize, Serialize};
+mod filesystem;
 
-use crate::{CoreError, CoreResult};
+use std::path::{Path, PathBuf};
+
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+
+use crate::{
+    db::{self, MissingFileRecoveryEntry},
+    CoreError, CoreResult,
+};
+use filesystem::{
+    backing_file_path, ensure_record_is_missing, inspect_relink_candidate, missing_reason,
+    origin_detail, storage_mode_detail, RelinkCandidate,
+};
 
 /// Reason Core can report for a retained missing-file metadata row.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -125,9 +137,25 @@ pub(crate) fn get_missing_file_state(
     repo_path: String,
     file_id: i64,
 ) -> CoreResult<MissingFileState> {
-    validate_repo_path(&repo_path)?;
+    let repo = validate_repo_path(&repo_path)?;
     validate_file_id(file_id)?;
-    Err(CoreError::db("missing file recovery metadata unavailable"))
+    let entry = db::load_missing_file_recovery_entry(&repo, file_id)?;
+    let backing_path = backing_file_path(&repo, &entry);
+    ensure_record_is_missing(&backing_path)?;
+    Ok(MissingFileState {
+        file_id: entry.id,
+        relative_path: entry.path.clone(),
+        last_known_path: Some(backing_path.to_string_lossy().into_owned()),
+        last_seen_at: Some(entry.updated_at),
+        reason: missing_reason(&backing_path),
+        expected_hash_sha256: Some(entry.hash_sha256),
+        can_locate: true,
+        can_try_again: true,
+        can_remove_record: true,
+        remove_record_requires_confirmation: true,
+        can_run_rescan: false,
+        rescan_disabled_reason: Some("manual rescan requires S4-X-07 confirmation".to_owned()),
+    })
 }
 
 /// Removes only the AreaMatrix metadata record for a missing file.
@@ -147,10 +175,33 @@ pub(crate) fn remove_missing_file_record(
     repo_path: String,
     request: MissingFileRemoveRecordRequest,
 ) -> CoreResult<MissingFileRecoveryReport> {
-    validate_repo_path(&repo_path)?;
+    let repo = validate_repo_path(&repo_path)?;
     validate_file_id(request.file_id)?;
     validate_confirmation(request.confirmed, "remove record confirmation is required")?;
-    Err(CoreError::db("missing file recovery metadata unavailable"))
+    let entry = db::load_missing_file_recovery_entry(&repo, request.file_id)?;
+    let backing_path = backing_file_path(&repo, &entry);
+    ensure_record_is_missing(&backing_path)?;
+    let detail = json!({
+        "kind": "missing_file_record_removed",
+        "by": "user",
+        "path": entry.path.as_str(),
+        "last_known_path": backing_path.to_string_lossy(),
+        "storage_mode": storage_mode_detail(&entry.storage_mode),
+        "origin": origin_detail(&entry.origin),
+        "file_deleted": false,
+    });
+    db::mark_missing_file_record_removed(&repo, &entry, &detail)?;
+    Ok(MissingFileRecoveryReport {
+        file_id: entry.id,
+        status: MissingFileRecoveryStatus::RecordRemoved,
+        previous_path: Some(entry.path),
+        current_path: None,
+        hash_matched: false,
+        record_removed: true,
+        file_deleted: false,
+        change_log_action: Some("removed_from_index".to_owned()),
+        message: Some("Record removed; user file was not deleted.".to_owned()),
+    })
 }
 
 /// Relinks a missing record to a user-selected matching file.
@@ -171,20 +222,45 @@ pub(crate) fn relink_missing_file(
     repo_path: String,
     request: MissingFileRelinkRequest,
 ) -> CoreResult<MissingFileRecoveryReport> {
-    validate_repo_path(&repo_path)?;
+    let repo = validate_repo_path(&repo_path)?;
     validate_file_id(request.file_id)?;
-    validate_new_path(&request.new_path)?;
     validate_confirmation(request.confirmed, "relink confirmation is required")?;
-    Err(CoreError::db("missing file recovery metadata unavailable"))
+    let selected_path = validate_new_path(&request.new_path)?;
+    let entry = db::load_missing_file_recovery_entry(&repo, request.file_id)?;
+    let previous_path = entry.path.clone();
+    let previous_backing_path = backing_file_path(&repo, &entry);
+    ensure_record_is_missing(&previous_backing_path)?;
+    let candidate = inspect_relink_candidate(&repo, &entry, &selected_path)?;
+
+    if candidate.hash_sha256 != entry.hash_sha256 {
+        return Ok(hash_mismatch_report(entry.id, previous_path));
+    }
+
+    let detail = relink_detail(&entry, &previous_path, &candidate, &selected_path);
+    db::relink_missing_file_record(
+        &repo,
+        &entry,
+        &candidate.relative_path,
+        &candidate.current_name,
+        &candidate.category,
+        candidate.source_path.as_deref(),
+        candidate.size_bytes,
+        &detail,
+    )?;
+    Ok(relinked_report(
+        entry.id,
+        previous_path,
+        candidate.relative_path,
+    ))
 }
 
-fn validate_repo_path(repo_path: &str) -> CoreResult<()> {
+fn validate_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     if repo_path.trim().is_empty() {
         return Err(CoreError::db(
             "missing file recovery repository path is required",
         ));
     }
-    Ok(())
+    Ok(PathBuf::from(repo_path))
 }
 
 fn validate_file_id(file_id: i64) -> CoreResult<()> {
@@ -194,11 +270,11 @@ fn validate_file_id(file_id: i64) -> CoreResult<()> {
     Ok(())
 }
 
-fn validate_new_path(new_path: &str) -> CoreResult<()> {
+fn validate_new_path(new_path: &str) -> CoreResult<PathBuf> {
     if new_path.trim().is_empty() || new_path.contains('\0') {
         return Err(CoreError::file_not_found("selected relink path"));
     }
-    Ok(())
+    Ok(PathBuf::from(new_path))
 }
 
 fn validate_confirmation(confirmed: bool, reason: &str) -> CoreResult<()> {
@@ -206,4 +282,54 @@ fn validate_confirmation(confirmed: bool, reason: &str) -> CoreResult<()> {
         return Err(CoreError::permission_denied(reason));
     }
     Ok(())
+}
+
+fn hash_mismatch_report(file_id: i64, previous_path: String) -> MissingFileRecoveryReport {
+    MissingFileRecoveryReport {
+        file_id,
+        status: MissingFileRecoveryStatus::HashMismatch,
+        previous_path: Some(previous_path),
+        current_path: None,
+        hash_matched: false,
+        record_removed: false,
+        file_deleted: false,
+        change_log_action: None,
+        message: Some("Selected file does not match the missing record.".to_owned()),
+    }
+}
+
+fn relinked_report(
+    file_id: i64,
+    previous_path: String,
+    current_path: String,
+) -> MissingFileRecoveryReport {
+    MissingFileRecoveryReport {
+        file_id,
+        status: MissingFileRecoveryStatus::Relinked,
+        previous_path: Some(previous_path),
+        current_path: Some(current_path),
+        hash_matched: true,
+        record_removed: false,
+        file_deleted: false,
+        change_log_action: Some("external_modified".to_owned()),
+        message: Some("Missing file relinked.".to_owned()),
+    }
+}
+
+fn relink_detail(
+    entry: &MissingFileRecoveryEntry,
+    previous_path: &str,
+    candidate: &RelinkCandidate,
+    selected_path: &Path,
+) -> serde_json::Value {
+    json!({
+        "kind": "missing_file_relinked",
+        "by": "user",
+        "from_path": previous_path,
+        "to_path": candidate.relative_path.as_str(),
+        "selected_path": selected_path.to_string_lossy(),
+        "storage_mode": storage_mode_detail(&entry.storage_mode),
+        "hash_sha256": candidate.hash_sha256.as_str(),
+        "file_deleted": false,
+    })
 }
