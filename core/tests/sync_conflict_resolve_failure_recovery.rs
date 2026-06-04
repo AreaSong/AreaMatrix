@@ -208,7 +208,10 @@ fn sync_conflict_resolve_failure_recovery_preview_rejects_unwritable_metadata_re
         assert!(matches!(result, Err(CoreError::PermissionDenied { .. })));
         assert_eq!(user_files(repo.path()), before_files);
         assert_eq!(active_file_snapshot(repo.path(), file_id), before_file_row);
-        assert_eq!(conflict_state(repo.path())[0].status, SyncConflictStatus::NeedsReview);
+        assert_eq!(
+            conflict_state(repo.path())[0].status,
+            SyncConflictStatus::NeedsReview
+        );
         assert_eq!(sync_resolution_change_count(repo.path()), 0);
     });
 }
@@ -237,7 +240,10 @@ fn sync_conflict_resolve_failure_recovery_preflights_db_before_file_moves() {
         assert!(matches!(result, Err(CoreError::PermissionDenied { .. })));
         assert_eq!(user_files(repo.path()), before_files);
         assert_eq!(active_file_snapshot(repo.path(), file_id), before_file_row);
-        assert_eq!(conflict_state(repo.path())[0].status, SyncConflictStatus::NeedsReview);
+        assert_eq!(
+            conflict_state(repo.path())[0].status,
+            SyncConflictStatus::NeedsReview
+        );
         assert_eq!(sync_resolution_change_count(repo.path()), 0);
         assert!(!trash_dir.join("report.pdf").exists());
     });
@@ -266,7 +272,10 @@ fn sync_conflict_resolve_failure_recovery_rolls_back_files_when_db_write_fails()
         assert!(matches!(result, Err(CoreError::Db { .. })));
         assert_eq!(user_files(repo.path()), before_files);
         assert_eq!(active_file_snapshot(repo.path(), file_id), before_file_row);
-        assert_eq!(conflict_state(repo.path())[0].status, SyncConflictStatus::NeedsReview);
+        assert_eq!(
+            conflict_state(repo.path())[0].status,
+            SyncConflictStatus::NeedsReview
+        );
         assert_eq!(sync_resolution_change_count(repo.path()), 0);
         assert!(!trash_dir.join("report.pdf").exists());
     });
@@ -293,7 +302,10 @@ fn sync_conflict_resolve_failure_recovery_rejects_stale_preview_token_read_only(
         assert!(matches!(result, Err(CoreError::Conflict { .. })));
         assert_eq!(user_files(repo.path()), before_files);
         assert_eq!(active_file_snapshot(repo.path(), file_id), before_file_row);
-        assert_eq!(conflict_state(repo.path())[0].status, SyncConflictStatus::NeedsReview);
+        assert_eq!(
+            conflict_state(repo.path())[0].status,
+            SyncConflictStatus::NeedsReview
+        );
         assert_eq!(sync_resolution_change_count(repo.path()), 0);
     });
 }

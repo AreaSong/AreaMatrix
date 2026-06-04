@@ -19,9 +19,14 @@ pub(super) fn apply_resolution(
 ) -> CoreResult<SyncConflictResolveReport> {
     db::preflight_sync_conflict_resolution(repo)?;
     match &plan.replacement {
-        Some(replacement) if replacement.move_incoming_to_canonical => {
-            apply_file_replacement(repo, plan, request, replacement, serialized_state, resolved_at)
-        }
+        Some(replacement) if replacement.move_incoming_to_canonical => apply_file_replacement(
+            repo,
+            plan,
+            request,
+            replacement,
+            serialized_state,
+            resolved_at,
+        ),
         Some(replacement) => persist_resolution(
             repo,
             plan,
@@ -31,7 +36,15 @@ pub(super) fn apply_resolution(
             &[],
             resolved_at,
         ),
-        None => persist_resolution(repo, plan, request, None, serialized_state, &[], resolved_at),
+        None => persist_resolution(
+            repo,
+            plan,
+            request,
+            None,
+            serialized_state,
+            &[],
+            resolved_at,
+        ),
     }
 }
 
@@ -151,7 +164,10 @@ impl TrashMoveGuard {
     fn rollback(&mut self) -> CoreResult<()> {
         if self.armed
             && self.trash_path.try_exists().map_err(map_rollback_error)?
-            && !self.original_path.try_exists().map_err(map_rollback_error)?
+            && !self
+                .original_path
+                .try_exists()
+                .map_err(map_rollback_error)?
         {
             storage::move_recoverable_file(&self.trash_path, &self.original_path)?;
         }
@@ -188,8 +204,14 @@ impl IncomingMoveGuard {
 
     fn rollback(&mut self) -> CoreResult<()> {
         if self.armed
-            && self.canonical_path.try_exists().map_err(map_rollback_error)?
-            && !self.original_path.try_exists().map_err(map_rollback_error)?
+            && self
+                .canonical_path
+                .try_exists()
+                .map_err(map_rollback_error)?
+            && !self
+                .original_path
+                .try_exists()
+                .map_err(map_rollback_error)?
         {
             storage::move_recoverable_file(&self.canonical_path, &self.original_path)?;
         }

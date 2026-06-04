@@ -3,9 +3,7 @@
 mod apply;
 mod plan;
 
-use std::{
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -321,7 +319,8 @@ fn validate_resolution_request(request: &SyncConflictResolutionRequest) -> CoreR
 }
 
 fn initialized_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
-    repo_path::validate_initialized_repo_path(repo_path.to_owned()).map_err(normalize_state_error)?;
+    repo_path::validate_initialized_repo_path(repo_path.to_owned())
+        .map_err(normalize_state_error)?;
     Ok(PathBuf::from(repo_path))
 }
 
@@ -362,7 +361,10 @@ fn ensure_request_matches_plan(
     if request.preview_token != *preview_token {
         return Err(CoreError::conflict("sync conflict preview token is stale"));
     }
-    if matches!(request.strategy, SyncConflictResolutionStrategy::UseIncoming) {
+    if matches!(
+        request.strategy,
+        SyncConflictResolutionStrategy::UseIncoming
+    ) {
         ensure_use_incoming_enabled(request, plan)?;
     } else if !plan.can_apply {
         return Err(CoreError::conflict(

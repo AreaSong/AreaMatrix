@@ -81,7 +81,8 @@ pub(crate) fn replace_sync_conflict_state(
 
 pub(crate) fn preflight_sync_conflict_resolution(repo_path: &Path) -> CoreResult<()> {
     super::ensure_config_storage_writable(repo_path)?;
-    let connection = super::open_repo_connection(repo_path).map_err(super::map_update_open_error)?;
+    let connection =
+        super::open_repo_connection(repo_path).map_err(super::map_update_open_error)?;
     let available_tables = connection
         .query_row(
             "SELECT COUNT(*)

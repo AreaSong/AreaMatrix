@@ -189,7 +189,10 @@ fn sync_conflict_resolve_implementation_previews_keep_both_read_only() {
         );
         assert_eq!(user_files(repo.path()), before_files);
         assert_eq!(change_rows(repo.path()), before_changes);
-        assert_eq!(conflict_state(repo.path())[0].status, SyncConflictStatus::NeedsReview);
+        assert_eq!(
+            conflict_state(repo.path())[0].status,
+            SyncConflictStatus::NeedsReview
+        );
     });
 }
 
@@ -220,13 +223,19 @@ fn sync_conflict_resolve_implementation_keep_both_resolves_state_without_moving_
         assert_eq!(report.change_log_action, "conflict_resolved_keep_both");
         assert!(report.trashed_paths.is_empty());
         assert_eq!(user_files(repo.path()), before_files);
-        assert_eq!(conflict_state(repo.path())[0].status, SyncConflictStatus::Resolved);
+        assert_eq!(
+            conflict_state(repo.path())[0].status,
+            SyncConflictStatus::Resolved
+        );
 
         let changes = change_rows(repo.path());
         assert_eq!(changes.len(), 2);
         assert_eq!(changes[1].0, "external_modified");
         assert_eq!(changes[1].1["kind"], "sync_conflict_resolved");
-        assert_eq!(changes[1].1["logical_action"], "conflict_resolved_keep_both");
+        assert_eq!(
+            changes[1].1["logical_action"],
+            "conflict_resolved_keep_both"
+        );
         assert_eq!(changes[1].1["conflict_id"], conflict_id);
     });
 }
@@ -266,7 +275,10 @@ fn sync_conflict_resolve_implementation_use_incoming_requires_replace_confirmati
 
         assert!(matches!(result, Err(CoreError::PermissionDenied { .. })));
         assert_eq!(user_files(repo.path()), before_files);
-        assert_eq!(conflict_state(repo.path())[0].status, SyncConflictStatus::NeedsReview);
+        assert_eq!(
+            conflict_state(repo.path())[0].status,
+            SyncConflictStatus::NeedsReview
+        );
     });
 }
 
@@ -312,11 +324,17 @@ fn sync_conflict_resolve_implementation_use_incoming_moves_existing_to_trash() {
         assert_eq!(path, "docs/report.pdf");
         assert_eq!(size_bytes, 10);
         assert_ne!(hash_sha256, "");
-        assert_eq!(conflict_state(repo.path())[0].status, SyncConflictStatus::Resolved);
+        assert_eq!(
+            conflict_state(repo.path())[0].status,
+            SyncConflictStatus::Resolved
+        );
 
         let changes = change_rows(repo.path());
         assert_eq!(changes[1].1["kind"], "sync_conflict_resolved");
-        assert_eq!(changes[1].1["logical_action"], "conflict_resolved_use_incoming");
+        assert_eq!(
+            changes[1].1["logical_action"],
+            "conflict_resolved_use_incoming"
+        );
         assert_eq!(changes[1].1["trashed_paths"][0], "docs/report.pdf");
         assert_eq!(changes[1].1["replace_confirmation_id"], "replace-confirmed");
     });
