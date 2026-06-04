@@ -286,6 +286,87 @@
     "4-3/task-80": {
       "attempts": 2,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260605_001900/phase-4/4-3-task-80-copy-attempt-2.log",
+      "git": {
+        "attempts": 2,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260605_001900/phase-4/4-3-task-80-copy-attempt-2.log",
+          ".codex/task-loop-logs/20260605_001900/phase-4/4-3-task-80-verify-attempt-2.log",
+          ".codex/task-loop-runs/20260605_001900/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "core/src/db/mod.rs",
+          "core/src/db/sync_conflicts.rs",
+          "core/src/sync_conflict_resolve/apply.rs",
+          "core/tests/support/sync_conflict_resolve_validation.rs",
+          "core/tests/sync_conflict_resolve_implementation.rs",
+          "core/tests/sync_conflict_resolve_validation.rs",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "8de1640255704475d10b0b08bb53d51dde89b9d1",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260605_001900/phase-4/4-3-task-80-copy-attempt-2.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/20260605_001900/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tcore/src/db/mod.rs",
+          "M\tcore/src/db/sync_conflicts.rs",
+          "M\tcore/src/sync_conflict_resolve/apply.rs",
+          "M\tcore/tests/support/sync_conflict_resolve_validation.rs",
+          "M\tcore/tests/sync_conflict_resolve_implementation.rs",
+          "M\tcore/tests/sync_conflict_resolve_validation.rs",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "final_log_files": [
+          ".codex/task-loop-logs/20260605_001900/phase-4/4-3-task-80-copy-attempt-2.log",
+          ".codex/task-loop-logs/20260605_001900/phase-4/4-3-task-80-verify-attempt-2.log"
+        ],
+        "label": "4-3/task-80",
+        "mode": "commit",
+        "phase": "phase-4",
+        "pre_checkpoint_changed_files": [
+          ".codex/task-loop-runs/20260605_001900/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "core/src/db/mod.rs",
+          "core/src/db/sync_conflicts.rs",
+          "core/src/sync_conflict_resolve/apply.rs",
+          "core/tests/support/sync_conflict_resolve_validation.rs",
+          "core/tests/sync_conflict_resolve_implementation.rs",
+          "core/tests/sync_conflict_resolve_validation.rs",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260605_001900",
+        "skipped_log_files": [],
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260605_001900/phase-4/4-3-task-80-copy-attempt-2.log",
+          "A\t.codex/task-loop-logs/20260605_001900/phase-4/4-3-task-80-verify-attempt-2.log",
+          "M\t.codex/task-loop-runs/20260605_001900/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tcore/src/db/mod.rs",
+          "M\tcore/src/db/sync_conflicts.rs",
+          "M\tcore/src/sync_conflict_resolve/apply.rs",
+          "M\tcore/tests/support/sync_conflict_resolve_validation.rs",
+          "M\tcore/tests/sync_conflict_resolve_implementation.rs",
+          "M\tcore/tests/sync_conflict_resolve_validation.rs",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/20260605_001900/summary.json",
+          " M .codex/task-loop-runs/index.json",
+          " M core/src/db/mod.rs",
+          " M core/src/db/sync_conflicts.rs",
+          " M core/src/sync_conflict_resolve/apply.rs",
+          " M core/tests/support/sync_conflict_resolve_validation.rs",
+          " M core/tests/sync_conflict_resolve_implementation.rs",
+          " M core/tests/sync_conflict_resolve_validation.rs",
+          " M tasks/prompts/_shared/progress.json"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260605_001900/summary.json",
+        "task_name": "4-3-task-80",
+        "updated_at": "2026-06-04T18:57:22.875162+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260605_001900/phase-4/4-3-task-80-verify-attempt-2.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-4",
       "risk": "Mission-Critical",
@@ -300,7 +381,7 @@
     "retries": 1,
     "task_count": 637
   },
-  "updated_at": "2026-06-04T18:57:22.707424+00:00",
+  "updated_at": "2026-06-04T18:57:22.882813+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
