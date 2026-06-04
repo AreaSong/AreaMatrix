@@ -1,0 +1,54 @@
+**一、执行结论**
+
+已完成 `4-3/task-77`。
+
+**二、执行范围**
+
+单任务：C4-16 `sync-conflict-resolve` Core 实现。  
+修改/新增文件：
+
+- [core/src/sync_conflict_resolve.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync_conflict_resolve.rs)
+- [core/src/sync_conflict_resolve/plan.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync_conflict_resolve/plan.rs)
+- [core/src/sync_conflict_resolve/apply.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync_conflict_resolve/apply.rs)
+- [core/src/db/sync_conflicts.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/sync_conflicts.rs)
+- [core/src/db/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs)
+- [core/tests/sync_conflict_resolve_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_conflict_resolve_contract_api.rs)
+- [core/tests/sync_conflict_resolve_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_conflict_resolve_implementation.rs)
+- [core/tests/sync_conflict_resolve_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_conflict_resolve_failure_recovery.rs)
+
+`apps/**` 未触碰。工作树里仍有既有脏状态：`tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260605_001900/`，未纳入本任务修改。
+
+**三、完成情况**
+
+核对清单全部满足：只实现 C4-16；落实 preview/resolve 输入输出、conflict state、change log、UseIncoming canonical metadata 更新、错误映射；Rust Core 未依赖平台 UI API；补了最小实现与 failure-recovery 测试。
+
+完成标准满足：C4-16 可通过 Core API 调用测试；UseIncoming 必须二次确认，旧 canonical 文件只进入用户 Trash，失败会恢复文件与 unresolved 状态。
+
+**四、工程质量**
+
+实现拆成 plan/apply 两层：preview 只读并生成 token/impact/replace plan；apply 负责 DB 预检、文件移动、事务写入和 rollback。  
+新增 rustdoc/错误说明保持在 public Core API 路径；没有 mock-only、硬编码通过态或一次性脚本逻辑。  
+高风险边界处理：DB/change-log 可写预检在文件移动前执行；DB 写入失败后会把 incoming 移回原路径，并从 Trash 恢复 existing。
+
+**五、验证情况**
+
+已运行：
+
+```bash
+./dev check task 4-3/task-77
+```
+
+通过内容：
+
+- `prompt_pipeline.py doctor`: OK
+- `git diff --check`: OK
+- `cargo test --test sync_conflict_resolve_contract_api`: 4 passed
+- `cargo test --test sync_conflict_resolve_failure_recovery`: 4 passed
+- `cargo test --test sync_conflict_resolve_implementation`: 4 passed
+
+无失败项，无无法运行项。未升级到 broad gate，符合本 task 的 validation 上限。
+
+**六、风险与后续**
+
+剩余风险：未做 UX 页面接入、未实现相邻 C4-21 平台能力，也未扩展通用 undo token；这些不属于当前 task。  
+建议下一个任务进入 C4-16 verify 或后续页面/平台消费 wiring。

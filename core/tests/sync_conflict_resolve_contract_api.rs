@@ -148,18 +148,21 @@ fn sync_conflict_resolve_contract_exports_signatures_outputs_and_errors() {
 }
 
 #[test]
-fn sync_conflict_resolve_contract_has_no_fake_success_before_implementation() {
+fn sync_conflict_resolve_contract_rejects_uninitialized_and_unconfirmed_requests() {
+    let repo = tempfile::tempdir().expect("create uninitialized repository directory");
+    let repo_path = repo.path().to_string_lossy().into_owned();
+
     assert!(matches!(
         preview_sync_conflict_resolution(
-            "/tmp/repo".to_owned(),
+            repo_path.clone(),
             "sync-conflict:same-name:docs/report.pdf".to_owned(),
             SyncConflictResolutionStrategy::KeepBoth
         ),
-        Err(CoreError::Conflict { .. })
+        Err(CoreError::Db { .. })
     ));
     assert!(matches!(
         resolve_sync_conflict(
-            "/tmp/repo".to_owned(),
+            repo_path.clone(),
             "sync-conflict:same-name:docs/report.pdf".to_owned(),
             SyncConflictResolutionRequest {
                 strategy: SyncConflictResolutionStrategy::KeepBoth,
@@ -168,11 +171,11 @@ fn sync_conflict_resolve_contract_has_no_fake_success_before_implementation() {
                 replace_confirmation_id: None,
             }
         ),
-        Err(CoreError::Conflict { .. })
+        Err(CoreError::Db { .. })
     ));
     assert!(matches!(
         resolve_sync_conflict(
-            "/tmp/repo".to_owned(),
+            repo_path,
             "sync-conflict:same-name:docs/report.pdf".to_owned(),
             SyncConflictResolutionRequest {
                 strategy: SyncConflictResolutionStrategy::UseIncoming,
