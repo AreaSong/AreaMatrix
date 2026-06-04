@@ -135,6 +135,11 @@ namespace area_matrix {
     [Throws=CoreError]
     RecoveryReport recover_on_startup(string repo_path);
 
+    // C4-19 manual-rescan reuses the full repository reindex entry point after
+    // S4-X-07 has shown the high-risk confirmation. The scope is the entire
+    // repository; partial subtree rescan and dry-run preview are not exposed by
+    // this contract. Core must only update AreaMatrix metadata and must not
+    // move, delete, rename, overwrite, trash, or download user files.
     [Throws=CoreError]
     ReindexReport reindex_from_filesystem(string repo_path);
 
@@ -144,9 +149,14 @@ namespace area_matrix {
     [Throws=CoreError]
     RepairReport repair_metadata(string repo_path, RepairOptions options);
 
+    // C4-19 consumers read the latest scan session to render manual rescan
+    // progress, completion, failure, interruption, and retry state without
+    // starting or resuming a scan.
     [Throws=CoreError]
     ScanSession? get_latest_scan_session(string repo_path);
 
+    // C4-19 resumes an interrupted or failed whole-repository manual rescan
+    // only after the UI has routed the user through S4-X-07 recovery copy.
     [Throws=CoreError]
     ReindexReport resume_scan_session(string repo_path, i64 scan_session_id);
 

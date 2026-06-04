@@ -556,6 +556,11 @@ pub struct RecoveryReport {
 }
 
 /// Filesystem reindex summary.
+///
+/// C4-19 manual rescan consumers use this as the post-confirmation summary for
+/// an entire-repository scan. It intentionally keeps detailed preview and
+/// review classification out of the report until a dedicated C4-19 implementation
+/// task defines those persisted categories.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ReindexReport {
     /// Optional scan session identifier.
@@ -608,6 +613,10 @@ pub struct RepairReport {
 }
 
 /// Persisted scan session state.
+///
+/// C4-19 manual rescan consumers use `kind`, `status`, counters, timestamps,
+/// `last_path`, and `errors` to render progress, completion, retry, and failure
+/// state without parsing logs or inspecting user files.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ScanSession {
     /// Stable database identifier.

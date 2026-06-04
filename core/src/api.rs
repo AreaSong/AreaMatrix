@@ -767,6 +767,13 @@ pub fn recover_on_startup(repo_path: String) -> CoreResult<RecoveryReport> {
 /// `scan_sessions(kind = Reindex)` row, update `.areamatrix/index.db` metadata,
 /// and return inserted/updated/skipped counters in [`ReindexReport`].
 ///
+/// C4-19 also uses this entry point for Windows/Linux manual rescan after
+/// S4-X-07 has shown the high-risk confirmation. The C4-19 scope is the entire
+/// repository; partial subtree rescan and preview/dry-run APIs are not exposed
+/// by this contract. Consumers combine the returned [`ReindexReport`] with
+/// [`get_latest_scan_session`] to render the rescan summary, persisted session
+/// status, counters, timestamps, and errors.
+///
 /// The API treats filesystem content as read-only input. It must skip
 /// `.areamatrix/`, `.areamatrix/generated/`, root `AREAMATRIX.md`, ignored
 /// directories, and system temporary files. It must not move, rename, delete,
@@ -833,6 +840,11 @@ pub fn repair_metadata(repo_path: String, options: RepairOptions) -> CoreResult<
 /// lifecycle status, last processed path, counters, timestamps, and recorded
 /// errors without touching user files or starting a new scan.
 ///
+/// C4-19 consumers use the same read-only session contract to display manual
+/// rescan progress, completion, failure, interruption, and retry state after
+/// the S4-X-07 confirmation route. This function does not start a scan, resume
+/// a scan, or inspect user file contents.
+///
 /// # Errors
 ///
 /// Returns `CoreError::Db { message }` when scan-session metadata cannot be read,
@@ -849,6 +861,11 @@ pub fn get_latest_scan_session(repo_path: String) -> CoreResult<Option<ScanSessi
 /// contract is idempotent: already-indexed files are updated in place, new files
 /// are inserted with the original layout preserved, and a completed session
 /// returns an empty report instead of mutating user files.
+///
+/// For C4-19, this resumes an interrupted or failed entire-repository manual
+/// rescan only after the UI has routed the user through S4-X-07 recovery copy.
+/// It must not bypass confirmation, start a concurrent rescan, or expose
+/// Windows/Linux watcher controls.
 ///
 /// # Errors
 ///
