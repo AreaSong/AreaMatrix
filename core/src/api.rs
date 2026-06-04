@@ -63,9 +63,9 @@ pub fn inspect_binding_contract(
 /// `S4-X-02 platform-differences`, `S4-LNX-03 local-folder-notice`, and
 /// `S4-X-08 repository-settings` consume this matrix to render watcher, Trash
 /// or Recycle Bin, share extension, cloud placeholder, and security bookmark
-/// support without guessing from platform UI state. Unknown capability rows
-/// are disabled by default so unsupported dangerous actions are not exposed as
-/// available.
+/// support without guessing from platform UI state. Limited, unavailable, or
+/// unknown capability rows carry stable reasons so unsupported dangerous
+/// actions are not exposed as available.
 ///
 /// The contract is read-only and platform-neutral. It does not inspect the
 /// repository, start watchers, test Trash/Recycle Bin integration, query cloud

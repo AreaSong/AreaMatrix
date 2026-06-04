@@ -62,26 +62,29 @@ fn platform_capabilities_contract_exports_signature_inputs_outputs_and_errors() 
 }
 
 #[test]
-fn platform_capabilities_contract_returns_safe_unknown_matrix_without_platform_probe() {
+fn platform_capabilities_contract_returns_structured_matrix_without_platform_probe() {
     let matrix =
         get_platform_capabilities(PlatformId::Windows, "0.1.0".to_owned()).expect("matrix");
 
     assert_eq!(matrix.platform, PlatformId::Windows);
-    for row in [
-        &matrix.watcher,
-        &matrix.trash,
-        &matrix.share_extension,
-        &matrix.cloud_placeholder,
-        &matrix.security_bookmark,
-    ] {
-        assert_eq!(row.status, PlatformCapabilityStatus::Unknown);
-        assert!(!row.ui_enabled);
-        assert!(!row.requires_permission);
-        assert!(row
-            .reason
-            .as_deref()
-            .is_some_and(|reason| { reason.contains("not reported by this Core contract") }));
-    }
+    assert_eq!(matrix.app_version, "0.1.0");
+    assert_eq!(matrix.watcher.status, PlatformCapabilityStatus::Available);
+    assert!(matrix.watcher.ui_enabled);
+    assert_eq!(matrix.trash.status, PlatformCapabilityStatus::Limited);
+    assert!(matrix.trash.ui_enabled);
+    assert_eq!(
+        matrix.share_extension.status,
+        PlatformCapabilityStatus::NotAvailable
+    );
+    assert!(!matrix.share_extension.ui_enabled);
+    assert_eq!(
+        matrix.cloud_placeholder.status,
+        PlatformCapabilityStatus::Limited
+    );
+    assert_eq!(
+        matrix.security_bookmark.status,
+        PlatformCapabilityStatus::NotAvailable
+    );
 }
 
 #[test]
@@ -206,8 +209,8 @@ fn platform_capabilities_documents_consumers_and_scope_boundaries() {
 
     for fragment in [
         "Returns the C4-17 platform capability matrix for a platform shell.",
-        "Unknown capability rows",
-        "disabled by default",
+        "Limited, unavailable, or",
+        "unknown capability rows carry stable reasons",
         "does not inspect the",
         "repository, start watchers",
         "Returns `CoreError::Config { reason }`",
@@ -218,7 +221,8 @@ fn platform_capabilities_documents_consumers_and_scope_boundaries() {
     for fragment in [
         "C4-17 platform capability matrix contract types and entry point.",
         "does not inspect repositories",
-        "not reported by this Core contract",
+        "Limited and unavailable rows",
+        "disable unsupported operations without guessing",
         "Returns `CoreError::Config { reason }`",
     ] {
         assert_contains(PLATFORM_CAPABILITIES_RS, fragment);

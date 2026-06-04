@@ -1,0 +1,43 @@
+一、执行结论
+
+已完成 `4-3/task-82`。
+
+二、执行范围
+
+单任务：C4-17 `platform-capabilities` Core implementation。
+
+修改文件：
+- [core/src/platform_capabilities.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/platform_capabilities.rs:69)
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:63)
+- [core/tests/platform_capabilities_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/platform_capabilities_contract_api.rs:65)
+- [core/tests/platform_capabilities_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/platform_capabilities_implementation.rs:1)
+
+三、完成情况
+
+核对清单全部完成：只实现 C4-17；按文档落实输入、输出、无 DB/文件系统副作用和 `Config` 错误映射；Rust Core 未依赖平台 UI API；补了 targeted implementation tests。完成标准满足：`get_platform_capabilities(platform, app_version)` 可被测试和桥接调用验证。未触碰 `apps/**`，`core/area_matrix.udl` 无需变更且未修改。
+
+四、工程质量
+
+实现从 task-81 的全 `Unknown` 合同态升级为表驱动平台矩阵：macOS、iOS、Windows、Linux 分别返回 watcher、trash、share extension、cloud placeholder、security bookmark 的结构化 `Available/Limited/NotAvailable` 状态、UI enablement、permission 和 stable reason。没有 mock-only、硬编码通过态或一次性脚本；没有新增依赖；public API rustdoc 已同步。测试覆盖平台矩阵、非法输入 `Config` 映射，以及无 FS/DB/runtime probe 边界。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-3/task-82
+```
+
+通过内容：
+- `prompt_pipeline.py doctor`: OK
+- `git diff --check`: OK
+- `cargo test --test platform_capabilities_contract_api -- --nocapture`: 5 passed
+- `cargo test --test platform_capabilities_implementation -- --nocapture`: 5 passed
+
+未运行宽门禁，符合本 task 验证上限。
+
+六、风险与后续
+
+剩余风险：平台能力矩阵是 Core 的静态合同，不替代平台层真实 preflight；Trash/Recycle Bin、iCloud/OneDrive placeholder、security-scoped access 仍必须在各平台操作前重新校验。工作树中已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是本任务开始前存在的 task-loop 状态脏改动，我没有处理。
+
+建议下一个任务：`4-3/task-83`，补 C4-17 failure/edge 语义。
