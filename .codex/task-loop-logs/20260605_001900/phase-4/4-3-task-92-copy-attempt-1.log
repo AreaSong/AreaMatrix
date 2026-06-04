@@ -1,0 +1,37 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-3/task-92`。  
+本次新增文件：[manual_rescan_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/manual_rescan_implementation.rs)。  
+未修改 `apps/**`。
+
+三、完成情况
+
+核对清单结果：只覆盖 C4-19 manual-rescan；验证了 `reindex_from_filesystem`、`get_latest_scan_session`、`resume_scan_session` 的核心行为；Rust Core 未引入平台 UI API；新增了最小 implementation 测试支撑，不做页面接入。
+
+完成标准结果：C4-19 核心行为已可通过 targeted Rust test 验证；测试证明 rescan 只更新 metadata/scan session，不移动、不删除、不覆盖用户文件，并跳过 `.areamatrix/generated/` 与根 `AREAMATRIX.md`，保留 `README.md` 作为普通用户文件索引。
+
+Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+新增测试结构清晰，使用临时 repo 验证真实 Core API 和真实 DB/文件系统行为，没有 mock-only、硬编码通过态或一次性脚本。错误/边界覆盖保持在 task-92 的实现最小闭环内；更完整的失败边界属于后续 `4-3/task-93`。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+cargo test --test manual_rescan_implementation -- --nocapture
+./dev check task 4-3/task-92
+```
+
+`./dev check task 4-3/task-92` 通过项包括：prompt doctor、`git diff --check`、`manual_rescan_contract_api`、`manual_rescan_implementation`。
+
+六、风险与后续
+
+剩余风险：本任务未扩展到权限失败、DB 错误、恢复/回滚的完整失败矩阵，这些按任务拆分应由 `4-3/task-93` 和 `4-3/task-94` 承接。  
+工作树中另有既存脏改动：`.codex/task-loop-runs/20260605_001900/summary.json`、`tasks/prompts/_shared/progress.json`；它们不属于本次修改成果，我没有处理。
