@@ -97,12 +97,16 @@ fn validate_request(platform: PlatformId, app_version: &str) -> CoreResult<()> {
         return Err(CoreError::config("platform id is required"));
     }
     if app_version.trim().is_empty()
-        || app_version.contains('\0')
+        || !app_version.chars().all(is_valid_app_version_char)
         || app_version.len() > MAX_APP_VERSION_LEN
     {
         return Err(CoreError::config("app version is invalid"));
     }
     Ok(())
+}
+
+fn is_valid_app_version_char(character: char) -> bool {
+    character.is_ascii_alphanumeric() || matches!(character, '.' | '-' | '_' | '+')
 }
 
 fn macos_capabilities(platform: PlatformId, app_version: String) -> PlatformCapabilities {
