@@ -142,6 +142,25 @@ fn active_file_snapshot(repo: &Path, file_id: i64) -> (String, i64, String) {
         .expect("read active file row")
 }
 
+fn active_file_records(repo: &Path) -> Vec<(i64, String, String, String)> {
+    let connection = open_db(repo);
+    let mut statement = connection
+        .prepare(
+            "SELECT id, path, storage_mode, origin
+             FROM files
+             WHERE status = 'active'
+             ORDER BY path ASC, id ASC",
+        )
+        .expect("prepare active files query");
+    statement
+        .query_map([], |row| {
+            Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+        })
+        .expect("query active files")
+        .map(|row| row.expect("read active file row"))
+        .collect()
+}
+
 fn preview_token(
     repo: &Path,
     conflict_id: &str,
@@ -237,6 +256,73 @@ fn sync_conflict_resolve_implementation_keep_both_resolves_state_without_moving_
             "conflict_resolved_keep_both"
         );
         assert_eq!(changes[1].1["conflict_id"], conflict_id);
+    });
+}
+
+#[test]
+fn sync_conflict_resolve_implementation_use_existing_retains_incoming_visible_record() {
+    with_test_system_trash(|_trash_dir| {
+        let (repo, conflict_id, file_id) = setup_same_name_conflict();
+        let before_files = user_files(repo.path());
+        let token = preview_token(
+            repo.path(),
+            &conflict_id,
+            SyncConflictResolutionStrategy::UseExisting,
+        );
+
+        let report = resolve_sync_conflict(
+            path_string(repo.path()),
+            conflict_id.clone(),
+            SyncConflictResolutionRequest {
+                strategy: SyncConflictResolutionStrategy::UseExisting,
+                preview_token: token,
+                replace_confirmed: false,
+                replace_confirmation_id: None,
+            },
+        )
+        .expect("resolve use existing");
+
+        assert_eq!(report.status, SyncConflictStatus::Resolved);
+        assert_eq!(report.change_log_action, "conflict_resolved_use_existing");
+        assert_eq!(
+            report.retained_paths,
+            vec!["docs/report (Alice's conflicted copy).pdf".to_owned()]
+        );
+        assert!(report.trashed_paths.is_empty());
+        assert_eq!(user_files(repo.path()), before_files);
+        assert_eq!(
+            active_file_snapshot(repo.path(), file_id).0,
+            "docs/report.pdf"
+        );
+
+        let active_records = active_file_records(repo.path());
+        let retained = active_records
+            .iter()
+            .find(|row| row.1 == "docs/report (Alice's conflicted copy).pdf")
+            .expect("incoming retained active file row");
+        assert_eq!(retained.2, "indexed");
+        assert_eq!(retained.3, "external");
+        assert_eq!(report.affected_file_ids.len(), 2);
+        assert!(report.affected_file_ids.contains(&file_id));
+        assert!(report.affected_file_ids.contains(&retained.0));
+
+        let changes = change_rows(repo.path());
+        assert_eq!(
+            changes[1].1["logical_action"],
+            "conflict_resolved_use_existing"
+        );
+        assert_eq!(changes[1].1["retained_paths"][0], retained.1);
+        assert_eq!(
+            changes[1].1["affected_file_ids"]
+                .as_array()
+                .expect("affected ids")
+                .len(),
+            2
+        );
+        assert_eq!(
+            conflict_state(repo.path())[0].status,
+            SyncConflictStatus::Resolved
+        );
     });
 }
 

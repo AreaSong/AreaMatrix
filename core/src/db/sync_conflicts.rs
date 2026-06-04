@@ -2,7 +2,8 @@
 
 use std::path::Path;
 
-use rusqlite::{params, Transaction};
+use rusqlite::{params, OptionalExtension, Transaction};
+use serde_json::Value;
 
 use crate::{CoreError, CoreResult};
 
@@ -23,12 +24,26 @@ pub(crate) struct SyncConflictCanonicalUpdate<'a> {
     pub(crate) hash_sha256: &'a str,
 }
 
+pub(crate) struct SyncConflictRetainedFileRecord {
+    pub(crate) path: String,
+    pub(crate) original_name: String,
+    pub(crate) current_name: String,
+    pub(crate) category: String,
+    pub(crate) size_bytes: i64,
+    pub(crate) hash_sha256: String,
+}
+
 pub(crate) struct SyncConflictResolutionRecord<'a> {
     pub(crate) serialized_state: &'a str,
     pub(crate) file_update: Option<SyncConflictCanonicalUpdate<'a>>,
+    pub(crate) retained_files: &'a [SyncConflictRetainedFileRecord],
     pub(crate) log_file_id: Option<i64>,
     pub(crate) detail_json: &'a str,
     pub(crate) occurred_at: i64,
+}
+
+pub(crate) struct SyncConflictResolutionDbResult {
+    pub(crate) affected_file_ids: Vec<i64>,
 }
 
 pub(crate) fn list_active_sync_conflict_files(
@@ -105,7 +120,7 @@ pub(crate) fn preflight_sync_conflict_resolution(repo_path: &Path) -> CoreResult
 pub(crate) fn record_sync_conflict_resolution(
     repo_path: &Path,
     record: SyncConflictResolutionRecord<'_>,
-) -> CoreResult<()> {
+) -> CoreResult<SyncConflictResolutionDbResult> {
     super::ensure_config_storage_writable(repo_path)?;
     let mut connection =
         super::open_repo_connection(repo_path).map_err(super::map_update_open_error)?;
@@ -115,15 +130,31 @@ pub(crate) fn record_sync_conflict_resolution(
     if let Some(update) = &record.file_update {
         update_canonical_file_metadata(&tx, update, record.occurred_at)?;
     }
+    let mut retained_file_ids = Vec::new();
+    for retained_file in record.retained_files {
+        push_unique(
+            &mut retained_file_ids,
+            retain_visible_file_record(&tx, retained_file, record.occurred_at)?,
+        );
+    }
     super::upsert_repo_config_record(
         &tx,
         SYNC_CONFLICT_STATE_KEY,
         record.serialized_state,
         record.occurred_at,
     )?;
-    insert_resolution_change(&tx, record)?;
+    let merged_detail = merge_detail_affected_file_ids(record.detail_json, &retained_file_ids)?;
+    insert_resolution_change(
+        &tx,
+        record.log_file_id,
+        &merged_detail.detail_json,
+        record.occurred_at,
+    )?;
     tx.commit()
-        .map_err(|error| CoreError::db(error.to_string()))
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    Ok(SyncConflictResolutionDbResult {
+        affected_file_ids: merged_detail.affected_file_ids,
+    })
 }
 
 fn update_canonical_file_metadata(
@@ -153,14 +184,124 @@ fn update_canonical_file_metadata(
     }
 }
 
+fn retain_visible_file_record(
+    tx: &Transaction<'_>,
+    retained_file: &SyncConflictRetainedFileRecord,
+    occurred_at: i64,
+) -> CoreResult<i64> {
+    if let Some(existing) = active_file_at_path(tx, &retained_file.path)? {
+        if existing.matches(retained_file) {
+            return Ok(existing.id);
+        }
+        return Err(CoreError::conflict(
+            "sync conflict retained file record is stale",
+        ));
+    }
+
+    tx.execute(
+        "INSERT INTO files (
+            path, original_name, current_name, category, size_bytes,
+            hash_sha256, storage_mode, origin, source_path,
+            imported_at, updated_at, status
+         ) VALUES (
+            ?1, ?2, ?3, ?4, ?5, ?6, 'indexed', 'external', NULL,
+            ?7, ?7, 'active'
+         )",
+        params![
+            retained_file.path,
+            retained_file.original_name,
+            retained_file.current_name,
+            retained_file.category,
+            retained_file.size_bytes,
+            retained_file.hash_sha256,
+            occurred_at,
+        ],
+    )
+    .map_err(|error| CoreError::db(error.to_string()))?;
+    Ok(tx.last_insert_rowid())
+}
+
+fn active_file_at_path(tx: &Transaction<'_>, path: &str) -> CoreResult<Option<RetainedActiveFile>> {
+    tx.query_row(
+        "SELECT id, size_bytes, hash_sha256
+         FROM files
+         WHERE path = ?1 AND status = 'active'",
+        params![path],
+        |row| {
+            Ok(RetainedActiveFile {
+                id: row.get(0)?,
+                size_bytes: row.get(1)?,
+                hash_sha256: row.get(2)?,
+            })
+        },
+    )
+    .optional()
+    .map_err(|error| CoreError::db(error.to_string()))
+}
+
+struct RetainedActiveFile {
+    id: i64,
+    size_bytes: i64,
+    hash_sha256: String,
+}
+
+impl RetainedActiveFile {
+    fn matches(&self, retained_file: &SyncConflictRetainedFileRecord) -> bool {
+        self.size_bytes == retained_file.size_bytes && self.hash_sha256 == retained_file.hash_sha256
+    }
+}
+
+fn merge_detail_affected_file_ids(
+    detail_json: &str,
+    retained_file_ids: &[i64],
+) -> CoreResult<MergedResolutionDetail> {
+    let mut detail: Value = serde_json::from_str(detail_json)
+        .map_err(|error| CoreError::internal(error.to_string()))?;
+    let Some(ids) = detail
+        .get_mut("affected_file_ids")
+        .and_then(Value::as_array_mut)
+    else {
+        return Err(CoreError::internal(
+            "sync conflict resolution detail is missing affected file ids",
+        ));
+    };
+
+    for retained_id in retained_file_ids {
+        if !ids.iter().any(|id| id.as_i64() == Some(*retained_id)) {
+            ids.push(Value::from(*retained_id));
+        }
+    }
+
+    let affected_file_ids = ids.iter().filter_map(Value::as_i64).collect();
+    let detail_json =
+        serde_json::to_string(&detail).map_err(|error| CoreError::internal(error.to_string()))?;
+    Ok(MergedResolutionDetail {
+        detail_json,
+        affected_file_ids,
+    })
+}
+
+struct MergedResolutionDetail {
+    detail_json: String,
+    affected_file_ids: Vec<i64>,
+}
+
+fn push_unique(ids: &mut Vec<i64>, id: i64) {
+    if !ids.contains(&id) {
+        ids.push(id);
+    }
+}
+
 fn insert_resolution_change(
     tx: &Transaction<'_>,
-    record: SyncConflictResolutionRecord<'_>,
+    log_file_id: Option<i64>,
+    detail_json: &str,
+    occurred_at: i64,
 ) -> CoreResult<()> {
     tx.execute(
         "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
          VALUES (?1, 'external_modified', ?2, ?3)",
-        params![record.log_file_id, record.detail_json, record.occurred_at],
+        params![log_file_id, detail_json, occurred_at],
     )
     .map(|_| ())
     .map_err(|error| CoreError::db(error.to_string()))

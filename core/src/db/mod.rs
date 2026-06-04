@@ -114,7 +114,7 @@ pub(crate) use sync::*;
 pub(crate) use sync_conflicts::{
     list_active_sync_conflict_files, load_sync_conflict_state, preflight_sync_conflict_resolution,
     record_sync_conflict_resolution, replace_sync_conflict_state, ActiveSyncConflictFile,
-    SyncConflictCanonicalUpdate, SyncConflictResolutionRecord,
+    SyncConflictCanonicalUpdate, SyncConflictResolutionRecord, SyncConflictRetainedFileRecord,
 };
 pub(crate) use tags::{
     add_tag_row, apply_ai_tag_suggestion_rows, apply_tag_suggestion_rows, batch_add_tags_rows,

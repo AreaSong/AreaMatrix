@@ -66,6 +66,41 @@ pub(crate) fn active_file_snapshot(repo: &Path, file_id: i64) -> (String, i64, S
         .expect("read active file row")
 }
 
+pub(crate) fn active_file_records(repo: &Path) -> Vec<(i64, String, String, String)> {
+    let connection = open_db(repo);
+    let mut statement = connection
+        .prepare(
+            "SELECT id, path, storage_mode, origin
+             FROM files
+             WHERE status = 'active'
+             ORDER BY path ASC, id ASC",
+        )
+        .expect("prepare active files query");
+    statement
+        .query_map([], |row| {
+            Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+        })
+        .expect("query active files")
+        .map(|row| row.expect("read active file row"))
+        .collect()
+}
+
+pub(crate) fn sync_resolution_detail(repo: &Path) -> serde_json::Value {
+    let detail_json: String = open_db(repo)
+        .query_row(
+            "SELECT detail_json
+             FROM change_log
+             WHERE action = 'external_modified'
+               AND json_extract(detail_json, '$.kind') = 'sync_conflict_resolved'
+             ORDER BY id DESC
+             LIMIT 1",
+            [],
+            |row| row.get(0),
+        )
+        .expect("read sync conflict resolution detail");
+    serde_json::from_str(&detail_json).expect("sync conflict resolution detail parses")
+}
+
 pub(crate) fn user_files(repo: &Path) -> Vec<(String, Vec<u8>)> {
     let mut files = Vec::new();
     collect_user_files(repo, repo, &mut files);

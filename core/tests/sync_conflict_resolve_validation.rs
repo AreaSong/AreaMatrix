@@ -11,8 +11,9 @@ mod sync_conflict_resolve_validation_support;
 
 use support::system_trash_home::with_test_system_trash;
 use sync_conflict_resolve_validation_support::{
-    active_file_snapshot, conflict_state, path_string, setup_same_name_conflict,
-    sync_resolution_change_count, user_files, validation_snapshot,
+    active_file_records, active_file_snapshot, conflict_state, path_string,
+    setup_same_name_conflict, sync_resolution_change_count, sync_resolution_detail, user_files,
+    validation_snapshot,
 };
 
 const TASK: &str = include_str!(
@@ -72,6 +73,7 @@ fn sync_conflict_resolve_validation_success_paths_cover_preview_and_apply() {
         .expect("resolve keep both");
 
         assert_keep_both_report(&report, &conflict_id);
+        assert_keep_both_active_records(repo.path(), file_id, &report);
         assert_eq!(
             conflict_state(repo.path())[0].status,
             SyncConflictStatus::Resolved
@@ -80,19 +82,23 @@ fn sync_conflict_resolve_validation_success_paths_cover_preview_and_apply() {
         assert_eq!(
             user_files(repo.path()),
             vec![
-                ("docs/report (Alice's conflicted copy).pdf".to_owned(), b"conflicted".to_vec()),
+                (
+                    "docs/report (Alice's conflicted copy).pdf".to_owned(),
+                    b"conflicted".to_vec()
+                ),
                 ("docs/report.pdf".to_owned(), b"original".to_vec()),
             ]
         );
-        assert_eq!(active_file_snapshot(repo.path(), file_id).0, "docs/report.pdf");
+        assert_eq!(
+            active_file_snapshot(repo.path(), file_id).0,
+            "docs/report.pdf"
+        );
+        assert_resolution_detail_records(repo.path(), &report.affected_file_ids);
         assert!(!trash_dir.join("report.pdf").exists());
     });
 }
 
-fn assert_keep_both_preview(
-    preview: &SyncConflictResolutionPreviewReport,
-    conflict_id: &str,
-) {
+fn assert_keep_both_preview(preview: &SyncConflictResolutionPreviewReport, conflict_id: &str) {
     assert_eq!(preview.conflict_id, conflict_id);
     assert_eq!(
         preview.default_resolution,
@@ -121,6 +127,42 @@ fn assert_keep_both_report(report: &SyncConflictResolveReport, conflict_id: &str
     assert!(report.trashed_paths.is_empty());
     assert!(report.undo_token.is_none());
     assert!(report.resolved_at.is_some());
+}
+
+fn assert_keep_both_active_records(
+    repo: &std::path::Path,
+    canonical_file_id: i64,
+    report: &SyncConflictResolveReport,
+) {
+    let records = active_file_records(repo);
+    assert_eq!(records.len(), 2);
+    assert_eq!(
+        records.iter().map(|row| row.1.as_str()).collect::<Vec<_>>(),
+        vec![
+            "docs/report (Alice's conflicted copy).pdf",
+            "docs/report.pdf",
+        ]
+    );
+    let retained = records
+        .iter()
+        .find(|row| row.1 == "docs/report (Alice's conflicted copy).pdf")
+        .expect("incoming retained file record exists");
+    assert_eq!(retained.2, "indexed");
+    assert_eq!(retained.3, "external");
+    assert_eq!(report.affected_file_ids.len(), 2);
+    assert!(report.affected_file_ids.contains(&canonical_file_id));
+    assert!(report.affected_file_ids.contains(&retained.0));
+}
+
+fn assert_resolution_detail_records(repo: &std::path::Path, expected_file_ids: &[i64]) {
+    let detail = sync_resolution_detail(repo);
+    let actual = detail["affected_file_ids"]
+        .as_array()
+        .expect("affected file ids array")
+        .iter()
+        .map(|value| value.as_i64().expect("affected file id is integer"))
+        .collect::<Vec<_>>();
+    assert_eq!(actual, expected_file_ids);
 }
 
 #[test]
@@ -228,7 +270,12 @@ fn assert_task_docs_and_testing_alignment() {
         assert_contains(CONTROL_MAP, fragment);
     }
 
-    for fragment in ["Rust 单元测试", "集成测试目录", "Sync 模块", "`core/tests/`"] {
+    for fragment in [
+        "Rust 单元测试",
+        "集成测试目录",
+        "Sync 模块",
+        "`core/tests/`",
+    ] {
         assert_contains(TESTING_DOC, fragment);
     }
 }
@@ -277,10 +324,13 @@ fn assert_core_api_behavior_alignment() {
         "`preview_sync_conflict_resolution` 是 C4-16 的多端同步冲突解决预览入口",
         "`default_resolution` 必须为 `KeepBoth`",
         "`KeepBoth`：默认安全策略，所有版本继续留在用户可见位置。",
+        "`KeepBoth` 不删除、不覆盖任何版本；只能保留/新增普通可见 file record",
+        "`UseExisting` 不删除 incoming；existing 保持 canonical",
         "`UseIncoming`：incoming 将成为 canonical path；必须先进入 S4-X-09 二次确认。",
         "不移动、不删除、不重命名、不覆盖、不 Trash、不隐藏任何用户文件或冲突副本。",
         "### `resolve_sync_conflict(repoPath, conflictId, resolution) throws -> SyncConflictResolveReport`",
         "`resolve_sync_conflict` 是 C4-16 的执行入口",
+        "`affected_file_ids`：被更新或保留为普通可见文件的 record ids。",
         "任一阶段失败必须保持 conflict unresolved",
         "解决失败时 UI 必须继续展示该冲突",
         "| `preview_sync_conflict_resolution(repo, conflict_id, resolution)` | sync/conflict | √ | Conflict / PermissionDenied / Io / Db |",
@@ -353,6 +403,8 @@ fn assert_implementation_alignment() {
         "apply_resolution",
         "apply_file_replacement",
         "persist_resolution",
+        "retained_file_records",
+        "SyncConflictRetainedFileRecord",
         "rollback_replacement",
         "TrashMoveGuard",
         "IncomingMoveGuard",
@@ -363,6 +415,8 @@ fn assert_implementation_alignment() {
     for fragment in [
         "preflight_sync_conflict_resolution",
         "record_sync_conflict_resolution",
+        "retain_visible_file_record",
+        "merge_detail_affected_file_ids",
         "update_canonical_file_metadata",
         "insert_resolution_change",
     ] {
@@ -383,6 +437,7 @@ fn assert_existing_test_layers_are_present() {
     for fragment in [
         "sync_conflict_resolve_implementation_previews_keep_both_read_only",
         "sync_conflict_resolve_implementation_keep_both_resolves_state_without_moving_versions",
+        "sync_conflict_resolve_implementation_use_existing_retains_incoming_visible_record",
         "sync_conflict_resolve_implementation_use_incoming_requires_replace_confirmation",
         "sync_conflict_resolve_implementation_use_incoming_moves_existing_to_trash",
     ] {

@@ -1,7 +1,10 @@
 use std::{
     fs,
+    io::Read,
     path::{Path, PathBuf},
 };
+
+use sha2::{Digest, Sha256};
 
 use crate::{db, storage, CoreError, CoreResult};
 
@@ -9,6 +12,8 @@ use super::{
     resolution_detail_json, IncomingReplacement, ResolutionPlan, SyncConflictResolutionRequest,
     SyncConflictResolveReport,
 };
+
+const HASH_BUFFER_BYTES: usize = 64 * 1024;
 
 pub(super) fn apply_resolution(
     repo: &Path,
@@ -103,17 +108,21 @@ fn persist_resolution(
         size_bytes: replacement.incoming_size_bytes,
         hash_sha256: replacement.incoming_hash_sha256.as_str(),
     });
-    db::record_sync_conflict_resolution(
+    let retained_files = retained_file_records(repo, plan, replacement)?;
+    let db_result = db::record_sync_conflict_resolution(
         repo,
         db::SyncConflictResolutionRecord {
             serialized_state,
             file_update,
+            retained_files: &retained_files,
             log_file_id: log_file_id(plan, replacement),
             detail_json: &detail_json,
             occurred_at: resolved_at,
         },
     )?;
-    Ok(plan.resolve_report(trashed_paths.to_vec(), None, resolved_at))
+    let mut report = plan.resolve_report(trashed_paths.to_vec(), None, resolved_at);
+    report.affected_file_ids = db_result.affected_file_ids;
+    Ok(report)
 }
 
 fn log_file_id(plan: &ResolutionPlan, replacement: Option<&IncomingReplacement>) -> Option<i64> {
@@ -133,6 +142,82 @@ fn preflight_regular_file(path: &Path, display_path: &str) -> CoreResult<()> {
             Err(CoreError::conflict(display_path.to_owned()))
         }
         Err(_) => Err(CoreError::io("sync conflict file preflight failed")),
+    }
+}
+
+fn retained_file_records(
+    repo: &Path,
+    plan: &ResolutionPlan,
+    replacement: Option<&IncomingReplacement>,
+) -> CoreResult<Vec<db::SyncConflictRetainedFileRecord>> {
+    if replacement.is_some() {
+        return Ok(Vec::new());
+    }
+
+    plan.version_impacts
+        .iter()
+        .filter(|impact| impact.will_remain_user_visible && impact.file_id.is_none())
+        .map(|impact| retained_file_record(repo, &impact.path))
+        .collect()
+}
+
+fn retained_file_record(
+    repo: &Path,
+    relative_path: &str,
+) -> CoreResult<db::SyncConflictRetainedFileRecord> {
+    let absolute_path = repo.join(relative_path);
+    let metadata = fs::metadata(&absolute_path).map_err(map_file_metadata_error)?;
+    if !metadata.is_file() {
+        return Err(CoreError::conflict(relative_path.to_owned()));
+    }
+
+    let current_name = file_name_from_relative(relative_path)?;
+    Ok(db::SyncConflictRetainedFileRecord {
+        path: relative_path.to_owned(),
+        original_name: current_name.clone(),
+        current_name,
+        category: category_for_relative_path(relative_path),
+        size_bytes: metadata.len() as i64,
+        hash_sha256: sha256_file(&absolute_path)?,
+    })
+}
+
+fn file_name_from_relative(relative_path: &str) -> CoreResult<String> {
+    relative_path
+        .rsplit('/')
+        .next()
+        .filter(|name| !name.is_empty())
+        .map(str::to_owned)
+        .ok_or_else(|| CoreError::conflict("sync conflict retained path is invalid"))
+}
+
+fn category_for_relative_path(relative_path: &str) -> String {
+    match relative_path.split_once('/') {
+        Some((top_level, _)) if !top_level.is_empty() => top_level.to_owned(),
+        _ => "__root__".to_owned(),
+    }
+}
+
+fn sha256_file(path: &Path) -> CoreResult<String> {
+    let mut file = fs::File::open(path).map_err(map_file_metadata_error)?;
+    let mut hasher = Sha256::new();
+    let mut buffer = [0_u8; HASH_BUFFER_BYTES];
+
+    loop {
+        let bytes_read = file.read(&mut buffer).map_err(map_file_metadata_error)?;
+        if bytes_read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..bytes_read]);
+    }
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+fn map_file_metadata_error(error: std::io::Error) -> CoreError {
+    match error.kind() {
+        std::io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
+        std::io::ErrorKind::NotFound => CoreError::conflict("sync conflict file is missing"),
+        _ => CoreError::io("sync conflict file metadata failed"),
     }
 }
 
