@@ -1,0 +1,65 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-81`
+- 对应文件路径：`core/src/platform_capabilities.rs`、`core/src/api.rs`、`core/src/lib.rs`、`core/src/cross_platform_ffi.rs`、`core/area_matrix.udl`、`core/tests/platform_capabilities_contract_api.rs`、`docs/api/core-api.md`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取并对齐 C4-17 能力规格、control map、Core API、错误码
+- 结果：通过
+- 证据：C4-17 规格要求 `get_platform_capabilities(platform) -> PlatformCapabilities`，输入 `platform id、app version`，输出 watcher/trash/share extension/cloud placeholder/security bookmark，错误码 `Config`；UDL 已声明函数、结构体和枚举。
+- 涉及文件：`docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md:9`、`core/area_matrix.udl:10`、`core/area_matrix.udl:498`、`core/area_matrix.udl:2122`
+
+- 项目：确认 API 名称、输入、输出、错误码、权限/隐私边界一致
+- 结果：通过
+- 证据：Rust public API 暴露 `get_platform_capabilities(PlatformId, String) -> CoreResult<PlatformCapabilities>`，rustdoc 明确只读、不读取 repo、不启动 watcher、不检测 Trash、不读写用户文件，错误走 `CoreError::Config`。
+- 涉及文件：`core/src/api.rs:61`、`core/src/platform_capabilities.rs:69`、`core/src/platform_capabilities.rs:103`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+- 结果：通过
+- 证据：实现返回安全的 `Unknown` capability rows，`ui_enabled=false`，没有平台探测、DB、文件系统或 app 层调用；`apps/**` 无 diff。
+- 涉及文件：`core/src/platform_capabilities.rs:86`、`core/src/platform_capabilities.rs:116`
+
+- 项目：记录页面消费方是否能从合同得到所需状态
+- 结果：通过
+- 证据：Core API 文档记录 `S4-X-02`、`S4-LNX-03`、`S4-X-08` 消费 `status/ui_enabled/reason`，control map 中这些页面均声明 C4-17。
+- 涉及文件：`docs/api/core-api.md:2654`、`docs/api/core-api.md:2681`、`docs/architecture/stage-4-control-map.md:23`、`docs/architecture/stage-4-control-map.md:27`、`docs/architecture/stage-4-control-map.md:33`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C4-17 类型和入口集中在 `core/src/platform_capabilities.rs`，public wrapper 留在 `api.rs`，结构清楚。
+- 注释 / rustdoc / 文档同步：通过，public API 和类型有 rustdoc；Core API 与 UDL 同步。
+- 错误处理与边界处理：通过，无生产路径 `unwrap()` / `panic!()`；无效 platform/app version 返回 `Config`。
+- 测试与验证覆盖：通过，合同测试覆盖签名、输出矩阵、错误码、文档/UDL/control map 对齐和消费方边界。
+- 占位、硬编码、mock-only、一次性实现检查：通过；本任务范围是合同/API，不要求业务平台探测，当前 Unknown-disabled 行是安全合同默认态，不是冒充真实能力闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-81`
+- 通过：`prompt doctor` OK；`git diff --check` OK；`cargo test --test platform_capabilities_contract_api -- --nocapture` 5 passed。
+- 失败：无。
+- 缺失：无。未扩大到 `./dev check all`，符合该 atomic Core task 的 manifest 验证边界。
+- 工作区边界：`apps/**` 无修改；`progress.json` 和 task-loop `summary.json` 仍为 `in_progress` 属于 verify 发生在 runner 收口前的时序，不作为本次失败项。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS

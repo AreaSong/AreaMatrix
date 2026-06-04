@@ -209,6 +209,7 @@ fn supported_apis() -> Vec<BindingApiContract> {
         ("get_version", "C4-01"),
         ("init_logging", "C4-01"),
         ("inspect_binding_contract", "C4-01"),
+        ("get_platform_capabilities", "C4-17"),
     ]
     .into_iter()
     .map(|(name, capability)| BindingApiContract {
@@ -233,6 +234,13 @@ fn type_mappings(target_platform: &BindingTargetPlatform) -> Vec<BindingTypeMapp
         ("i64", "i64", "Int64", "Long", "int"),
         ("bool", "boolean", "Bool", "Boolean", "bool"),
         ("Vec<T>", "sequence<T>", "[T]", "List<T>", "list[T]"),
+        (
+            "PlatformCapabilities",
+            "PlatformCapabilities",
+            "PlatformCapabilities",
+            "PlatformCapabilities",
+            "PlatformCapabilities",
+        ),
         ("enum", "enum", "enum", "enum class", "Enum"),
         ("struct", "dictionary", "struct", "data class", "dataclass"),
         (

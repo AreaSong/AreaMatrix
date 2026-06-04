@@ -8,6 +8,11 @@ namespace area_matrix {
     BindingContractReport inspect_binding_contract(BindingContractRequest request);
 
     [Throws=CoreError]
+    PlatformCapabilities get_platform_capabilities(
+        PlatformId platform, string app_version
+    );
+
+    [Throws=CoreError]
     RepoPathValidation validate_repo_path(string repo_path);
 
     [Throws=CoreError]
@@ -488,6 +493,23 @@ dictionary BindingContractReport {
     sequence<BindingApiContract> supported_apis;
     sequence<BindingTypeMapping> type_mappings;
     sequence<BindingMissingCapability> missing_capabilities;
+};
+
+dictionary PlatformCapabilitySupport {
+    PlatformCapabilityStatus status;
+    boolean ui_enabled;
+    boolean requires_permission;
+    string? reason;
+};
+
+dictionary PlatformCapabilities {
+    PlatformId platform;
+    string app_version;
+    PlatformCapabilitySupport watcher;
+    PlatformCapabilitySupport trash;
+    PlatformCapabilitySupport share_extension;
+    PlatformCapabilitySupport cloud_placeholder;
+    PlatformCapabilitySupport security_bookmark;
 };
 
 dictionary AiFeatureConfig {
@@ -2097,6 +2119,8 @@ enum PlatformPathKind { "Local", "ICloudDrive", "OneDrive", "NetworkShare", "Unk
 enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
 enum BindingTargetPlatform { "Swift", "Kotlin", "Python" };
 enum BindingSupportStatus { "Supported", "Limited", "Missing" };
+enum PlatformId { "Macos", "Ios", "Windows", "Linux", "Unknown" };
+enum PlatformCapabilityStatus { "Available", "Limited", "NotAvailable", "Unknown" };
 enum AiProviderPreference { "LocalFirst", "LocalOnly", "RemoteFirst" };
 enum AiFeatureKind {
     "ClassificationSuggestions", "AutoSummaries", "AutoTags", "SemanticSearch"

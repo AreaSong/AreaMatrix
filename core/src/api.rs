@@ -7,33 +7,33 @@ use crate::{
     ai_summary, ai_tags_suggestion, batch_category, batch_delete, batch_rename as batch_rename_mod,
     classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules, classify,
     cloud_permission_state, cross_platform_ffi, db, icloud_conflicts, import_conflict_batch,
-    local_model_status, note, platform_watcher_status, recovery, redo, remote_provider_config,
-    repair, repo_init, repo_path, repo_scan, storage, sync, sync_conflict_detect,
-    sync_conflict_resolve, tree, AiCallLogClearReport, AiCallLogClearRequest, AiCallLogFilter,
-    AiCallLogPage, AiCallLogPagination, AiCategorySuggestion, AiCategorySuggestionRequest,
-    AiConfig, AiConfigSnapshot, AiFallbackStatus, AiFallbackStatusRequest,
-    AiPrivacyEvaluationReport, AiPrivacyEvaluationRequest, AiPrivacyRulesSnapshot,
-    AiPrivacyRulesUpdateRequest, AiSummaryClearReport, AiSummaryClearRequest, AiSummaryDraft,
-    AiSummaryGenerationRequest, AiSummarySaveReport, AiSummarySaveRequest,
-    AiTagSuggestionApplyReport, AiTagSuggestionReport, AiTagSuggestionRequest,
-    ApplyAiTagSuggestionsRequest, ApplyTagSuggestionsRequest, BatchCategoryChangeReport,
-    BatchCategoryPreviewReport, BatchDeleteMode, BatchDeletePreviewReport, BatchDeleteReport,
-    BatchRenamePreviewReport, BatchRenameReport, BatchRenameRule, BindingContractReport,
-    BindingContractRequest, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
-    ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
-    ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleUpdate,
-    ClassifyResult, CloudStorageState, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent,
-    FileEntry, FileFilter, ICloudConflictPair, ICloudConflictPreviewReport,
-    ICloudConflictResolution, ICloudConflictResolveReport, ImportConflictBatchApplyReport,
-    ImportConflictBatchApplyRequest, ImportConflictBatchPreviewReport,
-    ImportConflictBatchPreviewRequest, ImportOptions, ImportResult, LocalModelFolderLocation,
-    LocalModelFolderRequest, LocalModelStatusRequest, LocalModelStatusSnapshot,
-    MoveToCategoryPreview, PlatformWatcherHealthSignal, PlatformWatcherSnapshot, RecoveryReport,
-    RedoActionRecord, RedoActionResult, ReindexReport, RemoteProviderConfigSnapshot,
-    RemoteProviderDisableRequest, RemoteProviderEnableRequest, RemoteProviderTestRequest,
-    RemoteProviderTestResult, RepairOptions, RepairReport, RepoConfig, RepoInitOptions,
-    RepoPathValidation, RuleImpactReport, ScanSession, SyncConflict,
-    SyncConflictResolutionPreviewReport, SyncConflictResolutionRequest,
+    local_model_status, note, platform_capabilities, platform_watcher_status, recovery, redo,
+    remote_provider_config, repair, repo_init, repo_path, repo_scan, storage, sync,
+    sync_conflict_detect, sync_conflict_resolve, tree, AiCallLogClearReport, AiCallLogClearRequest,
+    AiCallLogFilter, AiCallLogPage, AiCallLogPagination, AiCategorySuggestion,
+    AiCategorySuggestionRequest, AiConfig, AiConfigSnapshot, AiFallbackStatus,
+    AiFallbackStatusRequest, AiPrivacyEvaluationReport, AiPrivacyEvaluationRequest,
+    AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest, AiSummaryClearReport,
+    AiSummaryClearRequest, AiSummaryDraft, AiSummaryGenerationRequest, AiSummarySaveReport,
+    AiSummarySaveRequest, AiTagSuggestionApplyReport, AiTagSuggestionReport,
+    AiTagSuggestionRequest, ApplyAiTagSuggestionsRequest, ApplyTagSuggestionsRequest,
+    BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
+    BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
+    BatchRenameRule, BindingContractReport, BindingContractRequest, ChangeFilter, ChangeLogEntry,
+    ClassifierCorrectionResult, ClassifierImpactPreviewRequest, ClassifierRule,
+    ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot,
+    ClassifierRuleUpdate, ClassifyResult, CloudStorageState, CoreError, CoreResult,
+    DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter, ICloudConflictPair,
+    ICloudConflictPreviewReport, ICloudConflictResolution, ICloudConflictResolveReport,
+    ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
+    ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
+    ImportResult, LocalModelFolderLocation, LocalModelFolderRequest, LocalModelStatusRequest,
+    LocalModelStatusSnapshot, MoveToCategoryPreview, PlatformCapabilities, PlatformId,
+    PlatformWatcherHealthSignal, PlatformWatcherSnapshot, RecoveryReport, RedoActionRecord,
+    RedoActionResult, ReindexReport, RemoteProviderConfigSnapshot, RemoteProviderDisableRequest,
+    RemoteProviderEnableRequest, RemoteProviderTestRequest, RemoteProviderTestResult,
+    RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation, RuleImpactReport,
+    ScanSession, SyncConflict, SyncConflictResolutionPreviewReport, SyncConflictResolutionRequest,
     SyncConflictResolutionStrategy, SyncConflictResolveReport, SyncResult,
     TagSuggestionApplyReport, TagSuggestionReport, TagSuggestionRequest,
 };
@@ -56,6 +56,31 @@ pub fn inspect_binding_contract(
     request: BindingContractRequest,
 ) -> CoreResult<BindingContractReport> {
     cross_platform_ffi::inspect_binding_contract(request)
+}
+
+/// Returns the C4-17 platform capability matrix for a platform shell.
+///
+/// `S4-X-02 platform-differences`, `S4-LNX-03 local-folder-notice`, and
+/// `S4-X-08 repository-settings` consume this matrix to render watcher, Trash
+/// or Recycle Bin, share extension, cloud placeholder, and security bookmark
+/// support without guessing from platform UI state. Unknown capability rows
+/// are disabled by default so unsupported dangerous actions are not exposed as
+/// available.
+///
+/// The contract is read-only and platform-neutral. It does not inspect the
+/// repository, start watchers, test Trash/Recycle Bin integration, query cloud
+/// SDKs, refresh security-scoped bookmarks, read user files, write diagnostics,
+/// or execute adjacent Stage 4 abilities.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` when `platform` is `Unknown` or
+/// `app_version` is empty, too long, or otherwise invalid for the contract.
+pub fn get_platform_capabilities(
+    platform: PlatformId,
+    app_version: String,
+) -> CoreResult<PlatformCapabilities> {
+    platform_capabilities::get_platform_capabilities(platform, app_version)
 }
 
 /// Returns the AreaMatrix core crate version.
