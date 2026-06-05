@@ -55,7 +55,6 @@ pub(crate) fn import_file_with_result(
         destination.final_path.clone(),
         prepared.source.clone(),
     );
-    ensure_replacement_is_recoverable_from_system_trash(&mut replacement_guard)?;
 
     let replacement_rollback = destination
         .replacement()
@@ -63,6 +62,12 @@ pub(crate) fn import_file_with_result(
     promote_import(&prepared, file_id, &destination)?;
     let entry = db::get_active_file_by_id(&prepared.repo, file_id)?;
     let entry = finish_overview_regeneration(&prepared.repo, entry, replacement_rollback.as_ref())?;
+    ensure_replacement_is_recoverable_from_system_trash(
+        &mut replacement_guard,
+        &prepared.repo,
+        file_id,
+        replacement_rollback.as_ref(),
+    )?;
 
     db_guard.disarm();
     final_guard.disarm();
@@ -222,6 +227,12 @@ fn import_indexed_file(prepared: PreparedImport) -> CoreResult<ImportResult> {
     let entry = db::get_active_file_by_id(&prepared.repo, commit.file_id)?;
     let entry =
         finish_overview_regeneration(&prepared.repo, entry, commit.replacement_rollback.as_ref())?;
+    ensure_replacement_is_recoverable_from_system_trash(
+        &mut commit.replacement_guard,
+        &prepared.repo,
+        commit.file_id,
+        commit.replacement_rollback.as_ref(),
+    )?;
 
     db_guard.disarm();
     if let Some(guard) = &mut commit.replacement_guard {
@@ -323,9 +334,19 @@ fn commit_filesystem(
 
 fn ensure_replacement_is_recoverable_from_system_trash(
     replacement_guard: &mut Option<ReplacementFileGuard>,
+    repo: &Path,
+    file_id: i64,
+    replacement_rollback: Option<&ReplacementDbRollback>,
 ) -> CoreResult<()> {
     if let Some(guard) = replacement_guard {
-        guard.ensure_system_trash_copy()?;
+        match guard.ensure_system_trash_copy() {
+            Ok(()) => {}
+            Err(error) => {
+                let rollback_error = replacement_rollback
+                    .and_then(|rollback| rollback.rollback(repo, file_id).err());
+                return Err(rollback_error.unwrap_or(error));
+            }
+        }
     }
     Ok(())
 }
@@ -395,8 +416,7 @@ fn insert_replacing_indexed_row(
     let imported_at = chrono::Utc::now().timestamp();
     let source_path = prepared.source.to_string_lossy().into_owned();
     let replacement = ReplacementPlan::prepare_for_existing(&prepared.repo, existing)?;
-    let mut replacement_guard = replacement.archive_existing_file(&prepared.repo)?;
-    ensure_replacement_is_recoverable_from_system_trash(&mut replacement_guard)?;
+    let replacement_guard = replacement.archive_existing_file(&prepared.repo)?;
     let file_id = db::insert_replacing_active_indexed_import(
         &prepared.repo,
         replacement.db_row(),

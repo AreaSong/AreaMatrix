@@ -1,0 +1,57 @@
+一、执行结论
+
+已完成 `4-3/task-103`。
+
+二、执行范围
+
+单任务：C4-21 `replace-confirm-cross-platform` failure-edge。
+
+本次修改文件：
+- [core/src/storage/import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:59)
+- [core/src/storage/replacement_trash.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/replacement_trash.rs:10)
+- [core/tests/replace_confirm_cross_platform_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/replace_confirm_cross_platform_failure_recovery.rs:181)
+
+开始前已有脏改仍存在，未触碰：`.codex/task-loop-runs/20260605_194121/summary.json`、`tasks/prompts/_shared/progress.json`。
+
+三、完成情况
+
+核对清单：
+- 空态、非法输入、权限/确认、IO/DB 错误、错误码映射：已覆盖，新增 failure-edge 测试验证空 repo/token、未确认 Replace、stale token、DB 失败、error mapping。
+- 写入/移动/删除/导入失败不留半成品：已覆盖；修正 replace import 顺序，DB/overview 成功后才创建 Trash 副本，Trash 失败会回滚 DB 与文件。
+- 隐私/AI/远程调用：C4-21 本次路径不涉及 AI/remote/provider/key，未新增日志或远程调用。
+- 未吞错/未静默降级：失败继续返回结构化 `CoreError`，测试断言错误类型与状态不变。
+
+完成标准：
+- C4-21 失败路径有明确返回和可测试证据：满足。
+- 用户文件安全保证：满足，失败后原文件、staging、DB conflict 状态保持可解释。
+- 高风险路径可回滚/可恢复：满足，`ReplacementFileGuard` 与 `ReplacementDbRollback` 共同覆盖失败恢复。
+
+Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+代码结构保持在既有 guard/rollback 模式内，没有新增抽象层或 mock-only 分支。关键变更在 [import.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:65)：将 replacement Trash 副本创建移到 DB/overview 成功之后，并在 Trash 失败时调用既有 rollback。`ReplacementFileGuard` 现在只在失败回滚时清理本次可定位的 fallback Trash 副本，成功提交时保留旧版本可恢复副本。
+
+新增测试集中在 C4-21 targeted 文件，覆盖 failure-edge，不改 UDL/API 文档。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-3/task-103
+```
+
+该命令实际通过：
+- prompt doctor
+- `git diff --check`
+- `cargo fmt --all -- --check`
+- `cargo clippy --all-targets --all-features -- -D warnings`
+- `cargo test --test replace_confirm_cross_platform_contract_api -- --nocapture`
+- `cargo test --test replace_confirm_cross_platform_failure_recovery -- --nocapture`
+- `cargo test --test replace_confirm_cross_platform_implementation -- --nocapture`
+
+六、风险与后续
+
+剩余风险：未跑全仓 `./dev check all`，因为本 task 明确要求验证上限为 `./dev check task 4-3/task-103`。建议下一个任务继续按 manifest 推进 C4-21 后续验收或相邻 Stage 4 能力，不需要为本次修复额外触碰 `apps/**`。
+
