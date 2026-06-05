@@ -1,0 +1,78 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-93`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-93-c4-19-failure-edge.md`
+- 实际范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_scan.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/manual_rescan_failure_recovery.rs`
+- 禁止范围：`apps/**` 未发现改动
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 空态、非法输入、权限、IO/DB 错误和错误码映射
+  - 结果：通过
+  - 证据：空仓完成空报告见 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/manual_rescan_failure_recovery.rs:96`；非法/未初始化路径无副作用见 `:117`；DB 失败保留用户文件并记录失败 session 见 `:139`；权限失败可恢复续扫见 `:193`；错误映射见 `:237`。
+  - 涉及文件：`core/tests/manual_rescan_failure_recovery.rs`、`core/src/repo_scan.rs`
+
+- 失败不留下半成品
+  - 结果：通过
+  - 证据：DB upsert 使用事务，失败会回滚单文件 metadata 写入，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/db/scan.rs:173`、`:237`；测试断言 DB 失败后用户文件不变且索引为空，见 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/manual_rescan_failure_recovery.rs:148`。
+  - 涉及文件：`core/src/db/scan.rs`、`core/tests/manual_rescan_failure_recovery.rs`
+
+- 隐私 / AI / 远程调用
+  - 结果：通过
+  - 证据：C4-19 文档和 Core API 边界为只读扫描 repo，不上传诊断、不触发 AI/网络；实际 `repo_scan.rs` 仅使用 `fs`、`File`、`WalkDir`、hash 和 DB 写入路径，没有远程 provider、key 或网络调用。
+  - 涉及文件：`core/src/repo_scan.rs`、`docs/api/core-api.md`
+
+- 不吞错或静默降级
+  - 结果：通过
+  - 证据：`finish_failed_scan` 在失败 session 持久化成功时返回原始错误，持久化失败时返回带原始上下文的 `Db` 错误，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_scan.rs:187`；对应双失败测试见 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/manual_rescan_failure_recovery.rs:168`。
+  - 涉及文件：`core/src/repo_scan.rs`、`core/tests/manual_rescan_failure_recovery.rs`
+
+- C4-19 失败路径有明确返回、可测试证据和用户文件安全保证
+  - 结果：通过
+  - 证据：`reindex_from_filesystem`、`get_latest_scan_session`、`resume_scan_session` 的 UDL/API 合同存在；新增测试覆盖失败 session、恢复续扫和用户文件快照不变。
+  - 涉及文件：`core/area_matrix.udl`、`core/src/api.rs`、`core/tests/manual_rescan_failure_recovery.rs`
+
+- 高风险路径具备可回滚或可恢复说明
+  - 结果：通过
+  - 证据：失败 session 记录为 `Failed`，恢复后通过 `resume_scan_session` 继续，并断言用户文件内容未变，见 `/Users/as/Ai-Project/project/AreaMatrix/core/tests/manual_rescan_failure_recovery.rs:215`。
+  - 涉及文件：`core/tests/manual_rescan_failure_recovery.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，改动集中在失败状态持久化错误处理，未扩大到相邻模块。
+- 注释 / rustdoc / 文档同步：通过，既有 API/UDL 文档已覆盖 C4-19 manual rescan 合同和副作用边界。
+- 错误处理与边界处理：通过，`PermissionDenied`、`Db`、`Io` 映射和失败 session 记录均有证据。
+- 测试与验证覆盖：通过，task-scoped 验证命令新鲜通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试走真实 temp repo、SQLite、文件权限和 Core API。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-93`
+- 通过：prompt doctor、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test manual_rescan_contract_api -- --nocapture`，3 passed
+- 通过：`cargo test --test manual_rescan_failure_recovery -- --nocapture`，6 passed
+- 通过：`cargo test --test manual_rescan_implementation -- --nocapture`，3 passed
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

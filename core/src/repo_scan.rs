@@ -191,13 +191,17 @@ fn finish_failed_scan(
     error: CoreError,
 ) -> CoreResult<()> {
     let errors = vec![format!("{relative_path}: {error}")];
-    db::finish_scan_session(
+    match db::finish_scan_session(
         repo_path,
         scan_session_id,
         ScanSessionStatus::Failed,
         &errors,
-    )?;
-    Err(error)
+    ) {
+        Ok(()) => Err(error),
+        Err(persist_error) => Err(CoreError::db(format!(
+            "failed to persist failed scan session after {relative_path}: {error}; {persist_error}"
+        ))),
+    }
 }
 
 fn should_process_after_resume(relative_path: &str, resume_after: Option<&str>) -> bool {
