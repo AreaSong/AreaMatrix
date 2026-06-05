@@ -1008,7 +1008,8 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// Core resolves a safe numbered name such as `name_1.ext`, while
 /// `CoreError::Conflict { path }` is reserved for exhausted or raced resolution.
 /// Dangerous replacement remains explicit through `DuplicateStrategy::Overwrite`
-/// after S1-24 has confirmed the user decision.
+/// after S1-24 or C4-21/S4-X-09 has confirmed the user decision and recoverable
+/// old-version handling.
 ///
 /// C1-20 uses a successful import as a generated-overview trigger. The trigger
 /// has no extra FFI input: Core derives the changed node/category from the
@@ -1132,6 +1133,10 @@ pub fn import_file_with_result(
 /// This entry point intentionally has no `hard` or permanent-delete flag. Indexed,
 /// adopted, external, or missing references must use [`remove_index_entry`] so
 /// external source files are never deleted as an index cleanup side effect.
+/// C4-21 replace-confirm-cross-platform composes the same Trash-only safety
+/// boundary for discarded versions: callers may route destructive confirmation
+/// through this contract only when a repo-owned file is being recoverably moved
+/// to Trash, never when a platform would require permanent deletion.
 ///
 /// # Errors
 ///

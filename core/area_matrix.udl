@@ -198,6 +198,10 @@ namespace area_matrix {
         string repo_path, string source_path, ImportOptions options
     );
 
+    // C4-21/S4-X-09 may compose this existing deletion contract only for
+    // recoverable repo-owned discarded versions. There is no hard-delete flag;
+    // platforms must disable Replace when Trash or a documented safety backup
+    // is unavailable.
     [Throws=CoreError]
     void delete_file(string repo_path, i64 file_id);
 
@@ -1101,10 +1105,10 @@ dictionary ImportOptions {
     string? target_directory;
     string? override_category;
     string? override_filename;
-    // C4-13 desktop import dialogs keep Replace hidden or disabled until the
-    // separate C4-21/S4-X-09 confirmation proves recoverability. Overwrite is
-    // the committed strategy token after that confirmation, not the preview or
-    // platform Trash capability contract.
+    // C4-13 desktop and C4-06 iOS import dialogs keep Replace hidden or
+    // disabled until the separate C4-21/S4-X-09 confirmation proves
+    // recoverability. Overwrite is the committed strategy token after that
+    // confirmation, not the preview or platform Trash capability contract.
     DuplicateStrategy duplicate_strategy;
 };
 
