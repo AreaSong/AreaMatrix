@@ -163,7 +163,7 @@ fn repository_settings_implementation_rejects_mismatched_payload_without_partial
     fs::write(&readme_path, "user readme\n").expect("write user README");
     let before_config = load_config(path_string(repo.path())).expect("load repository config");
     let before_rows = config_key_values(repo.path());
-    let before_files = file_snapshot(&[readme_path.clone()]);
+    let before_files = file_snapshot(std::slice::from_ref(&readme_path));
     let mut invalid = before_config.clone();
     invalid.repo_path = "/tmp/other-repository".to_owned();
     invalid.default_mode = StorageMode::Indexed;

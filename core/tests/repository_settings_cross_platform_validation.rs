@@ -61,8 +61,7 @@ fn initialized_repo() -> tempfile::TempDir {
     let repo = tempfile::tempdir().expect("create temporary repository directory");
     init_repo(path_string(repo.path()), create_empty_options()).expect("initialize repository");
     fs::write(repo.path().join("README.md"), "user readme\n").expect("write user README");
-    fs::write(repo.path().join("AREAMATRIX.md"), "user overview\n")
-        .expect("write user AREAMATRIX");
+    fs::write(repo.path().join("AREAMATRIX.md"), "user overview\n").expect("write user AREAMATRIX");
     repo
 }
 
@@ -204,7 +203,10 @@ fn repository_settings_validation_covers_failure_rollback_and_error_kinds() {
             .expect_err("unknown platform fails"),
         ErrorKind::Config,
     );
-    assert_eq!(load_config(path_string(repo.path())), Ok(before_config.clone()));
+    assert_eq!(
+        load_config(path_string(repo.path())),
+        Ok(before_config.clone())
+    );
     assert_eq!(snapshot(repo.path()), before);
 
     install_db_failure_trigger(repo.path());

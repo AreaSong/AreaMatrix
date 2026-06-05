@@ -1,0 +1,65 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-100`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-100-c4-20-integration-verify.md`
+- 对应范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：C4-20 spec 声明 `load_config`、`update_config`、`get_platform_capabilities`；`docs/api/core-api.md` 与 `core/area_matrix.udl` 均声明对应接口；`core/src/api.rs` 暴露真实 public API；`core/src/db/mod.rs` 通过事务更新 `repo_config`；C4-20 专用 contract / implementation / failure / validation 测试均通过。
+- 涉及文件：`docs/core/.../C4-20-repository-settings-cross-platform.md`、`docs/api/core-api.md`、`core/area_matrix.udl`、`core/src/api.rs`、`core/src/db/mod.rs`、`core/tests/repository_settings_cross_platform_*.rs`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：`S4-X-08` 需要 repo snapshot 与 platform capability snapshot；实现提供 `RepoConfig` 和 `PlatformCapabilities`。测试覆盖平台禁用行、Config / PermissionDenied / Io / Db 错误、失败回滚、用户文件不被移动/删除/覆盖、AI/远程 secret 不产生副作用。
+- 涉及文件：`docs/ux/page-specs/stage-4-multiplatform/S4-X-08-repository-settings.md`、`core/tests/repository_settings_cross_platform_failure_recovery.rs`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 中 `S4-X-08` 对应 `C4-17, C4-20`；当前 C4-20 只组合 repo config 读写和平台 capability matrix，不实现账号级云同步、diagnostics export、watcher 操作、Trash preflight、security bookmark refresh 或 UI 页面能力。
+- 涉及文件：`docs/architecture/stage-4-control-map.md`、`docs/api/core-api.md`、`core/src/api.rs`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮未编辑文件。`git diff -- apps` 与 `git diff --cached -- apps` 无输出，未触碰 Forbidden Touches。当前工作区存在 `core/tests/**`、`progress.json` 和 `.codex/task-loop-runs/...` 运行状态相关变更；不构成本 task 的 `apps/**` 禁止触碰。
+- 涉及文件：`apps/**` 无 diff
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，API 层委托清晰，DB 层事务更新 `repo_config`，平台能力矩阵表驱动且无 repo 副作用。
+- 注释 / rustdoc / 文档同步：通过，public API 有 rustdoc；Core API、UDL、capability spec、control map 和测试中均有对齐断言。
+- 错误处理与边界处理：通过，覆盖 Config、PermissionDenied、Io、Db；失败路径保持旧配置可读并保护用户文件。
+- 测试与验证覆盖：通过，fresh 运行 `./dev check task 4-3/task-100` 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，验收对象连接真实 `load_config` / `update_config` / SQLite `repo_config` / `get_platform_capabilities` 路径，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-100`
+- 通过：prompt doctor；`git diff --check`；`cargo fmt --all -- --check`；`cargo clippy --all-targets --all-features -- -D warnings`；`repository_settings_cross_platform_contract_api` 6 tests；`repository_settings_cross_platform_failure_recovery` 9 tests；`repository_settings_cross_platform_implementation` 3 tests；`repository_settings_cross_platform_validation` 3 tests。
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C4-20 可以作为后续 page-feature task 的真实 Core 依赖。
+
+VERIFY_RESULT: PASS

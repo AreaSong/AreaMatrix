@@ -1,0 +1,50 @@
+一、执行结论
+
+已完成。C4-20 可以作为后续 page-feature task 的真实 Core 依赖。
+
+二、执行范围
+
+单任务：`4-3/task-100`
+
+修改文件清单：
+- [repository_settings_cross_platform_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/repository_settings_cross_platform_validation.rs:64)
+- [repository_settings_cross_platform_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/repository_settings_cross_platform_implementation.rs:166)
+- [repository_settings_cross_platform_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/repository_settings_cross_platform_failure_recovery.rs:150)
+
+说明：只修了 `Expected New Paths` 内 C4-20 测试证据文件的 rustfmt / clippy 阻断项，没有改产品实现、UDL、Core API 或 `apps/**`。
+
+三、完成情况
+
+核对结果：
+- capability spec、Core API、UDL、Rust API、DB 实现和测试已交叉核对。
+- `S4-X-08` 需要的配置状态、平台能力禁用原因、错误类型、配置回滚和“不移动用户文件”副作用边界已有测试覆盖。
+- 未实现 control map 之外能力；诊断导出、reconnect、watcher runtime、账号级云同步等仍在 C4-20 外。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+代码结构清晰，无新增抽象、无 mock-only、无硬编码通过态。修复仅为测试代码符合 rustfmt 和 clippy 当前门禁：单元素 snapshot 改为 `std::slice::from_ref`，并应用 rustfmt 期望的换行。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-3/task-100
+```
+
+关键结果：
+- `prompt doctor`: OK，637 tasks / 637 manifests
+- `git diff --check`: OK
+- `cargo fmt --all -- --check`: OK
+- `cargo clippy --all-targets --all-features -- -D warnings`: OK
+- targeted tests：`repository_settings_cross_platform_contract_api` 6 passed
+- targeted tests：`repository_settings_cross_platform_failure_recovery` 9 passed
+- targeted tests：`repository_settings_cross_platform_implementation` 3 passed
+- targeted tests：`repository_settings_cross_platform_validation` 3 passed
+
+六、风险与后续
+
+残余风险：当前只证明 Core C4-20 依赖成立，不证明后续 UI 页面已接入。
+
+工作树仍有本轮开始前已存在的 task-loop 状态脏改动：`tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260605_194121/summary.json`，我没有回滚。建议下一个队列任务继续 `4-3/task-101`。

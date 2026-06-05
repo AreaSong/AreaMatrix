@@ -147,7 +147,7 @@ fn repository_settings_failure_invalid_inputs_return_config_without_mutation() {
     fs::write(&readme_path, "user readme\n").expect("write user README");
     let before_config = load_config(path_string(repo.path())).expect("load baseline config");
     let before_rows = config_rows(repo.path());
-    let before_files = file_snapshot(&[readme_path.clone()]);
+    let before_files = file_snapshot(std::slice::from_ref(&readme_path));
 
     let mut mismatched = before_config.clone();
     mismatched.repo_path = "/tmp/other-repository".to_owned();
@@ -197,7 +197,7 @@ fn repository_settings_failure_permission_denied_is_structured_and_non_mutating(
     fs::write(&readme_path, "user readme\n").expect("write user README");
     let before_config = load_config(path_string(repo.path())).expect("load baseline config");
     let before_rows = config_rows(repo.path());
-    let before_files = file_snapshot(&[readme_path.clone()]);
+    let before_files = file_snapshot(std::slice::from_ref(&readme_path));
 
     let metadata_dir = repo.path().join(".areamatrix");
     let original_permissions = fs::metadata(&metadata_dir)
@@ -263,7 +263,7 @@ fn repository_settings_failure_db_error_rolls_back_partial_config_updates() {
     fs::write(&readme_path, "user readme\n").expect("write user README");
     let before_config = load_config(path_string(repo.path())).expect("load baseline config");
     let before_rows = config_rows(repo.path());
-    let before_files = file_snapshot(&[readme_path.clone()]);
+    let before_files = file_snapshot(std::slice::from_ref(&readme_path));
     let before_table_counts = [
         table_count(repo.path(), "files"),
         table_count(repo.path(), "change_log"),
