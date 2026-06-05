@@ -31,6 +31,8 @@ namespace area_matrix {
     [Throws=CoreError]
     BindingContractReport inspect_binding_contract(BindingContractRequest request);
 
+    // C4-17 exposes platform capability rows. C4-20 repository settings reuses
+    // the same matrix to disable unsupported settings before config updates.
     [Throws=CoreError]
     PlatformCapabilities get_platform_capabilities(
         PlatformId platform, string app_version
@@ -45,9 +47,13 @@ namespace area_matrix {
     [Throws=CoreError]
     void init_repo(string repo_path, RepoInitOptions options);
 
+    // C4-20 repository settings reads this repository config snapshot together
+    // with PlatformCapabilities; loading is read-only and has no platform probe.
     [Throws=CoreError]
     RepoConfig load_config(string repo_path);
 
+    // C4-20 repository settings persists only repo_config. Platform-unsupported
+    // settings must be disabled by the caller; this API does not move user files.
     [Throws=CoreError]
     void update_config(string repo_path, RepoConfig new_config);
 
@@ -2913,6 +2919,29 @@ print("locale: \(cfg.locale)")
 配置文件或生成文件。metadata 存在但无法读取、解码或打开时，按
 `Config`、`PermissionDenied`、`Io`、`Db` 传播。
 
+#### C4-20 repository settings contract
+
+`load_config` 是 C4-20 `repository-settings-cross-platform` 的 repo config
+读取入口，和 `get_platform_capabilities(platform, appVersion)` 组合服务
+`S4-X-08 repository-settings`。页面消费方可从合同中得到：
+
+- 当前 repository path、storage mode、overview output、locale、iCloud warning、
+  classifier rule toggles、fallback 和 import replace 默认设置。
+- 平台 capability snapshot 中的 watcher、Trash / Recycle Bin、cloud placeholder
+  和 security bookmark 支持状态、禁用状态和稳定说明。
+- `Config`、`PermissionDenied`、`Io`、`Db` 的结构化错误，用于区分配置损坏、
+  权限阻断、文件系统读取失败和 metadata DB 失败。
+
+页面消费边界：
+
+- `S4-X-08` 可用 `RepoConfig` 渲染当前设置值，用 `PlatformCapabilities`
+  禁用平台不支持的设置和诊断入口。
+- 本合同不提供 repo name、last opened、watcher runtime health、diagnostics export、
+  reconnect picker、recent repo、安全书签续期或 ACL/POSIX permission 生命周期；
+  这些由 C4-17、C4-19、平台层或后续页面任务覆盖。
+- 本调用只读，不检测 watcher、Trash、云盘 SDK 或 security bookmark，也不读取、
+  移动、删除、重命名、覆盖或下载用户文件。
+
 ### `update_config(repoPath: String, newConfig: RepoConfig) throws`
 
 ```swift
@@ -2939,6 +2968,33 @@ rename，也不创建或更新 `README.md`、`AREAMATRIX.md` 或
 `newConfig.repoPath` 必须等于 `repoPath`，`locale` 不能为空。任一校验、
 权限、IO 或 DB 持久化失败时，事务回滚，旧配置保持可读；主要错误码为
 `Config`、`PermissionDenied`、`Io`、`Db`。
+
+#### C4-20 repository settings contract
+
+`update_config` 是 C4-20 `repository-settings-cross-platform` 的 repo config
+更新入口。调用方必须先读取 `get_platform_capabilities` 并在 UI 层禁用平台不支持的
+设置项；Core 只校验和持久化 `RepoConfig`，不接受 control map 之外的页面能力。
+
+C4-20 输入：
+
+- `repoPath`：已初始化资料库根目录。
+- `newConfig`：完整 `RepoConfig` payload，`repo_path` 必须等于 `repoPath`。
+- `platform`：不直接传入本函数；页面通过 `get_platform_capabilities` 查询平台约束。
+
+C4-20 输出：
+
+- 成功时无返回值；页面重新调用 `load_config` 和 `get_platform_capabilities`
+  刷新状态。
+- 失败时返回 `Config`、`PermissionDenied`、`Io` 或 `Db`，旧配置必须保持可读。
+
+C4-20 副作用边界：
+
+- 只通过 SQLite 事务更新 `.areamatrix/index.db` 的 `repo_config` 行。
+- 不写临时业务文件，不更新 `README.md`、`AREAMATRIX.md`、
+  `.areamatrix/classifier.yaml` 或用户文件。
+- 不移动、删除、重命名、覆盖用户文件，不触发 importer、overview generation、
+  watcher、manual rescan、cloud placeholder 下载、Trash / Recycle Bin preflight、
+  diagnostics export、账号级云同步或 security bookmark refresh。
 
 ### `load_ai_config(repoPath: String) throws -> AiConfigSnapshot`
 

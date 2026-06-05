@@ -1,0 +1,95 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-96`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-96-c4-20-contract-api.md`
+- 主要验收文件：
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/repository_settings_cross_platform_contract_api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取 C4-20 能力规格、control map、Core API、错误码
+- 结果：通过
+- 证据：C4-20 指定 `load_config`、`update_config`、`get_platform_capabilities`，错误码为 `Config` / `PermissionDenied` / `Io`；control map 将 `S4-X-08 repository-settings` 绑定到 `C4-17, C4-20`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md:7`，`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:33`
+
+- 项目：API 名称、输入、输出、错误码与能力规格一致
+- 结果：通过
+- 证据：UDL 暴露 `get_platform_capabilities`、`load_config`、`update_config`；`RepoConfig` 和 `PlatformCapabilities` 字段可表达设置值与平台能力约束；Core API 文档记录 `Config` / `PermissionDenied` / `Io` / `Db` 传播边界
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:10`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:484`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2918`
+
+- 项目：权限 / 隐私 / 用户文件边界
+- 结果：通过
+- 证据：Core API 文档明确 `load_config` 只读，不读取、移动、删除、重命名、覆盖或下载用户文件；`update_config` 只更新 `.areamatrix/index.db` 的 `repo_config` 行，不触发 watcher、rescan、cloud placeholder、Trash、diagnostics、账号级云同步或 security bookmark refresh
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2942`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2990`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+- 结果：通过
+- 证据：`core/src/api.rs` 仅补充 C4-20 rustdoc 合同说明并复用既有 `db::load_config_or_default`、`db::update_config`、`platform_capabilities::get_platform_capabilities`；未新增相邻 API
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:71`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:211`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:240`
+
+- 项目：页面消费方是否能从合同中得到所需状态
+- 结果：通过
+- 证据：测试验证页面可通过 `RepoConfig` 得到设置值，并通过 `PlatformCapabilities` 得到 Linux 下 cloud placeholder / security bookmark 的禁用状态和 reason
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/repository_settings_cross_platform_contract_api.rs:67`
+
+- 项目：完成标准 1，C4-20 Core API 合同可被后续 implementation task 直接实现
+- 结果：通过
+- 证据：文档给出输入、输出、错误、事务回滚和副作用边界；UDL 和 Rust public API 已对齐
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2972`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:26`
+
+- 项目：完成标准 2，未引入 control map 之外页面能力
+- 结果：通过
+- 证据：合同明确不提供 repo name、last opened、watcher runtime health、diagnostics export、reconnect picker、recent repo、安全书签续期或权限生命周期
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2937`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均有实际落地；`docs/api/core-api.md` 是 Exact Docs 和 Core API SSOT，同步合同文本与 task 的“Core API / UDL 合同”范围一致，不视为无关扩散
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/repository_settings_cross_platform_contract_api.rs`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- apps` 无输出，未触碰 `apps/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，复用既有 `load_config` / `update_config` / `get_platform_capabilities` 路径，没有新增复杂抽象或相邻能力。
+- 注释 / rustdoc / 文档同步：通过，public Rust API 已补 C4-20 rustdoc；Core API 文档与 UDL 同步。
+- 错误处理与边界处理：通过，文档和测试覆盖 `Config`、权限 / IO / DB 传播、无部分写入、用户文件不变。
+- 测试与验证覆盖：通过，新增 targeted contract test 覆盖 API 类型、文档 / UDL 对齐、页面消费状态、配置回滚、README / AREAMATRIX 不被修改。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未用 mock-only 闭环；测试走真实 `init_repo`、`load_config`、`update_config`、`get_platform_capabilities`。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-96`
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`，结果 `doctor: OK`
+- 通过：`git diff --check`
+- 通过：`cargo test --test repository_settings_cross_platform_contract_api -- --nocapture`，6 个测试全部通过
+- 失败：无
+- 缺失：无。未运行 `./dev check all`，因为当前 manifest 指定 task-scoped 验证，普通 atomic Core task 不要求宽门禁。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前 `progress.json` 的 `in_progress` 和 `.codex/task-loop-runs/...` 属于 runner 收口时序材料，不作为本 verify 阶段阻塞；未发现 `apps/**` Forbidden Touches 或危险无关脏改动。
+
+VERIFY_RESULT: PASS

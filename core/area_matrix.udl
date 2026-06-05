@@ -7,6 +7,8 @@ namespace area_matrix {
     [Throws=CoreError]
     BindingContractReport inspect_binding_contract(BindingContractRequest request);
 
+    // C4-17 exposes platform capability rows. C4-20 repository settings reuses
+    // the same matrix to disable unsupported settings before config updates.
     [Throws=CoreError]
     PlatformCapabilities get_platform_capabilities(
         PlatformId platform, string app_version
@@ -21,9 +23,13 @@ namespace area_matrix {
     [Throws=CoreError]
     void init_repo(string repo_path, RepoInitOptions options);
 
+    // C4-20 repository settings reads this repository config snapshot together
+    // with PlatformCapabilities; loading is read-only and has no platform probe.
     [Throws=CoreError]
     RepoConfig load_config(string repo_path);
 
+    // C4-20 repository settings persists only repo_config. Platform-unsupported
+    // settings must be disabled by the caller; this API does not move user files.
     [Throws=CoreError]
     void update_config(string repo_path, RepoConfig new_config);
 

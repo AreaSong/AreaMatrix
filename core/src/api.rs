@@ -68,6 +68,9 @@ pub fn inspect_binding_contract(
 /// support without guessing from platform UI state. Limited, unavailable, or
 /// unknown capability rows carry stable reasons so unsupported dangerous
 /// actions are not exposed as available.
+/// C4-20 repository settings composes this matrix with [`load_config`] and
+/// [`update_config`] so platform shells can disable unsupported settings before
+/// they submit repository configuration changes.
 ///
 /// The contract is read-only and platform-neutral. It does not inspect the
 /// repository, start watchers, test Trash/Recycle Bin integration, query cloud
@@ -205,10 +208,16 @@ pub fn init_repo(repo_path: String, options: RepoInitOptions) -> CoreResult<()> 
 /// validated or initialized the selected repository. Loading config is read-only
 /// and does not refresh platform permissions or create metadata.
 ///
+/// C4-20 repository settings also reuses this config snapshot for the
+/// cross-platform repository settings page. Page consumers combine it with
+/// [`get_platform_capabilities`] to render unsupported settings as disabled
+/// with structured reasons instead of inferring platform support in the UI.
+///
 /// # Errors
 ///
-/// Returns `CoreError::Io { message }`, `CoreError::Config { reason }`, or `CoreError::Db { message }` when the
-/// initialized metadata cannot be read or decoded.
+/// Returns `CoreError::Config { reason }`, `CoreError::PermissionDenied { path }`,
+/// `CoreError::Io { message }`, or `CoreError::Db { message }` when the initialized metadata
+/// cannot be read or decoded.
 pub fn load_config(repo_path: String) -> CoreResult<RepoConfig> {
     db::load_config_or_default(repo_path)
 }
@@ -228,6 +237,11 @@ pub fn load_config(repo_path: String) -> CoreResult<RepoConfig> {
 /// `OverviewOutput` policy: later overview-regeneration triggers read the
 /// policy from `repo_config`, while the settings call itself stays free of
 /// file side effects.
+/// C4-20 repository settings uses the same transactional update surface for
+/// cross-platform shells. Callers must first consult [`get_platform_capabilities`]
+/// and keep unsupported rows disabled; this function persists only the supplied
+/// repository configuration and does not test, enable, or emulate platform
+/// watcher, cloud placeholder, security bookmark, Trash, or account features.
 ///
 /// # Errors
 ///
