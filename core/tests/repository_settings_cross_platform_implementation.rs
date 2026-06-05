@@ -38,7 +38,9 @@ fn config_key_values(repo: &Path) -> Vec<(String, String)> {
         .prepare("SELECT key, value FROM repo_config ORDER BY key")
         .expect("prepare repo_config query");
     let rows = statement
-        .query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))
+        .query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })
         .expect("query repo_config rows");
 
     rows.map(|row| row.expect("read repo_config row")).collect()

@@ -307,7 +307,7 @@ pub(crate) fn load_config_or_default(repo_path: String) -> CoreResult<RepoConfig
         ));
     }
 
-    let connection = open_repo_connection(&repo)?;
+    let connection = open_repo_read_connection(&repo)?;
     read_config(&connection, repo_path)
 }
 

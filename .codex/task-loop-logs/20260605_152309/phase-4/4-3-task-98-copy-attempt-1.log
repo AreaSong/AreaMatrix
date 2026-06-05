@@ -1,0 +1,47 @@
+一、执行结论
+
+- 已完成。
+
+二、执行范围
+
+- 单任务：`4-3/task-98`
+- 产品改动文件：
+  - [core/src/db/mod.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/mod.rs:310)
+  - [core/tests/repository_settings_cross_platform_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/repository_settings_cross_platform_failure_recovery.rs:123)
+  - [core/tests/repository_settings_cross_platform_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/repository_settings_cross_platform_implementation.rs:38) 仅 `cargo fmt` 机械格式化
+- 未触碰 `apps/**`。
+- 工作树里原本已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 运行状态修改，我未回退，也未作为本任务产品改动处理。
+
+三、完成情况
+
+- 空态：新增测试确认未初始化 repo 调 `load_config` 返回默认配置，不创建 `.areamatrix`，AI/remote/secret 默认不生成。
+- 非法输入：覆盖空 repo path、repo_path mismatch、空 locale、损坏持久化 config，均返回 `Config` 且不改 DB/用户文件。
+- 权限、IO/DB、错误码映射：覆盖 metadata 不可写、`.areamatrix` malformed、损坏 SQLite、DB locked/corrupted 映射。
+- 半成品安全：用真实 SQLite trigger 制造事务中途 DB 失败，验证旧配置、`files/change_log/scan_sessions`、README 和 staging 均保持不变。
+- 隐私/AI/远程：验证 `ai_enabled` 默认关闭，settings toggle 不创建 remote、secrets、AI call log，也不写入 `sk-` / `api_key` 形态内容。
+- 不吞错：损坏 config / DB / IO / permission 都有显式 `CoreError` 返回。
+
+四、工程质量
+
+- `load_config_or_default` 改为 `open_repo_read_connection`，让 C4-20 的配置读取真正保持只读，不触发写连接或 schema migration 写入。
+- 新增 failure-recovery 测试文件 420 行，低于 500 行限制；测试使用真实 temp repo、SQLite、文件权限和事务失败，不是 mock-only 或硬编码通过态。
+- 未改 UDL；现有 `core/area_matrix.udl` 与 C4-20 API 合同已对齐。
+
+五、验证情况
+
+- 已运行 `cargo test --test repository_settings_cross_platform_failure_recovery -- --nocapture`：9 passed。
+- 已运行 `./dev check task 4-3/task-98`：通过。
+- 该 task validation 内包含：
+  - prompt doctor：OK
+  - git diff --check：OK
+  - `repository_settings_cross_platform_contract_api`：6 passed
+  - `repository_settings_cross_platform_failure_recovery`：9 passed
+  - `repository_settings_cross_platform_implementation`：3 passed
+- 另执行 `cargo fmt --all` 完成格式化。
+
+六、风险与后续
+
+- 剩余风险：未运行 broad gate，符合本 atomic task 的验证上限要求。
+- 回滚思路：若需要回滚，本任务主要回退 `load_config_or_default` 的只读连接改动并移除 failure-recovery 测试；但这样会重新暴露 read API 在只读 metadata 上尝试写连接的风险。
+- 建议下一个任务：继续 `4-3/task-99`，做 C4-20 validation 证据补齐。
+
