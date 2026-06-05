@@ -28,13 +28,13 @@ use crate::{
     ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
     ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
     ImportResult, LocalModelFolderLocation, LocalModelFolderRequest, LocalModelStatusRequest,
-    LocalModelStatusSnapshot, MissingFileRecoveryReport, MissingFileRelinkRequest,
-    MissingFileRemoveRecordRequest, MissingFileState, MoveToCategoryPreview, PlatformCapabilities,
-    PlatformId, PlatformWatcherHealthSignal, PlatformWatcherSnapshot, RecoveryReport,
-    RedoActionRecord, RedoActionResult, ReindexReport, RemoteProviderConfigSnapshot,
-    RemoteProviderDisableRequest, RemoteProviderEnableRequest, RemoteProviderTestRequest,
-    RemoteProviderTestResult, RepairOptions, RepairReport, RepoConfig, RepoInitOptions,
-    RepoPathValidation, RuleImpactReport, ScanSession, SyncConflict,
+    LocalModelStatusSnapshot, ManualRescanPreviewReport, MissingFileRecoveryReport,
+    MissingFileRelinkRequest, MissingFileRemoveRecordRequest, MissingFileState,
+    MoveToCategoryPreview, PlatformCapabilities, PlatformId, PlatformWatcherHealthSignal,
+    PlatformWatcherSnapshot, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
+    RemoteProviderConfigSnapshot, RemoteProviderDisableRequest, RemoteProviderEnableRequest,
+    RemoteProviderTestRequest, RemoteProviderTestResult, RepairOptions, RepairReport, RepoConfig,
+    RepoInitOptions, RepoPathValidation, RuleImpactReport, ScanSession, SyncConflict,
     SyncConflictResolutionPreviewReport, SyncConflictResolutionRequest,
     SyncConflictResolutionStrategy, SyncConflictResolveReport, SyncResult,
     TagSuggestionApplyReport, TagSuggestionReport, TagSuggestionRequest,
@@ -760,6 +760,27 @@ pub fn recover_on_startup(repo_path: String) -> CoreResult<RecoveryReport> {
     recovery::recover_on_startup(repo_path)
 }
 
+/// Previews C4-19 manual rescan impact without writing metadata or user files.
+///
+/// S4-X-07 calls this before enabling the high-risk confirmation. The preview
+/// scans the initialized repository and compares it with existing metadata, but
+/// it must not create `scan_sessions`, write `files`, write `change_log`, move,
+/// delete, rename, overwrite, Trash, or download user files. The returned
+/// summary exposes added, updated, missing, possible rename, conflict,
+/// unreadable, unknown, and skipped counts plus bounded sample items so the UI
+/// can route unresolved rows to Needs Review.
+///
+/// # Errors
+///
+/// Returns `CoreError::Db { message }` when metadata cannot be read,
+/// `CoreError::PermissionDenied { path }` when repository content or metadata
+/// cannot be inspected, `CoreError::Io { message }` for filesystem traversal
+/// failures, and `CoreError::Conflict { path }` when another manual rescan is
+/// already running.
+pub fn preview_manual_rescan(repo_path: String) -> CoreResult<ManualRescanPreviewReport> {
+    repo_scan::preview_manual_rescan(repo_path)
+}
+
 /// Reindexes repository metadata from the current filesystem state.
 ///
 /// C1-26 exposes this full-rescan API for repair and advanced settings flows.
@@ -768,11 +789,11 @@ pub fn recover_on_startup(repo_path: String) -> CoreResult<RecoveryReport> {
 /// and return inserted/updated/skipped counters in [`ReindexReport`].
 ///
 /// C4-19 also uses this entry point for Windows/Linux manual rescan after
-/// S4-X-07 has shown the high-risk confirmation. The C4-19 scope is the entire
-/// repository; partial subtree rescan and preview/dry-run APIs are not exposed
-/// by this contract. Consumers combine the returned [`ReindexReport`] with
-/// [`get_latest_scan_session`] to render the rescan summary, persisted session
-/// status, counters, timestamps, and errors.
+/// S4-X-07 has shown [`preview_manual_rescan`] and the high-risk confirmation.
+/// The C4-19 scope is the entire repository; partial subtree rescan is not
+/// exposed by this contract. Consumers combine the returned [`ReindexReport`]
+/// with [`get_latest_scan_session`] to render the rescan summary, persisted
+/// session status, counters, timestamps, and errors.
 ///
 /// The API treats filesystem content as read-only input. It must skip
 /// `.areamatrix/`, `.areamatrix/generated/`, root `AREAMATRIX.md`, ignored
@@ -785,7 +806,8 @@ pub fn recover_on_startup(repo_path: String) -> CoreResult<RecoveryReport> {
 /// Returns `CoreError::Db { message }` when scan-session or file metadata cannot
 /// be read or written, `CoreError::PermissionDenied { path }` when repository
 /// content or metadata cannot be inspected, `CoreError::Io { message }` for
-/// filesystem traversal failures, and `CoreError::Internal { message }` for
+/// filesystem traversal failures, `CoreError::Conflict { path }` when another
+/// manual rescan is already running, and `CoreError::Internal { message }` for
 /// invariant failures that should be surfaced through C1-21 error mapping.
 pub fn reindex_from_filesystem(repo_path: String) -> CoreResult<ReindexReport> {
     repair::reindex_from_filesystem(repo_path)

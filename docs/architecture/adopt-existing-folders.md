@@ -191,6 +191,10 @@ CREATE TABLE IF NOT EXISTS scan_sessions (
   last_path TEXT,
   inserted INTEGER NOT NULL DEFAULT 0,
   updated INTEGER NOT NULL DEFAULT 0,
+  missing INTEGER NOT NULL DEFAULT 0,
+  conflicts INTEGER NOT NULL DEFAULT 0,
+  unreadable INTEGER NOT NULL DEFAULT 0,
+  unknown INTEGER NOT NULL DEFAULT 0,
   skipped INTEGER NOT NULL DEFAULT 0,
   errors_json TEXT NOT NULL DEFAULT '[]'
 );
@@ -198,7 +202,7 @@ CREATE TABLE IF NOT EXISTS scan_sessions (
 
 恢复规则：
 
-- 每批处理后更新 `last_path` 与计数，批大小建议 100-500。
+- 每批处理后更新 `last_path`、写入计数和 Needs Review 计数，批大小建议 100-500。
 - 启动时发现 `running` 且进程不是当前实例，标记为 `interrupted`。
 - 默认向用户提供 `Resume`，也允许 `Restart scan`。
 - 扫描是幂等的：同一路径重复处理时按 `path + hash` upsert，不重复插入。

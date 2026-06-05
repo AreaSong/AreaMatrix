@@ -87,7 +87,7 @@ fn init_empty_repo_creates_metadata_db_config_rules_and_generated_overview() {
     let config_rows: i64 = connection
         .query_row("SELECT COUNT(*) FROM repo_config", [], |row| row.get(0))
         .expect("count repo_config rows");
-    assert_eq!(version, 1);
+    assert_eq!(version, 2);
     assert_eq!(config_rows, 10);
 }
 

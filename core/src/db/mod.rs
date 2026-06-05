@@ -1,12 +1,13 @@
 //! SQLite helpers for repository metadata.
 
 use std::{
-    fs::{File, Metadata},
+    collections::HashSet,
+    fs::{self, File, Metadata},
     io::Read,
     path::{Path, PathBuf},
 };
 
-use rusqlite::{params, Connection, OptionalExtension, Rows, Transaction};
+use rusqlite::{params, Connection, OpenFlags, OptionalExtension, Rows, Transaction};
 
 use crate::{
     config, CoreError, CoreResult, FileAvailabilityStatus, FileEntry, FileFilter, FileOrigin,
@@ -133,6 +134,13 @@ pub(crate) use undo::{
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const INDEX_DB_FILE: &str = "index.db";
 const SQLITE_HEADER: &[u8; 16] = b"SQLite format 3\0";
+const LATEST_SCHEMA_VERSION: i64 = 2;
+const SCAN_SESSION_V2_COLUMNS: &[(&str, &str)] = &[
+    ("missing", "missing INTEGER NOT NULL DEFAULT 0"),
+    ("conflicts", "conflicts INTEGER NOT NULL DEFAULT 0"),
+    ("unreadable", "unreadable INTEGER NOT NULL DEFAULT 0"),
+    ("unknown", "unknown INTEGER NOT NULL DEFAULT 0"),
+];
 
 const INITIAL_SCHEMA: &str = r#"
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -234,6 +242,10 @@ CREATE TABLE IF NOT EXISTS scan_sessions (
   last_path TEXT,
   inserted INTEGER NOT NULL DEFAULT 0,
   updated INTEGER NOT NULL DEFAULT 0,
+  missing INTEGER NOT NULL DEFAULT 0,
+  conflicts INTEGER NOT NULL DEFAULT 0,
+  unreadable INTEGER NOT NULL DEFAULT 0,
+  unknown INTEGER NOT NULL DEFAULT 0,
   skipped INTEGER NOT NULL DEFAULT 0,
   errors_json TEXT NOT NULL DEFAULT '[]'
 );
@@ -262,7 +274,7 @@ CREATE INDEX IF NOT EXISTS idx_saved_searches_sidebar
   ON saved_searches(pinned DESC, updated_at DESC, name COLLATE NOCASE ASC);
 
 INSERT OR IGNORE INTO schema_version (version, applied_at, applied_by)
-VALUES (1, strftime('%s', 'now'), 'area_matrix_core');
+VALUES (2, strftime('%s', 'now'), 'area_matrix_core');
 "#;
 
 pub(crate) fn initialize_repository_db(db_path: &Path, config: &RepoConfig) -> CoreResult<()> {
@@ -481,10 +493,111 @@ pub(crate) fn ensure_initialized_readable(repo_path: &Path) -> CoreResult<()> {
 
 pub(super) fn open_repo_connection(repo_path: &Path) -> CoreResult<Connection> {
     ensure_initialized(repo_path)?;
-    let connection =
+    let mut connection =
         Connection::open(db_path(repo_path)).map_err(|error| CoreError::db(error.to_string()))?;
     configure_connection(&connection)?;
+    run_schema_migrations(&mut connection, repo_path)?;
     Ok(connection)
+}
+
+pub(super) fn open_repo_read_connection(repo_path: &Path) -> CoreResult<Connection> {
+    ensure_initialized_readable(repo_path)?;
+    let connection =
+        Connection::open_with_flags(db_path(repo_path), OpenFlags::SQLITE_OPEN_READ_ONLY)
+            .map_err(|error| CoreError::db(error.to_string()))?;
+    configure_read_connection(&connection)?;
+    Ok(connection)
+}
+
+fn run_schema_migrations(connection: &mut Connection, repo_path: &Path) -> CoreResult<()> {
+    let current = current_schema_version(connection)?;
+    let scan_session_columns = table_columns(connection, "scan_sessions")?;
+    let missing_scan_columns = SCAN_SESSION_V2_COLUMNS
+        .iter()
+        .filter(|(name, _)| !scan_session_columns.contains(*name))
+        .copied()
+        .collect::<Vec<_>>();
+
+    if current >= LATEST_SCHEMA_VERSION && missing_scan_columns.is_empty() {
+        return Ok(());
+    }
+
+    checkpoint_wal(connection)?;
+    create_pre_migration_backup(repo_path, LATEST_SCHEMA_VERSION)?;
+    let schema_version_has_applied_by =
+        table_columns(connection, "schema_version")?.contains("applied_by");
+
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    for (_, definition) in missing_scan_columns {
+        tx.execute(
+            &format!("ALTER TABLE scan_sessions ADD COLUMN {definition}"),
+            [],
+        )
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    }
+    insert_schema_version(&tx, LATEST_SCHEMA_VERSION, schema_version_has_applied_by)?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn current_schema_version(connection: &Connection) -> CoreResult<i64> {
+    connection
+        .query_row(
+            "SELECT COALESCE(MAX(version), 0) FROM schema_version",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn table_columns(connection: &Connection, table_name: &str) -> CoreResult<HashSet<String>> {
+    let mut statement = connection
+        .prepare(&format!("PRAGMA table_info({table_name})"))
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    let rows = statement
+        .query_map([], |row| row.get::<_, String>(1))
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    let mut columns = HashSet::new();
+    for row in rows {
+        columns.insert(row.map_err(|error| CoreError::db(error.to_string()))?);
+    }
+    Ok(columns)
+}
+
+fn checkpoint_wal(connection: &Connection) -> CoreResult<()> {
+    connection
+        .execute_batch("PRAGMA wal_checkpoint(FULL);")
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn create_pre_migration_backup(repo_path: &Path, target_version: i64) -> CoreResult<()> {
+    let source = db_path(repo_path);
+    let backup = source.with_file_name(format!("{INDEX_DB_FILE}.pre-v{target_version}.bak"));
+    if path_exists(&backup)? {
+        return Ok(());
+    }
+    fs::copy(&source, &backup)
+        .map(|_| ())
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn insert_schema_version(
+    tx: &Transaction<'_>,
+    version: i64,
+    has_applied_by: bool,
+) -> CoreResult<()> {
+    let sql = if has_applied_by {
+        "INSERT OR IGNORE INTO schema_version (version, applied_at, applied_by)
+         VALUES (?1, strftime('%s', 'now'), 'area_matrix_core')"
+    } else {
+        "INSERT OR IGNORE INTO schema_version (version, applied_at)
+         VALUES (?1, strftime('%s', 'now'))"
+    };
+    tx.execute(sql, params![version])
+        .map(|_| ())
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn with_write_transaction<T>(
@@ -543,6 +656,16 @@ fn configure_connection(connection: &Connection) -> CoreResult<()> {
              PRAGMA temp_store = MEMORY;
              PRAGMA mmap_size = 268435456;
              PRAGMA cache_size = -65536;
+             PRAGMA busy_timeout = 5000;",
+        )
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn configure_read_connection(connection: &Connection) -> CoreResult<()> {
+    connection
+        .execute_batch(
+            "PRAGMA query_only = ON;
+             PRAGMA foreign_keys = ON;
              PRAGMA busy_timeout = 5000;",
         )
         .map_err(|error| CoreError::db(error.to_string()))

@@ -75,6 +75,10 @@ pub(crate) fn repair_metadata(
             scan_session_id: None,
             inserted: 0,
             updated: 0,
+            missing: 0,
+            conflicts: 0,
+            unreadable: 0,
+            unknown: 0,
             skipped: 0,
             errors: Vec::new(),
         }

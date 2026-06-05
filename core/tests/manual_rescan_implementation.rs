@@ -1,11 +1,13 @@
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    get_latest_scan_session, init_repo, list_files, reindex_from_filesystem, resume_scan_session,
-    FileFilter, FileOrigin, OverviewOutput, RepoInitMode, RepoInitOptions, ScanSessionKind,
+    get_latest_scan_session, init_repo, list_files, preview_manual_rescan, reindex_from_filesystem,
+    resume_scan_session, FileAvailabilityStatus, FileFilter, FileOrigin,
+    ManualRescanPreviewItemKind, OverviewOutput, RepoInitMode, RepoInitOptions, ScanSessionKind,
     ScanSessionStatus, StorageMode,
 };
 use pretty_assertions::assert_eq;
+use rusqlite::Connection;
 
 fn path_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
@@ -61,6 +63,34 @@ fn manual_rescan_indexes_files_without_mutating_user_content() {
 }
 
 #[test]
+fn manual_rescan_preview_is_read_only_and_matches_confirm_page_counts() {
+    let fixture = rescan_fixture();
+
+    let preview =
+        preview_manual_rescan(path_string(fixture.repo.path())).expect("preview manual rescan");
+
+    assert_eq!(preview.added, 2);
+    assert_eq!(preview.updated, 0);
+    assert_eq!(preview.missing_or_deleted_from_fs, 0);
+    assert_eq!(preview.conflicts, 0);
+    assert_eq!(preview.unreadable, 0);
+    assert_eq!(preview.unknown, 0);
+    assert!(!preview.snapshot_id.is_empty());
+    assert!(!preview.is_stale);
+    assert!(preview
+        .items
+        .iter()
+        .any(|item| item.relative_path == "README.md"));
+    fixture.assert_user_files_unchanged();
+    assert_eq!(indexed_paths(fixture.repo.path()), Vec::<String>::new());
+    assert_eq!(
+        scan_session_count(fixture.repo.path()),
+        0,
+        "dry-run preview must not create scan sessions"
+    );
+}
+
+#[test]
 fn manual_rescan_updates_changed_metadata_in_place_and_skips_stable_files() {
     let repo = tempfile::tempdir().expect("create temporary repository directory");
     init_repo(path_string(repo.path()), create_empty_options()).expect("initialize repository");
@@ -102,6 +132,80 @@ fn manual_rescan_updates_changed_metadata_in_place_and_skips_stable_files() {
 }
 
 #[test]
+fn manual_rescan_reports_missing_metadata_without_deleting_records() {
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    init_repo(path_string(repo.path()), create_empty_options()).expect("initialize repository");
+    let spec = repo.path().join("docs/spec.txt");
+    fs::create_dir_all(spec.parent().expect("spec should have parent")).expect("create docs");
+    fs::write(&spec, "present before initial rescan\n").expect("write user document");
+    reindex_from_filesystem(path_string(repo.path())).expect("initial manual rescan");
+    fs::remove_file(&spec).expect("simulate user removing file outside AreaMatrix");
+
+    let preview =
+        preview_manual_rescan(path_string(repo.path())).expect("preview missing metadata");
+    assert_eq!(preview.missing_or_deleted_from_fs, 1);
+    assert_eq!(preview.added, 0);
+    assert!(preview
+        .items
+        .iter()
+        .any(|item| item.relative_path == "docs/spec.txt"));
+
+    let report =
+        reindex_from_filesystem(path_string(repo.path())).expect("rescan missing metadata");
+    assert_eq!(report.missing, 1);
+    assert_eq!(report.conflicts, 0);
+    assert_eq!(report.unreadable, 0);
+    assert_eq!(report.unknown, 0);
+
+    let files = indexed_files(repo.path());
+    assert_eq!(files.len(), 1);
+    assert_eq!(files[0].path, "docs/spec.txt");
+    assert_eq!(
+        files[0].availability_status,
+        FileAvailabilityStatus::Missing
+    );
+}
+
+#[test]
+fn manual_rescan_reports_duplicate_hash_conflict_without_mutating_user_files() {
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    init_repo(path_string(repo.path()), create_empty_options()).expect("initialize repository");
+    let original = repo.path().join("docs/original.txt");
+    let copy = repo.path().join("docs/copy.txt");
+    fs::create_dir_all(original.parent().expect("original should have parent"))
+        .expect("create docs");
+    fs::write(&original, "same content\n").expect("write original user document");
+    reindex_from_filesystem(path_string(repo.path())).expect("seed original metadata");
+    fs::write(&copy, "same content\n").expect("write external duplicate user document");
+    let before = user_file_snapshot(&[&original, &copy]);
+
+    let preview =
+        preview_manual_rescan(path_string(repo.path())).expect("preview duplicate conflict");
+    assert_eq!(preview.conflicts, 1);
+    assert_eq!(preview.renamed_candidates, 0);
+    assert!(preview.items.iter().any(|item| {
+        item.kind == ManualRescanPreviewItemKind::Conflict && item.relative_path == "docs/copy.txt"
+    }));
+
+    let report =
+        reindex_from_filesystem(path_string(repo.path())).expect("rescan duplicate conflict");
+    assert_eq!(report.conflicts, 1);
+    assert_eq!(report.unreadable, 0);
+    assert_eq!(report.unknown, 0);
+    assert_eq!(report.errors, Vec::<String>::new());
+    assert_eq!(user_file_snapshot(&[&original, &copy]), before);
+
+    let session = get_latest_scan_session(path_string(repo.path()))
+        .expect("read conflict scan session")
+        .expect("manual rescan should persist conflict session");
+    assert_eq!(session.conflicts, 1);
+    assert_eq!(
+        indexed_paths(repo.path()),
+        vec!["docs/copy.txt", "docs/original.txt"]
+    );
+}
+
+#[test]
 fn manual_rescan_resume_completed_session_returns_empty_report_without_rescanning() {
     let repo = tempfile::tempdir().expect("create temporary repository directory");
     init_repo(path_string(repo.path()), create_empty_options()).expect("initialize repository");
@@ -119,6 +223,10 @@ fn manual_rescan_resume_completed_session_returns_empty_report_without_rescannin
     assert_eq!(report.scan_session_id, Some(completed.id));
     assert_eq!(report.inserted, 0);
     assert_eq!(report.updated, 0);
+    assert_eq!(report.missing, 0);
+    assert_eq!(report.conflicts, 0);
+    assert_eq!(report.unreadable, 0);
+    assert_eq!(report.unknown, 0);
     assert_eq!(report.skipped, 0);
     assert_eq!(report.errors, Vec::<String>::new());
     assert_eq!(indexed_paths(repo.path()), vec!["README.md"]);
@@ -126,6 +234,13 @@ fn manual_rescan_resume_completed_session_returns_empty_report_without_rescannin
         fs::read_to_string(repo.path().join("later.txt")).expect("read later user file"),
         "created after completion\n"
     );
+}
+
+fn scan_session_count(repo_path: &Path) -> i64 {
+    Connection::open(repo_path.join(".areamatrix/index.db"))
+        .expect("open repository database")
+        .query_row("SELECT COUNT(*) FROM scan_sessions", [], |row| row.get(0))
+        .expect("count scan sessions")
 }
 
 fn indexed_files(repo_path: &Path) -> Vec<area_matrix_core::FileEntry> {
@@ -205,6 +320,10 @@ fn assert_completed_reindex_session(
     assert_eq!(session.status, ScanSessionStatus::Completed);
     assert_eq!(session.inserted, report.inserted);
     assert_eq!(session.updated, report.updated);
+    assert_eq!(session.missing, report.missing);
+    assert_eq!(session.conflicts, report.conflicts);
+    assert_eq!(session.unreadable, report.unreadable);
+    assert_eq!(session.unknown, report.unknown);
     assert_eq!(session.skipped, report.skipped);
     assert_eq!(session.finished_at, Some(session.updated_at));
 }

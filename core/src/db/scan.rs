@@ -7,7 +7,9 @@ use crate::{
     CoreError, CoreResult, FileOrigin, ScanSession, ScanSessionKind, ScanSessionStatus, StorageMode,
 };
 
-use super::{open_repo_connection, origin_from_db, storage_mode_from_db};
+use super::{
+    open_repo_connection, open_repo_read_connection, origin_from_db, storage_mode_from_db,
+};
 
 #[derive(Debug)]
 pub(crate) struct FileIndexInput {
@@ -19,10 +21,27 @@ pub(crate) struct FileIndexInput {
     pub hash_sha256: String,
 }
 
+#[derive(Debug)]
+pub(crate) struct ScanFileSnapshot {
+    pub path: String,
+    pub original_name: String,
+    pub current_name: String,
+    pub category: String,
+    pub size_bytes: i64,
+    pub hash_sha256: String,
+    pub storage_mode: StorageMode,
+    pub origin: FileOrigin,
+    pub source_path: Option<String>,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum ScanFileChange {
     Inserted,
     Updated,
+    Missing,
+    Conflict,
+    Unreadable,
+    Unknown,
     Skipped,
 }
 
@@ -31,19 +50,60 @@ pub(crate) fn create_scan_session(repo_path: &Path, kind: ScanSessionKind) -> Co
     connection
         .execute(
             "INSERT INTO scan_sessions (
-                kind, status, started_at, updated_at, inserted, updated, skipped, errors_json
-             ) VALUES (?1, 'running', strftime('%s', 'now'), strftime('%s', 'now'), 0, 0, 0, '[]')",
+                kind, status, started_at, updated_at, inserted, updated,
+                missing, conflicts, unreadable, unknown, skipped, errors_json
+             ) VALUES (
+                ?1, 'running', strftime('%s', 'now'), strftime('%s', 'now'),
+                0, 0, 0, 0, 0, 0, 0, '[]'
+             )",
             params![kind_to_db(&kind)],
         )
         .map_err(|error| CoreError::db(error.to_string()))?;
     Ok(connection.last_insert_rowid())
 }
 
+pub(crate) fn has_running_reindex_session(repo_path: &Path) -> CoreResult<bool> {
+    let connection = open_repo_connection(repo_path)?;
+    has_running_reindex_session_on_connection(&connection, None)
+}
+
+pub(crate) fn has_running_reindex_session_excluding(
+    repo_path: &Path,
+    excluded_session_id: Option<i64>,
+) -> CoreResult<bool> {
+    let connection = open_repo_connection(repo_path)?;
+    has_running_reindex_session_on_connection(&connection, excluded_session_id)
+}
+
+pub(crate) fn has_running_reindex_session_read_only(repo_path: &Path) -> CoreResult<bool> {
+    let connection = open_repo_read_connection(repo_path)?;
+    has_running_reindex_session_on_connection(&connection, None)
+}
+
+fn has_running_reindex_session_on_connection(
+    connection: &rusqlite::Connection,
+    excluded_session_id: Option<i64>,
+) -> CoreResult<bool> {
+    let count: i64 = connection
+        .query_row(
+            "SELECT COUNT(*)
+             FROM scan_sessions
+             WHERE kind = 'reindex'
+               AND status = 'running'
+               AND (?1 IS NULL OR id != ?1)",
+            params![excluded_session_id],
+            |row| row.get(0),
+        )
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    Ok(count > 0)
+}
+
 pub(crate) fn latest_scan_session(repo_path: &Path) -> CoreResult<Option<ScanSession>> {
     let connection = open_repo_connection(repo_path)?;
     connection
         .query_row(
-            "SELECT id, kind, status, last_path, inserted, updated, skipped,
+            "SELECT id, kind, status, last_path, inserted, updated,
+                    missing, conflicts, unreadable, unknown, skipped,
                     started_at, updated_at, finished_at, errors_json
              FROM scan_sessions
              WHERE kind IN ('adopt', 'reindex')
@@ -63,7 +123,8 @@ pub(crate) fn scan_session_by_id(
     let connection = open_repo_connection(repo_path)?;
     connection
         .query_row(
-            "SELECT id, kind, status, last_path, inserted, updated, skipped,
+            "SELECT id, kind, status, last_path, inserted, updated,
+                    missing, conflicts, unreadable, unknown, skipped,
                     started_at, updated_at, finished_at, errors_json
              FROM scan_sessions
              WHERE id = ?1",
@@ -73,6 +134,72 @@ pub(crate) fn scan_session_by_id(
         .optional()
         .map_err(|error| CoreError::db(error.to_string()))?
         .ok_or_else(|| CoreError::db("database error"))
+}
+
+pub(crate) fn active_scan_file_snapshots(repo_path: &Path) -> CoreResult<Vec<ScanFileSnapshot>> {
+    let connection = open_repo_connection(repo_path)?;
+    active_scan_file_snapshots_on_connection(&connection)
+}
+
+pub(crate) fn active_scan_file_snapshots_read_only(
+    repo_path: &Path,
+) -> CoreResult<Vec<ScanFileSnapshot>> {
+    let connection = open_repo_read_connection(repo_path)?;
+    active_scan_file_snapshots_on_connection(&connection)
+}
+
+fn active_scan_file_snapshots_on_connection(
+    connection: &rusqlite::Connection,
+) -> CoreResult<Vec<ScanFileSnapshot>> {
+    let mut statement = connection
+        .prepare(
+            "SELECT path, original_name, current_name, category, size_bytes,
+                    hash_sha256, storage_mode, origin, source_path
+             FROM files
+             WHERE status = 'active'",
+        )
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    let mut rows = statement
+        .query([])
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    let mut snapshots = Vec::new();
+    while let Some(row) = rows
+        .next()
+        .map_err(|error| CoreError::db(error.to_string()))?
+    {
+        let storage_mode: String = row
+            .get(6)
+            .map_err(|error| CoreError::db(error.to_string()))?;
+        let origin: String = row
+            .get(7)
+            .map_err(|error| CoreError::db(error.to_string()))?;
+        snapshots.push(ScanFileSnapshot {
+            path: row
+                .get(0)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            original_name: row
+                .get(1)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            current_name: row
+                .get(2)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            category: row
+                .get(3)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            size_bytes: row
+                .get(4)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            hash_sha256: row
+                .get(5)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+            storage_mode: storage_mode_from_db(&storage_mode)?,
+            origin: origin_from_db(&origin)?,
+            source_path: row
+                .get(8)
+                .map_err(|error| CoreError::db(error.to_string()))?,
+        });
+    }
+    Ok(snapshots)
 }
 
 pub(crate) fn mark_scan_session_running_for_resume(
@@ -88,7 +215,7 @@ pub(crate) fn mark_scan_session_running_for_resume(
                  finished_at = NULL,
                  errors_json = '[]'
              WHERE id = ?1
-               AND status IN ('paused', 'failed', 'interrupted', 'running')",
+               AND status IN ('paused', 'failed', 'interrupted')",
             params![scan_session_id],
         )
         .map_err(|error| CoreError::db(error.to_string()))?;
@@ -261,6 +388,26 @@ pub(crate) fn update_scan_session_progress(
     } else {
         0
     };
+    let missing_inc = if change == ScanFileChange::Missing {
+        1
+    } else {
+        0
+    };
+    let conflict_inc = if change == ScanFileChange::Conflict {
+        1
+    } else {
+        0
+    };
+    let unreadable_inc = if change == ScanFileChange::Unreadable {
+        1
+    } else {
+        0
+    };
+    let unknown_inc = if change == ScanFileChange::Unknown {
+        1
+    } else {
+        0
+    };
     connection
         .execute(
             "UPDATE scan_sessions
@@ -268,6 +415,10 @@ pub(crate) fn update_scan_session_progress(
                  inserted = inserted + ?3,
                  updated = updated + ?4,
                  skipped = skipped + ?5,
+                 missing = missing + ?6,
+                 conflicts = conflicts + ?7,
+                 unreadable = unreadable + ?8,
+                 unknown = unknown + ?9,
                  updated_at = strftime('%s', 'now')
              WHERE id = ?1",
             params![
@@ -275,7 +426,11 @@ pub(crate) fn update_scan_session_progress(
                 last_path,
                 inserted_inc,
                 updated_inc,
-                skipped_inc
+                skipped_inc,
+                missing_inc,
+                conflict_inc,
+                unreadable_inc,
+                unknown_inc
             ],
         )
         .map_err(|error| CoreError::db(error.to_string()))?;
@@ -401,9 +556,9 @@ fn existing_file_for_path(
 fn scan_session_from_row(row: &Row<'_>) -> rusqlite::Result<ScanSession> {
     let kind: String = row.get(1)?;
     let status: String = row.get(2)?;
-    let errors_json: String = row.get(10)?;
+    let errors_json: String = row.get(14)?;
     let errors = serde_json::from_str(&errors_json).map_err(|error| {
-        rusqlite::Error::FromSqlConversionFailure(10, Type::Text, Box::new(error))
+        rusqlite::Error::FromSqlConversionFailure(14, Type::Text, Box::new(error))
     })?;
     Ok(ScanSession {
         id: row.get(0)?,
@@ -412,10 +567,14 @@ fn scan_session_from_row(row: &Row<'_>) -> rusqlite::Result<ScanSession> {
         last_path: row.get(3)?,
         inserted: row.get(4)?,
         updated: row.get(5)?,
-        skipped: row.get(6)?,
-        started_at: row.get(7)?,
-        updated_at: row.get(8)?,
-        finished_at: row.get(9)?,
+        missing: row.get(6)?,
+        conflicts: row.get(7)?,
+        unreadable: row.get(8)?,
+        unknown: row.get(9)?,
+        skipped: row.get(10)?,
+        started_at: row.get(11)?,
+        updated_at: row.get(12)?,
+        finished_at: row.get(13)?,
         errors,
     })
 }

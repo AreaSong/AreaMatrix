@@ -4,11 +4,13 @@ use std::{
 };
 
 use area_matrix_core::{
-    get_latest_scan_session, init_repo, list_files, reindex_from_filesystem, resume_scan_session,
-    CoreError, CoreResult, FileFilter, FileOrigin, OverviewOutput, ReindexReport, RepoInitMode,
-    RepoInitOptions, ScanSession, ScanSessionKind, ScanSessionStatus, StorageMode,
+    get_latest_scan_session, init_repo, list_files, preview_manual_rescan, reindex_from_filesystem,
+    resume_scan_session, CoreError, CoreResult, FileFilter, FileOrigin,
+    ManualRescanPreviewItemKind, ManualRescanPreviewReport, OverviewOutput, ReindexReport,
+    RepoInitMode, RepoInitOptions, ScanSession, ScanSessionKind, ScanSessionStatus, StorageMode,
 };
 use pretty_assertions::assert_eq;
+use rusqlite::Connection;
 
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-94-c4-19-validation.md"
@@ -98,6 +100,13 @@ fn indexed_paths(repo_path: &Path) -> Vec<String> {
         .collect()
 }
 
+fn scan_session_count(repo_path: &Path) -> i64 {
+    Connection::open(repo_path.join(".areamatrix/index.db"))
+        .expect("open repository database")
+        .query_row("SELECT COUNT(*) FROM scan_sessions", [], |row| row.get(0))
+        .expect("count scan sessions")
+}
+
 fn assert_contains(haystack: &str, needle: &str) {
     assert!(
         haystack.contains(needle),
@@ -128,21 +137,95 @@ fn manual_rescan_validation_success_path_is_ui_ready_and_file_safe() {
     );
     let before = user_file_snapshot(&[&readme, &spec, &root_overview]);
 
+    let preview = preview_manual_rescan(path_string(repo.path()))
+        .expect("preview manual rescan before confirmation");
+    assert_eq!(preview.added, 2);
+    assert_eq!(preview.missing_or_deleted_from_fs, 0);
+    assert_eq!(preview.unreadable, 0);
+    assert_eq!(preview.unknown, 0);
+    assert_eq!(
+        scan_session_count(repo.path()),
+        0,
+        "dry-run preview must not create scan sessions"
+    );
+
     let report =
         reindex_from_filesystem(path_string(repo.path())).expect("run manual rescan validation");
 
     assert!(report.scan_session_id.is_some());
     assert_eq!(report.inserted, 2);
     assert_eq!(report.updated, 0);
+    assert_eq!(report.missing, 0);
+    assert_eq!(report.conflicts, 0);
+    assert_eq!(report.unreadable, 0);
+    assert_eq!(report.unknown, 0);
     assert!(report.skipped >= 4);
     assert_eq!(report.errors, Vec::<String>::new());
-    assert_eq!(user_file_snapshot(&[&readme, &spec, &root_overview]), before);
+    assert_eq!(
+        user_file_snapshot(&[&readme, &spec, &root_overview]),
+        before
+    );
 
     let session = get_latest_scan_session(path_string(repo.path()))
         .expect("read latest scan session")
         .expect("manual rescan should persist a session");
     assert_completed_reindex_session(&session, &report);
     assert_indexed_external_paths(repo.path(), vec!["README.md", "docs/spec.txt"]);
+}
+
+#[test]
+fn manual_rescan_validation_structured_preview_and_summary_cover_needs_review() {
+    let repo = initialized_repo();
+    let spec = write_repo_file(repo.path(), "docs/spec.txt", b"before removal\n");
+    reindex_from_filesystem(path_string(repo.path())).expect("seed index before missing case");
+    fs::remove_file(&spec).expect("simulate external file removal");
+
+    let preview = preview_manual_rescan(path_string(repo.path()))
+        .expect("preview manual rescan missing case");
+    assert_eq!(preview.missing_or_deleted_from_fs, 1);
+    assert_eq!(preview.conflicts, 0);
+    assert_eq!(preview.unreadable, 0);
+    assert_eq!(preview.unknown, 0);
+    assert!(preview
+        .items
+        .iter()
+        .any(|item| item.relative_path == "docs/spec.txt"));
+
+    let report =
+        reindex_from_filesystem(path_string(repo.path())).expect("run missing manual rescan");
+    assert_eq!(report.missing, 1);
+    let session = get_latest_scan_session(path_string(repo.path()))
+        .expect("read latest scan session")
+        .expect("manual rescan should persist a session");
+    assert_eq!(session.missing, 1);
+    assert_eq!(session.errors, Vec::<String>::new());
+}
+
+#[test]
+fn manual_rescan_validation_conflict_status_has_real_scan_evidence() {
+    let repo = initialized_repo();
+    let original = write_repo_file(repo.path(), "docs/original.txt", b"same content\n");
+    reindex_from_filesystem(path_string(repo.path())).expect("seed original metadata");
+    let duplicate = write_repo_file(repo.path(), "docs/copy.txt", b"same content\n");
+    let before = user_file_snapshot(&[&original, &duplicate]);
+
+    let preview =
+        preview_manual_rescan(path_string(repo.path())).expect("preview duplicate conflict");
+    assert_eq!(preview.conflicts, 1);
+    assert!(preview.items.iter().any(|item| {
+        item.kind == ManualRescanPreviewItemKind::Conflict && item.relative_path == "docs/copy.txt"
+    }));
+
+    let report =
+        reindex_from_filesystem(path_string(repo.path())).expect("run conflict manual rescan");
+    assert_eq!(report.conflicts, 1);
+    assert_eq!(report.errors, Vec::<String>::new());
+    assert_eq!(user_file_snapshot(&[&original, &duplicate]), before);
+
+    let session = get_latest_scan_session(path_string(repo.path()))
+        .expect("read conflict scan session")
+        .expect("manual rescan should persist a session");
+    assert_eq!(session.conflicts, 1);
 }
 
 #[test]
@@ -195,6 +278,10 @@ fn manual_rescan_validation_resume_completed_session_is_metadata_only_noop() {
     assert_eq!(report.scan_session_id, Some(completed.id));
     assert_eq!(report.inserted, 0);
     assert_eq!(report.updated, 0);
+    assert_eq!(report.missing, 0);
+    assert_eq!(report.conflicts, 0);
+    assert_eq!(report.unreadable, 0);
+    assert_eq!(report.unknown, 0);
     assert_eq!(report.skipped, 0);
     assert_eq!(report.errors, Vec::<String>::new());
     assert_eq!(indexed_paths(repo.path()), vec!["README.md"]);
@@ -203,10 +290,12 @@ fn manual_rescan_validation_resume_completed_session_is_metadata_only_noop() {
 
 #[test]
 fn manual_rescan_validation_locks_api_udl_rust_and_test_evidence() {
+    fn assert_preview(_: fn(String) -> CoreResult<ManualRescanPreviewReport>) {}
     fn assert_reindex(_: fn(String) -> CoreResult<ReindexReport>) {}
     fn assert_latest(_: fn(String) -> CoreResult<Option<ScanSession>>) {}
     fn assert_resume(_: fn(String, i64) -> CoreResult<ReindexReport>) {}
 
+    assert_preview(preview_manual_rescan);
     assert_reindex(reindex_from_filesystem);
     assert_latest(get_latest_scan_session);
     assert_resume(resume_scan_session);
@@ -226,6 +315,10 @@ fn assert_completed_reindex_session(
     assert_eq!(session.status, ScanSessionStatus::Completed);
     assert_eq!(session.inserted, report.inserted);
     assert_eq!(session.updated, report.updated);
+    assert_eq!(session.missing, report.missing);
+    assert_eq!(session.conflicts, report.conflicts);
+    assert_eq!(session.unreadable, report.unreadable);
+    assert_eq!(session.unknown, report.unknown);
     assert_eq!(session.skipped, report.skipped);
     assert_eq!(session.errors, report.errors);
     assert_eq!(session.finished_at, Some(session.updated_at));
@@ -264,6 +357,7 @@ fn assert_task_docs_and_testing_alignment() {
         "- S4-X-07 rescan-confirm",
         "- S4-WIN-04 watcher-status",
         "- S4-LNX-04 watcher-status",
+        "- `preview_manual_rescan`",
         "- `reindex_from_filesystem`",
         "- `get_latest_scan_session`",
         "- `resume_scan_session`",
@@ -290,13 +384,22 @@ fn assert_task_docs_and_testing_alignment() {
 
 fn assert_core_api_udl_and_rust_alignment() {
     for fragment in [
+        "ManualRescanPreviewReport preview_manual_rescan(string repo_path);",
         "ReindexReport reindex_from_filesystem(string repo_path);",
         "ScanSession? get_latest_scan_session(string repo_path);",
         "ReindexReport resume_scan_session(string repo_path, i64 scan_session_id);",
+        "dictionary ManualRescanPreviewReport",
+        "i64 missing_or_deleted_from_fs;",
+        "sequence<ManualRescanPreviewItem> items;",
+        "enum ManualRescanPreviewItemKind",
         "dictionary ReindexReport",
         "i64? scan_session_id;",
         "i64 inserted;",
         "i64 updated;",
+        "i64 missing;",
+        "i64 conflicts;",
+        "i64 unreadable;",
+        "i64 unknown;",
         "i64 skipped;",
         "sequence<string> errors;",
         "dictionary ScanSession",
@@ -310,6 +413,7 @@ fn assert_core_api_udl_and_rust_alignment() {
     }
 
     for fragment in [
+        "pub fn preview_manual_rescan(repo_path: String) -> CoreResult<ManualRescanPreviewReport>",
         "pub fn reindex_from_filesystem(repo_path: String) -> CoreResult<ReindexReport>",
         "repair::reindex_from_filesystem(repo_path)",
         "pub fn get_latest_scan_session(repo_path: String) -> CoreResult<Option<ScanSession>>",
@@ -322,7 +426,11 @@ fn assert_core_api_udl_and_rust_alignment() {
 
     for fragment in [
         "db::create_scan_session(&repo, ScanSessionKind::Reindex)?",
-        "run_filesystem_scan(&repo, scan_session_id, None, ScanMode::Reindex)?",
+        "preview_from_plan(&repo, &plan)",
+        "ensure_no_running_reindex(&repo)?",
+        "DuplicateHashReviewState::Conflict",
+        "ScanFileChange::Conflict",
+        "run_filesystem_scan(&repo, scan_session_id, None, ScanMode::Reindex, true)?",
         "session.status == ScanSessionStatus::Completed",
         "return Ok(empty_report(scan_session_id));",
         "ScanMode::from_kind(&session.kind)",
@@ -331,9 +439,19 @@ fn assert_core_api_udl_and_rust_alignment() {
     }
 
     assert_contains(DB_MOD_RS, "CREATE TABLE IF NOT EXISTS scan_sessions");
-    assert_contains(DB_MOD_RS, "kind TEXT NOT NULL CHECK (kind IN ('adopt', 'reindex'))");
+    assert_contains(DB_MOD_RS, "const LATEST_SCHEMA_VERSION: i64 = 2;");
+    assert_contains(DB_MOD_RS, "fn run_schema_migrations");
+    assert_contains(DB_MOD_RS, "ALTER TABLE scan_sessions ADD COLUMN");
+    assert_contains(DB_MOD_RS, "{INDEX_DB_FILE}.pre-v{target_version}.bak");
+    assert_contains(
+        DB_MOD_RS,
+        "kind TEXT NOT NULL CHECK (kind IN ('adopt', 'reindex'))",
+    );
     assert_contains(DB_SCAN_RS, "pub(crate) fn upsert_reindexed_file");
-    assert_contains(DB_SCAN_RS, "INSERT INTO change_log (file_id, action, detail_json, occurred_at)");
+    assert_contains(
+        DB_SCAN_RS,
+        "INSERT INTO change_log (file_id, action, detail_json, occurred_at)",
+    );
 }
 
 fn assert_consumer_scope_alignment() {
@@ -346,18 +464,13 @@ fn assert_consumer_scope_alignment() {
         assert_contains(RESCAN_CONFIRM_PAGE, fragment);
     }
 
-    for fragment in ["提供 `Run rescan now` 入口，但点击后必须先进入 `S4-X-07 rescan-confirm`。"] {
-        assert_contains(WIN_WATCHER_PAGE, fragment);
-        assert_contains(LNX_WATCHER_PAGE, fragment);
-    }
+    let fragment = "提供 `Run rescan now` 入口，但点击后必须先进入 `S4-X-07 rescan-confirm`。";
+    assert_contains(WIN_WATCHER_PAGE, fragment);
+    assert_contains(LNX_WATCHER_PAGE, fragment);
     assert_contains(WIN_WATCHER_PAGE, "rescan 进行中不会启动第二个 rescan。");
     assert_contains(LNX_WATCHER_PAGE, "rescan 过程中不会启动第二次 rescan。");
 
-    for out_of_scope in [
-        "preview_manual_rescan",
-        "manual_rescan_dry_run",
-        "rescan_subtree",
-    ] {
+    for out_of_scope in ["manual_rescan_dry_run", "rescan_subtree"] {
         assert_not_contains(API_RS, out_of_scope);
         assert_not_contains(UDL, out_of_scope);
     }

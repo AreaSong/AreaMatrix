@@ -1,9 +1,9 @@
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    get_latest_scan_session, init_repo, list_files, reindex_from_filesystem, resume_scan_session,
-    CoreError, ErrorKind, ErrorRecoverability, ErrorSeverity, FileFilter, OverviewOutput,
-    RepoInitMode, RepoInitOptions, ScanSessionKind, ScanSessionStatus,
+    get_latest_scan_session, init_repo, list_files, preview_manual_rescan, reindex_from_filesystem,
+    resume_scan_session, CoreError, ErrorKind, ErrorRecoverability, ErrorSeverity, FileFilter,
+    OverviewOutput, RepoInitMode, RepoInitOptions, ScanSessionKind, ScanSessionStatus,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -42,6 +42,26 @@ fn initialized_repo() -> tempfile::TempDir {
 
 fn open_db(repo: &Path) -> Connection {
     Connection::open(repo.join(".areamatrix/index.db")).expect("open repository database")
+}
+
+fn schema_version(repo: &Path) -> i64 {
+    open_db(repo)
+        .query_row("SELECT MAX(version) FROM schema_version", [], |row| {
+            row.get(0)
+        })
+        .expect("read schema version")
+}
+
+fn scan_session_columns(repo: &Path) -> Vec<String> {
+    let connection = open_db(repo);
+    let mut statement = connection
+        .prepare("PRAGMA table_info(scan_sessions)")
+        .expect("prepare scan_sessions table info");
+    let rows = statement
+        .query_map([], |row| row.get::<_, String>(1))
+        .expect("query scan_sessions table info");
+    rows.map(|row| row.expect("read scan_sessions column"))
+        .collect()
 }
 
 fn indexed_paths(repo: &Path) -> Vec<String> {
@@ -92,6 +112,43 @@ fn install_scan_session_failure_update(repo: &Path) {
         .expect("install scan-session failure trigger");
 }
 
+fn downgrade_scan_sessions_to_v1(repo: &Path) {
+    open_db(repo)
+        .execute_batch(
+            "DROP INDEX IF EXISTS idx_scan_sessions_status;
+             ALTER TABLE scan_sessions RENAME TO scan_sessions_v2;
+             CREATE TABLE scan_sessions (
+               id INTEGER PRIMARY KEY AUTOINCREMENT,
+               kind TEXT NOT NULL CHECK (kind IN ('adopt', 'reindex')),
+               status TEXT NOT NULL CHECK (status IN (
+                 'running','completed','paused','failed','interrupted'
+               )),
+               started_at INTEGER NOT NULL,
+               updated_at INTEGER NOT NULL,
+               finished_at INTEGER,
+               last_path TEXT,
+               inserted INTEGER NOT NULL DEFAULT 0,
+               updated INTEGER NOT NULL DEFAULT 0,
+               skipped INTEGER NOT NULL DEFAULT 0,
+               errors_json TEXT NOT NULL DEFAULT '[]'
+             );
+             INSERT INTO scan_sessions (
+               id, kind, status, started_at, updated_at, finished_at,
+               last_path, inserted, updated, skipped, errors_json
+             )
+             SELECT id, kind, status, started_at, updated_at, finished_at,
+                    last_path, inserted, updated, skipped, errors_json
+               FROM scan_sessions_v2;
+             DROP TABLE scan_sessions_v2;
+             CREATE INDEX IF NOT EXISTS idx_scan_sessions_status
+               ON scan_sessions(status, updated_at DESC);
+             DELETE FROM schema_version WHERE version >= 2;
+             INSERT OR IGNORE INTO schema_version (version, applied_at, applied_by)
+             VALUES (1, strftime('%s', 'now'), 'area_matrix_core');",
+        )
+        .expect("downgrade scan_sessions to legacy v1 shape");
+}
+
 #[test]
 fn manual_rescan_failure_recovery_empty_repo_returns_completed_empty_report() {
     let repo = initialized_repo();
@@ -101,6 +158,10 @@ fn manual_rescan_failure_recovery_empty_repo_returns_completed_empty_report() {
     assert!(report.scan_session_id.is_some());
     assert_eq!(report.inserted, 0);
     assert_eq!(report.updated, 0);
+    assert_eq!(report.missing, 0);
+    assert_eq!(report.conflicts, 0);
+    assert_eq!(report.unreadable, 0);
+    assert_eq!(report.unknown, 0);
     assert_eq!(report.skipped, 0);
     assert_eq!(report.errors, Vec::<String>::new());
     assert_eq!(indexed_paths(repo.path()), Vec::<String>::new());
@@ -136,6 +197,110 @@ fn manual_rescan_failure_recovery_rejects_invalid_and_uninitialized_paths_withou
 }
 
 #[test]
+fn manual_rescan_failure_recovery_blocks_concurrent_rescan_sessions() {
+    let repo = initialized_repo();
+    fs::write(repo.path().join("README.md"), "# User project\n").expect("write README");
+    let connection = open_db(repo.path());
+    connection
+        .execute(
+            "INSERT INTO scan_sessions (
+                kind, status, started_at, updated_at, inserted, updated,
+                missing, conflicts, unreadable, unknown, skipped, errors_json
+             ) VALUES (
+                'reindex', 'running', strftime('%s', 'now'), strftime('%s', 'now'),
+                0, 0, 0, 0, 0, 0, 0, '[]'
+             )",
+            [],
+        )
+        .expect("seed running reindex session");
+    let running_session_id = connection.last_insert_rowid();
+
+    assert_eq!(
+        preview_manual_rescan(path_string(repo.path())),
+        Err(CoreError::conflict("manual rescan already running"))
+    );
+    assert_eq!(
+        reindex_from_filesystem(path_string(repo.path())),
+        Err(CoreError::conflict("manual rescan already running"))
+    );
+    assert_eq!(
+        resume_scan_session(path_string(repo.path()), running_session_id),
+        Err(CoreError::conflict("manual rescan already running"))
+    );
+    assert_eq!(indexed_paths(repo.path()), Vec::<String>::new());
+}
+
+#[test]
+fn manual_rescan_failure_recovery_preview_legacy_schema_does_not_migrate_metadata() {
+    let repo = initialized_repo();
+    let document = repo.path().join("docs/spec.txt");
+    fs::create_dir_all(document.parent().expect("document should have parent"))
+        .expect("create docs directory");
+    fs::write(&document, "legacy preview content\n").expect("write user document");
+    downgrade_scan_sessions_to_v1(repo.path());
+    let before_columns = scan_session_columns(repo.path());
+    let db_path = repo.path().join(".areamatrix/index.db");
+    let before_db = fs::read(&db_path).expect("read legacy database before preview");
+
+    assert_eq!(schema_version(repo.path()), 1);
+    assert!(!before_columns.contains(&"missing".to_owned()));
+
+    let preview =
+        preview_manual_rescan(path_string(repo.path())).expect("preview legacy schema repo");
+
+    assert_eq!(preview.added, 1);
+    assert_eq!(schema_version(repo.path()), 1);
+    assert_eq!(scan_session_columns(repo.path()), before_columns);
+    assert!(!repo.path().join(".areamatrix/index.db.pre-v2.bak").exists());
+    assert_eq!(
+        fs::read(&db_path).expect("read legacy database after preview"),
+        before_db
+    );
+}
+
+#[test]
+fn manual_rescan_failure_recovery_migrates_legacy_scan_session_schema() {
+    let repo = initialized_repo();
+    let document = repo.path().join("docs/spec.txt");
+    fs::create_dir_all(document.parent().expect("document should have parent"))
+        .expect("create docs directory");
+    fs::write(&document, "legacy schema content\n").expect("write user document");
+    let before = user_file_snapshot(&[&document]);
+    downgrade_scan_sessions_to_v1(repo.path());
+
+    assert_eq!(schema_version(repo.path()), 1);
+    assert!(!scan_session_columns(repo.path()).contains(&"missing".to_owned()));
+
+    let report =
+        reindex_from_filesystem(path_string(repo.path())).expect("rescan legacy schema repo");
+
+    assert_eq!(schema_version(repo.path()), 2);
+    for column in ["missing", "conflicts", "unreadable", "unknown"] {
+        assert!(
+            scan_session_columns(repo.path()).contains(&column.to_owned()),
+            "legacy migration should add scan_sessions.{column}"
+        );
+    }
+    assert!(repo
+        .path()
+        .join(".areamatrix/index.db.pre-v2.bak")
+        .is_file());
+    assert_eq!(report.inserted, 1);
+    assert_eq!(report.missing, 0);
+    assert_eq!(report.conflicts, 0);
+    assert_eq!(report.unreadable, 0);
+    assert_eq!(report.unknown, 0);
+    assert_eq!(user_file_snapshot(&[&document]), before);
+
+    let session = get_latest_scan_session(path_string(repo.path()))
+        .expect("read migrated scan session")
+        .expect("migrated rescan should persist a session");
+    assert_eq!(session.kind, ScanSessionKind::Reindex);
+    assert_eq!(session.status, ScanSessionStatus::Completed);
+    assert_eq!(session.inserted, 1);
+}
+
+#[test]
 fn manual_rescan_failure_recovery_db_error_preserves_user_files_and_records_failed_session() {
     let repo = initialized_repo();
     let document = repo.path().join("docs/spec.txt");
@@ -158,6 +323,9 @@ fn manual_rescan_failure_recovery_db_error_preserves_user_files_and_records_fail
     assert_eq!(session.status, ScanSessionStatus::Failed);
     assert_eq!(session.inserted, 0);
     assert_eq!(session.updated, 0);
+    assert_eq!(session.missing, 0);
+    assert_eq!(session.unreadable, 0);
+    assert_eq!(session.unknown, 0);
     assert_eq!(session.last_path, None);
     assert_eq!(session.errors.len(), 1);
     assert!(session.errors[0].contains("docs/spec.txt"));
@@ -219,6 +387,7 @@ fn manual_rescan_failure_recovery_permission_denied_is_resumable_without_user_fi
     assert_eq!(failed_session.status, ScanSessionStatus::Failed);
     assert_eq!(failed_session.last_path, Some("a-readable.txt".to_owned()));
     assert_eq!(failed_session.inserted, 1);
+    assert_eq!(failed_session.unreadable, 1);
     assert_eq!(failed_session.errors.len(), 1);
     assert!(failed_session.errors[0].contains("b-blocked.txt"));
 
@@ -226,6 +395,7 @@ fn manual_rescan_failure_recovery_permission_denied_is_resumable_without_user_fi
         .expect("resume failed manual rescan after restoring permissions");
     assert_eq!(report.scan_session_id, Some(failed_session.id));
     assert_eq!(report.errors, Vec::<String>::new());
+    assert_eq!(report.unreadable, 1);
     assert_eq!(
         indexed_paths(repo.path()),
         vec!["a-readable.txt", "b-blocked.txt"]

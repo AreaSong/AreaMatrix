@@ -135,11 +135,17 @@ namespace area_matrix {
     [Throws=CoreError]
     RecoveryReport recover_on_startup(string repo_path);
 
+    // C4-19 manual-rescan previews repository impact before S4-X-07 enables
+    // the high-risk confirmation. Preview is read-only: it must not write
+    // files, scan sessions, change log, or database file rows.
+    [Throws=CoreError]
+    ManualRescanPreviewReport preview_manual_rescan(string repo_path);
+
     // C4-19 manual-rescan reuses the full repository reindex entry point after
-    // S4-X-07 has shown the high-risk confirmation. The scope is the entire
-    // repository; partial subtree rescan and dry-run preview are not exposed by
-    // this contract. Core must only update AreaMatrix metadata and must not
-    // move, delete, rename, overwrite, trash, or download user files.
+    // S4-X-07 has shown preview and the high-risk confirmation. The scope is
+    // the entire repository; partial subtree rescan is not exposed by this
+    // contract. Core must only update AreaMatrix metadata and must not move,
+    // delete, rename, overwrite, trash, or download user files.
     [Throws=CoreError]
     ReindexReport reindex_from_filesystem(string repo_path);
 
@@ -2051,10 +2057,36 @@ dictionary RecoveryReport {
     sequence<string> warnings;
 };
 
+dictionary ManualRescanPreviewItem {
+    ManualRescanPreviewItemKind kind;
+    string relative_path;
+    string reason;
+    string suggested_action;
+};
+
+dictionary ManualRescanPreviewReport {
+    i64 added;
+    i64 updated;
+    i64 missing_or_deleted_from_fs;
+    i64 renamed_candidates;
+    i64 conflicts;
+    i64 unreadable;
+    i64 unknown;
+    i64 skipped;
+    string snapshot_id;
+    i64 created_at;
+    boolean is_stale;
+    sequence<ManualRescanPreviewItem> items;
+};
+
 dictionary ReindexReport {
     i64? scan_session_id;
     i64 inserted;
     i64 updated;
+    i64 missing;
+    i64 conflicts;
+    i64 unreadable;
+    i64 unknown;
     i64 skipped;
     sequence<string> errors;
 };
@@ -2086,6 +2118,10 @@ dictionary ScanSession {
     string? last_path;
     i64 inserted;
     i64 updated;
+    i64 missing;
+    i64 conflicts;
+    i64 unreadable;
+    i64 unknown;
     i64 skipped;
     i64 started_at;
     i64 updated_at;
@@ -2313,6 +2349,10 @@ enum LocalModelRecommendedAction {
 enum ImportDestination { "AutoClassify", "SelectedDirectory", "Category" };
 enum ScanSessionKind { "Adopt", "Reindex" };
 enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };
+enum ManualRescanPreviewItemKind {
+    "Added", "Updated", "Missing", "RenamedCandidate",
+    "Conflict", "Unreadable", "Unknown", "Skipped"
+};
 enum DuplicateStrategy { "Skip", "Overwrite", "KeepBoth", "Ask" };
 enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
 enum SearchScope { "AllRepo", "CurrentNode" };

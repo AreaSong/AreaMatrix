@@ -8,6 +8,7 @@
 
 ## Core API
 
+- `preview_manual_rescan`
 - `reindex_from_filesystem`
 - `get_latest_scan_session`
 - `resume_scan_session`
@@ -18,6 +19,7 @@
 
 ## 输出
 
+- ManualRescanPreviewReport。
 - ReindexReport 和 scan session。
 
 ## DB 变化
@@ -35,11 +37,13 @@
 - `PermissionDenied`
 - `Db`
 - `Io`
+- `Conflict`
 
 ## 验收标准
 
 - 手动 rescan 前必须确认影响。
 - 扫描失败可恢复或继续。
+- `missing`、`conflicts`、`unreadable`、`unknown` 必须作为 Needs Review 或诊断信号返回。
 - 不覆盖 README 和 generated 边界。
 
 ## 延后范围

@@ -160,6 +160,9 @@ namespace area_matrix {
     RecoveryReport recover_on_startup(string repo_path);
 
     [Throws=CoreError]
+    ManualRescanPreviewReport preview_manual_rescan(string repo_path);
+
+    [Throws=CoreError]
     ReindexReport reindex_from_filesystem(string repo_path);
 
     [Throws=CoreError]
@@ -2040,10 +2043,36 @@ dictionary RecoveryReport {
     sequence<string> warnings;
 };
 
+dictionary ManualRescanPreviewItem {
+    ManualRescanPreviewItemKind kind;
+    string relative_path;
+    string reason;
+    string suggested_action;
+};
+
+dictionary ManualRescanPreviewReport {
+    i64 added;
+    i64 updated;
+    i64 missing_or_deleted_from_fs;
+    i64 renamed_candidates;
+    i64 conflicts;
+    i64 unreadable;
+    i64 unknown;
+    i64 skipped;
+    string snapshot_id;
+    i64 created_at;
+    boolean is_stale;
+    sequence<ManualRescanPreviewItem> items;
+};
+
 dictionary ReindexReport {
     i64? scan_session_id;
     i64 inserted;
     i64 updated;
+    i64 missing;
+    i64 conflicts;
+    i64 unreadable;
+    i64 unknown;
     i64 skipped;
     sequence<string> errors;
 };
@@ -2075,6 +2104,10 @@ dictionary ScanSession {
     string? last_path;
     i64 inserted;
     i64 updated;
+    i64 missing;
+    i64 conflicts;
+    i64 unreadable;
+    i64 unknown;
     i64 skipped;
     i64 started_at;
     i64 updated_at;
@@ -2302,6 +2335,10 @@ enum LocalModelRecommendedAction {
 enum ImportDestination { "AutoClassify", "SelectedDirectory", "Category" };
 enum ScanSessionKind { "Adopt", "Reindex" };
 enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };
+enum ManualRescanPreviewItemKind {
+    "Added", "Updated", "Missing", "RenamedCandidate",
+    "Conflict", "Unreadable", "Unknown", "Skipped"
+};
 enum DuplicateStrategy { "Skip", "Overwrite", "KeepBoth", "Ask" };
 enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
 enum SearchScope { "AllRepo", "CurrentNode" };
@@ -2510,7 +2547,8 @@ interface CoreError {
 | `semantic_search(repo, query, filter, pagination)` | ai/search | √ | Config / PermissionDenied / Db / Internal |
 | `build_embedding_index(repo, scope)` | ai/search | √ | Config / PermissionDenied / Db / Internal |
 | `recover_on_startup(repo)` | repo | √ | Db |
-| `reindex_from_filesystem(repo)` | repo | √ | Io / Db |
+| `preview_manual_rescan(repo)` | repo | √ | Io / Db / PermissionDenied / Conflict |
+| `reindex_from_filesystem(repo)` | repo | √ | Io / Db / PermissionDenied / Conflict |
 | `create_diagnostics_snapshot(repo)` | repo | √ | Db / PermissionDenied / Io / Internal |
 | `repair_metadata(repo, options)` | repo | √ | Db / PermissionDenied / Io / Internal |
 | `get_latest_scan_session(repo)` | repo | √ | Db |
@@ -4115,13 +4153,34 @@ func bootstrap(repoPath: String) async throws {
 
 应用启动必调（在 UI 显示前）。耗时与残留 staging 文件数成正比。
 
+### `preview_manual_rescan(repoPath: String) throws -> ManualRescanPreviewReport`
+
+```swift
+let preview = try await Task.detached(priority: .background) {
+    try AreaMatrix.previewManualRescan(repoPath: repoPath)
+}.value
+print("added: \(preview.added), missing: \(preview.missingOrDeletedFromFs)")
+```
+
+S4-X-07 在启用 `Run Rescan` 前必须调用该只读预览入口。Core 会扫描 repo 和
+active metadata snapshot，返回 Added / Updated / Missing / Renamed candidates /
+Conflicts / Unreadable / Unknown / Skipped 的结构化摘要，以及最多若干可展示样例项。
+
+副作用边界：
+
+- 不创建 `scan_sessions`，不写 `files`，不写 `change_log`，不修改 DB 记录。
+- 不移动、不重命名、不删除、不覆盖、不 Trash、不下载用户文件。
+- `Unknown` / `Missing` / `Conflicts` / `Unreadable` 只作为 Needs Review 信号，
+  不会被预览当作删除或自动合并。
+- 已有 `scan_sessions(kind=Reindex,status=Running)` 时返回 `Conflict`，页面必须禁用第二次 rescan。
+
 ### `reindex_from_filesystem(repoPath: String) throws -> ReindexReport`
 
 ```swift
 let report = try await Task.detached(priority: .background) {
     try AreaMatrix.reindexFromFilesystem(repoPath: repoPath)
 }.value
-print("inserted: \(report.inserted), updated: \(report.updated), skipped: \(report.skipped)")
+print("inserted: \(report.inserted), missing: \(report.missing), skipped: \(report.skipped)")
 ```
 
 耗时与文件数成正比（1 万文件 ≈ 30s）。建议显示进度条。该 API 会跳过 `.areamatrix/`、系统临时文件、可配置忽略目录，以及 AreaMatrix 自身生成的概览文件。
@@ -4132,11 +4191,17 @@ print("inserted: \(report.inserted), updated: \(report.updated), skipped: \(repo
 - 启动后的全量重建或外部补扫写入 `FileEntry.origin = .external`。
 - 首次接管扫描由 `init_repo(mode=.adoptExisting)` 的内部流程触发，写入 `FileEntry.origin = .adopted`。
 - `README.md` 作为普通用户文件索引；`AREAMATRIX.md` 与 `.areamatrix/generated/` 始终跳过。
+- `ReindexReport` 和对应 `ScanSession` 返回 `inserted` / `updated` / `missing` /
+  `conflicts` / `unreadable` / `unknown` / `skipped` 计数。`missing`、`conflicts`、
+  `unreadable`、`unknown` 表示 UI 需要进入 Needs Review 或诊断路径，不表示 Core
+  已删除、合并或解决这些项目。
+- 已有 `scan_sessions(kind=Reindex,status=Running)` 时返回 `Conflict`，防止并发启动第二次手动 rescan。
 
 错误与副作用边界：
 
 - `Db`：scan session、`files` metadata 或诊断状态读写失败。
 - `PermissionDenied`：资料库文件、目录 metadata 或 `.areamatrix/` 写入被阻断。
+- `Conflict`：已有手动 rescan 正在运行。
 - `Io`：文件系统遍历、metadata 读取或 hash 计算失败。
 - `Internal`：重建过程发现无法恢复的一致性不变量破坏。
 - 只允许写 `.areamatrix/index.db` 与 scan session metadata。
