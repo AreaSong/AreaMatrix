@@ -1,0 +1,71 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-113`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-113-s4-ios-06-c4-08-cloud-permission-state.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/ICloudPermissionView.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryModel.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryView.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/MobileCloudStorageCoreFFI.swift`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrixTests/ICloudPermissionPageFeatureTests.swift`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S4-IOS-06 页面中的 C4-08 功能点
+- 结果：通过
+- 证据：manifest 将 `S4-IOS-06` 映射为 `C4-08`；实现新增 iOS iCloud permission 页面，并在 `.iCloudPermission` route 中渲染该页面。
+- 涉及文件：`stage-4-control-map.md:14`，`ICloudPermissionView.swift:145`，`ConnectRepositoryView.swift:384`
+
+- 项目：读取页面规格、control map、Core API 和 C4-08 能力规格
+- 结果：通过
+- 证据：页面规格要求三类状态、恢复动作和安全承诺；Core API 定义 `detect_cloud_storage_state` 输出结构化 cloud state；C4-08 要求 iCloud/OneDrive 风险提示来自结构化状态。
+- 涉及文件：`S4-IOS-06-icloud-permission.md:56`，`core-api.md:6642`，`C4-08-cloud-permission-state.md:34`
+
+- 项目：只接入 C4-08 对应的 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`ConnectRepositoryModel` 通过 `bridge.detectCloudStorageState` 获取状态；`MobileCloudStorageCoreFFIClient` 调用 `uniffi_area_matrix_core_fn_func_detect_cloud_storage_state`，不是 mock-only。
+- 涉及文件：`ConnectRepositoryModel.swift:186`，`MobileCloudStorageCoreFFI.swift:5`
+
+- 项目：不实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：改动集中在 `apps/ios/**` 的 onboarding iCloud permission / connect flow；`core/src/**` 无 diff；未触碰 C4-14、C4-21 等其他能力实现。
+- 涉及文件：`phase-4.md:9810`，`phase-4.md:9813`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。页面内容映射、状态判断、动作回调和 CoreBridge 调用分层清晰。
+- 注释 / rustdoc / 文档同步：通过。无新增 Rust public API；UDL 和 Core API 已存在并对齐。
+- 错误处理与边界处理：通过。覆盖 placeholder、permission denied、access expired、unavailable；重试会重新走 Core state 检测。
+- 测试与验证覆盖：通过。manifest 验证通过；iOS 定向测试 4/4 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径接入 UniFFI Core 函数；测试假对象只用于单测隔离。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-113`
+- 结果：通过，exit 0。关键输出：`doctor: OK`，`git diff --check` 通过，`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 显示 `BUILD SUCCEEDED`。
+- 已运行：`swift test --disable-sandbox --package-path apps/ios --scratch-path /private/tmp/areamatrix-ios-swiftpm-build --filter ICloudPermissionPageFeatureTests -Xswiftc -module-cache-path -Xswiftc /private/tmp/areamatrix-swiftpm-module-cache`
+- 结果：通过，`ICloudPermissionPageFeatureTests` 执行 4 tests，0 failures。
+- 缺失：未做真实 iOS 设备 / 模拟器 UI 手工点击验证；当前 task manifest 未要求该项，代码与测试证据足以覆盖本次 page-feature 验收。
+- 边界：`core/src/**` 未被修改；`Expected New Paths` 落在 `apps/**`。runner 相关 `progress.json` / `.codex/task-loop-runs/.../summary.json` 存在本地状态变化，按本验收时序不作为失败依据。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

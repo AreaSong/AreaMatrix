@@ -138,6 +138,28 @@ extension MobileCloudStorageState {
         )
     }
 
+    static func iCloudPlaceholder(path: String) -> MobileCloudStorageState {
+        fixture(
+            path: path,
+            providerKind: .iCloudDrive,
+            risk: .medium,
+            placeholderState: .placeholder,
+            recommendedAction: .retryStatusCheck,
+            canRetry: true
+        )
+    }
+
+    static func iCloudPermissionDenied(path: String) -> MobileCloudStorageState {
+        fixture(
+            path: path,
+            providerKind: .iCloudDrive,
+            risk: .high,
+            permissionState: .permissionDenied,
+            recommendedAction: .reconnectFolder,
+            requiresReconnect: true
+        )
+    }
+
     static func fixture(
         path: String,
         providerKind: MobileCloudStorageProviderKind,
@@ -145,7 +167,8 @@ extension MobileCloudStorageState {
         placeholderState: MobileCloudPlaceholderState = .notPlaceholder,
         permissionState: MobileCloudPermissionState = .accessible,
         recommendedAction: MobileCloudStorageRecommendedAction = .none,
-        requiresReconnect: Bool = false
+        requiresReconnect: Bool = false,
+        canRetry: Bool = false
     ) -> MobileCloudStorageState {
         MobileCloudStorageState(
             repoPath: path,
@@ -158,7 +181,7 @@ extension MobileCloudStorageState {
             recommendedAction: recommendedAction,
             requiresNoticeAcknowledgement: false,
             noticeAcknowledged: false,
-            canRetry: false,
+            canRetry: canRetry,
             requiresReconnect: requiresReconnect
         )
     }

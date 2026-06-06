@@ -52,7 +52,15 @@ struct ConnectRepositoryView: View {
     @ViewBuilder
     private var routeDestination: some View {
         if let route = routeCoordinator.activeRoute {
-            ConnectRepositoryRouteDestinationView(route: route)
+            ConnectRepositoryRouteDestinationView(
+                route: route,
+                cloudState: model.latestCloudState,
+                isChecking: model.isChecking,
+                onTryAgain: retryICloudPermission,
+                onReconnectFolder: openRecoveryFolderPicker,
+                onChooseAnotherFolder: openRecoveryFolderPicker,
+                onOpenSettings: ICloudPermissionSystemSettings.open
+            )
         }
     }
 
@@ -249,6 +257,19 @@ struct ConnectRepositoryView: View {
             model.cancelSystemPicker()
         }
     }
+
+    private func retryICloudPermission() {
+        Task {
+            if await model.retryICloudPermissionCheck() {
+                showingFolderPicker = true
+            }
+        }
+    }
+
+    private func openRecoveryFolderPicker() {
+        model.beginRecoveryFolderSelection()
+        showingFolderPicker = true
+    }
 }
 
 private extension View {
@@ -313,14 +334,32 @@ struct ConnectRepositoryRouteDestinationContent: Equatable {
 struct ConnectRepositoryRouteDestinationView: View {
     private let route: MobileRepositoryConnectionRoute
     private let mobileLibraryBridge: any MobileLibraryCoreBridge
+    private let cloudState: MobileCloudStorageState?
+    private let isChecking: Bool
+    private let onTryAgain: () -> Void
+    private let onReconnectFolder: () -> Void
+    private let onChooseAnotherFolder: () -> Void
+    private let onOpenSettings: () -> Void
     private let content: ConnectRepositoryRouteDestinationContent
 
     init(
         route: MobileRepositoryConnectionRoute,
-        mobileLibraryBridge: any MobileLibraryCoreBridge = LiveMobileRepositoryCoreBridge()
+        mobileLibraryBridge: any MobileLibraryCoreBridge = LiveMobileRepositoryCoreBridge(),
+        cloudState: MobileCloudStorageState? = nil,
+        isChecking: Bool = false,
+        onTryAgain: @escaping () -> Void = {},
+        onReconnectFolder: @escaping () -> Void = {},
+        onChooseAnotherFolder: @escaping () -> Void = {},
+        onOpenSettings: @escaping () -> Void = {}
     ) {
         self.route = route
         self.mobileLibraryBridge = mobileLibraryBridge
+        self.cloudState = cloudState
+        self.isChecking = isChecking
+        self.onTryAgain = onTryAgain
+        self.onReconnectFolder = onReconnectFolder
+        self.onChooseAnotherFolder = onChooseAnotherFolder
+        self.onOpenSettings = onOpenSettings
         content = ConnectRepositoryRouteDestinationContent(route: route)
     }
 
@@ -328,7 +367,7 @@ struct ConnectRepositoryRouteDestinationView: View {
         switch route {
         case let .mobileLibrary(connection):
             MobileLibraryView(connection: connection, bridge: mobileLibraryBridge)
-        case .repositoryInitConfirm, .repositoryAdoptConfirm, .iCloudPermission:
+        case .repositoryInitConfirm, .repositoryAdoptConfirm:
             List {
                 Section {
                     Label(content.primaryText, systemImage: content.systemImage)
@@ -342,6 +381,15 @@ struct ConnectRepositoryRouteDestinationView: View {
             }
             .connectRepositoryListStyle()
             .navigationTitle(content.title)
+        case let .iCloudPermission(error):
+            ICloudPermissionView(
+                content: ICloudPermissionContent(error: error, cloudState: cloudState),
+                isChecking: isChecking,
+                onTryAgain: onTryAgain,
+                onReconnectFolder: onReconnectFolder,
+                onChooseAnotherFolder: onChooseAnotherFolder,
+                onOpenSettings: onOpenSettings
+            )
         }
     }
 }

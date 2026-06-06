@@ -79,6 +79,19 @@ final class ConnectRepositoryModel: ObservableObject {
         route = nil
     }
 
+    @discardableResult
+    func retryICloudPermissionCheck() async -> Bool {
+        guard let validation = latestValidation else {
+            return await connectICloudRepository()
+        }
+        await connect(url: URL(fileURLWithPath: validation.repoPath, isDirectory: true))
+        return false
+    }
+
+    func beginRecoveryFolderSelection() {
+        prepareForPicker()
+    }
+
     func handleOpenURL(_ url: URL) async {
         guard url.scheme == "areamatrix", url.host == "share-import" else { return }
         await openRecentRepositoryForShareImport()

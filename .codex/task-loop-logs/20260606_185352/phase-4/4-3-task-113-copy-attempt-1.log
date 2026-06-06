@@ -1,0 +1,47 @@
+**一、执行结论**
+
+已完成 `4-3/task-113`。
+
+**二、执行范围**
+
+单任务：`S4-IOS-06 + C4-08 cloud-permission-state`
+
+修改文件：
+- [ICloudPermissionView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/ICloudPermissionView.swift)
+- [ConnectRepositoryView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryView.swift)
+- [ConnectRepositoryModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryModel.swift)
+- [ICloudPermissionPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrixTests/ICloudPermissionPageFeatureTests.swift)
+- [ConnectRepositoryModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrixTests/ConnectRepositoryModelTests.swift)
+- [ConnectRepositoryTestSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrixTests/ConnectRepositoryTestSupport.swift)
+
+已有脏文件未处理：`.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json`。
+
+**三、完成情况**
+
+- 只处理了 `S4-IOS-06` 中 `C4-08`：通过 `MobileCloudStorageState` 渲染 iCloud 权限/占位/不可用状态。
+- 已接入真实 `MobileRepositoryCoreBridge.detectCloudStorageState` 路径；`Try Again` 会重新走 CoreBridge 检测。
+- 页面提供 `Try Again`、`Reconnect Folder`、`Choose Another Folder`、`Open Settings`，加载态禁用恢复动作。
+- 未实现同页其他能力，也未触碰 control map 之外能力。
+- `core/src/**` 未触碰；`core/area_matrix.udl` 未修改。
+
+**四、工程质量**
+
+结构上把 S4-IOS-06 独立成 `ICloudPermissionView`，避免继续膨胀 `ConnectRepositoryView`。没有新增依赖，没有 mock-only 生产路径，没有硬编码成功态。iOS settings 跳转只在 `#if os(iOS)` 下编译，未强制解包。测试覆盖 placeholder、access expired、permission denied、unavailable，以及重试重新调用 CoreBridge 的行为。
+
+**五、验证情况**
+
+已通过：
+- `swift test --disable-sandbox --package-path apps/ios --cache-path /private/tmp/areamatrix-swiftpm-cache --filter 'ICloudPermissionPageFeatureTests|ConnectRepositoryModelTests/testICloudPermissionTryAgainRerunsCloudStateThroughCoreBridge'`
+  - 5 tests passed。
+- `./dev check task 4-3/task-113`
+  - `prompt doctor`: OK
+  - `git diff --check`: OK
+  - macOS Xcode build: `BUILD SUCCEEDED`
+
+说明：SwiftPM 初次运行被本地 sandbox/cache 权限阻断，改用 `/private/tmp` cache 并加 `--disable-sandbox` 后通过。
+
+**六、风险与后续**
+
+剩余风险：未做真实 iOS 设备/模拟器 UI 点击冒烟，当前证据是 SwiftPM 单元测试 + task 官方验证；官方 page gate 当前实际跑的是 macOS build。文件安全风险已控制：没有用户文件删除、移动、覆盖、iCloud 下载或 Core 写操作。
+
+建议下一个任务：`4-3/task-114`。

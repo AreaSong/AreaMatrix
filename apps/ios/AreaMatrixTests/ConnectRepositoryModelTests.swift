@@ -162,6 +162,23 @@ final class ConnectRepositoryModelTests: XCTestCase {
         XCTAssertEqual(model.route, .iCloudPermission(.unavailable(unavailableMessage)))
     }
 
+    func testICloudPermissionTryAgainRerunsCloudStateThroughCoreBridge() async {
+        let url = URL(fileURLWithPath: "/tmp/Mobile Documents/AreaMatrixRepo")
+        let bridge = FakeMobileRepositoryCoreBridge(
+            validation: .initialized(path: url.path),
+            cloudState: .iCloudAccessExpired(path: url.path)
+        )
+        let model = ConnectRepositoryModel(bridge: bridge, accessService: FakeRepositoryAccessService())
+
+        await model.connectSelectedURL(url)
+        let shouldOpenPicker = await model.retryICloudPermissionCheck()
+
+        XCTAssertFalse(shouldOpenPicker)
+        XCTAssertEqual(bridge.validatedPaths, [url.path, url.path])
+        XCTAssertEqual(bridge.detectedCloudStatePaths, [url.path, url.path])
+        XCTAssertEqual(model.route, .iCloudPermission(.accessExpired(url.path)))
+    }
+
     func testICloudAvailablePrimaryEntryRequestsFolderPicker() async {
         let bridge = FakeMobileRepositoryCoreBridge(validation: .initialized(path: "/tmp/AreaMatrixRepo"))
         let model = ConnectRepositoryModel(bridge: bridge, accessService: FakeRepositoryAccessService())
