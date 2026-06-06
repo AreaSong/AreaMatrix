@@ -1,0 +1,171 @@
+import Foundation
+
+@MainActor
+final class ConnectRepositoryModel: ObservableObject {
+    enum CheckState: Equatable {
+        case idle
+        case checking(String)
+    }
+
+    @Published private(set) var checkState: CheckState = .idle
+    @Published private(set) var recentRepositories: [RecentRepository] = []
+    @Published private(set) var error: MobileRepositoryConnectionError?
+    @Published private(set) var route: MobileRepositoryConnectionRoute?
+    @Published private(set) var latestValidation: MobileRepositoryValidation?
+
+    private let bridge: any MobileRepositoryCoreBridge
+    private let accessService: any RepositoryAccessServicing
+    private let now: @Sendable () -> Date
+
+    init(
+        bridge: any MobileRepositoryCoreBridge,
+        accessService: any RepositoryAccessServicing = SecurityScopedRepositoryAccessService(),
+        now: @escaping @Sendable () -> Date = { Date() }
+    ) {
+        self.bridge = bridge
+        self.accessService = accessService
+        self.now = now
+    }
+
+    var isChecking: Bool {
+        if case .checking = checkState { return true }
+        return false
+    }
+
+    func loadRecentRepositories() async {
+        recentRepositories = await accessService.recentRepositories()
+    }
+
+    func connectSelectedURL(_ url: URL) async {
+        await connect(url: url)
+    }
+
+    func reconnect(_ recent: RecentRepository) async {
+        do {
+            let url = try await accessService.resolveBookmark(for: recent)
+            await connect(url: url)
+        } catch {
+            applyFailure(.accessExpired(recent.pathDisplay))
+        }
+    }
+
+    func cancelSystemPicker() {
+        checkState = .idle
+    }
+
+    private func connect(url: URL) async {
+        guard url.isFileURL else {
+            applyFailure(.invalidPath(url.absoluteString))
+            return
+        }
+        beginChecking(url)
+        do {
+            let scopedAccess = try await accessService.beginAccessing(url)
+            defer { scopedAccess.stop() }
+            let validation = try await bridge.validateRepoPath(repoPath: url.path)
+            try await routeValidatedRepository(validation, sourceURL: url)
+        } catch {
+            applyFailure(Self.connectionError(from: error))
+        }
+    }
+
+    private func beginChecking(_ url: URL) {
+        checkState = .checking(url.path)
+        error = nil
+        route = nil
+        latestValidation = nil
+    }
+
+    private func routeValidatedRepository(_ validation: MobileRepositoryValidation, sourceURL: URL) async throws {
+        latestValidation = validation
+        if let blockingError = Self.blockingError(for: validation) {
+            applyFailure(blockingError)
+            return
+        }
+        if validation.isInitialized {
+            let bookmark = try await accessService.persistBookmark(for: sourceURL, lastOpenedAt: now())
+            try await openExistingRepository(validation, bookmark: bookmark)
+            return
+        }
+        let bookmark = Self.candidateBookmark(for: sourceURL, lastOpenedAt: now())
+        routeUninitializedRepository(validation, bookmark: bookmark)
+    }
+
+    private func openExistingRepository(
+        _ validation: MobileRepositoryValidation,
+        bookmark: RepositoryBookmark
+    ) async throws {
+        let config = try await bridge.loadConfig(repoPath: validation.repoPath)
+        checkState = .idle
+        route = .mobileLibrary(MobileRepositoryConnection(
+            validation: validation,
+            config: config,
+            bookmark: bookmark
+        ))
+    }
+
+    private func routeUninitializedRepository(
+        _ validation: MobileRepositoryValidation,
+        bookmark: RepositoryBookmark
+    ) {
+        checkState = .idle
+        let candidate = MobileRepositoryCandidate(validation: validation, bookmark: bookmark)
+        switch validation.recommendedMode {
+        case .createEmpty:
+            route = .repositoryInitConfirm(candidate)
+        case .adoptExisting:
+            route = .repositoryAdoptConfirm(candidate)
+        case nil:
+            applyFailure(.invalidRepository(validation.repoPath))
+        }
+    }
+
+    private func applyFailure(_ failure: MobileRepositoryConnectionError) {
+        checkState = .idle
+        error = failure
+        if case .iCloudPlaceholder = failure {
+            route = .iCloudPermission(failure)
+        }
+    }
+
+    private static func blockingError(for validation: MobileRepositoryValidation) -> MobileRepositoryConnectionError? {
+        if validation.isInsideAreaMatrix || validation.issues.contains(.insideAreaMatrix) {
+            return .invalidPath(validation.repoPath)
+        }
+        if !validation.exists || validation.issues.contains(.missingPath) {
+            return .invalidPath(validation.repoPath)
+        }
+        if !validation.isDirectory || validation.issues.contains(.notDirectory) {
+            return .selectedFile(validation.repoPath)
+        }
+        if !validation.isReadable || validation.issues.contains(.notReadable) {
+            return .permissionDenied(validation.repoPath)
+        }
+        if validation.issues.contains(.iCloudPath) && validation.isInitialized == false {
+            return nil
+        }
+        if validation.hasUnfinishedScanSession || validation.issues.contains(.unfinishedScanSession) {
+            return nil
+        }
+        if validation.recommendedMode == nil && validation.isInitialized == false {
+            return .invalidRepository(validation.repoPath)
+        }
+        return nil
+    }
+
+    private static func candidateBookmark(for url: URL, lastOpenedAt: Date) -> RepositoryBookmark {
+        RepositoryBookmark(
+            url: url,
+            displayName: url.lastPathComponent.isEmpty ? "Repository" : url.lastPathComponent,
+            pathDisplay: url.path,
+            lastOpenedAt: lastOpenedAt
+        )
+    }
+
+    private static func connectionError(from error: Error) -> MobileRepositoryConnectionError {
+        if let failure = error as? MobileRepositoryConnectionError {
+            return failure
+        }
+        return .unavailable(error.localizedDescription)
+    }
+}

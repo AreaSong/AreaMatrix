@@ -1,0 +1,4 @@
+module Carea_matrixFFI {
+    header "area_matrixFFI.h"
+    export *
+}
