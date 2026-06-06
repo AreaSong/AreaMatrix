@@ -12,6 +12,7 @@ final class ConnectRepositoryModel: ObservableObject {
     @Published private(set) var error: MobileRepositoryConnectionError?
     @Published private(set) var route: MobileRepositoryConnectionRoute?
     @Published private(set) var latestValidation: MobileRepositoryValidation?
+    @Published private(set) var latestCloudState: MobileCloudStorageState?
 
     private let bridge: any MobileRepositoryCoreBridge
     private let accessService: any RepositoryAccessServicing
@@ -74,12 +75,29 @@ final class ConnectRepositoryModel: ObservableObject {
         error = nil
         route = nil
         latestValidation = nil
+        latestCloudState = nil
     }
 
     private func routeValidatedRepository(_ validation: MobileRepositoryValidation, sourceURL: URL) async throws {
         latestValidation = validation
         if let blockingError = Self.blockingError(for: validation) {
             applyFailure(blockingError)
+            return
+        }
+        let cloudState: MobileCloudStorageState
+        do {
+            cloudState = try await bridge.detectCloudStorageState(repoPath: validation.repoPath)
+        } catch {
+            let failure = Self.connectionError(from: error)
+            if Self.shouldRouteCloudDetectionFailure(failure, validation: validation) {
+                applyCloudFailure(failure)
+                return
+            }
+            throw error
+        }
+        latestCloudState = cloudState
+        if let cloudError = Self.cloudBlockingError(for: cloudState) {
+            applyCloudFailure(cloudError)
             return
         }
         if validation.isInitialized {
@@ -123,9 +141,15 @@ final class ConnectRepositoryModel: ObservableObject {
     private func applyFailure(_ failure: MobileRepositoryConnectionError) {
         checkState = .idle
         error = failure
-        if case .iCloudPlaceholder = failure {
+        if Self.shouldRouteToICloudPermission(failure) {
             route = .iCloudPermission(failure)
         }
+    }
+
+    private func applyCloudFailure(_ failure: MobileRepositoryConnectionError) {
+        checkState = .idle
+        error = failure
+        route = .iCloudPermission(failure)
     }
 
     private static func blockingError(for validation: MobileRepositoryValidation) -> MobileRepositoryConnectionError? {
@@ -151,6 +175,59 @@ final class ConnectRepositoryModel: ObservableObject {
             return .invalidRepository(validation.repoPath)
         }
         return nil
+    }
+
+    private static func cloudBlockingError(
+        for state: MobileCloudStorageState
+    ) -> MobileRepositoryConnectionError? {
+        if state.placeholderState == .placeholder {
+            return .iCloudPlaceholder(state.repoPath)
+        }
+        if state.requiresReconnect || state.recommendedAction == .reconnectFolder {
+            return .accessExpired(state.repoPath)
+        }
+        switch state.permissionState {
+        case .accessible:
+            return nil
+        case .permissionDenied:
+            return .permissionDenied(state.repoPath)
+        case .accessExpired:
+            return .accessExpired(state.repoPath)
+        case .unknown:
+            if state.providerKind == .iCloudDrive || state.providerKind == .unknown {
+                return .unavailable(state.statusSummary)
+            }
+            return nil
+        }
+    }
+
+    private static func shouldRouteToICloudPermission(_ failure: MobileRepositoryConnectionError) -> Bool {
+        switch failure {
+        case .iCloudPlaceholder:
+            return true
+        case .invalidPath, .selectedFile, .permissionDenied, .accessExpired, .invalidRepository, .unavailable:
+            return false
+        }
+    }
+
+    private static func shouldRouteCloudDetectionFailure(
+        _ failure: MobileRepositoryConnectionError,
+        validation: MobileRepositoryValidation
+    ) -> Bool {
+        if case .iCloudPlaceholder = failure {
+            return true
+        }
+        guard validation.isICloudPath
+            || validation.issues.contains(.iCloudPath)
+            || validation.platformPathKind == .iCloudDrive else {
+            return false
+        }
+        switch failure {
+        case .permissionDenied, .accessExpired, .unavailable:
+            return true
+        case .invalidPath, .selectedFile, .iCloudPlaceholder, .invalidRepository:
+            return false
+        }
     }
 
     private static func candidateBookmark(for url: URL, lastOpenedAt: Date) -> RepositoryBookmark {

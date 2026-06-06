@@ -75,7 +75,12 @@ struct ConnectRepositoryView: View {
                     .font(.footnote)
                     .foregroundStyle(.orange)
             }
-            if model.latestValidation?.isThirdPartyCloudPath == true {
+            if let cloudState = model.latestCloudState, cloudState.shouldDisplayOnConnectPage {
+                Label(cloudStatusText(for: cloudState), systemImage: "cloud")
+                    .font(.footnote)
+                    .foregroundStyle(.orange)
+                    .accessibilityLabel(cloudAccessibilityLabel(for: cloudState))
+            } else if model.latestValidation?.isThirdPartyCloudPath == true {
                 Label("同步行为由所选云盘提供商决定。", systemImage: "cloud")
                     .font(.footnote)
                     .foregroundStyle(.orange)
@@ -144,6 +149,11 @@ struct ConnectRepositoryView: View {
                 Text(repository.lastOpenedAt, style: .relative)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if repository.accessStatus == .expired {
+                    Text("Access expired")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
             }
             Spacer()
             Text(statusText(for: repository.accessStatus))
@@ -158,6 +168,29 @@ struct ConnectRepositoryView: View {
 
     private func statusColor(for status: RecentRepository.AccessStatus) -> Color {
         status == .available ? .secondary : .orange
+    }
+
+    private func cloudStatusText(for state: MobileCloudStorageState) -> String {
+        if state.requiresReconnect || state.permissionState == .accessExpired {
+            return "iCloud 访问凭证已失效，需要重新连接。"
+        }
+        if state.permissionState == .permissionDenied {
+            return "iCloud 权限不足，请重新授权。"
+        }
+        if state.placeholderState == .placeholder {
+            return "iCloud 文件夹尚未下载，请在 Files 中下载后重试。"
+        }
+        if state.recommendedAction == .retryStatusCheck {
+            return "iCloud 状态暂时不可确认，可稍后重试。"
+        }
+        if state.providerKind != .local || state.risk != .noRisk {
+            return state.statusSummary.isEmpty ? "同步行为由所选云盘提供商决定。" : state.statusSummary
+        }
+        return "同步行为由所选云盘提供商决定。"
+    }
+
+    private func cloudAccessibilityLabel(for state: MobileCloudStorageState) -> String {
+        "Cloud status, \(cloudStatusText(for: state))"
     }
 
     private func accessibilityLabel(for repository: RecentRepository) -> String {

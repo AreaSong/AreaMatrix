@@ -2,6 +2,7 @@ import Foundation
 
 protocol MobileRepositoryCoreBridge: Sendable {
     func validateRepoPath(repoPath: String) async throws -> MobileRepositoryValidation
+    func detectCloudStorageState(repoPath: String) async throws -> MobileCloudStorageState
     func initializeEmptyRepository(repoPath: String) async throws
     func adoptExistingRepository(repoPath: String) async throws
     func loadConfig(repoPath: String) async throws -> MobileRepositoryConfig

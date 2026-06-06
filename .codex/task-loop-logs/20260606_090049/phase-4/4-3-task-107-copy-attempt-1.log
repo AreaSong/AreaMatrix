@@ -1,0 +1,50 @@
+一、执行结论
+
+已完成 `4-3/task-107`。
+
+二、执行范围
+
+单任务：`S4-IOS-01 connect-repo` 中的 `C4-08 cloud-permission-state`。
+
+修改文件清单：
+
+- [MobileCloudStorageState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/MobileCloudStorageState.swift)
+- [MobileCloudStorageCoreFFI.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/MobileCloudStorageCoreFFI.swift)
+- [MobileRepositoryCoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/MobileRepositoryCoreBridge.swift)
+- [MobileRepositoryCoreFFI.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/MobileRepositoryCoreFFI.swift)
+- [ConnectRepositoryModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryModel.swift)
+- [ConnectRepositoryView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryView.swift)
+- [area_matrixFFI.h](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/Carea_matrixFFI/area_matrixFFI.h)
+- [ConnectRepositoryModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrixTests/ConnectRepositoryModelTests.swift)
+
+三、完成情况
+
+核对清单全部完成：已读取页面规格、control map、Core API、C4-08 能力规格；只接入 `detect_cloud_storage_state` 对应的 iOS CoreBridge、状态 DTO、错误映射和页面提示；没有实现同页 C4-02 之外的新能力，也没有实现相邻页面。
+
+完成标准全部满足：S4-IOS-01 在选择/重连资料库后会触发真实 Core C4-08 探测；iCloud 占位符、权限不足、访问过期会进入 `iCloudPermission` 路由；可访问云盘状态会显示结构化提示但不阻断连接。
+
+Forbidden Touches：未触碰 `core/src/**`，也未修改 `core/area_matrix.udl`。改动均在 `apps/**` 内。工作区开始前已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 仍是脏改，未作为本任务业务修改处理。
+
+四、工程质量
+
+代码结构按职责拆分：云盘状态 DTO、C4-08 FFI client、主 bridge 注入、页面模型路由、SwiftUI 展示分别独立。生产路径通过 UniFFI C 函数调用真实 Core，不用 mock、fixture、静态状态或硬编码通过态。
+
+错误处理覆盖：Core contract checksum mismatch、Rust panic、Core error buffer、iCloud placeholder、permission denied、access expired、unknown cloud state 都有显式路径。无新增依赖，无 Rust public API，因此无 rustdoc 同步项。
+
+五、验证情况
+
+已通过：
+
+- `./dev check task 4-3/task-107`：通过。包含 `prompt_pipeline.py doctor`、`git diff --check`、macOS `xcodebuild` build，最终 `BUILD SUCCEEDED`。
+- `swift test --disable-sandbox --package-path apps/ios --scratch-path /private/tmp/areamatrix-ios-swift-build --filter ConnectRepositoryModelTests`：通过，15 tests / 0 failures。
+- `swiftc -parse ...` 针对 iOS onboarding Swift 文件：通过。
+- `git diff --check`：通过。
+
+说明：第一次未加可写缓存参数的 `swift test` 被 SwiftPM / clang module cache 权限阻断；随后使用 `/private/tmp` 缓存和 `--disable-sandbox` 重跑通过。
+
+六、风险与后续
+
+剩余风险：没有跑真实 iOS 模拟器 Files picker 手工流；当前证据覆盖模型、桥接和任务级构建验证。C4-08 Core 探测本身只读，不移动、不删除、不覆盖用户文件；回滚方式是撤销上述 `apps/ios/**` 改动。
+
+建议下一个任务：`4-3/task-108`，做 S4-IOS-01 整页 page integration verify。
+

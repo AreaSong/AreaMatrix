@@ -34,6 +34,11 @@ void uniffi_area_matrix_core_fn_func_init_repo(
     RustCallStatus *_Nonnull out_status
 );
 
+RustBuffer uniffi_area_matrix_core_fn_func_detect_cloud_storage_state(
+    RustBuffer repo_path,
+    RustCallStatus *_Nonnull out_status
+);
+
 RustBuffer ffi_area_matrix_core_rustbuffer_from_bytes(
     ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
@@ -48,3 +53,4 @@ uint32_t ffi_area_matrix_core_uniffi_contract_version(void);
 uint16_t uniffi_area_matrix_core_checksum_func_validate_repo_path(void);
 uint16_t uniffi_area_matrix_core_checksum_func_load_config(void);
 uint16_t uniffi_area_matrix_core_checksum_func_init_repo(void);
+uint16_t uniffi_area_matrix_core_checksum_func_detect_cloud_storage_state(void);

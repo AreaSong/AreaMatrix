@@ -3,13 +3,22 @@ import Foundation
 
 actor LiveMobileRepositoryCoreBridge: MobileRepositoryCoreBridge {
     private let client: MobileRepositoryCoreFFIClient
+    private let cloudClient: MobileCloudStorageCoreFFIClient
 
-    init(client: MobileRepositoryCoreFFIClient = MobileRepositoryCoreFFIClient()) {
+    init(
+        client: MobileRepositoryCoreFFIClient = MobileRepositoryCoreFFIClient(),
+        cloudClient: MobileCloudStorageCoreFFIClient = MobileCloudStorageCoreFFIClient()
+    ) {
         self.client = client
+        self.cloudClient = cloudClient
     }
 
     func validateRepoPath(repoPath: String) async throws -> MobileRepositoryValidation {
         try client.validateRepoPath(repoPath: repoPath)
+    }
+
+    func detectCloudStorageState(repoPath: String) async throws -> MobileCloudStorageState {
+        try cloudClient.detectCloudStorageState(repoPath: repoPath)
     }
 
     func initializeEmptyRepository(repoPath: String) async throws {
