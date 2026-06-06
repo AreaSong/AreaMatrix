@@ -1,0 +1,65 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：4-3/task-104
+- Task 文件：/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-104-c4-21-validation.md
+- Manifest 章节：/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:9544
+- 代码范围：/Users/as/Ai-Project/project/AreaMatrix/core/src/**、/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl、/Users/as/Ai-Project/project/AreaMatrix/core/tests/**
+
+三、完成度摘要
+
+- 已覆盖项数：4/4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+- 完成标准：2/2 通过
+
+四、逐项验收结果
+
+- 项目：补齐成功和失败路径测试
+- 结果：通过
+- 证据：新增 /Users/as/Ai-Project/project/AreaMatrix/core/tests/replace_confirm_cross_platform_validation.rs，覆盖 import overwrite 旧版本可恢复、sync UseIncoming 未确认拒绝且不变更文件/DB/Trash；既有 contract / implementation / failure tests 同时通过。
+- 涉及文件：core/tests/replace_confirm_cross_platform_validation.rs:203、core/tests/replace_confirm_cross_platform_validation.rs:268
+
+- 项目：验证 Core API / UDL / Rust 实现三者一致
+- 结果：通过
+- 证据：UDL 暴露 import_file/delete_file/resolve_sync_conflict 与 replace_confirmed、replace_plan、trashed_paths；Rust API 和测试进行函数签名与文档片段一致性断言。
+- 涉及文件：core/area_matrix.udl:183、core/area_matrix.udl:1842、core/tests/replace_confirm_cross_platform_validation.rs:321
+
+- 项目：不新增业务功能，只补验证与必要测试 fixture
+- 结果：通过
+- 证据：当前 task 相关新增路径为 core/tests/replace_confirm_cross_platform_validation.rs；core/src 与 core/area_matrix.udl 当前未见本轮未提交修改。
+- 涉及文件：core/tests/replace_confirm_cross_platform_validation.rs
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：必需验证 ./dev check task 4-3/task-104 已实际运行并通过；无必需命令无法运行。
+- 涉及文件：任务验证输出
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，测试按 helper + 场景断言组织，新增 validation 文件 500 行，未超过编码规范单文件阈值。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 public Rust API；validation 测试通过 include_str! 核对 task、capability spec、control map、Core API、UDL、Rust surface。
+- 错误处理与边界处理：通过，覆盖未确认 replace、DB failure rollback、delete failure restore、stale confirmation、错误映射等失败路径。
+- 测试与验证覆盖：通过，task-scoped gate 跑完 4 个 C4-21 targeted Rust test target，共 13 个测试通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试走 init_repo/import_file/resolve_sync_conflict/delete_file 等真实 Core 路径，并用临时 repo 与隔离 Trash 验证文件和 DB 状态。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：./dev check task 4-3/task-104
+- 哪些通过：prompt doctor OK；git diff --check OK；replace_confirm_cross_platform_contract_api 3/3 通过；replace_confirm_cross_platform_failure_recovery 5/5 通过；replace_confirm_cross_platform_implementation 2/2 通过；replace_confirm_cross_platform_validation 3/3 通过。
+- 哪些失败：无
+- 哪些缺失：未运行 ./dev check all、./dev check core、cargo test --workspace、fmt/clippy 宽门禁；原因是当前 manifest 只要求 ./dev check task 4-3/task-104，且 validation-driver 对普通 atomic Core task 以上限 task-scoped gate 为准。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS
