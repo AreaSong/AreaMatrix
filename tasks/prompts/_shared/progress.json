@@ -13671,11 +13671,38 @@
     "4-3/task-115": {
       "attempts": 2,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260606_220416/phase-4/4-3-task-115-copy-attempt-2.log",
+      "git_branch": "codex/areamatrix-task-loop-20260501_132850",
+      "git_changed_files": [
+        ".codex/task-loop-logs/20260606_220416/phase-4/4-3-task-115-copy-attempt-2.log",
+        ".codex/task-loop-logs/20260606_220416/phase-4/4-3-task-115-verify-attempt-2.log",
+        ".codex/task-loop-runs/20260606_220416/",
+        ".codex/task-loop-runs/index.json",
+        "apps/ios/AreaMatrix/Features/Import/FilesImportBatchDeleteCoreFFI.swift",
+        "apps/ios/AreaMatrix/Features/Import/FilesImportCoreBridge.swift",
+        "apps/ios/AreaMatrix/Features/Import/FilesImportCoreFFI.swift",
+        "apps/ios/AreaMatrix/Features/Import/FilesImportPreviewState.swift",
+        "apps/ios/AreaMatrix/Features/Import/FilesImportReplaceCoreFFI.swift",
+        "apps/ios/AreaMatrix/Features/Import/FilesImportReplaceState.swift",
+        "apps/ios/AreaMatrix/Features/Import/FilesImportReplaceViews.swift",
+        "apps/ios/AreaMatrix/Features/Import/FilesImportReviewHelpers.swift",
+        "apps/ios/AreaMatrix/Features/Import/FilesImportReviewModel.swift",
+        "apps/ios/AreaMatrix/Features/Import/FilesImportReviewSheet.swift",
+        "apps/ios/AreaMatrix/Features/Library/MobileLibraryView.swift",
+        "apps/ios/AreaMatrix/Features/Onboarding/MobileRepositoryCoreBridge.swift",
+        "apps/ios/AreaMatrix/Features/Onboarding/MobileRepositoryCoreFFI.swift",
+        "apps/ios/AreaMatrixTests/FilesImportReviewModelTests.swift",
+        "apps/ios/Carea_matrixFFI/area_matrixFFI.h",
+        "tasks/prompts/_shared/progress.json"
+      ],
+      "git_checkpoint_status": "committed",
+      "git_commit": "5bea4ddb30e259b96e1ee0a0f9a543cf87fdda39",
+      "git_push_status": "not_requested",
+      "git_remote": "",
       "note": "自动执行验收通过：attempt=2",
       "risk": "High",
       "run_id": "20260606_220416",
       "status": "completed",
-      "updated_at": "2026-06-06T15:06:27.177645+00:00",
+      "updated_at": "2026-06-06T15:06:27.453111+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260606_220416/phase-4/4-3-task-115-verify-attempt-2.log"
     },
     "4-3/task-12": {
@@ -15851,6 +15878,6 @@
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260605_152309/phase-4/4-3-task-99-verify-attempt-1.log"
     }
   },
-  "updated_at": "2026-06-06T12:06:05.662647+00:00",
+  "updated_at": "2026-06-06T15:06:27.453116+00:00",
   "version": 1
 }
