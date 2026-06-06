@@ -146,12 +146,16 @@ struct MobileLibraryView: View {
     @State private var showingCameraCapture = false
     @State private var cameraCaptureError: SystemCameraCaptureUnavailable?
     private let cameraImportBridge: any CameraImportCoreBridge
+    private let detailBridge: any MobileFileDetailCoreBridge
+    private let onOpenMissingRecovery: (Int64) -> Void
 
     init(
         connection: MobileRepositoryConnection,
         bridge: any MobileLibraryCoreBridge,
         cameraImportBridge: (any CameraImportCoreBridge)? = nil,
-        shareImportConsumer: (any ShareImportQueueConsuming)? = nil
+        shareImportConsumer: (any ShareImportQueueConsuming)? = nil,
+        detailBridge: (any MobileFileDetailCoreBridge)? = nil,
+        onOpenMissingRecovery: @escaping (Int64) -> Void = { _ in }
     ) {
         _model = StateObject(wrappedValue: LibraryListViewModel(
             connection: connection,
@@ -159,6 +163,8 @@ struct MobileLibraryView: View {
             shareImportConsumer: shareImportConsumer ?? ShareImportQueueConsumer()
         ))
         self.cameraImportBridge = cameraImportBridge ?? LiveMobileRepositoryCoreBridge()
+        self.detailBridge = detailBridge ?? LiveMobileRepositoryCoreBridge()
+        self.onOpenMissingRecovery = onOpenMissingRecovery
     }
 
     var body: some View {
@@ -273,7 +279,7 @@ struct MobileLibraryView: View {
                 emptyFilesView
             } else {
                 ForEach(model.files) { file in
-                    MobileLibraryFileRow(file: file)
+                    detailLink(for: file)
                 }
             }
         }
@@ -305,9 +311,22 @@ struct MobileLibraryView: View {
         if !model.needsReview.isEmpty {
             Section("Needs Review") {
                 ForEach(model.needsReview) { file in
-                    MobileLibraryFileRow(file: file)
+                    detailLink(for: file)
                 }
             }
+        }
+    }
+
+    private func detailLink(for file: MobileLibraryFile) -> some View {
+        NavigationLink {
+            MobileFileDetailView(
+                repoPath: model.repositoryPath,
+                fileID: file.id,
+                bridge: detailBridge,
+                onOpenMissingRecovery: onOpenMissingRecovery
+            )
+        } label: {
+            MobileLibraryFileRow(file: file)
         }
     }
 

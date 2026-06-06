@@ -1,0 +1,42 @@
+一、执行结论
+
+已完成 `4-3/task-112`。
+
+二、执行范围
+
+单任务：S4-IOS-05 中 C4-07 `mobile-detail`。
+
+修改文件：
+- [area_matrixFFI.h](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/Carea_matrixFFI/area_matrixFFI.h)
+- [MobileFileDetailCoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Detail/MobileFileDetailCoreBridge.swift)
+- [MobileFileDetailCoreFFI.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Detail/MobileFileDetailCoreFFI.swift)
+- [MobileFileDetailModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Detail/MobileFileDetailModel.swift)
+- [MobileFileDetailView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Detail/MobileFileDetailView.swift)
+- [MobileLibraryView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Library/MobileLibraryView.swift)
+- [MobileFileDetailModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrixTests/MobileFileDetailModelTests.swift)
+
+三、完成情况
+
+核对清单：已只接入 C4-07 的 `get_file`、`list_changes`、`read_note`；未实现 `write_note`、C4-18 缺失恢复 Core API、Open/Share 等相邻能力。库列表只增加进入详情页的导航 wiring。
+
+完成标准：详情页可加载 metadata，Log/Note 懒加载；生产路径走 `LiveMobileRepositoryCoreBridge` + C FFI，不是 mock/fixture/static 状态；missing 文件只暴露 S4-X-06 route intent，不伪造恢复闭环。
+
+Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+代码分层为 bridge、FFI client、view model、SwiftUI view、测试；每个新文件均低于 500 行。错误映射显式覆盖 `FileNotFound`、`Db`、`PermissionDenied` 和 fallback。未新增依赖、未引入远程调用、未写用户文件。测试包含 fake bridge 行为测试和 live bridge 真实 Core 调用测试。
+
+五、验证情况
+
+已通过：
+- `swift test --disable-sandbox --package-path apps/ios --scratch-path /private/tmp/areamatrix-ios-swiftpm --filter MobileFileDetailModelTests ...`：5 tests passed。
+- `./dev check task 4-3/task-112`：PASS；`doctor: OK`、`git diff --check` OK、macOS `xcodebuild` build succeeded。
+
+说明：SwiftPM 初次因当前沙箱不能写用户 Library/cache 失败，已用 `/private/tmp` scratch/cache 和 `--disable-sandbox` 重跑通过。`xcodebuild` 有 CoreSimulator/FSEvents warning，但 build 最终成功。
+
+六、风险与后续
+
+剩余风险：未做真机/模拟器 UI 点击验证；S4-X-06 实际恢复页仍属于后续 C4-18 任务。工作区还保留了本任务前已有的 `tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/...` 脏状态，我没有改动它们。
+
+建议下一个任务：按队列继续 `4-3/task-113`；缺失文件实际恢复闭环后续看 `4-3/task-157`。
