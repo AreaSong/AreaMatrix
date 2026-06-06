@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import UniformTypeIdentifiers
 #if os(iOS)
 import UIKit
 #endif
@@ -143,9 +144,13 @@ final class LibraryListViewModel: ObservableObject {
 struct MobileLibraryView: View {
     @StateObject private var model: LibraryListViewModel
     @State private var capturedPhoto: CapturedPhotoSelection?
+    @State private var filesImportSelection: FilesImportSelection?
+    @State private var filesImportPickerError: String?
     @State private var showingCameraCapture = false
+    @State private var showingFilesImporter = false
     @State private var cameraCaptureError: SystemCameraCaptureUnavailable?
     private let cameraImportBridge: any CameraImportCoreBridge
+    private let filesImportBridge: any FilesImportCoreBridge
     private let detailBridge: any MobileFileDetailCoreBridge
     private let onOpenMissingRecovery: (Int64) -> Void
 
@@ -153,6 +158,7 @@ struct MobileLibraryView: View {
         connection: MobileRepositoryConnection,
         bridge: any MobileLibraryCoreBridge,
         cameraImportBridge: (any CameraImportCoreBridge)? = nil,
+        filesImportBridge: (any FilesImportCoreBridge)? = nil,
         shareImportConsumer: (any ShareImportQueueConsuming)? = nil,
         detailBridge: (any MobileFileDetailCoreBridge)? = nil,
         onOpenMissingRecovery: @escaping (Int64) -> Void = { _ in }
@@ -163,6 +169,7 @@ struct MobileLibraryView: View {
             shareImportConsumer: shareImportConsumer ?? ShareImportQueueConsumer()
         ))
         self.cameraImportBridge = cameraImportBridge ?? LiveMobileRepositoryCoreBridge()
+        self.filesImportBridge = filesImportBridge ?? LiveMobileRepositoryCoreBridge()
         self.detailBridge = detailBridge ?? LiveMobileRepositoryCoreBridge()
         self.onOpenMissingRecovery = onOpenMissingRecovery
     }
@@ -173,6 +180,9 @@ struct MobileLibraryView: View {
             controlsSection
             if let error = model.error {
                 errorSection(error)
+            }
+            if let filesImportPickerError {
+                filesImportErrorSection(filesImportPickerError)
             }
             if let cameraCaptureError {
                 cameraErrorSection(cameraCaptureError)
@@ -195,6 +205,13 @@ struct MobileLibraryView: View {
             .disabled(model.isLoading || model.isRefreshing)
             .accessibilityLabel("Refresh repository")
             Button {
+                filesImportPickerError = nil
+                showingFilesImporter = true
+            } label: {
+                Image(systemName: "doc.badge.plus")
+            }
+            .accessibilityLabel("Import from Files")
+            Button {
                 Task { await startCameraCapture() }
             } label: {
                 Image(systemName: "camera")
@@ -211,6 +228,12 @@ struct MobileLibraryView: View {
                 cameraCaptureError = failure
             }
         )
+        .fileImporter(
+            isPresented: $showingFilesImporter,
+            allowedContentTypes: [.item],
+            allowsMultipleSelection: true,
+            onCompletion: handleFilesImportPicker
+        )
         .sheet(item: $capturedPhoto) { photo in
             CameraImportReviewSheet(
                 repoPath: model.repositoryPath,
@@ -225,6 +248,20 @@ struct MobileLibraryView: View {
                 },
                 onImported: { _ in
                     discardCapturedPhoto(photo)
+                    Task { await model.refresh() }
+                }
+            )
+        }
+        .sheet(item: $filesImportSelection) { selection in
+            FilesImportReviewSheet(
+                repoPath: model.repositoryPath,
+                selectedURLs: selection.urls,
+                bridge: filesImportBridge,
+                onCancel: {
+                    filesImportSelection = nil
+                },
+                onImported: { _ in
+                    filesImportSelection = nil
                     Task { await model.refresh() }
                 }
             )
@@ -385,6 +422,14 @@ struct MobileLibraryView: View {
         }
     }
 
+    private func filesImportErrorSection(_ message: String) -> some View {
+        Section {
+            Label(message, systemImage: "doc.badge.plus")
+                .font(.footnote)
+                .foregroundStyle(.orange)
+        }
+    }
+
     private func shareImportSection(_ report: ShareImportQueueTakeoverReport) -> some View {
         Section("Share Import") {
             if !report.imported.isEmpty {
@@ -425,6 +470,15 @@ struct MobileLibraryView: View {
         #endif
     }
 
+    private func handleFilesImportPicker(_ result: Result<[URL], Error>) {
+        switch result {
+        case let .success(urls):
+            filesImportSelection = FilesImportSelection(urls: urls)
+        case let .failure(error):
+            filesImportPickerError = error.localizedDescription
+        }
+    }
+
     private func discardCapturedPhoto(_ photo: CapturedPhotoSelection) {
         SystemCapturedPhotoStore.discardIfOwned(photo.url)
         capturedPhoto = nil
@@ -434,56 +488,4 @@ struct MobileLibraryView: View {
 private struct CapturedPhotoSelection: Identifiable {
     let id = UUID()
     var url: URL
-}
-
-private struct MobileLibraryFileRow: View {
-    let file: MobileLibraryFile
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: fileIcon)
-                .foregroundStyle(file.needsReview ? .orange : .secondary)
-                .frame(width: 24)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(file.currentName)
-                    .font(.headline)
-                Text(file.categoryPath)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            Spacer()
-            Text(statusText)
-                .font(.caption.weight(.medium))
-                .foregroundStyle(file.needsReview ? .orange : .secondary)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityLabel)
-    }
-
-    private var fileIcon: String {
-        file.needsReview ? "exclamationmark.triangle" : "doc"
-    }
-
-    private var statusText: String {
-        if file.needsReview {
-            return file.availability.statusText
-        }
-        return ByteCountFormatter.string(fromByteCount: file.sizeBytes, countStyle: .file)
-    }
-
-    private var accessibilityLabel: String {
-        "\(file.currentName), \(file.categoryPath), \(file.availability.statusText)"
-    }
-}
-
-private extension View {
-    @ViewBuilder
-    func mobileLibraryListStyle() -> some View {
-        #if os(iOS)
-        listStyle(.insetGrouped)
-        #else
-        listStyle(.inset)
-        #endif
-    }
 }
