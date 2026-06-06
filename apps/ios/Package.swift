@@ -10,6 +10,7 @@ let package = Package(
     ],
     products: [
         .library(name: "AreaMatrixIOS", targets: ["AreaMatrixIOS"]),
+        .library(name: "AreaMatrixShareExtension", targets: ["AreaMatrixShareExtension"]),
         .executable(name: "AreaMatrixIOSApp", targets: ["AreaMatrixIOSApp"])
     ],
     targets: [
@@ -35,7 +36,20 @@ let package = Package(
         .executableTarget(
             name: "AreaMatrixIOSApp",
             dependencies: ["AreaMatrixIOS"],
-            path: "AreaMatrixApp"
+            path: "AreaMatrixApp",
+            exclude: [
+                "AreaMatrixIOSApp.entitlements",
+                "Info.plist"
+            ]
+        ),
+        .target(
+            name: "AreaMatrixShareExtension",
+            dependencies: ["AreaMatrixIOS"],
+            path: "AreaMatrixShareExtension",
+            exclude: [
+                "AreaMatrixShareExtension.entitlements",
+                "Resources/Info.plist"
+            ]
         ),
         .testTarget(
             name: "AreaMatrixIOSTests",

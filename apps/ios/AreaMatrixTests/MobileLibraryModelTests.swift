@@ -26,6 +26,55 @@ final class MobileLibraryModelTests: XCTestCase {
         XCTAssertEqual(model.statusText, "Synced just now")
     }
 
+    func testLoadConsumesDeferredShareImportTicketsForCurrentRepository() async {
+        let bridge = FakeMobileLibraryCoreBridge(tree: .fixture(children: []), files: [])
+        let consumer = FakeShareImportQueueConsumer(report: ShareImportQueueTakeoverReport(
+            imported: [.fixture(id: 7, name: "Shared.pdf", category: "inbox")],
+            needsReview: [],
+            failed: []
+        ))
+        let model = LibraryListViewModel(
+            connection: connection(path: "/tmp/Repo"),
+            bridge: bridge,
+            shareImportConsumer: consumer
+        )
+
+        await model.loadIfNeeded()
+
+        let consumedRepoPaths = await consumer.repoPathsSnapshot()
+        let fileRequests = await bridge.fileRequestSnapshot()
+        XCTAssertEqual(consumedRepoPaths, ["/tmp/Repo"])
+        XCTAssertEqual(model.shareImportReport?.imported.map(\.currentName), ["Shared.pdf"])
+        XCTAssertEqual(fileRequests.map(\.repoPath), ["/tmp/Repo"])
+    }
+
+    func testLoadKeepsShareImportNeedsReviewTicketVisibleWithoutImportingIt() async {
+        let bridge = FakeMobileLibraryCoreBridge(tree: .fixture(children: []), files: [])
+        let ticket = ShareImportQueueTicket(
+            id: "ticket-review",
+            repoPath: "/tmp/Repo",
+            category: "inbox",
+            items: [],
+            needsConflictReview: true,
+            createdAt: Date(timeIntervalSince1970: 1)
+        )
+        let consumer = FakeShareImportQueueConsumer(report: ShareImportQueueTakeoverReport(
+            imported: [],
+            needsReview: [ticket],
+            failed: []
+        ))
+        let model = LibraryListViewModel(
+            connection: connection(path: "/tmp/Repo"),
+            bridge: bridge,
+            shareImportConsumer: consumer
+        )
+
+        await model.loadIfNeeded()
+
+        XCTAssertEqual(model.shareImportReport?.needsReview.map(\.id), ["ticket-review"])
+        XCTAssertTrue(model.shareImportReport?.imported.isEmpty == true)
+    }
+
     func testSelectingCategoryReloadsFilesWithCoreFilter() async {
         let category = MobileLibraryTreeNode.category(slug: "docs", name: "Documents", count: 1)
         let bridge = FakeMobileLibraryCoreBridge(
@@ -137,6 +186,24 @@ actor FakeMobileLibraryCoreBridge: MobileLibraryCoreBridge {
 
     func treeRequestSnapshot() -> [TreeRequest] {
         treeRequests
+    }
+}
+
+actor FakeShareImportQueueConsumer: ShareImportQueueConsuming {
+    private let report: ShareImportQueueTakeoverReport
+    private var repoPaths: [String] = []
+
+    init(report: ShareImportQueueTakeoverReport) {
+        self.report = report
+    }
+
+    func consumePendingTickets(repoPath: String) async -> ShareImportQueueTakeoverReport {
+        repoPaths.append(repoPath)
+        return report
+    }
+
+    func repoPathsSnapshot() -> [String] {
+        repoPaths
     }
 }
 

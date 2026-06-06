@@ -65,19 +65,22 @@ final class FakeMobileRepositoryCoreBridge: MobileRepositoryCoreBridge, @uncheck
 actor FakeRepositoryAccessService: RepositoryAccessServicing {
     private let resolveError: MobileRepositoryConnectionError?
     private let iCloudDriveAvailable: Bool
+    private let repositories: [RecentRepository]
     private(set) var persistedPaths: [String] = []
     private(set) var resolvedRecentPaths: [String] = []
 
     init(
         resolveError: MobileRepositoryConnectionError? = nil,
-        iCloudDriveAvailable: Bool = true
+        iCloudDriveAvailable: Bool = true,
+        repositories: [RecentRepository] = []
     ) {
         self.resolveError = resolveError
         self.iCloudDriveAvailable = iCloudDriveAvailable
+        self.repositories = repositories
     }
 
     func recentRepositories() async -> [RecentRepository] {
-        []
+        repositories
     }
 
     func isICloudDriveAvailable() async -> Bool {

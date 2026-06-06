@@ -294,6 +294,26 @@ final class ConnectRepositoryModelTests: XCTestCase {
         XCTAssertTrue(String(describing: type(of: entry)).contains("ConnectRepositoryEntryView"))
     }
 
+    func testShareImportOpenURLTakesOverMostRecentRepository() async {
+        let recent = RecentRepository(
+            displayName: "Shared Repo",
+            pathDisplay: "/tmp/AreaMatrixRepo",
+            lastOpenedAt: Date(timeIntervalSince1970: 10),
+            accessStatus: .available
+        )
+        let bridge = FakeMobileRepositoryCoreBridge(validation: .initialized(path: "/tmp/AreaMatrixRepo"))
+        let access = FakeRepositoryAccessService(repositories: [recent])
+        let model = ConnectRepositoryModel(bridge: bridge, accessService: access)
+
+        await model.handleOpenURL(URL(string: "areamatrix://share-import")!)
+
+        XCTAssertEqual(bridge.validatedPaths, ["/tmp/AreaMatrixRepo"])
+        XCTAssertEqual(bridge.loadedConfigPaths, ["/tmp/AreaMatrixRepo"])
+        XCTAssertEqual(model.shareImportTakeoverConnection?.validation.repoPath, "/tmp/AreaMatrixRepo")
+        XCTAssertEqual(model.shareImportTakeoverConnection?.bookmark.displayName, "Shared Repo")
+        XCTAssertNil(model.error)
+    }
+
     func testLiveBridgeTypeExistsForProductionCoreWiring() {
         let bridge: any MobileRepositoryCoreBridge = LiveMobileRepositoryCoreBridge()
 

@@ -11,6 +11,7 @@ final class LibraryListViewModel: ObservableObject {
     @Published private(set) var needsReview: [MobileLibraryFile] = []
     @Published private(set) var selectedCategory: MobileLibraryCategoryRow?
     @Published private(set) var error: MobileLibraryQueryError?
+    @Published private(set) var shareImportReport: ShareImportQueueTakeoverReport?
     @Published private(set) var isLoading = false
     @Published private(set) var isRefreshing = false
     @Published var sort: MobileLibrarySort = .recentlyUpdated {
@@ -22,11 +23,17 @@ final class LibraryListViewModel: ObservableObject {
 
     private let connection: MobileRepositoryConnection
     private let bridge: any MobileLibraryCoreBridge
+    private let shareImportConsumer: any ShareImportQueueConsuming
     private var hasLoaded = false
 
-    init(connection: MobileRepositoryConnection, bridge: any MobileLibraryCoreBridge) {
+    init(
+        connection: MobileRepositoryConnection,
+        bridge: any MobileLibraryCoreBridge,
+        shareImportConsumer: any ShareImportQueueConsuming = ShareImportQueueConsumer()
+    ) {
         self.connection = connection
         self.bridge = bridge
+        self.shareImportConsumer = shareImportConsumer
         repositoryPath = connection.validation.repoPath
         repositoryName = Self.name(for: connection)
     }
@@ -49,6 +56,7 @@ final class LibraryListViewModel: ObservableObject {
 
     func loadIfNeeded() async {
         guard !hasLoaded else { return }
+        await consumeShareImportQueue()
         await reload(isRefresh: false)
     }
 
@@ -78,6 +86,11 @@ final class LibraryListViewModel: ObservableObject {
             self.error = MobileLibraryQueryError.map(error)
         }
         endLoading()
+    }
+
+    private func consumeShareImportQueue() async {
+        let report = await shareImportConsumer.consumePendingTickets(repoPath: repositoryPath)
+        shareImportReport = report.isEmpty ? nil : report
     }
 
     private func beginLoading(isRefresh: Bool) {
@@ -137,9 +150,14 @@ struct MobileLibraryView: View {
     init(
         connection: MobileRepositoryConnection,
         bridge: any MobileLibraryCoreBridge,
-        cameraImportBridge: (any CameraImportCoreBridge)? = nil
+        cameraImportBridge: (any CameraImportCoreBridge)? = nil,
+        shareImportConsumer: (any ShareImportQueueConsuming)? = nil
     ) {
-        _model = StateObject(wrappedValue: LibraryListViewModel(connection: connection, bridge: bridge))
+        _model = StateObject(wrappedValue: LibraryListViewModel(
+            connection: connection,
+            bridge: bridge,
+            shareImportConsumer: shareImportConsumer ?? ShareImportQueueConsumer()
+        ))
         self.cameraImportBridge = cameraImportBridge ?? LiveMobileRepositoryCoreBridge()
     }
 
@@ -152,6 +170,9 @@ struct MobileLibraryView: View {
             }
             if let cameraCaptureError {
                 cameraErrorSection(cameraCaptureError)
+            }
+            if let report = model.shareImportReport {
+                shareImportSection(report)
             }
             filesSection
             categoriesSection
@@ -341,6 +362,30 @@ struct MobileLibraryView: View {
                 .foregroundStyle(.orange)
             if failure.canOpenSettings {
                 Button("Open Settings", action: openAppSettings)
+            }
+        }
+    }
+
+    private func shareImportSection(_ report: ShareImportQueueTakeoverReport) -> some View {
+        Section("Share Import") {
+            if !report.imported.isEmpty {
+                Label("\(report.imported.count) shared item imported", systemImage: "square.and.arrow.down")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(report.needsReview) { ticket in
+                Label("\(ticket.items.count) queued item needs review in AreaMatrix", systemImage: "exclamationmark.triangle")
+                    .font(.footnote)
+                    .foregroundStyle(.orange)
+            }
+            ForEach(report.failed) { failure in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(failure.displayName)
+                        .font(.footnote.weight(.medium))
+                    Text(failure.message)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
             }
         }
     }

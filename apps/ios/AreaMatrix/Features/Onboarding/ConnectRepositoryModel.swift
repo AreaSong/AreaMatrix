@@ -13,6 +13,7 @@ final class ConnectRepositoryModel: ObservableObject {
     @Published private(set) var route: MobileRepositoryConnectionRoute?
     @Published private(set) var latestValidation: MobileRepositoryValidation?
     @Published private(set) var latestCloudState: MobileCloudStorageState?
+    @Published private(set) var shareImportTakeoverConnection: MobileRepositoryConnection?
 
     private let bridge: any MobileRepositoryCoreBridge
     private let accessService: any RepositoryAccessServicing
@@ -78,12 +79,36 @@ final class ConnectRepositoryModel: ObservableObject {
         route = nil
     }
 
+    func handleOpenURL(_ url: URL) async {
+        guard url.scheme == "areamatrix", url.host == "share-import" else { return }
+        await openRecentRepositoryForShareImport()
+    }
+
+    private func openRecentRepositoryForShareImport() async {
+        let repositories = await accessService.recentRepositories()
+        guard let recent = repositories.first else {
+            applyFailure(.unavailable("Open AreaMatrix to connect a repository."))
+            return
+        }
+        guard recent.accessStatus == .available else {
+            applyFailure(.accessExpired(recent.pathDisplay))
+            return
+        }
+        do {
+            let url = try await accessService.resolveBookmark(for: recent)
+            try await routeShareImportRepository(url: url, recent: recent)
+        } catch {
+            applyFailure(Self.connectionError(from: error))
+        }
+    }
+
     private func prepareForPicker() {
         checkState = .idle
         error = nil
         route = nil
         latestValidation = nil
         latestCloudState = nil
+        shareImportTakeoverConnection = nil
     }
 
     private func connect(url: URL) async {
@@ -91,6 +116,7 @@ final class ConnectRepositoryModel: ObservableObject {
             applyFailure(.invalidPath(url.absoluteString))
             return
         }
+        shareImportTakeoverConnection = nil
         beginChecking(url)
         do {
             let scopedAccess = try await accessService.beginAccessing(url)
@@ -102,10 +128,38 @@ final class ConnectRepositoryModel: ObservableObject {
         }
     }
 
+    private func routeShareImportRepository(url: URL, recent: RecentRepository) async throws {
+        guard url.isFileURL else {
+            applyFailure(.invalidPath(url.absoluteString))
+            return
+        }
+        beginChecking(url)
+        let scopedAccess = try await accessService.beginAccessing(url)
+        defer { scopedAccess.stop() }
+        let validation = try await bridge.validateRepoPath(repoPath: url.path)
+        if let blockingError = Self.blockingError(for: validation) {
+            applyFailure(blockingError)
+            return
+        }
+        let config = try await bridge.loadConfig(repoPath: validation.repoPath)
+        checkState = .idle
+        shareImportTakeoverConnection = MobileRepositoryConnection(
+            validation: validation,
+            config: config,
+            bookmark: RepositoryBookmark(
+                url: url,
+                displayName: recent.displayName,
+                pathDisplay: recent.pathDisplay,
+                lastOpenedAt: recent.lastOpenedAt
+            )
+        )
+    }
+
     private func beginChecking(_ url: URL) {
         checkState = .checking(url.path)
         error = nil
         route = nil
+        shareImportTakeoverConnection = nil
         latestValidation = nil
         latestCloudState = nil
     }
