@@ -1,5 +1,8 @@
 import Foundation
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 @MainActor
 final class LibraryListViewModel: ObservableObject {
@@ -126,9 +129,18 @@ final class LibraryListViewModel: ObservableObject {
 
 struct MobileLibraryView: View {
     @StateObject private var model: LibraryListViewModel
+    @State private var capturedPhoto: CapturedPhotoSelection?
+    @State private var showingCameraCapture = false
+    @State private var cameraCaptureError: SystemCameraCaptureUnavailable?
+    private let cameraImportBridge: any CameraImportCoreBridge
 
-    init(connection: MobileRepositoryConnection, bridge: any MobileLibraryCoreBridge) {
+    init(
+        connection: MobileRepositoryConnection,
+        bridge: any MobileLibraryCoreBridge,
+        cameraImportBridge: (any CameraImportCoreBridge)? = nil
+    ) {
         _model = StateObject(wrappedValue: LibraryListViewModel(connection: connection, bridge: bridge))
+        self.cameraImportBridge = cameraImportBridge ?? LiveMobileRepositoryCoreBridge()
     }
 
     var body: some View {
@@ -137,6 +149,9 @@ struct MobileLibraryView: View {
             controlsSection
             if let error = model.error {
                 errorSection(error)
+            }
+            if let cameraCaptureError {
+                cameraErrorSection(cameraCaptureError)
             }
             filesSection
             categoriesSection
@@ -152,6 +167,40 @@ struct MobileLibraryView: View {
             }
             .disabled(model.isLoading || model.isRefreshing)
             .accessibilityLabel("Refresh repository")
+            Button {
+                Task { await startCameraCapture() }
+            } label: {
+                Image(systemName: "camera")
+            }
+            .accessibilityLabel("Take Photo")
+        }
+        .systemCameraCapture(
+            isPresented: $showingCameraCapture,
+            onCaptured: { url in
+                cameraCaptureError = nil
+                capturedPhoto = CapturedPhotoSelection(url: url)
+            },
+            onUnavailable: { failure in
+                cameraCaptureError = failure
+            }
+        )
+        .sheet(item: $capturedPhoto) { photo in
+            CameraImportReviewSheet(
+                repoPath: model.repositoryPath,
+                sourceURL: photo.url,
+                bridge: cameraImportBridge,
+                onCancel: {
+                    discardCapturedPhoto(photo)
+                },
+                onRetake: {
+                    discardCapturedPhoto(photo)
+                    Task { await startCameraCapture() }
+                },
+                onImported: { _ in
+                    discardCapturedPhoto(photo)
+                    Task { await model.refresh() }
+                }
+            )
         }
         .refreshable {
             await model.refresh()
@@ -284,6 +333,43 @@ struct MobileLibraryView: View {
                 .foregroundStyle(.orange)
         }
     }
+
+    private func cameraErrorSection(_ failure: SystemCameraCaptureUnavailable) -> some View {
+        Section {
+            Label(failure.message, systemImage: "camera")
+                .font(.footnote)
+                .foregroundStyle(.orange)
+            if failure.canOpenSettings {
+                Button("Open Settings", action: openAppSettings)
+            }
+        }
+    }
+
+    private func startCameraCapture() async {
+        cameraCaptureError = nil
+        if let failure = await SystemCameraCaptureAvailability.requestCameraAccess() {
+            cameraCaptureError = failure
+            return
+        }
+        showingCameraCapture = true
+    }
+
+    private func openAppSettings() {
+        #if os(iOS)
+        guard let settingsURL = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(settingsURL)
+        #endif
+    }
+
+    private func discardCapturedPhoto(_ photo: CapturedPhotoSelection) {
+        SystemCapturedPhotoStore.discardIfOwned(photo.url)
+        capturedPhoto = nil
+    }
+}
+
+private struct CapturedPhotoSelection: Identifiable {
+    let id = UUID()
+    var url: URL
 }
 
 private struct MobileLibraryFileRow: View {
