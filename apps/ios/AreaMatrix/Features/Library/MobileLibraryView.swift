@@ -55,6 +55,10 @@ final class LibraryListViewModel: ObservableObject {
         return "Synced just now"
     }
 
+    var allowReplaceDuringImport: Bool {
+        connection.config.allowReplaceDuringImport
+    }
+
     func loadIfNeeded() async {
         guard !hasLoaded else { return }
         await consumeShareImportQueue()
@@ -257,6 +261,7 @@ struct MobileLibraryView: View {
                 repoPath: model.repositoryPath,
                 selectedURLs: selection.urls,
                 bridge: filesImportBridge,
+                allowReplaceDuringImport: model.allowReplaceDuringImport,
                 onCancel: {
                     filesImportSelection = nil
                 },

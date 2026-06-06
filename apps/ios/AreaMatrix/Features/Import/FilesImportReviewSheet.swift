@@ -9,13 +9,15 @@ struct FilesImportReviewSheet: View {
         repoPath: String,
         selectedURLs: [URL],
         bridge: any FilesImportCoreBridge,
+        allowReplaceDuringImport: Bool = false,
         onCancel: @escaping () -> Void,
         onImported: @escaping ([MobileLibraryFile]) -> Void
     ) {
         _model = StateObject(wrappedValue: FilesImportReviewModel(
             repoPath: repoPath,
             selectedURLs: selectedURLs,
-            bridge: bridge
+            bridge: bridge,
+            allowReplaceDuringImport: allowReplaceDuringImport
         ))
         self.onCancel = onCancel
         self.onImported = onImported
@@ -26,7 +28,12 @@ struct FilesImportReviewSheet: View {
             List {
                 sourceSection
                 targetSection
-                MobileConflictSummary(items: model.previewItems)
+                MobileConflictSummary(
+                    items: model.previewItems,
+                    candidates: model.replaceCandidates,
+                    replaceUnavailableReason: model.replaceUnavailableReason,
+                    onSelectStrategy: model.updateConflictStrategy(for:strategy:)
+                )
                 statusSection
             }
             .navigationTitle("Import from Files")
@@ -48,6 +55,23 @@ struct FilesImportReviewSheet: View {
                 if phase == .succeeded {
                     onImported(model.importedFiles)
                 }
+            }
+            .sheet(item: Binding(
+                get: { model.pendingReplaceConfirmation },
+                set: { newValue in
+                    if newValue == nil, model.pendingReplaceConfirmation != nil {
+                        model.cancelReplaceConfirmation()
+                    }
+                }
+            )) { confirmation in
+                FilesImportReplaceConfirmSheet(
+                    confirmation: confirmation,
+                    errorMessage: model.replaceErrorMessage,
+                    onCancel: model.cancelReplaceConfirmation,
+                    onConfirm: { understands in
+                        model.confirmReplace(confirmation, understandsReplace: understands)
+                    }
+                )
             }
         }
     }
@@ -170,20 +194,34 @@ private struct FilesImportPreviewList: View {
 
 private struct MobileConflictSummary: View {
     let items: [FilesImportPreviewItem]
+    let candidates: [FilesImportReplaceCandidate]
+    let replaceUnavailableReason: String?
+    let onSelectStrategy: (FilesImportReplaceCandidate.ID, FilesImportConflictStrategy) -> Void
 
     var body: some View {
-        if !conflictRows.isEmpty {
+        if !candidateRows.isEmpty || !conflictRows.isEmpty {
             Section("Conflicts") {
+                ForEach(candidateRows) { candidate in
+                    FilesImportConflictCandidateRow(
+                        candidate: candidate,
+                        replaceUnavailableReason: replaceUnavailableReason,
+                        onSelectStrategy: onSelectStrategy
+                    )
+                }
                 ForEach(conflictRows, id: \.self) { row in
                     Label(row, systemImage: "exclamationmark.triangle")
                         .font(.footnote)
                         .foregroundStyle(.orange)
                 }
-                Text("Duplicate content uses Skip duplicate. Name conflicts use Keep both.")
+                Text("Duplicate content uses Skip duplicate. Name conflicts use Keep both. Replace requires confirmation.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private var candidateRows: [FilesImportReplaceCandidate] {
+        candidates
     }
 
     private var conflictRows: [String] {

@@ -1,0 +1,64 @@
+一、执行结论
+
+- 已完成。
+- `4-3/task-115` 的 manifest 验证已重新执行并通过。
+
+二、执行范围
+
+- 单任务：`4-3/task-115`
+- 修改范围：仅 `apps/**`
+- 本次修复涉及：
+  - `apps/ios/AreaMatrix/Features/Import/FilesImportCoreBridge.swift`
+  - `apps/ios/AreaMatrix/Features/Import/FilesImportBatchDeleteCoreFFI.swift`
+  - `apps/ios/AreaMatrix/Features/Import/FilesImportReplaceCoreFFI.swift`
+  - `apps/ios/AreaMatrix/Features/Import/FilesImportReviewModel.swift`
+  - `apps/ios/AreaMatrix/Features/Import/FilesImportReviewSheet.swift`
+  - `apps/ios/AreaMatrix/Features/Import/FilesImportReplaceState.swift`
+  - `apps/ios/AreaMatrix/Features/Import/FilesImportReplaceViews.swift`
+  - `apps/ios/AreaMatrix/Features/Import/FilesImportReviewHelpers.swift`
+  - `apps/ios/AreaMatrixTests/FilesImportReviewModelTests.swift`
+  - `apps/ios/Carea_matrixFFI/area_matrixFFI.h`
+
+三、完成情况
+
+- 核对清单：
+  - 只处理 S4-IOS-07 + C4-21：通过。
+  - 已读取页面规格、control map、Core API、C4-21 spec：通过。
+  - 只接入 C4-21 对应 CoreBridge / 状态 / 错误映射：通过。
+  - 未实现相邻页面、相邻平台或同页 C4-06：通过。
+- 完成标准：
+  - Replace 用户可见功能现在先走 Core Trash preflight，再进入二次确认：通过。
+  - 移除了 `coreSafetyBackupAvailable = true` 这种静态放行；不再用 `.overwrite` 伪装 C4-21：通过。
+  - 未触碰 control map 外 UI 能力；`batch_delete_to_trash` 只作为 C4-21 recoverable replace 的安全原语封装在 bridge 内：通过。
+- Forbidden Touches：
+  - `core/src/**` 未触碰。
+  - `core/area_matrix.udl` 未修改。
+
+四、工程质量
+
+- 代码结构：C4-21 拆成 `prepareReplace` 和 `replaceSelectedFile` 两步，UI model 不直接执行普通 overwrite。
+- 错误处理：Trash 不可用、Core preflight blocked、replace plan 缺失、delete/import failure 都会显式阻断或展示 recovery note。
+- 证据字段：二次确认 sheet 展示 old/new hash、affected record、backup target、database update、change log、recovery note。
+- 无新增外部依赖；`CryptoKit` 是系统框架，用于 incoming hash。
+- 文件长度已控制在 500 行以内。
+
+五、验证情况
+
+- 已运行并通过：
+  - `./dev check task 4-3/task-115`
+    - `doctor: OK`
+    - `git diff --check` 通过
+    - macOS `xcodebuild` build succeeded
+  - `xcrun swiftc -typecheck ... apps/ios/AreaMatrix/*.swift`
+    - 通过，exit 0
+  - `git diff --name-only -- core/src` / staged 同类检查
+    - 无输出，确认未触碰 Forbidden Touches
+- 额外验证未通过：
+  - `swift test --filter FilesImportReviewModelTests`
+  - 加 `--disable-sandbox` 与 `/private/tmp` cache 后仍失败
+  - 原因：当前环境无法写 SwiftPM / clang ModuleCache，报 `Operation not permitted` / `sandbox_apply`
+
+六、风险与后续
+
+- 剩余风险：当前 replace 由现有 Core Trash 删除合同 + 安全导入组合完成，不是一个新增的单一 Core replace API；若旧文件已进入 Trash 后新导入失败，UI 会报告 recovery note，用户需通过 Core undo token 或系统 Trash 恢复。
+- 建议下一个任务：进入 `4-3/task-116`，做 S4-IOS-07 页面集成验收，确认 C4-06 与 C4-21 在同页覆盖完整。

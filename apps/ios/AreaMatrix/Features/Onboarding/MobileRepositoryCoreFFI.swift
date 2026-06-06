@@ -223,7 +223,8 @@ private enum FFIReader {
         let config = try MobileRepositoryConfig(
             repoPath: reader.readString(),
             defaultMode: reader.readStorageMode(),
-            locale: reader.skippingConfigTailAfterLocale()
+            locale: reader.readLocaleFromConfigTail(),
+            allowReplaceDuringImport: reader.readAllowReplaceDuringImportFromConfigTail()
         )
         try reader.finish()
         return config
@@ -352,16 +353,18 @@ private enum FFIReader {
             }
         }
 
-        mutating func skippingConfigTailAfterLocale() throws -> String {
+        mutating func readLocaleFromConfigTail() throws -> String {
             try skipOverviewOutput()
             try skipBool()
-            let locale = try readString()
+            return try readString()
+        }
+
+        mutating func readAllowReplaceDuringImportFromConfigTail() throws -> Bool {
             try skipBool()
             try skipBool()
             try skipBool()
             try skipBool()
-            try skipBool()
-            return locale
+            return try readBool()
         }
 
         mutating func readCoreErrorPayload(variant: Int32) throws -> String {

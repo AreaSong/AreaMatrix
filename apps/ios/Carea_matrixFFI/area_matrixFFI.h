@@ -64,6 +64,21 @@ RustBuffer uniffi_area_matrix_core_fn_func_import_file(
     RustCallStatus *_Nonnull out_status
 );
 
+RustBuffer uniffi_area_matrix_core_fn_func_preview_batch_delete(
+    RustBuffer repo_path,
+    RustBuffer file_ids,
+    RustBuffer delete_mode,
+    RustCallStatus *_Nonnull out_status
+);
+
+RustBuffer uniffi_area_matrix_core_fn_func_batch_delete_to_trash(
+    RustBuffer repo_path,
+    RustBuffer file_ids,
+    RustBuffer delete_mode,
+    RustBuffer preview_token,
+    RustCallStatus *_Nonnull out_status
+);
+
 RustBuffer uniffi_area_matrix_core_fn_func_get_file(
     RustBuffer repo_path,
     int64_t file_id,
@@ -101,6 +116,8 @@ uint16_t uniffi_area_matrix_core_checksum_func_list_files(void);
 uint16_t uniffi_area_matrix_core_checksum_func_list_tree_json(void);
 uint16_t uniffi_area_matrix_core_checksum_func_predict_category(void);
 uint16_t uniffi_area_matrix_core_checksum_func_import_file(void);
+uint16_t uniffi_area_matrix_core_checksum_func_preview_batch_delete(void);
+uint16_t uniffi_area_matrix_core_checksum_func_batch_delete_to_trash(void);
 uint16_t uniffi_area_matrix_core_checksum_func_get_file(void);
 uint16_t uniffi_area_matrix_core_checksum_func_list_changes(void);
 uint16_t uniffi_area_matrix_core_checksum_func_read_note(void);

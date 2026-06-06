@@ -72,6 +72,7 @@ struct MobileRepositoryConfig: Equatable, Sendable {
     var repoPath: String
     var defaultMode: String
     var locale: String
+    var allowReplaceDuringImport = false
 }
 
 struct MobileRepositoryConnection: Equatable, Sendable {

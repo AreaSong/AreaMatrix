@@ -1,95 +1,5 @@
 import Foundation
 
-struct FilesImportSelection: Identifiable, Equatable {
-    let id = UUID()
-    var urls: [URL]
-}
-
-struct FilesImportScopedAccess: Sendable {
-    private let stopHandler: @Sendable () -> Void
-
-    init(stopHandler: @escaping @Sendable () -> Void) {
-        self.stopHandler = stopHandler
-    }
-
-    func stop() {
-        stopHandler()
-    }
-}
-
-protocol FilesImportSecurityScopedAccessing: Sendable {
-    func beginAccessing(_ url: URL) throws -> FilesImportScopedAccess
-}
-
-struct FilesImportSecurityScopedAccessService: FilesImportSecurityScopedAccessing {
-    func beginAccessing(_ url: URL) throws -> FilesImportScopedAccess {
-        let didStart = url.startAccessingSecurityScopedResource()
-        guard didStart || FileManager.default.isReadableFile(atPath: url.path) else {
-            throw FilesImportError.permissionDenied(url.path)
-        }
-        return FilesImportScopedAccess {
-            if didStart {
-                url.stopAccessingSecurityScopedResource()
-            }
-        }
-    }
-}
-
-enum FilesImportPhase: Equatable {
-    case reading
-    case ready
-    case importing
-    case succeeded
-    case failed
-}
-
-enum FilesImportPreviewStatus: Equatable {
-    case ready
-    case unreadable
-    case downloadNeeded
-    case importing
-    case imported
-    case skippedDuplicate(String)
-    case failed(String)
-
-    var isImportable: Bool {
-        self == .ready
-    }
-
-    var label: String {
-        switch self {
-        case .ready:
-            "Ready"
-        case .unreadable:
-            "Unreadable"
-        case .downloadNeeded:
-            "Download needed"
-        case .importing:
-            "Importing"
-        case .imported:
-            "Imported"
-        case .skippedDuplicate:
-            "Skipped duplicate"
-        case .failed:
-            "Failed"
-        }
-    }
-}
-
-struct FilesImportPreviewItem: Equatable, Identifiable {
-    var id: String { sourceURL.path }
-    var sourceURL: URL
-    var displayName: String
-    var sourceLocation: String
-    var sizeBytes: Int64?
-    var status: FilesImportPreviewStatus
-
-    var sizeText: String {
-        guard let sizeBytes else { return "Unknown size" }
-        return ByteCountFormatter.string(fromByteCount: sizeBytes, countStyle: .file)
-    }
-}
-
 @MainActor
 final class FilesImportReviewModel: ObservableObject {
     @Published private(set) var phase: FilesImportPhase = .reading
@@ -97,6 +7,9 @@ final class FilesImportReviewModel: ObservableObject {
     @Published private(set) var error: FilesImportError?
     @Published private(set) var warning: String?
     @Published private(set) var importedFiles: [MobileLibraryFile] = []
+    @Published private(set) var replaceCandidates: [FilesImportReplaceCandidate] = []
+    @Published private(set) var pendingReplaceConfirmation: FilesImportReplaceConfirmation?
+    @Published private(set) var replaceErrorMessage: String?
     @Published private(set) var category: String = "inbox"
     @Published var filename: String = "" {
         didSet { validateFilename() }
@@ -106,25 +19,45 @@ final class FilesImportReviewModel: ObservableObject {
     private let selectedURLs: [URL]
     private let bridge: any FilesImportCoreBridge
     private let accessProvider: any FilesImportSecurityScopedAccessing
+    private let allowReplaceDuringImport: Bool
 
     init(
         repoPath: String,
         selectedURLs: [URL],
         bridge: any FilesImportCoreBridge,
-        accessProvider: any FilesImportSecurityScopedAccessing = FilesImportSecurityScopedAccessService()
+        accessProvider: any FilesImportSecurityScopedAccessing = FilesImportSecurityScopedAccessService(),
+        allowReplaceDuringImport: Bool = false
     ) {
         self.repoPath = repoPath
         self.selectedURLs = selectedURLs
         self.bridge = bridge
         self.accessProvider = accessProvider
+        self.allowReplaceDuringImport = allowReplaceDuringImport
     }
 
     var canImport: Bool {
         phase == .ready
             && error == nil
             && filenameValidation == nil
+            && replaceErrorMessage == nil
+            && replaceCandidates.isEmpty
             && previewItems.contains { $0.status.isImportable }
             && !normalizedCategory.isEmpty
+    }
+
+    var hasPendingReplaceReview: Bool {
+        !replaceCandidates.isEmpty
+    }
+
+    var canShowReplaceOption: Bool {
+        allowReplaceDuringImport
+    }
+
+    var replaceUnavailableReason: String? {
+        if !allowReplaceDuringImport {
+            return "Replace is disabled in repository settings."
+        }
+        return nil
     }
 
     var allowsFilenameEditing: Bool {
@@ -195,23 +128,80 @@ final class FilesImportReviewModel: ObservableObject {
 
     func importFiles() async {
         guard canImport else { return }
-        phase = .importing
-        error = nil
-        warning = nil
-        importedFiles = []
-        for item in previewItems where item.status.isImportable {
-            await importItem(item)
-        }
-        if error != nil {
-            phase = .failed
-        } else {
-            phase = importedFiles.isEmpty && !hasSkippedDuplicates ? .failed : .succeeded
-        }
+        await importReadyItems(resetResults: true)
     }
 
     func retry() async {
         resetFailedItems()
         await importFiles()
+    }
+
+    private func importReadyItems(resetResults: Bool) async {
+        phase = .importing
+        error = nil
+        warning = nil
+        if resetResults {
+            importedFiles = []
+        }
+        replaceErrorMessage = nil
+        for item in previewItems where item.status.isImportable {
+            await importItem(item)
+            if hasPendingReplaceReview || error != nil {
+                break
+            }
+        }
+        if error != nil {
+            phase = .failed
+        } else if hasPendingReplaceReview {
+            phase = .ready
+        } else {
+            phase = importedFiles.isEmpty && !hasSkippedDuplicates ? .failed : .succeeded
+        }
+    }
+
+    func updateConflictStrategy(
+        for candidateID: FilesImportReplaceCandidate.ID,
+        strategy: FilesImportConflictStrategy
+    ) {
+        guard let index = replaceCandidates.firstIndex(where: { $0.id == candidateID }) else { return }
+        guard canSelect(strategy, for: replaceCandidates[index]) else { return }
+        switch strategy {
+        case .skip:
+            resolveCandidateAsSkipped(candidateID)
+        case .keepBoth:
+            Task { await resolveCandidateAsKeepBoth(candidateID) }
+        case .replace:
+            Task { await presentReplaceConfirmation(candidateID) }
+        }
+    }
+
+    func confirmReplace(_ confirmation: FilesImportReplaceConfirmation, understandsReplace: Bool) {
+        guard understandsReplace else {
+            replaceErrorMessage = "Confirm that you understand this will replace the existing file."
+            return
+        }
+        guard replaceUnavailableReason == nil else {
+            replaceErrorMessage = replaceUnavailableReason
+            return
+        }
+        guard let index = replaceCandidates.firstIndex(where: { $0.id == confirmation.id }) else {
+            replaceErrorMessage = "Replace confirmation context expired."
+            return
+        }
+        guard replaceCandidates[index].replacePlan?.canReplace == true else {
+            replaceErrorMessage = "Replace plan is unavailable. Run Core preflight again."
+            return
+        }
+        let candidateID = replaceCandidates[index].id
+        replaceCandidates[index].isConfirmed = true
+        pendingReplaceConfirmation = nil
+        replaceErrorMessage = nil
+        Task { await resolveConfirmedReplace(candidateID) }
+    }
+
+    func cancelReplaceConfirmation() {
+        pendingReplaceConfirmation = nil
+        replaceErrorMessage = nil
     }
 
     private var normalizedCategory: String {
@@ -255,26 +245,152 @@ final class FilesImportReviewModel: ObservableObject {
     private func handleImportFailure(_ thrownError: Error, for item: FilesImportPreviewItem) async {
         let mapped = FilesImportError.map(thrownError)
         if case let .duplicateContent(existingPath) = mapped {
-            updateItem(item.id, status: .skippedDuplicate(existingPath))
+            registerConflictCandidate(for: item, kind: .duplicateContent, existingPath: existingPath)
             return
         }
         if case let .nameConflict(existingPath) = mapped {
-            await retryNameConflict(item, existingPath: existingPath)
+            registerConflictCandidate(for: item, kind: .nameConflict, existingPath: existingPath)
             return
         }
         error = mapped
         updateItem(item.id, status: .failed(mapped.message))
     }
 
-    private func retryNameConflict(_ item: FilesImportPreviewItem, existingPath: String) async {
-        let resolved = Self.keepBothFilename(for: importFilename(for: item))
+    private func registerConflictCandidate(
+        for item: FilesImportPreviewItem,
+        kind: FilesImportConflictKind,
+        existingPath: String
+    ) {
+        let importName = importFilename(for: item)
+        replaceCandidates.append(FilesImportReplaceCandidate(
+            itemID: item.id,
+            kind: kind,
+            existingPath: existingPath,
+            incomingPath: item.sourceURL.path,
+            incomingName: importName,
+            incomingSizeBytes: item.sizeBytes,
+            targetRelativePath: Self.targetRelativePath(category: normalizedCategory, filename: importName),
+            keepBothFilename: Self.keepBothFilename(for: importName)
+        ))
+        updateItem(item.id, status: .failed("\(kind.title): \(existingPath)"))
+    }
+
+    private func canSelect(
+        _ strategy: FilesImportConflictStrategy,
+        for candidate: FilesImportReplaceCandidate
+    ) -> Bool {
+        candidate.kind.availableStrategies.contains(strategy)
+            && (strategy != .replace || allowReplaceDuringImport)
+    }
+
+    private func resolveCandidateAsSkipped(_ candidateID: FilesImportReplaceCandidate.ID) {
+        guard let index = replaceCandidates.firstIndex(where: { $0.id == candidateID }) else { return }
+        let candidate = replaceCandidates.remove(at: index)
+        updateItem(candidate.itemID, status: .skippedDuplicate(candidate.existingPath))
+        Task { await finishOrContinueAfterConflictResolution() }
+    }
+
+    private func resolveCandidateAsKeepBoth(_ candidateID: FilesImportReplaceCandidate.ID) async {
+        guard let index = replaceCandidates.firstIndex(where: { $0.id == candidateID }) else { return }
+        let candidate = replaceCandidates[index]
+        guard let resolved = candidate.keepBothFilename,
+              let item = previewItems.first(where: { $0.id == candidate.itemID }) else {
+            replaceErrorMessage = "Could not build a Keep both filename."
+            return
+        }
         do {
             let imported = try await importWithAccess(item, filename: resolved, strategy: .keepBoth)
             importedFiles.append(imported)
             updateItem(item.id, status: .imported)
+            removeReplaceCandidate(candidateID)
+            await finishOrContinueAfterConflictResolution()
         } catch {
             self.error = FilesImportError.map(error)
-            updateItem(item.id, status: .failed("Name conflict: \(existingPath)"))
+            updateItem(item.id, status: .failed(candidate.kind.title))
+            phase = .failed
+        }
+    }
+
+    private func presentReplaceConfirmation(_ candidateID: FilesImportReplaceCandidate.ID) async {
+        guard let index = replaceCandidates.firstIndex(where: { $0.id == candidateID }) else { return }
+        if replaceCandidates[index].replacePlan == nil {
+            await loadReplacePlan(for: candidateID)
+        }
+        guard let plannedIndex = replaceCandidates.firstIndex(where: { $0.id == candidateID }) else { return }
+        guard replaceCandidates[plannedIndex].replacePlan?.canReplace == true else {
+            replaceErrorMessage = replaceCandidates[plannedIndex].replaceBlockedReason
+                ?? "Core replace preflight did not approve this file."
+            return
+        }
+        pendingReplaceConfirmation = FilesImportReplaceConfirmation(candidate: replaceCandidates[plannedIndex])
+        replaceErrorMessage = nil
+    }
+
+    private func resolveConfirmedReplace(_ candidateID: FilesImportReplaceCandidate.ID) async {
+        guard let index = replaceCandidates.firstIndex(where: { $0.id == candidateID }) else { return }
+        let candidate = replaceCandidates[index]
+        guard let item = previewItems.first(where: { $0.id == candidate.itemID }) else {
+            replaceErrorMessage = "Selected file is no longer available."
+            return
+        }
+        guard let plan = candidate.replacePlan else {
+            replaceErrorMessage = "Replace plan is unavailable. Run Core preflight again."
+            return
+        }
+        do {
+            let report = try await replaceWithAccess(item, candidate: candidate, plan: plan)
+            importedFiles.append(report.importedFile)
+            warning = report.statusSummary
+            updateItem(item.id, status: .imported)
+            removeReplaceCandidate(candidateID)
+            await finishOrContinueAfterConflictResolution()
+        } catch {
+            self.error = FilesImportError.map(error)
+            updateItem(item.id, status: .failed(FilesImportError.map(error).message))
+            phase = .failed
+        }
+    }
+
+    private func loadReplacePlan(for candidateID: FilesImportReplaceCandidate.ID) async {
+        guard let index = replaceCandidates.firstIndex(where: { $0.id == candidateID }) else { return }
+        let candidate = replaceCandidates[index]
+        guard let item = previewItems.first(where: { $0.id == candidate.itemID }) else {
+            replaceErrorMessage = "Selected file is no longer available."
+            return
+        }
+        do {
+            let access = try accessProvider.beginAccessing(item.sourceURL)
+            defer { access.stop() }
+            let plan = try await bridge.prepareReplace(request: FilesImportReplacePlanRequest(
+                repoPath: repoPath,
+                sourceURL: item.sourceURL,
+                incomingName: candidate.incomingName,
+                category: normalizedCategory,
+                existingPath: candidate.existingPath,
+                targetRelativePath: candidate.targetRelativePath
+            ))
+            if let latestIndex = replaceCandidates.firstIndex(where: { $0.id == candidateID }) {
+                replaceCandidates[latestIndex].replacePlan = plan
+            }
+        } catch {
+            replaceErrorMessage = FilesImportError.map(error).message
+        }
+    }
+
+    private func removeReplaceCandidate(_ candidateID: FilesImportReplaceCandidate.ID) {
+        replaceCandidates.removeAll { $0.id == candidateID }
+    }
+
+    private func finishOrContinueAfterConflictResolution() async {
+        guard replaceCandidates.isEmpty else { return }
+        if previewItems.contains(where: { $0.status.isImportable }) {
+            await importReadyItems(resetResults: false)
+            return
+        }
+        if error == nil, importedFiles.isEmpty && hasSkippedDuplicates {
+            phase = .succeeded
+        } else if error == nil, !importedFiles.isEmpty {
+            phase = .succeeded
         }
     }
 
@@ -291,6 +407,22 @@ final class FilesImportReviewModel: ObservableObject {
             filename: filename,
             category: normalizedCategory,
             duplicateStrategy: strategy
+        ))
+    }
+
+    private func replaceWithAccess(
+        _ item: FilesImportPreviewItem,
+        candidate: FilesImportReplaceCandidate,
+        plan: FilesImportReplacePlan
+    ) async throws -> FilesImportReplaceExecutionReport {
+        let access = try accessProvider.beginAccessing(item.sourceURL)
+        defer { access.stop() }
+        return try await bridge.replaceSelectedFile(request: FilesImportReplaceRequest(
+            repoPath: repoPath,
+            sourceURL: item.sourceURL,
+            filename: candidate.incomingName,
+            category: normalizedCategory,
+            plan: plan
         ))
     }
 
@@ -346,54 +478,4 @@ final class FilesImportReviewModel: ObservableObject {
         }
     }
 
-    private static func fileSize(for url: URL) -> Int64? {
-        guard let values = try? url.resourceValues(forKeys: [.fileSizeKey]),
-              let size = values.fileSize else {
-            return nil
-        }
-        return Int64(size)
-    }
-
-    private static func isICloudPlaceholder(_ url: URL) -> Bool {
-        guard let values = try? url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]),
-              let status = values.ubiquitousItemDownloadingStatus else {
-            return false
-        }
-        return status == .notDownloaded
-    }
-
-    private static func sourceLocation(for url: URL) -> String {
-        let parent = url.deletingLastPathComponent().lastPathComponent
-        return parent.isEmpty ? url.deletingLastPathComponent().path : parent
-    }
-
-    private static func defaultFilename(for items: [FilesImportPreviewItem]) -> String {
-        if items.count == 1, let first = items.first {
-            return first.displayName
-        }
-        return items.isEmpty ? "" : "\(items.count) selected items"
-    }
-
-    private static func normalizedCategory(_ value: String) -> String {
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "inbox" : trimmed
-    }
-
-    private static func safeFilename(_ value: String) -> String {
-        let invalid = CharacterSet(charactersIn: "/:")
-        let cleaned = value.components(separatedBy: invalid).joined(separator: "-")
-        return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private static func keepBothFilename(for filename: String) -> String {
-        let safe = safeFilename(filename)
-        let source = safe.isEmpty ? "Imported File" : safe
-        let url = URL(fileURLWithPath: source)
-        let fileExtension = url.pathExtension
-        let basename = url.deletingPathExtension().lastPathComponent
-        if fileExtension.isEmpty {
-            return "\(basename) (2)"
-        }
-        return "\(basename) (2).\(fileExtension)"
-    }
 }

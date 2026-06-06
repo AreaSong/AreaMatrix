@@ -108,8 +108,19 @@ private enum FFIWriter {
         writeOptionalString(nil, into: &bytes)
         writeOptionalString(request.category, into: &bytes)
         writeOptionalString(request.filename, into: &bytes)
-        writeInt32(request.duplicateStrategy == .keepBoth ? 3 : 1, into: &bytes)
+        writeInt32(duplicateStrategyValue(request.duplicateStrategy), into: &bytes)
         return try bytes.withUnsafeBufferPointer { try lowerBytes($0) }
+    }
+
+    private static func duplicateStrategyValue(_ strategy: FilesImportDuplicateStrategy) -> Int32 {
+        switch strategy {
+        case .skip:
+            1
+        case .overwrite:
+            2
+        case .keepBoth:
+            3
+        }
     }
 
     private static func lowerBytes(_ bytes: UnsafeBufferPointer<UInt8>) throws -> RustBuffer {

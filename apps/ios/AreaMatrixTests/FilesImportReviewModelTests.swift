@@ -88,6 +88,11 @@ final class FilesImportReviewModelTests: XCTestCase {
 
         let imports = await bridge.importRequestsSnapshot()
         XCTAssertEqual(imports.map(\.duplicateStrategy), [.skip])
+        let candidate = try XCTUnwrap(model.replaceCandidates.first)
+        XCTAssertEqual(candidate.kind, .duplicateContent)
+        XCTAssertEqual(model.previewItems.map(\.status), [.failed("Duplicate content: docs/Existing.pdf")])
+        model.updateConflictStrategy(for: candidate.id, strategy: .skip)
+        try await waitForSucceededPhase(model)
         XCTAssertEqual(model.previewItems.map(\.status), [.skippedDuplicate("docs/Existing.pdf")])
         XCTAssertEqual(model.phase, .succeeded)
         XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
@@ -111,9 +116,85 @@ final class FilesImportReviewModelTests: XCTestCase {
         await model.importFiles()
 
         let imports = await bridge.importRequestsSnapshot()
-        XCTAssertEqual(imports.map(\.duplicateStrategy), [.skip, .keepBoth])
-        XCTAssertEqual(imports.last?.filename, "Plan (2).pdf")
+        XCTAssertEqual(imports.map(\.duplicateStrategy), [.skip])
+        let candidate = try XCTUnwrap(model.replaceCandidates.first)
+        XCTAssertEqual(candidate.kind, .nameConflict)
+        model.updateConflictStrategy(for: candidate.id, strategy: .keepBoth)
+        try await waitForSucceededPhase(model)
+
+        let resolvedImports = await bridge.importRequestsSnapshot()
+        XCTAssertEqual(resolvedImports.map(\.duplicateStrategy), [.skip, .keepBoth])
+        XCTAssertEqual(resolvedImports.last?.filename, "Plan (2).pdf")
         XCTAssertEqual(model.phase, .succeeded)
+    }
+
+    func testReplaceRequiresCorePlanAndSecondConfirmationBeforeApply() async throws {
+        let source = try makeSelectedFile(name: "Plan.pdf")
+        defer { removeSelectedFile(source) }
+        let bridge = FakeFilesImportCoreBridge(
+            prediction: .fixture(category: "docs"),
+            importErrors: [.nameConflict("docs/Plan.pdf")],
+            replacePlan: .fixture(oldPath: "docs/Plan.pdf", newPath: "docs/Plan.pdf")
+        )
+        let model = FilesImportReviewModel(
+            repoPath: "/tmp/Repo",
+            selectedURLs: [source],
+            bridge: bridge,
+            accessProvider: FakeFilesImportAccessProvider(),
+            allowReplaceDuringImport: true
+        )
+
+        await model.prepare()
+        await model.importFiles()
+
+        let candidate = try XCTUnwrap(model.replaceCandidates.first)
+        model.updateConflictStrategy(for: candidate.id, strategy: .replace)
+        let confirmation = try await waitForPendingReplace(model)
+        model.confirmReplace(confirmation, understandsReplace: false)
+        XCTAssertEqual(model.replaceErrorMessage, "Confirm that you understand this will replace the existing file.")
+
+        model.confirmReplace(confirmation, understandsReplace: true)
+        try await waitForSucceededPhase(model)
+
+        let imports = await bridge.importRequestsSnapshot()
+        XCTAssertEqual(imports.map(\.duplicateStrategy), [.skip])
+        let planRequests = await bridge.replacePlanRequestsSnapshot()
+        XCTAssertEqual(planRequests.map(\.existingPath), ["docs/Plan.pdf"])
+        let replaceRequests = await bridge.replaceRequestsSnapshot()
+        XCTAssertEqual(replaceRequests.map(\.plan.affectedFileID), [42])
+        XCTAssertNil(model.pendingReplaceConfirmation)
+        XCTAssertTrue(model.replaceCandidates.isEmpty)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
+    }
+
+    func testReplaceCannotBeConfirmedWhenCorePreflightBlocksTrash() async throws {
+        let source = try makeSelectedFile(name: "Existing.pdf")
+        defer { removeSelectedFile(source) }
+        let bridge = FakeFilesImportCoreBridge(
+            prediction: .fixture(category: "docs"),
+            importErrors: [.duplicateContent("docs/Existing.pdf")],
+            replacePlan: .fixtureBlocked(oldPath: "docs/Existing.pdf", reason: "Replace requires system Trash.")
+        )
+        let model = FilesImportReviewModel(
+            repoPath: "/tmp/Repo",
+            selectedURLs: [source],
+            bridge: bridge,
+            accessProvider: FakeFilesImportAccessProvider(),
+            allowReplaceDuringImport: true
+        )
+
+        await model.prepare()
+        await model.importFiles()
+
+        let candidate = try XCTUnwrap(model.replaceCandidates.first)
+        model.updateConflictStrategy(for: candidate.id, strategy: .replace)
+        try await waitForReplaceError(model, "Replace requires system Trash.")
+
+        let imports = await bridge.importRequestsSnapshot()
+        XCTAssertEqual(imports.map(\.duplicateStrategy), [.skip])
+        let replaceRequests = await bridge.replaceRequestsSnapshot()
+        XCTAssertTrue(replaceRequests.isEmpty)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
     }
 
     func testICloudPlaceholderFailureStaysRecoverableAndKeepsSource() async throws {
@@ -186,6 +267,37 @@ final class FilesImportReviewModelTests: XCTestCase {
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
         return url
     }
+
+    private func waitForSucceededPhase(_ model: FilesImportReviewModel) async throws {
+        for _ in 0 ..< 20 {
+            if model.phase == .succeeded {
+                return
+            }
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        XCTFail("Expected Files import to reach succeeded phase.")
+    }
+
+    private func waitForPendingReplace(_ model: FilesImportReviewModel) async throws
+        -> FilesImportReplaceConfirmation {
+        for _ in 0 ..< 20 {
+            if let confirmation = model.pendingReplaceConfirmation {
+                return confirmation
+            }
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        return try XCTUnwrap(model.pendingReplaceConfirmation)
+    }
+
+    private func waitForReplaceError(_ model: FilesImportReviewModel, _ expected: String) async throws {
+        for _ in 0 ..< 20 {
+            if model.replaceErrorMessage == expected {
+                return
+            }
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        XCTAssertEqual(model.replaceErrorMessage, expected)
+    }
 }
 
 private struct FakeFilesImportAccessProvider: FilesImportSecurityScopedAccessing {
@@ -199,15 +311,20 @@ actor FakeFilesImportCoreBridge: FilesImportCoreBridge {
 
     private let prediction: FilesImportCategoryPrediction
     private var importErrors: [FilesImportError]
+    private var replacePlan: FilesImportReplacePlan
     private var predictionRequests: [PredictionRequest] = []
     private var importRequests: [FilesImportCoreRequest] = []
+    private var replacePlanRequests: [FilesImportReplacePlanRequest] = []
+    private var replaceRequests: [FilesImportReplaceRequest] = []
 
     init(
         prediction: FilesImportCategoryPrediction,
-        importErrors: [FilesImportError] = []
+        importErrors: [FilesImportError] = [],
+        replacePlan: FilesImportReplacePlan = .fixture(oldPath: "docs/Existing.pdf", newPath: "docs/Existing.pdf")
     ) {
         self.prediction = prediction
         self.importErrors = importErrors
+        self.replacePlan = replacePlan
     }
 
     func predictCategory(repoPath: String, filename: String) async throws -> FilesImportCategoryPrediction {
@@ -223,6 +340,16 @@ actor FakeFilesImportCoreBridge: FilesImportCoreBridge {
         return .fixture(id: Int64(importRequests.count), name: request.filename, category: request.category)
     }
 
+    func prepareReplace(request: FilesImportReplacePlanRequest) async throws -> FilesImportReplacePlan {
+        replacePlanRequests.append(request)
+        return replacePlan
+    }
+
+    func replaceSelectedFile(request: FilesImportReplaceRequest) async throws -> FilesImportReplaceExecutionReport {
+        replaceRequests.append(request)
+        return .fixture(plan: request.plan, importedName: request.filename, category: request.category)
+    }
+
     func predictionRequestsSnapshot() -> [PredictionRequest] {
         predictionRequests
     }
@@ -230,11 +357,75 @@ actor FakeFilesImportCoreBridge: FilesImportCoreBridge {
     func importRequestsSnapshot() -> [FilesImportCoreRequest] {
         importRequests
     }
+
+    func replacePlanRequestsSnapshot() -> [FilesImportReplacePlanRequest] {
+        replacePlanRequests
+    }
+
+    func replaceRequestsSnapshot() -> [FilesImportReplaceRequest] {
+        replaceRequests
+    }
 }
 
 private extension FilesImportCategoryPrediction {
     static func fixture(category: String) -> FilesImportCategoryPrediction {
         FilesImportCategoryPrediction(category: category, suggestedName: "", confidence: 0.9)
+    }
+}
+
+private extension FilesImportReplacePlan {
+    static func fixture(oldPath: String, newPath: String) -> FilesImportReplacePlan {
+        FilesImportReplacePlan(
+            confirmationID: "token-replace",
+            oldPath: oldPath,
+            newPath: newPath,
+            oldHashSHA256: "old-hash",
+            newHashSHA256: "new-hash",
+            affectedFileID: 42,
+            backupTarget: "System Trash through Core batch_delete_to_trash.",
+            databaseUpdate: "Soft-delete record 42, then import \(newPath).",
+            changeLogAction: "deleted + imported",
+            recoveryNote: "Restore from Core undo token or system Trash.",
+            trashAvailable: true,
+            undoAvailable: true,
+            canReplace: true,
+            blockedReason: nil,
+            previewToken: "token-replace"
+        )
+    }
+
+    static func fixtureBlocked(oldPath: String, reason: String) -> FilesImportReplacePlan {
+        var plan = fixture(oldPath: oldPath, newPath: oldPath)
+        plan.trashAvailable = false
+        plan.undoAvailable = false
+        plan.canReplace = false
+        plan.blockedReason = reason
+        plan.backupTarget = "Unavailable"
+        plan.recoveryNote = reason
+        return plan
+    }
+}
+
+private extension FilesImportReplaceExecutionReport {
+    static func fixture(
+        plan: FilesImportReplacePlan,
+        importedName: String,
+        category: String
+    ) -> FilesImportReplaceExecutionReport {
+        FilesImportReplaceExecutionReport(
+            importedFile: .fixture(id: 2, name: importedName, category: category),
+            oldFileID: plan.affectedFileID,
+            oldPath: plan.oldPath,
+            newPath: plan.newPath,
+            oldHashSHA256: plan.oldHashSHA256,
+            newHashSHA256: plan.newHashSHA256,
+            backupTarget: plan.backupTarget,
+            databaseUpdate: plan.databaseUpdate,
+            changeLogAction: plan.changeLogAction,
+            recoveryNote: plan.recoveryNote,
+            undoToken: "undo-replace-42",
+            affectedFileIDs: [plan.affectedFileID, 2]
+        )
     }
 }
 
