@@ -1,0 +1,42 @@
+一、执行结论
+
+已完成。`4-3/task-108` 的两个验收阻塞已修复，并已重新跑当前 task manifest 的验证。
+
+二、执行范围
+
+单任务：`4-3/task-108`
+
+本轮核心修改：
+- [ConnectRepositoryView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryView.swift:20)：`Help` 不再是空 action；新增 sheet 说明页；新增 `navigationDestination` 消费 `model.route`。
+- [ConnectRepositoryModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryModel.swift:77)：新增 `dismissRoute()`，用于导航返回后清理 route。
+- [ConnectRepositoryModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrixTests/ConnectRepositoryModelTests.swift:221)：补 route dismiss、route coordinator、退出页内容、Help 内容测试。
+
+当前工作树还存在既有/runner 状态脏文件：`.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json`，以及已有 iOS support/test 相关变更；我未擅自回滚。
+
+三、完成情况
+
+- page-feature task 覆盖：通过，`106/107` 仍覆盖 `C4-02/C4-08`。
+- 页面入口、错误态、加载态、CoreBridge 调用：通过，生产入口仍使用真实 `LiveMobileRepositoryCoreBridge()`。
+- 退出闭环：通过，`model.route` 现在被生产视图消费并进入对应 route destination。
+- mock / fixture / 硬编码状态：通过，生产 `Help` 空实现已移除；测试 fake 仅存在于 tests。
+- control map 外能力：未新增。
+- Forbidden Touches：未触碰，`git diff --name-only -- core/src` 无输出，staged 区无输出。
+
+四、工程质量
+
+代码结构保持局部：route coordinator、destination content、Help content 都在 iOS onboarding 视图边界内。没有新增依赖，没有 Rust public API / rustdoc 需求，没有 Core API / UDL 改动。错误与边界仍由模型显式处理，连接页不初始化、不接管、不写用户文件、不触发 iCloud 下载。
+
+五、验证情况
+
+已运行并通过：
+- `SWIFTPM_MODULECACHE_OVERRIDE=/private/tmp/areamatrix-swiftpm-modulecache swift test --disable-sandbox --cache-path /private/tmp/areamatrix-swiftpm-cache`：22 tests，0 failures。
+- `./dev check task 4-3/task-108`：退出码 0；`doctor OK`、`git diff --check` 通过、task gate build 成功。
+- Swift 行长抽查：无超过 120 字符输出。
+
+未运行：
+- 真实 iOS simulator UI 点击烟测：manifest 未要求；当前环境 `xcodebuild` 日志仍有 CoreSimulatorService / log permission 噪声，但 build 本身成功。
+
+六、风险与后续
+
+剩余风险：目标页 `S4-IOS-02`、`S4-IOS-06`、`S4-X-04`、`S4-X-05` 的完整页面能力仍由后续对应 task 负责；本 task 只补 S4-IOS-01 的退出 wiring。建议下一个任务按 manifest 进入 `4-3/task-109`。
+

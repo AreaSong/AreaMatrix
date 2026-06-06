@@ -2,6 +2,7 @@ import Foundation
 
 protocol RepositoryAccessServicing: Sendable {
     func recentRepositories() async -> [RecentRepository]
+    func isICloudDriveAvailable() async -> Bool
     func beginAccessing(_ url: URL) async throws -> RepositoryScopedAccess
     func persistBookmark(for url: URL, lastOpenedAt: Date) async throws -> RepositoryBookmark
     func resolveBookmark(for recent: RecentRepository) async throws -> URL
@@ -65,6 +66,10 @@ actor SecurityScopedRepositoryAccessService: RepositoryAccessServicing {
                 accessStatus: resolvedURL(from: stored) == nil ? .expired : .available
             )
         }
+    }
+
+    func isICloudDriveAvailable() async -> Bool {
+        FileManager.default.url(forUbiquityContainerIdentifier: nil) != nil
     }
 
     func beginAccessing(_ url: URL) async throws -> RepositoryScopedAccess {

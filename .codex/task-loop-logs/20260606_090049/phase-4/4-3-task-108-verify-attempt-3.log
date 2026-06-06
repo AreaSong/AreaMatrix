@@ -1,0 +1,51 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-108`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-108-s4-ios-01-page-integration-verify.md`
+- 实现范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/ios/**`
+- Existing Code：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：14
+- 未覆盖项数：0
+- 通过项数：14
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- page-feature task 覆盖：通过。manifest 中 `4-3/task-106` 覆盖 `C4-02`，`4-3/task-107` 覆盖 `C4-08`，`4-3/task-108` 依赖二者并绑定整页验收；control map 中 `S4-IOS-01` 仅声明 `C4-02, C4-08`。
+- 页面闭环：通过。`ConnectRepositoryModel` 调用 `validateRepoPath`、`detectCloudStorageState`、`loadConfig`，并路由到 mobile library、init confirm、adopt confirm、iCloud permission；空/非空目录未直接执行 `initRepo`。
+- mock / fixture / 硬编码状态：通过。生产入口 `ConnectRepositoryEntryView` 注入 `LiveMobileRepositoryCoreBridge`；fixture/fake 仅在 `AreaMatrixTests` 下。
+- control map 外能力：通过。实现未发现新增 S4-IOS-01 control map 外业务能力。
+- Expected New Paths：通过。`apps/ios/AreaMatrix/Features/Onboarding/**` 与 `apps/ios/AreaMatrixTests/**` 已落地。
+- Forbidden Touches：通过。`git status --short -- core/src` 无输出，未修改 `core/src/**`。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。model / view / access service / FFI bridge 分层清楚，主要文件均小于 500 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 public Rust API；UDL 已包含 `detect_cloud_storage_state` 与 `CloudStorageState`。
+- 错误处理与边界处理：通过。权限、iCloud placeholder、access expired、selected file、empty/adopt route 均有显式路径。
+- 测试与验证覆盖：通过。manifest 验证通过，iOS SwiftPM 测试 22 个 XCTest 全部通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试 fake 未替代生产 live bridge；生产路径有真实 FFI 调用和 contract checksum 校验。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-108`，退出码 0；`doctor: OK`，`git diff --check` 通过，`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 显示 `BUILD SUCCEEDED`。
+- 已运行：`swift test --package-path apps/ios --disable-sandbox ...`，退出码 0；`Executed 22 tests, with 0 failures`。
+- 失败后重跑通过：未加 `--disable-sandbox` 的 SwiftPM 测试被当前环境的 SwiftPM sandbox/cache 权限阻断，未进入测试；改用 `/private/tmp` cache/scratch 并禁用 SwiftPM sandbox 后通过。
+- 缺失：未运行真实 iOS 设备/模拟器文件选择器手工冒烟；本 task manifest 未要求该项，当前证据来自 model/view 编译与 XCTest。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。runner/progress 文件仍有本地脏改动，但本验收发生在 runner checkpoint 收口前；不作为 task 本体失败依据。
+VERIFY_RESULT: PASS

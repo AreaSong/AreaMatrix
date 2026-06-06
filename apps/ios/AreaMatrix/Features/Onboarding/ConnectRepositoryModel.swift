@@ -37,21 +37,53 @@ final class ConnectRepositoryModel: ObservableObject {
         recentRepositories = await accessService.recentRepositories()
     }
 
+    @discardableResult
+    func connectICloudRepository() async -> Bool {
+        prepareForPicker()
+        guard await accessService.isICloudDriveAvailable() else {
+            applyCloudFailure(.unavailable(
+                "iCloud Drive 不可用，"
+                    + "请在系统设置中启用 iCloud Drive 后重试。"
+            ))
+            return false
+        }
+        return true
+    }
+
     func connectSelectedURL(_ url: URL) async {
         await connect(url: url)
     }
 
-    func reconnect(_ recent: RecentRepository) async {
+    @discardableResult
+    func reconnect(_ recent: RecentRepository) async -> Bool {
+        guard recent.accessStatus == .available else {
+            prepareForPicker()
+            return true
+        }
         do {
             let url = try await accessService.resolveBookmark(for: recent)
             await connect(url: url)
+            return false
         } catch {
             applyFailure(.accessExpired(recent.pathDisplay))
+            return true
         }
     }
 
     func cancelSystemPicker() {
         checkState = .idle
+    }
+
+    func dismissRoute() {
+        route = nil
+    }
+
+    private func prepareForPicker() {
+        checkState = .idle
+        error = nil
+        route = nil
+        latestValidation = nil
+        latestCloudState = nil
     }
 
     private func connect(url: URL) async {

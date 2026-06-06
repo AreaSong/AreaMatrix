@@ -3,7 +3,9 @@ import UniformTypeIdentifiers
 
 struct ConnectRepositoryView: View {
     @ObservedObject var model: ConnectRepositoryModel
+    @StateObject private var routeCoordinator = ConnectRepositoryRouteCoordinator()
     @State private var showingFolderPicker = false
+    @State private var showingRepositoryHelp = false
 
     var body: some View {
         NavigationStack {
@@ -16,7 +18,24 @@ struct ConnectRepositoryView: View {
             .connectRepositoryListStyle()
             .navigationTitle("Connect Repository")
             .toolbar {
-                Button("Help") {}
+                Button("Help") {
+                    showingRepositoryHelp = true
+                }
+            }
+            .sheet(isPresented: $showingRepositoryHelp) {
+                ConnectRepositoryHelpView()
+            }
+            .navigationDestination(isPresented: $routeCoordinator.isPresented) {
+                routeDestination
+            }
+            .onChange(of: model.route) { _, route in
+                routeCoordinator.update(route)
+            }
+            .onChange(of: routeCoordinator.isPresented) { _, isPresented in
+                if !isPresented {
+                    routeCoordinator.dismiss()
+                    model.dismissRoute()
+                }
             }
             .fileImporter(
                 isPresented: $showingFolderPicker,
@@ -30,12 +49,22 @@ struct ConnectRepositoryView: View {
         }
     }
 
+    @ViewBuilder
+    private var routeDestination: some View {
+        if let route = routeCoordinator.activeRoute {
+            ConnectRepositoryRouteDestinationView(route: route)
+        }
+    }
+
     private var summarySection: some View {
         Section {
             VStack(alignment: .leading, spacing: 8) {
                 Text("连接 AreaMatrix 资料库")
                     .font(.title2.weight(.semibold))
-                Text("选择一个已有的 AreaMatrix 文件夹。AreaMatrix 不会在你确认前移动、删除或覆盖文件。")
+                Text(
+                    "选择一个已有的 AreaMatrix 文件夹。"
+                        + "AreaMatrix 不会在你确认前移动、删除或覆盖文件。"
+                )
                     .foregroundStyle(.secondary)
                 Text("推荐使用 iCloud Drive，这样可以和 Mac 共用同一个资料库。")
                     .foregroundStyle(.secondary)
@@ -47,7 +76,11 @@ struct ConnectRepositoryView: View {
     private var actionsSection: some View {
         Section {
             Button {
-                showingFolderPicker = true
+                Task {
+                    if await model.connectICloudRepository() {
+                        showingFolderPicker = true
+                    }
+                }
             } label: {
                 actionLabel(
                     title: primaryButtonTitle,
@@ -63,7 +96,8 @@ struct ConnectRepositoryView: View {
             } label: {
                 actionLabel(
                     title: "Choose Folder...",
-                    subtitle: "选择 Files app 中可访问的位置。某些第三方云盘可能只提供临时访问。",
+                    subtitle: "选择 Files app 中可访问的位置。"
+                        + "某些第三方云盘可能只提供临时访问。",
                     systemImage: "folder"
                 )
             }
@@ -94,7 +128,11 @@ struct ConnectRepositoryView: View {
             Section("Recent Repositories") {
                 ForEach(model.recentRepositories) { repository in
                     Button {
-                        Task { await model.reconnect(repository) }
+                        Task {
+                            if await model.reconnect(repository) {
+                                showingFolderPicker = true
+                            }
+                        }
                     } label: {
                         recentRepositoryRow(repository)
                     }
@@ -221,5 +259,116 @@ private extension View {
         #else
             listStyle(.inset)
         #endif
+    }
+}
+
+@MainActor
+final class ConnectRepositoryRouteCoordinator: ObservableObject {
+    @Published private(set) var activeRoute: MobileRepositoryConnectionRoute?
+    @Published var isPresented = false
+
+    func update(_ route: MobileRepositoryConnectionRoute?) {
+        activeRoute = route
+        isPresented = route != nil
+    }
+
+    func dismiss() {
+        activeRoute = nil
+        isPresented = false
+    }
+}
+
+struct ConnectRepositoryRouteDestinationContent: Equatable {
+    var title: String
+    var systemImage: String
+    var primaryText: String
+    var pathText: String?
+
+    init(route: MobileRepositoryConnectionRoute) {
+        switch route {
+        case let .mobileLibrary(connection):
+            title = "Mobile Library"
+            systemImage = "folder"
+            primaryText = "Repository connected."
+            pathText = connection.validation.repoPath
+        case let .repositoryInitConfirm(candidate):
+            title = "Initialize Repository"
+            systemImage = "checkmark.shield"
+            primaryText = "Review this empty folder before AreaMatrix creates metadata."
+            pathText = candidate.validation.repoPath
+        case let .repositoryAdoptConfirm(candidate):
+            title = "Adopt Repository"
+            systemImage = "folder.badge.plus"
+            primaryText = "Review this folder before AreaMatrix adopts it."
+            pathText = candidate.validation.repoPath
+        case let .iCloudPermission(error):
+            title = "iCloud Permission"
+            systemImage = "icloud.slash"
+            primaryText = error.message
+            pathText = nil
+        }
+    }
+}
+
+struct ConnectRepositoryRouteDestinationView: View {
+    private let content: ConnectRepositoryRouteDestinationContent
+
+    init(route: MobileRepositoryConnectionRoute) {
+        content = ConnectRepositoryRouteDestinationContent(route: route)
+    }
+
+    var body: some View {
+        List {
+            Section {
+                Label(content.primaryText, systemImage: content.systemImage)
+                if let pathText = content.pathText {
+                    Text(pathText)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+            }
+        }
+        .connectRepositoryListStyle()
+        .navigationTitle(content.title)
+    }
+}
+
+struct ConnectRepositoryHelpContent: Equatable {
+    var title: String
+    var rows: [String]
+
+    static let repositoryHelp = ConnectRepositoryHelpContent(
+        title: "Repository Help",
+        rows: [
+            "A repository is a normal folder that contains AreaMatrix metadata.",
+            "AreaMatrix only reads the folder structure before you confirm initialization or adoption.",
+            "iCloud Drive lets this iOS app share the same repository folder with your Mac."
+        ]
+    )
+}
+
+struct ConnectRepositoryHelpView: View {
+    @Environment(\.dismiss) private var dismiss
+    private let content = ConnectRepositoryHelpContent.repositoryHelp
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(content.rows, id: \.self) { row in
+                        Text(row)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .connectRepositoryListStyle()
+            .navigationTitle(content.title)
+            .toolbar {
+                Button("Done") {
+                    dismiss()
+                }
+            }
+        }
     }
 }
