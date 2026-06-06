@@ -1,0 +1,75 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-105`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-105-c4-21-integration-verify.md`
+- 核验路径：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试  
+  结果：通过  
+  证据：Core API 明确 `Overwrite` 仅在 C4-21/S4-X-09 确认后使用，[core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1064)；UDL 暴露 replace preview / request / report 结构，[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:1842)；Rust `resolve_sync_conflict` 校验 preview token 与 `replace_confirmed`，[core/src/sync_conflict_resolve.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync_conflict_resolve.rs:303)。
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖  
+  结果：通过  
+  证据：preview 输出 `requires_replace_confirmation`、`trash_available`、`replace_plan`；apply 失败会 rollback，[core/src/sync_conflict_resolve/apply.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync_conflict_resolve/apply.rs:70)；测试覆盖 import overwrite、sync replace 未确认拒绝、DB 失败恢复、错误映射。
+
+- 项目：确认没有实现 control map 之外的能力  
+  结果：通过  
+  证据：实现集中在 C4-21 依赖的 `import_file` overwrite、`delete_file`、`resolve_sync_conflict` 和已有 import-conflict batch safety gate；未发现 `apps/**` 改动，也未新增平台 UI 能力。
+
+- 项目：不得修改文件，只记录验收证据和阻塞项  
+  结果：通过  
+  证据：本轮未做文件编辑；当前 dirty state 为 runner in-progress 记录与 `core/tests/replace_confirm_cross_platform_validation.rs` 格式化差异。无 staged 文件，无 `apps/**` diff。
+
+- 项目：C4-21 可作为后续 page-feature task 的真实 Core 依赖  
+  结果：通过  
+  证据：`./dev check task 4-3/task-105` fresh 通过；4 个 `replace_confirm_cross_platform_*` 测试目标共 13 个测试全部通过。
+
+- 项目：若无法证明，明确阻塞后续 UI 接入  
+  结果：通过  
+  证据：已能证明，不阻塞后续 UI 接入。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C4-21 行为拆在 `storage/import.rs`、`storage/replacement_trash.rs`、`sync_conflict_resolve/*`、`import_conflict_batch/*`，不是单次脚本化实现。
+- 注释 / rustdoc / 文档同步：通过。public API 有 C4-21 边界说明；Core API、UDL、Rust 类型和测试对齐。
+- 错误处理与边界处理：通过。未确认 replace 返回 `PermissionDenied` / `Conflict`；Trash 不可用禁用或拒绝；失败后 rollback 保持旧文件/冲突状态可解释。
+- 测试与验证覆盖：通过。覆盖成功、未确认、stale preview、DB failure rollback、delete failure rollback、错误映射。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现使用真实 FS、DB、Trash/test Trash 路径和 change log，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-105`
+- 通过：`prompt doctor`、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`replace_confirm_cross_platform_contract_api` 3/3
+- 通过：`replace_confirm_cross_platform_failure_recovery` 5/5
+- 通过：`replace_confirm_cross_platform_implementation` 2/2
+- 通过：`replace_confirm_cross_platform_validation` 3/3
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C4-21 可以作为后续 page-feature task 的真实 Core 依赖。
+
+
+
+VERIFY_RESULT: PASS

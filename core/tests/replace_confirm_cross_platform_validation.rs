@@ -2,8 +2,8 @@ use std::{fs, path::Path};
 
 use area_matrix_core::{
     detect_sync_conflicts, import_file, init_repo, preview_sync_conflict_resolution,
-    resolve_sync_conflict, CoreError, CoreResult, DuplicateStrategy, FileEntry,
-    ImportDestination, ImportOptions, OverviewOutput, RepoInitMode, RepoInitOptions, StorageMode,
+    resolve_sync_conflict, CoreError, CoreResult, DuplicateStrategy, FileEntry, ImportDestination,
+    ImportOptions, OverviewOutput, RepoInitMode, RepoInitOptions, StorageMode,
     SyncConflictResolutionPreviewReport, SyncConflictResolutionRequest,
     SyncConflictResolutionStrategy, SyncConflictResolveReport, SyncConflictStatus,
 };
@@ -184,7 +184,8 @@ fn setup_sync_replace_conflict() -> (tempfile::TempDir, String, i64) {
         DuplicateStrategy::Ask,
     );
     fs::write(
-        repo.path().join("docs/report (incoming conflicted copy).pdf"),
+        repo.path()
+            .join("docs/report (incoming conflicted copy).pdf"),
         b"incoming-version",
     )
     .expect("write incoming conflict copy");
@@ -246,10 +247,7 @@ fn replace_confirm_validation_import_overwrite_keeps_old_version_recoverable() {
     });
 }
 
-fn assert_replace_plan_is_ui_ready(
-    preview: &SyncConflictResolutionPreviewReport,
-    file_id: i64,
-) {
+fn assert_replace_plan_is_ui_ready(preview: &SyncConflictResolutionPreviewReport, file_id: i64) {
     let plan = preview.replace_plan.as_ref().expect("replace plan");
     assert_eq!(plan.old_path, "docs/report.pdf");
     assert_eq!(plan.new_path, "docs/report (incoming conflicted copy).pdf");
@@ -306,7 +304,10 @@ fn replace_confirm_validation_sync_rejects_unconfirmed_replace_without_mutation(
         assert_eq!(user_files(repo.path()), files_before);
         assert_eq!(change_count(repo.path()), changes_before);
         assert_eq!(file_row(repo.path(), file_id), row_before);
-        assert_eq!(sync_conflict_status(repo.path()), SyncConflictStatus::NeedsReview);
+        assert_eq!(
+            sync_conflict_status(repo.path()),
+            SyncConflictStatus::NeedsReview
+        );
         assert!(
             fs::read_dir(trash_dir)
                 .expect("read isolated trash")
@@ -385,7 +386,6 @@ fn assert_task_docs_and_testing_alignment() {
     ] {
         assert_contains(CONTROL_MAP, fragment);
     }
-
 }
 
 fn assert_core_api_udl_and_rust_alignment() {
