@@ -112,6 +112,20 @@ final class MobileLibraryModelTests: XCTestCase {
         XCTAssertEqual(model.statusText, "metadata locked")
     }
 
+    func testFilesImportReplaceGateComesFromRepositoryConfig() {
+        let disabledModel = LibraryListViewModel(
+            connection: connection(path: "/tmp/Repo", allowReplaceDuringImport: false),
+            bridge: FakeMobileLibraryCoreBridge(tree: .fixture(children: []), files: [])
+        )
+        let enabledModel = LibraryListViewModel(
+            connection: connection(path: "/tmp/Repo", allowReplaceDuringImport: true),
+            bridge: FakeMobileLibraryCoreBridge(tree: .fixture(children: []), files: [])
+        )
+
+        XCTAssertFalse(disabledModel.allowReplaceDuringImport)
+        XCTAssertTrue(enabledModel.allowReplaceDuringImport)
+    }
+
     func testLiveBridgeLoadsEmptyMobileLibraryThroughCore() async throws {
         let url = try makeTemporaryRepositoryURL()
         defer { try? FileManager.default.removeItem(at: url) }
@@ -125,10 +139,15 @@ final class MobileLibraryModelTests: XCTestCase {
         XCTAssertTrue(files.isEmpty)
     }
 
-    private func connection(path: String) -> MobileRepositoryConnection {
+    private func connection(path: String, allowReplaceDuringImport: Bool = false) -> MobileRepositoryConnection {
         MobileRepositoryConnection(
             validation: .initialized(path: path),
-            config: MobileRepositoryConfig(repoPath: path, defaultMode: "Copied", locale: "zh-Hans"),
+            config: MobileRepositoryConfig(
+                repoPath: path,
+                defaultMode: "Copied",
+                locale: "zh-Hans",
+                allowReplaceDuringImport: allowReplaceDuringImport
+            ),
             bookmark: RepositoryBookmark(
                 url: URL(fileURLWithPath: path),
                 displayName: "Repository",

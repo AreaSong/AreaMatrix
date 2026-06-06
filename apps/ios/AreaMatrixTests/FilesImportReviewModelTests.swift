@@ -197,6 +197,37 @@ final class FilesImportReviewModelTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
     }
 
+    func testReplaceDisabledByRepositoryConfigDoesNotRunCorePreflight() async throws {
+        let source = try makeSelectedFile(name: "Existing.pdf")
+        defer { removeSelectedFile(source) }
+        let bridge = FakeFilesImportCoreBridge(
+            prediction: .fixture(category: "docs"),
+            importErrors: [.nameConflict("docs/Existing.pdf")]
+        )
+        let model = FilesImportReviewModel(
+            repoPath: "/tmp/Repo",
+            selectedURLs: [source],
+            bridge: bridge,
+            accessProvider: FakeFilesImportAccessProvider(),
+            allowReplaceDuringImport: false
+        )
+
+        await model.prepare()
+        await model.importFiles()
+
+        let candidate = try XCTUnwrap(model.replaceCandidates.first)
+        model.updateConflictStrategy(for: candidate.id, strategy: .replace)
+        try await Task.sleep(nanoseconds: 50_000_000)
+
+        let planRequests = await bridge.replacePlanRequestsSnapshot()
+        let replaceRequests = await bridge.replaceRequestsSnapshot()
+        XCTAssertEqual(model.replaceUnavailableReason, "Replace is disabled in repository settings.")
+        XCTAssertTrue(planRequests.isEmpty)
+        XCTAssertTrue(replaceRequests.isEmpty)
+        XCTAssertNil(model.pendingReplaceConfirmation)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
+    }
+
     func testICloudPlaceholderFailureStaysRecoverableAndKeepsSource() async throws {
         let source = try makeSelectedFile(name: "Cloud.pdf")
         defer { removeSelectedFile(source) }
