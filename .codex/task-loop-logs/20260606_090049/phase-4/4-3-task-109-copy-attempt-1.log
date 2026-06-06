@@ -1,0 +1,57 @@
+一、执行结论
+
+已完成。`4-3/task-109` 的本地 task 验证通过。
+
+二、执行范围
+
+单任务：`S4-IOS-02 + C4-03 mobile-library-query`
+
+本次修改文件：
+
+- `apps/ios/AreaMatrix/Features/Library/MobileLibraryCoreBridge.swift`
+- `apps/ios/AreaMatrix/Features/Library/MobileLibraryCoreFFI.swift`
+- `apps/ios/AreaMatrix/Features/Library/MobileLibraryView.swift`
+- `apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryView.swift`
+- `apps/ios/AreaMatrix/Features/Onboarding/MobileRepositoryCoreFFI.swift`
+- `apps/ios/Carea_matrixFFI/area_matrixFFI.h`
+- `apps/ios/AreaMatrixTests/MobileLibraryModelTests.swift`
+
+三、完成情况
+
+核对清单均通过：
+
+- 只处理 `S4-IOS-02` 中 `C4-03`：通过。
+- 已读取页面规格、control map、Core API、C4-03 能力规格：通过。
+- 只接入 `list_files` / `list_tree_json` 对应的 CoreBridge、状态和错误映射：通过。
+- 未实现导入、详情、搜索、rescan、冲突处理等相邻能力：通过。
+
+完成标准：
+
+- 用户可见功能：连接已有 repo 后进入真实 `MobileLibraryView`，支持加载、刷新、分类切换、排序、缺失文件状态展示。
+- 无生产 mock/fixture：生产路径走 `LiveMobileRepositoryCoreBridge` + Core FFI；测试 fixture 仅限 XCTest。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+结构按 `Bridge / ViewModel / View / Tests` 拆分，文件均低于 500 行。新增 FFI 显式校验 UniFFI contract checksum，并处理 `Db`、`RepoNotInitialized`、权限/不可用错误；加载失败保留缓存列表，不静默清空。
+
+未新增依赖，未改 Core API / UDL / Rust 实现。当前工作树里另有既存脏改：`.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json`，我未处理。
+
+五、验证情况
+
+已通过：
+
+- `env ... swift test --disable-sandbox --scratch-path /private/tmp/areamatrix-ios-build`：26 tests passed。
+- `swiftformat --lint apps/ios/AreaMatrix/Features/Library apps/ios/AreaMatrixTests/MobileLibraryModelTests.swift ...`：0/4 files require formatting。
+- `./dev check task 4-3/task-109`：通过，包含 `prompt doctor OK`、`git diff --check`、macOS `xcodebuild build` 成功。
+
+失败/无法运行：
+
+- 初次直接 `swift test` 因 SwiftPM / Clang cache 写入用户缓存目录被 sandbox 拦截失败；改用 `--disable-sandbox` 和 `/private/tmp` scratch 后通过。
+- 全量 `apps/ios` SwiftFormat lint 发现既有 Onboarding 文件格式债；未扩大修改范围。
+
+六、风险与后续
+
+剩余风险：未做真实 iOS 模拟器/设备 UI smoke；本次以 SwiftPM XCTest 和 task manifest 验证为准。CI 和人工 review 尚未执行。
+
+建议下一个任务：`4-3/task-110`，即 `S4-IOS-03 + C4-04 camera-import`。

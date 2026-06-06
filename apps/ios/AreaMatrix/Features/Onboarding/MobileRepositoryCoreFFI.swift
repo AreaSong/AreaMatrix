@@ -234,9 +234,9 @@ private enum FFIReader {
         let variant = try reader.readInt32()
         let error: MobileRepositoryConnectionError
         switch variant {
-        case 3:
+        case 10:
             error = try .invalidRepository(reader.readString())
-        case 10, 11:
+        case 11:
             error = try .invalidPath(reader.readString())
         case 12:
             error = try .iCloudPlaceholder(reader.readString())

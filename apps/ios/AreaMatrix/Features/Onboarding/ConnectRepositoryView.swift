@@ -311,26 +311,38 @@ struct ConnectRepositoryRouteDestinationContent: Equatable {
 }
 
 struct ConnectRepositoryRouteDestinationView: View {
+    private let route: MobileRepositoryConnectionRoute
+    private let mobileLibraryBridge: any MobileLibraryCoreBridge
     private let content: ConnectRepositoryRouteDestinationContent
 
-    init(route: MobileRepositoryConnectionRoute) {
+    init(
+        route: MobileRepositoryConnectionRoute,
+        mobileLibraryBridge: any MobileLibraryCoreBridge = LiveMobileRepositoryCoreBridge()
+    ) {
+        self.route = route
+        self.mobileLibraryBridge = mobileLibraryBridge
         content = ConnectRepositoryRouteDestinationContent(route: route)
     }
 
     var body: some View {
-        List {
-            Section {
-                Label(content.primaryText, systemImage: content.systemImage)
-                if let pathText = content.pathText {
-                    Text(pathText)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
+        switch route {
+        case let .mobileLibrary(connection):
+            MobileLibraryView(connection: connection, bridge: mobileLibraryBridge)
+        case .repositoryInitConfirm, .repositoryAdoptConfirm, .iCloudPermission:
+            List {
+                Section {
+                    Label(content.primaryText, systemImage: content.systemImage)
+                    if let pathText = content.pathText {
+                        Text(pathText)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
                 }
             }
+            .connectRepositoryListStyle()
+            .navigationTitle(content.title)
         }
-        .connectRepositoryListStyle()
-        .navigationTitle(content.title)
     }
 }
 
