@@ -1,0 +1,9 @@
+<Window
+    x:Class="AreaMatrix.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:onboarding="using:AreaMatrix.Features.Onboarding"
+    Title="AreaMatrix">
+
+    <onboarding:ChooseRepositoryView x:Name="ChooseRepositoryPage" />
+</Window>

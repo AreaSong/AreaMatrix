@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.cs" Link="Core/AreaMatrixNativeCoreClient.cs" />
+    <Compile Include="../AreaMatrix/Core/LazyAreaMatrixWindowsCoreClient.cs" Link="Core/LazyAreaMatrixWindowsCoreClient.cs" />
+    <Compile Include="../AreaMatrix/Core/NativeCoreInterop.cs" Link="Core/NativeCoreInterop.cs" />
+    <Compile Include="../AreaMatrix/Core/NativeCoreLibrary.cs" Link="Core/NativeCoreLibrary.cs" />
+    <Compile Include="../AreaMatrix/Core/UniFfiReader.cs" Link="Core/UniFfiReader.cs" />
+    <Compile Include="../AreaMatrix/Features/Onboarding/WindowsRepositoryCoreBridge.cs" Link="Features/Onboarding/WindowsRepositoryCoreBridge.cs" />
+    <Compile Include="../AreaMatrix/Features/Onboarding/ChooseRepositoryViewModel.cs" Link="Features/Onboarding/ChooseRepositoryViewModel.cs" />
+  </ItemGroup>
+
+</Project>
