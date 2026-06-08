@@ -12,6 +12,7 @@ namespace AreaMatrix.Core;
 public sealed partial class AreaMatrixNativeCoreClient :
     IAreaMatrixWindowsCoreClient,
     IAreaMatrixDesktopQueryCoreClient,
+    IAreaMatrixWatcherStatusCoreClient,
     IDisposable
 {
     private const ushort AcknowledgeOneDriveRiskNoticeChecksum = 22622;
@@ -21,6 +22,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
     private const ushort ListFilesChecksum = 56809;
     private const ushort ListTreeJsonChecksum = 45468;
     private const ushort LoadConfigChecksum = 64573;
+    private const ushort RecordWatcherHealthChecksum = 47455;
     private const ushort SearchFilesChecksum = 65;
     private const ushort ValidateRepoPathChecksum = 43498;
 
@@ -109,6 +111,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
             || native.ListFilesChecksum() != ListFilesChecksum
             || native.ListTreeJsonChecksum() != ListTreeJsonChecksum
             || native.LoadConfigChecksum() != LoadConfigChecksum
+            || native.RecordWatcherHealthChecksum() != RecordWatcherHealthChecksum
             || native.SearchFilesChecksum() != SearchFilesChecksum
             || native.ValidateRepoPathChecksum() != ValidateRepoPathChecksum)
         {

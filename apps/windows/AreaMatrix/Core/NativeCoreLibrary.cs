@@ -24,6 +24,8 @@ internal sealed class NativeCoreLibrary : IDisposable
         GetFile = LoadFunction<GetFileDelegate>("uniffi_area_matrix_core_fn_func_get_file");
         ListTreeJson = LoadFunction<ListTreeJsonDelegate>("uniffi_area_matrix_core_fn_func_list_tree_json");
         SearchFiles = LoadFunction<SearchFilesDelegate>("uniffi_area_matrix_core_fn_func_search_files");
+        RecordWatcherHealth = LoadFunction<RecordWatcherHealthDelegate>(
+            "uniffi_area_matrix_core_fn_func_record_watcher_health");
         RustBufferFromBytes = LoadFunction<RustBufferFromBytesDelegate>(
             "ffi_area_matrix_core_rustbuffer_from_bytes");
         RustBufferFree = LoadFunction<RustBufferFreeDelegate>("ffi_area_matrix_core_rustbuffer_free");
@@ -45,6 +47,8 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_checksum_func_list_tree_json");
         SearchFilesChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_search_files");
+        RecordWatcherHealthChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_record_watcher_health");
     }
 
     public ValidateRepoPathDelegate ValidateRepoPath { get; }
@@ -64,6 +68,8 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ListTreeJsonDelegate ListTreeJson { get; }
 
     public SearchFilesDelegate SearchFiles { get; }
+
+    public RecordWatcherHealthDelegate RecordWatcherHealth { get; }
 
     public RustBufferFromBytesDelegate RustBufferFromBytes { get; }
 
@@ -86,6 +92,8 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ChecksumDelegate ListTreeJsonChecksum { get; }
 
     public ChecksumDelegate SearchFilesChecksum { get; }
+
+    public ChecksumDelegate RecordWatcherHealthChecksum { get; }
 
     public static NativeCoreLibrary LoadDefault()
     {

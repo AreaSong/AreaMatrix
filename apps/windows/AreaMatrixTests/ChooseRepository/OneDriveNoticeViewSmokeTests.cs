@@ -66,11 +66,16 @@ public static class OneDriveNoticeViewSmokeTests
         XElement watcher = LoadXml(RepositoryPath(
             "apps/windows/AreaMatrix/Features/Library/WatcherStatusView.xaml"));
         AssertNamedElement(watcher, "TextBlock", "WatcherRouteTextBlock");
+        AssertNamedElement(watcher, "TextBlock", "WatcherStatusTextBlock");
+        AssertButton(watcher, "Restart watcher", "RestartWatcherButton_Click");
+        AssertButton(watcher, "Run rescan now", "RunRescanNowButton_Click");
         AssertButton(watcher, "Close", "CloseWatcherStatusButton_Click");
 
         string watcherCode = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Features/Library/WatcherStatusView.xaml.cs"));
-        TestAssert.Contains("OpenRoute", watcherCode, "watcher status route open");
+        TestAssert.Contains("OpenRouteAsync", watcherCode, "watcher status route open");
+        TestAssert.Contains("RecordWatcherHealthAsync", File.ReadAllText(RepositoryPath(
+            "apps/windows/AreaMatrix/Features/Library/WatcherStatusCoreBridge.cs")), "C4-12 CoreBridge call");
         TestAssert.Contains("CloseRequested", watcherCode, "watcher status close event");
         TestAssert.DoesNotContain("ReindexFromFilesystem", watcherCode, "watcher placeholder must not start rescan");
         TestAssert.DoesNotContain("PreviewManualRescan", watcherCode, "watcher placeholder must not preview rescan");

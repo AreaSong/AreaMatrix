@@ -16,11 +16,16 @@
       Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.CloudStorage.cs"
       Link="Core/AreaMatrixNativeCoreClient.CloudStorage.cs" />
     <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.DesktopMainQuery.cs" Link="Core/AreaMatrixNativeCoreClient.DesktopMainQuery.cs" />
+    <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.WatcherStatus.cs" Link="Core/AreaMatrixNativeCoreClient.WatcherStatus.cs" />
     <Compile Include="../AreaMatrix/Core/UniFfiReader.cs" Link="Core/UniFfiReader.cs" />
     <Compile Include="../AreaMatrix/Features/Library/DesktopMainQueryCoreBridge.cs" Link="Features/Library/DesktopMainQueryCoreBridge.cs" />
     <Compile Include="../AreaMatrix/Features/Library/DesktopMainQueryModels.cs" Link="Features/Library/DesktopMainQueryModels.cs" />
     <Compile Include="../AreaMatrix/Features/Library/DesktopTreeJsonParser.cs" Link="Features/Library/DesktopTreeJsonParser.cs" />
+    <Compile Include="../AreaMatrix/Features/Library/WatcherStatusCoreBridge.cs" Link="Features/Library/WatcherStatusCoreBridge.cs" />
+    <Compile Include="../AreaMatrix/Features/Library/WatcherStatusModels.cs" Link="Features/Library/WatcherStatusModels.cs" />
+    <Compile Include="../AreaMatrix/Features/Library/WatcherStatusViewModel.cs" Link="Features/Library/WatcherStatusViewModel.cs" />
     <Compile Include="../AreaMatrix/Features/Library/WindowsMainWindowViewModel.cs" Link="Features/Library/WindowsMainWindowViewModel.cs" />
+    <Compile Include="../AreaMatrix/Features/Library/WindowsWatcherDiagnostics.cs" Link="Features/Library/WindowsWatcherDiagnostics.cs" />
     <Compile Include="../AreaMatrix/Features/Onboarding/WindowsCloudStorageState.cs" Link="Features/Onboarding/WindowsCloudStorageState.cs" />
     <Compile Include="../AreaMatrix/Features/Onboarding/WindowsRecentRepository.cs" Link="Features/Onboarding/WindowsRecentRepository.cs" />
     <Compile Include="../AreaMatrix/Features/Onboarding/WindowsRepositoryCoreBridge.cs" Link="Features/Onboarding/WindowsRepositoryCoreBridge.cs" />

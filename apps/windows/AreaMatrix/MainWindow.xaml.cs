@@ -10,6 +10,7 @@ public sealed partial class MainWindow : Window
 {
     private readonly LazyAreaMatrixWindowsCoreClient coreClient = new();
     private readonly IWindowsRepositoryCoreBridge repositoryBridge;
+    private readonly WindowsWatcherDiagnostics watcherDiagnostics = new();
     private bool oneDriveNoticeOpenedFromMainWindow;
 
     public MainWindow()
@@ -27,7 +28,11 @@ public sealed partial class MainWindow : Window
         WindowsMainWindowPage.ViewModel = new WindowsMainWindowViewModel(
             new DesktopMainQueryCoreBridge(coreClient));
         WindowsMainWindowPage.OpenOneDriveStatusRequested += WindowsMainWindowPage_OpenOneDriveStatusRequested;
+        WatcherStatusPage.ViewModel = new WatcherStatusViewModel(
+            new WatcherStatusCoreBridge(coreClient),
+            watcherDiagnostics);
         WatcherStatusPage.CloseRequested += WatcherStatusPage_CloseRequested;
+        WatcherStatusPage.OpenRescanConfirmRequested += WatcherStatusPage_OpenRescanConfirmRequested;
         Closed += MainWindow_Closed;
     }
 
@@ -117,7 +122,7 @@ public sealed partial class MainWindow : Window
         await OneDriveNoticePage.OpenRouteAsync(route);
     }
 
-    private void OneDriveNoticePage_OpenWatcherStatusRequested()
+    private async void OneDriveNoticePage_OpenWatcherStatusRequested()
     {
         WindowsRepositoryRoute route = OneDriveNoticePage.ViewModel is { } model
             ? new WindowsRepositoryRoute(
@@ -132,7 +137,7 @@ public sealed partial class MainWindow : Window
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Visible;
-        WatcherStatusPage.OpenRoute(route);
+        await WatcherStatusPage.OpenRouteAsync(route);
     }
 
     private void WatcherStatusPage_CloseRequested()
@@ -141,6 +146,11 @@ public sealed partial class MainWindow : Window
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Visible;
+    }
+
+    private void WatcherStatusPage_OpenRescanConfirmRequested(WindowsRepositoryRoute route)
+    {
+        // C4-19 owns the rescan confirmation flow; this C4-12 page only exposes the gated entry.
     }
 
     private void MainWindow_Closed(object sender, WindowEventArgs args)
@@ -156,6 +166,8 @@ public sealed partial class MainWindow : Window
         OneDriveNoticePage.OpenWatcherStatusRequested -= OneDriveNoticePage_OpenWatcherStatusRequested;
         WindowsMainWindowPage.OpenOneDriveStatusRequested -= WindowsMainWindowPage_OpenOneDriveStatusRequested;
         WatcherStatusPage.CloseRequested -= WatcherStatusPage_CloseRequested;
+        WatcherStatusPage.OpenRescanConfirmRequested -= WatcherStatusPage_OpenRescanConfirmRequested;
+        watcherDiagnostics.Dispose();
         coreClient.Dispose();
     }
 }

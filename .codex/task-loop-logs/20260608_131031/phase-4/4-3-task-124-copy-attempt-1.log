@@ -1,0 +1,51 @@
+一、执行结论
+
+已完成：`4-3/task-124` 的 S4-WIN-04 + C4-12 watcher status 页面功能已接入真实 CoreBridge 路径。
+
+二、执行范围
+
+单任务：仅处理 `S4-WIN-04 watcher-status` 中的 `C4-12 platform-watcher-status`。
+
+修改文件清单：
+- `apps/windows/AreaMatrix/Core/*WatcherStatus*`、native binding / lazy client wiring
+- `apps/windows/AreaMatrix/Features/Library/WatcherStatus*`、`WindowsWatcherDiagnostics.cs`
+- `apps/windows/AreaMatrix/MainWindow.xaml.cs`
+- `apps/windows/AreaMatrixTests/**` 相关 Windows 测试入口与 watcher status 测试
+
+三、完成情况
+
+核对清单：
+- 只处理 S4-WIN-04 + C4-12：通过。
+- 已读取 UX 页面、control map、Core API、C4-12 spec：通过。
+- 只接入 `record_watcher_health` 对应 CoreBridge / 状态 / 错误映射：通过。
+- 未实现同页 C4-19 manual rescan：通过，`Run rescan now` 只发确认流入口事件，不执行扫描。
+
+完成标准：
+- 用户可见 watcher 状态卡、最近事件、错误/恢复说明、OneDrive 噪声说明已落地。
+- 未使用 mock/fixture/静态状态作为产品闭环；测试 fake 仅限测试项目。
+- 未触碰 control map 之外 Core 能力。
+
+Forbidden Touches：
+- 未触碰 `core/src/**`。
+- 未修改 Core API / UDL / Rust 实现。
+
+四、工程质量
+
+代码结构按 Windows 现有模式拆分为 models、CoreBridge、diagnostics、ViewModel、View。错误路径覆盖了 DB、路径缺失、backend unavailable、database locked、OneDrive noise 等状态。`Export diagnostics` 和 `Open repository folder` 保留为禁用入口，避免在本 task 越界实现其他平台动作。未新增依赖。
+
+五、验证情况
+
+已运行并通过：
+- `dotnet run --project apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj`
+- `./dev check task 4-3/task-124`
+
+补充检查：
+- `git diff --check` 通过。
+- Forbidden Touches 扫描确认无 `core/src/**` 改动。
+
+未完全运行：
+- `dotnet build apps/windows/AreaMatrix/AreaMatrix.Windows.csproj` 未进入编译阶段；当前 macOS 环境无法恢复 Windows App SDK / Windows targeting 包，报 `NU1301` / `NU1101`，包括 `Microsoft.WindowsAppSDK`、`Microsoft.Windows.SDK.NET.Ref` 等包不可用。
+
+六、风险与后续
+
+剩余风险：Windows WinUI 生产项目未在当前环境完成真实 build，需在可恢复 NuGet 且具备 Windows targeting 包的环境补跑。建议下一个任务进入 `4-3/task-125`，实现同页 C4-19 manual rescan 确认入口后的真实闭环。

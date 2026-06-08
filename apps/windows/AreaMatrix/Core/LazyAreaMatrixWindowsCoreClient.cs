@@ -9,6 +9,7 @@ namespace AreaMatrix.Core;
 internal sealed class LazyAreaMatrixWindowsCoreClient :
     IAreaMatrixWindowsCoreClient,
     IAreaMatrixDesktopQueryCoreClient,
+    IAreaMatrixWatcherStatusCoreClient,
     IDisposable
 {
     private readonly object sync = new();
@@ -83,6 +84,14 @@ internal sealed class LazyAreaMatrixWindowsCoreClient :
         CancellationToken cancellationToken = default)
     {
         return Current.SearchFilesAsync(repoPath, query, filter, sort, pagination, cancellationToken);
+    }
+
+    public Task<CoreWatcherStatusSnapshot> RecordWatcherHealthAsync(
+        string repoPath,
+        CoreWatcherStatusHealthSignal signal,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.RecordWatcherHealthAsync(repoPath, signal, cancellationToken);
     }
 
     public void Dispose()
