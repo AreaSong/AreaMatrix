@@ -1,4 +1,5 @@
 using AreaMatrix.Linux.Core;
+using AreaMatrix.Linux.Features.Import;
 using AreaMatrix.Linux.Features.Onboarding;
 using AreaMatrix.Linux.Features.System;
 
@@ -14,6 +15,11 @@ public interface ILinuxWatcherStatusViewFactory
     LinuxWatcherStatusView Create(LinuxRepositoryRoute route);
 }
 
+public interface ILinuxImportDialogFactory
+{
+    LinuxImportDialog Create(LinuxRepositoryRoute route);
+}
+
 public interface ILinuxLocalFolderNoticeFactory
 {
     LocalFolderNoticeView Create(LinuxRepositoryRoute route);
@@ -23,10 +29,12 @@ public sealed class LinuxDesktopShell : IDisposable
 {
     private readonly LinuxChooseRepositoryView chooseRepositoryView;
     private readonly ILinuxLocalFolderNoticeFactory? localFolderNoticeFactory;
+    private readonly ILinuxImportDialogFactory? importDialogFactory;
     private readonly ILinuxMainWindowFactory mainWindowFactory;
     private readonly ILinuxWatcherStatusViewFactory? watcherStatusViewFactory;
     private readonly IDisposable? ownedResources;
     private LocalFolderNoticeView? localFolderNoticeView;
+    private LinuxImportDialog? importDialog;
     private LinuxMainWindow? mainWindow;
     private LinuxWatcherStatusView? watcherStatusView;
     private bool disposed;
@@ -35,12 +43,14 @@ public sealed class LinuxDesktopShell : IDisposable
         LinuxChooseRepositoryView chooseRepositoryView,
         ILinuxMainWindowFactory mainWindowFactory,
         ILinuxLocalFolderNoticeFactory? localFolderNoticeFactory = null,
+        ILinuxImportDialogFactory? importDialogFactory = null,
         ILinuxWatcherStatusViewFactory? watcherStatusViewFactory = null,
         IDisposable? ownedResources = null)
     {
         this.chooseRepositoryView = chooseRepositoryView;
         this.mainWindowFactory = mainWindowFactory;
         this.localFolderNoticeFactory = localFolderNoticeFactory;
+        this.importDialogFactory = importDialogFactory;
         this.watcherStatusViewFactory = watcherStatusViewFactory;
         this.ownedResources = ownedResources;
     }
@@ -48,6 +58,8 @@ public sealed class LinuxDesktopShell : IDisposable
     public LinuxChooseRepositoryView ChooseRepositoryView => chooseRepositoryView;
 
     public LocalFolderNoticeView? LocalFolderNoticeView => localFolderNoticeView;
+
+    public LinuxImportDialog? ImportDialog => importDialog;
 
     public LinuxMainWindow? MainWindow => mainWindow;
 
@@ -58,6 +70,7 @@ public sealed class LinuxDesktopShell : IDisposable
         AreaMatrixNativeCoreClient nativeCoreClient = new();
         LinuxRepositoryCoreBridge repositoryBridge = new(nativeCoreClient);
         DesktopMainQueryCoreBridge queryBridge = new(nativeCoreClient);
+        DesktopImportCoreBridge importBridge = new(nativeCoreClient, new LinuxImportFileProbe());
         LinuxWatcherStatusCoreBridge watcherBridge = new(nativeCoreClient);
         LinuxWatcherDiagnostics watcherDiagnostics = new();
         LinuxChooseRepositoryView chooseRepositoryView = new(
@@ -67,6 +80,7 @@ public sealed class LinuxDesktopShell : IDisposable
             chooseRepositoryView,
             new LinuxMainWindowFactory(queryBridge, locale),
             new LinuxLocalFolderNoticeFactory(repositoryBridge),
+            new LinuxImportDialogFactory(importBridge),
             new LinuxWatcherStatusViewFactory(watcherBridge, watcherDiagnostics),
             nativeCoreClient);
     }
@@ -97,6 +111,36 @@ public sealed class LinuxDesktopShell : IDisposable
         LinuxWatcherStatusView view = watcherStatusViewFactory.Create(route);
         await view.OpenRouteAsync(route, cancellationToken).ConfigureAwait(false);
         watcherStatusView = view;
+    }
+
+    public Task OpenImportAsync(CancellationToken cancellationToken = default)
+    {
+        return OpenImportWithSourcesAsync([], cancellationToken);
+    }
+
+    public async Task OpenImportWithSourcesAsync(
+        IEnumerable<string> sourcePaths,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (mainWindow is null || string.IsNullOrWhiteSpace(mainWindow.ViewModel.RepoPath))
+        {
+            return;
+        }
+
+        if (importDialogFactory is null)
+        {
+            throw new InvalidOperationException("Linux import route has no dialog factory.");
+        }
+
+        LinuxRepositoryRoute route = new(
+            LinuxRepositoryRouteKind.MainWindow,
+            mainWindow.ViewModel.RepoPath,
+            null);
+        LinuxImportDialog dialog = importDialogFactory.Create(route);
+        await dialog.OpenRepositoryWithSourcesAsync(route.RepoPath, sourcePaths, cancellationToken)
+            .ConfigureAwait(false);
+        importDialog = dialog;
     }
 
     public async Task ContinueFromLocalFolderNoticeAsync(
@@ -132,6 +176,7 @@ public sealed class LinuxDesktopShell : IDisposable
         {
             localFolderNoticeView = null;
             watcherStatusView = null;
+            importDialog = null;
             return;
         }
 
@@ -145,6 +190,7 @@ public sealed class LinuxDesktopShell : IDisposable
         mainWindow = window;
         watcherStatusView = null;
         localFolderNoticeView = null;
+        importDialog = null;
         chooseRepositoryView.ViewModel.ResetRoute();
     }
 
@@ -203,6 +249,22 @@ public sealed class LinuxMainWindowFactory : ILinuxMainWindowFactory
     public LinuxMainWindow Create(LinuxRepositoryRoute route)
     {
         return new LinuxMainWindow(new LinuxMainWindowViewModel(coreBridge, locale));
+    }
+}
+
+public sealed class LinuxImportDialogFactory : ILinuxImportDialogFactory
+{
+    private readonly IDesktopImportCoreBridge coreBridge;
+
+    public LinuxImportDialogFactory(IDesktopImportCoreBridge coreBridge)
+    {
+        this.coreBridge = coreBridge;
+    }
+
+    public LinuxImportDialog Create(LinuxRepositoryRoute route)
+    {
+        LinuxImportFileProbe fileProbe = new();
+        return new LinuxImportDialog(new LinuxImportViewModel(coreBridge), fileProbe);
     }
 }
 

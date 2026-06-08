@@ -1,0 +1,49 @@
+一、执行结论
+
+- 已完成
+
+二、执行范围
+
+- 单任务：`4-3/task-138`
+- 修改范围：仅 `apps/**`
+- 主要修改文件：
+  - [LinuxImportDialog.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Import/LinuxImportDialog.cs)
+  - [LinuxImportDialog.ui](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Import/LinuxImportDialog.ui)
+  - [LinuxImportPickerAdapter.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Import/LinuxImportPickerAdapter.cs)
+  - [LinuxImportFileProbe.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Import/LinuxImportFileProbe.cs)
+  - [LinuxMountInfoEntry.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Import/LinuxMountInfoEntry.cs)
+  - [LinuxDesktopShell.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs)
+  - [LinuxNativeCoreBridgeSmokeTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/ChooseRepository/LinuxNativeCoreBridgeSmokeTests.cs)
+  - [LinuxImportSmokeTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/Import/LinuxImportSmokeTests.cs)
+  - [LinuxImportViewModelTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/Import/LinuxImportViewModelTests.cs)
+
+三、完成情况
+
+- 核对清单：已只处理 `S4-LNX-05 + C4-13`，未接入 `C4-21` replace/trash 能力。
+- 用户可见触发：补了 GTK Builder XML dialog 合同，以及 Add files、Add folder、Drop、Move confirm、Import、Retry/Close 的可执行 C# action 层。
+- 真实 Core 闭环：新增 native smoke，用临时 repo/source 调用 `predict_category`、`import_file_with_result`，并用 `list_files` 验证 DB 可见。
+- Move mount 判断：不再用 `Path.GetPathRoot("/")`，改为读取 `/proc/self/mountinfo`，无法判断时返回 `unknown`，避免误报 `same mount`。
+- Forbidden Touches：未触碰 `core/src/**`；`core/area_matrix.udl` 未修改。
+
+四、工程质量
+
+- 代码结构：保持 `Dialog -> ViewModel -> CoreBridge -> NativeCoreClient` 分层。
+- 错误与边界：picker 失败、mountinfo 不可读、source 不可读、staging 不可用都显式处理。
+- 无新增第三方依赖；未引入 mock-only 生产路径。
+- 测试中的 fake bridge 仍用于 ViewModel 单元行为，真实 native import 证据已补到 smoke test。
+
+五、验证情况
+
+- 通过：`./dev check task 4-3/task-138`
+  - `prompt doctor: OK`
+  - `git diff --check`
+  - `xcodebuild ... BUILD SUCCEEDED`
+- 通过：`dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj --no-restore`
+  - 输出：`AreaMatrix Linux tests passed.`
+- 通过：单独 `git diff --check`
+- 无无法运行项。`xcodebuild` 有 CoreSimulator/FSEvents 环境警告，但最终 build succeeded。
+
+六、风险与后续
+
+- 剩余风险：当前 Linux 侧仍是仓库既有 C# harness + GTK Builder XML 合同，不是在真实 Linux 桌面会话中做人工点击/拖拽录屏；真实运行态 GUI 验证应在 Linux 环境补跑。
+- 建议下一个任务：`4-3/task-139`，补同页 `C4-21` replace/trash 确认能力；随后 `4-3/task-140` 做 S4-LNX-05 page integration verify。

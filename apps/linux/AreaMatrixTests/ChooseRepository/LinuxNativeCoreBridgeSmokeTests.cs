@@ -1,4 +1,5 @@
 using AreaMatrix.Linux.Core;
+using AreaMatrix.Linux.Features.Import;
 using AreaMatrix.Linux.Features.Library;
 using AreaMatrix.Linux.Features.Onboarding;
 
@@ -11,6 +12,7 @@ public static class LinuxNativeCoreBridgeSmokeTests
         await NativeClientLoadsCoreAndValidatesRepositoryPath();
         await NativeClientReadsLinuxPlatformCapabilities();
         await NativeClientOpensInitializedRepositoryThroughDesktopMainQueryBridge();
+        await NativeClientCommitsDesktopImportThroughImportFileWithResult();
     }
 
     private static async Task NativeClientLoadsCoreAndValidatesRepositoryPath()
@@ -83,6 +85,57 @@ public static class LinuxNativeCoreBridgeSmokeTests
             TestAssert.True(categories.Count > 0, "list_tree_json categories");
             TestAssert.Equal("contract", searchPage.Query, "search query echo");
             TestAssert.Equal(0, searchPage.TotalCount, "empty repo search total");
+        }
+        finally
+        {
+            Directory.Delete(tempRoot, recursive: true);
+        }
+    }
+
+    private static async Task NativeClientCommitsDesktopImportThroughImportFileWithResult()
+    {
+        string libraryPath = ResolveNativeLibraryPath();
+        string tempRoot = Path.Combine(Path.GetTempPath(), $"areamatrix-lnx-c413-{Guid.NewGuid():N}");
+        string repo = Path.Combine(tempRoot, "repo");
+        string sourceDirectory = Path.Combine(tempRoot, "source");
+        string source = Path.Combine(sourceDirectory, "Linux Report.pdf");
+        Directory.CreateDirectory(repo);
+        Directory.CreateDirectory(sourceDirectory);
+        await File.WriteAllTextAsync(source, "linux import native smoke");
+        try
+        {
+            using AreaMatrixNativeCoreClient client = new(libraryPath);
+            await client.InitRepoAsync(repo, CoreRepoInitOptions.CreateEmptyGeneratedOnly);
+
+            CoreDesktopClassifyResult preview = await client.PredictCategoryAsync(
+                repo,
+                Path.GetFileName(source));
+            CoreDesktopImportResult imported = await client.ImportFileWithResultAsync(
+                repo,
+                source,
+                new CoreDesktopImportOptions(
+                    "Copied",
+                    "SelectedDirectory",
+                    "linux/imports",
+                    null,
+                    null,
+                    "KeepBoth"));
+            DesktopMainQueryCoreBridge queryBridge = new(client);
+            IReadOnlyList<DesktopFileEntry> files = await queryBridge.ListFilesAsync(
+                repo,
+                DesktopFileFilter.FirstPage());
+
+            TestAssert.Equal("Linux Report.pdf", preview.SuggestedName, "desktop import suggested name");
+            TestAssert.Equal("NotRequested", imported.SourceRemovalStatus, "copy source removal status");
+            TestAssert.Null(imported.SourceRemovalFailure, "copy source removal failure");
+            TestAssert.Equal("linux/imports/Linux Report.pdf", imported.Entry.Path, "imported relative path");
+            TestAssert.True(File.Exists(source), "copy import leaves source file");
+            TestAssert.True(
+                File.Exists(Path.Combine(repo, imported.Entry.Path)),
+                "copy import writes repository file");
+            TestAssert.True(
+                files.Any(file => file.Id == imported.Entry.Id && file.Path == imported.Entry.Path),
+                "list_files sees imported DB row");
         }
         finally
         {

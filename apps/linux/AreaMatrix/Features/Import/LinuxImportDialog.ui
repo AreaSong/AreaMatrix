@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0" />
+  <object class="GtkDialog" id="S4Lnx05ImportDialog">
+    <property name="title">Import to AreaMatrix</property>
+    <property name="default-width">760</property>
+    <property name="modal">true</property>
+    <child internal-child="content_area">
+      <object class="GtkBox" id="ImportDialogContent">
+        <property name="orientation">vertical</property>
+        <property name="spacing">16</property>
+        <child>
+          <object class="GtkLabel" id="SourceSummaryLabel">
+            <property name="label">Add files or folders to import.</property>
+            <property name="xalign">0</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox" id="SourceActions">
+            <property name="orientation">horizontal</property>
+            <property name="spacing">8</property>
+            <child>
+              <object class="GtkButton" id="AddFilesButton">
+                <property name="label">Add files...</property>
+                <property name="action-name">import.add-files</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="AddFolderButton">
+                <property name="label">Add folder...</property>
+                <property name="action-name">import.add-folder</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkDropTarget" id="ImportDropTarget">
+                <property name="actions">copy</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="DropHintLabel">
+            <property name="label">Drop files or folders to import</property>
+            <property name="xalign">0</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkColumnView" id="PreviewListView">
+            <property name="hexpand">true</property>
+            <property name="vexpand">true</property>
+            <accessibility>
+              <property name="label">Import preview list with Name, Size, Suggested category, and Status.</property>
+            </accessibility>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox" id="ImportSettings">
+            <property name="orientation">vertical</property>
+            <property name="spacing">8</property>
+            <child>
+              <object class="GtkCheckButton" id="CopyModeButton">
+                <property name="label">Copy into repository</property>
+                <property name="active">true</property>
+                <property name="action-name">import.copy-mode</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="MoveModeButton">
+                <property name="label">Move into repository</property>
+                <property name="action-name">import.move-mode</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="PreserveFolderStructureCheck">
+                <property name="label">Preserve folder structure</property>
+                <property name="action-name">import.preserve-folder-structure</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox" id="MoveConfirmationSection">
+            <property name="orientation">vertical</property>
+            <property name="spacing">6</property>
+            <child>
+              <object class="GtkLabel" id="MoveConfirmationTitle">
+                <property name="label">Move originals after import?</property>
+                <property name="xalign">0</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="MoveSafetyText">
+                <property name="label">AreaMatrix will not remove originals until the imported files and database records are safely written.</property>
+                <property name="wrap">true</property>
+                <property name="xalign">0</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="MovePermissionText">
+                <property name="label">The source folder must allow removing these files. AreaMatrix will not ask for sudo or change permissions.</property>
+                <property name="wrap">true</property>
+                <property name="xalign">0</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="MoveMountText">
+                <property name="label">If the source and repository are on different mounts, AreaMatrix will copy into staging first and remove originals only after the import succeeds.</property>
+                <property name="wrap">true</property>
+                <property name="xalign">0</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="MoveRetainedText">
+                <property name="label">If removing an original fails, the result will say Imported, original retained.</property>
+                <property name="wrap">true</property>
+                <property name="xalign">0</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="MoveConfirmedCheck">
+                <property name="label">I understand the originals will be removed from the source folder after a successful import.</property>
+                <property name="action-name">import.confirm-move</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="UseCopyInsteadButton">
+                <property name="label">Use Copy instead</property>
+                <property name="action-name">import.use-copy-instead</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="ProgressLabel">
+            <property name="label">Staging / Hashing / Writing files / Updating database / Removing originals / Done</property>
+            <property name="xalign">0</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkListView" id="ResultsListView">
+            <accessibility>
+              <property name="label">Import results including Imported, original retained and failed rows.</property>
+            </accessibility>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child type="action">
+      <object class="GtkButton" id="CancelButton">
+        <property name="label">Cancel</property>
+        <property name="action-name">import.cancel</property>
+      </object>
+    </child>
+    <child type="action">
+      <object class="GtkButton" id="ImportButton">
+        <property name="label">Import</property>
+        <property name="action-name">import.commit</property>
+      </object>
+    </child>
+  </object>
+</interface>

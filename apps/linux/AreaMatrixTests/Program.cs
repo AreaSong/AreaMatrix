@@ -1,4 +1,5 @@
 using AreaMatrix.Linux.Tests.ChooseRepository;
+using AreaMatrix.Linux.Tests.Import;
 using AreaMatrix.Linux.Tests.Library;
 using AreaMatrix.Linux.Tests.System;
 
@@ -9,6 +10,8 @@ await LocalFolderNoticeViewModelTests.RunAllAsync();
 LocalFolderNoticeSmokeTests.RunAll();
 await LinuxMainWindowViewModelTests.RunAllAsync();
 LinuxMainWindowSmokeTests.RunAll();
+await LinuxImportViewModelTests.RunAllAsync();
+LinuxImportSmokeTests.RunAll();
 await LinuxWatcherStatusViewModelTests.RunAllAsync();
 LinuxWatcherStatusSmokeTests.RunAll();
 

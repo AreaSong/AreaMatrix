@@ -1,5 +1,6 @@
 using System.Text;
 using System.Runtime.InteropServices;
+using AreaMatrix.Linux.Features.Import;
 using AreaMatrix.Linux.Features.Library;
 using AreaMatrix.Linux.Features.Onboarding;
 using AreaMatrix.Linux.Features.System;
@@ -9,11 +10,14 @@ namespace AreaMatrix.Linux.Core;
 public sealed partial class AreaMatrixNativeCoreClient :
     IAreaMatrixLinuxCoreClient,
     IAreaMatrixLinuxDesktopQueryCoreClient,
+    IAreaMatrixLinuxDesktopImportCoreClient,
     IAreaMatrixLinuxWatcherStatusCoreClient,
     IDisposable
 {
     private const ushort InitRepoChecksum = 29414;
     private const ushort ValidateRepoPathChecksum = 43498;
+    private const ushort PredictCategoryChecksum = 65047;
+    private const ushort ImportFileWithResultChecksum = 52959;
     private const ushort GetPlatformCapabilitiesChecksum = 42907;
     private const ushort GetFileChecksum = 6132;
     private const ushort ListFilesChecksum = 56809;
@@ -83,6 +87,8 @@ public sealed partial class AreaMatrixNativeCoreClient :
     {
         if (native.InitRepoChecksum() != InitRepoChecksum
             || native.ValidateRepoPathChecksum() != ValidateRepoPathChecksum
+            || native.PredictCategoryChecksum() != PredictCategoryChecksum
+            || native.ImportFileWithResultChecksum() != ImportFileWithResultChecksum
             || native.GetPlatformCapabilitiesChecksum() != GetPlatformCapabilitiesChecksum
             || native.GetFileChecksum() != GetFileChecksum
             || native.ListFilesChecksum() != ListFilesChecksum
