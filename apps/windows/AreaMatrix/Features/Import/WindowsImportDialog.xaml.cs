@@ -171,6 +171,43 @@ public sealed partial class WindowsImportDialog : UserControl
         RefreshState();
     }
 
+    private async void PreviewReplaceButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        await ViewModel.PreviewReplaceAsync();
+        RefreshState();
+    }
+
+    private async void ApplyReplaceButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        await ViewModel.ApplyReplaceAsync();
+        RefreshState();
+    }
+
+    private void ReplaceConfirmedCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!refreshingControls && ViewModel is not null)
+        {
+            ViewModel.ReplaceConfirmed = ReplaceConfirmedCheckBox.IsChecked == true;
+            RefreshState();
+        }
+    }
+
+    private void CancelReplaceButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel?.CancelReplace();
+        RefreshState();
+    }
+
     private void UseCopyInsteadButton_Click(object sender, RoutedEventArgs e)
     {
         ViewModel?.UseCopyInstead();
@@ -301,6 +338,8 @@ public sealed partial class WindowsImportDialog : UserControl
             : InfoBarSeverity.Warning;
         ProgressTextBlock.Text = ViewModel.StatusText;
         ImportButton.IsEnabled = ViewModel.CanImport;
+        PreviewReplaceButton.IsEnabled = ViewModel.CanPreviewReplace;
+        ApplyReplaceButton.IsEnabled = ViewModel.CanApplyReplace;
         PreparePreviewButton.IsEnabled = ViewModel.CanPrepare;
         ProgressRing.Visibility = ViewModel.IsPreparing || ViewModel.IsImporting
             ? Visibility.Visible
@@ -314,6 +353,18 @@ public sealed partial class WindowsImportDialog : UserControl
         ResultsSection.Visibility = ViewModel.Results.Count > 0
             ? Visibility.Visible
             : Visibility.Collapsed;
+        ReplaceConfirmationSection.Visibility = ViewModel.HasNameConflicts || ViewModel.HasPendingReplaceConfirmation
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        ReplaceInfoBar.Message = ViewModel.ReplaceStatusText;
+        ReplaceInfoBar.Severity = ViewModel.PendingReplaceConfirmation?.CanConfirm == true
+            ? InfoBarSeverity.Warning
+            : InfoBarSeverity.Informational;
+        ReplaceExistingPathTextBlock.Text = ViewModel.PendingReplaceConfirmation?.ExistingPath ?? string.Empty;
+        ReplaceIncomingPathTextBlock.Text = ViewModel.PendingReplaceConfirmation?.IncomingPath ?? string.Empty;
+        ReplaceTargetPathTextBlock.Text = ViewModel.PendingReplaceConfirmation is { } confirmation
+            ? $"Target: {confirmation.TargetPath}"
+            : string.Empty;
         ResultSummaryTextBlock.Text = ViewModel.ResultSummaryText;
         PreviewListView.ItemsSource = ViewModel.PreviewItems;
         ResultsListView.ItemsSource = ViewModel.Results;
@@ -343,6 +394,7 @@ public sealed partial class WindowsImportDialog : UserControl
             };
             PreserveFolderStructureCheckBox.IsChecked = ViewModel?.PreserveFolderStructure == true;
             MoveConfirmedCheckBox.IsChecked = ViewModel?.MoveConfirmed == true;
+            ReplaceConfirmedCheckBox.IsChecked = ViewModel?.ReplaceConfirmed == true;
         }
         finally
         {

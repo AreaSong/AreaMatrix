@@ -194,6 +194,58 @@
                 </StackPanel>
 
                 <StackPanel
+                    x:Name="ReplaceConfirmationSection"
+                    Spacing="8"
+                    Visibility="Collapsed">
+                    <TextBlock
+                        Text="Replace existing file"
+                        Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <InfoBar
+                        x:Name="ReplaceInfoBar"
+                        AutomationProperties.LiveSetting="Polite"
+                        IsOpen="True" />
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="4">
+                            <TextBlock
+                                Text="Existing file"
+                                FontWeight="SemiBold" />
+                            <TextBlock
+                                x:Name="ReplaceExistingPathTextBlock"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock
+                                Text="Incoming file"
+                                FontWeight="SemiBold" />
+                            <TextBlock
+                                x:Name="ReplaceIncomingPathTextBlock"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock
+                        x:Name="ReplaceTargetPathTextBlock"
+                        TextWrapping="Wrap" />
+                    <CheckBox
+                        x:Name="ReplaceConfirmedCheckBox"
+                        Content="I understand the existing file will be moved to Recycle Bin before replacement."
+                        Checked="ReplaceConfirmedCheckBox_Changed"
+                        Unchecked="ReplaceConfirmedCheckBox_Changed" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button
+                            Content="Use Keep both"
+                            Click="CancelReplaceButton_Click" />
+                        <Button
+                            x:Name="ApplyReplaceButton"
+                            Content="Apply Replace"
+                            Click="ApplyReplaceButton_Click" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel
                     x:Name="ResultsSection"
                     Spacing="8"
                     Visibility="Collapsed">
@@ -228,6 +280,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Orientation="Horizontal" Spacing="8">
                 <ProgressRing
@@ -246,8 +299,13 @@
                 Content="Cancel"
                 Click="CancelButton_Click" />
             <Button
-                x:Name="ImportButton"
+                x:Name="PreviewReplaceButton"
                 Grid.Column="2"
+                Content="Preview Replace"
+                Click="PreviewReplaceButton_Click" />
+            <Button
+                x:Name="ImportButton"
+                Grid.Column="3"
                 Content="Import"
                 Click="ImportButton_Click" />
         </Grid>

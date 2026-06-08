@@ -39,8 +39,12 @@ public static class WindowsImportSmokeTests
         TestAssert.Contains("Move originals after import?", xaml, "Move confirmation title");
         TestAssert.Contains("MovePreflightInfoBar", xaml, "Move preflight status");
         TestAssert.Contains("Preserve folder structure", xaml, "folder import option");
-        TestAssert.DoesNotContain("Replace existing file", xaml, "C4-21 Replace must stay out of C4-13 task");
-        TestAssert.DoesNotContain("Overwrite", xaml, "destructive overwrite must stay hidden");
+        TestAssert.Contains("Replace existing file", xaml, "C4-21 Replace confirmation title");
+        TestAssert.Contains("ReplaceInfoBar", xaml, "replace status info bar");
+        TestAssert.Contains("Preview Replace", xaml, "replace preview trigger");
+        TestAssert.Contains("Apply Replace", xaml, "replace apply trigger");
+        TestAssert.Contains("I understand the existing file will be moved to Recycle Bin", xaml, "replace second confirmation");
+        TestAssert.DoesNotContain("Overwrite", xaml, "destructive overwrite wording must stay hidden");
         TestAssert.DoesNotContain("Index in place", xaml, "index mode is outside Windows MVP import task");
     }
 
@@ -77,6 +81,14 @@ public static class WindowsImportSmokeTests
             "uniffi_area_matrix_core_fn_func_import_file_with_result",
             nativeLibrary,
             "import_file_with_result native binding");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_preview_import_conflict_batch",
+            nativeLibrary,
+            "preview_import_conflict_batch native binding");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_apply_import_conflict_batch",
+            nativeLibrary,
+            "apply_import_conflict_batch native binding");
 
         string nativeClient = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Core/AreaMatrixNativeCoreClient.DesktopImport.cs"));
@@ -84,7 +96,14 @@ public static class WindowsImportSmokeTests
         TestAssert.Contains("ImportFileWithResultAsync", nativeClient, "import result bridge call");
         TestAssert.Contains("ReadImportSourceRemovalStatus", nativeClient, "source removal status mapping");
         TestAssert.Contains("WriteDuplicateStrategy", nativeClient, "duplicate strategy mapping");
-        TestAssert.DoesNotContain("\"Overwrite\" => 2", nativeClient, "C4-21 overwrite not exposed");
+        TestAssert.Contains("\"Overwrite\" => 2", nativeClient, "desktop import duplicate strategy mapping");
+
+        string conflictBatchClient = File.ReadAllText(RepositoryPath(
+            "apps/windows/AreaMatrix/Core/AreaMatrixNativeCoreClient.ImportConflictBatch.cs"));
+        TestAssert.Contains("PreviewImportConflictBatchAsync", conflictBatchClient, "replace preview Core call");
+        TestAssert.Contains("ApplyImportConflictBatchAsync", conflictBatchClient, "replace apply Core call");
+        TestAssert.Contains("\"Replace\" => 3", conflictBatchClient, "replace strategy lowering");
+        TestAssert.Contains("ReplaceConfirmed", conflictBatchClient, "replace confirmation lowering");
 
         string models = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Features/Import/DesktopImportModels.cs"));
@@ -101,6 +120,17 @@ public static class WindowsImportSmokeTests
             "apps/windows/AreaMatrix/Features/Import/WindowsImportViewModel.cs"));
         TestAssert.Contains("MovePreflight.CanMove", viewModel, "move preflight gates import");
         TestAssert.Contains("item.IsImportable", viewModel, "non-importable conflict rows are skipped");
+
+        string replaceViewModel = File.ReadAllText(RepositoryPath(
+            "apps/windows/AreaMatrix/Features/Import/WindowsImportViewModel.Replace.cs"));
+        TestAssert.Contains("PreviewReplaceAsync", replaceViewModel, "replace preview action");
+        TestAssert.Contains("ApplyReplaceAsync", replaceViewModel, "replace apply action");
+        TestAssert.Contains("ReplaceConfirmed", replaceViewModel, "replace second confirmation gate");
+        TestAssert.Contains("ApplyReplaceConflictAsync", replaceViewModel, "confirmed replace Core apply path");
+        TestAssert.DoesNotContain(
+            "DesktopImportDuplicateStrategy.Overwrite",
+            replaceViewModel,
+            "replace must not use direct desktop import overwrite fallback");
     }
 
     private static void AssertButton(XElement root, string content, string clickHandler)

@@ -36,6 +36,19 @@ internal delegate RustBuffer ImportFileWithResultDelegate(
     ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer PreviewImportConflictBatchDelegate(
+    RustBuffer repoPath,
+    RustBuffer request,
+    ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer ApplyImportConflictBatchDelegate(
+    RustBuffer repoPath,
+    RustBuffer request,
+    RustBuffer previewToken,
+    ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 internal delegate RustBuffer ListFilesDelegate(RustBuffer repoPath, RustBuffer filter, ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

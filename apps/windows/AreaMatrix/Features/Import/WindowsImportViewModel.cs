@@ -185,6 +185,7 @@ public sealed partial class WindowsImportViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(ImportableItemCount));
                 OnPropertyChanged(nameof(SourceSummaryText));
                 OnPropertyChanged(nameof(MoveConfirmationText));
+                NotifyReplacePreviewStateChanged();
                 OnPropertyChanged(nameof(CanImport));
                 RefreshMovePreflight();
             }
@@ -298,16 +299,7 @@ public sealed partial class WindowsImportViewModel : INotifyPropertyChanged
     {
         get
         {
-            if (Results.Count == 0)
-            {
-                return string.Empty;
-            }
-
-            int retained = Results.Count(result =>
-                result.SourceRemovalStatus == DesktopImportSourceRemovalStatus.Retained);
-            return retained > 0
-                ? $"Imported {Results.Count} item(s), {retained} original(s) retained"
-                : $"Imported {Results.Count} item(s)";
+            return Results.Count == 0 ? string.Empty : ResultSummaryFor(Results);
         }
     }
 
@@ -353,6 +345,7 @@ public sealed partial class WindowsImportViewModel : INotifyPropertyChanged
         sources = [];
         PreviewItems = [];
         Results = [];
+        ClearReplaceState();
         MovePreflight = DesktopImportMovePreflight.NotEvaluated;
         Error = null;
     }
@@ -380,15 +373,20 @@ public sealed partial class WindowsImportViewModel : INotifyPropertyChanged
         CurrentStep = DesktopImportStep.Preparing;
         Error = null;
         Results = [];
+        ClearReplaceState();
         try
         {
             List<DesktopImportPreviewItem> items = [];
-            foreach (string sourcePath in SourcePaths())
+            foreach (DesktopImportSource source in SourcesForPreview())
             {
                 DesktopImportPreviewItem item = await coreBridge
-                    .PredictImportAsync(RepoPath, sourcePath, cancellationToken)
+                    .PredictImportAsync(RepoPath, source.SourcePath, cancellationToken)
                     .ConfigureAwait(false);
-                items.Add(item);
+                items.Add(item with
+                {
+                    ImportSessionId = source.ImportSessionId,
+                    ConflictId = source.ConflictId
+                });
             }
 
             PreviewItems = items;
@@ -413,6 +411,7 @@ public sealed partial class WindowsImportViewModel : INotifyPropertyChanged
         IsImporting = true;
         Error = null;
         Results = [];
+        ReplaceResult = null;
         try
         {
             List<DesktopImportResult> imported = [];

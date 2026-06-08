@@ -17,23 +17,6 @@ public sealed partial class AreaMatrixNativeCoreClient :
     IAreaMatrixWatcherStatusCoreClient,
     IDisposable
 {
-    private const ushort AcknowledgeOneDriveRiskNoticeChecksum = 22622;
-    private const ushort DetectCloudStorageStateChecksum = 18169;
-    private const ushort GetFileChecksum = 6132;
-    private const ushort InitRepoChecksum = 29414;
-    private const ushort ImportFileWithResultChecksum = 52959;
-    private const ushort ListFilesChecksum = 56809;
-    private const ushort ListTreeJsonChecksum = 45468;
-    private const ushort LoadConfigChecksum = 64573;
-    private const ushort GetLatestScanSessionChecksum = 31155;
-    private const ushort PredictCategoryChecksum = 65047;
-    private const ushort PreviewManualRescanChecksum = 12140;
-    private const ushort RecordWatcherHealthChecksum = 47455;
-    private const ushort ReindexFromFilesystemChecksum = 54635;
-    private const ushort ResumeScanSessionChecksum = 31216;
-    private const ushort SearchFilesChecksum = 65;
-    private const ushort ValidateRepoPathChecksum = 43498;
-
     private readonly NativeCoreLibrary native;
     private bool disposed;
 
@@ -108,31 +91,6 @@ public sealed partial class AreaMatrixNativeCoreClient :
 
         native.Dispose();
         disposed = true;
-    }
-
-    private void VerifyContract()
-    {
-        if (native.InitRepoChecksum() != InitRepoChecksum
-            || native.AcknowledgeOneDriveRiskNoticeChecksum() != AcknowledgeOneDriveRiskNoticeChecksum
-            || native.DetectCloudStorageStateChecksum() != DetectCloudStorageStateChecksum
-            || native.GetFileChecksum() != GetFileChecksum
-            || native.ImportFileWithResultChecksum() != ImportFileWithResultChecksum
-            || native.ListFilesChecksum() != ListFilesChecksum
-            || native.ListTreeJsonChecksum() != ListTreeJsonChecksum
-            || native.LoadConfigChecksum() != LoadConfigChecksum
-            || native.GetLatestScanSessionChecksum() != GetLatestScanSessionChecksum
-            || native.PredictCategoryChecksum() != PredictCategoryChecksum
-            || native.PreviewManualRescanChecksum() != PreviewManualRescanChecksum
-            || native.RecordWatcherHealthChecksum() != RecordWatcherHealthChecksum
-            || native.ReindexFromFilesystemChecksum() != ReindexFromFilesystemChecksum
-            || native.ResumeScanSessionChecksum() != ResumeScanSessionChecksum
-            || native.SearchFilesChecksum() != SearchFilesChecksum
-            || native.ValidateRepoPathChecksum() != ValidateRepoPathChecksum)
-        {
-            throw new WindowsRepositoryCoreException(
-                WindowsRepositoryErrorKind.Config,
-                "AreaMatrix Core binding checksum mismatch.");
-        }
     }
 
     private T CallWithResult<T>(

@@ -11,6 +11,7 @@ public static class WindowsImportViewModelTests
         await PreparingPreviewUsesCorePredictCategoryForEachSource();
         await CoreBridgeMarksUnreadablePreviewWithoutCorePredictCall();
         await CoreBridgeMarksDuplicateAndNameConflictPreviewStatuses();
+        await CoreBridgeMarksNameConflictReplaceBlockedWithoutCoreSession();
         await CopyImportCommitsThroughCoreImportFileWithResult();
         await FolderImportCanPreserveRelativeDirectoryThroughCoreOptions();
         await UnreadablePreviewItemDoesNotCommitImport();
@@ -88,6 +89,45 @@ public static class WindowsImportViewModelTests
             Directory.Delete(root, recursive: true);
         }
     }
+
+    private static async Task CoreBridgeMarksNameConflictReplaceBlockedWithoutCoreSession()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            string repo = Path.Combine(root, "repo");
+            string source = Path.Combine(root, "sources");
+            Directory.CreateDirectory(Path.Combine(repo, ".areamatrix", "staging"));
+            Directory.CreateDirectory(Path.Combine(repo, "finance"));
+            Directory.CreateDirectory(source);
+
+            string nameConflictSource = Path.Combine(source, "report.pdf");
+            string existing = Path.Combine(repo, "finance", "report.pdf");
+            await File.WriteAllTextAsync(nameConflictSource, "incoming-content");
+            await File.WriteAllTextAsync(existing, "existing-content");
+
+            DesktopImportCoreBridge bridge = new(
+                new RecordingDesktopImportCoreClient(),
+                new WindowsImportFileProbe());
+
+            DesktopImportPreviewItem item = await bridge.PredictImportAsync(repo, nameConflictSource);
+
+            TestAssert.Equal(DesktopImportPreviewStatus.NameConflict, item.Status, "name conflict status");
+            TestAssert.True(item.HasNameConflictWithoutCoreSession, nameof(item.HasNameConflictWithoutCoreSession));
+            TestAssert.False(item.CanPreviewReplace, nameof(item.CanPreviewReplace));
+            TestAssert.False(item.ReplacePreflightAvailable, nameof(item.ReplacePreflightAvailable));
+            TestAssert.Equal(existing, item.ExistingPath, nameof(item.ExistingPath));
+            TestAssert.Contains(
+                "Core import conflict preview",
+                item.ReplaceBlockedReason ?? string.Empty,
+                nameof(item.ReplaceBlockedReason));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
 
     private static async Task CopyImportCommitsThroughCoreImportFileWithResult()
     {
@@ -332,144 +372,5 @@ public static class WindowsImportViewModelTests
         string path = Path.Combine(Path.GetTempPath(), $"areamatrix-win-import-{Guid.NewGuid():N}");
         Directory.CreateDirectory(path);
         return path;
-    }
-}
-
-internal sealed class FakeDesktopImportCoreBridge : IDesktopImportCoreBridge
-{
-    public List<string> PreviewRequests { get; } = [];
-
-    public List<string> ImportRequests { get; } = [];
-
-    public DesktopImportRequest? LastRequest { get; private set; }
-
-    public DesktopImportResult Result { get; set; } = new(
-        new DesktopFileEntry(
-            1,
-            @"finance\report.pdf",
-            "report.pdf",
-            "report.pdf",
-            "finance",
-            2048,
-            "hash-1",
-            DesktopStorageMode.Copied,
-            DesktopFileOrigin.Imported,
-            null,
-            DesktopFileAvailabilityStatus.Available,
-            1_700_000_000,
-            1_700_000_100),
-        DesktopImportSourceRemovalStatus.NotRequested,
-        null);
-
-    public Exception? ImportException { get; set; }
-
-    public DesktopImportPreviewStatus PreviewStatus { get; set; } = DesktopImportPreviewStatus.Ready;
-
-    public DesktopImportMovePreflight MovePreflight { get; set; } = new(true, []);
-
-    public Task<DesktopImportPreviewItem> PredictImportAsync(
-        string repoPath,
-        string sourcePath,
-        CancellationToken cancellationToken = default)
-    {
-        PreviewRequests.Add(sourcePath);
-        return Task.FromResult(new DesktopImportPreviewItem(
-            sourcePath,
-            Path.GetFileName(sourcePath),
-            "PDF",
-            "2 KB",
-            "finance",
-            Path.GetFileName(sourcePath),
-            PreviewStatus));
-    }
-
-    public Task<DesktopImportResult> ImportFileWithResultAsync(
-        string repoPath,
-        string sourcePath,
-        DesktopImportRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        if (ImportException is not null)
-        {
-            throw ImportException;
-        }
-
-        ImportRequests.Add(sourcePath);
-        LastRequest = request;
-        return Task.FromResult(Result);
-    }
-
-    public DesktopImportMovePreflight CheckMovePreflight(
-        string repoPath,
-        IReadOnlyList<DesktopImportPreviewItem> previewItems)
-    {
-        return MovePreflight;
-    }
-}
-
-internal sealed class RecordingDesktopImportCoreClient : IAreaMatrixDesktopImportCoreClient
-{
-    public List<string> PredictedFilenames { get; } = [];
-
-    public Task<CoreDesktopClassifyResult> PredictCategoryAsync(
-        string repoPath,
-        string filename,
-        CancellationToken cancellationToken = default)
-    {
-        PredictedFilenames.Add(filename);
-        return Task.FromResult(new CoreDesktopClassifyResult("finance", filename, "Extension", 0.9f));
-    }
-
-    public Task<CoreDesktopImportResult> ImportFileWithResultAsync(
-        string repoPath,
-        string sourcePath,
-        CoreDesktopImportOptions options,
-        CancellationToken cancellationToken = default)
-    {
-        throw new NotSupportedException("import is not used by this test");
-    }
-}
-
-internal sealed class StaticWindowsImportFileProbe : IWindowsImportFileProbe
-{
-    private readonly bool isReadable;
-
-    public StaticWindowsImportFileProbe(bool isReadable)
-    {
-        this.isReadable = isReadable;
-    }
-
-    public WindowsImportFileProbeResult Probe(string sourcePath)
-    {
-        return new WindowsImportFileProbeResult(
-            sourcePath,
-            Path.GetFileName(sourcePath),
-            isReadable ? "PDF" : "Unavailable",
-            isReadable ? "2 KB" : "-",
-            isReadable,
-            isReadable,
-            isReadable ? null : "source file is not readable",
-            isReadable ? null : "source location does not allow removal");
-    }
-
-    public DesktopImportPreviewStatus ResolvePreviewStatus(
-        string repoPath,
-        WindowsImportFileProbeResult source,
-        string suggestedCategory,
-        string suggestedName)
-    {
-        return source.IsReadable ? DesktopImportPreviewStatus.Ready : DesktopImportPreviewStatus.Unreadable;
-    }
-
-    public DesktopImportMovePreflight CheckMovePreflight(
-        string repoPath,
-        IReadOnlyList<DesktopImportPreviewItem> previewItems)
-    {
-        return new DesktopImportMovePreflight(isReadable, isReadable ? [] : ["source file is not readable"]);
-    }
-
-    public IReadOnlyList<DesktopImportSource> ExpandSources(IEnumerable<string> sourcePaths)
-    {
-        return sourcePaths.Select(path => new DesktopImportSource(path)).ToArray();
     }
 }

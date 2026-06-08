@@ -1,0 +1,60 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-128`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-128-s4-win-05-c4-21-replace-confirm-cross-platform.md`
+- 主要实现范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/**`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+| 项目 | 结果 | 证据 | 涉及文件 |
+|---|---|---|---|
+| 只处理 S4-WIN-05 页面中的 C4-21 | 通过 | task 绑定 S4-WIN-05 + C4-21；实现落在 Windows import dialog 的 Replace 区域 | task 文件:22-25；`WindowsImportDialog.xaml`:196-245 |
+| 已读取页面规格、control map、Core API、C4-21 spec | 通过 | S4-WIN-05 要求 Replace 进入二次确认，Recycle Bin 不可用时禁用；control map 声明 S4-WIN-05 为 C4-13,C4-21 | `S4-WIN-05-import-flow.md`:71-97；`stage-4-control-map.md`:20；`C4-21...md`:38-42 |
+| 只接入 C4-21 对应 CoreBridge / 状态 / 错误映射 | 通过 | Replace 走 `PreviewReplaceConflictAsync` / `ApplyReplaceConflictAsync`，并映射 preview token、TrashAvailable、ReplaceConfirmed | `DesktopImportCoreBridge.cs`:20-29,131-152；`WindowsImportViewModel.Replace.cs`:120-178 |
+| 不实现同页其他能力或相邻页面/平台 | 通过 | 变更集中在 `apps/windows/**` 的 import/bridge/test；未触碰 iOS/Linux；C4-13 既有导入流程未被扩成新能力 | `git status --short`；`git diff --name-status` |
+| 用户可见 C4-21 功能可触发和验收 | 通过 | XAML 暴露 `Preview Replace`、`Apply Replace`、二次确认 checkbox；code-behind 调用 ViewModel preview/apply | `WindowsImportDialog.xaml`:232-245,301-305；`WindowsImportDialog.xaml.cs`:174-193 |
+| 没有 mock / fixture / 静态状态伪造真实 Core 闭环 | 通过 | 生产路径经 `NativeCoreLibrary` UniFFI export 和 checksum；fake 仅在测试中使用 | `NativeCoreLibrary.cs`:27-30,62-65；`AreaMatrixNativeCoreClient.ImportConflictBatch.cs`:10-39 |
+| Replace 安全边界满足 | 通过 | `CanApplyReplace` 要求二次确认、Core preview 可 apply、TrashAvailable、PreviewToken；无 Core session 时不走 overwrite fallback | `DesktopImportReplaceModels.cs`:128-139；`WindowsImportViewModel.Replace.cs`:82-87,159-172 |
+| Expected New Paths 落地 | 通过 | 新增/修改均在 `apps/windows/**`；新增 Replace models/ViewModel/tests 和 native conflict batch bridge | `git status --short` |
+| Forbidden Touches 未违规 | 通过 | `git diff -- core/src` 无输出；`git diff --cached -- core/src` 无输出 | `core/src/**` |
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Replace 状态机被拆到 `WindowsImportViewModel.Replace.cs`，Core 映射集中在 `DesktopImportCoreBridge.cs` 与 native client。
+- 注释 / rustdoc / 文档同步：通过。未改 public Rust API；UDL 现有合同与 Core API 中 import conflict preview/apply 字段一致。
+- 错误处理与边界处理：通过。Core 异常经 `DesktopImportError.FromException` 映射；Apply 前缺 preview 会报 Conflict，不会静默执行。
+- 测试与验证覆盖：通过。覆盖无 Core session、无 overwrite fallback、未勾确认不可 Apply、带 preview token 的 Core Apply。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产代码没有 mock-only wiring；测试 fake 不作为生产闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-128`
+- 结果：通过，exit 0
+- 关键证据：`prompt doctor: OK`；`git diff --check` 通过；`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 已运行补充验证：`dotnet run --project apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj`
+- 结果：通过，输出 `AreaMatrix Windows tests passed.`
+- 失败：无
+- 缺失：未在真实 Windows 桌面手动点击 UI；本轮验收依据代码、XAML、ViewModel 测试、smoke 测试和 task-scoped validation。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C4-21 Replace 在 S4-WIN-05 中可由用户触发，Apply 被 Core preview、Recycle Bin/Trash 可用性、preview token 和二次确认共同约束；未触碰 `core/src/**`，未发现范围外危险改动。
+
+VERIFY_RESULT: PASS

@@ -84,6 +84,7 @@ public sealed partial class AreaMatrixNativeCoreClient
         WriteEnum(bytes, strategy switch
         {
             "Skip" => 1,
+            "Overwrite" => 2,
             "KeepBoth" => 3,
             "Ask" => 4,
             _ => throw BindingConfigError($"Unsupported desktop import duplicate strategy `{strategy}`.")

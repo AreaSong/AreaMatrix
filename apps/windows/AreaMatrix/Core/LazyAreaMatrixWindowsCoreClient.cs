@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using AreaMatrix.Features.Import;
 using AreaMatrix.Features.Library;
 using AreaMatrix.Features.Onboarding;
 
@@ -9,6 +10,7 @@ namespace AreaMatrix.Core;
 internal sealed class LazyAreaMatrixWindowsCoreClient :
     IAreaMatrixWindowsCoreClient,
     IAreaMatrixDesktopQueryCoreClient,
+    IAreaMatrixDesktopImportCoreClient,
     IAreaMatrixWatcherStatusCoreClient,
     IDisposable
 {
@@ -84,6 +86,40 @@ internal sealed class LazyAreaMatrixWindowsCoreClient :
         CancellationToken cancellationToken = default)
     {
         return Current.SearchFilesAsync(repoPath, query, filter, sort, pagination, cancellationToken);
+    }
+
+    public Task<CoreDesktopClassifyResult> PredictCategoryAsync(
+        string repoPath,
+        string filename,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.PredictCategoryAsync(repoPath, filename, cancellationToken);
+    }
+
+    public Task<CoreDesktopImportResult> ImportFileWithResultAsync(
+        string repoPath,
+        string sourcePath,
+        CoreDesktopImportOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.ImportFileWithResultAsync(repoPath, sourcePath, options, cancellationToken);
+    }
+
+    public Task<CoreDesktopImportConflictBatchPreviewReport> PreviewImportConflictBatchAsync(
+        string repoPath,
+        CoreDesktopImportConflictBatchPreviewRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.PreviewImportConflictBatchAsync(repoPath, request, cancellationToken);
+    }
+
+    public Task<CoreDesktopImportConflictBatchApplyReport> ApplyImportConflictBatchAsync(
+        string repoPath,
+        CoreDesktopImportConflictBatchApplyRequest request,
+        string previewToken,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.ApplyImportConflictBatchAsync(repoPath, request, previewToken, cancellationToken);
     }
 
     public Task<CoreWatcherStatusSnapshot> RecordWatcherHealthAsync(

@@ -11,6 +11,7 @@ OneDriveNoticeViewSmokeTests.RunAll();
 await DesktopMainQueryViewModelTests.RunAllAsync();
 DesktopMainQuerySmokeTests.RunAll();
 await WindowsImportViewModelTests.RunAllAsync();
+await WindowsImportReplaceViewModelTests.RunAllAsync();
 WindowsImportSmokeTests.RunAll();
 await WatcherStatusViewModelTests.RunAllAsync();
 WatcherStatusSmokeTests.RunAll();

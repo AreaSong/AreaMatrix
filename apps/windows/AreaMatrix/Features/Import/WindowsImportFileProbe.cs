@@ -20,6 +20,12 @@ public interface IWindowsImportFileProbe
         string repoPath,
         IReadOnlyList<DesktopImportPreviewItem> previewItems);
 
+    WindowsImportFileProbeResult ResolveReplacePreflight(
+        string repoPath,
+        WindowsImportFileProbeResult source,
+        string suggestedCategory,
+        string suggestedName);
+
     IReadOnlyList<DesktopImportSource> ExpandSources(IEnumerable<string> sourcePaths);
 }
 
@@ -31,7 +37,11 @@ public sealed record WindowsImportFileProbeResult(
     bool IsReadable,
     bool CanRemove,
     string? ReadFailure = null,
-    string? RemoveFailure = null);
+    string? RemoveFailure = null,
+    string? ExistingConflictPath = null,
+    string? TargetPath = null,
+    bool ReplacePreflightAvailable = false,
+    string? ReplaceBlockedReason = null);
 
 public sealed class WindowsImportFileProbe : IWindowsImportFileProbe
 {
@@ -266,6 +276,35 @@ public sealed class WindowsImportFileProbe : IWindowsImportFileProbe
             ? fallbackName
             : suggestedName.Trim();
         return Path.Combine(Path.GetFullPath(repoPath), category, name);
+    }
+
+    public WindowsImportFileProbeResult ResolveReplacePreflight(
+        string repoPath,
+        WindowsImportFileProbeResult source,
+        string suggestedCategory,
+        string suggestedName)
+    {
+        if (!source.IsReadable)
+        {
+            return source;
+        }
+
+        string targetPath = TargetPath(repoPath, suggestedCategory, suggestedName, source.FileName);
+        if (!File.Exists(targetPath))
+        {
+            return source with
+            {
+                TargetPath = targetPath
+            };
+        }
+
+        return source with
+        {
+            ExistingConflictPath = targetPath,
+            TargetPath = targetPath,
+            ReplacePreflightAvailable = false,
+            ReplaceBlockedReason = "Replace requires Core import conflict preview with Recycle Bin safety state."
+        };
     }
 
     private static bool RepositoryContainsHash(string repoPath, string sourcePath, string sourceHash)
