@@ -1,0 +1,46 @@
+一、执行结论
+
+- 已完成。
+
+二、执行范围
+
+- 单任务：`4-3/task-129`
+- 修改范围：仅 `apps/**`
+- 本轮主要修改文件：
+  - `apps/windows/AreaMatrix/Features/Library/WindowsMainWindow.xaml`
+  - `apps/windows/AreaMatrix/Features/Library/WindowsMainWindow.xaml.cs`
+  - `apps/windows/AreaMatrix/MainWindow.xaml.cs`
+  - `apps/windows/AreaMatrix/Features/Import/WindowsImportDialog.xaml.cs`
+  - `apps/windows/AreaMatrix/Features/Import/DesktopImportCoreBridge.cs`
+  - `apps/windows/AreaMatrix/Features/Import/DesktopImportCoreMapping.Parsing.cs`
+  - `apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj`
+  - `apps/windows/AreaMatrixTests/Import/WindowsImportSmokeTests.cs`
+
+三、完成情况
+
+- page-feature task 覆盖：通过。`S4-WIN-05` 仍只覆盖 control map 声明的 `C4-13, C4-21`。
+- 页面入口、状态、退出、错误态、CoreBridge 闭环：通过。主窗口现在支持 Explorer storage item 拖拽，显示 drop overlay，并进入同一个 `WindowsImportDialog`，自动走现有 `AppendSourcePaths` + `PreparePreviewAsync` 预览链路。
+- mock / fixture / 硬编码状态：通过。生产路径仍使用真实 `DesktopImportCoreBridge` / native Core client；测试 fake 仍只在测试项目。
+- 不新增 control map 外功能：通过。本轮只补 `S4-WIN-05` 的主窗口拖拽入口和导入 dialog handoff。
+- Forbidden Touches：未触碰。`git diff --name-only -- core/src` 无输出。
+
+四、工程质量
+
+- `DesktopImportCoreBridge.cs` 已从 502 行降到 444 行；解析逻辑拆到 `DesktopImportCoreMapping.Parsing.cs`，不是压缩式过线。
+- 未新增 Rust public API，无 rustdoc 需求；未改 Core API / UDL / docs。
+- 主窗口 drop 只接受 `StandardDataFormats.StorageItems`，空路径不进入导入流程；drop 本身只构建预览，不复制、不删除、不覆盖用户文件。
+- 未新增依赖。
+- 仍未执行 Windows 真机 Explorer/Narrator 手工验收，这是残余交互风险。
+
+五、验证情况
+
+- 通过：`dotnet build apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj`，0 warning，0 error。
+- 通过：`dotnet run --project apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj`，输出 `AreaMatrix Windows tests passed.`
+- 通过：`./dev check task 4-3/task-129`，包含 `doctor: OK`、`git diff --check`、`** BUILD SUCCEEDED **`。
+- 通过：`git diff --name-only -- core/src`，无输出。
+- 失败但非 manifest 必需项：`dotnet build apps/windows/AreaMatrix/AreaMatrix.Windows.csproj` 被 NuGet restore 阻断，报 `CookieContainer` / `GetDomainName: -1`；加 `/p:RestoreIgnoreFailedSources=true` 后仍因缺少 `Microsoft.WindowsAppSDK` 和 Windows runtime/ref 包失败。
+
+六、风险与后续
+
+- 剩余风险：未在真实 Windows 环境执行 Explorer 拖拽、Recycle Bin、Narrator 读屏验收。
+- 建议下一个任务：进入 `4-3/task-129` verify-ready，只读验收本轮修复；若需要补强证据，下一步应在 Windows 环境跑真实拖拽和 Narrator smoke。

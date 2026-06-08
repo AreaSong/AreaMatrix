@@ -36,6 +36,7 @@ internal sealed class FakeDesktopImportCoreBridge : IDesktopImportCoreBridge
             DesktopFileAvailabilityStatus.Available,
             1_700_000_000,
             1_700_000_100),
+        @"C:\Users\me\Downloads\report.pdf",
         DesktopImportSourceRemovalStatus.NotRequested,
         null);
 

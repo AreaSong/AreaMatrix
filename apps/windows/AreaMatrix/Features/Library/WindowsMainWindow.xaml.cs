@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -6,6 +7,8 @@ using AreaMatrix.Features.Onboarding;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage;
 using Windows.System;
 
 namespace AreaMatrix.Features.Library;
@@ -25,6 +28,8 @@ public sealed partial class WindowsMainWindow : UserControl
     public event Action<WindowsRepositoryRoute>? OpenWatcherStatusRequested;
 
     public event Action<WindowsRepositoryRoute>? OpenImportRequested;
+
+    public event Action<WindowsRepositoryRoute, IReadOnlyList<string>>? OpenImportDroppedSourcesRequested;
 
     public WindowsMainWindowViewModel? ViewModel
     {
@@ -54,6 +59,17 @@ public sealed partial class WindowsMainWindow : UserControl
         }
 
         await ViewModel.OpenRepositoryAsync(route);
+        RefreshState();
+    }
+
+    public async Task RefreshAndSelectFileAsync(long fileId)
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        await ViewModel.RefreshAndSelectFileAsync(fileId);
         RefreshState();
     }
 
@@ -103,6 +119,42 @@ public sealed partial class WindowsMainWindow : UserControl
         {
             OpenImportRequested?.Invoke(route);
         }
+    }
+
+    private void MainWindowDrop_DragEnter(object sender, DragEventArgs e)
+    {
+        ApplyDropState(e);
+    }
+
+    private void MainWindowDrop_DragOver(object sender, DragEventArgs e)
+    {
+        ApplyDropState(e);
+    }
+
+    private void MainWindowDrop_DragLeave(object sender, DragEventArgs e)
+    {
+        DropOverlay.Visibility = Visibility.Collapsed;
+    }
+
+    private async void MainWindowDrop_Drop(object sender, DragEventArgs e)
+    {
+        DropOverlay.Visibility = Visibility.Collapsed;
+        if (!CanAcceptDrop(e) || ViewModel?.ImportRoute is not { } route)
+        {
+            return;
+        }
+
+        IReadOnlyList<IStorageItem> items = await e.DataView.GetStorageItemsAsync();
+        string[] sourcePaths = items
+            .Select(item => item.Path)
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .ToArray();
+        if (sourcePaths.Length == 0)
+        {
+            return;
+        }
+
+        OpenImportDroppedSourcesRequested?.Invoke(route, sourcePaths);
     }
 
     private async void SearchButton_Click(object sender, RoutedEventArgs e)
@@ -158,6 +210,28 @@ public sealed partial class WindowsMainWindow : UserControl
         ViewModel.SearchQuery = SearchTextBox.Text;
         await ViewModel.RunSearchAsync();
         RefreshState();
+    }
+
+    private void ApplyDropState(DragEventArgs e)
+    {
+        if (!CanAcceptDrop(e))
+        {
+            e.AcceptedOperation = DataPackageOperation.None;
+            DropOverlay.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        e.AcceptedOperation = DataPackageOperation.Copy;
+        e.DragUIOverride.Caption = "Import to AreaMatrix";
+        e.DragUIOverride.IsCaptionVisible = true;
+        DropOverlay.Visibility = Visibility.Visible;
+    }
+
+    private bool CanAcceptDrop(DragEventArgs e)
+    {
+        return ViewModel?.ImportRoute is not null
+            && ViewModel.CanRunQuery
+            && e.DataView.Contains(StandardDataFormats.StorageItems);
     }
 
     private void RefreshState()

@@ -12,6 +12,7 @@ public static class DesktopMainQueryViewModelTests
         await SearchUsesCoreSearchWithoutScanningRepository();
         await SelectingFileUsesCoreDetailQuery();
         await RefreshKeepsCachedListOnDbError();
+        await RefreshAfterImportSelectsImportedFile();
         await OneDriveRepositoryExposesConnectedNoticeRoute();
         await MainWindowRouteExposesWatcherStatusEntry();
     }
@@ -78,6 +79,22 @@ public static class DesktopMainQueryViewModelTests
         TestAssert.Equal(WindowsRepositoryErrorKind.Db, model.Error?.Kind, "error kind");
         TestAssert.Contains("database", model.StatusText, nameof(model.StatusText));
     }
+
+    private static async Task RefreshAfterImportSelectsImportedFile()
+    {
+        FakeDesktopMainQueryCoreBridge bridge = new();
+        WindowsMainWindowViewModel model = new(bridge);
+        await model.OpenRepositoryAsync(Route(@"C:\Repos\AreaMatrix"));
+        bridge.ClearRequests();
+
+        await model.RefreshAndSelectFileAsync(2);
+
+        TestAssert.SequenceEqual([@"C:\Repos\AreaMatrix"], bridge.ListRequests, "list requests");
+        TestAssert.SequenceEqual([@"C:\Repos\AreaMatrix"], bridge.TreeRequests, "tree requests");
+        TestAssert.SequenceEqual([2L], bridge.DetailRequests, "detail requests");
+        TestAssert.Equal(2, model.SelectedFile?.Id, "selected imported file id");
+    }
+
 
     private static async Task OneDriveRepositoryExposesConnectedNoticeRoute()
     {

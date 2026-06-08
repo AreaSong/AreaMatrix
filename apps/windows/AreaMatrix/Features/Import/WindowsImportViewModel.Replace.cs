@@ -298,6 +298,7 @@ public sealed partial class WindowsImportViewModel
             0);
         return [new DesktopImportResult(
             entry,
+            item.SourcePath,
             DesktopImportSourceRemovalStatus.NotRequested,
             null,
             report)];

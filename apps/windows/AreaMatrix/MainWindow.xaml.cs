@@ -32,6 +32,7 @@ public sealed partial class MainWindow : Window
         WindowsMainWindowPage.OpenOneDriveStatusRequested += WindowsMainWindowPage_OpenOneDriveStatusRequested;
         WindowsMainWindowPage.OpenWatcherStatusRequested += WindowsMainWindowPage_OpenWatcherStatusRequested;
         WindowsMainWindowPage.OpenImportRequested += WindowsMainWindowPage_OpenImportRequested;
+        WindowsMainWindowPage.OpenImportDroppedSourcesRequested += WindowsMainWindowPage_OpenImportDroppedSourcesRequested;
         WindowsImportPage.ViewModel = new WindowsImportViewModel(
             new DesktopImportCoreBridge(coreClient, new WindowsImportFileProbe()));
         WindowsImportPage.ParentWindowHandle = WindowNative.GetWindowHandle(this);
@@ -156,16 +157,19 @@ public sealed partial class MainWindow : Window
 
     private void WindowsMainWindowPage_OpenImportRequested(WindowsRepositoryRoute route)
     {
-        OneDriveNoticePage.Visibility = Visibility.Collapsed;
-        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
-        WindowsMainWindowPage.Visibility = Visibility.Collapsed;
-        WatcherStatusPage.Visibility = Visibility.Collapsed;
-        RescanConfirmPage.Visibility = Visibility.Collapsed;
-        WindowsImportPage.Visibility = Visibility.Visible;
+        ShowImportPage();
         WindowsImportPage.OpenRepository(route.RepoPath);
     }
 
-    private void WindowsImportPage_CloseRequested()
+    private async void WindowsMainWindowPage_OpenImportDroppedSourcesRequested(
+        WindowsRepositoryRoute route,
+        IReadOnlyList<string> sourcePaths)
+    {
+        ShowImportPage();
+        await WindowsImportPage.OpenRepositoryWithSourcesAsync(route.RepoPath, sourcePaths);
+    }
+
+    private async void WindowsImportPage_CloseRequested(WindowsImportCloseRequest request)
     {
         WindowsImportPage.Visibility = Visibility.Collapsed;
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
@@ -173,6 +177,10 @@ public sealed partial class MainWindow : Window
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Visible;
+        if (request.ImportedFileIds.FirstOrDefault() is > 0 and long selectedFileId)
+        {
+            await WindowsMainWindowPage.RefreshAndSelectFileAsync(selectedFileId);
+        }
     }
 
     private async void OneDriveNoticePage_OpenWatcherStatusRequested()
@@ -240,11 +248,22 @@ public sealed partial class MainWindow : Window
         WindowsMainWindowPage.OpenOneDriveStatusRequested -= WindowsMainWindowPage_OpenOneDriveStatusRequested;
         WindowsMainWindowPage.OpenWatcherStatusRequested -= WindowsMainWindowPage_OpenWatcherStatusRequested;
         WindowsMainWindowPage.OpenImportRequested -= WindowsMainWindowPage_OpenImportRequested;
+        WindowsMainWindowPage.OpenImportDroppedSourcesRequested -= WindowsMainWindowPage_OpenImportDroppedSourcesRequested;
         WindowsImportPage.CloseRequested -= WindowsImportPage_CloseRequested;
         WatcherStatusPage.CloseRequested -= WatcherStatusPage_CloseRequested;
         WatcherStatusPage.OpenRescanConfirmRequested -= WatcherStatusPage_OpenRescanConfirmRequested;
         RescanConfirmPage.CloseRequested -= RescanConfirmPage_CloseRequested;
         watcherDiagnostics.Dispose();
         coreClient.Dispose();
+    }
+
+    private void ShowImportPage()
+    {
+        OneDriveNoticePage.Visibility = Visibility.Collapsed;
+        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        WindowsMainWindowPage.Visibility = Visibility.Collapsed;
+        WatcherStatusPage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
+        WindowsImportPage.Visibility = Visibility.Visible;
     }
 }

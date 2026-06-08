@@ -21,8 +21,18 @@ public sealed partial class WindowsImportViewModel
             TargetDirectoryForRequest(destination, source),
             overrideCategoryValue,
             item.SuggestedName,
-            DuplicateStrategy,
+            DuplicateStrategyForRequest(item),
             MoveConfirmed);
+    }
+
+    private DesktopImportDuplicateStrategy DuplicateStrategyForRequest(DesktopImportPreviewItem item)
+    {
+        if (item.Status == DesktopImportPreviewStatus.NameConflict)
+        {
+            return DesktopImportDuplicateStrategy.KeepBoth;
+        }
+
+        return DuplicateStrategy;
     }
 
     private string? TargetDirectoryForRequest(

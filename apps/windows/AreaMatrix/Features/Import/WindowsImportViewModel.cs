@@ -201,6 +201,9 @@ public sealed partial class WindowsImportViewModel : INotifyPropertyChanged
             {
                 OnPropertyChanged(nameof(ResultSummaryText));
                 OnPropertyChanged(nameof(StatusText));
+                OnPropertyChanged(nameof(HasSuccessfulResults));
+                OnPropertyChanged(nameof(HasFailedResults));
+                OnPropertyChanged(nameof(ImportedFileIds));
             }
         }
     }
@@ -417,14 +420,7 @@ public sealed partial class WindowsImportViewModel : INotifyPropertyChanged
             List<DesktopImportResult> imported = [];
             foreach (DesktopImportPreviewItem item in PreviewItems.Where(CanImportPreviewItem))
             {
-                CurrentStep = DesktopImportStep.Staging;
-                DesktopImportRequest request = MakeRequest(item);
-                CurrentStep = DesktopImportStep.Hashing;
-                DesktopImportResult result = await coreBridge
-                    .ImportFileWithResultAsync(RepoPath, item.SourcePath, request, cancellationToken)
-                    .ConfigureAwait(false);
-                CurrentStep = DesktopImportStep.UpdatingDatabase;
-                imported.Add(result);
+                imported.Add(await ImportPreviewItemAsync(item, cancellationToken).ConfigureAwait(false));
             }
 
             CurrentStep = Mode == DesktopImportMode.Move

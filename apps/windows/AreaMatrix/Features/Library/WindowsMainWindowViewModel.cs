@@ -9,7 +9,7 @@ using AreaMatrix.Features.Onboarding;
 
 namespace AreaMatrix.Features.Library;
 
-public sealed class WindowsMainWindowViewModel : INotifyPropertyChanged
+public sealed partial class WindowsMainWindowViewModel : INotifyPropertyChanged
 {
     private const long PageSize = 50;
 
@@ -256,6 +256,19 @@ public sealed class WindowsMainWindowViewModel : INotifyPropertyChanged
         return LoadSnapshotAsync(isInitialLoad: false, cancellationToken);
     }
 
+    public async Task RefreshAndSelectFileAsync(
+        long fileId,
+        CancellationToken cancellationToken = default)
+    {
+        if (fileId <= 0 || string.IsNullOrWhiteSpace(RepoPath))
+        {
+            await RefreshAsync(cancellationToken);
+            return;
+        }
+
+        await LoadSnapshotAsync(isInitialLoad: false, cancellationToken, selectedFileId: fileId);
+    }
+
     public async Task SelectCategoryAsync(
         DesktopCategoryNode? category,
         CancellationToken cancellationToken = default)
@@ -334,58 +347,6 @@ public sealed class WindowsMainWindowViewModel : INotifyPropertyChanged
         {
             Error = ErrorFromException(exception);
         }
-    }
-
-    private async Task LoadSnapshotAsync(
-        bool isInitialLoad,
-        CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(RepoPath))
-        {
-            return;
-        }
-
-        SetBusy(isInitialLoad, true);
-        Error = null;
-        try
-        {
-            IReadOnlyList<DesktopCategoryNode> categories = await coreBridge
-                .ListCategoriesAsync(RepoPath, locale, cancellationToken);
-            IReadOnlyList<DesktopFileEntry> files = await coreBridge.ListFilesAsync(
-                RepoPath,
-                DesktopFileFilter.FirstPage(SelectedCategory),
-                cancellationToken);
-            ApplySnapshot(files, categories, totalCount: files.Count, query: string.Empty, searchIndexStatus: null);
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException)
-        {
-            Error = ErrorFromException(exception);
-        }
-        finally
-        {
-            SetBusy(isInitialLoad, false);
-        }
-    }
-
-    private void ApplySnapshot(
-        IReadOnlyList<DesktopFileEntry> files,
-        IReadOnlyList<DesktopCategoryNode> categories,
-        long totalCount,
-        string query,
-        DesktopSearchIndexStatus? searchIndexStatus)
-    {
-        DesktopFileEntry? retainedSelection = SelectedFile is { } current
-            ? files.FirstOrDefault(file => file.Id == current.Id)
-            : null;
-
-        SelectedFile = retainedSelection;
-        Snapshot = new DesktopMainQuerySnapshot(
-            files,
-            categories,
-            retainedSelection,
-            totalCount,
-            query,
-            searchIndexStatus);
     }
 
     private void SetBusy(bool isInitialLoad, bool busy)

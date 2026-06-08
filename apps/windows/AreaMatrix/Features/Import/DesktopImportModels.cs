@@ -173,16 +173,40 @@ public sealed record DesktopImportMovePreflight(
 }
 
 public sealed record DesktopImportResult(
-    DesktopFileEntry Entry,
+    DesktopFileEntry? Entry,
+    string SourcePath,
     DesktopImportSourceRemovalStatus SourceRemovalStatus,
     string? SourceRemovalFailure,
     DesktopImportConflictBatchApplyReport? ReplaceReport = null,
-    bool IsReplace = false)
+    bool IsReplace = false,
+    DesktopImportError? Failure = null)
 {
+    public bool IsFailure => Failure is not null;
+
+    public bool HasImportedFile => Entry is { Id: > 0 } && !IsFailure;
+
+    public bool CanShowOriginal => SourceRemovalStatus == DesktopImportSourceRemovalStatus.Retained
+        && !string.IsNullOrWhiteSpace(SourcePath);
+
+    public bool CanShowImportedFile => HasImportedFile;
+
+    public bool CanRetry => IsFailure && !string.IsNullOrWhiteSpace(SourcePath);
+
+    public bool CanShowDetails => IsFailure
+        || !string.IsNullOrWhiteSpace(SourceRemovalFailure)
+        || !string.IsNullOrWhiteSpace(ReplaceReport?.FailureSummary);
+
+    public string DisplayPath => Entry?.Path ?? SourcePath;
+
     public string SummaryText
     {
         get
         {
+            if (Failure is not null)
+            {
+                return "Failed";
+            }
+
             if (ReplaceReport is not null)
             {
                 return ReplaceReport.SummaryText;
@@ -205,6 +229,11 @@ public sealed record DesktopImportResult(
     {
         get
         {
+            if (Failure is not null)
+            {
+                return Failure.Message;
+            }
+
             if (ReplaceReport is { } report)
             {
                 return report.FailureSummary
@@ -228,6 +257,23 @@ public sealed record DesktopImportResult(
             };
         }
     }
+
+    public static DesktopImportResult Failed(DesktopImportPreviewItem item, DesktopImportError error)
+    {
+        return new DesktopImportResult(
+            null,
+            item.SourcePath,
+            DesktopImportSourceRemovalStatus.NotRequested,
+            null,
+            Failure: error);
+    }
+}
+
+public sealed record WindowsImportCloseRequest(IReadOnlyList<long> ImportedFileIds)
+{
+    public static WindowsImportCloseRequest None { get; } = new([]);
+
+    public bool ShouldRefreshMainWindow => ImportedFileIds.Count > 0;
 }
 
 public sealed record DesktopImportError(

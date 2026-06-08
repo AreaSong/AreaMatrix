@@ -17,11 +17,13 @@ public static class WindowsImportViewModelTests
         await UnreadablePreviewItemDoesNotCommitImport();
         await DuplicatePreviewItemDoesNotCommitImport();
         await DuplicatePreviewCanImportWithKeepBothStrategy();
+        await NameConflictImportsWithKeepBothByDefault();
         await MoveImportRequiresExplicitConfirmation();
         await MovePreflightFailureBlocksMoveImport();
         await WindowsFileProbeRequiresWritableStagingForMovePreflight();
         await MoveRetainedResultKeepsImportedFileAndReportsOriginalRetained();
-        await CoreConflictDoesNotProduceSuccessResult();
+        await FailedImportStaysOnResultPageAndCanRetry();
+        await ImportCloseRequestCarriesImportedFileIds();
     }
 
     private static async Task PreparingPreviewUsesCorePredictCategoryForEachSource()
@@ -223,6 +225,28 @@ public static class WindowsImportViewModelTests
         TestAssert.Equal(DesktopImportDuplicateStrategy.KeepBoth, bridge.LastRequest?.DuplicateStrategy, "duplicate strategy");
     }
 
+    private static async Task NameConflictImportsWithKeepBothByDefault()
+    {
+        FakeDesktopImportCoreBridge bridge = new()
+        {
+            PreviewStatus = DesktopImportPreviewStatus.NameConflict
+        };
+        WindowsImportViewModel model = new(bridge);
+        model.OpenRepository(@"C:\Repos\AreaMatrix");
+        model.SourcePathsText = @"C:\Users\me\Downloads\report.pdf";
+
+        await model.PreparePreviewAsync();
+        await model.ImportAsync();
+
+        TestAssert.True(model.CanImport, nameof(model.CanImport));
+        TestAssert.SequenceEqual([@"C:\Users\me\Downloads\report.pdf"], bridge.ImportRequests, "import requests");
+        TestAssert.Equal(
+            DesktopImportDuplicateStrategy.KeepBoth,
+            bridge.LastRequest?.DuplicateStrategy,
+            "same-name conflict strategy");
+        TestAssert.Empty(bridge.ReplaceApplyRequests, nameof(bridge.ReplaceApplyRequests));
+    }
+
     private static async Task MoveImportRequiresExplicitConfirmation()
     {
         FakeDesktopImportCoreBridge bridge = new();
@@ -322,7 +346,7 @@ public static class WindowsImportViewModelTests
         TestAssert.Contains("source permission denied", model.Results[0].DetailText, "result detail text");
     }
 
-    private static async Task CoreConflictDoesNotProduceSuccessResult()
+    private static async Task FailedImportStaysOnResultPageAndCanRetry()
     {
         FakeDesktopImportCoreBridge bridge = new()
         {
@@ -337,16 +361,54 @@ public static class WindowsImportViewModelTests
         await model.PreparePreviewAsync();
         await model.ImportAsync();
 
-        TestAssert.Empty(model.Results, nameof(model.Results));
-        TestAssert.Equal(DesktopImportErrorKind.DuplicateFile, model.Error?.Kind, "error kind");
-        TestAssert.Contains("duplicate content", model.StatusText, nameof(model.StatusText));
+        TestAssert.Equal(1, model.Results.Count, "result count");
+        TestAssert.True(model.HasFailedResults, nameof(model.HasFailedResults));
+        TestAssert.False(model.HasSuccessfulResults, nameof(model.HasSuccessfulResults));
+        TestAssert.True(model.Results[0].CanRetry, "failed result can retry");
+        TestAssert.True(model.Results[0].CanShowDetails, "failed result details");
+        TestAssert.Contains("duplicate content", model.Results[0].DetailText, "failure details");
+        TestAssert.Contains("0 item(s), 1 failed", model.ResultSummaryText, nameof(model.ResultSummaryText));
+
+        bridge.ImportException = null;
+        await model.RetryFailedAsync(model.Results[0]);
+
+        TestAssert.True(model.HasSuccessfulResults, nameof(model.HasSuccessfulResults));
+        TestAssert.False(model.HasFailedResults, nameof(model.HasFailedResults));
+        TestAssert.Equal(1, bridge.ImportRequests.Count, "retry import count");
+        TestAssert.Equal(1, model.ImportedFileIds.Count, nameof(model.ImportedFileIds));
+    }
+
+    private static async Task ImportCloseRequestCarriesImportedFileIds()
+    {
+        FakeDesktopImportCoreBridge bridge = new()
+        {
+            Result = ImportResult(DesktopImportSourceRemovalStatus.Retained, "source permission denied")
+        };
+        WindowsImportViewModel model = new(bridge);
+        model.OpenRepository(@"C:\Repos\AreaMatrix");
+        model.SourcePathsText = @"C:\Users\me\Downloads\report.pdf";
+        model.Mode = DesktopImportMode.Move;
+        model.MoveConfirmed = true;
+
+        await model.PreparePreviewAsync();
+        await model.ImportAsync();
+
+        WindowsImportCloseRequest request = model.CreateCloseRequest();
+        TestAssert.True(request.ShouldRefreshMainWindow, nameof(request.ShouldRefreshMainWindow));
+        TestAssert.SequenceEqual([1L], request.ImportedFileIds, nameof(request.ImportedFileIds));
+        TestAssert.True(model.Results[0].CanShowOriginal, "retained original action");
+        TestAssert.True(model.Results[0].CanShowImportedFile, "imported file action");
     }
 
     private static DesktopImportResult ImportResult(
         DesktopImportSourceRemovalStatus status = DesktopImportSourceRemovalStatus.NotRequested,
         string? failure = null)
     {
-        return new DesktopImportResult(FileEntry(1, "report.pdf"), status, failure);
+        return new DesktopImportResult(
+            FileEntry(1, "report.pdf"),
+            @"C:\Users\me\Downloads\report.pdf",
+            status,
+            failure);
     }
 
     private static DesktopFileEntry FileEntry(long id, string name)

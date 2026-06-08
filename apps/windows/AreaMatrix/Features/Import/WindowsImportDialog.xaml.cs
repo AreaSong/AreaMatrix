@@ -17,6 +17,7 @@ public sealed partial class WindowsImportDialog : UserControl
 {
     private readonly IWindowsImportFileProbe fileProbe = new WindowsImportFileProbe();
     private bool refreshingControls;
+    private bool closeWhenDoneRequested;
 
     public WindowsImportDialog()
     {
@@ -24,7 +25,7 @@ public sealed partial class WindowsImportDialog : UserControl
         Unloaded += WindowsImportDialog_Unloaded;
     }
 
-    public event Action? CloseRequested;
+    public event Action<WindowsImportCloseRequest>? CloseRequested;
 
     public nint ParentWindowHandle { get; set; }
 
@@ -51,6 +52,20 @@ public sealed partial class WindowsImportDialog : UserControl
     public void OpenRepository(string repoPath)
     {
         ViewModel?.OpenRepository(repoPath);
+        RefreshState();
+    }
+
+    public async Task OpenRepositoryWithSourcesAsync(
+        string repoPath,
+        IEnumerable<string> sourcePaths)
+    {
+        ViewModel?.OpenRepository(repoPath);
+        AppendSourcePaths(fileProbe.ExpandSources(sourcePaths));
+        if (ViewModel?.CanPrepare == true)
+        {
+            await ViewModel.PreparePreviewAsync();
+        }
+
         RefreshState();
     }
 
@@ -222,7 +237,14 @@ public sealed partial class WindowsImportDialog : UserControl
 
     private void CancelButton_Click(object sender, RoutedEventArgs e)
     {
-        CloseRequested?.Invoke();
+        if (ViewModel?.IsImporting == true)
+        {
+            closeWhenDoneRequested = true;
+            RefreshState();
+            return;
+        }
+
+        RequestClose();
     }
 
     private void ImportDialog_DragOver(object sender, DragEventArgs e)
@@ -338,6 +360,8 @@ public sealed partial class WindowsImportDialog : UserControl
             : InfoBarSeverity.Warning;
         ProgressTextBlock.Text = ViewModel.StatusText;
         ImportButton.IsEnabled = ViewModel.CanImport;
+        ImportButton.Content = ViewModel.IsImporting ? "Close when done" : "Import";
+        CancelButton.Content = ViewModel.IsImporting ? "Close when done" : "Cancel";
         PreviewReplaceButton.IsEnabled = ViewModel.CanPreviewReplace;
         ApplyReplaceButton.IsEnabled = ViewModel.CanApplyReplace;
         PreparePreviewButton.IsEnabled = ViewModel.CanPrepare;
@@ -351,6 +375,12 @@ public sealed partial class WindowsImportDialog : UserControl
             ? Visibility.Visible
             : Visibility.Collapsed;
         ResultsSection.Visibility = ViewModel.Results.Count > 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        ShowInExplorerButton.Visibility = ViewModel.HasSuccessfulResults
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        ViewImportedFilesButton.Visibility = ViewModel.HasSuccessfulResults
             ? Visibility.Visible
             : Visibility.Collapsed;
         ReplaceConfirmationSection.Visibility = ViewModel.HasNameConflicts || ViewModel.HasPendingReplaceConfirmation
@@ -371,6 +401,21 @@ public sealed partial class WindowsImportDialog : UserControl
         StatusInfoBar.IsOpen = ViewModel.Error is not null;
         StatusInfoBar.Severity = ViewModel.Error is null ? InfoBarSeverity.Informational : InfoBarSeverity.Error;
         StatusInfoBar.Message = ViewModel.Error?.Message ?? string.Empty;
+        CloseAfterImportIfNeeded();
+    }
+
+    private void RequestClose()
+    {
+        closeWhenDoneRequested = false;
+        CloseRequested?.Invoke(ViewModel?.CreateCloseRequest() ?? WindowsImportCloseRequest.None);
+    }
+
+    private void CloseAfterImportIfNeeded()
+    {
+        if (closeWhenDoneRequested && ViewModel?.IsImporting == false)
+        {
+            RequestClose();
+        }
     }
 
     private void RefreshControlsFromModel()

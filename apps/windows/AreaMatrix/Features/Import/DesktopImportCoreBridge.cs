@@ -125,7 +125,7 @@ public sealed class DesktopImportCoreBridge : IDesktopImportCoreBridge
         CoreDesktopImportResult result = await coreClient
             .ImportFileWithResultAsync(repoPath, sourcePath, request.ToCoreOptions(), cancellationToken)
             .ConfigureAwait(false);
-        return result.ToDesktopResult();
+        return result.ToDesktopResult(sourcePath);
     }
 
     public async Task<DesktopImportConflictBatchPreviewReport> PreviewReplaceConflictAsync(
@@ -257,7 +257,7 @@ public sealed record CoreDesktopImportConflictBatchApplyReport(
     IReadOnlyList<string> ChangeLogActions,
     string? FailureSummary);
 
-internal static class DesktopImportCoreMapping
+internal static partial class DesktopImportCoreMapping
 {
     public static CoreDesktopImportOptions ToCoreOptions(this DesktopImportRequest request)
     {
@@ -270,10 +270,13 @@ internal static class DesktopImportCoreMapping
             request.DuplicateStrategy.ToCoreDuplicateStrategy());
     }
 
-    public static DesktopImportResult ToDesktopResult(this CoreDesktopImportResult result)
+    public static DesktopImportResult ToDesktopResult(
+        this CoreDesktopImportResult result,
+        string sourcePath)
     {
         return new DesktopImportResult(
             result.Entry.ToDesktopEntry(),
+            sourcePath,
             ParseSourceRemovalStatus(result.SourceRemovalStatus),
             result.SourceRemovalFailure);
     }
@@ -432,64 +435,6 @@ internal static class DesktopImportCoreMapping
             item.FileId,
             item.FinalPath,
             item.Error);
-    }
-
-    private static DesktopImportSourceRemovalStatus ParseSourceRemovalStatus(string value)
-    {
-        return value switch
-        {
-            "NotRequested" => DesktopImportSourceRemovalStatus.NotRequested,
-            "Removed" => DesktopImportSourceRemovalStatus.Removed,
-            "Retained" => DesktopImportSourceRemovalStatus.Retained,
-            _ => throw new DesktopImportCoreException(
-                DesktopImportErrorKind.Config,
-                $"AreaMatrix Core returned unsupported source removal status `{value}`.")
-        };
-    }
-
-    private static DesktopImportConflictBatchStrategy ParseConflictBatchStrategy(string value)
-    {
-        return value switch
-        {
-            "Skip" => DesktopImportConflictBatchStrategy.Skip,
-            "KeepBoth" => DesktopImportConflictBatchStrategy.KeepBoth,
-            "Replace" => DesktopImportConflictBatchStrategy.Replace,
-            "AskPerItem" => DesktopImportConflictBatchStrategy.AskPerItem,
-            _ => throw new DesktopImportCoreException(
-                DesktopImportErrorKind.Config,
-                $"AreaMatrix Core returned unsupported import conflict strategy `{value}`.")
-        };
-    }
-
-    private static DesktopImportConflictBatchPreviewStatus ParseConflictBatchPreviewStatus(string value)
-    {
-        return value switch
-        {
-            "Ready" => DesktopImportConflictBatchPreviewStatus.Ready,
-            "Pending" => DesktopImportConflictBatchPreviewStatus.Pending,
-            "NeedsConfirmation" => DesktopImportConflictBatchPreviewStatus.NeedsConfirmation,
-            "Blocked" => DesktopImportConflictBatchPreviewStatus.Blocked,
-            "Failed" => DesktopImportConflictBatchPreviewStatus.Failed,
-            _ => throw new DesktopImportCoreException(
-                DesktopImportErrorKind.Config,
-                $"AreaMatrix Core returned unsupported import conflict preview status `{value}`.")
-        };
-    }
-
-    private static DesktopImportConflictBatchResultStatus ParseConflictBatchResultStatus(string value)
-    {
-        return value switch
-        {
-            "Skipped" => DesktopImportConflictBatchResultStatus.Skipped,
-            "KeptBoth" => DesktopImportConflictBatchResultStatus.KeptBoth,
-            "Replaced" => DesktopImportConflictBatchResultStatus.Replaced,
-            "QueuedForPerItem" => DesktopImportConflictBatchResultStatus.QueuedForPerItem,
-            "Pending" => DesktopImportConflictBatchResultStatus.Pending,
-            "Failed" => DesktopImportConflictBatchResultStatus.Failed,
-            _ => throw new DesktopImportCoreException(
-                DesktopImportErrorKind.Config,
-                $"AreaMatrix Core returned unsupported import conflict result status `{value}`.")
-        };
     }
 
     private static string? NormalizeOptional(string? value)

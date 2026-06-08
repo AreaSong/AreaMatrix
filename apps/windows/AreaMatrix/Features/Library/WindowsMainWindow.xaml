@@ -7,7 +7,14 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid RowSpacing="0">
+    <Grid
+        x:Name="RootGrid"
+        AllowDrop="True"
+        DragEnter="MainWindowDrop_DragEnter"
+        DragLeave="MainWindowDrop_DragLeave"
+        DragOver="MainWindowDrop_DragOver"
+        Drop="MainWindowDrop_Drop"
+        RowSpacing="0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -208,6 +215,33 @@
             <TextBlock
                 x:Name="SnapshotTextBlock"
                 Grid.Column="1" />
+        </Grid>
+
+        <Grid
+            x:Name="DropOverlay"
+            Grid.RowSpan="4"
+            AutomationProperties.Name="Import drop target"
+            Background="#CC101820"
+            IsHitTestVisible="False"
+            Visibility="Collapsed">
+            <StackPanel
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="12">
+                <SymbolIcon
+                    Foreground="White"
+                    Symbol="Import" />
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    Foreground="White"
+                    Style="{ThemeResource TitleTextBlockStyle}"
+                    Text="Drop to import" />
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    Foreground="White"
+                    Text="Release to preview before copying."
+                    TextWrapping="WrapWholeWords" />
+            </StackPanel>
         </Grid>
     </Grid>
 </UserControl>
