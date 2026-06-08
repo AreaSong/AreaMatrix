@@ -9,11 +9,12 @@ public static class WatcherStatusSmokeTests
 
     public static void RunAll()
     {
-        WatcherStatusPageExposesC412StatusSnapshotControls();
-        NativeClientBindsC412RecordWatcherHealthOnly();
+        WatcherStatusPageExposesC419RescanHandoffControls();
+        MainWindowKeepsS4X07OutsideWatcherStatusTask();
+        NativeClientBindsC419ManualRescanCoreContracts();
     }
 
-    private static void WatcherStatusPageExposesC412StatusSnapshotControls()
+    private static void WatcherStatusPageExposesC419RescanHandoffControls()
     {
         XElement page = LoadXml(RepositoryPath(
             "apps/windows/AreaMatrix/Features/Library/WatcherStatusView.xaml"));
@@ -27,6 +28,8 @@ public static class WatcherStatusSmokeTests
         AssertNamedElement(page, "TextBlock", "WatcherLastEventTextBlock");
         AssertNamedElement(page, "TextBlock", "WatcherPendingEventsTextBlock");
         AssertNamedElement(page, "TextBlock", "WatcherLastRescanTextBlock");
+        AssertNamedElement(page, "TextBlock", "LatestScanSessionTextBlock");
+        AssertNamedElement(page, "TextBlock", "RescanPreviewTextBlock");
         AssertNamedElement(page, "ItemsControl", "WatcherRecentEventsList");
         AssertButton(page, "Restart watcher", "RestartWatcherButton_Click");
         AssertButton(page, "Run rescan now", "RunRescanNowButton_Click");
@@ -38,12 +41,26 @@ public static class WatcherStatusSmokeTests
             "apps/windows/AreaMatrix/Features/Library/WatcherStatusView.xaml.cs"));
         TestAssert.Contains("OpenRouteAsync", codeBehind, "watcher status route load");
         TestAssert.Contains("RestartWatcherAsync", codeBehind, "restart watcher trigger");
+        TestAssert.Contains("PrepareRescanConfirmAsync", codeBehind, "rescan preview preparation");
         TestAssert.Contains("OpenRescanConfirmRequested", codeBehind, "rescan confirmation handoff");
-        TestAssert.DoesNotContain("ReindexFromFilesystem", codeBehind, "C4-12 must not run rescan");
+        TestAssert.Contains("RescanConfirmRequest", codeBehind, "rescan request with preview");
+        TestAssert.DoesNotContain("ReindexFromFilesystem", codeBehind, "watcher status must not run rescan");
         TestAssert.DoesNotContain("SyncExternalChanges", codeBehind, "C4-12 must not sync events");
     }
 
-    private static void NativeClientBindsC412RecordWatcherHealthOnly()
+    private static void MainWindowKeepsS4X07OutsideWatcherStatusTask()
+    {
+        XElement window = LoadXml(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml"));
+        AssertNamedElement(window, "WatcherStatusView", "WatcherStatusPage");
+        TestAssert.DoesNotContain("RescanConfirmDialog", window.ToString(SaveOptions.DisableFormatting), "S4-X-07 page is separate task");
+
+        string codeBehind = File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml.cs"));
+        TestAssert.Contains("OpenRescanConfirmRequested", codeBehind, "watcher status still exposes handoff event");
+        TestAssert.DoesNotContain("new RescanConfirmViewModel", codeBehind, "S4-X-07 view model is separate task");
+        TestAssert.DoesNotContain("OpenPreview", codeBehind, "S4-X-07 page opening is separate task");
+    }
+
+    private static void NativeClientBindsC419ManualRescanCoreContracts()
     {
         string nativeLibrary = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Core/NativeCoreLibrary.cs"));
@@ -55,12 +72,33 @@ public static class WatcherStatusSmokeTests
             "uniffi_area_matrix_core_checksum_func_record_watcher_health",
             nativeLibrary,
             "record_watcher_health checksum");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_preview_manual_rescan",
+            nativeLibrary,
+            "preview_manual_rescan native binding");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_reindex_from_filesystem",
+            nativeLibrary,
+            "reindex_from_filesystem native binding");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_get_latest_scan_session",
+            nativeLibrary,
+            "get_latest_scan_session native binding");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_resume_scan_session",
+            nativeLibrary,
+            "resume_scan_session native binding");
 
         string watcherClient = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Core/AreaMatrixNativeCoreClient.WatcherStatus.cs"));
         TestAssert.Contains("RecordWatcherHealthAsync", watcherClient, "CoreBridge watcher call");
+        TestAssert.Contains("PreviewManualRescanAsync", watcherClient, "CoreBridge preview call");
+        TestAssert.Contains("GetLatestScanSessionAsync", watcherClient, "CoreBridge latest scan session call");
+        TestAssert.Contains("ResumeScanSessionAsync", watcherClient, "CoreBridge resume call");
         TestAssert.Contains("LowerWatcherHealthSignal", watcherClient, "watcher signal lowering");
         TestAssert.Contains("ReadWatcherStatusSnapshot", watcherClient, "watcher snapshot reading");
+        TestAssert.Contains("ReadManualRescanPreviewReport", watcherClient, "rescan preview reading");
+        TestAssert.Contains("ReadScanSession", watcherClient, "scan session reading");
         TestAssert.DoesNotContain("sync_external_changes", watcherClient, "C4-12 must not consume sync API");
         TestAssert.DoesNotContain("set_fs_event_cursor", watcherClient, "C4-12 must not advance cursor");
     }

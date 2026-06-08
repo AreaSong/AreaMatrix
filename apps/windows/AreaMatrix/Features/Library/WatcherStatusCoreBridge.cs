@@ -12,6 +12,23 @@ public interface IWatcherStatusCoreBridge
         string repoPath,
         WatcherStatusHealthSignal signal,
         CancellationToken cancellationToken = default);
+
+    Task<ManualRescanPreviewReport> PreviewManualRescanAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task<ReindexReport> ReindexFromFilesystemAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task<ScanSession?> GetLatestScanSessionAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task<ReindexReport> ResumeScanSessionAsync(
+        string repoPath,
+        long scanSessionId,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IAreaMatrixWatcherStatusCoreClient
@@ -19,6 +36,23 @@ public interface IAreaMatrixWatcherStatusCoreClient
     Task<CoreWatcherStatusSnapshot> RecordWatcherHealthAsync(
         string repoPath,
         CoreWatcherStatusHealthSignal signal,
+        CancellationToken cancellationToken = default);
+
+    Task<CoreManualRescanPreviewReport> PreviewManualRescanAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task<CoreReindexReport> ReindexFromFilesystemAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task<CoreScanSession?> GetLatestScanSessionAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task<CoreReindexReport> ResumeScanSessionAsync(
+        string repoPath,
+        long scanSessionId,
         CancellationToken cancellationToken = default);
 }
 
@@ -40,6 +74,47 @@ public sealed class WatcherStatusCoreBridge : IWatcherStatusCoreBridge
             .RecordWatcherHealthAsync(repoPath, signal.ToCoreSignal(), cancellationToken)
             .ConfigureAwait(false);
         return snapshot.ToWatcherStatusSnapshot();
+    }
+
+    public async Task<ManualRescanPreviewReport> PreviewManualRescanAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        CoreManualRescanPreviewReport report = await coreClient
+            .PreviewManualRescanAsync(repoPath, cancellationToken)
+            .ConfigureAwait(false);
+        return report.ToManualRescanPreviewReport();
+    }
+
+    public async Task<ReindexReport> ReindexFromFilesystemAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        CoreReindexReport report = await coreClient
+            .ReindexFromFilesystemAsync(repoPath, cancellationToken)
+            .ConfigureAwait(false);
+        return report.ToReindexReport();
+    }
+
+    public async Task<ScanSession?> GetLatestScanSessionAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        CoreScanSession? session = await coreClient
+            .GetLatestScanSessionAsync(repoPath, cancellationToken)
+            .ConfigureAwait(false);
+        return session?.ToScanSession();
+    }
+
+    public async Task<ReindexReport> ResumeScanSessionAsync(
+        string repoPath,
+        long scanSessionId,
+        CancellationToken cancellationToken = default)
+    {
+        CoreReindexReport report = await coreClient
+            .ResumeScanSessionAsync(repoPath, scanSessionId, cancellationToken)
+            .ConfigureAwait(false);
+        return report.ToReindexReport();
     }
 }
 
@@ -82,6 +157,54 @@ public sealed record CoreWatcherStatusSnapshot(
     IReadOnlyList<CoreWatcherStatusEventSample> RecentEvents,
     long ReportedAt);
 
+public sealed record CoreManualRescanPreviewItem(
+    string Kind,
+    string RelativePath,
+    string Reason,
+    string SuggestedAction);
+
+public sealed record CoreManualRescanPreviewReport(
+    long Added,
+    long Updated,
+    long MissingOrDeletedFromFs,
+    long RenamedCandidates,
+    long Conflicts,
+    long Unreadable,
+    long Unknown,
+    long Skipped,
+    string SnapshotId,
+    long CreatedAt,
+    bool IsStale,
+    IReadOnlyList<CoreManualRescanPreviewItem> Items);
+
+public sealed record CoreReindexReport(
+    long? ScanSessionId,
+    long Inserted,
+    long Updated,
+    long Missing,
+    long Conflicts,
+    long Unreadable,
+    long Unknown,
+    long Skipped,
+    IReadOnlyList<string> Errors);
+
+public sealed record CoreScanSession(
+    long Id,
+    string Kind,
+    string Status,
+    string? LastPath,
+    long Inserted,
+    long Updated,
+    long Missing,
+    long Conflicts,
+    long Unreadable,
+    long Unknown,
+    long Skipped,
+    long StartedAt,
+    long UpdatedAt,
+    long? FinishedAt,
+    IReadOnlyList<string> Errors);
+
 internal static class WatcherStatusCoreMapping
 {
     public static CoreWatcherStatusHealthSignal ToCoreSignal(this WatcherStatusHealthSignal signal)
@@ -123,6 +246,58 @@ internal static class WatcherStatusCoreMapping
             snapshot.ReportedAt);
     }
 
+    public static ManualRescanPreviewReport ToManualRescanPreviewReport(
+        this CoreManualRescanPreviewReport report)
+    {
+        return new ManualRescanPreviewReport(
+            report.Added,
+            report.Updated,
+            report.MissingOrDeletedFromFs,
+            report.RenamedCandidates,
+            report.Conflicts,
+            report.Unreadable,
+            report.Unknown,
+            report.Skipped,
+            report.SnapshotId,
+            report.CreatedAt,
+            report.IsStale,
+            report.Items.Select(item => item.ToManualRescanPreviewItem()).ToArray());
+    }
+
+    public static ReindexReport ToReindexReport(this CoreReindexReport report)
+    {
+        return new ReindexReport(
+            report.ScanSessionId,
+            report.Inserted,
+            report.Updated,
+            report.Missing,
+            report.Conflicts,
+            report.Unreadable,
+            report.Unknown,
+            report.Skipped,
+            report.Errors);
+    }
+
+    public static ScanSession ToScanSession(this CoreScanSession session)
+    {
+        return new ScanSession(
+            session.Id,
+            ParseScanSessionKind(session.Kind),
+            ParseScanSessionStatus(session.Status),
+            session.LastPath,
+            session.Inserted,
+            session.Updated,
+            session.Missing,
+            session.Conflicts,
+            session.Unreadable,
+            session.Unknown,
+            session.Skipped,
+            session.StartedAt,
+            session.UpdatedAt,
+            session.FinishedAt,
+            session.Errors);
+    }
+
     private static CoreWatcherStatusEventSample ToCoreEventSample(this WatcherStatusEventSample eventSample)
     {
         return new CoreWatcherStatusEventSample(
@@ -139,6 +314,15 @@ internal static class WatcherStatusCoreMapping
             ParseEventKind(eventSample.Kind),
             eventSample.EventId,
             eventSample.OccurredAt);
+    }
+
+    private static ManualRescanPreviewItem ToManualRescanPreviewItem(this CoreManualRescanPreviewItem item)
+    {
+        return new ManualRescanPreviewItem(
+            ParseManualRescanPreviewItemKind(item.Kind),
+            item.RelativePath,
+            item.Reason,
+            item.SuggestedAction);
     }
 
     private static string ToCoreBackend(this WatcherStatusBackend backend)
@@ -242,6 +426,45 @@ internal static class WatcherStatusCoreMapping
             "Modified" => WatcherStatusEventKind.Modified,
             "Renamed" => WatcherStatusEventKind.Renamed,
             _ => throw UnsupportedValue("watcher event kind", value)
+        };
+    }
+
+    private static ManualRescanPreviewItemKind ParseManualRescanPreviewItemKind(string value)
+    {
+        return value switch
+        {
+            "Added" => ManualRescanPreviewItemKind.Added,
+            "Updated" => ManualRescanPreviewItemKind.Updated,
+            "Missing" => ManualRescanPreviewItemKind.Missing,
+            "RenamedCandidate" => ManualRescanPreviewItemKind.RenamedCandidate,
+            "Conflict" => ManualRescanPreviewItemKind.Conflict,
+            "Unreadable" => ManualRescanPreviewItemKind.Unreadable,
+            "Unknown" => ManualRescanPreviewItemKind.Unknown,
+            "Skipped" => ManualRescanPreviewItemKind.Skipped,
+            _ => throw UnsupportedValue("manual rescan preview item kind", value)
+        };
+    }
+
+    private static ScanSessionKind ParseScanSessionKind(string value)
+    {
+        return value switch
+        {
+            "Adopt" => ScanSessionKind.Adopt,
+            "Reindex" => ScanSessionKind.Reindex,
+            _ => throw UnsupportedValue("scan session kind", value)
+        };
+    }
+
+    private static ScanSessionStatus ParseScanSessionStatus(string value)
+    {
+        return value switch
+        {
+            "Running" => ScanSessionStatus.Running,
+            "Completed" => ScanSessionStatus.Completed,
+            "Paused" => ScanSessionStatus.Paused,
+            "Failed" => ScanSessionStatus.Failed,
+            "Interrupted" => ScanSessionStatus.Interrupted,
+            _ => throw UnsupportedValue("scan session status", value)
         };
     }
 

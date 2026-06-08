@@ -14,8 +14,11 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
     private readonly IWindowsWatcherDiagnostics diagnostics;
     private string repoPath = string.Empty;
     private WatcherStatusSnapshot? snapshot;
+    private ManualRescanPreviewReport? rescanPreview;
+    private ScanSession? latestScanSession;
     private bool isLoading;
     private bool isRestarting;
+    private bool isPreparingRescan;
     private WindowsRepositoryError? error;
 
     public WatcherStatusViewModel(
@@ -52,6 +55,30 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
         }
     }
 
+    public ManualRescanPreviewReport? RescanPreview
+    {
+        get => rescanPreview;
+        private set
+        {
+            if (SetProperty(ref rescanPreview, value))
+            {
+                NotifyDisplayPropertiesChanged();
+            }
+        }
+    }
+
+    public ScanSession? LatestScanSession
+    {
+        get => latestScanSession;
+        private set
+        {
+            if (SetProperty(ref latestScanSession, value))
+            {
+                NotifyDisplayPropertiesChanged();
+            }
+        }
+    }
+
     public bool IsLoading
     {
         get => isLoading;
@@ -70,6 +97,18 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
         private set
         {
             if (SetProperty(ref isRestarting, value))
+            {
+                NotifyDisplayPropertiesChanged();
+            }
+        }
+    }
+
+    public bool IsPreparingRescan
+    {
+        get => isPreparingRescan;
+        private set
+        {
+            if (SetProperty(ref isPreparingRescan, value))
             {
                 NotifyDisplayPropertiesChanged();
             }
@@ -104,6 +143,11 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
                 return "Restarting watcher...";
             }
 
+            if (IsPreparingRescan)
+            {
+                return "Preparing rescan preview...";
+            }
+
             return Snapshot?.StatusText ?? "Status: Unavailable";
         }
     }
@@ -124,6 +168,22 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
     public string BackendText => Snapshot?.BackendText ?? "Backend: Unknown";
 
     public string WatchCountText => Snapshot?.WatchCountText ?? "Watch count: Unknown";
+
+    public string RescanPreviewText
+    {
+        get
+        {
+            if (RescanPreview is { } preview)
+            {
+                return preview.SummaryText;
+            }
+
+            return "Run rescan now opens confirmation after a read-only preview.";
+        }
+    }
+
+    public string LatestScanSessionText => LatestScanSession?.DisplayText
+        ?? "Latest rescan session: None.";
 
     public string SummaryText
     {
@@ -174,9 +234,11 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
 
     public bool HasRecentEvents => RecentEvents.Count > 0 && Snapshot?.IsBackendUnavailable != true;
 
-    public bool IsBusy => IsLoading || IsRestarting;
+    public bool IsBusy => IsLoading || IsRestarting || IsPreparingRescan;
 
     public bool CanRestartWatcher => !IsBusy && Snapshot?.IsBackendUnavailable != true;
+
+    public bool IsRescanRunning => LatestScanSession?.IsRunning == true;
 
     public bool CanOpenRescanConfirm
     {
@@ -184,6 +246,7 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
         {
             return !IsBusy
                 && Snapshot is not null
+                && !IsRescanRunning
                 && Snapshot.PendingEventCount >= 0
                 && !Snapshot.IsPathMissing
                 && !Snapshot.HasDatabaseLock
@@ -203,6 +266,11 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
             if (Snapshot is null || Snapshot.IsBackendUnavailable)
             {
                 return "Watcher snapshot is unavailable.";
+            }
+
+            if (IsRescanRunning)
+            {
+                return "A manual rescan is already running.";
             }
 
             if (Snapshot.IsPathMissing)
@@ -229,6 +297,8 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
     {
         RepoPath = route.RepoPath;
         Snapshot = null;
+        RescanPreview = null;
+        LatestScanSession = null;
         Error = null;
         await RefreshAsync(cancellationToken).ConfigureAwait(false);
     }
@@ -252,6 +322,9 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
                 .ConfigureAwait(false);
             Snapshot = await coreBridge
                 .RecordWatcherHealthAsync(RepoPath, signal, cancellationToken)
+                .ConfigureAwait(false);
+            LatestScanSession = await coreBridge
+                .GetLatestScanSessionAsync(RepoPath, cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -281,6 +354,9 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
             Snapshot = await coreBridge
                 .RecordWatcherHealthAsync(RepoPath, signal, cancellationToken)
                 .ConfigureAwait(false);
+            LatestScanSession = await coreBridge
+                .GetLatestScanSessionAsync(RepoPath, cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -289,6 +365,41 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
         finally
         {
             IsRestarting = false;
+        }
+    }
+
+    public async Task<bool> PrepareRescanConfirmAsync(CancellationToken cancellationToken = default)
+    {
+        if (!CanOpenRescanConfirm)
+        {
+            return false;
+        }
+
+        IsPreparingRescan = true;
+        Error = null;
+        try
+        {
+            LatestScanSession = await coreBridge
+                .GetLatestScanSessionAsync(RepoPath, cancellationToken)
+                .ConfigureAwait(false);
+            if (IsRescanRunning)
+            {
+                return false;
+            }
+
+            RescanPreview = await coreBridge
+                .PreviewManualRescanAsync(RepoPath, cancellationToken)
+                .ConfigureAwait(false);
+            return true;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            Error = ErrorFromException(exception);
+            return false;
+        }
+        finally
+        {
+            IsPreparingRescan = false;
         }
     }
 
@@ -363,6 +474,8 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(LastSyncText));
         OnPropertyChanged(nameof(BackendText));
         OnPropertyChanged(nameof(WatchCountText));
+        OnPropertyChanged(nameof(RescanPreviewText));
+        OnPropertyChanged(nameof(LatestScanSessionText));
         OnPropertyChanged(nameof(SummaryText));
         OnPropertyChanged(nameof(RecoveryText));
         OnPropertyChanged(nameof(OneDriveNoticeText));
@@ -370,6 +483,7 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(HasRecentEvents));
         OnPropertyChanged(nameof(IsBusy));
         OnPropertyChanged(nameof(CanRestartWatcher));
+        OnPropertyChanged(nameof(IsRescanRunning));
         OnPropertyChanged(nameof(CanOpenRescanConfirm));
         OnPropertyChanged(nameof(RescanDisabledReason));
         OnPropertyChanged(nameof(CanExportDiagnostics));

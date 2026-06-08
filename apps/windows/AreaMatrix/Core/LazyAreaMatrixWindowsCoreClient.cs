@@ -94,6 +94,35 @@ internal sealed class LazyAreaMatrixWindowsCoreClient :
         return Current.RecordWatcherHealthAsync(repoPath, signal, cancellationToken);
     }
 
+    public Task<CoreManualRescanPreviewReport> PreviewManualRescanAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.PreviewManualRescanAsync(repoPath, cancellationToken);
+    }
+
+    public Task<CoreReindexReport> ReindexFromFilesystemAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.ReindexFromFilesystemAsync(repoPath, cancellationToken);
+    }
+
+    public Task<CoreScanSession?> GetLatestScanSessionAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.GetLatestScanSessionAsync(repoPath, cancellationToken);
+    }
+
+    public Task<CoreReindexReport> ResumeScanSessionAsync(
+        string repoPath,
+        long scanSessionId,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.ResumeScanSessionAsync(repoPath, scanSessionId, cancellationToken);
+    }
+
     public void Dispose()
     {
         lock (sync)

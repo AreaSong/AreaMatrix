@@ -78,7 +78,7 @@ public static class OneDriveNoticeViewSmokeTests
             "apps/windows/AreaMatrix/Features/Library/WatcherStatusCoreBridge.cs")), "C4-12 CoreBridge call");
         TestAssert.Contains("CloseRequested", watcherCode, "watcher status close event");
         TestAssert.DoesNotContain("ReindexFromFilesystem", watcherCode, "watcher placeholder must not start rescan");
-        TestAssert.DoesNotContain("PreviewManualRescan", watcherCode, "watcher placeholder must not preview rescan");
+        TestAssert.Contains("PrepareRescanConfirmAsync", watcherCode, "watcher C4-19 preview handoff");
     }
 
     private static void AssertButton(XElement root, string content, string clickHandler)

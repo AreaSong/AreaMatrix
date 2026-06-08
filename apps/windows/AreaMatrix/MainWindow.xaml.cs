@@ -148,9 +148,9 @@ public sealed partial class MainWindow : Window
         WindowsMainWindowPage.Visibility = Visibility.Visible;
     }
 
-    private void WatcherStatusPage_OpenRescanConfirmRequested(WindowsRepositoryRoute route)
+    private void WatcherStatusPage_OpenRescanConfirmRequested(RescanConfirmRequest request)
     {
-        // C4-19 owns the rescan confirmation flow; this C4-12 page only exposes the gated entry.
+        // S4-X-07 owns the confirmation page; this page-feature task only prepares the handoff.
     }
 
     private void MainWindow_Closed(object sender, WindowEventArgs args)

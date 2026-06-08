@@ -42,6 +42,33 @@ public enum WatcherStatusEventKind
     Renamed
 }
 
+public enum ManualRescanPreviewItemKind
+{
+    Added,
+    Updated,
+    Missing,
+    RenamedCandidate,
+    Conflict,
+    Unreadable,
+    Unknown,
+    Skipped
+}
+
+public enum ScanSessionKind
+{
+    Adopt,
+    Reindex
+}
+
+public enum ScanSessionStatus
+{
+    Running,
+    Completed,
+    Paused,
+    Failed,
+    Interrupted
+}
+
 public sealed record WatcherStatusEventSample(
     string Path,
     WatcherStatusEventKind Kind,
@@ -64,6 +91,118 @@ public sealed record WatcherStatusEventSample(
             .ToLocalTime()
             .ToString("g", CultureInfo.CurrentCulture);
     }
+}
+
+public sealed record ManualRescanPreviewItem(
+    ManualRescanPreviewItemKind Kind,
+    string RelativePath,
+    string Reason,
+    string SuggestedAction)
+{
+    public string DisplayText => $"{Kind}: {RelativePath}";
+
+    public string DetailText => string.IsNullOrWhiteSpace(Reason)
+        ? SuggestedAction
+        : $"{Reason} - {SuggestedAction}";
+}
+
+public sealed record ManualRescanPreviewReport(
+    long Added,
+    long Updated,
+    long MissingOrDeletedFromFs,
+    long RenamedCandidates,
+    long Conflicts,
+    long Unreadable,
+    long Unknown,
+    long Skipped,
+    string SnapshotId,
+    long CreatedAt,
+    bool IsStale,
+    IReadOnlyList<ManualRescanPreviewItem> Items)
+{
+    public bool HasNeedsReview => MissingOrDeletedFromFs > 0
+        || Conflicts > 0
+        || Unreadable > 0
+        || Unknown > 0;
+
+    public bool CanRunRescan => !IsStale;
+
+    public string EstimatedItemsText => "Estimated items: "
+        + (Added + Updated + MissingOrDeletedFromFs + RenamedCandidates + Conflicts + Unreadable + Unknown)
+            .ToString(CultureInfo.CurrentCulture);
+
+    public string SummaryText => "Preview impact: "
+        + $"Added {Added.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Updated {Updated.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Missing {MissingOrDeletedFromFs.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Renamed candidates {RenamedCandidates.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Conflicts {Conflicts.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Unreadable {Unreadable.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Unknown {Unknown.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Skipped {Skipped.ToString(CultureInfo.CurrentCulture)}.";
+}
+
+public sealed record ReindexReport(
+    long? ScanSessionId,
+    long Inserted,
+    long Updated,
+    long Missing,
+    long Conflicts,
+    long Unreadable,
+    long Unknown,
+    long Skipped,
+    IReadOnlyList<string> Errors)
+{
+    public string SummaryText => "Rescan result: "
+        + $"Inserted {Inserted.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Updated {Updated.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Missing {Missing.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Conflicts {Conflicts.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Unreadable {Unreadable.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Unknown {Unknown.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Skipped {Skipped.ToString(CultureInfo.CurrentCulture)}.";
+
+    public bool HasNeedsReview => Missing > 0
+        || Conflicts > 0
+        || Unreadable > 0
+        || Unknown > 0;
+}
+
+public sealed record RescanConfirmRequest(
+    WindowsRepositoryRoute Route,
+    ManualRescanPreviewReport Preview);
+
+public sealed record ScanSession(
+    long Id,
+    ScanSessionKind Kind,
+    ScanSessionStatus Status,
+    string? LastPath,
+    long Inserted,
+    long Updated,
+    long Missing,
+    long Conflicts,
+    long Unreadable,
+    long Unknown,
+    long Skipped,
+    long StartedAt,
+    long UpdatedAt,
+    long? FinishedAt,
+    IReadOnlyList<string> Errors)
+{
+    public bool IsManualRescan => Kind == ScanSessionKind.Reindex;
+
+    public bool IsRunning => Status == ScanSessionStatus.Running;
+
+    public bool CanResume => IsManualRescan
+        && (Status == ScanSessionStatus.Paused
+            || Status == ScanSessionStatus.Failed
+            || Status == ScanSessionStatus.Interrupted);
+
+    public string DisplayText => $"Latest rescan session: {Status}, "
+        + $"inserted {Inserted.ToString(CultureInfo.CurrentCulture)}, "
+        + $"updated {Updated.ToString(CultureInfo.CurrentCulture)}, "
+        + $"missing {Missing.ToString(CultureInfo.CurrentCulture)}, "
+        + $"conflicts {Conflicts.ToString(CultureInfo.CurrentCulture)}.";
 }
 
 public sealed record WatcherStatusHealthSignal(

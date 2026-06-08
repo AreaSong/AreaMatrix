@@ -47,6 +47,21 @@ internal delegate RustBuffer RecordWatcherHealthDelegate(
     ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer PreviewManualRescanDelegate(RustBuffer repoPath, ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer ReindexFromFilesystemDelegate(RustBuffer repoPath, ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer GetLatestScanSessionDelegate(RustBuffer repoPath, ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer ResumeScanSessionDelegate(
+    RustBuffer repoPath,
+    long scanSessionId,
+    ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 internal delegate RustBuffer RustBufferFromBytesDelegate(ForeignBytes bytes, ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

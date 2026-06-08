@@ -26,6 +26,14 @@ internal sealed class NativeCoreLibrary : IDisposable
         SearchFiles = LoadFunction<SearchFilesDelegate>("uniffi_area_matrix_core_fn_func_search_files");
         RecordWatcherHealth = LoadFunction<RecordWatcherHealthDelegate>(
             "uniffi_area_matrix_core_fn_func_record_watcher_health");
+        PreviewManualRescan = LoadFunction<PreviewManualRescanDelegate>(
+            "uniffi_area_matrix_core_fn_func_preview_manual_rescan");
+        ReindexFromFilesystem = LoadFunction<ReindexFromFilesystemDelegate>(
+            "uniffi_area_matrix_core_fn_func_reindex_from_filesystem");
+        GetLatestScanSession = LoadFunction<GetLatestScanSessionDelegate>(
+            "uniffi_area_matrix_core_fn_func_get_latest_scan_session");
+        ResumeScanSession = LoadFunction<ResumeScanSessionDelegate>(
+            "uniffi_area_matrix_core_fn_func_resume_scan_session");
         RustBufferFromBytes = LoadFunction<RustBufferFromBytesDelegate>(
             "ffi_area_matrix_core_rustbuffer_from_bytes");
         RustBufferFree = LoadFunction<RustBufferFreeDelegate>("ffi_area_matrix_core_rustbuffer_free");
@@ -49,6 +57,14 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_checksum_func_search_files");
         RecordWatcherHealthChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_record_watcher_health");
+        PreviewManualRescanChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_preview_manual_rescan");
+        ReindexFromFilesystemChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_reindex_from_filesystem");
+        GetLatestScanSessionChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_get_latest_scan_session");
+        ResumeScanSessionChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_resume_scan_session");
     }
 
     public ValidateRepoPathDelegate ValidateRepoPath { get; }
@@ -70,6 +86,14 @@ internal sealed class NativeCoreLibrary : IDisposable
     public SearchFilesDelegate SearchFiles { get; }
 
     public RecordWatcherHealthDelegate RecordWatcherHealth { get; }
+
+    public PreviewManualRescanDelegate PreviewManualRescan { get; }
+
+    public ReindexFromFilesystemDelegate ReindexFromFilesystem { get; }
+
+    public GetLatestScanSessionDelegate GetLatestScanSession { get; }
+
+    public ResumeScanSessionDelegate ResumeScanSession { get; }
 
     public RustBufferFromBytesDelegate RustBufferFromBytes { get; }
 
@@ -94,6 +118,14 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ChecksumDelegate SearchFilesChecksum { get; }
 
     public ChecksumDelegate RecordWatcherHealthChecksum { get; }
+
+    public ChecksumDelegate PreviewManualRescanChecksum { get; }
+
+    public ChecksumDelegate ReindexFromFilesystemChecksum { get; }
+
+    public ChecksumDelegate GetLatestScanSessionChecksum { get; }
+
+    public ChecksumDelegate ResumeScanSessionChecksum { get; }
 
     public static NativeCoreLibrary LoadDefault()
     {

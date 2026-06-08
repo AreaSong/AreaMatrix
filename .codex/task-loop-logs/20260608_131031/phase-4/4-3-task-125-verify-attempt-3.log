@@ -1,0 +1,98 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-125`
+- Task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-125-s4-win-04-c4-19-manual-rescan.md`
+- Manifest：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md` 中 `## 4-3/task-125`
+- 实际验收文件：`apps/windows/**`、`core/area_matrix.udl`
+- Forbidden Touches：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S4-WIN-04 页面中的 C4-19 功能点
+- 结果：通过
+- 证据：`WatcherStatusView.xaml` 提供 `Run rescan now`；`WatcherStatusView.xaml.cs:84-98` 只准备 rescan preview 并发出 `OpenRescanConfirmRequested`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Library/WatcherStatusView.xaml.cs`
+
+- 项目：读取并对齐页面规格、control map、Core API、C4-19 规格
+- 结果：通过
+- 证据：S4-WIN-04 要求先进入 `S4-X-07 rescan-confirm`；Core API/UDL 暴露 `preview_manual_rescan`、`reindex_from_filesystem`、`get_latest_scan_session`、`resume_scan_session`
+- 涉及文件：`docs/ux/page-specs/stage-4-multiplatform/S4-WIN-04-watcher-status.md`、`docs/api/core-api.md`、`core/area_matrix.udl`
+
+- 项目：只接入 C4-19 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`WatcherStatusCoreBridge.cs:16-31`、`AreaMatrixNativeCoreClient.WatcherStatus.cs:11-63` 接入 C4-19 API；ViewModel 用 latest session 防并发，再调用 preview
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Library/WatcherStatusCoreBridge.cs`
+
+- 项目：不实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：`MainWindow.xaml.cs:151-154` 仅保留 S4-X-07 handoff 注释；smoke test 断言未创建 `RescanConfirmViewModel`、未打开 S4-X-07
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/MainWindow.xaml.cs`
+
+- 项目：用户可见功能可触发和验收
+- 结果：通过
+- 证据：`WatcherStatusViewModelTests` 覆盖 preview handoff、running scan session 禁用第二次 rescan、missing path / DB locked 禁用入口
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrixTests/WatcherStatus/WatcherStatusViewModelTests.cs`
+
+- 项目：未使用 mock / fixture / 静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产路径通过 `NativeCoreLibrary` 绑定 UniFFI native exports；mock 仅存在测试 fake bridge 中
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Core/NativeCoreLibrary.cs`
+
+- 项目：未触碰 control map 之外能力
+- 结果：通过
+- 证据：未调用 `sync_external_changes`、`set_fs_event_cursor`；测试显式断言 watcher 页不直接执行 `ReindexFromFilesystem`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrixTests/WatcherStatus/WatcherStatusSmokeTests.cs`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：改动落在 `apps/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/**`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：任务验证
+- 结果：通过
+- 证据：`./dev check task 4-3/task-125` exit 0；补充 `dotnet run --project apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj` 输出 `AreaMatrix Windows tests passed.`
+- 涉及文件：task-scoped validation
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C4-19 preview、scan session、handoff 分层在 ViewModel / CoreBridge / NativeClient 中，未把确认页实现塞进 watcher 页
+- 注释 / rustdoc / 文档同步：通过，本 task 未修改 Core API/UDL 文档；UDL 与 Core API 已存在 C4-19 合同
+- 错误处理与边界处理：通过，路径缺失、DB locked、已有 running rescan、Core error 均有禁用或错误映射
+- 测试与验证覆盖：通过，task gate 和 Windows .NET tests 均通过
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径使用 native Core binding；测试 fake 未进入生产代码
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-125`，通过；包含 prompt doctor OK、`git diff --check`、macOS build gate，最终 `BUILD SUCCEEDED`
+- 已运行：`dotnet run --project apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj`，通过，输出 `AreaMatrix Windows tests passed.`
+- 已运行：`git diff --name-only -- core/src`，通过，无 Forbidden Touches
+- 已运行：`git diff --check`，通过，无 whitespace/error 输出
+- 失败：无
+- 缺失：未运行真实 Windows GUI 手工点击；当前环境为 macOS，本 task 用 XAML smoke + ViewModel tests 覆盖 Windows 页面行为
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

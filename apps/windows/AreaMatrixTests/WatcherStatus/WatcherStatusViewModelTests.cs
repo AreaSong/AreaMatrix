@@ -10,6 +10,8 @@ public static class WatcherStatusViewModelTests
     {
         await OpeningWatcherStatusRecordsPlatformSnapshotThroughCoreBridge();
         await RestartWatcherUsesExplicitPlatformRestartAndRecordsUpdatedSnapshot();
+        await RunRescanNowPreparesCorePreviewBeforeConfirmationHandoff();
+        await RunningScanSessionDisablesSecondRescan();
         await MissingPathMapsToRecoveryTextAndDisablesRescanEntry();
         await DatabaseLockedSnapshotDisablesRescanWithoutCallingManualRescan();
         await CoreErrorMapsToReadableWatcherError();
@@ -52,7 +54,63 @@ public static class WatcherStatusViewModelTests
         TestAssert.SequenceEqual([path], diagnostics.RestartedPaths, nameof(diagnostics.RestartedPaths));
         TestAssert.Equal(2, bridge.RecordedSignals.Count, "recorded signals");
         TestAssert.Equal(WatcherStatusKind.Running, model.Snapshot?.Status, "snapshot status");
-        TestAssert.Empty(bridge.ManualRescanRequests, nameof(bridge.ManualRescanRequests));
+        TestAssert.Empty(bridge.PreviewManualRescanRequests, nameof(bridge.PreviewManualRescanRequests));
+    }
+
+    private static async Task RunRescanNowPreparesCorePreviewBeforeConfirmationHandoff()
+    {
+        const string path = @"C:\Repos\AreaMatrix";
+        FakeWatcherStatusCoreBridge bridge = new()
+        {
+            PreviewReport = new ManualRescanPreviewReport(
+                Added: 2,
+                Updated: 1,
+                MissingOrDeletedFromFs: 1,
+                RenamedCandidates: 0,
+                Conflicts: 1,
+                Unreadable: 0,
+                Unknown: 1,
+                Skipped: 3,
+                SnapshotId: "preview-1",
+                CreatedAt: 1_700_000_040,
+                IsStale: false,
+                Items: [new ManualRescanPreviewItem(
+                    ManualRescanPreviewItemKind.Missing,
+                    "docs\\missing.pdf",
+                    "file not found",
+                    "review missing")])
+        };
+        FakeWindowsWatcherDiagnostics diagnostics = new(RunningSignal(path));
+        WatcherStatusViewModel model = new(bridge, diagnostics);
+
+        await model.OpenRouteAsync(Route(path));
+        bool canOpenConfirm = await model.PrepareRescanConfirmAsync();
+
+        TestAssert.True(canOpenConfirm, nameof(canOpenConfirm));
+        TestAssert.SequenceEqual([path, path], bridge.LatestScanSessionRequests, nameof(bridge.LatestScanSessionRequests));
+        TestAssert.SequenceEqual([path], bridge.PreviewManualRescanRequests, nameof(bridge.PreviewManualRescanRequests));
+        TestAssert.Contains("Added 2", model.RescanPreviewText, nameof(model.RescanPreviewText));
+        TestAssert.Contains("Missing 1", model.RescanPreviewText, nameof(model.RescanPreviewText));
+        TestAssert.True(model.RescanPreview?.HasNeedsReview == true, nameof(model.RescanPreview.HasNeedsReview));
+    }
+
+    private static async Task RunningScanSessionDisablesSecondRescan()
+    {
+        const string path = @"C:\Repos\AreaMatrix";
+        FakeWatcherStatusCoreBridge bridge = new()
+        {
+            LatestScanSession = RunningReindexSession()
+        };
+        FakeWindowsWatcherDiagnostics diagnostics = new(RunningSignal(path));
+        WatcherStatusViewModel model = new(bridge, diagnostics);
+
+        await model.OpenRouteAsync(Route(path));
+        bool canOpenConfirm = await model.PrepareRescanConfirmAsync();
+
+        TestAssert.False(model.CanOpenRescanConfirm, nameof(model.CanOpenRescanConfirm));
+        TestAssert.False(canOpenConfirm, nameof(canOpenConfirm));
+        TestAssert.Contains("already running", model.RescanDisabledReason, nameof(model.RescanDisabledReason));
+        TestAssert.Empty(bridge.PreviewManualRescanRequests, nameof(bridge.PreviewManualRescanRequests));
     }
 
     private static async Task MissingPathMapsToRecoveryTextAndDisablesRescanEntry()
@@ -86,7 +144,7 @@ public static class WatcherStatusViewModelTests
 
         TestAssert.False(model.CanOpenRescanConfirm, nameof(model.CanOpenRescanConfirm));
         TestAssert.Contains("database lock", model.RescanDisabledReason, nameof(model.RescanDisabledReason));
-        TestAssert.Empty(bridge.ManualRescanRequests, nameof(bridge.ManualRescanRequests));
+        TestAssert.Empty(bridge.PreviewManualRescanRequests, nameof(bridge.PreviewManualRescanRequests));
     }
 
     private static async Task CoreErrorMapsToReadableWatcherError()
@@ -160,6 +218,26 @@ public static class WatcherStatusViewModelTests
             RecentEvents = []
         };
     }
+
+    private static ScanSession RunningReindexSession()
+    {
+        return new ScanSession(
+            Id: 7,
+            Kind: ScanSessionKind.Reindex,
+            Status: ScanSessionStatus.Running,
+            LastPath: "docs\\contract.pdf",
+            Inserted: 1,
+            Updated: 2,
+            Missing: 0,
+            Conflicts: 0,
+            Unreadable: 0,
+            Unknown: 0,
+            Skipped: 0,
+            StartedAt: 1_700_000_000,
+            UpdatedAt: 1_700_000_010,
+            FinishedAt: null,
+            Errors: []);
+    }
 }
 
 internal sealed class FakeWatcherStatusCoreBridge : IWatcherStatusCoreBridge
@@ -168,7 +246,40 @@ internal sealed class FakeWatcherStatusCoreBridge : IWatcherStatusCoreBridge
 
     public List<WatcherStatusHealthSignal> RecordedSignals { get; } = [];
 
-    public List<string> ManualRescanRequests { get; } = [];
+    public List<string> PreviewManualRescanRequests { get; } = [];
+
+    public List<string> ReindexRequests { get; } = [];
+
+    public List<string> LatestScanSessionRequests { get; } = [];
+
+    public List<long> ResumeScanSessionRequests { get; } = [];
+
+    public ManualRescanPreviewReport PreviewReport { get; set; } = new(
+        Added: 0,
+        Updated: 0,
+        MissingOrDeletedFromFs: 0,
+        RenamedCandidates: 0,
+        Conflicts: 0,
+        Unreadable: 0,
+        Unknown: 0,
+        Skipped: 0,
+        SnapshotId: "empty",
+        CreatedAt: 1_700_000_000,
+        IsStale: false,
+        Items: []);
+
+    public ScanSession? LatestScanSession { get; set; }
+
+    public ReindexReport ReindexReport { get; set; } = new(
+        ScanSessionId: null,
+        Inserted: 0,
+        Updated: 0,
+        Missing: 0,
+        Conflicts: 0,
+        Unreadable: 0,
+        Unknown: 0,
+        Skipped: 0,
+        Errors: []);
 
     public Exception? Error { get; set; }
 
@@ -200,6 +311,39 @@ internal sealed class FakeWatcherStatusCoreBridge : IWatcherStatusCoreBridge
             signal.HealthReasons,
             signal.RecentEvents,
             signal.ReportedAt));
+    }
+
+    public Task<ManualRescanPreviewReport> PreviewManualRescanAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        PreviewManualRescanRequests.Add(repoPath);
+        return Task.FromResult(PreviewReport);
+    }
+
+    public Task<ReindexReport> ReindexFromFilesystemAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        ReindexRequests.Add(repoPath);
+        return Task.FromResult(ReindexReport);
+    }
+
+    public Task<ScanSession?> GetLatestScanSessionAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        LatestScanSessionRequests.Add(repoPath);
+        return Task.FromResult(LatestScanSession);
+    }
+
+    public Task<ReindexReport> ResumeScanSessionAsync(
+        string repoPath,
+        long scanSessionId,
+        CancellationToken cancellationToken = default)
+    {
+        ResumeScanSessionRequests.Add(scanSessionId);
+        return Task.FromResult(ReindexReport);
     }
 }
 

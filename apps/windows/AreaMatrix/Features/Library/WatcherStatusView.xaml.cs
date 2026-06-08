@@ -17,7 +17,7 @@ public sealed partial class WatcherStatusView : UserControl
 
     public event Action? CloseRequested;
 
-    public event Action<WindowsRepositoryRoute>? OpenRescanConfirmRequested;
+    public event Action<RescanConfirmRequest>? OpenRescanConfirmRequested;
 
     public WindowsRepositoryRoute? Route { get; private set; }
 
@@ -81,12 +81,20 @@ public sealed partial class WatcherStatusView : UserControl
         RefreshState();
     }
 
-    private void RunRescanNowButton_Click(object sender, RoutedEventArgs e)
+    private async void RunRescanNowButton_Click(object sender, RoutedEventArgs e)
     {
-        if (ViewModel?.CanOpenRescanConfirm == true && Route is not null)
+        if (ViewModel is null || Route is null)
         {
-            OpenRescanConfirmRequested?.Invoke(Route);
+            return;
         }
+
+        if (await ViewModel.PrepareRescanConfirmAsync()
+            && ViewModel.RescanPreview is { } preview)
+        {
+            OpenRescanConfirmRequested?.Invoke(new RescanConfirmRequest(Route, preview));
+        }
+
+        RefreshState();
     }
 
     private void ExportDiagnosticsButton_Click(object sender, RoutedEventArgs e)
@@ -131,6 +139,8 @@ public sealed partial class WatcherStatusView : UserControl
         WatcherLastRescanTextBlock.Text = ViewModel.LastRescanText;
         WatcherBackendTextBlock.Text = ViewModel.BackendText;
         WatcherCountTextBlock.Text = ViewModel.WatchCountText;
+        LatestScanSessionTextBlock.Text = ViewModel.LatestScanSessionText;
+        RescanPreviewTextBlock.Text = ViewModel.RescanPreviewText;
         OneDriveNoticeTextBlock.Text = ViewModel.OneDriveNoticeText;
         OneDriveNoticeTextBlock.Visibility = ViewModel.HasOneDriveNotice
             ? Visibility.Visible

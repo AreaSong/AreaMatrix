@@ -77,6 +77,21 @@
                     x:Name="OneDriveNoticeTextBlock"
                     TextWrapping="Wrap" />
 
+                <StackPanel Spacing="4">
+                    <TextBlock
+                        Text="Manual rescan"
+                        Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <TextBlock
+                        x:Name="LatestScanSessionTextBlock"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        x:Name="RescanPreviewTextBlock"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Text="Run rescan now opens confirmation before any index update."
+                        TextWrapping="Wrap" />
+                </StackPanel>
+
                 <StackPanel Spacing="8">
                     <TextBlock
                         Text="Recent events"
