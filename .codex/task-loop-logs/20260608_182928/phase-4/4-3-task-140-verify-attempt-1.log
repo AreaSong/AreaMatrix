@@ -1,0 +1,91 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-140`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-140-s4-lnx-05-page-integration-verify.md`
+- Manifest 章节：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md` 的 `## 4-3/task-140`
+- 页面：`S4-LNX-05 import-flow`
+- Core 能力：`C4-13`、`C4-21`
+- 代码范围：`apps/**`、`core/area_matrix.udl`
+- 禁止触碰：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：逐项验收本页所有 page-feature task 是否完成
+- 结果：通过
+- 证据：依赖任务 `4-3/task-138` 与 `4-3/task-139` 的 verify 日志均为 `VERIFY_RESULT: PASS`；本轮 Linux 测试入口也运行了 `LinuxImportViewModelTests`、`LinuxImportReplaceViewModelTests`、`LinuxImportSmokeTests`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260608_182928/phase-4/4-3-task-138-verify-attempt-2.log`、`/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260608_182928/phase-4/4-3-task-139-verify-attempt-3.log`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/Program.cs`
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 调用闭环
+- 结果：通过
+- 证据：`LinuxImportDialog` 提供 add files、add folder、drop、import、replace preview/apply、cancel/close 入口；`LinuxImportViewModel` 管理空态、预览态、导入态、错误态、结果态、Move 确认和 retry；`DesktopImportCoreBridge` 调用 `PredictCategoryAsync`、`ImportFileWithResultAsync`、`PreviewImportConflictBatchAsync`、`ApplyImportConflictBatchAsync`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Import/LinuxImportDialog.cs`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Import/LinuxImportViewModel.cs`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Import/DesktopImportCoreBridge.cs`
+
+- 项目：移除无法最终验收的 mock、fixture 或硬编码状态
+- 结果：通过
+- 证据：生产 shell 使用 `AreaMatrixNativeCoreClient` 和真实 `DesktopImportCoreBridge`；`FakeDesktopImportCoreBridge`、`StaticLinuxImportFileProbe` 只存在于测试支持文件。真实 picker/drop name conflict 没有 Core conflict session 时会禁用 Replace，而不是走硬编码 overwrite fallback。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/Import/LinuxImportTestSupport.cs`
+
+- 项目：不新增 control map 外功能
+- 结果：通过
+- 证据：control map 对 `S4-LNX-05` 只声明 `C4-13, C4-21`；实现只接入桌面导入和 replace conflict preview/apply，没有新增同页外能力或直接 permanent delete 路径。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.DesktopImport.cs`
+
+- 项目：S4-LNX-05 可按 page spec 和 control map 完整验收
+- 结果：通过
+- 证据：GTK UI 描述包含标题、来源入口、drop target、预览列表、Copy/Move 设置、Move 确认区、Replace 确认区、结果列表；Linux 行为测试覆盖 copy/import、duplicate、name conflict keep both、Move preflight、retained result、retry failed、Replace 二次确认。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Import/LinuxImportDialog.ui`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/Import/LinuxImportViewModelTests.cs`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/Import/LinuxImportReplaceViewModelTests.cs`
+
+- 项目：页面声明的所有 Core 能力已真实接入或有明确阻塞证据
+- 结果：通过
+- 证据：`C4-13` 走 native `predict_category` 与 `import_file_with_result`；`C4-21` 走 native `preview_import_conflict_batch` 与 `apply_import_conflict_batch`，必须有 preview token、Trash 可用性和二次确认。无 Core conflict session 的直接 picker/drop Replace 明确禁用并显示阻塞原因。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Core/NativeCoreLibrary.cs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Linux import 拆分为 dialog、ViewModel、CoreBridge、models、file probe、picker adapter、native client，未发现单文件超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 Rust public API；`docs/api/core-api.md` 与 `core/area_matrix.udl` 已包含 C4-13 / C4-21 相关接口。
+- 错误处理与边界处理：通过。Move preflight、源文件 retained、DB locked 映射、permission denied、Trash/preview token/二次确认阻断均有显式处理。
+- 测试与验证覆盖：通过。manifest 指定命令通过，Linux targeted test 也通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试 fake 未进入生产路径；Replace 不使用 import overwrite fallback 伪造成功。
+
+六、阻塞项
+
+- 未发现阻塞项。
+- 非阻塞观察：当前工作区仅有 `.codex/task-loop-runs/20260608_182928/summary.json` 与 `tasks/prompts/_shared/progress.json` 为已修改状态；未发现 `apps/**`、`core/area_matrix.udl` 或 `core/src/**` 的工作区 / staged 差异。
+
+七、验证情况
+
+- 跑了哪些验证：
+  - `./dev check task 4-3/task-140`
+  - `dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj --no-restore`
+  - `git status --short`
+  - `git diff --name-only -- core/src apps core/area_matrix.udl && git diff --cached --name-only -- core/src apps core/area_matrix.udl`
+
+- 哪些通过：
+  - `./dev check task 4-3/task-140` 退出码 0；包含 `doctor: OK`、`git diff --check`、macOS build `BUILD SUCCEEDED`。
+  - Linux 测试退出码 0；输出 `AreaMatrix Linux tests passed.`
+  - Forbidden Touches 检查无输出，说明未发现 `core/src/**` 违规修改。
+
+- 哪些失败：
+  - 无。
+
+- 哪些缺失：
+  - 未运行真实 Linux GTK 桌面窗口人工 smoke；当前 manifest 未要求，且本仓库 Linux 阶段现有验收口径是 UI 描述文件 + controller / ViewModel / CoreBridge 测试，不作为本 task 阻塞项。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。S4-LNX-05 的 C4-13 与 C4-21 页面闭环已有真实 CoreBridge / native binding 接入、明确安全阻断路径和测试证据；未触碰 Forbidden Touches，验证通过。
+
+VERIFY_RESULT: PASS
