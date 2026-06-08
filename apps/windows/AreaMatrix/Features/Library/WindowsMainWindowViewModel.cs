@@ -191,6 +191,19 @@ public sealed class WindowsMainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    public WindowsRepositoryRoute? ImportRoute
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(RepoPath) || currentRoute is null)
+            {
+                return null;
+            }
+
+            return currentRoute with { Kind = WindowsRepositoryRouteKind.ImportFlow };
+        }
+    }
+
     public string SelectedFileTitle => SelectedFile?.DisplayName ?? "No file selected";
 
     public string SelectedFilePath => SelectedFile?.Path ?? "Select a file to view metadata.";
@@ -234,6 +247,7 @@ public sealed class WindowsMainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(OneDriveStatusRoute));
         OnPropertyChanged(nameof(CanOpenWatcherStatus));
         OnPropertyChanged(nameof(WatcherStatusRoute));
+        OnPropertyChanged(nameof(ImportRoute));
         await LoadSnapshotAsync(isInitialLoad: true, cancellationToken);
     }
 

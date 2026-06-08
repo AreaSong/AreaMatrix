@@ -1,5 +1,6 @@
 using AreaMatrixTests.ChooseRepository;
 using AreaMatrixTests.DesktopMainQuery;
+using AreaMatrixTests.Import;
 using AreaMatrixTests.WatcherStatus;
 
 await ChooseRepositoryViewModelTests.RunAllAsync();
@@ -9,6 +10,8 @@ ChooseRepositoryViewSmokeTests.RunAll();
 OneDriveNoticeViewSmokeTests.RunAll();
 await DesktopMainQueryViewModelTests.RunAllAsync();
 DesktopMainQuerySmokeTests.RunAll();
+await WindowsImportViewModelTests.RunAllAsync();
+WindowsImportSmokeTests.RunAll();
 await WatcherStatusViewModelTests.RunAllAsync();
 WatcherStatusSmokeTests.RunAll();
 Console.WriteLine("AreaMatrix Windows tests passed.");

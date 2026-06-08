@@ -1,0 +1,255 @@
+<UserControl
+    x:Class="AreaMatrix.Features.Import.WindowsImportDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:import="using:AreaMatrix.Features.Import"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    AllowDrop="True"
+    DragOver="ImportDialog_DragOver"
+    Drop="ImportDialog_Drop"
+    mc:Ignorable="d">
+
+    <Grid Padding="24" RowSpacing="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Spacing="4">
+                <TextBlock
+                    Text="Import to AreaMatrix"
+                    Style="{ThemeResource TitleTextBlockStyle}" />
+                <TextBlock
+                    x:Name="SourceSummaryTextBlock"
+                    AutomationProperties.LiveSetting="Polite"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+            <Button
+                Grid.Column="1"
+                Content="Clear"
+                Click="ClearButton_Click" />
+        </Grid>
+
+        <InfoBar
+            x:Name="StatusInfoBar"
+            Grid.Row="1"
+            IsOpen="False" />
+
+        <ScrollViewer Grid.Row="2">
+            <StackPanel Spacing="16">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" MinWidth="280" />
+                        <ColumnDefinition Width="*" MinWidth="220" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock
+                            Text="Source paths"
+                            Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <TextBox
+                            x:Name="SourcePathsTextBox"
+                            AcceptsReturn="True"
+                            AutomationProperties.HelpText="Enter one source file path per line."
+                            MinHeight="96"
+                            PlaceholderText="C:\Users\you\Downloads\report.pdf"
+                            TextChanged="SourcePathsTextBox_TextChanged"
+                            TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button
+                                Content="Add files..."
+                                Click="AddFilesButton_Click" />
+                            <Button
+                                Content="Add folder..."
+                                Click="AddFolderButton_Click" />
+                            <Button
+                                x:Name="PreparePreviewButton"
+                                Content="Prepare preview"
+                                Click="PreparePreviewButton_Click" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Spacing="8">
+                        <TextBlock
+                            Text="Import settings"
+                            Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <ComboBox
+                            x:Name="ImportModeComboBox"
+                            Header="Import mode"
+                            SelectedIndex="0"
+                            SelectionChanged="ImportModeComboBox_SelectionChanged">
+                            <ComboBoxItem Content="Copy into repository" />
+                            <ComboBoxItem Content="Move into repository" />
+                        </ComboBox>
+                        <TextBox
+                            x:Name="TargetCategoryTextBox"
+                            Header="Target category"
+                            PlaceholderText="Auto classify"
+                            TextChanged="TargetCategoryTextBox_TextChanged" />
+                        <TextBox
+                            x:Name="TargetDirectoryTextBox"
+                            Header="Target directory"
+                            PlaceholderText="Optional repository relative path"
+                            TextChanged="TargetDirectoryTextBox_TextChanged" />
+                        <ComboBox
+                            x:Name="DuplicateStrategyComboBox"
+                            Header="Duplicate content"
+                            SelectedIndex="0"
+                            SelectionChanged="DuplicateStrategyComboBox_SelectionChanged">
+                            <ComboBoxItem Content="Skip duplicate" />
+                            <ComboBoxItem Content="Keep both" />
+                            <ComboBoxItem Content="Ask before importing" />
+                        </ComboBox>
+                        <CheckBox
+                            x:Name="PreserveFolderStructureCheckBox"
+                            Content="Preserve folder structure"
+                            Checked="PreserveFolderStructureCheckBox_Changed"
+                            Unchecked="PreserveFolderStructureCheckBox_Changed"
+                            Visibility="Collapsed" />
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel
+                    x:Name="MoveConfirmationSection"
+                    Spacing="8"
+                    Visibility="Collapsed">
+                    <TextBlock
+                        Text="Move originals after import?"
+                        Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <TextBlock
+                        Text="AreaMatrix will keep the original files in place until the repository copy and database update succeed."
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Text="After a successful move, the originals will no longer remain in the source folder."
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        x:Name="MoveConfirmationTextBlock"
+                        TextWrapping="Wrap" />
+                    <InfoBar
+                        x:Name="MovePreflightInfoBar"
+                        AutomationProperties.LiveSetting="Polite"
+                        IsOpen="True" />
+                    <CheckBox
+                        x:Name="MoveConfirmedCheckBox"
+                        Content="I understand the originals will be removed from the source folder after a successful import."
+                        Checked="MoveConfirmedCheckBox_Changed"
+                        Unchecked="MoveConfirmedCheckBox_Changed" />
+                    <Button
+                        Content="Use Copy instead"
+                        Click="UseCopyInsteadButton_Click" />
+                </StackPanel>
+
+                <StackPanel Spacing="8">
+                    <TextBlock
+                        Text="Preview"
+                        Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <ListView
+                        x:Name="PreviewListView"
+                        AutomationProperties.Name="Import preview list"
+                        MinHeight="160">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="import:DesktopImportPreviewItem">
+                                <Grid Padding="0,8" ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*" MinWidth="180" />
+                                        <ColumnDefinition Width="90" />
+                                        <ColumnDefinition Width="90" />
+                                        <ColumnDefinition Width="*" MinWidth="140" />
+                                        <ColumnDefinition Width="130" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Spacing="2">
+                                        <TextBlock
+                                            Text="{x:Bind FileName}"
+                                            FontWeight="SemiBold"
+                                            TextTrimming="CharacterEllipsis" />
+                                        <TextBlock
+                                            Text="{x:Bind SourcePath}"
+                                            TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Text="{x:Bind TypeText}" />
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        Text="{x:Bind SizeText}" />
+                                    <TextBlock
+                                        Grid.Column="3"
+                                        Text="{x:Bind SuggestedCategory}"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        Grid.Column="4"
+                                        Text="{x:Bind StatusText}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+
+                <StackPanel
+                    x:Name="ResultsSection"
+                    Spacing="8"
+                    Visibility="Collapsed">
+                    <TextBlock
+                        x:Name="ResultSummaryTextBlock"
+                        Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <ListView
+                        x:Name="ResultsListView"
+                        AutomationProperties.Name="Import results">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="import:DesktopImportResult">
+                                <StackPanel Padding="0,8" Spacing="2">
+                                    <TextBlock
+                                        Text="{x:Bind SummaryText}"
+                                        FontWeight="SemiBold" />
+                                    <TextBlock
+                                        Text="{x:Bind Entry.Path}"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        Text="{x:Bind DetailText}"
+                                        TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Row="3" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <ProgressRing
+                    x:Name="ProgressRing"
+                    Width="20"
+                    Height="20"
+                    IsIndeterminate="True"
+                    Visibility="Collapsed" />
+                <TextBlock
+                    x:Name="ProgressTextBlock"
+                    VerticalAlignment="Center"
+                    AutomationProperties.LiveSetting="Polite" />
+            </StackPanel>
+            <Button
+                Grid.Column="1"
+                Content="Cancel"
+                Click="CancelButton_Click" />
+            <Button
+                x:Name="ImportButton"
+                Grid.Column="2"
+                Content="Import"
+                Click="ImportButton_Click" />
+        </Grid>
+    </Grid>
+</UserControl>

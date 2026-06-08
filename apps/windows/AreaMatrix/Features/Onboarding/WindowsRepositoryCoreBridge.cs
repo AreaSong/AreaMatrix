@@ -171,6 +171,7 @@ public enum WindowsRepositoryRouteKind
     MainWindow,
     OneDriveNotice,
     WatcherStatus,
+    ImportFlow,
     RepositoryInitConfirm,
     RepositoryAdoptConfirm
 }
@@ -186,6 +187,8 @@ public enum WindowsRepositoryErrorKind
     DiskUnavailable,
     OneDrivePathDetected,
     Config,
+    DuplicateFile,
+    Conflict,
     Unavailable
 }
 

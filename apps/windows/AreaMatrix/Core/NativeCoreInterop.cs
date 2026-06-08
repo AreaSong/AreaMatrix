@@ -23,6 +23,19 @@ internal delegate void InitRepoDelegate(RustBuffer repoPath, RustBuffer options,
 internal delegate RustBuffer LoadConfigDelegate(RustBuffer repoPath, ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer PredictCategoryDelegate(
+    RustBuffer repoPath,
+    RustBuffer filename,
+    ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer ImportFileWithResultDelegate(
+    RustBuffer repoPath,
+    RustBuffer sourcePath,
+    RustBuffer options,
+    ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 internal delegate RustBuffer ListFilesDelegate(RustBuffer repoPath, RustBuffer filter, ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

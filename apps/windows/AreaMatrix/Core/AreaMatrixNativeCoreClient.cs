@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using AreaMatrix.Features.Import;
 using AreaMatrix.Features.Library;
 using AreaMatrix.Features.Onboarding;
 
@@ -12,6 +13,7 @@ namespace AreaMatrix.Core;
 public sealed partial class AreaMatrixNativeCoreClient :
     IAreaMatrixWindowsCoreClient,
     IAreaMatrixDesktopQueryCoreClient,
+    IAreaMatrixDesktopImportCoreClient,
     IAreaMatrixWatcherStatusCoreClient,
     IDisposable
 {
@@ -19,10 +21,12 @@ public sealed partial class AreaMatrixNativeCoreClient :
     private const ushort DetectCloudStorageStateChecksum = 18169;
     private const ushort GetFileChecksum = 6132;
     private const ushort InitRepoChecksum = 29414;
+    private const ushort ImportFileWithResultChecksum = 52959;
     private const ushort ListFilesChecksum = 56809;
     private const ushort ListTreeJsonChecksum = 45468;
     private const ushort LoadConfigChecksum = 64573;
     private const ushort GetLatestScanSessionChecksum = 31155;
+    private const ushort PredictCategoryChecksum = 65047;
     private const ushort PreviewManualRescanChecksum = 12140;
     private const ushort RecordWatcherHealthChecksum = 47455;
     private const ushort ReindexFromFilesystemChecksum = 54635;
@@ -112,10 +116,12 @@ public sealed partial class AreaMatrixNativeCoreClient :
             || native.AcknowledgeOneDriveRiskNoticeChecksum() != AcknowledgeOneDriveRiskNoticeChecksum
             || native.DetectCloudStorageStateChecksum() != DetectCloudStorageStateChecksum
             || native.GetFileChecksum() != GetFileChecksum
+            || native.ImportFileWithResultChecksum() != ImportFileWithResultChecksum
             || native.ListFilesChecksum() != ListFilesChecksum
             || native.ListTreeJsonChecksum() != ListTreeJsonChecksum
             || native.LoadConfigChecksum() != LoadConfigChecksum
             || native.GetLatestScanSessionChecksum() != GetLatestScanSessionChecksum
+            || native.PredictCategoryChecksum() != PredictCategoryChecksum
             || native.PreviewManualRescanChecksum() != PreviewManualRescanChecksum
             || native.RecordWatcherHealthChecksum() != RecordWatcherHealthChecksum
             || native.ReindexFromFilesystemChecksum() != ReindexFromFilesystemChecksum
@@ -251,11 +257,13 @@ public sealed partial class AreaMatrixNativeCoreClient :
             1 => WindowsRepositoryErrorKind.DiskUnavailable,
             2 => WindowsRepositoryErrorKind.Db,
             3 => WindowsRepositoryErrorKind.Config,
-            6 => WindowsRepositoryErrorKind.Unavailable,
+            6 => WindowsRepositoryErrorKind.Conflict,
+            7 => WindowsRepositoryErrorKind.DuplicateFile,
             8 => WindowsRepositoryErrorKind.FileNotFound,
             10 => WindowsRepositoryErrorKind.InvalidRepository,
             11 => WindowsRepositoryErrorKind.InvalidPath,
             12 => WindowsRepositoryErrorKind.DiskUnavailable,
+            13 => WindowsRepositoryErrorKind.Unavailable,
             14 => WindowsRepositoryErrorKind.PermissionDenied,
             _ => WindowsRepositoryErrorKind.Unavailable
         };

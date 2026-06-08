@@ -24,6 +24,8 @@ public sealed partial class WindowsMainWindow : UserControl
 
     public event Action<WindowsRepositoryRoute>? OpenWatcherStatusRequested;
 
+    public event Action<WindowsRepositoryRoute>? OpenImportRequested;
+
     public WindowsMainWindowViewModel? ViewModel
     {
         get => DataContext as WindowsMainWindowViewModel;
@@ -92,6 +94,14 @@ public sealed partial class WindowsMainWindow : UserControl
         if (ViewModel?.WatcherStatusRoute is { } route)
         {
             OpenWatcherStatusRequested?.Invoke(route);
+        }
+    }
+
+    private void ImportButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel?.ImportRoute is { } route)
+        {
+            OpenImportRequested?.Invoke(route);
         }
     }
 
@@ -167,6 +177,7 @@ public sealed partial class WindowsMainWindow : UserControl
             : $"{ViewModel.Files.Count} visible";
 
         RefreshButton.IsEnabled = ViewModel.CanRunQuery;
+        ImportButton.IsEnabled = ViewModel.CanRunQuery;
         OneDriveStatusButton.IsEnabled = ViewModel.CanOpenOneDriveStatus;
         WatcherStatusButton.IsEnabled = ViewModel.CanOpenWatcherStatus;
         LoadingProgressRing.Visibility = ViewModel.IsLoading || ViewModel.IsRefreshing

@@ -17,6 +17,12 @@
 
         <CommandBar DefaultLabelPosition="Right">
             <AppBarButton
+                x:Name="ImportButton"
+                Icon="Import"
+                Label="Import"
+                IsEnabled="{Binding CanRunQuery}"
+                Click="ImportButton_Click" />
+            <AppBarButton
                 x:Name="RefreshButton"
                 Icon="Refresh"
                 Label="Refresh"

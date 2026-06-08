@@ -20,6 +20,10 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_fn_func_acknowledge_onedrive_risk_notice");
         InitRepo = LoadFunction<InitRepoDelegate>("uniffi_area_matrix_core_fn_func_init_repo");
         LoadConfig = LoadFunction<LoadConfigDelegate>("uniffi_area_matrix_core_fn_func_load_config");
+        PredictCategory = LoadFunction<PredictCategoryDelegate>(
+            "uniffi_area_matrix_core_fn_func_predict_category");
+        ImportFileWithResult = LoadFunction<ImportFileWithResultDelegate>(
+            "uniffi_area_matrix_core_fn_func_import_file_with_result");
         ListFiles = LoadFunction<ListFilesDelegate>("uniffi_area_matrix_core_fn_func_list_files");
         GetFile = LoadFunction<GetFileDelegate>("uniffi_area_matrix_core_fn_func_get_file");
         ListTreeJson = LoadFunction<ListTreeJsonDelegate>("uniffi_area_matrix_core_fn_func_list_tree_json");
@@ -47,6 +51,10 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_checksum_func_init_repo");
         LoadConfigChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_load_config");
+        PredictCategoryChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_predict_category");
+        ImportFileWithResultChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_import_file_with_result");
         ListFilesChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_list_files");
         GetFileChecksum = LoadFunction<ChecksumDelegate>(
@@ -76,6 +84,10 @@ internal sealed class NativeCoreLibrary : IDisposable
     public InitRepoDelegate InitRepo { get; }
 
     public LoadConfigDelegate LoadConfig { get; }
+
+    public PredictCategoryDelegate PredictCategory { get; }
+
+    public ImportFileWithResultDelegate ImportFileWithResult { get; }
 
     public ListFilesDelegate ListFiles { get; }
 
@@ -108,6 +120,10 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ChecksumDelegate InitRepoChecksum { get; }
 
     public ChecksumDelegate LoadConfigChecksum { get; }
+
+    public ChecksumDelegate PredictCategoryChecksum { get; }
+
+    public ChecksumDelegate ImportFileWithResultChecksum { get; }
 
     public ChecksumDelegate ListFilesChecksum { get; }
 
