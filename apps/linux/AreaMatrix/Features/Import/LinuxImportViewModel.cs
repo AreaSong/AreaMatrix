@@ -182,6 +182,9 @@ public sealed partial class LinuxImportViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(SourceSummaryText));
                 OnPropertyChanged(nameof(MoveConfirmationText));
                 OnPropertyChanged(nameof(CanImport));
+                OnPropertyChanged(nameof(HasNameConflicts));
+                OnPropertyChanged(nameof(CanPreviewReplace));
+                OnPropertyChanged(nameof(ReplaceStatusText));
                 RefreshMovePreflight();
             }
         }
@@ -199,6 +202,8 @@ public sealed partial class LinuxImportViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(HasSuccessfulResults));
                 OnPropertyChanged(nameof(HasFailedResults));
                 OnPropertyChanged(nameof(ImportedFileIds));
+                OnPropertyChanged(nameof(CanPreviewReplace));
+                OnPropertyChanged(nameof(ReplaceStatusText));
             }
         }
     }
@@ -241,7 +246,7 @@ public sealed partial class LinuxImportViewModel : INotifyPropertyChanged
 
     public bool RequiresMoveConfirmation => Mode == DesktopImportMode.Move;
 
-    public bool CanPrepare => !IsPreparing && !IsImporting && SourcePaths().Count > 0;
+    public bool CanPrepare => !IsPreparing && !IsImporting && !IsReplacing && SourcePaths().Count > 0;
 
     public bool CanImport
     {
@@ -249,11 +254,14 @@ public sealed partial class LinuxImportViewModel : INotifyPropertyChanged
         {
             return !IsPreparing
                 && !IsImporting
+                && !IsReplacing
                 && !string.IsNullOrWhiteSpace(RepoPath)
                 && ImportableItemCount > 0
                 && (!RequiresMoveConfirmation || MoveConfirmed && MovePreflight.CanMove);
         }
     }
+
+    public bool HasNameConflicts => PreviewItems.Any(item => item.Status == DesktopImportPreviewStatus.NameConflict);
 
     public bool HasSuccessfulResults => Results.Any(result => result.HasImportedFile);
 
@@ -309,6 +317,11 @@ public sealed partial class LinuxImportViewModel : INotifyPropertyChanged
                 return currentError.Message;
             }
 
+            if (IsReplacing)
+            {
+                return "Checking Trash availability...";
+            }
+
             if (IsPreparing || IsImporting)
             {
                 return ProgressText;
@@ -343,6 +356,7 @@ public sealed partial class LinuxImportViewModel : INotifyPropertyChanged
         PreviewItems = [];
         Results = [];
         MovePreflight = DesktopImportMovePreflight.NotEvaluated;
+        ClearReplaceState();
         Error = null;
     }
 
@@ -369,6 +383,7 @@ public sealed partial class LinuxImportViewModel : INotifyPropertyChanged
         CurrentStep = DesktopImportStep.Preparing;
         Error = null;
         Results = [];
+        ClearReplaceState();
         try
         {
             List<DesktopImportPreviewItem> items = [];
@@ -377,7 +392,11 @@ public sealed partial class LinuxImportViewModel : INotifyPropertyChanged
                 DesktopImportPreviewItem item = await coreBridge
                     .PredictImportAsync(RepoPath, source.SourcePath, cancellationToken)
                     .ConfigureAwait(false);
-                items.Add(item);
+                items.Add(item with
+                {
+                    ImportSessionId = source.ImportSessionId,
+                    ConflictId = source.ConflictId
+                });
             }
 
             PreviewItems = items;

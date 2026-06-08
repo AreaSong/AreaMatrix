@@ -1,0 +1,72 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-139`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-139-s4-lnx-05-c4-21-replace-confirm-cross-platform.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/apps/linux/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S4-LNX-05 页面中的 C4-21 功能点
+- 结果：通过
+- 证据：control map 将 `S4-LNX-05` 映射到 `C4-13, C4-21`；本轮新增/修改集中在 Linux import replace preview/apply、确认状态、Trash 可用性门禁和测试。
+- 涉及文件：`apps/linux/AreaMatrix/Features/Import/LinuxImportViewModel.Replace.cs`，`LinuxImportDialog.ui`
+
+- 项目：读取页面规格、control map、Core API、C4-21 能力规格
+- 结果：通过
+- 证据：四个 Exact Docs 均存在并已读取；Core API 中 `preview_import_conflict_batch` / `apply_import_conflict_batch` 包含 `replace_confirmation_required`、`trash_available`、`replace_confirmed` 合同。
+- 涉及文件：`docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md`，`docs/api/core-api.md`，`core/area_matrix.udl`
+
+- 项目：只接入 C4-21 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`DesktopImportCoreBridge` 调用 `PreviewImportConflictBatchAsync` / `ApplyImportConflictBatchAsync`；ViewModel 要求 Core preview token、Trash available、二次确认后才 apply。
+- 涉及文件：`DesktopImportCoreBridge.cs`，`AreaMatrixNativeCoreClient.DesktopImport.cs`，`DesktopImportReplaceModels.cs`
+
+- 项目：不顺手实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：脏改动未触碰 `core/src/**`；产品代码集中在 `apps/linux/**`。`tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/.../summary.json` 只是 runner in_progress 记录，不作为本 verify 阶段阻断。
+- 涉及文件：`git status --short`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Replace 逻辑拆到 `LinuxImportViewModel.Replace.cs`，Core 映射拆到 replace models / mapping，未塞进单个大方法。
+- 注释 / rustdoc / 文档同步：通过。当前是 Linux C# app 层接入，未新增 public Rust API；UDL 已有 C4-21 相关合同。
+- 错误处理与边界处理：通过。缺少 Core conflict session 时禁用 Replace；Trash 不可用、preview token 缺失、未二次确认时不执行 apply。
+- 测试与验证覆盖：通过。新增 Linux replace ViewModel 测试覆盖无 Core session 禁用、避免 import overwrite fallback、二次确认和 Core apply。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径走 `DesktopImportCoreBridge` 到 native Core client；Fake 仅存在于测试支持文件。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：
+  - `./dev check task 4-3/task-139`
+  - `dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj`
+- 哪些通过：
+  - `./dev check task 4-3/task-139` 退出码 0；包含 `doctor: OK`、`git diff --check`、macOS build `BUILD SUCCEEDED`
+  - Linux 测试输出 `AreaMatrix Linux tests passed.`
+- 哪些失败：
+  - 无
+- 哪些缺失：
+  - 未做真实 GTK 窗口点击验证；当前 Linux 既有架构是 dialog wrapper + `.ui` + ViewModel 测试层，非完整 GTK runtime action binding。该缺口不阻断本 task，因为 task-scoped 验证与新增 Linux 测试已证明功能路径可触发到 CoreBridge。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。S4-LNX-05 的 C4-21 Replace 确认路径已通过 CoreBridge 接入真实 Core import conflict preview/apply 合同，未用 mock/fixture 伪造生产闭环，未触碰 `core/src/**`，验证通过。
+
+VERIFY_RESULT: PASS

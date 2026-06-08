@@ -17,6 +17,10 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_fn_func_predict_category");
         ImportFileWithResult = LoadFunction<ImportFileWithResultDelegate>(
             "uniffi_area_matrix_core_fn_func_import_file_with_result");
+        PreviewImportConflictBatch = LoadFunction<PreviewImportConflictBatchDelegate>(
+            "uniffi_area_matrix_core_fn_func_preview_import_conflict_batch");
+        ApplyImportConflictBatch = LoadFunction<ApplyImportConflictBatchDelegate>(
+            "uniffi_area_matrix_core_fn_func_apply_import_conflict_batch");
         GetPlatformCapabilities = LoadFunction<GetPlatformCapabilitiesDelegate>(
             "uniffi_area_matrix_core_fn_func_get_platform_capabilities");
         ListFiles = LoadFunction<ListFilesDelegate>("uniffi_area_matrix_core_fn_func_list_files");
@@ -44,6 +48,10 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_checksum_func_predict_category");
         ImportFileWithResultChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_import_file_with_result");
+        PreviewImportConflictBatchChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_preview_import_conflict_batch");
+        ApplyImportConflictBatchChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_apply_import_conflict_batch");
         GetPlatformCapabilitiesChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_get_platform_capabilities");
         ListFilesChecksum = LoadFunction<ChecksumDelegate>(
@@ -73,6 +81,10 @@ internal sealed class NativeCoreLibrary : IDisposable
     public PredictCategoryDelegate PredictCategory { get; }
 
     public ImportFileWithResultDelegate ImportFileWithResult { get; }
+
+    public PreviewImportConflictBatchDelegate PreviewImportConflictBatch { get; }
+
+    public ApplyImportConflictBatchDelegate ApplyImportConflictBatch { get; }
 
     public GetPlatformCapabilitiesDelegate GetPlatformCapabilities { get; }
 
@@ -105,6 +117,10 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ChecksumDelegate PredictCategoryChecksum { get; }
 
     public ChecksumDelegate ImportFileWithResultChecksum { get; }
+
+    public ChecksumDelegate PreviewImportConflictBatchChecksum { get; }
+
+    public ChecksumDelegate ApplyImportConflictBatchChecksum { get; }
 
     public ChecksumDelegate GetPlatformCapabilitiesChecksum { get; }
 

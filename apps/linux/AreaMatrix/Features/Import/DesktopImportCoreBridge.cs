@@ -15,6 +15,17 @@ public interface IDesktopImportCoreBridge
         DesktopImportRequest request,
         CancellationToken cancellationToken = default);
 
+    Task<DesktopImportConflictBatchPreviewReport> PreviewReplaceConflictAsync(
+        string repoPath,
+        DesktopImportConflictBatchPreviewRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<DesktopImportConflictBatchApplyReport> ApplyReplaceConflictAsync(
+        string repoPath,
+        DesktopImportConflictBatchApplyRequest request,
+        string previewToken,
+        CancellationToken cancellationToken = default);
+
     DesktopImportMovePreflight CheckMovePreflight(
         string repoPath,
         IReadOnlyList<DesktopImportPreviewItem> previewItems);
@@ -31,6 +42,17 @@ public interface IAreaMatrixLinuxDesktopImportCoreClient
         string repoPath,
         string sourcePath,
         CoreDesktopImportOptions options,
+        CancellationToken cancellationToken = default);
+
+    Task<CoreDesktopImportConflictBatchPreviewReport> PreviewImportConflictBatchAsync(
+        string repoPath,
+        CoreDesktopImportConflictBatchPreviewRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<CoreDesktopImportConflictBatchApplyReport> ApplyImportConflictBatchAsync(
+        string repoPath,
+        CoreDesktopImportConflictBatchApplyRequest request,
+        string previewToken,
         CancellationToken cancellationToken = default);
 }
 
@@ -85,7 +107,8 @@ public sealed class DesktopImportCoreBridge : IDesktopImportCoreBridge
             statusProbe.Status,
             statusProbe.ExistingConflictPath,
             statusProbe.TargetPath,
-            statusProbe.ReadFailure);
+            statusProbe.ReadFailure,
+            ReplaceBlockedReason: statusProbe.ReplaceBlockedReason);
     }
 
     public async Task<DesktopImportResult> ImportFileWithResultAsync(
@@ -98,6 +121,29 @@ public sealed class DesktopImportCoreBridge : IDesktopImportCoreBridge
             .ImportFileWithResultAsync(repoPath, sourcePath, request.ToCoreOptions(), cancellationToken)
             .ConfigureAwait(false);
         return result.ToDesktopResult(sourcePath);
+    }
+
+    public async Task<DesktopImportConflictBatchPreviewReport> PreviewReplaceConflictAsync(
+        string repoPath,
+        DesktopImportConflictBatchPreviewRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        CoreDesktopImportConflictBatchPreviewReport result = await coreClient
+            .PreviewImportConflictBatchAsync(repoPath, request.ToCoreRequest(), cancellationToken)
+            .ConfigureAwait(false);
+        return result.ToDesktopReport();
+    }
+
+    public async Task<DesktopImportConflictBatchApplyReport> ApplyReplaceConflictAsync(
+        string repoPath,
+        DesktopImportConflictBatchApplyRequest request,
+        string previewToken,
+        CancellationToken cancellationToken = default)
+    {
+        CoreDesktopImportConflictBatchApplyReport result = await coreClient
+            .ApplyImportConflictBatchAsync(repoPath, request.ToCoreRequest(), previewToken, cancellationToken)
+            .ConfigureAwait(false);
+        return result.ToDesktopReport();
     }
 
     public DesktopImportMovePreflight CheckMovePreflight(
@@ -127,7 +173,86 @@ public sealed record CoreDesktopImportResult(
     string SourceRemovalStatus,
     string? SourceRemovalFailure);
 
-internal static class DesktopImportCoreMapping
+public sealed record CoreDesktopImportConflictBatchPreviewRequest(
+    string ImportSessionId,
+    IReadOnlyList<string> ConflictIds,
+    string DuplicateStrategy,
+    string SameNameStrategy,
+    bool ApplyToAllSimilarConflicts);
+
+public sealed record CoreDesktopImportConflictBatchApplyRequest(
+    string ImportSessionId,
+    IReadOnlyList<string> ConflictIds,
+    string DuplicateStrategy,
+    string SameNameStrategy,
+    bool ApplyToAllSimilarConflicts,
+    bool ReplaceConfirmed);
+
+public sealed record CoreDesktopImportConflictBatchPreviewItem(
+    string ConflictId,
+    string ConflictType,
+    long? ExistingFileId,
+    string? ExistingPath,
+    string IncomingPath,
+    string? TargetPath,
+    string SelectedStrategy,
+    string Status,
+    bool WillReplace,
+    bool WillKeepBoth,
+    bool WillSkip,
+    bool WillAskPerItem,
+    bool IndexOnly,
+    string RiskSummary,
+    string? Reason);
+
+public sealed record CoreDesktopImportConflictBatchPreviewReport(
+    string ImportSessionId,
+    string PreviewToken,
+    bool ApplyToAllSimilarConflicts,
+    long RequestedConflictCount,
+    long DuplicateConflictCount,
+    long SameNameConflictCount,
+    long IncludedCount,
+    long PendingCount,
+    long BlockedCount,
+    long ReplaceCount,
+    long SkipCount,
+    long KeepBothCount,
+    long AskPerItemCount,
+    bool TrashAvailable,
+    bool UndoAvailable,
+    bool CanApply,
+    string? ApplyBlockedReason,
+    bool ReplaceConfirmationRequired,
+    string? ReplaceConfirmationSummary,
+    IReadOnlyList<CoreDesktopImportConflictBatchPreviewItem> Items);
+
+public sealed record CoreDesktopImportConflictBatchItemResult(
+    string ConflictId,
+    string ConflictType,
+    string AppliedStrategy,
+    string Status,
+    long? FileId,
+    string? FinalPath,
+    string? Error);
+
+public sealed record CoreDesktopImportConflictBatchApplyReport(
+    string ImportSessionId,
+    long RequestedConflictCount,
+    long ResolvedCount,
+    long SkippedCount,
+    long KeptBothCount,
+    long ReplacedCount,
+    long QueuedForPerItemCount,
+    long PendingCount,
+    long FailedCount,
+    IReadOnlyList<CoreDesktopImportConflictBatchItemResult> ItemResults,
+    IReadOnlyList<long> AffectedFileIds,
+    string? UndoToken,
+    IReadOnlyList<string> ChangeLogActions,
+    string? FailureSummary);
+
+internal static partial class DesktopImportCoreMapping
 {
     public static CoreDesktopImportOptions ToCoreOptions(this DesktopImportRequest request)
     {
@@ -149,6 +274,75 @@ internal static class DesktopImportCoreMapping
             sourcePath,
             ParseSourceRemovalStatus(result.SourceRemovalStatus),
             result.SourceRemovalFailure);
+    }
+
+    public static CoreDesktopImportConflictBatchPreviewRequest ToCoreRequest(
+        this DesktopImportConflictBatchPreviewRequest request)
+    {
+        return new CoreDesktopImportConflictBatchPreviewRequest(
+            request.ImportSessionId,
+            request.ConflictIds,
+            request.DuplicateStrategy.ToCoreConflictBatchStrategy(),
+            request.SameNameStrategy.ToCoreConflictBatchStrategy(),
+            request.ApplyToAllSimilarConflicts);
+    }
+
+    public static CoreDesktopImportConflictBatchApplyRequest ToCoreRequest(
+        this DesktopImportConflictBatchApplyRequest request)
+    {
+        return new CoreDesktopImportConflictBatchApplyRequest(
+            request.ImportSessionId,
+            request.ConflictIds,
+            request.DuplicateStrategy.ToCoreConflictBatchStrategy(),
+            request.SameNameStrategy.ToCoreConflictBatchStrategy(),
+            request.ApplyToAllSimilarConflicts,
+            request.ReplaceConfirmed);
+    }
+
+    public static DesktopImportConflictBatchPreviewReport ToDesktopReport(
+        this CoreDesktopImportConflictBatchPreviewReport report)
+    {
+        return new DesktopImportConflictBatchPreviewReport(
+            report.ImportSessionId,
+            report.PreviewToken,
+            report.ApplyToAllSimilarConflicts,
+            report.RequestedConflictCount,
+            report.DuplicateConflictCount,
+            report.SameNameConflictCount,
+            report.IncludedCount,
+            report.PendingCount,
+            report.BlockedCount,
+            report.ReplaceCount,
+            report.SkipCount,
+            report.KeepBothCount,
+            report.AskPerItemCount,
+            report.TrashAvailable,
+            report.UndoAvailable,
+            report.CanApply,
+            report.ApplyBlockedReason,
+            report.ReplaceConfirmationRequired,
+            report.ReplaceConfirmationSummary,
+            report.Items.Select(item => item.ToDesktopItem()).ToArray());
+    }
+
+    public static DesktopImportConflictBatchApplyReport ToDesktopReport(
+        this CoreDesktopImportConflictBatchApplyReport report)
+    {
+        return new DesktopImportConflictBatchApplyReport(
+            report.ImportSessionId,
+            report.RequestedConflictCount,
+            report.ResolvedCount,
+            report.SkippedCount,
+            report.KeptBothCount,
+            report.ReplacedCount,
+            report.QueuedForPerItemCount,
+            report.PendingCount,
+            report.FailedCount,
+            report.ItemResults.Select(item => item.ToDesktopItem()).ToArray(),
+            report.AffectedFileIds,
+            report.UndoToken,
+            report.ChangeLogActions,
+            report.FailureSummary);
     }
 
     private static string ToCoreMode(this DesktopImportMode mode)
@@ -181,12 +375,61 @@ internal static class DesktopImportCoreMapping
         return strategy switch
         {
             DesktopImportDuplicateStrategy.Skip => "Skip",
+            DesktopImportDuplicateStrategy.Overwrite => "Overwrite",
             DesktopImportDuplicateStrategy.KeepBoth => "KeepBoth",
             DesktopImportDuplicateStrategy.Ask => "Ask",
             _ => throw new DesktopImportCoreException(
                 DesktopImportErrorKind.Config,
                 $"Unsupported desktop import duplicate strategy `{strategy}`.")
         };
+    }
+
+    private static string ToCoreConflictBatchStrategy(this DesktopImportConflictBatchStrategy strategy)
+    {
+        return strategy switch
+        {
+            DesktopImportConflictBatchStrategy.Skip => "Skip",
+            DesktopImportConflictBatchStrategy.KeepBoth => "KeepBoth",
+            DesktopImportConflictBatchStrategy.Replace => "Replace",
+            DesktopImportConflictBatchStrategy.AskPerItem => "AskPerItem",
+            _ => throw new DesktopImportCoreException(
+                DesktopImportErrorKind.Config,
+                $"Unsupported desktop import conflict strategy `{strategy}`.")
+        };
+    }
+
+    private static DesktopImportConflictBatchPreviewItem ToDesktopItem(
+        this CoreDesktopImportConflictBatchPreviewItem item)
+    {
+        return new DesktopImportConflictBatchPreviewItem(
+            item.ConflictId,
+            item.ConflictType,
+            item.ExistingFileId,
+            item.ExistingPath,
+            item.IncomingPath,
+            item.TargetPath,
+            ParseConflictBatchStrategy(item.SelectedStrategy),
+            ParseConflictBatchPreviewStatus(item.Status),
+            item.WillReplace,
+            item.WillKeepBoth,
+            item.WillSkip,
+            item.WillAskPerItem,
+            item.IndexOnly,
+            item.RiskSummary,
+            item.Reason);
+    }
+
+    private static DesktopImportConflictBatchItemResult ToDesktopItem(
+        this CoreDesktopImportConflictBatchItemResult item)
+    {
+        return new DesktopImportConflictBatchItemResult(
+            item.ConflictId,
+            item.ConflictType,
+            ParseConflictBatchStrategy(item.AppliedStrategy),
+            ParseConflictBatchResultStatus(item.Status),
+            item.FileId,
+            item.FinalPath,
+            item.Error);
     }
 
     private static DesktopImportSourceRemovalStatus ParseSourceRemovalStatus(string value)

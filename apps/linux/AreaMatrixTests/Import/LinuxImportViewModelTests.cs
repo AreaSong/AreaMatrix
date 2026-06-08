@@ -9,6 +9,7 @@ public static class LinuxImportViewModelTests
     {
         await PreparingPreviewUsesCorePredictCategoryForEachSource();
         await CoreBridgeMarksUnreadablePreviewWithoutCorePredictCall();
+        await CoreBridgeMarksNameConflictReplaceBlockedWithoutCoreSession();
         await LinuxImportDialogAddFilesAndDropActionsTriggerPreviewAndImport();
         await CopyImportCommitsThroughCoreImportFileWithResult();
         await DuplicatePreviewDoesNotCommitImportUnlessKeepBoth();
@@ -49,6 +50,39 @@ public static class LinuxImportViewModelTests
 
         TestAssert.Equal(DesktopImportPreviewStatus.PermissionDenied, item.Status, "preview status");
         TestAssert.Empty(coreClient.PredictedFilenames, nameof(coreClient.PredictedFilenames));
+    }
+
+    private static async Task CoreBridgeMarksNameConflictReplaceBlockedWithoutCoreSession()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            string repo = Path.Combine(root, "repo");
+            string sourceDirectory = Path.Combine(root, "sources");
+            string source = Path.Combine(sourceDirectory, "report.pdf");
+            Directory.CreateDirectory(Path.Combine(repo, "finance"));
+            Directory.CreateDirectory(sourceDirectory);
+            File.WriteAllText(Path.Combine(repo, "finance", "report.pdf"), "existing");
+            File.WriteAllText(source, "incoming");
+
+            RecordingDesktopImportCoreClient coreClient = new();
+            DesktopImportCoreBridge bridge = new(coreClient, new LinuxImportFileProbe());
+
+            DesktopImportPreviewItem item = await bridge.PredictImportAsync(repo, source);
+
+            TestAssert.Equal(DesktopImportPreviewStatus.NameConflict, item.Status, "preview status");
+            TestAssert.False(item.CanPreviewReplace, nameof(item.CanPreviewReplace));
+            TestAssert.Contains(
+                "Core import conflict session",
+                item.ReplaceBlockedReason ?? string.Empty,
+                nameof(item.ReplaceBlockedReason));
+            TestAssert.Equal(string.Empty, item.ImportSessionId ?? string.Empty, nameof(item.ImportSessionId));
+            TestAssert.Equal(string.Empty, item.ConflictId ?? string.Empty, nameof(item.ConflictId));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     private static async Task LinuxImportDialogAddFilesAndDropActionsTriggerPreviewAndImport()

@@ -31,7 +31,8 @@ public sealed record LinuxImportFileProbeResult(
     string? ReadFailure = null,
     string? RemoveFailure = null,
     string? ExistingConflictPath = null,
-    string? TargetPath = null);
+    string? TargetPath = null,
+    string? ReplaceBlockedReason = null);
 
 public sealed class LinuxImportFileProbe : ILinuxImportFileProbe
 {
@@ -107,13 +108,17 @@ public sealed class LinuxImportFileProbe : ILinuxImportFileProbe
             string targetPath = TargetPath(repoPath, suggestedCategory, suggestedName, source.FileName);
             if (File.Exists(targetPath))
             {
+                bool sameHash = FilesHaveSameHash(source.SourcePath, targetPath, sourceHash);
                 return source with
                 {
-                    Status = FilesHaveSameHash(source.SourcePath, targetPath, sourceHash)
+                    Status = sameHash
                         ? DesktopImportPreviewStatus.Duplicate
                         : DesktopImportPreviewStatus.NameConflict,
                     ExistingConflictPath = targetPath,
-                    TargetPath = targetPath
+                    TargetPath = targetPath,
+                    ReplaceBlockedReason = sameHash
+                        ? null
+                        : "Replace requires a Core import conflict session, preview token, and Linux Trash availability."
                 };
             }
 

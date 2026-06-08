@@ -18,6 +18,8 @@ public sealed partial class AreaMatrixNativeCoreClient :
     private const ushort ValidateRepoPathChecksum = 43498;
     private const ushort PredictCategoryChecksum = 65047;
     private const ushort ImportFileWithResultChecksum = 52959;
+    private const ushort PreviewImportConflictBatchChecksum = 52321;
+    private const ushort ApplyImportConflictBatchChecksum = 14573;
     private const ushort GetPlatformCapabilitiesChecksum = 42907;
     private const ushort GetFileChecksum = 6132;
     private const ushort ListFilesChecksum = 56809;
@@ -89,6 +91,8 @@ public sealed partial class AreaMatrixNativeCoreClient :
             || native.ValidateRepoPathChecksum() != ValidateRepoPathChecksum
             || native.PredictCategoryChecksum() != PredictCategoryChecksum
             || native.ImportFileWithResultChecksum() != ImportFileWithResultChecksum
+            || native.PreviewImportConflictBatchChecksum() != PreviewImportConflictBatchChecksum
+            || native.ApplyImportConflictBatchChecksum() != ApplyImportConflictBatchChecksum
             || native.GetPlatformCapabilitiesChecksum() != GetPlatformCapabilitiesChecksum
             || native.GetFileChecksum() != GetFileChecksum
             || native.ListFilesChecksum() != ListFilesChecksum

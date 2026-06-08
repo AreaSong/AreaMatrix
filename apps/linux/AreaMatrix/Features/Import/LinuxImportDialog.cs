@@ -95,6 +95,11 @@ public sealed class LinuxImportDialog
         ViewModel.MoveConfirmed = confirmed;
     }
 
+    public void ConfirmReplace(bool confirmed)
+    {
+        ViewModel.ReplaceConfirmed = confirmed;
+    }
+
     public Task PreparePreviewAsync(CancellationToken cancellationToken = default)
     {
         return ViewModel.PreparePreviewAsync(cancellationToken);
@@ -103,6 +108,21 @@ public sealed class LinuxImportDialog
     public Task ImportAsync(CancellationToken cancellationToken = default)
     {
         return ImportAndCloseIfRequestedAsync(cancellationToken);
+    }
+
+    public Task PreviewReplaceAsync(CancellationToken cancellationToken = default)
+    {
+        return ViewModel.PreviewReplaceAsync(cancellationToken);
+    }
+
+    public Task ApplyReplaceAsync(CancellationToken cancellationToken = default)
+    {
+        return ViewModel.ApplyReplaceAsync(cancellationToken);
+    }
+
+    public void CancelReplace()
+    {
+        ViewModel.CancelReplace();
     }
 
     public Task RetryFailedAsync(

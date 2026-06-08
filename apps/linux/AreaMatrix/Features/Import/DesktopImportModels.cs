@@ -19,6 +19,7 @@ public enum DesktopImportDestination
 public enum DesktopImportDuplicateStrategy
 {
     Skip,
+    Overwrite,
     KeepBoth,
     Ask
 }
@@ -64,7 +65,9 @@ public enum DesktopImportErrorKind
 public sealed record DesktopImportSource(
     string SourcePath,
     string? SourceRootPath = null,
-    string? RelativeDirectory = null)
+    string? RelativeDirectory = null,
+    string? ImportSessionId = null,
+    string? ConflictId = null)
 {
     public bool IsFromFolder => !string.IsNullOrWhiteSpace(SourceRootPath);
 }
@@ -98,9 +101,36 @@ public sealed record DesktopImportPreviewItem(
     DesktopImportPreviewStatus Status,
     string? ExistingPath = null,
     string? TargetPath = null,
-    string? BlockedReason = null)
+    string? BlockedReason = null,
+    string? ImportSessionId = null,
+    string? ConflictId = null,
+    DesktopImportConflictBatchPreviewItem? ReplacePreview = null,
+    string? ReplaceBlockedReason = null)
 {
     public bool IsImportable => Status is DesktopImportPreviewStatus.Ready or DesktopImportPreviewStatus.NameConflict;
+
+    public bool HasCoreReplaceConflict
+    {
+        get
+        {
+            return Status == DesktopImportPreviewStatus.NameConflict
+                && !string.IsNullOrWhiteSpace(ImportSessionId)
+                && !string.IsNullOrWhiteSpace(ConflictId);
+        }
+    }
+
+    public bool HasNameConflictWithoutCoreSession
+    {
+        get
+        {
+            return Status == DesktopImportPreviewStatus.NameConflict
+                && !HasCoreReplaceConflict
+                && !string.IsNullOrWhiteSpace(ExistingPath)
+                && !string.IsNullOrWhiteSpace(TargetPath);
+        }
+    }
+
+    public bool CanPreviewReplace => HasCoreReplaceConflict;
 
     public string StatusText
     {
@@ -150,6 +180,8 @@ public sealed record DesktopImportResult(
     string SourcePath,
     DesktopImportSourceRemovalStatus SourceRemovalStatus,
     string? SourceRemovalFailure,
+    DesktopImportConflictBatchApplyReport? ReplaceReport = null,
+    bool IsReplace = false,
     DesktopImportError? Failure = null)
 {
     public bool IsFailure => Failure is not null;
@@ -172,6 +204,18 @@ public sealed record DesktopImportResult(
                 return "Failed";
             }
 
+            if (ReplaceReport is not null)
+            {
+                return ReplaceReport.SummaryText;
+            }
+
+            if (IsReplace)
+            {
+                return SourceRemovalStatus == DesktopImportSourceRemovalStatus.Retained
+                    ? "Replaced 1 item(s), original retained."
+                    : "Replaced 1 item(s).";
+            }
+
             return SourceRemovalStatus == DesktopImportSourceRemovalStatus.Retained
                 ? "Imported, original retained"
                 : "Imported";
@@ -185,6 +229,20 @@ public sealed record DesktopImportResult(
             if (Failure is not null)
             {
                 return Failure.Message;
+            }
+
+            if (ReplaceReport is { } report)
+            {
+                return report.FailureSummary
+                    ?? "Existing file moved to Trash and replacement was recorded by Core.";
+            }
+
+            if (IsReplace)
+            {
+                return SourceRemovalStatus == DesktopImportSourceRemovalStatus.Retained
+                    ? "Existing file moved to Trash and replacement was recorded by Core. Original retained: "
+                        + (SourceRemovalFailure ?? "source removal did not complete")
+                    : "Existing file moved to Trash and replacement was recorded by Core.";
             }
 
             return SourceRemovalStatus switch
@@ -204,7 +262,7 @@ public sealed record DesktopImportResult(
             item.SourcePath,
             DesktopImportSourceRemovalStatus.NotRequested,
             null,
-            error);
+            Failure: error);
     }
 }
 

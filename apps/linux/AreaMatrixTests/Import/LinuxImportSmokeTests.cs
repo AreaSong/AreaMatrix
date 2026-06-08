@@ -50,8 +50,22 @@ public static class LinuxImportSmokeTests
         TestAssert.Contains("MovePreflight.CanMove", viewModel, "move gate");
         TestAssert.Contains("DesktopImportDuplicateStrategy.KeepBoth", requestModel, "name conflict keep both");
         TestAssert.Contains("ImportFileWithResultAsync", resultModel, "committed import bridge");
-        TestAssert.NotContains("PreviewReplace", viewModel, "no replace preview in C4-13 view model");
-        TestAssert.NotContains("ApplyReplace", viewModel, "no replace apply in C4-13 view model");
+        AssertObject(dialogRoot, "GtkBox", "ReplaceConfirmationSection");
+        AssertButton(dialogRoot, "PreviewReplaceButton", "Preview Replace", "import.preview-replace");
+        AssertButton(dialogRoot, "ApplyReplaceButton", "Apply Replace", "import.apply-replace");
+        AssertButton(dialogRoot, "CancelReplaceButton", "Cancel Replace", "import.cancel-replace");
+        AssertLabel(dialogRoot, "ReplaceConfirmationTitle", "Replace existing file?");
+        AssertLabel(dialogRoot, "ReplaceTrashText", "Trash before replacement");
+        TestAssert.Contains("PreviewReplaceAsync", dialog, "replace preview action");
+        TestAssert.Contains("ApplyReplaceAsync", dialog, "replace apply action");
+        TestAssert.Contains("ConfirmReplace", dialog, "replace confirmation action");
+        TestAssert.Contains("ReplaceConfirmed", File.ReadAllText(RepositoryPath(
+            "apps/linux/AreaMatrix/Features/Import/LinuxImportViewModel.Replace.cs")), "replace second confirmation gate");
+        TestAssert.Contains(
+            "ApplyReplaceConflictAsync",
+            File.ReadAllText(RepositoryPath("apps/linux/AreaMatrix/Features/Import/LinuxImportViewModel.Replace.cs")),
+            "confirmed replace core apply path");
+        TestAssert.NotContains("MakeReplaceRequest", requestModel, "no replace overwrite request");
     }
 
     private static void LinuxDesktopShellWiresImportDialogToRealCoreBridge()
@@ -88,10 +102,21 @@ public static class LinuxImportSmokeTests
         TestAssert.Contains("ImportFileWithResultChecksum = 52959", coreClient, "import checksum");
         TestAssert.Contains("PredictCategoryAsync", nativeClient, "predict bridge call");
         TestAssert.Contains("ImportFileWithResultAsync", nativeClient, "import result bridge call");
+        TestAssert.Contains("PreviewImportConflictBatchAsync", nativeClient, "replace preview bridge call");
+        TestAssert.Contains("ApplyImportConflictBatchAsync", nativeClient, "replace apply bridge call");
         TestAssert.Contains("ReadImportSourceRemovalStatus", nativeClient, "source removal status mapping");
         TestAssert.Contains("WriteDuplicateStrategy", nativeClient, "duplicate strategy mapping");
-        TestAssert.NotContains("preview_import_conflict_batch", nativeLibrary, "C4-21 replace preview stays out");
-        TestAssert.NotContains("apply_import_conflict_batch", nativeLibrary, "C4-21 replace apply stays out");
+        TestAssert.Contains("\"Overwrite\" => 2", nativeClient, "overwrite duplicate strategy mapping");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_preview_import_conflict_batch",
+            nativeLibrary,
+            "preview_import_conflict_batch native binding");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_apply_import_conflict_batch",
+            nativeLibrary,
+            "apply_import_conflict_batch native binding");
+        TestAssert.Contains("PreviewImportConflictBatchChecksum = 52321", coreClient, "replace preview checksum");
+        TestAssert.Contains("ApplyImportConflictBatchChecksum = 14573", coreClient, "replace apply checksum");
     }
 
     private static void AssertButton(

@@ -11,6 +11,7 @@ LocalFolderNoticeSmokeTests.RunAll();
 await LinuxMainWindowViewModelTests.RunAllAsync();
 LinuxMainWindowSmokeTests.RunAll();
 await LinuxImportViewModelTests.RunAllAsync();
+await LinuxImportReplaceViewModelTests.RunAllAsync();
 LinuxImportSmokeTests.RunAll();
 await LinuxWatcherStatusViewModelTests.RunAllAsync();
 LinuxWatcherStatusSmokeTests.RunAll();

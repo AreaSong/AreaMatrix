@@ -137,6 +137,62 @@
           </object>
         </child>
         <child>
+          <object class="GtkBox" id="ReplaceConfirmationSection">
+            <property name="orientation">vertical</property>
+            <property name="spacing">6</property>
+            <child>
+              <object class="GtkLabel" id="ReplaceConfirmationTitle">
+                <property name="label">Replace existing file?</property>
+                <property name="xalign">0</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="ReplaceTrashText">
+                <property name="label">AreaMatrix will move the existing repository file to Trash before replacement. Replace stays disabled when Trash is unavailable.</property>
+                <property name="wrap">true</property>
+                <property name="xalign">0</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="ReplaceStatusLabel">
+                <property name="label">Replace requires Core preflight and second confirmation.</property>
+                <property name="wrap">true</property>
+                <property name="xalign">0</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="ReplaceConfirmedCheck">
+                <property name="label">I understand the existing repository file will be moved to Trash before replacement.</property>
+                <property name="action-name">import.confirm-replace</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox" id="ReplaceActions">
+                <property name="orientation">horizontal</property>
+                <property name="spacing">8</property>
+                <child>
+                  <object class="GtkButton" id="PreviewReplaceButton">
+                    <property name="label">Preview Replace</property>
+                    <property name="action-name">import.preview-replace</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="ApplyReplaceButton">
+                    <property name="label">Apply Replace</property>
+                    <property name="action-name">import.apply-replace</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="CancelReplaceButton">
+                    <property name="label">Cancel Replace</property>
+                    <property name="action-name">import.cancel-replace</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
           <object class="GtkListView" id="ResultsListView">
             <accessibility>
               <property name="label">Import results including Imported, original retained and failed rows.</property>

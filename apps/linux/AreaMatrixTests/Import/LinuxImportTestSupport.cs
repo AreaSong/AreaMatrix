@@ -9,7 +9,17 @@ internal sealed class FakeDesktopImportCoreBridge : IDesktopImportCoreBridge
 
     public List<string> ImportRequests { get; } = [];
 
+    public List<DesktopImportConflictBatchPreviewRequest> ReplacePreviewRequests { get; } = [];
+
+    public List<DesktopImportConflictBatchApplyRequest> ReplaceApplyRequests { get; } = [];
+
     public DesktopImportRequest? LastRequest { get; private set; }
+
+    public DesktopImportConflictBatchPreviewRequest? LastReplacePreviewRequest { get; private set; }
+
+    public DesktopImportConflictBatchApplyRequest? LastReplaceApplyRequest { get; private set; }
+
+    public string? LastPreviewToken { get; private set; }
 
     public DesktopImportResult Result { get; set; } = ImportResult(DesktopImportSourceRemovalStatus.NotRequested);
 
@@ -39,6 +49,9 @@ internal sealed class FakeDesktopImportCoreBridge : IDesktopImportCoreBridge
                 : null,
             TargetPath: PreviewStatus == DesktopImportPreviewStatus.NameConflict
                 ? "/home/me/AreaMatrix/finance/report.pdf"
+                : null,
+            ReplaceBlockedReason: PreviewStatus == DesktopImportPreviewStatus.NameConflict
+                ? "Replace requires a Core import conflict session, preview token, and Linux Trash availability."
                 : null));
     }
 
@@ -57,6 +70,30 @@ internal sealed class FakeDesktopImportCoreBridge : IDesktopImportCoreBridge
         ImportRequests.Add(sourcePath);
         LastRequest = request;
         return Task.FromResult(Result with { SourcePath = sourcePath });
+    }
+
+    public Task<DesktopImportConflictBatchPreviewReport> PreviewReplaceConflictAsync(
+        string repoPath,
+        DesktopImportConflictBatchPreviewRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ReplacePreviewRequests.Add(request);
+        LastReplacePreviewRequest = request;
+        return Task.FromResult(ReplacePreview(request));
+    }
+
+    public Task<DesktopImportConflictBatchApplyReport> ApplyReplaceConflictAsync(
+        string repoPath,
+        DesktopImportConflictBatchApplyRequest request,
+        string previewToken,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ReplaceApplyRequests.Add(request);
+        LastReplaceApplyRequest = request;
+        LastPreviewToken = previewToken;
+        return Task.FromResult(ReplaceReport(request));
     }
 
     public DesktopImportMovePreflight CheckMovePreflight(
@@ -89,6 +126,74 @@ internal sealed class FakeDesktopImportCoreBridge : IDesktopImportCoreBridge
             sourceRemovalStatus,
             sourceRemovalFailure);
     }
+
+    private static DesktopImportConflictBatchPreviewReport ReplacePreview(
+        DesktopImportConflictBatchPreviewRequest request)
+    {
+        return new DesktopImportConflictBatchPreviewReport(
+            request.ImportSessionId,
+            "token-1",
+            request.ApplyToAllSimilarConflicts,
+            request.ConflictIds.Count,
+            0,
+            request.ConflictIds.Count,
+            request.ConflictIds.Count,
+            0,
+            0,
+            request.ConflictIds.Count,
+            0,
+            0,
+            0,
+            true,
+            true,
+            true,
+            null,
+            true,
+            "Existing file will move to Trash before replacement.",
+            request.ConflictIds.Select(conflictId => new DesktopImportConflictBatchPreviewItem(
+                conflictId,
+                "SameNameDifferentContent",
+                7,
+                "/home/me/AreaMatrix/finance/report.pdf",
+                "/home/me/Downloads/report.pdf",
+                "/home/me/AreaMatrix/finance/report.pdf",
+                DesktopImportConflictBatchStrategy.Replace,
+                DesktopImportConflictBatchPreviewStatus.NeedsConfirmation,
+                true,
+                false,
+                false,
+                false,
+                false,
+                "Existing file will move to Trash.",
+                null)).ToArray());
+    }
+
+    private static DesktopImportConflictBatchApplyReport ReplaceReport(
+        DesktopImportConflictBatchApplyRequest request)
+    {
+        return new DesktopImportConflictBatchApplyReport(
+            request.ImportSessionId,
+            request.ConflictIds.Count,
+            request.ConflictIds.Count,
+            0,
+            0,
+            request.ConflictIds.Count,
+            0,
+            0,
+            0,
+            request.ConflictIds.Select(conflictId => new DesktopImportConflictBatchItemResult(
+                conflictId,
+                "SameNameDifferentContent",
+                DesktopImportConflictBatchStrategy.Replace,
+                DesktopImportConflictBatchResultStatus.Replaced,
+                9,
+                "finance/report.pdf",
+                null)).ToArray(),
+            [9],
+            "undo-1",
+            ["import_replace"],
+            null);
+    }
 }
 
 internal sealed class RecordingDesktopImportCoreClient : IAreaMatrixLinuxDesktopImportCoreClient
@@ -96,6 +201,10 @@ internal sealed class RecordingDesktopImportCoreClient : IAreaMatrixLinuxDesktop
     public List<string> PredictedFilenames { get; } = [];
 
     public List<CoreDesktopImportOptions> ImportOptions { get; } = [];
+
+    public List<CoreDesktopImportConflictBatchPreviewRequest> ReplacePreviewRequests { get; } = [];
+
+    public List<CoreDesktopImportConflictBatchApplyRequest> ReplaceApplyRequests { get; } = [];
 
     public Task<CoreDesktopClassifyResult> PredictCategoryAsync(
         string repoPath,
@@ -131,6 +240,83 @@ internal sealed class RecordingDesktopImportCoreClient : IAreaMatrixLinuxDesktop
                 1_700_000_000,
                 1_700_000_100),
             "NotRequested",
+            null));
+    }
+
+    public Task<CoreDesktopImportConflictBatchPreviewReport> PreviewImportConflictBatchAsync(
+        string repoPath,
+        CoreDesktopImportConflictBatchPreviewRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ReplacePreviewRequests.Add(request);
+        return Task.FromResult(new CoreDesktopImportConflictBatchPreviewReport(
+            request.ImportSessionId,
+            "token-1",
+            request.ApplyToAllSimilarConflicts,
+            request.ConflictIds.Count,
+            0,
+            request.ConflictIds.Count,
+            request.ConflictIds.Count,
+            0,
+            0,
+            request.ConflictIds.Count,
+            0,
+            0,
+            0,
+            true,
+            true,
+            true,
+            null,
+            true,
+            "Existing file will move to Trash before replacement.",
+            request.ConflictIds.Select(conflictId => new CoreDesktopImportConflictBatchPreviewItem(
+                conflictId,
+                "SameNameDifferentContent",
+                7,
+                "/home/me/AreaMatrix/finance/report.pdf",
+                "/home/me/Downloads/report.pdf",
+                "/home/me/AreaMatrix/finance/report.pdf",
+                "Replace",
+                "NeedsConfirmation",
+                true,
+                false,
+                false,
+                false,
+                false,
+                "Existing file will move to Trash.",
+                null)).ToArray()));
+    }
+
+    public Task<CoreDesktopImportConflictBatchApplyReport> ApplyImportConflictBatchAsync(
+        string repoPath,
+        CoreDesktopImportConflictBatchApplyRequest request,
+        string previewToken,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ReplaceApplyRequests.Add(request);
+        return Task.FromResult(new CoreDesktopImportConflictBatchApplyReport(
+            request.ImportSessionId,
+            request.ConflictIds.Count,
+            request.ConflictIds.Count,
+            0,
+            0,
+            request.ConflictIds.Count,
+            0,
+            0,
+            0,
+            request.ConflictIds.Select(conflictId => new CoreDesktopImportConflictBatchItemResult(
+                conflictId,
+                "SameNameDifferentContent",
+                "Replace",
+                "Replaced",
+                9,
+                "finance/report.pdf",
+                null)).ToArray(),
+            [9],
+            "undo-1",
+            ["import_replace"],
             null));
     }
 }
