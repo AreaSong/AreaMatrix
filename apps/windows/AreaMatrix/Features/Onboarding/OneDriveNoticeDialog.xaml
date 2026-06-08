@@ -100,6 +100,16 @@
                         AutomationProperties.LiveSetting="Polite"
                         Text="{Binding ErrorText}"
                         TextWrapping="Wrap" />
+                    <CheckBox
+                        x:Name="RiskConfirmationCheckBox"
+                        Content="I understand OneDrive sync may be delayed or create conflict copies."
+                        IsChecked="{Binding IsRiskNoticeConfirmed, Mode=TwoWay}"
+                        AutomationProperties.HelpText="{Binding ContinueDisabledReason}" />
+                    <TextBlock
+                        x:Name="ContinueDisabledReasonTextBlock"
+                        AutomationProperties.LiveSetting="Polite"
+                        Text="{Binding ContinueDisabledReason}"
+                        TextWrapping="Wrap" />
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
@@ -107,6 +117,7 @@
         <Grid Grid.Row="3" ColumnSpacing="8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
@@ -139,8 +150,14 @@
                 Content="Choose Local Folder"
                 Click="ChooseLocalFolderButton_Click" />
             <Button
-                x:Name="CloseButton"
+                x:Name="ContinueWithOneDriveButton"
                 Grid.Column="4"
+                Content="Continue with OneDrive"
+                IsEnabled="{Binding CanContinueWithOneDrive}"
+                Click="ContinueWithOneDriveButton_Click" />
+            <Button
+                x:Name="CloseButton"
+                Grid.Column="5"
                 Content="Close"
                 Click="CloseButton_Click" />
         </Grid>

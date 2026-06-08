@@ -16,6 +16,10 @@ public interface IWindowsRepositoryCoreBridge
         string repoPath,
         CancellationToken cancellationToken = default);
 
+    Task<WindowsCloudStorageState> AcknowledgeOneDriveRiskNoticeAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
     Task<WindowsRepositoryConfig> LoadConfigAsync(
         string repoPath,
         CancellationToken cancellationToken = default);
@@ -36,6 +40,10 @@ public interface IAreaMatrixWindowsCoreClient
         CancellationToken cancellationToken = default);
 
     Task<CoreCloudStorageState> DetectCloudStorageStateAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task<CoreCloudStorageState> AcknowledgeOneDriveRiskNoticeAsync(
         string repoPath,
         CancellationToken cancellationToken = default);
 
@@ -89,6 +97,17 @@ public sealed class WindowsRepositoryCoreBridge : IWindowsRepositoryCoreBridge
     {
         CoreCloudStorageState state = await coreClient
             .DetectCloudStorageStateAsync(repoPath, cancellationToken)
+            .ConfigureAwait(false);
+
+        return state.ToWindowsCloudStorageState();
+    }
+
+    public async Task<WindowsCloudStorageState> AcknowledgeOneDriveRiskNoticeAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        CoreCloudStorageState state = await coreClient
+            .AcknowledgeOneDriveRiskNoticeAsync(repoPath, cancellationToken)
             .ConfigureAwait(false);
 
         return state.ToWindowsCloudStorageState();

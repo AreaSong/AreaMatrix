@@ -12,6 +12,9 @@
     <Compile Include="../AreaMatrix/Core/LazyAreaMatrixWindowsCoreClient.cs" Link="Core/LazyAreaMatrixWindowsCoreClient.cs" />
     <Compile Include="../AreaMatrix/Core/NativeCoreInterop.cs" Link="Core/NativeCoreInterop.cs" />
     <Compile Include="../AreaMatrix/Core/NativeCoreLibrary.cs" Link="Core/NativeCoreLibrary.cs" />
+    <Compile
+      Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.CloudStorage.cs"
+      Link="Core/AreaMatrixNativeCoreClient.CloudStorage.cs" />
     <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.DesktopMainQuery.cs" Link="Core/AreaMatrixNativeCoreClient.DesktopMainQuery.cs" />
     <Compile Include="../AreaMatrix/Core/UniFfiReader.cs" Link="Core/UniFfiReader.cs" />
     <Compile Include="../AreaMatrix/Features/Library/DesktopMainQueryCoreBridge.cs" Link="Features/Library/DesktopMainQueryCoreBridge.cs" />
@@ -22,6 +25,9 @@
     <Compile Include="../AreaMatrix/Features/Onboarding/WindowsRecentRepository.cs" Link="Features/Onboarding/WindowsRecentRepository.cs" />
     <Compile Include="../AreaMatrix/Features/Onboarding/WindowsRepositoryCoreBridge.cs" Link="Features/Onboarding/WindowsRepositoryCoreBridge.cs" />
     <Compile Include="../AreaMatrix/Features/Onboarding/ChooseRepositoryViewModel.cs" Link="Features/Onboarding/ChooseRepositoryViewModel.cs" />
+    <Compile
+      Include="../AreaMatrix/Features/Onboarding/ChooseRepositoryViewModel.OneDriveNotice.cs"
+      Link="Features/Onboarding/ChooseRepositoryViewModel.OneDriveNotice.cs" />
     <Compile Include="../AreaMatrix/Features/Onboarding/OneDriveNoticeViewModel.cs" Link="Features/Onboarding/OneDriveNoticeViewModel.cs" />
   </ItemGroup>
 

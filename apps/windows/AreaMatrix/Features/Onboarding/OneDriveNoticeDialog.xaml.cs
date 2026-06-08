@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.ComponentModel;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -17,10 +18,26 @@ public sealed partial class OneDriveNoticeDialog : UserControl
 
     public event Action? CloseRequested;
 
+    public event Func<WindowsCloudStorageState?, Task>? ContinueWithOneDriveRequested;
+
     public OneDriveNoticeViewModel? ViewModel
     {
         get => DataContext as OneDriveNoticeViewModel;
-        set => DataContext = value;
+        set
+        {
+            if (DataContext is OneDriveNoticeViewModel previous)
+            {
+                previous.PropertyChanged -= ViewModel_PropertyChanged;
+            }
+
+            DataContext = value;
+            if (value is not null)
+            {
+                value.PropertyChanged += ViewModel_PropertyChanged;
+            }
+
+            UpdateC414Visibility();
+        }
     }
 
     public async Task OpenRouteAsync(WindowsRepositoryRoute route)
@@ -31,6 +48,21 @@ public sealed partial class OneDriveNoticeDialog : UserControl
         }
 
         await ViewModel.LoadRouteAsync(route);
+        UpdateC414Visibility();
+    }
+
+    private async void ContinueWithOneDriveButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        bool completed = await ViewModel.ContinueWithOneDriveAsync();
+        if (completed && ContinueWithOneDriveRequested is { } continueRequested)
+        {
+            await continueRequested(ViewModel.CloudState);
+        }
     }
 
     private async void RetryStatusButton_Click(object sender, RoutedEventArgs e)
@@ -72,5 +104,21 @@ public sealed partial class OneDriveNoticeDialog : UserControl
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
         CloseRequested?.Invoke();
+    }
+
+    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        UpdateC414Visibility();
+    }
+
+    private void UpdateC414Visibility()
+    {
+        Visibility confirmationVisibility = ViewModel?.ShouldShowConfirmation == true
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        RiskConfirmationCheckBox.Visibility = confirmationVisibility;
+        ContinueDisabledReasonTextBlock.Visibility = confirmationVisibility;
+        ContinueWithOneDriveButton.Visibility = confirmationVisibility;
     }
 }

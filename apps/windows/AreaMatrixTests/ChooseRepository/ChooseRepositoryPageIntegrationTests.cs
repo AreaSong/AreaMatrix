@@ -7,6 +7,7 @@ public static class ChooseRepositoryPageIntegrationTests
     public static async Task RunAllAsync()
     {
         await OneDriveEmptyDirectoryRoutesToNoticeBeforeInit();
+        await ConfirmedOneDriveEmptyDirectoryReturnsToInitConfirmation();
         await OneDriveNonEmptyDirectoryRoutesToNoticeBeforeAdopt();
         await NotWritableDirectoryBlocksContinueBeforeRouting();
         RecentRepositoryStatusReasonsMatchPageSpec();
@@ -25,6 +26,25 @@ public static class ChooseRepositoryPageIntegrationTests
         TestAssert.SequenceEqual([@"C:\Users\me\OneDrive\Empty"], bridge.CloudStatePaths, "cloud state paths");
         TestAssert.Empty(bridge.InitializedPaths, nameof(bridge.InitializedPaths));
         TestAssert.Equal(WindowsRepositoryRouteKind.OneDriveNotice, model.Route.Kind, nameof(model.Route.Kind));
+        TestAssert.Equal(
+            WindowsRepositoryInitMode.CreateEmpty,
+            model.Route.Validation?.RecommendedMode,
+            "original route mode");
+    }
+
+    private static async Task ConfirmedOneDriveEmptyDirectoryReturnsToInitConfirmation()
+    {
+        const string path = @"C:\Users\me\OneDrive\Empty";
+        FakeWindowsRepositoryCoreBridge bridge = new(WindowsRepositoryValidationSamples.OneDriveEmptyDirectory(path));
+        ChooseRepositoryViewModel model = new(bridge);
+
+        await model.CheckRepositoryPathAsync(path);
+        await model.ContinueAsync();
+        await model.ContinueAfterOneDriveNoticeAsync(model.Route.CloudStorageState);
+
+        TestAssert.Empty(bridge.AcknowledgedPaths, nameof(bridge.AcknowledgedPaths));
+        TestAssert.Empty(bridge.InitializedPaths, nameof(bridge.InitializedPaths));
+        TestAssert.Equal(WindowsRepositoryRouteKind.RepositoryInitConfirm, model.Route.Kind, nameof(model.Route.Kind));
         TestAssert.Equal(
             WindowsRepositoryInitMode.CreateEmpty,
             model.Route.Validation?.RecommendedMode,

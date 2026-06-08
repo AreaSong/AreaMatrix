@@ -26,14 +26,21 @@ public static class OneDriveNoticeViewSmokeTests
         AssertNamedElement(page, "TextBlock", "CloudStatusTextBlock");
         AssertNamedElement(page, "TextBlock", "StatusSummaryTextBlock");
         AssertNamedElement(page, "ItemsControl", "RiskReasonsList");
+        AssertNamedElement(page, "CheckBox", "RiskConfirmationCheckBox");
+        AssertNamedElement(page, "TextBlock", "ContinueDisabledReasonTextBlock");
         AssertButton(page, "Retry status check", "RetryStatusButton_Click");
         AssertButton(page, "Open OneDrive folder", "OpenOneDriveFolderButton_Click");
         AssertButton(page, "Choose Local Folder", "ChooseLocalFolderButton_Click");
+        AssertButton(page, "Continue with OneDrive", "ContinueWithOneDriveButton_Click");
         AssertButton(page, "Close", "CloseButton_Click");
 
         string viewModel = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Features/Onboarding/OneDriveNoticeViewModel.cs"));
         TestAssert.Contains("DetectCloudStorageStateAsync", viewModel, "C4-08 CoreBridge call");
+        TestAssert.Contains(
+            "AcknowledgeOneDriveRiskNoticeAsync",
+            viewModel,
+            "C4-14 CoreBridge acknowledgement call");
         TestAssert.Contains("WindowsCloudPermissionState.PermissionDenied", viewModel, "permission mapping");
     }
 

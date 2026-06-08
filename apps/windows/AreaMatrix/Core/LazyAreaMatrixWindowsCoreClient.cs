@@ -35,6 +35,13 @@ internal sealed class LazyAreaMatrixWindowsCoreClient :
         return Current.DetectCloudStorageStateAsync(repoPath, cancellationToken);
     }
 
+    public Task<CoreCloudStorageState> AcknowledgeOneDriveRiskNoticeAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.AcknowledgeOneDriveRiskNoticeAsync(repoPath, cancellationToken);
+    }
+
     public Task InitRepoAsync(
         string repoPath,
         CoreRepoInitOptions options,

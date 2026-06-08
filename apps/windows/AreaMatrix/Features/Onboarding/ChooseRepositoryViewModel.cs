@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace AreaMatrix.Features.Onboarding;
 
-public sealed class ChooseRepositoryViewModel : INotifyPropertyChanged
+public sealed partial class ChooseRepositoryViewModel : INotifyPropertyChanged
 {
     private readonly IWindowsRepositoryCoreBridge coreBridge;
     private CancellationTokenSource? checkCancellation;
@@ -17,7 +17,6 @@ public sealed class ChooseRepositoryViewModel : INotifyPropertyChanged
     private WindowsRepositoryConfig? latestConfig;
     private WindowsRepositoryError? error;
     private WindowsRepositoryRoute route = WindowsRepositoryRoute.None;
-
     public ChooseRepositoryViewModel(IWindowsRepositoryCoreBridge coreBridge)
     {
         this.coreBridge = coreBridge;
@@ -37,6 +36,7 @@ public sealed class ChooseRepositoryViewModel : INotifyPropertyChanged
                 LatestCloudStorageState = null;
                 LatestConfig = null;
                 Route = WindowsRepositoryRoute.None;
+                oneDriveNoticeAcceptedPath = string.Empty;
                 OnPropertyChanged(nameof(CanContinue));
             }
         }
@@ -154,6 +154,7 @@ public sealed class ChooseRepositoryViewModel : INotifyPropertyChanged
         LatestCloudStorageState = null;
         LatestConfig = null;
         Route = WindowsRepositoryRoute.None;
+        oneDriveNoticeAcceptedPath = string.Empty;
 
         if (string.IsNullOrWhiteSpace(RepositoryPath))
         {
@@ -312,6 +313,11 @@ public sealed class ChooseRepositoryViewModel : INotifyPropertyChanged
         WindowsCloudStorageState state = LatestCloudStorageState
             ?? await coreBridge.DetectCloudStorageStateAsync(validation.RepoPath, cancellationToken);
         LatestCloudStorageState = state;
+        if (IsOneDriveNoticeAcceptedFor(validation))
+        {
+            return false;
+        }
+
         return state.RequiresOneDriveNotice
             || state.RecommendedAction == WindowsCloudStorageRecommendedAction.AcknowledgeNotice;
     }

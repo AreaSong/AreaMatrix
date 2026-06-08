@@ -111,9 +111,18 @@ public static class ChooseRepositoryViewSmokeTests
                 "apps/windows/AreaMatrix/Features/Onboarding/WindowsRepositoryCoreBridge.cs")),
             "C4-14 cloud storage bridge");
         TestAssert.Contains(
+            "AcknowledgeOneDriveRiskNoticeAsync",
+            File.ReadAllText(RepositoryPath(
+                "apps/windows/AreaMatrix/Features/Onboarding/WindowsRepositoryCoreBridge.cs")),
+            "C4-14 OneDrive acknowledgement bridge");
+        TestAssert.Contains(
             "uniffi_area_matrix_core_fn_func_detect_cloud_storage_state",
             File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/Core/NativeCoreLibrary.cs")),
             "C4-14 native core binding");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_acknowledge_onedrive_risk_notice",
+            File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/Core/NativeCoreLibrary.cs")),
+            "C4-14 native acknowledgement binding");
     }
 
     private static void AssertButton(XElement root, string content, string clickHandler)

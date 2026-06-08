@@ -10,6 +10,8 @@ public static class OneDriveNoticeViewModelTests
         await MissingRouteCloudStateDetectsThroughCoreBridge();
         await PermissionDeniedStateMapsToUnknownStatusAndReadableError();
         await RetryStatusCheckUsesCoreBridgeAfterInitialLoad();
+        await AcknowledgementRequiresCheckboxAndPersistsThroughCoreBridge();
+        await UninitializedNoticeConfirmationDoesNotCallCoreAcknowledgement();
     }
 
     private static async Task ExistingCloudStateRendersOneDriveStatusWithoutRedetecting()
@@ -97,6 +99,63 @@ public static class OneDriveNoticeViewModelTests
             bridge.CloudStatePaths,
             nameof(bridge.CloudStatePaths));
         TestAssert.Equal("Status: Available", model.StatusText, nameof(model.StatusText));
+    }
+
+    private static async Task AcknowledgementRequiresCheckboxAndPersistsThroughCoreBridge()
+    {
+        WindowsRepositoryValidation validation = WindowsRepositoryValidationSamples.OneDriveDirectory(
+            @"C:\Users\me\OneDrive\AreaMatrix");
+        WindowsCloudStorageState state = WindowsCloudStorageStateSamples.UnacknowledgedOneDrive(validation.RepoPath);
+        FakeWindowsRepositoryCoreBridge bridge = new(validation, state);
+        OneDriveNoticeViewModel model = new(bridge);
+
+        await model.LoadRouteAsync(new WindowsRepositoryRoute(
+            WindowsRepositoryRouteKind.OneDriveNotice,
+            validation.RepoPath,
+            validation,
+            null,
+            state));
+
+        TestAssert.True(model.ShouldShowConfirmation, nameof(model.ShouldShowConfirmation));
+        TestAssert.False(model.CanContinueWithOneDrive, nameof(model.CanContinueWithOneDrive));
+        TestAssert.Contains(
+            "Confirm OneDrive sync risks",
+            model.ContinueDisabledReason,
+            nameof(model.ContinueDisabledReason));
+
+        model.IsRiskNoticeConfirmed = true;
+        bool completed = await model.ContinueWithOneDriveAsync();
+
+        TestAssert.True(completed, nameof(completed));
+        TestAssert.SequenceEqual([validation.RepoPath], bridge.AcknowledgedPaths, nameof(bridge.AcknowledgedPaths));
+        TestAssert.True(model.CloudState?.NoticeAcknowledged == true, "notice acknowledged");
+        TestAssert.Equal(
+            WindowsCloudStorageRecommendedAction.None,
+            model.CloudState?.RecommendedAction,
+            "recommended action");
+    }
+
+    private static async Task UninitializedNoticeConfirmationDoesNotCallCoreAcknowledgement()
+    {
+        WindowsRepositoryValidation validation = WindowsRepositoryValidationSamples.OneDriveEmptyDirectory(
+            @"C:\Users\me\OneDrive\Empty");
+        WindowsCloudStorageState state = WindowsCloudStorageStateSamples.UnacknowledgedOneDrive(validation.RepoPath);
+        FakeWindowsRepositoryCoreBridge bridge = new(validation, state);
+        OneDriveNoticeViewModel model = new(bridge);
+
+        await model.LoadRouteAsync(new WindowsRepositoryRoute(
+            WindowsRepositoryRouteKind.OneDriveNotice,
+            validation.RepoPath,
+            validation,
+            null,
+            state));
+
+        model.IsRiskNoticeConfirmed = true;
+        bool completed = await model.ContinueWithOneDriveAsync();
+
+        TestAssert.True(completed, nameof(completed));
+        TestAssert.Empty(bridge.AcknowledgedPaths, nameof(bridge.AcknowledgedPaths));
+        TestAssert.False(model.CloudState?.NoticeAcknowledged == true, "notice acknowledged");
     }
 
     private static WindowsCloudStorageState PermissionDeniedOneDrive(string path)

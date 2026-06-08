@@ -16,6 +16,8 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_fn_func_validate_repo_path");
         DetectCloudStorageState = LoadFunction<DetectCloudStorageStateDelegate>(
             "uniffi_area_matrix_core_fn_func_detect_cloud_storage_state");
+        AcknowledgeOneDriveRiskNotice = LoadFunction<AcknowledgeOneDriveRiskNoticeDelegate>(
+            "uniffi_area_matrix_core_fn_func_acknowledge_onedrive_risk_notice");
         InitRepo = LoadFunction<InitRepoDelegate>("uniffi_area_matrix_core_fn_func_init_repo");
         LoadConfig = LoadFunction<LoadConfigDelegate>("uniffi_area_matrix_core_fn_func_load_config");
         ListFiles = LoadFunction<ListFilesDelegate>("uniffi_area_matrix_core_fn_func_list_files");
@@ -29,6 +31,8 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_checksum_func_validate_repo_path");
         DetectCloudStorageStateChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_detect_cloud_storage_state");
+        AcknowledgeOneDriveRiskNoticeChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_acknowledge_onedrive_risk_notice");
         InitRepoChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_init_repo");
         LoadConfigChecksum = LoadFunction<ChecksumDelegate>(
@@ -46,6 +50,8 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ValidateRepoPathDelegate ValidateRepoPath { get; }
 
     public DetectCloudStorageStateDelegate DetectCloudStorageState { get; }
+
+    public AcknowledgeOneDriveRiskNoticeDelegate AcknowledgeOneDriveRiskNotice { get; }
 
     public InitRepoDelegate InitRepo { get; }
 
@@ -66,6 +72,8 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ChecksumDelegate ValidateRepoPathChecksum { get; }
 
     public ChecksumDelegate DetectCloudStorageStateChecksum { get; }
+
+    public ChecksumDelegate AcknowledgeOneDriveRiskNoticeChecksum { get; }
 
     public ChecksumDelegate InitRepoChecksum { get; }
 

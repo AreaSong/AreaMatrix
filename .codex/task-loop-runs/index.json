@@ -1,10 +1,30 @@
 {
-  "latest_run_id": "20260608_090832",
+  "latest_run_id": "20260608_115651",
   "runs": [
     {
+      "completed": 1,
+      "exit_code": 0,
+      "finished_at": "2026-06-08T04:16:54.898175+00:00",
+      "phases": [
+        "phase-0",
+        "phase-1",
+        "phase-2",
+        "phase-3",
+        "phase-4"
+      ],
+      "retries": 0,
+      "run_id": "20260608_115651",
+      "start_from": "4-3/task-122",
+      "started_at": "2026-06-08T03:56:51.818208+00:00",
+      "status": "completed",
+      "stop_after": "",
+      "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260608_115651/summary.json",
+      "updated_at": "2026-06-08T04:16:54.898515+00:00"
+    },
+    {
       "completed": 4,
-      "exit_code": null,
-      "finished_at": "",
+      "exit_code": 1,
+      "finished_at": "2026-06-08T03:30:27.325201+00:00",
       "phases": [
         "phase-0",
         "phase-1",
@@ -16,10 +36,10 @@
       "run_id": "20260608_090832",
       "start_from": "",
       "started_at": "2026-06-08T01:08:32.908799+00:00",
-      "status": "running",
+      "status": "failed",
       "stop_after": "",
       "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260608_090832/summary.json",
-      "updated_at": "2026-06-08T02:56:22.629846+00:00"
+      "updated_at": "2026-06-08T03:30:27.327863+00:00"
     },
     {
       "completed": 1,
@@ -1973,27 +1993,8 @@
       "status": "completed",
       "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260504_125337/summary.json",
       "updated_at": "2026-05-04T05:21:28.577326+00:00"
-    },
-    {
-      "completed": 1,
-      "exit_code": 1,
-      "finished_at": "2026-05-04T04:25:32.666720+00:00",
-      "phases": [
-        "phase-0",
-        "phase-1",
-        "phase-2",
-        "phase-3",
-        "phase-4"
-      ],
-      "retries": 1,
-      "run_id": "20260504_115026",
-      "start_from": "",
-      "started_at": "2026-05-04T03:50:28.104285+00:00",
-      "status": "failed",
-      "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260504_115026/summary.json",
-      "updated_at": "2026-05-04T04:25:32.667310+00:00"
     }
   ],
-  "updated_at": "2026-06-08T02:56:22.629875+00:00",
+  "updated_at": "2026-06-08T04:16:54.898525+00:00",
   "version": 1
 }

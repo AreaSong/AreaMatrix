@@ -14,6 +14,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
     IAreaMatrixDesktopQueryCoreClient,
     IDisposable
 {
+    private const ushort AcknowledgeOneDriveRiskNoticeChecksum = 22622;
     private const ushort DetectCloudStorageStateChecksum = 18169;
     private const ushort GetFileChecksum = 6132;
     private const ushort InitRepoChecksum = 29414;
@@ -102,6 +103,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
     private void VerifyContract()
     {
         if (native.InitRepoChecksum() != InitRepoChecksum
+            || native.AcknowledgeOneDriveRiskNoticeChecksum() != AcknowledgeOneDriveRiskNoticeChecksum
             || native.DetectCloudStorageStateChecksum() != DetectCloudStorageStateChecksum
             || native.GetFileChecksum() != GetFileChecksum
             || native.ListFilesChecksum() != ListFilesChecksum

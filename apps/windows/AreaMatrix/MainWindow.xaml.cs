@@ -21,6 +21,7 @@ public sealed partial class MainWindow : Window
         OneDriveNoticePage.ViewModel = new OneDriveNoticeViewModel(repositoryBridge);
         OneDriveNoticePage.ChooseLocalFolderRequested += OneDriveNoticePage_ChooseLocalFolderRequested;
         OneDriveNoticePage.CloseRequested += OneDriveNoticePage_ChooseLocalFolderRequested;
+        OneDriveNoticePage.ContinueWithOneDriveRequested += OneDriveNoticePage_ContinueWithOneDriveRequested;
         WindowsMainWindowPage.ViewModel = new WindowsMainWindowViewModel(
             new DesktopMainQueryCoreBridge(coreClient));
         Closed += MainWindow_Closed;
@@ -64,6 +65,23 @@ public sealed partial class MainWindow : Window
         ChooseRepositoryPage.Visibility = Visibility.Visible;
     }
 
+    private async Task OneDriveNoticePage_ContinueWithOneDriveRequested(WindowsCloudStorageState? state)
+    {
+        if (ChooseRepositoryPage.ViewModel is not { } viewModel)
+        {
+            return;
+        }
+
+        await viewModel.ContinueAfterOneDriveNoticeAsync(state);
+        if (viewModel.Route.Kind is WindowsRepositoryRouteKind.RepositoryInitConfirm
+            or WindowsRepositoryRouteKind.RepositoryAdoptConfirm)
+        {
+            OneDriveNoticePage.Visibility = Visibility.Collapsed;
+            WindowsMainWindowPage.Visibility = Visibility.Collapsed;
+            ChooseRepositoryPage.Visibility = Visibility.Visible;
+        }
+    }
+
     private void MainWindow_Closed(object sender, WindowEventArgs args)
     {
         if (ChooseRepositoryPage.ViewModel is { } viewModel)
@@ -73,6 +91,7 @@ public sealed partial class MainWindow : Window
 
         OneDriveNoticePage.ChooseLocalFolderRequested -= OneDriveNoticePage_ChooseLocalFolderRequested;
         OneDriveNoticePage.CloseRequested -= OneDriveNoticePage_ChooseLocalFolderRequested;
+        OneDriveNoticePage.ContinueWithOneDriveRequested -= OneDriveNoticePage_ContinueWithOneDriveRequested;
         coreClient.Dispose();
     }
 }

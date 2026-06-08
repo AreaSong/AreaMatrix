@@ -11,8 +11,11 @@ namespace AreaMatrix.Features.Onboarding;
 public sealed class OneDriveNoticeViewModel : INotifyPropertyChanged
 {
     private readonly IWindowsRepositoryCoreBridge coreBridge;
+    private WindowsRepositoryValidation? routeValidation;
     private string repositoryPath = string.Empty;
     private bool isChecking;
+    private bool isAcknowledging;
+    private bool isRiskNoticeConfirmed;
     private WindowsCloudStorageState? cloudState;
     private WindowsRepositoryError? error;
     private IReadOnlyList<string> riskReasons = [];
@@ -42,6 +45,30 @@ public sealed class OneDriveNoticeViewModel : INotifyPropertyChanged
         private set
         {
             if (SetProperty(ref isChecking, value))
+            {
+                NotifyDisplayPropertiesChanged();
+            }
+        }
+    }
+
+    public bool IsAcknowledging
+    {
+        get => isAcknowledging;
+        private set
+        {
+            if (SetProperty(ref isAcknowledging, value))
+            {
+                NotifyDisplayPropertiesChanged();
+            }
+        }
+    }
+
+    public bool IsRiskNoticeConfirmed
+    {
+        get => isRiskNoticeConfirmed;
+        set
+        {
+            if (SetProperty(ref isRiskNoticeConfirmed, value))
             {
                 NotifyDisplayPropertiesChanged();
             }
@@ -86,6 +113,63 @@ public sealed class OneDriveNoticeViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool ShouldShowConfirmation
+    {
+        get
+        {
+            return CloudState?.RequiresOneDriveNotice == true
+                || CloudState?.RecommendedAction == WindowsCloudStorageRecommendedAction.AcknowledgeNotice;
+        }
+    }
+
+    public bool CanContinueWithOneDrive
+    {
+        get
+        {
+            return ShouldShowConfirmation
+                && IsRiskNoticeConfirmed
+                && !IsChecking
+                && !IsAcknowledging
+                && Error is null
+                && CloudState?.ProviderKind == WindowsCloudStorageProviderKind.OneDrive;
+        }
+    }
+
+    public string ContinueDisabledReason
+    {
+        get
+        {
+            if (!ShouldShowConfirmation)
+            {
+                return string.Empty;
+            }
+
+            if (IsAcknowledging)
+            {
+                return "Saving OneDrive acknowledgement...";
+            }
+
+            if (IsChecking)
+            {
+                return "Checking OneDrive status...";
+            }
+
+            if (Error is { } currentError)
+            {
+                return currentError.Message;
+            }
+
+            if (CloudState?.ProviderKind != WindowsCloudStorageProviderKind.OneDrive)
+            {
+                return "This folder is no longer detected as OneDrive.";
+            }
+
+            return IsRiskNoticeConfirmed
+                ? string.Empty
+                : "Confirm OneDrive sync risks before continuing.";
+        }
+    }
+
     public string FolderText
     {
         get
@@ -125,6 +209,11 @@ public sealed class OneDriveNoticeViewModel : INotifyPropertyChanged
     {
         get
         {
+            if (IsAcknowledging)
+            {
+                return "Saving OneDrive risk acknowledgement...";
+            }
+
             if (IsChecking)
             {
                 return "Checking OneDrive status...";
@@ -152,6 +241,7 @@ public sealed class OneDriveNoticeViewModel : INotifyPropertyChanged
         get
         {
             return !IsChecking
+                && !IsAcknowledging
                 && !string.IsNullOrWhiteSpace(RepositoryPath)
                 && (CloudState?.CanRetry == true || Error is not null);
         }
@@ -162,6 +252,7 @@ public sealed class OneDriveNoticeViewModel : INotifyPropertyChanged
         get
         {
             return !IsChecking
+                && !IsAcknowledging
                 && !string.IsNullOrWhiteSpace(RepositoryPath)
                 && Error?.Kind is not WindowsRepositoryErrorKind.InvalidPath
                 && Error?.Kind is not WindowsRepositoryErrorKind.FileNotFound;
@@ -172,7 +263,9 @@ public sealed class OneDriveNoticeViewModel : INotifyPropertyChanged
         WindowsRepositoryRoute route,
         CancellationToken cancellationToken = default)
     {
+        routeValidation = route.Validation;
         RepositoryPath = route.RepoPath;
+        IsRiskNoticeConfirmed = false;
         Error = null;
         CloudState = route.CloudStorageState;
 
@@ -211,6 +304,7 @@ public sealed class OneDriveNoticeViewModel : INotifyPropertyChanged
                 .DetectCloudStorageStateAsync(RepositoryPath, cancellationToken)
                 .ConfigureAwait(false);
 
+            IsRiskNoticeConfirmed = false;
             CloudState = state;
             ApplyStateError(state);
         }
@@ -235,6 +329,56 @@ public sealed class OneDriveNoticeViewModel : INotifyPropertyChanged
         finally
         {
             IsChecking = false;
+        }
+    }
+
+    public async Task<bool> ContinueWithOneDriveAsync(CancellationToken cancellationToken = default)
+    {
+        if (!CanContinueWithOneDrive)
+        {
+            return false;
+        }
+
+        if (routeValidation?.IsInitialized != true)
+        {
+            return true;
+        }
+
+        IsAcknowledging = true;
+        Error = null;
+        try
+        {
+            WindowsCloudStorageState state = await coreBridge
+                .AcknowledgeOneDriveRiskNoticeAsync(RepositoryPath, cancellationToken)
+                .ConfigureAwait(false);
+
+            CloudState = state;
+            ApplyStateError(state);
+            return Error is null
+                && state.NoticeAcknowledged
+                && !state.RequiresNoticeAcknowledgement
+                && state.RecommendedAction == WindowsCloudStorageRecommendedAction.None;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return false;
+        }
+        catch (WindowsRepositoryCoreException exception)
+        {
+            Error = ErrorFromCoreException(exception);
+            return false;
+        }
+        catch (Exception exception)
+        {
+            Error = new WindowsRepositoryError(
+                WindowsRepositoryErrorKind.Unavailable,
+                $"Saving OneDrive acknowledgement failed: {exception.Message}",
+                RepositoryPath);
+            return false;
+        }
+        finally
+        {
+            IsAcknowledging = false;
         }
     }
 
@@ -340,6 +484,9 @@ public sealed class OneDriveNoticeViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(ErrorText));
         OnPropertyChanged(nameof(CanRetryStatusCheck));
         OnPropertyChanged(nameof(CanOpenOneDriveFolder));
+        OnPropertyChanged(nameof(ShouldShowConfirmation));
+        OnPropertyChanged(nameof(CanContinueWithOneDrive));
+        OnPropertyChanged(nameof(ContinueDisabledReason));
     }
 
     private void OnPropertyChanged([CallerMemberName] string propertyName = "")
