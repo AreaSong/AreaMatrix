@@ -14,5 +14,8 @@
         <library:WindowsMainWindow
             x:Name="WindowsMainWindowPage"
             Visibility="Collapsed" />
+        <library:WatcherStatusView
+            x:Name="WatcherStatusPage"
+            Visibility="Collapsed" />
     </Grid>
 </Window>

@@ -38,11 +38,13 @@ public static class DesktopMainQuerySmokeTests
         AssertNamedElement(view, "ListView", "FileListView");
         AssertNamedElement(view, "TextBox", "SearchTextBox");
         AssertNamedElement(view, "AppBarButton", "RefreshButton");
+        AssertNamedElement(view, "AppBarButton", "OneDriveStatusButton");
         AssertButton(view, "Search", "SearchButton_Click");
 
         string codeBehind = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Features/Library/WindowsMainWindow.xaml.cs"));
         TestAssert.Contains("RefreshAsync", codeBehind, "refresh trigger");
+        TestAssert.Contains("OpenOneDriveStatusRequested", codeBehind, "OneDrive status trigger");
         TestAssert.Contains("RunSearchAsync", codeBehind, "search trigger");
         TestAssert.Contains("SelectCategoryAsync", codeBehind, "category trigger");
         TestAssert.Contains("SelectFileAsync", codeBehind, "detail trigger");

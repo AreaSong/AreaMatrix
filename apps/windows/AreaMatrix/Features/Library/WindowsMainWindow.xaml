@@ -21,6 +21,12 @@
                 Icon="Refresh"
                 Label="Refresh"
                 Click="RefreshButton_Click" />
+            <AppBarButton
+                x:Name="OneDriveStatusButton"
+                Icon="SyncFolder"
+                Label="OneDrive status"
+                IsEnabled="{Binding CanOpenOneDriveStatus}"
+                Click="OneDriveStatusButton_Click" />
             <CommandBar.Content>
                 <Grid MinWidth="360" ColumnSpacing="8">
                     <Grid.ColumnDefinitions>

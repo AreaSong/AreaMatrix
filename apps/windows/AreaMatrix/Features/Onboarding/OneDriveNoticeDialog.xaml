@@ -122,6 +122,7 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <ProgressRing
@@ -145,19 +146,25 @@
                 IsEnabled="{Binding CanOpenOneDriveFolder}"
                 Click="OpenOneDriveFolderButton_Click" />
             <Button
-                x:Name="ChooseLocalFolderButton"
+                x:Name="OpenWatcherStatusButton"
                 Grid.Column="3"
+                Content="Open watcher status"
+                IsEnabled="{Binding CanOpenWatcherStatus}"
+                Click="OpenWatcherStatusButton_Click" />
+            <Button
+                x:Name="ChooseLocalFolderButton"
+                Grid.Column="4"
                 Content="Choose Local Folder"
                 Click="ChooseLocalFolderButton_Click" />
             <Button
                 x:Name="ContinueWithOneDriveButton"
-                Grid.Column="4"
+                Grid.Column="5"
                 Content="Continue with OneDrive"
                 IsEnabled="{Binding CanContinueWithOneDrive}"
                 Click="ContinueWithOneDriveButton_Click" />
             <Button
                 x:Name="CloseButton"
-                Grid.Column="5"
+                Grid.Column="6"
                 Content="Close"
                 Click="CloseButton_Click" />
         </Grid>

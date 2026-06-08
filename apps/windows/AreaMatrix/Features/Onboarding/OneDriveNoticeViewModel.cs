@@ -113,14 +113,16 @@ public sealed class OneDriveNoticeViewModel : INotifyPropertyChanged
         }
     }
 
-    public bool ShouldShowConfirmation
-    {
-        get
-        {
-            return CloudState?.RequiresOneDriveNotice == true
-                || CloudState?.RecommendedAction == WindowsCloudStorageRecommendedAction.AcknowledgeNotice;
-        }
-    }
+    public bool ShouldShowConfirmation => CloudState?.RequiresOneDriveNotice == true
+        || CloudState?.RecommendedAction == WindowsCloudStorageRecommendedAction.AcknowledgeNotice;
+
+    public bool ShouldShowConnectedActions => !ShouldShowConfirmation
+        && !IsChecking
+        && !IsAcknowledging
+        && !string.IsNullOrWhiteSpace(RepositoryPath)
+        && CloudState?.ProviderKind == WindowsCloudStorageProviderKind.OneDrive;
+
+    public bool CanOpenWatcherStatus => ShouldShowConnectedActions && Error is null;
 
     public bool CanContinueWithOneDrive
     {
@@ -485,6 +487,8 @@ public sealed class OneDriveNoticeViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(CanRetryStatusCheck));
         OnPropertyChanged(nameof(CanOpenOneDriveFolder));
         OnPropertyChanged(nameof(ShouldShowConfirmation));
+        OnPropertyChanged(nameof(ShouldShowConnectedActions));
+        OnPropertyChanged(nameof(CanOpenWatcherStatus));
         OnPropertyChanged(nameof(CanContinueWithOneDrive));
         OnPropertyChanged(nameof(ContinueDisabledReason));
     }

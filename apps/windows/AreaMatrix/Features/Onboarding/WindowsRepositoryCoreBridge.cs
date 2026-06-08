@@ -170,6 +170,7 @@ public enum WindowsRepositoryRouteKind
     None,
     MainWindow,
     OneDriveNotice,
+    WatcherStatus,
     RepositoryInitConfirm,
     RepositoryAdoptConfirm
 }

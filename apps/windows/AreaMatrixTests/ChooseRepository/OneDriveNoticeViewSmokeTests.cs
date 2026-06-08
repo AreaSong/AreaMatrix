@@ -30,9 +30,15 @@ public static class OneDriveNoticeViewSmokeTests
         AssertNamedElement(page, "TextBlock", "ContinueDisabledReasonTextBlock");
         AssertButton(page, "Retry status check", "RetryStatusButton_Click");
         AssertButton(page, "Open OneDrive folder", "OpenOneDriveFolderButton_Click");
+        AssertButton(page, "Open watcher status", "OpenWatcherStatusButton_Click");
         AssertButton(page, "Choose Local Folder", "ChooseLocalFolderButton_Click");
         AssertButton(page, "Continue with OneDrive", "ContinueWithOneDriveButton_Click");
         AssertButton(page, "Close", "CloseButton_Click");
+
+        string codeBehind = File.ReadAllText(RepositoryPath(
+            "apps/windows/AreaMatrix/Features/Onboarding/OneDriveNoticeDialog.xaml.cs"));
+        TestAssert.Contains("OpenWatcherStatusRequested", codeBehind, "watcher status request event");
+        TestAssert.Contains("OpenWatcherStatusButton.Visibility", codeBehind, "connected watcher action visibility");
 
         string viewModel = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Features/Onboarding/OneDriveNoticeViewModel.cs"));
@@ -48,10 +54,26 @@ public static class OneDriveNoticeViewSmokeTests
     {
         XElement window = LoadXml(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml"));
         AssertNamedElement(window, "OneDriveNoticeDialog", "OneDriveNoticePage");
+        AssertNamedElement(window, "WatcherStatusView", "WatcherStatusPage");
 
         string codeBehind = File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml.cs"));
         TestAssert.Contains("WindowsRepositoryRouteKind.OneDriveNotice", codeBehind, "OneDrive route handling");
+        TestAssert.Contains("WindowsRepositoryRouteKind.WatcherStatus", codeBehind, "watcher status route handoff");
         TestAssert.Contains("new OneDriveNoticeViewModel(repositoryBridge)", codeBehind, "real bridge injection");
+        TestAssert.Contains("OpenOneDriveStatusRequested", codeBehind, "main window OneDrive status entry");
+        TestAssert.Contains("OpenWatcherStatusRequested", codeBehind, "OneDrive notice watcher status entry");
+
+        XElement watcher = LoadXml(RepositoryPath(
+            "apps/windows/AreaMatrix/Features/Library/WatcherStatusView.xaml"));
+        AssertNamedElement(watcher, "TextBlock", "WatcherRouteTextBlock");
+        AssertButton(watcher, "Close", "CloseWatcherStatusButton_Click");
+
+        string watcherCode = File.ReadAllText(RepositoryPath(
+            "apps/windows/AreaMatrix/Features/Library/WatcherStatusView.xaml.cs"));
+        TestAssert.Contains("OpenRoute", watcherCode, "watcher status route open");
+        TestAssert.Contains("CloseRequested", watcherCode, "watcher status close event");
+        TestAssert.DoesNotContain("ReindexFromFilesystem", watcherCode, "watcher placeholder must not start rescan");
+        TestAssert.DoesNotContain("PreviewManualRescan", watcherCode, "watcher placeholder must not preview rescan");
     }
 
     private static void AssertButton(XElement root, string content, string clickHandler)

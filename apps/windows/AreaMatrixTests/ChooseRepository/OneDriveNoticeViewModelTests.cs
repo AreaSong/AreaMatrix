@@ -12,6 +12,7 @@ public static class OneDriveNoticeViewModelTests
         await RetryStatusCheckUsesCoreBridgeAfterInitialLoad();
         await AcknowledgementRequiresCheckboxAndPersistsThroughCoreBridge();
         await UninitializedNoticeConfirmationDoesNotCallCoreAcknowledgement();
+        await ConnectedNoticeStateEnablesWatcherStatusEntryWithoutConfirmation();
     }
 
     private static async Task ExistingCloudStateRendersOneDriveStatusWithoutRedetecting()
@@ -156,6 +157,28 @@ public static class OneDriveNoticeViewModelTests
         TestAssert.True(completed, nameof(completed));
         TestAssert.Empty(bridge.AcknowledgedPaths, nameof(bridge.AcknowledgedPaths));
         TestAssert.False(model.CloudState?.NoticeAcknowledged == true, "notice acknowledged");
+    }
+
+    private static async Task ConnectedNoticeStateEnablesWatcherStatusEntryWithoutConfirmation()
+    {
+        WindowsRepositoryValidation validation = WindowsRepositoryValidationSamples.OneDriveDirectory(
+            @"C:\Users\me\OneDrive\AreaMatrix");
+        WindowsCloudStorageState state = WindowsCloudStorageStateSamples.AcknowledgedOneDrive(validation.RepoPath);
+        FakeWindowsRepositoryCoreBridge bridge = new(validation, state);
+        OneDriveNoticeViewModel model = new(bridge);
+
+        await model.LoadRouteAsync(new WindowsRepositoryRoute(
+            WindowsRepositoryRouteKind.OneDriveNotice,
+            validation.RepoPath,
+            validation,
+            null,
+            state));
+
+        TestAssert.False(model.ShouldShowConfirmation, nameof(model.ShouldShowConfirmation));
+        TestAssert.True(model.ShouldShowConnectedActions, nameof(model.ShouldShowConnectedActions));
+        TestAssert.True(model.CanOpenWatcherStatus, nameof(model.CanOpenWatcherStatus));
+        TestAssert.False(model.CanContinueWithOneDrive, nameof(model.CanContinueWithOneDrive));
+        TestAssert.Empty(bridge.AcknowledgedPaths, nameof(bridge.AcknowledgedPaths));
     }
 
     private static WindowsCloudStorageState PermissionDeniedOneDrive(string path)

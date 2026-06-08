@@ -20,6 +20,8 @@ public sealed partial class OneDriveNoticeDialog : UserControl
 
     public event Func<WindowsCloudStorageState?, Task>? ContinueWithOneDriveRequested;
 
+    public event Action? OpenWatcherStatusRequested;
+
     public OneDriveNoticeViewModel? ViewModel
     {
         get => DataContext as OneDriveNoticeViewModel;
@@ -96,6 +98,14 @@ public sealed partial class OneDriveNoticeDialog : UserControl
         }
     }
 
+    private void OpenWatcherStatusButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel?.CanOpenWatcherStatus == true)
+        {
+            OpenWatcherStatusRequested?.Invoke();
+        }
+    }
+
     private void ChooseLocalFolderButton_Click(object sender, RoutedEventArgs e)
     {
         ChooseLocalFolderRequested?.Invoke();
@@ -120,5 +130,17 @@ public sealed partial class OneDriveNoticeDialog : UserControl
         RiskConfirmationCheckBox.Visibility = confirmationVisibility;
         ContinueDisabledReasonTextBlock.Visibility = confirmationVisibility;
         ContinueWithOneDriveButton.Visibility = confirmationVisibility;
+
+        bool shouldShowConnectedActions = ViewModel?.ShouldShowConnectedActions == true;
+        Visibility connectedActionVisibility = shouldShowConnectedActions
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        Visibility initialActionVisibility = shouldShowConnectedActions
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+
+        OpenWatcherStatusButton.Visibility = connectedActionVisibility;
+        RetryStatusButton.Visibility = initialActionVisibility;
+        ChooseLocalFolderButton.Visibility = initialActionVisibility;
     }
 }

@@ -20,6 +20,8 @@ public sealed partial class WindowsMainWindow : UserControl
         Unloaded += WindowsMainWindow_Unloaded;
     }
 
+    public event Action<WindowsRepositoryRoute>? OpenOneDriveStatusRequested;
+
     public WindowsMainWindowViewModel? ViewModel
     {
         get => DataContext as WindowsMainWindowViewModel;
@@ -73,6 +75,14 @@ public sealed partial class WindowsMainWindow : UserControl
 
         await ViewModel.RefreshAsync();
         RefreshState();
+    }
+
+    private void OneDriveStatusButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel?.OneDriveStatusRoute is { } route)
+        {
+            OpenOneDriveStatusRequested?.Invoke(route);
+        }
     }
 
     private async void SearchButton_Click(object sender, RoutedEventArgs e)
@@ -147,6 +157,7 @@ public sealed partial class WindowsMainWindow : UserControl
             : $"{ViewModel.Files.Count} visible";
 
         RefreshButton.IsEnabled = ViewModel.CanRunQuery;
+        OneDriveStatusButton.IsEnabled = ViewModel.CanOpenOneDriveStatus;
         LoadingProgressRing.Visibility = ViewModel.IsLoading || ViewModel.IsRefreshing
             ? Visibility.Visible
             : Visibility.Collapsed;

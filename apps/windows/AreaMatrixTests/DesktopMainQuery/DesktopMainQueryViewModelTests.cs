@@ -12,6 +12,7 @@ public static class DesktopMainQueryViewModelTests
         await SearchUsesCoreSearchWithoutScanningRepository();
         await SelectingFileUsesCoreDetailQuery();
         await RefreshKeepsCachedListOnDbError();
+        await OneDriveRepositoryExposesConnectedNoticeRoute();
     }
 
     private static async Task OpenRepositoryLoadsTreeAndFirstPageFromCoreBridge()
@@ -77,6 +78,25 @@ public static class DesktopMainQueryViewModelTests
         TestAssert.Contains("database", model.StatusText, nameof(model.StatusText));
     }
 
+    private static async Task OneDriveRepositoryExposesConnectedNoticeRoute()
+    {
+        const string path = @"C:\Users\me\OneDrive\AreaMatrix";
+        FakeDesktopMainQueryCoreBridge bridge = new();
+        WindowsMainWindowViewModel model = new(bridge);
+
+        await model.OpenRepositoryAsync(OneDriveRoute(path));
+
+        TestAssert.True(model.CanOpenOneDriveStatus, nameof(model.CanOpenOneDriveStatus));
+        TestAssert.Equal(
+            WindowsRepositoryRouteKind.OneDriveNotice,
+            model.OneDriveStatusRoute?.Kind,
+            "OneDrive status route kind");
+        TestAssert.Equal(
+            WindowsCloudStorageProviderKind.OneDrive,
+            model.OneDriveStatusRoute?.CloudStorageState?.ProviderKind,
+            "OneDrive status cloud state");
+    }
+
     private static WindowsRepositoryRoute Route(string path)
     {
         return new WindowsRepositoryRoute(
@@ -84,6 +104,16 @@ public static class DesktopMainQueryViewModelTests
             path,
             WindowsRepositoryValidationSamples.Initialized(path),
             new WindowsRepositoryConfig(path, "Copied", "en-US"));
+    }
+
+    private static WindowsRepositoryRoute OneDriveRoute(string path)
+    {
+        return new WindowsRepositoryRoute(
+            WindowsRepositoryRouteKind.MainWindow,
+            path,
+            WindowsRepositoryValidationSamples.OneDriveDirectory(path),
+            new WindowsRepositoryConfig(path, "Copied", "en-US"),
+            WindowsCloudStorageStateSamples.AcknowledgedOneDrive(path));
     }
 }
 

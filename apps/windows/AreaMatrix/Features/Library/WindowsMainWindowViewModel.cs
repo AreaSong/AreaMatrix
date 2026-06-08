@@ -23,6 +23,7 @@ public sealed class WindowsMainWindowViewModel : INotifyPropertyChanged
     private bool isRefreshing;
     private DesktopMainQuerySnapshot snapshot = DesktopMainQuerySnapshot.Empty;
     private DesktopFileEntry? selectedFile;
+    private WindowsRepositoryRoute? currentRoute;
     private WindowsRepositoryError? error;
 
     public WindowsMainWindowViewModel(
@@ -73,6 +74,7 @@ public sealed class WindowsMainWindowViewModel : INotifyPropertyChanged
             if (SetProperty(ref isLoading, value))
             {
                 OnPropertyChanged(nameof(CanRunQuery));
+                OnPropertyChanged(nameof(CanOpenOneDriveStatus));
                 OnPropertyChanged(nameof(StatusText));
             }
         }
@@ -86,6 +88,7 @@ public sealed class WindowsMainWindowViewModel : INotifyPropertyChanged
             if (SetProperty(ref isRefreshing, value))
             {
                 OnPropertyChanged(nameof(CanRunQuery));
+                OnPropertyChanged(nameof(CanOpenOneDriveStatus));
                 OnPropertyChanged(nameof(StatusText));
             }
         }
@@ -140,6 +143,29 @@ public sealed class WindowsMainWindowViewModel : INotifyPropertyChanged
 
     public bool CanRunQuery => !IsLoading && !IsRefreshing && !string.IsNullOrWhiteSpace(RepoPath);
 
+    public bool CanOpenOneDriveStatus
+    {
+        get
+        {
+            return !IsLoading
+                && !IsRefreshing
+                && OneDriveStatusRoute is not null;
+        }
+    }
+
+    public WindowsRepositoryRoute? OneDriveStatusRoute
+    {
+        get
+        {
+            if (currentRoute is not { CloudStorageState.ProviderKind: WindowsCloudStorageProviderKind.OneDrive })
+            {
+                return null;
+            }
+
+            return currentRoute with { Kind = WindowsRepositoryRouteKind.OneDriveNotice };
+        }
+    }
+
     public string SelectedFileTitle => SelectedFile?.DisplayName ?? "No file selected";
 
     public string SelectedFilePath => SelectedFile?.Path ?? "Select a file to view metadata.";
@@ -174,10 +200,13 @@ public sealed class WindowsMainWindowViewModel : INotifyPropertyChanged
         WindowsRepositoryRoute route,
         CancellationToken cancellationToken = default)
     {
+        currentRoute = route;
         RepoPath = route.RepoPath;
         RepoName = RepositoryName(route.RepoPath);
         SearchQuery = string.Empty;
         SelectedCategory = null;
+        OnPropertyChanged(nameof(CanOpenOneDriveStatus));
+        OnPropertyChanged(nameof(OneDriveStatusRoute));
         await LoadSnapshotAsync(isInitialLoad: true, cancellationToken);
     }
 

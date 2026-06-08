@@ -363,6 +363,14 @@ internal static class TestAssert
         }
     }
 
+    public static void DoesNotContain(string unexpectedSubstring, string actual, string label)
+    {
+        if (actual.Contains(unexpectedSubstring, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"{label}: unexpected `{unexpectedSubstring}`.");
+        }
+    }
+
     public static void Null<T>(T? actual, string label)
     {
         if (actual is not null)
