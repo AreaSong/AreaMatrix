@@ -8,6 +8,23 @@ public interface ILinuxWatcherStatusCoreBridge
         string repoPath,
         LinuxWatcherStatusHealthSignal signal,
         CancellationToken cancellationToken = default);
+
+    Task<LinuxManualRescanPreviewReport> PreviewManualRescanAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task<LinuxScanSession?> GetLatestScanSessionAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task<LinuxReindexReport> ReindexFromFilesystemAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task<LinuxReindexReport> ResumeScanSessionAsync(
+        string repoPath,
+        long scanSessionId,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IAreaMatrixLinuxWatcherStatusCoreClient
@@ -15,6 +32,23 @@ public interface IAreaMatrixLinuxWatcherStatusCoreClient
     Task<CoreLinuxWatcherStatusSnapshot> RecordWatcherHealthAsync(
         string repoPath,
         CoreLinuxWatcherStatusHealthSignal signal,
+        CancellationToken cancellationToken = default);
+
+    Task<CoreLinuxManualRescanPreviewReport> PreviewManualRescanAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task<CoreLinuxScanSession?> GetLatestScanSessionAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task<CoreLinuxReindexReport> ReindexFromFilesystemAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task<CoreLinuxReindexReport> ResumeScanSessionAsync(
+        string repoPath,
+        long scanSessionId,
         CancellationToken cancellationToken = default);
 }
 
@@ -36,6 +70,47 @@ public sealed class LinuxWatcherStatusCoreBridge : ILinuxWatcherStatusCoreBridge
             .RecordWatcherHealthAsync(repoPath, signal.ToCoreSignal(), cancellationToken)
             .ConfigureAwait(false);
         return snapshot.ToLinuxSnapshot();
+    }
+
+    public async Task<LinuxManualRescanPreviewReport> PreviewManualRescanAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        CoreLinuxManualRescanPreviewReport report = await coreClient
+            .PreviewManualRescanAsync(repoPath, cancellationToken)
+            .ConfigureAwait(false);
+        return report.ToLinuxManualRescanPreviewReport();
+    }
+
+    public async Task<LinuxScanSession?> GetLatestScanSessionAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        CoreLinuxScanSession? session = await coreClient
+            .GetLatestScanSessionAsync(repoPath, cancellationToken)
+            .ConfigureAwait(false);
+        return session?.ToLinuxScanSession();
+    }
+
+    public async Task<LinuxReindexReport> ReindexFromFilesystemAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        CoreLinuxReindexReport report = await coreClient
+            .ReindexFromFilesystemAsync(repoPath, cancellationToken)
+            .ConfigureAwait(false);
+        return report.ToLinuxReindexReport();
+    }
+
+    public async Task<LinuxReindexReport> ResumeScanSessionAsync(
+        string repoPath,
+        long scanSessionId,
+        CancellationToken cancellationToken = default)
+    {
+        CoreLinuxReindexReport report = await coreClient
+            .ResumeScanSessionAsync(repoPath, scanSessionId, cancellationToken)
+            .ConfigureAwait(false);
+        return report.ToLinuxReindexReport();
     }
 }
 
@@ -77,6 +152,65 @@ public sealed record CoreLinuxWatcherStatusSnapshot(
     IReadOnlyList<string> HealthReasons,
     IReadOnlyList<CoreLinuxWatcherStatusEventSample> RecentEvents,
     long ReportedAt);
+
+public sealed record CoreLinuxManualRescanPreviewItem(
+    string Kind,
+    string RelativePath,
+    string Reason,
+    string SuggestedAction);
+
+public sealed record CoreLinuxManualRescanPreviewReport(
+    long Added,
+    long Updated,
+    long MissingOrDeletedFromFs,
+    long RenamedCandidates,
+    long Conflicts,
+    long Unreadable,
+    long Unknown,
+    long Skipped,
+    string SnapshotId,
+    long CreatedAt,
+    bool IsStale,
+    IReadOnlyList<CoreLinuxManualRescanPreviewItem> Items);
+
+public sealed record CoreLinuxReindexReport(
+    long? ScanSessionId,
+    long Inserted,
+    long Updated,
+    long Missing,
+    long Conflicts,
+    long Unreadable,
+    long Unknown,
+    long Skipped,
+    IReadOnlyList<string> Errors);
+
+public sealed record LinuxReindexReport(
+    long? ScanSessionId,
+    long Inserted,
+    long Updated,
+    long Missing,
+    long Conflicts,
+    long Unreadable,
+    long Unknown,
+    long Skipped,
+    IReadOnlyList<string> Errors);
+
+public sealed record CoreLinuxScanSession(
+    long Id,
+    string Kind,
+    string Status,
+    string? LastPath,
+    long Inserted,
+    long Updated,
+    long Missing,
+    long Conflicts,
+    long Unreadable,
+    long Unknown,
+    long Skipped,
+    long StartedAt,
+    long UpdatedAt,
+    long? FinishedAt,
+    IReadOnlyList<string> Errors);
 
 internal static class LinuxWatcherStatusCoreMapping
 {
@@ -121,6 +255,58 @@ internal static class LinuxWatcherStatusCoreMapping
             snapshot.ReportedAt);
     }
 
+    public static LinuxManualRescanPreviewReport ToLinuxManualRescanPreviewReport(
+        this CoreLinuxManualRescanPreviewReport report)
+    {
+        return new LinuxManualRescanPreviewReport(
+            report.Added,
+            report.Updated,
+            report.MissingOrDeletedFromFs,
+            report.RenamedCandidates,
+            report.Conflicts,
+            report.Unreadable,
+            report.Unknown,
+            report.Skipped,
+            report.SnapshotId,
+            report.CreatedAt,
+            report.IsStale,
+            report.Items.Select(item => item.ToLinuxManualRescanPreviewItem()).ToArray());
+    }
+
+    public static LinuxReindexReport ToLinuxReindexReport(this CoreLinuxReindexReport report)
+    {
+        return new LinuxReindexReport(
+            report.ScanSessionId,
+            report.Inserted,
+            report.Updated,
+            report.Missing,
+            report.Conflicts,
+            report.Unreadable,
+            report.Unknown,
+            report.Skipped,
+            report.Errors);
+    }
+
+    public static LinuxScanSession ToLinuxScanSession(this CoreLinuxScanSession session)
+    {
+        return new LinuxScanSession(
+            session.Id,
+            ParseScanSessionKind(session.Kind),
+            ParseScanSessionStatus(session.Status),
+            session.LastPath,
+            session.Inserted,
+            session.Updated,
+            session.Missing,
+            session.Conflicts,
+            session.Unreadable,
+            session.Unknown,
+            session.Skipped,
+            session.StartedAt,
+            session.UpdatedAt,
+            session.FinishedAt,
+            session.Errors);
+    }
+
     private static CoreLinuxWatcherStatusEventSample ToCoreEventSample(
         this LinuxWatcherStatusEventSample eventSample)
     {
@@ -139,6 +325,16 @@ internal static class LinuxWatcherStatusCoreMapping
             ParseEventKind(eventSample.Kind),
             eventSample.EventId,
             eventSample.OccurredAt);
+    }
+
+    private static LinuxManualRescanPreviewItem ToLinuxManualRescanPreviewItem(
+        this CoreLinuxManualRescanPreviewItem item)
+    {
+        return new LinuxManualRescanPreviewItem(
+            ParseManualRescanPreviewItemKind(item.Kind),
+            item.RelativePath,
+            item.Reason,
+            item.SuggestedAction);
     }
 
     private static string ToCoreBackend(this LinuxWatcherStatusBackend backend)
@@ -242,6 +438,45 @@ internal static class LinuxWatcherStatusCoreMapping
             "Modified" => LinuxWatcherStatusEventKind.Modified,
             "Renamed" => LinuxWatcherStatusEventKind.Renamed,
             _ => throw UnsupportedValue("watcher event kind", value)
+        };
+    }
+
+    private static LinuxManualRescanPreviewItemKind ParseManualRescanPreviewItemKind(string value)
+    {
+        return value switch
+        {
+            "Added" => LinuxManualRescanPreviewItemKind.Added,
+            "Updated" => LinuxManualRescanPreviewItemKind.Updated,
+            "Missing" => LinuxManualRescanPreviewItemKind.Missing,
+            "RenamedCandidate" => LinuxManualRescanPreviewItemKind.RenamedCandidate,
+            "Conflict" => LinuxManualRescanPreviewItemKind.Conflict,
+            "Unreadable" => LinuxManualRescanPreviewItemKind.Unreadable,
+            "Unknown" => LinuxManualRescanPreviewItemKind.Unknown,
+            "Skipped" => LinuxManualRescanPreviewItemKind.Skipped,
+            _ => throw UnsupportedValue("manual rescan item kind", value)
+        };
+    }
+
+    private static LinuxScanSessionKind ParseScanSessionKind(string value)
+    {
+        return value switch
+        {
+            "Adopt" => LinuxScanSessionKind.Adopt,
+            "Reindex" => LinuxScanSessionKind.Reindex,
+            _ => throw UnsupportedValue("scan session kind", value)
+        };
+    }
+
+    private static LinuxScanSessionStatus ParseScanSessionStatus(string value)
+    {
+        return value switch
+        {
+            "Running" => LinuxScanSessionStatus.Running,
+            "Completed" => LinuxScanSessionStatus.Completed,
+            "Paused" => LinuxScanSessionStatus.Paused,
+            "Failed" => LinuxScanSessionStatus.Failed,
+            "Interrupted" => LinuxScanSessionStatus.Interrupted,
+            _ => throw UnsupportedValue("scan session status", value)
         };
     }
 

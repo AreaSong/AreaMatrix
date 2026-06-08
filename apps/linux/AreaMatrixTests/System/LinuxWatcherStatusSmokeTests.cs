@@ -6,12 +6,12 @@ public static class LinuxWatcherStatusSmokeTests
 {
     public static void RunAll()
     {
-        WatcherStatusPageExposesC412UserTriggers();
+        WatcherStatusPageExposesC419ManualRescanHandoff();
         LinuxDesktopShellWiresWatcherStatusToRealCoreBridge();
-        NativeClientBindsOnlyC412WatcherStatusContract();
+        NativeClientBindsC419ManualRescanCoreContracts();
     }
 
-    private static void WatcherStatusPageExposesC412UserTriggers()
+    private static void WatcherStatusPageExposesC419ManualRescanHandoff()
     {
         string ui = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Features/System/WatcherStatusView.ui"));
@@ -19,6 +19,8 @@ public static class LinuxWatcherStatusSmokeTests
             "apps/linux/AreaMatrix/Features/System/LinuxWatcherStatusView.cs"));
         string viewModel = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Features/System/LinuxWatcherStatusViewModel.cs"));
+        string rescanViewModel = File.ReadAllText(RepositoryPath(
+            "apps/linux/AreaMatrix/Features/System/LinuxWatcherStatusViewModel.Rescan.cs"));
         string diagnostics = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Features/System/LinuxWatcherDiagnostics.cs"));
 
@@ -36,8 +38,9 @@ public static class LinuxWatcherStatusSmokeTests
             "run_rescan_now: LinuxWatcherStatusView.RunRescanNow",
             "export_diagnostics: LinuxWatcherStatusViewModel.ExportDiagnosticsAsync",
             "The page calls record_watcher_health through LinuxWatcherStatusCoreBridge.",
-            "Run rescan now only raises OpenRescanConfirmRequested for S4-X-07 and never calls reindex.",
-            "The page does not call sync_external_changes, set_fs_event_cursor, preview_manual_rescan, reindex_from_filesystem, or resume_scan_session.",
+            "Run rescan now calls get_latest_scan_session and preview_manual_rescan before raising S4-X-07.",
+            "Run rescan now raises OpenRescanConfirmRequested with LinuxRescanConfirmRequest for S4-X-07 and never calls reindex directly.",
+            "The page does not call sync_external_changes, set_fs_event_cursor, reindex_from_filesystem, or resume_scan_session.",
             "The page never runs sudo, chmod, or modifies system inotify settings."
         })
         {
@@ -47,8 +50,12 @@ public static class LinuxWatcherStatusSmokeTests
         TestAssert.Contains("OpenRouteAsync", view, "watcher status route load");
         TestAssert.Contains("RestartWatcherAsync", view, "restart watcher trigger");
         TestAssert.Contains("OpenRescanConfirmRequested", view, "rescan confirmation handoff");
+        TestAssert.Contains("LinuxRescanConfirmRequest", view, "rescan request includes preview");
         TestAssert.Contains("CanRequestRescanConfirm", view, "rescan handoff guard");
         TestAssert.Contains("RecordWatcherHealthAsync", viewModel, "C4-12 CoreBridge call");
+        TestAssert.Contains("PrepareRescanConfirmAsync", rescanViewModel, "C4-19 preview preparation");
+        TestAssert.Contains("PreviewManualRescanAsync", rescanViewModel, "C4-19 preview call");
+        TestAssert.Contains("GetLatestScanSessionAsync", rescanViewModel, "C4-19 latest session call");
         TestAssert.Contains("CaptureSnapshotAsync", viewModel, "platform snapshot capture");
         TestAssert.Contains("RestartWatcherAsync", diagnostics, "explicit watcher restart");
         TestAssert.Contains("ExportDiagnosticsAsync", diagnostics, "diagnostics export");
@@ -58,7 +65,8 @@ public static class LinuxWatcherStatusSmokeTests
         TestAssert.NotContains("chmod", diagnostics, "no chmod");
         TestAssert.NotContains("sync_external_changes", viewModel, "C4-12 must not sync events");
         TestAssert.NotContains("set_fs_event_cursor", viewModel, "C4-12 must not advance cursor");
-        TestAssert.NotContains("ReindexFromFilesystem", view, "watcher handoff must not run rescan");
+        TestAssert.NotContains("ReindexFromFilesystemAsync", view, "watcher handoff must not run rescan");
+        TestAssert.NotContains("ResumeScanSessionAsync", view, "watcher handoff must not resume rescan");
     }
 
     private static void LinuxDesktopShellWiresWatcherStatusToRealCoreBridge()
@@ -77,7 +85,7 @@ public static class LinuxWatcherStatusSmokeTests
         TestAssert.NotContains("FakeLinuxWatcherStatusCoreBridge", shell, "no fake watcher bridge in production shell");
     }
 
-    private static void NativeClientBindsOnlyC412WatcherStatusContract()
+    private static void NativeClientBindsC419ManualRescanCoreContracts()
     {
         string nativeLibrary = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Core/NativeCoreLibrary.cs"));
@@ -98,18 +106,40 @@ public static class LinuxWatcherStatusSmokeTests
             "uniffi_area_matrix_core_checksum_func_record_watcher_health",
             nativeLibrary,
             "record_watcher_health checksum");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_preview_manual_rescan",
+            nativeLibrary,
+            "preview_manual_rescan native binding");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_reindex_from_filesystem",
+            nativeLibrary,
+            "reindex_from_filesystem native binding");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_get_latest_scan_session",
+            nativeLibrary,
+            "get_latest_scan_session native binding");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_resume_scan_session",
+            nativeLibrary,
+            "resume_scan_session native binding");
         TestAssert.Contains("RecordWatcherHealthDelegate", nativeInterop, "record watcher delegate");
+        TestAssert.Contains("PreviewManualRescanDelegate", nativeInterop, "preview rescan delegate");
+        TestAssert.Contains("GetLatestScanSessionDelegate", nativeInterop, "latest scan session delegate");
         TestAssert.Contains("RecordWatcherHealthChecksum = 47455", nativeClient, "record watcher checksum");
+        TestAssert.Contains("PreviewManualRescanChecksum = 12140", nativeClient, "preview rescan checksum");
+        TestAssert.Contains("GetLatestScanSessionChecksum = 31155", nativeClient, "latest scan session checksum");
         TestAssert.Contains("IAreaMatrixLinuxWatcherStatusCoreClient", nativeClient, "native client interface");
         TestAssert.Contains("RecordWatcherHealthAsync", watcherClient, "CoreBridge watcher call");
+        TestAssert.Contains("PreviewManualRescanAsync", watcherClient, "CoreBridge preview call");
+        TestAssert.Contains("GetLatestScanSessionAsync", watcherClient, "CoreBridge latest scan session call");
+        TestAssert.Contains("ResumeScanSessionAsync", watcherClient, "CoreBridge resume call");
         TestAssert.Contains("LowerWatcherHealthSignal", watcherClient, "watcher signal lowering");
         TestAssert.Contains("ReadWatcherStatusSnapshot", watcherClient, "watcher snapshot reading");
+        TestAssert.Contains("ReadManualRescanPreviewReport", watcherClient, "rescan preview reading");
+        TestAssert.Contains("ReadScanSession", watcherClient, "scan session reading");
         TestAssert.Contains("LinuxWatcherStatusBackend.Inotify", watcherBridge, "Linux inotify backend mapping");
         TestAssert.NotContains("sync_external_changes", watcherClient, "C4-12 must not consume sync API");
         TestAssert.NotContains("set_fs_event_cursor", watcherClient, "C4-12 must not advance cursor");
-        TestAssert.NotContains("preview_manual_rescan", nativeLibrary, "out-of-scope C4-19 preview binding");
-        TestAssert.NotContains("reindex_from_filesystem", nativeLibrary, "out-of-scope C4-19 rescan binding");
-        TestAssert.NotContains("resume_scan_session", nativeLibrary, "out-of-scope C4-19 resume binding");
     }
 
     private static string RepositoryPath(string relativePath)

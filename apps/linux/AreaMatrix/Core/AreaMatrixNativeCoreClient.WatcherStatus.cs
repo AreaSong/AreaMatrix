@@ -5,6 +5,60 @@ namespace AreaMatrix.Linux.Core;
 
 public sealed partial class AreaMatrixNativeCoreClient
 {
+    public Task<CoreLinuxManualRescanPreviewReport> PreviewManualRescanAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        CoreLinuxManualRescanPreviewReport report = CallWithResult(
+            (ref RustCallStatus status) => native.PreviewManualRescan(
+                LowerString(repoPath),
+                ref status),
+            ReadManualRescanPreviewReport);
+        return Task.FromResult(report);
+    }
+
+    public Task<CoreLinuxReindexReport> ReindexFromFilesystemAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        CoreLinuxReindexReport report = CallWithResult(
+            (ref RustCallStatus status) => native.ReindexFromFilesystem(
+                LowerString(repoPath),
+                ref status),
+            ReadReindexReport);
+        return Task.FromResult(report);
+    }
+
+    public Task<CoreLinuxScanSession?> GetLatestScanSessionAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        CoreLinuxScanSession? session = CallWithResult(
+            (ref RustCallStatus status) => native.GetLatestScanSession(
+                LowerString(repoPath),
+                ref status),
+            ReadOptionalScanSession);
+        return Task.FromResult(session);
+    }
+
+    public Task<CoreLinuxReindexReport> ResumeScanSessionAsync(
+        string repoPath,
+        long scanSessionId,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        CoreLinuxReindexReport report = CallWithResult(
+            (ref RustCallStatus status) => native.ResumeScanSession(
+                LowerString(repoPath),
+                scanSessionId,
+                ref status),
+            ReadReindexReport);
+        return Task.FromResult(report);
+    }
+
     public Task<CoreLinuxWatcherStatusSnapshot> RecordWatcherHealthAsync(
         string repoPath,
         CoreLinuxWatcherStatusHealthSignal signal,
@@ -18,6 +72,84 @@ public sealed partial class AreaMatrixNativeCoreClient
                 ref status),
             ReadWatcherStatusSnapshot);
         return Task.FromResult(snapshot);
+    }
+
+    private CoreLinuxManualRescanPreviewReport ReadManualRescanPreviewReport(UniFfiReader reader)
+    {
+        return new CoreLinuxManualRescanPreviewReport(
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadString(),
+            reader.ReadInt64(),
+            reader.ReadBool(),
+            ReadManualRescanPreviewItems(reader));
+    }
+
+    private IReadOnlyList<CoreLinuxManualRescanPreviewItem> ReadManualRescanPreviewItems(
+        UniFfiReader reader)
+    {
+        int count = reader.ReadInt32();
+        List<CoreLinuxManualRescanPreviewItem> items = new(count);
+        for (int index = 0; index < count; index += 1)
+        {
+            items.Add(new CoreLinuxManualRescanPreviewItem(
+                ReadManualRescanPreviewItemKind(reader),
+                reader.ReadString(),
+                reader.ReadString(),
+                reader.ReadString()));
+        }
+
+        return items;
+    }
+
+    private CoreLinuxReindexReport ReadReindexReport(UniFfiReader reader)
+    {
+        return new CoreLinuxReindexReport(
+            ReadOptionalInt64(reader),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            ReadStrings(reader));
+    }
+
+    private CoreLinuxScanSession? ReadOptionalScanSession(UniFfiReader reader)
+    {
+        return reader.ReadByte() switch
+        {
+            0 => null,
+            1 => ReadScanSession(reader),
+            _ => throw BindingConfigError("AreaMatrix Core returned an invalid scan session optional tag.")
+        };
+    }
+
+    private CoreLinuxScanSession ReadScanSession(UniFfiReader reader)
+    {
+        return new CoreLinuxScanSession(
+            reader.ReadInt64(),
+            ReadScanSessionKind(reader),
+            ReadScanSessionStatus(reader),
+            ReadOptionalString(reader),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            reader.ReadInt64(),
+            ReadOptionalInt64(reader),
+            ReadStrings(reader));
     }
 
     private CoreLinuxWatcherStatusSnapshot ReadWatcherStatusSnapshot(UniFfiReader reader)
@@ -67,6 +199,18 @@ public sealed partial class AreaMatrixNativeCoreClient
         }
 
         return reasons;
+    }
+
+    private static IReadOnlyList<string> ReadStrings(UniFfiReader reader)
+    {
+        int count = reader.ReadInt32();
+        List<string> values = new(count);
+        for (int index = 0; index < count; index += 1)
+        {
+            values.Add(reader.ReadString());
+        }
+
+        return values;
     }
 
     private RustBuffer LowerWatcherHealthSignal(CoreLinuxWatcherStatusHealthSignal signal)
@@ -161,6 +305,45 @@ public sealed partial class AreaMatrixNativeCoreClient
             7 => "CloudSyncNoise",
             8 => "Unknown",
             _ => throw BindingConfigError("AreaMatrix Core returned an unknown watcher health reason.")
+        };
+    }
+
+    private static string ReadManualRescanPreviewItemKind(UniFfiReader reader)
+    {
+        return reader.ReadInt32() switch
+        {
+            1 => "Added",
+            2 => "Updated",
+            3 => "Missing",
+            4 => "RenamedCandidate",
+            5 => "Conflict",
+            6 => "Unreadable",
+            7 => "Unknown",
+            8 => "Skipped",
+            _ => throw BindingConfigError("AreaMatrix Core returned an unknown manual rescan item kind.")
+        };
+    }
+
+    private static string ReadScanSessionKind(UniFfiReader reader)
+    {
+        return reader.ReadInt32() switch
+        {
+            1 => "Adopt",
+            2 => "Reindex",
+            _ => throw BindingConfigError("AreaMatrix Core returned an unknown scan session kind.")
+        };
+    }
+
+    private static string ReadScanSessionStatus(UniFfiReader reader)
+    {
+        return reader.ReadInt32() switch
+        {
+            1 => "Running",
+            2 => "Completed",
+            3 => "Paused",
+            4 => "Failed",
+            5 => "Interrupted",
+            _ => throw BindingConfigError("AreaMatrix Core returned an unknown scan session status.")
         };
     }
 

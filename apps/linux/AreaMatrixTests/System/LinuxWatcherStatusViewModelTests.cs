@@ -10,7 +10,8 @@ public static class LinuxWatcherStatusViewModelTests
     {
         await OpeningWatcherStatusRecordsInotifySnapshotThroughCoreBridge();
         await RestartWatcherRecordsUpdatedSnapshot();
-        await RunRescanNowOnlyRaisesConfirmationHandoff();
+        await RunRescanNowPreviewsCoreImpactBeforeConfirmationHandoff();
+        await RunningScanSessionDisablesSecondRescanPreview();
         await StartingSnapshotDisablesRestartAndRescanHandoff();
         await MissingPathMapsToRecoveryTextAndDisablesRescanEntry();
         await DatabaseLockedSnapshotDisablesRescanHandoff();
@@ -32,6 +33,7 @@ public static class LinuxWatcherStatusViewModelTests
         TestAssert.SequenceEqual([path], diagnostics.CapturedPaths, nameof(diagnostics.CapturedPaths));
         TestAssert.Empty(diagnostics.RestartedPaths, nameof(diagnostics.RestartedPaths));
         TestAssert.SequenceEqual([path], bridge.RecordedRepoPaths, nameof(bridge.RecordedRepoPaths));
+        TestAssert.SequenceEqual([path], bridge.LatestScanSessionRequests, nameof(bridge.LatestScanSessionRequests));
         TestAssert.Equal(LinuxWatcherStatusBackend.Inotify, model.Snapshot?.Backend, "backend");
         TestAssert.Equal(LinuxWatcherStatusKind.Running, model.Snapshot?.Status, "snapshot status");
         TestAssert.True(model.CanRestartWatcher, nameof(model.CanRestartWatcher));
@@ -55,23 +57,74 @@ public static class LinuxWatcherStatusViewModelTests
 
         TestAssert.SequenceEqual([path], diagnostics.RestartedPaths, nameof(diagnostics.RestartedPaths));
         TestAssert.Equal(2, bridge.RecordedSignals.Count, "recorded signals");
+        TestAssert.SequenceEqual([path, path], bridge.LatestScanSessionRequests, nameof(bridge.LatestScanSessionRequests));
         TestAssert.Equal(LinuxWatcherStatusKind.Running, model.Snapshot?.Status, "snapshot status");
+        TestAssert.Empty(bridge.PreviewManualRescanRequests, nameof(bridge.PreviewManualRescanRequests));
     }
 
-    private static async Task RunRescanNowOnlyRaisesConfirmationHandoff()
+    private static async Task RunRescanNowPreviewsCoreImpactBeforeConfirmationHandoff()
     {
         const string path = "/home/me/AreaMatrix";
+        FakeLinuxWatcherStatusCoreBridge bridge = new()
+        {
+            PreviewReport = new LinuxManualRescanPreviewReport(
+                Added: 2,
+                Updated: 1,
+                MissingOrDeletedFromFs: 1,
+                RenamedCandidates: 0,
+                Conflicts: 1,
+                Unreadable: 0,
+                Unknown: 1,
+                Skipped: 3,
+                SnapshotId: "preview-1",
+                CreatedAt: 1_700_000_040,
+                IsStale: false,
+                Items: [new LinuxManualRescanPreviewItem(
+                    LinuxManualRescanPreviewItemKind.Missing,
+                    "docs/missing.pdf",
+                    "file not found",
+                    "review missing")])
+        };
         LinuxWatcherStatusView view = new(new LinuxWatcherStatusViewModel(
-            new FakeLinuxWatcherStatusCoreBridge(),
+            bridge,
             new FakeLinuxWatcherDiagnostics(RunningSignal(path))));
-        List<LinuxRepositoryRoute> requestedRoutes = [];
-        view.OpenRescanConfirmRequested += route => requestedRoutes.Add(route);
+        List<LinuxRescanConfirmRequest> requests = [];
+        view.OpenRescanConfirmRequested += request => requests.Add(request);
 
         await view.OpenRouteAsync(Route(path));
-        bool requested = view.RunRescanNow();
+        bool requested = await view.RunRescanNow();
 
         TestAssert.True(requested, nameof(requested));
-        TestAssert.SequenceEqual([path], requestedRoutes.Select(route => route.RepoPath).ToArray(), "rescan route");
+        TestAssert.SequenceEqual([path, path], bridge.LatestScanSessionRequests, nameof(bridge.LatestScanSessionRequests));
+        TestAssert.SequenceEqual([path], bridge.PreviewManualRescanRequests, nameof(bridge.PreviewManualRescanRequests));
+        TestAssert.Empty(bridge.ReindexRequests, nameof(bridge.ReindexRequests));
+        TestAssert.Empty(bridge.ResumeScanSessionRequests, nameof(bridge.ResumeScanSessionRequests));
+        TestAssert.SequenceEqual([path], requests.Select(request => request.Route.RepoPath).ToArray(), "rescan route");
+        TestAssert.Contains("Added 2", view.ViewModel.RescanPreviewText, nameof(view.ViewModel.RescanPreviewText));
+        TestAssert.True(requests.Single().Preview.HasNeedsReview, "preview needs review");
+    }
+
+    private static async Task RunningScanSessionDisablesSecondRescanPreview()
+    {
+        const string path = "/home/me/AreaMatrix";
+        FakeLinuxWatcherStatusCoreBridge bridge = new()
+        {
+            LatestScanSession = RunningReindexSession()
+        };
+        LinuxWatcherStatusView view = new(new LinuxWatcherStatusViewModel(
+            bridge,
+            new FakeLinuxWatcherDiagnostics(RunningSignal(path))));
+        bool handoffRaised = false;
+        view.OpenRescanConfirmRequested += _ => handoffRaised = true;
+
+        await view.OpenRouteAsync(Route(path));
+        bool requested = await view.RunRescanNow();
+
+        TestAssert.False(view.ViewModel.CanOpenRescanConfirm, nameof(view.ViewModel.CanOpenRescanConfirm));
+        TestAssert.False(requested, nameof(requested));
+        TestAssert.False(handoffRaised, nameof(handoffRaised));
+        TestAssert.Contains("already running", view.ViewModel.RescanDisabledReason, nameof(view.ViewModel.RescanDisabledReason));
+        TestAssert.Empty(bridge.PreviewManualRescanRequests, nameof(bridge.PreviewManualRescanRequests));
     }
 
     private static async Task StartingSnapshotDisablesRestartAndRescanHandoff()
@@ -84,7 +137,7 @@ public static class LinuxWatcherStatusViewModelTests
         view.OpenRescanConfirmRequested += _ => handoffRaised = true;
 
         await view.OpenRouteAsync(Route(path));
-        bool requested = view.RunRescanNow();
+        bool requested = await view.RunRescanNow();
 
         TestAssert.Equal(LinuxWatcherStatusKind.Starting, view.ViewModel.Snapshot?.Status, "snapshot status");
         TestAssert.False(view.ViewModel.CanRestartWatcher, nameof(view.ViewModel.CanRestartWatcher));
@@ -117,14 +170,16 @@ public static class LinuxWatcherStatusViewModelTests
             HealthReasons = [LinuxWatcherStatusReason.DatabaseLocked],
             ErrorSummary = "Repository database is locked."
         };
+        FakeLinuxWatcherStatusCoreBridge bridge = new();
         LinuxWatcherStatusViewModel model = new(
-            new FakeLinuxWatcherStatusCoreBridge(),
+            bridge,
             new FakeLinuxWatcherDiagnostics(signal));
 
         await model.OpenRouteAsync(Route(path));
 
         TestAssert.False(model.CanOpenRescanConfirm, nameof(model.CanOpenRescanConfirm));
         TestAssert.Contains("database lock", model.RescanDisabledReason, nameof(model.RescanDisabledReason));
+        TestAssert.Empty(bridge.PreviewManualRescanRequests, nameof(bridge.PreviewManualRescanRequests));
     }
 
     private static async Task LimitExceededAndNetworkMountRenderLinuxRecoveryGuidance()
@@ -261,105 +316,24 @@ public static class LinuxWatcherStatusViewModelTests
             ErrorSummary = "Repository path is missing or disconnected."
         };
     }
-}
 
-internal sealed class FakeLinuxWatcherStatusCoreBridge : ILinuxWatcherStatusCoreBridge
-{
-    public List<string> RecordedRepoPaths { get; } = [];
-
-    public List<LinuxWatcherStatusHealthSignal> RecordedSignals { get; } = [];
-
-    public Exception? Error { get; set; }
-
-    public Task<LinuxWatcherStatusSnapshot> RecordWatcherHealthAsync(
-        string repoPath,
-        LinuxWatcherStatusHealthSignal signal,
-        CancellationToken cancellationToken = default)
+    private static LinuxScanSession RunningReindexSession()
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (Error is not null)
-        {
-            throw Error;
-        }
-
-        RecordedRepoPaths.Add(repoPath);
-        RecordedSignals.Add(signal);
-        return Task.FromResult(new LinuxWatcherStatusSnapshot(
-            repoPath,
-            signal.Backend,
-            signal.Status,
-            signal.WatchedPath,
-            signal.LastEventId,
-            signal.LastEventAt,
-            signal.LastSyncEventId,
-            signal.LastSyncAt,
-            signal.LastRescanAt,
-            signal.PendingEventCount,
-            signal.WatchCount,
-            signal.ErrorSummary,
-            signal.HealthReasons,
-            signal.RecentEvents,
-            signal.ReportedAt));
-    }
-}
-
-internal sealed class FakeLinuxWatcherDiagnostics : ILinuxWatcherDiagnostics
-{
-    private readonly LinuxWatcherStatusHealthSignal captureSignal;
-
-    public FakeLinuxWatcherDiagnostics(LinuxWatcherStatusHealthSignal captureSignal)
-    {
-        this.captureSignal = captureSignal;
-    }
-
-    public LinuxWatcherStatusHealthSignal? RestartSignal { get; set; }
-
-    public List<string> CapturedPaths { get; } = [];
-
-    public List<string> RestartedPaths { get; } = [];
-
-    public List<string> ExportedPaths { get; } = [];
-
-    public List<LinuxWatcherStatusSnapshot> ExportedSnapshots { get; } = [];
-
-    public List<string> OpenedFolders { get; } = [];
-
-    public Task<LinuxWatcherStatusHealthSignal> CaptureSnapshotAsync(
-        string repoPath,
-        CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        CapturedPaths.Add(repoPath);
-        return Task.FromResult(captureSignal);
-    }
-
-    public Task<LinuxWatcherStatusHealthSignal> RestartWatcherAsync(
-        string repoPath,
-        CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        RestartedPaths.Add(repoPath);
-        return Task.FromResult(RestartSignal ?? captureSignal);
-    }
-
-    public Task<string> ExportDiagnosticsAsync(
-        string repoPath,
-        LinuxWatcherStatusSnapshot snapshot,
-        CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        ExportedPaths.Add(repoPath);
-        ExportedSnapshots.Add(snapshot);
-        return Task.FromResult(
-            $"{repoPath}/.areamatrix/generated/diagnostics/watcher-status.txt");
-    }
-
-    public Task OpenRepositoryFolderAsync(
-        string repoPath,
-        CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        OpenedFolders.Add(repoPath);
-        return Task.CompletedTask;
+        return new LinuxScanSession(
+            Id: 7,
+            Kind: LinuxScanSessionKind.Reindex,
+            Status: LinuxScanSessionStatus.Running,
+            LastPath: "docs/contract.pdf",
+            Inserted: 1,
+            Updated: 2,
+            Missing: 0,
+            Conflicts: 0,
+            Unreadable: 0,
+            Unknown: 0,
+            Skipped: 0,
+            StartedAt: 1_700_000_000,
+            UpdatedAt: 1_700_000_010,
+            FinishedAt: null,
+            Errors: []);
     }
 }

@@ -20,6 +20,10 @@ public sealed partial class AreaMatrixNativeCoreClient :
     private const ushort ListTreeJsonChecksum = 45468;
     private const ushort SearchFilesChecksum = 65;
     private const ushort RecordWatcherHealthChecksum = 47455;
+    private const ushort PreviewManualRescanChecksum = 12140;
+    private const ushort ReindexFromFilesystemChecksum = 54635;
+    private const ushort GetLatestScanSessionChecksum = 31155;
+    private const ushort ResumeScanSessionChecksum = 31216;
 
     private readonly NativeCoreLibrary native;
     private bool disposed;
@@ -84,7 +88,11 @@ public sealed partial class AreaMatrixNativeCoreClient :
             || native.ListFilesChecksum() != ListFilesChecksum
             || native.ListTreeJsonChecksum() != ListTreeJsonChecksum
             || native.SearchFilesChecksum() != SearchFilesChecksum
-            || native.RecordWatcherHealthChecksum() != RecordWatcherHealthChecksum)
+            || native.RecordWatcherHealthChecksum() != RecordWatcherHealthChecksum
+            || native.PreviewManualRescanChecksum() != PreviewManualRescanChecksum
+            || native.ReindexFromFilesystemChecksum() != ReindexFromFilesystemChecksum
+            || native.GetLatestScanSessionChecksum() != GetLatestScanSessionChecksum
+            || native.ResumeScanSessionChecksum() != ResumeScanSessionChecksum)
         {
             throw new LinuxRepositoryCoreException(
                 LinuxRepositoryErrorKind.Config,

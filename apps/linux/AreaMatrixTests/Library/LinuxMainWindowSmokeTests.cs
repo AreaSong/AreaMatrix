@@ -112,7 +112,10 @@ public static class LinuxMainWindowSmokeTests
         TestAssert.Contains("ReadSearchResultPage", queryClient, "search result reading");
         TestAssert.Contains("ReadFileAvailabilityStatus", queryClient, "missing badge reading");
         TestAssert.NotContains("RecordWatcherHealthAsync", mainWindow, "main window must not consume watcher health");
-        TestAssert.NotContains("reindex_from_filesystem", nativeLibrary, "out-of-scope rescan binding");
+        TestAssert.NotContains("ReindexFromFilesystemAsync", queryClient, "query client must not run rescan");
+        TestAssert.NotContains("PreviewManualRescanAsync", queryClient, "query client must not preview rescan");
+        TestAssert.NotContains("ResumeScanSessionAsync", queryClient, "query client must not resume rescan");
+        TestAssert.NotContains("ReindexFromFilesystemAsync", mainWindow, "main window must not run rescan");
     }
 
     private static string RepositoryPath(string relativePath)

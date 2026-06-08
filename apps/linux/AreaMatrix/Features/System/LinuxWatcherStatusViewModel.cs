@@ -4,7 +4,7 @@ using AreaMatrix.Linux.Features.Onboarding;
 
 namespace AreaMatrix.Linux.Features.System;
 
-public sealed class LinuxWatcherStatusViewModel : INotifyPropertyChanged
+public sealed partial class LinuxWatcherStatusViewModel : INotifyPropertyChanged
 {
     private readonly ILinuxWatcherStatusCoreBridge coreBridge;
     private readonly ILinuxWatcherDiagnostics diagnostics;
@@ -101,7 +101,7 @@ public sealed class LinuxWatcherStatusViewModel : INotifyPropertyChanged
 
     public IReadOnlyList<LinuxWatcherStatusEventSample> RecentEvents => Snapshot?.RecentEvents ?? [];
 
-    public bool IsBusy => IsLoading || IsRestarting || IsExporting;
+    public bool IsBusy => IsLoading || IsRestarting || IsPreparingRescan || IsExporting;
 
     public bool IsWatcherStarting => Snapshot?.Status == LinuxWatcherStatusKind.Starting;
 
@@ -115,20 +115,6 @@ public sealed class LinuxWatcherStatusViewModel : INotifyPropertyChanged
         && Snapshot is not null
         && !Snapshot.IsPathMissing
         && !string.IsNullOrWhiteSpace(RepoPath);
-
-    public bool CanOpenRescanConfirm
-    {
-        get
-        {
-            return !IsBusy
-                && Snapshot is not null
-                && !IsWatcherStarting
-                && Snapshot.PendingEventCount >= 0
-                && !Snapshot.IsPathMissing
-                && !Snapshot.HasDatabaseLock
-                && !Snapshot.IsBackendUnavailable;
-        }
-    }
 
     public bool HasRecentEvents => RecentEvents.Count > 0 && Snapshot?.IsBackendUnavailable != true;
 
@@ -151,6 +137,11 @@ public sealed class LinuxWatcherStatusViewModel : INotifyPropertyChanged
             if (IsExporting)
             {
                 return "Exporting diagnostics...";
+            }
+
+            if (IsPreparingRescan)
+            {
+                return "Preparing rescan preview...";
             }
 
             return Snapshot?.StatusText ?? "Status: Unavailable";
@@ -234,45 +225,14 @@ public sealed class LinuxWatcherStatusViewModel : INotifyPropertyChanged
         ? "This location may not report all file changes."
         : string.Empty;
 
-    public string RescanDisabledReason
-    {
-        get
-        {
-            if (IsBusy)
-            {
-                return "Checking watcher status...";
-            }
-
-            if (Snapshot is null || Snapshot.IsBackendUnavailable)
-            {
-                return "Watcher snapshot is unavailable.";
-            }
-
-            if (IsWatcherStarting)
-            {
-                return "Wait for the watcher to finish starting.";
-            }
-
-            if (Snapshot.IsPathMissing)
-            {
-                return "Reconnect the repository path before running a rescan.";
-            }
-
-            if (Snapshot.HasDatabaseLock)
-            {
-                return "Wait for the database lock to clear before running a rescan.";
-            }
-
-            return "Opens S4-X-07 rescan confirmation before scanning.";
-        }
-    }
-
     public async Task OpenRouteAsync(
         LinuxRepositoryRoute route,
         CancellationToken cancellationToken = default)
     {
         RepoPath = route.RepoPath;
         Snapshot = null;
+        RescanPreview = null;
+        LatestScanSession = null;
         Error = null;
         LastDiagnosticsExportPath = null;
         await RefreshAsync(cancellationToken).ConfigureAwait(false);
@@ -297,6 +257,9 @@ public sealed class LinuxWatcherStatusViewModel : INotifyPropertyChanged
                 .ConfigureAwait(false);
             Snapshot = await coreBridge
                 .RecordWatcherHealthAsync(RepoPath, signal, cancellationToken)
+                .ConfigureAwait(false);
+            LatestScanSession = await coreBridge
+                .GetLatestScanSessionAsync(RepoPath, cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -326,6 +289,9 @@ public sealed class LinuxWatcherStatusViewModel : INotifyPropertyChanged
             Snapshot = await coreBridge
                 .RecordWatcherHealthAsync(RepoPath, signal, cancellationToken)
                 .ConfigureAwait(false);
+            LatestScanSession = await coreBridge
+                .GetLatestScanSessionAsync(RepoPath, cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -335,11 +301,6 @@ public sealed class LinuxWatcherStatusViewModel : INotifyPropertyChanged
         {
             IsRestarting = false;
         }
-    }
-
-    public bool CanRequestRescanConfirm()
-    {
-        return CanOpenRescanConfirm;
     }
 
     public async Task<bool> ExportDiagnosticsAsync(CancellationToken cancellationToken = default)
@@ -449,6 +410,7 @@ public sealed class LinuxWatcherStatusViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(RecentEvents));
         OnPropertyChanged(nameof(IsBusy));
         OnPropertyChanged(nameof(IsWatcherStarting));
+        OnPropertyChanged(nameof(IsRescanRunning));
         OnPropertyChanged(nameof(CanRestartWatcher));
         OnPropertyChanged(nameof(CanExportDiagnostics));
         OnPropertyChanged(nameof(CanOpenRepositoryFolder));
@@ -463,6 +425,8 @@ public sealed class LinuxWatcherStatusViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(LastSyncText));
         OnPropertyChanged(nameof(LastRescanText));
         OnPropertyChanged(nameof(PendingEventsText));
+        OnPropertyChanged(nameof(RescanPreviewText));
+        OnPropertyChanged(nameof(LatestScanSessionText));
         OnPropertyChanged(nameof(SummaryText));
         OnPropertyChanged(nameof(RecoveryText));
         OnPropertyChanged(nameof(NetworkMountNoticeText));

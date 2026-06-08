@@ -9,7 +9,7 @@ public sealed class LinuxWatcherStatusView
         ViewModel = viewModel;
     }
 
-    public event Action<LinuxRepositoryRoute>? OpenRescanConfirmRequested;
+    public event Action<LinuxRescanConfirmRequest>? OpenRescanConfirmRequested;
 
     public event Action? CloseRequested;
 
@@ -30,14 +30,22 @@ public sealed class LinuxWatcherStatusView
         return ViewModel.RestartWatcherAsync(cancellationToken);
     }
 
-    public bool RunRescanNow()
+    public async Task<bool> RunRescanNow(CancellationToken cancellationToken = default)
     {
         if (Route is null || !ViewModel.CanRequestRescanConfirm())
         {
             return false;
         }
 
-        OpenRescanConfirmRequested?.Invoke(Route);
+        bool prepared = await ViewModel
+            .PrepareRescanConfirmAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (!prepared || ViewModel.RescanPreview is not { } preview)
+        {
+            return false;
+        }
+
+        OpenRescanConfirmRequested?.Invoke(new LinuxRescanConfirmRequest(Route, preview));
         return true;
     }
 

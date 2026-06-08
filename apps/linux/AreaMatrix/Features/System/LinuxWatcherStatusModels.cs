@@ -39,6 +39,33 @@ public enum LinuxWatcherStatusEventKind
     Renamed
 }
 
+public enum LinuxManualRescanPreviewItemKind
+{
+    Added,
+    Updated,
+    Missing,
+    RenamedCandidate,
+    Conflict,
+    Unreadable,
+    Unknown,
+    Skipped
+}
+
+public enum LinuxScanSessionKind
+{
+    Adopt,
+    Reindex
+}
+
+public enum LinuxScanSessionStatus
+{
+    Running,
+    Completed,
+    Paused,
+    Failed,
+    Interrupted
+}
+
 public sealed record LinuxWatcherStatusEventSample(
     string Path,
     LinuxWatcherStatusEventKind Kind,
@@ -61,6 +88,87 @@ public sealed record LinuxWatcherStatusEventSample(
             .ToLocalTime()
             .ToString("g", CultureInfo.CurrentCulture);
     }
+}
+
+public sealed record LinuxManualRescanPreviewItem(
+    LinuxManualRescanPreviewItemKind Kind,
+    string RelativePath,
+    string Reason,
+    string SuggestedAction)
+{
+    public string DisplayText => $"{Kind}: {RelativePath}";
+
+    public string DetailText => string.IsNullOrWhiteSpace(Reason)
+        ? SuggestedAction
+        : $"{Reason} - {SuggestedAction}";
+}
+
+public sealed record LinuxManualRescanPreviewReport(
+    long Added,
+    long Updated,
+    long MissingOrDeletedFromFs,
+    long RenamedCandidates,
+    long Conflicts,
+    long Unreadable,
+    long Unknown,
+    long Skipped,
+    string SnapshotId,
+    long CreatedAt,
+    bool IsStale,
+    IReadOnlyList<LinuxManualRescanPreviewItem> Items)
+{
+    public bool HasNeedsReview => MissingOrDeletedFromFs > 0
+        || Conflicts > 0
+        || Unreadable > 0
+        || Unknown > 0;
+
+    public bool CanRunRescan => !IsStale;
+
+    public string EstimatedItemsText => "Estimated items: "
+        + (Added + Updated + MissingOrDeletedFromFs + RenamedCandidates + Conflicts + Unreadable + Unknown)
+            .ToString(CultureInfo.CurrentCulture);
+
+    public string SummaryText => "Preview impact: "
+        + $"Added {Added.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Updated {Updated.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Missing {MissingOrDeletedFromFs.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Renamed candidates {RenamedCandidates.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Conflicts {Conflicts.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Unreadable {Unreadable.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Unknown {Unknown.ToString(CultureInfo.CurrentCulture)}, "
+        + $"Skipped {Skipped.ToString(CultureInfo.CurrentCulture)}.";
+}
+
+public sealed record LinuxRescanConfirmRequest(
+    LinuxRepositoryRoute Route,
+    LinuxManualRescanPreviewReport Preview);
+
+public sealed record LinuxScanSession(
+    long Id,
+    LinuxScanSessionKind Kind,
+    LinuxScanSessionStatus Status,
+    string? LastPath,
+    long Inserted,
+    long Updated,
+    long Missing,
+    long Conflicts,
+    long Unreadable,
+    long Unknown,
+    long Skipped,
+    long StartedAt,
+    long UpdatedAt,
+    long? FinishedAt,
+    IReadOnlyList<string> Errors)
+{
+    public bool IsManualRescan => Kind == LinuxScanSessionKind.Reindex;
+
+    public bool IsRunning => Status == LinuxScanSessionStatus.Running;
+
+    public string DisplayText => $"Latest rescan session: {Status}, "
+        + $"inserted {Inserted.ToString(CultureInfo.CurrentCulture)}, "
+        + $"updated {Updated.ToString(CultureInfo.CurrentCulture)}, "
+        + $"missing {Missing.ToString(CultureInfo.CurrentCulture)}, "
+        + $"conflicts {Conflicts.ToString(CultureInfo.CurrentCulture)}.";
 }
 
 public sealed record LinuxWatcherStatusHealthSignal(
