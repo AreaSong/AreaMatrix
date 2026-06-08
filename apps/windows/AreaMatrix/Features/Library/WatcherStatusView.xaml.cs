@@ -97,12 +97,26 @@ public sealed partial class WatcherStatusView : UserControl
         RefreshState();
     }
 
-    private void ExportDiagnosticsButton_Click(object sender, RoutedEventArgs e)
+    private async void ExportDiagnosticsButton_Click(object sender, RoutedEventArgs e)
     {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        await ViewModel.ExportDiagnosticsAsync();
+        RefreshState();
     }
 
-    private void OpenRepositoryFolderButton_Click(object sender, RoutedEventArgs e)
+    private async void OpenRepositoryFolderButton_Click(object sender, RoutedEventArgs e)
     {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        await ViewModel.OpenRepositoryFolderAsync();
+        RefreshState();
     }
 
     private void CloseWatcherStatusButton_Click(object sender, RoutedEventArgs e)
@@ -161,10 +175,11 @@ public sealed partial class WatcherStatusView : UserControl
         WatcherNoEventsTextBlock.Visibility = ViewModel.HasRecentEvents
             ? Visibility.Collapsed
             : Visibility.Visible;
-        WatcherStatusProgressRing.Visibility = ViewModel.IsBusy
+        bool showProgress = ViewModel.IsBusy || ViewModel.IsWatcherStarting;
+        WatcherStatusProgressRing.Visibility = showProgress
             ? Visibility.Visible
             : Visibility.Collapsed;
-        WatcherStatusProgressRing.IsActive = ViewModel.IsBusy;
+        WatcherStatusProgressRing.IsActive = showProgress;
 
         RestartWatcherButton.IsEnabled = ViewModel.CanRestartWatcher;
         RunRescanNowButton.IsEnabled = ViewModel.CanOpenRescanConfirm;

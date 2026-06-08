@@ -10,7 +10,7 @@ public static class WatcherStatusSmokeTests
     public static void RunAll()
     {
         WatcherStatusPageExposesC419RescanHandoffControls();
-        MainWindowKeepsS4X07OutsideWatcherStatusTask();
+        MainWindowRoutesWatcherRescanHandoffToS4X07();
         NativeClientBindsC419ManualRescanCoreContracts();
     }
 
@@ -42,22 +42,35 @@ public static class WatcherStatusSmokeTests
         TestAssert.Contains("OpenRouteAsync", codeBehind, "watcher status route load");
         TestAssert.Contains("RestartWatcherAsync", codeBehind, "restart watcher trigger");
         TestAssert.Contains("PrepareRescanConfirmAsync", codeBehind, "rescan preview preparation");
+        TestAssert.Contains("IsWatcherStarting", codeBehind, "Starting state progress binding");
+        TestAssert.Contains("ExportDiagnosticsAsync", codeBehind, "diagnostics export trigger");
+        TestAssert.Contains("OpenRepositoryFolderAsync", codeBehind, "repository folder trigger");
         TestAssert.Contains("OpenRescanConfirmRequested", codeBehind, "rescan confirmation handoff");
         TestAssert.Contains("RescanConfirmRequest", codeBehind, "rescan request with preview");
         TestAssert.DoesNotContain("ReindexFromFilesystem", codeBehind, "watcher status must not run rescan");
         TestAssert.DoesNotContain("SyncExternalChanges", codeBehind, "C4-12 must not sync events");
     }
 
-    private static void MainWindowKeepsS4X07OutsideWatcherStatusTask()
+    private static void MainWindowRoutesWatcherRescanHandoffToS4X07()
     {
         XElement window = LoadXml(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml"));
         AssertNamedElement(window, "WatcherStatusView", "WatcherStatusPage");
-        TestAssert.DoesNotContain("RescanConfirmDialog", window.ToString(SaveOptions.DisableFormatting), "S4-X-07 page is separate task");
+        AssertNamedElement(window, "RescanConfirmDialog", "RescanConfirmPage");
+
+        XElement rescanConfirm = LoadXml(RepositoryPath(
+            "apps/windows/AreaMatrix/Features/Library/RescanConfirmDialog.xaml"));
+        AssertNamedElement(rescanConfirm, "TextBlock", "RepositoryTextBlock");
+        AssertNamedElement(rescanConfirm, "TextBlock", "PreviewSummaryTextBlock");
+        AssertNamedElement(rescanConfirm, "TextBlock", "NeedsReviewTextBlock");
+        AssertButton(rescanConfirm, "Cancel", "CancelRescanConfirmButton_Click");
 
         string codeBehind = File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml.cs"));
+        TestAssert.Contains("OpenWatcherStatusRequested", codeBehind, "main window watcher status entry");
         TestAssert.Contains("OpenRescanConfirmRequested", codeBehind, "watcher status still exposes handoff event");
-        TestAssert.DoesNotContain("new RescanConfirmViewModel", codeBehind, "S4-X-07 view model is separate task");
-        TestAssert.DoesNotContain("OpenPreview", codeBehind, "S4-X-07 page opening is separate task");
+        TestAssert.Contains("RescanConfirmPage.OpenRequest(request)", codeBehind, "S4-X-07 page handoff");
+        TestAssert.Contains("RescanConfirmPage_CloseRequested", codeBehind, "S4-X-07 cancel returns to watcher status");
+        TestAssert.DoesNotContain("ReindexFromFilesystemAsync", codeBehind, "watcher handoff must not run rescan");
+        TestAssert.DoesNotContain("ResumeScanSessionAsync", codeBehind, "watcher handoff must not resume rescan");
     }
 
     private static void NativeClientBindsC419ManualRescanCoreContracts()

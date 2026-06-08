@@ -8,7 +8,7 @@ using AreaMatrix.Features.Onboarding;
 
 namespace AreaMatrix.Features.Library;
 
-public sealed class WatcherStatusViewModel : INotifyPropertyChanged
+public sealed partial class WatcherStatusViewModel : INotifyPropertyChanged
 {
     private readonly IWatcherStatusCoreBridge coreBridge;
     private readonly IWindowsWatcherDiagnostics diagnostics;
@@ -234,18 +234,13 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
 
     public bool HasRecentEvents => RecentEvents.Count > 0 && Snapshot?.IsBackendUnavailable != true;
 
-    public bool IsBusy => IsLoading || IsRestarting || IsPreparingRescan;
-
-    public bool CanRestartWatcher => !IsBusy && Snapshot?.IsBackendUnavailable != true;
-
-    public bool IsRescanRunning => LatestScanSession?.IsRunning == true;
-
     public bool CanOpenRescanConfirm
     {
         get
         {
             return !IsBusy
                 && Snapshot is not null
+                && !IsWatcherStarting
                 && !IsRescanRunning
                 && Snapshot.PendingEventCount >= 0
                 && !Snapshot.IsPathMissing
@@ -268,6 +263,11 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
                 return "Watcher snapshot is unavailable.";
             }
 
+            if (IsWatcherStarting)
+            {
+                return "Wait for the watcher to finish starting.";
+            }
+
             if (IsRescanRunning)
             {
                 return "A manual rescan is already running.";
@@ -286,10 +286,6 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
             return "Opens rescan confirmation before scanning.";
         }
     }
-
-    public bool CanExportDiagnostics => false;
-
-    public bool CanOpenRepositoryFolder => false;
 
     public async Task OpenRouteAsync(
         WindowsRepositoryRoute route,
@@ -482,12 +478,14 @@ public sealed class WatcherStatusViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(HasOneDriveNotice));
         OnPropertyChanged(nameof(HasRecentEvents));
         OnPropertyChanged(nameof(IsBusy));
+        OnPropertyChanged(nameof(IsWatcherStarting));
         OnPropertyChanged(nameof(CanRestartWatcher));
         OnPropertyChanged(nameof(IsRescanRunning));
         OnPropertyChanged(nameof(CanOpenRescanConfirm));
         OnPropertyChanged(nameof(RescanDisabledReason));
         OnPropertyChanged(nameof(CanExportDiagnostics));
         OnPropertyChanged(nameof(CanOpenRepositoryFolder));
+        OnPropertyChanged(nameof(LastDiagnosticsExportPath));
     }
 
     private void OnPropertyChanged([CallerMemberName] string propertyName = "")

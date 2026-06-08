@@ -28,11 +28,13 @@ public sealed partial class MainWindow : Window
         WindowsMainWindowPage.ViewModel = new WindowsMainWindowViewModel(
             new DesktopMainQueryCoreBridge(coreClient));
         WindowsMainWindowPage.OpenOneDriveStatusRequested += WindowsMainWindowPage_OpenOneDriveStatusRequested;
+        WindowsMainWindowPage.OpenWatcherStatusRequested += WindowsMainWindowPage_OpenWatcherStatusRequested;
         WatcherStatusPage.ViewModel = new WatcherStatusViewModel(
             new WatcherStatusCoreBridge(coreClient),
             watcherDiagnostics);
         WatcherStatusPage.CloseRequested += WatcherStatusPage_CloseRequested;
         WatcherStatusPage.OpenRescanConfirmRequested += WatcherStatusPage_OpenRescanConfirmRequested;
+        RescanConfirmPage.CloseRequested += RescanConfirmPage_CloseRequested;
         Closed += MainWindow_Closed;
     }
 
@@ -52,6 +54,7 @@ public sealed partial class MainWindow : Window
             ChooseRepositoryPage.Visibility = Visibility.Collapsed;
             WindowsMainWindowPage.Visibility = Visibility.Collapsed;
             WatcherStatusPage.Visibility = Visibility.Collapsed;
+            RescanConfirmPage.Visibility = Visibility.Collapsed;
             OneDriveNoticePage.Visibility = Visibility.Visible;
             await OneDriveNoticePage.OpenRouteAsync(route);
             return;
@@ -65,6 +68,7 @@ public sealed partial class MainWindow : Window
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Visible;
         await WindowsMainWindowPage.OpenRepositoryAsync(route);
     }
@@ -76,6 +80,7 @@ public sealed partial class MainWindow : Window
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.Visibility = Visibility.Visible;
     }
 
@@ -90,6 +95,7 @@ public sealed partial class MainWindow : Window
         oneDriveNoticeOpenedFromMainWindow = false;
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Visible;
     }
@@ -108,6 +114,7 @@ public sealed partial class MainWindow : Window
             OneDriveNoticePage.Visibility = Visibility.Collapsed;
             WindowsMainWindowPage.Visibility = Visibility.Collapsed;
             WatcherStatusPage.Visibility = Visibility.Collapsed;
+            RescanConfirmPage.Visibility = Visibility.Collapsed;
             ChooseRepositoryPage.Visibility = Visibility.Visible;
         }
     }
@@ -118,8 +125,19 @@ public sealed partial class MainWindow : Window
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
         OneDriveNoticePage.Visibility = Visibility.Visible;
         await OneDriveNoticePage.OpenRouteAsync(route);
+    }
+
+    private async void WindowsMainWindowPage_OpenWatcherStatusRequested(WindowsRepositoryRoute route)
+    {
+        OneDriveNoticePage.Visibility = Visibility.Collapsed;
+        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        WindowsMainWindowPage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
+        WatcherStatusPage.Visibility = Visibility.Visible;
+        await WatcherStatusPage.OpenRouteAsync(route);
     }
 
     private async void OneDriveNoticePage_OpenWatcherStatusRequested()
@@ -136,6 +154,7 @@ public sealed partial class MainWindow : Window
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Visible;
         await WatcherStatusPage.OpenRouteAsync(route);
     }
@@ -144,13 +163,28 @@ public sealed partial class MainWindow : Window
     {
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Visible;
     }
 
     private void WatcherStatusPage_OpenRescanConfirmRequested(RescanConfirmRequest request)
     {
-        // S4-X-07 owns the confirmation page; this page-feature task only prepares the handoff.
+        OneDriveNoticePage.Visibility = Visibility.Collapsed;
+        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        WindowsMainWindowPage.Visibility = Visibility.Collapsed;
+        WatcherStatusPage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Visible;
+        RescanConfirmPage.OpenRequest(request);
+    }
+
+    private void RescanConfirmPage_CloseRequested()
+    {
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
+        OneDriveNoticePage.Visibility = Visibility.Collapsed;
+        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        WatcherStatusPage.Visibility = Visibility.Visible;
+        WindowsMainWindowPage.Visibility = Visibility.Collapsed;
     }
 
     private void MainWindow_Closed(object sender, WindowEventArgs args)
@@ -165,8 +199,10 @@ public sealed partial class MainWindow : Window
         OneDriveNoticePage.ContinueWithOneDriveRequested -= OneDriveNoticePage_ContinueWithOneDriveRequested;
         OneDriveNoticePage.OpenWatcherStatusRequested -= OneDriveNoticePage_OpenWatcherStatusRequested;
         WindowsMainWindowPage.OpenOneDriveStatusRequested -= WindowsMainWindowPage_OpenOneDriveStatusRequested;
+        WindowsMainWindowPage.OpenWatcherStatusRequested -= WindowsMainWindowPage_OpenWatcherStatusRequested;
         WatcherStatusPage.CloseRequested -= WatcherStatusPage_CloseRequested;
         WatcherStatusPage.OpenRescanConfirmRequested -= WatcherStatusPage_OpenRescanConfirmRequested;
+        RescanConfirmPage.CloseRequested -= RescanConfirmPage_CloseRequested;
         watcherDiagnostics.Dispose();
         coreClient.Dispose();
     }

@@ -17,5 +17,8 @@
         <library:WatcherStatusView
             x:Name="WatcherStatusPage"
             Visibility="Collapsed" />
+        <library:RescanConfirmDialog
+            x:Name="RescanConfirmPage"
+            Visibility="Collapsed" />
     </Grid>
 </Window>

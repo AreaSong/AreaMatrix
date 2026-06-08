@@ -22,6 +22,8 @@ public sealed partial class WindowsMainWindow : UserControl
 
     public event Action<WindowsRepositoryRoute>? OpenOneDriveStatusRequested;
 
+    public event Action<WindowsRepositoryRoute>? OpenWatcherStatusRequested;
+
     public WindowsMainWindowViewModel? ViewModel
     {
         get => DataContext as WindowsMainWindowViewModel;
@@ -82,6 +84,14 @@ public sealed partial class WindowsMainWindow : UserControl
         if (ViewModel?.OneDriveStatusRoute is { } route)
         {
             OpenOneDriveStatusRequested?.Invoke(route);
+        }
+    }
+
+    private void WatcherStatusButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel?.WatcherStatusRoute is { } route)
+        {
+            OpenWatcherStatusRequested?.Invoke(route);
         }
     }
 
@@ -158,6 +168,7 @@ public sealed partial class WindowsMainWindow : UserControl
 
         RefreshButton.IsEnabled = ViewModel.CanRunQuery;
         OneDriveStatusButton.IsEnabled = ViewModel.CanOpenOneDriveStatus;
+        WatcherStatusButton.IsEnabled = ViewModel.CanOpenWatcherStatus;
         LoadingProgressRing.Visibility = ViewModel.IsLoading || ViewModel.IsRefreshing
             ? Visibility.Visible
             : Visibility.Collapsed;

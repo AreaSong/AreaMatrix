@@ -13,6 +13,7 @@ public static class DesktopMainQueryViewModelTests
         await SelectingFileUsesCoreDetailQuery();
         await RefreshKeepsCachedListOnDbError();
         await OneDriveRepositoryExposesConnectedNoticeRoute();
+        await MainWindowRouteExposesWatcherStatusEntry();
     }
 
     private static async Task OpenRepositoryLoadsTreeAndFirstPageFromCoreBridge()
@@ -95,6 +96,22 @@ public static class DesktopMainQueryViewModelTests
             WindowsCloudStorageProviderKind.OneDrive,
             model.OneDriveStatusRoute?.CloudStorageState?.ProviderKind,
             "OneDrive status cloud state");
+    }
+
+    private static async Task MainWindowRouteExposesWatcherStatusEntry()
+    {
+        const string path = @"C:\Repos\AreaMatrix";
+        FakeDesktopMainQueryCoreBridge bridge = new();
+        WindowsMainWindowViewModel model = new(bridge);
+
+        await model.OpenRepositoryAsync(Route(path));
+
+        TestAssert.True(model.CanOpenWatcherStatus, nameof(model.CanOpenWatcherStatus));
+        TestAssert.Equal(
+            WindowsRepositoryRouteKind.WatcherStatus,
+            model.WatcherStatusRoute?.Kind,
+            "watcher status route kind");
+        TestAssert.Equal(path, model.WatcherStatusRoute?.RepoPath, "watcher status route path");
     }
 
     private static WindowsRepositoryRoute Route(string path)

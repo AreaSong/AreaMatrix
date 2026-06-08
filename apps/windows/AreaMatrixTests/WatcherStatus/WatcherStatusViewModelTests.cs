@@ -11,9 +11,12 @@ public static class WatcherStatusViewModelTests
         await OpeningWatcherStatusRecordsPlatformSnapshotThroughCoreBridge();
         await RestartWatcherUsesExplicitPlatformRestartAndRecordsUpdatedSnapshot();
         await RunRescanNowPreparesCorePreviewBeforeConfirmationHandoff();
+        await StartingSnapshotDisablesRecoveryActionsAndRescanPreview();
         await RunningScanSessionDisablesSecondRescan();
         await MissingPathMapsToRecoveryTextAndDisablesRescanEntry();
         await DatabaseLockedSnapshotDisablesRescanWithoutCallingManualRescan();
+        await ExportDiagnosticsWritesRedactedWatcherSnapshot();
+        await OpenRepositoryFolderUsesPlatformDiagnosticsAction();
         await CoreErrorMapsToReadableWatcherError();
     }
 
@@ -32,8 +35,8 @@ public static class WatcherStatusViewModelTests
         TestAssert.Equal(WatcherStatusKind.Running, model.Snapshot?.Status, "snapshot status");
         TestAssert.True(model.CanRestartWatcher, nameof(model.CanRestartWatcher));
         TestAssert.True(model.CanOpenRescanConfirm, nameof(model.CanOpenRescanConfirm));
-        TestAssert.False(model.CanExportDiagnostics, nameof(model.CanExportDiagnostics));
-        TestAssert.False(model.CanOpenRepositoryFolder, nameof(model.CanOpenRepositoryFolder));
+        TestAssert.True(model.CanExportDiagnostics, nameof(model.CanExportDiagnostics));
+        TestAssert.True(model.CanOpenRepositoryFolder, nameof(model.CanOpenRepositoryFolder));
         TestAssert.Contains("OneDrive may generate bursts", model.OneDriveNoticeText, nameof(model.OneDriveNoticeText));
         TestAssert.Contains("AreaMatrix is watching", model.SummaryText, nameof(model.SummaryText));
     }
@@ -55,6 +58,41 @@ public static class WatcherStatusViewModelTests
         TestAssert.Equal(2, bridge.RecordedSignals.Count, "recorded signals");
         TestAssert.Equal(WatcherStatusKind.Running, model.Snapshot?.Status, "snapshot status");
         TestAssert.Empty(bridge.PreviewManualRescanRequests, nameof(bridge.PreviewManualRescanRequests));
+    }
+
+    private static async Task ExportDiagnosticsWritesRedactedWatcherSnapshot()
+    {
+        const string path = @"C:\Repos\AreaMatrix";
+        FakeWatcherStatusCoreBridge bridge = new();
+        FakeWindowsWatcherDiagnostics diagnostics = new(RunningSignal(path));
+        WatcherStatusViewModel model = new(bridge, diagnostics);
+
+        await model.OpenRouteAsync(Route(path));
+        bool exported = await model.ExportDiagnosticsAsync();
+
+        TestAssert.True(exported, nameof(exported));
+        TestAssert.SequenceEqual([path], diagnostics.ExportedPaths, nameof(diagnostics.ExportedPaths));
+        TestAssert.Equal(model.Snapshot, diagnostics.ExportedSnapshots.Single(), "exported snapshot");
+        TestAssert.Equal(
+            @"C:\Repos\AreaMatrix\.areamatrix\generated\diagnostics\watcher-status.txt",
+            model.LastDiagnosticsExportPath,
+            nameof(model.LastDiagnosticsExportPath));
+        TestAssert.Null(model.Error, nameof(model.Error));
+    }
+
+    private static async Task OpenRepositoryFolderUsesPlatformDiagnosticsAction()
+    {
+        const string path = @"C:\Repos\AreaMatrix";
+        FakeWatcherStatusCoreBridge bridge = new();
+        FakeWindowsWatcherDiagnostics diagnostics = new(RunningSignal(path));
+        WatcherStatusViewModel model = new(bridge, diagnostics);
+
+        await model.OpenRouteAsync(Route(path));
+        bool opened = await model.OpenRepositoryFolderAsync();
+
+        TestAssert.True(opened, nameof(opened));
+        TestAssert.SequenceEqual([path], diagnostics.OpenedFolders, nameof(diagnostics.OpenedFolders));
+        TestAssert.Null(model.Error, nameof(model.Error));
     }
 
     private static async Task RunRescanNowPreparesCorePreviewBeforeConfirmationHandoff()
@@ -110,6 +148,25 @@ public static class WatcherStatusViewModelTests
         TestAssert.False(model.CanOpenRescanConfirm, nameof(model.CanOpenRescanConfirm));
         TestAssert.False(canOpenConfirm, nameof(canOpenConfirm));
         TestAssert.Contains("already running", model.RescanDisabledReason, nameof(model.RescanDisabledReason));
+        TestAssert.Empty(bridge.PreviewManualRescanRequests, nameof(bridge.PreviewManualRescanRequests));
+    }
+
+    private static async Task StartingSnapshotDisablesRecoveryActionsAndRescanPreview()
+    {
+        const string path = @"C:\Repos\AreaMatrix";
+        FakeWatcherStatusCoreBridge bridge = new();
+        FakeWindowsWatcherDiagnostics diagnostics = new(StartingSignal(path));
+        WatcherStatusViewModel model = new(bridge, diagnostics);
+
+        await model.OpenRouteAsync(Route(path));
+        bool canOpenConfirm = await model.PrepareRescanConfirmAsync();
+
+        TestAssert.Equal(WatcherStatusKind.Starting, model.Snapshot?.Status, "snapshot status");
+        TestAssert.True(model.IsWatcherStarting, nameof(model.IsWatcherStarting));
+        TestAssert.False(model.CanRestartWatcher, nameof(model.CanRestartWatcher));
+        TestAssert.False(model.CanOpenRescanConfirm, nameof(model.CanOpenRescanConfirm));
+        TestAssert.False(canOpenConfirm, nameof(canOpenConfirm));
+        TestAssert.Contains("finish starting", model.RescanDisabledReason, nameof(model.RescanDisabledReason));
         TestAssert.Empty(bridge.PreviewManualRescanRequests, nameof(bridge.PreviewManualRescanRequests));
     }
 
@@ -204,6 +261,16 @@ public static class WatcherStatusViewModelTests
             Status = WatcherStatusKind.Paused,
             PendingEventCount = 3,
             HealthReasons = []
+        };
+    }
+
+    private static WatcherStatusHealthSignal StartingSignal(string path)
+    {
+        return RunningSignal(path) with
+        {
+            Status = WatcherStatusKind.Starting,
+            PendingEventCount = 0,
+            RecentEvents = []
         };
     }
 
@@ -361,6 +428,12 @@ internal sealed class FakeWindowsWatcherDiagnostics : IWindowsWatcherDiagnostics
 
     public List<string> RestartedPaths { get; } = [];
 
+    public List<string> ExportedPaths { get; } = [];
+
+    public List<WatcherStatusSnapshot> ExportedSnapshots { get; } = [];
+
+    public List<string> OpenedFolders { get; } = [];
+
     public WatcherStatusHealthSignal RestartSignal { get; set; }
 
     public Task<WatcherStatusHealthSignal> CaptureSnapshotAsync(
@@ -377,5 +450,24 @@ internal sealed class FakeWindowsWatcherDiagnostics : IWindowsWatcherDiagnostics
     {
         RestartedPaths.Add(repoPath);
         return Task.FromResult(RestartSignal);
+    }
+
+    public Task<string> ExportDiagnosticsAsync(
+        string repoPath,
+        WatcherStatusSnapshot snapshot,
+        CancellationToken cancellationToken = default)
+    {
+        ExportedPaths.Add(repoPath);
+        ExportedSnapshots.Add(snapshot);
+        return Task.FromResult(
+            @"C:\Repos\AreaMatrix\.areamatrix\generated\diagnostics\watcher-status.txt");
+    }
+
+    public Task OpenRepositoryFolderAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        OpenedFolders.Add(repoPath);
+        return Task.CompletedTask;
     }
 }

@@ -75,6 +75,7 @@ public sealed class WindowsMainWindowViewModel : INotifyPropertyChanged
             {
                 OnPropertyChanged(nameof(CanRunQuery));
                 OnPropertyChanged(nameof(CanOpenOneDriveStatus));
+                OnPropertyChanged(nameof(CanOpenWatcherStatus));
                 OnPropertyChanged(nameof(StatusText));
             }
         }
@@ -89,6 +90,7 @@ public sealed class WindowsMainWindowViewModel : INotifyPropertyChanged
             {
                 OnPropertyChanged(nameof(CanRunQuery));
                 OnPropertyChanged(nameof(CanOpenOneDriveStatus));
+                OnPropertyChanged(nameof(CanOpenWatcherStatus));
                 OnPropertyChanged(nameof(StatusText));
             }
         }
@@ -153,6 +155,16 @@ public sealed class WindowsMainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool CanOpenWatcherStatus
+    {
+        get
+        {
+            return !IsLoading
+                && !IsRefreshing
+                && WatcherStatusRoute is not null;
+        }
+    }
+
     public WindowsRepositoryRoute? OneDriveStatusRoute
     {
         get
@@ -163,6 +175,19 @@ public sealed class WindowsMainWindowViewModel : INotifyPropertyChanged
             }
 
             return currentRoute with { Kind = WindowsRepositoryRouteKind.OneDriveNotice };
+        }
+    }
+
+    public WindowsRepositoryRoute? WatcherStatusRoute
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(RepoPath) || currentRoute is null)
+            {
+                return null;
+            }
+
+            return currentRoute with { Kind = WindowsRepositoryRouteKind.WatcherStatus };
         }
     }
 
@@ -207,6 +232,8 @@ public sealed class WindowsMainWindowViewModel : INotifyPropertyChanged
         SelectedCategory = null;
         OnPropertyChanged(nameof(CanOpenOneDriveStatus));
         OnPropertyChanged(nameof(OneDriveStatusRoute));
+        OnPropertyChanged(nameof(CanOpenWatcherStatus));
+        OnPropertyChanged(nameof(WatcherStatusRoute));
         await LoadSnapshotAsync(isInitialLoad: true, cancellationToken);
     }
 

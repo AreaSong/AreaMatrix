@@ -1,0 +1,103 @@
+<UserControl
+    x:Class="AreaMatrix.Features.Library.RescanConfirmDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid
+        Padding="40"
+        RowSpacing="20"
+        Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Spacing="6">
+            <TextBlock
+                Text="Run repository rescan?"
+                Style="{ThemeResource TitleTextBlockStyle}" />
+            <TextBlock
+                x:Name="RepositoryTextBlock"
+                TextWrapping="Wrap" />
+        </StackPanel>
+
+        <Border
+            Grid.Row="1"
+            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="4"
+            Padding="16">
+            <StackPanel Spacing="8">
+                <TextBlock
+                    Text="Preview only. No database records or files will be changed until you confirm."
+                    TextWrapping="Wrap" />
+                <TextBlock
+                    x:Name="EstimatedItemsTextBlock"
+                    TextWrapping="Wrap" />
+                <TextBlock
+                    x:Name="PreviewSummaryTextBlock"
+                    TextWrapping="Wrap" />
+                <TextBlock
+                    x:Name="NeedsReviewTextBlock"
+                    TextWrapping="Wrap" />
+                <TextBlock
+                    x:Name="StalePreviewTextBlock"
+                    Text="Preview may be out of date. Reopen rescan confirmation before running rescan."
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="2">
+            <StackPanel Spacing="16">
+                <StackPanel Spacing="8">
+                    <TextBlock
+                        Text="Safety"
+                        Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <TextBlock
+                        Text="Rescan reads files and updates AreaMatrix records only after explicit confirmation."
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Text="It will not move, delete, rename, or overwrite user files."
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Text="Missing, unreadable, conflict, or unknown items stay available for review."
+                        TextWrapping="Wrap" />
+                </StackPanel>
+
+                <StackPanel Spacing="8">
+                    <TextBlock
+                        Text="Preview items"
+                        Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <ItemsControl x:Name="PreviewItemsList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock
+                                    Text="{Binding}"
+                                    TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock
+                        x:Name="NoPreviewItemsTextBlock"
+                        Text="No preview items need attention."
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Row="3" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Button
+                x:Name="CancelRescanConfirmButton"
+                Grid.Column="1"
+                Content="Cancel"
+                Click="CancelRescanConfirmButton_Click" />
+        </Grid>
+    </Grid>
+</UserControl>

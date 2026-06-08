@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AreaMatrix.Features.Onboarding;
 
 namespace AreaMatrix.Features.Library;
 
@@ -14,6 +16,15 @@ public interface IWindowsWatcherDiagnostics
         CancellationToken cancellationToken = default);
 
     Task<WatcherStatusHealthSignal> RestartWatcherAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task<string> ExportDiagnosticsAsync(
+        string repoPath,
+        WatcherStatusSnapshot snapshot,
+        CancellationToken cancellationToken = default);
+
+    Task OpenRepositoryFolderAsync(
         string repoPath,
         CancellationToken cancellationToken = default);
 }
@@ -53,6 +64,64 @@ public sealed class WindowsWatcherDiagnostics : IWindowsWatcherDiagnostics, IDis
             EnsureWatcher(repoPath);
             return Task.FromResult(BuildSignal(repoPath));
         }
+    }
+
+    public async Task<string> ExportDiagnosticsAsync(
+        string repoPath,
+        WatcherStatusSnapshot snapshot,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(repoPath))
+        {
+            throw new WatcherStatusCoreException(
+                WindowsRepositoryErrorKind.InvalidPath,
+                "Repository path is required before exporting watcher diagnostics.",
+                repoPath);
+        }
+
+        if (!Directory.Exists(repoPath))
+        {
+            throw new WatcherStatusCoreException(
+                WindowsRepositoryErrorKind.FileNotFound,
+                "Repository folder was not found.",
+                repoPath);
+        }
+
+        string diagnosticsDirectory = Path.Combine(repoPath, ".areamatrix", "generated", "diagnostics");
+        Directory.CreateDirectory(diagnosticsDirectory);
+        string outputPath = DiagnosticOutputPath(diagnosticsDirectory);
+
+        await using FileStream stream = new(outputPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+        await using StreamWriter writer = new(stream);
+        foreach (string line in DiagnosticLines(snapshot))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await writer.WriteLineAsync(line).ConfigureAwait(false);
+        }
+
+        return outputPath;
+    }
+
+    public Task OpenRepositoryFolderAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(repoPath) || !Directory.Exists(repoPath))
+        {
+            throw new WatcherStatusCoreException(
+                WindowsRepositoryErrorKind.FileNotFound,
+                "Repository folder was not found.",
+                repoPath);
+        }
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = repoPath,
+            UseShellExecute = true
+        });
+        return Task.CompletedTask;
     }
 
     public void Dispose()
@@ -270,5 +339,37 @@ public sealed class WindowsWatcherDiagnostics : IWindowsWatcherDiagnostics, IDis
         return relative.StartsWith("..", StringComparison.Ordinal)
             ? Path.GetFileName(fullPath)
             : relative;
+    }
+
+    private static string DiagnosticOutputPath(string diagnosticsDirectory)
+    {
+        return Path.Combine(
+            diagnosticsDirectory,
+            $"watcher-status-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss-fff}.txt");
+    }
+
+    private static IReadOnlyList<string> DiagnosticLines(WatcherStatusSnapshot snapshot)
+    {
+        List<string> lines =
+        [
+            "AreaMatrix watcher diagnostics",
+            $"Status: {snapshot.Status}",
+            $"Backend: {snapshot.Backend}",
+            $"Watched path: {snapshot.WatchedPath}",
+            $"Pending events: {snapshot.PendingEventCount}",
+            $"Last event id: {snapshot.LastEventId?.ToString() ?? "Unknown"}",
+            $"Last event at: {snapshot.LastEventAt?.ToString() ?? "Unknown"}",
+            $"Last sync event id: {snapshot.LastSyncEventId?.ToString() ?? "Unknown"}",
+            $"Last sync at: {snapshot.LastSyncAt?.ToString() ?? "Unknown"}",
+            $"Last rescan at: {snapshot.LastRescanAt?.ToString() ?? "Unknown"}",
+            $"Watch count: {snapshot.WatchCount?.ToString() ?? "Unknown"}",
+            $"Error summary: {snapshot.ErrorSummary ?? "None"}",
+            $"Health reasons: {string.Join(", ", snapshot.HealthReasons)}",
+            "Recent events are relative paths only; file contents are not exported."
+        ];
+
+        lines.AddRange(snapshot.RecentEvents.Select(eventSample =>
+            $"- {eventSample.Kind}: {eventSample.Path} ({eventSample.EventId})"));
+        return lines;
     }
 }
