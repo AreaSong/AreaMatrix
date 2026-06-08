@@ -1,0 +1,111 @@
+namespace AreaMatrix.Linux.Features.Onboarding;
+
+public enum LinuxRepositoryInitMode
+{
+    CreateEmpty,
+    AdoptExisting
+}
+
+public enum LinuxRepositoryPathIssue
+{
+    MissingPath,
+    NotDirectory,
+    NotReadable,
+    NotWritable,
+    NonEmptyDirectory,
+    AlreadyInitialized,
+    InsideAreaMatrix,
+    ICloudPath,
+    OneDrivePath,
+    WindowsReservedName,
+    WindowsCaseInsensitive,
+    UnfinishedScanSession
+}
+
+public enum LinuxPlatformPathKind
+{
+    Local,
+    ICloudDrive,
+    OneDrive,
+    NetworkShare,
+    Unknown
+}
+
+public enum LinuxRepositoryRouteKind
+{
+    None,
+    MainWindow,
+    LocalFolderNotice,
+    RepositoryInitConfirm,
+    RepositoryAdoptConfirm
+}
+
+public enum LinuxRepositoryErrorKind
+{
+    Db,
+    Config,
+    InvalidPath,
+    SelectedFile,
+    PermissionDenied,
+    InvalidRepository,
+    FileNotFound,
+    DiskUnavailable,
+    ICloudPlaceholder,
+    Unavailable
+}
+
+public sealed record LinuxRepositoryValidation(
+    string RepoPath,
+    bool Exists,
+    bool IsDirectory,
+    bool IsReadable,
+    bool IsWritable,
+    bool IsEmpty,
+    bool IsInitialized,
+    bool IsInsideAreaMatrix,
+    bool IsICloudPath,
+    bool IsOneDrivePath,
+    LinuxPlatformPathKind PlatformPathKind,
+    bool IsCaseSensitivePath,
+    bool HasUnfinishedScanSession,
+    LinuxRepositoryInitMode? RecommendedMode,
+    IReadOnlyList<LinuxRepositoryPathIssue> Issues)
+{
+    public bool HasIssue(LinuxRepositoryPathIssue issue)
+    {
+        return Issues.Contains(issue);
+    }
+}
+
+public sealed record LinuxRepositoryRoute(
+    LinuxRepositoryRouteKind Kind,
+    string RepoPath,
+    LinuxRepositoryValidation? Validation)
+{
+    public static LinuxRepositoryRoute None { get; } = new(
+        LinuxRepositoryRouteKind.None,
+        string.Empty,
+        null);
+}
+
+public sealed record LinuxRepositoryError(
+    LinuxRepositoryErrorKind Kind,
+    string Message,
+    string? Path = null);
+
+public sealed class LinuxRepositoryCoreException : Exception
+{
+    public LinuxRepositoryCoreException(
+        LinuxRepositoryErrorKind kind,
+        string message,
+        string? path = null)
+        : base(message)
+    {
+        Kind = kind;
+        Path = path;
+    }
+
+    public LinuxRepositoryErrorKind Kind { get; }
+
+    public string? Path { get; }
+}
