@@ -7,6 +7,8 @@ public static class LocalFolderNoticeViewModelTests
     public static async Task RunAllAsync()
     {
         await LoadRouteChecksFolderThroughCoreBridge();
+        await LoadRouteReadsC417PlatformCapabilities();
+        await PlatformCapabilityRowsDriveLinuxRiskCopy();
         await RiskConfirmationRoutesToAdoptConfirmWithoutInitializing();
         await LocalEmptyFolderRoutesToInitConfirmWithoutCheckbox();
         await ExternalDriveShowsDisconnectWarning();
@@ -27,12 +29,57 @@ public static class LocalFolderNoticeViewModelTests
             null));
 
         TestAssert.SequenceEqual([path], bridge.ValidatedPaths, nameof(bridge.ValidatedPaths));
+        TestAssert.Equal(1, bridge.PlatformCapabilityRequests.Count, "platform capability calls");
+        TestAssert.Equal(LinuxPlatformId.Linux, bridge.PlatformCapabilityRequests[0].Platform, "platform id");
+        TestAssert.Equal("0.1.0", bridge.PlatformCapabilityRequests[0].AppVersion, "app version");
         TestAssert.Equal($"Folder: {path}", model.FolderText, nameof(model.FolderText));
         TestAssert.Equal("Type: Network mount", model.TypeText, nameof(model.TypeText));
         TestAssert.Equal("Writable: Yes", model.WritableText, nameof(model.WritableText));
         TestAssert.True(model.ShouldShowRiskConfirmation, nameof(model.ShouldShowRiskConfirmation));
         TestAssert.False(model.CanContinue, nameof(model.CanContinue));
         TestAssert.Contains("delay or reorder file events", model.RiskText, nameof(model.RiskText));
+    }
+
+    private static async Task LoadRouteReadsC417PlatformCapabilities()
+    {
+        const string path = "/home/me/AreaMatrix";
+        FakeLinuxRepositoryCoreBridge bridge = new(LinuxRepositoryValidationSamples.EmptyDirectory(path));
+        LocalFolderNoticeViewModel model = new(bridge, appVersion: " 1.2.3+linux ");
+
+        await model.LoadRouteAsync(new LinuxRepositoryRoute(
+            LinuxRepositoryRouteKind.LocalFolderNotice,
+            path,
+            null));
+
+        TestAssert.Equal(1, bridge.PlatformCapabilityRequests.Count, "platform capability calls");
+        TestAssert.Equal(LinuxPlatformId.Linux, model.LatestPlatformCapabilities?.Platform, "capability platform");
+        TestAssert.Equal("1.2.3+linux", bridge.PlatformCapabilityRequests[0].AppVersion, "trimmed app version");
+        TestAssert.Contains("Watcher available", model.PlatformCapabilityText, nameof(model.PlatformCapabilityText));
+        TestAssert.Contains(
+            "Cloud placeholders not available",
+            model.PlatformCapabilityText,
+            nameof(model.PlatformCapabilityText));
+    }
+
+    private static async Task PlatformCapabilityRowsDriveLinuxRiskCopy()
+    {
+        const string path = "/mnt/team/AreaMatrix";
+        FakeLinuxRepositoryCoreBridge bridge = new(
+            LinuxRepositoryValidationSamples.NetworkShare(path),
+            LinuxPlatformCapabilitySamples.WatcherLimited("inotify does not guarantee network mount ordering"));
+        LocalFolderNoticeViewModel model = new(bridge);
+
+        await model.LoadRouteAsync(new LinuxRepositoryRoute(
+            LinuxRepositoryRouteKind.LocalFolderNotice,
+            path,
+            null));
+
+        TestAssert.Contains("Watcher: limited", model.RiskText, nameof(model.RiskText));
+        TestAssert.Contains("inotify does not guarantee network mount ordering", model.RiskText, "watcher reason");
+        TestAssert.Contains(
+            "Linux sync folders do not expose a standard placeholder contract",
+            model.RiskText,
+            "cloud placeholder reason");
     }
 
     private static async Task RiskConfirmationRoutesToAdoptConfirmWithoutInitializing()
@@ -104,6 +151,7 @@ public static class LocalFolderNoticeViewModelTests
         TestAssert.Equal("Type: Sync folder", model.TypeText, nameof(model.TypeText));
         TestAssert.True(model.ShouldShowRiskConfirmation, nameof(model.ShouldShowRiskConfirmation));
         TestAssert.Contains("does not manage your sync provider", model.RiskText, nameof(model.RiskText));
+        TestAssert.Equal(1, bridge.PlatformCapabilityRequests.Count, "platform capability calls");
         TestAssert.Empty(bridge.InitializedPaths, nameof(bridge.InitializedPaths));
         TestAssert.Empty(bridge.AdoptedPaths, nameof(bridge.AdoptedPaths));
     }

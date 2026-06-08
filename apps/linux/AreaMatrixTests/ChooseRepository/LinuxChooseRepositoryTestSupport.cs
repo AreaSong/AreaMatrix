@@ -2,13 +2,19 @@ using AreaMatrix.Linux.Features.Onboarding;
 
 namespace AreaMatrix.Linux.Tests.ChooseRepository;
 
-internal sealed class FakeLinuxRepositoryCoreBridge : ILinuxRepositoryCoreBridge
+internal sealed class FakeLinuxRepositoryCoreBridge :
+    ILinuxRepositoryCoreBridge,
+    ILinuxPlatformCapabilitiesCoreBridge
 {
     private readonly LinuxRepositoryValidation validation;
+    private readonly LinuxPlatformCapabilities capabilities;
 
-    public FakeLinuxRepositoryCoreBridge(LinuxRepositoryValidation validation)
+    public FakeLinuxRepositoryCoreBridge(
+        LinuxRepositoryValidation validation,
+        LinuxPlatformCapabilities? capabilities = null)
     {
         this.validation = validation;
+        this.capabilities = capabilities ?? LinuxPlatformCapabilitySamples.LinuxDefault();
     }
 
     public List<string> ValidatedPaths { get; } = [];
@@ -16,6 +22,8 @@ internal sealed class FakeLinuxRepositoryCoreBridge : ILinuxRepositoryCoreBridge
     public List<string> InitializedPaths { get; } = [];
 
     public List<string> AdoptedPaths { get; } = [];
+
+    public List<(LinuxPlatformId Platform, string AppVersion)> PlatformCapabilityRequests { get; } = [];
 
     public Task<LinuxRepositoryValidation> ValidateRepoPathAsync(
         string repoPath,
@@ -42,6 +50,16 @@ internal sealed class FakeLinuxRepositoryCoreBridge : ILinuxRepositoryCoreBridge
         cancellationToken.ThrowIfCancellationRequested();
         AdoptedPaths.Add(repoPath);
         return Task.CompletedTask;
+    }
+
+    public Task<LinuxPlatformCapabilities> GetPlatformCapabilitiesAsync(
+        LinuxPlatformId platform,
+        string appVersion,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        PlatformCapabilityRequests.Add((platform, appVersion));
+        return Task.FromResult(capabilities);
     }
 }
 
@@ -229,5 +247,60 @@ internal static class LinuxRepositoryValidationSamples
             HasUnfinishedScanSession: false,
             recommendedMode,
             issues ?? []);
+    }
+}
+
+internal static class LinuxPlatformCapabilitySamples
+{
+    public static LinuxPlatformCapabilities LinuxDefault()
+    {
+        return new LinuxPlatformCapabilities(
+            LinuxPlatformId.Linux,
+            "0.1.0",
+            Available(),
+            Limited("freedesktop Trash support depends on the desktop and mount"),
+            NotAvailable("share extension import is not available on Linux"),
+            NotAvailable("Linux sync folders do not expose a standard placeholder contract"),
+            NotAvailable("Linux uses POSIX permissions instead of security-scoped bookmarks"));
+    }
+
+    public static LinuxPlatformCapabilities WatcherLimited(string reason)
+    {
+        LinuxPlatformCapabilities defaults = LinuxDefault();
+        return defaults with
+        {
+            Watcher = new LinuxPlatformCapabilitySupport(
+                LinuxPlatformCapabilityStatus.Limited,
+                UiEnabled: false,
+                RequiresPermission: false,
+                reason)
+        };
+    }
+
+    private static LinuxPlatformCapabilitySupport Available()
+    {
+        return new LinuxPlatformCapabilitySupport(
+            LinuxPlatformCapabilityStatus.Available,
+            UiEnabled: true,
+            RequiresPermission: false,
+            Reason: null);
+    }
+
+    private static LinuxPlatformCapabilitySupport Limited(string reason)
+    {
+        return new LinuxPlatformCapabilitySupport(
+            LinuxPlatformCapabilityStatus.Limited,
+            UiEnabled: true,
+            RequiresPermission: false,
+            reason);
+    }
+
+    private static LinuxPlatformCapabilitySupport NotAvailable(string reason)
+    {
+        return new LinuxPlatformCapabilitySupport(
+            LinuxPlatformCapabilityStatus.NotAvailable,
+            UiEnabled: false,
+            RequiresPermission: false,
+            reason);
     }
 }

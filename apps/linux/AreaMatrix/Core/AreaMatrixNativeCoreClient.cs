@@ -12,6 +12,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
 {
     private const ushort InitRepoChecksum = 29414;
     private const ushort ValidateRepoPathChecksum = 43498;
+    private const ushort GetPlatformCapabilitiesChecksum = 42907;
     private const ushort GetFileChecksum = 6132;
     private const ushort ListFilesChecksum = 56809;
     private const ushort ListTreeJsonChecksum = 45468;
@@ -75,6 +76,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
     {
         if (native.InitRepoChecksum() != InitRepoChecksum
             || native.ValidateRepoPathChecksum() != ValidateRepoPathChecksum
+            || native.GetPlatformCapabilitiesChecksum() != GetPlatformCapabilitiesChecksum
             || native.GetFileChecksum() != GetFileChecksum
             || native.ListFilesChecksum() != ListFilesChecksum
             || native.ListTreeJsonChecksum() != ListTreeJsonChecksum

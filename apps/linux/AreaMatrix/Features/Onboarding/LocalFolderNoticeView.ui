@@ -9,6 +9,7 @@ summary:
   - Type: Sync folder
   - Type: Unknown
   - Writable: Yes/No
+  - Platform capabilities: Watcher available; Cloud placeholders not available.
 states:
   checking: Checking folder...
   empty_path: Choose a repository folder first.
@@ -25,6 +26,8 @@ actions:
   - Open Folder
 safety:
   - The page calls validate_repo_path through LinuxRepositoryCoreBridge.
+  - The page calls get_platform_capabilities through LinuxPlatformCapabilitiesCoreBridge.
+  - Watcher and cloud placeholder rows come from the C4-17 PlatformCapabilities matrix.
   - The page routes to S4-X-04 or S4-X-05 for init/adopt confirmation before init_repo can run.
   - The page does not create, delete, move, rename, overwrite, sudo, or chmod user files.
-  - C4-17 platform capabilities are out of scope for this C4-10 page-feature task.
+  - The page does not call cloud storage detection or configure sync providers.

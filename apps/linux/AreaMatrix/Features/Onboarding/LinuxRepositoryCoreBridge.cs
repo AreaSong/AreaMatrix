@@ -15,6 +15,14 @@ public interface ILinuxRepositoryCoreBridge
         CancellationToken cancellationToken = default);
 }
 
+public interface ILinuxPlatformCapabilitiesCoreBridge
+{
+    Task<LinuxPlatformCapabilities> GetPlatformCapabilitiesAsync(
+        LinuxPlatformId platform,
+        string appVersion,
+        CancellationToken cancellationToken = default);
+}
+
 public interface IAreaMatrixLinuxCoreClient
 {
     Task<CoreRepoPathValidation> ValidateRepoPathAsync(
@@ -25,9 +33,16 @@ public interface IAreaMatrixLinuxCoreClient
         string repoPath,
         CoreRepoInitOptions options,
         CancellationToken cancellationToken = default);
+
+    Task<CorePlatformCapabilities> GetPlatformCapabilitiesAsync(
+        string platform,
+        string appVersion,
+        CancellationToken cancellationToken = default);
 }
 
-public sealed class LinuxRepositoryCoreBridge : ILinuxRepositoryCoreBridge
+public sealed class LinuxRepositoryCoreBridge :
+    ILinuxRepositoryCoreBridge,
+    ILinuxPlatformCapabilitiesCoreBridge
 {
     private readonly IAreaMatrixLinuxCoreClient coreClient;
 
@@ -65,6 +80,18 @@ public sealed class LinuxRepositoryCoreBridge : ILinuxRepositoryCoreBridge
             repoPath,
             CoreRepoInitOptions.AdoptExistingGeneratedOnly,
             cancellationToken);
+    }
+
+    public async Task<LinuxPlatformCapabilities> GetPlatformCapabilitiesAsync(
+        LinuxPlatformId platform,
+        string appVersion,
+        CancellationToken cancellationToken = default)
+    {
+        CorePlatformCapabilities capabilities = await coreClient
+            .GetPlatformCapabilitiesAsync(platform.ToCorePlatformId(), appVersion, cancellationToken)
+            .ConfigureAwait(false);
+
+        return capabilities.ToLinuxCapabilities();
     }
 }
 
@@ -165,4 +192,89 @@ public sealed record CoreRepoInitOptions(
         "AdoptExisting",
         CreateDefaultCategories: false,
         "GeneratedOnly");
+}
+
+public sealed record CorePlatformCapabilitySupport(
+    string Status,
+    bool UiEnabled,
+    bool RequiresPermission,
+    string? Reason)
+{
+    public LinuxPlatformCapabilitySupport ToLinuxSupport()
+    {
+        return new LinuxPlatformCapabilitySupport(
+            ParseCapabilityStatus(Status),
+            UiEnabled,
+            RequiresPermission,
+            Reason);
+    }
+
+    private static LinuxPlatformCapabilityStatus ParseCapabilityStatus(string value)
+    {
+        return value switch
+        {
+            "Available" => LinuxPlatformCapabilityStatus.Available,
+            "Limited" => LinuxPlatformCapabilityStatus.Limited,
+            "NotAvailable" => LinuxPlatformCapabilityStatus.NotAvailable,
+            "Unknown" => LinuxPlatformCapabilityStatus.Unknown,
+            _ => throw new LinuxRepositoryCoreException(
+                LinuxRepositoryErrorKind.Config,
+                $"Unknown platform capability status `{value}`.")
+        };
+    }
+}
+
+public sealed record CorePlatformCapabilities(
+    string Platform,
+    string AppVersion,
+    CorePlatformCapabilitySupport Watcher,
+    CorePlatformCapabilitySupport Trash,
+    CorePlatformCapabilitySupport ShareExtension,
+    CorePlatformCapabilitySupport CloudPlaceholder,
+    CorePlatformCapabilitySupport SecurityBookmark)
+{
+    public LinuxPlatformCapabilities ToLinuxCapabilities()
+    {
+        return new LinuxPlatformCapabilities(
+            ParsePlatformId(Platform),
+            AppVersion,
+            Watcher.ToLinuxSupport(),
+            Trash.ToLinuxSupport(),
+            ShareExtension.ToLinuxSupport(),
+            CloudPlaceholder.ToLinuxSupport(),
+            SecurityBookmark.ToLinuxSupport());
+    }
+
+    private static LinuxPlatformId ParsePlatformId(string value)
+    {
+        return value switch
+        {
+            "Macos" => LinuxPlatformId.Macos,
+            "Ios" => LinuxPlatformId.Ios,
+            "Windows" => LinuxPlatformId.Windows,
+            "Linux" => LinuxPlatformId.Linux,
+            "Unknown" => LinuxPlatformId.Unknown,
+            _ => throw new LinuxRepositoryCoreException(
+                LinuxRepositoryErrorKind.Config,
+                $"Unknown platform id `{value}`.")
+        };
+    }
+}
+
+internal static class LinuxPlatformCapabilityMapping
+{
+    public static string ToCorePlatformId(this LinuxPlatformId platform)
+    {
+        return platform switch
+        {
+            LinuxPlatformId.Macos => "Macos",
+            LinuxPlatformId.Ios => "Ios",
+            LinuxPlatformId.Windows => "Windows",
+            LinuxPlatformId.Linux => "Linux",
+            LinuxPlatformId.Unknown => "Unknown",
+            _ => throw new LinuxRepositoryCoreException(
+                LinuxRepositoryErrorKind.Config,
+                $"Unsupported Linux platform id `{platform}`.")
+        };
+    }
 }

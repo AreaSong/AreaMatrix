@@ -9,6 +9,7 @@ public static class LinuxNativeCoreBridgeSmokeTests
     public static async Task RunAllAsync()
     {
         await NativeClientLoadsCoreAndValidatesRepositoryPath();
+        await NativeClientReadsLinuxPlatformCapabilities();
         await NativeClientOpensInitializedRepositoryThroughDesktopMainQueryBridge();
     }
 
@@ -35,6 +36,23 @@ public static class LinuxNativeCoreBridgeSmokeTests
         {
             Directory.Delete(tempRoot, recursive: true);
         }
+    }
+
+    private static async Task NativeClientReadsLinuxPlatformCapabilities()
+    {
+        string libraryPath = ResolveNativeLibraryPath();
+        using AreaMatrixNativeCoreClient client = new(libraryPath);
+
+        CorePlatformCapabilities capabilities = await client.GetPlatformCapabilitiesAsync(
+            "Linux",
+            "0.1.0");
+
+        TestAssert.Equal("Linux", capabilities.Platform, nameof(capabilities.Platform));
+        TestAssert.Equal("0.1.0", capabilities.AppVersion, nameof(capabilities.AppVersion));
+        TestAssert.Equal("Available", capabilities.Watcher.Status, "watcher status");
+        TestAssert.True(capabilities.Watcher.UiEnabled, "watcher enabled");
+        TestAssert.Equal("NotAvailable", capabilities.CloudPlaceholder.Status, "cloud placeholder status");
+        TestAssert.False(capabilities.CloudPlaceholder.UiEnabled, "cloud placeholder disabled");
     }
 
     private static async Task NativeClientOpensInitializedRepositoryThroughDesktopMainQueryBridge()

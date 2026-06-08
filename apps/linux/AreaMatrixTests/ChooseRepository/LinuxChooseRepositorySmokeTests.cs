@@ -58,8 +58,13 @@ public static class LinuxChooseRepositorySmokeTests
 
         TestAssert.Contains("uniffi_area_matrix_core_fn_func_validate_repo_path", nativeLibrary, "validate symbol");
         TestAssert.Contains("uniffi_area_matrix_core_fn_func_init_repo", nativeLibrary, "init symbol");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_get_platform_capabilities",
+            nativeLibrary,
+            "platform capability symbol");
         TestAssert.Contains("ValidateRepoPathChecksum = 43498", nativeClient, "validate checksum");
         TestAssert.Contains("InitRepoChecksum = 29414", nativeClient, "init checksum");
+        TestAssert.Contains("GetPlatformCapabilitiesChecksum = 42907", nativeClient, "platform checksum");
         TestAssert.Contains("ValidateRepoPathAsync", viewModel, "view model bridge call");
         TestAssert.NotContains("DetectCloudStorageStateAsync", nativeClient, "out-of-scope cloud capability");
         TestAssert.NotContains("LoadConfigAsync", viewModel, "out-of-scope config load");

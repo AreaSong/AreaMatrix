@@ -6,16 +6,28 @@ namespace AreaMatrix.Linux.Features.Onboarding;
 public sealed class LocalFolderNoticeViewModel : INotifyPropertyChanged
 {
     private readonly ILinuxRepositoryCoreBridge coreBridge;
+    private readonly ILinuxPlatformCapabilitiesCoreBridge platformCapabilitiesBridge;
+    private readonly string appVersion;
     private string repositoryPath = string.Empty;
     private bool isChecking;
     private bool isRiskNoticeConfirmed;
     private LinuxRepositoryValidation? latestValidation;
+    private LinuxPlatformCapabilities? latestPlatformCapabilities;
     private LinuxRepositoryError? error;
     private LinuxRepositoryRoute route = LinuxRepositoryRoute.None;
 
-    public LocalFolderNoticeViewModel(ILinuxRepositoryCoreBridge coreBridge)
+    public LocalFolderNoticeViewModel(
+        ILinuxRepositoryCoreBridge coreBridge,
+        ILinuxPlatformCapabilitiesCoreBridge? platformCapabilitiesBridge = null,
+        string appVersion = "0.1.0")
     {
         this.coreBridge = coreBridge;
+        this.platformCapabilitiesBridge = platformCapabilitiesBridge
+            ?? coreBridge as ILinuxPlatformCapabilitiesCoreBridge
+            ?? throw new ArgumentException(
+                "Local folder notice requires C4-17 platform capabilities.",
+                nameof(coreBridge));
+        this.appVersion = LocalFolderNoticePresentation.NormalizeAppVersion(appVersion);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -68,6 +80,18 @@ public sealed class LocalFolderNoticeViewModel : INotifyPropertyChanged
         }
     }
 
+    public LinuxPlatformCapabilities? LatestPlatformCapabilities
+    {
+        get => latestPlatformCapabilities;
+        private set
+        {
+            if (SetProperty(ref latestPlatformCapabilities, value))
+            {
+                NotifyDisplayPropertiesChanged();
+            }
+        }
+    }
+
     public LinuxRepositoryError? Error
     {
         get => error;
@@ -108,12 +132,16 @@ public sealed class LocalFolderNoticeViewModel : INotifyPropertyChanged
         : "Choose a repository folder first.";
 
     public string TypeText => LatestValidation is { } validation
-        ? $"Type: {PathTypeLabel(validation)}"
+        ? $"Type: {LocalFolderNoticePresentation.PathTypeLabel(validation)}"
         : "Type: Unknown";
 
     public string WritableText => LatestValidation is { } validation
         ? $"Writable: {(validation.IsWritable ? "Yes" : "No")}"
         : "Writable: Unknown";
+
+    public string PlatformCapabilityText => LatestPlatformCapabilities is { } capabilities
+        ? LocalFolderNoticePresentation.PlatformCapabilityTextFor(capabilities)
+        : "Platform capabilities: Unknown";
 
     public string StatusText
     {
@@ -130,13 +158,13 @@ public sealed class LocalFolderNoticeViewModel : INotifyPropertyChanged
             }
 
             return LatestValidation is { } validation
-                ? StatusTextFor(validation)
+                ? LocalFolderNoticePresentation.StatusTextFor(validation)
                 : "Choose a repository folder first.";
         }
     }
 
     public string RiskText => LatestValidation is { } validation
-        ? RiskTextFor(validation)
+        ? LocalFolderNoticePresentation.RiskTextFor(validation, LatestPlatformCapabilities)
         : string.Empty;
 
     public string ContinueDisabledReason
@@ -173,6 +201,7 @@ public sealed class LocalFolderNoticeViewModel : INotifyPropertyChanged
     {
         RepositoryPath = route.RepoPath.Trim();
         LatestValidation = route.Validation;
+        LatestPlatformCapabilities = null;
         Error = null;
         Route = LinuxRepositoryRoute.None;
         IsRiskNoticeConfirmed = false;
@@ -207,6 +236,9 @@ public sealed class LocalFolderNoticeViewModel : INotifyPropertyChanged
                 .ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             LatestValidation = validation;
+            LatestPlatformCapabilities = await platformCapabilitiesBridge
+                .GetPlatformCapabilitiesAsync(LinuxPlatformId.Linux, appVersion, cancellationToken)
+                .ConfigureAwait(false);
             Error = BlockingErrorFor(validation);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -342,55 +374,6 @@ public sealed class LocalFolderNoticeViewModel : INotifyPropertyChanged
             : null;
     }
 
-    private static string PathTypeLabel(LinuxRepositoryValidation validation)
-    {
-        if (validation.IsICloudPath
-            || validation.IsOneDrivePath
-            || validation.HasIssue(LinuxRepositoryPathIssue.ICloudPath)
-            || validation.HasIssue(LinuxRepositoryPathIssue.OneDrivePath))
-        {
-            return "Sync folder";
-        }
-
-        return validation.PlatformPathKind switch
-        {
-            LinuxPlatformPathKind.Local => "Local folder",
-            LinuxPlatformPathKind.ExternalDrive => "External drive",
-            LinuxPlatformPathKind.NetworkShare => "Network mount",
-            LinuxPlatformPathKind.ICloudDrive => "Sync folder",
-            LinuxPlatformPathKind.OneDrive => "Sync folder",
-            _ => "Unknown"
-        };
-    }
-
-    private static string StatusTextFor(LinuxRepositoryValidation validation)
-    {
-        return PathTypeLabel(validation) switch
-        {
-            "Local folder" => "This is the recommended setup for Linux.",
-            "External drive" => "External drive detected.",
-            "Network mount" => "Network mount detected.",
-            "Sync folder" => "Sync folder detected.",
-            _ => "Unknown"
-        };
-    }
-
-    private static string RiskTextFor(LinuxRepositoryValidation validation)
-    {
-        return PathTypeLabel(validation) switch
-        {
-            "External drive" =>
-                "If this drive is disconnected, the repository will not be accessible.",
-            "Network mount" =>
-                "Network drives may delay or reorder file events. Run a rescan if changes look out of date.",
-            "Sync folder" =>
-                "AreaMatrix does not manage your sync provider. Conflict files will be shown for review when detected.",
-            "Unknown" =>
-                "This folder type is unknown. Confirm it can report changes reliably before continuing.",
-            _ => string.Empty
-        };
-    }
-
     private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string propertyName = "")
     {
         if (EqualityComparer<T>.Default.Equals(field, value))
@@ -411,6 +394,7 @@ public sealed class LocalFolderNoticeViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(FolderText));
         OnPropertyChanged(nameof(TypeText));
         OnPropertyChanged(nameof(WritableText));
+        OnPropertyChanged(nameof(PlatformCapabilityText));
         OnPropertyChanged(nameof(StatusText));
         OnPropertyChanged(nameof(RiskText));
         OnPropertyChanged(nameof(ContinueDisabledReason));

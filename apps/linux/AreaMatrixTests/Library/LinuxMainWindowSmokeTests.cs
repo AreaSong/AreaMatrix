@@ -78,6 +78,7 @@ public static class LinuxMainWindowSmokeTests
         TestAssert.Contains("DesktopMainQueryCoreBridge queryBridge = new(nativeCoreClient)", shell, "query bridge");
         TestAssert.Contains("new LocalFolderNoticeViewModel(coreBridge)", shell, "local notice view model");
         TestAssert.Contains("new LinuxMainWindowViewModel(coreBridge", shell, "main window view model");
+        TestAssert.NotContains("FakeLinuxPlatformCapabilitiesCoreBridge", shell, "no fake platform capability bridge");
         TestAssert.NotContains("FakeDesktopMainQueryCoreBridge", shell, "no fake bridge in production shell");
     }
 

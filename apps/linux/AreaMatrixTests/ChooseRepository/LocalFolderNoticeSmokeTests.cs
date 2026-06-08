@@ -28,12 +28,15 @@ public static class LocalFolderNoticeSmokeTests
             "Type: Sync folder",
             "Type: Unknown",
             "Writable: Yes/No",
+            "Platform capabilities: Watcher available; Cloud placeholders not available.",
             "I understand this location may not report changes reliably.",
             "Continue",
             "Choose Another Folder",
             "Open Folder",
             "The page calls validate_repo_path through LinuxRepositoryCoreBridge.",
-            "C4-17 platform capabilities are out of scope"
+            "The page calls get_platform_capabilities through LinuxPlatformCapabilitiesCoreBridge.",
+            "Watcher and cloud placeholder rows come from the C4-17 PlatformCapabilities matrix.",
+            "The page does not call cloud storage detection or configure sync providers."
         })
         {
             TestAssert.Contains(fragment, ui, $"UI fragment {fragment}");
@@ -56,11 +59,12 @@ public static class LocalFolderNoticeSmokeTests
             "apps/linux/AreaMatrix/Features/Onboarding/LinuxRepositoryCoreBridge.cs"));
 
         TestAssert.Contains("ILinuxRepositoryCoreBridge", viewModel, "repository bridge");
+        TestAssert.Contains("ILinuxPlatformCapabilitiesCoreBridge", viewModel, "platform bridge");
         TestAssert.Contains("ValidateRepoPathAsync", viewModel, "validate_repo_path bridge call");
+        TestAssert.Contains("GetPlatformCapabilitiesAsync", viewModel, "get_platform_capabilities bridge call");
         TestAssert.Contains("InitializeEmptyRepositoryAsync", bridge, "init_repo bridge available");
         TestAssert.Contains("AdoptExistingRepositoryAsync", bridge, "adopt init_repo bridge available");
         TestAssert.NotContains("DetectCloudStorageStateAsync", viewModel, "out-of-scope C4-17/cloud call");
-        TestAssert.NotContains("GetPlatformCapabilities", viewModel, "out-of-scope platform capability call");
         TestAssert.NotContains("LoadConfigAsync", viewModel, "out-of-scope config call");
     }
 

@@ -224,5 +224,13 @@ public static class LinuxChooseRepositoryViewModelTests
         {
             throw new InvalidOperationException("choose-repo tests must not initialize repositories");
         }
+
+        public Task<CorePlatformCapabilities> GetPlatformCapabilitiesAsync(
+            string platform,
+            string appVersion,
+            CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException("choose-repo tests must not read platform capabilities");
+        }
     }
 }

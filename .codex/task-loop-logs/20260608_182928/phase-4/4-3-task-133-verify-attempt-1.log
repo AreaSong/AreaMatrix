@@ -1,0 +1,82 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-133`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-133-s4-lnx-03-c4-17-platform-capabilities.md`
+- 实现范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/**`
+- 读取并核对：task、共享规则、切片规则、工程质量规则、编码规范、repo-local validation-driver、依赖图、phase manifest、4 个 Exact Docs、`core/area_matrix.udl`、相关 `apps/**` 实现与测试
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S4-LNX-03 页面中的 C4-17 功能点  
+  结果：通过  
+  证据：`LocalFolderNoticeViewModel` 新增 C4-17 `ILinuxPlatformCapabilitiesCoreBridge` 依赖，并在加载路径状态时读取 Linux platform capabilities；未实现同页 C4-10 之外的新 Core 功能。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Onboarding/LocalFolderNoticeViewModel.cs:19`
+
+- 项目：读取页面规格、control map、Core API 和 C4-17 能力规格  
+  结果：通过  
+  证据：S4-LNX-03 control map 声明 `C4-10, C4-17`；Core API 明确 `get_platform_capabilities` 服务 `S4-LNX-03`；UDL 存在 `PlatformCapabilities` 合同。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:23`
+
+- 项目：只接入 C4-17 对应 CoreBridge / 状态 / 错误映射  
+  结果：通过  
+  证据：Linux bridge 通过 `GetPlatformCapabilitiesAsync` 调用 Core client；native client 加载 `uniffi_area_matrix_core_fn_func_get_platform_capabilities` 并校验 checksum；未知 platform/capability status 映射为 `Config` 类错误。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Onboarding/LinuxRepositoryCoreBridge.cs:85`
+
+- 项目：不顺手实现相邻页面、相邻平台或同页其他能力  
+  结果：通过  
+  证据：变更集中在 `apps/linux/**`；`git diff -- core/src` 无输出；LocalFolderNotice smoke 明确排除 `DetectCloudStorageStateAsync`、`LoadConfigAsync` 等越界调用。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/ChooseRepository/LocalFolderNoticeSmokeTests.cs:63`
+
+- 项目：C4-17 用户可见功能可触发和验收  
+  结果：通过  
+  证据：页面展示 `Platform capabilities`，并将 watcher / cloud placeholder 能力行合并到风险文案；测试覆盖读取 C4-17、网络挂载、外接盘、同步目录、不可写路径和继续前确认。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Onboarding/LocalFolderNoticePresentation.cs:38`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环  
+  结果：通过  
+  证据：生产路径从 ViewModel -> LinuxRepositoryCoreBridge -> AreaMatrixNativeCoreClient -> UniFFI symbol；测试中的 fake 仅用于单元验证，native smoke 读取真实 Core capabilities。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.PlatformCapabilities.cs:7`
+
+- 项目：未触碰 control map 之外 Core 能力 / Forbidden Touches  
+  结果：通过  
+  证据：`core/src/**` 无 diff；新增路径在 manifest 允许的 `apps/**` 下；`.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 为 runner 进度状态，按本轮验收时序不单独阻断。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C4-17 native binding、bridge mapping、ViewModel 状态和展示文案分层清楚，新增文件未超 500 行。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Rust public API；UI spec stub 已更新 C4-17 页面消费说明。
+- 错误处理与边界处理：通过，空路径、不可写、Core exception、未知 enum/status 均有显式处理；不可写路径阻止继续。
+- 测试与验证覆盖：通过，已运行 manifest 验证与 Linux harness；测试覆盖 C4-17 调用、风险文案、越界能力排除和 native Core 读取。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径未使用 mock-only；测试 fake 未进入生产闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-133`，通过；包含 prompt doctor OK、`git diff --check`、macOS build gate，最终 `BUILD SUCCEEDED`，退出码 0。
+- 已运行：`dotnet test apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj`，退出码 0；该项目是 executable harness，输出仅显示 restore 状态，不能单独作为行为证据。
+- 已运行：`dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj`，通过；输出 `AreaMatrix Linux tests passed.`
+- 已运行：`git diff -- core/src`，无输出，Forbidden Touches 未被触碰。
+- 缺失：未做真实 Linux GUI/窗口点击验证；当前 task manifest 只要求 `./dev check task 4-3/task-133`，Linux harness 已补充覆盖 ViewModel 和 native bridge。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+VERIFY_RESULT: PASS

@@ -13,6 +13,8 @@ internal sealed class NativeCoreLibrary : IDisposable
         ValidateRepoPath = LoadFunction<ValidateRepoPathDelegate>(
             "uniffi_area_matrix_core_fn_func_validate_repo_path");
         InitRepo = LoadFunction<InitRepoDelegate>("uniffi_area_matrix_core_fn_func_init_repo");
+        GetPlatformCapabilities = LoadFunction<GetPlatformCapabilitiesDelegate>(
+            "uniffi_area_matrix_core_fn_func_get_platform_capabilities");
         ListFiles = LoadFunction<ListFilesDelegate>("uniffi_area_matrix_core_fn_func_list_files");
         GetFile = LoadFunction<GetFileDelegate>("uniffi_area_matrix_core_fn_func_get_file");
         ListTreeJson = LoadFunction<ListTreeJsonDelegate>("uniffi_area_matrix_core_fn_func_list_tree_json");
@@ -24,6 +26,8 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_checksum_func_validate_repo_path");
         InitRepoChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_init_repo");
+        GetPlatformCapabilitiesChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_get_platform_capabilities");
         ListFilesChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_list_files");
         GetFileChecksum = LoadFunction<ChecksumDelegate>(
@@ -37,6 +41,8 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ValidateRepoPathDelegate ValidateRepoPath { get; }
 
     public InitRepoDelegate InitRepo { get; }
+
+    public GetPlatformCapabilitiesDelegate GetPlatformCapabilities { get; }
 
     public ListFilesDelegate ListFiles { get; }
 
@@ -53,6 +59,8 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ChecksumDelegate ValidateRepoPathChecksum { get; }
 
     public ChecksumDelegate InitRepoChecksum { get; }
+
+    public ChecksumDelegate GetPlatformCapabilitiesChecksum { get; }
 
     public ChecksumDelegate ListFilesChecksum { get; }
 

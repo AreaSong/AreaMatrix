@@ -57,6 +57,23 @@ public enum LinuxRepositoryErrorKind
     Unavailable
 }
 
+public enum LinuxPlatformId
+{
+    Macos,
+    Ios,
+    Windows,
+    Linux,
+    Unknown
+}
+
+public enum LinuxPlatformCapabilityStatus
+{
+    Available,
+    Limited,
+    NotAvailable,
+    Unknown
+}
+
 public sealed record LinuxRepositoryValidation(
     string RepoPath,
     bool Exists,
@@ -79,6 +96,21 @@ public sealed record LinuxRepositoryValidation(
         return Issues.Contains(issue);
     }
 }
+
+public sealed record LinuxPlatformCapabilitySupport(
+    LinuxPlatformCapabilityStatus Status,
+    bool UiEnabled,
+    bool RequiresPermission,
+    string? Reason);
+
+public sealed record LinuxPlatformCapabilities(
+    LinuxPlatformId Platform,
+    string AppVersion,
+    LinuxPlatformCapabilitySupport Watcher,
+    LinuxPlatformCapabilitySupport Trash,
+    LinuxPlatformCapabilitySupport ShareExtension,
+    LinuxPlatformCapabilitySupport CloudPlaceholder,
+    LinuxPlatformCapabilitySupport SecurityBookmark);
 
 public sealed record LinuxRepositoryRoute(
     LinuxRepositoryRouteKind Kind,
