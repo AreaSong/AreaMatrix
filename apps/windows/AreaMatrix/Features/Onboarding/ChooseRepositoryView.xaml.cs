@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage.Pickers;
 using Windows.System;
 
@@ -10,11 +14,15 @@ namespace AreaMatrix.Features.Onboarding;
 
 public sealed partial class ChooseRepositoryView : Page
 {
+    private readonly List<WindowsRecentRepository> recentRepositories = [];
+
     public ChooseRepositoryView()
     {
         InitializeComponent();
         Unloaded += ChooseRepositoryView_Unloaded;
     }
+
+    public event Action<WindowsRecentRepository>? RecentRepositoryRemoved;
 
     public ChooseRepositoryViewModel? ViewModel
     {
@@ -35,6 +43,13 @@ public sealed partial class ChooseRepositoryView : Page
 
             RefreshState();
         }
+    }
+
+    public void SetRecentRepositories(IEnumerable<WindowsRecentRepository> repositories)
+    {
+        recentRepositories.Clear();
+        recentRepositories.AddRange(repositories);
+        RefreshRecentRepositories();
     }
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -87,9 +102,55 @@ public sealed partial class ChooseRepositoryView : Page
             return;
         }
 
-        await ViewModel.CheckRepositoryPathAsync(folder.Path);
-        RepositoryFolderTextBox.Text = ViewModel.RepositoryPath;
-        RefreshState();
+        await CheckRepositoryPathValueAsync(folder.Path);
+    }
+
+    private async void PastePathFromClipboard_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        DataPackageView clipboardContent = Clipboard.GetContent();
+        if (!clipboardContent.Contains(StandardDataFormats.Text))
+        {
+            return;
+        }
+
+        string clipboardPath = await clipboardContent.GetTextAsync();
+        if (string.IsNullOrWhiteSpace(clipboardPath))
+        {
+            return;
+        }
+
+        await CheckRepositoryPathValueAsync(clipboardPath);
+        RepositoryFolderTextBox.Focus(FocusState.Programmatic);
+    }
+
+    private async void RecentRepositoriesListView_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        if (ViewModel is null || RecentRepositoriesListView.SelectedItem is not WindowsRecentRepository recent)
+        {
+            return;
+        }
+
+        RecentRepositoriesListView.SelectedItem = null;
+        await CheckRepositoryPathValueAsync(recent.RepoPath);
+    }
+
+    private void RemoveRecentRepositoryButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: WindowsRecentRepository recent })
+        {
+            return;
+        }
+
+        recentRepositories.RemoveAll(item => item.RepoPath == recent.RepoPath);
+        RecentRepositoryRemoved?.Invoke(recent);
+        RefreshRecentRepositories();
     }
 
     private async void ContinueButton_Click(object sender, RoutedEventArgs e)
@@ -123,8 +184,28 @@ public sealed partial class ChooseRepositoryView : Page
             return;
         }
 
-        await ViewModel.CheckRepositoryPathAsync(typedPath);
+        await CheckRepositoryPathValueAsync(typedPath);
+    }
+
+    private async Task CheckRepositoryPathValueAsync(string path)
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        await ViewModel.CheckRepositoryPathAsync(path);
         RepositoryFolderTextBox.Text = ViewModel.RepositoryPath;
+        RefreshState();
+    }
+
+    private void RefreshRecentRepositories()
+    {
+        RecentRepositoriesListView.ItemsSource = null;
+        RecentRepositoriesListView.ItemsSource = recentRepositories.ToList();
+        RecentRepositoriesSection.Visibility = recentRepositories.Count > 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     private void RefreshState()
@@ -142,5 +223,10 @@ public sealed partial class ChooseRepositoryView : Page
             ? Visibility.Visible
             : Visibility.Collapsed;
         StatusTextBlock.Text = ViewModel.StatusText;
+
+        if (ViewModel.Error is not null)
+        {
+            RepositoryFolderTextBox.Focus(FocusState.Programmatic);
+        }
     }
 }

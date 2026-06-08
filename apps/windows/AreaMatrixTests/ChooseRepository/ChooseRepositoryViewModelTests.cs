@@ -368,6 +368,30 @@ internal static class WindowsRepositoryValidationSamples
             issues: [WindowsRepositoryPathIssue.OneDrivePath]);
     }
 
+    public static WindowsRepositoryValidation OneDriveEmptyDirectory(string path)
+    {
+        return Valid(
+            path,
+            isEmpty: true,
+            isInitialized: false,
+            isOneDrivePath: true,
+            platformPathKind: WindowsPlatformPathKind.OneDrive,
+            recommendedMode: WindowsRepositoryInitMode.CreateEmpty,
+            issues: [WindowsRepositoryPathIssue.OneDrivePath]);
+    }
+
+    public static WindowsRepositoryValidation OneDriveNonEmptyDirectory(string path)
+    {
+        return Valid(
+            path,
+            isEmpty: false,
+            isInitialized: false,
+            isOneDrivePath: true,
+            platformPathKind: WindowsPlatformPathKind.OneDrive,
+            recommendedMode: WindowsRepositoryInitMode.AdoptExisting,
+            issues: [WindowsRepositoryPathIssue.OneDrivePath, WindowsRepositoryPathIssue.NonEmptyDirectory]);
+    }
+
     public static WindowsRepositoryValidation Missing(string path)
     {
         return Valid(
@@ -391,6 +415,17 @@ internal static class WindowsRepositoryValidationSamples
             isInitialized: false,
             recommendedMode: null,
             issues: [WindowsRepositoryPathIssue.NotDirectory]);
+    }
+
+    public static WindowsRepositoryValidation NotWritable(string path)
+    {
+        return Valid(
+            path,
+            isWritable: false,
+            isEmpty: true,
+            isInitialized: false,
+            recommendedMode: WindowsRepositoryInitMode.CreateEmpty,
+            issues: [WindowsRepositoryPathIssue.NotWritable]);
     }
 
     private static WindowsRepositoryValidation Valid(

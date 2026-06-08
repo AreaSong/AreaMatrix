@@ -55,9 +55,32 @@ public static class ChooseRepositoryViewSmokeTests
         AssertButton(page, "Browse...", "BrowseButton_Click");
         AssertButton(page, "Continue", "ContinueButton_Click");
         AssertButton(page, "Cancel", "CancelButton_Click");
+        AssertButton(page, "Remove from recent", "RemoveRecentRepositoryButton_Click");
+        AssertClickable(page, "HyperlinkButton", "Paste path from clipboard", "PastePathFromClipboard_Click");
         AssertNamedElement(page, "TextBox", "RepositoryFolderTextBox");
         AssertNamedElement(page, "TextBlock", "StatusTextBlock");
         AssertNamedElement(page, "ProgressRing", "CheckingProgressRing");
+        AssertNamedElement(page, "StackPanel", "RecentRepositoriesSection");
+        AssertNamedElement(page, "ListView", "RecentRepositoriesListView");
+
+        string codeBehind = File.ReadAllText(RepositoryPath(
+            "apps/windows/AreaMatrix/Features/Onboarding/ChooseRepositoryView.xaml.cs"));
+        TestAssert.Contains("SetRecentRepositories", codeBehind, "recent repositories injection");
+        TestAssert.Contains("RecentRepositoryRemoved", codeBehind, "remove recent callback");
+        TestAssert.Contains("Focus(FocusState.Programmatic)", codeBehind, "error focus recovery");
+    }
+
+    private static void AssertClickable(
+        XElement root,
+        string localName,
+        string content,
+        string clickHandler)
+    {
+        XElement element = Descendants(root, localName)
+            .FirstOrDefault(item => AttributeValue(item, "Content") == content)
+            ?? throw new InvalidOperationException($"{localName} `{content}` was not found.");
+
+        TestAssert.Equal(clickHandler, AttributeValue(element, "Click"), $"{content} click handler");
     }
 
     private static void MainWindowConnectsPageToRealCoreBridge()

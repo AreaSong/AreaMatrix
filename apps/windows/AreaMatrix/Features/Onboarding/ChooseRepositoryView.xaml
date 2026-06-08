@@ -29,14 +29,64 @@
                 Header="Repository folder"
                 PlaceholderText="C:\Users\you\Documents\AreaMatrix"
                 AutomationProperties.Name="Repository folder"
+                TabIndex="0"
                 LostFocus="RepositoryFolderTextBox_LostFocus"
                 KeyDown="RepositoryFolderTextBox_KeyDown"
                 TextChanged="RepositoryFolderTextBox_TextChanged" />
+
+            <HyperlinkButton
+                x:Name="PastePathButton"
+                Content="Paste path from clipboard"
+                TabIndex="2"
+                Click="PastePathFromClipboard_Click" />
 
             <TextBlock
                 x:Name="StatusTextBlock"
                 AutomationProperties.LiveSetting="Polite"
                 TextWrapping="Wrap" />
+        </StackPanel>
+
+        <StackPanel
+            x:Name="RecentRepositoriesSection"
+            Grid.Row="2"
+            Spacing="8"
+            Visibility="Collapsed">
+            <TextBlock
+                Text="Recent repositories"
+                Style="{ThemeResource SubtitleTextBlockStyle}" />
+            <ListView
+                x:Name="RecentRepositoriesListView"
+                AutomationProperties.Name="Recent repositories"
+                IsItemClickEnabled="False"
+                SelectionChanged="RecentRepositoriesListView_SelectionChanged"
+                TabIndex="3">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="0,8" ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2">
+                                <TextBlock
+                                    Text="{Binding Name}"
+                                    FontWeight="SemiBold" />
+                                <TextBlock
+                                    Text="{Binding RepoPath}"
+                                    TextTrimming="CharacterEllipsis"
+                                    TextWrapping="NoWrap" />
+                                <TextBlock
+                                    Text="{Binding StatusReason}"
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Button
+                                Grid.Column="1"
+                                Content="Remove from recent"
+                                Click="RemoveRecentRepositoryButton_Click" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
         </StackPanel>
 
         <Grid Grid.Row="3" ColumnSpacing="8">
@@ -57,16 +107,19 @@
             <Button
                 Grid.Column="1"
                 Content="Cancel"
+                TabIndex="4"
                 Click="CancelButton_Click" />
             <Button
                 Grid.Column="2"
                 Content="Browse..."
+                TabIndex="1"
                 Click="BrowseButton_Click" />
             <Button
                 x:Name="ContinueButton"
                 Grid.Column="3"
                 Content="Continue"
                 Style="{ThemeResource AccentButtonStyle}"
+                TabIndex="5"
                 Click="ContinueButton_Click" />
         </Grid>
     </Grid>
