@@ -48,12 +48,20 @@ enum SyncConflictResolutionApplyState: Equatable {
     }
 }
 
+struct SyncConflictReplaceConfirmationSnapshot: Equatable {
+    var conflictID: String
+    var previewToken: String
+    var confirmationID: String
+    var replacePlan: SyncConflictReplacePlanSnapshot
+}
+
 @MainActor
 final class SyncConflictReviewModel: ObservableObject {
     @Published private(set) var state: SyncConflictReviewState = .notLoaded
     @Published private(set) var selectedResolution: SyncConflictResolutionStrategySnapshot = .keepBoth
     @Published private(set) var previewState: SyncConflictResolutionPreviewState = .idle
     @Published private(set) var applyState: SyncConflictResolutionApplyState = .idle
+    @Published private(set) var replaceConfirmation: SyncConflictReplaceConfirmationSnapshot?
 
     let repoPath: String
     let conflictID: String?
@@ -92,6 +100,10 @@ final class SyncConflictReviewModel: ObservableObject {
         applyDisabledReason == nil
     }
 
+    var canConfirmReplacePlan: Bool {
+        replaceConfirmationDisabledReason == nil
+    }
+
     var applyDisabledReason: String? {
         guard let conflict else { return "Conflict details are not loaded." }
         guard case let .loaded(preview) = previewState else {
@@ -106,14 +118,41 @@ final class SyncConflictReviewModel: ObservableObject {
         if preview.conflictID != conflict.conflictID || preview.resolution != selectedResolution {
             return "Resolution impact does not match the selected conflict."
         }
-        if selectedResolution == .useIncoming || preview.requiresReplaceConfirmation {
-            return "Use incoming version requires S4-X-09 replace confirmation."
+        if requiresReplaceConfirmation(preview), !isReplaceConfirmed(for: preview) {
+            return replaceConfirmationDisabledReason
+                ?? "Confirm the S4-X-09 replace plan before applying Use incoming version."
         }
-        if !preview.canApply {
+        if !preview.canApply, !canApplyConfirmedReplace(preview) {
             return preview.blockedReasonDisplay ?? "Core reported this resolution cannot be applied."
         }
         if preview.normalizedPreviewToken == nil {
             return "Core did not return a resolution preview token."
+        }
+        return nil
+    }
+
+    var replaceConfirmationDisabledReason: String? {
+        guard let conflict else { return "Conflict details are not loaded." }
+        guard case let .loaded(preview) = previewState else {
+            return previewState.isLoading ? "Resolution impact is still loading." : "Resolution impact is required."
+        }
+        guard selectedResolution == .useIncoming || preview.requiresReplaceConfirmation else {
+            return "Replace confirmation is only required for Use incoming version."
+        }
+        if preview.conflictID != conflict.conflictID || preview.resolution != selectedResolution {
+            return "Resolution impact does not match the selected conflict."
+        }
+        guard preview.replacePlan != nil else {
+            return "Core did not return a replace plan."
+        }
+        guard preview.normalizedPreviewToken != nil else {
+            return "Core did not return a resolution preview token."
+        }
+        if preview.trashRequired, !preview.trashAvailable {
+            return preview.blockedReasonDisplay ?? "Replace requires Trash or a Core safety backup."
+        }
+        if !preview.canApply, !preview.blocksOnlyForReplaceConfirmation {
+            return preview.blockedReasonDisplay ?? "Core reported this replace plan cannot be applied."
         }
         return nil
     }
@@ -124,6 +163,7 @@ final class SyncConflictReviewModel: ObservableObject {
         state = .loading
         previewState = .idle
         applyState = .idle
+        replaceConfirmation = nil
 
         do {
             let conflicts = try await conflictDetector.detectSyncConflicts(repoPath: repoPath)
@@ -148,6 +188,7 @@ final class SyncConflictReviewModel: ObservableObject {
     func selectResolution(_ resolution: SyncConflictResolutionStrategySnapshot) async {
         selectedResolution = resolution
         applyState = .idle
+        replaceConfirmation = nil
         guard let conflict else {
             previewState = .idle
             return
@@ -155,11 +196,27 @@ final class SyncConflictReviewModel: ObservableObject {
         await previewResolution(resolution, conflict: conflict)
     }
 
+    func confirmReplacePlan() {
+        guard replaceConfirmationDisabledReason == nil,
+              let conflict,
+              let preview = previewState.preview,
+              let previewToken = preview.normalizedPreviewToken,
+              let replacePlan = preview.replacePlan else { return }
+
+        replaceConfirmation = SyncConflictReplaceConfirmationSnapshot(
+            conflictID: conflict.conflictID,
+            previewToken: previewToken,
+            confirmationID: confirmationID(conflictID: conflict.conflictID, previewToken: previewToken),
+            replacePlan: replacePlan
+        )
+    }
+
     func applyResolution() async {
         guard canApplyResolution,
               let conflict,
               let preview = previewState.preview,
               let previewToken = preview.normalizedPreviewToken else { return }
+        let confirmation = isReplaceConfirmed(for: preview) ? replaceConfirmation : nil
 
         applyState = .applying(selectedResolution)
 
@@ -170,8 +227,8 @@ final class SyncConflictReviewModel: ObservableObject {
                 request: SyncConflictResolutionRequestSnapshot(
                     strategy: selectedResolution,
                     previewToken: previewToken,
-                    replaceConfirmed: false,
-                    replaceConfirmationID: nil
+                    replaceConfirmed: confirmation != nil,
+                    replaceConfirmationID: confirmation?.confirmationID
                 )
             )
             applyState = .succeeded(report)
@@ -198,6 +255,7 @@ final class SyncConflictReviewModel: ObservableObject {
             previewState = .loaded(preview)
         } catch {
             guard generation == previewGeneration else { return }
+            replaceConfirmation = nil
             previewState = await .failed(resolution, mapError(error))
         }
     }
@@ -223,6 +281,32 @@ final class SyncConflictReviewModel: ObservableObject {
             return await errorMapper.mapCoreError(coreError)
         }
         return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
+    }
+
+    private func requiresReplaceConfirmation(_ preview: SyncConflictResolutionPreviewSnapshot) -> Bool {
+        selectedResolution == .useIncoming || preview.requiresReplaceConfirmation
+    }
+
+    private func isReplaceConfirmed(for preview: SyncConflictResolutionPreviewSnapshot) -> Bool {
+        guard let confirmation = replaceConfirmation,
+              let previewToken = preview.normalizedPreviewToken else { return false }
+        return confirmation.conflictID == preview.conflictID && confirmation.previewToken == previewToken
+    }
+
+    private func canApplyConfirmedReplace(_ preview: SyncConflictResolutionPreviewSnapshot) -> Bool {
+        requiresReplaceConfirmation(preview)
+            && isReplaceConfirmed(for: preview)
+            && preview.blocksOnlyForReplaceConfirmation
+    }
+
+    private func confirmationID(conflictID: String, previewToken: String) -> String {
+        let rawID = "\(conflictID)-\(previewToken)"
+        let safeID = rawID.map { character in
+            character.isLetter || character.isNumber || character == "-" || character == "_"
+                ? String(character)
+                : "-"
+        }.joined()
+        return "S4-X-01-C4-21-\(safeID)"
     }
 }
 

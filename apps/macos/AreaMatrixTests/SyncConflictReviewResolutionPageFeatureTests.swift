@@ -1,7 +1,7 @@
 @testable import AreaMatrix
 import XCTest
 
-final class SyncConflictReviewResolutionPageFeatureTests: XCTestCase {
+final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
     @MainActor
     func testS4X01C416LoadedViewShowsSummaryVersionsAndDefaultImpact() async throws {
         let conflict = SyncConflictSnapshot.s4x01Fixture()
@@ -73,7 +73,7 @@ final class SyncConflictReviewResolutionPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X01C416UseIncomingRequiresS4X09AndDoesNotResolveDirectly() async {
+    func testS4X01C421UseIncomingRequiresReplaceConfirmationBeforeResolve() async throws {
         let resolver = S4X01RecordingSyncConflictResolver(previewResults: [
             .keepBoth: .success(.s4x01PreviewFixture()),
             .useIncoming: .success(.s4x01PreviewFixture(
@@ -89,18 +89,98 @@ final class SyncConflictReviewResolutionPageFeatureTests: XCTestCase {
         await model.load()
         await model.selectResolution(.useIncoming)
         await model.applyResolution()
-        let body = s4x01MirrorDescription(of: SyncConflictReviewView(
-            model: model,
-            onBackToNeedsReview: {},
-            onClose: {}
-        ).body)
+        let preview = try XCTUnwrap(model.previewState.preview)
+        let replacePlan = try XCTUnwrap(preview.replacePlan)
         let resolveRequests = await resolver.recordedResolveRequests()
 
         XCTAssertFalse(model.canApplyResolution)
-        XCTAssertEqual(model.applyDisabledReason, "Use incoming version requires S4-X-09 replace confirmation.")
+        XCTAssertTrue(model.canConfirmReplacePlan)
+        XCTAssertEqual(
+            model.applyDisabledReason,
+            "Confirm the S4-X-09 replace plan before applying Use incoming version."
+        )
         XCTAssertEqual(resolveRequests, [])
-        XCTAssertTrue(body.contains("Use incoming version requires S4-X-09 replace confirmation."))
-        XCTAssertTrue(body.contains("Replace confirmation required"))
+        XCTAssertEqual(preview.blockedReasonDisplay, "Replace confirmation required")
+        XCTAssertEqual(replacePlan.changeLogAction, "conflict_resolved_use_incoming")
+        XCTAssertEqual(replacePlan.backupTarget, "Trash")
+        XCTAssertNil(model.replaceConfirmationDisabledReason)
+    }
+
+    @MainActor
+    func testS4X01C421ConfirmedReplaceUsesPreviewTokenAndCoreResolveFlag() async throws {
+        let resolver = S4X01RecordingSyncConflictResolver(
+            previewResults: [
+                .keepBoth: .success(.s4x01PreviewFixture()),
+                .useIncoming: .success(.s4x01PreviewFixture(
+                    resolution: .useIncoming,
+                    canApply: false,
+                    requiresReplaceConfirmation: true,
+                    blockedReason: "Replace confirmation required",
+                    previewToken: "preview-token-use-incoming"
+                ))
+            ],
+            resolveResult: .success(.s4x01ResolveFixture(resolution: .useIncoming))
+        )
+        let model = makeModel(resolver: resolver)
+
+        await model.load()
+        await model.selectResolution(.useIncoming)
+        model.confirmReplacePlan()
+        await model.applyResolution()
+        let preview = try XCTUnwrap(model.previewState.preview)
+        let confirmation = try XCTUnwrap(model.replaceConfirmation)
+        let panelBody = s4x01MirrorDescription(of: SyncConflictReplaceConfirmationPanel(
+            preview: preview,
+            confirmation: confirmation,
+            disabledReason: model.replaceConfirmationDisabledReason,
+            onConfirm: {}
+        ).body)
+        let resolveRequests = await resolver.recordedResolveRequests()
+
+        XCTAssertEqual(confirmation.previewToken, "preview-token-use-incoming")
+        XCTAssertEqual(resolveRequests, [
+            S4X01SyncConflictResolveRequest(
+                repoPath: "/tmp/s4x01-repo",
+                conflictID: "conflict-report",
+                request: SyncConflictResolutionRequestSnapshot(
+                    strategy: .useIncoming,
+                    previewToken: "preview-token-use-incoming",
+                    replaceConfirmed: true,
+                    replaceConfirmationID: "S4-X-01-C4-21-conflict-report-preview-token-use-incoming"
+                )
+            )
+        ])
+        XCTAssertEqual(model.applyState, .succeeded(.s4x01ResolveFixture(resolution: .useIncoming)))
+        XCTAssertTrue(panelBody.contains("Replace plan confirmed for this preview token."))
+        XCTAssertTrue(panelBody.contains("conflict_resolved_use_incoming"))
+    }
+
+    @MainActor
+    func testS4X01C421TrashUnavailableDisablesReplaceConfirmationAndResolve() async {
+        let resolver = S4X01RecordingSyncConflictResolver(previewResults: [
+            .keepBoth: .success(.s4x01PreviewFixture()),
+            .useIncoming: .success(.s4x01PreviewFixture(
+                resolution: .useIncoming,
+                canApply: false,
+                requiresReplaceConfirmation: true,
+                trashAvailable: false,
+                blockedReason: "Replace requires Trash or safety backup",
+                previewToken: "preview-token-use-incoming"
+            ))
+        ])
+        let model = makeModel(resolver: resolver)
+
+        await model.load()
+        await model.selectResolution(.useIncoming)
+        model.confirmReplacePlan()
+        await model.applyResolution()
+        let resolveRequests = await resolver.recordedResolveRequests()
+
+        XCTAssertNil(model.replaceConfirmation)
+        XCTAssertFalse(model.canConfirmReplacePlan)
+        XCTAssertEqual(model.replaceConfirmationDisabledReason, "Replace requires Trash or safety backup")
+        XCTAssertFalse(model.canApplyResolution)
+        XCTAssertEqual(resolveRequests, [])
     }
 
     @MainActor

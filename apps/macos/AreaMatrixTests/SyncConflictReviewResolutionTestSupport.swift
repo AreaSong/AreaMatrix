@@ -2,7 +2,9 @@
 import Foundation
 
 actor S4X01RecordingSyncConflictResolver: CoreSyncConflictResolving {
-    private let previewResults: [SyncConflictResolutionStrategySnapshot: Result<SyncConflictResolutionPreviewSnapshot, Error>]
+    private let previewResults: [
+        SyncConflictResolutionStrategySnapshot: Result<SyncConflictResolutionPreviewSnapshot, Error>
+    ]
     private let resolveResult: Result<SyncConflictResolveReportSnapshot, Error>
     private var previewRequests: [S4X01SyncConflictPreviewRequest] = []
     private var resolveRequests: [S4X01SyncConflictResolveRequest] = []
@@ -68,6 +70,7 @@ extension SyncConflictResolutionPreviewSnapshot {
         resolution: SyncConflictResolutionStrategySnapshot = .keepBoth,
         canApply: Bool = true,
         requiresReplaceConfirmation: Bool = false,
+        trashAvailable: Bool = true,
         blockedReason: String? = nil,
         previewToken: String? = "preview-token-keep-both"
     ) -> SyncConflictResolutionPreviewSnapshot {
@@ -94,7 +97,7 @@ extension SyncConflictResolutionPreviewSnapshot {
             destructive: resolution == .useIncoming,
             requiresReplaceConfirmation: requiresReplaceConfirmation,
             trashRequired: resolution == .useIncoming,
-            trashAvailable: resolution != .useIncoming,
+            trashAvailable: trashAvailable,
             canApply: canApply,
             blockedReason: blockedReason,
             previewToken: previewToken,
@@ -102,7 +105,7 @@ extension SyncConflictResolutionPreviewSnapshot {
         )
     }
 
-    private static func changeLogAction(for resolution: SyncConflictResolutionStrategySnapshot) -> String {
+    static func changeLogAction(for resolution: SyncConflictResolutionStrategySnapshot) -> String {
         switch resolution {
         case .keepBoth:
             "conflict_resolved_keep_both"
@@ -161,9 +164,9 @@ extension SyncConflictResolveReportSnapshot {
             status: .resolved,
             keptPaths: ["docs/report.pdf"],
             retainedPaths: ["docs/report (Windows conflict).pdf"],
-            trashedPaths: [],
+            trashedPaths: resolution == .useIncoming ? ["docs/report.pdf"] : [],
             affectedFileIDs: [42, 43],
-            changeLogAction: "conflict_resolved_keep_both",
+            changeLogAction: SyncConflictResolutionPreviewSnapshot.changeLogAction(for: resolution),
             undoToken: nil,
             resolvedAt: 1_778_738_500
         )

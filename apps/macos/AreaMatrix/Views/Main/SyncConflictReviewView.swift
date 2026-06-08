@@ -13,6 +13,7 @@ enum SyncConflictReviewCopy {
     static let applyingAction = "Applying resolution..."
     static let impactTitle = "Impact summary"
     static let resolutionTitle = "Resolution"
+    static let replaceConfirmAction = "Confirm replace plan"
 }
 
 enum SyncConflictReviewAccessibilityID {
@@ -31,6 +32,8 @@ enum SyncConflictReviewAccessibilityID {
     static let apply = "S4-X-01-C4-16-apply"
     static let applyFailure = "S4-X-01-C4-16-apply-failure"
     static let applySuccess = "S4-X-01-C4-16-apply-success"
+    static let replaceConfirmation = "S4-X-01-C4-21-replace-confirmation"
+    static let replaceConfirm = "S4-X-01-C4-21-confirm-replace-plan"
 
     static func versionCard(fileID: String) -> String {
         "S4-X-01-C4-15-version-\(safeID(fileID))"
@@ -76,7 +79,9 @@ struct SyncConflictReviewView: View {
         }
         .accessibilityIdentifier(SyncConflictReviewAccessibilityID.page)
     }
+}
 
+private extension SyncConflictReviewView {
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 5) {
@@ -286,6 +291,7 @@ struct SyncConflictReviewView: View {
                 Label("Use incoming version requires S4-X-09 replace confirmation.", systemImage: "lock.shield")
                     .foregroundStyle(.orange)
             }
+            replaceConfirmationContent(preview)
             if let blockedReason = preview.blockedReasonDisplay {
                 Label(blockedReason, systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.orange)
@@ -293,6 +299,18 @@ struct SyncConflictReviewView: View {
             versionImpactList(preview.versionImpacts)
         }
         .accessibilityIdentifier(SyncConflictReviewAccessibilityID.impact)
+    }
+
+    @ViewBuilder
+    private func replaceConfirmationContent(_ preview: SyncConflictResolutionPreviewSnapshot) -> some View {
+        if preview.requiresReplaceConfirmation || model.selectedResolution == .useIncoming {
+            SyncConflictReplaceConfirmationPanel(
+                preview: preview,
+                confirmation: model.replaceConfirmation,
+                disabledReason: model.replaceConfirmationDisabledReason,
+                onConfirm: model.confirmReplacePlan
+            )
+        }
     }
 
     private func versionImpactList(_ impacts: [SyncConflictVersionImpactSnapshot]) -> some View {

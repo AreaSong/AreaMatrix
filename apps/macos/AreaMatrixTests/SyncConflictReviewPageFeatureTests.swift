@@ -2,14 +2,13 @@
 import XCTest
 
 final class SyncConflictReviewPageFeatureTests: XCTestCase {
-    private static let declaredCapabilities: Set<String> = ["C4-15", "C4-16"]
+    private static let declaredCapabilities: Set<String> = ["C4-15", "C4-16", "C4-21"]
 
-    func testS4X01DeclaresOnlyC415AndC416Boundaries() {
-        XCTAssertEqual(Self.declaredCapabilities, ["C4-15", "C4-16"])
+    func testS4X01DeclaresOnlyC415C416AndC421Boundaries() {
+        XCTAssertEqual(Self.declaredCapabilities, ["C4-15", "C4-16", "C4-21"])
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.detectSyncConflicts))
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.previewSyncConflictResolution))
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.resolveSyncConflict))
-        XCTAssertFalse(Self.declaredCapabilities.contains("C4-21"))
     }
 
     @MainActor
@@ -73,60 +72,12 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
             errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
         )
         await model.selectFiles([file.id])
-        let body = s4x01MirrorDescription(of: MainRepositoryDetailPane(
-            selection: model.selection,
-            multiSelectionSummary: MultiSelectionDetailSummary(selection: model.selection, files: model.files),
-            detailErrorMapping: model.detailErrorMapping,
-            isDetailLoading: model.isDetailLoading,
-            selectedFileDetail: model.selectedFileDetail,
-            noteWriteBlock: model.selectedFileNoteWriteBlock,
-            detailLogState: model.detailLogState,
-            detailLogDiagnosticsState: model.detailLogDiagnosticsState,
-            detailExternalCreateSyncState: model.detailExternalCreateSyncState,
-            detailTagEditorState: model.detailTagEditorState,
-            detailTagSuggestionState: model.detailTagSuggestionState,
-            tagSuggestionPresentationRequest: model.tagSuggestionPresentationRequest,
-            detailTagUndoToast: model.detailTagUndoToast,
-            detailTabRequest: model.detailTabRequest,
-            selectedImportProgressRow: nil,
-            semanticDetail: nil,
-            repoPath: opening.config.repoPath,
-            batchTagStore: CoreBridge(),
-            batchTagUndoStore: CoreBridge(),
-            batchTagErrorMapper: model.errorMapper,
-            batchDeleter: CoreBridge(),
-            batchCategoryChanger: CoreBridge(),
-            batchRenamer: CoreBridge(),
-            categoryRows: opening.tree.sidebarRows,
-            onBatchCategoryApplied: { _ in },
-            onBatchDeleteApplied: { _ in },
-            onBatchRenameApplied: { _ in },
-            onBatchCategoryCreateNewCategory: { _ in },
-            onRetrySelectedFileDetail: {},
-            tagActions: .noop,
-            onCopyPaths: { _ in },
-            onOpenNoteFile: { _ in },
-            onRefreshChangeLog: {},
-            onRequestDetailLogDiagnostics: {},
-            onConfirmDetailLogDiagnostics: {},
-            onCancelDetailLogDiagnostics: {},
-            onDetailTabRequestConsumed: { _ in },
-            onBeginRenameFile: { _ in },
-            onBeginChangeCategoryFile: { _ in },
-            onBeginClassifierCorrectionFile: { _ in },
-            onBeginAIClassificationSuggestionFile: { _ in },
-            onBeginDeleteFile: { _ in },
-            onBeginICloudConflictResolution: { _ in },
-            onBeginSyncConflictReview: { routedFile = $0 },
-            onOpenAISettings: {},
-            writeActionDisabledReason: model.writeActionDisabledReason,
-            summaryExitController: AISummaryEditorExitController(),
-            noteModel: DetailNoteModel(
-                repoPath: opening.config.repoPath,
-                noteStore: S4X01NoopNoteStore(),
-                errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
-            )
-        ).body)
+        let detailPane = makeS4X01DetailPane(
+            model: model,
+            opening: opening,
+            onBeginSyncConflictReview: { routedFile = $0 }
+        )
+        let body = s4x01MirrorDescription(of: detailPane.body)
         let route = SyncConflictReviewRoute.fileDetail(repoPath: opening.config.repoPath, file: file)
 
         XCTAssertTrue(body.contains("Review Sync Conflict..."))
@@ -192,6 +143,73 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
         XCTAssertTrue(body.contains(SyncConflictReviewCopy.errorTitle))
         XCTAssertTrue(body.contains("Retry"))
     }
+}
+
+@MainActor
+private func makeS4X01DetailPane(
+    model: MainFileListModel,
+    opening: RepositoryOpeningResult,
+    onBeginSyncConflictReview: @escaping (FileEntrySnapshot) -> Void
+) -> MainRepositoryDetailPane {
+    MainRepositoryDetailPane(
+        selection: model.selection,
+        multiSelectionSummary: MultiSelectionDetailSummary(selection: model.selection, files: model.files),
+        detailErrorMapping: model.detailErrorMapping,
+        isDetailLoading: model.isDetailLoading,
+        selectedFileDetail: model.selectedFileDetail,
+        noteWriteBlock: model.selectedFileNoteWriteBlock,
+        detailLogState: model.detailLogState,
+        detailLogDiagnosticsState: model.detailLogDiagnosticsState,
+        detailExternalCreateSyncState: model.detailExternalCreateSyncState,
+        detailTagEditorState: model.detailTagEditorState,
+        detailTagSuggestionState: model.detailTagSuggestionState,
+        tagSuggestionPresentationRequest: model.tagSuggestionPresentationRequest,
+        detailTagUndoToast: model.detailTagUndoToast,
+        detailTabRequest: model.detailTabRequest,
+        selectedImportProgressRow: nil,
+        semanticDetail: nil,
+        repoPath: opening.config.repoPath,
+        batchTagStore: CoreBridge(),
+        batchTagUndoStore: CoreBridge(),
+        batchTagErrorMapper: model.errorMapper,
+        batchDeleter: CoreBridge(),
+        batchCategoryChanger: CoreBridge(),
+        batchRenamer: CoreBridge(),
+        categoryRows: opening.tree.sidebarRows,
+        onBatchCategoryApplied: { _ in },
+        onBatchDeleteApplied: { _ in },
+        onBatchRenameApplied: { _ in },
+        onBatchCategoryCreateNewCategory: { _ in },
+        onRetrySelectedFileDetail: {},
+        tagActions: .noop,
+        onCopyPaths: { _ in },
+        onOpenNoteFile: { _ in },
+        onRefreshChangeLog: {},
+        onRequestDetailLogDiagnostics: {},
+        onConfirmDetailLogDiagnostics: {},
+        onCancelDetailLogDiagnostics: {},
+        onDetailTabRequestConsumed: { _ in },
+        onBeginRenameFile: { _ in },
+        onBeginChangeCategoryFile: { _ in },
+        onBeginClassifierCorrectionFile: { _ in },
+        onBeginAIClassificationSuggestionFile: { _ in },
+        onBeginDeleteFile: { _ in },
+        onBeginICloudConflictResolution: { _ in },
+        onBeginSyncConflictReview: onBeginSyncConflictReview,
+        onOpenAISettings: {},
+        writeActionDisabledReason: model.writeActionDisabledReason,
+        summaryExitController: AISummaryEditorExitController(),
+        noteModel: makeS4X01DetailNoteModel(repoPath: opening.config.repoPath)
+    )
+}
+
+@MainActor
+private func makeS4X01DetailNoteModel(repoPath: String) -> DetailNoteModel {
+    DetailNoteModel(
+        repoPath: repoPath,
+        noteStore: S4X01NoopNoteStore(),
+        errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+    )
 }
 
 actor S4X01RecordingSyncConflictDetector: CoreSyncConflictDetecting {
@@ -299,7 +317,7 @@ extension FileEntrySnapshot {
             originalName: currentName,
             currentName: currentName,
             category: "docs",
-            sizeBytes: 2_048,
+            sizeBytes: 2048,
             hashSha256: "s4x01-file-\(id)",
             storageMode: "Copied",
             origin: "Imported",
@@ -322,7 +340,7 @@ extension SyncConflictAffectedFileSnapshot {
             path: path,
             fileID: fileID,
             role: role,
-            sizeBytes: 2_048,
+            sizeBytes: 2048,
             modifiedAt: 1_778_738_400,
             hashSha256: hashSha256,
             sourcePlatform: sourcePlatform
@@ -337,23 +355,23 @@ actor S4X01RecordingFileDetailer: CoreFileDetailing {
         self.result = result
     }
 
-    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
+    func getFile(repoPath _: String, fileID _: Int64) async throws -> FileEntrySnapshot {
         try result.get()
     }
 }
 
 struct S4X01NoopFileLister: CoreFileListing {
-    func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
+    func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         []
     }
 }
 
 actor S4X01NoopNoteStore: CoreNoteReadingWriting {
-    func readNote(repoPath: String, fileID: Int64) async throws -> String? {
+    func readNote(repoPath _: String, fileID _: Int64) async throws -> String? {
         nil
     }
 
-    func writeNote(repoPath: String, fileID: Int64, contentMarkdown: String) async throws {}
+    func writeNote(repoPath _: String, fileID _: Int64, contentMarkdown _: String) async throws {}
 }
 
 extension CoreErrorMappingSnapshot {

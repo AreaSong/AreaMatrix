@@ -121,6 +121,12 @@ struct SyncConflictResolutionPreviewSnapshot: Equatable {
         let trimmed = blockedReason?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return trimmed.isEmpty ? nil : trimmed
     }
+
+    var blocksOnlyForReplaceConfirmation: Bool {
+        !canApply
+            && requiresReplaceConfirmation
+            && blockedReasonDisplay?.localizedCaseInsensitiveContains("confirmation") == true
+    }
 }
 
 struct SyncConflictResolutionRequestSnapshot: Equatable {
