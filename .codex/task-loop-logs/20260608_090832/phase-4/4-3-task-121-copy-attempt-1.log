@@ -1,0 +1,39 @@
+一、执行结论
+
+已完成。`4-3/task-121` 的 manifest 验证已通过，改动只落在 `apps/**`。
+
+二、执行范围
+
+修改 / 新增文件：
+- [MainWindow.xaml](/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/MainWindow.xaml)
+- [MainWindow.xaml.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/MainWindow.xaml.cs)
+- [OneDriveNoticeViewModel.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/OneDriveNoticeViewModel.cs)
+- [OneDriveNoticeDialog.xaml](/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/OneDriveNoticeDialog.xaml)
+- [OneDriveNoticeDialog.xaml.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/OneDriveNoticeDialog.xaml.cs)
+- Windows 测试项目和 `OneDriveNotice*` 测试文件
+
+三、完成情况
+
+核对清单：已只处理 `S4-WIN-03 + C4-08`。页面现在通过 `DetectCloudStorageStateAsync` 展示 OneDrive provider/status/summary/risk reasons，并映射 permission denied、access expired、reconnect、非 OneDrive 等状态。没有接 `acknowledge_onedrive_risk_notice`，没有实现 `C4-14`、watcher、rescan、replace 或其他页面能力。
+
+完成标准：C4-08 用户可见状态页可从 `OneDriveNotice` route 触发；状态来自真实 `CoreBridge` 路径，不是 mock-only 或静态伪造。未触碰 `core/src/**`，也未修改 `core/area_matrix.udl`。
+
+四、工程质量
+
+代码结构为 `OneDriveNoticeViewModel` 负责状态/错误映射，`OneDriveNoticeDialog` 负责 UI 和打开 Explorer，`MainWindow` 只做 route host。无新增依赖；没有文件删除、移动、覆盖、DB、reindex、sync SDK 或用户文件写入。新增文件均小于 500 行，未发现行尾空白。
+
+五、验证情况
+
+已运行并通过：
+- `dotnet run --project apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj`：通过，输出 `AreaMatrix Windows tests passed.`
+- `./dev check task 4-3/task-121`：通过；包含 `doctor: OK`、`git diff --check`、macOS `xcodebuild ... build`，最终 `** BUILD SUCCEEDED **`
+
+补充检查未通过：
+- `dotnet build apps/windows/AreaMatrix/AreaMatrix.Windows.csproj --no-restore`：失败在 NuGet 源加载，`NU1301` / `CookieContainer` 初始化异常 / `GetDomainName: -1`。这是环境/包源访问层阻断，本轮用 Windows test harness 覆盖了新增 ViewModel 与 smoke 结构，但 Windows app 本体 XAML 编译仍建议在 NuGet 可用环境补跑。
+
+六、风险与后续
+
+剩余风险：Windows app 本体 build 未在当前环境完成；`Continue with OneDrive` / 风险确认持久化刻意未做，属于 `4-3/task-122` 的 `C4-14` 范围。
+
+建议下一个任务：`4-3/task-122`，接入 `S4-WIN-03 + C4-14 onedrive-risk-state`。
+

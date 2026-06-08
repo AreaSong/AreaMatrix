@@ -317,6 +317,14 @@ internal static class TestAssert
         }
     }
 
+    public static void True(bool actual, string label)
+    {
+        if (!actual)
+        {
+            throw new InvalidOperationException($"{label}: expected true.");
+        }
+    }
+
     public static void Contains(string expectedSubstring, string actual, string label)
     {
         if (!actual.Contains(expectedSubstring, StringComparison.Ordinal))

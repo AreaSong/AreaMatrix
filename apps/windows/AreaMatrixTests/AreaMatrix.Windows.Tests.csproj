@@ -22,6 +22,7 @@
     <Compile Include="../AreaMatrix/Features/Onboarding/WindowsRecentRepository.cs" Link="Features/Onboarding/WindowsRecentRepository.cs" />
     <Compile Include="../AreaMatrix/Features/Onboarding/WindowsRepositoryCoreBridge.cs" Link="Features/Onboarding/WindowsRepositoryCoreBridge.cs" />
     <Compile Include="../AreaMatrix/Features/Onboarding/ChooseRepositoryViewModel.cs" Link="Features/Onboarding/ChooseRepositoryViewModel.cs" />
+    <Compile Include="../AreaMatrix/Features/Onboarding/OneDriveNoticeViewModel.cs" Link="Features/Onboarding/OneDriveNoticeViewModel.cs" />
   </ItemGroup>
 
 </Project>

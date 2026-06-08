@@ -8,6 +8,9 @@
 
     <Grid>
         <onboarding:ChooseRepositoryView x:Name="ChooseRepositoryPage" />
+        <onboarding:OneDriveNoticeDialog
+            x:Name="OneDriveNoticePage"
+            Visibility="Collapsed" />
         <library:WindowsMainWindow
             x:Name="WindowsMainWindowPage"
             Visibility="Collapsed" />
