@@ -57,6 +57,7 @@ struct MainRepositoryContentView: View {
     @State var savedSearchesBySidebarID: [String: SavedSearchSnapshot] = [:]
     @State var smartListLoadError: CoreErrorMappingSnapshot?
     @State var smartListManagementRoute: SmartListManagementRoute?
+    @State var pendingSyncConflictReviewRoute: SyncConflictReviewRoute?
     @FocusState var isSearchFieldFocused: Bool
     @StateObject var dropPreviewModel: ImportDropPreviewModel
     @StateObject var detailNoteModel: DetailNoteModel
@@ -305,6 +306,7 @@ extension MainRepositoryContentView {
         .sheet(item: $pendingBatchRenameRoute, content: batchRenameRoutingSheet)
         .sheet(item: $pendingUndoHistoryRequest, content: undoHistorySheet)
         .sheet(item: $smartListManagementRoute, content: smartListManagementSheet)
+        .sheet(item: $pendingSyncConflictReviewRoute, content: syncConflictReviewSheet)
         .onChange(of: pendingImportConflictBatchRoute) { _, route in
             guard let route else { return }; pendingImportConflictBatchRoute = nil
             onOpenImportConflictBatch(route)

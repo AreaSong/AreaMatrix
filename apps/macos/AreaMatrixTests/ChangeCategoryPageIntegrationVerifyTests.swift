@@ -115,6 +115,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             onBeginClassifierCorrectionFile: model.beginClassifierCorrection,
             onBeginAIClassificationSuggestionFile: model.beginAIClassificationSuggestion,
             onBeginDeleteFile: model.beginDelete, onBeginICloudConflictResolution: model.beginICloudConflictResolution,
+            onBeginSyncConflictReview: { _ in },
             onOpenAISettings: {},
             writeActionDisabledReason: model.writeActionDisabledReason,
             summaryExitController: AISummaryEditorExitController(),

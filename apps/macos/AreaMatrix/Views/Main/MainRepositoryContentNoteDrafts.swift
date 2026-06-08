@@ -224,12 +224,29 @@ extension MainRepositoryContentView {
             onBeginAIClassificationSuggestionFile: fileListModel.beginAIClassificationSuggestion,
             onBeginDeleteFile: fileListModel.beginDelete,
             onBeginICloudConflictResolution: fileListModel.beginICloudConflictResolution,
+            onBeginSyncConflictReview: beginSyncConflictReview,
             onOpenAISettings: onOpenAISettings,
             writeActionDisabledReason: fileListModel.writeActionDisabledReason,
             summaryExitController: summaryExitController,
             noteModel: detailNoteModel
         )
         .frame(minWidth: 220, idealWidth: 260, maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    func beginSyncConflictReview(file: FileEntrySnapshot) {
+        pendingSyncConflictReviewRoute = .fileDetail(repoPath: opening.config.repoPath, file: file)
+    }
+
+    func syncConflictReviewSheet(_ route: SyncConflictReviewRoute) -> some View {
+        SyncConflictReviewView(
+            model: SyncConflictReviewModel(
+                repoPath: route.repoPath,
+                conflictID: route.conflictID,
+                primaryPath: route.primaryPath
+            ),
+            onBackToNeedsReview: { pendingSyncConflictReviewRoute = nil },
+            onClose: { pendingSyncConflictReviewRoute = nil }
+        )
     }
 
     // swiftlint:disable:next identifier_name

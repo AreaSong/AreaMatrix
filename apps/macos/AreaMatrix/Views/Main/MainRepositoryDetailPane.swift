@@ -45,6 +45,7 @@ struct MainRepositoryDetailPane: View {
     let onBeginAIClassificationSuggestionFile: (Int64) -> Void
     let onBeginDeleteFile: (Int64) -> Void
     let onBeginICloudConflictResolution: (Int64) -> Void
+    let onBeginSyncConflictReview: (FileEntrySnapshot) -> Void
     let onOpenAISettings: () -> Void
     let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
 
@@ -384,6 +385,11 @@ extension MainRepositoryDetailPane {
                 }
                 .disabled(disabledReason != nil)
                 .accessibilityIdentifier("S3-04-review-ai-suggestion")
+                Button("Review Sync Conflict...") {
+                    onBeginSyncConflictReview(detail)
+                }
+                .disabled(disabledReason != nil)
+                .accessibilityIdentifier("S4-X-01-C4-15-review-sync-conflict")
                 if detail.hasICloudConflictCopySignal {
                     Button("Resolve iCloud Conflict...") {
                         onBeginICloudConflictResolution(detail.id)

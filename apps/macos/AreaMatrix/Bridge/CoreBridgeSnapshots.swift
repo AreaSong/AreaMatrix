@@ -171,6 +171,12 @@ private extension RepoPathIssueSnapshot {
             self = .insideAreaMatrix
         case .iCloudPath:
             self = .iCloudPath
+        case .oneDrivePath:
+            self = .oneDrivePath
+        case .windowsReservedName:
+            self = .windowsReservedName
+        case .windowsCaseInsensitive:
+            self = .windowsCaseInsensitive
         case .unfinishedScanSession:
             self = .unfinishedScanSession
         }

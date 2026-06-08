@@ -67,6 +67,9 @@ enum RepoPathIssueSnapshot: String, Equatable {
     case alreadyInitialized = "AlreadyInitialized"
     case insideAreaMatrix = "InsideAreaMatrix"
     case iCloudPath = "ICloudPath"
+    case oneDrivePath = "OneDrivePath"
+    case windowsReservedName = "WindowsReservedName"
+    case windowsCaseInsensitive = "WindowsCaseInsensitive"
     case unfinishedScanSession = "UnfinishedScanSession"
 }
 

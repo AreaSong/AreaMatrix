@@ -258,6 +258,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             onBeginAIClassificationSuggestionFile: model.beginAIClassificationSuggestion,
             onBeginDeleteFile: model.beginDelete,
             onBeginICloudConflictResolution: model.beginICloudConflictResolution,
+            onBeginSyncConflictReview: { _ in },
             onOpenAISettings: {},
             writeActionDisabledReason: model.writeActionDisabledReason,
             summaryExitController: AISummaryEditorExitController(),
