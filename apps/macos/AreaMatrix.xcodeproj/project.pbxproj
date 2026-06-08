@@ -85,6 +85,9 @@
 		0A0000000000000000000762 /* SyncConflictReviewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000763 /* SyncConflictReviewModel.swift */; };
 		0A0000000000000000000764 /* SyncConflictReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000765 /* SyncConflictReviewView.swift */; };
 		0A0000000000000000000766 /* SyncConflictReviewPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000767 /* SyncConflictReviewPageFeatureTests.swift */; };
+		0A0000000000000000000768 /* SyncConflictReviewResolutionTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000769 /* SyncConflictReviewResolutionTestSupport.swift */; };
+		0A000000000000000000076A /* CoreSyncConflictResolving.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000076B /* CoreSyncConflictResolving.swift */; };
+		0A000000000000000000076C /* SyncConflictReviewResolutionPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000076D /* SyncConflictReviewResolutionPageFeatureTests.swift */; };
 		0A00000000000000000002EC /* CoreMetadataRepairing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002ED /* CoreMetadataRepairing.swift */; };
 		0A00000000000000000002EF /* DatabaseRepairConfirmModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F0 /* DatabaseRepairConfirmModel.swift */; };
 		0A00000000000000000002F1 /* DatabaseRepairConfirmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F2 /* DatabaseRepairConfirmView.swift */; };
@@ -450,6 +453,9 @@
 		0A0000000000000000000763 /* SyncConflictReviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/SyncConflictReviewModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000765 /* SyncConflictReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/SyncConflictReviewView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000767 /* SyncConflictReviewPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SyncConflictReviewPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000769 /* SyncConflictReviewResolutionTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SyncConflictReviewResolutionTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000076B /* CoreSyncConflictResolving.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreSyncConflictResolving.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000076D /* SyncConflictReviewResolutionPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SyncConflictReviewResolutionPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000261 /* MainFileListDetailSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileListDetailSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000223 /* MainFileListState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileListState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000133 /* MainListFilesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainListFilesTests.swift; sourceTree = SOURCE_ROOT; };
@@ -836,6 +842,7 @@
 				0A0000000000000000000157 /* CoreExternalChangesSyncing.swift */,
 				0A00000000000000000002E5 /* CoreICloudConflictListing.swift */,
 				0A0000000000000000000761 /* CoreSyncConflictDetecting.swift */,
+				0A000000000000000000076B /* CoreSyncConflictResolving.swift */,
 				0A00000000000000000002ED /* CoreMetadataRepairing.swift */,
 				0A0000000000000000000711 /* CoreRemoteProviderConfiguring.swift */,
 				0A00000000000000000001E3 /* CoreChangeLogListing.swift */,
@@ -1050,6 +1057,8 @@
 				0A00000000000000000002E3 /* ICloudConflictMinimalPageIntegrationTestSupport.swift */,
 				0A00000000000000000002EB /* ICloudConflictListPageFeatureTests.swift */,
 				0A0000000000000000000767 /* SyncConflictReviewPageFeatureTests.swift */,
+				0A0000000000000000000769 /* SyncConflictReviewResolutionTestSupport.swift */,
+				0A000000000000000000076D /* SyncConflictReviewResolutionPageFeatureTests.swift */,
 				0A000000000000000000014B /* MainLoadingAdoptExistingTests.swift */,
 				0A0000000000000000000151 /* MainLoadingTestSupport.swift */,
 				0A0000000000000000000153 /* MainLoadingFixtures.swift */,
@@ -1364,6 +1373,7 @@
 				0A0000000000000000000156 /* CoreExternalChangesSyncing.swift in Sources */,
 				0A00000000000000000002E4 /* CoreICloudConflictListing.swift in Sources */,
 				0A0000000000000000000760 /* CoreSyncConflictDetecting.swift in Sources */,
+				0A000000000000000000076A /* CoreSyncConflictResolving.swift in Sources */,
 				0A00000000000000000002EC /* CoreMetadataRepairing.swift in Sources */,
 				0A0000000000000000000710 /* CoreRemoteProviderConfiguring.swift in Sources */,
 				0A00000000000000000001E2 /* CoreChangeLogListing.swift in Sources */,
@@ -1447,6 +1457,8 @@
 					0A00000000000000000002E2 /* ICloudConflictMinimalPageIntegrationTestSupport.swift in Sources */,
 					0A00000000000000000002EA /* ICloudConflictListPageFeatureTests.swift in Sources */,
 					0A0000000000000000000766 /* SyncConflictReviewPageFeatureTests.swift in Sources */,
+					0A0000000000000000000768 /* SyncConflictReviewResolutionTestSupport.swift in Sources */,
+					0A000000000000000000076C /* SyncConflictReviewResolutionPageFeatureTests.swift in Sources */,
 					0A00000000000000000002F3 /* DatabaseRepairConfirmPageFeatureTests.swift in Sources */,
 					0A00000000000000000002F7 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000200 /* DetailMetaPageFeatureTests.swift in Sources */,

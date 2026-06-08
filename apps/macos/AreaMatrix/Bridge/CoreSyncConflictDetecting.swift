@@ -189,7 +189,7 @@ private extension SyncConflictAffectedFileSnapshot {
     }
 }
 
-private extension SyncConflictStatusSnapshot {
+extension SyncConflictStatusSnapshot {
     init(coreStatus: SyncConflictStatus) {
         switch coreStatus {
         case .needsReview:
@@ -230,7 +230,7 @@ private extension SyncConflictSeveritySnapshot {
     }
 }
 
-private extension SyncConflictFileRoleSnapshot {
+extension SyncConflictFileRoleSnapshot {
     init(coreRole: SyncConflictFileRole) {
         switch coreRole {
         case .existing:

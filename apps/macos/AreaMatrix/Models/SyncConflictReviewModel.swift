@@ -19,28 +19,64 @@ enum SyncConflictReviewState: Equatable {
     }
 }
 
+enum SyncConflictResolutionPreviewState: Equatable {
+    case idle
+    case loading(SyncConflictResolutionStrategySnapshot)
+    case loaded(SyncConflictResolutionPreviewSnapshot)
+    case failed(SyncConflictResolutionStrategySnapshot, CoreErrorMappingSnapshot)
+
+    var preview: SyncConflictResolutionPreviewSnapshot? {
+        guard case let .loaded(preview) = self else { return nil }
+        return preview
+    }
+
+    var isLoading: Bool {
+        if case .loading = self { return true }
+        return false
+    }
+}
+
+enum SyncConflictResolutionApplyState: Equatable {
+    case idle
+    case applying(SyncConflictResolutionStrategySnapshot)
+    case succeeded(SyncConflictResolveReportSnapshot)
+    case failed(SyncConflictResolutionStrategySnapshot, CoreErrorMappingSnapshot)
+
+    var isApplying: Bool {
+        if case .applying = self { return true }
+        return false
+    }
+}
+
 @MainActor
 final class SyncConflictReviewModel: ObservableObject {
     @Published private(set) var state: SyncConflictReviewState = .notLoaded
+    @Published private(set) var selectedResolution: SyncConflictResolutionStrategySnapshot = .keepBoth
+    @Published private(set) var previewState: SyncConflictResolutionPreviewState = .idle
+    @Published private(set) var applyState: SyncConflictResolutionApplyState = .idle
 
     let repoPath: String
     let conflictID: String?
     let primaryPath: String?
     private let conflictDetector: any CoreSyncConflictDetecting
+    private let conflictResolver: any CoreSyncConflictResolving
     private let errorMapper: any CoreErrorMapping
     private var loadGeneration = 0
+    private var previewGeneration = 0
 
     init(
         repoPath: String,
         conflictID: String? = nil,
         primaryPath: String? = nil,
         conflictDetector: any CoreSyncConflictDetecting = CoreBridge(),
+        conflictResolver: any CoreSyncConflictResolving = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         self.repoPath = repoPath
         self.conflictID = conflictID
         self.primaryPath = primaryPath
         self.conflictDetector = conflictDetector
+        self.conflictResolver = conflictResolver
         self.errorMapper = errorMapper
     }
 
@@ -52,15 +88,53 @@ final class SyncConflictReviewModel: ObservableObject {
         state.isLoading
     }
 
+    var canApplyResolution: Bool {
+        applyDisabledReason == nil
+    }
+
+    var applyDisabledReason: String? {
+        guard let conflict else { return "Conflict details are not loaded." }
+        guard case let .loaded(preview) = previewState else {
+            return previewState.isLoading ? "Resolution impact is still loading." : "Resolution impact is required."
+        }
+        if case .succeeded = applyState {
+            return "Resolution has already been applied."
+        }
+        if applyState.isApplying {
+            return "Resolution is already applying."
+        }
+        if preview.conflictID != conflict.conflictID || preview.resolution != selectedResolution {
+            return "Resolution impact does not match the selected conflict."
+        }
+        if selectedResolution == .useIncoming || preview.requiresReplaceConfirmation {
+            return "Use incoming version requires S4-X-09 replace confirmation."
+        }
+        if !preview.canApply {
+            return preview.blockedReasonDisplay ?? "Core reported this resolution cannot be applied."
+        }
+        if preview.normalizedPreviewToken == nil {
+            return "Core did not return a resolution preview token."
+        }
+        return nil
+    }
+
     func load() async {
         loadGeneration += 1
         let generation = loadGeneration
         state = .loading
+        previewState = .idle
+        applyState = .idle
 
         do {
             let conflicts = try await conflictDetector.detectSyncConflicts(repoPath: repoPath)
             guard generation == loadGeneration else { return }
-            state = selectedConflict(from: conflicts).map(SyncConflictReviewState.loaded) ?? .empty
+            guard let conflict = selectedConflict(from: conflicts) else {
+                state = .empty
+                return
+            }
+            selectedResolution = .keepBoth
+            state = .loaded(conflict)
+            await previewResolution(.keepBoth, conflict: conflict)
         } catch {
             guard generation == loadGeneration else { return }
             state = await .failed(mapError(error))
@@ -69,6 +143,63 @@ final class SyncConflictReviewModel: ObservableObject {
 
     func refresh() async {
         await load()
+    }
+
+    func selectResolution(_ resolution: SyncConflictResolutionStrategySnapshot) async {
+        selectedResolution = resolution
+        applyState = .idle
+        guard let conflict else {
+            previewState = .idle
+            return
+        }
+        await previewResolution(resolution, conflict: conflict)
+    }
+
+    func applyResolution() async {
+        guard canApplyResolution,
+              let conflict,
+              let preview = previewState.preview,
+              let previewToken = preview.normalizedPreviewToken else { return }
+
+        applyState = .applying(selectedResolution)
+
+        do {
+            let report = try await conflictResolver.resolveSyncConflict(
+                repoPath: repoPath,
+                conflictID: conflict.conflictID,
+                request: SyncConflictResolutionRequestSnapshot(
+                    strategy: selectedResolution,
+                    previewToken: previewToken,
+                    replaceConfirmed: false,
+                    replaceConfirmationID: nil
+                )
+            )
+            applyState = .succeeded(report)
+        } catch {
+            applyState = await .failed(selectedResolution, mapError(error))
+        }
+    }
+
+    private func previewResolution(
+        _ resolution: SyncConflictResolutionStrategySnapshot,
+        conflict: SyncConflictSnapshot
+    ) async {
+        previewGeneration += 1
+        let generation = previewGeneration
+        previewState = .loading(resolution)
+
+        do {
+            let preview = try await conflictResolver.previewSyncConflictResolution(
+                repoPath: repoPath,
+                conflictID: conflict.conflictID,
+                resolution: resolution
+            )
+            guard generation == previewGeneration else { return }
+            previewState = .loaded(preview)
+        } catch {
+            guard generation == previewGeneration else { return }
+            previewState = await .failed(resolution, mapError(error))
+        }
     }
 
     private func selectedConflict(from conflicts: [SyncConflictSnapshot]) -> SyncConflictSnapshot? {

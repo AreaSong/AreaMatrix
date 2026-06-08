@@ -122,6 +122,8 @@ enum CoreBridgeBoundary: String, CaseIterable, Equatable {
     case previewConflictVersions = "preview_conflict_versions"
     case resolveICloudConflict = "resolve_icloud_conflict"
     case detectSyncConflicts = "detect_sync_conflicts"
+    case previewSyncConflictResolution = "preview_sync_conflict_resolution"
+    case resolveSyncConflict = "resolve_sync_conflict"
     case readNote = "read_note"
     case writeNote = "write_note"
     case syncExternalChanges = "sync_external_changes"
