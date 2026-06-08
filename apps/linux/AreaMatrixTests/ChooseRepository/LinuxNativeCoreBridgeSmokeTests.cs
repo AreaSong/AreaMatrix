@@ -1,4 +1,5 @@
 using AreaMatrix.Linux.Core;
+using AreaMatrix.Linux.Features.Library;
 using AreaMatrix.Linux.Features.Onboarding;
 
 namespace AreaMatrix.Linux.Tests.ChooseRepository;
@@ -8,6 +9,7 @@ public static class LinuxNativeCoreBridgeSmokeTests
     public static async Task RunAllAsync()
     {
         await NativeClientLoadsCoreAndValidatesRepositoryPath();
+        await NativeClientOpensInitializedRepositoryThroughDesktopMainQueryBridge();
     }
 
     private static async Task NativeClientLoadsCoreAndValidatesRepositoryPath()
@@ -28,6 +30,41 @@ public static class LinuxNativeCoreBridgeSmokeTests
             TestAssert.True(validation.IsEmpty, nameof(validation.IsEmpty));
             TestAssert.False(validation.IsInitialized, nameof(validation.IsInitialized));
             TestAssert.Equal("CreateEmpty", validation.RecommendedMode, nameof(validation.RecommendedMode));
+        }
+        finally
+        {
+            Directory.Delete(tempRoot, recursive: true);
+        }
+    }
+
+    private static async Task NativeClientOpensInitializedRepositoryThroughDesktopMainQueryBridge()
+    {
+        string libraryPath = ResolveNativeLibraryPath();
+        string tempRoot = Path.Combine(Path.GetTempPath(), $"areamatrix-lnx-c411-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempRoot);
+        try
+        {
+            using AreaMatrixNativeCoreClient client = new(libraryPath);
+            await client.InitRepoAsync(tempRoot, CoreRepoInitOptions.CreateEmptyGeneratedOnly);
+            DesktopMainQueryCoreBridge bridge = new(client);
+
+            IReadOnlyList<DesktopFileEntry> files = await bridge.ListFilesAsync(
+                tempRoot,
+                DesktopFileFilter.FirstPage());
+            IReadOnlyList<DesktopCategoryNode> categories = await bridge.ListCategoriesAsync(
+                tempRoot,
+                "en-US");
+            DesktopSearchResultPage searchPage = await bridge.SearchFilesAsync(
+                tempRoot,
+                "contract",
+                DesktopSearchFilter.AllRepository(),
+                DesktopSearchSort.Relevance,
+                new DesktopSearchPagination(50, 0));
+
+            TestAssert.Empty(files, "empty repo list_files");
+            TestAssert.True(categories.Count > 0, "list_tree_json categories");
+            TestAssert.Equal("contract", searchPage.Query, "search query echo");
+            TestAssert.Equal(0, searchPage.TotalCount, "empty repo search total");
         }
         finally
         {

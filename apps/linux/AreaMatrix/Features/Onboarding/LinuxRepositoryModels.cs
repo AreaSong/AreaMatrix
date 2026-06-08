@@ -48,6 +48,7 @@ public enum LinuxRepositoryErrorKind
     SelectedFile,
     PermissionDenied,
     InvalidRepository,
+    RepoNotInitialized,
     FileNotFound,
     DiskUnavailable,
     ICloudPlaceholder,

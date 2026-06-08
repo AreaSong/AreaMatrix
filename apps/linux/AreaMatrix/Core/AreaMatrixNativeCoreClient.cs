@@ -1,13 +1,21 @@
-using System.Runtime.InteropServices;
 using System.Text;
+using System.Runtime.InteropServices;
+using AreaMatrix.Linux.Features.Library;
 using AreaMatrix.Linux.Features.Onboarding;
 
 namespace AreaMatrix.Linux.Core;
 
-public sealed class AreaMatrixNativeCoreClient : IAreaMatrixLinuxCoreClient, IDisposable
+public sealed partial class AreaMatrixNativeCoreClient :
+    IAreaMatrixLinuxCoreClient,
+    IAreaMatrixLinuxDesktopQueryCoreClient,
+    IDisposable
 {
     private const ushort InitRepoChecksum = 29414;
     private const ushort ValidateRepoPathChecksum = 43498;
+    private const ushort GetFileChecksum = 6132;
+    private const ushort ListFilesChecksum = 56809;
+    private const ushort ListTreeJsonChecksum = 45468;
+    private const ushort SearchFilesChecksum = 65;
 
     private readonly NativeCoreLibrary native;
     private bool disposed;
@@ -66,7 +74,11 @@ public sealed class AreaMatrixNativeCoreClient : IAreaMatrixLinuxCoreClient, IDi
     private void VerifyContract()
     {
         if (native.InitRepoChecksum() != InitRepoChecksum
-            || native.ValidateRepoPathChecksum() != ValidateRepoPathChecksum)
+            || native.ValidateRepoPathChecksum() != ValidateRepoPathChecksum
+            || native.GetFileChecksum() != GetFileChecksum
+            || native.ListFilesChecksum() != ListFilesChecksum
+            || native.ListTreeJsonChecksum() != ListTreeJsonChecksum
+            || native.SearchFilesChecksum() != SearchFilesChecksum)
         {
             throw new LinuxRepositoryCoreException(
                 LinuxRepositoryErrorKind.Config,
@@ -165,7 +177,7 @@ public sealed class AreaMatrixNativeCoreClient : IAreaMatrixLinuxCoreClient, IDi
             2 => LinuxRepositoryErrorKind.Db,
             3 => LinuxRepositoryErrorKind.Config,
             8 => LinuxRepositoryErrorKind.FileNotFound,
-            10 => LinuxRepositoryErrorKind.InvalidRepository,
+            10 => LinuxRepositoryErrorKind.RepoNotInitialized,
             11 => LinuxRepositoryErrorKind.InvalidPath,
             12 => LinuxRepositoryErrorKind.ICloudPlaceholder,
             13 => LinuxRepositoryErrorKind.InvalidRepository,

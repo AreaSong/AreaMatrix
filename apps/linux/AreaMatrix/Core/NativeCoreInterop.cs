@@ -9,6 +9,24 @@ internal delegate RustBuffer ValidateRepoPathDelegate(RustBuffer repoPath, ref R
 internal delegate void InitRepoDelegate(RustBuffer repoPath, RustBuffer options, ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer ListFilesDelegate(RustBuffer repoPath, RustBuffer filter, ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer GetFileDelegate(RustBuffer repoPath, long fileId, ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer ListTreeJsonDelegate(RustBuffer repoPath, RustBuffer locale, ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer SearchFilesDelegate(
+    RustBuffer repoPath,
+    RustBuffer query,
+    RustBuffer filter,
+    RustBuffer sort,
+    RustBuffer pagination,
+    ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 internal delegate RustBuffer RustBufferFromBytesDelegate(ForeignBytes bytes, ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

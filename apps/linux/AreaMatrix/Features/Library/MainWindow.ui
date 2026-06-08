@@ -1,0 +1,56 @@
+page_id: S4-LNX-02
+title: AreaMatrix Library
+description: Browse the connected Linux repository through C4-11 desktop-main-query.
+toolbar:
+  - Import
+  - Search
+  - Refresh
+  - Settings
+navigation:
+  - All Files
+  - Recent
+  - Needs Review
+  - Categories from list_tree_json
+file_list:
+  columns:
+    - Name
+    - Category
+    - Modified
+    - Size
+    - Status
+detail:
+  empty: Repository summary and import entry
+  tabs:
+    - Meta
+    - Log
+    - Note
+status_bar:
+  - Local folder
+  - Watcher: platform status
+  - DB: ready
+states:
+  loading: Loading repository...
+  refreshing: Refreshing...
+  db_locked: Keep cached list and show retry
+  permission_denied: Show readable error without chmod
+  missing_file: Show missing status and recovery entry
+actions:
+  open_repository: LinuxMainWindowViewModel.OpenRepositoryAsync
+  refresh: LinuxMainWindowViewModel.RefreshAsync
+  search: LinuxMainWindowViewModel.RunSearchAsync
+  load_more: LinuxMainWindowViewModel.LoadMoreAsync
+  select_category: LinuxMainWindowViewModel.SelectCategoryAsync
+  select_file: LinuxMainWindowViewModel.SelectFileAsync
+pagination:
+  page_size: 50
+  state: LinuxMainWindowViewModel.PaginationText
+  next_page_enabled: LinuxMainWindowViewModel.CanLoadMore
+safety:
+  - The page calls list_files through DesktopMainQueryCoreBridge.
+  - The page calls get_file through DesktopMainQueryCoreBridge.
+  - The page calls list_tree_json through DesktopMainQueryCoreBridge.
+  - The page calls search_files through DesktopMainQueryCoreBridge.
+  - Load more advances FileFilter/SearchPagination offset through DesktopMainQueryCoreBridge.
+  - Refresh only reloads the current snapshot and never runs reindex or rescan.
+  - The Linux UI does not scan the repository filesystem to build the list.
+  - The page does not implement watcher health, import commit, rescan confirm, replace, or recovery.

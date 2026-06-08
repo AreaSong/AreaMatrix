@@ -34,6 +34,14 @@ internal static class TestAssert
         }
     }
 
+    public static void NotNull(object? value, string label)
+    {
+        if (value is null)
+        {
+            throw new InvalidOperationException($"{label}: expected non-null.");
+        }
+    }
+
     public static void Empty<T>(IReadOnlyCollection<T> values, string label)
     {
         if (values.Count != 0)

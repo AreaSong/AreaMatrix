@@ -13,6 +13,10 @@ internal sealed class NativeCoreLibrary : IDisposable
         ValidateRepoPath = LoadFunction<ValidateRepoPathDelegate>(
             "uniffi_area_matrix_core_fn_func_validate_repo_path");
         InitRepo = LoadFunction<InitRepoDelegate>("uniffi_area_matrix_core_fn_func_init_repo");
+        ListFiles = LoadFunction<ListFilesDelegate>("uniffi_area_matrix_core_fn_func_list_files");
+        GetFile = LoadFunction<GetFileDelegate>("uniffi_area_matrix_core_fn_func_get_file");
+        ListTreeJson = LoadFunction<ListTreeJsonDelegate>("uniffi_area_matrix_core_fn_func_list_tree_json");
+        SearchFiles = LoadFunction<SearchFilesDelegate>("uniffi_area_matrix_core_fn_func_search_files");
         RustBufferFromBytes = LoadFunction<RustBufferFromBytesDelegate>(
             "ffi_area_matrix_core_rustbuffer_from_bytes");
         RustBufferFree = LoadFunction<RustBufferFreeDelegate>("ffi_area_matrix_core_rustbuffer_free");
@@ -20,11 +24,27 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_checksum_func_validate_repo_path");
         InitRepoChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_init_repo");
+        ListFilesChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_list_files");
+        GetFileChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_get_file");
+        ListTreeJsonChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_list_tree_json");
+        SearchFilesChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_search_files");
     }
 
     public ValidateRepoPathDelegate ValidateRepoPath { get; }
 
     public InitRepoDelegate InitRepo { get; }
+
+    public ListFilesDelegate ListFiles { get; }
+
+    public GetFileDelegate GetFile { get; }
+
+    public ListTreeJsonDelegate ListTreeJson { get; }
+
+    public SearchFilesDelegate SearchFiles { get; }
 
     public RustBufferFromBytesDelegate RustBufferFromBytes { get; }
 
@@ -33,6 +53,14 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ChecksumDelegate ValidateRepoPathChecksum { get; }
 
     public ChecksumDelegate InitRepoChecksum { get; }
+
+    public ChecksumDelegate ListFilesChecksum { get; }
+
+    public ChecksumDelegate GetFileChecksum { get; }
+
+    public ChecksumDelegate ListTreeJsonChecksum { get; }
+
+    public ChecksumDelegate SearchFilesChecksum { get; }
 
     public static NativeCoreLibrary LoadDefault()
     {
