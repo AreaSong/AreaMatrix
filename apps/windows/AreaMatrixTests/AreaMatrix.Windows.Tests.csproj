@@ -13,6 +13,7 @@
     <Compile Include="../AreaMatrix/Core/NativeCoreInterop.cs" Link="Core/NativeCoreInterop.cs" />
     <Compile Include="../AreaMatrix/Core/NativeCoreLibrary.cs" Link="Core/NativeCoreLibrary.cs" />
     <Compile Include="../AreaMatrix/Core/UniFfiReader.cs" Link="Core/UniFfiReader.cs" />
+    <Compile Include="../AreaMatrix/Features/Onboarding/WindowsCloudStorageState.cs" Link="Features/Onboarding/WindowsCloudStorageState.cs" />
     <Compile Include="../AreaMatrix/Features/Onboarding/WindowsRepositoryCoreBridge.cs" Link="Features/Onboarding/WindowsRepositoryCoreBridge.cs" />
     <Compile Include="../AreaMatrix/Features/Onboarding/ChooseRepositoryViewModel.cs" Link="Features/Onboarding/ChooseRepositoryViewModel.cs" />
   </ItemGroup>

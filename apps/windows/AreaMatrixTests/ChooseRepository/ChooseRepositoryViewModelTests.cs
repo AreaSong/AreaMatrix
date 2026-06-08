@@ -10,6 +10,7 @@ public static class ChooseRepositoryViewModelTests
         await EmptyDirectoryRoutesToInitConfirmationWithoutInitializing();
         await NonEmptyDirectoryRoutesToAdoptConfirmationWithoutWritingMetadata();
         await OneDriveDirectoryRoutesToNoticeBeforeOpenInitOrAdopt();
+        await AcknowledgedOneDriveRepositoryCanContinueToOriginalRoute();
         await InvalidAndPermissionStatesDisableContinueWithPageSpecMessages();
         await ManualPathEditClearsPreviousValidationBeforeRechecking();
     }
@@ -79,11 +80,41 @@ public static class ChooseRepositoryViewModelTests
         await model.ContinueAsync();
 
         TestAssert.SequenceEqual([@"C:\Users\me\OneDrive\AreaMatrix"], bridge.ValidatedPaths, nameof(bridge.ValidatedPaths));
+        TestAssert.SequenceEqual([@"C:\Users\me\OneDrive\AreaMatrix"], bridge.CloudStatePaths, nameof(bridge.CloudStatePaths));
         TestAssert.Empty(bridge.LoadedConfigPaths, nameof(bridge.LoadedConfigPaths));
         TestAssert.Empty(bridge.InitializedPaths, nameof(bridge.InitializedPaths));
         TestAssert.Empty(bridge.AdoptedPaths, nameof(bridge.AdoptedPaths));
         TestAssert.Equal(WindowsRepositoryRouteKind.OneDriveNotice, model.Route.Kind, nameof(model.Route.Kind));
         TestAssert.Null(model.Route.Config, nameof(model.Route.Config));
+        TestAssert.Equal(
+            WindowsCloudStorageRecommendedAction.AcknowledgeNotice,
+            model.LatestCloudStorageState?.RecommendedAction,
+            "cloud recommended action");
+        TestAssert.Contains(
+            "OneDrive path detected",
+            model.StatusText,
+            nameof(model.StatusText));
+    }
+
+    private static async Task AcknowledgedOneDriveRepositoryCanContinueToOriginalRoute()
+    {
+        FakeWindowsRepositoryCoreBridge bridge = new(
+            WindowsRepositoryValidationSamples.OneDriveDirectory(@"C:\Users\me\OneDrive\AreaMatrix"),
+            WindowsCloudStorageStateSamples.AcknowledgedOneDrive(@"C:\Users\me\OneDrive\AreaMatrix"));
+        ChooseRepositoryViewModel model = new(bridge);
+
+        await model.CheckRepositoryPathAsync(@"C:\Users\me\OneDrive\AreaMatrix");
+        await model.ContinueAsync();
+
+        TestAssert.SequenceEqual([@"C:\Users\me\OneDrive\AreaMatrix"], bridge.ValidatedPaths, nameof(bridge.ValidatedPaths));
+        TestAssert.SequenceEqual([@"C:\Users\me\OneDrive\AreaMatrix"], bridge.CloudStatePaths, nameof(bridge.CloudStatePaths));
+        TestAssert.SequenceEqual([@"C:\Users\me\OneDrive\AreaMatrix"], bridge.LoadedConfigPaths, nameof(bridge.LoadedConfigPaths));
+        TestAssert.Equal(WindowsRepositoryRouteKind.MainWindow, model.Route.Kind, nameof(model.Route.Kind));
+        TestAssert.Equal(@"C:\Users\me\OneDrive\AreaMatrix", model.Route.Config?.RepoPath, "config repo path");
+        TestAssert.Equal(
+            WindowsCloudStorageRecommendedAction.None,
+            model.Route.CloudStorageState?.RecommendedAction,
+            "route cloud recommended action");
     }
 
     private static async Task InvalidAndPermissionStatesDisableContinueWithPageSpecMessages()
@@ -114,6 +145,7 @@ public static class ChooseRepositoryViewModelTests
         model.RepositoryPath = @"C:\Repos\Other";
 
         TestAssert.Null(model.LatestValidation, nameof(model.LatestValidation));
+        TestAssert.Null(model.LatestCloudStorageState, nameof(model.LatestCloudStorageState));
         TestAssert.Null(model.LatestConfig, nameof(model.LatestConfig));
         TestAssert.Equal(WindowsRepositoryRouteKind.None, model.Route.Kind, nameof(model.Route.Kind));
         TestAssert.False(model.CanContinue, nameof(model.CanContinue));
@@ -123,13 +155,20 @@ public static class ChooseRepositoryViewModelTests
 internal sealed class FakeWindowsRepositoryCoreBridge : IWindowsRepositoryCoreBridge
 {
     private readonly WindowsRepositoryValidation validation;
+    private readonly WindowsCloudStorageState cloudStorageState;
 
-    public FakeWindowsRepositoryCoreBridge(WindowsRepositoryValidation validation)
+    public FakeWindowsRepositoryCoreBridge(
+        WindowsRepositoryValidation validation,
+        WindowsCloudStorageState? cloudStorageState = null)
     {
         this.validation = validation;
+        this.cloudStorageState = cloudStorageState
+            ?? WindowsCloudStorageStateSamples.FromValidation(validation);
     }
 
     public List<string> ValidatedPaths { get; } = [];
+
+    public List<string> CloudStatePaths { get; } = [];
 
     public List<string> LoadedConfigPaths { get; } = [];
 
@@ -143,6 +182,14 @@ internal sealed class FakeWindowsRepositoryCoreBridge : IWindowsRepositoryCoreBr
     {
         ValidatedPaths.Add(repoPath);
         return Task.FromResult(validation);
+    }
+
+    public Task<WindowsCloudStorageState> DetectCloudStorageStateAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        CloudStatePaths.Add(repoPath);
+        return Task.FromResult(cloudStorageState);
     }
 
     public Task<WindowsRepositoryConfig> LoadConfigAsync(
@@ -167,6 +214,67 @@ internal sealed class FakeWindowsRepositoryCoreBridge : IWindowsRepositoryCoreBr
     {
         AdoptedPaths.Add(repoPath);
         return Task.CompletedTask;
+    }
+}
+
+internal static class WindowsCloudStorageStateSamples
+{
+    public static WindowsCloudStorageState FromValidation(WindowsRepositoryValidation validation)
+    {
+        return validation.IsOneDrivePath || validation.PlatformPathKind == WindowsPlatformPathKind.OneDrive
+            ? UnacknowledgedOneDrive(validation.RepoPath)
+            : Local(validation.RepoPath);
+    }
+
+    public static WindowsCloudStorageState Local(string path)
+    {
+        return new WindowsCloudStorageState(
+            path,
+            WindowsCloudStorageProviderKind.Local,
+            WindowsCloudStorageRiskLevel.NoRisk,
+            WindowsCloudPlaceholderState.NotPlaceholder,
+            WindowsCloudPermissionState.Accessible,
+            "Local folder",
+            [],
+            WindowsCloudStorageRecommendedAction.None,
+            RequiresNoticeAcknowledgement: false,
+            NoticeAcknowledged: false,
+            CanRetry: false,
+            RequiresReconnect: false);
+    }
+
+    public static WindowsCloudStorageState UnacknowledgedOneDrive(string path)
+    {
+        return new WindowsCloudStorageState(
+            path,
+            WindowsCloudStorageProviderKind.OneDrive,
+            WindowsCloudStorageRiskLevel.Medium,
+            WindowsCloudPlaceholderState.NotPlaceholder,
+            WindowsCloudPermissionState.Accessible,
+            "OneDrive path detected. Review sync risks before continuing.",
+            ["OneDrive SDK is not managed by AreaMatrix.", "Conflict copies may appear later."],
+            WindowsCloudStorageRecommendedAction.AcknowledgeNotice,
+            RequiresNoticeAcknowledgement: true,
+            NoticeAcknowledged: false,
+            CanRetry: false,
+            RequiresReconnect: false);
+    }
+
+    public static WindowsCloudStorageState AcknowledgedOneDrive(string path)
+    {
+        return new WindowsCloudStorageState(
+            path,
+            WindowsCloudStorageProviderKind.OneDrive,
+            WindowsCloudStorageRiskLevel.Medium,
+            WindowsCloudPlaceholderState.NotPlaceholder,
+            WindowsCloudPermissionState.Accessible,
+            "OneDrive path detected. Risk notice has already been acknowledged.",
+            ["OneDrive SDK is not managed by AreaMatrix."],
+            WindowsCloudStorageRecommendedAction.None,
+            RequiresNoticeAcknowledgement: false,
+            NoticeAcknowledged: true,
+            CanRetry: false,
+            RequiresReconnect: false);
     }
 }
 

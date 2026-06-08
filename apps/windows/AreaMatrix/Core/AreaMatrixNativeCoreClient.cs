@@ -12,6 +12,7 @@ namespace AreaMatrix.Core;
 
 public sealed class AreaMatrixNativeCoreClient : IAreaMatrixWindowsCoreClient, IDisposable
 {
+    private const ushort DetectCloudStorageStateChecksum = 18169;
     private const ushort InitRepoChecksum = 29414;
     private const ushort LoadConfigChecksum = 64573;
     private const ushort ValidateRepoPathChecksum = 43498;
@@ -57,6 +58,17 @@ public sealed class AreaMatrixNativeCoreClient : IAreaMatrixWindowsCoreClient, I
         return Task.FromResult(config);
     }
 
+    public Task<CoreCloudStorageState> DetectCloudStorageStateAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        CoreCloudStorageState state = CallWithResult(
+            (ref RustCallStatus status) => native.DetectCloudStorageState(LowerString(repoPath), ref status),
+            ReadCloudStorageState);
+        return Task.FromResult(state);
+    }
+
     public Task InitRepoAsync(
         string repoPath,
         CoreRepoInitOptions options,
@@ -84,6 +96,7 @@ public sealed class AreaMatrixNativeCoreClient : IAreaMatrixWindowsCoreClient, I
     private void VerifyContract()
     {
         if (native.InitRepoChecksum() != InitRepoChecksum
+            || native.DetectCloudStorageStateChecksum() != DetectCloudStorageStateChecksum
             || native.LoadConfigChecksum() != LoadConfigChecksum
             || native.ValidateRepoPathChecksum() != ValidateRepoPathChecksum)
         {
@@ -189,12 +202,30 @@ public sealed class AreaMatrixNativeCoreClient : IAreaMatrixWindowsCoreClient, I
         return new CoreRepoConfig(repoPath, defaultMode, locale);
     }
 
+    private CoreCloudStorageState ReadCloudStorageState(UniFfiReader reader)
+    {
+        return new CoreCloudStorageState(
+            reader.ReadString(),
+            ReadCloudStorageProviderKind(reader),
+            ReadCloudStorageRiskLevel(reader),
+            ReadCloudPlaceholderState(reader),
+            ReadCloudPermissionState(reader),
+            reader.ReadString(),
+            ReadStrings(reader),
+            ReadCloudStorageRecommendedAction(reader),
+            reader.ReadBool(),
+            reader.ReadBool(),
+            reader.ReadBool(),
+            reader.ReadBool());
+    }
+
     private WindowsRepositoryCoreException ReadCoreError(UniFfiReader reader)
     {
         int variant = reader.ReadInt32();
         string payload = reader.ReadString();
         WindowsRepositoryErrorKind kind = variant switch
         {
+            1 => WindowsRepositoryErrorKind.DiskUnavailable,
             3 => WindowsRepositoryErrorKind.Config,
             10 => WindowsRepositoryErrorKind.InvalidRepository,
             11 => WindowsRepositoryErrorKind.InvalidPath,
@@ -298,6 +329,18 @@ public sealed class AreaMatrixNativeCoreClient : IAreaMatrixWindowsCoreClient, I
         return issues;
     }
 
+    private static IReadOnlyList<string> ReadStrings(UniFfiReader reader)
+    {
+        int count = reader.ReadInt32();
+        List<string> values = new(count);
+        for (int index = 0; index < count; index += 1)
+        {
+            values.Add(reader.ReadString());
+        }
+
+        return values;
+    }
+
     private static string ReadRepoInitMode(UniFfiReader reader)
     {
         return reader.ReadInt32() switch
@@ -344,6 +387,73 @@ public sealed class AreaMatrixNativeCoreClient : IAreaMatrixWindowsCoreClient, I
             _ => throw new WindowsRepositoryCoreException(
                 WindowsRepositoryErrorKind.Config,
                 "AreaMatrix Core returned an unknown platform path kind.")
+        };
+    }
+
+    private static string ReadCloudStorageProviderKind(UniFfiReader reader)
+    {
+        return reader.ReadInt32() switch
+        {
+            1 => "Local",
+            2 => "ICloudDrive",
+            3 => "OneDrive",
+            4 => "Unknown",
+            _ => throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                "AreaMatrix Core returned an unknown cloud storage provider.")
+        };
+    }
+    private static string ReadCloudStorageRiskLevel(UniFfiReader reader)
+    {
+        return reader.ReadInt32() switch
+        {
+            1 => "NoRisk",
+            2 => "Low",
+            3 => "Medium",
+            4 => "High",
+            5 => "Unknown",
+            _ => throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                "AreaMatrix Core returned an unknown cloud storage risk level.")
+        };
+    }
+    private static string ReadCloudPlaceholderState(UniFfiReader reader)
+    {
+        return reader.ReadInt32() switch
+        {
+            1 => "NotPlaceholder",
+            2 => "Placeholder",
+            3 => "Unknown",
+            _ => throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                "AreaMatrix Core returned an unknown cloud placeholder state.")
+        };
+    }
+    private static string ReadCloudPermissionState(UniFfiReader reader)
+    {
+        return reader.ReadInt32() switch
+        {
+            1 => "Accessible",
+            2 => "PermissionDenied",
+            3 => "AccessExpired",
+            4 => "Unknown",
+            _ => throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                "AreaMatrix Core returned an unknown cloud permission state.")
+        };
+    }
+    private static string ReadCloudStorageRecommendedAction(UniFfiReader reader)
+    {
+        return reader.ReadInt32() switch
+        {
+            1 => "None",
+            2 => "AcknowledgeNotice",
+            3 => "RetryStatusCheck",
+            4 => "ReconnectFolder",
+            5 => "ChooseLocalFolder",
+            _ => throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                "AreaMatrix Core returned an unknown cloud storage recommended action.")
         };
     }
 

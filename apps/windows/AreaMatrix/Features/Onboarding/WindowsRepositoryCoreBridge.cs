@@ -12,6 +12,10 @@ public interface IWindowsRepositoryCoreBridge
         string repoPath,
         CancellationToken cancellationToken = default);
 
+    Task<WindowsCloudStorageState> DetectCloudStorageStateAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
     Task<WindowsRepositoryConfig> LoadConfigAsync(
         string repoPath,
         CancellationToken cancellationToken = default);
@@ -28,6 +32,10 @@ public interface IWindowsRepositoryCoreBridge
 public interface IAreaMatrixWindowsCoreClient
 {
     Task<CoreRepoPathValidation> ValidateRepoPathAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task<CoreCloudStorageState> DetectCloudStorageStateAsync(
         string repoPath,
         CancellationToken cancellationToken = default);
 
@@ -73,6 +81,17 @@ public sealed class WindowsRepositoryCoreBridge : IWindowsRepositoryCoreBridge
             config.RepoPath,
             config.DefaultMode,
             config.Locale);
+    }
+
+    public async Task<WindowsCloudStorageState> DetectCloudStorageStateAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        CoreCloudStorageState state = await coreClient
+            .DetectCloudStorageStateAsync(repoPath, cancellationToken)
+            .ConfigureAwait(false);
+
+        return state.ToWindowsCloudStorageState();
     }
 
     public Task InitializeEmptyRepositoryAsync(
@@ -258,6 +277,109 @@ public sealed record CoreRepoPathValidation(
     }
 }
 
+public sealed record CoreCloudStorageState(
+    string RepoPath,
+    string ProviderKind,
+    string Risk,
+    string PlaceholderState,
+    string PermissionState,
+    string StatusSummary,
+    IReadOnlyList<string> RiskReasons,
+    string RecommendedAction,
+    bool RequiresNoticeAcknowledgement,
+    bool NoticeAcknowledged,
+    bool CanRetry,
+    bool RequiresReconnect)
+{
+    public WindowsCloudStorageState ToWindowsCloudStorageState()
+    {
+        return new WindowsCloudStorageState(
+            RepoPath,
+            ParseProviderKind(ProviderKind),
+            ParseRiskLevel(Risk),
+            ParsePlaceholderState(PlaceholderState),
+            ParsePermissionState(PermissionState),
+            StatusSummary,
+            RiskReasons,
+            ParseRecommendedAction(RecommendedAction),
+            RequiresNoticeAcknowledgement,
+            NoticeAcknowledged,
+            CanRetry,
+            RequiresReconnect);
+    }
+
+    private static WindowsCloudStorageProviderKind ParseProviderKind(string value)
+    {
+        return value switch
+        {
+            "Local" => WindowsCloudStorageProviderKind.Local,
+            "ICloudDrive" => WindowsCloudStorageProviderKind.ICloudDrive,
+            "OneDrive" => WindowsCloudStorageProviderKind.OneDrive,
+            "Unknown" => WindowsCloudStorageProviderKind.Unknown,
+            _ => throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                $"Unknown cloud storage provider `{value}`.")
+        };
+    }
+
+    private static WindowsCloudStorageRiskLevel ParseRiskLevel(string value)
+    {
+        return value switch
+        {
+            "NoRisk" => WindowsCloudStorageRiskLevel.NoRisk,
+            "Low" => WindowsCloudStorageRiskLevel.Low,
+            "Medium" => WindowsCloudStorageRiskLevel.Medium,
+            "High" => WindowsCloudStorageRiskLevel.High,
+            "Unknown" => WindowsCloudStorageRiskLevel.Unknown,
+            _ => throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                $"Unknown cloud storage risk `{value}`.")
+        };
+    }
+
+    private static WindowsCloudPlaceholderState ParsePlaceholderState(string value)
+    {
+        return value switch
+        {
+            "NotPlaceholder" => WindowsCloudPlaceholderState.NotPlaceholder,
+            "Placeholder" => WindowsCloudPlaceholderState.Placeholder,
+            "Unknown" => WindowsCloudPlaceholderState.Unknown,
+            _ => throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                $"Unknown cloud placeholder state `{value}`.")
+        };
+    }
+
+    private static WindowsCloudPermissionState ParsePermissionState(string value)
+    {
+        return value switch
+        {
+            "Accessible" => WindowsCloudPermissionState.Accessible,
+            "PermissionDenied" => WindowsCloudPermissionState.PermissionDenied,
+            "AccessExpired" => WindowsCloudPermissionState.AccessExpired,
+            "Unknown" => WindowsCloudPermissionState.Unknown,
+            _ => throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                $"Unknown cloud permission state `{value}`.")
+        };
+    }
+
+    private static WindowsCloudStorageRecommendedAction ParseRecommendedAction(string value)
+    {
+        return value switch
+        {
+            "None" => WindowsCloudStorageRecommendedAction.None,
+            "AcknowledgeNotice" => WindowsCloudStorageRecommendedAction.AcknowledgeNotice,
+            "RetryStatusCheck" => WindowsCloudStorageRecommendedAction.RetryStatusCheck,
+            "ReconnectFolder" => WindowsCloudStorageRecommendedAction.ReconnectFolder,
+            "ChooseLocalFolder" => WindowsCloudStorageRecommendedAction.ChooseLocalFolder,
+            _ => throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                $"Unknown cloud storage action `{value}`.")
+        };
+    }
+}
+
 public sealed record CoreRepoConfig(
     string RepoPath,
     string DefaultMode,
@@ -283,11 +405,13 @@ public sealed record WindowsRepositoryRoute(
     WindowsRepositoryRouteKind Kind,
     string RepoPath,
     WindowsRepositoryValidation? Validation,
-    WindowsRepositoryConfig? Config)
+    WindowsRepositoryConfig? Config,
+    WindowsCloudStorageState? CloudStorageState = null)
 {
     public static WindowsRepositoryRoute None { get; } = new(
         WindowsRepositoryRouteKind.None,
         string.Empty,
+        null,
         null,
         null);
 }

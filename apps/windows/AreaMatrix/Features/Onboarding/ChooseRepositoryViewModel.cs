@@ -13,6 +13,7 @@ public sealed class ChooseRepositoryViewModel : INotifyPropertyChanged
     private string repositoryPath = string.Empty;
     private bool isChecking;
     private WindowsRepositoryValidation? latestValidation;
+    private WindowsCloudStorageState? latestCloudStorageState;
     private WindowsRepositoryConfig? latestConfig;
     private WindowsRepositoryError? error;
     private WindowsRepositoryRoute route = WindowsRepositoryRoute.None;
@@ -33,6 +34,7 @@ public sealed class ChooseRepositoryViewModel : INotifyPropertyChanged
             {
                 Error = null;
                 LatestValidation = null;
+                LatestCloudStorageState = null;
                 LatestConfig = null;
                 Route = WindowsRepositoryRoute.None;
                 OnPropertyChanged(nameof(CanContinue));
@@ -59,6 +61,19 @@ public sealed class ChooseRepositoryViewModel : INotifyPropertyChanged
         private set
         {
             if (SetProperty(ref latestValidation, value))
+            {
+                OnPropertyChanged(nameof(CanContinue));
+                OnPropertyChanged(nameof(StatusText));
+            }
+        }
+    }
+
+    public WindowsCloudStorageState? LatestCloudStorageState
+    {
+        get => latestCloudStorageState;
+        private set
+        {
+            if (SetProperty(ref latestCloudStorageState, value))
             {
                 OnPropertyChanged(nameof(CanContinue));
                 OnPropertyChanged(nameof(StatusText));
@@ -136,6 +151,7 @@ public sealed class ChooseRepositoryViewModel : INotifyPropertyChanged
 
         RepositoryPath = candidatePath.Trim();
         LatestValidation = null;
+        LatestCloudStorageState = null;
         LatestConfig = null;
         Route = WindowsRepositoryRoute.None;
 
@@ -156,6 +172,12 @@ public sealed class ChooseRepositoryViewModel : INotifyPropertyChanged
 
             LatestValidation = validation;
             Error = BlockingErrorFor(validation);
+            if (Error is null && IsOneDriveCandidate(validation))
+            {
+                LatestCloudStorageState = await coreBridge
+                    .DetectCloudStorageStateAsync(validation.RepoPath, token);
+                token.ThrowIfCancellationRequested();
+            }
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
@@ -184,15 +206,33 @@ public sealed class ChooseRepositoryViewModel : INotifyPropertyChanged
             return;
         }
 
-        if (validation.IsOneDrivePath
-            || validation.HasIssue(WindowsRepositoryPathIssue.OneDrivePath)
-            || validation.PlatformPathKind == WindowsPlatformPathKind.OneDrive)
+        bool requiresOneDriveNotice;
+        try
+        {
+            requiresOneDriveNotice = IsOneDriveCandidate(validation)
+                && await RequiresOneDriveNoticeAsync(validation, cancellationToken);
+        }
+        catch (WindowsRepositoryCoreException exception)
+        {
+            Error = ErrorFromCoreException(exception);
+            return;
+        }
+        catch (Exception exception)
+        {
+            Error = new WindowsRepositoryError(
+                WindowsRepositoryErrorKind.Unavailable,
+                exception.Message);
+            return;
+        }
+
+        if (requiresOneDriveNotice)
         {
             Route = new WindowsRepositoryRoute(
                 WindowsRepositoryRouteKind.OneDriveNotice,
                 validation.RepoPath,
                 validation,
-                null);
+                null,
+                LatestCloudStorageState);
             return;
         }
 
@@ -224,7 +264,8 @@ public sealed class ChooseRepositoryViewModel : INotifyPropertyChanged
                 WindowsRepositoryRouteKind.MainWindow,
                 validation.RepoPath,
                 validation,
-                config);
+                config,
+                LatestCloudStorageState);
         }
         catch (WindowsRepositoryCoreException exception)
         {
@@ -256,7 +297,30 @@ public sealed class ChooseRepositoryViewModel : INotifyPropertyChanged
             return;
         }
 
-        Route = new WindowsRepositoryRoute(kind, validation.RepoPath, validation, null);
+        Route = new WindowsRepositoryRoute(
+            kind,
+            validation.RepoPath,
+            validation,
+            null,
+            LatestCloudStorageState);
+    }
+
+    private async Task<bool> RequiresOneDriveNoticeAsync(
+        WindowsRepositoryValidation validation,
+        CancellationToken cancellationToken)
+    {
+        WindowsCloudStorageState state = LatestCloudStorageState
+            ?? await coreBridge.DetectCloudStorageStateAsync(validation.RepoPath, cancellationToken);
+        LatestCloudStorageState = state;
+        return state.RequiresOneDriveNotice
+            || state.RecommendedAction == WindowsCloudStorageRecommendedAction.AcknowledgeNotice;
+    }
+
+    private static bool IsOneDriveCandidate(WindowsRepositoryValidation validation)
+    {
+        return validation.IsOneDrivePath
+            || validation.HasIssue(WindowsRepositoryPathIssue.OneDrivePath)
+            || validation.PlatformPathKind == WindowsPlatformPathKind.OneDrive;
     }
 
     private static WindowsRepositoryError? BlockingErrorFor(WindowsRepositoryValidation validation)
@@ -358,8 +422,14 @@ public sealed class ChooseRepositoryViewModel : INotifyPropertyChanged
         return new WindowsRepositoryError(exception.Kind, message, exception.Path);
     }
 
-    private static string StatusTextFor(WindowsRepositoryValidation validation)
+    private string StatusTextFor(WindowsRepositoryValidation validation)
     {
+        if (LatestCloudStorageState is { } cloudState
+            && cloudState.ProviderKind == WindowsCloudStorageProviderKind.OneDrive)
+        {
+            return OneDriveStatusText(cloudState);
+        }
+
         if (validation.IsInitialized)
         {
             return "AreaMatrix repository found";
@@ -378,6 +448,16 @@ public sealed class ChooseRepositoryViewModel : INotifyPropertyChanged
                 => "This folder already contains files. AreaMatrix will ask before creating its metadata folder.",
             _ => "This folder is not ready to connect."
         };
+    }
+
+    private static string OneDriveStatusText(WindowsCloudStorageState state)
+    {
+        if (string.IsNullOrWhiteSpace(state.StatusSummary))
+        {
+            return "This folder is inside OneDrive.";
+        }
+
+        return $"This folder is inside OneDrive. {state.StatusSummary}";
     }
 
     private bool SetProperty<T>(

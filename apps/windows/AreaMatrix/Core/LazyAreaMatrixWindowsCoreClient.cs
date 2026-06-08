@@ -24,6 +24,13 @@ internal sealed class LazyAreaMatrixWindowsCoreClient : IAreaMatrixWindowsCoreCl
         return Current.LoadConfigAsync(repoPath, cancellationToken);
     }
 
+    public Task<CoreCloudStorageState> DetectCloudStorageStateAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.DetectCloudStorageStateAsync(repoPath, cancellationToken);
+    }
+
     public Task InitRepoAsync(
         string repoPath,
         CoreRepoInitOptions options,

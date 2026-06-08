@@ -82,6 +82,15 @@ public static class ChooseRepositoryViewSmokeTests
             "new ChooseRepositoryViewModel",
             codeBehind,
             "choose repository view model");
+        TestAssert.Contains(
+            "DetectCloudStorageStateAsync",
+            File.ReadAllText(RepositoryPath(
+                "apps/windows/AreaMatrix/Features/Onboarding/WindowsRepositoryCoreBridge.cs")),
+            "C4-14 cloud storage bridge");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_detect_cloud_storage_state",
+            File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/Core/NativeCoreLibrary.cs")),
+            "C4-14 native core binding");
     }
 
     private static void AssertButton(XElement root, string content, string clickHandler)

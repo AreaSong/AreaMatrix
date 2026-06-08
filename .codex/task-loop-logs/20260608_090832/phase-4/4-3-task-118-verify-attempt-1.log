@@ -1,0 +1,96 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-118`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-118-s4-win-01-c4-14-onedrive-risk-state.md`
+- Manifest 章节：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md` 的 `## 4-3/task-118`
+- 实际实现范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/**`，以及读取核对 `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S4-WIN-01 页面中的 C4-14 功能点  
+  结果：通过  
+  证据：实现集中在 Windows choose-repo 的 OneDrive risk state 检测与路由；未实现相邻页面功能。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/ChooseRepositoryViewModel.cs:175`
+
+- 项目：读取并对齐页面规格、control map、Core API、C4-14 能力规格  
+  结果：通过  
+  证据：S4-WIN-01 映射 C4-09、C4-14；本 task 只验 C4-14；Core API/UDL 均包含 `detect_cloud_storage_state` 与 cloud state 字段。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:447`
+
+- 项目：接入 C4-14 CoreBridge / 状态 / 错误映射  
+  结果：通过  
+  证据：`IWindowsRepositoryCoreBridge` 暴露 `DetectCloudStorageStateAsync`，真实 bridge 调用 core client，native client 绑定 UniFFI 符号并校验 checksum。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/WindowsRepositoryCoreBridge.cs:15`、`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Core/NativeCoreLibrary.cs:17`
+
+- 项目：不实现同页其他 Core 能力或相邻平台能力  
+  结果：通过  
+  证据：diff 未出现 `core/src/**`；实现没有扩展 C4-09 初始化/接管逻辑，只在原有路由前加入 OneDrive notice gate。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/ChooseRepositoryViewModel.cs:201`
+
+- 项目：S4-WIN-01 中 C4-14 用户可见功能可触发  
+  结果：通过  
+  证据：路径输入/Browse 后可触发检查；OneDrive 状态展示到 `StatusText`，Continue 前路由到 `OneDriveNotice`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/ChooseRepositoryView.xaml:63`、`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/ChooseRepositoryViewModel.cs:228`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环  
+  结果：通过  
+  证据：生产路径由 `MainWindow` 接入 `LazyAreaMatrixWindowsCoreClient` 和 `WindowsRepositoryCoreBridge`；fixture 只存在于测试。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Core/AreaMatrixNativeCoreClient.cs:61`
+
+- 项目：未触碰 control map 之外能力  
+  结果：通过  
+  证据：实际新增/修改均围绕 S4-WIN-01 的 C4-14 OneDrive risk state；未新增 OneDrive SDK、同步控制、rescan、replace 或 watcher 能力。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/WindowsCloudStorageState.cs:46`
+
+- 项目：Expected New Paths  
+  结果：通过  
+  证据：`apps/**` 已落地，新增 `/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/WindowsCloudStorageState.cs`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/WindowsCloudStorageState.cs:1`
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git diff --name-only -- core/src` 无输出，未触碰 `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：Validation  
+  结果：通过  
+  证据：`./dev check task 4-3/task-118` 返回 0；补充运行 Windows self-check 也通过。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrixTests/ChooseRepository/ChooseRepositoryViewModelTests.cs:73`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，ViewModel 负责页面状态和路由，CoreBridge 负责 Core 映射，native client 负责 UniFFI 调用；文件长度未超过 500 行，但 `AreaMatrixNativeCoreClient.cs` 接近阈值。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Rust public API；UDL 与 Core API 已存在对应 C4-14 合同。
+- 错误处理与边界处理：通过，Core exception 映射到页面错误；OneDrive 检测失败不会静默吞错。
+- 测试与验证覆盖：通过，覆盖未确认 OneDrive 路由、已确认 OneDrive 继续原路由、真实 bridge/native binding 存在性。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径接真实 native Core client；测试 fake bridge 未进入生产路径。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-118`，通过；包含 `doctor: OK`、`git diff --check`、macOS build `** BUILD SUCCEEDED **`。
+- 已运行：`dotnet test apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj`，返回 0；该项目不是标准 test SDK，只显示 restore 状态。
+- 已运行：`dotnet run --project apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj`，通过，输出 `AreaMatrix Windows choose-repository tests passed.`
+- Forbidden Touches 检查：`git diff --name-only -- core/src` 无输出。
+- 工作区说明：`tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260608_090832/summary.json` 是 runner 收口前状态；按本验收 prompt 规则不作为失败项。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

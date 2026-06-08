@@ -7,6 +7,11 @@ namespace AreaMatrix.Core;
 internal delegate RustBuffer ValidateRepoPathDelegate(RustBuffer repoPath, ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer DetectCloudStorageStateDelegate(
+    RustBuffer repoPath,
+    ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 internal delegate void InitRepoDelegate(RustBuffer repoPath, RustBuffer options, ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

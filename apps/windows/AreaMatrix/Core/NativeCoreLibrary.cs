@@ -14,6 +14,8 @@ internal sealed class NativeCoreLibrary : IDisposable
         this.handle = handle;
         ValidateRepoPath = LoadFunction<ValidateRepoPathDelegate>(
             "uniffi_area_matrix_core_fn_func_validate_repo_path");
+        DetectCloudStorageState = LoadFunction<DetectCloudStorageStateDelegate>(
+            "uniffi_area_matrix_core_fn_func_detect_cloud_storage_state");
         InitRepo = LoadFunction<InitRepoDelegate>("uniffi_area_matrix_core_fn_func_init_repo");
         LoadConfig = LoadFunction<LoadConfigDelegate>("uniffi_area_matrix_core_fn_func_load_config");
         RustBufferFromBytes = LoadFunction<RustBufferFromBytesDelegate>(
@@ -21,6 +23,8 @@ internal sealed class NativeCoreLibrary : IDisposable
         RustBufferFree = LoadFunction<RustBufferFreeDelegate>("ffi_area_matrix_core_rustbuffer_free");
         ValidateRepoPathChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_validate_repo_path");
+        DetectCloudStorageStateChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_detect_cloud_storage_state");
         InitRepoChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_init_repo");
         LoadConfigChecksum = LoadFunction<ChecksumDelegate>(
@@ -28,6 +32,8 @@ internal sealed class NativeCoreLibrary : IDisposable
     }
 
     public ValidateRepoPathDelegate ValidateRepoPath { get; }
+
+    public DetectCloudStorageStateDelegate DetectCloudStorageState { get; }
 
     public InitRepoDelegate InitRepo { get; }
 
@@ -38,6 +44,8 @@ internal sealed class NativeCoreLibrary : IDisposable
     public RustBufferFreeDelegate RustBufferFree { get; }
 
     public ChecksumDelegate ValidateRepoPathChecksum { get; }
+
+    public ChecksumDelegate DetectCloudStorageStateChecksum { get; }
 
     public ChecksumDelegate InitRepoChecksum { get; }
 
