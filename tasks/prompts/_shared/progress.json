@@ -14202,11 +14202,35 @@
     "4-3/task-131": {
       "attempts": 2,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260608_182928/phase-4/4-3-task-131-copy-attempt-2.log",
+      "git_branch": "codex/areamatrix-task-loop-20260501_132850",
+      "git_changed_files": [
+        ".codex/task-loop-logs/20260608_182928/phase-4/4-3-task-131-copy-attempt-2.log",
+        ".codex/task-loop-logs/20260608_182928/phase-4/4-3-task-131-verify-attempt-2.log",
+        ".codex/task-loop-runs/20260608_182928/summary.json",
+        ".codex/task-loop-runs/index.json",
+        "apps/linux/AreaMatrix/AreaMatrix.Linux.csproj",
+        "apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.DesktopMainQuery.cs",
+        "apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.cs",
+        "apps/linux/AreaMatrix/Core/NativeCoreInterop.cs",
+        "apps/linux/AreaMatrix/Core/NativeCoreLibrary.cs",
+        "apps/linux/AreaMatrix/Core/UniFfiReader.cs",
+        "apps/linux/AreaMatrix/Features/Library/",
+        "apps/linux/AreaMatrix/Features/Onboarding/LinuxRepositoryModels.cs",
+        "apps/linux/AreaMatrixTests/ChooseRepository/LinuxNativeCoreBridgeSmokeTests.cs",
+        "apps/linux/AreaMatrixTests/ChooseRepository/TestAssert.cs",
+        "apps/linux/AreaMatrixTests/Library/",
+        "apps/linux/AreaMatrixTests/Program.cs",
+        "tasks/prompts/_shared/progress.json"
+      ],
+      "git_checkpoint_status": "committed",
+      "git_commit": "4388d52cb2af86237a32b689d7292f486586baef",
+      "git_push_status": "not_requested",
+      "git_remote": "",
       "note": "自动执行验收通过：attempt=2",
       "risk": "High",
       "run_id": "20260608_182928",
       "status": "completed",
-      "updated_at": "2026-06-08T16:39:55.568370+00:00",
+      "updated_at": "2026-06-08T16:39:55.783773+00:00",
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260608_182928/phase-4/4-3-task-131-verify-attempt-2.log"
     },
     "4-3/task-14": {
@@ -16332,6 +16356,6 @@
       "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260605_152309/phase-4/4-3-task-99-verify-attempt-1.log"
     }
   },
-  "updated_at": "2026-06-08T15:43:47.112434+00:00",
+  "updated_at": "2026-06-08T16:39:55.783775+00:00",
   "version": 1
 }
