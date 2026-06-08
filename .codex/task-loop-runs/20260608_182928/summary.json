@@ -990,6 +990,67 @@
     "4-3/task-134": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260608_182928/phase-4/4-3-task-134-copy-attempt-1.log",
+      "git": {
+        "attempts": 1,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260608_182928/phase-4/4-3-task-134-copy-attempt-1.log",
+          ".codex/task-loop-logs/20260608_182928/phase-4/4-3-task-134-verify-attempt-1.log",
+          ".codex/task-loop-runs/20260608_182928/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "apps/linux/AreaMatrix/Features/Onboarding/LinuxRepositoryCoreBridge.cs",
+          "apps/linux/AreaMatrixTests/ChooseRepository/LinuxChooseRepositoryViewModelTests.cs",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "e84c5e18a6ff005b58819ac058fbaf1e37e5bfa9",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260608_182928/phase-4/4-3-task-134-copy-attempt-1.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/20260608_182928/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/linux/AreaMatrix/Features/Onboarding/LinuxRepositoryCoreBridge.cs",
+          "M\tapps/linux/AreaMatrixTests/ChooseRepository/LinuxChooseRepositoryViewModelTests.cs",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "final_log_files": [
+          ".codex/task-loop-logs/20260608_182928/phase-4/4-3-task-134-copy-attempt-1.log",
+          ".codex/task-loop-logs/20260608_182928/phase-4/4-3-task-134-verify-attempt-1.log"
+        ],
+        "label": "4-3/task-134",
+        "mode": "commit",
+        "phase": "phase-4",
+        "pre_checkpoint_changed_files": [
+          ".codex/task-loop-runs/20260608_182928/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "apps/linux/AreaMatrix/Features/Onboarding/LinuxRepositoryCoreBridge.cs",
+          "apps/linux/AreaMatrixTests/ChooseRepository/LinuxChooseRepositoryViewModelTests.cs",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260608_182928",
+        "skipped_log_files": [],
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260608_182928/phase-4/4-3-task-134-copy-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260608_182928/phase-4/4-3-task-134-verify-attempt-1.log",
+          "M\t.codex/task-loop-runs/20260608_182928/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/linux/AreaMatrix/Features/Onboarding/LinuxRepositoryCoreBridge.cs",
+          "M\tapps/linux/AreaMatrixTests/ChooseRepository/LinuxChooseRepositoryViewModelTests.cs",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/20260608_182928/summary.json",
+          " M .codex/task-loop-runs/index.json",
+          " M apps/linux/AreaMatrix/Features/Onboarding/LinuxRepositoryCoreBridge.cs",
+          " M apps/linux/AreaMatrixTests/ChooseRepository/LinuxChooseRepositoryViewModelTests.cs",
+          " M tasks/prompts/_shared/progress.json"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260608_182928/summary.json",
+        "task_name": "4-3-task-134",
+        "updated_at": "2026-06-08T18:03:08.951045+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260608_182928/phase-4/4-3-task-134-verify-attempt-1.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-4",
       "risk": "High",
@@ -1004,7 +1065,7 @@
     "retries": 8,
     "task_count": 637
   },
-  "updated_at": "2026-06-08T18:03:08.753274+00:00",
+  "updated_at": "2026-06-08T18:03:08.959163+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
