@@ -1,11 +1,15 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using AreaMatrix.Features.Library;
 using AreaMatrix.Features.Onboarding;
 
 namespace AreaMatrix.Core;
 
-internal sealed class LazyAreaMatrixWindowsCoreClient : IAreaMatrixWindowsCoreClient, IDisposable
+internal sealed class LazyAreaMatrixWindowsCoreClient :
+    IAreaMatrixWindowsCoreClient,
+    IAreaMatrixDesktopQueryCoreClient,
+    IDisposable
 {
     private readonly object sync = new();
     private AreaMatrixNativeCoreClient? client;
@@ -37,6 +41,41 @@ internal sealed class LazyAreaMatrixWindowsCoreClient : IAreaMatrixWindowsCoreCl
         CancellationToken cancellationToken = default)
     {
         return Current.InitRepoAsync(repoPath, options, cancellationToken);
+    }
+
+    public Task<IReadOnlyList<CoreDesktopFileEntry>> ListFilesAsync(
+        string repoPath,
+        CoreDesktopFileFilter filter,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.ListFilesAsync(repoPath, filter, cancellationToken);
+    }
+
+    public Task<CoreDesktopFileEntry> GetFileAsync(
+        string repoPath,
+        long fileId,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.GetFileAsync(repoPath, fileId, cancellationToken);
+    }
+
+    public Task<string> ListTreeJsonAsync(
+        string repoPath,
+        string locale,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.ListTreeJsonAsync(repoPath, locale, cancellationToken);
+    }
+
+    public Task<CoreDesktopSearchResultPage> SearchFilesAsync(
+        string repoPath,
+        string query,
+        CoreDesktopSearchFilter filter,
+        string sort,
+        CoreDesktopSearchPagination pagination,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.SearchFilesAsync(repoPath, query, filter, sort, pagination, cancellationToken);
     }
 
     public void Dispose()

@@ -1,20 +1,26 @@
 using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using AreaMatrix.Features.Library;
 using AreaMatrix.Features.Onboarding;
 
 namespace AreaMatrix.Core;
 
-public sealed class AreaMatrixNativeCoreClient : IAreaMatrixWindowsCoreClient, IDisposable
+public sealed partial class AreaMatrixNativeCoreClient :
+    IAreaMatrixWindowsCoreClient,
+    IAreaMatrixDesktopQueryCoreClient,
+    IDisposable
 {
     private const ushort DetectCloudStorageStateChecksum = 18169;
+    private const ushort GetFileChecksum = 6132;
     private const ushort InitRepoChecksum = 29414;
+    private const ushort ListFilesChecksum = 56809;
+    private const ushort ListTreeJsonChecksum = 45468;
     private const ushort LoadConfigChecksum = 64573;
+    private const ushort SearchFilesChecksum = 65;
     private const ushort ValidateRepoPathChecksum = 43498;
 
     private readonly NativeCoreLibrary native;
@@ -97,7 +103,11 @@ public sealed class AreaMatrixNativeCoreClient : IAreaMatrixWindowsCoreClient, I
     {
         if (native.InitRepoChecksum() != InitRepoChecksum
             || native.DetectCloudStorageStateChecksum() != DetectCloudStorageStateChecksum
+            || native.GetFileChecksum() != GetFileChecksum
+            || native.ListFilesChecksum() != ListFilesChecksum
+            || native.ListTreeJsonChecksum() != ListTreeJsonChecksum
             || native.LoadConfigChecksum() != LoadConfigChecksum
+            || native.SearchFilesChecksum() != SearchFilesChecksum
             || native.ValidateRepoPathChecksum() != ValidateRepoPathChecksum)
         {
             throw new WindowsRepositoryCoreException(
@@ -226,7 +236,9 @@ public sealed class AreaMatrixNativeCoreClient : IAreaMatrixWindowsCoreClient, I
         WindowsRepositoryErrorKind kind = variant switch
         {
             1 => WindowsRepositoryErrorKind.DiskUnavailable,
+            2 => WindowsRepositoryErrorKind.Db,
             3 => WindowsRepositoryErrorKind.Config,
+            8 => WindowsRepositoryErrorKind.FileNotFound,
             10 => WindowsRepositoryErrorKind.InvalidRepository,
             11 => WindowsRepositoryErrorKind.InvalidPath,
             12 => WindowsRepositoryErrorKind.DiskUnavailable,
@@ -482,15 +494,4 @@ public sealed class AreaMatrixNativeCoreClient : IAreaMatrixWindowsCoreClient, I
         };
     }
 
-    private static void WriteEnum(List<byte> bytes, int value)
-    {
-        Span<byte> buffer = stackalloc byte[4];
-        BinaryPrimitives.WriteInt32BigEndian(buffer, value);
-        bytes.AddRange(buffer.ToArray());
-    }
-
-    private static void WriteBool(List<byte> bytes, bool value)
-    {
-        bytes.Add(value ? (byte)1 : (byte)0);
-    }
 }

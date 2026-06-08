@@ -157,10 +157,12 @@ public enum WindowsRepositoryRouteKind
 
 public enum WindowsRepositoryErrorKind
 {
+    Db,
     InvalidPath,
     SelectedFile,
     PermissionDenied,
     InvalidRepository,
+    FileNotFound,
     DiskUnavailable,
     OneDrivePathDetected,
     Config,

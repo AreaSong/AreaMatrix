@@ -35,6 +35,22 @@ internal sealed class UniFfiReader
         return value;
     }
 
+    public long ReadInt64()
+    {
+        EnsureAvailable(8);
+        long value = BinaryPrimitives.ReadInt64BigEndian(bytes.AsSpan(offset, 8));
+        offset += 8;
+        return value;
+    }
+
+    public float ReadSingle()
+    {
+        EnsureAvailable(4);
+        int bits = BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(offset, 4));
+        offset += 4;
+        return BitConverter.Int32BitsToSingle(bits);
+    }
+
     public string ReadString()
     {
         int length = ReadInt32();

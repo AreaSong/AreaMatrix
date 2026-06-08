@@ -1,6 +1,9 @@
 using AreaMatrixTests.ChooseRepository;
+using AreaMatrixTests.DesktopMainQuery;
 
 await ChooseRepositoryViewModelTests.RunAllAsync();
 await ChooseRepositoryPageIntegrationTests.RunAllAsync();
 ChooseRepositoryViewSmokeTests.RunAll();
-Console.WriteLine("AreaMatrix Windows choose-repository tests passed.");
+await DesktopMainQueryViewModelTests.RunAllAsync();
+DesktopMainQuerySmokeTests.RunAll();
+Console.WriteLine("AreaMatrix Windows tests passed.");
