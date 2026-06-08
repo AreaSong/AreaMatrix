@@ -196,6 +196,19 @@ public static class LinuxChooseRepositoryViewModelTests
 
         TestAssert.Equal(LinuxPlatformPathKind.NetworkShare, bridged.PlatformPathKind, "bridged path kind");
         TestAssert.SequenceEqual(["/mnt/share/AreaMatrix"], client.ValidatedPaths, "client validated");
+
+        CoreRepoPathValidation externalCoreValidation = coreValidation with
+        {
+            RepoPath = "/run/media/me/AreaMatrix",
+            PlatformPathKind = "Local",
+            IsCaseSensitivePath = true
+        };
+        LinuxRepositoryValidation externalValidation = externalCoreValidation.ToLinuxValidation();
+
+        TestAssert.Equal(
+            LinuxPlatformPathKind.ExternalDrive,
+            externalValidation.PlatformPathKind,
+            "linux removable mount path kind");
     }
 
     private sealed class FakeLinuxCoreClient : IAreaMatrixLinuxCoreClient

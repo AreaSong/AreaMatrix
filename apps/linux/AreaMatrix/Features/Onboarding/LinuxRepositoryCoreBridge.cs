@@ -114,6 +114,9 @@ public sealed record CoreRepoPathValidation(
 {
     public LinuxRepositoryValidation ToLinuxValidation()
     {
+        LinuxPlatformPathKind platformPathKind = LinuxPlatformPathClassifier.Classify(
+            RepoPath,
+            ParsePlatformPathKind(PlatformPathKind));
         return new LinuxRepositoryValidation(
             RepoPath,
             Exists,
@@ -125,7 +128,7 @@ public sealed record CoreRepoPathValidation(
             IsInsideAreaMatrix,
             IsICloudPath,
             IsOneDrivePath,
-            ParsePlatformPathKind(PlatformPathKind),
+            platformPathKind,
             IsCaseSensitivePath,
             HasUnfinishedScanSession,
             ParseInitMode(RecommendedMode),
@@ -175,6 +178,30 @@ public sealed record CoreRepoPathValidation(
                 LinuxRepositoryErrorKind.Config,
                 $"Unknown repository path issue `{value}`.")
         };
+    }
+}
+
+internal static class LinuxPlatformPathClassifier
+{
+    public static LinuxPlatformPathKind Classify(
+        string repoPath,
+        LinuxPlatformPathKind corePathKind)
+    {
+        if (corePathKind != LinuxPlatformPathKind.Local)
+        {
+            return corePathKind;
+        }
+
+        return LooksLikeRemovableMount(repoPath)
+            ? LinuxPlatformPathKind.ExternalDrive
+            : corePathKind;
+    }
+
+    private static bool LooksLikeRemovableMount(string repoPath)
+    {
+        string normalized = repoPath.Trim().Replace('\\', '/');
+        return normalized.StartsWith("/media/", StringComparison.Ordinal)
+            || normalized.StartsWith("/run/media/", StringComparison.Ordinal);
     }
 }
 
