@@ -25,6 +25,7 @@ public enum LinuxRepositoryPathIssue
 public enum LinuxPlatformPathKind
 {
     Local,
+    ExternalDrive,
     ICloudDrive,
     OneDrive,
     NetworkShare,
@@ -34,6 +35,7 @@ public enum LinuxPlatformPathKind
 public enum LinuxRepositoryRouteKind
 {
     None,
+    ChooseRepository,
     MainWindow,
     LocalFolderNotice,
     RepositoryInitConfirm,

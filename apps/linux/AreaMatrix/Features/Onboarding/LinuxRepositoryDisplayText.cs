@@ -50,6 +50,7 @@ public static class LinuxRepositoryDisplayText
     public static bool RequiresLocalFolderNotice(LinuxRepositoryValidation validation)
     {
         return validation.PlatformPathKind is LinuxPlatformPathKind.NetworkShare
+                or LinuxPlatformPathKind.ExternalDrive
                 or LinuxPlatformPathKind.ICloudDrive
                 or LinuxPlatformPathKind.OneDrive
                 or LinuxPlatformPathKind.Unknown

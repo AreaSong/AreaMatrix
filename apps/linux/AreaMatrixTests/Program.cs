@@ -4,6 +4,8 @@ using AreaMatrix.Linux.Tests.Library;
 await LinuxChooseRepositoryViewModelTests.RunAllAsync();
 await LinuxNativeCoreBridgeSmokeTests.RunAllAsync();
 LinuxChooseRepositorySmokeTests.RunAll();
+await LocalFolderNoticeViewModelTests.RunAllAsync();
+LocalFolderNoticeSmokeTests.RunAll();
 await LinuxMainWindowViewModelTests.RunAllAsync();
 LinuxMainWindowSmokeTests.RunAll();
 

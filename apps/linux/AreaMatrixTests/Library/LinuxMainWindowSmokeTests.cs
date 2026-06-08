@@ -69,11 +69,14 @@ public static class LinuxMainWindowSmokeTests
             "apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs"));
 
         TestAssert.Contains("ConsumeRouteAsync", shell, "route consumer");
+        TestAssert.Contains("LinuxRepositoryRouteKind.LocalFolderNotice", shell, "local folder notice route");
         TestAssert.Contains("LinuxRepositoryRouteKind.MainWindow", shell, "main window route");
         TestAssert.Contains("CreateDefault", shell, "default production shell");
         TestAssert.Contains("AreaMatrixNativeCoreClient nativeCoreClient = new()", shell, "real native core client");
         TestAssert.Contains("LinuxRepositoryCoreBridge repositoryBridge = new(nativeCoreClient)", shell, "repository bridge");
+        TestAssert.Contains("new LinuxLocalFolderNoticeFactory(repositoryBridge)", shell, "local notice bridge");
         TestAssert.Contains("DesktopMainQueryCoreBridge queryBridge = new(nativeCoreClient)", shell, "query bridge");
+        TestAssert.Contains("new LocalFolderNoticeViewModel(coreBridge)", shell, "local notice view model");
         TestAssert.Contains("new LinuxMainWindowViewModel(coreBridge", shell, "main window view model");
         TestAssert.NotContains("FakeDesktopMainQueryCoreBridge", shell, "no fake bridge in production shell");
     }

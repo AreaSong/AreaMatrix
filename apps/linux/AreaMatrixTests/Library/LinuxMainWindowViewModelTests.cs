@@ -9,6 +9,7 @@ public static class LinuxMainWindowViewModelTests
     public static async Task RunAllAsync()
     {
         await RepositoryRouteOpensMainWindowThroughProductionShell();
+        await LocalFolderNoticeRouteIsHostedBeforeContinuing();
         await OpenRepositoryLoadsTreeAndFirstPageFromCoreBridge();
         await LoadMoreAdvancesListOffsetThroughCoreBridge();
         await SearchUsesCoreSearchWithoutScanningRepository();
@@ -37,6 +38,34 @@ public static class LinuxMainWindowViewModelTests
         TestAssert.Equal("AreaMatrix", shell.MainWindow?.ViewModel.RepoName, "main repo name");
         TestAssert.SequenceEqual(["/home/me/AreaMatrix"], queryBridge.ListRequests, "list requests");
         TestAssert.Equal(LinuxRepositoryRouteKind.None, chooseModel.Route.Kind, "consumed route");
+    }
+
+    private static async Task LocalFolderNoticeRouteIsHostedBeforeContinuing()
+    {
+        const string path = "//server/share/AreaMatrix";
+        FakeDesktopMainQueryCoreBridge queryBridge = new();
+        FakeLinuxRepositoryCoreBridge repositoryBridge = new(LinuxRepositoryValidationSamples.NetworkShare(path));
+        FakeLinuxMainWindowFactory mainWindowFactory = new(queryBridge);
+        FakeLocalFolderNoticeFactory noticeFactory = new(repositoryBridge);
+        LinuxChooseRepositoryViewModel chooseModel = new(repositoryBridge);
+        LinuxChooseRepositoryView chooseView = new(chooseModel, new FakeLinuxFolderPickerAdapter(path));
+        LinuxDesktopShell shell = new(chooseView, mainWindowFactory, noticeFactory);
+
+        await chooseView.TypeRepositoryPathAsync(path);
+        await shell.ContinueFromRepositorySelectionAsync();
+
+        TestAssert.NotNull(shell.LocalFolderNoticeView, nameof(shell.LocalFolderNoticeView));
+        TestAssert.Equal(LinuxRepositoryRouteKind.None, chooseModel.Route.Kind, "choose route consumed");
+        TestAssert.Empty(mainWindowFactory.CreatedRoutes, "main window before notice confirmation");
+        TestAssert.SequenceEqual([path], noticeFactory.CreatedRoutes.Select(route => route.RepoPath).ToArray(), "notice route");
+
+        shell.LocalFolderNoticeView!.ViewModel.IsRiskNoticeConfirmed = true;
+        await shell.ContinueFromLocalFolderNoticeAsync();
+
+        TestAssert.Equal(LinuxRepositoryRouteKind.RepositoryAdoptConfirm, shell.LocalFolderNoticeView.ViewModel.Route.Kind, "next route");
+        TestAssert.Empty(queryBridge.ListRequests, "no main query before adopt confirmation");
+        TestAssert.Empty(repositoryBridge.InitializedPaths, nameof(repositoryBridge.InitializedPaths));
+        TestAssert.Empty(repositoryBridge.AdoptedPaths, nameof(repositoryBridge.AdoptedPaths));
     }
 
     private static async Task OpenRepositoryLoadsTreeAndFirstPageFromCoreBridge()
@@ -287,5 +316,23 @@ internal sealed class FakeLinuxMainWindowFactory : ILinuxMainWindowFactory
     {
         CreatedRoutes.Add(route);
         return new LinuxMainWindow(new LinuxMainWindowViewModel(bridge));
+    }
+}
+
+internal sealed class FakeLocalFolderNoticeFactory : ILinuxLocalFolderNoticeFactory
+{
+    private readonly ILinuxRepositoryCoreBridge bridge;
+
+    public FakeLocalFolderNoticeFactory(ILinuxRepositoryCoreBridge bridge)
+    {
+        this.bridge = bridge;
+    }
+
+    public List<LinuxRepositoryRoute> CreatedRoutes { get; } = [];
+
+    public LocalFolderNoticeView Create(LinuxRepositoryRoute route)
+    {
+        CreatedRoutes.Add(route);
+        return new LocalFolderNoticeView(new LocalFolderNoticeViewModel(bridge));
     }
 }

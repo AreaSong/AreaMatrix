@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <None Include="Features/Onboarding/ChooseRepositoryView.ui" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Features/Onboarding/LocalFolderNoticeView.ui" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Features/Library/MainWindow.ui" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

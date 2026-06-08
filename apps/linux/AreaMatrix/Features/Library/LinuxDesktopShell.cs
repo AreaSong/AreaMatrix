@@ -8,25 +8,36 @@ public interface ILinuxMainWindowFactory
     LinuxMainWindow Create(LinuxRepositoryRoute route);
 }
 
+public interface ILinuxLocalFolderNoticeFactory
+{
+    LocalFolderNoticeView Create(LinuxRepositoryRoute route);
+}
+
 public sealed class LinuxDesktopShell : IDisposable
 {
     private readonly LinuxChooseRepositoryView chooseRepositoryView;
+    private readonly ILinuxLocalFolderNoticeFactory? localFolderNoticeFactory;
     private readonly ILinuxMainWindowFactory mainWindowFactory;
     private readonly IDisposable? ownedResources;
+    private LocalFolderNoticeView? localFolderNoticeView;
     private LinuxMainWindow? mainWindow;
     private bool disposed;
 
     public LinuxDesktopShell(
         LinuxChooseRepositoryView chooseRepositoryView,
         ILinuxMainWindowFactory mainWindowFactory,
+        ILinuxLocalFolderNoticeFactory? localFolderNoticeFactory = null,
         IDisposable? ownedResources = null)
     {
         this.chooseRepositoryView = chooseRepositoryView;
         this.mainWindowFactory = mainWindowFactory;
+        this.localFolderNoticeFactory = localFolderNoticeFactory;
         this.ownedResources = ownedResources;
     }
 
     public LinuxChooseRepositoryView ChooseRepositoryView => chooseRepositoryView;
+
+    public LocalFolderNoticeView? LocalFolderNoticeView => localFolderNoticeView;
 
     public LinuxMainWindow? MainWindow => mainWindow;
 
@@ -41,6 +52,7 @@ public sealed class LinuxDesktopShell : IDisposable
         return new LinuxDesktopShell(
             chooseRepositoryView,
             new LinuxMainWindowFactory(queryBridge, locale),
+            new LinuxLocalFolderNoticeFactory(repositoryBridge),
             nativeCoreClient);
     }
 
@@ -51,9 +63,41 @@ public sealed class LinuxDesktopShell : IDisposable
         await ConsumeRouteAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task ContinueFromLocalFolderNoticeAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (localFolderNoticeView is null)
+        {
+            return;
+        }
+
+        await localFolderNoticeView.ContinueAsync(cancellationToken).ConfigureAwait(false);
+        await ConsumeRouteAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task ConsumeRouteAsync(CancellationToken cancellationToken = default)
     {
-        LinuxRepositoryRoute route = chooseRepositoryView.ViewModel.Route;
+        LinuxRepositoryRoute route = ActiveRoute();
+        if (route.Kind == LinuxRepositoryRouteKind.LocalFolderNotice)
+        {
+            if (localFolderNoticeFactory is null)
+            {
+                throw new InvalidOperationException("Linux local folder notice route has no view factory.");
+            }
+
+            LocalFolderNoticeView noticeView = localFolderNoticeFactory.Create(route);
+            await noticeView.LoadAsync(route, cancellationToken).ConfigureAwait(false);
+            localFolderNoticeView = noticeView;
+            chooseRepositoryView.ViewModel.ResetRoute();
+            return;
+        }
+
+        if (route.Kind == LinuxRepositoryRouteKind.ChooseRepository)
+        {
+            localFolderNoticeView = null;
+            return;
+        }
+
         if (route.Kind != LinuxRepositoryRouteKind.MainWindow)
         {
             return;
@@ -62,7 +106,17 @@ public sealed class LinuxDesktopShell : IDisposable
         LinuxMainWindow window = mainWindowFactory.Create(route);
         await window.OpenRepositoryAsync(route, cancellationToken).ConfigureAwait(false);
         mainWindow = window;
+        localFolderNoticeView = null;
         chooseRepositoryView.ViewModel.ResetRoute();
+    }
+
+    private LinuxRepositoryRoute ActiveRoute()
+    {
+        LinuxRepositoryRoute noticeRoute = localFolderNoticeView?.ViewModel.Route
+            ?? LinuxRepositoryRoute.None;
+        return noticeRoute.Kind == LinuxRepositoryRouteKind.None
+            ? chooseRepositoryView.ViewModel.Route
+            : noticeRoute;
     }
 
     public void Dispose()
@@ -79,6 +133,21 @@ public sealed class LinuxDesktopShell : IDisposable
 
         ownedResources?.Dispose();
         disposed = true;
+    }
+}
+
+public sealed class LinuxLocalFolderNoticeFactory : ILinuxLocalFolderNoticeFactory
+{
+    private readonly ILinuxRepositoryCoreBridge coreBridge;
+
+    public LinuxLocalFolderNoticeFactory(ILinuxRepositoryCoreBridge coreBridge)
+    {
+        this.coreBridge = coreBridge;
+    }
+
+    public LocalFolderNoticeView Create(LinuxRepositoryRoute route)
+    {
+        return new LocalFolderNoticeView(new LocalFolderNoticeViewModel(coreBridge));
     }
 }
 

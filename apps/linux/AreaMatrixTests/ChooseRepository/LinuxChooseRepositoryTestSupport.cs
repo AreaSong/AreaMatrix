@@ -138,6 +138,16 @@ internal static class LinuxRepositoryValidationSamples
             ]);
     }
 
+    public static LinuxRepositoryValidation ExternalDrive(string path)
+    {
+        return New(
+            path,
+            isEmpty: false,
+            platformPathKind: LinuxPlatformPathKind.ExternalDrive,
+            recommendedMode: LinuxRepositoryInitMode.AdoptExisting,
+            issues: [LinuxRepositoryPathIssue.NonEmptyDirectory]);
+    }
+
     public static LinuxRepositoryValidation Missing(string path)
     {
         return New(

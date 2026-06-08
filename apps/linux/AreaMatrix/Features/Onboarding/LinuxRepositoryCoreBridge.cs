@@ -120,6 +120,7 @@ public sealed record CoreRepoPathValidation(
         return value switch
         {
             "Local" => LinuxPlatformPathKind.Local,
+            "ExternalDrive" => LinuxPlatformPathKind.ExternalDrive,
             "ICloudDrive" => LinuxPlatformPathKind.ICloudDrive,
             "OneDrive" => LinuxPlatformPathKind.OneDrive,
             "NetworkShare" => LinuxPlatformPathKind.NetworkShare,
