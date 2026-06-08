@@ -33,6 +33,12 @@ internal delegate RustBuffer SearchFilesDelegate(
     ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer RecordWatcherHealthDelegate(
+    RustBuffer repoPath,
+    RustBuffer signal,
+    ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 internal delegate RustBuffer RustBufferFromBytesDelegate(ForeignBytes bytes, ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

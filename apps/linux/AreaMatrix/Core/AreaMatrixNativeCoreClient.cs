@@ -2,12 +2,14 @@ using System.Text;
 using System.Runtime.InteropServices;
 using AreaMatrix.Linux.Features.Library;
 using AreaMatrix.Linux.Features.Onboarding;
+using AreaMatrix.Linux.Features.System;
 
 namespace AreaMatrix.Linux.Core;
 
 public sealed partial class AreaMatrixNativeCoreClient :
     IAreaMatrixLinuxCoreClient,
     IAreaMatrixLinuxDesktopQueryCoreClient,
+    IAreaMatrixLinuxWatcherStatusCoreClient,
     IDisposable
 {
     private const ushort InitRepoChecksum = 29414;
@@ -17,6 +19,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
     private const ushort ListFilesChecksum = 56809;
     private const ushort ListTreeJsonChecksum = 45468;
     private const ushort SearchFilesChecksum = 65;
+    private const ushort RecordWatcherHealthChecksum = 47455;
 
     private readonly NativeCoreLibrary native;
     private bool disposed;
@@ -80,7 +83,8 @@ public sealed partial class AreaMatrixNativeCoreClient :
             || native.GetFileChecksum() != GetFileChecksum
             || native.ListFilesChecksum() != ListFilesChecksum
             || native.ListTreeJsonChecksum() != ListTreeJsonChecksum
-            || native.SearchFilesChecksum() != SearchFilesChecksum)
+            || native.SearchFilesChecksum() != SearchFilesChecksum
+            || native.RecordWatcherHealthChecksum() != RecordWatcherHealthChecksum)
         {
             throw new LinuxRepositoryCoreException(
                 LinuxRepositoryErrorKind.Config,

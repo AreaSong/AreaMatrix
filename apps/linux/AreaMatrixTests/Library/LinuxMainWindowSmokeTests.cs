@@ -88,6 +88,8 @@ public static class LinuxMainWindowSmokeTests
             "apps/linux/AreaMatrix/Core/NativeCoreLibrary.cs"));
         string queryClient = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.DesktopMainQuery.cs"));
+        string mainWindow = File.ReadAllText(RepositoryPath(
+            "apps/linux/AreaMatrix/Features/Library/LinuxMainWindowViewModel.cs"));
 
         TestAssert.Contains(
             "uniffi_area_matrix_core_fn_func_list_files",
@@ -109,8 +111,8 @@ public static class LinuxMainWindowSmokeTests
         TestAssert.Contains("LowerSearchFilter", queryClient, "search filter lowering");
         TestAssert.Contains("ReadSearchResultPage", queryClient, "search result reading");
         TestAssert.Contains("ReadFileAvailabilityStatus", queryClient, "missing badge reading");
+        TestAssert.NotContains("RecordWatcherHealthAsync", mainWindow, "main window must not consume watcher health");
         TestAssert.NotContains("reindex_from_filesystem", nativeLibrary, "out-of-scope rescan binding");
-        TestAssert.NotContains("record_watcher_health", nativeLibrary, "out-of-scope watcher binding");
     }
 
     private static string RepositoryPath(string relativePath)

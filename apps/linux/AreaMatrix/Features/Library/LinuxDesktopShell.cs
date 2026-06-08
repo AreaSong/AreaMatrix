@@ -1,11 +1,17 @@
 using AreaMatrix.Linux.Core;
 using AreaMatrix.Linux.Features.Onboarding;
+using AreaMatrix.Linux.Features.System;
 
 namespace AreaMatrix.Linux.Features.Library;
 
 public interface ILinuxMainWindowFactory
 {
     LinuxMainWindow Create(LinuxRepositoryRoute route);
+}
+
+public interface ILinuxWatcherStatusViewFactory
+{
+    LinuxWatcherStatusView Create(LinuxRepositoryRoute route);
 }
 
 public interface ILinuxLocalFolderNoticeFactory
@@ -18,20 +24,24 @@ public sealed class LinuxDesktopShell : IDisposable
     private readonly LinuxChooseRepositoryView chooseRepositoryView;
     private readonly ILinuxLocalFolderNoticeFactory? localFolderNoticeFactory;
     private readonly ILinuxMainWindowFactory mainWindowFactory;
+    private readonly ILinuxWatcherStatusViewFactory? watcherStatusViewFactory;
     private readonly IDisposable? ownedResources;
     private LocalFolderNoticeView? localFolderNoticeView;
     private LinuxMainWindow? mainWindow;
+    private LinuxWatcherStatusView? watcherStatusView;
     private bool disposed;
 
     public LinuxDesktopShell(
         LinuxChooseRepositoryView chooseRepositoryView,
         ILinuxMainWindowFactory mainWindowFactory,
         ILinuxLocalFolderNoticeFactory? localFolderNoticeFactory = null,
+        ILinuxWatcherStatusViewFactory? watcherStatusViewFactory = null,
         IDisposable? ownedResources = null)
     {
         this.chooseRepositoryView = chooseRepositoryView;
         this.mainWindowFactory = mainWindowFactory;
         this.localFolderNoticeFactory = localFolderNoticeFactory;
+        this.watcherStatusViewFactory = watcherStatusViewFactory;
         this.ownedResources = ownedResources;
     }
 
@@ -41,11 +51,15 @@ public sealed class LinuxDesktopShell : IDisposable
 
     public LinuxMainWindow? MainWindow => mainWindow;
 
+    public LinuxWatcherStatusView? WatcherStatusView => watcherStatusView;
+
     public static LinuxDesktopShell CreateDefault(string locale = "en-US")
     {
         AreaMatrixNativeCoreClient nativeCoreClient = new();
         LinuxRepositoryCoreBridge repositoryBridge = new(nativeCoreClient);
         DesktopMainQueryCoreBridge queryBridge = new(nativeCoreClient);
+        LinuxWatcherStatusCoreBridge watcherBridge = new(nativeCoreClient);
+        LinuxWatcherDiagnostics watcherDiagnostics = new();
         LinuxChooseRepositoryView chooseRepositoryView = new(
             new LinuxChooseRepositoryViewModel(repositoryBridge),
             new LinuxSystemFolderPickerAdapter());
@@ -53,6 +67,7 @@ public sealed class LinuxDesktopShell : IDisposable
             chooseRepositoryView,
             new LinuxMainWindowFactory(queryBridge, locale),
             new LinuxLocalFolderNoticeFactory(repositoryBridge),
+            new LinuxWatcherStatusViewFactory(watcherBridge, watcherDiagnostics),
             nativeCoreClient);
     }
 
@@ -61,6 +76,27 @@ public sealed class LinuxDesktopShell : IDisposable
     {
         await chooseRepositoryView.ContinueAsync(cancellationToken).ConfigureAwait(false);
         await ConsumeRouteAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task OpenWatcherStatusAsync(CancellationToken cancellationToken = default)
+    {
+        if (mainWindow is null || string.IsNullOrWhiteSpace(mainWindow.ViewModel.RepoPath))
+        {
+            return;
+        }
+
+        if (watcherStatusViewFactory is null)
+        {
+            throw new InvalidOperationException("Linux watcher status route has no view factory.");
+        }
+
+        LinuxRepositoryRoute route = new(
+            LinuxRepositoryRouteKind.MainWindow,
+            mainWindow.ViewModel.RepoPath,
+            null);
+        LinuxWatcherStatusView view = watcherStatusViewFactory.Create(route);
+        await view.OpenRouteAsync(route, cancellationToken).ConfigureAwait(false);
+        watcherStatusView = view;
     }
 
     public async Task ContinueFromLocalFolderNoticeAsync(
@@ -95,6 +131,7 @@ public sealed class LinuxDesktopShell : IDisposable
         if (route.Kind == LinuxRepositoryRouteKind.ChooseRepository)
         {
             localFolderNoticeView = null;
+            watcherStatusView = null;
             return;
         }
 
@@ -106,6 +143,7 @@ public sealed class LinuxDesktopShell : IDisposable
         LinuxMainWindow window = mainWindowFactory.Create(route);
         await window.OpenRepositoryAsync(route, cancellationToken).ConfigureAwait(false);
         mainWindow = window;
+        watcherStatusView = null;
         localFolderNoticeView = null;
         chooseRepositoryView.ViewModel.ResetRoute();
     }
@@ -165,5 +203,24 @@ public sealed class LinuxMainWindowFactory : ILinuxMainWindowFactory
     public LinuxMainWindow Create(LinuxRepositoryRoute route)
     {
         return new LinuxMainWindow(new LinuxMainWindowViewModel(coreBridge, locale));
+    }
+}
+
+public sealed class LinuxWatcherStatusViewFactory : ILinuxWatcherStatusViewFactory
+{
+    private readonly ILinuxWatcherStatusCoreBridge coreBridge;
+    private readonly ILinuxWatcherDiagnostics diagnostics;
+
+    public LinuxWatcherStatusViewFactory(
+        ILinuxWatcherStatusCoreBridge coreBridge,
+        ILinuxWatcherDiagnostics diagnostics)
+    {
+        this.coreBridge = coreBridge;
+        this.diagnostics = diagnostics;
+    }
+
+    public LinuxWatcherStatusView Create(LinuxRepositoryRoute route)
+    {
+        return new LinuxWatcherStatusView(new LinuxWatcherStatusViewModel(coreBridge, diagnostics));
     }
 }

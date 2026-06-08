@@ -1,0 +1,86 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-135`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-135-s4-lnx-04-c4-12-platform-watcher-status.md`
+- 主要实现路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/`
+- CoreBridge / native binding：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.WatcherStatus.cs`
+- 测试路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/System/`
+
+三、完成度摘要
+
+- 已覆盖项数：7（4 个核对清单 + 3 个完成标准）
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S4-LNX-04 页面中的 C4-12 功能点
+- 结果：通过
+- 证据：Linux watcher status 页面、view model、diagnostics、CoreBridge 均落在 `apps/linux/**`；页面资源声明 `page_id: S4-LNX-04` 和 C4-12 watcher status。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/WatcherStatusView.ui:1`
+
+- 项目：读取页面规格、control map、Core API、C4-12 能力规格
+- 结果：通过
+- 证据：S4-LNX-04 显示 inotify watcher 状态、C4-12 API 为 `record_watcher_health`，control map 将 S4-LNX-04 绑定到 `C4-12, C4-19`，本 task 只覆盖 C4-12。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:24`
+
+- 项目：只接入 C4-12 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`LinuxWatcherStatusViewModel` 打开页面和重启 watcher 时调用 `RecordWatcherHealthAsync`；native client 绑定 `uniffi_area_matrix_core_fn_func_record_watcher_health`，并校验 checksum。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/LinuxWatcherStatusViewModel.cs:295`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Core/NativeCoreLibrary.cs:22`
+
+- 项目：不实现同页 C4-19 或相邻能力
+- 结果：通过
+- 证据：`RunRescanNow` 只触发 `OpenRescanConfirmRequested`，未调用 rescan/reindex；smoke test 也检查未绑定 `preview_manual_rescan`、`reindex_from_filesystem`、`resume_scan_session`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/LinuxWatcherStatusView.cs:33`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/System/LinuxWatcherStatusSmokeTests.cs:108`
+
+- 项目：C4-12 用户可见功能可触发和验收
+- 结果：通过
+- 证据：页面暴露 `Restart watcher`、`Run rescan now`、`Export diagnostics`、`Open repository folder`；测试覆盖打开页面、重启、rescan handoff、诊断导出和打开目录。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/WatcherStatusView.ui:21`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/System/LinuxWatcherStatusViewModelTests.cs:9`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产 shell 使用 `LinuxWatcherStatusCoreBridge watcherBridge = new(nativeCoreClient)` 和 `LinuxWatcherDiagnostics watcherDiagnostics = new()`；fake 仅存在于测试。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs:56`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/System/LinuxWatcherStatusViewModelTests.cs:266`
+
+- 项目：未触碰 control map 之外 Core 能力与 Forbidden Touches
+- 结果：通过
+- 证据：`git diff -- core/src` 无输出；`git diff --name-only` 未包含 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，View、ViewModel、Diagnostics、CoreBridge、native client 分层清楚。
+- 注释 / rustdoc / 文档同步：通过，本 task 没有新增 Rust public API；UDL 与 Core API 已存在 C4-12 合同。
+- 错误处理与边界处理：通过，覆盖 path missing、permission denied、DB locked、backend unavailable、limit exceeded、network mount；不运行 sudo/chmod。
+- 测试与验证覆盖：通过，已跑 manifest 验证和 Linux 测试项目。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径接入真实 native Core client；mock 只在测试内。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-135`，通过；包含 prompt doctor OK、`git diff --check` 通过、macOS build gate `BUILD SUCCEEDED`。
+- 已运行：`dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj`，通过，输出 `AreaMatrix Linux tests passed.`
+- 已运行：`git diff -- core/src`，通过，无输出，确认未触碰 Forbidden Touches。
+- 失败：无。
+- 缺失：未做真实 Linux GUI 点击烟测；当前 task 已有 Linux view-model/smoke 测试覆盖用户可触发状态和 handoff。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
