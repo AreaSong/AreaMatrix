@@ -245,8 +245,14 @@ extension MainRepositoryContentView {
                 primaryPath: route.primaryPath
             ),
             onBackToNeedsReview: { pendingSyncConflictReviewRoute = nil },
-            onClose: { pendingSyncConflictReviewRoute = nil }
+            onClose: { pendingSyncConflictReviewRoute = nil },
+            onResolved: handleSyncConflictResolved
         )
+    }
+
+    func handleSyncConflictResolved(_: SyncConflictResolveReportSnapshot) async {
+        pendingSyncConflictReviewRoute = nil
+        await fileListModel.retryCurrentCategory()
     }
 
     // swiftlint:disable:next identifier_name

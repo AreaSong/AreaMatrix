@@ -272,6 +272,105 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testS4X01PageIntegrationConnectsC415C416C421AndResolvedExit() async throws {
+        let detector = S4X01RecordingSyncConflictDetector(result: .success([.s4x01Fixture()]))
+        let resolver = S4X01RecordingSyncConflictResolver(
+            previewResults: [
+                .keepBoth: .success(.s4x01PreviewFixture()),
+                .useIncoming: .success(.s4x01PreviewFixture(
+                    resolution: .useIncoming,
+                    canApply: false,
+                    requiresReplaceConfirmation: true,
+                    blockedReason: "Replace confirmation required",
+                    previewToken: "preview-token-use-incoming"
+                ))
+            ],
+            resolveResult: .success(.s4x01ResolveFixture(resolution: .useIncoming))
+        )
+        let model = SyncConflictReviewModel(
+            repoPath: "/tmp/s4x01-repo",
+            conflictID: "conflict-report",
+            conflictDetector: detector,
+            conflictResolver: resolver,
+            errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+        )
+        var resolvedReports: [SyncConflictResolveReportSnapshot] = []
+        let view = SyncConflictReviewView(
+            model: model,
+            onBackToNeedsReview: {},
+            onClose: {},
+            onResolved: { resolvedReports.append($0) }
+        )
+
+        await model.load()
+        await model.selectResolution(.useIncoming)
+        model.confirmReplacePlan()
+        await view.applySelectedResolution()
+        let detectRequests = await detector.recordedRequests()
+        let previewRequests = await resolver.recordedPreviewRequests()
+        let resolveRequests = await resolver.recordedResolveRequests()
+
+        XCTAssertEqual(detectRequests, ["/tmp/s4x01-repo"])
+        XCTAssertEqual(previewRequests.map(\.resolution), [.keepBoth, .useIncoming])
+        XCTAssertEqual(resolveRequests, [.s4x01UseIncomingConfirmedRequest])
+        XCTAssertEqual(resolvedReports, [.s4x01ResolveFixture(resolution: .useIncoming)])
+        XCTAssertEqual(model.applyDisabledReason, "Resolution has already been applied.")
+    }
+
+    @MainActor
+    func testS4X01PageIntegrationResolveFailureKeepsSheetCallbackUnfired() async {
+        let mapper = S4X01RecordingErrorMapper(mapping: .s4x01Mapping(rawContext: "apply failed"))
+        let resolver = S4X01RecordingSyncConflictResolver(
+            previewResults: [.keepBoth: .success(.s4x01PreviewFixture(previewToken: "preview-token-144"))],
+            resolveResult: .failure(CoreError.Conflict(path: "stale sync conflict"))
+        )
+        let model = makeModel(resolver: resolver, errorMapper: mapper)
+        var resolvedReports: [SyncConflictResolveReportSnapshot] = []
+        let view = SyncConflictReviewView(
+            model: model,
+            onBackToNeedsReview: {},
+            onClose: {},
+            onResolved: { resolvedReports.append($0) }
+        )
+
+        await model.load()
+        await view.applySelectedResolution()
+        let mappedErrors = await mapper.recordedErrors()
+
+        XCTAssertTrue(resolvedReports.isEmpty)
+        guard case .failed(.keepBoth, _) = model.applyState else {
+            return XCTFail("Expected apply failure to remain in S4-X-01")
+        }
+        XCTAssertEqual(mappedErrors, [CoreError.Conflict(path: "stale sync conflict")])
+    }
+
+    @MainActor
+    func testS4X01PageIntegrationOuterResolvedHandlerClosesRouteAndRefreshesNeedsReview() async {
+        let docsFile = FileEntrySnapshot.s4x01Fixture(id: 144, path: "docs/report.pdf", currentName: "report.pdf")
+        let lister = MainListRecordingFileLister(results: [.success([docsFile]), .success([])])
+        var content = MainRepositoryContentView(
+            opening: .s4x01Fixture(repoPath: "/tmp/s4x01-repo", files: [docsFile]),
+            state: .list,
+            onImport: {},
+            onDropImport: { _, _ in },
+            fileLister: lister,
+            fileDetailer: MainListRecordingFileDetailer(results: [.success(docsFile)]),
+            errorMapper: MainListRecordingErrorMapper(mapping: .s4x01Mapping())
+        )
+
+        await content.fileListModel.loadCurrentCategory("docs")
+        content.beginSyncConflictReview(file: docsFile)
+        let beforeResolveRequests = await lister.recordedRequests()
+
+        await content.handleSyncConflictResolved(.s4x01ResolveFixture())
+        let listRequests = await lister.recordedRequests()
+
+        XCTAssertNil(content.pendingSyncConflictReviewRoute)
+        XCTAssertEqual(beforeResolveRequests, [FileFilterSnapshot.currentCategory("docs")])
+        XCTAssertEqual(listRequests.count, beforeResolveRequests.count + 1)
+    }
+
+    @MainActor
     private func makeModel(
         resolver: S4X01RecordingSyncConflictResolver,
         errorMapper: S4X01RecordingErrorMapper = S4X01RecordingErrorMapper(mapping: .s4x01Mapping())

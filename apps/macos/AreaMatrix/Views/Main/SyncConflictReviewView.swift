@@ -52,15 +52,18 @@ struct SyncConflictReviewView: View {
     @StateObject private var model: SyncConflictReviewModel
     let onBackToNeedsReview: () -> Void
     let onClose: () -> Void
+    let onResolved: @MainActor (SyncConflictResolveReportSnapshot) async -> Void
 
     init(
         model: SyncConflictReviewModel,
         onBackToNeedsReview: @escaping () -> Void,
-        onClose: @escaping () -> Void
+        onClose: @escaping () -> Void,
+        onResolved: @escaping @MainActor (SyncConflictResolveReportSnapshot) async -> Void = { _ in }
     ) {
         _model = StateObject(wrappedValue: model)
         self.onBackToNeedsReview = onBackToNeedsReview
         self.onClose = onClose
+        self.onResolved = onResolved
     }
 
     var body: some View {
@@ -419,7 +422,9 @@ private extension SyncConflictReviewView {
             }
             .accessibilityIdentifier(SyncConflictReviewAccessibilityID.refresh)
             Button(applyButtonTitle) {
-                Task { await model.applyResolution() }
+                Task {
+                    await applySelectedResolution()
+                }
             }
             .disabled(!model.canApplyResolution)
             .help(model.applyDisabledReason ?? "Apply the selected Core sync conflict resolution.")
@@ -435,5 +440,15 @@ private extension SyncConflictReviewView {
 
     private var applyButtonTitle: String {
         model.applyState.isApplying ? SyncConflictReviewCopy.applyingAction : SyncConflictReviewCopy.applyAction
+    }
+
+}
+
+extension SyncConflictReviewView {
+    @MainActor
+    func applySelectedResolution() async {
+        if let report = await model.applyResolution() {
+            await onResolved(report)
+        }
     }
 }

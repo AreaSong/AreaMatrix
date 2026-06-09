@@ -211,11 +211,12 @@ final class SyncConflictReviewModel: ObservableObject {
         )
     }
 
-    func applyResolution() async {
+    @discardableResult
+    func applyResolution() async -> SyncConflictResolveReportSnapshot? {
         guard canApplyResolution,
               let conflict,
               let preview = previewState.preview,
-              let previewToken = preview.normalizedPreviewToken else { return }
+              let previewToken = preview.normalizedPreviewToken else { return nil }
         let confirmation = isReplaceConfirmed(for: preview) ? replaceConfirmation : nil
 
         applyState = .applying(selectedResolution)
@@ -232,8 +233,10 @@ final class SyncConflictReviewModel: ObservableObject {
                 )
             )
             applyState = .succeeded(report)
+            return report
         } catch {
             applyState = await .failed(selectedResolution, mapError(error))
+            return nil
         }
     }
 

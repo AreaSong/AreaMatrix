@@ -62,6 +62,17 @@ struct S4X01SyncConflictResolveRequest: Equatable {
     var repoPath: String
     var conflictID: String
     var request: SyncConflictResolutionRequestSnapshot
+
+    static let s4x01UseIncomingConfirmedRequest = S4X01SyncConflictResolveRequest(
+        repoPath: "/tmp/s4x01-repo",
+        conflictID: "conflict-report",
+        request: SyncConflictResolutionRequestSnapshot(
+            strategy: .useIncoming,
+            previewToken: "preview-token-use-incoming",
+            replaceConfirmed: true,
+            replaceConfirmationID: "S4-X-01-C4-21-conflict-report-preview-token-use-incoming"
+        )
+    )
 }
 
 extension SyncConflictResolutionPreviewSnapshot {
