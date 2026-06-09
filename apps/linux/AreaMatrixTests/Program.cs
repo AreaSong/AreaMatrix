@@ -22,6 +22,7 @@ await LinuxImportReplaceViewModelTests.RunAllAsync();
 LinuxImportSmokeTests.RunAll();
 await MissingFileRecoveryViewModelTests.RunAllAsync();
 await LinuxWatcherStatusViewModelTests.RunAllAsync();
+await LinuxRescanConfirmViewModelTests.RunAllAsync();
 LinuxWatcherStatusSmokeTests.RunAll();
 await PlatformDifferencesTests.RunAllAsync();
 

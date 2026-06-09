@@ -350,6 +350,8 @@ internal sealed class FakeWatcherStatusCoreBridge : IWatcherStatusCoreBridge
 
     public Exception? Error { get; set; }
 
+    public Exception? ReindexError { get; set; }
+
     public Task<WatcherStatusSnapshot> RecordWatcherHealthAsync(
         string repoPath,
         WatcherStatusHealthSignal signal,
@@ -392,6 +394,12 @@ internal sealed class FakeWatcherStatusCoreBridge : IWatcherStatusCoreBridge
         string repoPath,
         CancellationToken cancellationToken = default)
     {
+        if (ReindexError is not null)
+        {
+            ReindexRequests.Add(repoPath);
+            throw ReindexError;
+        }
+
         ReindexRequests.Add(repoPath);
         return Task.FromResult(ReindexReport);
     }

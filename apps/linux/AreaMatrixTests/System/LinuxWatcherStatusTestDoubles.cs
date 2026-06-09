@@ -45,6 +45,8 @@ internal sealed class FakeLinuxWatcherStatusCoreBridge : ILinuxWatcherStatusCore
 
     public Exception? Error { get; set; }
 
+    public Exception? ReindexError { get; set; }
+
     public Task<LinuxWatcherStatusSnapshot> RecordWatcherHealthAsync(
         string repoPath,
         LinuxWatcherStatusHealthSignal signal,
@@ -99,6 +101,12 @@ internal sealed class FakeLinuxWatcherStatusCoreBridge : ILinuxWatcherStatusCore
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (ReindexError is not null)
+        {
+            ReindexRequests.Add(repoPath);
+            throw ReindexError;
+        }
+
         ReindexRequests.Add(repoPath);
         return Task.FromResult(ReindexReport);
     }

@@ -21,6 +21,7 @@ await WindowsImportViewModelTests.RunAllAsync();
 await WindowsImportReplaceViewModelTests.RunAllAsync();
 WindowsImportSmokeTests.RunAll();
 await WatcherStatusViewModelTests.RunAllAsync();
+await RescanConfirmViewModelTests.RunAllAsync();
 WatcherStatusSmokeTests.RunAll();
 await PlatformDifferencesTests.RunAllAsync();
 await WindowsSyncConflictEntryPageFeatureTests.RunAllAsync();

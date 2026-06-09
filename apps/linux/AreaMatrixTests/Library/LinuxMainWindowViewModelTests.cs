@@ -1,7 +1,9 @@
 using AreaMatrix.Linux.Features.Library;
 using AreaMatrix.Linux.Features.Conflicts;
 using AreaMatrix.Linux.Features.Onboarding;
+using AreaMatrix.Linux.Features.System;
 using AreaMatrix.Linux.Tests.ChooseRepository;
+using AreaMatrix.Linux.Tests.System;
 
 namespace AreaMatrix.Linux.Tests.Library;
 
@@ -13,6 +15,7 @@ public static class LinuxMainWindowViewModelTests
         await LocalFolderNoticeRouteIsHostedBeforeContinuing();
         await RepositoryInitConfirmRouteCreatesThenOpensMainWindow();
         await RepositoryAdoptConfirmRouteAdoptsThenOpensMainWindow();
+        await WatcherRescanHandoffOpensS4X07ConfirmationView();
         await OpenRepositoryLoadsTreeAndFirstPageFromCoreBridge();
         await LoadMoreAdvancesListOffsetThroughCoreBridge();
         await SearchUsesCoreSearchWithoutScanningRepository();
@@ -153,6 +156,60 @@ public static class LinuxMainWindowViewModelTests
         TestAssert.NotNull(shell.MainWindow, nameof(shell.MainWindow));
         TestAssert.Null(shell.RepositoryAdoptConfirmView, nameof(shell.RepositoryAdoptConfirmView));
         TestAssert.SequenceEqual([path], queryBridge.ListRequests, "main query after adopt");
+    }
+
+    private static async Task WatcherRescanHandoffOpensS4X07ConfirmationView()
+    {
+        const string path = "/home/me/AreaMatrix";
+        FakeDesktopMainQueryCoreBridge queryBridge = new();
+        FakeLinuxMainWindowFactory mainWindowFactory = new(queryBridge);
+        FakeLinuxWatcherStatusCoreBridge watcherBridge = new()
+        {
+            PreviewReport = new LinuxManualRescanPreviewReport(
+                Added: 1,
+                Updated: 0,
+                MissingOrDeletedFromFs: 1,
+                RenamedCandidates: 0,
+                Conflicts: 0,
+                Unreadable: 0,
+                Unknown: 0,
+                Skipped: 2,
+                SnapshotId: "preview-shell",
+                CreatedAt: 1_700_000_040,
+                IsStale: false,
+                Items: [])
+        };
+        FakeLinuxWatcherStatusViewFactory watcherFactory = new(watcherBridge);
+        FakeLinuxRescanConfirmViewFactory rescanFactory = new(watcherBridge);
+        LinuxChooseRepositoryViewModel chooseModel = new(
+            new FakeLinuxRepositoryCoreBridge(LinuxRepositoryValidationSamples.Initialized(path)));
+        LinuxChooseRepositoryView chooseView = new(chooseModel, new FakeLinuxFolderPickerAdapter(path));
+        LinuxDesktopShell shell = new(
+            chooseView,
+            mainWindowFactory,
+            watcherStatusViewFactory: watcherFactory,
+            rescanConfirmViewFactory: rescanFactory);
+
+        await chooseView.TypeRepositoryPathAsync(path);
+        await shell.ContinueFromRepositorySelectionAsync();
+        await shell.OpenWatcherStatusAsync();
+        bool requested = await shell.WatcherStatusView!.RunRescanNow();
+
+        TestAssert.True(requested, nameof(requested));
+        TestAssert.NotNull(shell.RescanConfirmView, nameof(shell.RescanConfirmView));
+        TestAssert.Equal(path, shell.RescanConfirmView?.Request?.Route.RepoPath, "rescan route");
+        TestAssert.SequenceEqual([path], watcherBridge.PreviewManualRescanRequests, "preview requests");
+        TestAssert.Empty(watcherBridge.ReindexRequests, "reindex before confirmation");
+        TestAssert.SequenceEqual(
+            [path],
+            rescanFactory.CreatedRequests.Select(request => request.Route.RepoPath).ToArray(),
+            "confirm routes");
+
+        shell.RescanConfirmView!.SetConfirmation(true);
+        bool started = await shell.RescanConfirmView.RunRescanAsync();
+
+        TestAssert.True(started, nameof(started));
+        TestAssert.SequenceEqual([path], watcherBridge.ReindexRequests, "reindex after confirmation");
     }
 
     private static async Task OpenRepositoryLoadsTreeAndFirstPageFromCoreBridge()
@@ -500,5 +557,62 @@ internal sealed class FakeRepositoryAdoptConfirmFactory : ILinuxRepositoryAdoptC
     {
         CreatedRoutes.Add(route);
         return new RepositoryAdoptConfirmView(new RepositoryAdoptConfirmViewModel(bridge));
+    }
+}
+
+internal sealed class FakeLinuxWatcherStatusViewFactory : ILinuxWatcherStatusViewFactory
+{
+    private readonly ILinuxWatcherStatusCoreBridge coreBridge;
+
+    public FakeLinuxWatcherStatusViewFactory(ILinuxWatcherStatusCoreBridge coreBridge)
+    {
+        this.coreBridge = coreBridge;
+    }
+
+    public List<LinuxRepositoryRoute> CreatedRoutes { get; } = [];
+
+    public LinuxWatcherStatusView Create(LinuxRepositoryRoute route)
+    {
+        CreatedRoutes.Add(route);
+        return new LinuxWatcherStatusView(new LinuxWatcherStatusViewModel(
+            coreBridge,
+            new FakeLinuxWatcherDiagnostics(RunningSignal(route.RepoPath))));
+    }
+
+    private static LinuxWatcherStatusHealthSignal RunningSignal(string path)
+    {
+        return new LinuxWatcherStatusHealthSignal(
+            LinuxWatcherStatusBackend.Inotify,
+            LinuxWatcherStatusKind.Running,
+            path,
+            42,
+            1_700_000_000,
+            42,
+            1_700_000_010,
+            1_700_000_020,
+            0,
+            128,
+            null,
+            [],
+            [],
+            1_700_000_030);
+    }
+}
+
+internal sealed class FakeLinuxRescanConfirmViewFactory : ILinuxRescanConfirmViewFactory
+{
+    private readonly ILinuxWatcherStatusCoreBridge coreBridge;
+
+    public FakeLinuxRescanConfirmViewFactory(ILinuxWatcherStatusCoreBridge coreBridge)
+    {
+        this.coreBridge = coreBridge;
+    }
+
+    public List<LinuxRescanConfirmRequest> CreatedRequests { get; } = [];
+
+    public LinuxRescanConfirmView Create(LinuxRescanConfirmRequest request)
+    {
+        CreatedRequests.Add(request);
+        return new LinuxRescanConfirmView(new LinuxRescanConfirmViewModel(coreBridge));
     }
 }

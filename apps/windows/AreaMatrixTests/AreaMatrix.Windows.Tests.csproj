@@ -75,6 +75,7 @@
     <Compile Include="../AreaMatrix/Features/Library/WatcherStatusModels.cs" Link="Features/Library/WatcherStatusModels.cs" />
     <Compile Include="../AreaMatrix/Features/Library/WatcherStatusPlatformActions.cs" Link="Features/Library/WatcherStatusPlatformActions.cs" />
     <Compile Include="../AreaMatrix/Features/Library/WatcherStatusViewModel.cs" Link="Features/Library/WatcherStatusViewModel.cs" />
+    <Compile Include="../AreaMatrix/Features/Library/RescanConfirmViewModel.cs" Link="Features/Library/RescanConfirmViewModel.cs" />
     <Compile Include="../AreaMatrix/Features/Library/WindowsMainWindowViewModel.cs" Link="Features/Library/WindowsMainWindowViewModel.cs" />
     <Compile Include="../AreaMatrix/Features/Library/WindowsWatcherDiagnostics.cs" Link="Features/Library/WindowsWatcherDiagnostics.cs" />
     <Compile

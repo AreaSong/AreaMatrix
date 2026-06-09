@@ -128,6 +128,21 @@ public sealed class LinuxWatcherStatusViewFactory : ILinuxWatcherStatusViewFacto
     }
 }
 
+public sealed class LinuxRescanConfirmViewFactory : ILinuxRescanConfirmViewFactory
+{
+    private readonly ILinuxWatcherStatusCoreBridge coreBridge;
+
+    public LinuxRescanConfirmViewFactory(ILinuxWatcherStatusCoreBridge coreBridge)
+    {
+        this.coreBridge = coreBridge;
+    }
+
+    public LinuxRescanConfirmView Create(LinuxRescanConfirmRequest request)
+    {
+        return new LinuxRescanConfirmView(new LinuxRescanConfirmViewModel(coreBridge));
+    }
+}
+
 public sealed class LinuxPlatformDifferencesViewFactory : ILinuxPlatformDifferencesViewFactory
 {
     private readonly IPlatformDifferencesCoreBridge coreBridge;

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <!-- page_id: S4-X-07 -->
+  <!-- capability: C4-19 manual-rescan -->
+  <requires lib="gtk" version="4.0" />
+  <object class="GtkDialog" id="S4X07RescanConfirmDialog">
+    <property name="title">Run repository rescan?</property>
+    <property name="default-width">720</property>
+    <property name="modal">true</property>
+    <child internal-child="content_area">
+      <object class="GtkBox" id="RescanConfirmContent">
+        <property name="orientation">vertical</property>
+        <property name="spacing">14</property>
+        <child>
+          <object class="GtkLabel" id="RepositoryLabel">
+            <property name="label">Repository: /home/you/AreaMatrix</property>
+            <property name="xalign">0</property>
+            <accessibility>
+              <property name="label">Repository path and manual rescan scope.</property>
+            </accessibility>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="PreviewSafetyLabel">
+            <property name="label">Preview only. No database records or files will be changed until you confirm.</property>
+            <property name="wrap">true</property>
+            <property name="xalign">0</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="PreviewSummaryLabel">
+            <property name="label">Added, Updated, Missing / Deleted from file system, Renamed candidates, Conflicts, Unreadable, Unknown, Skipped.</property>
+            <property name="wrap">true</property>
+            <property name="xalign">0</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="NoUserFileMutationLabel">
+            <property name="label">It will not move, delete, rename, or overwrite user files.</property>
+            <property name="wrap">true</property>
+            <property name="xalign">0</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="NeedsReviewLabel">
+            <property name="label">Missing, unreadable, conflict, or unknown items will stay in Needs Review.</property>
+            <property name="wrap">true</property>
+            <property name="xalign">0</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkCheckButton" id="RescanConfirmedCheck">
+            <property name="label">I understand AreaMatrix will update its index from the current file system state.</property>
+            <property name="action-name">rescan.confirm-risk</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="RunRescanButton">
+            <property name="label">Run Rescan</property>
+            <property name="action-name">rescan.run-confirmed</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="ProgressLabel">
+            <property name="label">Scanning files, comparing records, and updating the index.</property>
+            <property name="wrap">true</property>
+            <property name="xalign">0</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="ResultSummaryLabel">
+            <property name="label">Success result shows added, updated, missing, conflicts, unreadable, unknown, and skipped counts.</property>
+            <property name="wrap">true</property>
+            <property name="xalign">0</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="CloseRescanButton">
+            <property name="label">Close</property>
+            <property name="action-name">rescan.close</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

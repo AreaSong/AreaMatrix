@@ -12,6 +12,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <StackPanel Spacing="6">
@@ -55,12 +56,12 @@
                     <TextBlock
                         Text="Safety"
                         Style="{ThemeResource SubtitleTextBlockStyle}" />
-                    <TextBlock
-                        Text="Rescan reads files and updates AreaMatrix records only after explicit confirmation."
-                        TextWrapping="Wrap" />
-                    <TextBlock
-                        Text="It will not move, delete, rename, or overwrite user files."
-                        TextWrapping="Wrap" />
+                <TextBlock
+                    Text="Rescan reads files and updates AreaMatrix records only after explicit confirmation."
+                    TextWrapping="Wrap" />
+                <TextBlock
+                    Text="It will not move, delete, rename, or overwrite user files."
+                    TextWrapping="Wrap" />
                     <TextBlock
                         Text="Missing, unreadable, conflict, or unknown items stay available for review."
                         TextWrapping="Wrap" />
@@ -87,9 +88,30 @@
             </StackPanel>
         </ScrollViewer>
 
-        <Grid Grid.Row="3" ColumnSpacing="8">
+        <StackPanel
+            Grid.Row="3"
+            Spacing="8">
+            <CheckBox
+                x:Name="RescanConfirmCheckBox"
+                Content="I understand AreaMatrix will update its index from the current file system state."
+                Checked="RescanConfirmCheckBox_Changed"
+                Unchecked="RescanConfirmCheckBox_Changed" />
+            <TextBlock
+                x:Name="ProgressTextBlock"
+                Text="Scanning files, comparing records, and updating the index..."
+                TextWrapping="Wrap" />
+            <TextBlock
+                x:Name="ResultTextBlock"
+                TextWrapping="Wrap" />
+            <TextBlock
+                x:Name="ErrorTextBlock"
+                TextWrapping="Wrap" />
+        </StackPanel>
+
+        <Grid Grid.Row="4" ColumnSpacing="8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
@@ -98,6 +120,11 @@
                 Grid.Column="1"
                 Content="Cancel"
                 Click="CancelRescanConfirmButton_Click" />
+            <Button
+                x:Name="RunRescanButton"
+                Grid.Column="2"
+                Content="Run Rescan"
+                Click="RunRescanButton_Click" />
         </Grid>
     </Grid>
 </UserControl>

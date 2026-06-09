@@ -18,6 +18,11 @@ public interface ILinuxWatcherStatusViewFactory
     LinuxWatcherStatusView Create(LinuxRepositoryRoute route);
 }
 
+public interface ILinuxRescanConfirmViewFactory
+{
+    LinuxRescanConfirmView Create(LinuxRescanConfirmRequest request);
+}
+
 public interface ILinuxImportDialogFactory
 {
     LinuxImportDialog Create(LinuxRepositoryRoute route);
@@ -59,6 +64,7 @@ public sealed class LinuxDesktopShell : IDisposable
     private readonly ILinuxMainWindowFactory mainWindowFactory;
     private readonly ILinuxPlatformDifferencesViewFactory? platformDifferencesViewFactory;
     private readonly ILinuxWatcherStatusViewFactory? watcherStatusViewFactory;
+    private readonly ILinuxRescanConfirmViewFactory? rescanConfirmViewFactory;
     private readonly IDisposable? ownedResources;
     private LocalFolderNoticeView? localFolderNoticeView;
     private RepositoryInitConfirmView? repositoryInitConfirmView;
@@ -68,6 +74,7 @@ public sealed class LinuxDesktopShell : IDisposable
     private LinuxMainWindow? mainWindow;
     private PlatformDifferencesView? platformDifferencesView;
     private LinuxWatcherStatusView? watcherStatusView;
+    private LinuxRescanConfirmView? rescanConfirmView;
     private bool disposed;
 
     public LinuxDesktopShell(
@@ -80,6 +87,7 @@ public sealed class LinuxDesktopShell : IDisposable
         ILinuxMissingFileRecoveryViewFactory? missingFileRecoveryViewFactory = null,
         ILinuxPlatformDifferencesViewFactory? platformDifferencesViewFactory = null,
         ILinuxWatcherStatusViewFactory? watcherStatusViewFactory = null,
+        ILinuxRescanConfirmViewFactory? rescanConfirmViewFactory = null,
         IDisposable? ownedResources = null)
     {
         this.chooseRepositoryView = chooseRepositoryView;
@@ -91,6 +99,7 @@ public sealed class LinuxDesktopShell : IDisposable
         this.missingFileRecoveryViewFactory = missingFileRecoveryViewFactory;
         this.platformDifferencesViewFactory = platformDifferencesViewFactory;
         this.watcherStatusViewFactory = watcherStatusViewFactory;
+        this.rescanConfirmViewFactory = rescanConfirmViewFactory;
         this.ownedResources = ownedResources;
     }
 
@@ -111,6 +120,8 @@ public sealed class LinuxDesktopShell : IDisposable
     public LinuxMainWindow? MainWindow => mainWindow;
 
     public LinuxWatcherStatusView? WatcherStatusView => watcherStatusView;
+
+    public LinuxRescanConfirmView? RescanConfirmView => rescanConfirmView;
 
     public static LinuxDesktopShell CreateDefault(string locale = "en-US")
     {
@@ -135,6 +146,7 @@ public sealed class LinuxDesktopShell : IDisposable
             new LinuxMissingFileRecoveryViewFactory(recoveryBridge),
             new LinuxPlatformDifferencesViewFactory(new PlatformDifferencesCoreBridge(nativeCoreClient)),
             new LinuxWatcherStatusViewFactory(watcherBridge, watcherDiagnostics),
+            new LinuxRescanConfirmViewFactory(watcherBridge),
             nativeCoreClient);
     }
 
@@ -163,6 +175,7 @@ public sealed class LinuxDesktopShell : IDisposable
             null);
         LinuxWatcherStatusView view = watcherStatusViewFactory.Create(route);
         await view.OpenRouteAsync(route, cancellationToken).ConfigureAwait(false);
+        view.OpenRescanConfirmRequested += WatcherStatusView_OpenRescanConfirmRequested;
         watcherStatusView = view;
     }
 
@@ -372,7 +385,20 @@ public sealed class LinuxDesktopShell : IDisposable
         importDialog = null;
         missingFileRecoveryView = null;
         platformDifferencesView = null;
+        rescanConfirmView = null;
         chooseRepositoryView.ViewModel.ResetRoute();
+    }
+
+    private void WatcherStatusView_OpenRescanConfirmRequested(LinuxRescanConfirmRequest request)
+    {
+        if (rescanConfirmViewFactory is null)
+        {
+            throw new InvalidOperationException("Linux rescan confirmation route has no view factory.");
+        }
+
+        LinuxRescanConfirmView view = rescanConfirmViewFactory.Create(request);
+        view.OpenRequest(request);
+        rescanConfirmView = view;
     }
 
     private LinuxRepositoryRoute ActiveRoute()

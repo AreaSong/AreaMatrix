@@ -7,6 +7,7 @@ public static class LinuxWatcherStatusSmokeTests
     public static void RunAll()
     {
         WatcherStatusPageExposesC419ManualRescanHandoff();
+        RescanConfirmPageExecutesOnlyC419AfterConfirmation();
         LinuxDesktopShellWiresWatcherStatusToRealCoreBridge();
         NativeClientBindsC419ManualRescanCoreContracts();
     }
@@ -69,19 +70,64 @@ public static class LinuxWatcherStatusSmokeTests
         TestAssert.NotContains("ResumeScanSessionAsync", view, "watcher handoff must not resume rescan");
     }
 
+    private static void RescanConfirmPageExecutesOnlyC419AfterConfirmation()
+    {
+        string ui = File.ReadAllText(RepositoryPath(
+            "apps/linux/AreaMatrix/Features/System/RescanConfirmView.ui"));
+        string view = File.ReadAllText(RepositoryPath(
+            "apps/linux/AreaMatrix/Features/System/LinuxRescanConfirmView.cs"));
+        string viewModel = File.ReadAllText(RepositoryPath(
+            "apps/linux/AreaMatrix/Features/System/LinuxRescanConfirmViewModel.cs"));
+
+        foreach (string fragment in new[]
+        {
+            "page_id: S4-X-07",
+            "capability: C4-19 manual-rescan",
+            "Run repository rescan?",
+            "Preview only. No database records or files will be changed until you confirm.",
+            "It will not move, delete, rename, or overwrite user files.",
+            "Missing, unreadable, conflict, or unknown items will stay in Needs Review.",
+            "I understand AreaMatrix will update its index from the current file system state.",
+            "Run Rescan",
+            "Success result shows added, updated, missing, conflicts, unreadable, unknown, and skipped counts."
+        })
+        {
+            TestAssert.Contains(fragment, ui, $"S4-X-07 UI fragment {fragment}");
+        }
+
+        TestAssert.Contains("SetConfirmation", view, "confirmation setter");
+        TestAssert.Contains("RunRescanAsync", view, "run action");
+        TestAssert.Contains("UserConfirmed", viewModel, "explicit confirmation state");
+        TestAssert.Contains("Preview?.CanRunRescan", viewModel, "stale preview disables run");
+        TestAssert.Contains("ReindexFromFilesystemAsync", viewModel, "S4-X-07 executes C4-19 reindex");
+        TestAssert.Contains("ErrorMessageFor", viewModel, "S4-X-07 error mapping");
+        TestAssert.NotContains("ResumeScanSessionAsync", viewModel, "S4-X-07 does not resume adjacent flow");
+        TestAssert.NotContains("SyncExternalChanges", viewModel, "S4-X-07 must not sync C4-12");
+        TestAssert.NotContains("sudo", ui + viewModel, "S4-X-07 does not change system settings");
+        TestAssert.NotContains("chmod", ui + viewModel, "S4-X-07 does not change permissions");
+    }
+
     private static void LinuxDesktopShellWiresWatcherStatusToRealCoreBridge()
     {
         string shell = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs"));
+        string factories = File.ReadAllText(RepositoryPath(
+            "apps/linux/AreaMatrix/Features/Library/LinuxDesktopShellFactories.cs"));
         string project = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/AreaMatrix.Linux.csproj"));
 
         TestAssert.Contains("OpenWatcherStatusAsync", shell, "watcher status route entry");
         TestAssert.Contains("ILinuxWatcherStatusViewFactory", shell, "watcher view factory");
+        TestAssert.Contains("ILinuxRescanConfirmViewFactory", shell, "rescan confirm view factory");
+        TestAssert.Contains("WatcherStatusView_OpenRescanConfirmRequested", shell, "watcher handoff handler");
+        TestAssert.Contains("rescanConfirmViewFactory.Create(request)", shell, "S4-X-07 view creation");
         TestAssert.Contains("LinuxWatcherStatusCoreBridge watcherBridge = new(nativeCoreClient)", shell, "real watcher bridge");
         TestAssert.Contains("LinuxWatcherDiagnostics watcherDiagnostics = new()", shell, "real Linux diagnostics");
         TestAssert.Contains("new LinuxWatcherStatusViewFactory(watcherBridge, watcherDiagnostics)", shell, "watcher factory wiring");
+        TestAssert.Contains("new LinuxRescanConfirmViewFactory(watcherBridge)", shell, "rescan factory wiring");
+        TestAssert.Contains("LinuxRescanConfirmViewModel(coreBridge)", factories, "rescan confirm real bridge");
         TestAssert.Contains("WatcherStatusView.ui", project, "watcher status UI resource");
+        TestAssert.Contains("RescanConfirmView.ui", project, "rescan confirm UI resource");
         TestAssert.NotContains("FakeLinuxWatcherStatusCoreBridge", shell, "no fake watcher bridge in production shell");
     }
 

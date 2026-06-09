@@ -61,6 +61,7 @@ public sealed partial class MainWindow : Window
             watcherDiagnostics);
         WatcherStatusPage.CloseRequested += WatcherStatusPage_CloseRequested;
         WatcherStatusPage.OpenRescanConfirmRequested += WatcherStatusPage_OpenRescanConfirmRequested;
+        RescanConfirmPage.ViewModel = new RescanConfirmViewModel(new WatcherStatusCoreBridge(coreClient));
         PlatformDifferencesPage.ViewModel = new PlatformDifferencesViewModel(
             new PlatformDifferencesCoreBridge(coreClient));
         PlatformDifferencesPage.CloseRequested += PlatformDifferencesPage_CloseRequested;

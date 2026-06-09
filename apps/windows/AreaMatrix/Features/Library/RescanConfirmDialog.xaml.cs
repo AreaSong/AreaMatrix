@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -8,7 +9,7 @@ namespace AreaMatrix.Features.Library;
 
 public sealed partial class RescanConfirmDialog : UserControl
 {
-    private RescanConfirmRequest? request;
+    private RescanConfirmViewModel? viewModel;
 
     public RescanConfirmDialog()
     {
@@ -20,17 +21,38 @@ public sealed partial class RescanConfirmDialog : UserControl
 
     public RescanConfirmRequest? Request
     {
-        get => request;
-        private set
+        get => viewModel?.Request;
+    }
+
+    public RescanConfirmViewModel? ViewModel
+    {
+        get => viewModel;
+        set
         {
-            request = value;
+            if (viewModel is not null)
+            {
+                viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+            }
+
+            viewModel = value;
+            if (viewModel is not null)
+            {
+                viewModel.PropertyChanged += ViewModel_PropertyChanged;
+            }
+
             RefreshState();
         }
     }
 
     public void OpenRequest(RescanConfirmRequest rescanRequest)
     {
-        Request = rescanRequest;
+        if (viewModel is null)
+        {
+            throw new InvalidOperationException("Rescan confirmation requires an injected view model.");
+        }
+
+        viewModel.OpenRequest(rescanRequest);
+        RefreshState();
     }
 
     private void CancelRescanConfirmButton_Click(object sender, RoutedEventArgs e)
@@ -38,9 +60,37 @@ public sealed partial class RescanConfirmDialog : UserControl
         CloseRequested?.Invoke();
     }
 
+    private void RescanConfirmCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (viewModel is null)
+        {
+            return;
+        }
+
+        viewModel.UserConfirmed = RescanConfirmCheckBox.IsChecked == true;
+        RefreshState();
+    }
+
+    private async void RunRescanButton_Click(object sender, RoutedEventArgs e)
+    {
+        await RunRescanAsync().ConfigureAwait(true);
+    }
+
+    public async Task<bool> RunRescanAsync()
+    {
+        if (viewModel is null)
+        {
+            return false;
+        }
+
+        bool started = await viewModel.RunRescanAsync().ConfigureAwait(true);
+        RefreshState();
+        return started;
+    }
+
     private void RefreshState()
     {
-        if (Request is null)
+        if (viewModel?.Request is not { } currentRequest)
         {
             RepositoryTextBlock.Text = "Repository: Unavailable";
             EstimatedItemsTextBlock.Text = "Estimated items: Unknown";
@@ -50,17 +100,21 @@ public sealed partial class RescanConfirmDialog : UserControl
             StalePreviewTextBlock.Visibility = Visibility.Collapsed;
             PreviewItemsList.ItemsSource = Array.Empty<string>();
             NoPreviewItemsTextBlock.Visibility = Visibility.Visible;
+            RescanConfirmCheckBox.IsChecked = false;
+            RescanConfirmCheckBox.IsEnabled = false;
+            RunRescanButton.IsEnabled = false;
+            ProgressTextBlock.Visibility = Visibility.Collapsed;
+            ResultTextBlock.Visibility = Visibility.Collapsed;
+            ErrorTextBlock.Visibility = Visibility.Collapsed;
             return;
         }
 
-        ManualRescanPreviewReport preview = Request.Preview;
-        RepositoryTextBlock.Text = $"Repository: {Request.Route.RepoPath}";
-        EstimatedItemsTextBlock.Text = preview.EstimatedItemsText;
-        PreviewSummaryTextBlock.Text = preview.SummaryText;
-        NeedsReviewTextBlock.Text = preview.HasNeedsReview
-            ? "Some results may need review after rescan."
-            : string.Empty;
-        NeedsReviewTextBlock.Visibility = preview.HasNeedsReview
+        ManualRescanPreviewReport preview = currentRequest.Preview;
+        RepositoryTextBlock.Text = viewModel.RepositoryText;
+        EstimatedItemsTextBlock.Text = viewModel.EstimatedItemsText;
+        PreviewSummaryTextBlock.Text = viewModel.PreviewSummaryText;
+        NeedsReviewTextBlock.Text = viewModel.NeedsReviewText;
+        NeedsReviewTextBlock.Visibility = viewModel.HasNeedsReview
             ? Visibility.Visible
             : Visibility.Collapsed;
         StalePreviewTextBlock.Visibility = preview.IsStale
@@ -72,6 +126,20 @@ public sealed partial class RescanConfirmDialog : UserControl
         NoPreviewItemsTextBlock.Visibility = itemTexts.Count > 0
             ? Visibility.Collapsed
             : Visibility.Visible;
+        RescanConfirmCheckBox.IsChecked = viewModel.UserConfirmed;
+        RescanConfirmCheckBox.IsEnabled = !viewModel.IsRunning && !viewModel.HasResult;
+        RunRescanButton.IsEnabled = viewModel.CanRunRescan;
+        ProgressTextBlock.Visibility = viewModel.IsRunning
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        ResultTextBlock.Text = viewModel.ResultText;
+        ResultTextBlock.Visibility = viewModel.HasResult
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        ErrorTextBlock.Text = viewModel.ErrorText;
+        ErrorTextBlock.Visibility = viewModel.HasError
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     private static IReadOnlyList<string> PreviewItemTexts(ManualRescanPreviewReport preview)
@@ -82,5 +150,10 @@ public sealed partial class RescanConfirmDialog : UserControl
                 ? item.DisplayText
                 : $"{item.DisplayText}: {item.DetailText}")
             .ToArray();
+    }
+
+    private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        RefreshState();
     }
 }
