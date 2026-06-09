@@ -1,4 +1,5 @@
 using AreaMatrix.Linux.Core;
+using AreaMatrix.Linux.Features.Help;
 using AreaMatrix.Linux.Features.Import;
 using AreaMatrix.Linux.Features.Onboarding;
 using AreaMatrix.Linux.Features.System;
@@ -20,6 +21,11 @@ public interface ILinuxImportDialogFactory
     LinuxImportDialog Create(LinuxRepositoryRoute route);
 }
 
+public interface ILinuxPlatformDifferencesViewFactory
+{
+    PlatformDifferencesView Create();
+}
+
 public interface ILinuxLocalFolderNoticeFactory
 {
     LocalFolderNoticeView Create(LinuxRepositoryRoute route);
@@ -31,11 +37,13 @@ public sealed class LinuxDesktopShell : IDisposable
     private readonly ILinuxLocalFolderNoticeFactory? localFolderNoticeFactory;
     private readonly ILinuxImportDialogFactory? importDialogFactory;
     private readonly ILinuxMainWindowFactory mainWindowFactory;
+    private readonly ILinuxPlatformDifferencesViewFactory? platformDifferencesViewFactory;
     private readonly ILinuxWatcherStatusViewFactory? watcherStatusViewFactory;
     private readonly IDisposable? ownedResources;
     private LocalFolderNoticeView? localFolderNoticeView;
     private LinuxImportDialog? importDialog;
     private LinuxMainWindow? mainWindow;
+    private PlatformDifferencesView? platformDifferencesView;
     private LinuxWatcherStatusView? watcherStatusView;
     private bool disposed;
 
@@ -44,6 +52,7 @@ public sealed class LinuxDesktopShell : IDisposable
         ILinuxMainWindowFactory mainWindowFactory,
         ILinuxLocalFolderNoticeFactory? localFolderNoticeFactory = null,
         ILinuxImportDialogFactory? importDialogFactory = null,
+        ILinuxPlatformDifferencesViewFactory? platformDifferencesViewFactory = null,
         ILinuxWatcherStatusViewFactory? watcherStatusViewFactory = null,
         IDisposable? ownedResources = null)
     {
@@ -51,6 +60,7 @@ public sealed class LinuxDesktopShell : IDisposable
         this.mainWindowFactory = mainWindowFactory;
         this.localFolderNoticeFactory = localFolderNoticeFactory;
         this.importDialogFactory = importDialogFactory;
+        this.platformDifferencesViewFactory = platformDifferencesViewFactory;
         this.watcherStatusViewFactory = watcherStatusViewFactory;
         this.ownedResources = ownedResources;
     }
@@ -60,6 +70,8 @@ public sealed class LinuxDesktopShell : IDisposable
     public LocalFolderNoticeView? LocalFolderNoticeView => localFolderNoticeView;
 
     public LinuxImportDialog? ImportDialog => importDialog;
+
+    public PlatformDifferencesView? PlatformDifferencesView => platformDifferencesView;
 
     public LinuxMainWindow? MainWindow => mainWindow;
 
@@ -81,6 +93,7 @@ public sealed class LinuxDesktopShell : IDisposable
             new LinuxMainWindowFactory(queryBridge, locale),
             new LinuxLocalFolderNoticeFactory(repositoryBridge),
             new LinuxImportDialogFactory(importBridge),
+            new LinuxPlatformDifferencesViewFactory(new PlatformDifferencesCoreBridge(nativeCoreClient)),
             new LinuxWatcherStatusViewFactory(watcherBridge, watcherDiagnostics),
             nativeCoreClient);
     }
@@ -116,6 +129,18 @@ public sealed class LinuxDesktopShell : IDisposable
     public Task OpenImportAsync(CancellationToken cancellationToken = default)
     {
         return OpenImportWithSourcesAsync([], cancellationToken);
+    }
+
+    public async Task OpenPlatformDifferencesAsync(CancellationToken cancellationToken = default)
+    {
+        if (platformDifferencesViewFactory is null)
+        {
+            throw new InvalidOperationException("Linux platform differences route has no view factory.");
+        }
+
+        PlatformDifferencesView view = platformDifferencesViewFactory.Create();
+        await view.OpenAsync(cancellationToken).ConfigureAwait(false);
+        platformDifferencesView = view;
     }
 
     public async Task OpenImportWithSourcesAsync(
@@ -177,6 +202,7 @@ public sealed class LinuxDesktopShell : IDisposable
             localFolderNoticeView = null;
             watcherStatusView = null;
             importDialog = null;
+            platformDifferencesView = null;
             return;
         }
 
@@ -191,6 +217,7 @@ public sealed class LinuxDesktopShell : IDisposable
         watcherStatusView = null;
         localFolderNoticeView = null;
         importDialog = null;
+        platformDifferencesView = null;
         chooseRepositoryView.ViewModel.ResetRoute();
     }
 
@@ -284,5 +311,20 @@ public sealed class LinuxWatcherStatusViewFactory : ILinuxWatcherStatusViewFacto
     public LinuxWatcherStatusView Create(LinuxRepositoryRoute route)
     {
         return new LinuxWatcherStatusView(new LinuxWatcherStatusViewModel(coreBridge, diagnostics));
+    }
+}
+
+public sealed class LinuxPlatformDifferencesViewFactory : ILinuxPlatformDifferencesViewFactory
+{
+    private readonly IPlatformDifferencesCoreBridge coreBridge;
+
+    public LinuxPlatformDifferencesViewFactory(IPlatformDifferencesCoreBridge coreBridge)
+    {
+        this.coreBridge = coreBridge;
+    }
+
+    public PlatformDifferencesView Create()
+    {
+        return new PlatformDifferencesView(new PlatformDifferencesViewModel(coreBridge));
     }
 }

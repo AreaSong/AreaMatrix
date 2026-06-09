@@ -1,0 +1,44 @@
+一、执行结论
+
+- 已完成：`4-3/task-145` 的 repair retry 已补齐 iOS / Windows / Linux 目标平台的 S4-X-02 + C4-01 可触发入口与验证证据。
+- Manifest 验证 `./dev check task 4-3/task-145` 已通过。
+
+二、执行范围
+
+- 单任务：`4-3/task-145`
+- 功能改动集中在 `apps/**`：iOS Help 页面、Windows Help 页面与入口、Linux Help 页面与 shell 入口，以及三端 C4-01 `inspect_binding_contract` bridge / native binding / 测试。
+- 工作树仍有此前 task-loop 本地状态文件改动：`.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json`，不属于本次业务实现。
+- `core/src/**`：无 diff。
+- `core/area_matrix.udl`：无 diff。
+
+三、完成情况
+
+- 只处理 S4-X-02 页面中的 C4-01：通过。三端新增入口只触发 binding contract check。
+- 已读取并对齐页面规格、control map、Core API、C4-01 能力规格：通过。
+- 只接入 C4-01 CoreBridge / 状态 / 错误映射：通过。生产路径调用真实 `inspect_binding_contract`，错误映射为可见 recovery。
+- 未实现同页其他能力：通过。C4-17 / platform capabilities API 在新增 C4-01 源码搜索无命中。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+- 结构：View / ViewModel / CoreBridge / native client / tests 分层清楚，没有把 UI 直接绕过平台 bridge 调 UniFFI。
+- 错误处理：iOS、Windows、Linux 都覆盖成功和失败路径；失败态显示 recovery，不硬编码成功。
+- mock / fixture：生产路径没有 mock-only；fixture 只在测试中使用。
+- 依赖：未新增第三方依赖。
+- 文档 / rustdoc：未新增 public Rust API，不涉及 rustdoc；本次是 apps 层接线。
+
+五、验证情况
+
+- `./dev check task 4-3/task-145`：通过，exit 0；包含 `doctor: OK`、`git diff --check`、macOS `xcodebuild build`，最终 `BUILD SUCCEEDED`。
+- `swift test --package-path apps/ios ... --disable-sandbox`：通过，71 tests / 0 failures；新增 `PlatformDifferencesPageFeatureTests` 3 tests 通过。
+- `dotnet build apps/linux/AreaMatrix/AreaMatrix.Linux.csproj`：通过，0 warnings / 0 errors。
+- `dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj`：通过。
+- `dotnet run --project apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj`：通过。
+- `dotnet build apps/windows/AreaMatrix/AreaMatrix.Windows.csproj --no-restore`：未作为最终门禁通过，当前环境在 NuGet 源初始化处失败：`NU1301` / `System.Net.CookieContainer` / `GetDomainName: -1`。Manifest 未要求此命令，Windows 源码由测试项目编译覆盖。
+
+六、风险与后续
+
+- 剩余风险：Windows 原生 app 完整 build 受当前 NuGet 环境问题阻塞；三端页面真实手工 UI 点击未运行，只完成代码级入口和模型/bridge 验证。
+- 回滚思路：撤销本次 `apps/**` 下 Help 页面、Core binding adapter、入口 wiring 和对应测试即可；不涉及 DB、用户文件、migration 或 `core/src/**`。
+- 建议下一个任务：继续执行同页剩余能力的 C4-17 page-feature task，然后再跑 S4-X-02 page integration verify。 
+

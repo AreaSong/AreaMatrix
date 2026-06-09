@@ -35,6 +35,11 @@ internal delegate RustBuffer ApplyImportConflictBatchDelegate(
     ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer InspectBindingContractDelegate(
+    RustBuffer request,
+    ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 internal delegate RustBuffer GetPlatformCapabilitiesDelegate(
     RustBuffer platform,
     RustBuffer appVersion,

@@ -2,6 +2,7 @@
     x:Class="AreaMatrix.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:help="using:AreaMatrix.Features.Help"
     xmlns:import="using:AreaMatrix.Features.Import"
     xmlns:library="using:AreaMatrix.Features.Library"
     xmlns:onboarding="using:AreaMatrix.Features.Onboarding"
@@ -23,6 +24,9 @@
             Visibility="Collapsed" />
         <library:RescanConfirmDialog
             x:Name="RescanConfirmPage"
+            Visibility="Collapsed" />
+        <help:PlatformDifferencesView
+            x:Name="PlatformDifferencesPage"
             Visibility="Collapsed" />
     </Grid>
 </Window>

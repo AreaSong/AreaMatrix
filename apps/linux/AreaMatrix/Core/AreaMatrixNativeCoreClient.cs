@@ -1,5 +1,6 @@
 using System.Text;
 using System.Runtime.InteropServices;
+using AreaMatrix.Linux.Features.Help;
 using AreaMatrix.Linux.Features.Import;
 using AreaMatrix.Linux.Features.Library;
 using AreaMatrix.Linux.Features.Onboarding;
@@ -9,6 +10,7 @@ namespace AreaMatrix.Linux.Core;
 
 public sealed partial class AreaMatrixNativeCoreClient :
     IAreaMatrixLinuxCoreClient,
+    IAreaMatrixBindingContractCoreClient,
     IAreaMatrixLinuxDesktopQueryCoreClient,
     IAreaMatrixLinuxDesktopImportCoreClient,
     IAreaMatrixLinuxWatcherStatusCoreClient,
@@ -18,6 +20,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
     private const ushort ValidateRepoPathChecksum = 43498;
     private const ushort PredictCategoryChecksum = 65047;
     private const ushort ImportFileWithResultChecksum = 52959;
+    private const ushort InspectBindingContractChecksum = 34434;
     private const ushort PreviewImportConflictBatchChecksum = 52321;
     private const ushort ApplyImportConflictBatchChecksum = 14573;
     private const ushort GetPlatformCapabilitiesChecksum = 42907;
@@ -91,6 +94,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
             || native.ValidateRepoPathChecksum() != ValidateRepoPathChecksum
             || native.PredictCategoryChecksum() != PredictCategoryChecksum
             || native.ImportFileWithResultChecksum() != ImportFileWithResultChecksum
+            || native.InspectBindingContractChecksum() != InspectBindingContractChecksum
             || native.PreviewImportConflictBatchChecksum() != PreviewImportConflictBatchChecksum
             || native.ApplyImportConflictBatchChecksum() != ApplyImportConflictBatchChecksum
             || native.GetPlatformCapabilitiesChecksum() != GetPlatformCapabilitiesChecksum

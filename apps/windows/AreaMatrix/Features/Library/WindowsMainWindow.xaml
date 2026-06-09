@@ -46,6 +46,11 @@
                 Label="Watcher status"
                 IsEnabled="{Binding CanOpenWatcherStatus}"
                 Click="WatcherStatusButton_Click" />
+            <AppBarButton
+                x:Name="PlatformDifferencesButton"
+                Icon="Help"
+                Label="Platform capabilities"
+                Click="PlatformDifferencesButton_Click" />
             <CommandBar.Content>
                 <Grid MinWidth="360" ColumnSpacing="8">
                     <Grid.ColumnDefinitions>

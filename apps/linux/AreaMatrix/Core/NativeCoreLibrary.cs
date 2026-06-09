@@ -21,6 +21,8 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_fn_func_preview_import_conflict_batch");
         ApplyImportConflictBatch = LoadFunction<ApplyImportConflictBatchDelegate>(
             "uniffi_area_matrix_core_fn_func_apply_import_conflict_batch");
+        InspectBindingContract = LoadFunction<InspectBindingContractDelegate>(
+            "uniffi_area_matrix_core_fn_func_inspect_binding_contract");
         GetPlatformCapabilities = LoadFunction<GetPlatformCapabilitiesDelegate>(
             "uniffi_area_matrix_core_fn_func_get_platform_capabilities");
         ListFiles = LoadFunction<ListFilesDelegate>("uniffi_area_matrix_core_fn_func_list_files");
@@ -52,6 +54,8 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_checksum_func_preview_import_conflict_batch");
         ApplyImportConflictBatchChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_apply_import_conflict_batch");
+        InspectBindingContractChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_inspect_binding_contract");
         GetPlatformCapabilitiesChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_get_platform_capabilities");
         ListFilesChecksum = LoadFunction<ChecksumDelegate>(
@@ -85,6 +89,8 @@ internal sealed class NativeCoreLibrary : IDisposable
     public PreviewImportConflictBatchDelegate PreviewImportConflictBatch { get; }
 
     public ApplyImportConflictBatchDelegate ApplyImportConflictBatch { get; }
+
+    public InspectBindingContractDelegate InspectBindingContract { get; }
 
     public GetPlatformCapabilitiesDelegate GetPlatformCapabilities { get; }
 
@@ -121,6 +127,8 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ChecksumDelegate PreviewImportConflictBatchChecksum { get; }
 
     public ChecksumDelegate ApplyImportConflictBatchChecksum { get; }
+
+    public ChecksumDelegate InspectBindingContractChecksum { get; }
 
     public ChecksumDelegate GetPlatformCapabilitiesChecksum { get; }
 

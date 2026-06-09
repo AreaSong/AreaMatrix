@@ -12,6 +12,11 @@ internal delegate RustBuffer DetectCloudStorageStateDelegate(
     ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer InspectBindingContractDelegate(
+    RustBuffer request,
+    ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 internal delegate RustBuffer AcknowledgeOneDriveRiskNoticeDelegate(
     RustBuffer repoPath,
     ref RustCallStatus status);

@@ -97,6 +97,11 @@ RustBuffer uniffi_area_matrix_core_fn_func_read_note(
     RustCallStatus *_Nonnull out_status
 );
 
+RustBuffer uniffi_area_matrix_core_fn_func_inspect_binding_contract(
+    RustBuffer request,
+    RustCallStatus *_Nonnull out_status
+);
+
 RustBuffer ffi_area_matrix_core_rustbuffer_from_bytes(
     ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
@@ -121,3 +126,4 @@ uint16_t uniffi_area_matrix_core_checksum_func_batch_delete_to_trash(void);
 uint16_t uniffi_area_matrix_core_checksum_func_get_file(void);
 uint16_t uniffi_area_matrix_core_checksum_func_list_changes(void);
 uint16_t uniffi_area_matrix_core_checksum_func_read_note(void);
+uint16_t uniffi_area_matrix_core_checksum_func_inspect_binding_contract(void);

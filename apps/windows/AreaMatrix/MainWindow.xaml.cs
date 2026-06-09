@@ -1,4 +1,5 @@
 using AreaMatrix.Core;
+using AreaMatrix.Features.Help;
 using AreaMatrix.Features.Import;
 using AreaMatrix.Features.Library;
 using AreaMatrix.Features.Onboarding;
@@ -33,6 +34,7 @@ public sealed partial class MainWindow : Window
         WindowsMainWindowPage.OpenWatcherStatusRequested += WindowsMainWindowPage_OpenWatcherStatusRequested;
         WindowsMainWindowPage.OpenImportRequested += WindowsMainWindowPage_OpenImportRequested;
         WindowsMainWindowPage.OpenImportDroppedSourcesRequested += WindowsMainWindowPage_OpenImportDroppedSourcesRequested;
+        WindowsMainWindowPage.OpenPlatformDifferencesRequested += WindowsMainWindowPage_OpenPlatformDifferencesRequested;
         WindowsImportPage.ViewModel = new WindowsImportViewModel(
             new DesktopImportCoreBridge(coreClient, new WindowsImportFileProbe()));
         WindowsImportPage.ParentWindowHandle = WindowNative.GetWindowHandle(this);
@@ -42,6 +44,9 @@ public sealed partial class MainWindow : Window
             watcherDiagnostics);
         WatcherStatusPage.CloseRequested += WatcherStatusPage_CloseRequested;
         WatcherStatusPage.OpenRescanConfirmRequested += WatcherStatusPage_OpenRescanConfirmRequested;
+        PlatformDifferencesPage.ViewModel = new PlatformDifferencesViewModel(
+            new PlatformDifferencesCoreBridge(coreClient));
+        PlatformDifferencesPage.CloseRequested += PlatformDifferencesPage_CloseRequested;
         RescanConfirmPage.CloseRequested += RescanConfirmPage_CloseRequested;
         Closed += MainWindow_Closed;
     }
@@ -64,6 +69,7 @@ public sealed partial class MainWindow : Window
             WindowsImportPage.Visibility = Visibility.Collapsed;
             WatcherStatusPage.Visibility = Visibility.Collapsed;
             RescanConfirmPage.Visibility = Visibility.Collapsed;
+            PlatformDifferencesPage.Visibility = Visibility.Collapsed;
             OneDriveNoticePage.Visibility = Visibility.Visible;
             await OneDriveNoticePage.OpenRouteAsync(route);
             return;
@@ -79,6 +85,7 @@ public sealed partial class MainWindow : Window
         WindowsImportPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Visible;
         await WindowsMainWindowPage.OpenRepositoryAsync(route);
     }
@@ -92,6 +99,7 @@ public sealed partial class MainWindow : Window
         WindowsImportPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.Visibility = Visibility.Visible;
     }
 
@@ -108,6 +116,7 @@ public sealed partial class MainWindow : Window
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Visible;
     }
@@ -128,6 +137,7 @@ public sealed partial class MainWindow : Window
             WindowsImportPage.Visibility = Visibility.Collapsed;
             WatcherStatusPage.Visibility = Visibility.Collapsed;
             RescanConfirmPage.Visibility = Visibility.Collapsed;
+            PlatformDifferencesPage.Visibility = Visibility.Collapsed;
             ChooseRepositoryPage.Visibility = Visibility.Visible;
         }
     }
@@ -140,6 +150,7 @@ public sealed partial class MainWindow : Window
         WindowsImportPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
         OneDriveNoticePage.Visibility = Visibility.Visible;
         await OneDriveNoticePage.OpenRouteAsync(route);
     }
@@ -151,6 +162,7 @@ public sealed partial class MainWindow : Window
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Visible;
         await WatcherStatusPage.OpenRouteAsync(route);
     }
@@ -176,6 +188,7 @@ public sealed partial class MainWindow : Window
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Visible;
         if (request.ImportedFileIds.FirstOrDefault() is > 0 and long selectedFileId)
         {
@@ -199,6 +212,7 @@ public sealed partial class MainWindow : Window
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Visible;
         await WatcherStatusPage.OpenRouteAsync(route);
     }
@@ -209,6 +223,7 @@ public sealed partial class MainWindow : Window
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Visible;
     }
@@ -220,8 +235,26 @@ public sealed partial class MainWindow : Window
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Visible;
         RescanConfirmPage.OpenRequest(request);
+    }
+
+    private async void WindowsMainWindowPage_OpenPlatformDifferencesRequested()
+    {
+        ShowPlatformDifferencesPage();
+        await PlatformDifferencesPage.OpenAsync();
+    }
+
+    private void PlatformDifferencesPage_CloseRequested()
+    {
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        OneDriveNoticePage.Visibility = Visibility.Collapsed;
+        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        WindowsImportPage.Visibility = Visibility.Collapsed;
+        WatcherStatusPage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
+        WindowsMainWindowPage.Visibility = Visibility.Visible;
     }
 
     private void RescanConfirmPage_CloseRequested()
@@ -232,6 +265,7 @@ public sealed partial class MainWindow : Window
         WindowsImportPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Visible;
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
     }
 
     private void MainWindow_Closed(object sender, WindowEventArgs args)
@@ -249,9 +283,11 @@ public sealed partial class MainWindow : Window
         WindowsMainWindowPage.OpenWatcherStatusRequested -= WindowsMainWindowPage_OpenWatcherStatusRequested;
         WindowsMainWindowPage.OpenImportRequested -= WindowsMainWindowPage_OpenImportRequested;
         WindowsMainWindowPage.OpenImportDroppedSourcesRequested -= WindowsMainWindowPage_OpenImportDroppedSourcesRequested;
+        WindowsMainWindowPage.OpenPlatformDifferencesRequested -= WindowsMainWindowPage_OpenPlatformDifferencesRequested;
         WindowsImportPage.CloseRequested -= WindowsImportPage_CloseRequested;
         WatcherStatusPage.CloseRequested -= WatcherStatusPage_CloseRequested;
         WatcherStatusPage.OpenRescanConfirmRequested -= WatcherStatusPage_OpenRescanConfirmRequested;
+        PlatformDifferencesPage.CloseRequested -= PlatformDifferencesPage_CloseRequested;
         RescanConfirmPage.CloseRequested -= RescanConfirmPage_CloseRequested;
         watcherDiagnostics.Dispose();
         coreClient.Dispose();
@@ -264,6 +300,18 @@ public sealed partial class MainWindow : Window
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Visible;
+    }
+
+    private void ShowPlatformDifferencesPage()
+    {
+        OneDriveNoticePage.Visibility = Visibility.Collapsed;
+        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        WindowsMainWindowPage.Visibility = Visibility.Collapsed;
+        WindowsImportPage.Visibility = Visibility.Collapsed;
+        WatcherStatusPage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Visible;
     }
 }

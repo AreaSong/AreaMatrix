@@ -1,0 +1,84 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-145`
+- 对应 task：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-145-s4-x-02-c4-01-cross-platform-ffi-contract.md`
+- 验收实现范围：`apps/**`、`core/area_matrix.udl`
+- Forbidden Touches：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S4-X-02 页面中的 C4-01 功能点
+- 结果：通过
+- 证据：S4-X-02 入口和页面只围绕 `inspect_binding_contract` / Binding contract 展示；未在新增 Help/BindingContract 实现中命中 `GetPlatformCapabilities`、watcher、import、rescan、sync、Trash 等同页或相邻能力调用。
+- 涉及文件：`apps/ios/AreaMatrix/Features/Help/PlatformDifferencesView.swift`、`apps/macos/AreaMatrix/Views/Settings/PlatformDifferencesView.swift`、`apps/windows/AreaMatrix/Features/Help/PlatformDifferencesView.xaml`、`apps/linux/AreaMatrix/Features/Help/PlatformDifferencesView.ui`
+
+- 项目：读取页面规格、control map、Core API、C4-01 能力规格并交叉验收
+- 结果：通过
+- 证据：Exact Docs 均存在且已读取；control map 明确 `S4-X-02 -> C4-01, C4-17`，本 task 只覆盖 C4-01，C4-17 留给 `4-3/task-146/147`。
+- 涉及文件：`docs/ux/page-specs/stage-4-multiplatform/S4-X-02-platform-differences.md`、`docs/architecture/stage-4-control-map.md`、`docs/api/core-api.md`、`docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md`
+
+- 项目：只接入 C4-01 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：macOS `CoreBindingContractInspecting` 通过 `CoreBridge` 调 UniFFI `inspectBindingContract`；iOS `LivePlatformDifferencesCoreBridge` 调 `uniffi_area_matrix_core_fn_func_inspect_binding_contract`；Windows/Linux native client 均实现 `InspectBindingContractAsync` 并解析 BindingContract report。
+- 涉及文件：`apps/macos/AreaMatrix/Bridge/CoreBindingContractInspecting.swift`、`apps/ios/AreaMatrix/Features/Help/PlatformDifferencesCoreBridge.swift`、`apps/windows/AreaMatrix/Core/AreaMatrixNativeCoreClient.BindingContract.cs`、`apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.BindingContract.cs`
+
+- 项目：不顺手实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：新增/修改路径均在 `apps/**`；`git status --short core/src core/area_matrix.udl` 无输出；新增 Help/BindingContract 实现未调用 C4-17 platform capability API。
+- 涉及文件：`apps/**`、`core/area_matrix.udl`
+
+- 项目：S4-X-02 中 C4-01 用户可见功能可触发和验收
+- 结果：通过
+- 证据：macOS/iOS 有页面加载和按钮触发；Windows 主窗口有 `Platform capabilities` 按钮并打开页面；Linux shell 有 `OpenPlatformDifferencesAsync` 路由。
+- 涉及文件：`apps/windows/AreaMatrix/MainWindow.xaml.cs`、`apps/windows/AreaMatrix/Features/Library/WindowsMainWindow.xaml`、`apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产路径默认注入真实 `CoreBridge` / native client；fake/fixture 只出现在测试文件中，用于断言边界和错误状态。
+- 涉及文件：`apps/macos/AreaMatrix/Models/PlatformDifferencesModel.swift`、`apps/ios/AreaMatrix/Features/Help/PlatformDifferencesView.swift`、`apps/windows/AreaMatrix/Features/Help/PlatformDifferencesViewModel.cs`、`apps/linux/AreaMatrix/Features/Help/PlatformDifferencesViewModel.cs`
+
+- 项目：未触碰 control map 之外 Core 能力
+- 结果：通过
+- 证据：只读搜索未发现新增 C4-01 文件调用同页 C4-17 或其他 Core 能力；Forbidden `core/src/**` 未修改。
+- 涉及文件：`apps/**`、`core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。各平台拆分为 bridge/client、view model、view/test；新增文件未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 Rust public API；`docs/api/core-api.md` 与 `core/area_matrix.udl` 对 `inspect_binding_contract` 和 BindingContract 类型一致。
+- 错误处理与边界处理：通过。Swift/C# 路径都有 failure state；iOS/native parsing 对合同版本、checksum、未知 enum、optional tag、buffer 边界有显式错误。
+- 测试与验证覆盖：通过。task-scoped 验证通过，并补跑 Windows/Linux .NET 测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径走真实 CoreBridge/native FFI；测试 fake 未进入产品默认路径。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-145`
+- 结果：通过，退出码 0
+- 关键证据：`doctor: OK`，`git diff --check` 通过，macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 已运行：`dotnet test apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj --no-restore`
+- 结果：通过，退出码 0
+- 已运行：`dotnet test apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj --no-restore`
+- 结果：通过，退出码 0
+- 缺失：未做真实 UI 点击烟测；本 task manifest 要求的必跑验证已完成，补充的 .NET 测试覆盖 Windows/Linux view model、路由和 native client wiring。
+- Forbidden Touches：`git status --short core/src core/area_matrix.udl` 无输出，未发现违规修改。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

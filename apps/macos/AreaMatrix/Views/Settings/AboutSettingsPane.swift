@@ -39,6 +39,7 @@ struct AboutSettingsPane: View {
                     versionErrorBanner
                     actionFeedbackBanner
                     versionsSection
+                    PlatformDifferencesView()
                     licenseSection
                     linksSection
                     diagnosticsSection

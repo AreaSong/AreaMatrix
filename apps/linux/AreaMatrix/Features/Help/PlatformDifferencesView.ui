@@ -1,0 +1,21 @@
+page_id: S4-X-02
+title: Platform capabilities
+platform: Linux
+repository: Not connected
+sections:
+  - Binding contract
+  - Supported APIs
+  - Type mappings
+  - Limited or missing capabilities
+actions:
+  check_contract: PlatformDifferencesView.CheckContractAsync
+  close: PlatformDifferencesView.Close
+safety:
+  - The page calls inspect_binding_contract through PlatformDifferencesCoreBridge.
+  - The page passes target platform and binding version only; it does not read a repository path.
+  - The page does not call platform capability matrix, watcher, import, rescan, sync, or Trash APIs.
+  - The check is read-only and does not open, move, delete, rename, or modify repository files.
+states:
+  loading: Checking binding contract...
+  loaded: Binding contract is available.
+  failed: Binding contract unavailable.

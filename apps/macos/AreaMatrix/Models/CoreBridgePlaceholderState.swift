@@ -82,6 +82,7 @@ struct ConfigLoadFailure: Equatable {
 enum CoreBridgeBoundary: String, CaseIterable, Equatable {
     case getVersion = "get_version"
     case initLogging = "init_logging"
+    case inspectBindingContract = "inspect_binding_contract"
     case validateRepoPath = "validate_repo_path"
     case validateInitializedRepoPath = "validate_initialized_repo_path"
     case initRepo = "init_repo"

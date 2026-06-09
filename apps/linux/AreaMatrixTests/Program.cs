@@ -1,4 +1,5 @@
 using AreaMatrix.Linux.Tests.ChooseRepository;
+using AreaMatrix.Linux.Tests.Help;
 using AreaMatrix.Linux.Tests.Import;
 using AreaMatrix.Linux.Tests.Library;
 using AreaMatrix.Linux.Tests.System;
@@ -15,5 +16,6 @@ await LinuxImportReplaceViewModelTests.RunAllAsync();
 LinuxImportSmokeTests.RunAll();
 await LinuxWatcherStatusViewModelTests.RunAllAsync();
 LinuxWatcherStatusSmokeTests.RunAll();
+await PlatformDifferencesTests.RunAllAsync();
 
 Console.WriteLine("AreaMatrix Linux tests passed.");

@@ -31,6 +31,8 @@ public sealed partial class WindowsMainWindow : UserControl
 
     public event Action<WindowsRepositoryRoute, IReadOnlyList<string>>? OpenImportDroppedSourcesRequested;
 
+    public event Action? OpenPlatformDifferencesRequested;
+
     public WindowsMainWindowViewModel? ViewModel
     {
         get => DataContext as WindowsMainWindowViewModel;
@@ -119,6 +121,11 @@ public sealed partial class WindowsMainWindow : UserControl
         {
             OpenImportRequested?.Invoke(route);
         }
+    }
+
+    private void PlatformDifferencesButton_Click(object sender, RoutedEventArgs e)
+    {
+        OpenPlatformDifferencesRequested?.Invoke();
     }
 
     private void MainWindowDrop_DragEnter(object sender, DragEventArgs e)
