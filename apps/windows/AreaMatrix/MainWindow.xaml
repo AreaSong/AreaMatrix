@@ -6,6 +6,7 @@
     xmlns:import="using:AreaMatrix.Features.Import"
     xmlns:library="using:AreaMatrix.Features.Library"
     xmlns:onboarding="using:AreaMatrix.Features.Onboarding"
+    xmlns:recovery="using:AreaMatrix.Features.Recovery"
     Title="AreaMatrix">
 
     <Grid>
@@ -24,6 +25,9 @@
             Visibility="Collapsed" />
         <import:WindowsImportDialog
             x:Name="WindowsImportPage"
+            Visibility="Collapsed" />
+        <recovery:MissingFileRecoveryDialog
+            x:Name="MissingFileRecoveryPage"
             Visibility="Collapsed" />
         <library:WatcherStatusView
             x:Name="WatcherStatusPage"

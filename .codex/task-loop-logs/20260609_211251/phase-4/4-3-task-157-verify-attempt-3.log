@@ -1,0 +1,83 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-157`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-157-s4-x-06-c4-18-missing-file-recovery.md`
+- 验收对象：S4-X-06 页面中的 C4-18 missing-file-recovery
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S4-X-06 页面中的 C4-18 功能点
+- 结果：通过
+- 证据：control map 仅声明 `S4-X-06 -> C4-18`；实现集中在 iOS/Windows/Linux `Features/Recovery` 与入口路由，未扩到 C4-19 rescan 执行。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:31`
+
+- 项目：读取并对齐页面规格、control map、Core API、C4-18 能力规格
+- 结果：通过
+- 证据：页面规格要求 `Locate File`、`Try Again`、`Decide Later`、`Remove Record`；Core API 明确 C4-18 三个入口与不触发 rescan/不删除用户文件边界。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-4-multiplatform/S4-X-06-missing-file-recovery.md:23`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:6163`
+
+- 项目：只接入 C4-18 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：Windows/Linux CoreBridge 调用 `GetMissingFileStateAsync`、`RelinkMissingFileAsync`、`RemoveMissingFileRecordAsync`；iOS 通过 `MissingFileRecoveryCoreFFIClient` 进入真实 Core FFI。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Recovery/MissingFileRecoveryCoreBridge.cs:52`，`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Recovery/MissingFileRecoveryCoreBridge.cs:50`，`/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Recovery/MissingFileRecoveryCoreBridge.swift:183`
+
+- 项目：不顺手实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：静态扫描未发现 `ReindexFromFilesystemAsync` / `PreviewManualRescanAsync` 接入；测试也断言 C4-18 不运行 rescan。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrixTests/Recovery/MissingFileRecoveryViewModelTests.cs:129`，`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/Recovery/MissingFileRecoveryViewModelTests.cs:216`
+
+- 项目：S4-X-06 中 C4-18 用户可见功能可触发和验收
+- 结果：通过
+- 证据：iOS sheet 从 mobile detail 打开 recovery；Windows 主窗口 missing selection 打开 recovery page；Linux shell 从 missing selection 创建 recovery view。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryRouteDestinationView.swift:120`，`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/MainWindow.xaml.cs:247`，`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs:211`
+
+- 项目：没有用 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产路径注入 live/native Core client；mock/fixture 只出现在测试文件。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/MainWindow.xaml.cs:55`，`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs:122`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 与 cached 检查均无输出，未触碰 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Recovery 被拆成 View / ViewModel / Models / CoreBridge / native client，职责清楚。
+- 注释 / rustdoc / 文档同步：通过。当前 task 未新增 Rust public API；UDL/API 已存在 C4-18 合同。
+- 错误处理与边界处理：通过。hash mismatch、PermissionDenied、FileNotFound、Db 映射到页面错误；Remove Record 需确认，报告 `fileDeleted=false`。
+- 测试与验证覆盖：通过。manifest 验证通过；平台测试源码覆盖 state、try-again、relink、hash mismatch、remove confirmation、no-rescan。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产代码未发现 mock-only 闭环；测试 fake 未进入生产注入路径。
+
+六、阻塞项
+
+- 未发现本 task 阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-157`
+- 结果：通过。`prompt doctor: OK`，`git diff --check` 通过，macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`。
+- 补充运行：`dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj`
+- 结果：失败于后续 C4-17 PlatformDifferences 断言；Recovery 测试入口在其前执行，未抛错，不作为本 task 阻塞。
+- 补充运行：`dotnet run --project apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj`
+- 结果：失败于 C4-17 PlatformDifferences 断言，程序未到 Recovery 测试段；作为非本 task broad-test 缺口记录。
+- 补充运行：`swift test --package-path apps/ios --filter MissingFileRecoveryPageFeatureTests`
+- 结果：当前沙箱 SwiftPM / ModuleCache 写权限阻断，未能执行；不替代 manifest 验证。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。manifest 指定验证通过，C4-18 页面功能有真实 CoreBridge/FFI 消费证据，未触碰 `core/src/**`，未实现 control map 之外的 Core 能力。
+
+VERIFY_RESULT: PASS

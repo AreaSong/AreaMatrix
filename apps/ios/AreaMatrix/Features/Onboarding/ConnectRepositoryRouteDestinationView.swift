@@ -51,6 +51,7 @@ struct ConnectRepositoryRouteDestinationContent: Equatable {
 struct ConnectRepositoryRouteDestinationView: View {
     private let route: MobileRepositoryConnectionRoute
     private let mobileLibraryBridge: any MobileLibraryCoreBridge
+    private let missingFileRecoveryBridge: any MissingFileRecoveryCoreBridge
     private let cloudState: MobileCloudStorageState?
     private let isChecking: Bool
     private let isCreatingRepository: Bool
@@ -65,10 +66,12 @@ struct ConnectRepositoryRouteDestinationView: View {
     private let onCancelRepositoryInit: () -> Void
     private let onOpenSettings: () -> Void
     private let onOpenSyncConflictReview: (SyncConflictEntryReviewRoute) -> Void
+    @State private var pendingMissingFileRecoveryRoute: MissingFileRecoveryRoute?
 
     init(
         route: MobileRepositoryConnectionRoute,
         mobileLibraryBridge: any MobileLibraryCoreBridge = LiveMobileRepositoryCoreBridge(),
+        missingFileRecoveryBridge: any MissingFileRecoveryCoreBridge = LiveMobileRepositoryCoreBridge(),
         cloudState: MobileCloudStorageState? = nil,
         isChecking: Bool = false,
         isCreatingRepository: Bool = false,
@@ -86,6 +89,7 @@ struct ConnectRepositoryRouteDestinationView: View {
     ) {
         self.route = route
         self.mobileLibraryBridge = mobileLibraryBridge
+        self.missingFileRecoveryBridge = missingFileRecoveryBridge
         self.cloudState = cloudState
         self.isChecking = isChecking
         self.isCreatingRepository = isCreatingRepository
@@ -108,8 +112,21 @@ struct ConnectRepositoryRouteDestinationView: View {
             MobileLibraryView(
                 connection: connection,
                 bridge: mobileLibraryBridge,
+                onOpenMissingRecovery: { fileID in
+                    openMissingFileRecovery(repoPath: connection.validation.repoPath, fileID: fileID)
+                },
                 onOpenSyncConflictReview: onOpenSyncConflictReview
             )
+            .sheet(item: $pendingMissingFileRecoveryRoute) { route in
+                MissingFileRecoveryView(
+                    model: MissingFileRecoveryViewModel(
+                        repoPath: route.repoPath,
+                        fileID: route.fileID,
+                        bridge: missingFileRecoveryBridge
+                    ),
+                    onDecideLater: dismissMissingFileRecovery
+                )
+            }
         case let .repositoryInitConfirm(candidate):
             RepositoryInitConfirmView(
                 candidate: candidate,
@@ -142,6 +159,14 @@ struct ConnectRepositoryRouteDestinationView: View {
                 onOpenSettings: onOpenSettings
             )
         }
+    }
+
+    private func openMissingFileRecovery(repoPath: String, fileID: Int64) {
+        pendingMissingFileRecoveryRoute = MissingFileRecoveryRoute(repoPath: repoPath, fileID: fileID)
+    }
+
+    private func dismissMissingFileRecovery() {
+        pendingMissingFileRecoveryRoute = nil
     }
 }
 

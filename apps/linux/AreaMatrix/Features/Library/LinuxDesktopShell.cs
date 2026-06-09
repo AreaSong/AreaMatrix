@@ -3,6 +3,7 @@ using AreaMatrix.Linux.Features.Conflicts;
 using AreaMatrix.Linux.Features.Help;
 using AreaMatrix.Linux.Features.Import;
 using AreaMatrix.Linux.Features.Onboarding;
+using AreaMatrix.Linux.Features.Recovery;
 using AreaMatrix.Linux.Features.System;
 
 namespace AreaMatrix.Linux.Features.Library;
@@ -20,6 +21,11 @@ public interface ILinuxWatcherStatusViewFactory
 public interface ILinuxImportDialogFactory
 {
     LinuxImportDialog Create(LinuxRepositoryRoute route);
+}
+
+public interface ILinuxMissingFileRecoveryViewFactory
+{
+    MissingFileRecoveryView Create(MissingFileRecoveryRoute route);
 }
 
 public interface ILinuxPlatformDifferencesViewFactory
@@ -49,6 +55,7 @@ public sealed class LinuxDesktopShell : IDisposable
     private readonly ILinuxRepositoryInitConfirmFactory? repositoryInitConfirmFactory;
     private readonly ILinuxRepositoryAdoptConfirmFactory? repositoryAdoptConfirmFactory;
     private readonly ILinuxImportDialogFactory? importDialogFactory;
+    private readonly ILinuxMissingFileRecoveryViewFactory? missingFileRecoveryViewFactory;
     private readonly ILinuxMainWindowFactory mainWindowFactory;
     private readonly ILinuxPlatformDifferencesViewFactory? platformDifferencesViewFactory;
     private readonly ILinuxWatcherStatusViewFactory? watcherStatusViewFactory;
@@ -57,6 +64,7 @@ public sealed class LinuxDesktopShell : IDisposable
     private RepositoryInitConfirmView? repositoryInitConfirmView;
     private RepositoryAdoptConfirmView? repositoryAdoptConfirmView;
     private LinuxImportDialog? importDialog;
+    private MissingFileRecoveryView? missingFileRecoveryView;
     private LinuxMainWindow? mainWindow;
     private PlatformDifferencesView? platformDifferencesView;
     private LinuxWatcherStatusView? watcherStatusView;
@@ -69,6 +77,7 @@ public sealed class LinuxDesktopShell : IDisposable
         ILinuxRepositoryInitConfirmFactory? repositoryInitConfirmFactory = null,
         ILinuxRepositoryAdoptConfirmFactory? repositoryAdoptConfirmFactory = null,
         ILinuxImportDialogFactory? importDialogFactory = null,
+        ILinuxMissingFileRecoveryViewFactory? missingFileRecoveryViewFactory = null,
         ILinuxPlatformDifferencesViewFactory? platformDifferencesViewFactory = null,
         ILinuxWatcherStatusViewFactory? watcherStatusViewFactory = null,
         IDisposable? ownedResources = null)
@@ -79,6 +88,7 @@ public sealed class LinuxDesktopShell : IDisposable
         this.repositoryInitConfirmFactory = repositoryInitConfirmFactory;
         this.repositoryAdoptConfirmFactory = repositoryAdoptConfirmFactory;
         this.importDialogFactory = importDialogFactory;
+        this.missingFileRecoveryViewFactory = missingFileRecoveryViewFactory;
         this.platformDifferencesViewFactory = platformDifferencesViewFactory;
         this.watcherStatusViewFactory = watcherStatusViewFactory;
         this.ownedResources = ownedResources;
@@ -94,6 +104,8 @@ public sealed class LinuxDesktopShell : IDisposable
 
     public LinuxImportDialog? ImportDialog => importDialog;
 
+    public MissingFileRecoveryView? MissingFileRecoveryView => missingFileRecoveryView;
+
     public PlatformDifferencesView? PlatformDifferencesView => platformDifferencesView;
 
     public LinuxMainWindow? MainWindow => mainWindow;
@@ -107,6 +119,7 @@ public sealed class LinuxDesktopShell : IDisposable
         DesktopMainQueryCoreBridge queryBridge = new(nativeCoreClient);
         SyncConflictEntryCoreBridge syncConflictBridge = new(nativeCoreClient);
         DesktopImportCoreBridge importBridge = new(nativeCoreClient, new LinuxImportFileProbe());
+        MissingFileRecoveryCoreBridge recoveryBridge = new(nativeCoreClient);
         LinuxWatcherStatusCoreBridge watcherBridge = new(nativeCoreClient);
         LinuxWatcherDiagnostics watcherDiagnostics = new();
         LinuxChooseRepositoryView chooseRepositoryView = new(
@@ -119,6 +132,7 @@ public sealed class LinuxDesktopShell : IDisposable
             new LinuxRepositoryInitConfirmFactory(repositoryBridge),
             new LinuxRepositoryAdoptConfirmFactory(repositoryBridge),
             new LinuxImportDialogFactory(importBridge),
+            new LinuxMissingFileRecoveryViewFactory(recoveryBridge),
             new LinuxPlatformDifferencesViewFactory(new PlatformDifferencesCoreBridge(nativeCoreClient)),
             new LinuxWatcherStatusViewFactory(watcherBridge, watcherDiagnostics),
             nativeCoreClient);
@@ -194,6 +208,24 @@ public sealed class LinuxDesktopShell : IDisposable
         importDialog = dialog;
     }
 
+    public async Task<bool> OpenMissingFileRecoveryAsync(CancellationToken cancellationToken = default)
+    {
+        if (mainWindow?.ViewModel.SelectedMissingFileRecoveryRoute is not { } route)
+        {
+            return false;
+        }
+
+        if (missingFileRecoveryViewFactory is null)
+        {
+            throw new InvalidOperationException("Linux missing-file recovery route has no view factory.");
+        }
+
+        MissingFileRecoveryView view = missingFileRecoveryViewFactory.Create(route);
+        await view.OpenRouteAsync(route, cancellationToken).ConfigureAwait(false);
+        missingFileRecoveryView = view;
+        return true;
+    }
+
     public async Task ContinueFromLocalFolderNoticeAsync(
         CancellationToken cancellationToken = default)
     {
@@ -262,6 +294,7 @@ public sealed class LinuxDesktopShell : IDisposable
             repositoryAdoptConfirmView = null;
             watcherStatusView = null;
             importDialog = null;
+            missingFileRecoveryView = null;
             platformDifferencesView = null;
             return;
         }
@@ -337,6 +370,7 @@ public sealed class LinuxDesktopShell : IDisposable
         repositoryInitConfirmView = null;
         repositoryAdoptConfirmView = null;
         importDialog = null;
+        missingFileRecoveryView = null;
         platformDifferencesView = null;
         chooseRepositoryView.ViewModel.ResetRoute();
     }

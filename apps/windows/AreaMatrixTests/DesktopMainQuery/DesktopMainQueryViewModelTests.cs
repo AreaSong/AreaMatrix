@@ -15,6 +15,7 @@ public static class DesktopMainQueryViewModelTests
         await RefreshAfterImportSelectsImportedFile();
         await OneDriveRepositoryExposesConnectedNoticeRoute();
         await MainWindowRouteExposesWatcherStatusEntry();
+        await MissingFileSelectionExposesRecoveryRouteOnlyForMissingStatus();
     }
 
     private static async Task OpenRepositoryLoadsTreeAndFirstPageFromCoreBridge()
@@ -131,6 +132,25 @@ public static class DesktopMainQueryViewModelTests
         TestAssert.Equal(path, model.WatcherStatusRoute?.RepoPath, "watcher status route path");
     }
 
+    private static async Task MissingFileSelectionExposesRecoveryRouteOnlyForMissingStatus()
+    {
+        const string path = @"C:\Repos\AreaMatrix";
+        FakeDesktopMainQueryCoreBridge bridge = new(includeMissingFile: true);
+        WindowsMainWindowViewModel model = new(bridge);
+
+        await model.OpenRepositoryAsync(Route(path));
+        await model.SelectFileAsync(model.Files.First(file => file.AvailabilityStatus == DesktopFileAvailabilityStatus.Available));
+
+        TestAssert.False(model.CanOpenMissingFileRecovery, "available file recovery route");
+        TestAssert.Null(model.SelectedMissingFileRecoveryRoute, "available recovery route");
+
+        await model.SelectFileAsync(model.Files.First(file => file.AvailabilityStatus == DesktopFileAvailabilityStatus.Missing));
+
+        TestAssert.True(model.CanOpenMissingFileRecovery, nameof(model.CanOpenMissingFileRecovery));
+        TestAssert.Equal(path, model.SelectedMissingFileRecoveryRoute?.RepoPath, "recovery repo path");
+        TestAssert.Equal(3, model.SelectedMissingFileRecoveryRoute?.FileId, "recovery file id");
+    }
+
     private static WindowsRepositoryRoute Route(string path)
     {
         return new WindowsRepositoryRoute(
@@ -153,11 +173,21 @@ public static class DesktopMainQueryViewModelTests
 
 internal sealed class FakeDesktopMainQueryCoreBridge : IDesktopMainQueryCoreBridge
 {
-    private readonly IReadOnlyList<DesktopFileEntry> files =
-    [
-        FileEntry(1, "Contracts", "client-contract.pdf"),
-        FileEntry(2, "Notes", "meeting-notes.md")
-    ];
+    private readonly IReadOnlyList<DesktopFileEntry> files;
+
+    public FakeDesktopMainQueryCoreBridge(bool includeMissingFile = false)
+    {
+        files = includeMissingFile
+            ? [
+                FileEntry(1, "Contracts", "client-contract.pdf"),
+                FileEntry(2, "Notes", "meeting-notes.md"),
+                FileEntry(3, "Reports", "missing-report.pdf", DesktopFileAvailabilityStatus.Missing)
+            ]
+            : [
+                FileEntry(1, "Contracts", "client-contract.pdf"),
+                FileEntry(2, "Notes", "meeting-notes.md")
+            ];
+    }
 
     public List<string> ListRequests { get; } = [];
 
@@ -232,7 +262,11 @@ internal sealed class FakeDesktopMainQueryCoreBridge : IDesktopMainQueryCoreBrid
         return Task.FromResult(page);
     }
 
-    private static DesktopFileEntry FileEntry(long id, string category, string name)
+    private static DesktopFileEntry FileEntry(
+        long id,
+        string category,
+        string name,
+        DesktopFileAvailabilityStatus status = DesktopFileAvailabilityStatus.Available)
     {
         return new DesktopFileEntry(
             id,
@@ -245,7 +279,7 @@ internal sealed class FakeDesktopMainQueryCoreBridge : IDesktopMainQueryCoreBrid
             DesktopStorageMode.Copied,
             DesktopFileOrigin.Imported,
             null,
-            DesktopFileAvailabilityStatus.Available,
+            status,
             1_700_000_000,
             1_700_000_100);
     }

@@ -27,6 +27,12 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_fn_func_get_platform_capabilities");
         ListFiles = LoadFunction<ListFilesDelegate>("uniffi_area_matrix_core_fn_func_list_files");
         GetFile = LoadFunction<GetFileDelegate>("uniffi_area_matrix_core_fn_func_get_file");
+        GetMissingFileState = LoadFunction<GetMissingFileStateDelegate>(
+            "uniffi_area_matrix_core_fn_func_get_missing_file_state");
+        RelinkMissingFile = LoadFunction<RelinkMissingFileDelegate>(
+            "uniffi_area_matrix_core_fn_func_relink_missing_file");
+        RemoveMissingFileRecord = LoadFunction<RemoveMissingFileRecordDelegate>(
+            "uniffi_area_matrix_core_fn_func_remove_missing_file_record");
         ListTreeJson = LoadFunction<ListTreeJsonDelegate>("uniffi_area_matrix_core_fn_func_list_tree_json");
         DetectSyncConflicts = LoadFunction<DetectSyncConflictsDelegate>(
             "uniffi_area_matrix_core_fn_func_detect_sync_conflicts");
@@ -64,6 +70,12 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_checksum_func_list_files");
         GetFileChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_get_file");
+        GetMissingFileStateChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_get_missing_file_state");
+        RelinkMissingFileChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_relink_missing_file");
+        RemoveMissingFileRecordChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_remove_missing_file_record");
         ListTreeJsonChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_list_tree_json");
         DetectSyncConflictsChecksum = LoadFunction<ChecksumDelegate>(
@@ -101,6 +113,12 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ListFilesDelegate ListFiles { get; }
 
     public GetFileDelegate GetFile { get; }
+
+    public GetMissingFileStateDelegate GetMissingFileState { get; }
+
+    public RelinkMissingFileDelegate RelinkMissingFile { get; }
+
+    public RemoveMissingFileRecordDelegate RemoveMissingFileRecord { get; }
 
     public ListTreeJsonDelegate ListTreeJson { get; }
 
@@ -141,6 +159,12 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ChecksumDelegate ListFilesChecksum { get; }
 
     public ChecksumDelegate GetFileChecksum { get; }
+
+    public ChecksumDelegate GetMissingFileStateChecksum { get; }
+
+    public ChecksumDelegate RelinkMissingFileChecksum { get; }
+
+    public ChecksumDelegate RemoveMissingFileRecordChecksum { get; }
 
     public ChecksumDelegate ListTreeJsonChecksum { get; }
 

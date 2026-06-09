@@ -66,6 +66,21 @@ internal delegate RustBuffer ListFilesDelegate(RustBuffer repoPath, RustBuffer f
 internal delegate RustBuffer GetFileDelegate(RustBuffer repoPath, long fileId, ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer GetMissingFileStateDelegate(RustBuffer repoPath, long fileId, ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer RelinkMissingFileDelegate(
+    RustBuffer repoPath,
+    RustBuffer request,
+    ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer RemoveMissingFileRecordDelegate(
+    RustBuffer repoPath,
+    RustBuffer request,
+    ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 internal delegate RustBuffer ListTreeJsonDelegate(RustBuffer repoPath, RustBuffer locale, ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

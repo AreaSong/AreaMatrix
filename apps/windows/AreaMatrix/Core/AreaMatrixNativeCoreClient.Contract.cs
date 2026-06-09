@@ -9,6 +9,7 @@ public sealed partial class AreaMatrixNativeCoreClient
     private const ushort DetectCloudStorageStateChecksum = 18169;
     private const ushort DetectSyncConflictsChecksum = 31524;
     private const ushort GetFileChecksum = 6132;
+    private const ushort GetMissingFileStateChecksum = 9097;
     private const ushort GetPlatformCapabilitiesChecksum = 42907;
     private const ushort InitRepoChecksum = 29414;
     private const ushort InspectBindingContractChecksum = 34434;
@@ -22,6 +23,8 @@ public sealed partial class AreaMatrixNativeCoreClient
     private const ushort PreviewManualRescanChecksum = 12140;
     private const ushort RecordWatcherHealthChecksum = 47455;
     private const ushort ReindexFromFilesystemChecksum = 54635;
+    private const ushort RelinkMissingFileChecksum = 39194;
+    private const ushort RemoveMissingFileRecordChecksum = 46697;
     private const ushort ResumeScanSessionChecksum = 31216;
     private const ushort SearchFilesChecksum = 65;
     private const ushort ValidateRepoPathChecksum = 43498;
@@ -34,6 +37,7 @@ public sealed partial class AreaMatrixNativeCoreClient
             || native.DetectCloudStorageStateChecksum() != DetectCloudStorageStateChecksum
             || native.DetectSyncConflictsChecksum() != DetectSyncConflictsChecksum
             || native.GetFileChecksum() != GetFileChecksum
+            || native.GetMissingFileStateChecksum() != GetMissingFileStateChecksum
             || native.GetPlatformCapabilitiesChecksum() != GetPlatformCapabilitiesChecksum
             || native.InspectBindingContractChecksum() != InspectBindingContractChecksum
             || native.ImportFileWithResultChecksum() != ImportFileWithResultChecksum
@@ -46,6 +50,8 @@ public sealed partial class AreaMatrixNativeCoreClient
             || native.PreviewManualRescanChecksum() != PreviewManualRescanChecksum
             || native.RecordWatcherHealthChecksum() != RecordWatcherHealthChecksum
             || native.ReindexFromFilesystemChecksum() != ReindexFromFilesystemChecksum
+            || native.RelinkMissingFileChecksum() != RelinkMissingFileChecksum
+            || native.RemoveMissingFileRecordChecksum() != RemoveMissingFileRecordChecksum
             || native.ResumeScanSessionChecksum() != ResumeScanSessionChecksum
             || native.SearchFilesChecksum() != SearchFilesChecksum
             || native.ValidateRepoPathChecksum() != ValidateRepoPathChecksum)

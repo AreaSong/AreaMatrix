@@ -4,6 +4,7 @@ using AreaMatrix.Features.Help;
 using AreaMatrix.Features.Import;
 using AreaMatrix.Features.Library;
 using AreaMatrix.Features.Onboarding;
+using AreaMatrix.Features.Recovery;
 using Microsoft.UI.Xaml;
 using WinRT.Interop;
 using System.ComponentModel;
@@ -46,10 +47,15 @@ public sealed partial class MainWindow : Window
         WindowsMainWindowPage.OpenImportRequested += WindowsMainWindowPage_OpenImportRequested;
         WindowsMainWindowPage.OpenImportDroppedSourcesRequested += WindowsMainWindowPage_OpenImportDroppedSourcesRequested;
         WindowsMainWindowPage.OpenPlatformDifferencesRequested += WindowsMainWindowPage_OpenPlatformDifferencesRequested;
+        WindowsMainWindowPage.OpenMissingFileRecoveryRequested += WindowsMainWindowPage_OpenMissingFileRecoveryRequested;
         WindowsImportPage.ViewModel = new WindowsImportViewModel(
             new DesktopImportCoreBridge(coreClient, new WindowsImportFileProbe()));
         WindowsImportPage.ParentWindowHandle = WindowNative.GetWindowHandle(this);
         WindowsImportPage.CloseRequested += WindowsImportPage_CloseRequested;
+        MissingFileRecoveryPage.ViewModel = new MissingFileRecoveryViewModel(
+            new MissingFileRecoveryCoreBridge(coreClient));
+        MissingFileRecoveryPage.ParentWindowHandle = WindowNative.GetWindowHandle(this);
+        MissingFileRecoveryPage.CloseRequested += MissingFileRecoveryPage_CloseRequested;
         WatcherStatusPage.ViewModel = new WatcherStatusViewModel(
             new WatcherStatusCoreBridge(coreClient),
             watcherDiagnostics);
@@ -238,6 +244,12 @@ public sealed partial class MainWindow : Window
         await WindowsImportPage.OpenRepositoryWithSourcesAsync(route.RepoPath, sourcePaths);
     }
 
+    private async void WindowsMainWindowPage_OpenMissingFileRecoveryRequested(MissingFileRecoveryRoute route)
+    {
+        ShowMissingFileRecoveryPage();
+        await MissingFileRecoveryPage.OpenRouteAsync(route);
+    }
+
     private async void WindowsImportPage_CloseRequested(WindowsImportCloseRequest request)
     {
         WindowsImportPage.Visibility = Visibility.Collapsed;
@@ -252,6 +264,24 @@ public sealed partial class MainWindow : Window
         if (request.ImportedFileIds.FirstOrDefault() is > 0 and long selectedFileId)
         {
             await WindowsMainWindowPage.RefreshAndSelectFileAsync(selectedFileId);
+        }
+    }
+
+    private async void MissingFileRecoveryPage_CloseRequested(MissingFileRecoveryReport? report)
+    {
+        MissingFileRecoveryPage.Visibility = Visibility.Collapsed;
+        OneDriveNoticePage.Visibility = Visibility.Collapsed;
+        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
+        RepositoryAdoptConfirmPage.Visibility = Visibility.Collapsed;
+        WindowsImportPage.Visibility = Visibility.Collapsed;
+        WatcherStatusPage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        WindowsMainWindowPage.Visibility = Visibility.Visible;
+        if (report?.FileId is > 0 and long fileId)
+        {
+            await WindowsMainWindowPage.RefreshAndSelectFileAsync(fileId);
         }
     }
 
@@ -419,7 +449,9 @@ public sealed partial class MainWindow : Window
         WindowsMainWindowPage.OpenSyncConflictReviewRequested -= WindowsMainWindowPage_OpenSyncConflictReviewRequested;
         WindowsMainWindowPage.OpenImportDroppedSourcesRequested -= WindowsMainWindowPage_OpenImportDroppedSourcesRequested;
         WindowsMainWindowPage.OpenPlatformDifferencesRequested -= WindowsMainWindowPage_OpenPlatformDifferencesRequested;
+        WindowsMainWindowPage.OpenMissingFileRecoveryRequested -= WindowsMainWindowPage_OpenMissingFileRecoveryRequested;
         WindowsImportPage.CloseRequested -= WindowsImportPage_CloseRequested;
+        MissingFileRecoveryPage.CloseRequested -= MissingFileRecoveryPage_CloseRequested;
         WatcherStatusPage.CloseRequested -= WatcherStatusPage_CloseRequested;
         WatcherStatusPage.OpenRescanConfirmRequested -= WatcherStatusPage_OpenRescanConfirmRequested;
         PlatformDifferencesPage.CloseRequested -= PlatformDifferencesPage_CloseRequested;
@@ -438,7 +470,22 @@ public sealed partial class MainWindow : Window
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        MissingFileRecoveryPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Visible;
+    }
+
+    private void ShowMissingFileRecoveryPage()
+    {
+        OneDriveNoticePage.Visibility = Visibility.Collapsed;
+        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
+        RepositoryAdoptConfirmPage.Visibility = Visibility.Collapsed;
+        WindowsMainWindowPage.Visibility = Visibility.Collapsed;
+        WindowsImportPage.Visibility = Visibility.Collapsed;
+        WatcherStatusPage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        MissingFileRecoveryPage.Visibility = Visibility.Visible;
     }
 
     private void ShowPlatformDifferencesPage()
@@ -451,6 +498,7 @@ public sealed partial class MainWindow : Window
         WindowsImportPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
+        MissingFileRecoveryPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Visible;
     }
 }

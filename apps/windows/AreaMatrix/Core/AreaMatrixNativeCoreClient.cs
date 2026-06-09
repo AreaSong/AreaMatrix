@@ -9,6 +9,7 @@ using AreaMatrix.Features.Conflicts;
 using AreaMatrix.Features.Import;
 using AreaMatrix.Features.Library;
 using AreaMatrix.Features.Onboarding;
+using AreaMatrix.Features.Recovery;
 
 namespace AreaMatrix.Core;
 
@@ -17,6 +18,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
     IAreaMatrixBindingContractCoreClient,
     IAreaMatrixDesktopQueryCoreClient,
     IAreaMatrixDesktopImportCoreClient,
+    IAreaMatrixMissingFileRecoveryCoreClient,
     IAreaMatrixSyncConflictDetectCoreClient,
     IAreaMatrixWatcherStatusCoreClient,
     IDisposable

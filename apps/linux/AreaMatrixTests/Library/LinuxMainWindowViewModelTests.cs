@@ -18,6 +18,7 @@ public static class LinuxMainWindowViewModelTests
         await SearchUsesCoreSearchWithoutScanningRepository();
         await LoadMoreAdvancesSearchPaginationThroughCoreBridge();
         await SelectingFileUsesCoreDetailQuery();
+        await MissingFileSelectionExposesRecoveryRouteOnlyForMissingStatus();
         await RefreshKeepsCachedListOnDbError();
     }
 
@@ -237,6 +238,26 @@ public static class LinuxMainWindowViewModelTests
         TestAssert.Contains(selected.DisplayName, model.SelectedFileTitle, nameof(model.SelectedFileTitle));
     }
 
+    private static async Task MissingFileSelectionExposesRecoveryRouteOnlyForMissingStatus()
+    {
+        FakeDesktopMainQueryCoreBridge bridge = new(includeMissingFile: true);
+        LinuxMainWindowViewModel model = new(bridge);
+
+        await model.OpenRepositoryAsync(Route("/home/me/AreaMatrix"));
+        await model.SelectFileAsync(model.Files.First(file =>
+            file.AvailabilityStatus == DesktopFileAvailabilityStatus.Available));
+
+        TestAssert.False(model.CanOpenMissingFileRecovery, "available file recovery route");
+        TestAssert.Null(model.SelectedMissingFileRecoveryRoute, "available recovery route");
+
+        await model.SelectFileAsync(model.Files.First(file =>
+            file.AvailabilityStatus == DesktopFileAvailabilityStatus.Missing));
+
+        TestAssert.True(model.CanOpenMissingFileRecovery, nameof(model.CanOpenMissingFileRecovery));
+        TestAssert.Equal("/home/me/AreaMatrix", model.SelectedMissingFileRecoveryRoute?.RepoPath, "recovery repo path");
+        TestAssert.Equal(3, model.SelectedMissingFileRecoveryRoute?.FileId, "recovery file id");
+    }
+
     private static async Task RefreshKeepsCachedListOnDbError()
     {
         FakeDesktopMainQueryCoreBridge bridge = new();
@@ -267,11 +288,12 @@ internal sealed class FakeDesktopMainQueryCoreBridge : IDesktopMainQueryCoreBrid
 {
     private readonly IReadOnlyList<DesktopFileEntry> files;
 
-    public FakeDesktopMainQueryCoreBridge(int fileCount = 2)
+    public FakeDesktopMainQueryCoreBridge(int fileCount = 2, bool includeMissingFile = false)
     {
         files = Enumerable
             .Range(1, fileCount)
             .Select(index => FileEntry(index))
+            .Concat(includeMissingFile ? [MissingFileEntry(3)] : [])
             .ToArray();
     }
 
@@ -382,6 +404,24 @@ internal sealed class FakeDesktopMainQueryCoreBridge : IDesktopMainQueryCoreBrid
             DesktopFileOrigin.Imported,
             null,
             DesktopFileAvailabilityStatus.Available,
+            1_700_000_000,
+            1_700_000_100);
+    }
+
+    private static DesktopFileEntry MissingFileEntry(long id)
+    {
+        return new DesktopFileEntry(
+            id,
+            "Reports/missing-report.pdf",
+            "missing-report.pdf",
+            "missing-report.pdf",
+            "Reports",
+            4096,
+            $"missing-hash-{id}",
+            DesktopStorageMode.Indexed,
+            DesktopFileOrigin.External,
+            null,
+            DesktopFileAvailabilityStatus.Missing,
             1_700_000_000,
             1_700_000_100);
     }

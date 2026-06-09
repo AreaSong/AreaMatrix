@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AreaMatrix.Features.Conflicts;
 using AreaMatrix.Features.Onboarding;
+using AreaMatrix.Features.Recovery;
 
 namespace AreaMatrix.Features.Library;
 
@@ -87,6 +88,7 @@ public sealed partial class WindowsMainWindowViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(CanRunQuery));
                 OnPropertyChanged(nameof(CanOpenOneDriveStatus));
                 OnPropertyChanged(nameof(CanOpenWatcherStatus));
+                OnPropertyChanged(nameof(CanOpenMissingFileRecovery));
                 OnPropertyChanged(nameof(StatusText));
             }
         }
@@ -102,6 +104,7 @@ public sealed partial class WindowsMainWindowViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(CanRunQuery));
                 OnPropertyChanged(nameof(CanOpenOneDriveStatus));
                 OnPropertyChanged(nameof(CanOpenWatcherStatus));
+                OnPropertyChanged(nameof(CanOpenMissingFileRecovery));
                 OnPropertyChanged(nameof(StatusText));
             }
         }
@@ -133,6 +136,8 @@ public sealed partial class WindowsMainWindowViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(SelectedFilePath));
                 OnPropertyChanged(nameof(SelectedFileStatus));
                 OnPropertyChanged(nameof(SelectedFileSyncConflict));
+                OnPropertyChanged(nameof(SelectedMissingFileRecoveryRoute));
+                OnPropertyChanged(nameof(CanOpenMissingFileRecovery));
             }
         }
     }
@@ -182,6 +187,10 @@ public sealed partial class WindowsMainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool CanOpenMissingFileRecovery => SelectedMissingFileRecoveryRoute is not null
+        && !IsLoading
+        && !IsRefreshing;
+
     public WindowsRepositoryRoute? OneDriveStatusRoute
     {
         get
@@ -218,6 +227,20 @@ public sealed partial class WindowsMainWindowViewModel : INotifyPropertyChanged
             }
 
             return currentRoute with { Kind = WindowsRepositoryRouteKind.ImportFlow };
+        }
+    }
+
+    public MissingFileRecoveryRoute? SelectedMissingFileRecoveryRoute
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(RepoPath)
+                || SelectedFile is not { AvailabilityStatus: DesktopFileAvailabilityStatus.Missing } file)
+            {
+                return null;
+            }
+
+            return new MissingFileRecoveryRoute(RepoPath, file.Id);
         }
     }
 
@@ -265,6 +288,8 @@ public sealed partial class WindowsMainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(CanOpenWatcherStatus));
         OnPropertyChanged(nameof(WatcherStatusRoute));
         OnPropertyChanged(nameof(ImportRoute));
+        OnPropertyChanged(nameof(SelectedMissingFileRecoveryRoute));
+        OnPropertyChanged(nameof(CanOpenMissingFileRecovery));
         await LoadSnapshotAsync(isInitialLoad: true, cancellationToken);
         if (SyncConflictEntry is not null)
         {

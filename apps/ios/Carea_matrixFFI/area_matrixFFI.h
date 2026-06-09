@@ -90,6 +90,24 @@ RustBuffer uniffi_area_matrix_core_fn_func_get_file(
     RustCallStatus *_Nonnull out_status
 );
 
+RustBuffer uniffi_area_matrix_core_fn_func_get_missing_file_state(
+    RustBuffer repo_path,
+    int64_t file_id,
+    RustCallStatus *_Nonnull out_status
+);
+
+RustBuffer uniffi_area_matrix_core_fn_func_relink_missing_file(
+    RustBuffer repo_path,
+    RustBuffer request,
+    RustCallStatus *_Nonnull out_status
+);
+
+RustBuffer uniffi_area_matrix_core_fn_func_remove_missing_file_record(
+    RustBuffer repo_path,
+    RustBuffer request,
+    RustCallStatus *_Nonnull out_status
+);
+
 RustBuffer uniffi_area_matrix_core_fn_func_list_changes(
     RustBuffer repo_path,
     RustBuffer filter,
@@ -136,6 +154,9 @@ uint16_t uniffi_area_matrix_core_checksum_func_import_file(void);
 uint16_t uniffi_area_matrix_core_checksum_func_preview_batch_delete(void);
 uint16_t uniffi_area_matrix_core_checksum_func_batch_delete_to_trash(void);
 uint16_t uniffi_area_matrix_core_checksum_func_get_file(void);
+uint16_t uniffi_area_matrix_core_checksum_func_get_missing_file_state(void);
+uint16_t uniffi_area_matrix_core_checksum_func_relink_missing_file(void);
+uint16_t uniffi_area_matrix_core_checksum_func_remove_missing_file_record(void);
 uint16_t uniffi_area_matrix_core_checksum_func_list_changes(void);
 uint16_t uniffi_area_matrix_core_checksum_func_read_note(void);
 uint16_t uniffi_area_matrix_core_checksum_func_inspect_binding_contract(void);

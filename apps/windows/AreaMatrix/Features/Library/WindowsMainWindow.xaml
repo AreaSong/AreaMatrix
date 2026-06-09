@@ -255,6 +255,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <TextBlock
@@ -290,7 +291,29 @@
                             Click="DetailSyncConflictReviewButton_Click" />
                     </StackPanel>
                 </Border>
-                <TabView Grid.Row="4">
+                <Border
+                    x:Name="DetailMissingFileRecoveryBanner"
+                    Grid.Row="4"
+                    BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="12"
+                    Visibility="Collapsed">
+                    <StackPanel Spacing="8">
+                        <TextBlock
+                            Text="This file is missing"
+                            FontWeight="SemiBold"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Text="Locate the file, try the path check again, or remove only the AreaMatrix record."
+                            TextWrapping="Wrap" />
+                        <Button
+                            x:Name="DetailMissingFileRecoveryButton"
+                            Content="Recover"
+                            Click="DetailMissingFileRecoveryButton_Click" />
+                    </StackPanel>
+                </Border>
+                <TabView Grid.Row="5">
                     <TabViewItem Header="Meta">
                         <StackPanel Padding="0,12" Spacing="6">
                             <TextBlock x:Name="DetailCategoryTextBlock" />

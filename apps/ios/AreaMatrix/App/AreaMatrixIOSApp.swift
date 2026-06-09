@@ -2,6 +2,7 @@ import SwiftUI
 
 public struct ConnectRepositoryEntryView: View {
     @StateObject private var model = ConnectRepositoryModel(bridge: LiveMobileRepositoryCoreBridge())
+    @State private var pendingMissingFileRecoveryRoute: MissingFileRecoveryRoute?
     @State private var pendingSyncConflictReviewRoute: SyncConflictEntryReviewRoute?
 
     public init() {}
@@ -13,8 +14,21 @@ public struct ConnectRepositoryEntryView: View {
                     MobileLibraryView(
                         connection: connection,
                         bridge: LiveMobileRepositoryCoreBridge(),
+                        onOpenMissingRecovery: { fileID in
+                            openMissingFileRecovery(repoPath: connection.validation.repoPath, fileID: fileID)
+                        },
                         onOpenSyncConflictReview: openSyncConflictReview
                     )
+                    .sheet(item: $pendingMissingFileRecoveryRoute) { route in
+                        MissingFileRecoveryView(
+                            model: MissingFileRecoveryViewModel(
+                                repoPath: route.repoPath,
+                                fileID: route.fileID,
+                                bridge: LiveMobileRepositoryCoreBridge()
+                            ),
+                            onDecideLater: dismissMissingFileRecovery
+                        )
+                    }
                     .navigationDestination(item: $pendingSyncConflictReviewRoute) { route in
                         SyncConflictReviewRouteView(route: route)
                     }
@@ -26,6 +40,14 @@ public struct ConnectRepositoryEntryView: View {
         .onOpenURL { url in
             Task { await model.handleOpenURL(url) }
         }
+    }
+
+    private func openMissingFileRecovery(repoPath: String, fileID: Int64) {
+        pendingMissingFileRecoveryRoute = MissingFileRecoveryRoute(repoPath: repoPath, fileID: fileID)
+    }
+
+    private func dismissMissingFileRecovery() {
+        pendingMissingFileRecoveryRoute = nil
     }
 
     private func openSyncConflictReview(_ route: SyncConflictEntryReviewRoute) {

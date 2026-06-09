@@ -2,6 +2,7 @@ using AreaMatrix.Linux.Tests.ChooseRepository;
 using AreaMatrix.Linux.Tests.Help;
 using AreaMatrix.Linux.Tests.Import;
 using AreaMatrix.Linux.Tests.Library;
+using AreaMatrix.Linux.Tests.Recovery;
 using AreaMatrix.Linux.Tests.System;
 
 await LinuxChooseRepositoryViewModelTests.RunAllAsync();
@@ -19,6 +20,7 @@ await LinuxSyncConflictEntryPageFeatureTests.RunAllAsync();
 await LinuxImportViewModelTests.RunAllAsync();
 await LinuxImportReplaceViewModelTests.RunAllAsync();
 LinuxImportSmokeTests.RunAll();
+await MissingFileRecoveryViewModelTests.RunAllAsync();
 await LinuxWatcherStatusViewModelTests.RunAllAsync();
 LinuxWatcherStatusSmokeTests.RunAll();
 await PlatformDifferencesTests.RunAllAsync();

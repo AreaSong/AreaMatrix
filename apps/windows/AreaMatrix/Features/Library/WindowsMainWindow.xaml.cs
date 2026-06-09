@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AreaMatrix.Features.Conflicts;
 using AreaMatrix.Features.Onboarding;
+using AreaMatrix.Features.Recovery;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -35,6 +36,8 @@ public sealed partial class WindowsMainWindow : UserControl
     public event Action? OpenPlatformDifferencesRequested;
 
     public event Action<SyncConflictEntryReviewRoute>? OpenSyncConflictReviewRequested;
+
+    public event Action<MissingFileRecoveryRoute>? OpenMissingFileRecoveryRequested;
 
     public WindowsMainWindowViewModel? ViewModel
     {
@@ -250,6 +253,14 @@ public sealed partial class WindowsMainWindow : UserControl
         OpenSyncConflictReview(ViewModel?.SelectedFileSyncConflict);
     }
 
+    private void DetailMissingFileRecoveryButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel?.SelectedMissingFileRecoveryRoute is { } route)
+        {
+            OpenMissingFileRecoveryRequested?.Invoke(route);
+        }
+    }
+
     private async Task RunSearchAsync()
     {
         if (ViewModel is null)
@@ -360,6 +371,7 @@ public sealed partial class WindowsMainWindow : UserControl
         DetailSizeTextBlock.Text = file is null ? "Size: -" : $"Size: {file.SizeText}";
         DetailUpdatedTextBlock.Text = file is null ? "Updated: -" : $"Updated: {file.UpdatedAtText}";
         RefreshDetailSyncConflict();
+        RefreshDetailMissingFileRecovery();
     }
 
     private void RefreshSyncConflictEntry()
@@ -400,6 +412,13 @@ public sealed partial class WindowsMainWindow : UserControl
         DetailSyncConflictBanner.Visibility = VisibilityFor(conflict is not null);
         DetailSyncConflictSummaryTextBlock.Text = conflict?.SummaryText ?? string.Empty;
         DetailSyncConflictReviewButton.IsEnabled = ViewModel?.SyncConflictEntry?.ReviewRouteFor(conflict) is not null;
+    }
+
+    private void RefreshDetailMissingFileRecovery()
+    {
+        bool canRecover = ViewModel?.CanOpenMissingFileRecovery == true;
+        DetailMissingFileRecoveryBanner.Visibility = VisibilityFor(canRecover);
+        DetailMissingFileRecoveryButton.IsEnabled = canRecover;
     }
 
     private void OpenSyncConflictReview(SyncConflictEntryConflict? conflict)

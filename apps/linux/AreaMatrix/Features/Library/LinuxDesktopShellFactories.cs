@@ -2,6 +2,7 @@ using AreaMatrix.Linux.Features.Conflicts;
 using AreaMatrix.Linux.Features.Help;
 using AreaMatrix.Linux.Features.Import;
 using AreaMatrix.Linux.Features.Onboarding;
+using AreaMatrix.Linux.Features.Recovery;
 using AreaMatrix.Linux.Features.System;
 
 namespace AreaMatrix.Linux.Features.Library;
@@ -86,6 +87,25 @@ public sealed class LinuxImportDialogFactory : ILinuxImportDialogFactory
     {
         LinuxImportFileProbe fileProbe = new();
         return new LinuxImportDialog(new LinuxImportViewModel(coreBridge), fileProbe);
+    }
+}
+
+public sealed class LinuxMissingFileRecoveryViewFactory : ILinuxMissingFileRecoveryViewFactory
+{
+    private readonly IMissingFileRecoveryCoreBridge coreBridge;
+    private readonly IMissingFileRecoveryFilePicker filePicker;
+
+    public LinuxMissingFileRecoveryViewFactory(
+        IMissingFileRecoveryCoreBridge coreBridge,
+        IMissingFileRecoveryFilePicker? filePicker = null)
+    {
+        this.coreBridge = coreBridge;
+        this.filePicker = filePicker ?? new LinuxMissingFileRecoveryFilePicker();
+    }
+
+    public MissingFileRecoveryView Create(MissingFileRecoveryRoute route)
+    {
+        return new MissingFileRecoveryView(new MissingFileRecoveryViewModel(coreBridge), filePicker);
     }
 }
 

@@ -5,6 +5,7 @@ using AreaMatrix.Linux.Features.Import;
 using AreaMatrix.Linux.Features.Library;
 using AreaMatrix.Linux.Features.Onboarding;
 using AreaMatrix.Linux.Features.Conflicts;
+using AreaMatrix.Linux.Features.Recovery;
 using AreaMatrix.Linux.Features.System;
 
 namespace AreaMatrix.Linux.Core;
@@ -14,6 +15,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
     IAreaMatrixBindingContractCoreClient,
     IAreaMatrixLinuxDesktopQueryCoreClient,
     IAreaMatrixLinuxDesktopImportCoreClient,
+    IAreaMatrixLinuxMissingFileRecoveryCoreClient,
     IAreaMatrixLinuxSyncConflictDetectCoreClient,
     IAreaMatrixLinuxWatcherStatusCoreClient,
     IDisposable
@@ -27,6 +29,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
     private const ushort ApplyImportConflictBatchChecksum = 14573;
     private const ushort GetPlatformCapabilitiesChecksum = 42907;
     private const ushort GetFileChecksum = 6132;
+    private const ushort GetMissingFileStateChecksum = 9097;
     private const ushort ListFilesChecksum = 56809;
     private const ushort ListTreeJsonChecksum = 45468;
     private const ushort DetectSyncConflictsChecksum = 31524;
@@ -34,6 +37,8 @@ public sealed partial class AreaMatrixNativeCoreClient :
     private const ushort RecordWatcherHealthChecksum = 47455;
     private const ushort PreviewManualRescanChecksum = 12140;
     private const ushort ReindexFromFilesystemChecksum = 54635;
+    private const ushort RelinkMissingFileChecksum = 39194;
+    private const ushort RemoveMissingFileRecordChecksum = 46697;
     private const ushort GetLatestScanSessionChecksum = 31155;
     private const ushort ResumeScanSessionChecksum = 31216;
 
@@ -102,6 +107,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
             || native.ApplyImportConflictBatchChecksum() != ApplyImportConflictBatchChecksum
             || native.GetPlatformCapabilitiesChecksum() != GetPlatformCapabilitiesChecksum
             || native.GetFileChecksum() != GetFileChecksum
+            || native.GetMissingFileStateChecksum() != GetMissingFileStateChecksum
             || native.ListFilesChecksum() != ListFilesChecksum
             || native.ListTreeJsonChecksum() != ListTreeJsonChecksum
             || native.DetectSyncConflictsChecksum() != DetectSyncConflictsChecksum
@@ -109,6 +115,8 @@ public sealed partial class AreaMatrixNativeCoreClient :
             || native.RecordWatcherHealthChecksum() != RecordWatcherHealthChecksum
             || native.PreviewManualRescanChecksum() != PreviewManualRescanChecksum
             || native.ReindexFromFilesystemChecksum() != ReindexFromFilesystemChecksum
+            || native.RelinkMissingFileChecksum() != RelinkMissingFileChecksum
+            || native.RemoveMissingFileRecordChecksum() != RemoveMissingFileRecordChecksum
             || native.GetLatestScanSessionChecksum() != GetLatestScanSessionChecksum
             || native.ResumeScanSessionChecksum() != ResumeScanSessionChecksum)
         {

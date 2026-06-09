@@ -1,0 +1,45 @@
+一、执行结论
+
+- 已完成：已修复上次验收指出的 iOS picker / security-scoped URL 缺口，以及 Linux native 用户可见 picker / Locate action 证据缺口。
+
+二、执行范围
+
+- 单任务：`4-3/task-157`
+- 本轮 repair 修改文件：
+  - [MissingFileRecoveryView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Recovery/MissingFileRecoveryView.swift)
+  - [MissingFileRecoveryFileAccess.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Recovery/MissingFileRecoveryFileAccess.swift)
+  - [MissingFileRecoveryPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrixTests/MissingFileRecoveryPageFeatureTests.swift)
+  - [MissingFileRecoveryView.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Recovery/MissingFileRecoveryView.cs)
+  - [MissingFileRecoveryFilePicker.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Recovery/MissingFileRecoveryFilePicker.cs)
+  - [MissingFileRecoveryViewModel.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Recovery/MissingFileRecoveryViewModel.cs)
+  - [MissingFileRecoveryView.ui](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Recovery/MissingFileRecoveryView.ui)
+  - [LinuxDesktopShellFactories.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Library/LinuxDesktopShellFactories.cs)
+  - [MissingFileRecoveryViewModelTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/Recovery/MissingFileRecoveryViewModelTests.cs)
+
+三、完成情况
+
+- 核对清单：通过。只处理 `S4-X-06 + C4-18`，未接入 rescan / reindex / replace / sync conflict resolve。
+- 完成标准：通过。iOS `Locate File` 现在使用平台 `fileImporter`，relink 前进入 security-scoped access；Linux 现在有真实 GTK dialog 资源、`LocateFileButton` / action-name、`zenity` / `kdialog` 系统 file picker adapter。
+- Forbidden Touches：未触碰。`git diff --name-only -- core/src` 和 cached 同类检查无输出。
+
+四、工程质量
+
+- 结构清晰：iOS 将 picker 授权封装为 `MissingFileRecoveryFileAccessing`；Linux 将系统 picker 封装为 `IMissingFileRecoveryFilePicker`，与已有 import picker 模式一致。
+- 错误与边界：用户取消 picker 不调用 Core；权限失败映射为可见错误；hash mismatch 继续保留页面错误；remove record 仍需二次确认且不删除用户文件。
+- 未新增依赖；未改 docs / Core API / UDL；未引入生产 mock、fixture、硬编码通过态或一次性脚本逻辑。
+
+五、验证情况
+
+- 通过：`./dev check task 4-3/task-157`
+- 通过：`git diff --check`
+- 通过：`dotnet build apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj`，0 warning / 0 error
+- 通过：`dotnet build apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj`，0 warning / 0 error
+- 通过：`xcrun --sdk macosx swiftc -typecheck ... @/private/tmp/areamatrix-task157-ios-sources.txt`
+- 无法完成：`swift test --package-path apps/ios` 仍被 SwiftPM / clang module cache / `sandbox-exec` 权限阻断。
+- 补充失败但非本 task 归因：`dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj` 仍阻断在既有 `PlatformDifferencesTests` 的 `File watcher - Available` 断言；recovery 测试在该失败前已执行。
+
+六、风险与后续
+
+- 剩余风险：iOS SwiftPM 测试仍受本机 sandbox 权限影响，未形成 XCTest 运行证据；但 Swift typecheck 与 manifest validation 已通过。
+- 回滚思路：撤回本轮列出的 `apps/**` 文件改动即可恢复 retry 前状态，不涉及用户文件、DB、Core `src` 或迁移。
+- 建议下一个任务：重新进入 `4-3/task-157` verify-ready 验收。

@@ -25,6 +25,7 @@
     <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.DesktopMainQuery.cs" Link="Core/AreaMatrixNativeCoreClient.DesktopMainQuery.cs" />
     <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.DesktopImport.cs" Link="Core/AreaMatrixNativeCoreClient.DesktopImport.cs" />
     <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.ImportConflictBatch.cs" Link="Core/AreaMatrixNativeCoreClient.ImportConflictBatch.cs" />
+    <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.MissingFileRecovery.cs" Link="Core/AreaMatrixNativeCoreClient.MissingFileRecovery.cs" />
     <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.SyncConflictDetect.cs" Link="Core/AreaMatrixNativeCoreClient.SyncConflictDetect.cs" />
     <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.WatcherStatus.cs" Link="Core/AreaMatrixNativeCoreClient.WatcherStatus.cs" />
     <Compile Include="../AreaMatrix/Core/UniFfiReader.cs" Link="Core/UniFfiReader.cs" />
@@ -76,6 +77,15 @@
     <Compile Include="../AreaMatrix/Features/Library/WatcherStatusViewModel.cs" Link="Features/Library/WatcherStatusViewModel.cs" />
     <Compile Include="../AreaMatrix/Features/Library/WindowsMainWindowViewModel.cs" Link="Features/Library/WindowsMainWindowViewModel.cs" />
     <Compile Include="../AreaMatrix/Features/Library/WindowsWatcherDiagnostics.cs" Link="Features/Library/WindowsWatcherDiagnostics.cs" />
+    <Compile
+      Include="../AreaMatrix/Features/Recovery/MissingFileRecoveryCoreBridge.cs"
+      Link="Features/Recovery/MissingFileRecoveryCoreBridge.cs" />
+    <Compile
+      Include="../AreaMatrix/Features/Recovery/MissingFileRecoveryModels.cs"
+      Link="Features/Recovery/MissingFileRecoveryModels.cs" />
+    <Compile
+      Include="../AreaMatrix/Features/Recovery/MissingFileRecoveryViewModel.cs"
+      Link="Features/Recovery/MissingFileRecoveryViewModel.cs" />
     <Compile Include="../AreaMatrix/Features/Onboarding/WindowsCloudStorageState.cs" Link="Features/Onboarding/WindowsCloudStorageState.cs" />
     <Compile Include="../AreaMatrix/Features/Onboarding/WindowsRecentRepository.cs" Link="Features/Onboarding/WindowsRecentRepository.cs" />
     <Compile Include="../AreaMatrix/Features/Onboarding/WindowsRepositoryCoreBridge.cs" Link="Features/Onboarding/WindowsRepositoryCoreBridge.cs" />

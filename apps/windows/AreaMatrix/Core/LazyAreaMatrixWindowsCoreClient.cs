@@ -5,6 +5,7 @@ using AreaMatrix.Features.Conflicts;
 using AreaMatrix.Features.Import;
 using AreaMatrix.Features.Library;
 using AreaMatrix.Features.Onboarding;
+using AreaMatrix.Features.Recovery;
 using AreaMatrix.Features.Help;
 
 namespace AreaMatrix.Core;
@@ -14,6 +15,7 @@ internal sealed class LazyAreaMatrixWindowsCoreClient :
     IAreaMatrixBindingContractCoreClient,
     IAreaMatrixDesktopQueryCoreClient,
     IAreaMatrixDesktopImportCoreClient,
+    IAreaMatrixMissingFileRecoveryCoreClient,
     IAreaMatrixSyncConflictDetectCoreClient,
     IAreaMatrixWatcherStatusCoreClient,
     IDisposable
@@ -147,6 +149,30 @@ internal sealed class LazyAreaMatrixWindowsCoreClient :
         CancellationToken cancellationToken = default)
     {
         return Current.ApplyImportConflictBatchAsync(repoPath, request, previewToken, cancellationToken);
+    }
+
+    public Task<CoreMissingFileState> GetMissingFileStateAsync(
+        string repoPath,
+        long fileId,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.GetMissingFileStateAsync(repoPath, fileId, cancellationToken);
+    }
+
+    public Task<CoreMissingFileRecoveryReport> RelinkMissingFileAsync(
+        string repoPath,
+        CoreMissingFileRelinkRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.RelinkMissingFileAsync(repoPath, request, cancellationToken);
+    }
+
+    public Task<CoreMissingFileRecoveryReport> RemoveMissingFileRecordAsync(
+        string repoPath,
+        CoreMissingFileRemoveRecordRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.RemoveMissingFileRecordAsync(repoPath, request, cancellationToken);
     }
 
     public Task<CoreWatcherStatusSnapshot> RecordWatcherHealthAsync(

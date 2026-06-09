@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using AreaMatrix.Linux.Features.Conflicts;
 using AreaMatrix.Linux.Features.Onboarding;
+using AreaMatrix.Linux.Features.Recovery;
 
 namespace AreaMatrix.Linux.Features.Library;
 
@@ -135,6 +136,8 @@ public sealed partial class LinuxMainWindowViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(SelectedFilePath));
                 OnPropertyChanged(nameof(SelectedFileStatus));
                 OnPropertyChanged(nameof(SelectedFileSyncConflict));
+                OnPropertyChanged(nameof(SelectedMissingFileRecoveryRoute));
+                OnPropertyChanged(nameof(CanOpenMissingFileRecovery));
             }
         }
     }
@@ -164,6 +167,11 @@ public sealed partial class LinuxMainWindowViewModel : INotifyPropertyChanged
 
     public bool CanLoadMore => CanRunQuery && Snapshot.HasMore;
 
+    public bool CanOpenMissingFileRecovery => SelectedMissingFileRecoveryRoute is not null
+        && !IsLoading
+        && !IsRefreshing
+        && !IsLoadingMore;
+
     public string PaginationText => Snapshot.PageText;
 
     public string SelectedFileTitle => SelectedFile?.DisplayName ?? "No file selected";
@@ -182,6 +190,20 @@ public sealed partial class LinuxMainWindowViewModel : INotifyPropertyChanged
 
     public SyncConflictEntryConflict? SelectedFileSyncConflict =>
         SyncConflictEntry?.DetailConflictFor(SelectedFile);
+
+    public MissingFileRecoveryRoute? SelectedMissingFileRecoveryRoute
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(RepoPath)
+                || SelectedFile is not { AvailabilityStatus: DesktopFileAvailabilityStatus.Missing } file)
+            {
+                return null;
+            }
+
+            return new MissingFileRecoveryRoute(RepoPath, file.Id);
+        }
+    }
 
     public string DbStatusText => Error?.Kind == LinuxRepositoryErrorKind.Db
         ? "DB: needs attention"
