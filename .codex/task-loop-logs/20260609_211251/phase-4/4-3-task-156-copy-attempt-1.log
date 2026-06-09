@@ -1,0 +1,36 @@
+一、执行结论
+
+- 已完成。未做代码修改；现有实现已满足 `4-3/task-156` 的整页集成验收要求，并且 targeted validation 通过。
+
+二、执行范围
+
+- 单任务：`4-3/task-156`
+- 修改文件清单：无 `apps/**` / Core API / UDL / manifest 代码改动。
+- 注意：工作树中已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 的 task-loop 状态记录差异；我只读核对，没有回滚或改写。
+
+三、完成情况
+
+- `4-3/task-153 / C4-02`：iOS `RepositoryAdoptConfirmView`、`ConnectRepositoryModel+RepositoryConfirmation` 已接 `validateRepoPath`、`adoptExistingRepository`、成功后 `loadConfig` 进入 mobile library。
+- `4-3/task-154 / C4-09`：Windows `RepositoryAdoptConfirmViewModel` 已接 `ValidateRepoPathAsync`、`AdoptExistingRepositoryAsync`、成功后 `LoadConfigAsync` 进入 MainWindow。
+- `4-3/task-155 / C4-10`：Linux `RepositoryAdoptConfirmViewModel` 已接 `ValidateRepoPathAsync`、`AdoptExistingRepositoryAsync`，成功后进入 MainWindow；没有 sudo/chmod 建议。
+- 页面入口、取消、选择其他目录、错误态、重试、确认项禁用、准备态均有现有实现或测试覆盖。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+- 代码结构保持现状，无一次性脚本、mock-only wiring 或硬编码通过态新增。
+- 未新增 public Rust API，无 rustdoc 同步需求。
+- 高风险边界保持在平台 UI + CoreBridge：页面承诺不移动、不删除、不重命名、不覆盖用户文件；真正写入只经 Core `init_repo` adopt 模式触发。
+- 回滚思路：本次无产品代码 diff；若后续补改只需回滚对应 `apps/**` diff 并复跑 task validation。
+
+五、验证情况
+
+- 已运行：`./dev check task 4-3/task-156`
+- 结果：通过，退出码 0。
+- 覆盖到：prompt doctor OK、`git diff --check`、macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`，最终 `BUILD SUCCEEDED`。
+- 未升级运行全量门禁，符合本 task 的 validation 上限要求。
+
+六、风险与后续
+
+- 剩余风险：本轮按 task 指定验证收口，没有额外做三端真实 UI 手工操作或全量 Windows/Linux/iOS 测试。
+- 建议下一个任务：进入 `4-3/task-156` 的 verify-ready 只读验收，确认 task + manifest + 实际文件三者证据闭环。
