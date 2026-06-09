@@ -61,6 +61,17 @@ public sealed partial class PlatformDifferencesView : UserControl
         RefreshState();
     }
 
+    private async void CheckCapabilitiesButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        await ViewModel.LoadCapabilitiesAsync();
+        RefreshState();
+    }
+
     private async void BindingTargetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (ViewModel is null || BindingTargetComboBox.SelectedItem is not PlatformDifferencesBindingTarget target)
@@ -101,12 +112,33 @@ public sealed partial class PlatformDifferencesView : UserControl
 
         IsEnabled = true;
         PlatformSummaryTextBlock.Text = $"Platform: {ViewModel.HostPlatform}. {ViewModel.RepositoryText}";
+        CheckCapabilitiesButton.IsEnabled = !ViewModel.IsCheckingCapabilities;
+        CapabilitiesProgressRing.Visibility = ViewModel.IsCheckingCapabilities ? Visibility.Visible : Visibility.Collapsed;
+        CapabilitiesProgressRing.IsActive = ViewModel.IsCheckingCapabilities;
         CheckContractButton.Content = ViewModel.ActionTitle;
         CheckContractButton.IsEnabled = !ViewModel.IsChecking;
         ContractProgressRing.Visibility = ViewModel.IsChecking ? Visibility.Visible : Visibility.Collapsed;
         ContractProgressRing.IsActive = ViewModel.IsChecking;
+        RefreshCapabilitiesStatus();
         RefreshContractStatus();
         RefreshContractRows();
+    }
+
+    private void RefreshCapabilitiesStatus()
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        CapabilitiesSummaryTextBlock.Text = ViewModel.CapabilitySummaryText;
+        CapabilityRowsItemsControl.ItemsSource = ViewModel.CapabilityRows;
+        CapabilitiesStatusInfoBar.Message = ViewModel.CapabilityErrorMessage is not null
+            ? ViewModel.CapabilityRecoveryText ?? "Retry the platform capability check."
+            : "Platform capability snapshot is available.";
+        CapabilitiesStatusInfoBar.Severity = ViewModel.CapabilityErrorMessage is not null
+            ? InfoBarSeverity.Warning
+            : InfoBarSeverity.Informational;
     }
 
     private void RefreshContractStatus()

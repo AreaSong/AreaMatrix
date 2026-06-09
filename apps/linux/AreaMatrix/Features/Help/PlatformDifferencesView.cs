@@ -16,6 +16,11 @@ public sealed class PlatformDifferencesView
         return ViewModel.LoadAsync(cancellationToken);
     }
 
+    public Task CheckCapabilitiesAsync(CancellationToken cancellationToken = default)
+    {
+        return ViewModel.LoadCapabilitiesAsync(cancellationToken);
+    }
+
     public async Task SelectTargetAndCheckAsync(
         PlatformDifferencesBindingTarget targetPlatform,
         CancellationToken cancellationToken = default)

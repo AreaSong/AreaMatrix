@@ -1,3 +1,5 @@
+using AreaMatrix.Linux.Features.Onboarding;
+
 namespace AreaMatrix.Linux.Features.Help;
 
 public interface IPlatformDifferencesCoreBridge
@@ -6,6 +8,11 @@ public interface IPlatformDifferencesCoreBridge
         PlatformDifferencesBindingTarget targetPlatform,
         long bindingVersion,
         CancellationToken cancellationToken = default);
+
+    Task<LinuxPlatformCapabilities> GetPlatformCapabilitiesAsync(
+        LinuxPlatformId platform,
+        string appVersion,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IAreaMatrixBindingContractCoreClient
@@ -13,6 +20,11 @@ public interface IAreaMatrixBindingContractCoreClient
     Task<CoreBindingContractReport> InspectBindingContractAsync(
         string targetPlatform,
         long bindingVersion,
+        CancellationToken cancellationToken = default);
+
+    Task<CorePlatformCapabilities> GetPlatformCapabilitiesAsync(
+        string platform,
+        string appVersion,
         CancellationToken cancellationToken = default);
 }
 
@@ -35,6 +47,18 @@ public sealed class PlatformDifferencesCoreBridge : IPlatformDifferencesCoreBrid
             .ConfigureAwait(false);
 
         return report.ToPlatformDifferencesReport();
+    }
+
+    public async Task<LinuxPlatformCapabilities> GetPlatformCapabilitiesAsync(
+        LinuxPlatformId platform,
+        string appVersion,
+        CancellationToken cancellationToken = default)
+    {
+        CorePlatformCapabilities capabilities = await coreClient
+            .GetPlatformCapabilitiesAsync(platform.ToCorePlatformId(), appVersion, cancellationToken)
+            .ConfigureAwait(false);
+
+        return capabilities.ToLinuxCapabilities();
     }
 }
 

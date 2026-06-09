@@ -18,6 +18,8 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_fn_func_detect_cloud_storage_state");
         InspectBindingContract = LoadFunction<InspectBindingContractDelegate>(
             "uniffi_area_matrix_core_fn_func_inspect_binding_contract");
+        GetPlatformCapabilities = LoadFunction<GetPlatformCapabilitiesDelegate>(
+            "uniffi_area_matrix_core_fn_func_get_platform_capabilities");
         AcknowledgeOneDriveRiskNotice = LoadFunction<AcknowledgeOneDriveRiskNoticeDelegate>(
             "uniffi_area_matrix_core_fn_func_acknowledge_onedrive_risk_notice");
         InitRepo = LoadFunction<InitRepoDelegate>("uniffi_area_matrix_core_fn_func_init_repo");
@@ -53,6 +55,8 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_checksum_func_detect_cloud_storage_state");
         InspectBindingContractChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_inspect_binding_contract");
+        GetPlatformCapabilitiesChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_get_platform_capabilities");
         AcknowledgeOneDriveRiskNoticeChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_acknowledge_onedrive_risk_notice");
         InitRepoChecksum = LoadFunction<ChecksumDelegate>(
@@ -92,6 +96,8 @@ internal sealed class NativeCoreLibrary : IDisposable
     public DetectCloudStorageStateDelegate DetectCloudStorageState { get; }
 
     public InspectBindingContractDelegate InspectBindingContract { get; }
+
+    public GetPlatformCapabilitiesDelegate GetPlatformCapabilities { get; }
 
     public AcknowledgeOneDriveRiskNoticeDelegate AcknowledgeOneDriveRiskNotice { get; }
 
@@ -134,6 +140,8 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ChecksumDelegate DetectCloudStorageStateChecksum { get; }
 
     public ChecksumDelegate InspectBindingContractChecksum { get; }
+
+    public ChecksumDelegate GetPlatformCapabilitiesChecksum { get; }
 
     public ChecksumDelegate AcknowledgeOneDriveRiskNoticeChecksum { get; }
 

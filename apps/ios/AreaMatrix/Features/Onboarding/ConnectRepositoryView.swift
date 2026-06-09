@@ -416,6 +416,15 @@ struct ConnectRepositoryHelpView: View {
         NavigationStack {
             List {
                 Section {
+                    NavigationLink {
+                        PlatformDifferencesView()
+                    } label: {
+                        Label("Platform capabilities", systemImage: "list.bullet.rectangle")
+                    }
+                    .accessibilityLabel("Platform capabilities")
+                }
+
+                Section {
                     ForEach(content.rows, id: \.self) { row in
                         Text(row)
                             .foregroundStyle(.secondary)

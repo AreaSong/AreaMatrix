@@ -8,6 +8,7 @@ public sealed partial class AreaMatrixNativeCoreClient
     private const ushort ApplyImportConflictBatchChecksum = 14573;
     private const ushort DetectCloudStorageStateChecksum = 18169;
     private const ushort GetFileChecksum = 6132;
+    private const ushort GetPlatformCapabilitiesChecksum = 42907;
     private const ushort InitRepoChecksum = 29414;
     private const ushort InspectBindingContractChecksum = 34434;
     private const ushort ImportFileWithResultChecksum = 52959;
@@ -31,6 +32,7 @@ public sealed partial class AreaMatrixNativeCoreClient
             || native.ApplyImportConflictBatchChecksum() != ApplyImportConflictBatchChecksum
             || native.DetectCloudStorageStateChecksum() != DetectCloudStorageStateChecksum
             || native.GetFileChecksum() != GetFileChecksum
+            || native.GetPlatformCapabilitiesChecksum() != GetPlatformCapabilitiesChecksum
             || native.InspectBindingContractChecksum() != InspectBindingContractChecksum
             || native.ImportFileWithResultChecksum() != ImportFileWithResultChecksum
             || native.ListFilesChecksum() != ListFilesChecksum

@@ -1,0 +1,87 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-146`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-146-s4-x-02-c4-17-platform-capabilities.md`
+- Manifest 章节：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md` 的 `## 4-3/task-146`
+- Exact Docs：4 个均已读取
+- Existing Code：`apps/**`、`core/area_matrix.udl`
+- Expected New Paths：`apps/**`
+- Forbidden Touches：`core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S4-X-02 页面中的 C4-17 功能点
+- 结果：通过
+- 证据：改动集中在 `apps/ios|windows|linux` 的 `PlatformDifferences*` 页面、ViewModel、CoreBridge 和 capability client；未发现实现 watcher/import/rescan/sync/Trash 操作入口。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+- 项目：读取页面规格、control map、Core API、C4-17 能力规格
+- 结果：通过
+- 证据：Exact Docs 已读取；control map 明确 `S4-X-02` 只映射 `C4-01, C4-17`，Core API/UDL 已定义 `get_platform_capabilities(platform, app_version)` 与 `PlatformCapabilities`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+- 项目：只接入 C4-17 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：iOS 通过 `uniffi_area_matrix_core_fn_func_get_platform_capabilities` 调用真实 Core；Windows/Linux 通过 native delegate、checksum 和 `GetPlatformCapabilitiesAsync` 进入 Core；失败时映射为 Unknown capability rows。
+- 涉及文件：`apps/ios/AreaMatrix/Features/Help/PlatformDifferencesCapabilitiesCoreBridge.swift`、`apps/windows/AreaMatrix/Core/AreaMatrixNativeCoreClient.PlatformCapabilities.cs`、`apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.PlatformCapabilities.cs`
+
+- 项目：不实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：本轮没有新增 control map 外 Core 调用；保留既有 C4-01 binding contract 区域，但 C4-17 改动只增加 capability matrix。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+- 项目：S4-X-02 中 C4-17 用户可见功能可触发和验收
+- 结果：通过
+- 证据：iOS 页面加载时读取 capability snapshot；Windows 提供 `Check capabilities` 触发；Linux 提供 `CheckCapabilitiesAsync` action；能力行显示 status、UI enabled、permission、reason。
+- 涉及文件：`PlatformDifferencesView.swift`、`PlatformDifferencesView.xaml`、`PlatformDifferencesView.ui`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产代码走真实 FFI/native client；Fake/Recording 仅存在于测试文件。
+- 涉及文件：`apps/ios/AreaMatrixTests/**`、`apps/windows/AreaMatrixTests/**`、`apps/linux/AreaMatrixTests/**`
+
+- 项目：未触碰 control map 之外 Core 能力
+- 结果：通过
+- 证据：`rg` 与 diff 检查未发现新增 watcher/import/rescan/sync/delete/replace 等操作调用；`git diff --name-only -- core/src` 输出为空。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。ViewModel、Bridge、native client 分层清楚，页面不直接执行危险 Core 操作；检查文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。Core API 与 UDL 已对齐 C4-17 合同；本 task 未要求改 Core public API。
+- 错误处理与边界处理：通过。Core bridge mismatch、Core error、capability load failure 均有错误映射；失败行显示 Unknown，不伪装可用。
+- 测试与验证覆盖：通过。`./dev check task 4-3/task-146` 新鲜通过；相关测试文件覆盖 capability load、失败 Unknown fallback、页面入口和 native binding。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径有真实 `get_platform_capabilities` 调用和 checksum 校验；未发现 mock-only 产品闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-146`
+- 结果：通过，exit code 0
+- 关键证据：`prompt doctor` OK；`git diff --check` OK；task gate 执行 `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO`，最终 `BUILD SUCCEEDED`。
+- 已运行：`git diff --check -- apps/...`
+- 结果：通过，无输出。
+- 已运行：`git diff --name-only -- core/src`
+- 结果：通过，无输出，Forbidden Touches 未被修改。
+- 失败：无。
+- 缺失：未执行超出 manifest 的真机 UI 点击/截图；本 task manifest 要求的验证命令已通过，整页多能力验收留给 `4-3/task-147`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

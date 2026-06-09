@@ -19,11 +19,33 @@
                 x:Name="PlatformSummaryTextBlock"
                 TextWrapping="Wrap" />
             <TextBlock
-                Text="Read-only binding contract check. No repository files are opened or modified."
+                Text="Read-only capability and binding contract checks. No repository files are opened or modified."
+                TextWrapping="Wrap" />
+            <TextBlock
+                Text="The capability matrix does not replace operation-time permission checks."
                 TextWrapping="Wrap" />
         </StackPanel>
 
-        <Grid Grid.Row="1" ColumnSpacing="12">
+        <StackPanel Grid.Row="1" Spacing="12">
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Button
+                    x:Name="CheckCapabilitiesButton"
+                    Content="Check capabilities"
+                    Click="CheckCapabilitiesButton_Click" />
+                <ProgressRing
+                    x:Name="CapabilitiesProgressRing"
+                    Grid.Column="1"
+                    Width="20"
+                    Height="20"
+                    HorizontalAlignment="Left"
+                    IsIndeterminate="True" />
+            </Grid>
+
+            <Grid ColumnSpacing="12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" />
                 <ColumnDefinition Width="Auto" />
@@ -45,10 +67,19 @@
                 Height="20"
                 HorizontalAlignment="Left"
                 IsIndeterminate="True" />
-        </Grid>
+            </Grid>
+        </StackPanel>
 
         <ScrollViewer Grid.Row="2">
             <StackPanel Spacing="12">
+                <InfoBar
+                    x:Name="CapabilitiesStatusInfoBar"
+                    IsOpen="True"
+                    Severity="Informational" />
+                <TextBlock
+                    x:Name="CapabilitiesSummaryTextBlock"
+                    TextWrapping="Wrap" />
+                <ItemsControl x:Name="CapabilityRowsItemsControl" />
                 <InfoBar
                     x:Name="ContractStatusInfoBar"
                     IsOpen="True"

@@ -17,6 +17,12 @@ internal delegate RustBuffer InspectBindingContractDelegate(
     ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer GetPlatformCapabilitiesDelegate(
+    RustBuffer platform,
+    RustBuffer appVersion,
+    ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 internal delegate RustBuffer AcknowledgeOneDriveRiskNoticeDelegate(
     RustBuffer repoPath,
     ref RustCallStatus status);

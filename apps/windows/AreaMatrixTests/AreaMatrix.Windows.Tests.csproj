@@ -13,6 +13,9 @@
     <Compile
       Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.BindingContract.cs"
       Link="Core/AreaMatrixNativeCoreClient.BindingContract.cs" />
+    <Compile
+      Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.PlatformCapabilities.cs"
+      Link="Core/AreaMatrixNativeCoreClient.PlatformCapabilities.cs" />
     <Compile Include="../AreaMatrix/Core/LazyAreaMatrixWindowsCoreClient.cs" Link="Core/LazyAreaMatrixWindowsCoreClient.cs" />
     <Compile Include="../AreaMatrix/Core/NativeCoreInterop.cs" Link="Core/NativeCoreInterop.cs" />
     <Compile Include="../AreaMatrix/Core/NativeCoreLibrary.cs" Link="Core/NativeCoreLibrary.cs" />
@@ -27,6 +30,9 @@
     <Compile
       Include="../AreaMatrix/Features/Help/PlatformDifferencesCoreBridge.cs"
       Link="Features/Help/PlatformDifferencesCoreBridge.cs" />
+    <Compile
+      Include="../AreaMatrix/Features/Help/PlatformDifferencesCapabilities.cs"
+      Link="Features/Help/PlatformDifferencesCapabilities.cs" />
     <Compile
       Include="../AreaMatrix/Features/Help/PlatformDifferencesViewModel.cs"
       Link="Features/Help/PlatformDifferencesViewModel.cs" />

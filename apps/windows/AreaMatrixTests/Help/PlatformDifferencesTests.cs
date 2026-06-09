@@ -8,9 +8,11 @@ public static class PlatformDifferencesTests
     public static async Task RunAllAsync()
     {
         await WindowsHelpPageChecksC401BindingContract();
+        await WindowsHelpPageLoadsC417PlatformCapabilities();
+        await CapabilityFailureShowsUnknownRowsWithoutStaticAvailability();
         await ContractFailureShowsRecoveryWithoutStaticSuccess();
         PlatformDifferencesPageIsReachableFromWindowsMainWindow();
-        NativeClientExportsInspectBindingContract();
+        NativeClientExportsPlatformDifferenceCoreCalls();
     }
 
     private static async Task WindowsHelpPageChecksC401BindingContract()
@@ -20,7 +22,7 @@ public static class PlatformDifferencesTests
 
         await model.LoadAsync();
 
-        TestAssert.Equal("Windows", model.HostPlatform, nameof(model.HostPlatform));
+        TestAssert.Equal(PlatformDifferencesPlatformId.Windows, model.HostPlatform, nameof(model.HostPlatform));
         TestAssert.Equal(PlatformDifferencesContractStatus.Loaded, model.Status, nameof(model.Status));
         TestAssert.Equal(PlatformDifferencesBindingTarget.Kotlin, model.Report?.TargetPlatform, "target");
         TestAssert.SequenceEqual(
@@ -28,6 +30,38 @@ public static class PlatformDifferencesTests
             bridge.Targets,
             "requested targets");
         TestAssert.SequenceEqual([1L], bridge.BindingVersions, "requested versions");
+    }
+
+    private static async Task WindowsHelpPageLoadsC417PlatformCapabilities()
+    {
+        FakePlatformDifferencesCoreBridge bridge = new(ContractReport(PlatformDifferencesBindingTarget.Kotlin))
+        {
+            Capabilities = CapabilityReport()
+        };
+        PlatformDifferencesViewModel model = new(bridge, appVersion: "1.2.3");
+
+        await model.LoadAsync();
+
+        TestAssert.Equal(PlatformDifferencesPlatformId.Windows, model.Capabilities?.Platform, "platform");
+        TestAssert.Equal(PlatformDifferencesCapabilityStatus.Available, model.Capabilities?.Watcher.Status, "watcher");
+        TestAssert.SequenceEqual([PlatformDifferencesPlatformId.Windows], bridge.Platforms, "requested platforms");
+        TestAssert.SequenceEqual(["1.2.3"], bridge.AppVersions, "requested app versions");
+        TestAssert.Contains("File watcher - Available", model.CapabilityRows.FirstOrDefault() ?? "", "capability row");
+    }
+
+    private static async Task CapabilityFailureShowsUnknownRowsWithoutStaticAvailability()
+    {
+        FakePlatformDifferencesCoreBridge bridge = new(ContractReport(PlatformDifferencesBindingTarget.Kotlin))
+        {
+            CapabilityError = new InvalidOperationException("platform unavailable")
+        };
+        PlatformDifferencesViewModel model = new(bridge);
+
+        await model.LoadCapabilitiesAsync();
+
+        TestAssert.Equal("Capability snapshot unavailable", model.CapabilityErrorMessage, "capability error");
+        TestAssert.Equal(PlatformDifferencesCapabilityStatus.Unknown, model.Capabilities?.Watcher.Status, "watcher");
+        TestAssert.Contains("platform capability bridge", model.CapabilityRecoveryText ?? "", "capability recovery");
     }
 
     private static async Task ContractFailureShowsRecoveryWithoutStaticSuccess()
@@ -60,15 +94,18 @@ public static class PlatformDifferencesTests
         TestAssert.Contains("Label=\"Platform capabilities\"", mainView, "visible help action");
         TestAssert.Contains("PlatformDifferencesButton_Click", mainViewCode, "help action handler");
         TestAssert.Contains("Check contract", page, "contract trigger");
-        TestAssert.Contains("Read-only binding contract check", page, "read-only safety copy");
+        TestAssert.Contains("Check capabilities", page, "capability trigger");
+        TestAssert.Contains("Read-only capability and binding contract checks", page, "read-only safety copy");
     }
 
-    private static void NativeClientExportsInspectBindingContract()
+    private static void NativeClientExportsPlatformDifferenceCoreCalls()
     {
         string nativeLibrary = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Core/NativeCoreLibrary.cs"));
         string nativeClient = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Core/AreaMatrixNativeCoreClient.BindingContract.cs"));
+        string capabilityClient = File.ReadAllText(RepositoryPath(
+            "apps/windows/AreaMatrix/Core/AreaMatrixNativeCoreClient.PlatformCapabilities.cs"));
         string contract = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Core/AreaMatrixNativeCoreClient.Contract.cs"));
 
@@ -78,10 +115,12 @@ public static class PlatformDifferencesTests
             "inspect_binding_contract native binding");
         TestAssert.Contains("InspectBindingContractAsync", nativeClient, "C4-01 native client method");
         TestAssert.Contains("InspectBindingContractChecksum = 34434", contract, "C4-01 checksum");
-        TestAssert.DoesNotContain(
-            "Get" + "Platform" + "CapabilitiesAsync",
-            nativeClient,
-            "no same-page capability bridge in C4-01 client");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_get_platform_capabilities",
+            nativeLibrary,
+            "get_platform_capabilities native binding");
+        TestAssert.Contains("GetPlatformCapabilitiesAsync", capabilityClient, "C4-17 native client method");
+        TestAssert.Contains("GetPlatformCapabilitiesChecksum = 42907", contract, "C4-17 checksum");
     }
 
     private static PlatformDifferencesBindingContractReport ContractReport(
@@ -107,6 +146,28 @@ public static class PlatformDifferencesTests
                     null)
             ],
             []);
+    }
+
+    private static PlatformDifferencesCapabilities CapabilityReport()
+    {
+        PlatformDifferencesCapabilitySupport available = new(
+            PlatformDifferencesCapabilityStatus.Available,
+            true,
+            false,
+            null);
+        PlatformDifferencesCapabilitySupport limited = new(
+            PlatformDifferencesCapabilityStatus.Limited,
+            false,
+            true,
+            "Only for local folders.");
+        return new PlatformDifferencesCapabilities(
+            PlatformDifferencesPlatformId.Windows,
+            "1.2.3",
+            available,
+            available,
+            limited,
+            limited,
+            available);
     }
 
     private static string RepositoryPath(string relativePath)
@@ -146,6 +207,14 @@ internal sealed class FakePlatformDifferencesCoreBridge : IPlatformDifferencesCo
 
     public List<long> BindingVersions { get; } = [];
 
+    public List<PlatformDifferencesPlatformId> Platforms { get; } = [];
+
+    public List<string> AppVersions { get; } = [];
+
+    public PlatformDifferencesCapabilities? Capabilities { get; init; }
+
+    public Exception? CapabilityError { get; init; }
+
     public Task<PlatformDifferencesBindingContractReport> InspectBindingContractAsync(
         PlatformDifferencesBindingTarget targetPlatform,
         long bindingVersion,
@@ -160,5 +229,21 @@ internal sealed class FakePlatformDifferencesCoreBridge : IPlatformDifferencesCo
         }
 
         return Task.FromResult(report ?? throw new InvalidOperationException("missing report"));
+    }
+
+    public Task<PlatformDifferencesCapabilities> GetPlatformCapabilitiesAsync(
+        PlatformDifferencesPlatformId platform,
+        string appVersion,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        Platforms.Add(platform);
+        AppVersions.Add(appVersion);
+        if (CapabilityError is not null)
+        {
+            throw CapabilityError;
+        }
+
+        return Task.FromResult(Capabilities ?? throw new InvalidOperationException("missing capabilities"));
     }
 }

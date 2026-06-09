@@ -4,11 +4,13 @@ using System.Threading.Tasks;
 using AreaMatrix.Features.Import;
 using AreaMatrix.Features.Library;
 using AreaMatrix.Features.Onboarding;
+using AreaMatrix.Features.Help;
 
 namespace AreaMatrix.Core;
 
 internal sealed class LazyAreaMatrixWindowsCoreClient :
     IAreaMatrixWindowsCoreClient,
+    IAreaMatrixBindingContractCoreClient,
     IAreaMatrixDesktopQueryCoreClient,
     IAreaMatrixDesktopImportCoreClient,
     IAreaMatrixWatcherStatusCoreClient,
@@ -51,6 +53,22 @@ internal sealed class LazyAreaMatrixWindowsCoreClient :
         CancellationToken cancellationToken = default)
     {
         return Current.InitRepoAsync(repoPath, options, cancellationToken);
+    }
+
+    public Task<CoreBindingContractReport> InspectBindingContractAsync(
+        string targetPlatform,
+        long bindingVersion,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.InspectBindingContractAsync(targetPlatform, bindingVersion, cancellationToken);
+    }
+
+    public Task<CorePlatformCapabilities> GetPlatformCapabilitiesAsync(
+        string platform,
+        string appVersion,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.GetPlatformCapabilitiesAsync(platform, appVersion, cancellationToken);
     }
 
     public Task<IReadOnlyList<CoreDesktopFileEntry>> ListFilesAsync(

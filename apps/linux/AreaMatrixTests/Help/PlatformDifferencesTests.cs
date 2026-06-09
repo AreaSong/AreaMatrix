@@ -10,9 +10,11 @@ public static class PlatformDifferencesTests
     public static async Task RunAllAsync()
     {
         await LinuxHelpPageChecksC401BindingContract();
+        await LinuxHelpPageLoadsC417PlatformCapabilities();
+        await CapabilityFailureShowsUnknownRowsWithoutStaticAvailability();
         await ContractFailureShowsRecoveryWithoutStaticSuccess();
         await ShellOpensPlatformDifferencesHelpPage();
-        PlatformDifferencesUiDeclaresC401Only();
+        PlatformDifferencesUiDeclaresC401AndC417Only();
         NativeClientExportsInspectBindingContract();
     }
 
@@ -23,7 +25,7 @@ public static class PlatformDifferencesTests
 
         await model.LoadAsync();
 
-        TestAssert.Equal("Linux", model.HostPlatform, nameof(model.HostPlatform));
+        TestAssert.Equal(LinuxPlatformId.Linux, model.HostPlatform, nameof(model.HostPlatform));
         TestAssert.Equal(PlatformDifferencesContractStatus.Loaded, model.Status, nameof(model.Status));
         TestAssert.Equal(PlatformDifferencesBindingTarget.Python, model.Report?.TargetPlatform, "target");
         TestAssert.SequenceEqual(
@@ -31,6 +33,38 @@ public static class PlatformDifferencesTests
             bridge.Targets,
             "requested targets");
         TestAssert.SequenceEqual([1L], bridge.BindingVersions, "requested versions");
+    }
+
+    private static async Task LinuxHelpPageLoadsC417PlatformCapabilities()
+    {
+        FakePlatformDifferencesCoreBridge bridge = new(ContractReport(PlatformDifferencesBindingTarget.Python))
+        {
+            Capabilities = CapabilityReport()
+        };
+        PlatformDifferencesViewModel model = new(bridge, appVersion: "1.2.3");
+
+        await model.LoadAsync();
+
+        TestAssert.Equal(LinuxPlatformId.Linux, model.Capabilities?.Platform, "platform");
+        TestAssert.Equal(LinuxPlatformCapabilityStatus.Available, model.Capabilities?.Watcher.Status, "watcher");
+        TestAssert.SequenceEqual([LinuxPlatformId.Linux], bridge.Platforms, "requested platforms");
+        TestAssert.SequenceEqual(["1.2.3"], bridge.AppVersions, "requested app versions");
+        TestAssert.Contains("File watcher - Available", model.CapabilityRows.FirstOrDefault() ?? "", "capability row");
+    }
+
+    private static async Task CapabilityFailureShowsUnknownRowsWithoutStaticAvailability()
+    {
+        FakePlatformDifferencesCoreBridge bridge = new(ContractReport(PlatformDifferencesBindingTarget.Python))
+        {
+            CapabilityError = new InvalidOperationException("platform unavailable")
+        };
+        PlatformDifferencesViewModel model = new(bridge);
+
+        await model.LoadCapabilitiesAsync();
+
+        TestAssert.Equal("Capability snapshot unavailable", model.CapabilityErrorMessage, "capability error");
+        TestAssert.Equal(LinuxPlatformCapabilityStatus.Unknown, model.Capabilities?.Watcher.Status, "watcher");
+        TestAssert.Contains("platform capability bridge", model.CapabilityRecoveryText ?? "", "capability recovery");
     }
 
     private static async Task ContractFailureShowsRecoveryWithoutStaticSuccess()
@@ -64,7 +98,7 @@ public static class PlatformDifferencesTests
         TestAssert.SequenceEqual([PlatformDifferencesBindingTarget.Python], bridge.Targets, "shell target");
     }
 
-    private static void PlatformDifferencesUiDeclaresC401Only()
+    private static void PlatformDifferencesUiDeclaresC401AndC417Only()
     {
         string ui = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Features/Help/PlatformDifferencesView.ui"));
@@ -72,9 +106,11 @@ public static class PlatformDifferencesTests
             "apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs"));
 
         TestAssert.Contains("page_id: S4-X-02", ui, "page id");
+        TestAssert.Contains("check_capabilities: PlatformDifferencesView.CheckCapabilitiesAsync", ui, "capability action");
         TestAssert.Contains("check_contract: PlatformDifferencesView.CheckContractAsync", ui, "check action");
+        TestAssert.Contains("get_platform_capabilities", ui, "C4-17 Core call");
         TestAssert.Contains("inspect_binding_contract", ui, "C4-01 Core call");
-        TestAssert.Contains("does not call platform capability matrix", ui, "same-page capability exclusion");
+        TestAssert.Contains("does not call watcher health", ui, "same-page capability exclusion");
         TestAssert.Contains("OpenPlatformDifferencesAsync", shell, "shell route");
         TestAssert.Contains("new PlatformDifferencesCoreBridge(nativeCoreClient)", shell, "real Core bridge");
     }
@@ -125,6 +161,28 @@ public static class PlatformDifferencesTests
             []);
     }
 
+    private static LinuxPlatformCapabilities CapabilityReport()
+    {
+        LinuxPlatformCapabilitySupport available = new(
+            LinuxPlatformCapabilityStatus.Available,
+            UiEnabled: true,
+            RequiresPermission: false,
+            null);
+        LinuxPlatformCapabilitySupport limited = new(
+            LinuxPlatformCapabilityStatus.Limited,
+            UiEnabled: false,
+            RequiresPermission: true,
+            "Only for local folders.");
+        return new LinuxPlatformCapabilities(
+            LinuxPlatformId.Linux,
+            "1.2.3",
+            available,
+            available,
+            limited,
+            limited,
+            available);
+    }
+
     private static string RepositoryPath(string relativePath)
     {
         string? current = AppContext.BaseDirectory;
@@ -162,6 +220,14 @@ internal sealed class FakePlatformDifferencesCoreBridge : IPlatformDifferencesCo
 
     public List<long> BindingVersions { get; } = [];
 
+    public List<LinuxPlatformId> Platforms { get; } = [];
+
+    public List<string> AppVersions { get; } = [];
+
+    public LinuxPlatformCapabilities? Capabilities { get; init; }
+
+    public Exception? CapabilityError { get; init; }
+
     public Task<PlatformDifferencesBindingContractReport> InspectBindingContractAsync(
         PlatformDifferencesBindingTarget targetPlatform,
         long bindingVersion,
@@ -176,6 +242,22 @@ internal sealed class FakePlatformDifferencesCoreBridge : IPlatformDifferencesCo
         }
 
         return Task.FromResult(report ?? throw new InvalidOperationException("missing report"));
+    }
+
+    public Task<LinuxPlatformCapabilities> GetPlatformCapabilitiesAsync(
+        LinuxPlatformId platform,
+        string appVersion,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        Platforms.Add(platform);
+        AppVersions.Add(appVersion);
+        if (CapabilityError is not null)
+        {
+            throw CapabilityError;
+        }
+
+        return Task.FromResult(Capabilities ?? throw new InvalidOperationException("missing capabilities"));
     }
 }
 

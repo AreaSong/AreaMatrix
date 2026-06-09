@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using AreaMatrix.Linux.Features.Onboarding;
 
 namespace AreaMatrix.Linux.Features.Help;
 
@@ -15,24 +16,32 @@ public sealed class PlatformDifferencesViewModel : INotifyPropertyChanged
 {
     private readonly IPlatformDifferencesCoreBridge coreBridge;
     private PlatformDifferencesBindingContractReport? report;
+    private LinuxPlatformCapabilities? capabilities;
     private PlatformDifferencesBindingTarget selectedTargetPlatform = PlatformDifferencesBindingTarget.Python;
     private string? errorMessage;
     private string? recoveryText;
+    private string? capabilityErrorMessage;
+    private string? capabilityRecoveryText;
     private bool isChecking;
+    private bool isCheckingCapabilities;
 
     public PlatformDifferencesViewModel(
         IPlatformDifferencesCoreBridge coreBridge,
-        string hostPlatform = "Linux",
+        LinuxPlatformId hostPlatform = LinuxPlatformId.Linux,
+        string appVersion = "1",
         long bindingVersion = 1)
     {
         this.coreBridge = coreBridge;
         HostPlatform = hostPlatform;
+        AppVersion = appVersion;
         BindingVersion = bindingVersion;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public string HostPlatform { get; }
+    public LinuxPlatformId HostPlatform { get; }
+
+    public string AppVersion { get; }
 
     public long BindingVersion { get; }
 
@@ -63,12 +72,32 @@ public sealed class PlatformDifferencesViewModel : INotifyPropertyChanged
         }
     }
 
+    public LinuxPlatformCapabilities? Capabilities
+    {
+        get => capabilities;
+        private set
+        {
+            capabilities = value;
+            OnPropertyChanged();
+        }
+    }
+
     public string? ErrorMessage
     {
         get => errorMessage;
         private set
         {
             errorMessage = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string? CapabilityErrorMessage
+    {
+        get => capabilityErrorMessage;
+        private set
+        {
+            capabilityErrorMessage = value;
             OnPropertyChanged();
         }
     }
@@ -83,12 +112,32 @@ public sealed class PlatformDifferencesViewModel : INotifyPropertyChanged
         }
     }
 
+    public string? CapabilityRecoveryText
+    {
+        get => capabilityRecoveryText;
+        private set
+        {
+            capabilityRecoveryText = value;
+            OnPropertyChanged();
+        }
+    }
+
     public bool IsChecking
     {
         get => isChecking;
         private set
         {
             isChecking = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsCheckingCapabilities
+    {
+        get => isCheckingCapabilities;
+        private set
+        {
+            isCheckingCapabilities = value;
             OnPropertyChanged();
         }
     }
@@ -101,9 +150,44 @@ public sealed class PlatformDifferencesViewModel : INotifyPropertyChanged
         ? $"{currentReport.TargetPlatform} binding v{currentReport.BindingVersion}, Core {currentReport.CoreVersion}"
         : "Binding contract has not been checked.";
 
+    public string CapabilitySummaryText => Capabilities is { } currentCapabilities
+        ? $"{currentCapabilities.Platform} capabilities for app {currentCapabilities.AppVersion}"
+        : "Capability snapshot has not been checked.";
+
+    public IReadOnlyList<string> CapabilityRows => Capabilities is { } currentCapabilities
+        ? PlatformDifferencesCapabilitiesDisplay.RowsFor(currentCapabilities)
+        : [];
+
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
+        await LoadCapabilitiesAsync(cancellationToken).ConfigureAwait(false);
         await InspectContractAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task LoadCapabilitiesAsync(CancellationToken cancellationToken = default)
+    {
+        BeginCheckingCapabilities();
+        try
+        {
+            Capabilities = await coreBridge
+                .GetPlatformCapabilitiesAsync(HostPlatform, AppVersion, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (Exception error)
+        {
+            Capabilities = PlatformDifferencesCapabilitiesDisplay.UnknownSnapshot(
+                HostPlatform,
+                AppVersion,
+                error.Message);
+            CapabilityErrorMessage = "Capability snapshot unavailable";
+            CapabilityRecoveryText = RecoveryForCapability(error);
+        }
+        finally
+        {
+            IsCheckingCapabilities = false;
+            OnPropertyChanged(nameof(CapabilitySummaryText));
+            OnPropertyChanged(nameof(CapabilityRows));
+        }
     }
 
     public async Task InspectContractAsync(CancellationToken cancellationToken = default)
@@ -142,11 +226,26 @@ public sealed class PlatformDifferencesViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(Status));
     }
 
+    private void BeginCheckingCapabilities()
+    {
+        IsCheckingCapabilities = true;
+        CapabilityErrorMessage = null;
+        CapabilityRecoveryText = null;
+        OnPropertyChanged(nameof(CapabilitySummaryText));
+    }
+
     private static string RecoveryFor(Exception error)
     {
         return error is OperationCanceledException
             ? "Retry the contract check."
             : "Check the Core bridge integration, then retry.";
+    }
+
+    private static string RecoveryForCapability(Exception error)
+    {
+        return error is OperationCanceledException
+            ? "Retry the platform capability check."
+            : "Check the Core platform capability bridge, then retry.";
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)

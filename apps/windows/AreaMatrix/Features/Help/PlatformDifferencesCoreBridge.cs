@@ -6,6 +6,11 @@ public interface IPlatformDifferencesCoreBridge
         PlatformDifferencesBindingTarget targetPlatform,
         long bindingVersion,
         CancellationToken cancellationToken = default);
+
+    Task<PlatformDifferencesCapabilities> GetPlatformCapabilitiesAsync(
+        PlatformDifferencesPlatformId platform,
+        string appVersion,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IAreaMatrixBindingContractCoreClient
@@ -13,6 +18,11 @@ public interface IAreaMatrixBindingContractCoreClient
     Task<CoreBindingContractReport> InspectBindingContractAsync(
         string targetPlatform,
         long bindingVersion,
+        CancellationToken cancellationToken = default);
+
+    Task<CorePlatformCapabilities> GetPlatformCapabilitiesAsync(
+        string platform,
+        string appVersion,
         CancellationToken cancellationToken = default);
 }
 
@@ -35,6 +45,18 @@ public sealed class PlatformDifferencesCoreBridge : IPlatformDifferencesCoreBrid
             .ConfigureAwait(false);
 
         return report.ToPlatformDifferencesReport();
+    }
+
+    public async Task<PlatformDifferencesCapabilities> GetPlatformCapabilitiesAsync(
+        PlatformDifferencesPlatformId platform,
+        string appVersion,
+        CancellationToken cancellationToken = default)
+    {
+        CorePlatformCapabilities capabilities = await coreClient
+            .GetPlatformCapabilitiesAsync(platform.ToCorePlatformId(), appVersion, cancellationToken)
+            .ConfigureAwait(false);
+
+        return capabilities.ToPlatformDifferencesCapabilities();
     }
 }
 
@@ -153,6 +175,69 @@ public sealed record CoreBindingContractReport(
     }
 }
 
+public sealed record CorePlatformCapabilitySupport(
+    string Status,
+    bool UiEnabled,
+    bool RequiresPermission,
+    string? Reason)
+{
+    public PlatformDifferencesCapabilitySupport ToPlatformDifferencesSupport()
+    {
+        return new PlatformDifferencesCapabilitySupport(
+            ParseCapabilityStatus(Status),
+            UiEnabled,
+            RequiresPermission,
+            Reason);
+    }
+
+    private static PlatformDifferencesCapabilityStatus ParseCapabilityStatus(string value)
+    {
+        return value switch
+        {
+            "Available" => PlatformDifferencesCapabilityStatus.Available,
+            "Limited" => PlatformDifferencesCapabilityStatus.Limited,
+            "NotAvailable" => PlatformDifferencesCapabilityStatus.NotAvailable,
+            "Unknown" => PlatformDifferencesCapabilityStatus.Unknown,
+            _ => throw new InvalidOperationException($"Unknown platform capability status `{value}`.")
+        };
+    }
+}
+
+public sealed record CorePlatformCapabilities(
+    string Platform,
+    string AppVersion,
+    CorePlatformCapabilitySupport Watcher,
+    CorePlatformCapabilitySupport Trash,
+    CorePlatformCapabilitySupport ShareExtension,
+    CorePlatformCapabilitySupport CloudPlaceholder,
+    CorePlatformCapabilitySupport SecurityBookmark)
+{
+    public PlatformDifferencesCapabilities ToPlatformDifferencesCapabilities()
+    {
+        return new PlatformDifferencesCapabilities(
+            ParsePlatformId(Platform),
+            AppVersion,
+            Watcher.ToPlatformDifferencesSupport(),
+            Trash.ToPlatformDifferencesSupport(),
+            ShareExtension.ToPlatformDifferencesSupport(),
+            CloudPlaceholder.ToPlatformDifferencesSupport(),
+            SecurityBookmark.ToPlatformDifferencesSupport());
+    }
+
+    private static PlatformDifferencesPlatformId ParsePlatformId(string value)
+    {
+        return value switch
+        {
+            "Macos" => PlatformDifferencesPlatformId.Macos,
+            "Ios" => PlatformDifferencesPlatformId.Ios,
+            "Windows" => PlatformDifferencesPlatformId.Windows,
+            "Linux" => PlatformDifferencesPlatformId.Linux,
+            "Unknown" => PlatformDifferencesPlatformId.Unknown,
+            _ => throw new InvalidOperationException($"Unknown platform id `{value}`.")
+        };
+    }
+}
+
 internal static class PlatformDifferencesBindingTargetExtensions
 {
     public static string ToCoreTargetPlatform(this PlatformDifferencesBindingTarget targetPlatform)
@@ -163,6 +248,22 @@ internal static class PlatformDifferencesBindingTargetExtensions
             PlatformDifferencesBindingTarget.Kotlin => "Kotlin",
             PlatformDifferencesBindingTarget.Python => "Python",
             _ => throw new InvalidOperationException($"Unknown binding target platform `{targetPlatform}`.")
+        };
+    }
+}
+
+internal static class PlatformDifferencesPlatformIdExtensions
+{
+    public static string ToCorePlatformId(this PlatformDifferencesPlatformId platform)
+    {
+        return platform switch
+        {
+            PlatformDifferencesPlatformId.Macos => "Macos",
+            PlatformDifferencesPlatformId.Ios => "Ios",
+            PlatformDifferencesPlatformId.Windows => "Windows",
+            PlatformDifferencesPlatformId.Linux => "Linux",
+            PlatformDifferencesPlatformId.Unknown => "Unknown",
+            _ => throw new InvalidOperationException($"Unknown platform id `{platform}`.")
         };
     }
 }
