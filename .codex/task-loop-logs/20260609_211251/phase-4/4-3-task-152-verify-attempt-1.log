@@ -1,0 +1,71 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-152`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-152-s4-x-04-page-integration-verify.md`
+- 验收代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：0
+- 通过项数：11
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖完整
+- 结果：通过
+- 证据：control map 声明 `S4-X-04` 覆盖 `C4-02, C4-09, C4-10`，并绑定 `4-3/task-149`、`150`、`151`、`152`；三个依赖 task 文件均存在。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:29`
+
+- 项目：页面状态、入口、退出、错误态、CoreBridge 调用闭环
+- 结果：通过
+- 证据：iOS 打开确认页会重新 `validateRepoPath`，确认后 `initializeEmptyRepository`、再次 validate、`loadConfig` 并进入 library；Windows 打开 route 重新校验，确认后 init、validate、load config 并进入 MainWindow；Linux 打开 route 重新校验，确认后 init、validate 并进入 MainWindow。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryModel.swift:105`、`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/RepositoryInitConfirmViewModel.cs:187`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Onboarding/RepositoryInitConfirmViewModel.cs:169`
+
+- 项目：mock、fixture、硬编码状态检查
+- 结果：通过
+- 证据：生产路径使用 FFI/native Core 调用；`Fake`/`fixture` 仅用于测试。iOS FFI 直接调用 `validate_repo_path`、`init_repo`、`load_config`；Windows/Linux 生产 bridge 调用 native Core client。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/MobileRepositoryCoreFFI.swift:37`、`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/WindowsRepositoryCoreBridge.cs:60`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.cs:59`
+
+- 项目：不新增 control map 外能力
+- 结果：通过
+- 证据：S4-X-04 确认页只消费 repo path validation、empty init、成功后打开主页面所需配置/路由；没有在确认页执行 adopt、import、reindex、rescan、watcher 或平台差异能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Onboarding/RepositoryInitConfirmView.ui:34`
+
+- 项目：完成标准
+- 结果：通过
+- 证据：页面规格要求的路径展示、安全说明、检查态、创建态、失败重试、取消/换目录、成功跳转均有对应实现；UDL 暴露 `validate_repo_path`、`init_repo`、`load_config` 和相关类型。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md:55`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:18`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，相关生产文件均未超过 500 行，页面/VM/Bridge 分层清楚。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Core public Rust API；UDL 与 Core API 文档接口一致。
+- 错误处理与边界处理：通过，不可写、非目录、`.areamatrix` 内部路径、初始化失败均停留确认页或禁用创建。
+- 测试与验证覆盖：通过，manifest 验证通过；S4-X-04 相关 iOS/Windows/Linux 测试文件存在并覆盖刷新、创建、失败、非空/不可写路径。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现生产路径 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-152`，通过，exit 0；包含 `prompt doctor: OK`、`git diff --check`、`xcodebuild ... build`，最终 `BUILD SUCCEEDED`。
+- 已运行：`git diff --name-only -- core/src apps core/area_matrix.udl`，无输出，未发现 Forbidden Touches 或验收范围代码 diff。
+- 已运行：`git status --short`，仅有 runner 收口时序相关 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 处于 `in_progress`，按本验收规则不作为阻断。
+- 补充验证：`dotnet run --project` Windows/Linux 控制台测试入口在 S4-X-04 相关测试之后因 `S4-X-02/C4-17 platform-differences` 文案断言失败退出；不作为本 task 阻断，但不能声明全量 Windows/Linux suite 通过。
+- 未通过/未完成：`swift test` 在 `apps/ios` 因 SwiftPM/clang cache 写入权限被阻断，非 manifest 必需验证。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
