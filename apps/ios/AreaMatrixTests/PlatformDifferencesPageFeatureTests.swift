@@ -86,9 +86,33 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.capabilityState, expectedState)
     }
 
+    func testIOSCapabilityRowsCoverS4X02PageSpecMatrix() {
+        let rowNames = PlatformDifferencesCapabilities.iosFixture().pageSpecRows.map(\.name)
+
+        XCTAssertEqual(rowNames, [
+            "Repository access",
+            "File import",
+            "File watcher",
+            "Cloud provider",
+            "Trash / Recycle Bin",
+            "Share integration",
+            "Camera import"
+        ])
+        XCTAssertEqual(PlatformDifferencesCapabilities.iosFixture().pageSpecRows[6].support.status, .limited)
+        XCTAssertTrue(
+            PlatformDifferencesCapabilities
+                .iosFixture()
+                .pageSpecRows[6]
+                .support
+                .reason?
+                .contains("camera import flow") == true
+        )
+    }
+
     func testIOSPlatformDifferencesIsReachableFromConnectRepositoryHelp() throws {
         let appSource = try Self.readSource("../AreaMatrixApp/AreaMatrixIOSApp.swift")
         let connectSource = try Self.readSource("../AreaMatrix/Features/Onboarding/ConnectRepositoryView.swift")
+        let helpSource = try Self.readSource("../AreaMatrix/Features/Help/PlatformDifferencesView.swift")
 
         XCTAssertTrue(appSource.contains("ConnectRepositoryEntryView()"))
         XCTAssertTrue(connectSource.contains("Button(\"Help\")"))
@@ -97,6 +121,9 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
         XCTAssertTrue(connectSource.contains("NavigationLink"))
         XCTAssertTrue(connectSource.contains("PlatformDifferencesView()"))
         XCTAssertTrue(connectSource.contains("Platform capabilities"))
+        XCTAssertTrue(helpSource.contains("Open repository settings"))
+        XCTAssertTrue(helpSource.contains("Export diagnostics"))
+        XCTAssertTrue(helpSource.contains("Close"))
     }
 
     private static func readSource(_ relativePath: String) throws -> String {

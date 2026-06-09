@@ -9,10 +9,14 @@ sections:
   - Type mappings
   - Limited or missing capabilities
 actions:
+  open_repository_settings: disabled - Repository settings are not available from this Linux help entry yet.
+  export_diagnostics: disabled - Diagnostics are not available on this platform yet.
   check_capabilities: PlatformDifferencesView.CheckCapabilitiesAsync
   check_contract: PlatformDifferencesView.CheckContractAsync
   close: PlatformDifferencesView.Close
 safety:
+  - The page has Open repository settings, Export diagnostics, and Close footer actions.
+  - Diagnostics are disabled when no platform diagnostics service is wired, so no blank package is generated.
   - The page calls get_platform_capabilities through PlatformDifferencesCoreBridge for C4-17 rows.
   - The page calls inspect_binding_contract through PlatformDifferencesCoreBridge.
   - The page passes target platform and binding version only; it does not read a repository path.

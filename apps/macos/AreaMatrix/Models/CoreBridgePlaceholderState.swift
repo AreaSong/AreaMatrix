@@ -83,6 +83,7 @@ enum CoreBridgeBoundary: String, CaseIterable, Equatable {
     case getVersion = "get_version"
     case initLogging = "init_logging"
     case inspectBindingContract = "inspect_binding_contract"
+    case getPlatformCapabilities = "get_platform_capabilities"
     case validateRepoPath = "validate_repo_path"
     case validateInitializedRepoPath = "validate_initialized_repo_path"
     case initRepo = "init_repo"

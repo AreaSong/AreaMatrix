@@ -113,12 +113,22 @@ public sealed partial class PlatformDifferencesView : UserControl
         IsEnabled = true;
         PlatformSummaryTextBlock.Text = $"Platform: {ViewModel.HostPlatform}. {ViewModel.RepositoryText}";
         CheckCapabilitiesButton.IsEnabled = !ViewModel.IsCheckingCapabilities;
-        CapabilitiesProgressRing.Visibility = ViewModel.IsCheckingCapabilities ? Visibility.Visible : Visibility.Collapsed;
+        CapabilitiesProgressRing.Visibility = ViewModel.IsCheckingCapabilities
+            ? Visibility.Visible
+            : Visibility.Collapsed;
         CapabilitiesProgressRing.IsActive = ViewModel.IsCheckingCapabilities;
         CheckContractButton.Content = ViewModel.ActionTitle;
         CheckContractButton.IsEnabled = !ViewModel.IsChecking;
         ContractProgressRing.Visibility = ViewModel.IsChecking ? Visibility.Visible : Visibility.Collapsed;
         ContractProgressRing.IsActive = ViewModel.IsChecking;
+        OpenRepositorySettingsButton.IsEnabled = ViewModel.CanOpenRepositorySettings;
+        RepositorySettingsUnavailableTextBlock.Text = ViewModel.CanOpenRepositorySettings
+            ? string.Empty
+            : ViewModel.RepositorySettingsUnavailableText;
+        ExportDiagnosticsButton.IsEnabled = ViewModel.CanExportDiagnostics;
+        DiagnosticsUnavailableTextBlock.Text = ViewModel.CanExportDiagnostics
+            ? string.Empty
+            : ViewModel.DiagnosticsUnavailableText;
         RefreshCapabilitiesStatus();
         RefreshContractStatus();
         RefreshContractRows();

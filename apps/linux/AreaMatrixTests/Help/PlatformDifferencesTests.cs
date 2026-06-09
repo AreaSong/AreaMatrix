@@ -11,6 +11,7 @@ public static class PlatformDifferencesTests
     {
         await LinuxHelpPageChecksC401BindingContract();
         await LinuxHelpPageLoadsC417PlatformCapabilities();
+        LinuxCapabilityRowsCoverS4X02PageSpecMatrix();
         await CapabilityFailureShowsUnknownRowsWithoutStaticAvailability();
         await ContractFailureShowsRecoveryWithoutStaticSuccess();
         await ShellOpensPlatformDifferencesHelpPage();
@@ -50,6 +51,20 @@ public static class PlatformDifferencesTests
         TestAssert.SequenceEqual([LinuxPlatformId.Linux], bridge.Platforms, "requested platforms");
         TestAssert.SequenceEqual(["1.2.3"], bridge.AppVersions, "requested app versions");
         TestAssert.Contains("File watcher - Available", model.CapabilityRows.FirstOrDefault() ?? "", "capability row");
+    }
+
+    private static void LinuxCapabilityRowsCoverS4X02PageSpecMatrix()
+    {
+        IReadOnlyList<string> rows = PlatformDifferencesCapabilitiesDisplay.RowsFor(CapabilityReport());
+
+        TestAssert.Contains("Repository access - Available", rows[0], "repository access row");
+        TestAssert.Contains("File import - Limited", rows[1], "file import row");
+        TestAssert.Contains("File watcher - Available", rows[2], "file watcher row");
+        TestAssert.Contains("Cloud provider - Limited", rows[3], "cloud provider row");
+        TestAssert.Contains("Trash / Recycle Bin - Available", rows[4], "trash row");
+        TestAssert.Contains("Share integration - Limited", rows[5], "share row");
+        TestAssert.Contains("Camera import - Limited", rows[6], "camera row");
+        TestAssert.Contains("preflight", rows[1], "import preflight copy");
     }
 
     private static async Task CapabilityFailureShowsUnknownRowsWithoutStaticAvailability()
@@ -106,7 +121,12 @@ public static class PlatformDifferencesTests
             "apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs"));
 
         TestAssert.Contains("page_id: S4-X-02", ui, "page id");
-        TestAssert.Contains("check_capabilities: PlatformDifferencesView.CheckCapabilitiesAsync", ui, "capability action");
+        TestAssert.Contains("open_repository_settings: disabled", ui, "repository settings action");
+        TestAssert.Contains("export_diagnostics: disabled", ui, "diagnostics action");
+        TestAssert.Contains(
+            "check_capabilities: PlatformDifferencesView.CheckCapabilitiesAsync",
+            ui,
+            "capability action");
         TestAssert.Contains("check_contract: PlatformDifferencesView.CheckContractAsync", ui, "check action");
         TestAssert.Contains("get_platform_capabilities", ui, "C4-17 Core call");
         TestAssert.Contains("inspect_binding_contract", ui, "C4-01 Core call");
@@ -270,9 +290,11 @@ internal sealed class FakePlatformDifferencesViewFactory : ILinuxPlatformDiffere
         this.bridge = bridge;
     }
 
-    public PlatformDifferencesView Create()
+    public PlatformDifferencesView Create(string? repositoryPath = null)
     {
-        return new PlatformDifferencesView(new PlatformDifferencesViewModel(bridge));
+        return new PlatformDifferencesView(new PlatformDifferencesViewModel(
+            bridge,
+            repositoryPath: repositoryPath));
     }
 }
 

@@ -2,21 +2,38 @@ import SwiftUI
 
 struct PlatformDifferencesView: View {
     @StateObject private var model: PlatformDifferencesModel
+    private let onOpenRepositorySettings: () -> Void
+    private let onClose: () -> Void
 
     @MainActor
-    init() {
-        _model = StateObject(wrappedValue: PlatformDifferencesModel())
+    init(
+        repositoryText: String = "Not connected",
+        onOpenRepositorySettings: @escaping () -> Void = {},
+        onClose: @escaping () -> Void = {}
+    ) {
+        _model = StateObject(wrappedValue: PlatformDifferencesModel(repositoryText: repositoryText))
+        self.onOpenRepositorySettings = onOpenRepositorySettings
+        self.onClose = onClose
     }
 
-    init(model: PlatformDifferencesModel) {
+    init(
+        model: PlatformDifferencesModel,
+        onOpenRepositorySettings: @escaping () -> Void = {},
+        onClose: @escaping () -> Void = {}
+    ) {
         _model = StateObject(wrappedValue: model)
+        self.onOpenRepositorySettings = onOpenRepositorySettings
+        self.onClose = onClose
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
+            summary
+            capabilityContent
             targetControls
             contractContent
+            actions
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .task {
@@ -29,7 +46,19 @@ struct PlatformDifferencesView: View {
             Text("Platform capabilities")
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
-            Text("Binding contract")
+            Text("Capability matrix and binding contract")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var summary: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            PlatformDifferencesKeyValueRow(label: "Platform", value: model.hostPlatform.rawValue)
+            PlatformDifferencesKeyValueRow(label: "Repository", value: model.repositoryText)
+            PlatformDifferencesKeyValueRow(label: "App version", value: model.appVersion)
+            PlatformDifferencesKeyValueRow(label: "Core version", value: coreVersionText)
+            Text("Capability matrix does not replace operation-time permission checks.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -59,6 +88,26 @@ struct PlatformDifferencesView: View {
     }
 
     @ViewBuilder
+    private var capabilityContent: some View {
+        switch model.capabilityState {
+        case .loading:
+            HStack(spacing: 10) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Checking platform capabilities...")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .combine)
+        case let .loaded(capabilities):
+            capabilityMatrix(capabilities)
+        case let .failed(capabilities, error):
+            capabilityMatrix(capabilities)
+            PlatformDifferencesCapabilityErrorBanner(error: error)
+        }
+    }
+
+    @ViewBuilder
     private var contractContent: some View {
         switch model.contractState {
         case .loading:
@@ -74,6 +123,16 @@ struct PlatformDifferencesView: View {
             contractReport(report)
         case let .failed(error):
             PlatformDifferencesErrorBanner(error: error)
+        }
+    }
+
+    private func capabilityMatrix(_ capabilities: PlatformCapabilitiesSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Capability matrix")
+                .font(.subheadline.weight(.semibold))
+            ForEach(capabilities.pageSpecRows) { row in
+                PlatformDifferencesCapabilityRow(row: row)
+            }
         }
     }
 
@@ -133,6 +192,33 @@ struct PlatformDifferencesView: View {
         }
     }
 
+    private var actions: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Button("Open repository settings", action: onOpenRepositorySettings)
+                    .accessibilityIdentifier("S4-X-02-open-repository-settings")
+                Button("Export diagnostics") {}
+                    .disabled(true)
+                    .help("Diagnostics are not available on this platform yet.")
+                    .accessibilityIdentifier("S4-X-02-export-diagnostics")
+                Button("Close", action: onClose)
+                    .accessibilityIdentifier("S4-X-02-close")
+            }
+            Text("Diagnostics are not available on this platform yet.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var coreVersionText: String {
+        switch model.contractState {
+        case let .loaded(report):
+            report.coreVersion
+        default:
+            "Unknown"
+        }
+    }
+
     private var selectedTargetBinding: Binding<BindingTargetPlatformSnapshot> {
         Binding(
             get: { model.selectedTargetPlatform },
@@ -143,6 +229,66 @@ struct PlatformDifferencesView: View {
                 }
             }
         )
+    }
+}
+
+private struct PlatformDifferencesCapabilityRow: View {
+    let row: PlatformDifferencesCapabilityDisplayRow
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(row.name)
+                    .font(.callout)
+                Spacer()
+                Text(row.support.status.rawValue)
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(statusTint.opacity(0.12), in: Capsule())
+                    .foregroundStyle(statusTint)
+            }
+            Text(row.detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text("UI enabled: \(row.support.uiEnabled ? "Yes" : "No")")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if row.support.requiresPermission {
+                Text("Requires platform permission before use.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let reason = row.support.reason, !reason.isEmpty {
+                Text(reason)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let alternative = row.alternative, !alternative.isEmpty {
+                Text(alternative)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .combine)
+    }
+
+    private var statusTint: Color {
+        switch row.support.status {
+        case .available:
+            .green
+        case .limited:
+            .orange
+        case .notAvailable:
+            .red
+        case .unknown:
+            .gray
+        }
     }
 }
 
@@ -212,6 +358,30 @@ private struct PlatformDifferencesStatusRow: View, Identifiable {
         case .missing:
             .red
         }
+    }
+}
+
+private struct PlatformDifferencesCapabilityErrorBanner: View {
+    let error: PlatformDifferencesCapabilityError
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(error.message, systemImage: "exclamationmark.triangle")
+                .foregroundStyle(.orange)
+            Text(error.recovery)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Text(error.detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+                .lineLimit(3)
+                .truncationMode(.middle)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .combine)
     }
 }
 

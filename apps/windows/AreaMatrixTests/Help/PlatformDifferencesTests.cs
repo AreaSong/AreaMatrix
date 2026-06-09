@@ -9,6 +9,7 @@ public static class PlatformDifferencesTests
     {
         await WindowsHelpPageChecksC401BindingContract();
         await WindowsHelpPageLoadsC417PlatformCapabilities();
+        WindowsCapabilityRowsCoverS4X02PageSpecMatrix();
         await CapabilityFailureShowsUnknownRowsWithoutStaticAvailability();
         await ContractFailureShowsRecoveryWithoutStaticSuccess();
         PlatformDifferencesPageIsReachableFromWindowsMainWindow();
@@ -47,6 +48,20 @@ public static class PlatformDifferencesTests
         TestAssert.SequenceEqual([PlatformDifferencesPlatformId.Windows], bridge.Platforms, "requested platforms");
         TestAssert.SequenceEqual(["1.2.3"], bridge.AppVersions, "requested app versions");
         TestAssert.Contains("File watcher - Available", model.CapabilityRows.FirstOrDefault() ?? "", "capability row");
+    }
+
+    private static void WindowsCapabilityRowsCoverS4X02PageSpecMatrix()
+    {
+        IReadOnlyList<string> rows = CapabilityReport().DisplayRows();
+
+        TestAssert.Contains("Repository access - Available", rows[0], "repository access row");
+        TestAssert.Contains("File import - Limited", rows[1], "file import row");
+        TestAssert.Contains("File watcher - Available", rows[2], "file watcher row");
+        TestAssert.Contains("Cloud provider - Limited", rows[3], "cloud provider row");
+        TestAssert.Contains("Trash / Recycle Bin - Available", rows[4], "trash row");
+        TestAssert.Contains("Share integration - Limited", rows[5], "share row");
+        TestAssert.Contains("Camera import - Limited", rows[6], "camera row");
+        TestAssert.Contains("preflight", rows[1], "import preflight copy");
     }
 
     private static async Task CapabilityFailureShowsUnknownRowsWithoutStaticAvailability()
@@ -95,6 +110,8 @@ public static class PlatformDifferencesTests
         TestAssert.Contains("PlatformDifferencesButton_Click", mainViewCode, "help action handler");
         TestAssert.Contains("Check contract", page, "contract trigger");
         TestAssert.Contains("Check capabilities", page, "capability trigger");
+        TestAssert.Contains("Open repository settings", page, "repository settings action");
+        TestAssert.Contains("Export diagnostics", page, "diagnostics action");
         TestAssert.Contains("Read-only capability and binding contract checks", page, "read-only safety copy");
     }
 

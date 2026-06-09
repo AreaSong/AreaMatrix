@@ -132,7 +132,13 @@ extension GeneralSettingsView {
                 onOpenRecoveryTools: onOpenRepositoryRecovery
             )
         case "about":
-            AboutSettingsPane(repoPath: model.repoPath)
+            AboutSettingsPane(
+                repoPath: model.repoPath,
+                onOpenRepositorySettings: {
+                    selectedTab = "repository"
+                },
+                onClose: onClose
+            )
         default:
             generalContent
         }

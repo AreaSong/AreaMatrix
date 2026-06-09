@@ -26,6 +26,15 @@ struct PlatformDifferencesCapabilityFailure: Equatable {
     var detail: String
 }
 
+struct PlatformDifferencesCapabilityDisplayRow: Equatable, Identifiable {
+    var name: String
+    var support: PlatformDifferencesCapabilitySupport
+    var detail: String
+    var alternative: String?
+
+    var id: String { name }
+}
+
 @MainActor
 final class PlatformDifferencesViewModel: ObservableObject {
     @Published private(set) var contractState: PlatformDifferencesContractState = .idle
@@ -134,16 +143,20 @@ final class PlatformDifferencesViewModel: ObservableObject {
 }
 
 struct PlatformDifferencesView: View {
+    @Environment(\.dismiss) private var dismiss
     @StateObject private var model: PlatformDifferencesViewModel
+    private let onOpenRepositorySettings: (() -> Void)?
 
     @MainActor
-    init() {
+    init(onOpenRepositorySettings: (() -> Void)? = nil) {
         _model = StateObject(wrappedValue: PlatformDifferencesViewModel())
+        self.onOpenRepositorySettings = onOpenRepositorySettings
     }
 
     @MainActor
-    init(model: PlatformDifferencesViewModel) {
+    init(model: PlatformDifferencesViewModel, onOpenRepositorySettings: (() -> Void)? = nil) {
         _model = StateObject(wrappedValue: model)
+        self.onOpenRepositorySettings = onOpenRepositorySettings
     }
 
     var body: some View {
@@ -175,6 +188,8 @@ struct PlatformDifferencesView: View {
             }
 
             contractSection
+
+            actionsSection
         }
         .mobileLibraryListStyle()
         .navigationTitle(model.title)
@@ -252,142 +267,29 @@ struct PlatformDifferencesView: View {
             }
         )
     }
-}
 
-private struct PlatformDifferencesCapabilityMatrixSection: View {
-    let capabilities: PlatformDifferencesCapabilities
-
-    var body: some View {
-        Section("Capability matrix") {
-            LabeledContent("Platform", value: capabilities.platform.rawValue)
-            LabeledContent("App version", value: capabilities.appVersion)
-            PlatformDifferencesCapabilityRow(name: "File watcher", support: capabilities.watcher)
-            PlatformDifferencesCapabilityRow(name: "Trash / Recycle Bin", support: capabilities.trash)
-            PlatformDifferencesCapabilityRow(name: "Share integration", support: capabilities.shareExtension)
-            PlatformDifferencesCapabilityRow(name: "Cloud placeholder", support: capabilities.cloudPlaceholder)
-            PlatformDifferencesCapabilityRow(name: "Security bookmark", support: capabilities.securityBookmark)
-        }
-    }
-}
-
-private struct PlatformDifferencesCapabilityRow: View {
-    let name: String
-    let support: PlatformDifferencesCapabilitySupport
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(name)
-                Spacer()
-                Text(support.status.rawValue)
-                    .font(.caption.weight(.semibold))
+    private var actionsSection: some View {
+        Section("Actions") {
+            Button("Open repository settings") {
+                onOpenRepositorySettings?()
             }
-            Text("UI enabled: \(support.uiEnabled ? "Yes" : "No")")
+            .disabled(onOpenRepositorySettings == nil)
+
+            if onOpenRepositorySettings == nil {
+                Text("Repository settings are not available from this iOS help entry yet.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Button("Export diagnostics") {}
+                .disabled(true)
+            Text("Diagnostics are not available on this platform yet.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            if support.requiresPermission {
-                Text("Requires platform permission before use.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            if let reason = support.reason, !reason.isEmpty {
-                Text(reason)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+
+            Button("Close") {
+                dismiss()
             }
         }
-        .accessibilityElement(children: .combine)
-    }
-}
-
-private struct PlatformDifferencesReportSection: View {
-    let report: PlatformDifferencesBindingContractReport
-
-    var body: some View {
-        Section("Contract status") {
-            LabeledContent("Target", value: report.targetPlatform.rawValue)
-            LabeledContent("Contract version", value: "\(report.bindingVersion)")
-            LabeledContent("Core version", value: report.coreVersion)
-            ForEach(report.supportedApis) { api in
-                PlatformDifferencesStatusRow(
-                    title: api.name,
-                    detail: api.capability,
-                    status: api.status,
-                    reason: api.reason
-                )
-            }
-            ForEach(report.typeMappings) { mapping in
-                PlatformDifferencesStatusRow(
-                    title: "\(mapping.rustType) -> \(mapping.targetType)",
-                    detail: mapping.udlType,
-                    status: mapping.status,
-                    reason: mapping.reason
-                )
-            }
-            if report.missingCapabilities.isEmpty {
-                Label("No missing binding capabilities for this target.", systemImage: "checkmark.circle")
-                    .foregroundStyle(.green)
-            } else {
-                ForEach(report.missingCapabilities) { capability in
-                    PlatformDifferencesStatusRow(
-                        title: capability.label,
-                        detail: capability.capability,
-                        status: capability.status,
-                        reason: capability.reason
-                    )
-                }
-            }
-        }
-    }
-}
-
-private extension PlatformDifferencesCapabilities {
-    static func unknownSnapshot(
-        platform: PlatformDifferencesPlatformId,
-        appVersion: String,
-        reason: String
-    ) -> PlatformDifferencesCapabilities {
-        let support = PlatformDifferencesCapabilitySupport(
-            status: .unknown,
-            uiEnabled: false,
-            requiresPermission: false,
-            reason: reason
-        )
-        return PlatformDifferencesCapabilities(
-            platform: platform,
-            appVersion: appVersion,
-            watcher: support,
-            trash: support,
-            shareExtension: support,
-            cloudPlaceholder: support,
-            securityBookmark: support
-        )
-    }
-}
-
-private struct PlatformDifferencesStatusRow: View {
-    let title: String
-    let detail: String
-    let status: PlatformDifferencesBindingSupportStatus
-    let reason: String?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(title)
-                Spacer()
-                Text(status.rawValue)
-                    .font(.caption.weight(.semibold))
-            }
-            Text(detail)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            if let reason, !reason.isEmpty {
-                Text(reason)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .accessibilityElement(children: .combine)
     }
 }

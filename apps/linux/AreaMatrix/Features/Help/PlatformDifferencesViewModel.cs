@@ -29,12 +29,14 @@ public sealed class PlatformDifferencesViewModel : INotifyPropertyChanged
         IPlatformDifferencesCoreBridge coreBridge,
         LinuxPlatformId hostPlatform = LinuxPlatformId.Linux,
         string appVersion = "1",
-        long bindingVersion = 1)
+        long bindingVersion = 1,
+        string? repositoryPath = null)
     {
         this.coreBridge = coreBridge;
         HostPlatform = hostPlatform;
         AppVersion = appVersion;
         BindingVersion = bindingVersion;
+        RepositoryPath = repositoryPath;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -44,6 +46,8 @@ public sealed class PlatformDifferencesViewModel : INotifyPropertyChanged
     public string AppVersion { get; }
 
     public long BindingVersion { get; }
+
+    public string? RepositoryPath { get; }
 
     public PlatformDifferencesContractStatus Status { get; private set; } = PlatformDifferencesContractStatus.Idle;
 
@@ -144,7 +148,18 @@ public sealed class PlatformDifferencesViewModel : INotifyPropertyChanged
 
     public string ActionTitle => IsChecking ? "Checking contract..." : "Check contract";
 
-    public string RepositoryText => "Repository: Not connected";
+    public string RepositoryText => string.IsNullOrWhiteSpace(RepositoryPath)
+        ? "Repository: Not connected"
+        : $"Repository: {RepositoryPath}";
+
+    public bool CanOpenRepositorySettings => false;
+
+    public string RepositorySettingsUnavailableText =>
+        "Repository settings are not available from this Linux help entry yet.";
+
+    public bool CanExportDiagnostics => false;
+
+    public string DiagnosticsUnavailableText => "Diagnostics are not available on this platform yet.";
 
     public string SummaryText => Report is { } currentReport
         ? $"{currentReport.TargetPlatform} binding v{currentReport.BindingVersion}, Core {currentReport.CoreVersion}"

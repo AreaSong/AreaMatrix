@@ -7,6 +7,13 @@ protocol CoreBindingContractInspecting: Sendable {
     ) async throws -> BindingContractReportSnapshot
 }
 
+protocol CorePlatformCapabilitiesLoading: Sendable {
+    func getPlatformCapabilities(
+        platform: PlatformIdSnapshot,
+        appVersion: String
+    ) async throws -> PlatformCapabilitiesSnapshot
+}
+
 enum BindingTargetPlatformSnapshot: String, CaseIterable, Equatable, Hashable, Sendable {
     case swift = "Swift"
     case kotlin = "Kotlin"
@@ -62,6 +69,158 @@ struct BindingContractReportSnapshot: Equatable, Sendable {
     var missingCapabilities: [BindingMissingCapabilitySnapshot]
 }
 
+enum PlatformIdSnapshot: String, Equatable, Hashable, Sendable {
+    case macos = "macOS"
+    case ios = "iOS"
+    case windows = "Windows"
+    case linux = "Linux"
+    case unknown = "Unknown"
+}
+
+enum PlatformCapabilityStatusSnapshot: String, Equatable, Hashable, Sendable {
+    case available = "Available"
+    case limited = "Limited"
+    case notAvailable = "Not available"
+    case unknown = "Unknown"
+}
+
+struct PlatformCapabilitySupportSnapshot: Equatable, Sendable {
+    var status: PlatformCapabilityStatusSnapshot
+    var uiEnabled: Bool
+    var requiresPermission: Bool
+    var reason: String?
+}
+
+struct PlatformCapabilitiesSnapshot: Equatable, Sendable {
+    var platform: PlatformIdSnapshot
+    var appVersion: String
+    var watcher: PlatformCapabilitySupportSnapshot
+    var trash: PlatformCapabilitySupportSnapshot
+    var shareExtension: PlatformCapabilitySupportSnapshot
+    var cloudPlaceholder: PlatformCapabilitySupportSnapshot
+    var securityBookmark: PlatformCapabilitySupportSnapshot
+
+    static func unknown(
+        platform: PlatformIdSnapshot,
+        appVersion: String,
+        reason: String
+    ) -> PlatformCapabilitiesSnapshot {
+        let support = PlatformCapabilitySupportSnapshot(
+            status: .unknown,
+            uiEnabled: false,
+            requiresPermission: false,
+            reason: reason
+        )
+        return PlatformCapabilitiesSnapshot(
+            platform: platform,
+            appVersion: appVersion,
+            watcher: support,
+            trash: support,
+            shareExtension: support,
+            cloudPlaceholder: support,
+            securityBookmark: support
+        )
+    }
+}
+
+struct PlatformDifferencesCapabilityDisplayRow: Equatable, Identifiable {
+    var name: String
+    var support: PlatformCapabilitySupportSnapshot
+    var detail: String
+    var alternative: String?
+
+    var id: String { name }
+}
+
+extension PlatformCapabilitiesSnapshot {
+    var pageSpecRows: [PlatformDifferencesCapabilityDisplayRow] {
+        [
+            PlatformDifferencesCapabilityDisplayRow(
+                name: "Repository access",
+                support: securityBookmark,
+                detail: "Uses platform repository permission or bookmark state from Core.",
+                alternative: "Open repository settings if access needs to be renewed."
+            ),
+            PlatformDifferencesCapabilityDisplayRow(
+                name: "File import",
+                support: limitedFrom(
+                    securityBookmark,
+                    reason: "Import flows still rerun picker, permission, and duplicate preflight."
+                ),
+                detail: "Files and folders are imported only through their source flow.",
+                alternative: "Return to the real import entry before choosing files."
+            ),
+            PlatformDifferencesCapabilityDisplayRow(
+                name: "File watcher",
+                support: watcher,
+                detail: "Shows whether the platform can support repository change watching.",
+                alternative: "Use manual rescan where watcher support is limited."
+            ),
+            PlatformDifferencesCapabilityDisplayRow(
+                name: "Cloud provider",
+                support: cloudPlaceholder,
+                detail: "Shows cloud placeholder or provider limitations without reporting sync progress.",
+                alternative: "Use the platform cloud provider UI for exact sync state."
+            ),
+            PlatformDifferencesCapabilityDisplayRow(
+                name: "Trash / Recycle Bin",
+                support: trash,
+                detail: "Controls whether recoverable destructive actions may be enabled elsewhere.",
+                alternative: "Keep dangerous actions disabled when this row is not available."
+            ),
+            PlatformDifferencesCapabilityDisplayRow(
+                name: "Share integration",
+                support: shareExtension,
+                detail: "Shows whether the platform exposes share or handoff entry points.",
+                alternative: "Use file picker or drag and drop when share integration is unavailable."
+            ),
+            PlatformDifferencesCapabilityDisplayRow(
+                name: "Camera import",
+                support: limitedFrom(
+                    shareExtension,
+                    reason: "Camera capture is validated by the camera import flow, not this page."
+                ),
+                detail: "This page only explains camera entry availability; capture preflight stays in import.",
+                alternative: "Open the camera import flow for the final permission check."
+            )
+        ]
+    }
+
+    private func limitedFrom(
+        _ support: PlatformCapabilitySupportSnapshot,
+        reason: String
+    ) -> PlatformCapabilitySupportSnapshot {
+        guard support.status == .available else {
+            return support.withAdditionalReason(reason)
+        }
+
+        return PlatformCapabilitySupportSnapshot(
+            status: .limited,
+            uiEnabled: false,
+            requiresPermission: true,
+            reason: reason
+        )
+    }
+}
+
+private extension PlatformCapabilitySupportSnapshot {
+    func withAdditionalReason(_ additionalReason: String) -> PlatformCapabilitySupportSnapshot {
+        let combinedReason: String
+        if let reason, !reason.isEmpty {
+            combinedReason = "\(reason) \(additionalReason)"
+        } else {
+            combinedReason = additionalReason
+        }
+
+        return PlatformCapabilitySupportSnapshot(
+            status: status,
+            uiEnabled: uiEnabled,
+            requiresPermission: requiresPermission,
+            reason: combinedReason
+        )
+    }
+}
+
 extension CoreBridge: CoreBindingContractInspecting {
     func inspectBindingContract(
         targetPlatform: BindingTargetPlatformSnapshot,
@@ -78,6 +237,21 @@ extension CoreBridge: CoreBindingContractInspecting {
     }
 }
 
+extension CoreBridge: CorePlatformCapabilitiesLoading {
+    func getPlatformCapabilities(
+        platform: PlatformIdSnapshot,
+        appVersion: String
+    ) async throws -> PlatformCapabilitiesSnapshot {
+        try await Task.detached(priority: .userInitiated) {
+            let capabilities = try loadCorePlatformCapabilities(
+                platform: platform.corePlatformId,
+                appVersion: appVersion
+            )
+            return PlatformCapabilitiesSnapshot(coreCapabilities: capabilities)
+        }.value
+    }
+}
+
 extension BindingContractReportSnapshot {
     init(coreReport: BindingContractReport) {
         targetPlatform = BindingTargetPlatformSnapshot(coreTargetPlatform: coreReport.targetPlatform)
@@ -88,6 +262,27 @@ extension BindingContractReportSnapshot {
         missingCapabilities = coreReport.missingCapabilities.map(
             BindingMissingCapabilitySnapshot.init(coreCapability:)
         )
+    }
+}
+
+extension PlatformCapabilitiesSnapshot {
+    init(coreCapabilities: PlatformCapabilities) {
+        platform = PlatformIdSnapshot(corePlatformId: coreCapabilities.platform)
+        appVersion = coreCapabilities.appVersion
+        watcher = PlatformCapabilitySupportSnapshot(coreSupport: coreCapabilities.watcher)
+        trash = PlatformCapabilitySupportSnapshot(coreSupport: coreCapabilities.trash)
+        shareExtension = PlatformCapabilitySupportSnapshot(coreSupport: coreCapabilities.shareExtension)
+        cloudPlaceholder = PlatformCapabilitySupportSnapshot(coreSupport: coreCapabilities.cloudPlaceholder)
+        securityBookmark = PlatformCapabilitySupportSnapshot(coreSupport: coreCapabilities.securityBookmark)
+    }
+}
+
+private extension PlatformCapabilitySupportSnapshot {
+    init(coreSupport: PlatformCapabilitySupport) {
+        status = PlatformCapabilityStatusSnapshot(coreStatus: coreSupport.status)
+        uiEnabled = coreSupport.uiEnabled
+        requiresPermission = coreSupport.requiresPermission
+        reason = coreSupport.reason
     }
 }
 
@@ -119,6 +314,38 @@ private extension BindingMissingCapabilitySnapshot {
     }
 }
 
+private extension PlatformIdSnapshot {
+    init(corePlatformId: PlatformId) {
+        switch corePlatformId {
+        case .macos:
+            self = .macos
+        case .ios:
+            self = .ios
+        case .windows:
+            self = .windows
+        case .linux:
+            self = .linux
+        case .unknown:
+            self = .unknown
+        }
+    }
+
+    var corePlatformId: PlatformId {
+        switch self {
+        case .macos:
+            .macos
+        case .ios:
+            .ios
+        case .windows:
+            .windows
+        case .linux:
+            .linux
+        case .unknown:
+            .unknown
+        }
+    }
+}
+
 private extension BindingTargetPlatformSnapshot {
     init(coreTargetPlatform: BindingTargetPlatform) {
         switch coreTargetPlatform {
@@ -143,6 +370,21 @@ private extension BindingTargetPlatformSnapshot {
     }
 }
 
+private extension PlatformCapabilityStatusSnapshot {
+    init(coreStatus: PlatformCapabilityStatus) {
+        switch coreStatus {
+        case .available:
+            self = .available
+        case .limited:
+            self = .limited
+        case .notAvailable:
+            self = .notAvailable
+        case .unknown:
+            self = .unknown
+        }
+    }
+}
+
 private extension BindingSupportStatusSnapshot {
     init(coreStatus: BindingSupportStatus) {
         switch coreStatus {
@@ -158,4 +400,11 @@ private extension BindingSupportStatusSnapshot {
 
 private func inspectCoreBindingContract(request: BindingContractRequest) throws -> BindingContractReport {
     try inspectBindingContract(request: request)
+}
+
+private func loadCorePlatformCapabilities(
+    platform: PlatformId,
+    appVersion: String
+) throws -> PlatformCapabilities {
+    try getPlatformCapabilities(platform: platform, appVersion: appVersion)
 }

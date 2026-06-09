@@ -242,6 +242,9 @@ public sealed partial class MainWindow : Window
 
     private async void WindowsMainWindowPage_OpenPlatformDifferencesRequested()
     {
+        PlatformDifferencesPage.ViewModel = new PlatformDifferencesViewModel(
+            new PlatformDifferencesCoreBridge(coreClient),
+            repositoryPath: WindowsMainWindowPage.ViewModel?.RepoPath);
         ShowPlatformDifferencesPage();
         await PlatformDifferencesPage.OpenAsync();
     }

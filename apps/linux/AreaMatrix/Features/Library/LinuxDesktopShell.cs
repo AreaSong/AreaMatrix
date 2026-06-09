@@ -23,7 +23,7 @@ public interface ILinuxImportDialogFactory
 
 public interface ILinuxPlatformDifferencesViewFactory
 {
-    PlatformDifferencesView Create();
+    PlatformDifferencesView Create(string? repositoryPath = null);
 }
 
 public interface ILinuxLocalFolderNoticeFactory
@@ -138,7 +138,7 @@ public sealed class LinuxDesktopShell : IDisposable
             throw new InvalidOperationException("Linux platform differences route has no view factory.");
         }
 
-        PlatformDifferencesView view = platformDifferencesViewFactory.Create();
+        PlatformDifferencesView view = platformDifferencesViewFactory.Create(mainWindow?.ViewModel.RepoPath);
         await view.OpenAsync(cancellationToken).ConfigureAwait(false);
         platformDifferencesView = view;
     }
@@ -323,8 +323,10 @@ public sealed class LinuxPlatformDifferencesViewFactory : ILinuxPlatformDifferen
         this.coreBridge = coreBridge;
     }
 
-    public PlatformDifferencesView Create()
+    public PlatformDifferencesView Create(string? repositoryPath = null)
     {
-        return new PlatformDifferencesView(new PlatformDifferencesViewModel(coreBridge));
+        return new PlatformDifferencesView(new PlatformDifferencesViewModel(
+            coreBridge,
+            repositoryPath: repositoryPath));
     }
 }

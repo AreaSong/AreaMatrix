@@ -34,6 +34,18 @@ public sealed class PlatformDifferencesView
         return ViewModel.InspectContractAsync(cancellationToken);
     }
 
+    public Task<bool> OpenRepositorySettingsAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(ViewModel.CanOpenRepositorySettings);
+    }
+
+    public Task<bool> ExportDiagnosticsAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(ViewModel.CanExportDiagnostics);
+    }
+
     public void Close()
     {
         CloseRequested?.Invoke();
