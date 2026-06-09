@@ -10,19 +10,22 @@ internal sealed class FakeLinuxRepositoryCoreBridge :
     private readonly LinuxRepositoryValidation fallbackValidation;
     private readonly LinuxPlatformCapabilities capabilities;
     private readonly LinuxRepositoryCoreException? initializeError;
+    private readonly LinuxRepositoryCoreException? adoptError;
 
     public FakeLinuxRepositoryCoreBridge(
         LinuxRepositoryValidation validation,
         LinuxPlatformCapabilities? capabilities = null,
-        LinuxRepositoryCoreException? initializeError = null)
-        : this([validation], capabilities, initializeError)
+        LinuxRepositoryCoreException? initializeError = null,
+        LinuxRepositoryCoreException? adoptError = null)
+        : this([validation], capabilities, initializeError, adoptError)
     {
     }
 
     public FakeLinuxRepositoryCoreBridge(
         IEnumerable<LinuxRepositoryValidation> validations,
         LinuxPlatformCapabilities? capabilities = null,
-        LinuxRepositoryCoreException? initializeError = null)
+        LinuxRepositoryCoreException? initializeError = null,
+        LinuxRepositoryCoreException? adoptError = null)
     {
         IReadOnlyList<LinuxRepositoryValidation> validationList = validations.ToArray();
         if (validationList.Count == 0)
@@ -34,6 +37,7 @@ internal sealed class FakeLinuxRepositoryCoreBridge :
         fallbackValidation = validationList[^1];
         this.capabilities = capabilities ?? LinuxPlatformCapabilitySamples.LinuxDefault();
         this.initializeError = initializeError;
+        this.adoptError = adoptError;
     }
 
     public List<string> ValidatedPaths { get; } = [];
@@ -76,6 +80,11 @@ internal sealed class FakeLinuxRepositoryCoreBridge :
     {
         cancellationToken.ThrowIfCancellationRequested();
         AdoptedPaths.Add(repoPath);
+        if (adoptError is not null)
+        {
+            throw adoptError;
+        }
+
         return Task.CompletedTask;
     }
 

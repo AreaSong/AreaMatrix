@@ -67,6 +67,8 @@ public static class LinuxMainWindowSmokeTests
     {
         string shell = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs"));
+        string factories = File.ReadAllText(RepositoryPath(
+            "apps/linux/AreaMatrix/Features/Library/LinuxDesktopShellFactories.cs"));
 
         TestAssert.Contains("ConsumeRouteAsync", shell, "route consumer");
         TestAssert.Contains("LinuxRepositoryRouteKind.LocalFolderNotice", shell, "local folder notice route");
@@ -76,8 +78,8 @@ public static class LinuxMainWindowSmokeTests
         TestAssert.Contains("LinuxRepositoryCoreBridge repositoryBridge = new(nativeCoreClient)", shell, "repository bridge");
         TestAssert.Contains("new LinuxLocalFolderNoticeFactory(repositoryBridge)", shell, "local notice bridge");
         TestAssert.Contains("DesktopMainQueryCoreBridge queryBridge = new(nativeCoreClient)", shell, "query bridge");
-        TestAssert.Contains("new LocalFolderNoticeViewModel(coreBridge)", shell, "local notice view model");
-        TestAssert.Contains("new LinuxMainWindowViewModel(coreBridge", shell, "main window view model");
+        TestAssert.Contains("new LocalFolderNoticeViewModel(coreBridge)", factories, "local notice view model");
+        TestAssert.Contains("new LinuxMainWindowViewModel(coreBridge", factories, "main window view model");
         TestAssert.NotContains("FakeLinuxPlatformCapabilitiesCoreBridge", shell, "no fake platform capability bridge");
         TestAssert.NotContains("FakeDesktopMainQueryCoreBridge", shell, "no fake bridge in production shell");
     }

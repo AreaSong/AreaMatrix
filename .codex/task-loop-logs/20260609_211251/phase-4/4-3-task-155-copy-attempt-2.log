@@ -1,0 +1,42 @@
+一、执行结论
+
+已完成。`./dev check task 4-3/task-155` 已重新执行并通过。
+
+二、执行范围
+
+单任务：`4-3/task-155`，只修复上次验收指出的 Linux S4-X-05 route/test 证据问题。
+
+本次 retry 直接修改：
+- [LinuxMainWindowViewModelTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/Library/LinuxMainWindowViewModelTests.cs:46)
+- [LinuxMainWindowSmokeTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/Library/LinuxMainWindowSmokeTests.cs:66)
+
+三、完成情况
+
+核对清单结果：
+- 只处理 S4-X-05 + C4-10：通过。
+- 已读取页面规格、control map、Core API、C4-10 能力规格：通过。
+- 只接入/验证 C4-10 的 CoreBridge、状态、错误映射：通过。
+- 未实现相邻页面、相邻平台或同页其他能力：通过。
+
+完成标准结果：
+- S4-X-05 adopt confirm route 可触发并进入页面：通过，测试现在注入 `FakeRepositoryAdoptConfirmFactory` 并断言 adopt confirm route 被创建。
+- 未使用 mock/fixture 伪造生产闭环：通过，生产路径仍由 `CreateDefault` 注入真实 `LinuxRepositoryCoreBridge`。
+- 未触碰 control map 之外 Core 能力：通过。
+
+Forbidden Touches：`git diff -- core/src` 无输出，未触碰 `core/src/**`。
+
+四、工程质量
+
+修复保持在测试 wiring 与 smoke evidence 层，没有改生产 Core 语义。`LocalFolderNotice` 继续后按 shell 生命周期清理旧 view，并停在 `RepositoryAdoptConfirmView`，避免提前打开主窗口或调用 init/adopt。未新增依赖、未新增 Rust public API、无 mock-only 生产路径。
+
+五、验证情况
+
+已运行：
+- `dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj`：原来的 `Linux repository adopt confirm route has no view factory` 已消失；该命令随后失败在相邻 `S4-X-02/C4-17` 的 `PlatformDifferencesTests`，错误为缺少 `File watcher - Available` 文本，不属于本 task 范围。
+- `./dev check task 4-3/task-155`：通过，exit 0；包含 `prompt doctor: OK`、`git diff --check`、macOS build `BUILD SUCCEEDED`。
+
+六、风险与后续
+
+剩余风险：Linux 全测试入口仍被相邻 C4-17 平台能力文案测试阻断，不是本次 S4-X-05/C4-10 retry 范围。
+
+建议下一个任务：处理 `PlatformDifferencesTests` / `S4-X-02 + C4-17` 的能力行文案或排序漂移。

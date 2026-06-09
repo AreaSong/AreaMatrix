@@ -1,0 +1,43 @@
+page_id: S4-X-05
+platform_slice: Linux C4-10 linux-repo-connect
+title: Use Existing Folder
+description: Confirm Linux non-empty repository adoption before Core creates AreaMatrix metadata.
+summary:
+  - Folder: /home/you/Existing
+  - Estimated items: Existing files detected by Core validation.
+  - Writable: Yes/No
+  - Existing .areamatrix: Yes/No
+  - Location type: Local folder
+  - Location type: External drive
+  - Location type: Network mount
+  - Location type: Sync folder
+  - Location type: Unknown
+copy:
+  - AreaMatrix will not move, delete, rename, or overwrite existing files.
+  - It will create a .areamatrix folder for metadata and scan this folder.
+  - Removing .areamatrix metadata later must not remove user files.
+checks:
+  - I understand AreaMatrix will add metadata to this folder.
+  - I understand this location may sync or report changes differently.
+states:
+  checking: Checking folder...
+  adopting: Preparing repository...
+  empty_path: Choose a folder first.
+  empty_folder: This folder is empty. Use the create repository confirmation instead.
+  ready: Ready to use this folder.
+  failure: Try Again
+actions:
+  - Use This Folder
+  - Try Again
+  - Choose Another Folder
+  - Cancel
+details:
+  - .areamatrix stores metadata, generated overview files, staging state, and the repository database.
+handoff:
+  success: S4-LNX-02
+safety:
+  - The page calls validate_repo_path through LinuxRepositoryCoreBridge when opened.
+  - The page calls init_repo with AdoptExisting through LinuxRepositoryCoreBridge only after Use This Folder.
+  - The page revalidates after init_repo and requires Core to detect .areamatrix metadata.
+  - The page does not suggest sudo or chmod.
+  - The page does not move, delete, rename, overwrite, import, reindex, rescan, or inspect user files directly.

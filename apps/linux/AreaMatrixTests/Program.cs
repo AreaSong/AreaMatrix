@@ -11,6 +11,8 @@ await LocalFolderNoticeViewModelTests.RunAllAsync();
 LocalFolderNoticeSmokeTests.RunAll();
 await RepositoryInitConfirmViewModelTests.RunAllAsync();
 RepositoryInitConfirmSmokeTests.RunAll();
+await RepositoryAdoptConfirmViewModelTests.RunAllAsync();
+RepositoryAdoptConfirmSmokeTests.RunAll();
 await LinuxMainWindowViewModelTests.RunAllAsync();
 LinuxMainWindowSmokeTests.RunAll();
 await LinuxSyncConflictEntryPageFeatureTests.RunAllAsync();
