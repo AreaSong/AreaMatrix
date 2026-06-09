@@ -287,23 +287,3 @@ private struct InitSafetyChecklist: View {
         }
     }
 }
-
-struct RepositoryRoutePlaceholderView: View {
-    let content: ConnectRepositoryRouteDestinationContent
-
-    var body: some View {
-        List {
-            Section {
-                Label(content.primaryText, systemImage: content.systemImage)
-                if let pathText = content.pathText {
-                    Text(pathText)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                }
-            }
-        }
-        .connectRepositoryListStyle()
-        .navigationTitle(content.title)
-    }
-}

@@ -112,15 +112,18 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
     func testIOSPlatformDifferencesIsReachableFromConnectRepositoryHelp() throws {
         let appSource = try Self.readSource("../AreaMatrixApp/AreaMatrixIOSApp.swift")
         let connectSource = try Self.readSource("../AreaMatrix/Features/Onboarding/ConnectRepositoryView.swift")
+        let routeSource = try Self.readSource(
+            "../AreaMatrix/Features/Onboarding/ConnectRepositoryRouteDestinationView.swift"
+        )
         let helpSource = try Self.readSource("../AreaMatrix/Features/Help/PlatformDifferencesView.swift")
 
         XCTAssertTrue(appSource.contains("ConnectRepositoryEntryView()"))
         XCTAssertTrue(connectSource.contains("Button(\"Help\")"))
         XCTAssertTrue(connectSource.contains(".sheet(isPresented: $showingRepositoryHelp)"))
         XCTAssertTrue(connectSource.contains("ConnectRepositoryHelpView()"))
-        XCTAssertTrue(connectSource.contains("NavigationLink"))
-        XCTAssertTrue(connectSource.contains("PlatformDifferencesView()"))
-        XCTAssertTrue(connectSource.contains("Platform capabilities"))
+        XCTAssertTrue(routeSource.contains("NavigationLink"))
+        XCTAssertTrue(routeSource.contains("PlatformDifferencesView()"))
+        XCTAssertTrue(routeSource.contains("Platform capabilities"))
         XCTAssertTrue(helpSource.contains("Open repository settings"))
         XCTAssertTrue(helpSource.contains("Export diagnostics"))
         XCTAssertTrue(helpSource.contains("Close"))

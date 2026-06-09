@@ -99,12 +99,15 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
 
     func testS4X03ConnectRoutePassesReviewHandlerToMobileLibrary() throws {
         let connectSource = try Self.readSource("../../AreaMatrix/Features/Onboarding/ConnectRepositoryView.swift")
+        let routeSource = try Self.readSource(
+            "../../AreaMatrix/Features/Onboarding/ConnectRepositoryRouteDestinationView.swift"
+        )
 
         XCTAssertTrue(connectSource.contains("@State private var pendingSyncConflictReviewRoute"))
         XCTAssertTrue(connectSource.contains("onOpenSyncConflictReview: openSyncConflictReview"))
-        XCTAssertTrue(connectSource.contains("onOpenSyncConflictReview: onOpenSyncConflictReview"))
         XCTAssertTrue(connectSource.contains("SyncConflictReviewRouteView(route: route)"))
         XCTAssertTrue(connectSource.contains("pendingSyncConflictReviewRoute = route"))
+        XCTAssertTrue(routeSource.contains("onOpenSyncConflictReview: onOpenSyncConflictReview"))
     }
 
     private static func readSource(_ relativePath: String) throws -> String {
