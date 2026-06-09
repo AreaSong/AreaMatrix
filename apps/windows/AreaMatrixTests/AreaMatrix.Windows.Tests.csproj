@@ -84,6 +84,9 @@
       Include="../AreaMatrix/Features/Onboarding/ChooseRepositoryViewModel.OneDriveNotice.cs"
       Link="Features/Onboarding/ChooseRepositoryViewModel.OneDriveNotice.cs" />
     <Compile Include="../AreaMatrix/Features/Onboarding/OneDriveNoticeViewModel.cs" Link="Features/Onboarding/OneDriveNoticeViewModel.cs" />
+    <Compile
+      Include="../AreaMatrix/Features/Onboarding/RepositoryInitConfirmViewModel.cs"
+      Link="Features/Onboarding/RepositoryInitConfirmViewModel.cs" />
   </ItemGroup>
 
 </Project>

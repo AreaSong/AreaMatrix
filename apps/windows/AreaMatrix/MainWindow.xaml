@@ -13,6 +13,9 @@
         <onboarding:OneDriveNoticeDialog
             x:Name="OneDriveNoticePage"
             Visibility="Collapsed" />
+        <onboarding:RepositoryInitConfirmDialog
+            x:Name="RepositoryInitConfirmPage"
+            Visibility="Collapsed" />
         <library:WindowsMainWindow
             x:Name="WindowsMainWindowPage"
             Visibility="Collapsed" />

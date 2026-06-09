@@ -1,0 +1,122 @@
+<UserControl
+    x:Class="AreaMatrix.Features.Onboarding.RepositoryInitConfirmDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid
+        Padding="40"
+        RowSpacing="20"
+        Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Spacing="6">
+            <TextBlock
+                Text="Create AreaMatrix Repository"
+                Style="{ThemeResource TitleTextBlockStyle}" />
+            <TextBlock
+                x:Name="StatusTextBlock"
+                AutomationProperties.LiveSetting="Polite"
+                TextWrapping="Wrap" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="16">
+                <Border
+                    BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock
+                            x:Name="SafetyTextBlock"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Name="NoOverwriteTextBlock"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Name="FolderTextBlock"
+                            TextWrapping="Wrap"
+                            IsTextSelectionEnabled="True" />
+                        <TextBlock
+                            x:Name="PathTypeTextBlock"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Name="WritableTextBlock"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Spacing="8">
+                    <TextBlock
+                        Text="Checks"
+                        Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <TextBlock
+                        x:Name="FolderCheckTextBlock"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        x:Name="WritePermissionTextBlock"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        x:Name="DiskSpaceTextBlock"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        x:Name="RiskTextBlock"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+
+                <StackPanel
+                    x:Name="FailureSection"
+                    Spacing="8"
+                    Visibility="Collapsed">
+                    <TextBlock
+                        x:Name="ErrorTextBlock"
+                        TextWrapping="Wrap" />
+                    <Button
+                        x:Name="TryAgainButton"
+                        Content="Try Again"
+                        Click="TryAgainButton_Click" />
+                </StackPanel>
+
+                <TextBlock
+                    x:Name="DisabledReasonTextBlock"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Row="2" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <ProgressRing
+                x:Name="RepositoryInitProgressRing"
+                Width="20"
+                Height="20"
+                IsIndeterminate="True"
+                HorizontalAlignment="Left" />
+
+            <Button
+                Grid.Column="1"
+                Content="Cancel"
+                Click="CancelButton_Click" />
+            <Button
+                Grid.Column="2"
+                Content="Choose Another Folder"
+                Click="ChooseAnotherFolderButton_Click" />
+            <Button
+                x:Name="CreateRepositoryButton"
+                Grid.Column="3"
+                Content="Create Repository"
+                Style="{ThemeResource AccentButtonStyle}"
+                Click="CreateRepositoryButton_Click" />
+        </Grid>
+    </Grid>
+</UserControl>

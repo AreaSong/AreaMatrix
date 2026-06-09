@@ -24,6 +24,10 @@ public sealed partial class MainWindow : Window
         repositoryBridge = new WindowsRepositoryCoreBridge(coreClient);
         ChooseRepositoryPage.ViewModel = new ChooseRepositoryViewModel(repositoryBridge);
         ChooseRepositoryPage.ViewModel.PropertyChanged += ChooseRepositoryViewModel_PropertyChanged;
+        RepositoryInitConfirmPage.ViewModel = new RepositoryInitConfirmViewModel(repositoryBridge);
+        RepositoryInitConfirmPage.CancelRequested += RepositoryInitConfirmPage_CloseRequested;
+        RepositoryInitConfirmPage.ChooseAnotherFolderRequested += RepositoryInitConfirmPage_CloseRequested;
+        RepositoryInitConfirmPage.RepositoryOpenedRequested += RepositoryInitConfirmPage_RepositoryOpenedRequested;
         OneDriveNoticePage.ViewModel = new OneDriveNoticeViewModel(repositoryBridge);
         OneDriveNoticePage.ChooseLocalFolderRequested += OneDriveNoticePage_ChooseLocalFolderRequested;
         OneDriveNoticePage.CloseRequested += OneDriveNoticePage_CloseRequested;
@@ -68,6 +72,7 @@ public sealed partial class MainWindow : Window
         {
             oneDriveNoticeOpenedFromMainWindow = false;
             ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+            RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
             WindowsMainWindowPage.Visibility = Visibility.Collapsed;
             WindowsImportPage.Visibility = Visibility.Collapsed;
             WatcherStatusPage.Visibility = Visibility.Collapsed;
@@ -78,6 +83,20 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        if (route.Kind == WindowsRepositoryRouteKind.RepositoryInitConfirm)
+        {
+            ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+            OneDriveNoticePage.Visibility = Visibility.Collapsed;
+            WindowsMainWindowPage.Visibility = Visibility.Collapsed;
+            WindowsImportPage.Visibility = Visibility.Collapsed;
+            WatcherStatusPage.Visibility = Visibility.Collapsed;
+            RescanConfirmPage.Visibility = Visibility.Collapsed;
+            PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+            RepositoryInitConfirmPage.Visibility = Visibility.Visible;
+            await RepositoryInitConfirmPage.OpenRouteAsync(route);
+            return;
+        }
+
         if (route.Kind != WindowsRepositoryRouteKind.MainWindow)
         {
             return;
@@ -85,6 +104,7 @@ public sealed partial class MainWindow : Window
 
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
@@ -98,6 +118,7 @@ public sealed partial class MainWindow : Window
         oneDriveNoticeOpenedFromMainWindow = false;
         ChooseRepositoryPage.ViewModel?.ResetRoute();
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
@@ -116,6 +137,7 @@ public sealed partial class MainWindow : Window
 
         oneDriveNoticeOpenedFromMainWindow = false;
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
@@ -132,10 +154,15 @@ public sealed partial class MainWindow : Window
         }
 
         await viewModel.ContinueAfterOneDriveNoticeAsync(state);
-        if (viewModel.Route.Kind is WindowsRepositoryRouteKind.RepositoryInitConfirm
-            or WindowsRepositoryRouteKind.RepositoryAdoptConfirm)
+        if (viewModel.Route.Kind == WindowsRepositoryRouteKind.RepositoryInitConfirm)
+        {
+            return;
+        }
+
+        if (viewModel.Route.Kind == WindowsRepositoryRouteKind.RepositoryAdoptConfirm)
         {
             OneDriveNoticePage.Visibility = Visibility.Collapsed;
+            RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
             WindowsMainWindowPage.Visibility = Visibility.Collapsed;
             WindowsImportPage.Visibility = Visibility.Collapsed;
             WatcherStatusPage.Visibility = Visibility.Collapsed;
@@ -149,6 +176,7 @@ public sealed partial class MainWindow : Window
     {
         oneDriveNoticeOpenedFromMainWindow = true;
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
@@ -162,6 +190,7 @@ public sealed partial class MainWindow : Window
     {
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
@@ -195,6 +224,7 @@ public sealed partial class MainWindow : Window
         WindowsImportPage.Visibility = Visibility.Collapsed;
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
@@ -218,6 +248,7 @@ public sealed partial class MainWindow : Window
 
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
@@ -230,6 +261,7 @@ public sealed partial class MainWindow : Window
     {
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
@@ -241,6 +273,7 @@ public sealed partial class MainWindow : Window
     {
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
@@ -266,6 +299,7 @@ public sealed partial class MainWindow : Window
         WindowsImportPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Visible;
     }
 
@@ -278,6 +312,33 @@ public sealed partial class MainWindow : Window
         WatcherStatusPage.Visibility = Visibility.Visible;
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
+    }
+
+    private void RepositoryInitConfirmPage_CloseRequested()
+    {
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
+        OneDriveNoticePage.Visibility = Visibility.Collapsed;
+        WindowsMainWindowPage.Visibility = Visibility.Collapsed;
+        WindowsImportPage.Visibility = Visibility.Collapsed;
+        WatcherStatusPage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        ChooseRepositoryPage.ViewModel?.ResetRoute();
+        ChooseRepositoryPage.Visibility = Visibility.Visible;
+    }
+
+    private async Task RepositoryInitConfirmPage_RepositoryOpenedRequested(WindowsRepositoryRoute route)
+    {
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
+        OneDriveNoticePage.Visibility = Visibility.Collapsed;
+        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        WindowsImportPage.Visibility = Visibility.Collapsed;
+        WatcherStatusPage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        WindowsMainWindowPage.Visibility = Visibility.Visible;
+        await WindowsMainWindowPage.OpenRepositoryAsync(route);
     }
 
     private void MainWindow_Closed(object sender, WindowEventArgs args)
@@ -291,6 +352,9 @@ public sealed partial class MainWindow : Window
         OneDriveNoticePage.CloseRequested -= OneDriveNoticePage_CloseRequested;
         OneDriveNoticePage.ContinueWithOneDriveRequested -= OneDriveNoticePage_ContinueWithOneDriveRequested;
         OneDriveNoticePage.OpenWatcherStatusRequested -= OneDriveNoticePage_OpenWatcherStatusRequested;
+        RepositoryInitConfirmPage.CancelRequested -= RepositoryInitConfirmPage_CloseRequested;
+        RepositoryInitConfirmPage.ChooseAnotherFolderRequested -= RepositoryInitConfirmPage_CloseRequested;
+        RepositoryInitConfirmPage.RepositoryOpenedRequested -= RepositoryInitConfirmPage_RepositoryOpenedRequested;
         WindowsMainWindowPage.OpenOneDriveStatusRequested -= WindowsMainWindowPage_OpenOneDriveStatusRequested;
         WindowsMainWindowPage.OpenWatcherStatusRequested -= WindowsMainWindowPage_OpenWatcherStatusRequested;
         WindowsMainWindowPage.OpenImportRequested -= WindowsMainWindowPage_OpenImportRequested;
@@ -310,6 +374,7 @@ public sealed partial class MainWindow : Window
     {
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
@@ -321,6 +386,7 @@ public sealed partial class MainWindow : Window
     {
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
