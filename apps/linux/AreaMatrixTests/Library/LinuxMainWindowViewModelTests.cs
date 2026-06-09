@@ -11,6 +11,7 @@ public static class LinuxMainWindowViewModelTests
     {
         await RepositoryRouteOpensMainWindowThroughProductionShell();
         await LocalFolderNoticeRouteIsHostedBeforeContinuing();
+        await RepositoryInitConfirmRouteCreatesThenOpensMainWindow();
         await OpenRepositoryLoadsTreeAndFirstPageFromCoreBridge();
         await LoadMoreAdvancesListOffsetThroughCoreBridge();
         await SearchUsesCoreSearchWithoutScanningRepository();
@@ -67,6 +68,42 @@ public static class LinuxMainWindowViewModelTests
         TestAssert.Empty(queryBridge.ListRequests, "no main query before adopt confirmation");
         TestAssert.Empty(repositoryBridge.InitializedPaths, nameof(repositoryBridge.InitializedPaths));
         TestAssert.Empty(repositoryBridge.AdoptedPaths, nameof(repositoryBridge.AdoptedPaths));
+    }
+
+    private static async Task RepositoryInitConfirmRouteCreatesThenOpensMainWindow()
+    {
+        const string path = "/home/me/Empty";
+        FakeDesktopMainQueryCoreBridge queryBridge = new();
+        FakeLinuxRepositoryCoreBridge repositoryBridge = new(
+            [
+                LinuxRepositoryValidationSamples.EmptyDirectory(path),
+                LinuxRepositoryValidationSamples.EmptyDirectory(path),
+                LinuxRepositoryValidationSamples.Initialized(path)
+            ]);
+        FakeLinuxMainWindowFactory mainWindowFactory = new(queryBridge);
+        FakeRepositoryInitConfirmFactory initConfirmFactory = new(repositoryBridge);
+        LinuxChooseRepositoryViewModel chooseModel = new(repositoryBridge);
+        LinuxChooseRepositoryView chooseView = new(chooseModel, new FakeLinuxFolderPickerAdapter(path));
+        LinuxDesktopShell shell = new(
+            chooseView,
+            mainWindowFactory,
+            repositoryInitConfirmFactory: initConfirmFactory);
+
+        await chooseView.TypeRepositoryPathAsync(path);
+        await shell.ContinueFromRepositorySelectionAsync();
+
+        TestAssert.NotNull(shell.RepositoryInitConfirmView, nameof(shell.RepositoryInitConfirmView));
+        TestAssert.Empty(mainWindowFactory.CreatedRoutes, "main window before create confirmation");
+        TestAssert.Empty(repositoryBridge.InitializedPaths, nameof(repositoryBridge.InitializedPaths));
+
+        await shell.ContinueFromRepositoryInitConfirmAsync();
+
+        TestAssert.SequenceEqual([path], repositoryBridge.InitializedPaths, nameof(repositoryBridge.InitializedPaths));
+        TestAssert.Empty(repositoryBridge.AdoptedPaths, nameof(repositoryBridge.AdoptedPaths));
+        TestAssert.Equal(1, mainWindowFactory.CreatedRoutes.Count, "created main windows");
+        TestAssert.NotNull(shell.MainWindow, nameof(shell.MainWindow));
+        TestAssert.Null(shell.RepositoryInitConfirmView, nameof(shell.RepositoryInitConfirmView));
+        TestAssert.SequenceEqual([path], queryBridge.ListRequests, "main query after create");
     }
 
     private static async Task OpenRepositoryLoadsTreeAndFirstPageFromCoreBridge()
@@ -339,5 +376,23 @@ internal sealed class FakeLocalFolderNoticeFactory : ILinuxLocalFolderNoticeFact
     {
         CreatedRoutes.Add(route);
         return new LocalFolderNoticeView(new LocalFolderNoticeViewModel(bridge));
+    }
+}
+
+internal sealed class FakeRepositoryInitConfirmFactory : ILinuxRepositoryInitConfirmFactory
+{
+    private readonly ILinuxRepositoryCoreBridge bridge;
+
+    public FakeRepositoryInitConfirmFactory(ILinuxRepositoryCoreBridge bridge)
+    {
+        this.bridge = bridge;
+    }
+
+    public List<LinuxRepositoryRoute> CreatedRoutes { get; } = [];
+
+    public RepositoryInitConfirmView Create(LinuxRepositoryRoute route)
+    {
+        CreatedRoutes.Add(route);
+        return new RepositoryInitConfirmView(new RepositoryInitConfirmViewModel(bridge));
     }
 }

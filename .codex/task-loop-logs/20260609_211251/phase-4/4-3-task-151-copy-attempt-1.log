@@ -1,0 +1,63 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-3/task-151`，仅处理 `S4-X-04 repository-init-confirm` 中的 `C4-10 linux-repo-connect`。
+
+修改文件清单：
+- [RepositoryInitConfirmViewModel.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Onboarding/RepositoryInitConfirmViewModel.cs)
+- [RepositoryInitConfirmView.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Onboarding/RepositoryInitConfirmView.cs)
+- [RepositoryInitConfirmPresentation.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Onboarding/RepositoryInitConfirmPresentation.cs)
+- [RepositoryInitConfirmView.ui](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Onboarding/RepositoryInitConfirmView.ui)
+- [LinuxDesktopShell.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs)
+- [AreaMatrix.Linux.csproj](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/AreaMatrix.Linux.csproj)
+- [RepositoryInitConfirmViewModelTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/ChooseRepository/RepositoryInitConfirmViewModelTests.cs)
+- [RepositoryInitConfirmSmokeTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/ChooseRepository/RepositoryInitConfirmSmokeTests.cs)
+- [LinuxChooseRepositoryTestSupport.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/ChooseRepository/LinuxChooseRepositoryTestSupport.cs)
+- [LinuxMainWindowViewModelTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/Library/LinuxMainWindowViewModelTests.cs)
+- [Program.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/Program.cs)
+
+三、完成情况
+
+核对清单：
+- 只处理 S4-X-04 中 C4-10：通过，Linux 确认页只消费 `validate_repo_path` 与 `init_repo`。
+- 已读取页面规格、control map、Core API、C4-10 能力规格：通过。
+- 只接入 C4-10 CoreBridge / 状态 / 错误映射：通过，未接 C4-17、cloud、adopt、import、rescan。
+- 未实现相邻页面、相邻平台或同页其他能力：通过。
+
+完成标准：
+- C4-10 用户可见功能可触发：通过，Linux shell 可从空目录进入确认页，点击 Create 后调用真实 CoreBridge 初始化并进入主窗口。
+- 没有 mock/fixture 伪造真实闭环：通过，生产路径走 `LinuxRepositoryCoreBridge.InitializeEmptyRepositoryAsync`；测试 fake 只用于验证调用顺序。
+- 未触碰 control map 外能力：通过。
+
+Forbidden Touches：
+- 未触碰 `core/src/**`。
+- 未修改 `core/area_matrix.udl`。
+- 所有本次产品改动均在 `apps/**` 内。
+
+四、工程质量
+
+代码结构按现有 Linux 模式拆分：ViewModel 管状态和错误，View 只转发动作，Shell 只消费 route。错误路径覆盖了空路径、非目录、不可读、不可写、Core `InvalidPath` / `PermissionDenied` / `Io` 类失败；确认页不会建议 `sudo` / `chmod`，不会执行 adopt/import/reindex/rescan。
+
+未新增依赖，未新增 public Rust API，无 rustdoc 同步需求。没有占位、硬编码成功、mock-only 生产路径或一次性脚本实现。
+
+五、验证情况
+
+已通过：
+- `./dev check task 4-3/task-151`
+  - `prompt_pipeline.py doctor`: OK
+  - `git diff --check`: OK
+  - macOS page-task build gate: `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` succeeded
+- `dotnet build apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj`: succeeded，0 warnings / 0 errors
+
+补充验证：
+- `dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj`：未整体通过。新增的 repository-init-confirm 和 shell 路由测试已执行到其后，随后失败在既有 `PlatformDifferencesTests`，断言把 `CapabilityRows.FirstOrDefault()` 期望成 `File watcher - Available`，但当前第一行实际是 repository access；这是 S4-X-02/C4-17 既有测试断言问题，不属于本 task 范围。
+
+六、风险与后续
+
+剩余风险：真实 Linux 桌面窗口级 UI 未在本机打开验证；本 task 的 manifest gate 已通过，Linux C# 编译通过。工作树中原本已有 `.codex/task-loop-runs/.../summary.json` 与 `tasks/prompts/_shared/progress.json` 修改，我未回退或处理。
+
+建议下一个任务：`4-3/task-152` 做 S4-X-04 page integration verify，汇总 C4-02 / C4-09 / C4-10 三个 page-feature 的整页覆盖。
+

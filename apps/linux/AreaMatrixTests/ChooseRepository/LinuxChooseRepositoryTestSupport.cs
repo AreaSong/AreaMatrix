@@ -6,15 +6,34 @@ internal sealed class FakeLinuxRepositoryCoreBridge :
     ILinuxRepositoryCoreBridge,
     ILinuxPlatformCapabilitiesCoreBridge
 {
-    private readonly LinuxRepositoryValidation validation;
+    private readonly Queue<LinuxRepositoryValidation> validations;
+    private readonly LinuxRepositoryValidation fallbackValidation;
     private readonly LinuxPlatformCapabilities capabilities;
+    private readonly LinuxRepositoryCoreException? initializeError;
 
     public FakeLinuxRepositoryCoreBridge(
         LinuxRepositoryValidation validation,
-        LinuxPlatformCapabilities? capabilities = null)
+        LinuxPlatformCapabilities? capabilities = null,
+        LinuxRepositoryCoreException? initializeError = null)
+        : this([validation], capabilities, initializeError)
     {
-        this.validation = validation;
+    }
+
+    public FakeLinuxRepositoryCoreBridge(
+        IEnumerable<LinuxRepositoryValidation> validations,
+        LinuxPlatformCapabilities? capabilities = null,
+        LinuxRepositoryCoreException? initializeError = null)
+    {
+        IReadOnlyList<LinuxRepositoryValidation> validationList = validations.ToArray();
+        if (validationList.Count == 0)
+        {
+            throw new ArgumentException("At least one Linux repository validation is required.", nameof(validations));
+        }
+
+        this.validations = new Queue<LinuxRepositoryValidation>(validationList);
+        fallbackValidation = validationList[^1];
         this.capabilities = capabilities ?? LinuxPlatformCapabilitySamples.LinuxDefault();
+        this.initializeError = initializeError;
     }
 
     public List<string> ValidatedPaths { get; } = [];
@@ -31,6 +50,9 @@ internal sealed class FakeLinuxRepositoryCoreBridge :
     {
         cancellationToken.ThrowIfCancellationRequested();
         ValidatedPaths.Add(repoPath);
+        LinuxRepositoryValidation validation = validations.Count > 0
+            ? validations.Dequeue()
+            : fallbackValidation;
         return Task.FromResult(validation);
     }
 
@@ -40,6 +62,11 @@ internal sealed class FakeLinuxRepositoryCoreBridge :
     {
         cancellationToken.ThrowIfCancellationRequested();
         InitializedPaths.Add(repoPath);
+        if (initializeError is not null)
+        {
+            throw initializeError;
+        }
+
         return Task.CompletedTask;
     }
 

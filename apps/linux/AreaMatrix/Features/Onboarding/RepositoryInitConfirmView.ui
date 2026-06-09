@@ -1,0 +1,38 @@
+page_id: S4-X-04
+platform_slice: Linux C4-10 linux-repo-connect
+title: Create AreaMatrix Repository
+description: Confirm Linux empty repository initialization before Core creates AreaMatrix metadata.
+summary:
+  - Folder: /home/you/AreaMatrix
+  - Type: Local folder
+  - Type: External drive
+  - Type: Network mount
+  - Type: Sync folder
+  - Type: Unknown
+  - Writable: Yes/No
+copy:
+  - AreaMatrix will create a .areamatrix folder here.
+  - No existing files will be moved, deleted, renamed, or overwritten.
+checks:
+  - Folder is empty
+  - Write permission available
+  - Enough disk space: Core verifies metadata writes during creation.
+states:
+  checking: Checking folder...
+  creating: Creating metadata...
+  empty_path: Choose a folder first.
+  ready: Ready to create .areamatrix metadata.
+  failure: Try Again
+actions:
+  - Create Repository
+  - Try Again
+  - Choose Another Folder
+  - Cancel
+handoff:
+  success: S4-LNX-02
+safety:
+  - The page calls validate_repo_path through LinuxRepositoryCoreBridge when opened.
+  - The page calls init_repo through LinuxRepositoryCoreBridge only after Create Repository.
+  - The page revalidates after init_repo and requires Core to detect .areamatrix metadata.
+  - The page does not suggest sudo or chmod.
+  - The page does not move, delete, rename, overwrite, adopt, import, reindex, or rescan user files.

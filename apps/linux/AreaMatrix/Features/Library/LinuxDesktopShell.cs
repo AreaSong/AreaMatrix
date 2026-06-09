@@ -32,16 +32,23 @@ public interface ILinuxLocalFolderNoticeFactory
     LocalFolderNoticeView Create(LinuxRepositoryRoute route);
 }
 
+public interface ILinuxRepositoryInitConfirmFactory
+{
+    RepositoryInitConfirmView Create(LinuxRepositoryRoute route);
+}
+
 public sealed class LinuxDesktopShell : IDisposable
 {
     private readonly LinuxChooseRepositoryView chooseRepositoryView;
     private readonly ILinuxLocalFolderNoticeFactory? localFolderNoticeFactory;
+    private readonly ILinuxRepositoryInitConfirmFactory? repositoryInitConfirmFactory;
     private readonly ILinuxImportDialogFactory? importDialogFactory;
     private readonly ILinuxMainWindowFactory mainWindowFactory;
     private readonly ILinuxPlatformDifferencesViewFactory? platformDifferencesViewFactory;
     private readonly ILinuxWatcherStatusViewFactory? watcherStatusViewFactory;
     private readonly IDisposable? ownedResources;
     private LocalFolderNoticeView? localFolderNoticeView;
+    private RepositoryInitConfirmView? repositoryInitConfirmView;
     private LinuxImportDialog? importDialog;
     private LinuxMainWindow? mainWindow;
     private PlatformDifferencesView? platformDifferencesView;
@@ -52,6 +59,7 @@ public sealed class LinuxDesktopShell : IDisposable
         LinuxChooseRepositoryView chooseRepositoryView,
         ILinuxMainWindowFactory mainWindowFactory,
         ILinuxLocalFolderNoticeFactory? localFolderNoticeFactory = null,
+        ILinuxRepositoryInitConfirmFactory? repositoryInitConfirmFactory = null,
         ILinuxImportDialogFactory? importDialogFactory = null,
         ILinuxPlatformDifferencesViewFactory? platformDifferencesViewFactory = null,
         ILinuxWatcherStatusViewFactory? watcherStatusViewFactory = null,
@@ -60,6 +68,7 @@ public sealed class LinuxDesktopShell : IDisposable
         this.chooseRepositoryView = chooseRepositoryView;
         this.mainWindowFactory = mainWindowFactory;
         this.localFolderNoticeFactory = localFolderNoticeFactory;
+        this.repositoryInitConfirmFactory = repositoryInitConfirmFactory;
         this.importDialogFactory = importDialogFactory;
         this.platformDifferencesViewFactory = platformDifferencesViewFactory;
         this.watcherStatusViewFactory = watcherStatusViewFactory;
@@ -69,6 +78,8 @@ public sealed class LinuxDesktopShell : IDisposable
     public LinuxChooseRepositoryView ChooseRepositoryView => chooseRepositoryView;
 
     public LocalFolderNoticeView? LocalFolderNoticeView => localFolderNoticeView;
+
+    public RepositoryInitConfirmView? RepositoryInitConfirmView => repositoryInitConfirmView;
 
     public LinuxImportDialog? ImportDialog => importDialog;
 
@@ -94,6 +105,7 @@ public sealed class LinuxDesktopShell : IDisposable
             chooseRepositoryView,
             new LinuxMainWindowFactory(queryBridge, locale, syncConflictBridge),
             new LinuxLocalFolderNoticeFactory(repositoryBridge),
+            new LinuxRepositoryInitConfirmFactory(repositoryBridge),
             new LinuxImportDialogFactory(importBridge),
             new LinuxPlatformDifferencesViewFactory(new PlatformDifferencesCoreBridge(nativeCoreClient)),
             new LinuxWatcherStatusViewFactory(watcherBridge, watcherDiagnostics),
@@ -182,26 +194,39 @@ public sealed class LinuxDesktopShell : IDisposable
         await ConsumeRouteAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task ContinueFromRepositoryInitConfirmAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (repositoryInitConfirmView is null)
+        {
+            return;
+        }
+
+        await repositoryInitConfirmView
+            .CreateRepositoryAsync(cancellationToken)
+            .ConfigureAwait(false);
+        await ConsumeRouteAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task ConsumeRouteAsync(CancellationToken cancellationToken = default)
     {
         LinuxRepositoryRoute route = ActiveRoute();
         if (route.Kind == LinuxRepositoryRouteKind.LocalFolderNotice)
         {
-            if (localFolderNoticeFactory is null)
-            {
-                throw new InvalidOperationException("Linux local folder notice route has no view factory.");
-            }
+            await ShowLocalFolderNoticeAsync(route, cancellationToken).ConfigureAwait(false);
+            return;
+        }
 
-            LocalFolderNoticeView noticeView = localFolderNoticeFactory.Create(route);
-            await noticeView.LoadAsync(route, cancellationToken).ConfigureAwait(false);
-            localFolderNoticeView = noticeView;
-            chooseRepositoryView.ViewModel.ResetRoute();
+        if (route.Kind == LinuxRepositoryRouteKind.RepositoryInitConfirm)
+        {
+            await ShowRepositoryInitConfirmAsync(route, cancellationToken).ConfigureAwait(false);
             return;
         }
 
         if (route.Kind == LinuxRepositoryRouteKind.ChooseRepository)
         {
             localFolderNoticeView = null;
+            repositoryInitConfirmView = null;
             watcherStatusView = null;
             importDialog = null;
             platformDifferencesView = null;
@@ -213,11 +238,51 @@ public sealed class LinuxDesktopShell : IDisposable
             return;
         }
 
+        await ShowMainWindowAsync(route, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task ShowLocalFolderNoticeAsync(
+        LinuxRepositoryRoute route,
+        CancellationToken cancellationToken)
+    {
+        if (localFolderNoticeFactory is null)
+        {
+            throw new InvalidOperationException("Linux local folder notice route has no view factory.");
+        }
+
+        LocalFolderNoticeView noticeView = localFolderNoticeFactory.Create(route);
+        await noticeView.LoadAsync(route, cancellationToken).ConfigureAwait(false);
+        localFolderNoticeView = noticeView;
+        repositoryInitConfirmView = null;
+        chooseRepositoryView.ViewModel.ResetRoute();
+    }
+
+    private async Task ShowRepositoryInitConfirmAsync(
+        LinuxRepositoryRoute route,
+        CancellationToken cancellationToken)
+    {
+        if (repositoryInitConfirmFactory is null)
+        {
+            throw new InvalidOperationException("Linux repository init confirm route has no view factory.");
+        }
+
+        RepositoryInitConfirmView initConfirmView = repositoryInitConfirmFactory.Create(route);
+        await initConfirmView.OpenRouteAsync(route, cancellationToken).ConfigureAwait(false);
+        repositoryInitConfirmView = initConfirmView;
+        localFolderNoticeView = null;
+        chooseRepositoryView.ViewModel.ResetRoute();
+    }
+
+    private async Task ShowMainWindowAsync(
+        LinuxRepositoryRoute route,
+        CancellationToken cancellationToken)
+    {
         LinuxMainWindow window = mainWindowFactory.Create(route);
         await window.OpenRepositoryAsync(route, cancellationToken).ConfigureAwait(false);
         mainWindow = window;
         watcherStatusView = null;
         localFolderNoticeView = null;
+        repositoryInitConfirmView = null;
         importDialog = null;
         platformDifferencesView = null;
         chooseRepositoryView.ViewModel.ResetRoute();
@@ -227,9 +292,16 @@ public sealed class LinuxDesktopShell : IDisposable
     {
         LinuxRepositoryRoute noticeRoute = localFolderNoticeView?.ViewModel.Route
             ?? LinuxRepositoryRoute.None;
-        return noticeRoute.Kind == LinuxRepositoryRouteKind.None
+        if (noticeRoute.Kind != LinuxRepositoryRouteKind.None)
+        {
+            return noticeRoute;
+        }
+
+        LinuxRepositoryRoute initConfirmRoute = repositoryInitConfirmView?.ViewModel.CompletedRoute
+            ?? LinuxRepositoryRoute.None;
+        return initConfirmRoute.Kind == LinuxRepositoryRouteKind.None
             ? chooseRepositoryView.ViewModel.Route
-            : noticeRoute;
+            : initConfirmRoute;
     }
 
     public void Dispose()
@@ -261,6 +333,21 @@ public sealed class LinuxLocalFolderNoticeFactory : ILinuxLocalFolderNoticeFacto
     public LocalFolderNoticeView Create(LinuxRepositoryRoute route)
     {
         return new LocalFolderNoticeView(new LocalFolderNoticeViewModel(coreBridge));
+    }
+}
+
+public sealed class LinuxRepositoryInitConfirmFactory : ILinuxRepositoryInitConfirmFactory
+{
+    private readonly ILinuxRepositoryCoreBridge coreBridge;
+
+    public LinuxRepositoryInitConfirmFactory(ILinuxRepositoryCoreBridge coreBridge)
+    {
+        this.coreBridge = coreBridge;
+    }
+
+    public RepositoryInitConfirmView Create(LinuxRepositoryRoute route)
+    {
+        return new RepositoryInitConfirmView(new RepositoryInitConfirmViewModel(coreBridge));
     }
 }
 
