@@ -16,6 +16,9 @@
         <onboarding:RepositoryInitConfirmDialog
             x:Name="RepositoryInitConfirmPage"
             Visibility="Collapsed" />
+        <onboarding:RepositoryAdoptConfirmDialog
+            x:Name="RepositoryAdoptConfirmPage"
+            Visibility="Collapsed" />
         <library:WindowsMainWindow
             x:Name="WindowsMainWindowPage"
             Visibility="Collapsed" />

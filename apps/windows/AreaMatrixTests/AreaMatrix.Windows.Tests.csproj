@@ -87,6 +87,12 @@
     <Compile
       Include="../AreaMatrix/Features/Onboarding/RepositoryInitConfirmViewModel.cs"
       Link="Features/Onboarding/RepositoryInitConfirmViewModel.cs" />
+    <Compile
+      Include="../AreaMatrix/Features/Onboarding/RepositoryAdoptConfirmViewModel.cs"
+      Link="Features/Onboarding/RepositoryAdoptConfirmViewModel.cs" />
+    <Compile
+      Include="../AreaMatrix/Features/Onboarding/RepositoryAdoptConfirmViewModel.Validation.cs"
+      Link="Features/Onboarding/RepositoryAdoptConfirmViewModel.Validation.cs" />
   </ItemGroup>
 
 </Project>

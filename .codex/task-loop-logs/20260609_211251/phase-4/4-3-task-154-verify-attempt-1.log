@@ -1,0 +1,65 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-154`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-154-s4-x-05-c4-09-windows-repo-connect.md`
+- 实现范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/**`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S4-X-05 页面中的 C4-09 功能点
+- 结果：通过
+- 证据：新增 `RepositoryAdoptConfirmDialog` / `RepositoryAdoptConfirmViewModel`，只处理 Windows repo validate / adopt / load config；同页 C4-02、C4-10 未被本 task 扩展。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/RepositoryAdoptConfirmViewModel.cs:201`
+
+- 项目：读取并对齐页面规格、control map、Core API、C4-09 能力规格
+- 结果：通过
+- 证据：S4-X-05 要求接管确认、不移动/删除/覆盖用户文件；control map 将 S4-X-05 + C4-09 定义为 adopt confirm；C4-09 API 为 `validate_repo_path`、`init_repo`、`load_config`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:30`
+
+- 项目：只接入 C4-09 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`AdoptExistingRepositoryAsync` 调用 `InitRepoAsync(... AdoptExistingGeneratedOnly)`；完成后重新 `ValidateRepoPathAsync` 并 `LoadConfigAsync`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/WindowsRepositoryCoreBridge.cs:126`
+
+- 项目：不实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：变更集中在 Windows onboarding 页面与测试；`git diff --name-only -- core/src` 无输出，未触碰 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/MainWindow.xaml.cs:106`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，ViewModel 拆分主流程与 validation helper，生产路径通过 `IWindowsRepositoryCoreBridge` 走 Native Core。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 public Rust API；未修改 Core API / UDL。
+- 错误处理与边界处理：通过，处理不可写、空目录、已初始化、`.areamatrix` 内部、Windows reserved name、unfinished scan、Core exception。
+- 测试与验证覆盖：通过，manifest 验证通过；Windows 测试项目可编译。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产代码不是 mock-only；测试 fake bridge 仅用于断言调用顺序。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-154`，通过；包含 `prompt doctor: OK`、`git diff --check`、macOS build gate，退出码 0。
+- 已运行：`dotnet build apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj --no-restore`，通过，0 warning / 0 error。
+- 已运行：`dotnet run --project apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj`，失败；失败点为既有 `PlatformDifferencesTests.WindowsHelpPageLoadsC417PlatformCapabilities` 期望 `File watcher - Available`，非本 task 的 S4-X-05/C4-09 adopt-confirm 范围；本 task 新增 adopt-confirm 测试位于该失败前执行，未抛异常。
+- 缺失：未做真实 Windows GUI 点击验收；当前 task manifest 未要求该项。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。Manifest 指定验证通过，Expected New Paths 已落在 `apps/**`，Forbidden Touches `core/src/**` 未被修改，S4-X-05 中 C4-09 的用户可见接管确认、CoreBridge 调用、错误映射和测试证据完整。
+
+VERIFY_RESULT: PASS
