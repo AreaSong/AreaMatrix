@@ -60,9 +60,14 @@ struct ConnectRepositoryView: View {
                 route: route,
                 cloudState: model.latestCloudState,
                 isChecking: model.isChecking,
+                isCreatingRepository: model.isCreatingRepository,
+                repositoryError: model.error,
+                onRefreshRepositoryInit: refreshRepositoryInitConfirmation,
+                onCreateRepository: createRepository,
                 onTryAgain: retryICloudPermission,
                 onReconnectFolder: openRecoveryFolderPicker,
                 onChooseAnotherFolder: openRecoveryFolderPicker,
+                onCancelRepositoryInit: cancelRepositoryInitConfirmation,
                 onOpenSettings: ICloudPermissionSystemSettings.open,
                 onOpenSyncConflictReview: openSyncConflictReview
             )
@@ -78,7 +83,7 @@ struct ConnectRepositoryView: View {
                     "选择一个已有的 AreaMatrix 文件夹。"
                         + "AreaMatrix 不会在你确认前移动、删除或覆盖文件。"
                 )
-                    .foregroundStyle(.secondary)
+                .foregroundStyle(.secondary)
                 Text("推荐使用 iCloud Drive，这样可以和 Mac 共用同一个资料库。")
                     .foregroundStyle(.secondary)
             }
@@ -175,7 +180,7 @@ struct ConnectRepositoryView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text(title)
-                    if model.isChecking && title == "Checking..." {
+                    if model.isChecking, title == "Checking..." {
                         ProgressView()
                     }
                 }
@@ -276,18 +281,34 @@ struct ConnectRepositoryView: View {
         showingFolderPicker = true
     }
 
+    private func refreshRepositoryInitConfirmation(_ candidate: MobileRepositoryCandidate) {
+        Task {
+            await model.refreshRepositoryInitConfirmation(candidate)
+        }
+    }
+
+    private func createRepository(_ candidate: MobileRepositoryCandidate) {
+        Task {
+            await model.createRepository(from: candidate)
+        }
+    }
+
+    private func cancelRepositoryInitConfirmation() {
+        model.dismissRoute()
+    }
+
     private func openSyncConflictReview(_ route: SyncConflictEntryReviewRoute) {
         pendingSyncConflictReviewRoute = route
     }
 }
 
-private extension View {
+extension View {
     @ViewBuilder
     func connectRepositoryListStyle() -> some View {
         #if os(iOS)
-            listStyle(.insetGrouped)
+        listStyle(.insetGrouped)
         #else
-            listStyle(.inset)
+        listStyle(.inset)
         #endif
     }
 }
@@ -345,9 +366,14 @@ struct ConnectRepositoryRouteDestinationView: View {
     private let mobileLibraryBridge: any MobileLibraryCoreBridge
     private let cloudState: MobileCloudStorageState?
     private let isChecking: Bool
+    private let isCreatingRepository: Bool
+    private let repositoryError: MobileRepositoryConnectionError?
+    private let onRefreshRepositoryInit: (MobileRepositoryCandidate) -> Void
+    private let onCreateRepository: (MobileRepositoryCandidate) -> Void
     private let onTryAgain: () -> Void
     private let onReconnectFolder: () -> Void
     private let onChooseAnotherFolder: () -> Void
+    private let onCancelRepositoryInit: () -> Void
     private let onOpenSettings: () -> Void
     private let onOpenSyncConflictReview: (SyncConflictEntryReviewRoute) -> Void
     private let content: ConnectRepositoryRouteDestinationContent
@@ -357,9 +383,14 @@ struct ConnectRepositoryRouteDestinationView: View {
         mobileLibraryBridge: any MobileLibraryCoreBridge = LiveMobileRepositoryCoreBridge(),
         cloudState: MobileCloudStorageState? = nil,
         isChecking: Bool = false,
+        isCreatingRepository: Bool = false,
+        repositoryError: MobileRepositoryConnectionError? = nil,
+        onRefreshRepositoryInit: @escaping (MobileRepositoryCandidate) -> Void = { _ in },
+        onCreateRepository: @escaping (MobileRepositoryCandidate) -> Void = { _ in },
         onTryAgain: @escaping () -> Void = {},
         onReconnectFolder: @escaping () -> Void = {},
         onChooseAnotherFolder: @escaping () -> Void = {},
+        onCancelRepositoryInit: @escaping () -> Void = {},
         onOpenSettings: @escaping () -> Void = {},
         onOpenSyncConflictReview: @escaping (SyncConflictEntryReviewRoute) -> Void = { _ in }
     ) {
@@ -367,9 +398,14 @@ struct ConnectRepositoryRouteDestinationView: View {
         self.mobileLibraryBridge = mobileLibraryBridge
         self.cloudState = cloudState
         self.isChecking = isChecking
+        self.isCreatingRepository = isCreatingRepository
+        self.repositoryError = repositoryError
+        self.onRefreshRepositoryInit = onRefreshRepositoryInit
+        self.onCreateRepository = onCreateRepository
         self.onTryAgain = onTryAgain
         self.onReconnectFolder = onReconnectFolder
         self.onChooseAnotherFolder = onChooseAnotherFolder
+        self.onCancelRepositoryInit = onCancelRepositoryInit
         self.onOpenSettings = onOpenSettings
         self.onOpenSyncConflictReview = onOpenSyncConflictReview
         content = ConnectRepositoryRouteDestinationContent(route: route)
@@ -383,20 +419,19 @@ struct ConnectRepositoryRouteDestinationView: View {
                 bridge: mobileLibraryBridge,
                 onOpenSyncConflictReview: onOpenSyncConflictReview
             )
-        case .repositoryInitConfirm, .repositoryAdoptConfirm:
-            List {
-                Section {
-                    Label(content.primaryText, systemImage: content.systemImage)
-                    if let pathText = content.pathText {
-                        Text(pathText)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                    }
-                }
-            }
-            .connectRepositoryListStyle()
-            .navigationTitle(content.title)
+        case let .repositoryInitConfirm(candidate):
+            RepositoryInitConfirmView(
+                candidate: candidate,
+                isChecking: isChecking,
+                isCreating: isCreatingRepository,
+                error: repositoryError,
+                onRefresh: onRefreshRepositoryInit,
+                onCreate: onCreateRepository,
+                onChooseAnotherFolder: onChooseAnotherFolder,
+                onCancel: onCancelRepositoryInit
+            )
+        case .repositoryAdoptConfirm:
+            RepositoryRoutePlaceholderView(content: content)
         case let .iCloudPermission(error):
             ICloudPermissionView(
                 content: ICloudPermissionContent(error: error, cloudState: cloudState),

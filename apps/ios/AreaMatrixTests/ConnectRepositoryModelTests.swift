@@ -1,5 +1,5 @@
-import Foundation
 @testable import AreaMatrixIOS
+import Foundation
 import XCTest
 
 @MainActor
@@ -311,7 +311,7 @@ final class ConnectRepositoryModelTests: XCTestCase {
         XCTAssertTrue(String(describing: type(of: entry)).contains("ConnectRepositoryEntryView"))
     }
 
-    func testShareImportOpenURLTakesOverMostRecentRepository() async {
+    func testShareImportOpenURLTakesOverMostRecentRepository() async throws {
         let recent = RecentRepository(
             displayName: "Shared Repo",
             pathDisplay: "/tmp/AreaMatrixRepo",
@@ -322,7 +322,7 @@ final class ConnectRepositoryModelTests: XCTestCase {
         let access = FakeRepositoryAccessService(repositories: [recent])
         let model = ConnectRepositoryModel(bridge: bridge, accessService: access)
 
-        await model.handleOpenURL(URL(string: "areamatrix://share-import")!)
+        try await model.handleOpenURL(XCTUnwrap(URL(string: "areamatrix://share-import")))
 
         XCTAssertEqual(bridge.validatedPaths, ["/tmp/AreaMatrixRepo"])
         XCTAssertEqual(bridge.loadedConfigPaths, ["/tmp/AreaMatrixRepo"])

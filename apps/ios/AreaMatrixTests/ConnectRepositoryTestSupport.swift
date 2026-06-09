@@ -1,5 +1,5 @@
-import Foundation
 @testable import AreaMatrixIOS
+import Foundation
 
 func makeTemporaryRepositoryURL() throws -> URL {
     let url = FileManager.default.temporaryDirectory
@@ -9,8 +9,10 @@ func makeTemporaryRepositoryURL() throws -> URL {
 }
 
 final class FakeMobileRepositoryCoreBridge: MobileRepositoryCoreBridge, @unchecked Sendable {
-    private let result: Result<MobileRepositoryValidation, MobileRepositoryConnectionError>
+    private let validationResults: [Result<MobileRepositoryValidation, MobileRepositoryConnectionError>]
     private let cloudState: Result<MobileCloudStorageState, MobileRepositoryConnectionError>
+    private let initializeError: MobileRepositoryConnectionError?
+    private var validationIndex = 0
     private(set) var validatedPaths: [String] = []
     private(set) var detectedCloudStatePaths: [String] = []
     private(set) var loadedConfigPaths: [String] = []
@@ -19,28 +21,46 @@ final class FakeMobileRepositoryCoreBridge: MobileRepositoryCoreBridge, @uncheck
 
     init(
         validation: MobileRepositoryValidation,
-        cloudState: MobileCloudStorageState? = nil
+        cloudState: MobileCloudStorageState? = nil,
+        initializeError: MobileRepositoryConnectionError? = nil
     ) {
-        result = .success(validation)
+        validationResults = [.success(validation)]
         self.cloudState = .success(cloudState ?? .local(path: validation.repoPath))
+        self.initializeError = initializeError
+    }
+
+    init(
+        validations: [MobileRepositoryValidation],
+        cloudState: MobileCloudStorageState? = nil,
+        initializeError: MobileRepositoryConnectionError? = nil
+    ) {
+        precondition(!validations.isEmpty, "Fake bridge requires at least one validation result.")
+        validationResults = validations.map(Result.success)
+        self.cloudState = .success(cloudState ?? .local(path: validations[0].repoPath))
+        self.initializeError = initializeError
     }
 
     init(
         validation: MobileRepositoryValidation,
-        cloudError: MobileRepositoryConnectionError
+        cloudError: MobileRepositoryConnectionError,
+        initializeError: MobileRepositoryConnectionError? = nil
     ) {
-        result = .success(validation)
+        validationResults = [.success(validation)]
         cloudState = .failure(cloudError)
+        self.initializeError = initializeError
     }
 
     init(error: MobileRepositoryConnectionError) {
-        result = .failure(error)
+        validationResults = [.failure(error)]
         cloudState = .failure(error)
+        initializeError = nil
     }
 
     func validateRepoPath(repoPath: String) async throws -> MobileRepositoryValidation {
         validatedPaths.append(repoPath)
-        return try result.get()
+        let index = min(validationIndex, validationResults.count - 1)
+        validationIndex += 1
+        return try validationResults[index].get()
     }
 
     func detectCloudStorageState(repoPath: String) async throws -> MobileCloudStorageState {
@@ -50,6 +70,9 @@ final class FakeMobileRepositoryCoreBridge: MobileRepositoryCoreBridge, @uncheck
 
     func initializeEmptyRepository(repoPath: String) async throws {
         initializedPaths.append(repoPath)
+        if let initializeError {
+            throw initializeError
+        }
     }
 
     func adoptExistingRepository(repoPath: String) async throws {

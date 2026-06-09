@@ -4,12 +4,12 @@ protocol SyncConflictEntryCoreBridge: Sendable {
     func detectSyncConflicts(repoPath: String) async throws -> [SyncConflictEntryConflict]
 }
 
-enum SyncConflictEntryStatus: String, Equatable, Sendable {
+enum SyncConflictEntryStatus: String, Equatable {
     case needsReview = "NeedsReview"
     case resolved = "Resolved"
 }
 
-enum SyncConflictEntryType: String, Equatable, Sendable {
+enum SyncConflictEntryType: String, Equatable {
     case sameNameDifferentContent = "SameNameDifferentContent"
     case concurrentModification = "ConcurrentModification"
     case metadataMismatch = "MetadataMismatch"
@@ -32,7 +32,7 @@ enum SyncConflictEntryType: String, Equatable, Sendable {
     }
 }
 
-enum SyncConflictEntrySeverity: String, Equatable, Sendable {
+enum SyncConflictEntrySeverity: String, Equatable {
     case low = "Low"
     case medium = "Medium"
     case high = "High"
@@ -49,7 +49,7 @@ enum SyncConflictEntrySeverity: String, Equatable, Sendable {
     }
 }
 
-enum SyncConflictEntryFileRole: String, Equatable, Sendable {
+enum SyncConflictEntryFileRole: String, Equatable {
     case existing = "Existing"
     case incoming = "Incoming"
     case conflictCopy = "ConflictCopy"
@@ -57,7 +57,7 @@ enum SyncConflictEntryFileRole: String, Equatable, Sendable {
     case unknown = "Unknown"
 }
 
-struct SyncConflictEntryAffectedFile: Equatable, Identifiable, Sendable {
+struct SyncConflictEntryAffectedFile: Equatable, Identifiable {
     var path: String
     var fileID: Int64?
     var role: SyncConflictEntryFileRole
@@ -74,7 +74,7 @@ struct SyncConflictEntryAffectedFile: Equatable, Identifiable, Sendable {
     }
 }
 
-struct SyncConflictEntryConflict: Equatable, Identifiable, Sendable {
+struct SyncConflictEntryConflict: Equatable, Identifiable {
     var conflictID: String
     var conflictType: SyncConflictEntryType
     var severity: SyncConflictEntrySeverity
@@ -124,7 +124,7 @@ struct SyncConflictEntryConflict: Equatable, Identifiable, Sendable {
     }
 }
 
-struct SyncConflictEntryReviewRoute: Equatable, Identifiable, Sendable {
+struct SyncConflictEntryReviewRoute: Equatable, Hashable, Identifiable {
     var repoPath: String
     var conflictID: String
     var primaryPath: String
@@ -134,7 +134,7 @@ struct SyncConflictEntryReviewRoute: Equatable, Identifiable, Sendable {
     }
 }
 
-enum SyncConflictEntryError: Error, Equatable, Sendable {
+enum SyncConflictEntryError: Error, Equatable {
     case database(String)
     case io(String)
     case conflict(String)

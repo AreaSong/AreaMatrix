@@ -15,8 +15,9 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         let model = SyncConflictEntryViewModel(repoPath: "/tmp/Repo", bridge: bridge)
 
         await model.loadIfNeeded()
+        let repoPaths = await bridge.repoPaths()
 
-        XCTAssertEqual(await bridge.repoPaths(), ["/tmp/Repo"])
+        XCTAssertEqual(repoPaths, ["/tmp/Repo"])
         XCTAssertEqual(model.reviewableConflicts, [reviewable])
         XCTAssertTrue(model.isBannerVisible)
     }

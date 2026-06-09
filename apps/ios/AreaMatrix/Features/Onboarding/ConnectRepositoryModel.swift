@@ -5,6 +5,7 @@ final class ConnectRepositoryModel: ObservableObject {
     enum CheckState: Equatable {
         case idle
         case checking(String)
+        case creating(String)
     }
 
     @Published private(set) var checkState: CheckState = .idle
@@ -30,7 +31,16 @@ final class ConnectRepositoryModel: ObservableObject {
     }
 
     var isChecking: Bool {
-        if case .checking = checkState { return true }
+        switch checkState {
+        case .checking, .creating:
+            true
+        case .idle:
+            false
+        }
+    }
+
+    var isCreatingRepository: Bool {
+        if case .creating = checkState { return true }
         return false
     }
 
@@ -90,6 +100,16 @@ final class ConnectRepositoryModel: ObservableObject {
 
     func beginRecoveryFolderSelection() {
         prepareForPicker()
+    }
+
+    func refreshRepositoryInitConfirmation(_ candidate: MobileRepositoryCandidate) async {
+        await refreshRepositoryInitCandidate(candidate) { _ in }
+    }
+
+    func createRepository(from candidate: MobileRepositoryCandidate) async {
+        await refreshRepositoryInitCandidate(candidate) { updatedCandidate in
+            try await createValidatedEmptyRepository(from: updatedCandidate)
+        }
     }
 
     func handleOpenURL(_ url: URL) async {
@@ -177,6 +197,13 @@ final class ConnectRepositoryModel: ObservableObject {
         latestCloudState = nil
     }
 
+    private func beginCreatingRepository(_ candidate: MobileRepositoryCandidate) {
+        checkState = .creating(candidate.validation.repoPath)
+        error = nil
+        route = .repositoryInitConfirm(candidate)
+        latestValidation = candidate.validation
+    }
+
     private func routeValidatedRepository(_ validation: MobileRepositoryValidation, sourceURL: URL) async throws {
         latestValidation = validation
         if let blockingError = Self.blockingError(for: validation) {
@@ -221,6 +248,19 @@ final class ConnectRepositoryModel: ObservableObject {
         ))
     }
 
+    private func openCreatedRepository(
+        validation: MobileRepositoryValidation,
+        bookmark: RepositoryBookmark
+    ) async throws {
+        let config = try await bridge.loadConfig(repoPath: validation.repoPath)
+        checkState = .idle
+        route = .mobileLibrary(MobileRepositoryConnection(
+            validation: validation,
+            config: config,
+            bookmark: bookmark
+        ))
+    }
+
     private func routeUninitializedRepository(
         _ validation: MobileRepositoryValidation,
         bookmark: RepositoryBookmark
@@ -235,6 +275,59 @@ final class ConnectRepositoryModel: ObservableObject {
         case nil:
             applyFailure(.invalidRepository(validation.repoPath))
         }
+    }
+
+    private func beginCheckingRepositoryInitCandidate(_ candidate: MobileRepositoryCandidate) {
+        checkState = .checking(candidate.validation.repoPath)
+        error = nil
+        route = .repositoryInitConfirm(candidate)
+        latestValidation = candidate.validation
+    }
+
+    private func refreshRepositoryInitCandidate(
+        _ candidate: MobileRepositoryCandidate,
+        afterRefresh: (MobileRepositoryCandidate) async throws -> Void
+    ) async {
+        guard case .repositoryInitConfirm = route else { return }
+        beginCheckingRepositoryInitCandidate(candidate)
+        do {
+            let scopedAccess = try await accessService.beginAccessing(candidate.bookmark.url)
+            defer { scopedAccess.stop() }
+            let refreshed = try await bridge.validateRepoPath(repoPath: candidate.validation.repoPath)
+            let updatedCandidate = MobileRepositoryCandidate(
+                validation: refreshed,
+                bookmark: candidate.bookmark
+            )
+            latestValidation = refreshed
+            route = .repositoryInitConfirm(updatedCandidate)
+            checkState = .idle
+            try await afterRefresh(updatedCandidate)
+        } catch {
+            applyFailure(Self.connectionError(from: error))
+            route = .repositoryInitConfirm(candidate)
+        }
+    }
+
+    private func createValidatedEmptyRepository(from candidate: MobileRepositoryCandidate) async throws {
+        guard Self.canCreateEmptyRepository(from: candidate.validation) else {
+            applyFailure(.invalidRepository(candidate.validation.repoPath))
+            route = .repositoryInitConfirm(candidate)
+            return
+        }
+        beginCreatingRepository(candidate)
+        try await bridge.initializeEmptyRepository(repoPath: candidate.validation.repoPath)
+        let initialized = try await bridge.validateRepoPath(repoPath: candidate.validation.repoPath)
+        guard initialized.isInitialized else {
+            applyFailure(.invalidRepository(initialized.repoPath))
+            route = .repositoryInitConfirm(MobileRepositoryCandidate(
+                validation: initialized,
+                bookmark: candidate.bookmark
+            ))
+            return
+        }
+        latestValidation = initialized
+        let bookmark = try await accessService.persistBookmark(for: candidate.bookmark.url, lastOpenedAt: now())
+        try await openCreatedRepository(validation: initialized, bookmark: bookmark)
     }
 
     private func applyFailure(_ failure: MobileRepositoryConnectionError) {
@@ -255,8 +348,12 @@ final class ConnectRepositoryModel: ObservableObject {
         if validation.isInsideAreaMatrix || validation.issues.contains(.insideAreaMatrix) {
             return .invalidPath(validation.repoPath)
         }
-        if !validation.exists || validation.issues.contains(.missingPath) {
+        if (!validation.exists || validation.issues.contains(.missingPath))
+            && validation.recommendedMode != .createEmpty {
             return .invalidPath(validation.repoPath)
+        }
+        if !validation.exists && validation.recommendedMode == .createEmpty {
+            return nil
         }
         if !validation.isDirectory || validation.issues.contains(.notDirectory) {
             return .selectedFile(validation.repoPath)
@@ -270,10 +367,18 @@ final class ConnectRepositoryModel: ObservableObject {
         if validation.hasUnfinishedScanSession || validation.issues.contains(.unfinishedScanSession) {
             return nil
         }
-        if validation.recommendedMode == nil && validation.isInitialized == false {
+        if validation.recommendedMode == nil, validation.isInitialized == false {
             return .invalidRepository(validation.repoPath)
         }
         return nil
+    }
+
+    private static func canCreateEmptyRepository(from validation: MobileRepositoryValidation) -> Bool {
+        validation.recommendedMode == .createEmpty
+            && validation.isWritable
+            && (!validation.exists || (validation.isDirectory && validation.isReadable && validation.isEmpty))
+            && !validation.isInitialized
+            && !validation.isInsideAreaMatrix
     }
 
     private static func cloudBlockingError(
@@ -303,9 +408,9 @@ final class ConnectRepositoryModel: ObservableObject {
     private static func shouldRouteToICloudPermission(_ failure: MobileRepositoryConnectionError) -> Bool {
         switch failure {
         case .iCloudPlaceholder:
-            return true
+            true
         case .invalidPath, .selectedFile, .permissionDenied, .accessExpired, .invalidRepository, .unavailable:
-            return false
+            false
         }
     }
 
