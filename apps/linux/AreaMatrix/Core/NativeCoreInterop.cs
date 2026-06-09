@@ -55,6 +55,9 @@ internal delegate RustBuffer GetFileDelegate(RustBuffer repoPath, long fileId, r
 internal delegate RustBuffer ListTreeJsonDelegate(RustBuffer repoPath, RustBuffer locale, ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer DetectSyncConflictsDelegate(RustBuffer repoPath, ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 internal delegate RustBuffer SearchFilesDelegate(
     RustBuffer repoPath,
     RustBuffer query,

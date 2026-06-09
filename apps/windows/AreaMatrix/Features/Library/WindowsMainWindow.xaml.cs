@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
+using AreaMatrix.Features.Conflicts;
 using AreaMatrix.Features.Onboarding;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -32,6 +33,8 @@ public sealed partial class WindowsMainWindow : UserControl
     public event Action<WindowsRepositoryRoute, IReadOnlyList<string>>? OpenImportDroppedSourcesRequested;
 
     public event Action? OpenPlatformDifferencesRequested;
+
+    public event Action<SyncConflictEntryReviewRoute>? OpenSyncConflictReviewRequested;
 
     public WindowsMainWindowViewModel? ViewModel
     {
@@ -128,6 +131,28 @@ public sealed partial class WindowsMainWindow : UserControl
         OpenPlatformDifferencesRequested?.Invoke();
     }
 
+    private void SyncConflictReviewButton_Click(object sender, RoutedEventArgs e)
+    {
+        OpenSyncConflictReview(ViewModel?.SyncConflictEntry?.FirstReviewableConflict);
+    }
+
+    private void SyncConflictLaterButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel?.SyncConflictEntry?.DismissBanner();
+        RefreshState();
+    }
+
+    private async void SyncConflictRetryButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel?.SyncConflictEntry is null)
+        {
+            return;
+        }
+
+        await ViewModel.SyncConflictEntry.RefreshAsync();
+        RefreshState();
+    }
+
     private void MainWindowDrop_DragEnter(object sender, DragEventArgs e)
     {
         ApplyDropState(e);
@@ -207,6 +232,24 @@ public sealed partial class WindowsMainWindow : UserControl
         RefreshState();
     }
 
+    private void NeedsReviewListView_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        if (refreshingControls)
+        {
+            return;
+        }
+
+        OpenSyncConflictReview(NeedsReviewListView.SelectedItem as SyncConflictEntryConflict);
+        NeedsReviewListView.SelectedItem = null;
+    }
+
+    private void DetailSyncConflictReviewButton_Click(object sender, RoutedEventArgs e)
+    {
+        OpenSyncConflictReview(ViewModel?.SelectedFileSyncConflict);
+    }
+
     private async Task RunSearchAsync()
     {
         if (ViewModel is null)
@@ -272,6 +315,7 @@ public sealed partial class WindowsMainWindow : UserControl
             : InfoBarSeverity.Error;
 
         RefreshItemsSources();
+        RefreshSyncConflictEntry();
         RefreshDetail();
     }
 
@@ -315,5 +359,82 @@ public sealed partial class WindowsMainWindow : UserControl
         DetailCategoryTextBlock.Text = file is null ? "Category: -" : $"Category: {file.Category}";
         DetailSizeTextBlock.Text = file is null ? "Size: -" : $"Size: {file.SizeText}";
         DetailUpdatedTextBlock.Text = file is null ? "Updated: -" : $"Updated: {file.UpdatedAtText}";
+        RefreshDetailSyncConflict();
+    }
+
+    private void RefreshSyncConflictEntry()
+    {
+        SyncConflictEntryViewModel? entry = ViewModel?.SyncConflictEntry;
+        if (entry is null)
+        {
+            SyncConflictBanner.Visibility = Visibility.Collapsed;
+            NeedsReviewPanel.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        refreshingControls = true;
+        try
+        {
+            if (!ReferenceEquals(NeedsReviewListView.ItemsSource, entry.Conflicts))
+            {
+                NeedsReviewListView.ItemsSource = entry.Conflicts;
+            }
+        }
+        finally
+        {
+            refreshingControls = false;
+        }
+
+        bool hasVisibleState = entry.IsBannerVisible || entry.IsLoading || entry.Error is not null;
+        SyncConflictBanner.Visibility = VisibilityFor(hasVisibleState);
+        NeedsReviewPanel.Visibility = VisibilityFor(entry.HasConflicts);
+        SyncConflictStatusTextBlock.Text = SyncConflictStatusText(entry);
+        SyncConflictRetryButton.Visibility = VisibilityFor(entry.Error is not null);
+        SyncConflictReviewButton.IsEnabled = entry.FirstReviewableConflict is not null;
+        SyncConflictLaterButton.IsEnabled = entry.HasConflicts;
+    }
+
+    private void RefreshDetailSyncConflict()
+    {
+        SyncConflictEntryConflict? conflict = ViewModel?.SelectedFileSyncConflict;
+        DetailSyncConflictBanner.Visibility = VisibilityFor(conflict is not null);
+        DetailSyncConflictSummaryTextBlock.Text = conflict?.SummaryText ?? string.Empty;
+        DetailSyncConflictReviewButton.IsEnabled = ViewModel?.SyncConflictEntry?.ReviewRouteFor(conflict) is not null;
+    }
+
+    private void OpenSyncConflictReview(SyncConflictEntryConflict? conflict)
+    {
+        if (ViewModel?.SyncConflictEntry?.ReviewRouteFor(conflict) is { } route)
+        {
+            OpenSyncConflictReviewRequested?.Invoke(route);
+        }
+    }
+
+    public void ShowSyncConflictReviewRoute(SyncConflictEntryReviewRoute route)
+    {
+        StatusInfoBar.Title = "Review sync conflict";
+        StatusInfoBar.Message = $"{route.PrimaryPath} ({route.ConflictId})";
+        StatusInfoBar.Severity = InfoBarSeverity.Warning;
+        StatusInfoBar.IsOpen = true;
+    }
+
+    private static string SyncConflictStatusText(SyncConflictEntryViewModel entry)
+    {
+        if (entry.Error is { } error)
+        {
+            return $"{error.Message}. {error.SuggestedAction}";
+        }
+
+        if (entry.HasConflicts && entry.FirstReviewableConflict is null)
+        {
+            return "Repair index first";
+        }
+
+        return entry.StatusText;
+    }
+
+    private static Visibility VisibilityFor(bool isVisible)
+    {
+        return isVisible ? Visibility.Visible : Visibility.Collapsed;
     }
 }

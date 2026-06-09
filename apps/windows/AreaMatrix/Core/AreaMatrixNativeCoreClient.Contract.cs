@@ -7,6 +7,7 @@ public sealed partial class AreaMatrixNativeCoreClient
     private const ushort AcknowledgeOneDriveRiskNoticeChecksum = 22622;
     private const ushort ApplyImportConflictBatchChecksum = 14573;
     private const ushort DetectCloudStorageStateChecksum = 18169;
+    private const ushort DetectSyncConflictsChecksum = 31524;
     private const ushort GetFileChecksum = 6132;
     private const ushort GetPlatformCapabilitiesChecksum = 42907;
     private const ushort InitRepoChecksum = 29414;
@@ -31,6 +32,7 @@ public sealed partial class AreaMatrixNativeCoreClient
             || native.AcknowledgeOneDriveRiskNoticeChecksum() != AcknowledgeOneDriveRiskNoticeChecksum
             || native.ApplyImportConflictBatchChecksum() != ApplyImportConflictBatchChecksum
             || native.DetectCloudStorageStateChecksum() != DetectCloudStorageStateChecksum
+            || native.DetectSyncConflictsChecksum() != DetectSyncConflictsChecksum
             || native.GetFileChecksum() != GetFileChecksum
             || native.GetPlatformCapabilitiesChecksum() != GetPlatformCapabilitiesChecksum
             || native.InspectBindingContractChecksum() != InspectBindingContractChecksum

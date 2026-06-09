@@ -1,4 +1,5 @@
 using AreaMatrix.Linux.Core;
+using AreaMatrix.Linux.Features.Conflicts;
 using AreaMatrix.Linux.Features.Help;
 using AreaMatrix.Linux.Features.Import;
 using AreaMatrix.Linux.Features.Onboarding;
@@ -82,6 +83,7 @@ public sealed class LinuxDesktopShell : IDisposable
         AreaMatrixNativeCoreClient nativeCoreClient = new();
         LinuxRepositoryCoreBridge repositoryBridge = new(nativeCoreClient);
         DesktopMainQueryCoreBridge queryBridge = new(nativeCoreClient);
+        SyncConflictEntryCoreBridge syncConflictBridge = new(nativeCoreClient);
         DesktopImportCoreBridge importBridge = new(nativeCoreClient, new LinuxImportFileProbe());
         LinuxWatcherStatusCoreBridge watcherBridge = new(nativeCoreClient);
         LinuxWatcherDiagnostics watcherDiagnostics = new();
@@ -90,7 +92,7 @@ public sealed class LinuxDesktopShell : IDisposable
             new LinuxSystemFolderPickerAdapter());
         return new LinuxDesktopShell(
             chooseRepositoryView,
-            new LinuxMainWindowFactory(queryBridge, locale),
+            new LinuxMainWindowFactory(queryBridge, locale, syncConflictBridge),
             new LinuxLocalFolderNoticeFactory(repositoryBridge),
             new LinuxImportDialogFactory(importBridge),
             new LinuxPlatformDifferencesViewFactory(new PlatformDifferencesCoreBridge(nativeCoreClient)),
@@ -265,17 +267,22 @@ public sealed class LinuxLocalFolderNoticeFactory : ILinuxLocalFolderNoticeFacto
 public sealed class LinuxMainWindowFactory : ILinuxMainWindowFactory
 {
     private readonly IDesktopMainQueryCoreBridge coreBridge;
+    private readonly ISyncConflictEntryCoreBridge? syncConflictBridge;
     private readonly string locale;
 
-    public LinuxMainWindowFactory(IDesktopMainQueryCoreBridge coreBridge, string locale = "en-US")
+    public LinuxMainWindowFactory(
+        IDesktopMainQueryCoreBridge coreBridge,
+        string locale = "en-US",
+        ISyncConflictEntryCoreBridge? syncConflictBridge = null)
     {
         this.coreBridge = coreBridge;
+        this.syncConflictBridge = syncConflictBridge;
         this.locale = locale;
     }
 
     public LinuxMainWindow Create(LinuxRepositoryRoute route)
     {
-        return new LinuxMainWindow(new LinuxMainWindowViewModel(coreBridge, locale));
+        return new LinuxMainWindow(new LinuxMainWindowViewModel(coreBridge, syncConflictBridge, locale));
     }
 }
 

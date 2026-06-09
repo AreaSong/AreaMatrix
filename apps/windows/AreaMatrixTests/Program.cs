@@ -1,4 +1,5 @@
 using AreaMatrixTests.ChooseRepository;
+using AreaMatrixTests.Conflicts;
 using AreaMatrixTests.DesktopMainQuery;
 using AreaMatrixTests.Help;
 using AreaMatrixTests.Import;
@@ -17,4 +18,5 @@ WindowsImportSmokeTests.RunAll();
 await WatcherStatusViewModelTests.RunAllAsync();
 WatcherStatusSmokeTests.RunAll();
 await PlatformDifferencesTests.RunAllAsync();
+await WindowsSyncConflictEntryPageFeatureTests.RunAllAsync();
 Console.WriteLine("AreaMatrix Windows tests passed.");

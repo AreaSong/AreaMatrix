@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using AreaMatrix.Features.Conflicts;
 using AreaMatrix.Features.Import;
 using AreaMatrix.Features.Library;
 using AreaMatrix.Features.Onboarding;
@@ -13,6 +14,7 @@ internal sealed class LazyAreaMatrixWindowsCoreClient :
     IAreaMatrixBindingContractCoreClient,
     IAreaMatrixDesktopQueryCoreClient,
     IAreaMatrixDesktopImportCoreClient,
+    IAreaMatrixSyncConflictDetectCoreClient,
     IAreaMatrixWatcherStatusCoreClient,
     IDisposable
 {
@@ -104,6 +106,13 @@ internal sealed class LazyAreaMatrixWindowsCoreClient :
         CancellationToken cancellationToken = default)
     {
         return Current.SearchFilesAsync(repoPath, query, filter, sort, pagination, cancellationToken);
+    }
+
+    public Task<IReadOnlyList<CoreSyncConflictEntry>> DetectSyncConflictsAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.DetectSyncConflictsAsync(repoPath, cancellationToken);
     }
 
     public Task<CoreDesktopClassifyResult> PredictCategoryAsync(

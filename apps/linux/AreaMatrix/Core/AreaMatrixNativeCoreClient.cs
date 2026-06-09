@@ -4,6 +4,7 @@ using AreaMatrix.Linux.Features.Help;
 using AreaMatrix.Linux.Features.Import;
 using AreaMatrix.Linux.Features.Library;
 using AreaMatrix.Linux.Features.Onboarding;
+using AreaMatrix.Linux.Features.Conflicts;
 using AreaMatrix.Linux.Features.System;
 
 namespace AreaMatrix.Linux.Core;
@@ -13,6 +14,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
     IAreaMatrixBindingContractCoreClient,
     IAreaMatrixLinuxDesktopQueryCoreClient,
     IAreaMatrixLinuxDesktopImportCoreClient,
+    IAreaMatrixLinuxSyncConflictDetectCoreClient,
     IAreaMatrixLinuxWatcherStatusCoreClient,
     IDisposable
 {
@@ -27,6 +29,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
     private const ushort GetFileChecksum = 6132;
     private const ushort ListFilesChecksum = 56809;
     private const ushort ListTreeJsonChecksum = 45468;
+    private const ushort DetectSyncConflictsChecksum = 31524;
     private const ushort SearchFilesChecksum = 65;
     private const ushort RecordWatcherHealthChecksum = 47455;
     private const ushort PreviewManualRescanChecksum = 12140;
@@ -101,6 +104,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
             || native.GetFileChecksum() != GetFileChecksum
             || native.ListFilesChecksum() != ListFilesChecksum
             || native.ListTreeJsonChecksum() != ListTreeJsonChecksum
+            || native.DetectSyncConflictsChecksum() != DetectSyncConflictsChecksum
             || native.SearchFilesChecksum() != SearchFilesChecksum
             || native.RecordWatcherHealthChecksum() != RecordWatcherHealthChecksum
             || native.PreviewManualRescanChecksum() != PreviewManualRescanChecksum
@@ -204,6 +208,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
             1 => LinuxRepositoryErrorKind.DiskUnavailable,
             2 => LinuxRepositoryErrorKind.Db,
             3 => LinuxRepositoryErrorKind.Config,
+            6 => LinuxRepositoryErrorKind.Conflict,
             8 => LinuxRepositoryErrorKind.FileNotFound,
             10 => LinuxRepositoryErrorKind.RepoNotInitialized,
             11 => LinuxRepositoryErrorKind.InvalidPath,

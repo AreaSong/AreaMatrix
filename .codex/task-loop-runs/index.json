@@ -1,6 +1,26 @@
 {
-  "latest_run_id": "20260609_121309",
+  "latest_run_id": "20260609_192932",
   "runs": [
+    {
+      "completed": 1,
+      "exit_code": 0,
+      "finished_at": "2026-06-09T12:34:13.890915+00:00",
+      "phases": [
+        "phase-0",
+        "phase-1",
+        "phase-2",
+        "phase-3",
+        "phase-4"
+      ],
+      "retries": 1,
+      "run_id": "20260609_192932",
+      "start_from": "4-3/task-148",
+      "started_at": "2026-06-09T11:29:32.248438+00:00",
+      "status": "completed",
+      "stop_after": "",
+      "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260609_192932/summary.json",
+      "updated_at": "2026-06-09T12:34:13.891567+00:00"
+    },
     {
       "completed": 1,
       "exit_code": 0,
@@ -1980,27 +2000,8 @@
       "stop_after": "",
       "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260505_140302/summary.json",
       "updated_at": "2026-05-05T07:10:49.735362+00:00"
-    },
-    {
-      "completed": 1,
-      "exit_code": 0,
-      "finished_at": "2026-05-04T11:18:26.077143+00:00",
-      "phases": [
-        "phase-0",
-        "phase-1",
-        "phase-2",
-        "phase-3",
-        "phase-4"
-      ],
-      "retries": 0,
-      "run_id": "20260504_190145",
-      "start_from": "2-1/task-18",
-      "started_at": "2026-05-04T11:01:46.933423+00:00",
-      "status": "completed",
-      "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260504_190145/summary.json",
-      "updated_at": "2026-05-04T11:18:26.077623+00:00"
     }
   ],
-  "updated_at": "2026-06-09T05:13:47.654808+00:00",
+  "updated_at": "2026-06-09T12:34:13.891592+00:00",
   "version": 1
 }

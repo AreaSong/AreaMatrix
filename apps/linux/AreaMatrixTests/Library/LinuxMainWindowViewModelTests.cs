@@ -1,4 +1,5 @@
 using AreaMatrix.Linux.Features.Library;
+using AreaMatrix.Linux.Features.Conflicts;
 using AreaMatrix.Linux.Features.Onboarding;
 using AreaMatrix.Linux.Tests.ChooseRepository;
 
@@ -304,10 +305,14 @@ internal sealed class FakeDesktopMainQueryCoreBridge : IDesktopMainQueryCoreBrid
 internal sealed class FakeLinuxMainWindowFactory : ILinuxMainWindowFactory
 {
     private readonly IDesktopMainQueryCoreBridge bridge;
+    private readonly ISyncConflictEntryCoreBridge? syncConflictBridge;
 
-    public FakeLinuxMainWindowFactory(IDesktopMainQueryCoreBridge bridge)
+    public FakeLinuxMainWindowFactory(
+        IDesktopMainQueryCoreBridge bridge,
+        ISyncConflictEntryCoreBridge? syncConflictBridge = null)
     {
         this.bridge = bridge;
+        this.syncConflictBridge = syncConflictBridge;
     }
 
     public List<LinuxRepositoryRoute> CreatedRoutes { get; } = [];
@@ -315,7 +320,7 @@ internal sealed class FakeLinuxMainWindowFactory : ILinuxMainWindowFactory
     public LinuxMainWindow Create(LinuxRepositoryRoute route)
     {
         CreatedRoutes.Add(route);
-        return new LinuxMainWindow(new LinuxMainWindowViewModel(bridge));
+        return new LinuxMainWindow(new LinuxMainWindowViewModel(bridge, syncConflictBridge));
     }
 }
 

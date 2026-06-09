@@ -1,0 +1,35 @@
+page_id: S4-X-03
+title: Sync conflict entry
+description: Linux entry surface for C4-15 sync-conflict-detect.
+banner:
+  title: Sync conflict needs review
+  message: AreaMatrix found files that may represent different versions. No version has been deleted.
+  primary_action: Review
+  secondary_action: Later
+needs_review:
+  title: Needs Review
+  empty: No items need review.
+  loading: Checking conflicts...
+  error: Could not load review items
+  retry: Try again
+  disabled_review: Repair index first
+  row_fields:
+    - file name
+    - relative path
+    - conflict type
+    - source platform
+    - detected time
+detail:
+  banner: This file has a sync conflict
+actions:
+  load_conflicts: SyncConflictEntryViewModel.RefreshAsync
+  review: SyncConflictEntryViewModel.ReviewRouteFor
+  later: SyncConflictEntryViewModel.DismissBanner
+  detail_match: SyncConflictEntryViewModel.DetailConflictFor
+safety:
+  - The page calls detect_sync_conflicts through SyncConflictEntryCoreBridge.
+  - The Linux entry filters status=NeedsReview and never marks conflicts resolved.
+  - Later only hides the current banner and keeps the Needs Review list.
+  - Review only creates a route for S4-X-01 and does not resolve, replace, delete, move, or overwrite files.
+  - Missing conflict id disables Review and shows Repair index first.
+  - This page does not call preview_sync_conflict_resolution or resolve_sync_conflict.

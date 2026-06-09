@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using AreaMatrix.Linux.Features.Conflicts;
 using AreaMatrix.Linux.Features.Onboarding;
 
 namespace AreaMatrix.Linux.Features.Library;
@@ -21,10 +22,16 @@ public sealed partial class LinuxMainWindowViewModel : INotifyPropertyChanged
 
     public LinuxMainWindowViewModel(
         IDesktopMainQueryCoreBridge coreBridge,
+        ISyncConflictEntryCoreBridge? syncConflictBridge = null,
         string locale = "en-US")
     {
         this.coreBridge = coreBridge;
         this.locale = locale;
+        if (syncConflictBridge is not null)
+        {
+            SyncConflictEntry = new SyncConflictEntryViewModel(syncConflictBridge);
+            SyncConflictEntry.PropertyChanged += (_, _) => OnPropertyChanged(nameof(SyncConflictEntry));
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -127,6 +134,7 @@ public sealed partial class LinuxMainWindowViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(SelectedFileTitle));
                 OnPropertyChanged(nameof(SelectedFilePath));
                 OnPropertyChanged(nameof(SelectedFileStatus));
+                OnPropertyChanged(nameof(SelectedFileSyncConflict));
             }
         }
     }
@@ -169,6 +177,11 @@ public sealed partial class LinuxMainWindowViewModel : INotifyPropertyChanged
         : $"Local folder: {RepoPath}";
 
     public string WatcherStatusText => "Watcher: platform status";
+
+    public SyncConflictEntryViewModel? SyncConflictEntry { get; }
+
+    public SyncConflictEntryConflict? SelectedFileSyncConflict =>
+        SyncConflictEntry?.DetailConflictFor(SelectedFile);
 
     public string DbStatusText => Error?.Kind == LinuxRepositoryErrorKind.Db
         ? "DB: needs attention"
@@ -214,11 +227,21 @@ public sealed partial class LinuxMainWindowViewModel : INotifyPropertyChanged
         SearchQuery = string.Empty;
         SelectedCategory = null;
         await LoadSnapshotAsync(isInitialLoad: true, cancellationToken);
+        if (SyncConflictEntry is not null)
+        {
+            await SyncConflictEntry.OpenRepositoryAsync(RepoPath, cancellationToken).ConfigureAwait(false);
+            OnPropertyChanged(nameof(SelectedFileSyncConflict));
+        }
     }
 
-    public Task RefreshAsync(CancellationToken cancellationToken = default)
+    public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
-        return LoadSnapshotAsync(isInitialLoad: false, cancellationToken);
+        await LoadSnapshotAsync(isInitialLoad: false, cancellationToken).ConfigureAwait(false);
+        if (SyncConflictEntry is not null)
+        {
+            await SyncConflictEntry.RefreshAsync(cancellationToken).ConfigureAwait(false);
+            OnPropertyChanged(nameof(SelectedFileSyncConflict));
+        }
     }
 
     public async Task RunSearchAsync(CancellationToken cancellationToken = default)

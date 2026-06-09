@@ -164,6 +164,10 @@ extension MainRepositoryContentView {
             }
             .padding(10)
             .background(Color.yellow.opacity(0.12))
+        } else if state == .list {
+            SyncConflictEntryPanel(model: syncConflictEntryModel) { route in
+                pendingSyncConflictReviewRoute = route
+            }
         }
     }
 
@@ -176,6 +180,7 @@ extension MainRepositoryContentView {
                 isUpdating: fileListModel.isLoading || fileListModel.isDetailLoading
             ),
             detailErrorMapping: fileListModel.detailErrorMapping,
+            syncConflict: syncConflictEntryModel.detailConflict(for: fileListModel.selectedFileDetail),
             isDetailLoading: fileListModel.isDetailLoading,
             selectedFileDetail: fileListModel.selectedFileDetail,
             noteWriteBlock: fileListModel.selectedFileNoteWriteBlock,
@@ -234,6 +239,10 @@ extension MainRepositoryContentView {
     }
 
     func beginSyncConflictReview(file: FileEntrySnapshot) {
+        if let conflict = syncConflictEntryModel.detailConflict(for: file) {
+            pendingSyncConflictReviewRoute = syncConflictEntryModel.reviewRoute(for: conflict)
+            return
+        }
         pendingSyncConflictReviewRoute = .fileDetail(repoPath: opening.config.repoPath, file: file)
     }
 
@@ -252,6 +261,7 @@ extension MainRepositoryContentView {
 
     func handleSyncConflictResolved(_: SyncConflictResolveReportSnapshot) async {
         pendingSyncConflictReviewRoute = nil
+        await syncConflictEntryModel.refresh()
         await fileListModel.retryCurrentCategory()
     }
 

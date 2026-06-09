@@ -5,6 +5,7 @@ struct MainRepositoryDetailPane: View {
     let selection: MainFileSelectionState
     let multiSelectionSummary: MultiSelectionDetailSummary
     let detailErrorMapping: CoreErrorMappingSnapshot?
+    var syncConflict: SyncConflictSnapshot? = nil
     let isDetailLoading: Bool
     let selectedFileDetail: FileEntrySnapshot?
     let noteWriteBlock: MainDetailNoteWriteBlock?
@@ -248,6 +249,9 @@ extension MainRepositoryDetailPane {
                 Text(detail.currentName)
                     .font(.headline)
                     .textSelection(.enabled)
+                SyncConflictDetailBanner(conflict: syncConflict) { _ in
+                    onBeginSyncConflictReview(detail)
+                }
                 semanticSearchDetailBanner
                 Picker("Detail tab", selection: Binding(get: { selectedTab }, set: requestDetailTabChange)) {
                     ForEach(DetailPaneTab.allCases) { tab in

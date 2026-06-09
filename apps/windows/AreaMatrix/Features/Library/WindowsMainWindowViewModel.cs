@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using AreaMatrix.Features.Conflicts;
 using AreaMatrix.Features.Onboarding;
 
 namespace AreaMatrix.Features.Library;
@@ -28,10 +29,20 @@ public sealed partial class WindowsMainWindowViewModel : INotifyPropertyChanged
 
     public WindowsMainWindowViewModel(
         IDesktopMainQueryCoreBridge coreBridge,
+        ISyncConflictEntryCoreBridge? syncConflictBridge = null,
         string locale = "en-US")
     {
         this.coreBridge = coreBridge;
         this.locale = locale;
+        if (syncConflictBridge is not null)
+        {
+            SyncConflictEntry = new SyncConflictEntryViewModel(syncConflictBridge);
+            SyncConflictEntry.PropertyChanged += (_, _) =>
+            {
+                OnPropertyChanged(nameof(SyncConflictEntry));
+                OnPropertyChanged(nameof(SelectedFileSyncConflict));
+            };
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -121,6 +132,7 @@ public sealed partial class WindowsMainWindowViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(SelectedFileTitle));
                 OnPropertyChanged(nameof(SelectedFilePath));
                 OnPropertyChanged(nameof(SelectedFileStatus));
+                OnPropertyChanged(nameof(SelectedFileSyncConflict));
             }
         }
     }
@@ -138,6 +150,11 @@ public sealed partial class WindowsMainWindowViewModel : INotifyPropertyChanged
     }
 
     public IReadOnlyList<DesktopFileEntry> Files => Snapshot.Files;
+
+    public SyncConflictEntryViewModel? SyncConflictEntry { get; }
+
+    public SyncConflictEntryConflict? SelectedFileSyncConflict =>
+        SyncConflictEntry?.DetailConflictFor(SelectedFile);
 
     public IReadOnlyList<DesktopCategoryNode> Categories => Snapshot.Categories;
 
@@ -249,11 +266,21 @@ public sealed partial class WindowsMainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(WatcherStatusRoute));
         OnPropertyChanged(nameof(ImportRoute));
         await LoadSnapshotAsync(isInitialLoad: true, cancellationToken);
+        if (SyncConflictEntry is not null)
+        {
+            await SyncConflictEntry.OpenRepositoryAsync(RepoPath, cancellationToken);
+            OnPropertyChanged(nameof(SelectedFileSyncConflict));
+        }
     }
 
-    public Task RefreshAsync(CancellationToken cancellationToken = default)
+    public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
-        return LoadSnapshotAsync(isInitialLoad: false, cancellationToken);
+        await LoadSnapshotAsync(isInitialLoad: false, cancellationToken);
+        if (SyncConflictEntry is not null)
+        {
+            await SyncConflictEntry.RefreshAsync(cancellationToken);
+            OnPropertyChanged(nameof(SelectedFileSyncConflict));
+        }
     }
 
     public async Task RefreshAndSelectFileAsync(
@@ -267,6 +294,11 @@ public sealed partial class WindowsMainWindowViewModel : INotifyPropertyChanged
         }
 
         await LoadSnapshotAsync(isInitialLoad: false, cancellationToken, selectedFileId: fileId);
+        if (SyncConflictEntry is not null)
+        {
+            await SyncConflictEntry.RefreshAsync(cancellationToken);
+            OnPropertyChanged(nameof(SelectedFileSyncConflict));
+        }
     }
 
     public async Task SelectCategoryAsync(

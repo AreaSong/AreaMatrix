@@ -28,6 +28,8 @@ internal sealed class NativeCoreLibrary : IDisposable
         ListFiles = LoadFunction<ListFilesDelegate>("uniffi_area_matrix_core_fn_func_list_files");
         GetFile = LoadFunction<GetFileDelegate>("uniffi_area_matrix_core_fn_func_get_file");
         ListTreeJson = LoadFunction<ListTreeJsonDelegate>("uniffi_area_matrix_core_fn_func_list_tree_json");
+        DetectSyncConflicts = LoadFunction<DetectSyncConflictsDelegate>(
+            "uniffi_area_matrix_core_fn_func_detect_sync_conflicts");
         SearchFiles = LoadFunction<SearchFilesDelegate>("uniffi_area_matrix_core_fn_func_search_files");
         RecordWatcherHealth = LoadFunction<RecordWatcherHealthDelegate>(
             "uniffi_area_matrix_core_fn_func_record_watcher_health");
@@ -64,6 +66,8 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_checksum_func_get_file");
         ListTreeJsonChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_list_tree_json");
+        DetectSyncConflictsChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_detect_sync_conflicts");
         SearchFilesChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_search_files");
         RecordWatcherHealthChecksum = LoadFunction<ChecksumDelegate>(
@@ -99,6 +103,8 @@ internal sealed class NativeCoreLibrary : IDisposable
     public GetFileDelegate GetFile { get; }
 
     public ListTreeJsonDelegate ListTreeJson { get; }
+
+    public DetectSyncConflictsDelegate DetectSyncConflicts { get; }
 
     public SearchFilesDelegate SearchFiles { get; }
 
@@ -137,6 +143,8 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ChecksumDelegate GetFileChecksum { get; }
 
     public ChecksumDelegate ListTreeJsonChecksum { get; }
+
+    public ChecksumDelegate DetectSyncConflictsChecksum { get; }
 
     public ChecksumDelegate SearchFilesChecksum { get; }
 

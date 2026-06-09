@@ -25,8 +25,18 @@
     <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.DesktopMainQuery.cs" Link="Core/AreaMatrixNativeCoreClient.DesktopMainQuery.cs" />
     <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.DesktopImport.cs" Link="Core/AreaMatrixNativeCoreClient.DesktopImport.cs" />
     <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.ImportConflictBatch.cs" Link="Core/AreaMatrixNativeCoreClient.ImportConflictBatch.cs" />
+    <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.SyncConflictDetect.cs" Link="Core/AreaMatrixNativeCoreClient.SyncConflictDetect.cs" />
     <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.WatcherStatus.cs" Link="Core/AreaMatrixNativeCoreClient.WatcherStatus.cs" />
     <Compile Include="../AreaMatrix/Core/UniFfiReader.cs" Link="Core/UniFfiReader.cs" />
+    <Compile
+      Include="../AreaMatrix/Features/Conflicts/SyncConflictEntryCoreBridge.cs"
+      Link="Features/Conflicts/SyncConflictEntryCoreBridge.cs" />
+    <Compile
+      Include="../AreaMatrix/Features/Conflicts/SyncConflictEntryModels.cs"
+      Link="Features/Conflicts/SyncConflictEntryModels.cs" />
+    <Compile
+      Include="../AreaMatrix/Features/Conflicts/SyncConflictEntryViewModel.cs"
+      Link="Features/Conflicts/SyncConflictEntryViewModel.cs" />
     <Compile
       Include="../AreaMatrix/Features/Help/PlatformDifferencesCoreBridge.cs"
       Link="Features/Help/PlatformDifferencesCoreBridge.cs" />

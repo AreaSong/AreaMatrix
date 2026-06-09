@@ -147,6 +147,7 @@ final class LibraryListViewModel: ObservableObject {
 
 struct MobileLibraryView: View {
     @StateObject private var model: LibraryListViewModel
+    @StateObject private var syncConflictModel: SyncConflictEntryViewModel
     @State private var capturedPhoto: CapturedPhotoSelection?
     @State private var filesImportSelection: FilesImportSelection?
     @State private var filesImportPickerError: String?
@@ -156,7 +157,9 @@ struct MobileLibraryView: View {
     private let cameraImportBridge: any CameraImportCoreBridge
     private let filesImportBridge: any FilesImportCoreBridge
     private let detailBridge: any MobileFileDetailCoreBridge
+    private let syncConflictBridge: any SyncConflictEntryCoreBridge
     private let onOpenMissingRecovery: (Int64) -> Void
+    private let onOpenSyncConflictReview: (SyncConflictEntryReviewRoute) -> Void
 
     init(
         connection: MobileRepositoryConnection,
@@ -165,17 +168,26 @@ struct MobileLibraryView: View {
         filesImportBridge: (any FilesImportCoreBridge)? = nil,
         shareImportConsumer: (any ShareImportQueueConsuming)? = nil,
         detailBridge: (any MobileFileDetailCoreBridge)? = nil,
-        onOpenMissingRecovery: @escaping (Int64) -> Void = { _ in }
+        syncConflictBridge: (any SyncConflictEntryCoreBridge)? = nil,
+        onOpenMissingRecovery: @escaping (Int64) -> Void = { _ in },
+        onOpenSyncConflictReview: @escaping (SyncConflictEntryReviewRoute) -> Void = { _ in }
     ) {
         _model = StateObject(wrappedValue: LibraryListViewModel(
             connection: connection,
             bridge: bridge,
             shareImportConsumer: shareImportConsumer ?? ShareImportQueueConsumer()
         ))
+        let conflictBridge = syncConflictBridge ?? LiveMobileRepositoryCoreBridge()
+        _syncConflictModel = StateObject(wrappedValue: SyncConflictEntryViewModel(
+            repoPath: connection.validation.repoPath,
+            bridge: conflictBridge
+        ))
         self.cameraImportBridge = cameraImportBridge ?? LiveMobileRepositoryCoreBridge()
         self.filesImportBridge = filesImportBridge ?? LiveMobileRepositoryCoreBridge()
         self.detailBridge = detailBridge ?? LiveMobileRepositoryCoreBridge()
+        self.syncConflictBridge = conflictBridge
         self.onOpenMissingRecovery = onOpenMissingRecovery
+        self.onOpenSyncConflictReview = onOpenSyncConflictReview
     }
 
     var body: some View {
@@ -194,6 +206,7 @@ struct MobileLibraryView: View {
             if let report = model.shareImportReport {
                 shareImportSection(report)
             }
+            syncConflictSection
             filesSection
             categoriesSection
             needsReviewSection
@@ -202,7 +215,7 @@ struct MobileLibraryView: View {
         .navigationTitle(model.repositoryName)
         .toolbar {
             Button {
-                Task { await model.refresh() }
+                Task { await refreshRepository() }
             } label: {
                 Image(systemName: "arrow.clockwise")
             }
@@ -252,7 +265,7 @@ struct MobileLibraryView: View {
                 },
                 onImported: { _ in
                     discardCapturedPhoto(photo)
-                    Task { await model.refresh() }
+                    Task { await refreshRepository() }
                 }
             )
         }
@@ -267,16 +280,23 @@ struct MobileLibraryView: View {
                 },
                 onImported: { _ in
                     filesImportSelection = nil
-                    Task { await model.refresh() }
+                    Task { await refreshRepository() }
                 }
             )
         }
         .refreshable {
-            await model.refresh()
+            await refreshRepository()
         }
         .task {
             await model.loadIfNeeded()
         }
+    }
+
+    private var syncConflictSection: some View {
+        SyncConflictEntryMobileHomeSection(
+            model: syncConflictModel,
+            onReview: onOpenSyncConflictReview
+        )
     }
 
     private var repositoryStatusSection: some View {
@@ -365,7 +385,9 @@ struct MobileLibraryView: View {
                 repoPath: model.repositoryPath,
                 fileID: file.id,
                 bridge: detailBridge,
-                onOpenMissingRecovery: onOpenMissingRecovery
+                syncConflictBridge: syncConflictBridge,
+                onOpenMissingRecovery: onOpenMissingRecovery,
+                onOpenSyncConflictReview: onOpenSyncConflictReview
             )
         } label: {
             MobileLibraryFileRow(file: file)
@@ -466,6 +488,11 @@ struct MobileLibraryView: View {
             return
         }
         showingCameraCapture = true
+    }
+
+    private func refreshRepository() async {
+        await model.refresh()
+        await syncConflictModel.refresh()
     }
 
     private func openAppSettings() {

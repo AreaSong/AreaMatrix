@@ -51,6 +51,11 @@ RustBuffer uniffi_area_matrix_core_fn_func_list_tree_json(
     RustCallStatus *_Nonnull out_status
 );
 
+RustBuffer uniffi_area_matrix_core_fn_func_detect_sync_conflicts(
+    RustBuffer repo_path,
+    RustCallStatus *_Nonnull out_status
+);
+
 RustBuffer uniffi_area_matrix_core_fn_func_predict_category(
     RustBuffer repo_path,
     RustBuffer filename,
@@ -125,6 +130,7 @@ uint16_t uniffi_area_matrix_core_checksum_func_init_repo(void);
 uint16_t uniffi_area_matrix_core_checksum_func_detect_cloud_storage_state(void);
 uint16_t uniffi_area_matrix_core_checksum_func_list_files(void);
 uint16_t uniffi_area_matrix_core_checksum_func_list_tree_json(void);
+uint16_t uniffi_area_matrix_core_checksum_func_detect_sync_conflicts(void);
 uint16_t uniffi_area_matrix_core_checksum_func_predict_category(void);
 uint16_t uniffi_area_matrix_core_checksum_func_import_file(void);
 uint16_t uniffi_area_matrix_core_checksum_func_preview_batch_delete(void);

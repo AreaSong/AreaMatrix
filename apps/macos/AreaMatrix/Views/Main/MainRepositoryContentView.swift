@@ -30,6 +30,7 @@ struct MainRepositoryContentView: View {
     let onPendingTagSuggestionFocusConsumed: (TagSuggestionPresentationRequest) -> Void
     let importProgressItems: [ImportBatchProgressSnapshot.Item]
     @StateObject var fileListModel: MainFileListModel
+    @StateObject var syncConflictEntryModel: SyncConflictEntryModel
     @State var repositoryTree: RepositoryTreeNodeSnapshot
     @State var selectedSidebarID: String = "inbox"
     @State var selectedFileIDs: Set<Int64> = []
@@ -103,6 +104,7 @@ struct MainRepositoryContentView: View {
         batchDeleter: any CoreBatchDeleting = CoreBridge(),
         batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
         batchRenamer: any CoreBatchRenaming = CoreBridge(),
+        syncConflictDetector: any CoreSyncConflictDetecting = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         tagStore: any CoreTagCRUD = CoreBridge(),
         aiPrivacyRules: any CoreAIPrivacyEvaluating = CoreBridge(),
@@ -161,6 +163,11 @@ struct MainRepositoryContentView: View {
             errorMapper: errorMapper,
             diagnosticsCollector: diagnosticsCollector
         ))
+        _syncConflictEntryModel = StateObject(wrappedValue: SyncConflictEntryModel(
+            repoPath: opening.config.repoPath,
+            conflictDetector: syncConflictDetector,
+            errorMapper: errorMapper
+        ))
         _repositoryTree = State(initialValue: opening.tree)
         _selectedSidebarID = State(initialValue: Self.defaultSelectedSidebarID(from: opening.tree.sidebarRows))
         let defaultSidebarID = Self.defaultSelectedSidebarID(from: opening.tree.sidebarRows)
@@ -204,6 +211,10 @@ extension MainRepositoryContentView {
         .task(id: opening.config.repoPath) {
             guard state == .list else { return }
             await loadSmartLists()
+        }
+        .task(id: opening.config.repoPath) {
+            guard state == .list else { return }
+            await syncConflictEntryModel.loadIfNeeded()
         }
         .task(id: externalCreatedEvent?.id) {
             guard let externalCreatedEvent else { return }

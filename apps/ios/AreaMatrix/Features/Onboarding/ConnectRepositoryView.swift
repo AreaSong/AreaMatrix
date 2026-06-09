@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 struct ConnectRepositoryView: View {
     @ObservedObject var model: ConnectRepositoryModel
     @StateObject private var routeCoordinator = ConnectRepositoryRouteCoordinator()
+    @State private var pendingSyncConflictReviewRoute: SyncConflictEntryReviewRoute?
     @State private var showingFolderPicker = false
     @State private var showingRepositoryHelp = false
 
@@ -27,6 +28,9 @@ struct ConnectRepositoryView: View {
             }
             .navigationDestination(isPresented: $routeCoordinator.isPresented) {
                 routeDestination
+            }
+            .navigationDestination(item: $pendingSyncConflictReviewRoute) { route in
+                SyncConflictReviewRouteView(route: route)
             }
             .onChange(of: model.route) { _, route in
                 routeCoordinator.update(route)
@@ -59,7 +63,8 @@ struct ConnectRepositoryView: View {
                 onTryAgain: retryICloudPermission,
                 onReconnectFolder: openRecoveryFolderPicker,
                 onChooseAnotherFolder: openRecoveryFolderPicker,
-                onOpenSettings: ICloudPermissionSystemSettings.open
+                onOpenSettings: ICloudPermissionSystemSettings.open,
+                onOpenSyncConflictReview: openSyncConflictReview
             )
         }
     }
@@ -270,6 +275,10 @@ struct ConnectRepositoryView: View {
         model.beginRecoveryFolderSelection()
         showingFolderPicker = true
     }
+
+    private func openSyncConflictReview(_ route: SyncConflictEntryReviewRoute) {
+        pendingSyncConflictReviewRoute = route
+    }
 }
 
 private extension View {
@@ -340,6 +349,7 @@ struct ConnectRepositoryRouteDestinationView: View {
     private let onReconnectFolder: () -> Void
     private let onChooseAnotherFolder: () -> Void
     private let onOpenSettings: () -> Void
+    private let onOpenSyncConflictReview: (SyncConflictEntryReviewRoute) -> Void
     private let content: ConnectRepositoryRouteDestinationContent
 
     init(
@@ -350,7 +360,8 @@ struct ConnectRepositoryRouteDestinationView: View {
         onTryAgain: @escaping () -> Void = {},
         onReconnectFolder: @escaping () -> Void = {},
         onChooseAnotherFolder: @escaping () -> Void = {},
-        onOpenSettings: @escaping () -> Void = {}
+        onOpenSettings: @escaping () -> Void = {},
+        onOpenSyncConflictReview: @escaping (SyncConflictEntryReviewRoute) -> Void = { _ in }
     ) {
         self.route = route
         self.mobileLibraryBridge = mobileLibraryBridge
@@ -360,13 +371,18 @@ struct ConnectRepositoryRouteDestinationView: View {
         self.onReconnectFolder = onReconnectFolder
         self.onChooseAnotherFolder = onChooseAnotherFolder
         self.onOpenSettings = onOpenSettings
+        self.onOpenSyncConflictReview = onOpenSyncConflictReview
         content = ConnectRepositoryRouteDestinationContent(route: route)
     }
 
     var body: some View {
         switch route {
         case let .mobileLibrary(connection):
-            MobileLibraryView(connection: connection, bridge: mobileLibraryBridge)
+            MobileLibraryView(
+                connection: connection,
+                bridge: mobileLibraryBridge,
+                onOpenSyncConflictReview: onOpenSyncConflictReview
+            )
         case .repositoryInitConfirm, .repositoryAdoptConfirm:
             List {
                 Section {

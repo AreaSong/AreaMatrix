@@ -1,4 +1,5 @@
 using AreaMatrix.Core;
+using AreaMatrix.Features.Conflicts;
 using AreaMatrix.Features.Help;
 using AreaMatrix.Features.Import;
 using AreaMatrix.Features.Library;
@@ -29,7 +30,9 @@ public sealed partial class MainWindow : Window
         OneDriveNoticePage.ContinueWithOneDriveRequested += OneDriveNoticePage_ContinueWithOneDriveRequested;
         OneDriveNoticePage.OpenWatcherStatusRequested += OneDriveNoticePage_OpenWatcherStatusRequested;
         WindowsMainWindowPage.ViewModel = new WindowsMainWindowViewModel(
-            new DesktopMainQueryCoreBridge(coreClient));
+            new DesktopMainQueryCoreBridge(coreClient),
+            new SyncConflictEntryCoreBridge(coreClient));
+        WindowsMainWindowPage.OpenSyncConflictReviewRequested += WindowsMainWindowPage_OpenSyncConflictReviewRequested;
         WindowsMainWindowPage.OpenOneDriveStatusRequested += WindowsMainWindowPage_OpenOneDriveStatusRequested;
         WindowsMainWindowPage.OpenWatcherStatusRequested += WindowsMainWindowPage_OpenWatcherStatusRequested;
         WindowsMainWindowPage.OpenImportRequested += WindowsMainWindowPage_OpenImportRequested;
@@ -173,6 +176,12 @@ public sealed partial class MainWindow : Window
         WindowsImportPage.OpenRepository(route.RepoPath);
     }
 
+    private void WindowsMainWindowPage_OpenSyncConflictReviewRequested(SyncConflictEntryReviewRoute route)
+    {
+        WindowsMainWindowPage.Visibility = Visibility.Visible;
+        WindowsMainWindowPage.ShowSyncConflictReviewRoute(route);
+    }
+
     private async void WindowsMainWindowPage_OpenImportDroppedSourcesRequested(
         WindowsRepositoryRoute route,
         IReadOnlyList<string> sourcePaths)
@@ -285,6 +294,7 @@ public sealed partial class MainWindow : Window
         WindowsMainWindowPage.OpenOneDriveStatusRequested -= WindowsMainWindowPage_OpenOneDriveStatusRequested;
         WindowsMainWindowPage.OpenWatcherStatusRequested -= WindowsMainWindowPage_OpenWatcherStatusRequested;
         WindowsMainWindowPage.OpenImportRequested -= WindowsMainWindowPage_OpenImportRequested;
+        WindowsMainWindowPage.OpenSyncConflictReviewRequested -= WindowsMainWindowPage_OpenSyncConflictReviewRequested;
         WindowsMainWindowPage.OpenImportDroppedSourcesRequested -= WindowsMainWindowPage_OpenImportDroppedSourcesRequested;
         WindowsMainWindowPage.OpenPlatformDifferencesRequested -= WindowsMainWindowPage_OpenPlatformDifferencesRequested;
         WindowsImportPage.CloseRequested -= WindowsImportPage_CloseRequested;

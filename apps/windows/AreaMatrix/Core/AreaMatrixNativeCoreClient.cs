@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using AreaMatrix.Features.Help;
+using AreaMatrix.Features.Conflicts;
 using AreaMatrix.Features.Import;
 using AreaMatrix.Features.Library;
 using AreaMatrix.Features.Onboarding;
@@ -16,6 +17,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
     IAreaMatrixBindingContractCoreClient,
     IAreaMatrixDesktopQueryCoreClient,
     IAreaMatrixDesktopImportCoreClient,
+    IAreaMatrixSyncConflictDetectCoreClient,
     IAreaMatrixWatcherStatusCoreClient,
     IDisposable
 {

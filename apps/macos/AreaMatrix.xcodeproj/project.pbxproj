@@ -89,6 +89,9 @@
 		0A000000000000000000076A /* CoreSyncConflictResolving.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000076B /* CoreSyncConflictResolving.swift */; };
 		0A000000000000000000076C /* SyncConflictReviewResolutionPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000076D /* SyncConflictReviewResolutionPageFeatureTests.swift */; };
 		0A000000000000000000076E /* SyncConflictReplaceConfirmationPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000076F /* SyncConflictReplaceConfirmationPanel.swift */; };
+		0A0000000000000000000778 /* SyncConflictEntryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000779 /* SyncConflictEntryModel.swift */; };
+		0A000000000000000000077A /* SyncConflictEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000077B /* SyncConflictEntryView.swift */; };
+		0A000000000000000000077C /* SyncConflictEntryPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000077D /* SyncConflictEntryPageFeatureTests.swift */; };
 		0A0000000000000000000770 /* CoreBindingContractInspecting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000771 /* CoreBindingContractInspecting.swift */; };
 		0A0000000000000000000772 /* PlatformDifferencesModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000773 /* PlatformDifferencesModel.swift */; };
 		0A0000000000000000000774 /* PlatformDifferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000775 /* PlatformDifferencesView.swift */; };
@@ -462,6 +465,9 @@
 		0A000000000000000000076B /* CoreSyncConflictResolving.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreSyncConflictResolving.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000076D /* SyncConflictReviewResolutionPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SyncConflictReviewResolutionPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000076F /* SyncConflictReplaceConfirmationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/SyncConflictReplaceConfirmationPanel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000779 /* SyncConflictEntryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/SyncConflictEntryModel.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000077B /* SyncConflictEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/SyncConflictEntryView.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000077D /* SyncConflictEntryPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SyncConflictEntryPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000771 /* CoreBindingContractInspecting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBindingContractInspecting.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000773 /* PlatformDifferencesModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/PlatformDifferencesModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000775 /* PlatformDifferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/PlatformDifferencesView.swift; sourceTree = SOURCE_ROOT; };
@@ -766,6 +772,7 @@
 				0A00000000000000000002E9 /* ICloudConflictListView.swift */,
 				0A0000000000000000000765 /* SyncConflictReviewView.swift */,
 				0A000000000000000000076F /* SyncConflictReplaceConfirmationPanel.swift */,
+				0A000000000000000000077B /* SyncConflictEntryView.swift */,
 				0A0000000000000000000149 /* MainLoadingView.swift */,
 				0A00000000000000000002B4 /* StartupRecoveryErrorRecoveryView.swift */,
 				0A000000000000000000015F /* RepositoryErrorView.swift */,
@@ -942,6 +949,7 @@
 				0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */,
 				0A00000000000000000002E7 /* ICloudConflictListModel.swift */,
 				0A0000000000000000000763 /* SyncConflictReviewModel.swift */,
+				0A0000000000000000000779 /* SyncConflictEntryModel.swift */,
 				0A00000000000000000002F0 /* DatabaseRepairConfirmModel.swift */,
 				0A0000000000000000000261 /* MainFileListDetailSupport.swift */,
 				0A0000000000000000000223 /* MainFileListState.swift */,
@@ -1074,6 +1082,7 @@
 				0A0000000000000000000767 /* SyncConflictReviewPageFeatureTests.swift */,
 				0A0000000000000000000769 /* SyncConflictReviewResolutionTestSupport.swift */,
 				0A000000000000000000076D /* SyncConflictReviewResolutionPageFeatureTests.swift */,
+				0A000000000000000000077D /* SyncConflictEntryPageFeatureTests.swift */,
 				0A000000000000000000014B /* MainLoadingAdoptExistingTests.swift */,
 				0A0000000000000000000151 /* MainLoadingTestSupport.swift */,
 				0A0000000000000000000153 /* MainLoadingFixtures.swift */,
@@ -1230,6 +1239,7 @@
 				0A00000000000000000002E0 /* ICloudConflictMinimalResolution.swift in Sources */,
 				0A00000000000000000002E6 /* ICloudConflictListModel.swift in Sources */,
 				0A0000000000000000000762 /* SyncConflictReviewModel.swift in Sources */,
+				0A0000000000000000000778 /* SyncConflictEntryModel.swift in Sources */,
 				0A00000000000000000002EF /* DatabaseRepairConfirmModel.swift in Sources */,
 				0A0000000000000000000712 /* RemoteProviderConfigState.swift in Sources */,
 				0A0000000000000000000714 /* RemoteProviderCredentialStore.swift in Sources */,
@@ -1356,6 +1366,7 @@
 				0A00000000000000000002E8 /* ICloudConflictListView.swift in Sources */,
 				0A0000000000000000000764 /* SyncConflictReviewView.swift in Sources */,
 				0A000000000000000000076E /* SyncConflictReplaceConfirmationPanel.swift in Sources */,
+				0A000000000000000000077A /* SyncConflictEntryView.swift in Sources */,
 				0A00000000000000000002F1 /* DatabaseRepairConfirmView.swift in Sources */,
 					0A0000000000000000000146 /* MainLoadingState.swift in Sources */,
 					0A000000000000000000014C /* StartupRecoveryModels.swift in Sources */,
@@ -1478,6 +1489,7 @@
 					0A0000000000000000000766 /* SyncConflictReviewPageFeatureTests.swift in Sources */,
 					0A0000000000000000000768 /* SyncConflictReviewResolutionTestSupport.swift in Sources */,
 					0A000000000000000000076C /* SyncConflictReviewResolutionPageFeatureTests.swift in Sources */,
+					0A000000000000000000077C /* SyncConflictEntryPageFeatureTests.swift in Sources */,
 					0A00000000000000000002F3 /* DatabaseRepairConfirmPageFeatureTests.swift in Sources */,
 					0A00000000000000000002F7 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000200 /* DetailMetaPageFeatureTests.swift in Sources */,

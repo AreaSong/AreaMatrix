@@ -2,20 +2,29 @@ import SwiftUI
 
 struct MobileFileDetailView: View {
     @StateObject private var model: MobileFileDetailViewModel
+    @StateObject private var syncConflictModel: SyncConflictEntryViewModel
     private let onOpenMissingRecovery: (Int64) -> Void
+    private let onOpenSyncConflictReview: (SyncConflictEntryReviewRoute) -> Void
 
     init(
         repoPath: String,
         fileID: Int64,
         bridge: any MobileFileDetailCoreBridge,
-        onOpenMissingRecovery: @escaping (Int64) -> Void = { _ in }
+        syncConflictBridge: any SyncConflictEntryCoreBridge = LiveMobileRepositoryCoreBridge(),
+        onOpenMissingRecovery: @escaping (Int64) -> Void = { _ in },
+        onOpenSyncConflictReview: @escaping (SyncConflictEntryReviewRoute) -> Void = { _ in }
     ) {
         _model = StateObject(wrappedValue: MobileFileDetailViewModel(
             repoPath: repoPath,
             fileID: fileID,
             bridge: bridge
         ))
+        _syncConflictModel = StateObject(wrappedValue: SyncConflictEntryViewModel(
+            repoPath: repoPath,
+            bridge: syncConflictBridge
+        ))
         self.onOpenMissingRecovery = onOpenMissingRecovery
+        self.onOpenSyncConflictReview = onOpenSyncConflictReview
     }
 
     var body: some View {
@@ -27,7 +36,7 @@ struct MobileFileDetailView: View {
         .navigationTitle(model.navigationTitle)
         .toolbar {
             Button {
-                Task { await model.reloadMetadata() }
+                Task { await reloadVisibleState() }
             } label: {
                 Image(systemName: "arrow.clockwise")
             }
@@ -35,6 +44,7 @@ struct MobileFileDetailView: View {
         }
         .task {
             await model.loadMetadataIfNeeded()
+            await syncConflictModel.loadIfNeeded()
         }
         .onChange(of: model.selectedSegment) { _, _ in
             Task { await model.loadSelectedSegmentIfNeeded() }
@@ -74,6 +84,7 @@ struct MobileFileDetailView: View {
             FilePreviewHeader(file: file) {
                 model.requestMissingRecoveryRoute()
             }
+            syncConflictBanner(file)
             Section {
                 Picker("Detail section", selection: $model.selectedSegment) {
                     ForEach(MobileFileDetailSegment.allCases) { segment in
@@ -85,6 +96,15 @@ struct MobileFileDetailView: View {
             }
             selectedSection(file: file)
         }
+    }
+
+    private func syncConflictBanner(_ file: MobileFileDetailMetadata) -> some View {
+        let conflict = syncConflictModel.detailConflict(fileID: file.id, path: file.path)
+        return SyncConflictEntryDetailBanner(
+            conflict: conflict,
+            onReview: onOpenSyncConflictReview,
+            route: conflict.flatMap { syncConflictModel.reviewRoute(for: $0) }
+        )
     }
 
     @ViewBuilder
@@ -125,6 +145,11 @@ struct MobileFileDetailView: View {
         default:
             .secondary
         }
+    }
+
+    private func reloadVisibleState() async {
+        await model.reloadMetadata()
+        await syncConflictModel.refresh()
     }
 }
 

@@ -46,6 +46,7 @@ public enum LinuxRepositoryErrorKind
 {
     Db,
     Config,
+    Conflict,
     InvalidPath,
     SelectedFile,
     PermissionDenied,
