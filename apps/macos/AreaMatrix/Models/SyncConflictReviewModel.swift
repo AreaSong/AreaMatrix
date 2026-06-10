@@ -309,7 +309,7 @@ final class SyncConflictReviewModel: ObservableObject {
                 ? String(character)
                 : "-"
         }.joined()
-        return "S4-X-01-C4-21-\(safeID)"
+        return "S4-X-09-C4-16-\(safeID)"
     }
 }
 

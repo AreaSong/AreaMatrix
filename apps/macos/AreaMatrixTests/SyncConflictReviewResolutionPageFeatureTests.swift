@@ -73,7 +73,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X01C421UseIncomingRequiresReplaceConfirmationBeforeResolve() async throws {
+    func testS4X09C416UseIncomingRequiresReplaceConfirmationBeforeResolve() async throws {
         let resolver = S4X01RecordingSyncConflictResolver(previewResults: [
             .keepBoth: .success(.s4x01PreviewFixture()),
             .useIncoming: .success(.s4x01PreviewFixture(
@@ -107,7 +107,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X01C421ConfirmedReplaceUsesPreviewTokenAndCoreResolveFlag() async throws {
+    func testS4X09C416ConfirmedReplaceUsesPreviewTokenAndCoreResolveFlag() async throws {
         let resolver = S4X01RecordingSyncConflictResolver(
             previewResults: [
                 .keepBoth: .success(.s4x01PreviewFixture()),
@@ -146,17 +146,19 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
                     strategy: .useIncoming,
                     previewToken: "preview-token-use-incoming",
                     replaceConfirmed: true,
-                    replaceConfirmationID: "S4-X-01-C4-21-conflict-report-preview-token-use-incoming"
+                    replaceConfirmationID: "S4-X-09-C4-16-conflict-report-preview-token-use-incoming"
                 )
             )
         ])
         XCTAssertEqual(model.applyState, .succeeded(.s4x01ResolveFixture(resolution: .useIncoming)))
+        XCTAssertTrue(panelBody.contains(SyncConflictReviewAccessibilityID.replaceConfirmation))
+        XCTAssertTrue(panelBody.contains(SyncConflictReviewAccessibilityID.replaceConfirm))
         XCTAssertTrue(panelBody.contains("Replace plan confirmed for this preview token."))
         XCTAssertTrue(panelBody.contains("conflict_resolved_use_incoming"))
     }
 
     @MainActor
-    func testS4X01C421TrashUnavailableDisablesReplaceConfirmationAndResolve() async {
+    func testS4X09C416TrashUnavailableDisablesReplaceConfirmationAndResolve() async {
         let resolver = S4X01RecordingSyncConflictResolver(previewResults: [
             .keepBoth: .success(.s4x01PreviewFixture()),
             .useIncoming: .success(.s4x01PreviewFixture(
