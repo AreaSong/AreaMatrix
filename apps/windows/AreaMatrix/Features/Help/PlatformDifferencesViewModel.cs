@@ -151,10 +151,10 @@ public sealed class PlatformDifferencesViewModel : INotifyPropertyChanged
         ? "Repository: Not connected"
         : $"Repository: {RepositoryPath}";
 
-    public bool CanOpenRepositorySettings => false;
+    public bool CanOpenRepositorySettings => true;
 
     public string RepositorySettingsUnavailableText =>
-        "Repository settings are not available from this Windows help entry yet.";
+        string.Empty;
 
     public bool CanExportDiagnostics => false;
 

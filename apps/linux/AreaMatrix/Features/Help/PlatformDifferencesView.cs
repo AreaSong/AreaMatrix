@@ -9,6 +9,8 @@ public sealed class PlatformDifferencesView
 
     public event Action? CloseRequested;
 
+    public event Action? OpenRepositorySettingsRequested;
+
     public PlatformDifferencesViewModel ViewModel { get; }
 
     public Task OpenAsync(CancellationToken cancellationToken = default)
@@ -37,6 +39,11 @@ public sealed class PlatformDifferencesView
     public Task<bool> OpenRepositorySettingsAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (ViewModel.CanOpenRepositorySettings)
+        {
+            OpenRepositorySettingsRequested?.Invoke();
+        }
+
         return Task.FromResult(ViewModel.CanOpenRepositorySettings);
     }
 

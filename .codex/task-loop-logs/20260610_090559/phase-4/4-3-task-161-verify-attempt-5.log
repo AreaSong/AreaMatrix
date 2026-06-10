@@ -1,0 +1,79 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-161`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-161-s4-x-08-page-integration-verify.md`
+- 主要验收路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖
+  结果：通过
+  证据：`4-3/task-159` 覆盖 `S4-X-08 + C4-17`，`4-3/task-160` 覆盖 `S4-X-08 + C4-20`；control map 仅声明 `S4-X-08 -> C4-17, C4-20`。
+  涉及文件：`docs/architecture/stage-4-control-map.md:24`
+
+- 项目：页面状态、入口、退出、错误态闭环
+  结果：通过
+  证据：iOS/Windows/Linux/macOS 均有 loading、empty/failed、loaded 状态；Windows/Linux/iOS 有从 platform capabilities 到 repository settings 的入口，macOS settings tab 与 about/platform capabilities 互通。
+  涉及文件：`apps/ios/AreaMatrix/Features/Settings/RepositorySettingsView.swift:122`、`apps/windows/AreaMatrix/MainWindow.xaml.cs:359`、`apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs:200`、`apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:114`
+
+- 项目：CoreBridge / native bridge 调用
+  结果：通过
+  证据：页面真实调用 `load_config`、`update_config`、`get_platform_capabilities`、`get_version`；UDL 合同存在。
+  涉及文件：`core/area_matrix.udl:10`、`apps/ios/AreaMatrix/Features/Onboarding/MobileRepositoryCoreFFI.swift:80`、`apps/windows/AreaMatrix/Features/Settings/RepositorySettingsViewModel.cs:261`、`apps/linux/AreaMatrix/Features/Settings/RepositorySettingsViewModel.cs:197`、`apps/macos/AreaMatrix/Bridge/CoreBridge.swift:217`
+
+- 项目：mock / fixture / 硬编码状态
+  结果：通过
+  证据：production settings 路径未检出 mock/fixture/TODO/try!；测试中的 Fake/Recording 仅限测试替身。`Last opened: Unknown` 属于缺运行时来源时的未知态，不是通过态伪造。
+  涉及文件：`apps/**/Features/Settings/**`
+
+- 项目：未新增 control map 外功能
+  结果：通过
+  证据：页面只围绕 page spec 中的 repository settings、platform capabilities、safe diagnostics、reconnect/choose folder；未暴露删除 repo、Trash 执行、rescan、云 SDK 配置、账号/插件等越界入口。
+  涉及文件：`apps/linux/AreaMatrix/Features/Settings/RepositorySettingsView.ui:28`
+
+- 项目：Expected New Paths
+  结果：通过
+  证据：`apps/**` 下已落地 iOS、Windows、Linux、macOS settings 页面实现与测试。
+  涉及文件：`apps/ios/AreaMatrix/Features/Settings/RepositorySettingsView.swift`、`apps/windows/AreaMatrix/Features/Settings/RepositorySettingsViewModel.cs`、`apps/linux/AreaMatrix/Features/Settings/RepositorySettingsViewModel.cs`
+
+- 项目：Forbidden Touches
+  结果：通过
+  证据：`git diff --name-only -- core/src` 与 `git diff --cached --name-only -- core/src` 均无输出，未触碰 `core/src/**`。
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，settings model/view/bridge 分层清楚，相关 production 文件均小于 500 行。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Rust public API；UDL 与 Core API 中 C4-17/C4-20 合同一致。
+- 错误处理与边界处理：通过，加载失败、保存失败、诊断导出失败、空 repo、权限不可用均有状态或禁用路径。
+- 测试与验证覆盖：通过，存在 iOS/Windows/Linux/macOS page integration 或 view model 测试；本轮已运行 manifest 指定验证。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现 production mock-only 或 fixture-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-161`
+- 通过：prompt doctor OK；`git diff --check` 通过；macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 失败：无
+- 缺失：无本 task manifest 要求的验证缺失；未额外运行真实窗口 UI smoke，因 manifest 指定验证为 task-scoped check
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

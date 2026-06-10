@@ -4,6 +4,7 @@ using AreaMatrix.Linux.Features.Help;
 using AreaMatrix.Linux.Features.Import;
 using AreaMatrix.Linux.Features.Onboarding;
 using AreaMatrix.Linux.Features.Recovery;
+using AreaMatrix.Linux.Features.Settings;
 using AreaMatrix.Linux.Features.System;
 
 namespace AreaMatrix.Linux.Features.Library;
@@ -38,6 +39,11 @@ public interface ILinuxPlatformDifferencesViewFactory
     PlatformDifferencesView Create(string? repositoryPath = null);
 }
 
+public interface ILinuxRepositorySettingsViewFactory
+{
+    RepositorySettingsView Create(string? repositoryPath = null);
+}
+
 public interface ILinuxLocalFolderNoticeFactory
 {
     LocalFolderNoticeView Create(LinuxRepositoryRoute route);
@@ -63,6 +69,7 @@ public sealed class LinuxDesktopShell : IDisposable
     private readonly ILinuxMissingFileRecoveryViewFactory? missingFileRecoveryViewFactory;
     private readonly ILinuxMainWindowFactory mainWindowFactory;
     private readonly ILinuxPlatformDifferencesViewFactory? platformDifferencesViewFactory;
+    private readonly ILinuxRepositorySettingsViewFactory? repositorySettingsViewFactory;
     private readonly ILinuxWatcherStatusViewFactory? watcherStatusViewFactory;
     private readonly ILinuxRescanConfirmViewFactory? rescanConfirmViewFactory;
     private readonly IDisposable? ownedResources;
@@ -73,6 +80,7 @@ public sealed class LinuxDesktopShell : IDisposable
     private MissingFileRecoveryView? missingFileRecoveryView;
     private LinuxMainWindow? mainWindow;
     private PlatformDifferencesView? platformDifferencesView;
+    private RepositorySettingsView? repositorySettingsView;
     private LinuxWatcherStatusView? watcherStatusView;
     private LinuxRescanConfirmView? rescanConfirmView;
     private bool disposed;
@@ -86,6 +94,7 @@ public sealed class LinuxDesktopShell : IDisposable
         ILinuxImportDialogFactory? importDialogFactory = null,
         ILinuxMissingFileRecoveryViewFactory? missingFileRecoveryViewFactory = null,
         ILinuxPlatformDifferencesViewFactory? platformDifferencesViewFactory = null,
+        ILinuxRepositorySettingsViewFactory? repositorySettingsViewFactory = null,
         ILinuxWatcherStatusViewFactory? watcherStatusViewFactory = null,
         ILinuxRescanConfirmViewFactory? rescanConfirmViewFactory = null,
         IDisposable? ownedResources = null)
@@ -98,6 +107,7 @@ public sealed class LinuxDesktopShell : IDisposable
         this.importDialogFactory = importDialogFactory;
         this.missingFileRecoveryViewFactory = missingFileRecoveryViewFactory;
         this.platformDifferencesViewFactory = platformDifferencesViewFactory;
+        this.repositorySettingsViewFactory = repositorySettingsViewFactory;
         this.watcherStatusViewFactory = watcherStatusViewFactory;
         this.rescanConfirmViewFactory = rescanConfirmViewFactory;
         this.ownedResources = ownedResources;
@@ -116,6 +126,8 @@ public sealed class LinuxDesktopShell : IDisposable
     public MissingFileRecoveryView? MissingFileRecoveryView => missingFileRecoveryView;
 
     public PlatformDifferencesView? PlatformDifferencesView => platformDifferencesView;
+
+    public RepositorySettingsView? RepositorySettingsView => repositorySettingsView;
 
     public LinuxMainWindow? MainWindow => mainWindow;
 
@@ -145,6 +157,7 @@ public sealed class LinuxDesktopShell : IDisposable
             new LinuxImportDialogFactory(importBridge),
             new LinuxMissingFileRecoveryViewFactory(recoveryBridge),
             new LinuxPlatformDifferencesViewFactory(new PlatformDifferencesCoreBridge(nativeCoreClient)),
+            new LinuxRepositorySettingsViewFactory(repositoryBridge, repositoryBridge),
             new LinuxWatcherStatusViewFactory(watcherBridge, watcherDiagnostics),
             new LinuxRescanConfirmViewFactory(watcherBridge),
             nativeCoreClient);
@@ -191,9 +204,31 @@ public sealed class LinuxDesktopShell : IDisposable
             throw new InvalidOperationException("Linux platform differences route has no view factory.");
         }
 
-        PlatformDifferencesView view = platformDifferencesViewFactory.Create(mainWindow?.ViewModel.RepoPath);
+        string? repositoryPath = repositorySettingsView?.ViewModel.RepositoryPath
+            ?? mainWindow?.ViewModel.RepoPath;
+        PlatformDifferencesView view = platformDifferencesViewFactory.Create(repositoryPath);
+        view.OpenRepositorySettingsRequested += async () =>
+            await OpenRepositorySettingsAsync(cancellationToken).ConfigureAwait(false);
         await view.OpenAsync(cancellationToken).ConfigureAwait(false);
         platformDifferencesView = view;
+    }
+
+    public async Task OpenRepositorySettingsAsync(CancellationToken cancellationToken = default)
+    {
+        if (repositorySettingsViewFactory is null)
+        {
+            throw new InvalidOperationException("Linux repository settings route has no view factory.");
+        }
+
+        string? repositoryPath = platformDifferencesView?.ViewModel.RepositoryPath
+            ?? mainWindow?.ViewModel.RepoPath;
+        RepositorySettingsView view = repositorySettingsViewFactory.Create(repositoryPath);
+        view.ReconnectRepositoryRequested += ReturnToChooseRepository;
+        view.ChooseAnotherFolderRequested += ReturnToChooseRepository;
+        view.PlatformCapabilitiesRequested += async () =>
+            await OpenPlatformDifferencesAsync(cancellationToken).ConfigureAwait(false);
+        await view.OpenAsync(cancellationToken).ConfigureAwait(false);
+        repositorySettingsView = view;
     }
 
     public async Task OpenImportWithSourcesAsync(
@@ -309,6 +344,7 @@ public sealed class LinuxDesktopShell : IDisposable
             importDialog = null;
             missingFileRecoveryView = null;
             platformDifferencesView = null;
+            repositorySettingsView = null;
             return;
         }
 
@@ -385,7 +421,18 @@ public sealed class LinuxDesktopShell : IDisposable
         importDialog = null;
         missingFileRecoveryView = null;
         platformDifferencesView = null;
+        repositorySettingsView = null;
         rescanConfirmView = null;
+        chooseRepositoryView.ViewModel.ResetRoute();
+    }
+
+    private void ReturnToChooseRepository()
+    {
+        localFolderNoticeView = null;
+        repositoryInitConfirmView = null;
+        repositoryAdoptConfirmView = null;
+        platformDifferencesView = null;
+        repositorySettingsView = null;
         chooseRepositoryView.ViewModel.ResetRoute();
     }
 

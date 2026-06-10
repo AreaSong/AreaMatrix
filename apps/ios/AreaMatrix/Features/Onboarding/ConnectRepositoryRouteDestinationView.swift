@@ -117,6 +117,14 @@ struct ConnectRepositoryRouteDestinationView: View {
                 },
                 onOpenSyncConflictReview: onOpenSyncConflictReview
             )
+            .toolbar {
+                NavigationLink {
+                    PlatformDifferencesView(repositoryPath: connection.validation.repoPath)
+                } label: {
+                    Image(systemName: "list.bullet.rectangle")
+                }
+                .accessibilityLabel("Platform capabilities")
+            }
             .sheet(item: $pendingMissingFileRecoveryRoute) { route in
                 MissingFileRecoveryView(
                     model: MissingFileRecoveryViewModel(

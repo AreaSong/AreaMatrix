@@ -3,7 +3,19 @@ using System.Runtime.InteropServices;
 namespace AreaMatrix.Linux.Core;
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer GetVersionDelegate(ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 internal delegate RustBuffer ValidateRepoPathDelegate(RustBuffer repoPath, ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate RustBuffer LoadConfigDelegate(RustBuffer repoPath, ref RustCallStatus status);
+
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate void UpdateConfigDelegate(
+    RustBuffer repoPath,
+    RustBuffer newConfig,
+    ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 internal delegate void InitRepoDelegate(RustBuffer repoPath, RustBuffer options, ref RustCallStatus status);

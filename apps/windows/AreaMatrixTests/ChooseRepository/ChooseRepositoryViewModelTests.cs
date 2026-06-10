@@ -193,6 +193,8 @@ internal sealed class FakeWindowsRepositoryCoreBridge : IWindowsRepositoryCoreBr
 
     public List<string> LoadedConfigPaths { get; } = [];
 
+    public List<WindowsRepositoryConfig> UpdatedConfigs { get; } = [];
+
     public List<string> InitializedPaths { get; } = [];
 
     public List<string> AdoptedPaths { get; } = [];
@@ -228,6 +230,15 @@ internal sealed class FakeWindowsRepositoryCoreBridge : IWindowsRepositoryCoreBr
     {
         LoadedConfigPaths.Add(repoPath);
         return Task.FromResult(new WindowsRepositoryConfig(repoPath, "copy", "en-US"));
+    }
+
+    public Task UpdateConfigAsync(
+        string repoPath,
+        WindowsRepositoryConfig newConfig,
+        CancellationToken cancellationToken = default)
+    {
+        UpdatedConfigs.Add(newConfig);
+        return Task.CompletedTask;
     }
 
     public Task InitializeEmptyRepositoryAsync(

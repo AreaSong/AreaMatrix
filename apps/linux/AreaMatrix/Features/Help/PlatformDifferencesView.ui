@@ -9,7 +9,7 @@ sections:
   - Type mappings
   - Limited or missing capabilities
 actions:
-  open_repository_settings: disabled - Repository settings are not available from this Linux help entry yet.
+  open_repository_settings: PlatformDifferencesView.OpenRepositorySettingsAsync
   export_diagnostics: disabled - Diagnostics are not available on this platform yet.
   check_capabilities: PlatformDifferencesView.CheckCapabilitiesAsync
   check_contract: PlatformDifferencesView.CheckContractAsync

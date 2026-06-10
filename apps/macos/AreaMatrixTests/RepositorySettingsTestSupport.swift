@@ -170,7 +170,7 @@ actor RepositorySettingsStaticErrorMapper: CoreErrorMapping {
             severity: .medium,
             suggestedAction: "Retry status",
             recoverability: .retryable,
-            rawContext: "S1-27 C1-04"
+            rawContext: "S4-X-08 C4-20"
         )
     }
 

@@ -19,6 +19,8 @@ public sealed partial class PlatformDifferencesView : UserControl
 
     public event Action? CloseRequested;
 
+    public event Action? OpenRepositorySettingsRequested;
+
     public PlatformDifferencesViewModel? ViewModel
     {
         get => DataContext as PlatformDifferencesViewModel;
@@ -87,6 +89,11 @@ public sealed partial class PlatformDifferencesView : UserControl
     private void ClosePlatformDifferencesButton_Click(object sender, RoutedEventArgs e)
     {
         CloseRequested?.Invoke();
+    }
+
+    private void OpenRepositorySettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        OpenRepositorySettingsRequested?.Invoke();
     }
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)

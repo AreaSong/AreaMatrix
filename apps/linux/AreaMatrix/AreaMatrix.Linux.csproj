@@ -16,5 +16,6 @@
     <None Include="Features/Recovery/MissingFileRecoveryView.ui" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Features/System/WatcherStatusView.ui" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Features/System/RescanConfirmView.ui" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Features/Settings/RepositorySettingsView.ui" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

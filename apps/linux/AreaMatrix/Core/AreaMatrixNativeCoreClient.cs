@@ -20,8 +20,11 @@ public sealed partial class AreaMatrixNativeCoreClient :
     IAreaMatrixLinuxWatcherStatusCoreClient,
     IDisposable
 {
+    private const ushort GetVersionChecksum = 61902;
     private const ushort InitRepoChecksum = 29414;
+    private const ushort LoadConfigChecksum = 64573;
     private const ushort ValidateRepoPathChecksum = 43498;
+    private const ushort UpdateConfigChecksum = 60628;
     private const ushort PredictCategoryChecksum = 65047;
     private const ushort ImportFileWithResultChecksum = 52959;
     private const ushort InspectBindingContractChecksum = 34434;
@@ -61,6 +64,15 @@ public sealed partial class AreaMatrixNativeCoreClient :
         VerifyContract();
     }
 
+    public Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        string version = CallWithResult(
+            (ref RustCallStatus status) => native.GetVersion(ref status),
+            reader => reader.ReadString());
+        return Task.FromResult(version);
+    }
+
     public Task<CoreRepoPathValidation> ValidateRepoPathAsync(
         string repoPath,
         CancellationToken cancellationToken = default)
@@ -70,6 +82,30 @@ public sealed partial class AreaMatrixNativeCoreClient :
             (ref RustCallStatus status) => native.ValidateRepoPath(LowerString(repoPath), ref status),
             ReadRepoPathValidation);
         return Task.FromResult(validation);
+    }
+
+    public Task<CoreRepoConfig> LoadConfigAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        CoreRepoConfig config = CallWithResult(
+            (ref RustCallStatus status) => native.LoadConfig(LowerString(repoPath), ref status),
+            ReadRepoConfig);
+        return Task.FromResult(config);
+    }
+
+    public Task UpdateConfigAsync(
+        string repoPath,
+        CoreRepoConfig newConfig,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        CallVoid((ref RustCallStatus status) => native.UpdateConfig(
+            LowerString(repoPath),
+            LowerRepoConfig(newConfig),
+            ref status));
+        return Task.CompletedTask;
     }
 
     public Task InitRepoAsync(
@@ -98,8 +134,11 @@ public sealed partial class AreaMatrixNativeCoreClient :
 
     private void VerifyContract()
     {
-        if (native.InitRepoChecksum() != InitRepoChecksum
+        if (native.GetVersionChecksum() != GetVersionChecksum
+            || native.InitRepoChecksum() != InitRepoChecksum
+            || native.LoadConfigChecksum() != LoadConfigChecksum
             || native.ValidateRepoPathChecksum() != ValidateRepoPathChecksum
+            || native.UpdateConfigChecksum() != UpdateConfigChecksum
             || native.PredictCategoryChecksum() != PredictCategoryChecksum
             || native.ImportFileWithResultChecksum() != ImportFileWithResultChecksum
             || native.InspectBindingContractChecksum() != InspectBindingContractChecksum
@@ -207,6 +246,31 @@ public sealed partial class AreaMatrixNativeCoreClient :
             ReadRepoPathIssues(reader));
     }
 
+    private static CoreRepoConfig ReadRepoConfig(UniFfiReader reader)
+    {
+        string repoPath = reader.ReadString();
+        string defaultMode = ReadStorageMode(reader);
+        string overviewOutput = ReadOverviewOutput(reader);
+        bool aiEnabled = reader.ReadBool();
+        string locale = reader.ReadString();
+        bool iCloudWarn = reader.ReadBool();
+        bool enableExtensionRules = reader.ReadBool();
+        bool enableKeywordRules = reader.ReadBool();
+        bool fallbackToInbox = reader.ReadBool();
+        bool allowReplaceDuringImport = reader.ReadBool();
+        return new CoreRepoConfig(
+            repoPath,
+            defaultMode,
+            locale,
+            overviewOutput,
+            aiEnabled,
+            iCloudWarn,
+            enableExtensionRules,
+            enableKeywordRules,
+            fallbackToInbox,
+            allowReplaceDuringImport);
+    }
+
     private static LinuxRepositoryCoreException ReadCoreError(UniFfiReader reader)
     {
         int variant = reader.ReadInt32();
@@ -254,6 +318,37 @@ public sealed partial class AreaMatrixNativeCoreClient :
                 LinuxRepositoryErrorKind.Config,
                 $"Unsupported overview output `{options.OverviewOutput}`.")
         });
+        return RustBufferFromBytes(bytes.ToArray());
+    }
+
+    private RustBuffer LowerRepoConfig(CoreRepoConfig config)
+    {
+        List<byte> bytes = [];
+        WriteString(bytes, config.RepoPath);
+        WriteEnum(bytes, config.DefaultMode switch
+        {
+            "Moved" => 1,
+            "Copied" => 2,
+            "Indexed" => 3,
+            _ => throw new LinuxRepositoryCoreException(
+                LinuxRepositoryErrorKind.Config,
+                $"Unsupported storage mode `{config.DefaultMode}`.")
+        });
+        WriteEnum(bytes, config.OverviewOutput switch
+        {
+            "GeneratedOnly" => 1,
+            "RootAreaMatrixFile" => 2,
+            _ => throw new LinuxRepositoryCoreException(
+                LinuxRepositoryErrorKind.Config,
+                $"Unsupported overview output `{config.OverviewOutput}`.")
+        });
+        WriteBool(bytes, config.AiEnabled);
+        WriteString(bytes, config.Locale);
+        WriteBool(bytes, config.ICloudWarn);
+        WriteBool(bytes, config.EnableExtensionRules);
+        WriteBool(bytes, config.EnableKeywordRules);
+        WriteBool(bytes, config.FallbackToInbox);
+        WriteBool(bytes, config.AllowReplaceDuringImport);
         return RustBufferFromBytes(bytes.ToArray());
     }
 
@@ -352,6 +447,18 @@ public sealed partial class AreaMatrixNativeCoreClient :
             _ => throw new LinuxRepositoryCoreException(
                 LinuxRepositoryErrorKind.Config,
                 "AreaMatrix Core returned an unknown repository path issue.")
+        };
+    }
+
+    private static string ReadOverviewOutput(UniFfiReader reader)
+    {
+        return reader.ReadInt32() switch
+        {
+            1 => "GeneratedOnly",
+            2 => "RootAreaMatrixFile",
+            _ => throw new LinuxRepositoryCoreException(
+                LinuxRepositoryErrorKind.Config,
+                "AreaMatrix Core returned an unknown overview output.")
         };
     }
 

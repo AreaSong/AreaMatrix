@@ -4,6 +4,7 @@ using AreaMatrixTests.DesktopMainQuery;
 using AreaMatrixTests.Help;
 using AreaMatrixTests.Import;
 using AreaMatrixTests.Recovery;
+using AreaMatrixTests.Settings;
 using AreaMatrixTests.WatcherStatus;
 
 await ChooseRepositoryViewModelTests.RunAllAsync();
@@ -24,6 +25,7 @@ await WatcherStatusViewModelTests.RunAllAsync();
 await RescanConfirmViewModelTests.RunAllAsync();
 WatcherStatusSmokeTests.RunAll();
 await PlatformDifferencesTests.RunAllAsync();
+await RepositorySettingsViewModelTests.RunAllAsync();
 await WindowsSyncConflictEntryPageFeatureTests.RunAllAsync();
 await MissingFileRecoveryViewModelTests.RunAllAsync();
 Console.WriteLine("AreaMatrix Windows tests passed.");

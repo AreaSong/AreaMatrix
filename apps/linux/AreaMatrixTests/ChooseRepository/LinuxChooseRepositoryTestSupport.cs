@@ -9,21 +9,24 @@ internal sealed class FakeLinuxRepositoryCoreBridge :
     private readonly Queue<LinuxRepositoryValidation> validations;
     private readonly LinuxRepositoryValidation fallbackValidation;
     private readonly LinuxPlatformCapabilities capabilities;
+    private readonly string coreVersion;
     private readonly LinuxRepositoryCoreException? initializeError;
     private readonly LinuxRepositoryCoreException? adoptError;
 
     public FakeLinuxRepositoryCoreBridge(
         LinuxRepositoryValidation validation,
         LinuxPlatformCapabilities? capabilities = null,
+        string coreVersion = "test-core",
         LinuxRepositoryCoreException? initializeError = null,
         LinuxRepositoryCoreException? adoptError = null)
-        : this([validation], capabilities, initializeError, adoptError)
+        : this([validation], capabilities, coreVersion, initializeError, adoptError)
     {
     }
 
     public FakeLinuxRepositoryCoreBridge(
         IEnumerable<LinuxRepositoryValidation> validations,
         LinuxPlatformCapabilities? capabilities = null,
+        string coreVersion = "test-core",
         LinuxRepositoryCoreException? initializeError = null,
         LinuxRepositoryCoreException? adoptError = null)
     {
@@ -36,6 +39,7 @@ internal sealed class FakeLinuxRepositoryCoreBridge :
         this.validations = new Queue<LinuxRepositoryValidation>(validationList);
         fallbackValidation = validationList[^1];
         this.capabilities = capabilities ?? LinuxPlatformCapabilitySamples.LinuxDefault();
+        this.coreVersion = coreVersion;
         this.initializeError = initializeError;
         this.adoptError = adoptError;
     }
@@ -46,7 +50,20 @@ internal sealed class FakeLinuxRepositoryCoreBridge :
 
     public List<string> AdoptedPaths { get; } = [];
 
+    public List<string> LoadedConfigPaths { get; } = [];
+
+    public List<(string RepoPath, LinuxRepositoryConfig Config)> UpdatedConfigs { get; } = [];
+
     public List<(LinuxPlatformId Platform, string AppVersion)> PlatformCapabilityRequests { get; } = [];
+
+    public int CoreVersionRequestCount { get; private set; }
+
+    public Task<string> GetCoreVersionAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        CoreVersionRequestCount += 1;
+        return Task.FromResult(coreVersion);
+    }
 
     public Task<LinuxRepositoryValidation> ValidateRepoPathAsync(
         string repoPath,
@@ -85,6 +102,25 @@ internal sealed class FakeLinuxRepositoryCoreBridge :
             throw adoptError;
         }
 
+        return Task.CompletedTask;
+    }
+
+    public Task<LinuxRepositoryConfig> LoadConfigAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        LoadedConfigPaths.Add(repoPath);
+        return Task.FromResult(new LinuxRepositoryConfig(repoPath, "Copied", "en-US"));
+    }
+
+    public Task UpdateConfigAsync(
+        string repoPath,
+        LinuxRepositoryConfig newConfig,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        UpdatedConfigs.Add((repoPath, newConfig));
         return Task.CompletedTask;
     }
 

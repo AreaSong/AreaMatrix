@@ -17,8 +17,13 @@ final class FakeMobileRepositoryCoreBridge: MobileRepositoryCoreBridge, @uncheck
     private(set) var validatedPaths: [String] = []
     private(set) var detectedCloudStatePaths: [String] = []
     private(set) var loadedConfigPaths: [String] = []
+    private(set) var updatedConfigRequests: [(repoPath: String, config: MobileRepositoryConfig)] = []
     private(set) var initializedPaths: [String] = []
     private(set) var adoptedPaths: [String] = []
+
+    func getVersion() async throws -> String {
+        "test-core"
+    }
 
     init(
         validation: MobileRepositoryValidation,
@@ -93,6 +98,10 @@ final class FakeMobileRepositoryCoreBridge: MobileRepositoryCoreBridge, @uncheck
     func loadConfig(repoPath: String) async throws -> MobileRepositoryConfig {
         loadedConfigPaths.append(repoPath)
         return MobileRepositoryConfig(repoPath: repoPath, defaultMode: "Copied", locale: "zh-Hans")
+    }
+
+    func updateConfig(repoPath: String, newConfig: MobileRepositoryConfig) async throws {
+        updatedConfigRequests.append((repoPath, newConfig))
     }
 }
 

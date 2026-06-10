@@ -99,6 +99,7 @@
 		0A0000000000000000000800 /* RepositorySettingsPlatformCapabilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000801 /* RepositorySettingsPlatformCapabilities.swift */; };
 		0A0000000000000000000802 /* RepositorySettingsPlatformCapabilitySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000803 /* RepositorySettingsPlatformCapabilitySection.swift */; };
 		0A0000000000000000000810 /* RepositorySettingsConfigModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000811 /* RepositorySettingsConfigModel.swift */; };
+		0A0000000000000000000820 /* RepositorySettingsSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000821 /* RepositorySettingsSummary.swift */; };
 		0A0000000000000000000812 /* RepositorySettingsConfigSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000813 /* RepositorySettingsConfigSection.swift */; };
 		0A0000000000000000000814 /* RepositorySettingsConfigPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000815 /* RepositorySettingsConfigPageFeatureTests.swift */; };
 		0A00000000000000000002EC /* CoreMetadataRepairing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002ED /* CoreMetadataRepairing.swift */; };
@@ -480,6 +481,7 @@
 		0A0000000000000000000801 /* RepositorySettingsPlatformCapabilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/RepositorySettingsPlatformCapabilities.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000803 /* RepositorySettingsPlatformCapabilitySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/RepositorySettingsPlatformCapabilitySection.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000811 /* RepositorySettingsConfigModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/RepositorySettingsConfigModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000821 /* RepositorySettingsSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/RepositorySettingsSummary.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000813 /* RepositorySettingsConfigSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/RepositorySettingsConfigSection.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000815 /* RepositorySettingsConfigPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RepositorySettingsConfigPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000261 /* MainFileListDetailSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileListDetailSupport.swift; sourceTree = SOURCE_ROOT; };
@@ -910,6 +912,7 @@
 				0A0000000000000000000773 /* PlatformDifferencesModel.swift */,
 				0A0000000000000000000277 /* GeneralSettingsActions.swift */,
 				0A0000000000000000000281 /* RepositorySettingsModel.swift */,
+				0A0000000000000000000821 /* RepositorySettingsSummary.swift */,
 				0A0000000000000000000801 /* RepositorySettingsPlatformCapabilities.swift */,
 				0A0000000000000000000811 /* RepositorySettingsConfigModel.swift */,
 				0A0000000000000000000289 /* RepositorySettingsActionState.swift */,
@@ -1315,6 +1318,7 @@
 				0A0000000000000000000772 /* PlatformDifferencesModel.swift in Sources */,
 				0A0000000000000000000276 /* GeneralSettingsActions.swift in Sources */,
 				0A0000000000000000000280 /* RepositorySettingsModel.swift in Sources */,
+				0A0000000000000000000820 /* RepositorySettingsSummary.swift in Sources */,
 				0A0000000000000000000800 /* RepositorySettingsPlatformCapabilities.swift in Sources */,
 				0A0000000000000000000810 /* RepositorySettingsConfigModel.swift in Sources */,
 				0A0000000000000000000288 /* RepositorySettingsActionState.swift in Sources */,

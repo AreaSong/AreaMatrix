@@ -47,6 +47,9 @@
     <Compile
       Include="../AreaMatrix/Features/Help/PlatformDifferencesViewModel.cs"
       Link="Features/Help/PlatformDifferencesViewModel.cs" />
+    <Compile
+      Include="../AreaMatrix/Features/Settings/RepositorySettingsViewModel.cs"
+      Link="Features/Settings/RepositorySettingsViewModel.cs" />
     <Compile Include="../AreaMatrix/Features/Import/DesktopImportCoreBridge.cs" Link="Features/Import/DesktopImportCoreBridge.cs" />
     <Compile
       Include="../AreaMatrix/Features/Import/DesktopImportCoreMapping.Parsing.cs"

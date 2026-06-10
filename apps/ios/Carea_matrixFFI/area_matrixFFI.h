@@ -18,6 +18,10 @@ typedef struct RustCallStatus {
     RustBuffer errorBuf;
 } RustCallStatus;
 
+RustBuffer uniffi_area_matrix_core_fn_func_get_version(
+    RustCallStatus *_Nonnull out_status
+);
+
 RustBuffer uniffi_area_matrix_core_fn_func_validate_repo_path(
     RustBuffer repo_path,
     RustCallStatus *_Nonnull out_status
@@ -25,6 +29,12 @@ RustBuffer uniffi_area_matrix_core_fn_func_validate_repo_path(
 
 RustBuffer uniffi_area_matrix_core_fn_func_load_config(
     RustBuffer repo_path,
+    RustCallStatus *_Nonnull out_status
+);
+
+void uniffi_area_matrix_core_fn_func_update_config(
+    RustBuffer repo_path,
+    RustBuffer new_config,
     RustCallStatus *_Nonnull out_status
 );
 
@@ -142,8 +152,10 @@ void ffi_area_matrix_core_rustbuffer_free(
 );
 
 uint32_t ffi_area_matrix_core_uniffi_contract_version(void);
+uint16_t uniffi_area_matrix_core_checksum_func_get_version(void);
 uint16_t uniffi_area_matrix_core_checksum_func_validate_repo_path(void);
 uint16_t uniffi_area_matrix_core_checksum_func_load_config(void);
+uint16_t uniffi_area_matrix_core_checksum_func_update_config(void);
 uint16_t uniffi_area_matrix_core_checksum_func_init_repo(void);
 uint16_t uniffi_area_matrix_core_checksum_func_detect_cloud_storage_state(void);
 uint16_t uniffi_area_matrix_core_checksum_func_list_files(void);

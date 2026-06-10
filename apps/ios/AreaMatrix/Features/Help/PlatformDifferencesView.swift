@@ -43,6 +43,7 @@ final class PlatformDifferencesViewModel: ObservableObject {
     @Published var selectedTargetPlatform: PlatformDifferencesBindingTarget
 
     let hostPlatform: PlatformDifferencesPlatformId
+    let repositoryPath: String?
     let appVersion: String
     let bindingVersion: Int64
     private let inspector: any PlatformDifferencesBindingContractInspecting
@@ -50,6 +51,7 @@ final class PlatformDifferencesViewModel: ObservableObject {
 
     init(
         hostPlatform: PlatformDifferencesPlatformId = .ios,
+        repositoryPath: String? = nil,
         appVersion: String = "1",
         selectedTargetPlatform: PlatformDifferencesBindingTarget = .swift,
         bindingVersion: Int64 = 1,
@@ -57,6 +59,7 @@ final class PlatformDifferencesViewModel: ObservableObject {
         capabilityLoader: any PlatformDifferencesCapabilityLoading = LivePlatformDifferencesCapabilityBridge()
     ) {
         self.hostPlatform = hostPlatform
+        self.repositoryPath = repositoryPath
         self.appVersion = appVersion
         self.selectedTargetPlatform = selectedTargetPlatform
         self.bindingVersion = bindingVersion
@@ -66,7 +69,13 @@ final class PlatformDifferencesViewModel: ObservableObject {
 
     var title: String { "Platform capabilities" }
 
-    var repositoryText: String { "Repository: Not connected" }
+    var repositoryText: String {
+        if let repositoryPath, !repositoryPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "Repository: \(repositoryPath)"
+        }
+
+        return "Repository: Not connected"
+    }
 
     var actionTitle: String {
         isChecking ? "Checking contract..." : "Check contract"
@@ -145,11 +154,15 @@ final class PlatformDifferencesViewModel: ObservableObject {
 struct PlatformDifferencesView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var model: PlatformDifferencesViewModel
+    @State private var isRepositorySettingsPresented = false
     private let onOpenRepositorySettings: (() -> Void)?
 
     @MainActor
-    init(onOpenRepositorySettings: (() -> Void)? = nil) {
-        _model = StateObject(wrappedValue: PlatformDifferencesViewModel())
+    init(
+        repositoryPath: String? = nil,
+        onOpenRepositorySettings: (() -> Void)? = nil
+    ) {
+        _model = StateObject(wrappedValue: PlatformDifferencesViewModel(repositoryPath: repositoryPath))
         self.onOpenRepositorySettings = onOpenRepositorySettings
     }
 
@@ -193,6 +206,14 @@ struct PlatformDifferencesView: View {
         }
         .mobileLibraryListStyle()
         .navigationTitle(model.title)
+        .sheet(isPresented: $isRepositorySettingsPresented) {
+            NavigationStack {
+                RepositorySettingsView(
+                    repoPath: model.repositoryPath,
+                    onOpenPlatformCapabilities: { isRepositorySettingsPresented = false }
+                )
+            }
+        }
         .task {
             await model.load()
         }
@@ -271,14 +292,7 @@ struct PlatformDifferencesView: View {
     private var actionsSection: some View {
         Section("Actions") {
             Button("Open repository settings") {
-                onOpenRepositorySettings?()
-            }
-            .disabled(onOpenRepositorySettings == nil)
-
-            if onOpenRepositorySettings == nil {
-                Text("Repository settings are not available from this iOS help entry yet.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                openRepositorySettings()
             }
 
             Button("Export diagnostics") {}
@@ -291,5 +305,14 @@ struct PlatformDifferencesView: View {
                 dismiss()
             }
         }
+    }
+
+    private func openRepositorySettings() {
+        if let onOpenRepositorySettings {
+            onOpenRepositorySettings()
+            return
+        }
+
+        isRepositorySettingsPresented = true
     }
 }

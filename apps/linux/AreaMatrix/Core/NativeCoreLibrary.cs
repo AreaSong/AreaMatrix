@@ -10,8 +10,11 @@ internal sealed class NativeCoreLibrary : IDisposable
     private NativeCoreLibrary(IntPtr handle)
     {
         this.handle = handle;
+        GetVersion = LoadFunction<GetVersionDelegate>("uniffi_area_matrix_core_fn_func_get_version");
         ValidateRepoPath = LoadFunction<ValidateRepoPathDelegate>(
             "uniffi_area_matrix_core_fn_func_validate_repo_path");
+        LoadConfig = LoadFunction<LoadConfigDelegate>("uniffi_area_matrix_core_fn_func_load_config");
+        UpdateConfig = LoadFunction<UpdateConfigDelegate>("uniffi_area_matrix_core_fn_func_update_config");
         InitRepo = LoadFunction<InitRepoDelegate>("uniffi_area_matrix_core_fn_func_init_repo");
         PredictCategory = LoadFunction<PredictCategoryDelegate>(
             "uniffi_area_matrix_core_fn_func_predict_category");
@@ -50,8 +53,14 @@ internal sealed class NativeCoreLibrary : IDisposable
         RustBufferFromBytes = LoadFunction<RustBufferFromBytesDelegate>(
             "ffi_area_matrix_core_rustbuffer_from_bytes");
         RustBufferFree = LoadFunction<RustBufferFreeDelegate>("ffi_area_matrix_core_rustbuffer_free");
+        GetVersionChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_get_version");
         ValidateRepoPathChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_validate_repo_path");
+        LoadConfigChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_load_config");
+        UpdateConfigChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_update_config");
         InitRepoChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_init_repo");
         PredictCategoryChecksum = LoadFunction<ChecksumDelegate>(
@@ -94,7 +103,13 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_checksum_func_resume_scan_session");
     }
 
+    public GetVersionDelegate GetVersion { get; }
+
     public ValidateRepoPathDelegate ValidateRepoPath { get; }
+
+    public LoadConfigDelegate LoadConfig { get; }
+
+    public UpdateConfigDelegate UpdateConfig { get; }
 
     public InitRepoDelegate InitRepo { get; }
 
@@ -140,7 +155,13 @@ internal sealed class NativeCoreLibrary : IDisposable
 
     public RustBufferFreeDelegate RustBufferFree { get; }
 
+    public ChecksumDelegate GetVersionChecksum { get; }
+
     public ChecksumDelegate ValidateRepoPathChecksum { get; }
+
+    public ChecksumDelegate LoadConfigChecksum { get; }
+
+    public ChecksumDelegate UpdateConfigChecksum { get; }
 
     public ChecksumDelegate InitRepoChecksum { get; }
 

@@ -3,7 +3,7 @@ import XCTest
 
 final class RepoSettingsPageIntegrationTests: XCTestCase {
     @MainActor
-    func testS127PageIntegrationConnectsCoreConfigIndexedCountOverviewAndSafeActions() async throws {
+    func testS4X08PageIntegrationConnectsCoreConfigCapabilitiesAndSafeActions() async throws {
         let context = try await makeRepositorySettingsIntegrationContext()
         defer {
             try? FileManager.default.removeItem(at: context.repoURL)
@@ -13,16 +13,13 @@ final class RepoSettingsPageIntegrationTests: XCTestCase {
         await context.model.load()
         context.model.revealRepositoryInFinder()
         context.model.copyRepositoryPath()
-        context.model.revealGeneratedOverviewInFinder()
-        let generatedOverviewActionMessage = context.model.repositoryActionMessage
         context.model.requestDiagnosticsExport()
         await context.model.collectDiagnostics()
         let diagnosticsRepoPaths = await context.diagnostics.requestedRepoPaths()
 
         assertRepositorySettingsIntegrationState(
             context: context,
-            diagnosticsRepoPaths: diagnosticsRepoPaths,
-            generatedOverviewActionMessage: generatedOverviewActionMessage
+            diagnosticsRepoPaths: diagnosticsRepoPaths
         )
     }
 
@@ -98,11 +95,9 @@ private struct RepositorySettingsIntegrationContext {
     let sourceRootURL: URL
     let sourceURL: URL
     let imported: FileEntrySnapshot
-    let generatedURL: URL
     let diagnosticsSnapshot: DiagnosticsSnapshotSnapshot
     let finder: ShellRecordingFinderOpener
     let copier: ShellRecordingPathCopier
-    let generatedRevealer: RepositorySettingsRecordingFileRevealer
     let diagnostics: ShellRecordingDiagnosticsCollector
     let announcer: S117RecordingAccessibilityAnnouncer
     let model: RepositorySettingsModel
@@ -112,13 +107,11 @@ private struct RepositorySettingsIntegrationURLs {
     let repoURL: URL
     let sourceRootURL: URL
     let sourceURL: URL
-    let generatedURL: URL
 }
 
 private struct RepositorySettingsIntegrationDoubles {
     let finder: ShellRecordingFinderOpener
     let copier: ShellRecordingPathCopier
-    let generatedRevealer: RepositorySettingsRecordingFileRevealer
     let diagnostics: ShellRecordingDiagnosticsCollector
     let announcer: S117RecordingAccessibilityAnnouncer
 }
@@ -151,11 +144,9 @@ private func makeRepositorySettingsIntegrationContext() async throws -> Reposito
         sourceRootURL: urls.sourceRootURL,
         sourceURL: urls.sourceURL,
         imported: imported,
-        generatedURL: urls.generatedURL,
         diagnosticsSnapshot: diagnosticsSnapshot,
         finder: doubles.finder,
         copier: doubles.copier,
-        generatedRevealer: doubles.generatedRevealer,
         diagnostics: doubles.diagnostics,
         announcer: doubles.announcer,
         model: model
@@ -169,15 +160,10 @@ private func makeRepositorySettingsIntegrationURLs() throws -> RepositorySetting
     let sourceRootURL = try temporaryRepositorySettingsRepo()
     let sourceURL = sourceRootURL.appendingPathComponent("indexed.pdf")
     try Data("indexed bytes".utf8).write(to: sourceURL)
-    let generatedURL = repoURL
-        .appendingPathComponent(".areamatrix", isDirectory: true)
-        .appendingPathComponent("generated", isDirectory: true)
-        .appendingPathComponent("root.md", isDirectory: false)
     return RepositorySettingsIntegrationURLs(
         repoURL: repoURL,
         sourceRootURL: sourceRootURL,
-        sourceURL: sourceURL,
-        generatedURL: generatedURL
+        sourceURL: sourceURL
     )
 }
 
@@ -186,7 +172,7 @@ private func makeRepositorySettingsDiagnosticsSnapshot(repoURL: URL) -> Diagnost
         snapshotPath: repoURL
             .appendingPathComponent(".areamatrix", isDirectory: true)
             .appendingPathComponent("diagnostics", isDirectory: true)
-            .appendingPathComponent("s1-27.zip")
+            .appendingPathComponent("s4-x-08.zip")
             .path,
         createdAt: 1_778_000_000,
         warnings: []
@@ -200,7 +186,6 @@ private func makeRepositorySettingsIntegrationDoubles(
     RepositorySettingsIntegrationDoubles(
         finder: ShellRecordingFinderOpener(),
         copier: ShellRecordingPathCopier(),
-        generatedRevealer: RepositorySettingsRecordingFileRevealer(),
         diagnostics: ShellRecordingDiagnosticsCollector(result: .success(diagnosticsSnapshot)),
         announcer: S117RecordingAccessibilityAnnouncer()
     )
@@ -222,7 +207,6 @@ private func makeRepositorySettingsModel(
         existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
         finderOpener: doubles.finder,
         pathCopier: doubles.copier,
-        generatedOverviewRevealer: doubles.generatedRevealer,
         diagnosticsCollector: doubles.diagnostics,
         errorMapper: bridge,
         accessibilityAnnouncer: doubles.announcer
@@ -232,17 +216,14 @@ private func makeRepositorySettingsModel(
 @MainActor
 private func assertRepositorySettingsIntegrationState(
     context: RepositorySettingsIntegrationContext,
-    diagnosticsRepoPaths: [String],
-    generatedOverviewActionMessage: String?
+    diagnosticsRepoPaths: [String]
 ) {
     let summary = context.model.summary
     let healthSummary = context.model.healthSummary
     let repositoryActionError = context.model.repositoryActionError
-    let overviewActionError = context.model.overviewActionError
     let diagnosticsState = context.model.diagnosticsState
     let openedRepoPaths = context.finder.openedRepoPaths
     let copyRequests = context.copier.requests
-    let generatedRequests = context.generatedRevealer.requests
     let announcements = context.announcer.announcements
 
     XCTAssertEqual(context.imported.storageMode, "Indexed")
@@ -251,30 +232,21 @@ private func assertRepositorySettingsIntegrationState(
     XCTAssertFalse(FileManager.default.fileExists(
         atPath: context.repoURL.appendingPathComponent(context.imported.path).path
     ))
-    XCTAssertTrue(FileManager.default.fileExists(atPath: context.generatedURL.path))
     XCTAssertFalse(FileManager.default.fileExists(atPath: context.repoURL.appendingPathComponent("README.md").path))
     XCTAssertFalse(FileManager.default.fileExists(atPath: context.repoURL.appendingPathComponent("AREAMATRIX.md").path))
 
     XCTAssertEqual(summary?.location, context.repoURL.path)
+    XCTAssertEqual(summary?.locationType, "Local folder")
     XCTAssertEqual(summary?.metadataStatus, ".areamatrix/ found")
-    XCTAssertEqual(summary?.overviewMode, "Generated only")
-    XCTAssertEqual(summary?.generatedPath, ".areamatrix/generated/root.md")
-    XCTAssertEqual(summary?.rootFile, "Off")
-    XCTAssertEqual(summary?.readmePolicy, "User file, never managed by AreaMatrix")
+    XCTAssertEqual(summary?.coreVersion, "0.1.0")
     XCTAssertEqual(healthSummary?.databaseStatus, .ok)
     XCTAssertEqual(healthSummary?.schemaVersion, 1)
     XCTAssertEqual(healthSummary?.filesIndexed, 1)
-    XCTAssertEqual(generatedOverviewActionMessage, "Generated overview revealed in Finder.")
     XCTAssertNil(repositoryActionError)
-    XCTAssertNil(overviewActionError)
     XCTAssertEqual(diagnosticsState, .collected(context.diagnosticsSnapshot))
     XCTAssertEqual(openedRepoPaths, [context.repoURL.path])
     XCTAssertEqual(copyRequests.map(\.repoPath), [context.repoURL.path])
     XCTAssertEqual(copyRequests.map(\.relativePath), [""])
-    XCTAssertEqual(generatedRequests, [RepositorySettingsRecordingFileRevealer.Request(
-        repoPath: context.repoURL.path,
-        relativePath: RepositorySettingsSummary.generatedOverviewRelativePath
-    )])
     XCTAssertEqual(diagnosticsRepoPaths, [context.repoURL.path])
     XCTAssertEqual(announcements, ["Repository path copied."])
 }

@@ -13,6 +13,10 @@ actor LiveMobileRepositoryCoreBridge: MobileRepositoryCoreBridge {
         self.cloudClient = cloudClient
     }
 
+    func getVersion() async throws -> String {
+        try client.getVersion()
+    }
+
     func validateRepoPath(repoPath: String) async throws -> MobileRepositoryValidation {
         try client.validateRepoPath(repoPath: repoPath)
     }
@@ -32,9 +36,21 @@ actor LiveMobileRepositoryCoreBridge: MobileRepositoryCoreBridge {
     func loadConfig(repoPath: String) async throws -> MobileRepositoryConfig {
         try client.loadConfig(repoPath: repoPath)
     }
+
+    func updateConfig(repoPath: String, newConfig: MobileRepositoryConfig) async throws {
+        try client.updateConfig(repoPath: repoPath, newConfig: newConfig)
+    }
 }
 
 struct MobileRepositoryCoreFFIClient: Sendable {
+    func getVersion() throws -> String {
+        try ensureCurrentContract()
+        let result = try rustCallWithCoreError {
+            uniffi_area_matrix_core_fn_func_get_version($0)
+        }
+        return try FFIReader.liftString(result)
+    }
+
     func validateRepoPath(repoPath: String) throws -> MobileRepositoryValidation {
         try ensureCurrentContract()
         let path = try FFIWriter.lowerString(repoPath)
@@ -70,10 +86,21 @@ struct MobileRepositoryCoreFFIClient: Sendable {
         return try FFIReader.liftConfig(result)
     }
 
+    func updateConfig(repoPath: String, newConfig: MobileRepositoryConfig) throws {
+        try ensureCurrentContract()
+        let path = try FFIWriter.lowerString(repoPath)
+        let config = try FFIWriter.lowerRepoConfig(newConfig)
+        try rustCallVoidWithCoreError {
+            uniffi_area_matrix_core_fn_func_update_config(path, config, $0)
+        }
+    }
+
     private func ensureCurrentContract() throws {
         guard ffi_area_matrix_core_uniffi_contract_version() == 26,
+              uniffi_area_matrix_core_checksum_func_get_version() == 61902,
               uniffi_area_matrix_core_checksum_func_validate_repo_path() == 43498,
               uniffi_area_matrix_core_checksum_func_load_config() == 64573,
+              uniffi_area_matrix_core_checksum_func_update_config() == 60628,
               uniffi_area_matrix_core_checksum_func_init_repo() == 29414 else {
             throw MobileRepositoryConnectionError.unavailable("AreaMatrix Core binding contract mismatch.")
         }
@@ -163,6 +190,21 @@ private enum FFIWriter {
         return try bytes.withUnsafeBufferPointer { try lowerBytes($0) }
     }
 
+    static func lowerRepoConfig(_ config: MobileRepositoryConfig) throws -> RustBuffer {
+        var bytes: [UInt8] = []
+        writeString(config.repoPath, into: &bytes)
+        writeStorageMode(config.defaultMode, into: &bytes)
+        writeOverviewOutput(config.overviewOutput, into: &bytes)
+        writeBool(config.aiEnabled, into: &bytes)
+        writeString(config.locale, into: &bytes)
+        writeBool(config.iCloudWarn, into: &bytes)
+        writeBool(config.enableExtensionRules, into: &bytes)
+        writeBool(config.enableKeywordRules, into: &bytes)
+        writeBool(config.fallbackToInbox, into: &bytes)
+        writeBool(config.allowReplaceDuringImport, into: &bytes)
+        return try bytes.withUnsafeBufferPointer { try lowerBytes($0) }
+    }
+
     private static func enumValue(for mode: MobileRepositoryInitMode) -> Int32 {
         switch mode {
         case .createEmpty:
@@ -170,6 +212,29 @@ private enum FFIWriter {
         case .adoptExisting:
             2
         }
+    }
+
+    private static func writeStorageMode(_ value: String, into bytes: inout [UInt8]) {
+        switch value {
+        case "Moved":
+            writeInt32(1, into: &bytes)
+        case "Copied":
+            writeInt32(2, into: &bytes)
+        case "Indexed":
+            writeInt32(3, into: &bytes)
+        default:
+            writeInt32(2, into: &bytes)
+        }
+    }
+
+    private static func writeOverviewOutput(_ value: String, into bytes: inout [UInt8]) {
+        writeInt32(value == "RootAreaMatrixFile" ? 2 : 1, into: &bytes)
+    }
+
+    private static func writeString(_ value: String, into bytes: inout [UInt8]) {
+        let stringBytes = Array(value.utf8)
+        writeInt32(Int32(stringBytes.count), into: &bytes)
+        bytes.append(contentsOf: stringBytes)
     }
 
     private static func lowerBytes(_ bytes: UnsafeBufferPointer<UInt8>) throws -> RustBuffer {
@@ -223,8 +288,14 @@ private enum FFIReader {
         let config = try MobileRepositoryConfig(
             repoPath: reader.readString(),
             defaultMode: reader.readStorageMode(),
-            locale: reader.readLocaleFromConfigTail(),
-            allowReplaceDuringImport: reader.readAllowReplaceDuringImportFromConfigTail()
+            overviewOutput: reader.readOverviewOutput(),
+            aiEnabled: reader.readBool(),
+            locale: reader.readString(),
+            iCloudWarn: reader.readBool(),
+            enableExtensionRules: reader.readBool(),
+            enableKeywordRules: reader.readBool(),
+            fallbackToInbox: reader.readBool(),
+            allowReplaceDuringImport: reader.readBool()
         )
         try reader.finish()
         return config
@@ -353,20 +424,6 @@ private enum FFIReader {
             }
         }
 
-        mutating func readLocaleFromConfigTail() throws -> String {
-            try skipOverviewOutput()
-            try skipBool()
-            return try readString()
-        }
-
-        mutating func readAllowReplaceDuringImportFromConfigTail() throws -> Bool {
-            try skipBool()
-            try skipBool()
-            try skipBool()
-            try skipBool()
-            return try readBool()
-        }
-
         mutating func readCoreErrorPayload(variant: Int32) throws -> String {
             switch variant {
             case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15:
@@ -418,17 +475,15 @@ private enum FFIReader {
             }
         }
 
-        private mutating func skipOverviewOutput() throws {
+        mutating func readOverviewOutput() throws -> String {
             switch try readInt32() {
-            case 1, 2:
-                return
+            case 1:
+                return "GeneratedOnly"
+            case 2:
+                return "RootAreaMatrixFile"
             case let value:
                 throw MobileRepositoryCoreFFIError.unexpectedEnumCase(value)
             }
-        }
-
-        private mutating func skipBool() throws {
-            _ = try readBool()
         }
 
         private mutating func readInt8() throws -> Int8 {

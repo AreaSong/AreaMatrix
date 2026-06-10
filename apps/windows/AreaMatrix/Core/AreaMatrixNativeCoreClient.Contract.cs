@@ -11,6 +11,7 @@ public sealed partial class AreaMatrixNativeCoreClient
     private const ushort GetFileChecksum = 6132;
     private const ushort GetMissingFileStateChecksum = 9097;
     private const ushort GetPlatformCapabilitiesChecksum = 42907;
+    private const ushort GetVersionChecksum = 61902;
     private const ushort InitRepoChecksum = 29414;
     private const ushort InspectBindingContractChecksum = 34434;
     private const ushort ImportFileWithResultChecksum = 52959;
@@ -27,6 +28,7 @@ public sealed partial class AreaMatrixNativeCoreClient
     private const ushort RemoveMissingFileRecordChecksum = 46697;
     private const ushort ResumeScanSessionChecksum = 31216;
     private const ushort SearchFilesChecksum = 65;
+    private const ushort UpdateConfigChecksum = 60628;
     private const ushort ValidateRepoPathChecksum = 43498;
 
     private void VerifyContract()
@@ -39,6 +41,7 @@ public sealed partial class AreaMatrixNativeCoreClient
             || native.GetFileChecksum() != GetFileChecksum
             || native.GetMissingFileStateChecksum() != GetMissingFileStateChecksum
             || native.GetPlatformCapabilitiesChecksum() != GetPlatformCapabilitiesChecksum
+            || native.GetVersionChecksum() != GetVersionChecksum
             || native.InspectBindingContractChecksum() != InspectBindingContractChecksum
             || native.ImportFileWithResultChecksum() != ImportFileWithResultChecksum
             || native.ListFilesChecksum() != ListFilesChecksum
@@ -54,6 +57,7 @@ public sealed partial class AreaMatrixNativeCoreClient
             || native.RemoveMissingFileRecordChecksum() != RemoveMissingFileRecordChecksum
             || native.ResumeScanSessionChecksum() != ResumeScanSessionChecksum
             || native.SearchFilesChecksum() != SearchFilesChecksum
+            || native.UpdateConfigChecksum() != UpdateConfigChecksum
             || native.ValidateRepoPathChecksum() != ValidateRepoPathChecksum)
         {
             throw new WindowsRepositoryCoreException(

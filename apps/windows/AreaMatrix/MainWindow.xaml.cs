@@ -5,6 +5,7 @@ using AreaMatrix.Features.Import;
 using AreaMatrix.Features.Library;
 using AreaMatrix.Features.Onboarding;
 using AreaMatrix.Features.Recovery;
+using AreaMatrix.Features.Settings;
 using Microsoft.UI.Xaml;
 using WinRT.Interop;
 using System.ComponentModel;
@@ -65,6 +66,11 @@ public sealed partial class MainWindow : Window
         PlatformDifferencesPage.ViewModel = new PlatformDifferencesViewModel(
             new PlatformDifferencesCoreBridge(coreClient));
         PlatformDifferencesPage.CloseRequested += PlatformDifferencesPage_CloseRequested;
+        PlatformDifferencesPage.OpenRepositorySettingsRequested += PlatformDifferencesPage_OpenRepositorySettingsRequested;
+        RepositorySettingsPage.ReconnectRepositoryRequested += RepositorySettingsPage_ChangeRepositoryRequested;
+        RepositorySettingsPage.ChooseAnotherFolderRequested += RepositorySettingsPage_ChangeRepositoryRequested;
+        RepositorySettingsPage.PlatformCapabilitiesRequested += RepositorySettingsPage_PlatformCapabilitiesRequested;
+        RepositorySettingsPage.ExportDiagnosticsRequested += RepositorySettingsPage_ExportDiagnosticsRequested;
         RescanConfirmPage.CloseRequested += RescanConfirmPage_CloseRequested;
         Closed += MainWindow_Closed;
     }
@@ -261,6 +267,7 @@ public sealed partial class MainWindow : Window
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        RepositorySettingsPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Visible;
         if (request.ImportedFileIds.FirstOrDefault() is > 0 and long selectedFileId)
         {
@@ -279,6 +286,7 @@ public sealed partial class MainWindow : Window
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        RepositorySettingsPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Visible;
         if (report?.FileId is > 0 and long fileId)
         {
@@ -305,6 +313,7 @@ public sealed partial class MainWindow : Window
         WindowsImportPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        RepositorySettingsPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Visible;
         await WatcherStatusPage.OpenRouteAsync(route);
     }
@@ -318,6 +327,7 @@ public sealed partial class MainWindow : Window
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        RepositorySettingsPage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Visible;
     }
@@ -332,6 +342,7 @@ public sealed partial class MainWindow : Window
         WindowsImportPage.Visibility = Visibility.Collapsed;
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        RepositorySettingsPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Visible;
         RescanConfirmPage.OpenRequest(request);
     }
@@ -345,6 +356,11 @@ public sealed partial class MainWindow : Window
         await PlatformDifferencesPage.OpenAsync();
     }
 
+    private async void PlatformDifferencesPage_OpenRepositorySettingsRequested()
+    {
+        await ShowRepositorySettingsPageAsync();
+    }
+
     private void PlatformDifferencesPage_CloseRequested()
     {
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
@@ -355,7 +371,36 @@ public sealed partial class MainWindow : Window
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
         RepositoryAdoptConfirmPage.Visibility = Visibility.Collapsed;
+        RepositorySettingsPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Visible;
+    }
+
+    private void RepositorySettingsPage_ChangeRepositoryRequested()
+    {
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        RepositorySettingsPage.Visibility = Visibility.Collapsed;
+        WindowsMainWindowPage.Visibility = Visibility.Collapsed;
+        WindowsImportPage.Visibility = Visibility.Collapsed;
+        WatcherStatusPage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
+        RepositoryAdoptConfirmPage.Visibility = Visibility.Collapsed;
+        ChooseRepositoryPage.ViewModel?.ResetRoute();
+        ChooseRepositoryPage.Visibility = Visibility.Visible;
+    }
+
+    private async void RepositorySettingsPage_PlatformCapabilitiesRequested()
+    {
+        PlatformDifferencesPage.ViewModel = new PlatformDifferencesViewModel(
+            new PlatformDifferencesCoreBridge(coreClient),
+            repositoryPath: RepositorySettingsPage.ViewModel?.RepositoryPath);
+        ShowPlatformDifferencesPage();
+        await PlatformDifferencesPage.OpenAsync();
+    }
+
+    private async void RepositorySettingsPage_ExportDiagnosticsRequested()
+    {
+        await RepositorySettingsPage.ExportDiagnosticsAsync();
     }
 
     private void RescanConfirmPage_CloseRequested()
@@ -367,6 +412,7 @@ public sealed partial class MainWindow : Window
         WatcherStatusPage.Visibility = Visibility.Visible;
         WindowsMainWindowPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        RepositorySettingsPage.Visibility = Visibility.Collapsed;
         RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
         RepositoryAdoptConfirmPage.Visibility = Visibility.Collapsed;
     }
@@ -381,6 +427,7 @@ public sealed partial class MainWindow : Window
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        RepositorySettingsPage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.ViewModel?.ResetRoute();
         ChooseRepositoryPage.Visibility = Visibility.Visible;
     }
@@ -395,6 +442,7 @@ public sealed partial class MainWindow : Window
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        RepositorySettingsPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Visible;
         await WindowsMainWindowPage.OpenRepositoryAsync(route);
     }
@@ -409,6 +457,7 @@ public sealed partial class MainWindow : Window
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        RepositorySettingsPage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.ViewModel?.ResetRoute();
         ChooseRepositoryPage.Visibility = Visibility.Visible;
     }
@@ -423,6 +472,7 @@ public sealed partial class MainWindow : Window
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        RepositorySettingsPage.Visibility = Visibility.Collapsed;
         WindowsMainWindowPage.Visibility = Visibility.Visible;
         await WindowsMainWindowPage.OpenRepositoryAsync(route);
     }
@@ -456,6 +506,11 @@ public sealed partial class MainWindow : Window
         WatcherStatusPage.CloseRequested -= WatcherStatusPage_CloseRequested;
         WatcherStatusPage.OpenRescanConfirmRequested -= WatcherStatusPage_OpenRescanConfirmRequested;
         PlatformDifferencesPage.CloseRequested -= PlatformDifferencesPage_CloseRequested;
+        PlatformDifferencesPage.OpenRepositorySettingsRequested -= PlatformDifferencesPage_OpenRepositorySettingsRequested;
+        RepositorySettingsPage.ReconnectRepositoryRequested -= RepositorySettingsPage_ChangeRepositoryRequested;
+        RepositorySettingsPage.ChooseAnotherFolderRequested -= RepositorySettingsPage_ChangeRepositoryRequested;
+        RepositorySettingsPage.PlatformCapabilitiesRequested -= RepositorySettingsPage_PlatformCapabilitiesRequested;
+        RepositorySettingsPage.ExportDiagnosticsRequested -= RepositorySettingsPage_ExportDiagnosticsRequested;
         RescanConfirmPage.CloseRequested -= RescanConfirmPage_CloseRequested;
         watcherDiagnostics.Dispose();
         coreClient.Dispose();
@@ -471,6 +526,7 @@ public sealed partial class MainWindow : Window
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        RepositorySettingsPage.Visibility = Visibility.Collapsed;
         MissingFileRecoveryPage.Visibility = Visibility.Collapsed;
         WindowsImportPage.Visibility = Visibility.Visible;
     }
@@ -486,6 +542,7 @@ public sealed partial class MainWindow : Window
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        RepositorySettingsPage.Visibility = Visibility.Collapsed;
         MissingFileRecoveryPage.Visibility = Visibility.Visible;
     }
 
@@ -500,6 +557,31 @@ public sealed partial class MainWindow : Window
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         RescanConfirmPage.Visibility = Visibility.Collapsed;
         MissingFileRecoveryPage.Visibility = Visibility.Collapsed;
+        RepositorySettingsPage.Visibility = Visibility.Collapsed;
         PlatformDifferencesPage.Visibility = Visibility.Visible;
+    }
+
+    private async Task ShowRepositorySettingsPageAsync()
+    {
+        string? repoPath = WindowsMainWindowPage.ViewModel?.RepoPath
+            ?? PlatformDifferencesPage.ViewModel?.RepositoryPath;
+        RepositorySettingsPage.ViewModel = new RepositorySettingsViewModel(
+            new WindowsRepositorySettingsBridge(
+                repositoryBridge,
+                new PlatformDifferencesCoreBridge(coreClient),
+                coreClient.GetVersionAsync),
+            repoPath);
+        OneDriveNoticePage.Visibility = Visibility.Collapsed;
+        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
+        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
+        RepositoryAdoptConfirmPage.Visibility = Visibility.Collapsed;
+        WindowsMainWindowPage.Visibility = Visibility.Collapsed;
+        WindowsImportPage.Visibility = Visibility.Collapsed;
+        WatcherStatusPage.Visibility = Visibility.Collapsed;
+        RescanConfirmPage.Visibility = Visibility.Collapsed;
+        MissingFileRecoveryPage.Visibility = Visibility.Collapsed;
+        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
+        RepositorySettingsPage.Visibility = Visibility.Visible;
+        await RepositorySettingsPage.OpenAsync();
     }
 }

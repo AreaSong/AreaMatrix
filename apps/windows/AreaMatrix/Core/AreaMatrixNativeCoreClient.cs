@@ -42,6 +42,15 @@ public sealed partial class AreaMatrixNativeCoreClient :
         VerifyContract();
     }
 
+    public Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        string version = CallWithResult(
+            (ref RustCallStatus status) => native.GetVersion(ref status),
+            reader => reader.ReadString());
+        return Task.FromResult(version);
+    }
+
     public Task<CoreRepoPathValidation> ValidateRepoPathAsync(
         string repoPath,
         CancellationToken cancellationToken = default)
@@ -62,6 +71,19 @@ public sealed partial class AreaMatrixNativeCoreClient :
             (ref RustCallStatus status) => native.LoadConfig(LowerString(repoPath), ref status),
             ReadRepoConfig);
         return Task.FromResult(config);
+    }
+
+    public Task UpdateConfigAsync(
+        string repoPath,
+        CoreRepoConfig newConfig,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        CallVoid((ref RustCallStatus status) => native.UpdateConfig(
+            LowerString(repoPath),
+            LowerRepoConfig(newConfig),
+            ref status));
+        return Task.CompletedTask;
     }
 
     public Task<CoreCloudStorageState> DetectCloudStorageStateAsync(
@@ -184,15 +206,25 @@ public sealed partial class AreaMatrixNativeCoreClient :
     {
         string repoPath = reader.ReadString();
         string defaultMode = ReadStorageMode(reader);
-        _ = ReadOverviewOutput(reader);
-        _ = reader.ReadBool();
+        string overviewOutput = ReadOverviewOutput(reader);
+        bool aiEnabled = reader.ReadBool();
         string locale = reader.ReadString();
-        _ = reader.ReadBool();
-        _ = reader.ReadBool();
-        _ = reader.ReadBool();
-        _ = reader.ReadBool();
-        _ = reader.ReadBool();
-        return new CoreRepoConfig(repoPath, defaultMode, locale);
+        bool iCloudWarn = reader.ReadBool();
+        bool enableExtensionRules = reader.ReadBool();
+        bool enableKeywordRules = reader.ReadBool();
+        bool fallbackToInbox = reader.ReadBool();
+        bool allowReplaceDuringImport = reader.ReadBool();
+        return new CoreRepoConfig(
+            repoPath,
+            defaultMode,
+            locale,
+            overviewOutput,
+            aiEnabled,
+            iCloudWarn,
+            enableExtensionRules,
+            enableKeywordRules,
+            fallbackToInbox,
+            allowReplaceDuringImport);
     }
 
     private CoreCloudStorageState ReadCloudStorageState(UniFfiReader reader)
@@ -260,6 +292,37 @@ public sealed partial class AreaMatrixNativeCoreClient :
                 WindowsRepositoryErrorKind.Config,
                 $"Unsupported overview output `{options.OverviewOutput}`.")
         });
+        return RustBufferFromBytes(bytes.ToArray());
+    }
+
+    private RustBuffer LowerRepoConfig(CoreRepoConfig config)
+    {
+        List<byte> bytes = [];
+        WriteString(bytes, config.RepoPath);
+        WriteEnum(bytes, config.DefaultMode switch
+        {
+            "Moved" => 1,
+            "Copied" => 2,
+            "Indexed" => 3,
+            _ => throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                $"Unsupported storage mode `{config.DefaultMode}`.")
+        });
+        WriteEnum(bytes, config.OverviewOutput switch
+        {
+            "GeneratedOnly" => 1,
+            "RootAreaMatrixFile" => 2,
+            _ => throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                $"Unsupported overview output `{config.OverviewOutput}`.")
+        });
+        WriteBool(bytes, config.AiEnabled);
+        WriteString(bytes, config.Locale);
+        WriteBool(bytes, config.ICloudWarn);
+        WriteBool(bytes, config.EnableExtensionRules);
+        WriteBool(bytes, config.EnableKeywordRules);
+        WriteBool(bytes, config.FallbackToInbox);
+        WriteBool(bytes, config.AllowReplaceDuringImport);
         return RustBufferFromBytes(bytes.ToArray());
     }
 

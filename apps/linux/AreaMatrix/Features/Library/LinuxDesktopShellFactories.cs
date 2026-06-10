@@ -3,6 +3,7 @@ using AreaMatrix.Linux.Features.Help;
 using AreaMatrix.Linux.Features.Import;
 using AreaMatrix.Linux.Features.Onboarding;
 using AreaMatrix.Linux.Features.Recovery;
+using AreaMatrix.Linux.Features.Settings;
 using AreaMatrix.Linux.Features.System;
 
 namespace AreaMatrix.Linux.Features.Library;
@@ -157,5 +158,27 @@ public sealed class LinuxPlatformDifferencesViewFactory : ILinuxPlatformDifferen
         return new PlatformDifferencesView(new PlatformDifferencesViewModel(
             coreBridge,
             repositoryPath: repositoryPath));
+    }
+}
+
+public sealed class LinuxRepositorySettingsViewFactory : ILinuxRepositorySettingsViewFactory
+{
+    private readonly ILinuxRepositoryCoreBridge repositoryBridge;
+    private readonly ILinuxPlatformCapabilitiesCoreBridge capabilityBridge;
+
+    public LinuxRepositorySettingsViewFactory(
+        ILinuxRepositoryCoreBridge repositoryBridge,
+        ILinuxPlatformCapabilitiesCoreBridge capabilityBridge)
+    {
+        this.repositoryBridge = repositoryBridge;
+        this.capabilityBridge = capabilityBridge;
+    }
+
+    public RepositorySettingsView Create(string? repositoryPath = null)
+    {
+        return new RepositorySettingsView(new RepositorySettingsViewModel(
+            repositoryBridge,
+            capabilityBridge,
+            repositoryPath));
     }
 }

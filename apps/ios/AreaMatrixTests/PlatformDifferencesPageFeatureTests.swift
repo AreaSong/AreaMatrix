@@ -125,8 +125,25 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
         XCTAssertTrue(routeSource.contains("PlatformDifferencesView()"))
         XCTAssertTrue(routeSource.contains("Platform capabilities"))
         XCTAssertTrue(helpSource.contains("Open repository settings"))
+        XCTAssertTrue(helpSource.contains(".sheet(isPresented: $isRepositorySettingsPresented)"))
+        XCTAssertTrue(helpSource.contains("RepositorySettingsView("))
+        XCTAssertTrue(helpSource.contains("repoPath: model.repositoryPath"))
+        XCTAssertFalse(helpSource.contains("repoPath: nil"))
         XCTAssertTrue(helpSource.contains("Export diagnostics"))
         XCTAssertTrue(helpSource.contains("Close"))
+    }
+
+    func testIOSPlatformDifferencesReceivesCurrentRepositoryRoute() throws {
+        let entrySource = try Self.readSource("../AreaMatrix/App/AreaMatrixIOSApp.swift")
+        let routeSource = try Self.readSource(
+            "../AreaMatrix/Features/Onboarding/ConnectRepositoryRouteDestinationView.swift"
+        )
+        let helpSource = try Self.readSource("../AreaMatrix/Features/Help/PlatformDifferencesView.swift")
+
+        XCTAssertTrue(entrySource.contains("PlatformDifferencesView(repositoryPath: connection.validation.repoPath)"))
+        XCTAssertTrue(routeSource.contains("PlatformDifferencesView(repositoryPath: connection.validation.repoPath)"))
+        XCTAssertTrue(helpSource.contains("var repositoryText: String"))
+        XCTAssertTrue(helpSource.contains("Repository: \\(repositoryPath)"))
     }
 
     private static func readSource(_ relativePath: String) throws -> String {

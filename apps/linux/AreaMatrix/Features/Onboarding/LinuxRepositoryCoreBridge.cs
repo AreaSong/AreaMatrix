@@ -2,6 +2,8 @@ namespace AreaMatrix.Linux.Features.Onboarding;
 
 public interface ILinuxRepositoryCoreBridge
 {
+    Task<string> GetCoreVersionAsync(CancellationToken cancellationToken = default);
+
     Task<LinuxRepositoryValidation> ValidateRepoPathAsync(
         string repoPath,
         CancellationToken cancellationToken = default);
@@ -12,6 +14,15 @@ public interface ILinuxRepositoryCoreBridge
 
     Task AdoptExistingRepositoryAsync(
         string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task<LinuxRepositoryConfig> LoadConfigAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task UpdateConfigAsync(
+        string repoPath,
+        LinuxRepositoryConfig newConfig,
         CancellationToken cancellationToken = default);
 }
 
@@ -25,6 +36,8 @@ public interface ILinuxPlatformCapabilitiesCoreBridge
 
 public interface IAreaMatrixLinuxCoreClient
 {
+    Task<string> GetVersionAsync(CancellationToken cancellationToken = default);
+
     Task<CoreRepoPathValidation> ValidateRepoPathAsync(
         string repoPath,
         CancellationToken cancellationToken = default);
@@ -32,6 +45,15 @@ public interface IAreaMatrixLinuxCoreClient
     Task InitRepoAsync(
         string repoPath,
         CoreRepoInitOptions options,
+        CancellationToken cancellationToken = default);
+
+    Task<CoreRepoConfig> LoadConfigAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task UpdateConfigAsync(
+        string repoPath,
+        CoreRepoConfig newConfig,
         CancellationToken cancellationToken = default);
 
     Task<CorePlatformCapabilities> GetPlatformCapabilitiesAsync(
@@ -49,6 +71,11 @@ public sealed class LinuxRepositoryCoreBridge :
     public LinuxRepositoryCoreBridge(IAreaMatrixLinuxCoreClient coreClient)
     {
         this.coreClient = coreClient;
+    }
+
+    public Task<string> GetCoreVersionAsync(CancellationToken cancellationToken = default)
+    {
+        return coreClient.GetVersionAsync(cancellationToken);
     }
 
     public async Task<LinuxRepositoryValidation> ValidateRepoPathAsync(
@@ -80,6 +107,25 @@ public sealed class LinuxRepositoryCoreBridge :
             repoPath,
             CoreRepoInitOptions.AdoptExistingGeneratedOnly,
             cancellationToken);
+    }
+
+    public async Task<LinuxRepositoryConfig> LoadConfigAsync(
+        string repoPath,
+        CancellationToken cancellationToken = default)
+    {
+        CoreRepoConfig config = await coreClient
+            .LoadConfigAsync(repoPath, cancellationToken)
+            .ConfigureAwait(false);
+
+        return config.ToLinuxConfig();
+    }
+
+    public Task UpdateConfigAsync(
+        string repoPath,
+        LinuxRepositoryConfig newConfig,
+        CancellationToken cancellationToken = default)
+    {
+        return coreClient.UpdateConfigAsync(repoPath, newConfig.ToCoreConfig(), cancellationToken);
     }
 
     public async Task<LinuxPlatformCapabilities> GetPlatformCapabilitiesAsync(
@@ -219,6 +265,62 @@ public sealed record CoreRepoInitOptions(
         "AdoptExisting",
         CreateDefaultCategories: false,
         "GeneratedOnly");
+}
+
+public sealed record LinuxRepositoryConfig(
+    string RepoPath,
+    string DefaultMode,
+    string Locale,
+    string OverviewOutput = "GeneratedOnly",
+    bool AiEnabled = true,
+    bool ICloudWarn = true,
+    bool EnableExtensionRules = true,
+    bool EnableKeywordRules = true,
+    bool FallbackToInbox = true,
+    bool AllowReplaceDuringImport = false)
+{
+    public CoreRepoConfig ToCoreConfig()
+    {
+        return new CoreRepoConfig(
+            RepoPath,
+            DefaultMode,
+            Locale,
+            OverviewOutput,
+            AiEnabled,
+            ICloudWarn,
+            EnableExtensionRules,
+            EnableKeywordRules,
+            FallbackToInbox,
+            AllowReplaceDuringImport);
+    }
+}
+
+public sealed record CoreRepoConfig(
+    string RepoPath,
+    string DefaultMode,
+    string Locale,
+    string OverviewOutput = "GeneratedOnly",
+    bool AiEnabled = true,
+    bool ICloudWarn = true,
+    bool EnableExtensionRules = true,
+    bool EnableKeywordRules = true,
+    bool FallbackToInbox = true,
+    bool AllowReplaceDuringImport = false)
+{
+    public LinuxRepositoryConfig ToLinuxConfig()
+    {
+        return new LinuxRepositoryConfig(
+            RepoPath,
+            DefaultMode,
+            Locale,
+            OverviewOutput,
+            AiEnabled,
+            ICloudWarn,
+            EnableExtensionRules,
+            EnableKeywordRules,
+            FallbackToInbox,
+            AllowReplaceDuringImport);
+    }
 }
 
 public sealed record CorePlatformCapabilitySupport(

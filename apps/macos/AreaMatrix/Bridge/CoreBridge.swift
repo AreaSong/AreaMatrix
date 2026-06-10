@@ -349,6 +349,8 @@ actor CoreBridge {
     }
 }
 
+extension CoreBridge: CoreVersionLoading {}
+
 extension CoreBridge:
     CoreConfigurationLoading,
     CoreConfigurationUpdating,

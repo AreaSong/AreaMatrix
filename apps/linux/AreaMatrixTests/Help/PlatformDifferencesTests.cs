@@ -14,6 +14,7 @@ public static class PlatformDifferencesTests
         LinuxCapabilityRowsCoverS4X02PageSpecMatrix();
         await CapabilityFailureShowsUnknownRowsWithoutStaticAvailability();
         await ContractFailureShowsRecoveryWithoutStaticSuccess();
+        await OpenRepositorySettingsActionRoutesToS4X08();
         await ShellOpensPlatformDifferencesHelpPage();
         PlatformDifferencesUiDeclaresC401AndC417Only();
         NativeClientExportsInspectBindingContract();
@@ -50,7 +51,9 @@ public static class PlatformDifferencesTests
         TestAssert.Equal(LinuxPlatformCapabilityStatus.Available, model.Capabilities?.Watcher.Status, "watcher");
         TestAssert.SequenceEqual([LinuxPlatformId.Linux], bridge.Platforms, "requested platforms");
         TestAssert.SequenceEqual(["1.2.3"], bridge.AppVersions, "requested app versions");
-        TestAssert.Contains("File watcher - Available", model.CapabilityRows.FirstOrDefault() ?? "", "capability row");
+        TestAssert.True(
+            model.CapabilityRows.Any(row => row.Contains("File watcher - Available", StringComparison.Ordinal)),
+            "capability row");
     }
 
     private static void LinuxCapabilityRowsCoverS4X02PageSpecMatrix()
@@ -95,6 +98,19 @@ public static class PlatformDifferencesTests
         TestAssert.Null(model.Report, nameof(model.Report));
     }
 
+    private static async Task OpenRepositorySettingsActionRoutesToS4X08()
+    {
+        FakePlatformDifferencesCoreBridge bridge = new(ContractReport(PlatformDifferencesBindingTarget.Python));
+        PlatformDifferencesView view = new(new PlatformDifferencesViewModel(bridge));
+        var didRequestRepositorySettings = false;
+        view.OpenRepositorySettingsRequested += () => didRequestRepositorySettings = true;
+
+        bool didOpen = await view.OpenRepositorySettingsAsync();
+
+        TestAssert.True(didOpen, "S4-X-08 repository settings action");
+        TestAssert.True(didRequestRepositorySettings, "S4-X-08 repository settings route");
+    }
+
     private static async Task ShellOpensPlatformDifferencesHelpPage()
     {
         FakePlatformDifferencesCoreBridge bridge = new(ContractReport(PlatformDifferencesBindingTarget.Python));
@@ -121,7 +137,10 @@ public static class PlatformDifferencesTests
             "apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs"));
 
         TestAssert.Contains("page_id: S4-X-02", ui, "page id");
-        TestAssert.Contains("open_repository_settings: disabled", ui, "repository settings action");
+        TestAssert.Contains(
+            "open_repository_settings: PlatformDifferencesView.OpenRepositorySettingsAsync",
+            ui,
+            "repository settings action");
         TestAssert.Contains("export_diagnostics: disabled", ui, "diagnostics action");
         TestAssert.Contains(
             "check_capabilities: PlatformDifferencesView.CheckCapabilitiesAsync",

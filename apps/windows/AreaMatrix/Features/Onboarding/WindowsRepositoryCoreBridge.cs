@@ -24,6 +24,11 @@ public interface IWindowsRepositoryCoreBridge
         string repoPath,
         CancellationToken cancellationToken = default);
 
+    Task UpdateConfigAsync(
+        string repoPath,
+        WindowsRepositoryConfig newConfig,
+        CancellationToken cancellationToken = default);
+
     Task InitializeEmptyRepositoryAsync(
         string repoPath,
         CancellationToken cancellationToken = default);
@@ -49,6 +54,11 @@ public interface IAreaMatrixWindowsCoreClient
 
     Task<CoreRepoConfig> LoadConfigAsync(
         string repoPath,
+        CancellationToken cancellationToken = default);
+
+    Task UpdateConfigAsync(
+        string repoPath,
+        CoreRepoConfig newConfig,
         CancellationToken cancellationToken = default);
 
     Task InitRepoAsync(
@@ -88,7 +98,35 @@ public sealed class WindowsRepositoryCoreBridge : IWindowsRepositoryCoreBridge
         return new WindowsRepositoryConfig(
             config.RepoPath,
             config.DefaultMode,
-            config.Locale);
+            config.Locale,
+            config.OverviewOutput,
+            config.AiEnabled,
+            config.ICloudWarn,
+            config.EnableExtensionRules,
+            config.EnableKeywordRules,
+            config.FallbackToInbox,
+            config.AllowReplaceDuringImport);
+    }
+
+    public Task UpdateConfigAsync(
+        string repoPath,
+        WindowsRepositoryConfig newConfig,
+        CancellationToken cancellationToken = default)
+    {
+        return coreClient.UpdateConfigAsync(
+            repoPath,
+            new CoreRepoConfig(
+                newConfig.RepoPath,
+                newConfig.DefaultMode,
+                newConfig.Locale,
+                newConfig.OverviewOutput,
+                newConfig.AiEnabled,
+                newConfig.ICloudWarn,
+                newConfig.EnableExtensionRules,
+                newConfig.EnableKeywordRules,
+                newConfig.FallbackToInbox,
+                newConfig.AllowReplaceDuringImport),
+            cancellationToken);
     }
 
     public async Task<WindowsCloudStorageState> DetectCloudStorageStateAsync(
@@ -218,7 +256,14 @@ public sealed record WindowsRepositoryValidation(
 public sealed record WindowsRepositoryConfig(
     string RepoPath,
     string DefaultMode,
-    string Locale);
+    string Locale,
+    string OverviewOutput = "GeneratedOnly",
+    bool AiEnabled = true,
+    bool ICloudWarn = true,
+    bool EnableExtensionRules = true,
+    bool EnableKeywordRules = true,
+    bool FallbackToInbox = true,
+    bool AllowReplaceDuringImport = false);
 
 public sealed record CoreRepoPathValidation(
     string RepoPath,
@@ -408,7 +453,14 @@ public sealed record CoreCloudStorageState(
 public sealed record CoreRepoConfig(
     string RepoPath,
     string DefaultMode,
-    string Locale);
+    string Locale,
+    string OverviewOutput = "GeneratedOnly",
+    bool AiEnabled = true,
+    bool ICloudWarn = true,
+    bool EnableExtensionRules = true,
+    bool EnableKeywordRules = true,
+    bool FallbackToInbox = true,
+    bool AllowReplaceDuringImport = false);
 
 public sealed record CoreRepoInitOptions(
     string Mode,

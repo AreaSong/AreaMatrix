@@ -1,108 +1,6 @@
 import Combine
 import Foundation
 
-struct RepositorySettingsLoadError: Equatable {
-    var message: String
-    var recovery: String
-}
-
-struct RepositorySettingsSyncError: Equatable {
-    var message: String
-    var recovery: String
-}
-
-struct RepositorySettingsOverviewActionError: Equatable {
-    var message: String
-    var recovery: String
-}
-
-enum RepositorySettingsDatabaseStatus: Equatable {
-    case ok
-    case locked
-    case needsRecovery
-
-    var label: String {
-        switch self {
-        case .ok:
-            "OK"
-        case .locked:
-            "Locked"
-        case .needsRecovery:
-            "Needs recovery"
-        }
-    }
-}
-
-enum RepositorySettingsWatcherStatus: Equatable {
-    case running
-    case paused
-
-    var label: String {
-        switch self {
-        case .running:
-            "Running"
-        case .paused:
-            "Paused"
-        }
-    }
-}
-
-struct RepositorySettingsHealthSummary: Equatable {
-    var databaseStatus: RepositorySettingsDatabaseStatus
-    var schemaVersion: Int64?
-    var filesIndexed: Int64?
-    var lastScanAt: Int64?
-    var watcherStatus: RepositorySettingsWatcherStatus
-}
-
-struct RepositorySettingsHealthError: Equatable {
-    var databaseStatus: RepositorySettingsDatabaseStatus
-    var message: String
-    var recovery: String
-}
-
-struct RepositorySettingsSummary: Equatable {
-    static let generatedOverviewRelativePath = ".areamatrix/generated/root.md"
-
-    var repositoryName: String
-    var location: String
-    var metadataStatus: String
-    var overviewMode: String
-    var generatedPath: String
-    var rootFile: String
-    var readmePolicy: String
-
-    init(config: RepoConfigSnapshot, fallbackRepoPath: String) {
-        let resolvedPath = config.repoPath.isEmpty || config.repoPath != fallbackRepoPath
-            ? fallbackRepoPath
-            : config.repoPath
-        repositoryName = Self.repositoryName(for: resolvedPath)
-        location = resolvedPath
-        metadataStatus = Self.metadataStatus(for: resolvedPath)
-        overviewMode = Self.overviewModeLabel(for: config.overviewOutput)
-        generatedPath = Self.generatedOverviewRelativePath
-        rootFile = config.overviewOutput == "RootAreaMatrixFile" ? "AREAMATRIX.md" : "Off"
-        readmePolicy = "User file, never managed by AreaMatrix"
-    }
-
-    private static func repositoryName(for path: String) -> String {
-        let name = URL(fileURLWithPath: path).lastPathComponent
-        return name.isEmpty ? "AreaMatrix" : name
-    }
-
-    private static func metadataStatus(for path: String) -> String {
-        let metadataURL = URL(fileURLWithPath: path, isDirectory: true)
-            .appendingPathComponent(".areamatrix", isDirectory: true)
-        return FileManager.default.fileExists(atPath: metadataURL.path)
-            ? ".areamatrix/ found"
-            : ".areamatrix/ missing"
-    }
-
-    private static func overviewModeLabel(for value: String) -> String {
-        value == "RootAreaMatrixFile" ? "Root AREAMATRIX.md enabled" : "Generated only"
-    }
-}
-
 @MainActor
 final class RepositorySettingsModel: ObservableObject {
     enum LoadState: Equatable {
@@ -132,6 +30,7 @@ final class RepositorySettingsModel: ObservableObject {
     private let pathCopier: any RepositoryPathCopying
     private let generatedOverviewRevealer: any RepositoryFileRevealing
     private let diagnosticsCollector: any CoreDiagnosticsCollecting
+    private let coreVersionLoader: any CoreVersionLoading
     private let errorMapper: any CoreErrorMapping
     private let accessibilityAnnouncer: any AccessibilityAnnouncing
 
@@ -148,6 +47,7 @@ final class RepositorySettingsModel: ObservableObject {
         pathCopier: any RepositoryPathCopying = NSPasteboardRepositoryPathCopier(),
         generatedOverviewRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
+        coreVersionLoader: any CoreVersionLoading = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
         accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer()
     ) {
@@ -162,12 +62,17 @@ final class RepositorySettingsModel: ObservableObject {
         self.pathCopier = pathCopier
         self.generatedOverviewRevealer = generatedOverviewRevealer
         self.diagnosticsCollector = diagnosticsCollector
+        self.coreVersionLoader = coreVersionLoader
         self.errorMapper = errorMapper
         self.accessibilityAnnouncer = accessibilityAnnouncer
     }
 }
 
 extension RepositorySettingsModel {
+    var hasConnectedRepository: Bool {
+        !repoPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     var isLoading: Bool {
         loadState == .loading
     }
@@ -183,6 +88,15 @@ extension RepositorySettingsModel {
     }
 
     func load() async {
+        guard hasConnectedRepository else {
+            loadedConfig = nil
+            loadState = .failed(RepositorySettingsLoadError(
+                message: "No repository connected.",
+                recovery: "Connect Repository"
+            ))
+            return
+        }
+
         loadState = .loading
         healthSummary = nil
         healthError = nil
@@ -194,6 +108,7 @@ extension RepositorySettingsModel {
         do {
             let config = try await loader.loadConfig(repoPath: repoPath)
             let effectiveConfig = config.withRepositoryPath(repoPath)
+            let coreVersion = await currentCoreVersion()
             loadedConfig = effectiveConfig
 
             if shouldSyncRepositoryPath(from: config) {
@@ -204,7 +119,11 @@ extension RepositorySettingsModel {
                 }
             }
 
-            loadState = .loaded(RepositorySettingsSummary(config: effectiveConfig, fallbackRepoPath: repoPath))
+            loadState = .loaded(RepositorySettingsSummary(
+                config: effectiveConfig,
+                fallbackRepoPath: repoPath,
+                coreVersion: coreVersion
+            ))
             await refreshHealth()
         } catch {
             loadedConfig = nil
@@ -282,6 +201,7 @@ extension RepositorySettingsModel {
             databaseStatus: .ok,
             schemaVersion: nil,
             filesIndexed: nil,
+            lastOpenedAt: nil,
             lastScanAt: nil,
             watcherStatus: .paused
         )
@@ -289,6 +209,7 @@ extension RepositorySettingsModel {
         do {
             let metadata = try await existingRepositoryMetadataReader.metadata(repoPath: repoPath)
             summary.schemaVersion = metadata.schemaVersion
+            summary.lastOpenedAt = metadata.lastOpenedAt
         } catch {
             summary = await applyHealthError(error, summary: summary)
             healthSummary = summary
@@ -395,6 +316,14 @@ extension RepositorySettingsModel {
         repositoryMetadataDatabaseExists && config.repoPath != repoPath
     }
 
+    private func currentCoreVersion() async -> String {
+        do {
+            return try await coreVersionLoader.coreVersion()
+        } catch {
+            return "Unknown"
+        }
+    }
+
     private var repositoryMetadataDatabaseExists: Bool {
         let databaseURL = URL(fileURLWithPath: repoPath, isDirectory: true)
             .appendingPathComponent(".areamatrix/index.db", isDirectory: false)
@@ -475,13 +404,5 @@ extension RepositorySettingsModel {
             message: "Diagnostics could not be exported.",
             recovery: "Retry after the repository is available."
         )
-    }
-}
-
-private extension RepoConfigSnapshot {
-    func withRepositoryPath(_ value: String) -> RepoConfigSnapshot {
-        var config = self
-        config.repoPath = value
-        return config
     }
 }

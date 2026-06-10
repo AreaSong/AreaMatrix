@@ -12,6 +12,7 @@ public static class PlatformDifferencesTests
         WindowsCapabilityRowsCoverS4X02PageSpecMatrix();
         await CapabilityFailureShowsUnknownRowsWithoutStaticAvailability();
         await ContractFailureShowsRecoveryWithoutStaticSuccess();
+        WindowsRepositorySettingsActionIsAvailable();
         PlatformDifferencesPageIsReachableFromWindowsMainWindow();
         NativeClientExportsPlatformDifferenceCoreCalls();
     }
@@ -47,7 +48,9 @@ public static class PlatformDifferencesTests
         TestAssert.Equal(PlatformDifferencesCapabilityStatus.Available, model.Capabilities?.Watcher.Status, "watcher");
         TestAssert.SequenceEqual([PlatformDifferencesPlatformId.Windows], bridge.Platforms, "requested platforms");
         TestAssert.SequenceEqual(["1.2.3"], bridge.AppVersions, "requested app versions");
-        TestAssert.Contains("File watcher - Available", model.CapabilityRows.FirstOrDefault() ?? "", "capability row");
+        TestAssert.True(
+            model.CapabilityRows.Any(row => row.Contains("File watcher - Available", StringComparison.Ordinal)),
+            "capability row");
     }
 
     private static void WindowsCapabilityRowsCoverS4X02PageSpecMatrix()
@@ -90,6 +93,15 @@ public static class PlatformDifferencesTests
         TestAssert.Equal("Binding contract unavailable", model.ErrorMessage, nameof(model.ErrorMessage));
         TestAssert.Contains("Core bridge", model.RecoveryText ?? string.Empty, nameof(model.RecoveryText));
         TestAssert.Null(model.Report, nameof(model.Report));
+    }
+
+    private static void WindowsRepositorySettingsActionIsAvailable()
+    {
+        FakePlatformDifferencesCoreBridge bridge = new(ContractReport(PlatformDifferencesBindingTarget.Kotlin));
+        PlatformDifferencesViewModel model = new(bridge);
+
+        TestAssert.True(model.CanOpenRepositorySettings, "S4-X-08 repository settings action");
+        TestAssert.Equal(string.Empty, model.RepositorySettingsUnavailableText, "repository settings unavailable text");
     }
 
     private static void PlatformDifferencesPageIsReachableFromWindowsMainWindow()

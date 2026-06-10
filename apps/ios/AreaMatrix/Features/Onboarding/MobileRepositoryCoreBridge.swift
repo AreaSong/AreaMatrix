@@ -1,11 +1,13 @@
 import Foundation
 
 protocol MobileRepositoryCoreBridge: Sendable {
+    func getVersion() async throws -> String
     func validateRepoPath(repoPath: String) async throws -> MobileRepositoryValidation
     func detectCloudStorageState(repoPath: String) async throws -> MobileCloudStorageState
     func initializeEmptyRepository(repoPath: String) async throws
     func adoptExistingRepository(repoPath: String) async throws
     func loadConfig(repoPath: String) async throws -> MobileRepositoryConfig
+    func updateConfig(repoPath: String, newConfig: MobileRepositoryConfig) async throws
 }
 
 enum MobileRepositoryInitMode: String, Equatable, Sendable {
@@ -71,7 +73,13 @@ struct MobileRepositoryValidation: Equatable, Sendable {
 struct MobileRepositoryConfig: Equatable, Sendable {
     var repoPath: String
     var defaultMode: String
+    var overviewOutput = "GeneratedOnly"
+    var aiEnabled = true
     var locale: String
+    var iCloudWarn = true
+    var enableExtensionRules = true
+    var enableKeywordRules = true
+    var fallbackToInbox = true
     var allowReplaceDuringImport = false
 }
 

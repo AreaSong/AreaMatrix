@@ -222,6 +222,12 @@ public static class LinuxChooseRepositoryViewModelTests
 
         public List<string> ValidatedPaths { get; } = [];
 
+        public Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult("test-core");
+        }
+
         public Task<CoreRepoPathValidation> ValidateRepoPathAsync(
             string repoPath,
             CancellationToken cancellationToken = default)
@@ -236,6 +242,21 @@ public static class LinuxChooseRepositoryViewModelTests
             CancellationToken cancellationToken = default)
         {
             throw new InvalidOperationException("choose-repo tests must not initialize repositories");
+        }
+
+        public Task<CoreRepoConfig> LoadConfigAsync(
+            string repoPath,
+            CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException("choose-repo tests must not load repository config");
+        }
+
+        public Task UpdateConfigAsync(
+            string repoPath,
+            CoreRepoConfig newConfig,
+            CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException("choose-repo tests must not update repository config");
         }
 
         public Task<CorePlatformCapabilities> GetPlatformCapabilitiesAsync(

@@ -23,6 +23,11 @@ internal sealed class LazyAreaMatrixWindowsCoreClient :
     private readonly object sync = new();
     private AreaMatrixNativeCoreClient? client;
 
+    public Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
+    {
+        return Current.GetVersionAsync(cancellationToken);
+    }
+
     public Task<CoreRepoPathValidation> ValidateRepoPathAsync(
         string repoPath,
         CancellationToken cancellationToken = default)
@@ -35,6 +40,14 @@ internal sealed class LazyAreaMatrixWindowsCoreClient :
         CancellationToken cancellationToken = default)
     {
         return Current.LoadConfigAsync(repoPath, cancellationToken);
+    }
+
+    public Task UpdateConfigAsync(
+        string repoPath,
+        CoreRepoConfig newConfig,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.UpdateConfigAsync(repoPath, newConfig, cancellationToken);
     }
 
     public Task<CoreCloudStorageState> DetectCloudStorageStateAsync(
