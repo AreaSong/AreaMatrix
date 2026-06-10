@@ -98,6 +98,9 @@
 		0A0000000000000000000776 /* PlatformDifferencesPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000777 /* PlatformDifferencesPageFeatureTests.swift */; };
 		0A0000000000000000000800 /* RepositorySettingsPlatformCapabilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000801 /* RepositorySettingsPlatformCapabilities.swift */; };
 		0A0000000000000000000802 /* RepositorySettingsPlatformCapabilitySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000803 /* RepositorySettingsPlatformCapabilitySection.swift */; };
+		0A0000000000000000000810 /* RepositorySettingsConfigModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000811 /* RepositorySettingsConfigModel.swift */; };
+		0A0000000000000000000812 /* RepositorySettingsConfigSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000813 /* RepositorySettingsConfigSection.swift */; };
+		0A0000000000000000000814 /* RepositorySettingsConfigPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000815 /* RepositorySettingsConfigPageFeatureTests.swift */; };
 		0A00000000000000000002EC /* CoreMetadataRepairing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002ED /* CoreMetadataRepairing.swift */; };
 		0A00000000000000000002EF /* DatabaseRepairConfirmModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F0 /* DatabaseRepairConfirmModel.swift */; };
 		0A00000000000000000002F1 /* DatabaseRepairConfirmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F2 /* DatabaseRepairConfirmView.swift */; };
@@ -476,6 +479,9 @@
 		0A0000000000000000000777 /* PlatformDifferencesPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/PlatformDifferencesPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000801 /* RepositorySettingsPlatformCapabilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/RepositorySettingsPlatformCapabilities.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000803 /* RepositorySettingsPlatformCapabilitySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/RepositorySettingsPlatformCapabilitySection.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000811 /* RepositorySettingsConfigModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/RepositorySettingsConfigModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000813 /* RepositorySettingsConfigSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/RepositorySettingsConfigSection.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000815 /* RepositorySettingsConfigPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RepositorySettingsConfigPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000261 /* MainFileListDetailSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileListDetailSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000223 /* MainFileListState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileListState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000133 /* MainListFilesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainListFilesTests.swift; sourceTree = SOURCE_ROOT; };
@@ -741,6 +747,7 @@
 				0A0000000000000000000521 /* ClassifierRuleEditorSection.swift */,
 				0A0000000000000000000283 /* RepositorySettingsPane.swift */,
 				0A0000000000000000000803 /* RepositorySettingsPlatformCapabilitySection.swift */,
+				0A0000000000000000000813 /* RepositorySettingsConfigSection.swift */,
 				0A000000000000000000029D /* IntegrationsSettingsPane.swift */,
 				0A00000000000000000002A3 /* AdvancedSettingsPane.swift */,
 				0A00000000000000000002AB /* AdvancedSettingsSupportViews.swift */,
@@ -904,6 +911,7 @@
 				0A0000000000000000000277 /* GeneralSettingsActions.swift */,
 				0A0000000000000000000281 /* RepositorySettingsModel.swift */,
 				0A0000000000000000000801 /* RepositorySettingsPlatformCapabilities.swift */,
+				0A0000000000000000000811 /* RepositorySettingsConfigModel.swift */,
 				0A0000000000000000000289 /* RepositorySettingsActionState.swift */,
 				0A000000000000000000014F /* OnboardingRoute.swift */,
 				0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */,
@@ -1073,6 +1081,7 @@
 				0A0000000000000000000777 /* PlatformDifferencesPageFeatureTests.swift */,
 				0A000000000000000000027F /* GeneralSettingsPageIntegrationVerifyTests.swift */,
 				0A0000000000000000000285 /* RepositorySettingsPageFeatureTests.swift */,
+				0A0000000000000000000815 /* RepositorySettingsConfigPageFeatureTests.swift */,
 				0A000000000000000000028B /* RepositorySettingsPageIntegrationVerifyTests.swift */,
 				0A0000000000000000000287 /* RepositorySettingsTestSupport.swift */,
 				0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */,
@@ -1307,6 +1316,7 @@
 				0A0000000000000000000276 /* GeneralSettingsActions.swift in Sources */,
 				0A0000000000000000000280 /* RepositorySettingsModel.swift in Sources */,
 				0A0000000000000000000800 /* RepositorySettingsPlatformCapabilities.swift in Sources */,
+				0A0000000000000000000810 /* RepositorySettingsConfigModel.swift in Sources */,
 				0A0000000000000000000288 /* RepositorySettingsActionState.swift in Sources */,
 				0A00000000000000000001CE /* ImportProgressActions.swift in Sources */,
 				0A00000000000000000001DE /* ImportResultRouteActions.swift in Sources */,
@@ -1323,6 +1333,7 @@
 				0A0000000000000000000520 /* ClassifierRuleEditorSection.swift in Sources */,
 				0A0000000000000000000282 /* RepositorySettingsPane.swift in Sources */,
 				0A0000000000000000000802 /* RepositorySettingsPlatformCapabilitySection.swift in Sources */,
+				0A0000000000000000000812 /* RepositorySettingsConfigSection.swift in Sources */,
 				0A000000000000000000029C /* IntegrationsSettingsPane.swift in Sources */,
 				0A00000000000000000002A2 /* AdvancedSettingsPane.swift in Sources */,
 				0A00000000000000000002AA /* AdvancedSettingsSupportViews.swift in Sources */,
@@ -1531,6 +1542,7 @@
 					0A0000000000000000000776 /* PlatformDifferencesPageFeatureTests.swift in Sources */,
 					0A000000000000000000027E /* GeneralSettingsPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000284 /* RepositorySettingsPageFeatureTests.swift in Sources */,
+					0A0000000000000000000814 /* RepositorySettingsConfigPageFeatureTests.swift in Sources */,
 					0A000000000000000000028A /* RepositorySettingsPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000286 /* RepositorySettingsTestSupport.swift in Sources */,
 				0A0000000000000000000136 /* MainListIntegrationFilterTests.swift in Sources */,

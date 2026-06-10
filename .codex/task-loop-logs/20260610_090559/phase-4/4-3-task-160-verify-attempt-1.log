@@ -1,0 +1,54 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-160`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-160-s4-x-08-c4-20-repository-settings-cross-platform.md`
+- 实际改动范围：`apps/macos/**`
+- Forbidden Touches：`core/src/**` 无 staged / unstaged diff
+
+三、完成度摘要
+
+- 已覆盖项数：7/7
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只处理 S4-X-08 页面中的 C4-20 功能点：通过。证据：新增配置区挂入 `RepositorySettingsPane`，保存入口为 `S4-X-08-C4-20-save-repository-config`。涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPane.swift:205`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/RepositorySettingsConfigSection.swift:73`
+- 已读取页面规格、control map、Core API、C4-20 spec：通过。证据：control map 声明 S4-X-08 绑定 C4-17/C4-20；C4-20 spec 声明 `load_config`、`update_config`、`get_platform_capabilities`。涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:33`，`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md:7`
+- 只接入 C4-20 对应 CoreBridge / 状态 / 错误映射：通过。证据：生产路径通过 `CoreConfigurationLoading` / `CoreConfigurationUpdating`，默认实现为 `CoreBridge`，最终调用 `loadConfig` / `updateConfig`。涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositorySettingsConfigModel.swift:159`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBridge.swift:217`
+- 未顺手实现相邻页面、相邻平台或同页其他能力：通过。证据：本轮新增/修改集中在 macOS repository settings config 区与测试；`core/src/**` 无 diff。
+- C4-20 用户可见功能可触发和验收：通过。证据：UI 提供 Overview output、Locale、cloud warning、fallback toggles 和 Save/Reset；保存成功后重新加载页面状态。涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/RepositorySettingsConfigSection.swift:54`
+- 没有 mock、fixture 或静态状态伪造真实 Core 闭环：通过。证据：生产默认依赖 `CoreBridge()`；测试中的 recording doubles 仅用于 XCTest。涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPane.swift:13`
+- 未触碰 control map 之外 Core 能力：通过。证据：UDL 的 C4-20 合同为 `load_config` / `update_config` 并复用 platform capabilities；本轮没有改 `core/src/**`。涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:26`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。新增 model 191 行、section 168 行，既有 pane 497 行，均未超过 500 行阈值；保存逻辑拆在 `RepositorySettingsConfigModel`。
+- 注释 / rustdoc / 文档同步：通过。未新增 public Rust API；Core API 与 UDL 已有 C4-20 注释和合同。
+- 错误处理与边界处理：通过。`updateConfig` 失败映射 CoreError，不清空当前 payload；平台 capability 未可用时禁用编辑并显示原因。
+- 测试与验证覆盖：通过。新增 C4-20 save 成功与 PermissionDenied 失败映射测试，且已运行通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未直接调用 UniFFI，未发现 `try!`、无根据强制解包、`fatalError`、`print()` 或 mock-only wiring。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-160`，通过。关键证据：prompt doctor OK，`git diff --check` OK，macOS `xcodebuild build` succeeded。
+- 已运行：`./dev test macos --only-testing AreaMatrixTests/RepositorySettingsConfigPageFeatureTests`，通过。标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断后，仓库脚本按规则复用已构建 XCTest bundle；2 tests，0 failures。
+- 已运行：`git diff --check`，通过。
+- 已运行：`git diff -- core/src` 与 `git diff --cached -- core/src`，无输出。
+- 未运行：`./dev check all`，manifest 未要求，且 validation-driver 对 page-feature task 不默认扩大到全仓门禁。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前 task 的 C4-20 repository settings config 功能在 `apps/**` 范围内落地，真实接入 CoreBridge，Forbidden Touches 未被触碰，验证命令和新增窄范围测试均已通过。`progress.json`、`.codex/task-loop-runs/.../summary.json` 属于 task-loop 收口运行状态，不作为本 verify 阶段阻塞。
+
+VERIFY_RESULT: PASS

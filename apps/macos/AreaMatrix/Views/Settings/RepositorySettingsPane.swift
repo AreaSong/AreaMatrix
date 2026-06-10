@@ -3,6 +3,7 @@ import SwiftUI
 struct RepositorySettingsPane: View {
     @StateObject private var model: RepositorySettingsModel
     @StateObject private var capabilityModel: RepositorySettingsPlatformCapabilitiesModel
+    @StateObject private var configModel: RepositorySettingsConfigModel
     let onChangeRepository: () -> Void
     let onOpenPlatformCapabilities: () -> Void
     let onOpenRecoveryTools: () -> Void
@@ -49,6 +50,12 @@ extension RepositorySettingsPane {
             appVersion: appVersion,
             capabilityLoader: capabilityLoader,
             errorMapper: errorMapper
+        ))
+        _configModel = StateObject(wrappedValue: RepositorySettingsConfigModel(
+            repoPath: repoPath,
+            updater: updater,
+            errorMapper: errorMapper,
+            accessibilityAnnouncer: accessibilityAnnouncer
         ))
         self.onChangeRepository = onChangeRepository
         self.onOpenPlatformCapabilities = onOpenPlatformCapabilities
@@ -162,6 +169,7 @@ extension RepositorySettingsPane {
                 repositoryPathSection(summary)
                 repositoryHealthSection
                 platformCapabilitySection
+                repositoryConfigSection
                 repositoryOverviewSection(summary)
                 repositorySafeActionsSection
                 metadataDeletionWarning
@@ -191,6 +199,17 @@ extension RepositorySettingsPane {
         RepositorySettingsPlatformCapabilitySection(
             state: capabilityModel.state,
             onOpenPlatformCapabilities: onOpenPlatformCapabilities
+        )
+    }
+
+    private var repositoryConfigSection: some View {
+        RepositorySettingsConfigSection(
+            config: model.loadedConfig,
+            model: configModel,
+            capabilityState: capabilityModel.state,
+            onSaved: {
+                await model.load()
+            }
         )
     }
 
