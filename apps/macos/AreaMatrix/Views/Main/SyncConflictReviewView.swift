@@ -32,8 +32,8 @@ enum SyncConflictReviewAccessibilityID {
     static let apply = "S4-X-01-C4-16-apply"
     static let applyFailure = "S4-X-01-C4-16-apply-failure"
     static let applySuccess = "S4-X-01-C4-16-apply-success"
-    static let replaceConfirmation = "S4-X-09-C4-16-replace-confirmation"
-    static let replaceConfirm = "S4-X-09-C4-16-confirm-replace-plan"
+    static let replaceConfirmation = "S4-X-09-C4-21-replace-confirmation"
+    static let replaceConfirm = "S4-X-09-C4-21-confirm-replace-plan"
 
     static func versionCard(fileID: String) -> String {
         "S4-X-01-C4-15-version-\(safeID(fileID))"
@@ -313,6 +313,7 @@ private extension SyncConflictReviewView {
                 disabledReason: model.replaceConfirmationDisabledReason,
                 onConfirm: model.confirmReplacePlan
             )
+            .id(preview.normalizedPreviewToken ?? preview.conflictID)
         }
     }
 

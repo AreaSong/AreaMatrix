@@ -196,8 +196,9 @@ final class SyncConflictReviewModel: ObservableObject {
         await previewResolution(resolution, conflict: conflict)
     }
 
-    func confirmReplacePlan() {
-        guard replaceConfirmationDisabledReason == nil,
+    func confirmReplacePlan(understandsReplace: Bool) {
+        guard understandsReplace,
+              replaceConfirmationDisabledReason == nil,
               let conflict,
               let preview = previewState.preview,
               let previewToken = preview.normalizedPreviewToken,
@@ -309,7 +310,7 @@ final class SyncConflictReviewModel: ObservableObject {
                 ? String(character)
                 : "-"
         }.joined()
-        return "S4-X-09-C4-16-\(safeID)"
+        return "S4-X-09-C4-21-\(safeID)"
     }
 }
 

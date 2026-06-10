@@ -1,0 +1,80 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-163`
+- 对应文件路径：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-163-s4-x-09-c4-21-replace-confirm-cross-platform.md`
+- 实际产品改动：`apps/macos/**`
+- 非产品运行状态改动：`.codex/task-loop-runs/20260610_090559/summary.json`、`tasks/prompts/_shared/progress.json`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S4-X-09 页面中的 C4-21 功能点  
+  结果：通过  
+  证据：实际 diff 只调整 S4-X-09 replace confirmation 的 C4-21 标识、确认复选框、按钮禁用和对应测试；`git diff --name-only -- core/src` 无输出。  
+  涉及文件：[SyncConflictReviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/SyncConflictReviewModel.swift:199)、[SyncConflictReviewView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SyncConflictReviewView.swift:35)
+
+- 项目：读取页面规格、control map、Core API 和 C4-21 能力规格  
+  结果：通过  
+  证据：已读取 `S4-X-09-replace-confirm.md`、`stage-4-control-map.md`、`core-api.md`、`C4-21-replace-confirm-cross-platform.md`；control map 确认 S4-X-09 为 `C4-16, C4-21`，本 task 只验 C4-21。
+
+- 项目：只接入 C4-21 对应 CoreBridge / 状态 / 错误映射  
+  结果：通过  
+  证据：生产路径默认使用 `CoreBridge()`，通过 `previewSyncConflictResolution` / `resolveSyncConflict` 调真实 Core；apply 时传递 `replaceConfirmed` 与 `replaceConfirmationID`。  
+  涉及文件：[CoreSyncConflictResolving.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreSyncConflictResolving.swift:152)、[SyncConflictReviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/SyncConflictReviewModel.swift:216)
+
+- 项目：不实现相邻页面、相邻平台或同页其他能力  
+  结果：通过  
+  证据：diff 未触碰 `core/src/**`、未改 UDL、未新增相邻 C* 行为；同页 C4-16 仅作为已有 resolve 流程上下文被消费。
+
+- 项目：C4-21 用户可见功能可触发和验收  
+  结果：通过  
+  证据：UI 展示 `Confirm Replace`、确认项、Old/New path/hash、affected record、backup target、DB update、change log、recovery note；未勾选确认时无法确认。  
+  涉及文件：[SyncConflictReplaceConfirmationPanel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SyncConflictReplaceConfirmationPanel.swift:14)
+
+- 项目：没有 mock / fixture / 静态状态伪造真实 Core 闭环  
+  结果：通过  
+  证据：生产代码走 `CoreBridge`；测试内使用 recording resolver 只用于断言 preview token、`replaceConfirmed` 和 Trash 不可用分支，不替代生产实现。  
+  涉及文件：[SyncConflictReviewResolutionPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/SyncConflictReviewResolutionPageFeatureTests.swift:76)
+
+- 项目：未触碰 control map 之外 Core 能力  
+  结果：通过  
+  证据：`git diff --name-status` 仅含 macOS S4-X-09/C4-21 相关 view/model/test 与 task-loop 状态文件；`git diff --cached --name-only` 无输出。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，文件均低于 500 行；确认逻辑拆在 model，展示逻辑在 panel/view，未在 View body 做 IO。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 public Rust API；UDL 与 Core API 已存在 C4-21 所需字段。
+- 错误处理与边界处理：通过，缺 replace plan、缺 preview token、Trash 不可用、Core blocked reason 都会禁用确认或 apply。
+- 测试与验证覆盖：通过，补跑 targeted XCTest，11 个测试 0 failures。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现生产路径 mock-only 或硬编码通过态。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-163`，通过；包含 `doctor: OK`、`git diff --check` 无错误、macOS `xcodebuild build` 最终 `BUILD SUCCEEDED`。
+- 已运行：`./dev test macos --only-testing AreaMatrixTests/SyncConflictReviewResolutionFeatureTests`，通过；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 限制阻断后，按 repo 规则复用 XCTest bundle，`xcrun xctest` 执行 11 tests、0 failures。
+- 已运行：`git diff --name-only -- core/src`，通过，无输出。
+- 已运行：`git diff --cached --name-only`，通过，无输出。
+- 缺失：未运行 `./dev check all`，原因是本 task manifest 只要求 `./dev check task 4-3/task-163`，validation-driver 不要求普通 page-feature task 扩大到全仓门禁。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+
+
+VERIFY_RESULT: PASS

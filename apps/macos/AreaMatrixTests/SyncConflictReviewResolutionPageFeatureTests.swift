@@ -73,7 +73,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X09C416UseIncomingRequiresReplaceConfirmationBeforeResolve() async throws {
+    func testS4X09C421UseIncomingRequiresReplaceConfirmationBeforeResolve() async throws {
         let resolver = S4X01RecordingSyncConflictResolver(previewResults: [
             .keepBoth: .success(.s4x01PreviewFixture()),
             .useIncoming: .success(.s4x01PreviewFixture(
@@ -107,7 +107,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X09C416ConfirmedReplaceUsesPreviewTokenAndCoreResolveFlag() async throws {
+    func testS4X09C421ConfirmedReplaceUsesPreviewTokenAndCoreResolveFlag() async throws {
         let resolver = S4X01RecordingSyncConflictResolver(
             previewResults: [
                 .keepBoth: .success(.s4x01PreviewFixture()),
@@ -125,7 +125,10 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
 
         await model.load()
         await model.selectResolution(.useIncoming)
-        model.confirmReplacePlan()
+        model.confirmReplacePlan(understandsReplace: false)
+        XCTAssertNil(model.replaceConfirmation)
+
+        model.confirmReplacePlan(understandsReplace: true)
         await model.applyResolution()
         let preview = try XCTUnwrap(model.previewState.preview)
         let confirmation = try XCTUnwrap(model.replaceConfirmation)
@@ -133,7 +136,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
             preview: preview,
             confirmation: confirmation,
             disabledReason: model.replaceConfirmationDisabledReason,
-            onConfirm: {}
+            onConfirm: { _ in }
         ).body)
         let resolveRequests = await resolver.recordedResolveRequests()
 
@@ -146,19 +149,23 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
                     strategy: .useIncoming,
                     previewToken: "preview-token-use-incoming",
                     replaceConfirmed: true,
-                    replaceConfirmationID: "S4-X-09-C4-16-conflict-report-preview-token-use-incoming"
+                    replaceConfirmationID: "S4-X-09-C4-21-conflict-report-preview-token-use-incoming"
                 )
             )
         ])
         XCTAssertEqual(model.applyState, .succeeded(.s4x01ResolveFixture(resolution: .useIncoming)))
         XCTAssertTrue(panelBody.contains(SyncConflictReviewAccessibilityID.replaceConfirmation))
         XCTAssertTrue(panelBody.contains(SyncConflictReviewAccessibilityID.replaceConfirm))
+        XCTAssertTrue(panelBody.contains("Confirm Replace"))
+        XCTAssertTrue(panelBody.contains("I understand this will replace the existing file."))
+        XCTAssertTrue(panelBody.contains("Old file path"))
+        XCTAssertTrue(panelBody.contains("Old version will be kept at"))
         XCTAssertTrue(panelBody.contains("Replace plan confirmed for this preview token."))
         XCTAssertTrue(panelBody.contains("conflict_resolved_use_incoming"))
     }
 
     @MainActor
-    func testS4X09C416TrashUnavailableDisablesReplaceConfirmationAndResolve() async {
+    func testS4X09C421TrashUnavailableDisablesReplaceConfirmationAndResolve() async {
         let resolver = S4X01RecordingSyncConflictResolver(previewResults: [
             .keepBoth: .success(.s4x01PreviewFixture()),
             .useIncoming: .success(.s4x01PreviewFixture(
@@ -174,7 +181,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
 
         await model.load()
         await model.selectResolution(.useIncoming)
-        model.confirmReplacePlan()
+        model.confirmReplacePlan(understandsReplace: true)
         await model.applyResolution()
         let resolveRequests = await resolver.recordedResolveRequests()
 
@@ -306,7 +313,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
 
         await model.load()
         await model.selectResolution(.useIncoming)
-        model.confirmReplacePlan()
+        model.confirmReplacePlan(understandsReplace: true)
         await view.applySelectedResolution()
         let detectRequests = await detector.recordedRequests()
         let previewRequests = await resolver.recordedPreviewRequests()

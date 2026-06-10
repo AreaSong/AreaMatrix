@@ -70,7 +70,7 @@ struct S4X01SyncConflictResolveRequest: Equatable {
             strategy: .useIncoming,
             previewToken: "preview-token-use-incoming",
             replaceConfirmed: true,
-            replaceConfirmationID: "S4-X-09-C4-16-conflict-report-preview-token-use-incoming"
+            replaceConfirmationID: "S4-X-09-C4-21-conflict-report-preview-token-use-incoming"
         )
     )
 }
