@@ -129,6 +129,79 @@
     "4-3/task-160": {
       "attempts": 1,
       "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260610_090559/phase-4/4-3-task-160-copy-attempt-1.log",
+      "git": {
+        "attempts": 1,
+        "branch": "codex/areamatrix-task-loop-20260501_132850",
+        "changed_files": [
+          ".codex/task-loop-logs/20260610_090559/phase-4/4-3-task-160-copy-attempt-1.log",
+          ".codex/task-loop-logs/20260610_090559/phase-4/4-3-task-160-verify-attempt-1.log",
+          ".codex/task-loop-runs/20260610_090559/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "apps/macos/AreaMatrix.xcodeproj/project.pbxproj",
+          "apps/macos/AreaMatrix/Models/RepositorySettingsConfigModel.swift",
+          "apps/macos/AreaMatrix/Views/Settings/RepositorySettingsConfigSection.swift",
+          "apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPane.swift",
+          "apps/macos/AreaMatrixTests/RepositorySettingsConfigPageFeatureTests.swift",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "commit": "059c64a9cc5c8d83892e2f45c7317cac4e50eadb",
+        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260610_090559/phase-4/4-3-task-160-copy-attempt-1.log",
+        "diff_name_status": [
+          "M\t.codex/task-loop-runs/20260610_090559/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/macos/AreaMatrix.xcodeproj/project.pbxproj",
+          "M\tapps/macos/AreaMatrix/Views/Settings/RepositorySettingsPane.swift",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "final_log_files": [
+          ".codex/task-loop-logs/20260610_090559/phase-4/4-3-task-160-copy-attempt-1.log",
+          ".codex/task-loop-logs/20260610_090559/phase-4/4-3-task-160-verify-attempt-1.log"
+        ],
+        "label": "4-3/task-160",
+        "mode": "commit",
+        "phase": "phase-4",
+        "pre_checkpoint_changed_files": [
+          ".codex/task-loop-runs/20260610_090559/summary.json",
+          ".codex/task-loop-runs/index.json",
+          "apps/macos/AreaMatrix.xcodeproj/project.pbxproj",
+          "apps/macos/AreaMatrix/Models/RepositorySettingsConfigModel.swift",
+          "apps/macos/AreaMatrix/Views/Settings/RepositorySettingsConfigSection.swift",
+          "apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPane.swift",
+          "apps/macos/AreaMatrixTests/RepositorySettingsConfigPageFeatureTests.swift",
+          "tasks/prompts/_shared/progress.json"
+        ],
+        "push_status": "not_requested",
+        "remote": "",
+        "run_id": "20260610_090559",
+        "skipped_log_files": [],
+        "staged_name_status": [
+          "A\t.codex/task-loop-logs/20260610_090559/phase-4/4-3-task-160-copy-attempt-1.log",
+          "A\t.codex/task-loop-logs/20260610_090559/phase-4/4-3-task-160-verify-attempt-1.log",
+          "M\t.codex/task-loop-runs/20260610_090559/summary.json",
+          "M\t.codex/task-loop-runs/index.json",
+          "M\tapps/macos/AreaMatrix.xcodeproj/project.pbxproj",
+          "A\tapps/macos/AreaMatrix/Models/RepositorySettingsConfigModel.swift",
+          "A\tapps/macos/AreaMatrix/Views/Settings/RepositorySettingsConfigSection.swift",
+          "M\tapps/macos/AreaMatrix/Views/Settings/RepositorySettingsPane.swift",
+          "A\tapps/macos/AreaMatrixTests/RepositorySettingsConfigPageFeatureTests.swift",
+          "M\ttasks/prompts/_shared/progress.json"
+        ],
+        "status": "committed",
+        "status_short": [
+          " M .codex/task-loop-runs/20260610_090559/summary.json",
+          " M .codex/task-loop-runs/index.json",
+          " M apps/macos/AreaMatrix.xcodeproj/project.pbxproj",
+          " M apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPane.swift",
+          " M tasks/prompts/_shared/progress.json",
+          "?? apps/macos/AreaMatrix/Models/RepositorySettingsConfigModel.swift",
+          "?? apps/macos/AreaMatrix/Views/Settings/RepositorySettingsConfigSection.swift",
+          "?? apps/macos/AreaMatrixTests/RepositorySettingsConfigPageFeatureTests.swift"
+        ],
+        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260610_090559/summary.json",
+        "task_name": "4-3-task-160",
+        "updated_at": "2026-06-10T02:19:44.168951+00:00",
+        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260610_090559/phase-4/4-3-task-160-verify-attempt-1.log"
+      },
       "note": "自动执行验收通过",
       "phase": "phase-4",
       "risk": "High",
@@ -143,7 +216,7 @@
     "retries": 0,
     "task_count": 637
   },
-  "updated_at": "2026-06-10T02:19:43.852165+00:00",
+  "updated_at": "2026-06-10T02:19:44.179446+00:00",
   "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
   "version": 1
 }
