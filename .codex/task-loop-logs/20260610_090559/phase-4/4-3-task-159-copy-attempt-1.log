@@ -1,0 +1,50 @@
+一、执行结论
+
+- 已完成：`4-3/task-159` 的 S4-X-08 + C4-17 页面功能已接入并验证通过。
+
+二、执行范围
+
+- 单任务：只处理 S4-X-08 repository-settings 中的 C4-17 platform-capabilities。
+- 修改文件清单：
+  - `apps/macos/AreaMatrix/Models/RepositorySettingsPlatformCapabilities.swift`
+  - `apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPlatformCapabilitySection.swift`
+  - `apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPane.swift`
+  - `apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift`
+  - `apps/macos/AreaMatrixTests/RepositorySettingsPageFeatureTests.swift`
+  - `apps/macos/AreaMatrixTests/RepositorySettingsTestSupport.swift`
+  - `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
+
+三、完成情况
+
+- C4-17 真实接入：新增 [RepositorySettingsPlatformCapabilitiesModel](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositorySettingsPlatformCapabilities.swift:23)，生产路径通过 `CorePlatformCapabilitiesLoading` 默认 `CoreBridge()` 调用 `getPlatformCapabilities`。
+- 页面可见功能：新增 [RepositorySettingsPlatformCapabilitySection](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPlatformCapabilitySection.swift:3)，展示 watcher、trash、cloud placeholder、repository access 能力状态，并提供 `Platform capabilities` 入口。
+- S4-X-08 接线：在 [RepositorySettingsPane](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPane.swift:24) 注入 capability loader，加载页面时同步加载 platform capability snapshot，并用 `securityBookmark.uiEnabled` 控制 diagnostics 导出可用性。
+- 未实现 C4-20，也未触碰 control map 之外能力。
+- Forbidden Touches：未触碰 `core/src/**`；`core/area_matrix.udl` 也无 diff。
+
+四、工程质量
+
+- 结构清晰：状态模型、SwiftUI section、页面 wiring、测试支撑分离，没有把逻辑堆在 view body。
+- 错误处理：CoreError / CoreBridgeError / 通用 Error 都映射为用户可见失败状态；失败时不伪造 loaded success。
+- 没有生产 mock、fixture、硬编码通过态；测试里的 recording loader 只用于验证调用参数和状态派生。
+- 本任务未新增 Rust public API，因此没有 rustdoc 变更需求；未改文档、Core API 或 UDL。
+
+五、验证情况
+
+- 通过：`./dev check task 4-3/task-159`
+  - `prompt doctor`: OK，tasks 637，manifests 637，high risk tasks 633
+  - `git diff --check`: 通过
+  - `xcodebuild ... build`: `BUILD SUCCEEDED`
+- 通过：`./dev test macos --only-testing AreaMatrixTests/RepositorySettingsHealthFeatureTests/testS4X08C417LoadsPlatformCapabilitiesAndDisablesDiagnosticsWhenAccessIsLimited`
+  - `xcodebuild test` 受本地 sandbox 的 `testmanagerd` 通信限制阻断
+  - 脚本 fallback 到 `xcrun xctest`，新增用例 1 个通过、0 失败
+- 非阻断警告：Xcode 输出 CoreSimulatorService / FSEvents / distributed notification sandbox 警告，但最终构建和直接 XCTest 均通过。
+- 未运行全量门禁：按本 task validation 上限，没有升级到 `./dev check all`。
+
+六、风险与后续
+
+- 高风险影响面已限制在 macOS app 层；没有用户文件删除/移动/覆盖、DB migration、Core/UDL 破坏性变更。
+- 回滚方式：移除新增的两个 Swift 文件和 xcodeproj 引用，并回退 `RepositorySettingsPane`、`GeneralSettingsView`、相关测试改动即可。
+- 当前工作树还有非本任务状态项：`tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260610_090559/`，属于 task-loop 运行痕迹，不在本次代码改动范围内；我没有回滚或改写它们。
+- 建议下一个任务：继续 `4-3/task-160` 覆盖 S4-X-08 的 C4-20，之后再跑 `4-3/task-161` 页面集成验收。
+

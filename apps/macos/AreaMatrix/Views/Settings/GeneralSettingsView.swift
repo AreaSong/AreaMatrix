@@ -118,6 +118,9 @@ extension GeneralSettingsView {
             RepositorySettingsPane(
                 repoPath: model.repoPath,
                 onChangeRepository: onChangeRepository,
+                onOpenPlatformCapabilities: {
+                    selectedTab = "about"
+                },
                 onOpenRecoveryTools: onOpenRepositoryRecovery
             )
         case "classifier":

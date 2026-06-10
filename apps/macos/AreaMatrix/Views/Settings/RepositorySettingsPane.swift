@@ -2,7 +2,9 @@ import SwiftUI
 
 struct RepositorySettingsPane: View {
     @StateObject private var model: RepositorySettingsModel
+    @StateObject private var capabilityModel: RepositorySettingsPlatformCapabilitiesModel
     let onChangeRepository: () -> Void
+    let onOpenPlatformCapabilities: () -> Void
     let onOpenRecoveryTools: () -> Void
 }
 
@@ -20,9 +22,12 @@ extension RepositorySettingsPane {
         pathCopier: any RepositoryPathCopying = NSPasteboardRepositoryPathCopier(),
         generatedOverviewRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
+        capabilityLoader: any CorePlatformCapabilitiesLoading = CoreBridge(),
+        appVersion: String = RepositorySettingsPlatformCapabilitiesModel.defaultAppVersion(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
         accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer(),
         onChangeRepository: @escaping () -> Void = {},
+        onOpenPlatformCapabilities: @escaping () -> Void = {},
         onOpenRecoveryTools: @escaping () -> Void = {}
     ) {
         _model = StateObject(wrappedValue: RepositorySettingsModel(
@@ -40,7 +45,13 @@ extension RepositorySettingsPane {
             errorMapper: errorMapper,
             accessibilityAnnouncer: accessibilityAnnouncer
         ))
+        _capabilityModel = StateObject(wrappedValue: RepositorySettingsPlatformCapabilitiesModel(
+            appVersion: appVersion,
+            capabilityLoader: capabilityLoader,
+            errorMapper: errorMapper
+        ))
         self.onChangeRepository = onChangeRepository
+        self.onOpenPlatformCapabilities = onOpenPlatformCapabilities
         self.onOpenRecoveryTools = onOpenRecoveryTools
     }
 
@@ -51,7 +62,7 @@ extension RepositorySettingsPane {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task {
-            await model.load()
+            await reload()
         }
         .confirmationDialog(
             "Export diagnostics?",
@@ -89,7 +100,7 @@ extension RepositorySettingsPane {
             } else {
                 Button("Retry status") {
                     Task {
-                        await model.load()
+                        await reload()
                     }
                 }
             }
@@ -150,6 +161,7 @@ extension RepositorySettingsPane {
 
                 repositoryPathSection(summary)
                 repositoryHealthSection
+                platformCapabilitySection
                 repositoryOverviewSection(summary)
                 repositorySafeActionsSection
                 metadataDeletionWarning
@@ -175,6 +187,13 @@ extension RepositorySettingsPane {
         }
     }
 
+    private var platformCapabilitySection: some View {
+        RepositorySettingsPlatformCapabilitySection(
+            state: capabilityModel.state,
+            onOpenPlatformCapabilities: onOpenPlatformCapabilities
+        )
+    }
+
     private func repositoryOverviewSection(_ summary: RepositorySettingsSummary) -> some View {
         RepositorySettingsSection(title: "概览输出") {
             RepositorySettingsKeyValueRow(label: "Generated overview", value: summary.overviewMode)
@@ -193,7 +212,8 @@ extension RepositorySettingsPane {
             Button(diagnosticsButtonTitle) {
                 model.requestDiagnosticsExport()
             }
-            .disabled(model.diagnosticsState.isCollecting)
+            .disabled(model.diagnosticsState.isCollecting || !capabilityModel.allowsDiagnosticsExport)
+            .help(capabilityModel.diagnosticsDisabledReason ?? "Diagnostics export is available.")
             .accessibilityIdentifier("S1-27-export-diagnostics")
 
             if model.healthError?.databaseStatus == .needsRecovery {
@@ -313,6 +333,11 @@ extension RepositorySettingsPane {
                 }
             }
         )
+    }
+
+    private func reload() async {
+        await model.load()
+        await capabilityModel.load()
     }
 
     @ViewBuilder

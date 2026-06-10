@@ -431,4 +431,35 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         XCTAssertEqual(model.healthError?.message, "数据库错误")
         XCTAssertEqual(model.healthError?.recovery, "Retry status")
     }
+
+    @MainActor
+    func testS4X08C417LoadsPlatformCapabilitiesAndDisablesDiagnosticsWhenAccessIsLimited() async {
+        let limitedAccess = repositorySettingsCapabilitySupport(
+            status: .limited,
+            uiEnabled: false,
+            requiresPermission: true,
+            reason: "Grant repository access."
+        )
+        let capabilities = repositorySettingsCapabilitiesFixture(securityBookmark: limitedAccess)
+        let loader = RepositorySettingsRecordingCapabilityLoader(result: .success(capabilities))
+        let model = RepositorySettingsPlatformCapabilitiesModel(
+            appVersion: "4.3.159",
+            capabilityLoader: loader,
+            errorMapper: RepositorySettingsStaticErrorMapper()
+        )
+
+        await model.load()
+
+        let requests = await loader.requests()
+        XCTAssertEqual(requests, [RepositorySettingsCapabilityRequest(platform: .macos, appVersion: "4.3.159")])
+        XCTAssertEqual(model.state, .loaded(capabilities))
+        XCTAssertEqual(capabilities.repositorySettingsRows.map(\.label), [
+            "Watcher",
+            "Trash / Recycle Bin",
+            "Cloud placeholders",
+            "Repository access"
+        ])
+        XCTAssertFalse(model.allowsDiagnosticsExport)
+        XCTAssertEqual(model.diagnosticsDisabledReason, "Grant repository access.")
+    }
 }

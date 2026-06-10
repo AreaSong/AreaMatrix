@@ -1,0 +1,77 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-159`
+- 对应文件路径：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-159-s4-x-08-c4-17-platform-capabilities.md`
+- 实际实现范围：`apps/**`，集中在 macOS Repository Settings 页面。
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S4-X-08 页面中的 C4-17 功能点
+- 结果：通过
+- 证据：[RepositorySettingsPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPane.swift:190) 只新增 platform capability section；[GeneralSettingsView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/GeneralSettingsView.swift:118) 只接入跳转到现有平台能力页。
+- 涉及文件：`apps/macos/**`
+
+- 项目：读取并对齐页面规格、control map、Core API、C4-17 规格
+- 结果：通过
+- 证据：S4-X-08 规格要求打开页面读取 platform capability snapshot；control map 声明 S4-X-08 覆盖 C4-17/C4-20，本 task 只覆盖 C4-17；Core API/UDL 均有 `get_platform_capabilities(platform, appVersion)`。
+- 涉及文件：`docs/**`、`core/area_matrix.udl`
+
+- 项目：只接入 C4-17 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：[RepositorySettingsPlatformCapabilities.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositorySettingsPlatformCapabilities.swift:73) 调用 `capabilityLoader.getPlatformCapabilities`；[CoreBindingContractInspecting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreBindingContractInspecting.swift:240) 通过 `CoreBridge` 调用真实 UniFFI 包装。
+- 涉及文件：`apps/macos/AreaMatrix/Models/**`、`apps/macos/AreaMatrix/Bridge/**`
+
+- 项目：不实现同页 C4-20 或相邻能力
+- 结果：通过
+- 证据：本轮 diff 未新增 `loadConfig/updateConfig` 接线；C4-20 由 `4-3/task-160` 覆盖。当前新增逻辑只消费 `PlatformCapabilitiesSnapshot` 的 watcher/trash/cloud/securityBookmark 行。
+- 涉及文件：`apps/macos/**`
+
+- 项目：用户可见功能可触发和验收
+- 结果：通过
+- 证据：[RepositorySettingsPlatformCapabilitySection.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/RepositorySettingsPlatformCapabilitySection.swift:9) 渲染 `Platform capabilities` 区块和按钮；[RepositorySettingsPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RepositorySettingsPageFeatureTests.swift:436) 验证加载能力矩阵、禁用 diagnostics 和 disabled reason。
+- 涉及文件：`apps/macos/AreaMatrix/Views/Settings/**`、`apps/macos/AreaMatrixTests/**`
+
+- 项目：无 mock-only / fixture-only / 静态状态伪造真实闭环
+- 结果：通过
+- 证据：生产默认 loader 是 `CoreBridge()`；测试中的 recording loader 只用于断言请求参数和状态映射，不替代生产路径。
+- 涉及文件：[RepositorySettingsPlatformCapabilities.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/RepositorySettingsPlatformCapabilities.swift:36)、[RepositorySettingsTestSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RepositorySettingsTestSupport.swift:187)
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，新增模型 156 行、section 132 行，现有相关文件均未超过 500 行；CoreBridge、状态、视图职责分离。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 public Rust API；Core API 与 UDL 已存在并一致。
+- 错误处理与边界处理：通过，CoreError/CoreBridgeError 均映射为用户可见失败状态，失败时使用 unknown capability snapshot 且禁用 diagnostics。
+- 测试与验证覆盖：通过，任务门禁和目标单测均 fresh 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，未发现生产路径 mock、fixture、静态成功态或直接 UniFFI 绕过 CoreBridge。
+
+六、阻塞项
+
+- 未发现阻塞项。
+- `tasks/prompts/_shared/progress.json` 与 `.codex/task-loop-runs/20260610_090559/` 是当前 task-loop in_progress / summary 运行痕迹，不作为产品实现证据，也不构成本 verify 阶段阻塞。
+- `core/src/**` 未修改；Forbidden Touches 未触碰。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-159`，通过；包含 prompt doctor OK、`git diff --check` OK、macOS build succeeded。
+- 已运行：`./dev test macos --only-testing AreaMatrixTests/RepositorySettingsHealthFeatureTests/testS4X08C417LoadsPlatformCapabilitiesAndDisablesDiagnosticsWhenAccessIsLimited`，通过；标准 `xcodebuild test` 被本地 `testmanagerd` sandbox 阻断后，仓库脚本按规则用 `xcrun xctest` 执行 1 test / 0 failures。
+- 已运行：`git status --short`、`git diff --name-only -- core/src`，确认改动范围和 Forbidden Touches。
+- 未运行：`./dev check all`、全量 macOS 测试、远端 CI；当前 manifest 未要求，合并前仍需 CI 覆盖。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS
+
