@@ -208,6 +208,36 @@
                                 Click="SyncConflictRetryButton_Click"
                                 Visibility="Collapsed" />
                         </StackPanel>
+                        <Border
+                            x:Name="SyncConflictReplacePlanPanel"
+                            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="10"
+                            Visibility="Collapsed">
+                            <StackPanel Spacing="6">
+                                <TextBlock
+                                    Text="Confirm Replace"
+                                    FontWeight="SemiBold"
+                                    TextWrapping="Wrap" />
+                                <TextBlock
+                                    x:Name="SyncConflictReplaceStatusTextBlock"
+                                    TextWrapping="Wrap" />
+                                <TextBlock
+                                    x:Name="SyncConflictReplacePlanTextBlock"
+                                    FontSize="12"
+                                    TextWrapping="Wrap" />
+                                <CheckBox
+                                    x:Name="SyncConflictReplaceConfirmCheckBox"
+                                    Content="I understand this will replace the existing file."
+                                    Checked="SyncConflictReplaceConfirmCheckBox_Changed"
+                                    Unchecked="SyncConflictReplaceConfirmCheckBox_Changed" />
+                                <Button
+                                    x:Name="SyncConflictApplyReplaceButton"
+                                    Content="Replace"
+                                    Click="SyncConflictApplyReplaceButton_Click" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </Border>
                 <ListView

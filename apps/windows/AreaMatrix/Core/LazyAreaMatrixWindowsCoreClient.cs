@@ -16,7 +16,7 @@ internal sealed class LazyAreaMatrixWindowsCoreClient :
     IAreaMatrixDesktopQueryCoreClient,
     IAreaMatrixDesktopImportCoreClient,
     IAreaMatrixMissingFileRecoveryCoreClient,
-    IAreaMatrixSyncConflictDetectCoreClient,
+    IAreaMatrixSyncConflictCoreClient,
     IAreaMatrixWatcherStatusCoreClient,
     IDisposable
 {
@@ -128,6 +128,24 @@ internal sealed class LazyAreaMatrixWindowsCoreClient :
         CancellationToken cancellationToken = default)
     {
         return Current.DetectSyncConflictsAsync(repoPath, cancellationToken);
+    }
+
+    public Task<CoreSyncConflictResolutionPreviewReport> PreviewSyncConflictResolutionAsync(
+        string repoPath,
+        string conflictId,
+        string resolution,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.PreviewSyncConflictResolutionAsync(repoPath, conflictId, resolution, cancellationToken);
+    }
+
+    public Task<CoreSyncConflictResolveReport> ResolveSyncConflictAsync(
+        string repoPath,
+        string conflictId,
+        CoreSyncConflictResolutionRequest resolution,
+        CancellationToken cancellationToken = default)
+    {
+        return Current.ResolveSyncConflictAsync(repoPath, conflictId, resolution, cancellationToken);
     }
 
     public Task<CoreDesktopClassifyResult> PredictCategoryAsync(

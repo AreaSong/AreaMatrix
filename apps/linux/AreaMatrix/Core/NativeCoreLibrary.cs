@@ -39,6 +39,10 @@ internal sealed class NativeCoreLibrary : IDisposable
         ListTreeJson = LoadFunction<ListTreeJsonDelegate>("uniffi_area_matrix_core_fn_func_list_tree_json");
         DetectSyncConflicts = LoadFunction<DetectSyncConflictsDelegate>(
             "uniffi_area_matrix_core_fn_func_detect_sync_conflicts");
+        PreviewSyncConflictResolution = LoadFunction<PreviewSyncConflictResolutionDelegate>(
+            "uniffi_area_matrix_core_fn_func_preview_sync_conflict_resolution");
+        ResolveSyncConflict = LoadFunction<ResolveSyncConflictDelegate>(
+            "uniffi_area_matrix_core_fn_func_resolve_sync_conflict");
         SearchFiles = LoadFunction<SearchFilesDelegate>("uniffi_area_matrix_core_fn_func_search_files");
         RecordWatcherHealth = LoadFunction<RecordWatcherHealthDelegate>(
             "uniffi_area_matrix_core_fn_func_record_watcher_health");
@@ -89,6 +93,10 @@ internal sealed class NativeCoreLibrary : IDisposable
             "uniffi_area_matrix_core_checksum_func_list_tree_json");
         DetectSyncConflictsChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_detect_sync_conflicts");
+        PreviewSyncConflictResolutionChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_preview_sync_conflict_resolution");
+        ResolveSyncConflictChecksum = LoadFunction<ChecksumDelegate>(
+            "uniffi_area_matrix_core_checksum_func_resolve_sync_conflict");
         SearchFilesChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_search_files");
         RecordWatcherHealthChecksum = LoadFunction<ChecksumDelegate>(
@@ -138,6 +146,10 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ListTreeJsonDelegate ListTreeJson { get; }
 
     public DetectSyncConflictsDelegate DetectSyncConflicts { get; }
+
+    public PreviewSyncConflictResolutionDelegate PreviewSyncConflictResolution { get; }
+
+    public ResolveSyncConflictDelegate ResolveSyncConflict { get; }
 
     public SearchFilesDelegate SearchFiles { get; }
 
@@ -190,6 +202,10 @@ internal sealed class NativeCoreLibrary : IDisposable
     public ChecksumDelegate ListTreeJsonChecksum { get; }
 
     public ChecksumDelegate DetectSyncConflictsChecksum { get; }
+
+    public ChecksumDelegate PreviewSyncConflictResolutionChecksum { get; }
+
+    public ChecksumDelegate ResolveSyncConflictChecksum { get; }
 
     public ChecksumDelegate SearchFilesChecksum { get; }
 

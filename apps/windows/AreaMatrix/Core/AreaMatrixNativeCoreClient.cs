@@ -19,7 +19,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
     IAreaMatrixDesktopQueryCoreClient,
     IAreaMatrixDesktopImportCoreClient,
     IAreaMatrixMissingFileRecoveryCoreClient,
-    IAreaMatrixSyncConflictDetectCoreClient,
+    IAreaMatrixSyncConflictCoreClient,
     IAreaMatrixWatcherStatusCoreClient,
     IDisposable
 {

@@ -47,7 +47,7 @@ struct SyncConflictReplaceConfirmationPanel: View {
                 ("Change log", plan.changeLogAction),
                 ("Recovery note", plan.recoveryNote)
             ])
-            if preview.trashRequired, !preview.trashAvailable {
+            if !preview.hasRecoverableOldVersion {
                 Label("Replace requires Trash or a Core safety backup.", systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.orange)
             }

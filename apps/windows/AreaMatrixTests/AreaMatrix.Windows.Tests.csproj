@@ -27,6 +27,7 @@
     <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.ImportConflictBatch.cs" Link="Core/AreaMatrixNativeCoreClient.ImportConflictBatch.cs" />
     <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.MissingFileRecovery.cs" Link="Core/AreaMatrixNativeCoreClient.MissingFileRecovery.cs" />
     <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.SyncConflictDetect.cs" Link="Core/AreaMatrixNativeCoreClient.SyncConflictDetect.cs" />
+    <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.SyncConflictResolve.cs" Link="Core/AreaMatrixNativeCoreClient.SyncConflictResolve.cs" />
     <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.WatcherStatus.cs" Link="Core/AreaMatrixNativeCoreClient.WatcherStatus.cs" />
     <Compile Include="../AreaMatrix/Core/UniFfiReader.cs" Link="Core/UniFfiReader.cs" />
     <Compile

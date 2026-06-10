@@ -1,6 +1,6 @@
 page_id: S4-X-03
 title: Sync conflict entry
-description: Linux entry surface for C4-15 sync-conflict-detect.
+description: Linux entry surface for C4-15 sync-conflict-detect and S4-X-09 C4-16/C4-21 replace confirmation.
 banner:
   title: Sync conflict needs review
   message: AreaMatrix found files that may represent different versions. No version has been deleted.
@@ -21,15 +21,42 @@ needs_review:
     - detected time
 detail:
   banner: This file has a sync conflict
+replace_confirm:
+  page_id: S4-X-09
+  title: Confirm Replace
+  loading: Checking recovery options...
+  confirmation: I understand this will replace the existing file.
+  disabled_trash: Trash is unavailable and Core safety backup is unavailable. Use Keep both.
+  missing_plan: Could not build replace plan.
+  plan_source: SyncConflictEntryViewModel.ReplacePlanText
+  plan_fields:
+    - Old file path
+    - New file path
+    - Old hash
+    - New hash
+    - Affected record
+    - Conflict or import item
+    - Old version will be kept at
+    - Database update
+    - Change log
+    - Recovery note
+  apply: Replace
+  success: change log action from resolve_sync_conflict
 actions:
   load_conflicts: SyncConflictEntryViewModel.RefreshAsync
   review: SyncConflictEntryViewModel.ReviewRouteFor
+  open_replace_confirm: SyncConflictEntryViewModel.OpenReviewRouteAsync
+  preview_replace: SyncConflictEntryCoreBridge.PreviewSyncConflictResolutionAsync
+  confirm_replace: SyncConflictEntryViewModel.ConfirmReplacePlan
+  apply_replace: SyncConflictEntryViewModel.ApplyReplaceAsync
   later: SyncConflictEntryViewModel.DismissBanner
   detail_match: SyncConflictEntryViewModel.DetailConflictFor
 safety:
   - The page calls detect_sync_conflicts through SyncConflictEntryCoreBridge.
-  - The Linux entry filters status=NeedsReview and never marks conflicts resolved.
+  - The Linux entry filters status=NeedsReview before opening S4-X-09.
   - Later only hides the current banner and keeps the Needs Review list.
-  - Review only creates a route for S4-X-01 and does not resolve, replace, delete, move, or overwrite files.
+  - Review creates an S4-X-09 route and calls preview_sync_conflict_resolution with UseIncoming.
+  - Replace stays disabled without Core preview token, Replace plan, reliable Trash/Core backup, and second confirmation.
+  - Apply calls resolve_sync_conflict with replace_confirmed=true and an S4-X-09-C4-21 confirmation id.
+  - The Linux UI does not directly delete, move, overwrite, or rename user files.
   - Missing conflict id disables Review and shows Repair index first.
-  - This page does not call preview_sync_conflict_resolution or resolve_sync_conflict.

@@ -21,11 +21,13 @@ public sealed partial class AreaMatrixNativeCoreClient
     private const ushort GetLatestScanSessionChecksum = 31155;
     private const ushort PredictCategoryChecksum = 65047;
     private const ushort PreviewImportConflictBatchChecksum = 52321;
+    private const ushort PreviewSyncConflictResolutionChecksum = 63696;
     private const ushort PreviewManualRescanChecksum = 12140;
     private const ushort RecordWatcherHealthChecksum = 47455;
     private const ushort ReindexFromFilesystemChecksum = 54635;
     private const ushort RelinkMissingFileChecksum = 39194;
     private const ushort RemoveMissingFileRecordChecksum = 46697;
+    private const ushort ResolveSyncConflictChecksum = 50056;
     private const ushort ResumeScanSessionChecksum = 31216;
     private const ushort SearchFilesChecksum = 65;
     private const ushort UpdateConfigChecksum = 60628;
@@ -50,11 +52,13 @@ public sealed partial class AreaMatrixNativeCoreClient
             || native.GetLatestScanSessionChecksum() != GetLatestScanSessionChecksum
             || native.PredictCategoryChecksum() != PredictCategoryChecksum
             || native.PreviewImportConflictBatchChecksum() != PreviewImportConflictBatchChecksum
+            || native.PreviewSyncConflictResolutionChecksum() != PreviewSyncConflictResolutionChecksum
             || native.PreviewManualRescanChecksum() != PreviewManualRescanChecksum
             || native.RecordWatcherHealthChecksum() != RecordWatcherHealthChecksum
             || native.ReindexFromFilesystemChecksum() != ReindexFromFilesystemChecksum
             || native.RelinkMissingFileChecksum() != RelinkMissingFileChecksum
             || native.RemoveMissingFileRecordChecksum() != RemoveMissingFileRecordChecksum
+            || native.ResolveSyncConflictChecksum() != ResolveSyncConflictChecksum
             || native.ResumeScanSessionChecksum() != ResumeScanSessionChecksum
             || native.SearchFilesChecksum() != SearchFilesChecksum
             || native.UpdateConfigChecksum() != UpdateConfigChecksum

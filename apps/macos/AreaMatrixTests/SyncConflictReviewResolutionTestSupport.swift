@@ -82,6 +82,7 @@ extension SyncConflictResolutionPreviewSnapshot {
         canApply: Bool = true,
         requiresReplaceConfirmation: Bool = false,
         trashAvailable: Bool = true,
+        backupTarget: String? = "Trash",
         blockedReason: String? = nil,
         previewToken: String? = "preview-token-keep-both"
     ) -> SyncConflictResolutionPreviewSnapshot {
@@ -112,7 +113,7 @@ extension SyncConflictResolutionPreviewSnapshot {
             canApply: canApply,
             blockedReason: blockedReason,
             previewToken: previewToken,
-            replacePlan: resolution == .useIncoming ? .s4x01ReplacePlanFixture() : nil
+            replacePlan: resolution == .useIncoming ? .s4x01ReplacePlanFixture(backupTarget: backupTarget) : nil
         )
     }
 
@@ -150,14 +151,14 @@ extension SyncConflictVersionImpactSnapshot {
 }
 
 extension SyncConflictReplacePlanSnapshot {
-    static func s4x01ReplacePlanFixture() -> SyncConflictReplacePlanSnapshot {
+    static func s4x01ReplacePlanFixture(backupTarget: String? = "Trash") -> SyncConflictReplacePlanSnapshot {
         SyncConflictReplacePlanSnapshot(
             oldPath: "docs/report.pdf",
             newPath: "docs/report (Windows conflict).pdf",
             oldHashSha256: "abcdef1234567890",
             newHashSha256: "fedcba9876543210",
             affectedFileID: 42,
-            backupTarget: "Trash",
+            backupTarget: backupTarget,
             databaseUpdate: "canonical record points to incoming",
             changeLogAction: "conflict_resolved_use_incoming",
             recoveryNote: "S4-X-09 confirmation is required."

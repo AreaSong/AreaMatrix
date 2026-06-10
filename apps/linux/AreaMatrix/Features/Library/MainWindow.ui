@@ -17,6 +17,11 @@ sync_conflict_entry:
   list: Needs Review
   detail_banner: This file has a sync conflict
   source: SyncConflictEntryViewModel
+replace_confirm:
+  page_id: S4-X-09
+  source: SyncConflictEntryViewModel.OpenReviewRouteAsync
+  core_preview: preview_sync_conflict_resolution
+  core_apply: resolve_sync_conflict
 file_list:
   columns:
     - Name
@@ -58,7 +63,10 @@ safety:
   - The page calls list_tree_json through DesktopMainQueryCoreBridge.
   - The page calls search_files through DesktopMainQueryCoreBridge.
   - The page calls detect_sync_conflicts through SyncConflictEntryCoreBridge for S4-X-03.
+  - The S4-X-09 route calls preview_sync_conflict_resolution before enabling Replace.
+  - Replace requires a Core preview token, Replace plan, Trash/Core backup evidence, and second confirmation.
+  - Confirmed Replace calls resolve_sync_conflict; the Linux UI never directly overwrites files.
   - Load more advances FileFilter/SearchPagination offset through DesktopMainQueryCoreBridge.
   - Refresh only reloads the current snapshot and never runs reindex or rescan.
   - The Linux UI does not scan the repository filesystem to build the list.
-  - The sync conflict entry does not implement resolve, replace, watcher health, import commit, rescan confirm, or recovery.
+  - The sync conflict entry does not implement watcher health, import commit, rescan confirm, or recovery.

@@ -35,6 +35,13 @@ public enum SyncConflictEntryFileRole
     Unknown
 }
 
+public enum SyncConflictResolutionStrategy
+{
+    KeepBoth,
+    UseExisting,
+    UseIncoming
+}
+
 public enum SyncConflictEntryErrorKind
 {
     Db,
@@ -114,6 +121,111 @@ public sealed record SyncConflictEntryReviewRoute(
     string RepoPath,
     string ConflictId,
     string PrimaryPath);
+
+public sealed record SyncConflictVersionImpact(
+    string Path,
+    long? FileId,
+    SyncConflictEntryFileRole Role,
+    bool WillKeep,
+    bool WillBeCanonical,
+    bool WillRemainUserVisible,
+    bool WillMoveToTrash,
+    string? RecoveryTarget,
+    string? Reason);
+
+public sealed record SyncConflictReplacePlan(
+    string OldPath,
+    string NewPath,
+    string? OldHashSha256,
+    string? NewHashSha256,
+    long? AffectedFileId,
+    string? BackupTarget,
+    string DatabaseUpdate,
+    string ChangeLogAction,
+    string RecoveryNote)
+{
+    public string AffectedRecordText => AffectedFileId?.ToString(CultureInfo.InvariantCulture) ?? "Unknown";
+
+    public string OldHashText => string.IsNullOrWhiteSpace(OldHashSha256) ? "Unknown" : OldHashSha256;
+
+    public string NewHashText => string.IsNullOrWhiteSpace(NewHashSha256) ? "Unknown" : NewHashSha256;
+
+    public string BackupTargetText => string.IsNullOrWhiteSpace(BackupTarget)
+        ? "Trash or Core safety backup required"
+        : BackupTarget;
+
+    public bool HasCoreSafetyBackup
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(BackupTarget))
+            {
+                return false;
+            }
+
+            string backupTarget = BackupTarget.Trim();
+            return !backupTarget.Contains("unavailable", StringComparison.OrdinalIgnoreCase)
+                && !backupTarget.Contains("trash", StringComparison.OrdinalIgnoreCase)
+                && !backupTarget.Contains("recycle bin", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+}
+
+public sealed record SyncConflictResolutionPreviewReport(
+    string ConflictId,
+    SyncConflictResolutionStrategy Resolution,
+    SyncConflictResolutionStrategy DefaultResolution,
+    SyncConflictEntryStatus StatusAfter,
+    IReadOnlyList<SyncConflictVersionImpact> VersionImpacts,
+    IReadOnlyList<string> KeptPaths,
+    IReadOnlyList<string> RetainedPaths,
+    IReadOnlyList<string> PlannedTrashPaths,
+    IReadOnlyList<long> AffectedFileIds,
+    string? CanonicalPath,
+    string ChangeLogAction,
+    bool Destructive,
+    bool RequiresReplaceConfirmation,
+    bool TrashRequired,
+    bool TrashAvailable,
+    bool CanApply,
+    string? BlockedReason,
+    string? PreviewToken,
+    SyncConflictReplacePlan? ReplacePlan)
+{
+    public string? NormalizedPreviewToken => string.IsNullOrWhiteSpace(PreviewToken) ? null : PreviewToken.Trim();
+
+    public bool HasRecoverableOldVersion =>
+        !TrashRequired || TrashAvailable || ReplacePlan?.HasCoreSafetyBackup == true;
+
+    public bool BlocksOnlyForReplaceConfirmation =>
+        !CanApply
+        && RequiresReplaceConfirmation
+        && (BlockedReason?.Contains("confirmation", StringComparison.OrdinalIgnoreCase) ?? false);
+}
+
+public sealed record SyncConflictResolutionRequest(
+    SyncConflictResolutionStrategy Strategy,
+    string PreviewToken,
+    bool ReplaceConfirmed,
+    string? ReplaceConfirmationId);
+
+public sealed record SyncConflictResolveReport(
+    string ConflictId,
+    SyncConflictResolutionStrategy Resolution,
+    SyncConflictEntryStatus Status,
+    IReadOnlyList<string> KeptPaths,
+    IReadOnlyList<string> RetainedPaths,
+    IReadOnlyList<string> TrashedPaths,
+    IReadOnlyList<long> AffectedFileIds,
+    string ChangeLogAction,
+    string? UndoToken,
+    long? ResolvedAt);
+
+public sealed record SyncConflictReplaceConfirmation(
+    string ConflictId,
+    string PreviewToken,
+    string ConfirmationId,
+    SyncConflictReplacePlan ReplacePlan);
 
 public sealed record SyncConflictEntryError(
     SyncConflictEntryErrorKind Kind,

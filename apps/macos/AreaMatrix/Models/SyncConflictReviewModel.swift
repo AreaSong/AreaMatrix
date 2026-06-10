@@ -148,7 +148,7 @@ final class SyncConflictReviewModel: ObservableObject {
         guard preview.normalizedPreviewToken != nil else {
             return "Core did not return a resolution preview token."
         }
-        if preview.trashRequired, !preview.trashAvailable {
+        if !preview.hasRecoverableOldVersion {
             return preview.blockedReasonDisplay ?? "Replace requires Trash or a Core safety backup."
         }
         if !preview.canApply, !preview.blocksOnlyForReplaceConfirmation {

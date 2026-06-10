@@ -16,7 +16,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
     IAreaMatrixLinuxDesktopQueryCoreClient,
     IAreaMatrixLinuxDesktopImportCoreClient,
     IAreaMatrixLinuxMissingFileRecoveryCoreClient,
-    IAreaMatrixLinuxSyncConflictDetectCoreClient,
+    IAreaMatrixLinuxSyncConflictCoreClient,
     IAreaMatrixLinuxWatcherStatusCoreClient,
     IDisposable
 {
@@ -36,6 +36,8 @@ public sealed partial class AreaMatrixNativeCoreClient :
     private const ushort ListFilesChecksum = 56809;
     private const ushort ListTreeJsonChecksum = 45468;
     private const ushort DetectSyncConflictsChecksum = 31524;
+    private const ushort PreviewSyncConflictResolutionChecksum = 63696;
+    private const ushort ResolveSyncConflictChecksum = 50056;
     private const ushort SearchFilesChecksum = 65;
     private const ushort RecordWatcherHealthChecksum = 47455;
     private const ushort PreviewManualRescanChecksum = 12140;
@@ -150,6 +152,8 @@ public sealed partial class AreaMatrixNativeCoreClient :
             || native.ListFilesChecksum() != ListFilesChecksum
             || native.ListTreeJsonChecksum() != ListTreeJsonChecksum
             || native.DetectSyncConflictsChecksum() != DetectSyncConflictsChecksum
+            || native.PreviewSyncConflictResolutionChecksum() != PreviewSyncConflictResolutionChecksum
+            || native.ResolveSyncConflictChecksum() != ResolveSyncConflictChecksum
             || native.SearchFilesChecksum() != SearchFilesChecksum
             || native.RecordWatcherHealthChecksum() != RecordWatcherHealthChecksum
             || native.PreviewManualRescanChecksum() != PreviewManualRescanChecksum

@@ -15,6 +15,9 @@ public static class LinuxSyncConflictEntryPageFeatureTests
         await MissingConflictIdDisablesReviewRoute();
         await DetailConflictMatchesSelectedFile();
         await ErrorStateMapsCoreConflictError();
+        await ReviewRoutePreviewsConfirmsAndAppliesReplace();
+        await CoreSafetyBackupAllowsReplaceWhenTrashUnavailable();
+        await ReplacePlanTextShowsCompleteS4X09Fields();
         LinuxMainWindowSmokeExposesS4X03C415Entry();
         LinuxDesktopShellWiresS4X03ToRealCoreBridge();
     }
@@ -114,6 +117,92 @@ public static class LinuxSyncConflictEntryPageFeatureTests
         TestAssert.Contains("Try again", model.Error?.SuggestedAction ?? "", "retry action");
     }
 
+    private static async Task ReviewRoutePreviewsConfirmsAndAppliesReplace()
+    {
+        FakeSyncConflictEntryCoreBridge syncBridge = new([
+            Conflict("replace", primaryPath: "Contracts/client-contract-1.pdf")
+        ]);
+        SyncConflictEntryViewModel model = new(syncBridge);
+
+        await model.OpenRepositoryAsync("/home/me/AreaMatrix");
+        SyncConflictEntryReviewRoute route = model.ReviewRouteFor(model.FirstReviewableConflict)
+            ?? throw new InvalidOperationException("review route missing");
+
+        await model.OpenReviewRouteAsync(route);
+        model.ConfirmReplacePlan(true);
+        await model.ApplyReplaceAsync();
+
+        TestAssert.Equal(1, syncBridge.PreviewRequests.Count, "preview request count");
+        TestAssert.Equal("/home/me/AreaMatrix", syncBridge.PreviewRequests[0].RepoPath, "preview repo");
+        TestAssert.Equal("replace", syncBridge.PreviewRequests[0].ConflictId, "preview conflict");
+        TestAssert.Equal(
+            SyncConflictResolutionStrategy.UseIncoming,
+            syncBridge.PreviewRequests[0].Resolution,
+            "preview strategy");
+        TestAssert.Contains(
+            "S4-X-09-C4-21",
+            syncBridge.ResolveRequests[0].Request.ReplaceConfirmationId ?? "",
+            "confirmation id");
+        TestAssert.True(syncBridge.ResolveRequests[0].Request.ReplaceConfirmed, "replace confirmed");
+        TestAssert.Equal(SyncConflictEntryStatus.Resolved, model.ReplaceResult?.Status, "resolved status");
+        TestAssert.Equal(0, model.Conflicts.Count, "resolved conflict removed");
+    }
+
+    private static async Task CoreSafetyBackupAllowsReplaceWhenTrashUnavailable()
+    {
+        FakeSyncConflictEntryCoreBridge syncBridge = new(
+            [Conflict("backup", primaryPath: "Contracts/client-contract-1.pdf")],
+            CoreSafetyBackupPreview);
+        SyncConflictEntryViewModel model = new(syncBridge);
+
+        await model.OpenRepositoryAsync("/home/me/AreaMatrix");
+        SyncConflictEntryReviewRoute route = model.ReviewRouteFor(model.FirstReviewableConflict)
+            ?? throw new InvalidOperationException("review route missing");
+
+        await model.OpenReviewRouteAsync(route);
+        model.ConfirmReplacePlan(true);
+        await model.ApplyReplaceAsync();
+
+        TestAssert.True(model.ReplacePreview?.HasRecoverableOldVersion ?? false, "Core safety backup recovery");
+        TestAssert.True(syncBridge.ResolveRequests[0].Request.ReplaceConfirmed, "replace confirmed");
+        TestAssert.Contains(
+            ".areamatrix/staging/safety-backups/client-contract-1.pdf",
+            model.ReplacePlanText,
+            "backup target");
+    }
+
+    private static async Task ReplacePlanTextShowsCompleteS4X09Fields()
+    {
+        FakeSyncConflictEntryCoreBridge syncBridge = new([
+            Conflict("plan", primaryPath: "Contracts/client-contract-1.pdf")
+        ]);
+        SyncConflictEntryViewModel model = new(syncBridge);
+
+        await model.OpenRepositoryAsync("/home/me/AreaMatrix");
+        SyncConflictEntryReviewRoute route = model.ReviewRouteFor(model.FirstReviewableConflict)
+            ?? throw new InvalidOperationException("review route missing");
+
+        await model.OpenReviewRouteAsync(route);
+        string planText = model.ReplacePlanText;
+
+        foreach (string fragment in new[]
+        {
+            "Old file path: ",
+            "New file path: ",
+            "Old hash: old-hash",
+            "New hash: new-hash",
+            "Affected record: 1",
+            "Conflict or import item: plan",
+            "Old version will be kept at: Trash",
+            "Database update: canonical record will point to incoming file",
+            "Change log: replace_file",
+            "Recovery note: Existing file remains recoverable if Core apply fails."
+        })
+        {
+            TestAssert.Contains(fragment, planText, $"replace plan fragment {fragment}");
+        }
+    }
+
     private static void LinuxMainWindowSmokeExposesS4X03C415Entry()
     {
         string mainUi = File.ReadAllText(RepositoryPath("apps/linux/AreaMatrix/Features/Library/MainWindow.ui"));
@@ -136,10 +225,12 @@ public static class LinuxSyncConflictEntryPageFeatureTests
         }
 
         TestAssert.Contains("DetectSyncConflictsAsync", bridge, "C4-15 bridge call");
+        TestAssert.Contains("PreviewSyncConflictResolutionAsync", bridge + viewModel, "C4-16 preview");
+        TestAssert.Contains("ResolveSyncConflictAsync", bridge + viewModel, "C4-16 resolve");
         TestAssert.Contains("Status == SyncConflictEntryStatus.NeedsReview", viewModel, "needs review filter");
+        TestAssert.Contains("ConfirmReplacePlan", entryUi + viewModel, "S4-X-09 confirmation");
+        TestAssert.Contains("S4-X-09-C4-21", viewModel, "C4-21 confirmation id");
         TestAssert.Contains("DismissBanner", viewModel, "later action");
-        TestAssert.NotContains("ResolveSyncConflict", bridge + viewModel, "no C4-16 resolve");
-        TestAssert.NotContains("PreviewSyncConflictResolution", bridge + viewModel, "no C4-16 preview");
     }
 
     private static void LinuxDesktopShellWiresS4X03ToRealCoreBridge()
@@ -157,12 +248,23 @@ public static class LinuxSyncConflictEntryPageFeatureTests
 
         TestAssert.Contains("SyncConflictEntryCoreBridge syncConflictBridge = new(nativeCoreClient)", shell, "real bridge");
         TestAssert.Contains("new LinuxMainWindowFactory(queryBridge, locale, syncConflictBridge)", shell, "factory bridge");
-        TestAssert.Contains("IAreaMatrixLinuxSyncConflictDetectCoreClient", nativeClient, "native interface");
+        TestAssert.Contains("IAreaMatrixLinuxSyncConflictCoreClient", nativeClient, "native interface");
         TestAssert.Contains("DetectSyncConflictsChecksum = 31524", nativeClient, "checksum");
+        TestAssert.Contains("PreviewSyncConflictResolutionChecksum = 63696", nativeClient, "preview checksum");
+        TestAssert.Contains("ResolveSyncConflictChecksum = 50056", nativeClient, "resolve checksum");
         TestAssert.Contains("uniffi_area_matrix_core_fn_func_detect_sync_conflicts", nativeLibrary, "native export");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_preview_sync_conflict_resolution",
+            nativeLibrary,
+            "preview native export");
+        TestAssert.Contains(
+            "uniffi_area_matrix_core_fn_func_resolve_sync_conflict",
+            nativeLibrary,
+            "resolve native export");
         TestAssert.Contains("DetectSyncConflictsDelegate", interop, "native delegate");
+        TestAssert.Contains("PreviewSyncConflictResolutionDelegate", interop, "preview native delegate");
+        TestAssert.Contains("ResolveSyncConflictDelegate", interop, "resolve native delegate");
         TestAssert.Contains("ReadSyncConflictStatus", nativeDetect, "status reader");
-        TestAssert.NotContains("resolve_sync_conflict", nativeDetect, "no resolve binding");
     }
 
     private static SyncConflictEntryConflict Conflict(
@@ -191,6 +293,22 @@ public static class LinuxSyncConflictEntryPageFeatureTests
             LinuxRepositoryRouteKind.MainWindow,
             path,
             LinuxRepositoryValidationSamples.Initialized(path));
+    }
+
+    private static SyncConflictResolutionPreviewReport CoreSafetyBackupPreview(
+        string conflictId,
+        SyncConflictResolutionStrategy resolution)
+    {
+        SyncConflictResolutionPreviewReport preview = FakeSyncConflictEntryCoreBridge.DefaultPreview(
+            conflictId,
+            resolution);
+        return preview with
+        {
+            TrashAvailable = false,
+            ReplacePlan = preview.ReplacePlan is { } plan
+                ? plan with { BackupTarget = ".areamatrix/staging/safety-backups/client-contract-1.pdf" }
+                : null
+        };
     }
 
     private static string ReadSyncConflictEntryUi()
@@ -228,19 +346,28 @@ internal sealed class FakeSyncConflictEntryCoreBridge : ISyncConflictEntryCoreBr
 {
     private readonly IReadOnlyList<SyncConflictEntryConflict> conflicts;
     private readonly Exception? exception;
+    private readonly Func<string, SyncConflictResolutionStrategy, SyncConflictResolutionPreviewReport> previewFactory;
 
-    public FakeSyncConflictEntryCoreBridge(IReadOnlyList<SyncConflictEntryConflict> conflicts)
+    public FakeSyncConflictEntryCoreBridge(
+        IReadOnlyList<SyncConflictEntryConflict> conflicts,
+        Func<string, SyncConflictResolutionStrategy, SyncConflictResolutionPreviewReport>? previewFactory = null)
     {
         this.conflicts = conflicts;
+        this.previewFactory = previewFactory ?? DefaultPreview;
     }
 
     public FakeSyncConflictEntryCoreBridge(Exception exception)
     {
         this.exception = exception;
         conflicts = [];
+        previewFactory = DefaultPreview;
     }
 
     public List<string> Requests { get; } = [];
+
+    public List<SyncConflictPreviewRequest> PreviewRequests { get; } = [];
+
+    public List<SyncConflictResolveRequest> ResolveRequests { get; } = [];
 
     public Task<IReadOnlyList<SyncConflictEntryConflict>> DetectSyncConflictsAsync(
         string repoPath,
@@ -254,4 +381,88 @@ internal sealed class FakeSyncConflictEntryCoreBridge : ISyncConflictEntryCoreBr
 
         return Task.FromResult(conflicts);
     }
+
+    public Task<SyncConflictResolutionPreviewReport> PreviewSyncConflictResolutionAsync(
+        string repoPath,
+        string conflictId,
+        SyncConflictResolutionStrategy resolution,
+        CancellationToken cancellationToken = default)
+    {
+        PreviewRequests.Add(new SyncConflictPreviewRequest(repoPath, conflictId, resolution));
+        return Task.FromResult(previewFactory(conflictId, resolution));
+    }
+
+    public Task<SyncConflictResolveReport> ResolveSyncConflictAsync(
+        string repoPath,
+        string conflictId,
+        SyncConflictResolutionRequest resolution,
+        CancellationToken cancellationToken = default)
+    {
+        ResolveRequests.Add(new SyncConflictResolveRequest(repoPath, conflictId, resolution));
+        return Task.FromResult(new SyncConflictResolveReport(
+            conflictId,
+            resolution.Strategy,
+            SyncConflictEntryStatus.Resolved,
+            [],
+            [],
+            ["Contracts/client-contract-1.pdf"],
+            [1],
+            "replace_file",
+            "undo-token",
+            1_700_000_300));
+    }
+
+    public static SyncConflictResolutionPreviewReport DefaultPreview(
+        string conflictId,
+        SyncConflictResolutionStrategy resolution)
+    {
+        return new SyncConflictResolutionPreviewReport(
+            conflictId,
+            resolution,
+            SyncConflictResolutionStrategy.KeepBoth,
+            SyncConflictEntryStatus.NeedsReview,
+            [new SyncConflictVersionImpact(
+                "Contracts/client-contract-1.pdf",
+                1,
+                SyncConflictEntryFileRole.Existing,
+                false,
+                false,
+                false,
+                true,
+                "Trash",
+                "Use incoming replaces the existing visible version.")],
+            [],
+            [],
+            ["Contracts/client-contract-1.pdf"],
+            [1],
+            "Contracts/client-contract-1.pdf",
+            "replace_file",
+            true,
+            true,
+            true,
+            true,
+            true,
+            null,
+            "preview-token",
+            new SyncConflictReplacePlan(
+                "Contracts/client-contract-1.pdf",
+                "Contracts/client-contract-incoming.pdf",
+                "old-hash",
+                "new-hash",
+                1,
+                "Trash",
+                "canonical record will point to incoming file",
+                "replace_file",
+                "Existing file remains recoverable if Core apply fails."));
+    }
 }
+
+internal sealed record SyncConflictPreviewRequest(
+    string RepoPath,
+    string ConflictId,
+    SyncConflictResolutionStrategy Resolution);
+
+internal sealed record SyncConflictResolveRequest(
+    string RepoPath,
+    string ConflictId,
+    SyncConflictResolutionRequest Request);

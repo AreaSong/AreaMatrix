@@ -156,6 +156,28 @@ public sealed partial class WindowsMainWindow : UserControl
         RefreshState();
     }
 
+    private void SyncConflictReplaceConfirmCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (refreshingControls)
+        {
+            return;
+        }
+
+        ViewModel?.SyncConflictEntry?.ConfirmReplacePlan(SyncConflictReplaceConfirmCheckBox.IsChecked == true);
+        RefreshState();
+    }
+
+    private async void SyncConflictApplyReplaceButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel?.SyncConflictEntry is not { } entry)
+        {
+            return;
+        }
+
+        await entry.ApplyReplaceAsync();
+        RefreshState();
+    }
+
     private void MainWindowDrop_DragEnter(object sender, DragEventArgs e)
     {
         ApplyDropState(e);
@@ -397,13 +419,31 @@ public sealed partial class WindowsMainWindow : UserControl
             refreshingControls = false;
         }
 
-        bool hasVisibleState = entry.IsBannerVisible || entry.IsLoading || entry.Error is not null;
+        bool hasVisibleState = entry.IsBannerVisible
+            || entry.IsLoading
+            || entry.Error is not null
+            || entry.ActiveReviewRoute is not null;
         SyncConflictBanner.Visibility = VisibilityFor(hasVisibleState);
         NeedsReviewPanel.Visibility = VisibilityFor(entry.HasConflicts);
         SyncConflictStatusTextBlock.Text = SyncConflictStatusText(entry);
         SyncConflictRetryButton.Visibility = VisibilityFor(entry.Error is not null);
         SyncConflictReviewButton.IsEnabled = entry.FirstReviewableConflict is not null;
         SyncConflictLaterButton.IsEnabled = entry.HasConflicts;
+        SyncConflictReplacePlanPanel.Visibility = VisibilityFor(entry.ActiveReviewRoute is not null);
+        SyncConflictReplaceStatusTextBlock.Text = entry.ReplaceStatusText;
+        SyncConflictReplacePlanTextBlock.Text = entry.ReplacePlanText;
+        refreshingControls = true;
+        try
+        {
+            SyncConflictReplaceConfirmCheckBox.IsChecked = entry.ReplaceConfirmed;
+        }
+        finally
+        {
+            refreshingControls = false;
+        }
+
+        SyncConflictReplaceConfirmCheckBox.IsEnabled = entry.CanConfirmReplacePlan;
+        SyncConflictApplyReplaceButton.IsEnabled = entry.CanApplyReplace;
     }
 
     private void RefreshDetailSyncConflict()
@@ -429,8 +469,15 @@ public sealed partial class WindowsMainWindow : UserControl
         }
     }
 
-    public void ShowSyncConflictReviewRoute(SyncConflictEntryReviewRoute route)
+    public async void ShowSyncConflictReviewRoute(SyncConflictEntryReviewRoute route)
     {
+        if (ViewModel?.SyncConflictEntry is { } entry)
+        {
+            await entry.OpenReviewRouteAsync(route);
+            RefreshState();
+            return;
+        }
+
         StatusInfoBar.Title = "Review sync conflict";
         StatusInfoBar.Message = $"{route.PrimaryPath} ({route.ConflictId})";
         StatusInfoBar.Severity = InfoBarSeverity.Warning;

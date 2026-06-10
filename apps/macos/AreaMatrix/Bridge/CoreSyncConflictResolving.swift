@@ -89,6 +89,19 @@ struct SyncConflictReplacePlanSnapshot: Equatable {
     var databaseUpdate: String
     var changeLogAction: String
     var recoveryNote: String
+
+    var hasCoreSafetyBackup: Bool {
+        guard let backupTarget = clean(backupTarget) else { return false }
+        let lowercased = backupTarget.lowercased()
+        return !lowercased.contains("unavailable")
+            && !lowercased.contains("trash")
+            && !lowercased.contains("recycle bin")
+    }
+
+    private func clean(_ value: String?) -> String? {
+        let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
+    }
 }
 
 struct SyncConflictResolutionPreviewSnapshot: Equatable {
@@ -126,6 +139,11 @@ struct SyncConflictResolutionPreviewSnapshot: Equatable {
         !canApply
             && requiresReplaceConfirmation
             && blockedReasonDisplay?.localizedCaseInsensitiveContains("confirmation") == true
+    }
+
+    var hasRecoverableOldVersion: Bool {
+        if !trashRequired { return true }
+        return trashAvailable || replacePlan?.hasCoreSafetyBackup == true
     }
 }
 
