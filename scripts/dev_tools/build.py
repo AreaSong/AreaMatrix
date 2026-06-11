@@ -10,6 +10,7 @@ from pathlib import Path
 from .common import fail, project_root, require_command, require_file, resolve_project_path, run_step
 
 UNIFFI_BINDGEN_WRAPPER = "areamatrix_uniffi_bindgen_wrapper"
+UNIFFI_BINDGEN_CRATE = "uniffi_bindgen"
 
 
 def _host_triple() -> str:
@@ -35,7 +36,7 @@ def _require_rust_target(target_triple: str) -> None:
         raise SystemExit(1)
 
 
-def _locked_uniffi_version(core_dir: Path) -> str | None:
+def _locked_crate_version(core_dir: Path, crate_name: str) -> str | None:
     lockfile = core_dir / "Cargo.lock"
     if not lockfile.is_file():
         return None
@@ -49,9 +50,13 @@ def _locked_uniffi_version(core_dir: Path) -> str | None:
         if line.startswith("name = "):
             current_name = line.split("=", 1)[1].strip().strip('"')
             continue
-        if current_name == "uniffi" and line.startswith("version = "):
+        if current_name == crate_name and line.startswith("version = "):
             return line.split("=", 1)[1].strip().strip('"')
     return None
+
+
+def _locked_uniffi_bindgen_version(core_dir: Path) -> str | None:
+    return _locked_crate_version(core_dir, UNIFFI_BINDGEN_CRATE) or _locked_crate_version(core_dir, "uniffi")
 
 
 def _candidate_cargo_homes() -> list[Path]:
@@ -68,10 +73,10 @@ def _candidate_cargo_homes() -> list[Path]:
     return deduped
 
 
-def _find_uniffi_source(version: str) -> Path | None:
+def _find_crate_source(crate_name: str, version: str) -> Path | None:
     for cargo_home in _candidate_cargo_homes():
         registry_src = cargo_home / "registry/src"
-        for candidate in sorted(registry_src.glob(f"*/uniffi-{version}")) if registry_src.is_dir() else []:
+        for candidate in sorted(registry_src.glob(f"*/{crate_name}-{version}")) if registry_src.is_dir() else []:
             if (candidate / "Cargo.toml").is_file():
                 return candidate
     return None
@@ -104,8 +109,8 @@ def _prepare_temp_cargo_home(tool_root: Path, source_home: Path) -> Path:
     return cargo_home
 
 
-def _write_uniffi_wrapper_crate(wrapper_dir: Path, uniffi_source: Path) -> None:
-    source_path = str(uniffi_source).replace("\\", "\\\\")
+def _write_uniffi_wrapper_crate(wrapper_dir: Path, uniffi_bindgen_source: Path) -> None:
+    source_path = str(uniffi_bindgen_source).replace("\\", "\\\\")
     src_dir = wrapper_dir / "src"
     src_dir.mkdir(parents=True, exist_ok=True)
     (wrapper_dir / "Cargo.toml").write_text(
@@ -117,7 +122,8 @@ def _write_uniffi_wrapper_crate(wrapper_dir: Path, uniffi_source: Path) -> None:
                 'edition = "2021"',
                 "",
                 "[dependencies]",
-                f'uniffi = {{ path = "{source_path}", features = ["cli"] }}',
+                'camino = "1.0.8"',
+                f'uniffi_bindgen = {{ path = "{source_path}" }}',
                 "",
             ]
         ),
@@ -126,8 +132,68 @@ def _write_uniffi_wrapper_crate(wrapper_dir: Path, uniffi_source: Path) -> None:
     (src_dir / "main.rs").write_text(
         "\n".join(
             [
+                "use camino::Utf8PathBuf;",
+                "use std::{env, error::Error, io, path::PathBuf};",
+                "use uniffi_bindgen::bindings::SwiftBindingGenerator;",
+                "",
+                "fn fail(message: impl Into<String>) -> Box<dyn Error> {",
+                "    io::Error::new(io::ErrorKind::InvalidInput, message.into()).into()",
+                "}",
+                "",
+                "fn take_flag_value(args: &mut Vec<String>, flag: &str) -> Result<String, Box<dyn Error>> {",
+                "    let index = args",
+                "        .iter()",
+                "        .position(|value| value == flag)",
+                "        .ok_or_else(|| fail(format!(\"missing required flag: {flag}\")))?;",
+                "    if index + 1 >= args.len() {",
+                "        return Err(fail(format!(\"missing value for flag: {flag}\")));",
+                "    }",
+                "    let value = args.remove(index + 1);",
+                "    args.remove(index);",
+                "    Ok(value)",
+                "}",
+                "",
+                "fn utf8_path(value: String, label: &str) -> Result<Utf8PathBuf, Box<dyn Error>> {",
+                "    Utf8PathBuf::from_path_buf(PathBuf::from(&value))",
+                "        .map_err(|_| fail(format!(\"{label} is not valid UTF-8: {value}\")))",
+                "}",
+                "",
+                "fn run() -> Result<(), Box<dyn Error>> {",
+                "    let mut args = env::args().skip(1).collect::<Vec<_>>();",
+                "    if args.first().map(String::as_str) != Some(\"generate\") {",
+                "        return Err(fail(\"expected command: generate\"));",
+                "    }",
+                "    args.remove(0);",
+                "    if args.is_empty() || args[0].starts_with(\"--\") {",
+                "        return Err(fail(\"missing UDL path\"));",
+                "    }",
+                "    let udl_path = utf8_path(args.remove(0), \"UDL path\")?;",
+                "    let language = take_flag_value(&mut args, \"--language\")?;",
+                "    if language != \"swift\" {",
+                "        return Err(fail(format!(\"unsupported language: {language}\")));",
+                "    }",
+                "    let out_dir = utf8_path(take_flag_value(&mut args, \"--out-dir\")?, \"out dir\")?;",
+                "    let lib_file = utf8_path(take_flag_value(&mut args, \"--lib-file\")?, \"lib file\")?;",
+                "    if !args.is_empty() {",
+                "        return Err(fail(format!(\"unsupported arguments: {}\", args.join(\" \"))));",
+                "    }",
+                "    uniffi_bindgen::generate_bindings(",
+                "        &udl_path,",
+                "        None,",
+                "        SwiftBindingGenerator,",
+                "        Some(&out_dir),",
+                "        Some(&lib_file),",
+                "        None,",
+                "        false,",
+                "    )?;",
+                "    Ok(())",
+                "}",
+                "",
                 "fn main() {",
-                "    uniffi::uniffi_bindgen_main();",
+                "    if let Err(error) = run() {",
+                "        eprintln!(\"error: {error}\");",
+                "        std::process::exit(1);",
+                "    }",
                 "}",
                 "",
             ]
@@ -136,17 +202,29 @@ def _write_uniffi_wrapper_crate(wrapper_dir: Path, uniffi_source: Path) -> None:
     )
 
 
-def _build_cached_uniffi_bindgen(core_dir: Path) -> list[str]:
-    version = _locked_uniffi_version(core_dir)
-    if version is None:
-        fail("unable to determine locked UniFFI version from core/Cargo.lock.")
+def _fetch_locked_cargo_dependencies(core_dir: Path) -> None:
+    print()
+    print("==> Fetching locked Cargo dependencies for UniFFI bindgen fallback")
+    proc = run_step(["cargo", "fetch", "--locked"], cwd=core_dir, check=False)
+    if proc.returncode != 0:
+        fail("unable to fetch locked Cargo dependencies for UniFFI bindgen fallback.", proc.returncode)
 
-    uniffi_source = _find_uniffi_source(version)
+
+def _build_cached_uniffi_bindgen(core_dir: Path) -> list[str]:
+    version = _locked_uniffi_bindgen_version(core_dir)
+    if version is None:
+        fail("unable to determine locked UniFFI bindgen version from core/Cargo.lock.")
+
+    uniffi_bindgen_source = _find_crate_source(UNIFFI_BINDGEN_CRATE, version)
     source_home = _find_registry_cache_home()
-    if uniffi_source is None or source_home is None:
+    if uniffi_bindgen_source is None or source_home is None:
+        _fetch_locked_cargo_dependencies(core_dir)
+        uniffi_bindgen_source = _find_crate_source(UNIFFI_BINDGEN_CRATE, version)
+        source_home = _find_registry_cache_home()
+    if uniffi_bindgen_source is None or source_home is None:
         fail(
-            "missing 'uniffi-bindgen' and no local Cargo cache is available for an offline fallback. "
-            "Install with: cargo install uniffi --features cli --version <locked-version>.",
+            "missing 'uniffi-bindgen' and no locked Cargo cache is available for the fallback. "
+            "Run `cd core && cargo fetch --locked`, then retry.",
             127,
         )
 
@@ -154,7 +232,7 @@ def _build_cached_uniffi_bindgen(core_dir: Path) -> list[str]:
     wrapper_dir = tool_root / f"wrapper-{version}"
     target_dir = tool_root / "target"
     cargo_home = _prepare_temp_cargo_home(tool_root, source_home)
-    _write_uniffi_wrapper_crate(wrapper_dir, uniffi_source)
+    _write_uniffi_wrapper_crate(wrapper_dir, uniffi_bindgen_source)
 
     print()
     print("==> Preparing cached UniFFI bindgen fallback")
@@ -166,6 +244,8 @@ def _build_cached_uniffi_bindgen(core_dir: Path) -> list[str]:
             "CARGO_HOME": str(cargo_home),
             "CARGO_NET_OFFLINE": "true",
             "CARGO_TARGET_DIR": str(target_dir),
+            "CARGO_ENCODED_RUSTFLAGS": "",
+            "RUSTFLAGS": "",
         },
         check=False,
     )

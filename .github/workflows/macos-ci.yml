@@ -45,10 +45,6 @@ jobs:
         with:
           workspaces: core
 
-      - name: Install UniFFI bindgen
-        if: steps.macos_project.outputs.present == 'true'
-        run: cargo install uniffi-bindgen --locked --version 0.28.3
-
       - name: Build core (Rust → universal staticlib + Swift bindings)
         if: steps.macos_project.outputs.present == 'true'
         run: ./dev build core
@@ -90,7 +86,7 @@ jobs:
         run: brew install swiftlint
       - name: Run SwiftLint
         if: steps.macos_sources.outputs.present == 'true'
-        run: swiftlint --strict
+        run: swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache
         working-directory: apps/macos
 
   swiftformat:
@@ -113,5 +109,5 @@ jobs:
         run: brew install swiftformat
       - name: Run SwiftFormat (check)
         if: steps.macos_sources.outputs.present == 'true'
-        run: swiftformat --lint .
+        run: swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI --cache ignore
         working-directory: apps/macos
