@@ -5,7 +5,9 @@ enum RepositorySettingsConfigOverviewOutput: String, CaseIterable, Equatable, Id
     case generatedOnly
     case rootAreaMatrixFile
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     init(snapshotValue: String) {
         self = snapshotValue == "RootAreaMatrixFile" ? .rootAreaMatrixFile : .generatedOnly
@@ -36,7 +38,9 @@ enum RepositorySettingsConfigLocale: String, CaseIterable, Equatable, Identifiab
     case zhCN
     case en
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     init(snapshotValue: String) {
         switch snapshotValue.trimmingCharacters(in: .whitespacesAndNewlines) {
@@ -64,7 +68,9 @@ enum RepositorySettingsConfigLocale: String, CaseIterable, Equatable, Identifiab
         }
     }
 
-    var label: String { snapshotValue }
+    var label: String {
+        snapshotValue
+    }
 }
 
 struct RepositorySettingsConfigDraft: Equatable {

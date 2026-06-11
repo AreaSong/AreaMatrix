@@ -26,9 +26,9 @@ struct SyncConflictReplaceConfirmationPanel: View {
             Button(SyncConflictReviewCopy.replaceConfirmAction, role: .destructive) {
                 onConfirm(understandsReplace)
             }
-                .disabled(!canConfirm)
-                .help(disabledReason ?? "Confirm this Core replace plan before applying Use incoming version.")
-                .accessibilityIdentifier(SyncConflictReviewAccessibilityID.replaceConfirm)
+            .disabled(!canConfirm)
+            .help(disabledReason ?? "Confirm this Core replace plan before applying Use incoming version.")
+            .accessibilityIdentifier(SyncConflictReviewAccessibilityID.replaceConfirm)
         }
         .accessibilityIdentifier(SyncConflictReviewAccessibilityID.replaceConfirmation)
     }

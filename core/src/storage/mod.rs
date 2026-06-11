@@ -5,6 +5,7 @@ mod delete;
 mod destination;
 mod hash;
 mod import;
+mod import_source_removal;
 mod import_target;
 mod move_to_category;
 mod rename;

@@ -426,7 +426,8 @@ private func snapshot(
     let availability = await availabilityChecker.availability(
         repoPath: repoPath,
         relativePath: coreFile.path,
-        sourcePath: coreFile.sourcePath
+        sourcePath: coreFile.sourcePath,
+        coreStatus: coreFile.availabilityStatus
     )
     return FileEntrySnapshot(coreEntry: coreFile) { _, _ in availability }
 }

@@ -286,7 +286,7 @@ fn assert_core_api_udl_and_rust_alignment() {
         "security-scoped bookmarks, iCloud availability, OneDrive client state",
         "acknowledgement UI",
         "provider downloads, acknowledgement UI",
-        "and reconnect UI remain in",
+        "reconnect UI remain in",
     ] {
         assert_contains(API_RS, fragment);
     }

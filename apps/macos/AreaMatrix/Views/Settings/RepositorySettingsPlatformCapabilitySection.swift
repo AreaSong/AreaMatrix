@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct RepositorySettingsPlatformCapabilitySection: View {
+struct RepoPlatformCapabilitySection: View {
     let state: RepositorySettingsCapabilityState
     let onOpenPlatformCapabilities: () -> Void
 

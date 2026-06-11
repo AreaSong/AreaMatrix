@@ -58,7 +58,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
                 previewToken: "preview-token-use-existing"
             ))
         ])
-        let model = makeModel(resolver: resolver)
+        let model = makeS4X01Model(resolver: resolver)
 
         await model.load()
         await model.selectResolution(.useExisting)
@@ -84,7 +84,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
                 previewToken: "preview-token-use-incoming"
             ))
         ])
-        let model = makeModel(resolver: resolver)
+        let model = makeS4X01Model(resolver: resolver)
 
         await model.load()
         await model.selectResolution(.useIncoming)
@@ -121,7 +121,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
             ],
             resolveResult: .success(.s4x01ResolveFixture(resolution: .useIncoming))
         )
-        let model = makeModel(resolver: resolver)
+        let model = makeS4X01Model(resolver: resolver)
 
         await model.load()
         await model.selectResolution(.useIncoming)
@@ -154,14 +154,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
             )
         ])
         XCTAssertEqual(model.applyState, .succeeded(.s4x01ResolveFixture(resolution: .useIncoming)))
-        XCTAssertTrue(panelBody.contains(SyncConflictReviewAccessibilityID.replaceConfirmation))
-        XCTAssertTrue(panelBody.contains(SyncConflictReviewAccessibilityID.replaceConfirm))
-        XCTAssertTrue(panelBody.contains("Confirm Replace"))
-        XCTAssertTrue(panelBody.contains("I understand this will replace the existing file."))
-        XCTAssertTrue(panelBody.contains("Old file path"))
-        XCTAssertTrue(panelBody.contains("Old version will be kept at"))
-        XCTAssertTrue(panelBody.contains("Replace plan confirmed for this preview token."))
-        XCTAssertTrue(panelBody.contains("conflict_resolved_use_incoming"))
+        assertS4X01ConfirmedReplacePanel(panelBody)
     }
 
     @MainActor
@@ -177,7 +170,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
                 previewToken: "preview-token-use-incoming"
             ))
         ])
-        let model = makeModel(resolver: resolver)
+        let model = makeS4X01Model(resolver: resolver)
 
         await model.load()
         await model.selectResolution(.useIncoming)
@@ -197,7 +190,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
         let resolver = S4X01RecordingSyncConflictResolver(previewResults: [
             .keepBoth: .success(.s4x01PreviewFixture(previewToken: "preview-token-142"))
         ])
-        let model = makeModel(resolver: resolver)
+        let model = makeS4X01Model(resolver: resolver)
 
         await model.load()
         await model.applyResolution()
@@ -233,7 +226,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
         let resolver = S4X01RecordingSyncConflictResolver(previewResults: [
             .keepBoth: .success(.s4x01PreviewFixture(previewToken: "preview-token-142"))
         ])
-        let model = makeModel(resolver: resolver)
+        let model = makeS4X01Model(resolver: resolver)
 
         await model.load()
         await model.applyResolution()
@@ -257,7 +250,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
             ],
             resolveResult: .failure(CoreError.Conflict(path: "stale sync conflict"))
         )
-        let model = makeModel(resolver: resolver, errorMapper: mapper)
+        let model = makeS4X01Model(resolver: resolver, errorMapper: mapper)
 
         await model.load()
         XCTAssertFalse(model.canApplyResolution)
@@ -279,9 +272,11 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
             return
         }
     }
+}
 
+final class SyncConflictReviewIntegrationTests: XCTestCase {
     @MainActor
-    func testS4X01PageIntegrationConnectsC415C416C421AndResolvedExit() async throws {
+    func testS4X01PageIntegrationConnectsC415C416C421AndResolvedExit() async {
         let detector = S4X01RecordingSyncConflictDetector(result: .success([.s4x01Fixture()]))
         let resolver = S4X01RecordingSyncConflictResolver(
             previewResults: [
@@ -333,7 +328,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
             previewResults: [.keepBoth: .success(.s4x01PreviewFixture(previewToken: "preview-token-144"))],
             resolveResult: .failure(CoreError.Conflict(path: "stale sync conflict"))
         )
-        let model = makeModel(resolver: resolver, errorMapper: mapper)
+        let model = makeS4X01Model(resolver: resolver, errorMapper: mapper)
         var resolvedReports: [SyncConflictResolveReportSnapshot] = []
         let view = SyncConflictReviewView(
             model: model,
@@ -378,17 +373,28 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
         XCTAssertEqual(beforeResolveRequests, [FileFilterSnapshot.currentCategory("docs")])
         XCTAssertEqual(listRequests.count, beforeResolveRequests.count + 1)
     }
+}
 
-    @MainActor
-    private func makeModel(
-        resolver: S4X01RecordingSyncConflictResolver,
-        errorMapper: S4X01RecordingErrorMapper = S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
-    ) -> SyncConflictReviewModel {
-        SyncConflictReviewModel(
-            repoPath: "/tmp/s4x01-repo",
-            conflictDetector: S4X01RecordingSyncConflictDetector(result: .success([.s4x01Fixture()])),
-            conflictResolver: resolver,
-            errorMapper: errorMapper
-        )
-    }
+private func assertS4X01ConfirmedReplacePanel(_ panelBody: String) {
+    XCTAssertTrue(panelBody.contains(SyncConflictReviewAccessibilityID.replaceConfirmation))
+    XCTAssertTrue(panelBody.contains(SyncConflictReviewAccessibilityID.replaceConfirm))
+    XCTAssertTrue(panelBody.contains("Confirm Replace"))
+    XCTAssertTrue(panelBody.contains("I understand this will replace the existing file."))
+    XCTAssertTrue(panelBody.contains("Old file path"))
+    XCTAssertTrue(panelBody.contains("Old version will be kept at"))
+    XCTAssertTrue(panelBody.contains("Replace plan confirmed for this preview token."))
+    XCTAssertTrue(panelBody.contains("conflict_resolved_use_incoming"))
+}
+
+@MainActor
+private func makeS4X01Model(
+    resolver: S4X01RecordingSyncConflictResolver,
+    errorMapper: S4X01RecordingErrorMapper = S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+) -> SyncConflictReviewModel {
+    SyncConflictReviewModel(
+        repoPath: "/tmp/s4x01-repo",
+        conflictDetector: S4X01RecordingSyncConflictDetector(result: .success([.s4x01Fixture()])),
+        conflictResolver: resolver,
+        errorMapper: errorMapper
+    )
 }

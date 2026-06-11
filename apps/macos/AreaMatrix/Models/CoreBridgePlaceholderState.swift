@@ -310,7 +310,7 @@ enum CoreBridgeError: Error, Equatable, LocalizedError {
 }
 
 struct SQLiteExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
-    private static let supportedSchemaVersion: Int64 = 1
+    private static let supportedSchemaVersion: Int64 = 2
 
     func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
         let dbURL = URL(fileURLWithPath: repoPath)

@@ -5,7 +5,7 @@ struct MainRepositoryDetailPane: View {
     let selection: MainFileSelectionState
     let multiSelectionSummary: MultiSelectionDetailSummary
     let detailErrorMapping: CoreErrorMappingSnapshot?
-    var syncConflict: SyncConflictSnapshot? = nil
+    var syncConflict: SyncConflictSnapshot?
     let isDetailLoading: Bool
     let selectedFileDetail: FileEntrySnapshot?
     let noteWriteBlock: MainDetailNoteWriteBlock?

@@ -14,19 +14,19 @@ protocol CorePlatformCapabilitiesLoading: Sendable {
     ) async throws -> PlatformCapabilitiesSnapshot
 }
 
-enum BindingTargetPlatformSnapshot: String, CaseIterable, Equatable, Hashable, Sendable {
+enum BindingTargetPlatformSnapshot: String, CaseIterable, Equatable, Hashable {
     case swift = "Swift"
     case kotlin = "Kotlin"
     case python = "Python"
 }
 
-enum BindingSupportStatusSnapshot: String, Equatable, Hashable, Sendable {
+enum BindingSupportStatusSnapshot: String, Equatable, Hashable {
     case supported = "Supported"
     case limited = "Limited"
     case missing = "Missing"
 }
 
-struct BindingApiContractSnapshot: Equatable, Sendable, Identifiable {
+struct BindingApiContractSnapshot: Equatable, Identifiable {
     var name: String
     var capability: String
     var status: BindingSupportStatusSnapshot
@@ -37,7 +37,7 @@ struct BindingApiContractSnapshot: Equatable, Sendable, Identifiable {
     }
 }
 
-struct BindingTypeMappingSnapshot: Equatable, Sendable, Identifiable {
+struct BindingTypeMappingSnapshot: Equatable, Identifiable {
     var rustType: String
     var udlType: String
     var targetType: String
@@ -49,7 +49,7 @@ struct BindingTypeMappingSnapshot: Equatable, Sendable, Identifiable {
     }
 }
 
-struct BindingMissingCapabilitySnapshot: Equatable, Sendable, Identifiable {
+struct BindingMissingCapabilitySnapshot: Equatable, Identifiable {
     var capability: String
     var label: String
     var status: BindingSupportStatusSnapshot
@@ -60,7 +60,7 @@ struct BindingMissingCapabilitySnapshot: Equatable, Sendable, Identifiable {
     }
 }
 
-struct BindingContractReportSnapshot: Equatable, Sendable {
+struct BindingContractReportSnapshot: Equatable {
     var targetPlatform: BindingTargetPlatformSnapshot
     var bindingVersion: Int64
     var coreVersion: String
@@ -69,7 +69,7 @@ struct BindingContractReportSnapshot: Equatable, Sendable {
     var missingCapabilities: [BindingMissingCapabilitySnapshot]
 }
 
-enum PlatformIdSnapshot: String, Equatable, Hashable, Sendable {
+enum PlatformIdSnapshot: String, Equatable, Hashable {
     case macos = "macOS"
     case ios = "iOS"
     case windows = "Windows"
@@ -77,21 +77,21 @@ enum PlatformIdSnapshot: String, Equatable, Hashable, Sendable {
     case unknown = "Unknown"
 }
 
-enum PlatformCapabilityStatusSnapshot: String, Equatable, Hashable, Sendable {
+enum PlatformCapabilityStatusSnapshot: String, Equatable, Hashable {
     case available = "Available"
     case limited = "Limited"
     case notAvailable = "Not available"
     case unknown = "Unknown"
 }
 
-struct PlatformCapabilitySupportSnapshot: Equatable, Sendable {
+struct PlatformCapabilitySupportSnapshot: Equatable {
     var status: PlatformCapabilityStatusSnapshot
     var uiEnabled: Bool
     var requiresPermission: Bool
     var reason: String?
 }
 
-struct PlatformCapabilitiesSnapshot: Equatable, Sendable {
+struct PlatformCapabilitiesSnapshot: Equatable {
     var platform: PlatformIdSnapshot
     var appVersion: String
     var watcher: PlatformCapabilitySupportSnapshot
@@ -129,7 +129,9 @@ struct PlatformDifferencesCapabilityDisplayRow: Equatable, Identifiable {
     var detail: String
     var alternative: String?
 
-    var id: String { name }
+    var id: String {
+        name
+    }
 }
 
 extension PlatformCapabilitiesSnapshot {
@@ -205,11 +207,10 @@ extension PlatformCapabilitiesSnapshot {
 
 private extension PlatformCapabilitySupportSnapshot {
     func withAdditionalReason(_ additionalReason: String) -> PlatformCapabilitySupportSnapshot {
-        let combinedReason: String
-        if let reason, !reason.isEmpty {
-            combinedReason = "\(reason) \(additionalReason)"
+        let combinedReason: String = if let reason, !reason.isEmpty {
+            "\(reason) \(additionalReason)"
         } else {
-            combinedReason = additionalReason
+            additionalReason
         }
 
         return PlatformCapabilitySupportSnapshot(

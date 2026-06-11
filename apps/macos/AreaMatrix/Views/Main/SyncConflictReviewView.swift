@@ -442,7 +442,6 @@ private extension SyncConflictReviewView {
     private var applyButtonTitle: String {
         model.applyState.isApplying ? SyncConflictReviewCopy.applyingAction : SyncConflictReviewCopy.applyAction
     }
-
 }
 
 extension SyncConflictReviewView {

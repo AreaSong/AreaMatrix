@@ -38,7 +38,8 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
     @MainActor
     func testS4X08C420SaveFailureMapsCoreErrorAndKeepsPayloadObservable() async {
         let current = RepoConfigSnapshot.repositorySettingsC420Fixture(repoPath: "/tmp/repo")
-        let updater = RepositorySettingsRecordingUpdater(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
+        let updater =
+            RepositorySettingsRecordingUpdater(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
         let mapper = RepositorySettingsStaticErrorMapper()
         let announcer = S117RecordingAccessibilityAnnouncer()
         let model = RepositorySettingsConfigModel(

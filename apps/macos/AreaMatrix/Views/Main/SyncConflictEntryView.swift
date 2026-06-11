@@ -2,7 +2,8 @@ import SwiftUI
 
 enum SyncConflictEntryCopy {
     static let bannerTitle = "Sync conflict needs review"
-    static let bannerMessage = "AreaMatrix found files that may represent different versions. No version has been deleted."
+    static let bannerMessage =
+        "AreaMatrix found files that may represent different versions. No version has been deleted."
     static let reviewAction = "Review"
     static let laterAction = "Later"
     static let listTitle = "Needs Review"

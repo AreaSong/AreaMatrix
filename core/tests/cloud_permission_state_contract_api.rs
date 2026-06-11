@@ -229,7 +229,7 @@ fn cloud_permission_state_documents_consumers_and_scope_boundaries() {
         "inspects only the authorized repository path",
         "security-scoped bookmarks, iCloud availability, OneDrive client state",
         "settings links, SDK calls, provider downloads, acknowledgement UI",
-        "and reconnect UI remain in",
+        "reconnect UI remain in",
         "the platform layer",
     ] {
         assert_contains(API_RS, fragment);

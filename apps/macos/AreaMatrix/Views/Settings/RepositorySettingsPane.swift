@@ -2,7 +2,7 @@ import SwiftUI
 
 struct RepositorySettingsPane: View {
     @StateObject private var model: RepositorySettingsModel
-    @StateObject private var capabilityModel: RepositorySettingsPlatformCapabilitiesModel
+    @StateObject private var capabilityModel: RepoPlatformCapabilitiesModel
     @StateObject private var configModel: RepositorySettingsConfigModel
     let onChangeRepository: () -> Void
     let onOpenPlatformCapabilities: () -> Void
@@ -24,7 +24,7 @@ extension RepositorySettingsPane {
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
         coreVersionLoader: any CoreVersionLoading = CoreBridge(),
         capabilityLoader: any CorePlatformCapabilitiesLoading = CoreBridge(),
-        appVersion: String = RepositorySettingsPlatformCapabilitiesModel.defaultAppVersion(),
+        appVersion: String = RepoPlatformCapabilitiesModel.defaultAppVersion(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
         accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer(),
         onChangeRepository: @escaping () -> Void = {},
@@ -46,7 +46,7 @@ extension RepositorySettingsPane {
             errorMapper: errorMapper,
             accessibilityAnnouncer: accessibilityAnnouncer
         ))
-        _capabilityModel = StateObject(wrappedValue: RepositorySettingsPlatformCapabilitiesModel(
+        _capabilityModel = StateObject(wrappedValue: RepoPlatformCapabilitiesModel(
             appVersion: appVersion,
             capabilityLoader: capabilityLoader,
             errorMapper: errorMapper
@@ -216,7 +216,7 @@ extension RepositorySettingsPane {
     }
 
     private var platformCapabilitySection: some View {
-        RepositorySettingsPlatformCapabilitySection(
+        RepoPlatformCapabilitySection(
             state: capabilityModel.state,
             onOpenPlatformCapabilities: onOpenPlatformCapabilities
         )

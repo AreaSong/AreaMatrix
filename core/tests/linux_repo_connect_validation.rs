@@ -426,7 +426,7 @@ fn assert_existing_test_layers_are_present() {
         "linux_repo_connect_failure_rejects_unconfirmed_adopt_options_without_user_file_changes",
         "linux_repo_connect_failure_corrupted_metadata_maps_db_without_repair_side_effects",
         "linux_repo_connect_failure_permission_denied_does_not_suggest_permission_mutation",
-        "linux_repo_connect_failure_adopt_scan_rolls_back_metadata_without_touching_user_files",
+        "linux_repo_connect_failure_adopt_scan_records_resumable_session_without_touching_user_files",
     ] {
         assert_contains(FAILURE_TEST, fragment);
     }

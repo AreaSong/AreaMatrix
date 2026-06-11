@@ -21,7 +21,7 @@ struct RepositorySettingsCapabilityRow: Equatable, Identifiable {
 }
 
 @MainActor
-final class RepositorySettingsPlatformCapabilitiesModel: ObservableObject {
+final class RepoPlatformCapabilitiesModel: ObservableObject {
     @Published private(set) var state: RepositorySettingsCapabilityState = .loading
     @Published private(set) var isLoading = false
 
@@ -32,7 +32,7 @@ final class RepositorySettingsPlatformCapabilitiesModel: ObservableObject {
 
     init(
         hostPlatform: PlatformIdSnapshot = .macos,
-        appVersion: String = RepositorySettingsPlatformCapabilitiesModel.defaultAppVersion(),
+        appVersion: String = RepoPlatformCapabilitiesModel.defaultAppVersion(),
         capabilityLoader: any CorePlatformCapabilitiesLoading = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
@@ -56,7 +56,7 @@ final class RepositorySettingsPlatformCapabilitiesModel: ObservableObject {
         case .loading:
             "Repository access capability is still loading."
         case let .loaded(capabilities):
-            capabilities.repositorySettingsDiagnosticsDisabledReason
+            capabilities.settingsDiagnosticsReason
         case let .failed(_, error):
             error.recovery
         }
@@ -149,7 +149,7 @@ extension PlatformCapabilitiesSnapshot {
         securityBookmark.uiEnabled
     }
 
-    var repositorySettingsDiagnosticsDisabledReason: String? {
+    var settingsDiagnosticsReason: String? {
         guard !repositorySettingsAllowsDiagnostics else { return nil }
         return securityBookmark.reason ?? "Repository access is not available on this platform."
     }

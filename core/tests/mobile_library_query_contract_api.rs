@@ -216,9 +216,9 @@ fn mobile_library_query_documents_consumer_state_without_adjacent_capabilities()
         "must use the documented `limit` and `offset` fields",
         "missing-file recovery stays with C4-18",
         "C4-03 allows a mobile list row to open a Core-backed detail record",
-        "C4-07 owns the mobile detail aggregation",
+        "C4-07 composes this API with [`list_changes`] and",
         "lazily request a small `limit`/`offset`",
-        "does not trigger filesystem rescan or sync repair",
+        "does not trigger filesystem rescan, sync",
         "C4-03 mobile-library uses this tree snapshot",
     ] {
         assert_contains(API_RS, fragment);

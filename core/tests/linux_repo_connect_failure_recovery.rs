@@ -4,8 +4,9 @@ use std::{
 };
 
 use area_matrix_core::{
-    init_repo, load_config, validate_repo_path, CoreError, ErrorKind, ErrorRecoverability,
-    OverviewOutput, RepoInitMode, RepoInitOptions, RepoPathIssue, StorageMode,
+    get_latest_scan_session, init_repo, load_config, validate_repo_path, CoreError, ErrorKind,
+    ErrorRecoverability, OverviewOutput, RepoInitMode, RepoInitOptions, RepoPathIssue,
+    ScanSessionKind, ScanSessionStatus, StorageMode,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -173,7 +174,7 @@ fn linux_repo_connect_failure_permission_denied_does_not_suggest_permission_muta
 
 #[cfg(unix)]
 #[test]
-fn linux_repo_connect_failure_adopt_scan_rolls_back_metadata_without_touching_user_files() {
+fn linux_repo_connect_failure_adopt_scan_records_resumable_session_without_touching_user_files() {
     use std::os::unix::fs::PermissionsExt;
 
     let repo = tempfile::tempdir().expect("create Linux scan failure repo");
@@ -199,7 +200,15 @@ fn linux_repo_connect_failure_adopt_scan_rolls_back_metadata_without_touching_us
     assert_error_kind(error, ErrorKind::PermissionDenied);
     assert_eq!(snapshot_files(std::slice::from_ref(&visible_file)), before);
     assert!(blocked_dir.join("secret.txt").is_file());
-    assert!(!repo.path().join(".areamatrix").exists());
+    assert!(repo.path().join(".areamatrix/index.db").is_file());
+
+    let session = get_latest_scan_session(path_string(repo.path()))
+        .expect("read failed Linux adopt scan session")
+        .expect("failed Linux adopt scan session should exist");
+    assert_eq!(session.kind, ScanSessionKind::Adopt);
+    assert_eq!(session.status, ScanSessionStatus::Failed);
+    assert_eq!(session.errors.len(), 1);
+    assert!(session.errors[0].contains("permission denied"));
 }
 
 #[test]

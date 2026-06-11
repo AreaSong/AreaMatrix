@@ -4,8 +4,9 @@ use std::{
 };
 
 use area_matrix_core::{
-    init_repo, load_config, validate_repo_path, CoreError, ErrorKind, ErrorRecoverability,
-    OverviewOutput, RepoInitMode, RepoInitOptions, RepoPathIssue, StorageMode,
+    get_latest_scan_session, init_repo, load_config, validate_repo_path, CoreError, ErrorKind,
+    ErrorRecoverability, OverviewOutput, RepoInitMode, RepoInitOptions, RepoPathIssue,
+    ScanSessionKind, ScanSessionStatus, StorageMode,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -216,7 +217,7 @@ fn windows_repo_connect_failure_io_error_is_explicit_and_read_only() {
 
 #[cfg(unix)]
 #[test]
-fn windows_repo_connect_failure_adopt_scan_rolls_back_metadata_without_touching_user_files() {
+fn windows_repo_connect_failure_adopt_scan_records_resumable_session_without_touching_user_files() {
     use std::os::unix::fs::PermissionsExt;
 
     let root = tempfile::tempdir().expect("create Windows scan failure root");
@@ -243,7 +244,15 @@ fn windows_repo_connect_failure_adopt_scan_rolls_back_metadata_without_touching_
     assert_error_kind(error, ErrorKind::PermissionDenied);
     assert_eq!(snapshot_files(std::slice::from_ref(&visible_file)), before);
     assert!(blocked_dir.join("secret.txt").is_file());
-    assert!(!repo.join(".areamatrix").exists());
+    assert!(repo.join(".areamatrix/index.db").is_file());
+
+    let session = get_latest_scan_session(path_string(&repo))
+        .expect("read failed Windows adopt scan session")
+        .expect("failed Windows adopt scan session should exist");
+    assert_eq!(session.kind, ScanSessionKind::Adopt);
+    assert_eq!(session.status, ScanSessionStatus::Failed);
+    assert_eq!(session.errors.len(), 1);
+    assert!(session.errors[0].contains("permission denied"));
 }
 
 #[test]

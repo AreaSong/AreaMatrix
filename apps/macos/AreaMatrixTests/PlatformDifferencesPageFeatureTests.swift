@@ -5,7 +5,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
     @MainActor
     func testS4X02C401LoadsBindingContractThroughCoreBridgeBoundary() async {
         let inspector = PlatformDifferencesRecordingInspector(result: .success(.fixture()))
-        let capabilityLoader = PlatformDifferencesRecordingCapabilityLoader(result: .success(.fixture()))
+        let capabilityLoader = PlatformDiffCapabilityLoader(result: .success(.fixture()))
         let model = PlatformDifferencesModel(
             appVersion: PlatformDifferencesModel.defaultTestAppVersion,
             selectedTargetPlatform: .swift,
@@ -36,7 +36,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
     @MainActor
     func testChangingTargetRechecksOnlyC401BindingContract() async {
         let inspector = PlatformDifferencesRecordingInspector(result: .success(.fixture(targetPlatform: .kotlin)))
-        let capabilityLoader = PlatformDifferencesRecordingCapabilityLoader(result: .success(.fixture()))
+        let capabilityLoader = PlatformDiffCapabilityLoader(result: .success(.fixture()))
         let model = PlatformDifferencesModel(
             appVersion: PlatformDifferencesModel.defaultTestAppVersion,
             selectedTargetPlatform: .swift,
@@ -62,7 +62,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
     @MainActor
     func testContractFailureUsesCoreErrorMapping() async {
         let inspector = PlatformDifferencesRecordingInspector(result: .failure(CoreError.Config(reason: "bad version")))
-        let capabilityLoader = PlatformDifferencesRecordingCapabilityLoader(result: .success(.fixture()))
+        let capabilityLoader = PlatformDiffCapabilityLoader(result: .success(.fixture()))
         let model = PlatformDifferencesModel(
             appVersion: PlatformDifferencesModel.defaultTestAppVersion,
             contractInspector: inspector,
@@ -82,7 +82,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
 
     @MainActor
     func testCapabilityFailureFallsBackToUnknownRows() async {
-        let capabilityLoader = PlatformDifferencesRecordingCapabilityLoader(
+        let capabilityLoader = PlatformDiffCapabilityLoader(
             result: .failure(CoreError.Config(reason: "platform Unknown"))
         )
         let model = PlatformDifferencesModel(
@@ -129,12 +129,12 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
     }
 }
 
-private struct PlatformDifferencesInspectRequest: Equatable, Sendable {
+private struct PlatformDifferencesInspectRequest: Equatable {
     var targetPlatform: BindingTargetPlatformSnapshot
     var bindingVersion: Int64
 }
 
-private struct PlatformDifferencesCapabilityRequest: Equatable, Sendable {
+private struct PlatformDifferencesCapabilityRequest: Equatable {
     var platform: PlatformIdSnapshot
     var appVersion: String
 }
@@ -163,7 +163,7 @@ private actor PlatformDifferencesRecordingInspector: CoreBindingContractInspecti
     }
 }
 
-private actor PlatformDifferencesRecordingCapabilityLoader: CorePlatformCapabilitiesLoading {
+private actor PlatformDiffCapabilityLoader: CorePlatformCapabilitiesLoading {
     private let result: Result<PlatformCapabilitiesSnapshot, Error>
     private var capturedRequests: [PlatformDifferencesCapabilityRequest] = []
 

@@ -3,20 +3,26 @@ use std::path::{Path, PathBuf};
 use serde_json::{json, Value};
 
 use crate::{
-    db, overview, CoreError, CoreResult, DuplicateStrategy, FileEntry, FileOrigin,
-    ImportDestination, ImportOptions, ImportResult, ImportSourceRemovalStatus, StorageMode,
+    db, overview, CoreError, CoreResult, DuplicateStrategy, FileEntry, FileOrigin, ImportOptions,
+    ImportResult, ImportSourceRemovalStatus, StorageMode,
 };
 
 use super::{
     dedup,
     destination::{ImportDestinationPlan, ReplacementPlan},
     hash,
+    import_source_removal::finalize_source_removal,
     import_target::{resolve_import_target, ImportTarget},
     replacement_trash::ReplacementFileGuard,
-    safe_move::{move_recoverable_file, remove_imported_source, FinalFileGuard, StagingFileGuard},
+    safe_move::{move_recoverable_file, FinalFileGuard, StagingFileGuard},
     staging_row::DbStagingRowGuard,
     validate,
 };
+
+#[path = "import/import_detail.rs"]
+mod import_detail;
+
+use import_detail::{destination_detail, import_change_detail, storage_mode_detail};
 
 pub(crate) fn import_file(
     repo_path: String,
@@ -75,7 +81,7 @@ pub(crate) fn import_file_with_result(
         guard.disarm();
     }
     destination.disarm();
-    let source_removal = finalize_source_removal(&prepared);
+    let source_removal = finalize_source_removal(&prepared.options.mode, &prepared.source);
     Ok(ImportResult {
         entry,
         source_removal_status: source_removal.status,
@@ -159,11 +165,6 @@ struct IndexedImportCommit {
     replacement_rollback: Option<ReplacementDbRollback>,
 }
 
-struct SourceRemovalOutcome {
-    status: ImportSourceRemovalStatus,
-    failure: Option<String>,
-}
-
 fn stage_source(prepared: &PreparedImport) -> CoreResult<StagedImport> {
     let staging_guard = match prepared.options.mode {
         StorageMode::Copied => StagingFileGuard::create_for_copy(&prepared.repo)?,
@@ -243,45 +244,6 @@ fn import_indexed_file(prepared: PreparedImport) -> CoreResult<ImportResult> {
         source_removal_status: ImportSourceRemovalStatus::NotRequested,
         source_removal_failure: None,
     })
-}
-
-fn finalize_source_removal(prepared: &PreparedImport) -> SourceRemovalOutcome {
-    if !matches!(prepared.options.mode, StorageMode::Moved) {
-        return SourceRemovalOutcome {
-            status: ImportSourceRemovalStatus::NotRequested,
-            failure: None,
-        };
-    }
-    match remove_imported_source(&prepared.source) {
-        Ok(()) => SourceRemovalOutcome {
-            status: ImportSourceRemovalStatus::Removed,
-            failure: None,
-        },
-        Err(error) => SourceRemovalOutcome {
-            status: ImportSourceRemovalStatus::Retained,
-            failure: Some(source_removal_failure_reason(error)),
-        },
-    }
-}
-
-fn source_removal_failure_reason(error: CoreError) -> String {
-    match error {
-        CoreError::PermissionDenied { path }
-        | CoreError::InvalidPath { path }
-        | CoreError::FileNotFound { path }
-        | CoreError::ICloudPlaceholder { path }
-        | CoreError::Conflict { path } => path,
-        CoreError::Io { message }
-        | CoreError::Db { message }
-        | CoreError::Internal { message }
-        | CoreError::RepoNotInitialized { path: message } => message,
-        CoreError::StagingRecoveryRequired { path } => path,
-        CoreError::Config { reason }
-        | CoreError::Validation { reason }
-        | CoreError::Classify { reason } => reason,
-        CoreError::DuplicateFile { existing_path } => existing_path,
-        CoreError::ExpiredAction { action_id } => action_id,
-    }
 }
 
 fn finish_overview_regeneration(
@@ -453,42 +415,6 @@ fn insert_replacing_indexed_row(
     })
 }
 
-fn import_change_detail(
-    prepared: &PreparedImport,
-    destination: &ImportDestinationPlan,
-) -> serde_json::Value {
-    match destination.replacement() {
-        Some(replacement) => json!({
-            "source": prepared.source.to_string_lossy(),
-            "mode": storage_mode_detail(&prepared.options.mode),
-            "category": destination.category,
-            "destination": destination_detail(&prepared.options.destination),
-            "renamed_from_original": prepared.original_name != destination.final_name,
-            "requested_name": prepared.target_filename,
-            "final_name": destination.final_name,
-            "final_path": destination.final_relative_path,
-            "name_conflict_resolved": prepared.target_filename != destination.final_name,
-            "duplicate_strategy": "overwrite",
-            "replace_reason": replacement.reason_detail(),
-            "replaced_file_id": replacement.replaced_file_id(),
-            "replaced_path": replacement.replaced_path(),
-            "by": "user",
-        }),
-        None => json!({
-            "source": prepared.source.to_string_lossy(),
-            "mode": storage_mode_detail(&prepared.options.mode),
-            "category": destination.category,
-            "destination": destination_detail(&prepared.options.destination),
-            "renamed_from_original": prepared.original_name != destination.final_name,
-            "requested_name": prepared.target_filename,
-            "final_name": destination.final_name,
-            "final_path": destination.final_relative_path,
-            "name_conflict_resolved": prepared.target_filename != destination.final_name,
-            "by": "user",
-        }),
-    }
-}
-
 fn validate_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     if repo_path.trim().is_empty() {
         return Err(CoreError::invalid_path("invalid path"));
@@ -503,22 +429,6 @@ fn source_filename(source: &Path) -> CoreResult<String> {
         .filter(|value| !value.is_empty())
         .map(str::to_owned)
         .ok_or_else(|| CoreError::invalid_path("invalid path"))
-}
-
-fn storage_mode_detail(mode: &StorageMode) -> &'static str {
-    match mode {
-        StorageMode::Moved => "moved",
-        StorageMode::Copied => "copied",
-        StorageMode::Indexed => "indexed",
-    }
-}
-
-fn destination_detail(destination: &ImportDestination) -> &'static str {
-    match destination {
-        ImportDestination::AutoClassify => "auto_classify",
-        ImportDestination::SelectedDirectory => "selected_directory",
-        ImportDestination::Category => "category",
-    }
 }
 
 fn persist_staging_to_final(staging: &Path, final_path: &Path) -> CoreResult<()> {
@@ -540,29 +450,5 @@ fn requested_target_relative_path(prepared: &PreparedImport) -> CoreResult<Strin
 }
 
 #[cfg(test)]
-mod tests {
-    use std::fs;
-
-    use super::*;
-
-    #[test]
-    fn resolve_name_conflict_persist_refuses_raced_final_without_overwrite() {
-        let dir = tempfile::tempdir().expect("create import tempdir");
-        let staging = dir.path().join("staging-file");
-        let final_path = dir.path().join("final.pdf");
-        fs::write(&staging, b"new content").expect("write staging file");
-        fs::write(&final_path, b"raced content").expect("write raced final file");
-
-        let result = persist_staging_to_final(&staging, &final_path);
-
-        assert!(matches!(result, Err(CoreError::Conflict { .. })));
-        assert_eq!(
-            fs::read(&staging).expect("staging remains recoverable"),
-            b"new content"
-        );
-        assert_eq!(
-            fs::read(&final_path).expect("raced final remains unmodified"),
-            b"raced content"
-        );
-    }
-}
+#[path = "import_tests.rs"]
+mod tests;

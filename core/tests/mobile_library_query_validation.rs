@@ -352,8 +352,8 @@ fn assert_core_api_udl_and_rust_alignment() {
         "availability status",
         "must use the documented `limit` and `offset` fields",
         "missing-file recovery stays with C4-18",
-        "C4-07 owns the mobile detail aggregation",
-        "does not trigger filesystem rescan or sync repair",
+        "C4-07 composes this API with [`list_changes`] and",
+        "does not trigger filesystem rescan, sync",
         "C4-03 mobile-library uses this tree snapshot",
     ] {
         assert_contains(API_RS, fragment);

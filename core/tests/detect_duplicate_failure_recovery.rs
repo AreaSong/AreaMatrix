@@ -283,7 +283,7 @@ fn detect_duplicate_failure_recovery_permission_denied_preserves_existing_entry(
 
     assert_eq!(
         result,
-        Err(CoreError::permission_denied("permission denied"))
+        Err(CoreError::permission_denied(path_string(&source_b)))
     );
     assert_eq!(
         fs::read(repo.path().join(first.path)).expect("read existing final after permission error"),

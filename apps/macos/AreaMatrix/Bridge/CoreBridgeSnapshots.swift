@@ -153,6 +153,7 @@ private extension RepoInitModeSnapshot {
 }
 
 private extension RepoPathIssueSnapshot {
+    // swiftlint:disable:next cyclomatic_complexity
     init(coreIssue: RepoPathIssue) {
         switch coreIssue {
         case .missingPath:

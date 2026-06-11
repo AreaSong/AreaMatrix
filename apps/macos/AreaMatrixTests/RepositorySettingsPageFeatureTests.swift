@@ -222,7 +222,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.summary?.rootFile, "Off")
         XCTAssertEqual(model.summary?.metadataStatus, ".areamatrix/ found")
         XCTAssertEqual(model.healthSummary?.databaseStatus, .ok)
-        XCTAssertEqual(model.healthSummary?.schemaVersion, 1)
+        XCTAssertEqual(model.healthSummary?.schemaVersion, 2)
         XCTAssertEqual(model.healthSummary?.filesIndexed, 0)
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
         XCTAssertFalse(FileManager.default.fileExists(
@@ -307,7 +307,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
 
         do {
             let metadata = try await SQLiteExistingRepositoryMetadataReader().metadata(repoPath: repoURL.path)
-            XCTAssertEqual(metadata.schemaVersion, 1)
+            XCTAssertEqual(metadata.schemaVersion, 2)
         } catch {
             XCTFail("metadata read failed: \(error)")
         }
@@ -390,7 +390,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
 
         XCTAssertEqual(model.summary?.metadataStatus, ".areamatrix/ found")
         XCTAssertEqual(model.healthSummary?.databaseStatus, .ok)
-        XCTAssertEqual(model.healthSummary?.schemaVersion, 1)
+        XCTAssertEqual(model.healthSummary?.schemaVersion, 2)
         XCTAssertEqual(model.healthSummary?.filesIndexed, 1)
         XCTAssertEqual(model.healthSummary?.watcherStatus, .paused)
         XCTAssertNil(model.healthError)
@@ -441,8 +441,8 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
             reason: "Grant repository access."
         )
         let capabilities = repositorySettingsCapabilitiesFixture(securityBookmark: limitedAccess)
-        let loader = RepositorySettingsRecordingCapabilityLoader(result: .success(capabilities))
-        let model = RepositorySettingsPlatformCapabilitiesModel(
+        let loader = RepoSettingsCapabilityLoader(result: .success(capabilities))
+        let model = RepoPlatformCapabilitiesModel(
             appVersion: "4.3.159",
             capabilityLoader: loader,
             errorMapper: RepositorySettingsStaticErrorMapper()

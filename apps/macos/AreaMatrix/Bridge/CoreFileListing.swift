@@ -245,12 +245,27 @@ enum FileAvailabilitySnapshot: String, Equatable {
 }
 
 protocol FileAvailabilityChecking: Sendable {
-    func availability(repoPath: String, relativePath: String, sourcePath: String?) async -> FileAvailabilitySnapshot
+    func availability(
+        repoPath: String,
+        relativePath: String,
+        sourcePath: String?,
+        coreStatus: FileAvailabilityStatus
+    ) async -> FileAvailabilitySnapshot
 }
 
 struct LocalFileAvailabilityChecker: FileAvailabilityChecking {
-    func availability(repoPath: String, relativePath: String, sourcePath: String?) async -> FileAvailabilitySnapshot {
-        FileAvailabilityResolver.availability(repoPath: repoPath, relativePath: relativePath, sourcePath: sourcePath)
+    func availability(
+        repoPath: String,
+        relativePath: String,
+        sourcePath: String?,
+        coreStatus: FileAvailabilityStatus
+    ) async -> FileAvailabilitySnapshot {
+        FileAvailabilityResolver.availability(
+            repoPath: repoPath,
+            relativePath: relativePath,
+            sourcePath: sourcePath,
+            coreStatus: coreStatus
+        )
     }
 }
 
@@ -427,17 +442,32 @@ extension SearchIndexStatusSnapshot {
 }
 
 private enum FileAvailabilityResolver {
-    static func availability(repoPath: String, relativePath: String, sourcePath: String?) -> FileAvailabilitySnapshot {
+    static func availability(
+        repoPath _: String,
+        relativePath: String,
+        sourcePath: String?,
+        coreStatus: FileAvailabilityStatus
+    ) -> FileAvailabilitySnapshot {
         if isICloudPlaceholder(relativePath) || sourcePath.map(isICloudPlaceholder) == true {
             return .iCloudPlaceholder
         }
 
-        let fileURL = URL(fileURLWithPath: repoPath, isDirectory: true).appendingPathComponent(relativePath)
-        return FileManager.default.fileExists(atPath: fileURL.path) ? .available : .missing
+        return FileAvailabilitySnapshot(coreStatus: coreStatus)
     }
 
     private static func isICloudPlaceholder(_ path: String) -> Bool {
         path.hasSuffix(".icloud") || path.contains(".icloud/")
+    }
+}
+
+private extension FileAvailabilitySnapshot {
+    init(coreStatus: FileAvailabilityStatus) {
+        switch coreStatus {
+        case .available:
+            self = .available
+        case .missing:
+            self = .missing
+        }
     }
 }
 

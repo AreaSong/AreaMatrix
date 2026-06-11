@@ -88,7 +88,7 @@ final class PlatformDifferencesModel: ObservableObject {
             )
             contractState = .loaded(report)
         } catch {
-            contractState = .failed(await contractError(for: error))
+            contractState = await .failed(contractError(for: error))
         }
     }
 

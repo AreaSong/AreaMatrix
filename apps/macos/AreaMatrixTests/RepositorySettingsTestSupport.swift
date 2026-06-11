@@ -179,12 +179,12 @@ actor RepositorySettingsStaticErrorMapper: CoreErrorMapping {
     }
 }
 
-struct RepositorySettingsCapabilityRequest: Equatable, Sendable {
+struct RepositorySettingsCapabilityRequest: Equatable {
     var platform: PlatformIdSnapshot
     var appVersion: String
 }
 
-actor RepositorySettingsRecordingCapabilityLoader: CorePlatformCapabilitiesLoading {
+actor RepoSettingsCapabilityLoader: CorePlatformCapabilitiesLoading {
     private let result: Result<PlatformCapabilitiesSnapshot, Error>
     private var capturedRequests: [RepositorySettingsCapabilityRequest] = []
 
