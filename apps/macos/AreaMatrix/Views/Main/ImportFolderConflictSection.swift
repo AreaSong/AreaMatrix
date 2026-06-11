@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct ImportFolderConflictSection: View {
     let model: ImportFolderPreviewModel
     @Binding var isExpanded: Bool

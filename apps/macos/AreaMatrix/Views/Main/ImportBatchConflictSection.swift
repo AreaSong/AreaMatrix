@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct ImportBatchConflictSection: View {
     let batchImportModel: ImportBatchCopyImportModel
     @Binding var isExpanded: Bool

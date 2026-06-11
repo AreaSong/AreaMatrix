@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 extension ImportBatchConflictSection {
     @ViewBuilder
     func incomingResolutionView(for row: ImportBatchCopyImportRow) -> some View {

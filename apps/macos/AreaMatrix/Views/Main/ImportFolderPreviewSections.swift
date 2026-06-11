@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct ImportFolderPreviewView: View {
     @ObservedObject var model: ImportFolderPreviewModel
     let request: ImportEntryRequest
