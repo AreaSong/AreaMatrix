@@ -7,6 +7,7 @@
 ## Core API
 
 - `detect_cloud_storage_state`
+- `acknowledge_onedrive_risk_notice`
 
 ## 输入
 
@@ -15,6 +16,7 @@
 ## 输出
 
 - OneDrive risk state、placeholder state、recommended action。
+- 用户确认后返回已刷新的 OneDrive risk state。
 
 ## DB 变化
 

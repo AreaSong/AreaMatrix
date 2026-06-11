@@ -253,7 +253,6 @@ fn validate_stored(stored: &StoredAiPrivacyRules) -> CoreResult<()> {
 
 fn map_storage_error(error: CoreError) -> CoreError {
     match error {
-        CoreError::Db { .. } => CoreError::db("AI privacy rules metadata persistence failed"),
         CoreError::InvalidPath { .. } => CoreError::config("AI privacy repository path is invalid"),
         CoreError::RepoNotInitialized { .. } => {
             CoreError::config("AI privacy requires initialized repository metadata")

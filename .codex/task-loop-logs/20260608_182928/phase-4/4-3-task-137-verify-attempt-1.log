@@ -1,0 +1,76 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-137`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-137-s4-lnx-04-page-integration-verify.md`
+- Manifest 章节：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:10449`
+- 相关实现：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/**`
+- 相关 Core contract：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：逐项验收本页所有 page-feature task 是否完成
+- 结果：通过
+- 证据：manifest 明确 `S4-LNX-04` 只声明 `C4-12, C4-19`，对应 `4-3/task-135`、`4-3/task-136`、`4-3/task-137`；control map 同步声明 `S4-LNX-04 | watcher-status | C4-12, C4-19`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:10395`、`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:24`
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 调用串成完整页面闭环
+- 结果：通过
+- 证据：页面入口由 `LinuxDesktopShell.OpenWatcherStatusAsync` 创建真实 `LinuxWatcherStatusView`；打开页面采集 inotify snapshot 并调用 `RecordWatcherHealthAsync`，同时读取 latest scan session；关闭通过 `CloseRequested`；错误态、limit、permission、network mount、path missing、DB locked 均有文案和禁用规则。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs:56`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/LinuxWatcherStatusView.cs:20`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/LinuxWatcherStatusViewModel.cs:181`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/LinuxWatcherStatusViewModel.cs:241`
+
+- 项目：移除本页无法通过最终验收的 mock、fixture 或硬编码状态
+- 结果：通过
+- 证据：生产 shell 使用 `AreaMatrixNativeCoreClient`、`LinuxWatcherStatusCoreBridge`、`LinuxWatcherDiagnostics`；native client 绑定 `record_watcher_health`、`preview_manual_rescan`、`get_latest_scan_session` 等真实 UniFFI 符号。测试 fake 仅存在于 `apps/linux/AreaMatrixTests/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs:56`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.WatcherStatus.cs:8`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/LinuxWatcherStatusCoreBridge.cs:64`
+
+- 项目：不新增本页未在 control map 中声明的功能
+- 结果：通过
+- 证据：页面只消费 C4-12 watcher health 和 C4-19 rescan handoff；`RunRescanNow` 只做 `get_latest_scan_session` + `preview_manual_rescan` 后抛出 `OpenRescanConfirmRequested`，没有直接执行 `reindex_from_filesystem` 或 `resume_scan_session`；smoke test 明确断言不调用 `sync_external_changes`、`set_fs_event_cursor`、直接 reindex/resume。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/LinuxWatcherStatusViewModel.Rescan.cs:106`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/LinuxWatcherStatusView.cs:33`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/System/LinuxWatcherStatusSmokeTests.cs:64`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，生产实现分为 view、view model、rescan partial、diagnostics、CoreBridge、native client，职责清楚。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Rust public API；UDL、Core API、page spec、control map 与 Linux bridge 映射一致。
+- 错误处理与边界处理：通过，路径缺失、权限不足、backend unavailable、DB locked、limit exceeded、network mount、Core error 都有可读错误或禁用原因。
+- 测试与验证覆盖：通过，task validation、Linux harness、view model tests、smoke tests 覆盖 watcher snapshot、restart、rescan handoff、并发 rescan 禁止、诊断导出和真实 bridge wiring。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径使用真实 native client 和 diagnostics；测试 fake 未进入生产 shell。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-137`
+- 结果：通过
+- 证据：`prompt doctor: OK`，`tasks: 637`，`manifests: 637`，`high risk tasks: 633`；`git diff --check` 通过；macOS build gate 最终输出 `** BUILD SUCCEEDED **`。
+
+- 已运行：`dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj --no-restore`
+- 结果：通过
+- 证据：输出 `AreaMatrix Linux tests passed.`
+
+- 已运行：`git diff --name-only -- core/src apps core/area_matrix.udl`
+- 结果：通过
+- 证据：无输出，说明 `core/src/**` 未被当前 diff 触碰，`apps/**` 与 `core/area_matrix.udl` 也无未提交 diff。
+
+- 当前工作区说明：仅发现 `.codex/task-loop-runs/20260608_182928/summary.json` 与 `tasks/prompts/_shared/progress.json` 有 runner/progress 类脏改动；不属于本 task 的产品实现路径，也不命中 Forbidden Touches。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,44 @@
+一、执行结论
+
+已完成。`4-2/task-59` 的 repair retry 已补齐并验证 S3-04 关键闭环证据。
+
+二、执行范围
+
+单任务：`4-2/task-59`
+
+本次 repair 直接修改：
+- [AIClassificationSuggestionPanel+Apply.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/AIClassificationSuggestionPanel+Apply.swift:63)
+- [S304PageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/S304PageIntegrationVerifyTests.swift:1)
+
+当前 task 相关实现还包括前序脏改动中的 S3-04 wiring、call-log detail、apply state、路由与测试文件；我没有回滚这些既有改动，也没有触碰 `core/src/**`。
+
+三、完成情况
+
+- page-feature 覆盖：C3-04 / C3-09 / C3-10 均在 S3-04 集成中串联。
+- Accept：现在要求目标路径 preview，点击 Accept 后显示 `Apply AI category?` 确认，确认后通过 `correctFileCategory` 执行，失败保持 S3-04 panel 并显示 `Retry apply` / `Classify manually` / `View call log`。
+- Reject：现在生成可验证的本页反馈状态，隐藏建议内容，不触发 Core 写入。
+- 规则沉淀：`Create rule from this correction` 采纳后进入 S2-17，并携带 AI 建议分类、最终分类、confidence、reason、used context、call log id。
+- View AI call：不再是 banner 占位，打开 AI call detail sheet，并通过 `listAICalls` 读取分类调用日志。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+代码结构按页面闭环拆到 S3-04 apply 扩展、apply state、call-log detail 和路由动作中；没有新增依赖，没有新增 Core/UDL/API，更没有绕过 `CoreBridge` 直接调 UniFFI。错误路径覆盖了 preview/apply failure、call-log not found / load failed、规则保存取消返回。测试使用 fake bridge/mover 只做证据注入，产品路径仍走真实 `CoreBridge` 协议。
+
+五、验证情况
+
+已运行并通过：
+- `./dev check task 4-2/task-59`
+  - `prompt_pipeline.py doctor`: OK
+  - `git diff --check`: OK
+  - macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`
+- `./dev test macos --only-testing AreaMatrixTests/S304PageIntegrationVerifyTests`
+  - 标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd` 限制阻断
+  - 仓库脚本按既有规则 fallback 到同一 XCTest bundle
+  - `xcrun xctest`: 5 tests, 0 failures
+
+六、风险与后续
+
+剩余风险：未做真实 macOS 窗口手工点击验证；当前证据是 build + targeted XCTest。工作树进入本轮前已有其他脏改动，包括 `.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json` 以及部分非 S3-04 测试文件，我未处理它们。
+
+建议下一个任务：进入 `4-2/task-59` 的 verify-ready 只读验收。

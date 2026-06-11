@@ -15,6 +15,14 @@ protocol CoreTagCRUD: Sendable {
     ) async throws -> TagSuggestionApplyReportSnapshot
 }
 
+protocol CoreAITagSuggestionManaging: Sendable {
+    func suggestTagsWithAI(repoPath: String, request: AiTagSuggestionRequest) async throws -> AiTagSuggestionReport
+    func applyAITagSuggestions(
+        repoPath: String,
+        request: ApplyAiTagSuggestionsRequest
+    ) async throws -> AiTagSuggestionApplyReport
+}
+
 protocol CoreUndoActionLogging: Sendable {
     func listUndoActions(repoPath: String) async throws -> [UndoActionRecordSnapshot]
     func undoAction(repoPath: String, actionID: String) async throws -> UndoActionResultSnapshot
@@ -220,6 +228,23 @@ extension CoreBridge: CoreTagCRUD {
                 repoPath: repoPath,
                 request: ApplyTagSuggestionsRequest(snapshot: request)
             ))
+        }.value
+    }
+}
+
+extension CoreBridge: CoreAITagSuggestionManaging {
+    func suggestTagsWithAI(repoPath: String, request: AiTagSuggestionRequest) async throws -> AiTagSuggestionReport {
+        try await Task.detached(priority: .userInitiated) {
+            try AreaMatrix.suggestTagsWithAi(repoPath: repoPath, request: request)
+        }.value
+    }
+
+    func applyAITagSuggestions(
+        repoPath: String,
+        request: ApplyAiTagSuggestionsRequest
+    ) async throws -> AiTagSuggestionApplyReport {
+        try await Task.detached(priority: .userInitiated) {
+            try AreaMatrix.applyAiTagSuggestions(repoPath: repoPath, request: request)
         }.value
     }
 }

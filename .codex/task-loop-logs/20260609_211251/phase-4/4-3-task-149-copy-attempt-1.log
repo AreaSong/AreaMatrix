@@ -1,0 +1,54 @@
+一、执行结论
+
+已完成 `4-3/task-149`。
+
+二、执行范围
+
+单任务：S4-X-04 repository-init-confirm 中的 C4-02 mobile-repo-connect。
+
+修改文件清单：
+- `apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryModel.swift`
+- `apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryView.swift`
+- `apps/ios/AreaMatrix/Features/Onboarding/RepositoryInitConfirmView.swift`
+- `apps/ios/AreaMatrixTests/RepositoryInitConfirmTests.swift`
+- `apps/ios/AreaMatrixTests/ConnectRepositoryTestSupport.swift`
+- 辅助编译修复：`apps/ios/AreaMatrix/Features/Conflicts/SyncConflictEntryCoreBridge.swift`、`apps/ios/AreaMatrixTests/Conflicts/SyncConflictEntryPageFeatureTests.swift`
+
+工作区另有非本次实现范围状态文件：`tasks/prompts/_shared/progress.json`、`.codex/task-loop-runs/20260609_211251/`，我未把它们作为本次实现改动处理。
+
+三、完成情况
+
+核对清单全部完成：
+- 只处理 S4-X-04 的 C4-02 初始化确认功能。
+- 已对齐 UX 页面、Stage 4 control map、Core API、C4-02 capability spec。
+- 接入真实 `MobileRepositoryCoreBridge`：确认页刷新调用 `validateRepoPath`，点击创建调用 `initializeEmptyRepository`，成功后重新 `validateRepoPath` + `loadConfig` 再进入 mobile library。
+- 未实现 C4-09/C4-10、未实现 adopt confirm。
+
+完成标准：
+- `Create Repository` 可触发真实 Core 初始化闭环。
+- 无 mock-only/静态成功态；测试替身只用于单测，生产路径走 CoreBridge。
+- 未触碰 control map 之外的 Core 能力实现。
+
+Forbidden Touches：未触碰 `core/src/**`；`core/area_matrix.udl` 未修改。
+
+四、工程质量
+
+代码结构保持在 iOS onboarding 内，新确认页拆成独立 `RepositoryInitConfirmView.swift`，避免原视图文件超 500 行。错误路径显式处理：初始化失败停留确认页并显示重试，不保存 bookmark；Cancel/Choose Another Folder 不写入。未新增依赖；无 public Rust API/rustdoc 需求。
+
+辅助修复仅为解除 iOS 编译阻断：给既有 `SyncConflictEntryReviewRoute` 补 `Hashable`，并修正测试中 actor `await` 的断言写法，没有新增 C4-15 行为。
+
+五、验证情况
+
+已通过：
+- `swiftformat --lint ...`：0 files require formatting
+- `swift test --disable-sandbox --package-path apps/ios ... --filter RepositoryInitConfirmTests`：5 tests passed
+- `swift test --disable-sandbox --package-path apps/ios ...`：86 tests passed
+- `./dev check task 4-3/task-149`：PASS，包含 prompt doctor、diff check、macOS build gate
+
+说明：直接 `swift test --package-path apps/ios` 最初被本机 SwiftPM cache/sandbox 权限阻断；改用仓库内 scratch/cache 并加 `--disable-sandbox` 后通过。
+
+六、风险与后续
+
+剩余风险：未做真实 iOS 设备/模拟器手工 UI 点击冒烟；当前证据覆盖编译、单测、CoreBridge 调用链和 task gate。远端 CI 未运行。
+
+建议下一个任务：继续 `4-3/task-150`，覆盖同页的 C4-09。

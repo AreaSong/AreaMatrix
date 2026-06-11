@@ -1,0 +1,45 @@
+一、执行结论
+
+已完成 `4-3/task-23: C4-05 failure-edge`。
+
+二、执行范围
+
+单任务。修改范围仅在允许的 `core/tests/**`：
+
+- 新增 [share_extension_import_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/share_extension_import_failure_recovery.rs:1)
+- 格式化调整 [share_extension_import_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/share_extension_import_implementation.rs:65)
+
+未触碰 `apps/**`。工作区里原有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 仍是既有未提交改动，我没有修改或回滚。
+
+三、完成情况
+
+核对清单已覆盖：
+
+- 空态 / deferred：验证 share extension 超时或尚未继续导入时 Core 无 DB、staging、final 文件副作用。
+- 非法输入：覆盖空 repo、空 source、非法文件名、`.areamatrix/staging` 内部路径拒绝。
+- 权限、IO、DB：覆盖 `PermissionDenied`、staging root IO failure、change_log trigger 强制 DB failure。
+- 错误码映射：覆盖 `InvalidPath`、`Io`、`Db locked`、`PermissionDenied` 的结构化 mapping。
+- 半成品保证：失败后断言 active/staging rows 为 0、change_log 为 0、staging 空、final 文件不存在、payload 保留。
+- 隐私/AI/远程：断言 `ai_enabled=false`、无 remote provider config、无 `ai_call_log` 表；mapping 不触碰 payload 或用户 README。
+- 未使用吞错或静默降级；失败路径都用 `CoreError` 明确断言。
+
+四、工程质量
+
+代码是集成测试形式，直接走真实 `import_file`、SQLite、staging、DB trigger 和临时文件系统，不是 mock-only 或硬编码通过态。没有新增依赖、没有新增 public API，因此不涉及 rustdoc/UDL 同步。
+
+五、验证情况
+
+已通过：
+
+- `cargo test --test share_extension_import_failure_recovery -- --nocapture`
+- `cargo fmt --all`
+- `./dev check task 4-3/task-23`
+
+`./dev check task` 实际执行并通过了：prompt doctor、diff check、cargo fmt --check、cargo clippy `-D warnings`、以及 C4-05 targeted tests：
+`share_extension_import_contract_api`、`share_extension_import_failure_recovery`、`share_extension_import_implementation`。
+
+六、风险与后续
+
+剩余风险：本任务验证的是 Core 侧 share staged file import 失败语义；iOS Share Extension 的 ticket 队列、权限过期 takeover、平台 UI 行为仍由后续页面/集成任务覆盖。
+
+建议下一个任务：`4-3/task-24`，继续做 C4-05 validation。

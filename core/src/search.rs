@@ -326,6 +326,11 @@ pub struct SearchResultPage {
 /// full-text search. It must not modify tags, categories, notes, change log,
 /// repository metadata, generated overviews, or user files.
 ///
+/// C4-11 desktop main-window consumers may use this same read-only page shape
+/// for the Windows and Linux search entry when Stage 2 search is available.
+/// Platform shells still render native lists and empty states themselves; Core
+/// only supplies paginated results, diagnostics, and index readiness.
+///
 /// # Errors
 ///
 /// Returns `CoreError::InvalidPath { path }` for invalid repository or scope

@@ -2,7 +2,10 @@ import SwiftUI
 
 struct RepositorySettingsPane: View {
     @StateObject private var model: RepositorySettingsModel
+    @StateObject private var capabilityModel: RepoPlatformCapabilitiesModel
+    @StateObject private var configModel: RepositorySettingsConfigModel
     let onChangeRepository: () -> Void
+    let onOpenPlatformCapabilities: () -> Void
     let onOpenRecoveryTools: () -> Void
 }
 
@@ -18,11 +21,14 @@ extension RepositorySettingsPane {
             SQLiteExistingRepositoryMetadataReader(),
         finderOpener: any RepositoryFinderOpening = NSWorkspaceRepositoryFinderOpener(),
         pathCopier: any RepositoryPathCopying = NSPasteboardRepositoryPathCopier(),
-        generatedOverviewRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
+        coreVersionLoader: any CoreVersionLoading = CoreBridge(),
+        capabilityLoader: any CorePlatformCapabilitiesLoading = CoreBridge(),
+        appVersion: String = RepoPlatformCapabilitiesModel.defaultAppVersion(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
         accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer(),
         onChangeRepository: @escaping () -> Void = {},
+        onOpenPlatformCapabilities: @escaping () -> Void = {},
         onOpenRecoveryTools: @escaping () -> Void = {}
     ) {
         _model = StateObject(wrappedValue: RepositorySettingsModel(
@@ -35,23 +41,34 @@ extension RepositorySettingsPane {
             existingRepositoryMetadataReader: existingRepositoryMetadataReader,
             finderOpener: finderOpener,
             pathCopier: pathCopier,
-            generatedOverviewRevealer: generatedOverviewRevealer,
             diagnosticsCollector: diagnosticsCollector,
+            coreVersionLoader: coreVersionLoader,
+            errorMapper: errorMapper,
+            accessibilityAnnouncer: accessibilityAnnouncer
+        ))
+        _capabilityModel = StateObject(wrappedValue: RepoPlatformCapabilitiesModel(
+            appVersion: appVersion,
+            capabilityLoader: capabilityLoader,
+            errorMapper: errorMapper
+        ))
+        _configModel = StateObject(wrappedValue: RepositorySettingsConfigModel(
+            repoPath: repoPath,
+            updater: updater,
             errorMapper: errorMapper,
             accessibilityAnnouncer: accessibilityAnnouncer
         ))
         self.onChangeRepository = onChangeRepository
+        self.onOpenPlatformCapabilities = onOpenPlatformCapabilities
         self.onOpenRecoveryTools = onOpenRecoveryTools
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-            content
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .task {
-            await model.load()
+        Group {
+            if model.hasConnectedRepository {
+                connectedRepositoryBody
+            } else {
+                emptyRepositoryBody
+            }
         }
         .confirmationDialog(
             "Export diagnostics?",
@@ -68,10 +85,33 @@ extension RepositorySettingsPane {
         }
     }
 
+    private var connectedRepositoryBody: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            header
+            content
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .task {
+            await reload()
+        }
+    }
+
+    private var emptyRepositoryBody: some View {
+        ContentUnavailableView {
+            Label("No repository connected.", systemImage: "folder.badge.questionmark")
+        } description: {
+            Text("Connect a repository to view cross-platform repository settings.")
+        } actions: {
+            Button("Connect Repository", action: onChangeRepository)
+                .accessibilityIdentifier("S4-X-08-connect-repository")
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("资料库")
+                Text("Repository Settings")
                     .font(.title2.weight(.semibold))
                     .accessibilityAddTraits(.isHeader)
                 Text(model.repoPath)
@@ -89,7 +129,7 @@ extension RepositorySettingsPane {
             } else {
                 Button("Retry status") {
                     Task {
-                        await model.load()
+                        await reload()
                     }
                 }
             }
@@ -116,7 +156,7 @@ extension RepositorySettingsPane {
     private var loadingContent: some View {
         VStack(spacing: 12) {
             ProgressView()
-            Text("Checking repository...")
+            Text("Loading repository settings...")
                 .font(.headline)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -124,18 +164,17 @@ extension RepositorySettingsPane {
 
     private func loadErrorContent(_ error: RepositorySettingsLoadError) -> some View {
         ContentUnavailableView {
-            Label("Unable to load repository status", systemImage: "exclamationmark.triangle")
+            Label("Could not load repository status", systemImage: "exclamationmark.triangle")
         } description: {
             Text(error.message)
             Text(error.recovery)
         } actions: {
-            Button("Retry status") {
+            Button("Try again") {
                 Task {
                     await model.load()
                 }
             }
             Button("Change repository...", action: onChangeRepository)
-            Button("Open recovery tools...", action: onOpenRecoveryTools)
         }
     }
 
@@ -144,15 +183,14 @@ extension RepositorySettingsPane {
             VStack(alignment: .leading, spacing: 24) {
                 syncErrorBanner
                 healthErrorBanner
-                overviewActionErrorBanner
                 repositoryActionBanner
                 diagnosticsStatusBanner
 
                 repositoryPathSection(summary)
                 repositoryHealthSection
-                repositoryOverviewSection(summary)
+                platformCapabilitySection
+                repositoryConfigSection
                 repositorySafeActionsSection
-                metadataDeletionWarning
             }
             .frame(maxWidth: 700, alignment: .leading)
             .padding(.horizontal, 34)
@@ -164,6 +202,8 @@ extension RepositorySettingsPane {
         RepositorySettingsSection(title: "路径") {
             RepositorySettingsKeyValueRow(label: "Repository name", value: summary.repositoryName)
             RepositorySettingsKeyValueRow(label: "Location", value: summary.location)
+            RepositorySettingsKeyValueRow(label: "Type", value: summary.locationType)
+            RepositorySettingsKeyValueRow(label: "Core version", value: summary.coreVersion)
             RepositorySettingsKeyValueRow(label: "Metadata", value: summary.metadataStatus)
             repositoryPathActions
         }
@@ -175,31 +215,38 @@ extension RepositorySettingsPane {
         }
     }
 
-    private func repositoryOverviewSection(_ summary: RepositorySettingsSummary) -> some View {
-        RepositorySettingsSection(title: "概览输出") {
-            RepositorySettingsKeyValueRow(label: "Generated overview", value: summary.overviewMode)
-            RepositorySettingsKeyValueRow(label: "Generated path", value: summary.generatedPath)
-            RepositorySettingsKeyValueRow(label: "Root file", value: summary.rootFile)
-            RepositorySettingsKeyValueRow(label: "README.md", value: summary.readmePolicy)
-            Button("Reveal generated overview") {
-                model.revealGeneratedOverviewInFinder()
+    private var platformCapabilitySection: some View {
+        RepoPlatformCapabilitySection(
+            state: capabilityModel.state,
+            onOpenPlatformCapabilities: onOpenPlatformCapabilities
+        )
+    }
+
+    private var repositoryConfigSection: some View {
+        RepositorySettingsConfigSection(
+            config: model.loadedConfig,
+            model: configModel,
+            capabilityState: capabilityModel.state,
+            onSaved: {
+                await model.load()
             }
-            .accessibilityIdentifier("S1-27-C1-20-reveal-generated-overview")
-        }
+        )
     }
 
     private var repositorySafeActionsSection: some View {
-        RepositorySettingsSection(title: "安全动作") {
+        RepositorySettingsSection(title: "Actions") {
+            Button("Reconnect Repository", action: onChangeRepository)
+                .accessibilityIdentifier("S4-X-08-reconnect-repository")
+
+            Button("Choose Another Folder", action: onChangeRepository)
+                .accessibilityIdentifier("S4-X-08-choose-another-folder")
+
             Button(diagnosticsButtonTitle) {
                 model.requestDiagnosticsExport()
             }
-            .disabled(model.diagnosticsState.isCollecting)
-            .accessibilityIdentifier("S1-27-export-diagnostics")
-
-            if model.healthError?.databaseStatus == .needsRecovery {
-                Button("Open recovery tools...", action: onOpenRecoveryTools)
-                    .accessibilityIdentifier("S1-27-open-recovery-tools")
-            }
+            .disabled(model.diagnosticsState.isCollecting || !capabilityModel.allowsDiagnosticsExport)
+            .help(capabilityModel.diagnosticsDisabledReason ?? "Diagnostics export is available.")
+            .accessibilityIdentifier("S4-X-08-export-diagnostics")
 
             Text("Diagnostics do not include your original file contents and are not uploaded automatically.")
                 .font(.callout)
@@ -207,30 +254,20 @@ extension RepositorySettingsPane {
         }
     }
 
-    private var metadataDeletionWarning: some View {
-        Text(
-            "Deleting the .areamatrix folder removes AreaMatrix metadata, not your original files. " +
-                "Do this only if you know what you are doing."
-        )
-        .font(.callout)
-        .foregroundStyle(.secondary)
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
     private var repositoryPathActions: some View {
         HStack(spacing: 10) {
             Button("Reveal in Finder") {
                 model.revealRepositoryInFinder()
             }
-            .accessibilityIdentifier("S1-27-reveal-repository")
+            .accessibilityIdentifier("S4-X-08-reveal-repository")
 
             Button("Copy path") {
                 model.copyRepositoryPath()
             }
-            .accessibilityIdentifier("S1-27-copy-repository-path")
+            .accessibilityIdentifier("S4-X-08-copy-repository-path")
 
             Button("Change repository...", action: onChangeRepository)
-                .accessibilityIdentifier("S1-27-change-repository")
+                .accessibilityIdentifier("S4-X-08-change-repository")
         }
     }
 
@@ -315,21 +352,9 @@ extension RepositorySettingsPane {
         )
     }
 
-    @ViewBuilder
-    private var overviewActionErrorBanner: some View {
-        if let error = model.overviewActionError {
-            VStack(alignment: .leading, spacing: 8) {
-                Label(error.message, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.orange)
-                Text(error.recovery)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-            .accessibilityElement(children: .combine)
-        }
+    private func reload() async {
+        await model.load()
+        await capabilityModel.load()
     }
 
     @ViewBuilder
@@ -421,6 +446,7 @@ private struct RepositorySettingsHealthSection: View {
             RepositorySettingsKeyValueRow(label: "Database", value: summary?.databaseStatus.label ?? "—")
             RepositorySettingsKeyValueRow(label: "Schema version", value: schemaVersionValue)
             RepositorySettingsKeyValueRow(label: "Files indexed", value: filesIndexedValue)
+            RepositorySettingsKeyValueRow(label: "Last opened", value: lastOpenedValue)
             RepositorySettingsKeyValueRow(label: "Last scan", value: lastScanValue)
             RepositorySettingsKeyValueRow(label: "Watcher", value: summary?.watcherStatus.label ?? "Paused")
         }
@@ -445,6 +471,15 @@ private struct RepositorySettingsHealthSection: View {
     private var lastScanValue: String {
         guard let timestamp = summary?.lastScanAt else {
             return "Not available"
+        }
+
+        return Date(timeIntervalSince1970: TimeInterval(timestamp))
+            .formatted(date: .abbreviated, time: .shortened)
+    }
+
+    private var lastOpenedValue: String {
+        guard let timestamp = summary?.lastOpenedAt else {
+            return "Unknown"
         }
 
         return Date(timeIntervalSince1970: TimeInterval(timestamp))

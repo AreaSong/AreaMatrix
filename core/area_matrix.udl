@@ -5,6 +5,16 @@ namespace area_matrix {
     void init_logging(string level);
 
     [Throws=CoreError]
+    BindingContractReport inspect_binding_contract(BindingContractRequest request);
+
+    // C4-17 exposes platform capability rows. C4-20 repository settings reuses
+    // the same matrix to disable unsupported settings before config updates.
+    [Throws=CoreError]
+    PlatformCapabilities get_platform_capabilities(
+        PlatformId platform, string app_version
+    );
+
+    [Throws=CoreError]
     RepoPathValidation validate_repo_path(string repo_path);
 
     [Throws=CoreError]
@@ -13,9 +23,13 @@ namespace area_matrix {
     [Throws=CoreError]
     void init_repo(string repo_path, RepoInitOptions options);
 
+    // C4-20 repository settings reads this repository config snapshot together
+    // with PlatformCapabilities; loading is read-only and has no platform probe.
     [Throws=CoreError]
     RepoConfig load_config(string repo_path);
 
+    // C4-20 repository settings persists only repo_config. Platform-unsupported
+    // settings must be disabled by the caller; this API does not move user files.
     [Throws=CoreError]
     void update_config(string repo_path, RepoConfig new_config);
 
@@ -107,6 +121,11 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
+    AiFallbackStatus get_ai_fallback_status(
+        string repo_path, AiFallbackStatusRequest request
+    );
+
+    [Throws=CoreError]
     SemanticSearchResultPage semantic_search(
         string repo_path,
         string query,
@@ -122,6 +141,17 @@ namespace area_matrix {
     [Throws=CoreError]
     RecoveryReport recover_on_startup(string repo_path);
 
+    // C4-19 manual-rescan previews repository impact before S4-X-07 enables
+    // the high-risk confirmation. Preview is read-only: it must not write
+    // files, scan sessions, change log, or database file rows.
+    [Throws=CoreError]
+    ManualRescanPreviewReport preview_manual_rescan(string repo_path);
+
+    // C4-19 manual-rescan reuses the full repository reindex entry point after
+    // S4-X-07 has shown preview and the high-risk confirmation. The scope is
+    // the entire repository; partial subtree rescan is not exposed by this
+    // contract. Core must only update AreaMatrix metadata and must not move,
+    // delete, rename, overwrite, trash, or download user files.
     [Throws=CoreError]
     ReindexReport reindex_from_filesystem(string repo_path);
 
@@ -131,20 +161,47 @@ namespace area_matrix {
     [Throws=CoreError]
     RepairReport repair_metadata(string repo_path, RepairOptions options);
 
+    // C4-19 consumers read the latest scan session to render manual rescan
+    // progress, completion, failure, interruption, and retry state without
+    // starting or resuming a scan.
     [Throws=CoreError]
     ScanSession? get_latest_scan_session(string repo_path);
 
+    // C4-19 resumes an interrupted or failed whole-repository manual rescan
+    // only after the UI has routed the user through S4-X-07 recovery copy.
     [Throws=CoreError]
     ReindexReport resume_scan_session(string repo_path, i64 scan_session_id);
 
+    // C4-13 desktop-import-flow reuses predict_category for read-only
+    // Windows/Linux import preview state after the platform picker, drop
+    // adapter, or optional shell entry has produced safe display names. Core
+    // does not expand folders, run platform permission preflight, detect
+    // Trash/Recycle Bin support, or manage multi-item progress here.
     [Throws=CoreError]
     ClassifyResult predict_category(string repo_path, string filename);
 
+    // C4-13 desktop-import-flow uses import_file_with_result for the final
+    // committed single-item desktop import result. import_file remains the
+    // backwards-compatible FileEntry entry point for existing Stage 1 callers.
+    // The desktop result includes source removal status so Move can report
+    // Imported, original retained without parsing errors or rolling back a
+    // safely committed repository file. Replace confirmation belongs to
+    // C4-21/S4-X-09; this entry point does not add a desktop-only replace or
+    // platform Trash API.
     [Throws=CoreError]
     FileEntry import_file(
         string repo_path, string source_path, ImportOptions options
     );
 
+    [Throws=CoreError]
+    ImportResult import_file_with_result(
+        string repo_path, string source_path, ImportOptions options
+    );
+
+    // C4-21/S4-X-09 may compose this existing deletion contract only for
+    // recoverable repo-owned discarded versions. There is no hard-delete flag;
+    // platforms must disable Replace when Trash or a documented safety backup
+    // is unavailable.
     [Throws=CoreError]
     void delete_file(string repo_path, i64 file_id);
 
@@ -251,6 +308,10 @@ namespace area_matrix {
     [Throws=CoreError]
     FileEntry restore_file(string repo_path, i64 file_id);
 
+    // C4-11 desktop-main-query reuses list_files, get_file, list_tree_json,
+    // and search_files for S4-WIN-02/S4-LNX-02 main-window state. Desktop
+    // shells page through FileFilter.limit/offset and must not scan the repo
+    // directly or hide watcher/import/recovery behavior behind this query set.
     [Throws=CoreError]
     sequence<FileEntry> list_files(string repo_path, FileFilter filter);
 
@@ -328,10 +389,44 @@ namespace area_matrix {
     FileEntry get_file(string repo_path, i64 file_id);
 
     [Throws=CoreError]
-    sequence<ChangeLogEntry> list_changes(string repo_path, ChangeFilter filter);
+    MissingFileState get_missing_file_state(string repo_path, i64 file_id);
 
     [Throws=CoreError]
+    MissingFileRecoveryReport relink_missing_file(
+        string repo_path, MissingFileRelinkRequest request
+    );
+
+    [Throws=CoreError]
+    MissingFileRecoveryReport remove_missing_file_record(
+        string repo_path, MissingFileRemoveRecordRequest request
+    );
+
+    // C4-07 mobile-detail composes get_file + list_changes + read_note.
+    // FileEntry.availability_status lets S4-IOS-05 route Missing to S4-X-06
+    // without platform-side metadata inference.
+    [Throws=CoreError]
+    sequence<ChangeLogEntry> list_changes(string repo_path, ChangeFilter filter);
+
+    // C4-11 also uses this read-only tree JSON for desktop sidebar state.
+    [Throws=CoreError]
     string list_tree_json(string repo_path, string locale);
+
+    [Throws=CoreError]
+    sequence<SyncConflict> detect_sync_conflicts(string repo_path);
+
+    [Throws=CoreError]
+    SyncConflictResolutionPreviewReport preview_sync_conflict_resolution(
+        string repo_path,
+        string conflict_id,
+        SyncConflictResolutionStrategy resolution
+    );
+
+    [Throws=CoreError]
+    SyncConflictResolveReport resolve_sync_conflict(
+        string repo_path,
+        string conflict_id,
+        SyncConflictResolutionRequest resolution
+    );
 
     [Throws=CoreError]
     sequence<ICloudConflictPair> list_icloud_conflicts(string repo_path);
@@ -347,6 +442,12 @@ namespace area_matrix {
         string conflict_id,
         ICloudConflictResolution resolution
     );
+
+    [Throws=CoreError]
+    CloudStorageState detect_cloud_storage_state(string repo_path);
+
+    [Throws=CoreError]
+    CloudStorageState acknowledge_onedrive_risk_notice(string repo_path);
 
     [Throws=CoreError]
     ImportConflictBatchPreviewReport preview_import_conflict_batch(
@@ -376,6 +477,11 @@ namespace area_matrix {
     [Throws=CoreError]
     void set_fs_event_cursor(string repo_path, i64 last_event_id);
 
+    [Throws=CoreError]
+    PlatformWatcherSnapshot record_watcher_health(
+        string repo_path, PlatformWatcherHealthSignal signal
+    );
+
     ErrorMapping map_core_error(ErrorMappingInput input);
 };
 
@@ -390,6 +496,59 @@ dictionary RepoConfig {
     boolean enable_keyword_rules;
     boolean fallback_to_inbox;
     boolean allow_replace_during_import;
+};
+
+dictionary BindingContractRequest {
+    BindingTargetPlatform target_platform;
+    i64 binding_version;
+};
+
+dictionary BindingApiContract {
+    string name;
+    string capability;
+    BindingSupportStatus status;
+    string? reason;
+};
+
+dictionary BindingTypeMapping {
+    string rust_type;
+    string udl_type;
+    string target_type;
+    BindingSupportStatus status;
+    string? reason;
+};
+
+dictionary BindingMissingCapability {
+    string capability;
+    string label;
+    BindingSupportStatus status;
+    string reason;
+};
+
+dictionary BindingContractReport {
+    BindingTargetPlatform target_platform;
+    i64 binding_version;
+    string core_version;
+    sequence<BindingApiContract> supported_apis;
+    sequence<BindingTypeMapping> type_mappings;
+    sequence<BindingMissingCapability> missing_capabilities;
+};
+
+dictionary PlatformCapabilitySupport {
+    PlatformCapabilityStatus status;
+    boolean ui_enabled;
+    boolean requires_permission;
+    string? reason;
+};
+
+dictionary PlatformCapabilities {
+    PlatformId platform;
+    string app_version;
+    PlatformCapabilitySupport watcher;
+    PlatformCapabilitySupport trash;
+    PlatformCapabilitySupport share_extension;
+    PlatformCapabilitySupport cloud_placeholder;
+    PlatformCapabilitySupport security_bookmark;
 };
 
 dictionary AiFeatureConfig {
@@ -773,6 +932,38 @@ dictionary AiPrivacyEvaluationReport {
     string message;
 };
 
+dictionary AiFallbackStatusRequest {
+    AiFallbackOperation operation;
+    AiCallLogRoute? route;
+    AiFallbackProviderErrorKind? provider_error;
+    string? provider_error_code;
+    AiPrivacyDecision? privacy_decision;
+    AiPrivacySkippedReason? privacy_skipped_reason;
+    AiCategorySuggestionSkipReason? category_skipped_reason;
+    SemanticSearchFallbackReason? semantic_fallback_reason;
+    AiCallLogStatus? call_log_status;
+    i64? call_log_id;
+    string? privacy_rule_id;
+    i64? retry_after;
+};
+
+dictionary AiFallbackStatus {
+    AiFallbackOperation operation;
+    AiFallbackKind kind;
+    AiFallbackCategory category;
+    string title;
+    string message;
+    boolean retryable;
+    string? retry_disabled_reason;
+    AiFallbackAction? primary_action;
+    AiFallbackAction? secondary_action;
+    AiFallbackAction non_ai_fallback_action;
+    AiCallLogRoute? route;
+    i64? call_log_id;
+    string? privacy_rule_id;
+    i64? retry_after;
+};
+
 dictionary SemanticSearchMatch {
     SearchFileResult result;
     f32 relevance;
@@ -900,6 +1091,9 @@ dictionary RepoPathValidation {
     boolean is_initialized;
     boolean is_inside_area_matrix;
     boolean is_icloud_path;
+    boolean is_onedrive_path;
+    PlatformPathKind platform_path_kind;
+    boolean is_case_sensitive_path;
     boolean has_unfinished_scan_session;
     RepoInitMode? recommended_mode;
     sequence<RepoPathIssue> issues;
@@ -911,7 +1105,17 @@ dictionary ImportOptions {
     string? target_directory;
     string? override_category;
     string? override_filename;
+    // C4-13 desktop and C4-06 iOS import dialogs keep Replace hidden or
+    // disabled until the separate C4-21/S4-X-09 confirmation proves
+    // recoverability. Overwrite is the committed strategy token after that
+    // confirmation, not the preview or platform Trash capability contract.
     DuplicateStrategy duplicate_strategy;
+};
+
+dictionary ImportResult {
+    FileEntry entry;
+    ImportSourceRemovalStatus source_removal_status;
+    string? source_removal_failure;
 };
 
 dictionary FileFilter {
@@ -1544,8 +1748,47 @@ dictionary FileEntry {
     StorageMode storage_mode;
     FileOrigin origin;
     string? source_path;
+    FileAvailabilityStatus availability_status;
     i64 imported_at;
     i64 updated_at;
+};
+
+dictionary MissingFileState {
+    i64 file_id;
+    string relative_path;
+    string? last_known_path;
+    i64? last_seen_at;
+    MissingFileReason reason;
+    string? expected_hash_sha256;
+    boolean can_locate;
+    boolean can_try_again;
+    boolean can_remove_record;
+    boolean remove_record_requires_confirmation;
+    boolean can_run_rescan;
+    string? rescan_disabled_reason;
+};
+
+dictionary MissingFileRelinkRequest {
+    i64 file_id;
+    string new_path;
+    boolean confirmed;
+};
+
+dictionary MissingFileRemoveRecordRequest {
+    i64 file_id;
+    boolean confirmed;
+};
+
+dictionary MissingFileRecoveryReport {
+    i64 file_id;
+    MissingFileRecoveryStatus status;
+    string? previous_path;
+    string? current_path;
+    boolean hash_matched;
+    boolean record_removed;
+    boolean file_deleted;
+    string? change_log_action;
+    string? message;
 };
 
 dictionary MoveToCategoryPreview {
@@ -1559,6 +1802,95 @@ dictionary MoveToCategoryPreview {
     boolean index_only;
     boolean name_conflict_resolved;
     boolean will_move_file;
+};
+
+dictionary SyncConflictAffectedFile {
+    string path;
+    i64? file_id;
+    SyncConflictFileRole role;
+    i64? size_bytes;
+    i64? modified_at;
+    string? hash_sha256;
+    string? source_platform;
+};
+
+dictionary SyncConflict {
+    string conflict_id;
+    SyncConflictType conflict_type;
+    SyncConflictSeverity severity;
+    SyncConflictStatus status;
+    string primary_path;
+    sequence<SyncConflictAffectedFile> affected_files;
+    i64 version_count;
+    string? source_provider;
+    i64? detected_at;
+    string? summary;
+};
+
+dictionary SyncConflictVersionImpact {
+    string path;
+    i64? file_id;
+    SyncConflictFileRole role;
+    boolean will_keep;
+    boolean will_be_canonical;
+    boolean will_remain_user_visible;
+    boolean will_move_to_trash;
+    string? recovery_target;
+    string? reason;
+};
+
+dictionary SyncConflictReplacePlan {
+    string old_path;
+    string new_path;
+    string? old_hash_sha256;
+    string? new_hash_sha256;
+    i64? affected_file_id;
+    string? backup_target;
+    string database_update;
+    string change_log_action;
+    string recovery_note;
+};
+
+dictionary SyncConflictResolutionPreviewReport {
+    string conflict_id;
+    SyncConflictResolutionStrategy resolution;
+    SyncConflictResolutionStrategy default_resolution;
+    SyncConflictStatus status_after;
+    sequence<SyncConflictVersionImpact> version_impacts;
+    sequence<string> kept_paths;
+    sequence<string> retained_paths;
+    sequence<string> planned_trash_paths;
+    sequence<i64> affected_file_ids;
+    string? canonical_path;
+    string change_log_action;
+    boolean destructive;
+    boolean requires_replace_confirmation;
+    boolean trash_required;
+    boolean trash_available;
+    boolean can_apply;
+    string? blocked_reason;
+    string? preview_token;
+    SyncConflictReplacePlan? replace_plan;
+};
+
+dictionary SyncConflictResolutionRequest {
+    SyncConflictResolutionStrategy strategy;
+    string preview_token;
+    boolean replace_confirmed;
+    string? replace_confirmation_id;
+};
+
+dictionary SyncConflictResolveReport {
+    string conflict_id;
+    SyncConflictResolutionStrategy resolution;
+    SyncConflictStatus status;
+    sequence<string> kept_paths;
+    sequence<string> retained_paths;
+    sequence<string> trashed_paths;
+    sequence<i64> affected_file_ids;
+    string change_log_action;
+    string? undo_token;
+    i64? resolved_at;
 };
 
 dictionary ICloudConflictPair {
@@ -1610,6 +1942,21 @@ dictionary ICloudConflictResolveReport {
     sequence<string> trashed_paths;
     string? undo_token;
     string change_log_action;
+};
+
+dictionary CloudStorageState {
+    string repo_path;
+    CloudStorageProviderKind provider_kind;
+    CloudStorageRiskLevel risk;
+    CloudPlaceholderState placeholder_state;
+    CloudPermissionState permission_state;
+    string status_summary;
+    sequence<string> risk_reasons;
+    CloudStorageRecommendedAction recommended_action;
+    boolean requires_notice_acknowledgement;
+    boolean notice_acknowledged;
+    boolean can_retry;
+    boolean requires_reconnect;
 };
 
 dictionary ImportConflictBatchPreviewRequest {
@@ -1720,10 +2067,36 @@ dictionary RecoveryReport {
     sequence<string> warnings;
 };
 
+dictionary ManualRescanPreviewItem {
+    ManualRescanPreviewItemKind kind;
+    string relative_path;
+    string reason;
+    string suggested_action;
+};
+
+dictionary ManualRescanPreviewReport {
+    i64 added;
+    i64 updated;
+    i64 missing_or_deleted_from_fs;
+    i64 renamed_candidates;
+    i64 conflicts;
+    i64 unreadable;
+    i64 unknown;
+    i64 skipped;
+    string snapshot_id;
+    i64 created_at;
+    boolean is_stale;
+    sequence<ManualRescanPreviewItem> items;
+};
+
 dictionary ReindexReport {
     i64? scan_session_id;
     i64 inserted;
     i64 updated;
+    i64 missing;
+    i64 conflicts;
+    i64 unreadable;
+    i64 unknown;
     i64 skipped;
     sequence<string> errors;
 };
@@ -1755,6 +2128,10 @@ dictionary ScanSession {
     string? last_path;
     i64 inserted;
     i64 updated;
+    i64 missing;
+    i64 conflicts;
+    i64 unreadable;
+    i64 unknown;
     i64 skipped;
     i64 started_at;
     i64 updated_at;
@@ -1776,6 +2153,48 @@ dictionary SyncResult {
     sequence<string> errors;
 };
 
+dictionary PlatformWatcherEventSample {
+    string path;
+    ExternalEventKind kind;
+    i64 fs_event_id;
+    i64? occurred_at;
+};
+
+dictionary PlatformWatcherHealthSignal {
+    PlatformWatcherBackend backend;
+    PlatformWatcherStatus status;
+    string watched_path;
+    i64? last_event_id;
+    i64? last_event_at;
+    i64? last_sync_event_id;
+    i64? last_sync_at;
+    i64? last_rescan_at;
+    i64 pending_event_count;
+    i64? watch_count;
+    string? error_summary;
+    sequence<PlatformWatcherHealthReason> health_reasons;
+    sequence<PlatformWatcherEventSample> recent_events;
+    i64 reported_at;
+};
+
+dictionary PlatformWatcherSnapshot {
+    string repo_path;
+    PlatformWatcherBackend backend;
+    PlatformWatcherStatus status;
+    string watched_path;
+    i64? last_event_id;
+    i64? last_event_at;
+    i64? last_sync_event_id;
+    i64? last_sync_at;
+    i64? last_rescan_at;
+    i64 pending_event_count;
+    i64? watch_count;
+    string? error_summary;
+    sequence<PlatformWatcherHealthReason> health_reasons;
+    sequence<PlatformWatcherEventSample> recent_events;
+    i64 reported_at;
+};
+
 dictionary ErrorMappingInput {
     ErrorKind kind;
     string? path;
@@ -1793,14 +2212,22 @@ dictionary ErrorMapping {
 };
 
 enum StorageMode { "Moved", "Copied", "Indexed" };
+enum ImportSourceRemovalStatus { "NotRequested", "Removed", "Retained" };
 enum FileOrigin { "Imported", "Adopted", "External" };
+enum FileAvailabilityStatus { "Available", "Missing" };
 enum RepoInitMode { "CreateEmpty", "AdoptExisting" };
 enum RepoPathIssue {
     "MissingPath", "NotDirectory", "NotReadable", "NotWritable",
     "NonEmptyDirectory", "AlreadyInitialized", "InsideAreaMatrix",
-    "ICloudPath", "UnfinishedScanSession"
+    "ICloudPath", "OneDrivePath", "WindowsReservedName",
+    "WindowsCaseInsensitive", "UnfinishedScanSession"
 };
+enum PlatformPathKind { "Local", "ICloudDrive", "OneDrive", "NetworkShare", "Unknown" };
 enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
+enum BindingTargetPlatform { "Swift", "Kotlin", "Python" };
+enum BindingSupportStatus { "Supported", "Limited", "Missing" };
+enum PlatformId { "Macos", "Ios", "Windows", "Linux", "Unknown" };
+enum PlatformCapabilityStatus { "Available", "Limited", "NotAvailable", "Unknown" };
 enum AiProviderPreference { "LocalFirst", "LocalOnly", "RemoteFirst" };
 enum AiFeatureKind {
     "ClassificationSuggestions", "AutoSummaries", "AutoTags", "SemanticSearch"
@@ -1873,6 +2300,29 @@ enum AiPrivacyProviderGateReason {
     "PrivacyGateDisabled", "ScopeNotAllowed", "ProviderNotConfigured",
     "ProviderNotVerified", "ProviderDisabled"
 };
+enum AiFallbackOperation {
+    "ClassificationSuggestion", "SemanticSearch", "EmbeddingIndexBuild"
+};
+enum AiFallbackProviderErrorKind {
+    "LocalModelNotReady", "RemoteNotConfigured", "RemoteFailed",
+    "ProviderUnavailable", "RateLimited", "Timeout", "CallLogUnavailable",
+    "InternalFailure"
+};
+enum AiFallbackKind {
+    "AiDisabled", "FeatureDisabled", "LocalModelNotReady",
+    "RemoteNotConfigured", "RemoteFailed", "ProviderUnavailable",
+    "PrivacySkipped", "SemanticIndexNotReady", "NoEligibleInput",
+    "NormalSearchUnavailable", "CallLogUnavailable", "RateLimited",
+    "Timeout", "InternalFailure"
+};
+enum AiFallbackCategory {
+    "Disabled", "Skipped", "Unavailable", "Error"
+};
+enum AiFallbackAction {
+    "Retry", "RetryLater", "OpenAiSettings", "OpenLocalModelStatus",
+    "ConfigureRemoteAi", "ViewPrivacyRule", "ViewCallLog",
+    "BuildSemanticIndex", "UseNormalSearch", "ClassifyManually"
+};
 enum SemanticSearchRoute { "Local", "Remote" };
 enum SemanticSearchInputField {
     "FileName", "RepoRelativePath", "Category", "NoteSummary",
@@ -1909,6 +2359,10 @@ enum LocalModelRecommendedAction {
 enum ImportDestination { "AutoClassify", "SelectedDirectory", "Category" };
 enum ScanSessionKind { "Adopt", "Reindex" };
 enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };
+enum ManualRescanPreviewItemKind {
+    "Added", "Updated", "Missing", "RenamedCandidate",
+    "Conflict", "Unreadable", "Unknown", "Skipped"
+};
 enum DuplicateStrategy { "Skip", "Overwrite", "KeepBoth", "Ask" };
 enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
 enum SearchScope { "AllRepo", "CurrentNode" };
@@ -1934,10 +2388,34 @@ enum CommandTargetAction {
     "Navigate", "OpenSheet", "OpenConfirmation", "RunSmartList",
     "FocusFile", "OpenSearch", "LowRiskAction"
 };
+enum SyncConflictStatus { "NeedsReview", "Resolved" };
+enum SyncConflictType {
+    "SameNameDifferentContent", "ConcurrentModification", "MetadataMismatch",
+    "MissingVersion", "Unknown"
+};
+enum SyncConflictSeverity { "Low", "Medium", "High" };
+enum SyncConflictFileRole {
+    "Existing", "Incoming", "ConflictCopy", "Missing", "Unknown"
+};
+enum SyncConflictResolutionStrategy { "KeepBoth", "UseExisting", "UseIncoming" };
+enum MissingFileReason {
+    "PathMissing", "PermissionDenied", "CloudPlaceholder",
+    "ExternalVolumeDisconnected", "Unknown"
+};
+enum MissingFileRecoveryStatus {
+    "Missing", "Present", "Relinked", "HashMismatch", "RecordRemoved", "Blocked"
+};
 enum ICloudConflictStatus { "NeedsReview", "Resolved" };
 enum ICloudConflictVersionRole { "Original", "ConflictedCopy" };
 enum ICloudConflictPreviewStatus { "Available", "MetadataOnly", "Unavailable" };
 enum ICloudConflictResolution { "KeepBoth", "KeepOriginal", "KeepConflictedCopy" };
+enum CloudStorageProviderKind { "Local", "ICloudDrive", "OneDrive", "Unknown" };
+enum CloudStorageRiskLevel { "NoRisk", "Low", "Medium", "High", "Unknown" };
+enum CloudPlaceholderState { "NotPlaceholder", "Placeholder", "Unknown" };
+enum CloudPermissionState { "Accessible", "PermissionDenied", "AccessExpired", "Unknown" };
+enum CloudStorageRecommendedAction {
+    "None", "AcknowledgeNotice", "RetryStatusCheck", "ReconnectFolder", "ChooseLocalFolder"
+};
 enum ImportConflictBatchConflictType { "DuplicateHash", "SameNameDifferentContent" };
 enum ImportConflictBatchStrategy { "Skip", "KeepBoth", "Replace", "AskPerItem" };
 enum ImportConflictBatchPreviewStatus {
@@ -1947,6 +2425,12 @@ enum ImportConflictBatchResultStatus {
     "Skipped", "KeptBoth", "Replaced", "QueuedForPerItem", "Pending", "Failed"
 };
 enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
+enum PlatformWatcherBackend { "ReadDirectoryChangesW", "Inotify", "Unknown" };
+enum PlatformWatcherStatus { "Starting", "Running", "Paused", "Error", "Unavailable" };
+enum PlatformWatcherHealthReason {
+    "PermissionDenied", "PathMissing", "BackendUnavailable", "DatabaseLocked",
+    "LimitExceeded", "NetworkMount", "CloudSyncNoise", "Unknown"
+};
 enum BatchMutationStatus { "Added", "AlreadyHadTag", "Failed" };
 enum TagSuggestionSource { "FileName", "Path", "SourceFolder", "ExistingTagPattern" };
 enum TagSuggestionMatch { "Strong", "Weak" };

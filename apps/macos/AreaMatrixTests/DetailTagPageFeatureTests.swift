@@ -1,7 +1,6 @@
 @testable import AreaMatrix
 import XCTest
 
-// swiftlint:disable file_length
 // swiftlint:disable:next type_body_length
 final class DetailTagPageFeatureTests: XCTestCase {
     @MainActor
@@ -483,22 +482,5 @@ final class DetailTagPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["tax-review"])
         XCTAssertNotNil(model.detailTagSuggestionState.editSession)
         XCTAssertNotNil(model.detailTagEditorState.failure)
-    }
-}
-
-extension UndoActionRecordSnapshot {
-    static func s223ApplySuggestion(token: String) -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
-            actionID: token,
-            kind: "tag_suggestion_apply",
-            summary: "Applied 1 suggested tag.",
-            affectedCount: 1,
-            affectedFileNames: ["invoice_2026.pdf"],
-            status: .pending,
-            canUndo: true,
-            disabledReason: nil,
-            createdAt: 1_700_000_400,
-            updatedAt: 1_700_000_400
-        )
     }
 }

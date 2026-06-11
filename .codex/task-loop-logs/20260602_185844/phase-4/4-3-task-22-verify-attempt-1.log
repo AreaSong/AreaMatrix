@@ -1,0 +1,81 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-22`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-22-c4-05-implementation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 只实现 C4-05，不顺手实现同阶段其他能力
+  - 结果：通过
+  - 证据：C4-05 复用 `predict_category` / `import_file`，未新增其他 C4 能力 API；`apps/**` 无变更。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:832`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:916`
+
+- 按能力规格落实输入、输出、DB/文件系统变化和错误映射
+  - 结果：通过
+  - 证据：UDL 保持 `predict_category` 与 `import_file`；`ImportOptions` 暴露 `mode/destination/override_filename/duplicate_strategy`；`import_file` 经 staging 写入最终文件、`files`、`change_log`；测试验证 copied staged payload、DB 行、change_log 和 payload 不入日志。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:148`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:984`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:21`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/share_extension_import_implementation.rs:80`
+
+- Rust Core 不依赖平台 UI API
+  - 结果：通过
+  - 证据：`api.rs` 明确 Share Extension 解析、app-group queue、权限刷新、超时处理和 deferred ticket 存储留在平台层；Core 只接收 staged file path。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:832`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:916`
+
+- 最小测试支撑，不做页面接入
+  - 结果：通过
+  - 证据：新增 Core 集成测试 `share_extension_import_implementation.rs`；无 `apps/**` 改动。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/share_extension_import_implementation.rs:1`
+
+- C4-05 核心行为可被测试或桥接调用验证
+  - 结果：通过
+  - 证据：`./dev check task 4-3/task-22` 运行 `share_extension_import_contract_api` 4 个测试和 `share_extension_import_implementation` 3 个测试，全部通过。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/share_extension_import_contract_api.rs:29`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/share_extension_import_implementation.rs:79`
+
+- 未触碰用户文件安全边界之外行为
+  - 结果：通过
+  - 证据：实现使用 copied import 语义，测试确认 staged payload 原文件保留、repo 内生成副本、staging 清空；`apps/**` 无修改。
+  - 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/share_extension_import_implementation.rs:93`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C4-05 复用既有 import/classify 合同，没有引入临时接口或跨平台 UI 依赖。
+- 注释 / rustdoc / 文档同步：通过，public API 注释说明 C4-05 平台边界和 deferred takeover 语义。
+- 错误处理与边界处理：通过，沿用 `CoreError::InvalidPath/FileNotFound/PermissionDenied/Io/Db/DuplicateFile` 路径；source path 校验和 `.areamatrix` 内部路径拒绝存在。
+- 测试与验证覆盖：通过，覆盖 staged payload copy、deferred main-app continuation、change_log 不含 payload 内容。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试走真实 `init_repo/import_file/list_files/SQLite`，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-22`
+- 通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`: OK
+  - `git diff --check`: OK
+  - `cargo test --test share_extension_import_contract_api -- --nocapture`: 4 passed
+  - `cargo test --test share_extension_import_implementation -- --nocapture`: 3 passed
+- 失败：无
+- 缺失：未运行 `./dev check all` / `./dev check core`，原因是当前 manifest 指定 task-scoped 验证，且本 atomic Core task 不要求宽门禁。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

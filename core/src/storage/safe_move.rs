@@ -12,25 +12,23 @@ const STAGING_DIR: &str = "staging";
 
 pub(super) struct StagingFileGuard {
     path: PathBuf,
-    cleanup: StagingCleanup,
     armed: bool,
 }
 
 impl StagingFileGuard {
     pub(super) fn create_for_copy(repo: &Path) -> CoreResult<Self> {
-        Self::create(repo, "copy-import", StagingCleanup::Delete)
+        Self::create(repo, "copy-import")
     }
 
-    pub(super) fn create_for_move(repo: &Path, source: PathBuf) -> CoreResult<Self> {
-        Self::create(repo, "move-import", StagingCleanup::RestoreSource(source))
+    pub(super) fn create_for_move(repo: &Path) -> CoreResult<Self> {
+        Self::create(repo, "move-import")
     }
 
-    fn create(repo: &Path, prefix: &str, cleanup: StagingCleanup) -> CoreResult<Self> {
+    fn create(repo: &Path, prefix: &str) -> CoreResult<Self> {
         let staging_dir = repo.join(AREA_MATRIX_DIR).join(STAGING_DIR);
-        fs::create_dir_all(&staging_dir).map_err(hash::map_io_error)?;
+        fs::create_dir_all(&staging_dir).map_err(map_staging_dir_error)?;
         Ok(Self {
             path: staging_dir.join(format!("{}-{}", prefix, uuid::Uuid::new_v4())),
-            cleanup,
             armed: true,
         })
     }
@@ -47,22 +45,10 @@ impl StagingFileGuard {
 impl Drop for StagingFileGuard {
     fn drop(&mut self) {
         if self.armed {
-            match &self.cleanup {
-                StagingCleanup::Delete => {
-                    // Best-effort cleanup for the internal staging file created by this import.
-                    let _cleanup_result = fs::remove_file(&self.path);
-                }
-                StagingCleanup::RestoreSource(source) => {
-                    restore_staged_source_or_keep_recoverable(&self.path, source);
-                }
-            }
+            // Best-effort cleanup for the internal staging file created by this import.
+            let _cleanup_result = fs::remove_file(&self.path);
         }
     }
-}
-
-enum StagingCleanup {
-    Delete,
-    RestoreSource(PathBuf),
 }
 
 pub(super) enum FinalFileGuard {
@@ -115,10 +101,6 @@ impl Drop for FinalFileGuard {
     }
 }
 
-pub(super) fn move_source_to_staging(source: &Path, staging: &Path) -> CoreResult<()> {
-    move_file_no_replace(source, staging)
-}
-
 fn restore_staged_source_or_keep_recoverable(current_path: &Path, source: &Path) {
     if !current_path.exists() {
         return;
@@ -128,6 +110,10 @@ fn restore_staged_source_or_keep_recoverable(current_path: &Path, source: &Path)
         return;
     }
     let _restore_result = move_recoverable_file(current_path, source);
+}
+
+pub(super) fn remove_imported_source(source: &Path) -> CoreResult<()> {
+    fs::remove_file(source).map_err(map_source_removal_error)
 }
 
 pub(crate) fn move_recoverable_file(current_path: &Path, source: &Path) -> CoreResult<()> {
@@ -160,6 +146,22 @@ fn copy_to_new_destination(current_path: &Path, destination: &Path) -> CoreResul
         return Err(CoreError::io("io error"));
     }
     Ok(())
+}
+
+fn map_staging_dir_error(error: std::io::Error) -> CoreError {
+    match error.kind() {
+        std::io::ErrorKind::AlreadyExists => CoreError::io("io error"),
+        _ => hash::map_io_error(error),
+    }
+}
+
+fn map_source_removal_error(error: std::io::Error) -> CoreError {
+    match error.kind() {
+        std::io::ErrorKind::NotFound => CoreError::file_not_found("missing file"),
+        std::io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
+        std::io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
+        _ => CoreError::io("io error"),
+    }
 }
 
 #[cfg(test)]

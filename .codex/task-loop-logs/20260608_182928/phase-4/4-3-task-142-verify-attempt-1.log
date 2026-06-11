@@ -1,0 +1,92 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-142`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-142-s4-x-01-c4-16-sync-conflict-resolve.md`
+- 实现范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+- 禁止范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：12
+- 未覆盖项数：0
+- 通过项数：12
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S4-X-01 页面中的 C4-16 功能点
+- 结果：通过
+- 证据：新增 C4-16 专属 resolution/impact/apply UI 标识；C4-15 仍仅负责冲突读取与版本展示。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SyncConflictReviewView.swift`
+
+- 项目：读取页面规格、control map、Core API、C4-16 能力规格
+- 结果：通过
+- 证据：文档要求 C4-16 提供 `preview_sync_conflict_resolution` / `resolve_sync_conflict`，S4-X-01 需展示 impact summary、禁用不安全 Replace、成功写 change log；实现与这些合同一致。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+
+- 项目：只接入 C4-16 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreSyncConflictResolving` 通过 `CoreBridge` 调用真实 UniFFI 生成绑定；model 有 preview/apply 状态与 Core error mapping。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreSyncConflictResolving.swift`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/SyncConflictReviewModel.swift`
+
+- 项目：不实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：未接入 C4-21 执行能力；`Use incoming` 被禁用并提示必须进入 S4-X-09。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/SyncConflictReviewModel.swift`
+
+- 项目：C4-16 用户可见功能可触发和验收
+- 结果：通过
+- 证据：页面提供 resolution picker、impact summary、Apply resolution；测试覆盖默认 Keep both、切换 Use existing、Apply 成功、失败错误映射、Use incoming 阻断。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/SyncConflictReviewResolutionPageFeatureTests.swift`
+
+- 项目：没有使用 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产路径调用 `AreaMatrix.previewSyncConflictResolution` 与 `AreaMatrix.resolveSyncConflict`；fixture 仅存在于测试文件。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreSyncConflictResolving.swift`
+
+- 项目：未触碰 control map 之外 Core 能力
+- 结果：通过
+- 证据：新增边界仅为 `preview_sync_conflict_resolution`、`resolve_sync_conflict`；未扩展到导入冲突、批量删除、AI、rescan 等能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/CoreBridgePlaceholderState.swift`
+
+- 项目：Expected New Paths 已落地
+- 结果：通过
+- 证据：新增 `apps/macos/AreaMatrix/Bridge/CoreSyncConflictResolving.swift`、C4-16 page-feature tests 和 test support。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，`core/src/**` 未被修改。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。CoreBridge adapter、model state、SwiftUI view、tests 分层清楚，文件均未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 Rust public API；Core API / UDL 已存在 C4-16 合同，Swift 实现按合同消费。
+- 错误处理与边界处理：通过。preview/apply failure 进入 Core error mapping；`Use incoming` 不直接执行，要求 S4-X-09。
+- 测试与验证覆盖：通过。manifest 验证通过，另补跑 C4-16 targeted XCTest 6 个用例通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径无 mock-only 闭环；测试替身只在 XCTest 中记录请求和断言。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-142`
+- 结果：通过。包含 `prompt_pipeline.py doctor: OK`、`git diff --check` 通过、macOS `xcodebuild ... build` 最终 `BUILD SUCCEEDED`。
+- 已运行：`./dev test macos --only-testing AreaMatrixTests/SyncConflictReviewResolutionPageFeatureTests --keep-derived-data`
+- 结果：通过。标准 `xcodebuild test` 在本地 sandbox 的 `testmanagerd` 通信阶段失败，但测试用例已执行且 6/6 通过；仓库脚本随后按规则复用已构建 XCTest bundle，`xcrun xctest` 通过。
+- 缺失：未跑 `./dev check all`，本 task manifest 未要求宽门禁，且普通 page-feature task 验证上限为 `./dev check task 4-3/task-142`。
+- 工作区状态：存在 task 相关 `apps/**` 改动和 runner `progress/summary` 的 in_progress 记录；按本 verify 时序规则，这些不作为本轮验收阻断。未发现 `core/src/**` Forbidden Touches。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

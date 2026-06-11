@@ -1,0 +1,68 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-134`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-134-s4-lnx-03-page-integration-verify.md`
+- Manifest 章节：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md` 的 `## 4-3/task-134`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：逐项验收本页所有 page-feature task 是否完成
+- 结果：通过
+- 证据：control map 将 `S4-LNX-03` 绑定到 `C4-10, C4-17` 和 `4-3/task-132/133/134`；`./dev check task 4-3/task-132`、`./dev check task 4-3/task-133` 均通过。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:23`
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 调用闭环
+- 结果：通过
+- 证据：入口从选择 repo 路由到 `LocalFolderNotice`；页面加载调用 `ValidateRepoPathAsync` 与 `GetPlatformCapabilitiesAsync`；继续、选择其他目录、打开目录和错误上报均有实现；Linux tests 通过。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Onboarding/LocalFolderNoticeViewModel.cs:198`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Onboarding/LinuxRepositoryCoreBridge.cs:54`
+
+- 项目：移除无法通过最终验收的 mock、fixture 或硬编码状态
+- 结果：通过
+- 证据：生产路径通过 `AreaMatrixNativeCoreClient` 调用 `validate_repo_path` / `get_platform_capabilities`，测试 fake 仅存在于测试代码；未发现生产路径 mock-only 或绕过 CoreBridge 的闭环。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.cs:40`、`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.PlatformCapabilities.cs:7`
+
+- 项目：不新增 control map 外功能
+- 结果：通过
+- 证据：页面只消费 `C4-10` 的 repo path validation / route confirm 和 `C4-17` 的 platform capabilities；未调用 cloud storage detection、config load 或未声明 Core 能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/ChooseRepository/LocalFolderNoticeSmokeTests.cs:54`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，View、ViewModel、CoreBridge、NativeCoreClient 分层清楚；本 task 相关文件未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过，C# 范围不涉及 rustdoc；`docs/api/core-api.md` 与 `core/area_matrix.udl` 均声明 `validate_repo_path` 和 `get_platform_capabilities`。
+- 错误处理与边界处理：通过，空路径、缺失路径、非目录、不可写、Core 异常、打开文件夹失败都有显式错误路径。
+- 测试与验证覆盖：通过，manifest 验证、依赖 task 验证、Linux 页面测试均已运行并通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径未发现 mock-only；测试 fake 用于断言不初始化、不接管、不触碰用户文件。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-134`，通过；包含 `prompt_pipeline.py doctor` OK、`git diff --check` 通过、`xcodebuild ... build` 成功。
+- 已运行：`dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj`，通过，输出 `AreaMatrix Linux tests passed.`
+- 已运行：`./dev check task 4-3/task-132`，通过。
+- 已运行：`./dev check task 4-3/task-133`，通过。
+- 已运行：`git diff --name-only -- core/src`，无输出，未触碰 Forbidden Touches。
+- 缺失：无必需验证缺失；未运行 `./dev check all`，因为当前 manifest 只要求 `./dev check task 4-3/task-134`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+- 当前工作区有 runner/progress 状态文件仍为 `in_progress`，按本 verify 时序规则不作为本次不通过依据；业务 diff 位于允许的 `apps/**` 范围内，且未触碰 `core/src/**`。
+
+VERIFY_RESULT: PASS

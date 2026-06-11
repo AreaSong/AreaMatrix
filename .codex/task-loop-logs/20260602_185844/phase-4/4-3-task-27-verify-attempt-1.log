@@ -1,0 +1,91 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-27`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-27-c4-06-implementation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：13
+- 未覆盖项数：0
+- 通过项数：13
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只实现 C4-06，不顺手实现同阶段其他 C* 能力
+- 结果：通过
+- 证据：本轮新增可见实现证据集中在 `core/tests/files_import_implementation.rs`；`apps/**` 无 diff；C4-21 Replace 确认未在本 task 做页面接入，API 文档明确 C4-06 不执行 C4-21 确认。
+- 涉及文件：`core/tests/files_import_implementation.rs`、`core/src/api.rs:934`
+
+- 项目：按能力规格落实输入、输出、DB/文件系统变化和错误映射
+- 结果：通过
+- 证据：`import_file` 真实走 source validate、staging、hash、dedup、DB row、final path、change_log；测试覆盖授权 Files provider 路径复制、DB active row、change_log、source 保留、staging 清空。
+- 涉及文件：`core/src/storage/import.rs:21`、`core/tests/files_import_implementation.rs:91`
+
+- 项目：保持 Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：Core API 注释明确 picker、security-scoped access、iCloud 下载编排、Replace 确认均在平台层；本轮未触碰 `apps/**`。
+- 涉及文件：`core/src/api.rs:934`、`docs/architecture/stage-4-control-map.md`
+
+- 项目：必要时补最小测试支撑，但不做页面接入
+- 结果：通过
+- 证据：新增 `files_import_implementation` 测试 6 个；未新增/修改页面实现。
+- 涉及文件：`core/tests/files_import_implementation.rs:91`
+
+- 项目：C4-06 核心行为可被测试或桥接调用验证
+- 结果：通过
+- 证据：`files_import_contract_api` 验证 `predict_category` / `import_file`、Core API、UDL、文档对齐；`files_import_implementation` 验证真实导入行为。
+- 涉及文件：`core/tests/files_import_contract_api.rs:53`、`core/area_matrix.udl:149`
+
+- 项目：未触碰用户文件安全边界之外的行为
+- 结果：通过
+- 证据：测试验证 Copy 模式保留 provider source；Cancel 不写 DB/文件；placeholder、permission、duplicate 均不留下 active/staging 半成品。
+- 涉及文件：`core/tests/files_import_implementation.rs:105`、`core/tests/files_import_implementation.rs:154`、`core/tests/files_import_implementation.rs:170`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl` 已存在；`core/tests/files_import_implementation.rs` 已落地并被 task check 执行。
+- 涉及文件：`core/src/storage/import.rs`、`core/area_matrix.udl`、`core/tests/files_import_implementation.rs`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- apps` 无输出，未触碰 `apps/**`。
+- 涉及文件：`apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，导入链路拆分为 validate、stage、dedup、destination、commit、promote 等小函数，未发现单次脚本化实现。
+- 注释 / rustdoc / 文档同步：通过，公开 API 已有 C4-06 说明，UDL 中 `predict_category` / `import_file` / `ImportOptions` / error variants 对齐。
+- 错误处理与边界处理：通过，覆盖 `ICloudPlaceholder`、`PermissionDenied`、`DuplicateFile`、`Conflict` 相关路径；生产路径未发现为本 task 新增的 `unwrap()` / `panic!()`。
+- 测试与验证覆盖：通过，task 验证实际运行 contract + implementation 两组测试，共 10 个测试通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试调用真实 `init_repo`、`import_file`、SQLite DB、文件系统和 `list_files`，不是 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-3/task-27`
+- 哪些通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`tasks: 637`，`manifests: 637`
+  - `git diff --check`：通过
+  - `cargo test --test files_import_contract_api -- --nocapture`：通过，4 passed
+  - `cargo test --test files_import_implementation -- --nocapture`：通过，6 passed
+- 哪些失败：无
+- 哪些缺失：无必需验证缺失；未运行 `./dev check all` / `cargo test --workspace`，因为本 task manifest 要求的是 `./dev check task 4-3/task-27`，且任务级 gate 已选择 C4-06 targeted tests。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。`4-3/task-27` 当前可视为完成；runner 后续 progress / summary / Git checkpoint 收口不属于本 verify 阶段阻断项。
+
+VERIFY_RESULT: PASS

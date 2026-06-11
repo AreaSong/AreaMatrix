@@ -107,6 +107,7 @@ fn search_query_files_contract_result_page_carries_consumer_state() {
         storage_mode: StorageMode::Copied,
         origin: FileOrigin::Imported,
         source_path: None,
+        availability_status: area_matrix_core::FileAvailabilityStatus::Available,
         imported_at: 100,
         updated_at: 120,
     };

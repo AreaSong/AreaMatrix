@@ -1,0 +1,43 @@
+**一、执行结论**
+
+已完成 `4-3/task-51`。
+
+**二、执行范围**
+
+单任务：C4-11 `desktop-main-query` contract/API。
+
+修改文件清单：
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1479)
+- [core/src/search.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/search.rs:329)
+- [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:262)
+- [core/tests/desktop_main_query_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/desktop_main_query_contract_api.rs:1)
+
+**三、完成情况**
+
+核对清单全部完成：已读取 C4-11 能力规格、Stage 4 control map、Core API、错误码；已确认 `list_files`、`get_file`、`list_tree_json`、`search_files` 合同与分页、只读、错误边界一致；只补合同说明、UDL 注释和 contract test，没有实现相邻能力；合同测试记录了 Windows/Linux 主窗口可从这些查询合同得到列表、详情、树、搜索、缺失状态、DB locked/Refresh 等消费状态。
+
+完成标准满足：C4-11 Core API 合同可供后续 `task-52` implementation 直接实现；没有引入 control map 之外页面能力。
+
+Forbidden Touches：未触碰 `apps/**`。
+
+**四、工程质量**
+
+代码结构清晰，未新增抽象、依赖、mock-only wiring 或一次性实现。新增的是 rustdoc/UDL 合同说明和 targeted contract test；错误处理边界仍沿用现有 `CoreError::Db`、`RepoNotInitialized` 等合同，没有新增业务路径或吞错逻辑。
+
+**五、验证情况**
+
+已运行：
+
+```bash
+./dev check task 4-3/task-51
+```
+
+结果：通过。包含 `prompt doctor` OK、`git diff --check` OK、targeted `cargo test --test desktop_main_query_contract_api -- --nocapture`，3 个测试全部通过。
+
+第一次验证因新增测试断言文案跨行不匹配失败，已修正断言并重新跑同一命令通过。
+
+**六、风险与后续**
+
+剩余风险：本轮是合同/API task，没有实现新的业务闭环；真实最小行为闭环留给 `4-3/task-52`。当前工作区还显示既有 task-loop 状态脏改动：`tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260603_085846/`，我没有修改或回滚它们。
+
+建议下一个任务：继续 `4-3/task-52`，实现 C4-11 的最小 Core 行为闭环。

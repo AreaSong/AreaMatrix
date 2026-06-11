@@ -1,0 +1,33 @@
+page_id: S4-LNX-03
+title: Repository folder on Linux
+description: Explain local folder risk before the Linux repository continues to open, init, or adopt confirmation.
+summary:
+  - Folder: /home/you/AreaMatrix
+  - Type: Local folder
+  - Type: External drive
+  - Type: Network mount
+  - Type: Sync folder
+  - Type: Unknown
+  - Writable: Yes/No
+  - Platform capabilities: Watcher available; Cloud placeholders not available.
+states:
+  checking: Checking folder...
+  empty_path: Choose a repository folder first.
+  local: This is the recommended setup for Linux.
+  network: Network drives may delay or reorder file events. Run a rescan if changes look out of date.
+  sync: AreaMatrix does not manage your sync provider. Conflict files will be shown for review when detected.
+  unknown: Unknown
+  readonly: The folder is not writable. Choose another folder before initializing or importing.
+confirmation:
+  checkbox: I understand this location may not report changes reliably.
+actions:
+  - Continue
+  - Choose Another Folder
+  - Open Folder
+safety:
+  - The page calls validate_repo_path through LinuxRepositoryCoreBridge.
+  - The page calls get_platform_capabilities through LinuxPlatformCapabilitiesCoreBridge.
+  - Watcher and cloud placeholder rows come from the C4-17 PlatformCapabilities matrix.
+  - The page routes to S4-X-04 or S4-X-05 for init/adopt confirmation before init_repo can run.
+  - The page does not create, delete, move, rename, overwrite, sudo, or chmod user files.
+  - The page does not call cloud storage detection or configure sync providers.

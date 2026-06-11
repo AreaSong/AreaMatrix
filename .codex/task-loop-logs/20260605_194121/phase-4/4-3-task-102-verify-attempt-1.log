@@ -1,0 +1,87 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-102`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-102-c4-21-implementation.md`
+- 核验代码：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只实现 C4-21，不顺手实现同阶段其他 C* 能力  
+  结果：通过  
+  证据：当前未发现 `apps/**` 改动；实现证据集中在 C4-21 声明的 `import_file` overwrite、`delete_file` Trash-only、安全替换和 `resolve_sync_conflict` replace confirmation 路径。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/replace_confirm_cross_platform_implementation.rs:249`
+
+- 项目：输入、输出、DB/文件系统变化和错误映射  
+  结果：通过  
+  证据：UDL 暴露 `resolve_sync_conflict`、`replace_confirmed`、`replace_confirmation_id`、`trashed_paths`；API 文档要求 old version 进入 Trash/backup，不允许永久删除；实现会软删除旧 row、写 change log，并在测试中断言 `files.status = deleted`、`change_log.deleted.safe_replace = true`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:424`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs:333`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/replace_confirm_cross_platform_implementation.rs:175`
+
+- 项目：Rust Core 不依赖平台 UI API  
+  结果：通过  
+  证据：Core 使用 Rust storage / db / sync_conflict_resolve 路径；Trash 通过 Core storage guard 和 `trash` 适配，不引用 AppKit、SwiftUI、FSEvents 或 UI 层。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/replacement_trash.rs:99`、`/Users/as/Ai-Project/project/AreaMatrix/core/AGENTS.md:5`
+
+- 项目：最小测试支撑，不做页面接入  
+  结果：通过  
+  证据：新增/存在 implementation test 覆盖 import overwrite 可恢复、sync use incoming 未确认拒绝、确认后替换并进 Trash；无 `apps/**` 修改。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/replace_confirm_cross_platform_implementation.rs:250`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/replace_confirm_cross_platform_implementation.rs:285`
+
+- 项目：C4-21 核心行为可被测试或桥接调用验证  
+  结果：通过  
+  证据：`./dev check task 4-3/task-102` 运行 contract test 3 个通过，implementation test 2 个通过。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/replace_confirm_cross_platform_contract_api.rs:39`
+
+- 项目：未触碰用户文件安全边界之外行为  
+  结果：通过  
+  证据：replace 路径先 archive / Trash，再 promote DB；失败路径 guard rollback，未提供永久删除参数。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/replacement_trash.rs:89`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/sync_conflict_resolve/apply.rs:83`
+
+- 项目：Expected New Paths  
+  结果：通过  
+  证据：`core/src/**`、`core/area_matrix.udl` 已存在并参与验收；`core/tests/replace_confirm_cross_platform_implementation.rs` 已落地并被 cargo test 执行。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/replace_confirm_cross_platform_implementation.rs:1`
+
+- 项目：Forbidden Touches  
+  结果：通过  
+  证据：`git diff --name-only -- apps` 无输出，未触碰 `apps/**`。  
+  涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，replace 文件操作由 guard 管理，DB promote 与 rollback 分离。
+- 注释 / rustdoc / 文档同步：通过，public API 和 UDL 字段有说明，Core API / capability spec / UDL 对齐。
+- 错误处理与边界处理：通过，缺确认返回 `PermissionDenied`，stale/不可用状态走 `Conflict`，IO/DB 有映射。
+- 测试与验证覆盖：通过，manifest 指定验证已运行并通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试使用真实 temp repo、SQLite、文件写入和 Trash 测试目录，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项。
+- 工作区状态说明：当前有 task-loop/progress 运行态修改和未跟踪测试文件，且无 staged 文件；按本 verify 阶段规则，runner 收口前的 progress / summary / Git checkpoint 状态不作为阻断。未发现 Forbidden Touches 或危险无关脏改动。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-102`
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`，doctor OK，tasks 637，manifests 637，high risk tasks 633。
+- 通过：`git diff --check`
+- 通过：`cargo test --test replace_confirm_cross_platform_contract_api -- --nocapture`，3 passed。
+- 通过：`cargo test --test replace_confirm_cross_platform_implementation -- --nocapture`，2 passed。
+- 未运行：`./dev check all`、`./dev check core`，原因是当前普通 atomic Core task 的 manifest 只要求 `./dev check task 4-3/task-102`，不扩大验证边界。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

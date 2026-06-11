@@ -1,0 +1,57 @@
+一、执行结论
+
+已完成 `4-3/task-131` repair retry。
+
+二、执行范围
+
+单任务：`S4-LNX-02 + C4-11 desktop-main-query`。  
+本轮修复集中在 `apps/linux/**`，补齐：
+
+- Linux choose-repo `MainWindow` route 到 `LinuxMainWindow` 的生产 shell wiring。
+- `DesktopMainQueryCoreBridge(new AreaMatrixNativeCoreClient(...))` 真实生产链路。
+- C4-11 列表/搜索分页：`LoadMoreAsync`、`CanLoadMore`、`PaginationText`、`limit/offset`。
+- Linux native smoke 覆盖真实 Core 空库 `list_files/list_tree_json/search_files` 查询闭环。
+- C# UniFFI reader 对顶层 string buffer 的兼容解码。
+
+工作树仍有进入本轮前已存在的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 修改；本轮没有把它们作为功能修复点扩展处理。
+
+三、完成情况
+
+核对清单逐项结果：
+
+- 只处理 S4-LNX-02 中 C4-11：通过。
+- 已读取页面规格、control map、Core API、C4-11 能力规格：通过。
+- 只接入 C4-11 CoreBridge / 状态 / 错误映射：通过。
+- 未实现相邻页面、相邻平台或同页其他能力：通过。
+
+完成标准逐项结果：
+
+- 用户可见功能可触发和验收：通过，生产 shell 可消费 `MainWindow` route 并创建真实 CoreBridge 主窗口。
+- 无 mock/fixture/静态状态伪造真实 Core 闭环：通过，fake 只存在于单元测试；native smoke 已跑真实 Core 查询。
+- 未触碰 control map 之外 Core 能力：通过。
+
+Forbidden Touches：未触碰 `core/src/**`；`git diff --name-status -- core/src` 无输出。
+
+四、工程质量
+
+代码结构清晰：生产 shell、ViewModel 分页状态、CoreBridge/native binding 分层明确。  
+错误处理保留：DB/list 失败时保留缓存列表并映射错误；native binding 解码错误走 `Config` 类异常。  
+无新增依赖。无 public Rust API 或 Core API/UDL 改动，因此无需 rustdoc/docs 同步。  
+不存在生产 mock-only 或硬编码通过态；测试替身只用于 ViewModel 单元路径。
+
+五、验证情况
+
+已运行并通过：
+
+- `dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj --no-restore`  
+  结果：`AreaMatrix Linux tests passed.`
+- `./dev check task 4-3/task-131`  
+  结果：通过；`doctor: OK`、`git diff --check` 通过、`xcodebuild ... BUILD SUCCEEDED`。期间有 CoreSimulator/FSEvents 警告，但最终 build 成功。
+- `git diff --name-status -- core/src`  
+  结果：无输出。
+
+六、风险与后续
+
+剩余风险：未在真实 Linux 桌面环境启动 GTK/Qt 窗口做可视化操作；当前仓库 Linux UI 仍是 headless/spec + C# shell 形态，已用生产 shell 和 native smoke 覆盖可执行链路。
+
+建议下一个任务：继续 `4-3/task-132`，但保持只处理其 manifest 绑定的 S4-LNX-03 / C4-10、C4-17 范围。

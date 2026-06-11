@@ -1,0 +1,38 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-3/task-11`。  
+修改文件：
+
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1411)：补充 C4-03 在现有 `list_files` / `get_file` / `list_changes` / `list_tree_json` 合同上的移动端边界说明。
+- [core/tests/mobile_library_query_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/mobile_library_query_contract_api.rs:1)：新增 C4-03 合同测试，锁定 Core API、UDL、错误码、control map、页面消费状态与相邻能力边界。
+
+三、完成情况
+
+核对清单已完成：读取并交叉检查了 C4-03 能力规格、Stage 4 control map、Core API、错误码、UX 消费页面和现有 Core/UDL。现有 API 名称保持为能力规格列出的 `list_files`、`get_file`、`list_tree_json`、`list_changes`，没有新增 control map 之外能力。`core/area_matrix.udl` 已与现有合同一致，未修改。
+
+Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+代码结构清晰，只补合同说明和契约测试，没有业务实现、mock-only、硬编码通过态或相邻能力实现。新增测试覆盖签名、分页输入、文档/API/UDL 对齐、错误码、页面消费状态，以及 C4-07/C4-18 的边界归属。无新增依赖。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+cargo test --test mobile_library_query_contract_api -- --nocapture
+./dev check task 4-3/task-11
+```
+
+`./dev check task 4-3/task-11` 内部结果：`doctor: OK`，`git diff --check` 通过，targeted Core test 3 个测试全部通过。
+
+未运行全量 `cargo test --workspace`、clippy、`./dev check all`，因为本 task 明确要求普通 atomic Core task 以 `./dev check task 4-3/task-11` 为验证上限。
+
+六、风险与后续
+
+剩余风险：C4-03 当前仍是合同/API 任务，未实现新的业务行为；真实移动端查询行为和失败边界由后续 `4-3/task-12`、`4-3/task-13`、`4-3/task-14` 继续闭环。工作树中已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 的既有修改，我没有处理或回滚。

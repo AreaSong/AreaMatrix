@@ -1,0 +1,79 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-42`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-42-c4-09-implementation.md`
+- 核心实现范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_path.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+- 禁止触碰范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：18（manifest 12 项 + task 核对/完成标准 6 项）
+- 未覆盖项数：0
+- 通过项数：18
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：Exact Docs / Existing Code / Manifest 读取
+- 结果：通过
+- 证据：已读取 task、共享规则、切片规则、工程质量规则、编码规范、repo-local validation-driver、dependency graph、phase manifest，并定位 `## 4-3/task-42`。Manifest 指定 5 个 Exact Docs 均存在并已读取。
+- 涉及文件：`tasks/prompts/_shared/manifests/phase-4.md:7704`
+
+- 项目：只实现 C4-09，不顺手实现其他 C* 能力
+- 结果：通过
+- 证据：当前功能变更集中在 `core/src/repo_path.rs` 与新增 `core/tests/windows_repo_connect_implementation.rs`；无 `apps/**` 变更；未发现 C4-10/Linux、C4-14/OneDrive SDK 或页面接入实现。
+- 涉及文件：`core/src/repo_path.rs`、`core/tests/windows_repo_connect_implementation.rs`
+
+- 项目：输入、输出、DB/文件系统变化和错误映射
+- 结果：通过
+- 证据：`validate_repo_path` 覆盖 Windows-shaped path、OneDrive、大小写不敏感、UNC/network share、`.areamatrix` 内部路径；Windows 保留名映射为 `CoreError::InvalidPath`；`init_repo` 复用既有 CreateEmpty / AdoptExisting，接管时只写 `.areamatrix/` metadata 并通过真实 DB/list_files 验证 adopted 文件。
+- 涉及文件：`core/src/repo_path.rs:64`、`core/src/repo_path.rs:396`、`core/src/repo_init.rs:40`、`core/tests/windows_repo_connect_implementation.rs:50`
+
+- 项目：Rust Core 不依赖平台 UI API
+- 结果：通过
+- 证据：实现使用 `std::fs`、`std::path`、`rusqlite` 等 Core 可用能力；未引入 Swift/AppKit/Win32 UI 调用；OneDrive 仅做路径风险识别，不调用 SDK、不控制同步。
+- 涉及文件：`core/src/repo_path.rs:3`、`docs/api/core-api.md:2443`
+
+- 项目：最小测试支撑，不做页面接入
+- 结果：通过
+- 证据：新增 `windows_repo_connect_implementation` 覆盖空 Windows path 初始化、OneDrive 非空目录接管且不改用户文件、保留名拒绝、Windows 分隔符 metadata 内部路径阻断、UNC/mixed separator 分类。页面目录 `apps/**` 无变更。
+- 涉及文件：`core/tests/windows_repo_connect_implementation.rs:50`
+
+- 项目：完成标准
+- 结果：通过
+- 证据：`./dev check task 4-3/task-42` 已 fresh 运行并通过；C4-09 核心行为可由 targeted Rust tests 验证。测试使用真实临时目录、真实 `init_repo/load_config/list_files`，不是 mock-only 或硬编码通过态。
+- 涉及文件：`core/tests/windows_repo_connect_contract_api.rs`、`core/tests/windows_repo_connect_implementation.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`core/src/repo_path.rs` 489 行，新增测试 220 行，未超 500 行；C4-09 新增逻辑局部、可读，没有引入额外抽象。
+- 注释 / rustdoc / 文档同步：通过。Public Core API 仍有 rustdoc；Core API / UDL 已包含 `is_onedrive_path`、`platform_path_kind`、`is_case_sensitive_path`、Windows issues 和错误码。
+- 错误处理与边界处理：通过。生产路径未见新增 `unwrap()` / `expect()` / `panic!()`；Windows 保留名、metadata 内部路径、权限/IO/DB 读取错误均走 `CoreError`。
+- 测试与验证覆盖：通过。targeted tests 覆盖正常路径、OneDrive 风险、非空接管文件安全、保留名、分隔符、UNC/mixed separator。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试走真实文件系统、真实 repo init、真实 DB/list_files；无页面 mock 或静态示例闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-42`
+- 通过：`prompt_pipeline.py doctor`，结果 `doctor: OK`，637 tasks / 637 manifests。
+- 通过：`git diff --check`
+- 通过：`cargo test --test windows_repo_connect_contract_api -- --nocapture`，6 passed。
+- 通过：`cargo test --test windows_repo_connect_implementation -- --nocapture`，5 passed。
+- 失败：无。
+- 缺失：未运行 `./dev check all`、`cargo test --workspace`、clippy/fmt broad gate；按 manifest 与 validation-driver，普通 atomic Core task 的验收上限是 `./dev check task 4-3/task-42`，不默认扩大。
+- 工作区状态：`apps/**` 无变更；`progress.json` 与 `.codex/task-loop-runs/.../summary.json` 仅为 runner in_progress 收口前状态，不构成本 verify 阶段阻断。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

@@ -35,6 +35,7 @@ extension MainRepositoryContentView {
             onPreviewChangeCategory: previewChangeCategory,
             onLoadClassifierCorrectionContext: loadClassifierCorrectionContext,
             onChangeCategory: submitChangeCategory,
+            onApplyAIClassificationSuggestion: submitAIClassificationSuggestion,
             onBeginClassifierRuleHandoff: fileListModel.beginClassifierRuleHandoff,
             onRenameFirstFromChangeCategory: { fileID, targetCategory in
                 fileListModel.beginRenameFromChangeCategory(fileID: fileID, targetCategory: targetCategory)
@@ -43,6 +44,9 @@ extension MainRepositoryContentView {
             onPreviewClassifierRuleImpact: fileListModel.beginClassifierImpactPreview,
             onClassifierRuleSaved: fileListModel.completeClassifierRuleSave,
             onOpenChangeCategoryPermissionRecovery: onOpenChangeCategoryPermissionRecovery,
+            onBeginAIClassificationChange: fileListModel.beginAIClassificationChange,
+            onCancelClassifierRuleRoute: fileListModel.cancelClassifierRuleRoute,
+            onOpenAIRecoverySettings: onOpenAISettings,
             onDelete: submitDelete,
             onApplyICloudConflict: applyICloudConflict,
             onCollectDiagnostics: { Task { await fileListModel.collectCurrentListDiagnostics() } }
@@ -310,6 +314,10 @@ extension MainRepositoryContentView {
             )
             if didMove { refreshLatestUndoToast() }
         }
+    }
+
+    private func submitAIClassificationSuggestion(_ request: AIClassificationSuggestionApplyRequest) {
+        Task { if await fileListModel.submitAIClassificationSuggestion(request) { refreshLatestUndoToast() } }
     }
 
     private func submitDelete(fileID: Int64, operation: MainFileDeleteOperation) {

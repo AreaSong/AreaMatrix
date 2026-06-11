@@ -1,0 +1,48 @@
+一、执行结论
+
+已完成。`4-3/task-55` 只读验收通过，C4-11 可作为后续 `S4-WIN-02` / `S4-LNX-02` page-feature task 的真实 Core 依赖。
+
+二、执行范围
+
+- 单任务：`4-3/task-55`
+- 本轮未编辑任何文件
+- 未触碰 `apps/**`
+- 工作树仍有两处既有运行状态改动：`.codex/task-loop-runs/20260603_103922/summary.json`、`tasks/prompts/_shared/progress.json`
+
+三、完成情况
+
+- capability spec / Core API / UDL / Rust 实现 / 测试：通过交叉核对
+- 消费页面需要的状态、错误和副作用：已覆盖列表、详情、tree、搜索、分页、missing、DB/RepoNotInitialized、只读 refresh 边界
+- control map 之外能力：未发现 C4-11 实现越界；watcher、rescan、导入、恢复、平台 shell 行为仍在相邻能力/页面任务中
+- Forbidden Touches：未触碰
+
+四、工程质量
+
+- Core API 入口为 `list_files`、`get_file`、`list_tree_json`、`search_files`
+- `list_files` / `search_files` 有分页；`list_files` clamp 到 1000，`search_files` 有 `SearchPagination`
+- 查询路径是真实 DB / metadata / read-only tree/search 路径，不是 mock-only 或硬编码通过态
+- 测试覆盖 contract、implementation、failure recovery，包括只读快照、missing 行、未初始化 repo、DB corruption、错误映射、无远程 AI/secret 副作用
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-3/task-55
+```
+
+关键结果：
+
+- `prompt_pipeline.py doctor`: OK，637 tasks / 637 manifests
+- `git diff --check`: 通过
+- `cargo fmt --all -- --check`: 通过
+- `cargo clippy --all-targets --all-features -- -D warnings`: 通过
+- `desktop_main_query_contract_api`: 3 passed
+- `desktop_main_query_failure_recovery`: 7 passed
+- `desktop_main_query_implementation`: 3 passed
+
+六、风险与后续
+
+剩余风险：本任务只验 Core 能力，不验 Windows/Linux UI 实现本身；后续 UI 接入仍需在 `4-3/task-120` 和 `4-3/task-131` 中验证平台层是否通过 CoreBridge/等价桥接消费 C4-11，且不自行扫描 repo 拼列表。
+
+建议下一个任务：进入依赖于 `4-3/task-55` 的页面功能任务，优先 `4-3/task-120` 或 `4-3/task-131`。

@@ -1,0 +1,67 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-48`
+- 对应文件路径：`tasks/prompts/phase-4/4-2-stage3-ai/task-48-c3-10-failure-edge.md`
+- 核验范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 禁止触碰：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：`core/src/ai_fallback/validation.rs:24` 校验缺失 reason、非法 call log id、retry_after、provider error code、privacy rule id；`core/src/ai_fallback/call_log.rs:38` 将 metadata、权限、DB/IO 错误映射到 `Config` / `PermissionDenied` / `Internal`；`core/tests/ai_fallback_failure_recovery.rs:72`、`:114`、`:138` 覆盖非法输入、权限拒绝、损坏 DB。
+- 涉及文件：`core/src/ai_fallback/validation.rs`、`core/src/ai_fallback/call_log.rs`、`core/tests/ai_fallback_failure_recovery.rs`
+
+- 项目：失败不留下半成品
+- 结果：通过
+- 证据：C3-10 不写用户文件，只在缺失 `call_log_id` 时写入脱敏 AI call log；`core/src/ai_fallback.rs:187` 先验证请求再读 metadata，`:193` 仅在无 log id 时写日志；`core/tests/ai_fallback_failure_recovery.rs:157` 用触发器证明插入失败后 `ai_call_log` 仍为 0，`:114`、`:138` 证明权限/DB 失败后用户文件不变。
+- 涉及文件：`core/src/ai_fallback.rs`、`core/tests/ai_fallback_failure_recovery.rs`
+
+- 项目：隐私/AI/远程调用默认关闭、密钥不入日志
+- 结果：通过
+- 证据：实现只标准化 fallback 状态，不执行 AI 或 provider failover；`core/src/ai_fallback/call_log.rs:25` 写入 `sent_fields_json = "[]"`，`:71` 使用脱敏 provider 名；`core/src/ai_fallback/validation.rs:91`、`:131` 拒绝 key-like/path-like provider code；`core/tests/ai_fallback_failure_recovery.rs:187` 证明密钥形态不持久化，`:213` 证明 rate limit 不切换 provider。
+- 涉及文件：`core/src/ai_fallback/validation.rs`、`core/src/ai_fallback/call_log.rs`、`core/tests/ai_fallback_failure_recovery.rs`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：`get_ai_fallback_status` 对 validation、metadata read、call-log insert 均用 `?` 返回错误；`core/src/ai_fallback.rs:187`、`:191`、`:195` 无吞错路径；`core/src/ai_fallback/call_log.rs:38` 显式映射错误类型。
+- 涉及文件：`core/src/ai_fallback.rs`、`core/src/ai_fallback/call_log.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`ai_fallback.rs` 457 行、子模块 141/112 行，未超过 500 行；状态推导、输入验证、日志写入分层清楚。
+- 注释 / rustdoc / 文档同步：通过，public 类型有 rustdoc；`docs/api/core-api.md`、`core/area_matrix.udl`、`core/src/api.rs` 的 C3-10 合同一致。
+- 错误处理与边界处理：通过，生产路径未发现 `unwrap()` / `expect()` / `panic!()`；错误显式返回。
+- 测试与验证覆盖：通过，新增/现有 C3-10 contract、implementation、failure recovery 测试覆盖失败路径、DB 回滚、用户文件不变和敏感字段拒绝。
+- 占位、硬编码、mock-only、一次性实现检查：通过，验证走真实 `init_repo`、SQLite `ai_call_log`、文件权限/损坏 DB 场景；未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-48`
+- 通过：`prompt doctor`、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test ai_fallback_contract_api -- --nocapture`，4 passed
+- 通过：`cargo test --test ai_fallback_failure_recovery -- --nocapture`，6 passed
+- 通过：`cargo test --test ai_fallback_implementation -- --nocapture`，5 passed
+- 缺失：无。未运行 `./dev check all`，因为本 atomic task 的 manifest 验证上限是 `./dev check task 4-2/task-48`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

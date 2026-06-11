@@ -21,9 +21,26 @@ final class MainFileListModel: ObservableObject {
     @Published var detailExternalCreateSyncState = MainDetailExternalCreateSyncState.idle
     @Published var detailTagEditorState = DetailTagEditorState.notLoaded
     @Published var detailTagSuggestionState = DetailTagSuggestionState.idle
+    @Published var aiTagSuggestionState = AITagSuggestionState.idle
+    @Published var aiTagBatchSuggestionState = AITagBatchSuggestionState.idle
     @Published var tagSuggestionPresentationRequest: TagSuggestionPresentationRequest?
     @Published var detailTagUndoToast: DetailTagUndoToast?
-    @Published var searchState = MainSearchState.idle
+    @Published var searchState = MainSearchState.idle {
+        didSet {
+            if !semanticPrivacyGateState.isCurrent(for: searchState.request) {
+                semanticPrivacyGateState = .idle
+            }
+            if !semanticFallbackState.isCurrent(for: searchState.request) { semanticFallbackState = .idle }
+            if !semanticIndexControlState.isCurrent(for: searchState.request) { semanticIndexControlState = .idle }
+        }
+    }
+
+    @Published var semanticIndexBuildState = SemanticIndexBuildState.idle
+    @Published var semanticPrivacyGateState = SemanticPrivacyGateState.idle
+    @Published var semanticFallbackState = SemanticFallbackState.idle
+    @Published var semanticIndexControlState = SemanticIndexBuildControlState.idle
+    @Published var semanticPagingState = SemanticSearchPagingState.idle
+    @Published var showFoldedSemanticDuplicates = false
     @Published var searchFacetsState = MainSearchFacetsState.idle
     @Published var tagFilterRegistryState = TagFilterRegistryState.idle
     @Published var selectedFileNoteWriteBlock: MainDetailNoteWriteBlock?
@@ -57,12 +74,17 @@ final class MainFileListModel: ObservableObject {
     let batchCategoryChanger: any CoreBatchCategoryChanging
     let iCloudConflictResolver: any ICloudConflictResolving
     let tagStore: any CoreTagCRUD
+    let aiSettingsLoader: any CoreAISettingsLoading
+    let aiTagSuggestionStore: any CoreAITagSuggestionManaging
+    let aiPrivacyRules: any CoreAIPrivacyEvaluating
     let undoActionStore: any CoreUndoActionLogging
     let redoActionStore: any CoreRedoActionLogging
     let changeLogLister: any CoreChangeLogListing
     let externalChangesSyncer: any CoreExternalChangesSyncing
     let errorMapper: any CoreErrorMapping
     let searchQuerying: any CoreSearchQuerying
+    let semanticSearching: any CoreSemanticSearching
+    let semanticFallbackReader: any CoreSemanticFallbackStatusReading
     let searchFiltering: any CoreSearchFiltering
     let commandIndexer: any CoreCommandIndexing
     let diagnosticsCollector: any CoreDiagnosticsCollecting
@@ -74,12 +96,16 @@ final class MainFileListModel: ObservableObject {
     var tagFilterRegistryGeneration = 0
     var searchGeneration = 0
     var searchFacetsGeneration = 0
+    var semanticIndexBuildGeneration = 0
+    var semanticIndexBuildTask: Task<SemanticIndexBuildReportSnapshot, Error>?
 
     init(
         opening: RepositoryOpeningResult,
         fileLister: any CoreFileListing,
         fileDetailer: any CoreFileDetailing,
         searchQuerying: any CoreSearchQuerying = CoreBridge(),
+        semanticSearching: any CoreSemanticSearching = CoreBridge(),
+        semanticFallbackReader: any CoreSemanticFallbackStatusReading = CoreBridge(),
         searchFiltering: any CoreSearchFiltering = CoreBridge(),
         commandIndexer: any CoreCommandIndexing = CoreBridge(),
         fileRenamer: any CoreFileRenaming = CoreBridge(),
@@ -90,6 +116,9 @@ final class MainFileListModel: ObservableObject {
         batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         tagStore: any CoreTagCRUD = CoreBridge(),
+        aiSettingsLoader: any CoreAISettingsLoading = CoreBridge(),
+        aiTagSuggestionStore: any CoreAITagSuggestionManaging = CoreBridge(),
+        aiPrivacyRules: any CoreAIPrivacyEvaluating = CoreBridge(),
         undoActionStore: any CoreUndoActionLogging = CoreBridge(),
         redoActionStore: any CoreRedoActionLogging = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
@@ -105,6 +134,8 @@ final class MainFileListModel: ObservableObject {
         self.fileLister = fileLister
         self.fileDetailer = fileDetailer
         self.searchQuerying = searchQuerying
+        self.semanticSearching = semanticSearching
+        self.semanticFallbackReader = semanticFallbackReader
         self.searchFiltering = searchFiltering
         self.commandIndexer = commandIndexer
         self.fileRenamer = fileRenamer
@@ -115,6 +146,9 @@ final class MainFileListModel: ObservableObject {
         self.batchCategoryChanger = batchCategoryChanger
         self.iCloudConflictResolver = iCloudConflictResolver
         self.tagStore = tagStore
+        self.aiSettingsLoader = aiSettingsLoader
+        self.aiTagSuggestionStore = aiTagSuggestionStore
+        self.aiPrivacyRules = aiPrivacyRules
         self.undoActionStore = undoActionStore
         self.redoActionStore = redoActionStore
         self.changeLogLister = changeLogLister
@@ -243,6 +277,24 @@ extension MainFileListModel {
         if isLoading { return .listLoading }
         if writeLockedFileIDs.contains(fileID) { return .importLocked }
         return nil
+    }
+
+    func beginAIClassificationSuggestion(fileID: Int64? = nil) {
+        guard let fileID = fileID ?? selection.singleFileID,
+              writeActionDisabledReason(fileID: fileID) == nil else { return }
+        pendingActionDestination = .aiClassificationSuggestion(fileID: fileID)
+    }
+
+    func beginAIClassificationChange(fileID: Int64, targetCategory: String?) {
+        guard writeActionDisabledReason(fileID: fileID) == nil else { return }
+        changeCategoryState = .idle
+        classifierCorrectionContextState = .idle
+        classifierCorrectionResult = nil
+        pendingActionDestination = .changeCategory(
+            fileID: fileID,
+            initialTargetCategory: targetCategory,
+            mode: .classifierCorrection
+        )
     }
 
     func reloadCurrentCategory(focusingOn fileID: Int64? = nil) async {

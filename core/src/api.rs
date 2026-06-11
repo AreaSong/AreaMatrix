@@ -3,37 +3,89 @@
 use std::path::PathBuf;
 
 use crate::{
-    ai_call_log, ai_classification_suggestion, ai_privacy_rules, ai_settings, ai_summary,
-    ai_tags_suggestion, batch_category, batch_delete, batch_rename as batch_rename_mod,
+    ai_call_log, ai_classification_suggestion, ai_fallback, ai_privacy_rules, ai_settings,
+    ai_summary, ai_tags_suggestion, batch_category, batch_delete, batch_rename as batch_rename_mod,
     classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules, classify,
-    db, icloud_conflicts, import_conflict_batch, local_model_status, note, recovery, redo,
-    remote_provider_config, repair, repo_init, repo_path, repo_scan, storage, sync, tree,
+    cloud_permission_state, cross_platform_ffi, db, icloud_conflicts, import_conflict_batch,
+    local_model_status, missing_file_recovery, note, platform_capabilities,
+    platform_watcher_status, recovery, redo, remote_provider_config, repair, repo_init, repo_path,
+    repo_scan, storage, sync, sync_conflict_detect, sync_conflict_resolve, tree,
     AiCallLogClearReport, AiCallLogClearRequest, AiCallLogFilter, AiCallLogPage,
     AiCallLogPagination, AiCategorySuggestion, AiCategorySuggestionRequest, AiConfig,
-    AiConfigSnapshot, AiPrivacyEvaluationReport, AiPrivacyEvaluationRequest,
-    AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest, AiSummaryClearReport,
-    AiSummaryClearRequest, AiSummaryDraft, AiSummaryGenerationRequest, AiSummarySaveReport,
-    AiSummarySaveRequest, AiTagSuggestionApplyReport, AiTagSuggestionReport,
+    AiConfigSnapshot, AiFallbackStatus, AiFallbackStatusRequest, AiPrivacyEvaluationReport,
+    AiPrivacyEvaluationRequest, AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest,
+    AiSummaryClearReport, AiSummaryClearRequest, AiSummaryDraft, AiSummaryGenerationRequest,
+    AiSummarySaveReport, AiSummarySaveRequest, AiTagSuggestionApplyReport, AiTagSuggestionReport,
     AiTagSuggestionRequest, ApplyAiTagSuggestionsRequest, ApplyTagSuggestionsRequest,
     BatchCategoryChangeReport, BatchCategoryPreviewReport, BatchDeleteMode,
     BatchDeletePreviewReport, BatchDeleteReport, BatchRenamePreviewReport, BatchRenameReport,
-    BatchRenameRule, ChangeFilter, ChangeLogEntry, ClassifierCorrectionResult,
-    ClassifierImpactPreviewRequest, ClassifierRule, ClassifierRuleCreateRequest,
-    ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleUpdate,
-    ClassifyResult, CoreError, CoreResult, DiagnosticsSnapshot, ExternalEvent, FileEntry,
-    FileFilter, ICloudConflictPair, ICloudConflictPreviewReport, ICloudConflictResolution,
-    ICloudConflictResolveReport, ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
+    BatchRenameRule, BindingContractReport, BindingContractRequest, ChangeFilter, ChangeLogEntry,
+    ClassifierCorrectionResult, ClassifierImpactPreviewRequest, ClassifierRule,
+    ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot,
+    ClassifierRuleUpdate, ClassifyResult, CloudStorageState, CoreError, CoreResult,
+    DiagnosticsSnapshot, ExternalEvent, FileEntry, FileFilter, ICloudConflictPair,
+    ICloudConflictPreviewReport, ICloudConflictResolution, ICloudConflictResolveReport,
+    ImportConflictBatchApplyReport, ImportConflictBatchApplyRequest,
     ImportConflictBatchPreviewReport, ImportConflictBatchPreviewRequest, ImportOptions,
-    LocalModelFolderLocation, LocalModelFolderRequest, LocalModelStatusRequest,
-    LocalModelStatusSnapshot, MoveToCategoryPreview, RecoveryReport, RedoActionRecord,
-    RedoActionResult, ReindexReport, RemoteProviderConfigSnapshot, RemoteProviderDisableRequest,
-    RemoteProviderEnableRequest, RemoteProviderTestRequest, RemoteProviderTestResult,
-    RepairOptions, RepairReport, RepoConfig, RepoInitOptions, RepoPathValidation, RuleImpactReport,
-    ScanSession, SyncResult, TagSuggestionApplyReport, TagSuggestionReport, TagSuggestionRequest,
+    ImportResult, LocalModelFolderLocation, LocalModelFolderRequest, LocalModelStatusRequest,
+    LocalModelStatusSnapshot, ManualRescanPreviewReport, MissingFileRecoveryReport,
+    MissingFileRelinkRequest, MissingFileRemoveRecordRequest, MissingFileState,
+    MoveToCategoryPreview, PlatformCapabilities, PlatformId, PlatformWatcherHealthSignal,
+    PlatformWatcherSnapshot, RecoveryReport, RedoActionRecord, RedoActionResult, ReindexReport,
+    RemoteProviderConfigSnapshot, RemoteProviderDisableRequest, RemoteProviderEnableRequest,
+    RemoteProviderTestRequest, RemoteProviderTestResult, RepairOptions, RepairReport, RepoConfig,
+    RepoInitOptions, RepoPathValidation, RuleImpactReport, ScanSession, SyncConflict,
+    SyncConflictResolutionPreviewReport, SyncConflictResolutionRequest,
+    SyncConflictResolutionStrategy, SyncConflictResolveReport, SyncResult,
+    TagSuggestionApplyReport, TagSuggestionReport, TagSuggestionRequest,
 };
 
 fn not_implemented<T>() -> CoreResult<T> {
     Err(CoreError::internal("internal error"))
+}
+
+/// Inspects the cross-platform UniFFI contract surface for Stage 4 shells.
+///
+/// The report is read-only and lets S4-X-02 render supported APIs, type
+/// mappings, and missing capability gaps without guessing from UI state.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` when the requested binding version is
+/// outside the supported contract range, and `CoreError::Internal { message }`
+/// when the report cannot expose the minimum API and type-mapping surface.
+pub fn inspect_binding_contract(
+    request: BindingContractRequest,
+) -> CoreResult<BindingContractReport> {
+    cross_platform_ffi::inspect_binding_contract(request)
+}
+
+/// Returns the C4-17 platform capability matrix for a platform shell.
+///
+/// `S4-X-02 platform-differences`, `S4-LNX-03 local-folder-notice`, and
+/// `S4-X-08 repository-settings` consume this matrix to render watcher, Trash
+/// or Recycle Bin, share extension, cloud placeholder, and security bookmark
+/// support without guessing from platform UI state. Limited, unavailable, or
+/// unknown capability rows carry stable reasons so unsupported dangerous
+/// actions are not exposed as available.
+/// C4-20 repository settings composes this matrix with [`load_config`] and
+/// [`update_config`] so platform shells can disable unsupported settings before
+/// they submit repository configuration changes.
+///
+/// The contract is read-only and platform-neutral. It does not inspect the
+/// repository, start watchers, test Trash/Recycle Bin integration, query cloud
+/// SDKs, refresh security-scoped bookmarks, read user files, write diagnostics,
+/// or execute adjacent Stage 4 abilities.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` when `platform` is `Unknown` or
+/// `app_version` is empty, too long, or otherwise invalid for the contract.
+pub fn get_platform_capabilities(
+    platform: PlatformId,
+    app_version: String,
+) -> CoreResult<PlatformCapabilities> {
+    platform_capabilities::get_platform_capabilities(platform, app_version)
 }
 
 /// Returns the AreaMatrix core crate version.
@@ -59,6 +111,18 @@ pub fn init_logging(level: String) -> CoreResult<()> {
 /// display-ready issues for the Swift UI. This API is read-only: it must not
 /// create `.areamatrix/`, initialize a database, move user files, or trigger
 /// iCloud placeholder downloads.
+///
+/// The C4-02 mobile repository connection contract reuses the same surface
+/// after the platform layer has granted access to an iOS security-scoped URL or
+/// provider path. Core receives only the authorized filesystem path; picker,
+/// bookmark, and cloud-permission lifecycles stay outside the Rust boundary.
+///
+/// The C4-10 Linux repository connection contract also reuses this read-only
+/// surface. Linux shells can route from `platform_path_kind`, read/write flags,
+/// `recommended_mode`, and `issues` to local-folder, init, or adopt confirmation
+/// pages without parsing error text. Core does not run or recommend sudo/chmod;
+/// path pickers, mount details, file-manager integration, and sync-provider
+/// setup stay outside the Rust boundary.
 ///
 /// # Errors
 ///
@@ -115,6 +179,16 @@ pub fn validate_initialized_repo_path(repo_path: String) -> CoreResult<RepoPathV
 /// creates a root-level `AREAMATRIX.md` for an empty repository. `README.md`
 /// remains user content and is never created or overwritten by this API.
 ///
+/// For C4-02, mobile shells call this only after the shared init/adopt
+/// confirmation pages have converted a [`RepoPathValidation`] recommendation
+/// into explicit user consent. The API does not bypass those pages and does not
+/// perform iOS security-scoped bookmark or cloud-provider permission work.
+///
+/// For C4-10, Linux shells call this only after local-folder, init, or adopt
+/// confirmation pages have converted the [`RepoPathValidation`] result into
+/// explicit user consent. The API does not bypass those pages, does not
+/// adjust POSIX permissions, and does not configure third-party sync or mount options.
+///
 /// # Errors
 ///
 /// Returns `CoreError::InvalidPath { path }` for empty paths or `.areamatrix` internals,
@@ -130,10 +204,20 @@ pub fn init_repo(repo_path: String, options: RepoInitOptions) -> CoreResult<()> 
 /// C1-02 requires this API to read the `repo_config` state created by
 /// [`init_repo`] for an empty repository.
 ///
+/// C4-02 uses the same configuration snapshot after a mobile shell has
+/// validated or initialized the selected repository. Loading config is read-only
+/// and does not refresh platform permissions or create metadata.
+///
+/// C4-20 repository settings also reuses this config snapshot for the
+/// cross-platform repository settings page. Page consumers combine it with
+/// [`get_platform_capabilities`] to render unsupported settings as disabled
+/// with structured reasons instead of inferring platform support in the UI.
+///
 /// # Errors
 ///
-/// Returns `CoreError::Io { message }`, `CoreError::Config { reason }`, or `CoreError::Db { message }` when the
-/// initialized metadata cannot be read or decoded.
+/// Returns `CoreError::Config { reason }`, `CoreError::PermissionDenied { path }`,
+/// `CoreError::Io { message }`, or `CoreError::Db { message }` when the initialized metadata
+/// cannot be read or decoded.
 pub fn load_config(repo_path: String) -> CoreResult<RepoConfig> {
     db::load_config_or_default(repo_path)
 }
@@ -153,6 +237,11 @@ pub fn load_config(repo_path: String) -> CoreResult<RepoConfig> {
 /// `OverviewOutput` policy: later overview-regeneration triggers read the
 /// policy from `repo_config`, while the settings call itself stays free of
 /// file side effects.
+/// C4-20 repository settings uses the same transactional update surface for
+/// cross-platform shells. Callers must first consult [`get_platform_capabilities`]
+/// and keep unsupported rows disabled; this function persists only the supplied
+/// repository configuration and does not test, enable, or emulate platform
+/// watcher, cloud placeholder, security bookmark, Trash, or account features.
 ///
 /// # Errors
 ///
@@ -629,6 +718,37 @@ pub fn evaluate_ai_privacy(
     ai_privacy_rules::evaluate_ai_privacy(repo_path, request)
 }
 
+/// Normalizes C3-10 AI fallback metadata into a display-ready status.
+///
+/// S3-10 uses this contract after AI classification or semantic search returns
+/// skipped, unavailable, or failed metadata. The request carries only stable
+/// operation, provider-error, privacy-decision, and traceability fields. It
+/// must not include raw provider output, prompts, file contents, API keys, or
+/// absolute user paths. Returned actions are semantic commands; the host page
+/// remains responsible for rendering concrete labels such as `Classify
+/// manually` or `Use normal search`.
+///
+/// This contract does not execute AI calls, switch providers, enable remote AI,
+/// evaluate privacy rules, write user files, or mutate AI results. The C3-10
+/// implementation records one sanitized C3-05 call-log row when the caller did
+/// not already provide a `call_log_id`, keeping sent fields empty and result
+/// summary display-safe.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for invalid repository paths, missing
+/// fallback reason metadata, unsafe provider-error codes, unsafe privacy rule
+/// ids, invalid call-log ids, invalid retry timestamps, or missing initialized
+/// repository metadata. Returns `CoreError::PermissionDenied { path }` when
+/// fallback metadata cannot be inspected and `CoreError::Internal { message }`
+/// when call-log persistence or status resolution fails after sanitization.
+pub fn get_ai_fallback_status(
+    repo_path: String,
+    request: AiFallbackStatusRequest,
+) -> CoreResult<AiFallbackStatus> {
+    ai_fallback::get_ai_fallback_status(repo_path, request)
+}
+
 /// Recovers AreaMatrix-owned startup residue before the UI opens.
 ///
 /// C1-16 exposes this API for first-launch initialization, main-window
@@ -654,12 +774,40 @@ pub fn recover_on_startup(repo_path: String) -> CoreResult<RecoveryReport> {
     recovery::recover_on_startup(repo_path)
 }
 
+/// Previews C4-19 manual rescan impact without writing metadata or user files.
+///
+/// S4-X-07 calls this before enabling the high-risk confirmation. The preview
+/// scans the initialized repository and compares it with existing metadata, but
+/// it must not create `scan_sessions`, write `files`, write `change_log`, move,
+/// delete, rename, overwrite, Trash, or download user files. The returned
+/// summary exposes added, updated, missing, possible rename, conflict,
+/// unreadable, unknown, and skipped counts plus bounded sample items so the UI
+/// can route unresolved rows to Needs Review.
+///
+/// # Errors
+///
+/// Returns `CoreError::Db { message }` when metadata cannot be read,
+/// `CoreError::PermissionDenied { path }` when repository content or metadata
+/// cannot be inspected, `CoreError::Io { message }` for filesystem traversal
+/// failures, and `CoreError::Conflict { path }` when another manual rescan is
+/// already running.
+pub fn preview_manual_rescan(repo_path: String) -> CoreResult<ManualRescanPreviewReport> {
+    repo_scan::preview_manual_rescan(repo_path)
+}
+
 /// Reindexes repository metadata from the current filesystem state.
 ///
 /// C1-26 exposes this full-rescan API for repair and advanced settings flows.
 /// The input is an initialized repository root. Core may create or reuse a
 /// `scan_sessions(kind = Reindex)` row, update `.areamatrix/index.db` metadata,
 /// and return inserted/updated/skipped counters in [`ReindexReport`].
+///
+/// C4-19 also uses this entry point for Windows/Linux manual rescan after
+/// S4-X-07 has shown [`preview_manual_rescan`] and the high-risk confirmation.
+/// The C4-19 scope is the entire repository; partial subtree rescan is not
+/// exposed by this contract. Consumers combine the returned [`ReindexReport`]
+/// with [`get_latest_scan_session`] to render the rescan summary, persisted
+/// session status, counters, timestamps, and errors.
 ///
 /// The API treats filesystem content as read-only input. It must skip
 /// `.areamatrix/`, `.areamatrix/generated/`, root `AREAMATRIX.md`, ignored
@@ -672,7 +820,8 @@ pub fn recover_on_startup(repo_path: String) -> CoreResult<RecoveryReport> {
 /// Returns `CoreError::Db { message }` when scan-session or file metadata cannot
 /// be read or written, `CoreError::PermissionDenied { path }` when repository
 /// content or metadata cannot be inspected, `CoreError::Io { message }` for
-/// filesystem traversal failures, and `CoreError::Internal { message }` for
+/// filesystem traversal failures, `CoreError::Conflict { path }` when another
+/// manual rescan is already running, and `CoreError::Internal { message }` for
 /// invariant failures that should be surfaced through C1-21 error mapping.
 pub fn reindex_from_filesystem(repo_path: String) -> CoreResult<ReindexReport> {
     repair::reindex_from_filesystem(repo_path)
@@ -727,6 +876,11 @@ pub fn repair_metadata(repo_path: String, options: RepairOptions) -> CoreResult<
 /// lifecycle status, last processed path, counters, timestamps, and recorded
 /// errors without touching user files or starting a new scan.
 ///
+/// C4-19 consumers use the same read-only session contract to display manual
+/// rescan progress, completion, failure, interruption, and retry state after
+/// the S4-X-07 confirmation route. This function does not start a scan, resume
+/// a scan, or inspect user file contents.
+///
 /// # Errors
 ///
 /// Returns `CoreError::Db { message }` when scan-session metadata cannot be read,
@@ -743,6 +897,11 @@ pub fn get_latest_scan_session(repo_path: String) -> CoreResult<Option<ScanSessi
 /// contract is idempotent: already-indexed files are updated in place, new files
 /// are inserted with the original layout preserved, and a completed session
 /// returns an empty report instead of mutating user files.
+///
+/// For C4-19, this resumes an interrupted or failed entire-repository manual
+/// rescan only after the UI has routed the user through S4-X-07 recovery copy.
+/// It must not bypass confirmation, start a concurrent rescan, or expose
+/// Windows/Linux watcher controls.
 ///
 /// # Errors
 ///
@@ -761,6 +920,33 @@ pub fn resume_scan_session(repo_path: String, scan_session_id: i64) -> CoreResul
 /// bundled default rules when the file is absent, and returns a suggested
 /// category/name pair. It must not create repository metadata, touch the
 /// database, import files, or move user content.
+///
+/// C4-04 camera-import reuses this read-only preview surface after the
+/// platform layer has captured a photo and generated a candidate filename.
+/// Camera permission prompts, capture cancellation, retake flow, thumbnail
+/// generation, and temporary-file lifetime management remain outside Core.
+///
+/// C4-05 share-extension-import reuses this read-only preview surface after
+/// the Share Extension has parsed an `NSExtensionItem` and derived a safe
+/// candidate filename. Share-sheet parsing, app-group queue persistence,
+/// security-scoped bookmark refresh, URL materialization, and Extension
+/// timeout handling stay in the platform layer.
+///
+/// C4-06 files-import reuses this read-only preview surface after the iOS
+/// Files provider or document picker has granted access and exposed a display
+/// filename. Provider browsing, security-scoped access lifetime, iCloud
+/// placeholder download orchestration, and multi-file progress stay in the
+/// platform layer; Core only predicts a category/name from the authorized
+/// filename and repository classifier rules.
+///
+/// C4-13 desktop-import-flow reuses this read-only preview surface for
+/// Windows and Linux import dialogs after the platform picker, drag-and-drop
+/// adapter, or optional shell entry has produced display names. Directory
+/// expansion, platform permission preflight, Trash/Recycle Bin capability
+/// checks, and multi-item progress stay in the desktop shell. Core only reads
+/// the repository classifier rules and returns a [`ClassifyResult`] that
+/// `S4-WIN-05` and `S4-LNX-05` can show as suggested category state before the
+/// final [`import_file`] call.
 ///
 /// # Errors
 ///
@@ -822,7 +1008,8 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// Core resolves a safe numbered name such as `name_1.ext`, while
 /// `CoreError::Conflict { path }` is reserved for exhausted or raced resolution.
 /// Dangerous replacement remains explicit through `DuplicateStrategy::Overwrite`
-/// after S1-24 has confirmed the user decision.
+/// after S1-24 or C4-21/S4-X-09 has confirmed the user decision and recoverable
+/// old-version handling.
 ///
 /// C1-20 uses a successful import as a generated-overview trigger. The trigger
 /// has no extra FFI input: Core derives the changed node/category from the
@@ -830,6 +1017,56 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// Its allowed filesystem side effects are limited to generated markdown under
 /// `.areamatrix/generated/` and, only when explicitly configured,
 /// `AREAMATRIX.md`; `README.md` remains user-authored content.
+///
+/// C4-04 camera-import reuses `StorageMode::Copied` import semantics for a
+/// platform-saved temporary photo path. Core receives only the authorized
+/// filesystem path plus [`ImportOptions`]; it does not request camera
+/// permissions, drive the capture UI, delete photos outside AreaMatrix-owned
+/// staging, or clean up the final repository file. A successful call returns
+/// the committed [`FileEntry`] so mobile consumers can refresh the library row,
+/// show the copied storage mode, and route duplicate or name-conflict states
+/// without adding a camera-specific Core API.
+///
+/// C4-05 share-extension-import reuses `StorageMode::Copied` import semantics
+/// after the platform has materialized a share payload into a Core-readable app
+/// group staged file. Core receives only that staged file path plus
+/// [`ImportOptions`]; it does not parse `NSExtensionItem`, store the deferred
+/// import ticket, open the main app, resolve security-scoped permissions, or
+/// log external app payload bytes. A successful call returns the committed
+/// [`FileEntry`] so `S4-IOS-04` can render completed imports. When the
+/// Extension must defer, the platform-owned ticket records queued,
+/// needs-review, or permission-expired takeover state and the main app later
+/// calls this same Core import contract.
+///
+/// C4-06 files-import reuses `StorageMode::Copied` import semantics for iOS
+/// Files provider selections after the platform layer has granted access to a
+/// readable file URL. Core receives only the authorized path plus
+/// [`ImportOptions`]; it does not open the document picker, retain
+/// security-scoped bookmarks, trigger provider downloads, move source files, or
+/// perform C4-21 replace confirmation. `S4-IOS-07` can derive its preview and
+/// result states from [`predict_category`], [`ImportOptions`], the returned
+/// [`FileEntry`], and structured `ICloudPlaceholder`, `PermissionDenied`,
+/// `DuplicateFile`, and `Conflict` errors. Cancelled selections stay in the
+/// platform sheet and must not call this API.
+///
+/// C4-13 desktop-import-flow keeps this same import contract available for
+/// existing callers, but `S4-WIN-05` and `S4-LNX-05` should use
+/// [`import_file_with_result`] when they need Move source-removal state.
+/// Desktop shells pass the picker or drop source path plus [`ImportOptions`]
+/// for a single committed item; folder recursion, batching, drag-and-drop,
+/// Explorer/Nautilus integration, platform permission preflight, and
+/// Trash/Recycle Bin availability checks remain outside Core.
+/// `StorageMode::Copied` is the safe default. `StorageMode::Moved` must not be
+/// silently downgraded by the UI; source-impact confirmation and per-item
+/// progress are platform/UI responsibilities. `DuplicateStrategy::KeepBoth`,
+/// `Skip`, and `Ask` expose duplicate or same-name state through the returned
+/// [`FileEntry`] or structured `DuplicateFile` / `Conflict` errors.
+/// `DuplicateStrategy::Overwrite` is only valid after the separate C4-21 /
+/// `S4-X-09` replace confirmation has proven a recoverable old-file path; this
+/// API does not perform that confirmation, detect platform Trash support, or
+/// add a desktop-only replace capability. A failed pre-commit desktop import
+/// must surface an error instead of a success state and must not leave active
+/// file rows or final destination half-products.
 ///
 /// # Errors
 ///
@@ -851,6 +1088,40 @@ pub fn import_file(
     storage::import_file(repo_path, source_path, options)
 }
 
+/// Imports one source file and returns desktop-ready result state.
+///
+/// C4-13 uses this wrapper for `S4-WIN-05` and `S4-LNX-05` after the desktop
+/// shell has completed picker/drop parsing, Move confirmation, and platform
+/// preflight. It reuses the same transactional repository import path as
+/// [`import_file`] and adds only the source-removal outcome required by desktop
+/// result pages. `StorageMode::Copied` and `StorageMode::Indexed` return
+/// `ImportSourceRemovalStatus::NotRequested`. `StorageMode::Moved` first commits
+/// the repository file, database row, change log, and generated overview; only
+/// after those writes are safe does Core try to remove the original source.
+///
+/// If post-commit source removal fails, the API still returns the committed
+/// [`FileEntry`] with `ImportSourceRemovalStatus::Retained` plus a structured
+/// failure reason. That lets Windows and Linux show `Imported, original
+/// retained` without rolling back the already-safe repository file or marking
+/// the item as fully moved. Replace confirmation, Trash/Recycle Bin detection,
+/// folder batching, drag-and-drop, and multi-item progress remain outside this
+/// entry point and continue to belong to their own Stage 4 tasks.
+///
+/// # Errors
+///
+/// Returns the same pre-commit errors as [`import_file`]: invalid paths, missing
+/// or unreadable sources, duplicate or name conflicts, unavailable iCloud
+/// placeholders, permission failures, IO failures, database failures, and
+/// internal errors. Pre-commit failures do not create active file rows or final
+/// destination half-products.
+pub fn import_file_with_result(
+    repo_path: String,
+    source_path: String,
+    options: ImportOptions,
+) -> CoreResult<ImportResult> {
+    storage::import_file_with_result(repo_path, source_path, options)
+}
+
 /// Moves a repo-owned file entry to the system Trash and soft-deletes metadata.
 ///
 /// C1-23 owns the user-visible delete/remove-index contract for S1-34.
@@ -862,6 +1133,10 @@ pub fn import_file(
 /// This entry point intentionally has no `hard` or permanent-delete flag. Indexed,
 /// adopted, external, or missing references must use [`remove_index_entry`] so
 /// external source files are never deleted as an index cleanup side effect.
+/// C4-21 replace-confirm-cross-platform composes the same Trash-only safety
+/// boundary for discarded versions: callers may route destructive confirmation
+/// through this contract only when a repo-owned file is being recoverably moved
+/// to Trash, never when a platform would require permanent deletion.
 ///
 /// # Errors
 ///
@@ -1346,6 +1621,18 @@ pub fn restore_file(_repo_path: String, _file_id: i64) -> CoreResult<FileEntry> 
 /// tag filtering, smart lists, and single-file detail aggregation belong to
 /// later capabilities and must not be hidden behind this entry point.
 ///
+/// C4-03 reuses this query for `S4-IOS-02` mobile-library rows. Mobile callers
+/// must use the documented `limit` and `offset` fields instead of loading the
+/// entire repository. The returned [`FileEntry::availability_status`] gives UI
+/// consumers a structured availability status for `Missing` badges, while
+/// missing-file recovery stays with C4-18 rather than this list contract.
+///
+/// C4-11 reuses the same paginated metadata query for `S4-WIN-02` and
+/// `S4-LNX-02` desktop main-window rows. Desktop shells must not scan the
+/// repository directly to assemble the main list; `FileFilter::limit` and
+/// `FileFilter::offset` carry the page request, and adjacent watcher, import,
+/// conflict, and recovery actions remain outside this contract.
+///
 /// # Errors
 ///
 /// Returns `CoreError::RepoNotInitialized { path }` when the repository metadata is
@@ -1367,6 +1654,20 @@ pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileE
 /// change-log aggregation, and note aggregation belong to adjacent capabilities
 /// and must not be hidden behind this entry point.
 ///
+/// C4-03 allows a mobile list row to open a Core-backed detail record from
+/// `S4-IOS-02`; C4-07 composes this API with [`list_changes`] and
+/// [`read_note`] for `S4-IOS-05` mobile-file-detail. This contract stays
+/// limited to base [`FileEntry`] metadata and intentionally does not introduce
+/// a separate detail DTO. The returned [`FileEntry::availability_status`]
+/// mirrors the list payload so detail consumers can keep a missing row visible
+/// without platform-side filesystem inference and route the missing state to
+/// `S4-X-06` rather than inferring it from the filesystem.
+///
+/// C4-11 desktop main-window consumers use this detail query after selecting a
+/// row from [`list_files`] or [`search_files`]. It returns the same base
+/// metadata shape and does not add platform-side preview, watcher, rescan, or
+/// recovery behavior.
+///
 /// # Errors
 ///
 /// Returns `CoreError::RepoNotInitialized { path }` when repository metadata is missing,
@@ -1375,7 +1676,66 @@ pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileE
 /// be read.
 pub fn get_file(repo_path: String, file_id: i64) -> CoreResult<FileEntry> {
     let repo = PathBuf::from(repo_path);
-    db::get_active_file_by_id(&repo, file_id)
+    let entry = db::get_active_file_by_id(&repo, file_id)?;
+    Ok(db::with_availability_status(&repo, entry))
+}
+
+/// Returns the C4-18 missing-file recovery state for S4-X-06.
+///
+/// The state gives page consumers the last known path, missing reason, relink
+/// hash expectation, remove-record confirmation requirement, and rescan route
+/// availability. It does not scan the whole repository, trigger manual rescan,
+/// open a platform picker, delete metadata, or mutate user files.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` when the file id is invalid or
+/// no active missing-file row exists, `CoreError::PermissionDenied { path }`
+/// when recovery metadata cannot be inspected, and `CoreError::Db { message }`
+/// when metadata cannot be read.
+pub fn get_missing_file_state(repo_path: String, file_id: i64) -> CoreResult<MissingFileState> {
+    missing_file_recovery::get_missing_file_state(repo_path, file_id)
+}
+
+/// Relinks one missing-file record to a user-selected matching path.
+///
+/// The platform layer owns the picker and access recovery. Core receives only
+/// an authorized path and later implementation must verify the selected file
+/// hash before updating metadata. A hash mismatch must leave the missing
+/// record unchanged and return a report the UI can render; this entry point
+/// must never overwrite, move, delete, trash, or download user files.
+///
+/// # Errors
+///
+/// Returns `CoreError::FileNotFound { path }` when the file id or selected path
+/// is invalid, `CoreError::PermissionDenied { path }` when confirmation or
+/// access is missing, and `CoreError::Db { message }` when metadata or
+/// change-log persistence fails.
+pub fn relink_missing_file(
+    repo_path: String,
+    request: MissingFileRelinkRequest,
+) -> CoreResult<MissingFileRecoveryReport> {
+    missing_file_recovery::relink_missing_file(repo_path, request)
+}
+
+/// Removes only the AreaMatrix metadata record for a missing file.
+///
+/// S4-X-06 must gather explicit confirmation before calling this API. A
+/// successful later implementation removes only the AreaMatrix record, writes a
+/// change-log entry, and reports `file_deleted = false`; it must not remove,
+/// trash, move, rename, overwrite, or download any user file.
+///
+/// # Errors
+///
+/// Returns `CoreError::PermissionDenied { path }` when confirmation is missing,
+/// `CoreError::FileNotFound { path }` when the file id is invalid or no longer
+/// removable, and `CoreError::Db { message }` when metadata or change-log
+/// persistence fails.
+pub fn remove_missing_file_record(
+    repo_path: String,
+    request: MissingFileRemoveRecordRequest,
+) -> CoreResult<MissingFileRecoveryReport> {
+    missing_file_recovery::remove_missing_file_record(repo_path, request)
 }
 
 /// Lists change-log entries from repository metadata.
@@ -1391,6 +1751,12 @@ pub fn get_file(repo_path: String, file_id: i64) -> CoreResult<FileEntry> {
 /// create files, rename files, or probe user file contents. Undo history,
 /// rollback, and batch revert behavior belong to Stage 2 and must not be
 /// hidden behind this query entry point.
+///
+/// C4-03/C4-07 mobile consumers can lazily request a small `limit`/`offset`
+/// page for visible detail timelines. In C4-07, `S4-IOS-05` uses `file_id` to
+/// load the Log segment without blocking the Meta segment. The API remains a
+/// read-only metadata query and does not trigger filesystem rescan, sync
+/// repair, conflict resolution, or missing-file recovery.
 ///
 /// # Errors
 ///
@@ -1415,6 +1781,15 @@ pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<C
 /// Virtual smart lists, search result trees, and Stage 2 tree projections remain
 /// outside this API boundary.
 ///
+/// C4-03 mobile-library uses this tree snapshot for compact category browsing.
+/// Mobile shells must keep large-repository list data paginated through
+/// [`list_files`]; this tree contract does not add search, sync, or recovery
+/// actions.
+///
+/// C4-11 desktop main-window consumers may use the same tree snapshot for the
+/// Windows and Linux sidebar. The platform UI remains responsible for native
+/// rendering and virtualization; Core only returns the read-only tree JSON.
+///
 /// # Errors
 ///
 /// Returns `CoreError::RepoNotInitialized { path }` when metadata is missing,
@@ -1423,6 +1798,82 @@ pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<C
 /// config cannot be inspected.
 pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String> {
     tree::list_tree_json(repo_path, locale)
+}
+
+/// Detects C4-15 sync conflicts without resolving any version.
+///
+/// `S4-X-03 sync-conflict-entry` consumes this non-resolving list for conflict
+/// count, latest detection state, row badges, and Review routing.
+/// `S4-X-01 sync-conflict` consumes the same rows as its conflict summary and
+/// affected-version metadata before C4-16 resolution builds impact plans. Core
+/// may inspect persisted external events and safe file metadata, and it may
+/// write or refresh conflict-state metadata for detected conflicts. This entry
+/// point must not choose a winning version, mark conflicts resolved, advance
+/// sync cursors, trigger rescan, download cloud placeholders, or
+/// move/delete/rename/overwrite user files.
+///
+/// # Errors
+///
+/// Returns `CoreError::Db { message }` for unavailable, unreadable, or
+/// unwritable conflict-state metadata, `CoreError::Io { message }` for safe
+/// metadata inspection failures, and `CoreError::Conflict { path }` when
+/// snapshots or event state cannot be bound to a stable conflict without user
+/// review.
+pub fn detect_sync_conflicts(repo_path: String) -> CoreResult<Vec<SyncConflict>> {
+    sync_conflict_detect::detect_sync_conflicts(repo_path)
+}
+
+/// Previews a C4-16 sync conflict resolution plan without mutating files.
+///
+/// `S4-X-01 sync-conflict` consumes this contract after the user chooses
+/// `Keep both`, `Use existing version`, or `Use incoming version`. The preview
+/// exposes per-version file impact, affected DB record ids, canonical and
+/// retained paths, planned change-log action, and whether `S4-X-09
+/// replace-confirm` is required. `Keep both` remains the default safe strategy.
+/// This entry point must not mark a conflict resolved, write change log rows,
+/// move files, rename files, overwrite files, Trash versions, or bypass
+/// replace confirmation.
+///
+/// # Errors
+///
+/// Returns `CoreError::Conflict { path }` when the conflict id is missing,
+/// stale, or cannot be bound to a stable conflict state,
+/// `CoreError::PermissionDenied { path }` when required Trash/Recycle Bin,
+/// metadata, or permission preflight is blocked, `CoreError::Io { message }`
+/// for safe filesystem inspection failures, and `CoreError::Db { message }`
+/// for conflict-state or change-log preflight reads.
+pub fn preview_sync_conflict_resolution(
+    repo_path: String,
+    conflict_id: String,
+    resolution: SyncConflictResolutionStrategy,
+) -> CoreResult<SyncConflictResolutionPreviewReport> {
+    sync_conflict_resolve::preview_sync_conflict_resolution(repo_path, conflict_id, resolution)
+}
+
+/// Resolves one C4-16 sync conflict after preview and required confirmation.
+///
+/// `S4-X-01 sync-conflict` calls this only after a fresh preview. Requests that
+/// use `Use incoming version` must first complete `S4-X-09 replace-confirm`;
+/// Core receives that result as `replace_confirmed` and the preview token.
+/// Successful resolution must leave all non-discarded versions visible or move
+/// discarded versions only to Trash/Recycle Bin or a documented Core safety
+/// backup, then update conflict state and write change log. Failure must leave
+/// the conflict unresolved and must not silently delete or hide any version.
+///
+/// # Errors
+///
+/// Returns `CoreError::Conflict { path }` when the preview token, conflict id,
+/// version set, or conflict state is stale, `CoreError::PermissionDenied {
+/// path }` when replace confirmation, Trash/Recycle Bin, metadata, or
+/// permissions block the selected strategy, `CoreError::Io { message }` for
+/// filesystem or rollback failures, and `CoreError::Db { message }` for
+/// conflict-state or change-log write failures.
+pub fn resolve_sync_conflict(
+    repo_path: String,
+    conflict_id: String,
+    resolution: SyncConflictResolutionRequest,
+) -> CoreResult<SyncConflictResolveReport> {
+    sync_conflict_resolve::resolve_sync_conflict(repo_path, conflict_id, resolution)
 }
 
 /// Lists iCloud conflicted copy pairs without resolving them.
@@ -1507,6 +1958,52 @@ pub fn resolve_icloud_conflict(
     resolution: ICloudConflictResolution,
 ) -> CoreResult<ICloudConflictResolveReport> {
     icloud_conflicts::resolve_icloud_conflict(repo_path, conflict_id, resolution)
+}
+
+/// Detects C4-08 cloud storage provider state and C4-14 OneDrive risk state.
+///
+/// `S4-IOS-06 icloud-permission`, `S4-WIN-03 onedrive-notice`, and the cloud
+/// branch of `S4-IOS-01 connect-repo` use this read-only contract to render
+/// provider-specific recovery or notice state from structured fields. Core
+/// inspects only the authorized repository path and basic filesystem metadata;
+/// security-scoped bookmarks, iCloud availability, OneDrive client state,
+/// settings links, SDK calls, provider downloads, acknowledgement UI, and
+/// reconnect UI remain in the platform layer. `S4-WIN-03` can use
+/// `recommended_action`, `requires_notice_acknowledgement`, and
+/// `notice_acknowledged` to render the OneDrive confirmation state without
+/// parsing display text.
+///
+/// # Errors
+///
+/// Returns `CoreError::InvalidPath { path }` when the input is empty or points
+/// inside AreaMatrix metadata, `CoreError::ICloudPlaceholder { path }` when the
+/// repository path or required metadata is still a visible cloud placeholder,
+/// `CoreError::PermissionDenied { path }` when metadata or directory listing is
+/// blocked, and `CoreError::Io { message }` for other read-only filesystem
+/// inspection failures.
+pub fn detect_cloud_storage_state(repo_path: String) -> CoreResult<CloudStorageState> {
+    cloud_permission_state::detect_cloud_storage_state(repo_path)
+}
+
+/// Persists the C4-14 OneDrive risk notice acknowledgement.
+///
+/// `S4-WIN-03 onedrive-notice` calls this only after the user has explicitly
+/// confirmed the OneDrive warning. The API writes only Core-visible repository
+/// metadata (`repo_config`) for an already initialized repository, then returns
+/// the refreshed [`CloudStorageState`]. It does not create a repository, move,
+/// rename, delete, overwrite, reindex, trigger downloads, call the OneDrive
+/// SDK, or change cloud sync settings.
+///
+/// # Errors
+///
+/// Returns `CoreError::InvalidPath { path }` when the input is empty or points
+/// inside AreaMatrix metadata, `CoreError::ICloudPlaceholder { path }` when the
+/// repository path or required metadata is still a visible cloud placeholder,
+/// `CoreError::PermissionDenied { path }` when metadata, directory listing, or
+/// acknowledgement persistence is blocked, and `CoreError::Io { message }` for
+/// missing initialized metadata or other acknowledgement persistence failures.
+pub fn acknowledge_onedrive_risk_notice(repo_path: String) -> CoreResult<CloudStorageState> {
+    cloud_permission_state::acknowledge_onedrive_risk_notice(repo_path)
 }
 
 /// Previews C2-17 import conflict batch decisions without mutating staging or files.
@@ -1669,6 +2166,11 @@ pub fn apply_tag_suggestions(
 /// This API must not create note rows, write sidecar files, insert change-log
 /// entries, or mutate user files.
 ///
+/// C4-07 reuses this as the lazy Note segment query for `S4-IOS-05`. Mobile
+/// callers can show the empty-note state from `None` and isolate note read
+/// failures to the Note segment; note editing remains with the existing
+/// `write_note` contract and is not added to the C4-07 contract-api task.
+///
 /// # Errors
 ///
 /// Returns `CoreError::RepoNotInitialized { path }` when repository metadata is missing,
@@ -1766,4 +2268,31 @@ pub fn get_fs_event_cursor(repo_path: String) -> CoreResult<Option<i64>> {
 /// Returns `CoreError::RepoNotInitialized { path }`, `CoreError::InvalidPath { path }`, or `CoreError::Db { message }`.
 pub fn set_fs_event_cursor(repo_path: String, last_event_id: i64) -> CoreResult<()> {
     sync::set_fs_event_cursor(repo_path, last_event_id)
+}
+
+/// Records platform watcher health for Windows and Linux watcher-status pages.
+///
+/// C4-12 accepts a sanitized watcher health signal from the platform layer and
+/// returns a normalized [`PlatformWatcherSnapshot`] for `S4-WIN-04` and
+/// `S4-LNX-04`. The snapshot carries watcher lifecycle status, backend,
+/// watched path, latest event/sync timestamps, pending count, optional watch
+/// count, structured health reasons, and a display-safe error summary.
+///
+/// The platform layer owns ReadDirectoryChangesW/inotify startup, restart,
+/// debouncing, path reveal, diagnostics export, and event capture. Core must
+/// not start platform watchers, open Explorer/file managers, trigger manual
+/// rescan, inspect user file contents, or move/delete/rename/overwrite user
+/// files from this contract. Manual rescan remains C4-19 and must route through
+/// the `S4-X-07` confirmation flow before any indexing write.
+///
+/// # Errors
+///
+/// Returns `CoreError::Db { message }` when the health signal is invalid or
+/// watcher health metadata is unavailable, and `CoreError::Io { message }` for
+/// later AreaMatrix-owned metadata I/O failures.
+pub fn record_watcher_health(
+    repo_path: String,
+    signal: PlatformWatcherHealthSignal,
+) -> CoreResult<PlatformWatcherSnapshot> {
+    platform_watcher_status::record_watcher_health(repo_path, signal)
 }

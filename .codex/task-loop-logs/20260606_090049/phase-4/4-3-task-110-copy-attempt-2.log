@@ -1,0 +1,54 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-3/task-110`，只改 `apps/**` 范围内的 iOS camera import 相关实现与测试。
+
+修改文件清单：
+- [CameraImportView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Import/CameraImportView.swift)
+- [CameraImportReviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Import/CameraImportReviewModel.swift)
+- [CameraImportCoreBridge.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Import/CameraImportCoreBridge.swift)
+- [CameraImportCoreFFI.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Import/CameraImportCoreFFI.swift)
+- [SystemCameraCaptureView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Import/SystemCameraCaptureView.swift)
+- [MobileLibraryView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Library/MobileLibraryView.swift)
+- [CameraImportReviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrixTests/CameraImportReviewModelTests.swift)
+- [area_matrixFFI.h](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/Carea_matrixFFI/area_matrixFFI.h)
+
+三、完成情况
+
+核对项均完成：只处理 `S4-IOS-03 + C4-04`；只接入 `predict_category` / `import_file`；没有实现相邻页面、平台或其他 Core 能力。
+
+修复了上次 4 个失败点：
+- 照片预览改为读取 `sourceURL` 并渲染真实缩略图。
+- `CoreError.Conflict` 映射为 `Name conflict`，展示默认 `Keep both` 与自动编号文件名。
+- 权限拒绝返回资料库并提供 `Open Settings`；相机照片写入失败不再当作取消。
+- 新增 live Core 测试，验证临时 repo 中 `import_file` 写入后可被 `list_files` 读到。
+
+Forbidden Touches：未触碰。`git diff -- core/src` 为空。
+
+四、工程质量
+
+结构保持 Model / View / CoreBridge / FFI 分层，没有 mock-only 生产路径。错误路径覆盖了 unreadable source、permission denied、duplicate content、name conflict、Core import failure。未新增依赖，未改 public Rust API，无 rustdoc 同步需求。
+
+工作区仍有执行前已存在的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 脏状态；本轮没有把它们纳入修复范围。
+
+五、验证情况
+
+已通过：
+- `CLANG_MODULE_CACHE_PATH=/private/tmp/areamatrix-clang-module-cache swift test --disable-sandbox --cache-path /private/tmp/areamatrix-swiftpm-cache --scratch-path /private/tmp/areamatrix-ios-swiftpm-build`
+  - 33 tests, 0 failures
+- `git diff --check`
+- `./dev check task 4-3/task-110`
+  - `doctor: OK`
+  - diff check passed
+  - macOS build succeeded
+
+普通 `swift test` 未进入编译，原因是当前沙箱无法写 SwiftPM 用户缓存和 clang module cache；已用 `/private/tmp` 可写缓存复跑通过。
+
+六、风险与后续
+
+剩余风险：未做真实 iOS 设备相机 UI smoke，当前环境没有可用的真实相机交互面；设备级权限弹窗和系统相机 UI 仍建议后续在真机手工验一次。
+
+建议下一个任务：进入 `4-3/task-111` 或按 task-loop 继续 Stage 4 iOS share-extension import。

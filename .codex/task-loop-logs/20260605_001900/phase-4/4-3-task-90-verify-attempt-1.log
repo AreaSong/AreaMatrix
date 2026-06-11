@@ -1,0 +1,68 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-90`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-90-c4-18-integration-verify.md`
+- 验收文件范围：`docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md`、`docs/architecture/stage-4-control-map.md`、`docs/api/core-api.md`、`docs/ux/page-specs/stage-4-multiplatform/S4-X-06-missing-file-recovery.md`、`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：C4-18 spec 声明 `get_missing_file_state`、`remove_missing_file_record`、`relink_missing_file`；Core API 与 UDL 均暴露同名接口和 `MissingFileState` / `MissingFileRecoveryReport`；Rust `core/src/missing_file_recovery.rs` 实现三入口；`missing_file_recovery_contract_api`、`implementation`、`failure_recovery`、`validation` 测试均通过
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md:7`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:6042`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:365`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/missing_file_recovery.rs:136`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：S4-X-06 需要 hash 匹配 relink、hash mismatch 不关联、remove record 二次确认且不删文件；实现中 unconfirmed 返回 `PermissionDenied`，hash mismatch 返回 `HashMismatch` 且不写 change log，remove record 只 soft-delete metadata 并写 change log，报告 `file_deleted=false`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-4-multiplatform/S4-X-06-missing-file-recovery.md:56`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/missing_file_recovery.rs:174`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/db/missing_file_recovery.rs:92`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/missing_file_recovery_failure_recovery.rs:262`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 对 S4-X-06 仅声明 C4-18 relink/remove record；实现未加入 rescan、sync conflict、Replace、AI/remote 或平台 picker 能力；`get_missing_file_state` 明确 `can_run_rescan=false` 并给出 S4-X-07 disabled reason
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:31`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/missing_file_recovery.rs:156`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/missing_file_recovery_failure_recovery.rs:468`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮验收未写文件；当前脏改动中 `core/tests/missing_file_recovery_validation.rs` 属于 Expected New Paths，`.codex/task-loop-runs/.../summary.json` 与 `tasks/prompts/_shared/progress.json` 为 runner in_progress 状态记录；`git diff --name-only -- apps` 无输出，未触碰 Forbidden Touches
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/missing_file_recovery_validation.rs`、`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json`、`/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260605_001900/summary.json`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`missing_file_recovery.rs`、`filesystem.rs`、`db/missing_file_recovery.rs` 分层清晰，文件长度分别为 337、192、152 行，未超过 500 行阈值
+- 注释 / rustdoc / 文档同步：通过，public API 在 `core/src/api.rs` 有 rustdoc 与 `# Errors`，Core API / UDL / docs 由 validation 测试对齐
+- 错误处理与边界处理：通过，覆盖 `FileNotFound`、`PermissionDenied`、`Db`，事务失败回滚 metadata，remove record 不删除用户文件
+- 测试与验证覆盖：通过，成功路径、hash mismatch、未确认、权限、DB 损坏、change log 失败回滚、无 AI/remote/generated 副作用均有测试
+- 占位、硬编码、mock-only、一次性实现检查：通过，路径走真实 DB transaction、文件 hash、metadata 更新和 change log，不是 mock-only
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-90`
+- 通过：`prompt doctor`、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test missing_file_recovery_contract_api -- --nocapture`，4 passed
+- 通过：`cargo test --test missing_file_recovery_failure_recovery -- --nocapture`，9 passed
+- 通过：`cargo test --test missing_file_recovery_implementation -- --nocapture`，4 passed
+- 通过：`cargo test --test missing_file_recovery_validation -- --nocapture`，3 passed
+- 失败：无
+- 缺失：无；未运行 `./dev check all`，因为本 task manifest 只要求 `./dev check task 4-3/task-90`
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C4-18 可以作为后续 page-feature task 的真实 Core 依赖。
+
+VERIFY_RESULT: PASS

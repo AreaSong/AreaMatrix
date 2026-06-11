@@ -1,0 +1,48 @@
+一、执行结论
+
+已完成 `4-3/task-42`。
+
+二、执行范围
+
+单任务。修改文件清单：
+
+- [repo_path.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_path.rs:324)：补强 Windows-shaped 路径下 `.areamatrix` 内部路径识别，支持 `\` 分隔符与大小写无关匹配。
+- [windows_repo_connect_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/windows_repo_connect_implementation.rs:51)：新增 C4-09 implementation 测试。
+
+三、完成情况
+
+核对清单全部满足：
+
+- 只实现 C4-09：是，未实现相邻 C4 能力。
+- 输入、输出、DB/文件系统变化和错误映射：通过 `validate_repo_path`、`init_repo`、`load_config` 真实路径覆盖，含 `InvalidPath` / `Config` 行为。
+- Rust Core 不依赖平台 UI API：是，只使用 Core 文件系统/DB逻辑。
+- 最小测试支撑：已补 `windows_repo_connect_implementation`。
+
+完成标准全部满足：
+
+- C4-09 核心行为可被测试验证：是。
+- 未触碰用户文件安全边界之外行为：是，测试验证非空 OneDrive-shaped 目录 adopt 不改 `README.md`、用户文档和用户 `AREAMATRIX.md`。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+代码结构保持小范围修改，没有新增抽象、mock-only、硬编码通过态或一次性脚本。新增测试覆盖 Windows 分隔符、保留名、大小写规则、OneDrive 风险提示、UNC 网络盘分类、空目录初始化、非空目录接管和用户文件不变证据。生产代码没有新增 `unwrap` / `expect` / `panic`。
+
+五、验证情况
+
+已运行并通过：
+
+- `cd core && cargo test --test windows_repo_connect_implementation -- --nocapture`：5 passed。
+- `./dev check task 4-3/task-42`：通过。
+  - prompt doctor：OK。
+  - `git diff --check`：通过。
+  - `windows_repo_connect_contract_api`：6 passed。
+  - `windows_repo_connect_implementation`：5 passed。
+
+无无法运行项。
+
+六、风险与后续
+
+剩余风险：当前测试是在 macOS 上模拟 Windows-shaped 路径字符串，能证明 Core 的平台无关解析和文件安全边界；真实 Windows ACL / OneDrive 客户端状态仍属于平台层后续任务范围。
+
+建议下一个任务：继续 `4-3/task-43`，补 C4-09 failure-edge / recovery 边界。另有进入任务前已存在的脏改动仍在 `.codex/task-loop-runs/20260602_185844/summary.json` 和 `tasks/prompts/_shared/progress.json`，本次未处理。

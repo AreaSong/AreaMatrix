@@ -1,0 +1,91 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-130`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-130-s4-lnx-01-c4-10-linux-repo-connect.md`
+- 实现范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/linux/**`
+- 禁止触碰范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：9
+- 未覆盖项数：0
+- 通过项数：9
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S4-LNX-01 + C4-10
+- 结果：通过
+- 证据：control map 将 `S4-LNX-01` 仅绑定 `C4-10`；实现集中在 `apps/linux/AreaMatrix/Features/Onboarding/**`
+- 涉及文件：`docs/architecture/stage-4-control-map.md:21`
+
+- 项目：读取并对齐页面规格、Core API、C4-10 能力规格
+- 结果：通过
+- 证据：页面要求选择 repo、只读校验、空/非空目录路由、高风险路径提示；C4-10 只声明 `validate_repo_path` / `init_repo`
+- 涉及文件：`docs/ux/page-specs/stage-4-multiplatform/S4-LNX-01-choose-repo.md:23`，`docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md:10`
+
+- 项目：C4-10 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`LinuxRepositoryCoreBridge` 调用 `ValidateRepoPathAsync` 和 `InitRepoAsync`；ViewModel 只在本页执行路径校验、状态映射和路由，不直接写入 repo
+- 涉及文件：`apps/linux/AreaMatrix/Features/Onboarding/LinuxRepositoryCoreBridge.cs:39`，`apps/linux/AreaMatrix/Features/Onboarding/LinuxChooseRepositoryViewModel.cs:125`
+
+- 项目：用户可见功能可触发和验收
+- 结果：通过
+- 证据：`BrowseAsync`、`UseDefaultPathAsync`、`SelectRecentRepositoryAsync`、`ContinueAsync` 可触发；测试覆盖已有 repo、空目录、非空目录、网络路径、权限错误
+- 涉及文件：`apps/linux/AreaMatrix/Features/Onboarding/LinuxChooseRepositoryView.cs:31`，`apps/linux/AreaMatrixTests/ChooseRepository/LinuxChooseRepositoryViewModelTests.cs:7`
+
+- 项目：无 mock / fixture / 静态状态伪造真实闭环
+- 结果：通过
+- 证据：生产路径通过 native Core client 绑定 UniFFI `validate_repo_path` / `init_repo`；fake 仅存在于测试支持代码
+- 涉及文件：`apps/linux/AreaMatrix/Core/NativeCoreLibrary.cs:13`，`apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.cs:31`
+
+- 项目：未触碰 control map 之外能力
+- 结果：通过
+- 证据：实现未接入 `C4-11`、`C4-12`、`C4-13`、`C4-17`、`C4-19`、`C4-21` 等相邻能力；测试显式检查无越界 cloud/config 调用
+- 涉及文件：`apps/linux/AreaMatrixTests/ChooseRepository/LinuxChooseRepositorySmokeTests.cs:50`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：新增路径均在 `apps/linux/**`，符合 manifest 的 `apps/**`
+- 涉及文件：`apps/linux/.gitignore:1`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-status -- core/src` 与 cached diff 均无输出，未修改 `core/src/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+- 项目：验证命令
+- 结果：通过
+- 证据：`./dev check task 4-3/task-130` exit 0；`doctor: OK`，`git diff --check` 无报错，`xcodebuild ... BUILD SUCCEEDED`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Linux 端按 Core client、CoreBridge、ViewModel、View facade、display text、tests 拆分，文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。当前无 Rust public API 变更；`core/area_matrix.udl` 已包含 `validate_repo_path` / `init_repo`。
+- 错误处理与边界处理：通过。覆盖 InvalidPath、PermissionDenied、picker failure、network/removable risk、不可读写路径；未建议 `sudo` / `chmod`。
+- 测试与验证覆盖：通过。manifest 验证通过；补跑 `dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj` 通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径绑定 native Core 符号和 checksum；测试 fake 未进入生产闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-130`，通过。
+- 已运行：`dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj`，通过，输出 `AreaMatrix Linux tests passed.`
+- 已运行：`dotnet build apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj --artifacts-path /private/tmp/areamatrix-linux-verify-task-130-fresh`，通过，0 警告 0 错误。
+- 额外探针：直接执行 `/private/tmp` 下测试 dll 失败，原因是测试源码文件定位逻辑依赖从项目输出目录向上寻找 repo 文件；已用项目默认运行方式复验通过，不作为产品闭环阻断。
+- Forbidden Touches：`core/src/**` 无 diff。
+- 工作区状态：`apps/linux/**` 为本 task 允许新增路径；`.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 属 runner 状态文件，本 verify 阶段不因其未收口而阻断。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

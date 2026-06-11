@@ -1,0 +1,50 @@
+一、执行结论
+
+- 已完成。
+
+二、执行范围
+
+- 单任务：`4-3/task-144`
+- 实现修改文件：
+  - `apps/macos/AreaMatrix/Models/SyncConflictReviewModel.swift`
+  - `apps/macos/AreaMatrix/Views/Main/SyncConflictReviewView.swift`
+  - `apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift`
+  - `apps/macos/AreaMatrixTests/SyncConflictReviewResolutionPageFeatureTests.swift`
+  - `apps/macos/AreaMatrixTests/SyncConflictReviewResolutionTestSupport.swift`
+- 当前工作区另有 task-loop 状态文件变更：`tasks/prompts/_shared/progress.json`、`.codex/task-loop-runs/20260609_085951/`；未作为本次实现范围处理。
+
+三、完成情况
+
+- 核对清单：
+  - page-feature tasks 覆盖：PASS，C4-15 / C4-16 / C4-21 串联测试已补齐。
+  - 页面状态、入口、退出、错误态、CoreBridge 闭环：PASS，resolve 成功后关闭 sheet 并刷新 Needs Review 列表；失败时保留页内错误态。
+  - mock / fixture / 硬编码状态：PASS，生产路径未新增 mock-only 或硬编码通过态。
+  - control map 外功能：PASS，未新增 S4-X-01 声明之外能力。
+- 完成标准：
+  - S4-X-01 可按 page spec 与 control map 验收：PASS。
+  - 页面声明 Core 能力真实接入或有证据：PASS。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+- 代码结构保持小范围 wiring：model 返回真实 resolve report，view 只负责成功回调，外层负责关闭路由和刷新列表。
+- 未新增 Rust public API，因此无 rustdoc 需求；未改 docs / UDL。
+- 错误处理保持显式：resolve 失败返回 `nil`，不触发外层关闭回调，页面保留失败态。
+- 未新增依赖；未引入占位、硬编码、mock-only 或一次性实现。
+
+五、验证情况
+
+- 已通过：`./dev check task 4-3/task-144`
+  - `prompt_pipeline.py doctor`: OK，tasks/manifests 637。
+  - `git diff --check`: OK。
+  - macOS `xcodebuild build CODE_SIGNING_ALLOWED=NO`: `BUILD SUCCEEDED`。
+- 标准 targeted `xcodebuild test` 失败原因：本机 sandbox 无法访问 `com.apple.testmanagerd.control`，不是编译或断言失败。
+- 已按仓库规则 fallback：
+  - `xcodebuild build-for-testing ...`: `TEST BUILD SUCCEEDED`。
+  - `xcrun xctest -XCTest AreaMatrixTests.SyncConflictReviewResolutionFeatureTests ...`: 11 tests, 0 failures。
+  - `xcrun xctest -XCTest AreaMatrixTests.SyncConflictReviewPageFeatureTests ...`: 6 tests, 0 failures。
+
+六、风险与后续
+
+- 剩余风险：未做真实窗口手工 UI smoke；全量 `./dev check all` 未运行，非本 task manifest 要求。
+- 建议下一个任务：继续执行 manifest 后续 `4-3/task-145`，或先做 verify-ready 只读验收确认本 task 状态可标 completed。

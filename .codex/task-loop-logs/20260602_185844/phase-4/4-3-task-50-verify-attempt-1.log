@@ -1,0 +1,69 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-50`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-50-c4-10-integration-verify.md`
+- Manifest 章节：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md` 的 `## 4-3/task-50`
+- 对应实现范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：`validate_repo_path` / `init_repo` 在 Core API 与 UDL 中存在；`RepoPathValidation` 暴露 `platform_path_kind`、`recommended_mode`、`issues` 等页面消费字段；Rust public API 有 C4-10 rustdoc；验证测试锁定 docs/API/UDL/Rust/test 对齐。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2400`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:11`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:975`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:73`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/linux_repo_connect_validation.rs:228`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：选择页要求本地/非空/权限/网络挂载状态；确认页要求初始化和接管前确认、不修改用户文件。实现提供只读路径校验、初始化 metadata、非空目录 adopt 扫描、权限错误映射，测试覆盖用户文件快照不变、无 sudo/chmod 建议、失败回滚。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-4-multiplatform/S4-LNX-01-choose-repo.md:60`、`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md:23`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_path.rs:48`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_init.rs:60`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/linux_repo_connect_implementation.rs:95`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/linux_repo_connect_failure_recovery.rs:140`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 中 C4-10 只绑定 Linux repo connect 与相关确认页；实现复用 repo validate/init/adopt，不实现 C4-17、C4-02、C4-09 等消费页其他能力，也未触碰 `apps/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:21`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:153`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/linux_repo_connect_validation.rs:384`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本次验收未修改文件。当前 `git status --short` 显示已有脏改动为 `.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json` 和 `core/tests/linux_repo_connect_validation.rs`；`apps/**` 无脏改动。runner 状态文件仍为 in_progress 不按本 verify 阶段阻断。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/linux_repo_connect_validation.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`repo_path.rs` 只做 read-only inspection；`repo_init.rs` 分离 create/adopt preflight、metadata staging、rollback；`repo_scan.rs` 只扫描并写 metadata。
+- 注释 / rustdoc / 文档同步：通过。`api.rs` 对 public API 写明 C4-10 Linux 边界、错误和 sudo/chmod 禁止；测试锁定 docs、control map、Core API、UDL 片段。
+- 错误处理与边界处理：通过。覆盖 `InvalidPath`、`PermissionDenied`、`Db`、非目录、空路径、不可写目录、坏 metadata、adopt scan 失败回滚。
+- 测试与验证覆盖：通过。`./dev check task 4-3/task-50` 已运行并通过，包含 doctor、diff check、fmt、clippy 和 4 个 C4-10 test target。
+- 占位、硬编码、mock-only、一次性实现检查：通过。未发现 mock-only 闭环；测试使用临时目录和真实文件系统/SQLite 路径验证，`repo_init.rs` 使用 `create_new(true)` 和 metadata staging，未发现 `Command::new("sudo")` / `Command::new("chmod")`。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-50`
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`，`git diff --check`，`cargo fmt --all -- --check`，`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test linux_repo_connect_contract_api -- --nocapture`，5 passed
+- 通过：`cargo test --test linux_repo_connect_failure_recovery -- --nocapture`，6 passed
+- 通过：`cargo test --test linux_repo_connect_implementation -- --nocapture`，3 passed
+- 通过：`cargo test --test linux_repo_connect_validation -- --nocapture`，3 passed
+- 失败：无
+- 缺失：无；本 task manifest 未要求 `./dev check all`
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C4-10 可以作为后续 page-feature task 的真实 Core 依赖。
+
+VERIFY_RESULT: PASS

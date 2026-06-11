@@ -1,0 +1,69 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-83`
+- 对应文件路径：
+  - [task-83-c4-17-failure-edge.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-83-c4-17-failure-edge.md:1)
+  - [core/src/platform_capabilities.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/platform_capabilities.rs:1)
+  - [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:10)
+  - [platform_capabilities_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/platform_capabilities_failure_recovery.rs:1)
+
+三、完成度摘要
+
+- 已覆盖项数：8
+- 未覆盖项数：0
+- 通过项数：8
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 空态、非法输入、权限、IO/DB 错误和错误码映射：通过  
+  证据：[platform_capabilities_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/platform_capabilities_failure_recovery.rs:71) 覆盖 Unknown、空版本、空白版本、非法字符、过长版本，并断言 `CoreError::Config`、severity 和 recoverability；[platform_capabilities.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/platform_capabilities.rs:95) 统一返回 `CoreError::config`。
+- 失败不留下半成品：通过  
+  证据：C4-17 文档定义 DB/文件系统变化均为“无”；实现为 table-driven，无 repo/DB/FS 探测。[platform_capabilities_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/platform_capabilities_failure_recovery.rs:117) 用临时目录、README、损坏 DB 快照证明调用前后文件不变，且不生成 `AREAMATRIX.md`、generated、staging。
+- 隐私/AI/远程调用默认关闭、密钥不入日志：通过  
+  证据：C4-17 本身不涉及 AI/远程；[platform_capabilities_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/platform_capabilities_failure_recovery.rs:167) 断言实现源码不含 `reqwest`、`ureq`、`tracing::`、`println!`、`api_key`、`token`、`secret` 等路径。
+- 不吞错或静默降级：通过  
+  证据：[platform_capabilities.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/platform_capabilities.rs:85) 先校验输入并返回明确错误；Unsupported/Limited 能力行带稳定 reason，不把不可用能力显示为可用。
+- C4-17 失败路径明确返回、可测试证据和用户文件安全保证：通过  
+  证据：新增失败测试 5 个全部通过；API rustdoc 说明无副作用和错误条件：[api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:61)。
+- 高风险路径具备可回滚或可恢复说明：通过  
+  证据：C4-17 无写入/移动/删除/导入/同步副作用；测试读取 transactional-import 与 troubleshooting 文档片段，确认通用回滚/恢复语义仍有文档依据：[platform_capabilities_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/platform_capabilities_failure_recovery.rs:193)。
+- Expected New Paths：通过  
+  证据：`core/src/**` 已有 C4-17 实现；`core/area_matrix.udl` 暴露 API 和类型；`core/tests/**` 下存在并运行 `platform_capabilities_failure_recovery.rs`。
+- Forbidden Touches：通过  
+  证据：`git diff --name-only -- 'apps/**'`、`git diff --cached --name-only -- 'apps/**'`、`git ls-files 'apps/**' --modified --others --exclude-standard` 均无输出，未触碰 `apps/**`。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。实现集中在 [platform_capabilities.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/platform_capabilities.rs:81)，纯表驱动，函数短小，未引入无关抽象。
+- 注释 / rustdoc / 文档同步：通过。公开 API rustdoc 完整说明 `# Errors` 和副作用边界；UDL 与 core-api 对齐。
+- 错误处理与边界处理：通过。非法输入统一返回 `Config`，无 `unwrap()` / `panic!()` 生产路径，测试覆盖错误映射。
+- 测试与验证覆盖：通过。task gate 运行 3 个目标测试文件，共 15 个测试全部通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现不依赖 mock/fixture 路径；能力矩阵是合同定义的结构化平台能力，不执行外部探测或副作用。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-83`
+- 通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`: OK，637 tasks / 637 manifests
+  - `git diff --check`: 通过
+  - `cargo test --test platform_capabilities_contract_api -- --nocapture`: 5 passed
+  - `cargo test --test platform_capabilities_failure_recovery -- --nocapture`: 5 passed
+  - `cargo test --test platform_capabilities_implementation -- --nocapture`: 5 passed
+- 失败：无
+- 缺失：无。按 manifest 与 validation-driver，本 atomic Core task 不需要扩大到 `./dev check all`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

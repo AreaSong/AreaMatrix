@@ -1,0 +1,88 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-141`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-141-s4-x-01-c4-15-sync-conflict-detect.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：11
+- 未覆盖项数：0
+- 通过项数：11
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S4-X-01 页面中的 C4-15 功能点
+- 结果：通过
+- 证据：Control map 声明 S4-X-01 覆盖 C4-15/C4-16/C4-21，其中本 task 对应 `4-3/task-141`；测试显式声明仅 C4-15，并排除 C4-16/C4-21。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:26`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/SyncConflictReviewPageFeatureTests.swift:7`
+
+- 项目：读取页面规格、control map、Core API 和 C4-15 能力规格
+- 结果：通过
+- 证据：页面规格定义 Review 页面只展示冲突摘要和版本基础信息；C4-15 spec 定义 `detect_sync_conflicts`；Core API 说明 S4-X-01 只能从 C4-15 得到摘要与版本 metadata，不能得到解决策略。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md:25`，`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md:8`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:6363`
+
+- 项目：只接入 C4-15 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：`CoreBridge` 通过 `AreaMatrix.detectSyncConflicts(repoPath:)` 真实调用 UniFFI；`SyncConflictReviewModel.load()` 调用 detector、按 `conflictID` 或 `primaryPath` 选择 `NeedsReview` 冲突，并把 CoreError 映射为页面错误态。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreSyncConflictDetecting.swift:157`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/SyncConflictReviewModel.swift:55`
+
+- 项目：不实现同页其他能力或相邻页面能力
+- 结果：通过
+- 证据：View 只展示 summary 和 version cards；测试确认页面不包含 `Apply resolution`、`Keep both`、`Use incoming version`、`S4-X-09`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SyncConflictReviewView.swift:153`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/SyncConflictReviewPageFeatureTests.swift:38`
+
+- 项目：用户可见功能可触发和验收
+- 结果：通过
+- 证据：文件详情菜单新增 `Review Sync Conflict...`，通过 route 打开 `SyncConflictReviewView` sheet；针对该入口和页面状态的 XCTest 通过。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:388`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentView.swift:309`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift:236`
+
+- 项目：没有 mock / fixture / 静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产默认 detector 是 `CoreBridge()`，真实调用 UniFFI；fixture 仅存在于 XCTest 内。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/SyncConflictReviewModel.swift:37`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/SyncConflictReviewPageFeatureTests.swift:220`
+
+- 项目：Expected New Paths 已落地
+- 结果：通过
+- 证据：新增/修改均在 `apps/**`；新增文件包括 `CoreSyncConflictDetecting.swift`、`SyncConflictReviewModel.swift`、`SyncConflictReviewView.swift`、`SyncConflictReviewPageFeatureTests.swift`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreSyncConflictDetecting.swift:1`
+
+- 项目：Forbidden Touches 未被违规修改
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出；`git diff --cached --name-only` 无输出。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，生产链路按 Bridge / Model / View / route 拆分，未把解决逻辑塞进 C4-15。
+- 注释 / rustdoc / 文档同步：通过，本 task 未新增 Rust public API；Core API 与 UDL 已有 `detect_sync_conflicts` 和 `SyncConflict` 类型定义。
+- 错误处理与边界处理：通过，检测失败进入 mapped error state，空态、loading、retry 均有覆盖；C4-15 不执行删除、移动、覆盖、Trash。
+- 测试与验证覆盖：通过，manifest 验证通过，目标 XCTest 7 tests / 0 failures。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径默认使用 `CoreBridge()`；测试替身只用于单测断言。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-141`
+- 结果：通过；`doctor: OK`，`git diff --check` 通过，`xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 显示 `BUILD SUCCEEDED`。
+- 已运行：`./dev test macos --only-testing AreaMatrixTests/SyncConflictReviewPageFeatureTests`
+- 结果：通过；`SyncConflictReviewPageFeatureTests` 执行 7 tests，0 failures。`xcodebuild test` 结束阶段受本地 `testmanagerd` sandbox 限制，仓库脚本按规则复用已构建 XCTest bundle，`xcrun xctest` 通过。
+- 缺失：未运行全量 `./dev test macos`、SwiftLint、SwiftFormat、真实窗口 Computer Use smoke；本 task manifest 未要求这些宽门禁，且已有 task-scoped build + 目标 XCTest 证据。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+- 当前 `progress.json` / task-loop summary 仍显示 `in_progress` 属于 verify 通过前的 runner 收口时序，不作为本 task 功能失败依据。
+- 当前未发现 `core/src/**` Forbidden Touches、未发现 staged 越界改动、未发现 C4-16/C4-21 越界实现。
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,170 @@
+<UserControl
+    x:Class="AreaMatrix.Features.Library.WatcherStatusView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:library="using:AreaMatrix.Features.Library">
+
+    <Grid Padding="40" RowSpacing="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Spacing="6">
+            <TextBlock
+                Text="File watcher status"
+                Style="{ThemeResource TitleTextBlockStyle}" />
+            <TextBlock
+                x:Name="WatcherRouteTextBlock"
+                TextWrapping="Wrap" />
+        </StackPanel>
+
+        <Border
+            Grid.Row="1"
+            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="4"
+            Padding="16">
+            <Grid RowSpacing="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock
+                    x:Name="WatcherStatusTextBlock"
+                    AutomationProperties.LiveSetting="Polite"
+                    TextWrapping="Wrap" />
+                <TextBlock
+                    x:Name="WatcherSummaryTextBlock"
+                    Grid.Row="1"
+                    TextWrapping="Wrap" />
+                <TextBlock
+                    x:Name="WatcherLastEventTextBlock"
+                    Grid.Row="2" />
+                <TextBlock
+                    x:Name="WatcherPendingEventsTextBlock"
+                    Grid.Row="3" />
+                <TextBlock
+                    x:Name="WatcherLastSyncTextBlock"
+                    Grid.Row="4" />
+                <TextBlock
+                    x:Name="WatcherLastRescanTextBlock"
+                    Grid.Row="5" />
+                <TextBlock
+                    x:Name="WatcherBackendTextBlock"
+                    Grid.Row="6" />
+                <TextBlock
+                    x:Name="WatcherCountTextBlock"
+                    Grid.Row="7" />
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="2">
+            <StackPanel Spacing="16">
+                <InfoBar
+                    x:Name="WatcherRecoveryInfoBar"
+                    IsOpen="True"
+                    Severity="Informational" />
+                <TextBlock
+                    x:Name="OneDriveNoticeTextBlock"
+                    TextWrapping="Wrap" />
+
+                <StackPanel Spacing="4">
+                    <TextBlock
+                        Text="Manual rescan"
+                        Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <TextBlock
+                        x:Name="LatestScanSessionTextBlock"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        x:Name="RescanPreviewTextBlock"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Text="Run rescan now opens confirmation before any index update."
+                        TextWrapping="Wrap" />
+                </StackPanel>
+
+                <StackPanel Spacing="8">
+                    <TextBlock
+                        Text="Recent events"
+                        Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <ItemsControl
+                        x:Name="WatcherRecentEventsList"
+                        ItemsSource="{Binding RecentEvents}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="library:WatcherStatusEventSample">
+                                <Grid Padding="0,6" ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock
+                                        Text="{x:Bind DisplayText}"
+                                        TextWrapping="Wrap" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Text="{x:Bind OccurredAtText}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock
+                        x:Name="WatcherNoEventsTextBlock"
+                        Text="No recent watcher events."
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Row="3" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Button
+                x:Name="RestartWatcherButton"
+                Content="Restart watcher"
+                Click="RestartWatcherButton_Click" />
+            <Button
+                x:Name="RunRescanNowButton"
+                Grid.Column="1"
+                Content="Run rescan now"
+                Click="RunRescanNowButton_Click" />
+            <Button
+                x:Name="ExportDiagnosticsButton"
+                Grid.Column="2"
+                Content="Export diagnostics"
+                Click="ExportDiagnosticsButton_Click" />
+            <Button
+                x:Name="OpenRepositoryFolderButton"
+                Grid.Column="3"
+                Content="Open repository folder"
+                Click="OpenRepositoryFolderButton_Click" />
+            <ProgressRing
+                x:Name="WatcherStatusProgressRing"
+                Grid.Column="4"
+                Width="20"
+                Height="20"
+                HorizontalAlignment="Left"
+                IsIndeterminate="True" />
+            <Button
+                x:Name="CloseWatcherStatusButton"
+                Grid.Column="5"
+                Content="Close"
+                Click="CloseWatcherStatusButton_Click" />
+        </Grid>
+    </Grid>
+</UserControl>

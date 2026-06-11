@@ -1,4 +1,6 @@
 import Foundation
+
+// swiftlint:disable file_length
 import SwiftUI
 
 enum SearchFilterChipKind: String, Equatable {
@@ -83,6 +85,7 @@ extension MainRepositoryContentView {
     var searchTaskKey: String {
         [
             filterText,
+            searchMode.rawValue,
             searchScope.rawValue,
             searchSort.rawValue,
             effectiveSearchFilters.taskKey,
@@ -114,6 +117,9 @@ extension MainRepositoryContentView {
     func searchMatchText(for fileID: Int64) -> String {
         guard let result = fileListModel.searchState.page?.results.first(where: { $0.file.id == fileID }) else {
             return "-"
+        }
+        if let semantic = fileListModel.searchState.page?.semanticPage?.result(for: fileID) {
+            return semanticMatchText(semantic)
         }
         if let noteSnippet = result.noteSnippet, !noteSnippet.isEmpty {
             return "Note: \(noteSnippet)"
@@ -158,6 +164,10 @@ extension MainRepositoryContentView {
             }
             .padding(10)
             .background(Color.yellow.opacity(0.12))
+        } else if state == .list {
+            SyncConflictEntryPanel(model: syncConflictEntryModel) { route in
+                pendingSyncConflictReviewRoute = route
+            }
         }
     }
 
@@ -170,6 +180,7 @@ extension MainRepositoryContentView {
                 isUpdating: fileListModel.isLoading || fileListModel.isDetailLoading
             ),
             detailErrorMapping: fileListModel.detailErrorMapping,
+            syncConflict: syncConflictEntryModel.detailConflict(for: fileListModel.selectedFileDetail),
             isDetailLoading: fileListModel.isDetailLoading,
             selectedFileDetail: fileListModel.selectedFileDetail,
             noteWriteBlock: fileListModel.selectedFileNoteWriteBlock,
@@ -182,6 +193,7 @@ extension MainRepositoryContentView {
             detailTagUndoToast: fileListModel.detailTagUndoToast,
             detailTabRequest: fileListModel.detailTabRequest,
             selectedImportProgressRow: selectedImportProgressRow,
+            semanticDetail: semanticDetailPresentationForSelectedFile,
             repoPath: opening.config.repoPath,
             batchTagStore: fileListModel.tagStore,
             batchTagUndoStore: fileListModel.undoActionStore,
@@ -214,12 +226,49 @@ extension MainRepositoryContentView {
             onBeginRenameFile: fileListModel.beginRename,
             onBeginChangeCategoryFile: fileListModel.beginChangeCategory,
             onBeginClassifierCorrectionFile: fileListModel.beginClassifierCorrection,
+            onBeginAIClassificationSuggestionFile: fileListModel.beginAIClassificationSuggestion,
             onBeginDeleteFile: fileListModel.beginDelete,
             onBeginICloudConflictResolution: fileListModel.beginICloudConflictResolution,
+            onBeginSyncConflictReview: beginSyncConflictReview,
+            onOpenAISettings: onOpenAISettings,
             writeActionDisabledReason: fileListModel.writeActionDisabledReason,
+            summaryExitController: summaryExitController,
             noteModel: detailNoteModel
         )
         .frame(minWidth: 220, idealWidth: 260, maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    func beginSyncConflictReview(file: FileEntrySnapshot) {
+        if let conflict = syncConflictEntryModel.detailConflict(for: file) {
+            pendingSyncConflictReviewRoute = syncConflictEntryModel.reviewRoute(for: conflict)
+            return
+        }
+        pendingSyncConflictReviewRoute = .fileDetail(repoPath: opening.config.repoPath, file: file)
+    }
+
+    func syncConflictReviewSheet(_ route: SyncConflictReviewRoute) -> some View {
+        SyncConflictReviewView(
+            model: SyncConflictReviewModel(
+                repoPath: route.repoPath,
+                conflictID: route.conflictID,
+                primaryPath: route.primaryPath
+            ),
+            onBackToNeedsReview: { pendingSyncConflictReviewRoute = nil },
+            onClose: { pendingSyncConflictReviewRoute = nil },
+            onResolved: handleSyncConflictResolved
+        )
+    }
+
+    func handleSyncConflictResolved(_: SyncConflictResolveReportSnapshot) async {
+        pendingSyncConflictReviewRoute = nil
+        await syncConflictEntryModel.refresh()
+        await fileListModel.retryCurrentCategory()
+    }
+
+    // swiftlint:disable:next identifier_name
+    private var semanticDetailPresentationForSelectedFile: SemanticSearchDetailPresentation? {
+        guard let fileID = selectedFileIDs.first, selectedFileIDs.count == 1 else { return nil }
+        return fileListModel.searchState.page?.semanticPage?.detailPresentation(for: fileID)
     }
 
     @ViewBuilder
@@ -262,6 +311,7 @@ extension MainRepositoryContentView {
         [
             fileListModel.searchBannerContextText(for: request),
             "范围：\(request.scope.bannerDisplayName)",
+            "模式：\(request.mode.displayName)",
             "结果：\(searchResultCountText)",
             "过滤：\(searchActiveFilterCount)"
         ].joined(separator: "  ")
@@ -277,6 +327,9 @@ extension MainRepositoryContentView {
 
     private var searchResultCountText: String {
         guard let page = fileListModel.searchState.page else { return "-" }
+        if let semanticPage = page.semanticPage {
+            return "\(semanticPage.semanticTotalCount) semantic / \(semanticPage.normalTotalCount) normal"
+        }
         return "\(page.totalCount)"
     }
 
@@ -346,6 +399,8 @@ extension MainRepositoryContentView {
             Text("Search failed: \(error.userMessage)")
                 .font(.callout)
                 .foregroundStyle(.secondary)
+        } else if let semanticPage = fileListModel.searchState.page?.semanticPage {
+            semanticBannerDetail(semanticPage)
         } else if fileListModel.searchState.indexStatus == .unavailable {
             HStack(spacing: 10) {
                 Text("Search index unavailable")
@@ -356,7 +411,7 @@ extension MainRepositoryContentView {
             .font(.callout)
             .foregroundStyle(.secondary)
         } else if fileListModel.searchState.isLoading {
-            Text("Searching...")
+            Text(searchLoadingText)
                 .font(.callout)
                 .foregroundStyle(.secondary)
         } else if let diagnostic = fileListModel.searchState.page?.diagnostics.first {
@@ -384,6 +439,7 @@ extension MainRepositoryContentView {
 
     func clearSearch() {
         filterText = ""
+        searchMode = .normal
         searchFilters = .empty
         fileListModel.clearSearch()
         selectedFileIDs = []
@@ -394,6 +450,7 @@ extension MainRepositoryContentView {
 
     func beginCommandFindSearch() {
         fileListModel.enterSearch(context: .commandFind)
+        searchMode = .normal
         searchScope = .all
         isSearchFieldFocused = true
     }

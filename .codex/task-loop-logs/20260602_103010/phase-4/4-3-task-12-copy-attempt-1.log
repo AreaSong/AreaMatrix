@@ -1,0 +1,54 @@
+一、执行结论
+
+已完成。C4-03 当前生产 Core 查询路径已存在，本次补齐了 implementation 级证据：新增 [core/tests/mobile_library_query_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/mobile_library_query_implementation.rs:151)，验证移动端分页列表、Core-backed detail、tree、change log、missing metadata row 保留、未初始化错误映射，以及查询无写入副作用。
+
+二、执行范围
+
+单任务：`4-3/task-12`。
+
+修改文件清单：
+- 新增 `core/tests/mobile_library_query_implementation.rs`
+
+未触碰：
+- `apps/**`
+- `core/src/**`
+- `core/area_matrix.udl`
+
+注意：工作树里已有 `.codex/task-loop-runs/20260602_103010/summary.json` 和 `tasks/prompts/_shared/progress.json` 修改，我没有改动或回退。
+
+三、完成情况
+
+核对清单：
+- 只实现 C4-03：通过，只覆盖 `list_files` / `get_file` / `list_tree_json` / `list_changes` 的 C4-03 查询闭环。
+- 输入、输出、DB/FS、副作用、错误映射：通过测试覆盖分页、过滤、未初始化错误、missing row 保留、查询前后 DB row count 和文件内容不变。
+- Rust Core 不依赖平台 UI API：通过，本次只用 Rust Core + temp repo fixture。
+- 最小测试支撑、不做页面接入：通过。
+
+完成标准：
+- C4-03 核心行为可被测试验证：通过。
+- 未触碰用户文件安全边界之外行为：通过，仅测试临时目录；无真实用户文件写入/删除/移动。
+
+四、工程质量
+
+代码结构集中在一个 targeted integration test，fixture 明确，没有 mock-only、硬编码通过态或一次性脚本。测试覆盖正常路径、missing metadata 保留、只读副作用边界和错误映射。未新增 public Rust API，因此无 rustdoc/UDL 同步需求；也未新增依赖。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-3/task-12
+```
+
+该命令实际完成：
+- `prompt_pipeline.py doctor`：PASS
+- `git diff --check`：PASS
+- `cargo test --test mobile_library_query_contract_api -- --nocapture`：3 passed
+- `cargo test --test mobile_library_query_implementation -- --nocapture`：4 passed
+
+无法运行项：无。按 task 要求没有升级到 `cargo test --workspace`、clippy、`./dev check core/all`。
+
+六、风险与后续
+
+剩余风险：C4-03 只保留并暴露 missing metadata row，未实现 C4-18 的 relink/remove record 恢复动作；这符合当前任务边界。建议下一个任务继续 `4-3/task-13`，补齐 C4-03 failure-edge 语义。 
+

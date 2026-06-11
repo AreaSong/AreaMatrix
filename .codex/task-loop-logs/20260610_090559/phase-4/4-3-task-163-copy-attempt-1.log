@@ -1,0 +1,41 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-3/task-163`，只处理 `S4-X-09 + C4-21`。
+
+本轮实现改动：
+- [SyncConflictReviewModel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/SyncConflictReviewModel.swift)
+- [SyncConflictReplaceConfirmationPanel.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SyncConflictReplaceConfirmationPanel.swift)
+- [SyncConflictReviewView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SyncConflictReviewView.swift)
+- [SyncConflictReviewResolutionPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/SyncConflictReviewResolutionPageFeatureTests.swift)
+- [SyncConflictReviewResolutionTestSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/SyncConflictReviewResolutionTestSupport.swift)
+
+工作区另有进入本轮前已存在的 task-loop 状态改动：`.codex/task-loop-runs/20260610_090559/summary.json`、`tasks/prompts/_shared/progress.json`，我没有把它们作为本任务实现改动处理。
+
+三、完成情况
+
+核对清单通过：只接了 `C4-21` 的 replace confirmation；未实现相邻页面、相邻平台或其他能力。  
+完成标准通过：S4-X-09 的 replace plan 现在展示 `Confirm Replace`、旧/新路径、hash、affected record、旧版本保留位置、DB update、change log、recovery note，并要求勾选 `I understand this will replace the existing file.` 后才生成 C4-21 confirmation。确认后 Core resolve 请求会带 `replaceConfirmed=true` 和 `S4-X-09-C4-21-*` confirmation id。  
+Forbidden Touches：未触碰，`git diff --name-only -- core/src` 无输出。
+
+四、工程质量
+
+生产代码没有新增 mock、fixture、静态通过态或文件 IO。视图仍只消费 CoreBridge 返回的 preview/plan，不直接操作文件；preview token 变化会重置确认面板状态，避免旧确认沿用到新 plan。未新增依赖，未改 Core/UDL/文档。
+
+五、验证情况
+
+已运行并通过：
+- `./dev check task 4-3/task-163`：通过；包含 prompt doctor OK、`git diff --check` OK、macOS `xcodebuild build` succeeded。
+- `./dev test macos --only-testing AreaMatrixTests/SyncConflictReviewResolutionFeatureTests`：标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd` 通信限制阻断，仓库脚本复用已构建 XCTest bundle 执行；11 tests，0 failures。
+
+未运行：
+- `./dev check all`、全量 macOS tests、SwiftFormat/SwiftLint：manifest 本 task 验证上限是 `./dev check task 4-3/task-163`，未升级到宽门禁。
+
+六、风险与后续
+
+剩余风险：未做真实 UI 点击截图和远端 CI；合并前仍需要常规 review/CI/Git checkpoint。  
+建议下一个任务：`4-3/task-164`，做 S4-X-09 page integration verify，确认 C4-16 与 C4-21 的整页闭环。
+

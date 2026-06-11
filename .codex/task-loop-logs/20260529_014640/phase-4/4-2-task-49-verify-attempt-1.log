@@ -1,0 +1,81 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-49`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-49-c3-10-validation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_fallback.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_fallback/validation.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_fallback/call_log.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_fallback_validation.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/support/ai_fallback_validation.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐成功和失败路径测试
+- 结果：通过
+- 证据：`ai_fallback_validation` 新增 3 个 validation 测试；现有 targeted tests 覆盖 contract 4、failure 6、implementation 5、validation 3，共 18 个测试全部通过。
+- 涉及文件：`core/tests/ai_fallback_validation.rs`、`core/tests/support/ai_fallback_validation.rs`
+
+- 项目：验证 Core API / UDL / Rust 实现一致
+- 结果：通过
+- 证据：`docs/api/core-api.md`、`core/area_matrix.udl`、`core/src/api.rs`、`core/src/lib.rs`、`core/src/ai_fallback.rs` 均包含 `get_ai_fallback_status`、`AiFallbackStatusRequest`、`AiFallbackStatus`、fallback enums；validation 测试锁定这些片段。
+- 涉及文件：`docs/api/core-api.md`、`core/area_matrix.udl`、`core/src/api.rs`、`core/src/lib.rs`
+
+- 项目：不新增业务功能，只补验证与必要 fixture
+- 结果：通过
+- 证据：本轮脏改动仅新增 `core/tests/ai_fallback_validation.rs` 和 `core/tests/support/ai_fallback_validation.rs`；`apps/**` 无脏改动。
+- 涉及文件：`core/tests/**`
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：任务要求的 `./dev check task 4-2/task-49` 已运行并通过，无必需验证缺失。
+- 涉及文件：manifest Validation
+
+- 项目：C3-10 有足够测试证明可进入 UI 接入
+- 结果：通过
+- 证据：测试覆盖 remote failure、privacy skipped、AI disabled、local model not ready、semantic index fallback、invalid request、secret-like provider code、metadata failure、call-log rollback、non-AI import/search/classifier continuity。
+- 涉及文件：`core/tests/ai_fallback_*`
+
+- 项目：Expected New Paths / Forbidden Touches
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在并参与核验；`git status --short -- apps` 无输出，未触碰 `apps/**`。
+- 涉及文件：manifest `4-2/task-49`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，C3-10 实现拆分为主状态、validation、call_log，测试 helper 复用 fixture，没有发现单次脚本化实现。
+- 注释 / rustdoc / 文档同步：通过，public Rust API 有 rustdoc，API 文档、UDL、Rust surface 被 validation 测试锁定。
+- 错误处理与边界处理：通过，invalid input 返回 `Config`，metadata permission 返回 `PermissionDenied`，DB/call-log 持久化失败返回 `Internal`，测试覆盖失败前不写入与 rollback。
+- 测试与验证覆盖：通过，`./dev check task 4-2/task-49` 新鲜通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试调用真实 Core API、真实临时 repo、真实 SQLite/call-log 路径；未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-49`
+- 通过：`prompt_pipeline.py doctor` OK；`git diff --check` OK；`cargo test --test ai_fallback_contract_api` 4 passed；`cargo test --test ai_fallback_failure_recovery` 6 passed；`cargo test --test ai_fallback_implementation` 5 passed；`cargo test --test ai_fallback_validation` 3 passed。
+- 失败：无
+- 缺失：无。未运行 `./dev check core`、`cargo test --workspace`、`./dev check all`，因为当前 ordinary atomic Core validation 的 manifest 上限是 `./dev check task 4-2/task-49`，repo-local validation-driver 不要求扩展为 broad gate。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+- 工作区仍有 task-loop 收口文件修改和本 task 新增测试文件未跟踪；按本 verify-ready 时序，这不阻断当前验收，后续应由 runner 在 `VERIFY_RESULT: PASS` 后处理 progress / summary / Git checkpoint 收口。
+
+VERIFY_RESULT: PASS

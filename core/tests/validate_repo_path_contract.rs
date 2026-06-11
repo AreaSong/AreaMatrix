@@ -1,6 +1,6 @@
 use area_matrix_core::{
-    validate_initialized_repo_path, validate_repo_path, CoreError, CoreResult, RepoInitMode,
-    RepoPathIssue, RepoPathValidation,
+    validate_initialized_repo_path, validate_repo_path, CoreError, CoreResult, PlatformPathKind,
+    RepoInitMode, RepoPathIssue, RepoPathValidation,
 };
 use pretty_assertions::assert_eq;
 
@@ -24,6 +24,9 @@ fn validate_repo_path_contract_exposes_structured_status_and_issues() {
         is_initialized: false,
         is_inside_area_matrix: false,
         is_icloud_path: false,
+        is_onedrive_path: false,
+        platform_path_kind: PlatformPathKind::Local,
+        is_case_sensitive_path: true,
         has_unfinished_scan_session: false,
         recommended_mode: Some(RepoInitMode::CreateEmpty),
         issues: vec![],
@@ -38,6 +41,9 @@ fn validate_repo_path_contract_exposes_structured_status_and_issues() {
         is_initialized: false,
         is_inside_area_matrix: false,
         is_icloud_path: false,
+        is_onedrive_path: false,
+        platform_path_kind: PlatformPathKind::Local,
+        is_case_sensitive_path: true,
         has_unfinished_scan_session: false,
         recommended_mode: Some(RepoInitMode::AdoptExisting),
         issues: vec![RepoPathIssue::NonEmptyDirectory],
@@ -70,6 +76,9 @@ fn validate_repo_path_contract_exposes_all_documented_issues() {
         RepoPathIssue::AlreadyInitialized,
         RepoPathIssue::InsideAreaMatrix,
         RepoPathIssue::ICloudPath,
+        RepoPathIssue::OneDrivePath,
+        RepoPathIssue::WindowsReservedName,
+        RepoPathIssue::WindowsCaseInsensitive,
         RepoPathIssue::UnfinishedScanSession,
     ];
 
@@ -83,6 +92,9 @@ fn validate_repo_path_contract_exposes_all_documented_issues() {
         is_initialized: false,
         is_inside_area_matrix: true,
         is_icloud_path: true,
+        is_onedrive_path: true,
+        platform_path_kind: PlatformPathKind::OneDrive,
+        is_case_sensitive_path: false,
         has_unfinished_scan_session: true,
         recommended_mode: None,
         issues: documented_issues.clone(),

@@ -1,0 +1,40 @@
+**一、执行结论**
+已完成 `4-3/task-56`，并通过指定验证 `./dev check task 4-3/task-56`。
+
+**二、执行范围**
+单任务：C4-12 `platform-watcher-status` contract/API。
+
+修改文件：
+- [core/src/platform_watcher_status.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/platform_watcher_status.rs)
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs)
+- [core/src/lib.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs)
+- [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl)
+- [core/tests/platform_watcher_status_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/platform_watcher_status_contract_api.rs)
+- [docs/api/core-api.md](/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md)
+
+**三、完成情况**
+核对清单全部完成：已读取 C4-12 能力规格、Stage 4 control map、Core API、错误码、相关 watcher-status 页面；补齐 `record_watcher_health(repo_path, signal) -> PlatformWatcherSnapshot` 合同、UDL 声明、Rust 类型和 contract test。
+
+完成标准满足：C4-12 合同已可供后续 `4-3/task-57` implementation 直接实现；没有引入 control map 外页面能力。`Run rescan now` 明确仍必须进入 `S4-X-07 rescan-confirm`，不由 C4-12 直接触发。
+
+Forbidden Touches：未触碰 `apps/**`。
+
+**四、工程质量**
+结构清晰：新增 C4-12 独立模块，类型包含 backend、status、health reasons、event samples、signal、snapshot。public Rust API 已补 rustdoc 和 `# Errors`。
+
+无 mock-only 或硬编码成功：`record_watcher_health` 当前只做合同级输入校验，随后返回明确 `Db` 错误，不伪造成功；真实 metadata 持久化留给 implementation task。未新增依赖，未做用户文件读写、移动、删除、覆盖或平台 watcher 操作。
+
+**五、验证情况**
+已通过：
+- `cargo fmt --manifest-path core/Cargo.toml -- --check`
+- `git diff --check`
+- `./dev check task 4-3/task-56`
+
+`./dev check task 4-3/task-56` 输出要点：prompt doctor OK，diff check OK，自动运行 targeted test `cargo test --test platform_watcher_status_contract_api -- --nocapture`，4 个测试全部通过。
+
+失败项：无。无法运行项：无。未运行宽门禁：未运行 `cargo test --workspace` / clippy / `./dev check core/all`，遵守本 atomic task 的验证上限。
+
+**六、风险与后续**
+剩余风险：C4-12 目前是合同/API 阶段，watcher health metadata 的真实 DB 写入、读取、DB locked/IO 细节仍待 `4-3/task-57` 和后续 failure/validation task 完成。
+
+工作区还有本任务外既有脏改：`.codex/task-loop-runs/20260603_103922/summary.json`、`tasks/prompts/_shared/progress.json`。我未把它们纳入本次修改范围。

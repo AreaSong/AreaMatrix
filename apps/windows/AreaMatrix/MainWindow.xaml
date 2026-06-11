@@ -1,0 +1,46 @@
+<Window
+    x:Class="AreaMatrix.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:help="using:AreaMatrix.Features.Help"
+    xmlns:import="using:AreaMatrix.Features.Import"
+    xmlns:library="using:AreaMatrix.Features.Library"
+    xmlns:onboarding="using:AreaMatrix.Features.Onboarding"
+    xmlns:recovery="using:AreaMatrix.Features.Recovery"
+    xmlns:settings="using:AreaMatrix.Features.Settings"
+    Title="AreaMatrix">
+
+    <Grid>
+        <onboarding:ChooseRepositoryView x:Name="ChooseRepositoryPage" />
+        <onboarding:OneDriveNoticeDialog
+            x:Name="OneDriveNoticePage"
+            Visibility="Collapsed" />
+        <onboarding:RepositoryInitConfirmDialog
+            x:Name="RepositoryInitConfirmPage"
+            Visibility="Collapsed" />
+        <onboarding:RepositoryAdoptConfirmDialog
+            x:Name="RepositoryAdoptConfirmPage"
+            Visibility="Collapsed" />
+        <library:WindowsMainWindow
+            x:Name="WindowsMainWindowPage"
+            Visibility="Collapsed" />
+        <import:WindowsImportDialog
+            x:Name="WindowsImportPage"
+            Visibility="Collapsed" />
+        <recovery:MissingFileRecoveryDialog
+            x:Name="MissingFileRecoveryPage"
+            Visibility="Collapsed" />
+        <library:WatcherStatusView
+            x:Name="WatcherStatusPage"
+            Visibility="Collapsed" />
+        <library:RescanConfirmDialog
+            x:Name="RescanConfirmPage"
+            Visibility="Collapsed" />
+        <help:PlatformDifferencesView
+            x:Name="PlatformDifferencesPage"
+            Visibility="Collapsed" />
+        <settings:RepositorySettingsView
+            x:Name="RepositorySettingsPage"
+            Visibility="Collapsed" />
+    </Grid>
+</Window>

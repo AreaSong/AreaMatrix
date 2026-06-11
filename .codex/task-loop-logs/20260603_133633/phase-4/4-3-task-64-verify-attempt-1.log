@@ -1,0 +1,64 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-64`
+- 对应文件路径：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-64-c4-13-validation.md`
+- 主要验收文件：`core/tests/desktop_import_flow_validation.rs`、`core/tests/desktop_import_flow_contract_api.rs`、`core/tests/desktop_import_flow_implementation.rs`、`core/tests/desktop_import_flow_failure_recovery.rs`、`core/src/api.rs`、`core/src/storage/import.rs`、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐成功和失败路径测试
+- 结果：通过
+- 证据：`core/tests/desktop_import_flow_validation.rs` 覆盖 copy 成功、move/index 成功、InvalidPath、DuplicateFile 且验证无成功状态；既有 implementation / failure_recovery 测试继续通过。
+- 涉及文件：`core/tests/desktop_import_flow_validation.rs`
+
+- 项目：Core API / UDL / Rust 实现一致
+- 结果：通过
+- 证据：UDL 暴露 `predict_category`、`import_file`、`ImportOptions` 与错误类型；Rust API 转发到真实 `classify::predict_category` 和 `storage::import_file`；验证测试锁定 Core API / UDL / Rust 文档片段。
+- 涉及文件：`core/area_matrix.udl`、`core/src/api.rs`、`core/tests/desktop_import_flow_validation.rs`
+
+- 项目：不新增业务功能，只补验证与 fixture
+- 结果：通过
+- 证据：当前业务实现文件未显示 task-64 新改动；新增落点为 `core/tests/desktop_import_flow_validation.rs`。`apps/**` 无改动。
+- 涉及文件：`core/tests/desktop_import_flow_validation.rs`
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：必需验证已运行且通过，无无法运行项。
+- 涉及文件：验证命令输出
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。新增测试文件 499 行，未超过 500 行阈值；测试 helper 拆分清楚，没有把验证堆成单个超长测试。
+- 注释 / rustdoc / 文档同步：通过。当前任务新增测试，不新增 public Rust API；现有 `core/src/api.rs` 对 C4-13 的 API 边界已有 rustdoc，UDL 有对应注释。
+- 错误处理与边界处理：通过。测试覆盖 InvalidPath、DuplicateFile、DB 失败、Conflict、PermissionDenied、无半成品与无成功状态；生产实现使用 `Result` 传播错误。
+- 测试与验证覆盖：通过。`./dev check task 4-3/task-64` 新鲜通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。验证连接真实 `init_repo`、`predict_category`、`import_file`、SQLite metadata、文件系统 staging 与 repo 文件，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-64`
+- 通过：`prompt_pipeline.py doctor`、`git diff --check`、`cargo test --test desktop_import_flow_contract_api`、`cargo test --test desktop_import_flow_failure_recovery`、`cargo test --test desktop_import_flow_implementation`、`cargo test --test desktop_import_flow_validation`
+- 失败：无
+- 缺失：无。未运行 `./dev check all` / `./dev check core`，原因是当前 manifest 只要求 task-scoped 验证，validation-driver 对普通 atomic Core task 不要求默认扩大门禁。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。当前工作区有 runner 的 `progress.json` / `summary.json` in_progress 记录和未 staged 的新增测试文件，但按本 verify 阶段规则不作为失败依据；`apps/**` 未被触碰。
+
+VERIFY_RESULT: PASS

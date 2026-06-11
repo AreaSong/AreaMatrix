@@ -1,0 +1,45 @@
+一、执行结论
+
+已完成 `4-2/task-61`。
+
+二、执行范围
+
+单任务：S3-06 页面中的 C3-06 `ai-summary` 功能点。
+
+修改文件：
+- [CoreNoteReadingWriting.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreNoteReadingWriting.swift): 增加 `CoreAISummaryManaging`，通过 `CoreBridge` 接入 `generateAiSummary` / `saveAiSummary` / `clearAiSummary`。
+- [MainFileListState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListState.swift): 增加 `Summary` tab。
+- [MainRepositoryDetailPane.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift): 在详情页接入 `AISummaryEditor`。
+- [SearchRouteViews.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SearchRouteViews.swift): 增加 AI 摘要编辑模型、状态、错误映射和 UI。
+- [ValidatePathErrorMappingSmokeTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/ValidatePathErrorMappingSmokeTests.swift): 增加 S3-06/C3-06 模型测试。
+- [S304PageIntegrationVerifyTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/S304PageIntegrationVerifyTests.swift): 仅保留测试迁移后的空行级调整。
+
+三、完成情况
+
+核对清单：
+- 只处理 S3-06 + C3-06：通过。
+- 已对照页面规格、Stage 3 control map、Core API、C3-06 spec：通过。
+- 只接入 C3-06 的 CoreBridge / 状态 / 错误映射：通过。
+- 未实现同页 C3-09、S3-05 调用日志页面或其他相邻能力：通过。
+
+完成标准：
+- 用户可触发生成、保存、清除摘要：通过。
+- 生成结果先进入 draft，保存才调用 Core save：通过。
+- 保存失败保留草稿，清除成功回到空态：通过测试覆盖。
+- 未使用 mock/fixture 伪造生产闭环；测试 stub 仅用于 XCTest：通过。
+- Forbidden Touches：未触碰 `core/src/**`，也未修改 generated bridge 或 UDL。
+
+四、工程质量
+
+代码结构保持在既有 SwiftUI/CoreBridge 模式内，没有绕过 `CoreBridge` 直调 UniFFI。新增错误处理会把 `CoreError` 映射为页面 inline error；生成取消、保存失败、清除失败都有状态保留逻辑。未新增依赖、未新增 public Rust API、未修改文档源事实。
+
+五、验证情况
+
+已运行：
+- `./dev check task 4-2/task-61`：通过。包含 prompt doctor、`git diff --check`、macOS `xcodebuild build`，最终 `BUILD SUCCEEDED`。
+- `xcodebuild ... test -only-testing:AreaMatrixTests/S306AISummaryEditorModelTests`：标准 XCTest 被本地 sandbox 的 `testmanagerd.control` 阻断。
+- `xcrun xctest -XCTest AreaMatrixTests.S306AISummaryEditorModelTests ...`：通过，3 tests，0 failures。
+
+六、风险与后续
+
+剩余风险：未做真实窗口点击级 UI smoke；当前证据覆盖 build、CoreBridge wiring 和模型行为。下一个任务建议继续执行 `4-2/task-62`，覆盖同页 secondary capability `C3-09` 的隐私规则相关行为。

@@ -63,6 +63,7 @@
 		0A0000000000000000000410 /* CoreBatchDelete.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000411 /* CoreBatchDelete.swift */; };
 		0A00000000000000000002C8 /* MainFileCategoryMoveActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */; };
 		0A00000000000000000002CA /* MainFileCategoryMoveState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002CB /* MainFileCategoryMoveState.swift */; };
+		0A0000000000000000000732 /* AIClassificationSuggestionApplyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000733 /* AIClassificationSuggestionApplyState.swift */; };
 		0A0000000000000000000332 /* BatchChangeCategoryState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000333 /* BatchChangeCategoryState.swift */; };
 		0A0000000000000000000412 /* BatchDeleteState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000413 /* BatchDeleteState.swift */; };
 		0A00000000000000000002CC /* MainFileActionRoutingActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002CD /* MainFileActionRoutingActions.swift */; };
@@ -80,6 +81,27 @@
 		0A00000000000000000002E6 /* ICloudConflictListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002E7 /* ICloudConflictListModel.swift */; };
 		0A00000000000000000002E8 /* ICloudConflictListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002E9 /* ICloudConflictListView.swift */; };
 		0A00000000000000000002EA /* ICloudConflictListPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002EB /* ICloudConflictListPageFeatureTests.swift */; };
+		0A0000000000000000000760 /* CoreSyncConflictDetecting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000761 /* CoreSyncConflictDetecting.swift */; };
+		0A0000000000000000000762 /* SyncConflictReviewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000763 /* SyncConflictReviewModel.swift */; };
+		0A0000000000000000000764 /* SyncConflictReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000765 /* SyncConflictReviewView.swift */; };
+		0A0000000000000000000766 /* SyncConflictReviewPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000767 /* SyncConflictReviewPageFeatureTests.swift */; };
+		0A0000000000000000000768 /* SyncConflictReviewResolutionTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000769 /* SyncConflictReviewResolutionTestSupport.swift */; };
+		0A000000000000000000076A /* CoreSyncConflictResolving.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000076B /* CoreSyncConflictResolving.swift */; };
+		0A000000000000000000076C /* SyncConflictReviewResolutionPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000076D /* SyncConflictReviewResolutionPageFeatureTests.swift */; };
+		0A000000000000000000076E /* SyncConflictReplaceConfirmationPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000076F /* SyncConflictReplaceConfirmationPanel.swift */; };
+		0A0000000000000000000778 /* SyncConflictEntryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000779 /* SyncConflictEntryModel.swift */; };
+		0A000000000000000000077A /* SyncConflictEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000077B /* SyncConflictEntryView.swift */; };
+		0A000000000000000000077C /* SyncConflictEntryPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000077D /* SyncConflictEntryPageFeatureTests.swift */; };
+		0A0000000000000000000770 /* CoreBindingContractInspecting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000771 /* CoreBindingContractInspecting.swift */; };
+		0A0000000000000000000772 /* PlatformDifferencesModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000773 /* PlatformDifferencesModel.swift */; };
+		0A0000000000000000000774 /* PlatformDifferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000775 /* PlatformDifferencesView.swift */; };
+		0A0000000000000000000776 /* PlatformDifferencesPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000777 /* PlatformDifferencesPageFeatureTests.swift */; };
+		0A0000000000000000000800 /* RepositorySettingsPlatformCapabilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000801 /* RepositorySettingsPlatformCapabilities.swift */; };
+		0A0000000000000000000802 /* RepositorySettingsPlatformCapabilitySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000803 /* RepositorySettingsPlatformCapabilitySection.swift */; };
+		0A0000000000000000000810 /* RepositorySettingsConfigModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000811 /* RepositorySettingsConfigModel.swift */; };
+		0A0000000000000000000820 /* RepositorySettingsSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000821 /* RepositorySettingsSummary.swift */; };
+		0A0000000000000000000812 /* RepositorySettingsConfigSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000813 /* RepositorySettingsConfigSection.swift */; };
+		0A0000000000000000000814 /* RepositorySettingsConfigPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000815 /* RepositorySettingsConfigPageFeatureTests.swift */; };
 		0A00000000000000000002EC /* CoreMetadataRepairing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002ED /* CoreMetadataRepairing.swift */; };
 		0A00000000000000000002EF /* DatabaseRepairConfirmModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F0 /* DatabaseRepairConfirmModel.swift */; };
 		0A00000000000000000002F1 /* DatabaseRepairConfirmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F2 /* DatabaseRepairConfirmView.swift */; };
@@ -199,6 +221,36 @@
 		0A0000000000000000000616 /* CommandPaletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000617 /* CommandPaletteView.swift */; };
 		0A0000000000000000000618 /* ICloudConflictApplyResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000619 /* ICloudConflictApplyResult.swift */; };
 		0A000000000000000000061A /* ICloudConflictApplyContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000061B /* ICloudConflictApplyContext.swift */; };
+		0A0000000000000000000710 /* CoreRemoteProviderConfiguring.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000711 /* CoreRemoteProviderConfiguring.swift */; };
+		0A0000000000000000000712 /* RemoteProviderConfigState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000713 /* RemoteProviderConfigState.swift */; };
+		0A0000000000000000000714 /* RemoteProviderCredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000715 /* RemoteProviderCredentialStore.swift */; };
+		0A0000000000000000000716 /* RemoteProviderConfigModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000717 /* RemoteProviderConfigModel.swift */; };
+		0A0000000000000000000718 /* RemoteModelConfigSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000719 /* RemoteModelConfigSheet.swift */; };
+		0A000000000000000000074A /* AIPrivacyRulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000074B /* AIPrivacyRulesView.swift */; };
+		0A000000000000000000074E /* AIPrivacyRulesSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000074F /* AIPrivacyRulesSupport.swift */; };
+		0A0000000000000000000750 /* AIPrivacyRulesEditorComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000751 /* AIPrivacyRulesEditorComponents.swift */; };
+		0A000000000000000000075A /* AIPrivacyRulesSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000075B /* AIPrivacyRulesSections.swift */; };
+		0A0000000000000000000754 /* AIPrivacyRulesRegistryReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000755 /* AIPrivacyRulesRegistryReader.swift */; };
+		0A0000000000000000000756 /* AIPrivacyRemoteProviderStateModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000757 /* AIPrivacyRemoteProviderStateModel.swift */; };
+		0A0000000000000000000758 /* AIPrivacyRulesRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000759 /* AIPrivacyRulesRoute.swift */; };
+		0A0000000000000000000728 /* AIClassificationSuggestionPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */; };
+		0A000000000000000000072A /* AIClassificationPrivacyRuleReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000072B /* AIClassificationPrivacyRuleReference.swift */; };
+		0A0000000000000000000730 /* AIClassificationCallLogDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000731 /* AIClassificationCallLogDetail.swift */; };
+		0A0000000000000000000734 /* AIClassificationSuggestionPanel+Apply.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000735 /* AIClassificationSuggestionPanel+Apply.swift */; };
+		0A0000000000000000000724 /* RemoteProviderProbeRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000725 /* RemoteProviderProbeRuntime.swift */; };
+		0A0000000000000000000726 /* RemoteProviderProbeRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000727 /* RemoteProviderProbeRuntimeTests.swift */; };
+		0A0000000000000000000736 /* S304PageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000737 /* S304PageIntegrationVerifyTests.swift */; };
+		0A0000000000000000000738 /* AISummaryEditorState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000739 /* AISummaryEditorState.swift */; };
+		0A000000000000000000073A /* AISummaryEditorGateState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000073B /* AISummaryEditorGateState.swift */; };
+		0A0000000000000000000740 /* AISummaryMetadataReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000741 /* AISummaryMetadataReader.swift */; };
+		0A000000000000000000073C /* S306PageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000073D /* S306PageIntegrationVerifyTests.swift */; };
+		0A000000000000000000073E /* S306AISummaryPrivacyRuleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000073F /* S306AISummaryPrivacyRuleTests.swift */; };
+		0A000000000000000000074C /* S309RemoteProviderConfigPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000074D /* S309RemoteProviderConfigPageFeatureTests.swift */; };
+		0A0000000000000000000752 /* S309PageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000753 /* S309PageIntegrationVerifyTests.swift */; };
+		0A0000000000000000000742 /* SemanticSearchPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000743 /* SemanticSearchPresentation.swift */; };
+		0A0000000000000000000744 /* SemanticIndexBuildControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000745 /* SemanticIndexBuildControls.swift */; };
+		0A0000000000000000000746 /* SemanticSearchResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000747 /* SemanticSearchResultsView.swift */; };
+		0A0000000000000000000748 /* S308PageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000749 /* S308PageIntegrationVerifyTests.swift */; };
 		0A00000000000000000001A0 /* ImportBatchNamingOptionsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001A1 /* ImportBatchNamingOptionsSection.swift */; };
 		0A00000000000000000001B2 /* ImportFolderPreviewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001B3 /* ImportFolderPreviewModel.swift */; };
 		0A00000000000000000001B4 /* ImportFolderScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001B5 /* ImportFolderScanner.swift */; };
@@ -245,6 +297,8 @@
 		0A0000000000000000000276 /* GeneralSettingsActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000277 /* GeneralSettingsActions.swift */; };
 		0A0000000000000000000278 /* GeneralSettingsPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000279 /* GeneralSettingsPageFeatureTests.swift */; };
 		0A000000000000000000027A /* GeneralSettingsImportDefaultModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000027B /* GeneralSettingsImportDefaultModeTests.swift */; };
+		0A0000000000000000000720 /* RemoteProviderConfigModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000721 /* RemoteProviderConfigModelTests.swift */; };
+		0A0000000000000000000722 /* RemoteProviderConfigTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000723 /* RemoteProviderConfigTestSupport.swift */; };
 		0A000000000000000000027C /* RepositoryIgnoreRulesManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000027D /* RepositoryIgnoreRulesManager.swift */; };
 		0A000000000000000000027E /* GeneralSettingsPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000027F /* GeneralSettingsPageIntegrationVerifyTests.swift */; };
 		0A0000000000000000000280 /* RepositorySettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000281 /* RepositorySettingsModel.swift */; };
@@ -350,6 +404,7 @@
 		0A0000000000000000000411 /* CoreBatchDelete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBatchDelete.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileCategoryMoveActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002CB /* MainFileCategoryMoveState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileCategoryMoveState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000733 /* AIClassificationSuggestionApplyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/AIClassificationSuggestionApplyState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000333 /* BatchChangeCategoryState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/BatchChangeCategoryState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000413 /* BatchDeleteState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/BatchDeleteState.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002CD /* MainFileActionRoutingActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileActionRoutingActions.swift; sourceTree = SOURCE_ROOT; };
@@ -370,6 +425,36 @@
 		0A0000000000000000000617 /* CommandPaletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/CommandPaletteView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000619 /* ICloudConflictApplyResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ICloudConflictApplyResult.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000061B /* ICloudConflictApplyContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ICloudConflictApplyContext.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000711 /* CoreRemoteProviderConfiguring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreRemoteProviderConfiguring.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000713 /* RemoteProviderConfigState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteProviderConfigState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000715 /* RemoteProviderCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteProviderCredentialStore.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000717 /* RemoteProviderConfigModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteProviderConfigModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000719 /* RemoteModelConfigSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteModelConfigSheet.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000074B /* AIPrivacyRulesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesView.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000074F /* AIPrivacyRulesSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000751 /* AIPrivacyRulesEditorComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesEditorComponents.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000075B /* AIPrivacyRulesSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesSections.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000755 /* AIPrivacyRulesRegistryReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesRegistryReader.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000757 /* AIPrivacyRemoteProviderStateModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRemoteProviderStateModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000759 /* AIPrivacyRulesRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesRoute.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000072B /* AIClassificationPrivacyRuleReference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationPrivacyRuleReference.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000731 /* AIClassificationCallLogDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationCallLogDetail.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000735 /* AIClassificationSuggestionPanel+Apply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AreaMatrix/Features/AI/AIClassificationSuggestionPanel+Apply.swift"; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000725 /* RemoteProviderProbeRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteProviderProbeRuntime.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000727 /* RemoteProviderProbeRuntimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RemoteProviderProbeRuntimeTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000737 /* S304PageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S304PageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000739 /* AISummaryEditorState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AISummaryEditorState.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000073B /* AISummaryEditorGateState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AISummaryEditorGateState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000741 /* AISummaryMetadataReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AISummaryMetadataReader.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000073D /* S306PageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S306PageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000073F /* S306AISummaryPrivacyRuleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S306AISummaryPrivacyRuleTests.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000074D /* S309RemoteProviderConfigPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S309RemoteProviderConfigPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000753 /* S309PageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S309PageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000743 /* SemanticSearchPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/SemanticSearchPresentation.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000745 /* SemanticIndexBuildControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/SemanticIndexBuildControls.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000747 /* SemanticSearchResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/SemanticSearchResultsView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000749 /* S308PageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/S308PageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002DD /* ICloudConflictMinimalValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalValidationTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002DF /* ICloudConflictMinimalPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ICloudConflictMinimalResolution.swift; sourceTree = SOURCE_ROOT; };
@@ -378,6 +463,27 @@
 		0A00000000000000000002E7 /* ICloudConflictListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ICloudConflictListModel.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002E9 /* ICloudConflictListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ICloudConflictListView.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002EB /* ICloudConflictListPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictListPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000761 /* CoreSyncConflictDetecting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreSyncConflictDetecting.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000763 /* SyncConflictReviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/SyncConflictReviewModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000765 /* SyncConflictReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/SyncConflictReviewView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000767 /* SyncConflictReviewPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SyncConflictReviewPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000769 /* SyncConflictReviewResolutionTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SyncConflictReviewResolutionTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000076B /* CoreSyncConflictResolving.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreSyncConflictResolving.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000076D /* SyncConflictReviewResolutionPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SyncConflictReviewResolutionPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000076F /* SyncConflictReplaceConfirmationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/SyncConflictReplaceConfirmationPanel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000779 /* SyncConflictEntryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/SyncConflictEntryModel.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000077B /* SyncConflictEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/SyncConflictEntryView.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000077D /* SyncConflictEntryPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SyncConflictEntryPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000771 /* CoreBindingContractInspecting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBindingContractInspecting.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000773 /* PlatformDifferencesModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/PlatformDifferencesModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000775 /* PlatformDifferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/PlatformDifferencesView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000777 /* PlatformDifferencesPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/PlatformDifferencesPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000801 /* RepositorySettingsPlatformCapabilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/RepositorySettingsPlatformCapabilities.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000803 /* RepositorySettingsPlatformCapabilitySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/RepositorySettingsPlatformCapabilitySection.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000811 /* RepositorySettingsConfigModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/RepositorySettingsConfigModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000821 /* RepositorySettingsSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/RepositorySettingsSummary.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000813 /* RepositorySettingsConfigSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/RepositorySettingsConfigSection.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000815 /* RepositorySettingsConfigPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RepositorySettingsConfigPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000261 /* MainFileListDetailSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileListDetailSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000223 /* MainFileListState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileListState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000133 /* MainListFilesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainListFilesTests.swift; sourceTree = SOURCE_ROOT; };
@@ -417,6 +523,8 @@
 		0A0000000000000000000277 /* GeneralSettingsActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/GeneralSettingsActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000279 /* GeneralSettingsPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/GeneralSettingsPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000027B /* GeneralSettingsImportDefaultModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/GeneralSettingsImportDefaultModeTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000721 /* RemoteProviderConfigModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RemoteProviderConfigModelTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000723 /* RemoteProviderConfigTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RemoteProviderConfigTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000027D /* RepositoryIgnoreRulesManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/RepositoryIgnoreRulesManager.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000027F /* GeneralSettingsPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/GeneralSettingsPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000281 /* RepositorySettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/RepositorySettingsModel.swift; sourceTree = SOURCE_ROOT; };
@@ -600,6 +708,7 @@
 			isa = PBXGroup;
 			children = (
 				0A0000000000000000000035 /* App */,
+				0A000000000000000000071A /* Features */,
 				0A0000000000000000000036 /* Views */,
 				0A0000000000000000000037 /* Bridge */,
 				0A0000000000000000000038 /* Models */,
@@ -639,10 +748,13 @@
 				0A0000000000000000000293 /* ClassifierSettingsPane.swift */,
 				0A0000000000000000000521 /* ClassifierRuleEditorSection.swift */,
 				0A0000000000000000000283 /* RepositorySettingsPane.swift */,
+				0A0000000000000000000803 /* RepositorySettingsPlatformCapabilitySection.swift */,
+				0A0000000000000000000813 /* RepositorySettingsConfigSection.swift */,
 				0A000000000000000000029D /* IntegrationsSettingsPane.swift */,
 				0A00000000000000000002A3 /* AdvancedSettingsPane.swift */,
 				0A00000000000000000002AB /* AdvancedSettingsSupportViews.swift */,
 				0A00000000000000000002AF /* AboutSettingsPane.swift */,
+				0A0000000000000000000775 /* PlatformDifferencesView.swift */,
 				0A00000000000000000000D1 /* MainRepositoryContentView.swift */,
 				0A000000000000000000013D /* MainRepositoryDetailPane.swift */,
 				0A0000000000000000000211 /* DetailLogTabView.swift */,
@@ -651,6 +763,7 @@
 				0A0000000000000000000321 /* DetailTagSection.swift */,
 				0A0000000000000000000313 /* SearchFiltersPopover.swift */,
 				0A0000000000000000000615 /* SearchFilterChipsBar.swift */,
+				0A0000000000000000000747 /* SemanticSearchResultsView.swift */,
 				0A000000000000000000024F /* MainRepositoryContentNoteDrafts.swift */,
 				0A00000000000000000002D1 /* MainRepositoryContentCategoryMoveRefresh.swift */,
 				0A00000000000000000002D3 /* MainRepositoryContentActionRouting.swift */,
@@ -671,6 +784,9 @@
 				0A000000000000000000061B /* ICloudConflictApplyContext.swift */,
 				0A0000000000000000000601 /* ICloudConflictMinimalSheet+Sections.swift */,
 				0A00000000000000000002E9 /* ICloudConflictListView.swift */,
+				0A0000000000000000000765 /* SyncConflictReviewView.swift */,
+				0A000000000000000000076F /* SyncConflictReplaceConfirmationPanel.swift */,
+				0A000000000000000000077B /* SyncConflictEntryView.swift */,
 				0A0000000000000000000149 /* MainLoadingView.swift */,
 				0A00000000000000000002B4 /* StartupRecoveryErrorRecoveryView.swift */,
 				0A000000000000000000015F /* RepositoryErrorView.swift */,
@@ -707,6 +823,40 @@
 			name = Views;
 			sourceTree = "<group>";
 		};
+		0A000000000000000000071A /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				0A000000000000000000071B /* AI */,
+			);
+			name = Features;
+			sourceTree = "<group>";
+		};
+		0A000000000000000000071B /* AI */ = {
+			isa = PBXGroup;
+			children = (
+				0A0000000000000000000713 /* RemoteProviderConfigState.swift */,
+				0A0000000000000000000715 /* RemoteProviderCredentialStore.swift */,
+				0A0000000000000000000717 /* RemoteProviderConfigModel.swift */,
+				0A0000000000000000000725 /* RemoteProviderProbeRuntime.swift */,
+				0A0000000000000000000719 /* RemoteModelConfigSheet.swift */,
+				0A000000000000000000074B /* AIPrivacyRulesView.swift */,
+				0A000000000000000000074F /* AIPrivacyRulesSupport.swift */,
+				0A0000000000000000000751 /* AIPrivacyRulesEditorComponents.swift */,
+				0A000000000000000000075B /* AIPrivacyRulesSections.swift */,
+				0A0000000000000000000755 /* AIPrivacyRulesRegistryReader.swift */,
+				0A0000000000000000000757 /* AIPrivacyRemoteProviderStateModel.swift */,
+				0A0000000000000000000759 /* AIPrivacyRulesRoute.swift */,
+				0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */,
+				0A0000000000000000000735 /* AIClassificationSuggestionPanel+Apply.swift */,
+				0A000000000000000000072B /* AIClassificationPrivacyRuleReference.swift */,
+				0A0000000000000000000731 /* AIClassificationCallLogDetail.swift */,
+				0A0000000000000000000739 /* AISummaryEditorState.swift */,
+				0A000000000000000000073B /* AISummaryEditorGateState.swift */,
+				0A0000000000000000000741 /* AISummaryMetadataReader.swift */,
+			);
+			name = AI;
+			sourceTree = "<group>";
+		};
 		0A0000000000000000000037 /* Bridge */ = {
 			isa = PBXGroup;
 			children = (
@@ -724,7 +874,11 @@
 				0A0000000000000000000171 /* CoreImporting.swift */,
 				0A0000000000000000000157 /* CoreExternalChangesSyncing.swift */,
 				0A00000000000000000002E5 /* CoreICloudConflictListing.swift */,
+				0A0000000000000000000761 /* CoreSyncConflictDetecting.swift */,
+				0A000000000000000000076B /* CoreSyncConflictResolving.swift */,
+				0A0000000000000000000771 /* CoreBindingContractInspecting.swift */,
 				0A00000000000000000002ED /* CoreMetadataRepairing.swift */,
+				0A0000000000000000000711 /* CoreRemoteProviderConfiguring.swift */,
 				0A00000000000000000001E3 /* CoreChangeLogListing.swift */,
 				0A0000000000000000000241 /* CoreNoteReadingWriting.swift */,
 				0A000000000000000000001B /* AreaMatrix-Bridging-Header.h */,
@@ -755,8 +909,12 @@
 				0A00000000000000000002A1 /* AdvancedSettingsModel.swift */,
 				0A00000000000000000002A9 /* AdvancedSettingsDiagnostics.swift */,
 				0A00000000000000000002AD /* AboutSettingsModel.swift */,
+				0A0000000000000000000773 /* PlatformDifferencesModel.swift */,
 				0A0000000000000000000277 /* GeneralSettingsActions.swift */,
 				0A0000000000000000000281 /* RepositorySettingsModel.swift */,
+				0A0000000000000000000821 /* RepositorySettingsSummary.swift */,
+				0A0000000000000000000801 /* RepositorySettingsPlatformCapabilities.swift */,
+				0A0000000000000000000811 /* RepositorySettingsConfigModel.swift */,
 				0A0000000000000000000289 /* RepositorySettingsActionState.swift */,
 				0A000000000000000000014F /* OnboardingRoute.swift */,
 				0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */,
@@ -798,6 +956,7 @@
 				0A00000000000000000002C3 /* MainFileDeleteActions.swift */,
 				0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */,
 				0A00000000000000000002CB /* MainFileCategoryMoveState.swift */,
+				0A0000000000000000000733 /* AIClassificationSuggestionApplyState.swift */,
 				0A0000000000000000000333 /* BatchChangeCategoryState.swift */,
 				0A0000000000000000000413 /* BatchDeleteState.swift */,
 				0A00000000000000000002CD /* MainFileActionRoutingActions.swift */,
@@ -806,6 +965,8 @@
 				0A00000000000000000002D9 /* ICloudConflictMinimalValidation.swift */,
 				0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */,
 				0A00000000000000000002E7 /* ICloudConflictListModel.swift */,
+				0A0000000000000000000763 /* SyncConflictReviewModel.swift */,
+				0A0000000000000000000779 /* SyncConflictEntryModel.swift */,
 				0A00000000000000000002F0 /* DatabaseRepairConfirmModel.swift */,
 				0A0000000000000000000261 /* MainFileListDetailSupport.swift */,
 				0A0000000000000000000223 /* MainFileListState.swift */,
@@ -817,6 +978,8 @@
 				0A0000000000000000000311 /* MainFileListDiagnosticsActions.swift */,
 				0A0000000000000000000221 /* MainDetailExternalCreateSyncState.swift */,
 				0A0000000000000000000227 /* MainExternalCreatedFileActions.swift */,
+				0A0000000000000000000743 /* SemanticSearchPresentation.swift */,
+				0A0000000000000000000745 /* SemanticIndexBuildControls.swift */,
 				0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */,
 				0A0000000000000000000147 /* MainLoadingState.swift */,
 					0A000000000000000000014D /* StartupRecoveryModels.swift */,
@@ -902,6 +1065,15 @@
 				0A000000000000000000024B /* DetailNotePageFeatureTests.swift */,
 				0A0000000000000000000279 /* GeneralSettingsPageFeatureTests.swift */,
 				0A000000000000000000027B /* GeneralSettingsImportDefaultModeTests.swift */,
+				0A0000000000000000000721 /* RemoteProviderConfigModelTests.swift */,
+				0A0000000000000000000723 /* RemoteProviderConfigTestSupport.swift */,
+				0A0000000000000000000727 /* RemoteProviderProbeRuntimeTests.swift */,
+				0A0000000000000000000737 /* S304PageIntegrationVerifyTests.swift */,
+				0A000000000000000000073D /* S306PageIntegrationVerifyTests.swift */,
+				0A000000000000000000073F /* S306AISummaryPrivacyRuleTests.swift */,
+				0A0000000000000000000749 /* S308PageIntegrationVerifyTests.swift */,
+				0A000000000000000000074D /* S309RemoteProviderConfigPageFeatureTests.swift */,
+				0A0000000000000000000753 /* S309PageIntegrationVerifyTests.swift */,
 				0A0000000000000000000295 /* ClassifierSettingsPageFeatureTests.swift */,
 				0A0000000000000000000299 /* ClassifierSettingsRecoveryTests.swift */,
 				0A0000000000000000000525 /* ClassifierRuleEditorCoreBridgeTests.swift */,
@@ -909,8 +1081,10 @@
 				0A00000000000000000002A5 /* AdvancedSettingsPageFeatureTests.swift */,
 				0A00000000000000000002A7 /* AdvancedSettingsPageIntegrationVerifyTests.swift */,
 				0A00000000000000000002B1 /* AboutSettingsPageFeatureTests.swift */,
+				0A0000000000000000000777 /* PlatformDifferencesPageFeatureTests.swift */,
 				0A000000000000000000027F /* GeneralSettingsPageIntegrationVerifyTests.swift */,
 				0A0000000000000000000285 /* RepositorySettingsPageFeatureTests.swift */,
+				0A0000000000000000000815 /* RepositorySettingsConfigPageFeatureTests.swift */,
 				0A000000000000000000028B /* RepositorySettingsPageIntegrationVerifyTests.swift */,
 				0A0000000000000000000287 /* RepositorySettingsTestSupport.swift */,
 				0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */,
@@ -923,6 +1097,10 @@
 				0A00000000000000000002DF /* ICloudConflictMinimalPageIntegrationVerifyTests.swift */,
 				0A00000000000000000002E3 /* ICloudConflictMinimalPageIntegrationTestSupport.swift */,
 				0A00000000000000000002EB /* ICloudConflictListPageFeatureTests.swift */,
+				0A0000000000000000000767 /* SyncConflictReviewPageFeatureTests.swift */,
+				0A0000000000000000000769 /* SyncConflictReviewResolutionTestSupport.swift */,
+				0A000000000000000000076D /* SyncConflictReviewResolutionPageFeatureTests.swift */,
+				0A000000000000000000077D /* SyncConflictEntryPageFeatureTests.swift */,
 				0A000000000000000000014B /* MainLoadingAdoptExistingTests.swift */,
 				0A0000000000000000000151 /* MainLoadingTestSupport.swift */,
 				0A0000000000000000000153 /* MainLoadingFixtures.swift */,
@@ -1078,7 +1256,13 @@
 				0A00000000000000000002D8 /* ICloudConflictMinimalValidation.swift in Sources */,
 				0A00000000000000000002E0 /* ICloudConflictMinimalResolution.swift in Sources */,
 				0A00000000000000000002E6 /* ICloudConflictListModel.swift in Sources */,
+				0A0000000000000000000762 /* SyncConflictReviewModel.swift in Sources */,
+				0A0000000000000000000778 /* SyncConflictEntryModel.swift in Sources */,
 				0A00000000000000000002EF /* DatabaseRepairConfirmModel.swift in Sources */,
+				0A0000000000000000000712 /* RemoteProviderConfigState.swift in Sources */,
+				0A0000000000000000000714 /* RemoteProviderCredentialStore.swift in Sources */,
+				0A0000000000000000000716 /* RemoteProviderConfigModel.swift in Sources */,
+				0A0000000000000000000724 /* RemoteProviderProbeRuntime.swift in Sources */,
 				0A0000000000000000000134 /* MainListVisibleFileFiltering.swift in Sources */,
 				0A0000000000000000000122 /* OnboardingModelInputs.swift in Sources */,
 				0A0000000000000000000126 /* FileDropAdapter.swift in Sources */,
@@ -1131,8 +1315,12 @@
 				0A00000000000000000002A0 /* AdvancedSettingsModel.swift in Sources */,
 				0A00000000000000000002A8 /* AdvancedSettingsDiagnostics.swift in Sources */,
 				0A00000000000000000002AC /* AboutSettingsModel.swift in Sources */,
+				0A0000000000000000000772 /* PlatformDifferencesModel.swift in Sources */,
 				0A0000000000000000000276 /* GeneralSettingsActions.swift in Sources */,
 				0A0000000000000000000280 /* RepositorySettingsModel.swift in Sources */,
+				0A0000000000000000000820 /* RepositorySettingsSummary.swift in Sources */,
+				0A0000000000000000000800 /* RepositorySettingsPlatformCapabilities.swift in Sources */,
+				0A0000000000000000000810 /* RepositorySettingsConfigModel.swift in Sources */,
 				0A0000000000000000000288 /* RepositorySettingsActionState.swift in Sources */,
 				0A00000000000000000001CE /* ImportProgressActions.swift in Sources */,
 				0A00000000000000000001DE /* ImportResultRouteActions.swift in Sources */,
@@ -1148,14 +1336,34 @@
 				0A0000000000000000000292 /* ClassifierSettingsPane.swift in Sources */,
 				0A0000000000000000000520 /* ClassifierRuleEditorSection.swift in Sources */,
 				0A0000000000000000000282 /* RepositorySettingsPane.swift in Sources */,
+				0A0000000000000000000802 /* RepositorySettingsPlatformCapabilitySection.swift in Sources */,
+				0A0000000000000000000812 /* RepositorySettingsConfigSection.swift in Sources */,
 				0A000000000000000000029C /* IntegrationsSettingsPane.swift in Sources */,
 				0A00000000000000000002A2 /* AdvancedSettingsPane.swift in Sources */,
 				0A00000000000000000002AA /* AdvancedSettingsSupportViews.swift in Sources */,
 				0A00000000000000000002AE /* AboutSettingsPane.swift in Sources */,
+				0A0000000000000000000774 /* PlatformDifferencesView.swift in Sources */,
+				0A0000000000000000000718 /* RemoteModelConfigSheet.swift in Sources */,
+				0A000000000000000000074A /* AIPrivacyRulesView.swift in Sources */,
+				0A000000000000000000074E /* AIPrivacyRulesSupport.swift in Sources */,
+				0A0000000000000000000750 /* AIPrivacyRulesEditorComponents.swift in Sources */,
+				0A000000000000000000075A /* AIPrivacyRulesSections.swift in Sources */,
+				0A0000000000000000000754 /* AIPrivacyRulesRegistryReader.swift in Sources */,
+				0A0000000000000000000756 /* AIPrivacyRemoteProviderStateModel.swift in Sources */,
+				0A0000000000000000000758 /* AIPrivacyRulesRoute.swift in Sources */,
+				0A0000000000000000000728 /* AIClassificationSuggestionPanel.swift in Sources */,
+				0A000000000000000000072A /* AIClassificationPrivacyRuleReference.swift in Sources */,
+				0A0000000000000000000730 /* AIClassificationCallLogDetail.swift in Sources */,
+				0A0000000000000000000734 /* AIClassificationSuggestionPanel+Apply.swift in Sources */,
+				0A0000000000000000000738 /* AISummaryEditorState.swift in Sources */,
+				0A000000000000000000073A /* AISummaryEditorGateState.swift in Sources */,
+				0A0000000000000000000740 /* AISummaryMetadataReader.swift in Sources */,
+				0A0000000000000000000732 /* AIClassificationSuggestionApplyState.swift in Sources */,
 				0A000000000000000000013C /* MainRepositoryDetailPane.swift in Sources */,
 				0A0000000000000000000210 /* DetailLogTabView.swift in Sources */,
 				0A0000000000000000000224 /* DetailExternalCreateSyncStatusView.swift in Sources */,
 				0A0000000000000000000248 /* DetailNoteTabView.swift in Sources */,
+				0A0000000000000000000746 /* SemanticSearchResultsView.swift in Sources */,
 				0A0000000000000000000320 /* DetailTagSection.swift in Sources */,
 				0A000000000000000000024E /* MainRepositoryContentNoteDrafts.swift in Sources */,
 				0A0000000000000000000312 /* SearchFiltersPopover.swift in Sources */,
@@ -1179,6 +1387,9 @@
 				0A000000000000000000061A /* ICloudConflictApplyContext.swift in Sources */,
 				0A0000000000000000000600 /* ICloudConflictMinimalSheet+Sections.swift in Sources */,
 				0A00000000000000000002E8 /* ICloudConflictListView.swift in Sources */,
+				0A0000000000000000000764 /* SyncConflictReviewView.swift in Sources */,
+				0A000000000000000000076E /* SyncConflictReplaceConfirmationPanel.swift in Sources */,
+				0A000000000000000000077A /* SyncConflictEntryView.swift in Sources */,
 				0A00000000000000000002F1 /* DatabaseRepairConfirmView.swift in Sources */,
 					0A0000000000000000000146 /* MainLoadingState.swift in Sources */,
 					0A000000000000000000014C /* StartupRecoveryModels.swift in Sources */,
@@ -1213,7 +1424,11 @@
 				0A0000000000000000000170 /* CoreImporting.swift in Sources */,
 				0A0000000000000000000156 /* CoreExternalChangesSyncing.swift in Sources */,
 				0A00000000000000000002E4 /* CoreICloudConflictListing.swift in Sources */,
+				0A0000000000000000000760 /* CoreSyncConflictDetecting.swift in Sources */,
+				0A000000000000000000076A /* CoreSyncConflictResolving.swift in Sources */,
+				0A0000000000000000000770 /* CoreBindingContractInspecting.swift in Sources */,
 				0A00000000000000000002EC /* CoreMetadataRepairing.swift in Sources */,
+				0A0000000000000000000710 /* CoreRemoteProviderConfiguring.swift in Sources */,
 				0A00000000000000000001E2 /* CoreChangeLogListing.swift in Sources */,
 				0A0000000000000000000240 /* CoreNoteReadingWriting.swift in Sources */,
 				0A0000000000000000000222 /* MainFileListState.swift in Sources */,
@@ -1226,6 +1441,8 @@
 				0A0000000000000000000310 /* MainFileListDiagnosticsActions.swift in Sources */,
 				0A0000000000000000000220 /* MainDetailExternalCreateSyncState.swift in Sources */,
 				0A0000000000000000000226 /* MainExternalCreatedFileActions.swift in Sources */,
+				0A0000000000000000000742 /* SemanticSearchPresentation.swift in Sources */,
+				0A0000000000000000000744 /* SemanticIndexBuildControls.swift in Sources */,
 				0A0000000000000000000158 /* MainRepoExternalRemovalActions.swift in Sources */,
 				0A0000000000000000000162 /* MainRepoErrorActions.swift in Sources */,
 			);
@@ -1292,6 +1509,10 @@
 					0A00000000000000000002DE /* ICloudConflictMinimalPageIntegrationVerifyTests.swift in Sources */,
 					0A00000000000000000002E2 /* ICloudConflictMinimalPageIntegrationTestSupport.swift in Sources */,
 					0A00000000000000000002EA /* ICloudConflictListPageFeatureTests.swift in Sources */,
+					0A0000000000000000000766 /* SyncConflictReviewPageFeatureTests.swift in Sources */,
+					0A0000000000000000000768 /* SyncConflictReviewResolutionTestSupport.swift in Sources */,
+					0A000000000000000000076C /* SyncConflictReviewResolutionPageFeatureTests.swift in Sources */,
+					0A000000000000000000077C /* SyncConflictEntryPageFeatureTests.swift in Sources */,
 					0A00000000000000000002F3 /* DatabaseRepairConfirmPageFeatureTests.swift in Sources */,
 					0A00000000000000000002F7 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000200 /* DetailMetaPageFeatureTests.swift in Sources */,
@@ -1306,15 +1527,26 @@
 					0A000000000000000000024A /* DetailNotePageFeatureTests.swift in Sources */,
 					0A0000000000000000000278 /* GeneralSettingsPageFeatureTests.swift in Sources */,
 					0A000000000000000000027A /* GeneralSettingsImportDefaultModeTests.swift in Sources */,
-					0A0000000000000000000294 /* ClassifierSettingsPageFeatureTests.swift in Sources */,
+					0A0000000000000000000720 /* RemoteProviderConfigModelTests.swift in Sources */,
+					0A0000000000000000000722 /* RemoteProviderConfigTestSupport.swift in Sources */,
+					0A0000000000000000000726 /* RemoteProviderProbeRuntimeTests.swift in Sources */,
+					0A0000000000000000000736 /* S304PageIntegrationVerifyTests.swift in Sources */,
+					0A000000000000000000073C /* S306PageIntegrationVerifyTests.swift in Sources */,
+				0A000000000000000000073E /* S306AISummaryPrivacyRuleTests.swift in Sources */,
+				0A0000000000000000000748 /* S308PageIntegrationVerifyTests.swift in Sources */,
+				0A000000000000000000074C /* S309RemoteProviderConfigPageFeatureTests.swift in Sources */,
+				0A0000000000000000000752 /* S309PageIntegrationVerifyTests.swift in Sources */,
+				0A0000000000000000000294 /* ClassifierSettingsPageFeatureTests.swift in Sources */,
 					0A0000000000000000000298 /* ClassifierSettingsRecoveryTests.swift in Sources */,
 					0A0000000000000000000524 /* ClassifierRuleEditorCoreBridgeTests.swift in Sources */,
 					0A000000000000000000029E /* IntegrationsSettingsPageFeatureTests.swift in Sources */,
 					0A00000000000000000002A4 /* AdvancedSettingsPageFeatureTests.swift in Sources */,
 					0A00000000000000000002A6 /* AdvancedSettingsPageIntegrationVerifyTests.swift in Sources */,
 					0A00000000000000000002B0 /* AboutSettingsPageFeatureTests.swift in Sources */,
+					0A0000000000000000000776 /* PlatformDifferencesPageFeatureTests.swift in Sources */,
 					0A000000000000000000027E /* GeneralSettingsPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000284 /* RepositorySettingsPageFeatureTests.swift in Sources */,
+					0A0000000000000000000814 /* RepositorySettingsConfigPageFeatureTests.swift in Sources */,
 					0A000000000000000000028A /* RepositorySettingsPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000286 /* RepositorySettingsTestSupport.swift in Sources */,
 				0A0000000000000000000136 /* MainListIntegrationFilterTests.swift in Sources */,

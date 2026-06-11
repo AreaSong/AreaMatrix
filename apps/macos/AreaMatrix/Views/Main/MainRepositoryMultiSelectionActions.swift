@@ -46,6 +46,15 @@ struct MainRepositoryMultiSelectionActions: View {
                 onRefreshChangeLog: onRefreshChangeLog,
                 onUndoStateChange: tagActions.onBatchTagUndoStateChange
             )
+            BatchAITagSuggestionTrigger(
+                repoPath: repoPath,
+                selectedFiles: summary.files,
+                selectedCount: summary.selectedCount,
+                disabledReason: batchAddTagsDisabledReason,
+                state: tagActions.aiBatchSuggestionState,
+                actions: tagActions.aiBatchActions,
+                onOpenAISettings: tagActions.onOpenAISettings
+            )
             BatchChangeCategoryTrigger(
                 repoPath: repoPath,
                 fileIDs: selection.multipleFileIDs.sorted(),
@@ -92,36 +101,27 @@ struct MainRepositoryMultiSelectionActions: View {
 
     private var batchAddTagsDisabledReason: String? {
         if summary.selectedCount == 0 { return "No files selected" }
-        if let reason = summary.files.compactMap({ writeActionDisabledReason($0.id) }).first {
-            return reason.rawValue
-        }
-        return nil
+        return writeDisabledReason
     }
 
     private var batchChangeCategoryDisabledReason: String? {
-        if summary.selectedCount == 0 { return "No files selected" }
-        if let reason = summary.files.compactMap({ writeActionDisabledReason($0.id) }).first {
-            return reason.rawValue
-        }
-        return nil
+        batchAddTagsDisabledReason
     }
 
     private var batchDeleteDisabledReason: String? {
         if summary.selectedCount == 0 { return "No files selected" }
         if summary.isUpdating { return MainFileWriteActionDisabledReason.listLoading.rawValue }
-        if let reason = summary.files.compactMap({ writeActionDisabledReason($0.id) }).first {
-            return reason.rawValue
-        }
-        return nil
+        return writeDisabledReason
     }
 
     private var batchRenameDisabledReason: String? {
         if summary.selectedCount == 0 { return "No files selected" }
         if summary.isUpdating { return MainFileWriteActionDisabledReason.listLoading.rawValue }
-        if let reason = summary.files.compactMap({ writeActionDisabledReason($0.id) }).first {
-            return reason.rawValue
-        }
-        return nil
+        return writeDisabledReason
+    }
+
+    private var writeDisabledReason: String? {
+        summary.files.compactMap { writeActionDisabledReason($0.id)?.rawValue }.first
     }
 }
 

@@ -1,0 +1,30 @@
+一、执行结论  
+- 已完成。已修复上次验收失败的越界问题：`S4-WIN-04` 只保留 C4-19 的只读 preview、并发 rescan 禁用判断和确认页 handoff，不再实现或挂载 `S4-X-07 rescan-confirm` 页面。
+
+二、执行范围  
+- 单任务：`4-3/task-125`
+- 主要改动文件：`apps/windows/AreaMatrix/Features/Library/WatcherStatusView.xaml`、`WatcherStatusView.xaml.cs`、`WatcherStatusViewModel.cs`、`WatcherStatusCoreBridge.cs`、`WatcherStatusModels.cs`、`MainWindow.xaml.cs`、相关 Windows tests。
+- 已移除上次尝试留下的未跟踪越界文件：`RescanConfirmDialog.xaml`、`RescanConfirmDialog.xaml.cs`、`RescanConfirmViewModel.cs`、`RescanConfirmViewModelTests.cs`。
+
+三、完成情况  
+- 只处理 `S4-WIN-04 + C4-19`：通过。`Run rescan now` 现在只做 `PrepareRescanConfirmAsync()` 和 `RescanConfirmRequest` handoff。
+- 读取并对齐页面规格、control map、Core API、C4-19 spec：通过。
+- 只接入 C4-19 CoreBridge / 状态 / 错误映射：通过，保留 `preview_manual_rescan`、`get_latest_scan_session` 等映射。
+- 不顺手实现相邻页面：通过。`MainWindow` 不再挂载 `RescanConfirmDialog`，测试也断言不出现该页面。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量  
+- 结构清晰：watcher status 负责入口状态与 preview handoff，确认页仍留给 `4-3/task-158`。
+- 错误与边界：保留 DB locked、path missing、已有 rescan running、Core error 映射。
+- 无新增依赖；无 mock-only 或硬编码完成态。
+- 无新增 Rust public API，因此无 rustdoc 变更需求。
+- 当前工作树仍有 task-loop metadata diff（`.codex/...summary.json`、`tasks/prompts/_shared/progress.json`），不是本轮功能修复范围。
+
+五、验证情况  
+- 已运行：`./dev check task 4-3/task-125`，通过，exit 0。包含 `prompt doctor`、`git diff --check`、macOS build gate；输出最终 `** BUILD SUCCEEDED **`。
+- 已运行：`dotnet run --project apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj`，通过，输出 `AreaMatrix Windows tests passed.`
+- 未运行：真实 Windows UI 手工点击验收；当前环境只完成代码级和测试级验证。
+
+六、风险与后续  
+- 剩余风险：未做真实 Windows 窗口点击验证；确认页本身仍应由 `4-3/task-158` 独立实现与验收。
+- 建议下一个任务：进入 `4-3/task-125` verify-ready 验收；后续再做 `4-3/task-158` 的 `S4-X-07 rescan-confirm`。

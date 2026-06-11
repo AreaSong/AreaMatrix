@@ -3,26 +3,40 @@ use std::path::{Path, PathBuf};
 use serde_json::{json, Value};
 
 use crate::{
-    db, overview, CoreError, CoreResult, DuplicateStrategy, FileEntry, FileOrigin,
-    ImportDestination, ImportOptions, StorageMode,
+    db, overview, CoreError, CoreResult, DuplicateStrategy, FileEntry, FileOrigin, ImportOptions,
+    ImportResult, ImportSourceRemovalStatus, StorageMode,
 };
 
 use super::{
     dedup,
     destination::{ImportDestinationPlan, ReplacementPlan},
     hash,
+    import_source_removal::finalize_source_removal,
     import_target::{resolve_import_target, ImportTarget},
     replacement_trash::ReplacementFileGuard,
-    safe_move::{move_recoverable_file, move_source_to_staging, FinalFileGuard, StagingFileGuard},
+    safe_move::{move_recoverable_file, FinalFileGuard, StagingFileGuard},
     staging_row::DbStagingRowGuard,
     validate,
 };
+
+#[path = "import/import_detail.rs"]
+mod import_detail;
+
+use import_detail::{destination_detail, import_change_detail, storage_mode_detail};
 
 pub(crate) fn import_file(
     repo_path: String,
     source_path: String,
     options: ImportOptions,
 ) -> CoreResult<FileEntry> {
+    Ok(import_file_with_result(repo_path, source_path, options)?.entry)
+}
+
+pub(crate) fn import_file_with_result(
+    repo_path: String,
+    source_path: String,
+    options: ImportOptions,
+) -> CoreResult<ImportResult> {
     let prepared = PreparedImport::new(repo_path, source_path, options)?;
     if matches!(prepared.options.mode, StorageMode::Indexed) {
         return import_indexed_file(prepared);
@@ -47,7 +61,6 @@ pub(crate) fn import_file(
         destination.final_path.clone(),
         prepared.source.clone(),
     );
-    ensure_replacement_is_recoverable_from_system_trash(&mut replacement_guard)?;
 
     let replacement_rollback = destination
         .replacement()
@@ -55,6 +68,12 @@ pub(crate) fn import_file(
     promote_import(&prepared, file_id, &destination)?;
     let entry = db::get_active_file_by_id(&prepared.repo, file_id)?;
     let entry = finish_overview_regeneration(&prepared.repo, entry, replacement_rollback.as_ref())?;
+    ensure_replacement_is_recoverable_from_system_trash(
+        &mut replacement_guard,
+        &prepared.repo,
+        file_id,
+        replacement_rollback.as_ref(),
+    )?;
 
     db_guard.disarm();
     final_guard.disarm();
@@ -62,7 +81,12 @@ pub(crate) fn import_file(
         guard.disarm();
     }
     destination.disarm();
-    Ok(entry)
+    let source_removal = finalize_source_removal(&prepared.options.mode, &prepared.source);
+    Ok(ImportResult {
+        entry,
+        source_removal_status: source_removal.status,
+        source_removal_failure: source_removal.failure,
+    })
 }
 
 struct PreparedImport {
@@ -144,16 +168,12 @@ struct IndexedImportCommit {
 fn stage_source(prepared: &PreparedImport) -> CoreResult<StagedImport> {
     let staging_guard = match prepared.options.mode {
         StorageMode::Copied => StagingFileGuard::create_for_copy(&prepared.repo)?,
-        StorageMode::Moved => {
-            StagingFileGuard::create_for_move(&prepared.repo, prepared.source.clone())?
-        }
+        StorageMode::Moved => StagingFileGuard::create_for_move(&prepared.repo)?,
         StorageMode::Indexed => return Err(CoreError::internal("internal error")),
     };
     let hashed_copy = match prepared.options.mode {
-        StorageMode::Copied => hash::copy_and_hash(&prepared.source, staging_guard.path())?,
-        StorageMode::Moved => {
-            move_source_to_staging(&prepared.source, staging_guard.path())?;
-            hash::hash_file(staging_guard.path())?
+        StorageMode::Copied | StorageMode::Moved => {
+            hash::copy_and_hash(&prepared.source, staging_guard.path())?
         }
         StorageMode::Indexed => return Err(CoreError::internal("internal error")),
     };
@@ -188,7 +208,7 @@ fn check_duplicate(
     dedup::resolve_duplicate(&prepared.options.duplicate_strategy, None)
 }
 
-fn import_indexed_file(prepared: PreparedImport) -> CoreResult<FileEntry> {
+fn import_indexed_file(prepared: PreparedImport) -> CoreResult<ImportResult> {
     let fingerprint = hash::hash_file(&prepared.source)?;
     let duplicate_resolution = check_duplicate(&prepared, &fingerprint.hash_sha256)?;
 
@@ -208,12 +228,22 @@ fn import_indexed_file(prepared: PreparedImport) -> CoreResult<FileEntry> {
     let entry = db::get_active_file_by_id(&prepared.repo, commit.file_id)?;
     let entry =
         finish_overview_regeneration(&prepared.repo, entry, commit.replacement_rollback.as_ref())?;
+    ensure_replacement_is_recoverable_from_system_trash(
+        &mut commit.replacement_guard,
+        &prepared.repo,
+        commit.file_id,
+        commit.replacement_rollback.as_ref(),
+    )?;
 
     db_guard.disarm();
     if let Some(guard) = &mut commit.replacement_guard {
         guard.disarm();
     }
-    Ok(entry)
+    Ok(ImportResult {
+        entry,
+        source_removal_status: ImportSourceRemovalStatus::NotRequested,
+        source_removal_failure: None,
+    })
 }
 
 fn finish_overview_regeneration(
@@ -266,9 +296,19 @@ fn commit_filesystem(
 
 fn ensure_replacement_is_recoverable_from_system_trash(
     replacement_guard: &mut Option<ReplacementFileGuard>,
+    repo: &Path,
+    file_id: i64,
+    replacement_rollback: Option<&ReplacementDbRollback>,
 ) -> CoreResult<()> {
     if let Some(guard) = replacement_guard {
-        guard.ensure_system_trash_copy()?;
+        match guard.ensure_system_trash_copy() {
+            Ok(()) => {}
+            Err(error) => {
+                let rollback_error = replacement_rollback
+                    .and_then(|rollback| rollback.rollback(repo, file_id).err());
+                return Err(rollback_error.unwrap_or(error));
+            }
+        }
     }
     Ok(())
 }
@@ -338,8 +378,7 @@ fn insert_replacing_indexed_row(
     let imported_at = chrono::Utc::now().timestamp();
     let source_path = prepared.source.to_string_lossy().into_owned();
     let replacement = ReplacementPlan::prepare_for_existing(&prepared.repo, existing)?;
-    let mut replacement_guard = replacement.archive_existing_file(&prepared.repo)?;
-    ensure_replacement_is_recoverable_from_system_trash(&mut replacement_guard)?;
+    let replacement_guard = replacement.archive_existing_file(&prepared.repo)?;
     let file_id = db::insert_replacing_active_indexed_import(
         &prepared.repo,
         replacement.db_row(),
@@ -376,42 +415,6 @@ fn insert_replacing_indexed_row(
     })
 }
 
-fn import_change_detail(
-    prepared: &PreparedImport,
-    destination: &ImportDestinationPlan,
-) -> serde_json::Value {
-    match destination.replacement() {
-        Some(replacement) => json!({
-            "source": prepared.source.to_string_lossy(),
-            "mode": storage_mode_detail(&prepared.options.mode),
-            "category": destination.category,
-            "destination": destination_detail(&prepared.options.destination),
-            "renamed_from_original": prepared.original_name != destination.final_name,
-            "requested_name": prepared.target_filename,
-            "final_name": destination.final_name,
-            "final_path": destination.final_relative_path,
-            "name_conflict_resolved": prepared.target_filename != destination.final_name,
-            "duplicate_strategy": "overwrite",
-            "replace_reason": replacement.reason_detail(),
-            "replaced_file_id": replacement.replaced_file_id(),
-            "replaced_path": replacement.replaced_path(),
-            "by": "user",
-        }),
-        None => json!({
-            "source": prepared.source.to_string_lossy(),
-            "mode": storage_mode_detail(&prepared.options.mode),
-            "category": destination.category,
-            "destination": destination_detail(&prepared.options.destination),
-            "renamed_from_original": prepared.original_name != destination.final_name,
-            "requested_name": prepared.target_filename,
-            "final_name": destination.final_name,
-            "final_path": destination.final_relative_path,
-            "name_conflict_resolved": prepared.target_filename != destination.final_name,
-            "by": "user",
-        }),
-    }
-}
-
 fn validate_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     if repo_path.trim().is_empty() {
         return Err(CoreError::invalid_path("invalid path"));
@@ -426,22 +429,6 @@ fn source_filename(source: &Path) -> CoreResult<String> {
         .filter(|value| !value.is_empty())
         .map(str::to_owned)
         .ok_or_else(|| CoreError::invalid_path("invalid path"))
-}
-
-fn storage_mode_detail(mode: &StorageMode) -> &'static str {
-    match mode {
-        StorageMode::Moved => "moved",
-        StorageMode::Copied => "copied",
-        StorageMode::Indexed => "indexed",
-    }
-}
-
-fn destination_detail(destination: &ImportDestination) -> &'static str {
-    match destination {
-        ImportDestination::AutoClassify => "auto_classify",
-        ImportDestination::SelectedDirectory => "selected_directory",
-        ImportDestination::Category => "category",
-    }
 }
 
 fn persist_staging_to_final(staging: &Path, final_path: &Path) -> CoreResult<()> {
@@ -463,29 +450,5 @@ fn requested_target_relative_path(prepared: &PreparedImport) -> CoreResult<Strin
 }
 
 #[cfg(test)]
-mod tests {
-    use std::fs;
-
-    use super::*;
-
-    #[test]
-    fn resolve_name_conflict_persist_refuses_raced_final_without_overwrite() {
-        let dir = tempfile::tempdir().expect("create import tempdir");
-        let staging = dir.path().join("staging-file");
-        let final_path = dir.path().join("final.pdf");
-        fs::write(&staging, b"new content").expect("write staging file");
-        fs::write(&final_path, b"raced content").expect("write raced final file");
-
-        let result = persist_staging_to_final(&staging, &final_path);
-
-        assert!(matches!(result, Err(CoreError::Conflict { .. })));
-        assert_eq!(
-            fs::read(&staging).expect("staging remains recoverable"),
-            b"new content"
-        );
-        assert_eq!(
-            fs::read(&final_path).expect("raced final remains unmodified"),
-            b"raced content"
-        );
-    }
-}
+#[path = "import_tests.rs"]
+mod tests;

@@ -1,0 +1,33 @@
+page_id: S4-X-08
+title: Repository Settings
+platform: Linux
+sections:
+  - Repository
+  - Status
+  - Actions
+fields:
+  - Name
+  - Location
+  - Type
+  - Last opened
+  - Core version
+  - Access
+  - Watcher
+  - Cloud
+  - Fallback to Inbox
+actions:
+  reconnect_repository: RepositorySettingsView.ReconnectRepository
+  choose_another_folder: RepositorySettingsView.ChooseAnotherFolder
+  platform_capabilities: RepositorySettingsView.OpenPlatformCapabilities
+  save_fallback_to_inbox: RepositorySettingsView.SaveFallbackToInboxAsync
+  export_diagnostics: RepositorySettingsView.ExportDiagnosticsAsync
+states:
+  loading: Loading repository settings...
+  empty: No repository connected.
+  failed: Could not load repository status.
+safety:
+  - The page calls load_config and update_config through LinuxRepositoryCoreBridge for C4-20.
+  - The page calls get_platform_capabilities through LinuxRepositoryCoreBridge for C4-17.
+  - Export diagnostics writes redacted settings metadata under .areamatrix/generated/diagnostics.
+  - Export diagnostics is disabled when repository access capability is not UI-enabled.
+  - The page does not expose delete, Trash, rescan, import, or cloud SDK configuration.

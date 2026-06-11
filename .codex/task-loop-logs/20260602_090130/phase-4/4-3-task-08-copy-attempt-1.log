@@ -1,0 +1,28 @@
+**执行结论**
+已完成。
+
+**执行范围**
+- 新增 [core/tests/mobile_repo_connect_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/mobile_repo_connect_failure_recovery.rs:1)。
+- 因 `cargo fmt` 的机械调整，顺带格式化了 [core/tests/mobile_repo_connect_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/mobile_repo_connect_implementation.rs:142) 的一处链式调用。
+- 未触碰 `apps/**`；工作树里原有的 `tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260602_090130/` 不属于本次改动。
+
+**完成情况**
+- 空态、非法输入、权限、IO、DB、错误码映射都补了真实失败证据。
+- `init_repo`、`validate_repo_path`、`load_config` 的失败路径都证明了不会留下 `.areamatrix` 半成品。
+- 用户文件快照保持不变，默认 AI / 远程调用仍是关闭状态，日志里没有敏感 key 字符串。
+- Forbidden Touches 未触碰。
+
+**工程质量**
+- 只用了真实 Core API 和临时目录，没有 mock、fixture、硬编码成功态。
+- 测试函数短，边界和恢复断言分开，意图清楚。
+- 没新增 public API，所以没有 rustdoc 缺口。
+- 回滚很简单，撤销这两个测试文件的改动即可。
+
+**验证情况**
+- `./dev check task 4-3/task-08`：通过。
+- 其中 `prompt doctor`、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --test mobile_repo_connect_contract_api -- --nocapture`、`cargo test --test mobile_repo_connect_failure_recovery -- --nocapture`、`cargo test --test mobile_repo_connect_implementation -- --nocapture` 都通过。
+- 先前 `cargo fmt --all -- --check` 报过格式差异，已用 `cargo fmt --all` 修正后重新跑通。
+
+**风险与后续**
+- 残余风险很低，主要是权限和 SQLite 行为仍依赖当前平台语义，但本机验证已覆盖。
+- 下一步建议接 `4-3/task-09` 做该能力的验证收口。

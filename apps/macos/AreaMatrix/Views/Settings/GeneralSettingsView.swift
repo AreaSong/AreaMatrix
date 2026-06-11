@@ -98,6 +98,8 @@ extension GeneralSettingsView {
                 .tag("repository")
             Label("分类规则", systemImage: "tag")
                 .tag("classifier")
+            Label("AI", systemImage: "sparkles")
+                .tag("ai")
             Label("集成", systemImage: "point.3.connected.trianglepath.dotted")
                 .tag("integrations")
             Label("高级", systemImage: "wrench.and.screwdriver")
@@ -116,10 +118,15 @@ extension GeneralSettingsView {
             RepositorySettingsPane(
                 repoPath: model.repoPath,
                 onChangeRepository: onChangeRepository,
+                onOpenPlatformCapabilities: {
+                    selectedTab = "about"
+                },
                 onOpenRecoveryTools: onOpenRepositoryRecovery
             )
         case "classifier":
             ClassifierSettingsPane(repoPath: model.repoPath)
+        case "ai":
+            AISettingsPane(repoPath: model.repoPath)
         case "integrations":
             IntegrationsSettingsPane(repoPath: model.repoPath)
         case "advanced":
@@ -128,7 +135,13 @@ extension GeneralSettingsView {
                 onOpenRecoveryTools: onOpenRepositoryRecovery
             )
         case "about":
-            AboutSettingsPane(repoPath: model.repoPath)
+            AboutSettingsPane(
+                repoPath: model.repoPath,
+                onOpenRepositorySettings: {
+                    selectedTab = "repository"
+                },
+                onClose: onClose
+            )
         default:
             generalContent
         }

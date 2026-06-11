@@ -60,6 +60,83 @@ final class InitFailedErrorMappingTests: XCTestCase {
     }
 
     @MainActor
+    func testS309BlocksRemoteAIWithC301PrivacyGateOnly() async {
+        let updater = S309RecordingAISettingsUpdater(result: .success)
+        let model = AISettingsModel(
+            repoPath: "/tmp/s309",
+            loader: S309StaticAISettingsLoader(snapshot: .s309RemoteReady(repoPath: "/tmp/s309")),
+            updater: updater,
+            errorMapper: S309StaticAIErrorMapper()
+        )
+
+        await model.load()
+        let result = await model.blockRemoteAIWithPrivacyGate()
+        let requests = await updater.requests()
+
+        XCTAssertEqual(result, .saved)
+        XCTAssertEqual(requests.count, 1)
+        XCTAssertEqual(requests[0].config.privacyGateEnabled, false)
+        XCTAssertEqual(requests[0].config.remoteAIAllowed, true)
+        XCTAssertEqual(requests[0].config.providerPreference, .remoteFirst)
+        XCTAssertEqual(requests[0].config.featureToggles.filter(\.allowRemote).count, 2)
+    }
+
+    @MainActor
+    func testS309AllowRemoteGateRequiresS303ProviderConsentBeforeSaving() async {
+        let updater = S309RecordingAISettingsUpdater(result: .success)
+        let model = AISettingsModel(
+            repoPath: "/tmp/s309",
+            loader: S309StaticAISettingsLoader(snapshot: .s309Default(
+                repoPath: "/tmp/s309",
+                privacyGateEnabled: false
+            )),
+            updater: updater,
+            errorMapper: S309StaticAIErrorMapper()
+        )
+
+        await model.load()
+        let result = await model.allowRemoteAIAfterProviderConsent()
+        let requests = await updater.requests()
+
+        XCTAssertEqual(result, .needsRemoteConfiguration)
+        XCTAssertEqual(requests, [])
+        XCTAssertEqual(model.snapshot?.config.privacyGateEnabled, false)
+        XCTAssertEqual(model.actionFeedback, .failed(AISettingsError(
+            message: "Remote AI requires provider consent.",
+            recovery: "Configure remote AI before allowing the privacy gate.",
+            detail: "S3-03 owns provider setup, API key storage, connection verification, and remote scope."
+        )))
+    }
+
+    @MainActor
+    func testS309PrivacyGateSaveFailureKeepsLastSuccessfulStateAndRetriesSameConfig() async {
+        let updater = S309RecordingAISettingsUpdater(result: .failureThenSuccess(CoreError.Io(
+            message: "metadata locked"
+        )))
+        let model = AISettingsModel(
+            repoPath: "/tmp/s309",
+            loader: S309StaticAISettingsLoader(snapshot: .s309RemoteReady(repoPath: "/tmp/s309")),
+            updater: updater,
+            errorMapper: S309StaticAIErrorMapper()
+        )
+
+        await model.load()
+        let result = await model.blockRemoteAIWithPrivacyGate()
+
+        XCTAssertEqual(result, .failed)
+        XCTAssertEqual(model.snapshot?.config.privacyGateEnabled, true)
+        XCTAssertEqual(model.saveError?.message, "Remote AI privacy gate could not be updated.")
+        XCTAssertTrue(model.hasRetryableSave)
+
+        await model.retrySave()
+        let requests = await updater.requests()
+
+        XCTAssertEqual(requests.map(\.config.privacyGateEnabled), [false, false])
+        XCTAssertEqual(model.snapshot?.config.privacyGateEnabled, false)
+        XCTAssertNil(model.saveError)
+    }
+
+    @MainActor
     func testInitializationFailureCollectsDiagnosticsWithoutSavingRepositorySelection() async {
         let snapshot = DiagnosticsSnapshotSnapshot(
             snapshotPath: "/tmp/diagnostics/redacted.zip",
@@ -221,6 +298,67 @@ private struct InitFailedNoopWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {}
 }
 
+private actor S309StaticAISettingsLoader: CoreAISettingsLoading {
+    let snapshot: AISettingsSnapshot
+
+    init(snapshot: AISettingsSnapshot) {
+        self.snapshot = snapshot
+    }
+
+    func loadAISettings(repoPath _: String) async throws -> AISettingsSnapshot {
+        snapshot
+    }
+}
+
+private enum S309UpdateResult {
+    case success
+    case failureThenSuccess(Error)
+}
+
+private actor S309RecordingAISettingsUpdater: CoreAISettingsUpdating {
+    struct Request: Equatable {
+        var repoPath: String
+        var config: AISettingsConfigSnapshot
+    }
+
+    private let result: S309UpdateResult
+    private var recordedRequests: [Request] = []
+
+    init(result: S309UpdateResult) {
+        self.result = result
+    }
+
+    func updateAISettings(repoPath: String, newConfig: AISettingsConfigSnapshot) async throws -> AISettingsSnapshot {
+        let normalized = newConfig.normalized()
+        recordedRequests.append(Request(repoPath: repoPath, config: normalized))
+        switch result {
+        case .success:
+            return AISettingsSnapshot.s309Snapshot(config: normalized)
+        case let .failureThenSuccess(error) where recordedRequests.count == 1:
+            throw error
+        case .failureThenSuccess:
+            return AISettingsSnapshot.s309Snapshot(config: normalized)
+        }
+    }
+
+    func requests() -> [Request] {
+        recordedRequests
+    }
+}
+
+private actor S309StaticAIErrorMapper: CoreErrorMapping {
+    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .io,
+            userMessage: String(describing: error),
+            severity: .medium,
+            suggestedAction: "Retry save",
+            recoverability: .retryable,
+            rawContext: "S3-09 C3-01"
+        )
+    }
+}
+
 private extension RepoPathValidationSnapshot {
     static func initFailedAdoptExistingFixture(repoPath: String) -> RepoPathValidationSnapshot {
         RepoPathValidationSnapshot(
@@ -238,6 +376,51 @@ private extension RepoPathValidationSnapshot {
             isExternalVolume: false,
             recommendedMode: .adoptExisting,
             issues: [.nonEmptyDirectory]
+        )
+    }
+}
+
+private extension AISettingsSnapshot {
+    static func s309Default(repoPath: String, privacyGateEnabled: Bool = true) -> AISettingsSnapshot {
+        s309Snapshot(config: AISettingsConfigSnapshot(
+            repoPath: repoPath,
+            aiEnabled: false,
+            providerPreference: .localFirst,
+            localAIEnabled: false,
+            remoteAIAllowed: false,
+            privacyGateEnabled: privacyGateEnabled,
+            privacyPolicyRef: nil,
+            featureToggles: AISettingsFeatureKind.allCases.map {
+                AISettingsFeatureConfigSnapshot(feature: $0, enabled: false, allowRemote: false)
+            }
+        ))
+    }
+
+    static func s309RemoteReady(repoPath: String) -> AISettingsSnapshot {
+        s309Snapshot(config: AISettingsConfigSnapshot(
+            repoPath: repoPath,
+            aiEnabled: true,
+            providerPreference: .remoteFirst,
+            localAIEnabled: true,
+            remoteAIAllowed: true,
+            privacyGateEnabled: true,
+            privacyPolicyRef: "strict-default",
+            featureToggles: AISettingsFeatureKind.allCases.map {
+                AISettingsFeatureConfigSnapshot(
+                    feature: $0,
+                    enabled: true,
+                    allowRemote: $0 == .autoSummaries || $0 == .autoTags
+                )
+            }
+        ))
+    }
+
+    static func s309Snapshot(config: AISettingsConfigSnapshot) -> AISettingsSnapshot {
+        let normalized = config.normalized()
+        return AISettingsSnapshot(
+            config: normalized,
+            capabilities: AISettingsCapabilitySnapshot.derived(from: normalized),
+            updatedAt: 1_778_000_309
         )
     }
 }

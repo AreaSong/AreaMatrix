@@ -220,9 +220,12 @@ fn import_copy_file_failure_recovery_permission_denied_leaves_no_side_effects() 
 
     fs::set_permissions(&source, original_permissions).expect("restore source permissions");
 
-    assert_eq!(
-        result,
-        Err(CoreError::permission_denied("permission denied"))
+    assert!(
+        matches!(
+            result,
+            Err(CoreError::PermissionDenied { path }) if path == path_string(&source)
+        ),
+        "permission error should carry the copied source path"
     );
     assert!(!repo.path().join("finance").exists());
     assert_eq!(count_rows(repo.path(), "active"), 0);

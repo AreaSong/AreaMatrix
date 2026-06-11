@@ -112,6 +112,93 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
     }
 }
 
+extension AiFallbackStatus {
+    static func s304PrivacySkipped(callLogID: Int64) -> AiFallbackStatus {
+        AiFallbackStatus(
+            operation: .classificationSuggestion,
+            kind: .privacySkipped,
+            category: .skipped,
+            title: "Skipped by privacy rule",
+            message: "No AI call was made because a privacy rule blocked the available context.",
+            retryable: false,
+            retryDisabledReason: "Privacy skipped suggestions cannot be retried from this panel.",
+            primaryAction: .viewPrivacyRule,
+            secondaryAction: .viewCallLog,
+            nonAiFallbackAction: .classifyManually,
+            route: nil,
+            callLogId: callLogID,
+            privacyRuleId: "rule-confidential",
+            retryAfter: nil
+        )
+    }
+
+    static func s304ProviderUnavailable(callLogID: Int64) -> AiFallbackStatus {
+        AiFallbackStatus(
+            operation: .classificationSuggestion,
+            kind: .providerUnavailable,
+            category: .unavailable,
+            title: "AI provider is unavailable",
+            message: "The configured AI provider cannot return a category suggestion right now.",
+            retryable: true,
+            retryDisabledReason: "Retry before accepting this suggestion.",
+            primaryAction: .retry,
+            secondaryAction: .viewCallLog,
+            nonAiFallbackAction: .classifyManually,
+            route: .remote,
+            callLogId: callLogID,
+            privacyRuleId: nil,
+            retryAfter: nil
+        )
+    }
+
+    static func s304InternalFailure() -> AiFallbackStatus {
+        AiFallbackStatus(
+            operation: .classificationSuggestion,
+            kind: .internalFailure,
+            category: .error,
+            title: "AI suggestion failed.",
+            message: "AreaMatrix could not standardize the AI category fallback state.",
+            retryable: false,
+            retryDisabledReason: "Retry is unavailable until the failure is resolved.",
+            primaryAction: .viewCallLog,
+            secondaryAction: nil,
+            nonAiFallbackAction: .classifyManually,
+            route: nil,
+            callLogId: nil,
+            privacyRuleId: nil,
+            retryAfter: nil
+        )
+    }
+}
+
+@MainActor
+func s304SuggestionModel(
+    request: AIClassificationSuggestionRequestState,
+    bridge: S304SuggestionBridge,
+    fallbackBridge: S304FallbackBridge = S304FallbackBridge()
+) -> AIClassificationSuggestionPanelModel {
+    AIClassificationSuggestionPanelModel(
+        repoPath: "/tmp/repo",
+        request: request,
+        suggester: bridge,
+        fallbackReader: fallbackBridge,
+        errorMapper: S304ErrorMapper()
+    )
+}
+
+struct S304ErrorMapper: CoreErrorMapping {
+    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .config,
+            userMessage: "Mapped C3-04 core error",
+            severity: .medium,
+            suggestedAction: "Open AI settings",
+            recoverability: .userActionRequired,
+            rawContext: "S3-04 C3-04"
+        )
+    }
+}
+
 private func makeS126IntegrationRepositoryFixture() throws -> (repoURL: URL, sourceURL: URL) {
     let repoURL = try makeS126IntegrationTemporaryRepository()
     try FileManager.default.createDirectory(

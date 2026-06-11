@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 
 enum BatchAddTagsRouteSource: String, Equatable {
@@ -18,26 +19,29 @@ struct BatchAddTagsRoute: Identifiable, Equatable {
 }
 
 struct MainRepositoryDetailPaneTagActions {
-    let onLoadTags: () -> Void
-    let onRetryTags: () -> Void
-    let onAddTag: (String) -> Void
-    let onRemoveTag: (String) -> Void
-    let onLoadSuggestions: () -> Void
-    let onRetrySuggestions: () -> Void
-    let onToggleSuggestion: (String) -> Void
-    let onSelectAllSuggestions: () -> Void
-    let onClearSuggestions: () -> Void
-    let onStartEditingSuggestions: () -> Void
+    let aiSuggestionState: AITagSuggestionState
+    let aiBatchSuggestionState: AITagBatchSuggestionState
+    let onLoadTags: () -> Void; let onRetryTags: () -> Void
+    let onAddTag: (String) -> Void; let onRemoveTag: (String) -> Void
+    let onLoadSuggestions: () -> Void; let onRetrySuggestions: () -> Void
+    let onToggleSuggestion: (String) -> Void; let onSelectAllSuggestions: () -> Void
+    let onClearSuggestions: () -> Void; let onStartEditingSuggestions: () -> Void
     let onCancelEditingSuggestions: () -> Void
-    let onEditSuggestionDisplayName: (String, String) -> Void
-    let onEditSuggestionSlug: (String, String) -> Void
-    let onRegenerateSuggestionSlug: (String) -> Void
-    let onApplySuggestions: () -> Void
-    let onApplyEditedSuggestions: () -> Void
-    let onRetryFailedSuggestions: () -> Void
+    let onEditSuggestionDisplayName: (String, String) -> Void; let onEditSuggestionSlug: (String, String) -> Void
+    let onRegenerateSuggestionSlug: (String) -> Void; let onApplySuggestions: () -> Void
+    let onApplyEditedSuggestions: () -> Void; let onRetryFailedSuggestions: () -> Void
+    let onLoadAISuggestions: () -> Void; let onRetryAISuggestions: () -> Void
+    let onToggleAISuggestion: (String) -> Void; let onApplySingleAISuggestion: (String) -> Void
+    let onSelectHighConfidenceAISuggestions: () -> Void
+    let onClearAISuggestions: () -> Void; let onStartEditingAISuggestions: () -> Void
+    let onCancelEditingAISuggestions: () -> Void
+    let onEditAISuggestionDisplayName: (String, String) -> Void; let onEditAISuggestionSlug: (String, String) -> Void
+    let onRegenerateAISuggestionSlug: (String) -> Void; let onApplyAISuggestions: () -> Void
+    let onApplyEditedAISuggestions: () -> Void; let onRetryFailedAISuggestions: () -> Void
+    let aiBatchActions: AITagBatchSuggestionActions
+    let onOpenAISettings: () -> Void
     let onSuggestionPresentationConsumed: (TagSuggestionPresentationRequest) -> Void
-    let onUndoTagChange: () -> Void
-    let onDismissTagUndoToast: () -> Void
+    let onUndoTagChange: () -> Void; let onDismissTagUndoToast: () -> Void
     let onBatchTagUndoStateChange: (BatchTagUndoState) -> Void
 }
 

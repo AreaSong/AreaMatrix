@@ -1,0 +1,68 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-53`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-53-c4-11-failure-edge.md`
+- 验收范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**`，检查结果为空，未发现违规修改
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：空态、非法输入、权限、IO/DB 错误和错误码映射
+- 结果：通过
+- 证据：`core/tests/desktop_main_query_failure_recovery.rs:208` 覆盖空库；`:235` 覆盖非法输入；`:310` 覆盖 DB 损坏；`:349` 覆盖 IO 错误；`:370` 覆盖 `RepoNotInitialized`、`Db`、`PermissionDenied`、`Io`、`Validation` 的映射。`core/src/tree/mod.rs:399` 将权限 IO 映射为 `PermissionDenied`。
+- 涉及文件：`core/tests/desktop_main_query_failure_recovery.rs`、`core/src/tree/mod.rs`
+
+- 项目：失败不留下半成品
+- 结果：通过
+- 证据：C4-11 文档定义 DB 只读、文件系统无写入：`docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md:23`、`:27`。测试在失败后断言用户文件、metadata、staging 不被改变：`core/tests/desktop_main_query_failure_recovery.rs:264`、`:303`、`:341`、`:346`。
+- 涉及文件：`core/tests/desktop_main_query_failure_recovery.rs`
+
+- 项目：隐私 / AI / 远程调用默认关闭、密钥不入日志
+- 结果：通过
+- 证据：C4-11 是只读桌面查询能力，不涉及 AI 或远程调用；测试确认查询后不创建 `.areamatrix/ai`、`.areamatrix/remote`、`.areamatrix/secrets`，且 repo snapshot 不变：`core/tests/desktop_main_query_failure_recovery.rs:446`。
+- 涉及文件：`core/tests/desktop_main_query_failure_recovery.rs`
+
+- 项目：不得吞错或静默降级
+- 结果：通过
+- 证据：未初始化 repo、DB 损坏、tree IO 错误均使用 `expect_err` 并断言明确错误映射：`core/tests/desktop_main_query_failure_recovery.rs:278`、`:323`、`:360`。`search_files` 先校验路径和 filter，再走只读 DB 查询：`core/src/search/repo.rs:23`、`core/src/search/validation.rs:9`。
+- 涉及文件：`core/src/search/repo.rs`、`core/src/search/validation.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C4-11 复用 `list_files`、`get_file`、`list_tree_json`、`search_files`，UDL 中明确 Windows/Linux 主窗口共用查询能力：`core/area_matrix.udl:262`。
+- 注释 / rustdoc / 文档同步：通过。`list_tree_json` rustdoc 明确只读、无 mutation、错误返回：`core/src/api.rs:1561`。
+- 错误处理与边界处理：通过。测试覆盖空态、非法输入、未初始化、DB 损坏、IO、错误映射和本地-only隐私边界。
+- 测试与验证覆盖：通过。`./dev check task 4-3/task-53` 已 fresh 运行并通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试调用真实 Core API 和真实 SQLite/temp repo 路径；未发现 mock-only 或硬编码通过态。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-53`
+- 通过：prompt doctor、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test desktop_main_query_contract_api -- --nocapture`
+- 通过：`cargo test --test desktop_main_query_failure_recovery -- --nocapture`
+- 通过：`cargo test --test desktop_main_query_implementation -- --nocapture`
+- 缺失：无
+- 说明：`tasks/prompts/_shared/progress.json` 与 `.codex/task-loop-runs/...` 为 runner 当前 in-progress 收口记录；按本 verify 阶段规则，不作为 task 功能不通过依据。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

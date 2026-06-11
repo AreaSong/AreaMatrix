@@ -66,7 +66,7 @@ fn init_adopt_existing_repo(repo_path: String, options: RepoInitOptions) -> Core
     let init_dir = repo.join(format!("{INIT_DIR_PREFIX}{}", Uuid::new_v4()));
     let mut rollback = InitRollback::new(repo.clone(), init_dir.clone());
     let result = init_adopt_existing_inner(&repo_path, &repo, &init_dir, &options, &mut rollback);
-    if result.is_err() {
+    if result.is_err() && !rollback.metadata_committed() {
         rollback.rollback();
     }
     result
@@ -107,8 +107,9 @@ fn init_adopt_existing_inner(
 ) -> CoreResult<()> {
     create_metadata_staging(repo_path, init_dir, options)?;
     commit_metadata_staging(repo, init_dir, rollback)?;
+    repo_scan::start_adopt_scan(repo)?;
     rollback.mark_complete();
-    repo_scan::start_adopt_scan(repo)
+    Ok(())
 }
 
 fn create_metadata_staging(
@@ -372,6 +373,10 @@ impl InitRollback {
 
     fn mark_metadata_committed(&mut self) {
         self.metadata_committed = true;
+    }
+
+    fn metadata_committed(&self) -> bool {
+        self.metadata_committed
     }
 
     fn mark_root_entry_created(&mut self) {

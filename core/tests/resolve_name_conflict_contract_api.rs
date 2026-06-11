@@ -172,6 +172,7 @@ fn resolve_name_conflict_contract_exposes_documented_outputs() {
         storage_mode: StorageMode::Copied,
         origin: FileOrigin::Imported,
         source_path: Some("/tmp/source/report.pdf".to_owned()),
+        availability_status: area_matrix_core::FileAvailabilityStatus::Available,
         imported_at: 100,
         updated_at: 100,
     };

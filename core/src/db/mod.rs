@@ -1,16 +1,17 @@
 //! SQLite helpers for repository metadata.
 
 use std::{
-    fs::{File, Metadata},
+    collections::HashSet,
+    fs::{self, File, Metadata},
     io::Read,
     path::{Path, PathBuf},
 };
 
-use rusqlite::{params, Connection, OptionalExtension, Rows, Transaction};
+use rusqlite::{params, Connection, OpenFlags, OptionalExtension, Rows, Transaction};
 
 use crate::{
-    config, CoreError, CoreResult, FileEntry, FileFilter, FileOrigin, OverviewOutput, RepoConfig,
-    StorageMode,
+    config, CoreError, CoreResult, FileAvailabilityStatus, FileEntry, FileFilter, FileOrigin,
+    OverviewOutput, RepoConfig, StorageMode,
 };
 
 mod ai_call_log;
@@ -24,9 +25,11 @@ mod icloud_conflicts;
 mod import;
 mod import_conflicts;
 mod local_model_status;
+mod missing_file_recovery;
 mod move_to_category;
 mod note;
 mod overview;
+mod platform_watcher_status;
 mod redo;
 mod remote_provider_config;
 mod rename;
@@ -34,6 +37,7 @@ mod saved_search;
 mod scan;
 mod staging_recovery;
 mod sync;
+mod sync_conflicts;
 mod tags;
 mod undo;
 pub(crate) use ai_call_log::{
@@ -76,6 +80,10 @@ pub(crate) use import_conflicts::{
     ImportConflictReplacement, ImportConflictRow, ImportConflictStatus,
 };
 pub(crate) use local_model_status::update_local_model_status_record;
+pub(crate) use missing_file_recovery::{
+    load_missing_file_recovery_entry, mark_missing_file_record_removed, relink_missing_file_record,
+    MissingFileRecoveryEntry, MissingFileRelinkUpdate,
+};
 pub(crate) use move_to_category::{
     batch_update_category_metadata_only_in_tx, batch_update_category_repo_owned_in_tx,
     correct_file_category_metadata_only, correct_repo_owned_file_category,
@@ -88,6 +96,7 @@ pub(crate) use overview::{
     list_overview_node_files, list_overview_node_summaries, list_overview_recent_changes,
     OverviewChangeRow, OverviewFileRow, OverviewNodeSummary,
 };
+pub(crate) use platform_watcher_status::upsert_platform_watcher_health;
 pub(crate) use redo::{clear_redo_stack_in_tx, execute_redo_action_row, list_redo_action_rows};
 pub(crate) use remote_provider_config::{
     load_remote_provider_config_record, load_remote_provider_test_record,
@@ -108,6 +117,11 @@ pub(crate) use staging_recovery::{
     delete_staging_file_row, list_protected_staging_paths, list_staging_file_rows, StagingFileRow,
 };
 pub(crate) use sync::*;
+pub(crate) use sync_conflicts::{
+    list_active_sync_conflict_files, load_sync_conflict_state, preflight_sync_conflict_resolution,
+    record_sync_conflict_resolution, replace_sync_conflict_state, ActiveSyncConflictFile,
+    SyncConflictCanonicalUpdate, SyncConflictResolutionRecord, SyncConflictRetainedFileRecord,
+};
 pub(crate) use tags::{
     add_tag_row, apply_ai_tag_suggestion_rows, apply_tag_suggestion_rows, batch_add_tags_rows,
     list_tag_set, load_tag_suggestion_snapshot, remove_tag_row, AiTagSuggestionApplyProvenance,
@@ -120,6 +134,13 @@ pub(crate) use undo::{
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const INDEX_DB_FILE: &str = "index.db";
 const SQLITE_HEADER: &[u8; 16] = b"SQLite format 3\0";
+const LATEST_SCHEMA_VERSION: i64 = 2;
+const SCAN_SESSION_V2_COLUMNS: &[(&str, &str)] = &[
+    ("missing", "missing INTEGER NOT NULL DEFAULT 0"),
+    ("conflicts", "conflicts INTEGER NOT NULL DEFAULT 0"),
+    ("unreadable", "unreadable INTEGER NOT NULL DEFAULT 0"),
+    ("unknown", "unknown INTEGER NOT NULL DEFAULT 0"),
+];
 
 const INITIAL_SCHEMA: &str = r#"
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -221,6 +242,10 @@ CREATE TABLE IF NOT EXISTS scan_sessions (
   last_path TEXT,
   inserted INTEGER NOT NULL DEFAULT 0,
   updated INTEGER NOT NULL DEFAULT 0,
+  missing INTEGER NOT NULL DEFAULT 0,
+  conflicts INTEGER NOT NULL DEFAULT 0,
+  unreadable INTEGER NOT NULL DEFAULT 0,
+  unknown INTEGER NOT NULL DEFAULT 0,
   skipped INTEGER NOT NULL DEFAULT 0,
   errors_json TEXT NOT NULL DEFAULT '[]'
 );
@@ -249,7 +274,7 @@ CREATE INDEX IF NOT EXISTS idx_saved_searches_sidebar
   ON saved_searches(pinned DESC, updated_at DESC, name COLLATE NOCASE ASC);
 
 INSERT OR IGNORE INTO schema_version (version, applied_at, applied_by)
-VALUES (1, strftime('%s', 'now'), 'area_matrix_core');
+VALUES (2, strftime('%s', 'now'), 'area_matrix_core');
 "#;
 
 pub(crate) fn initialize_repository_db(db_path: &Path, config: &RepoConfig) -> CoreResult<()> {
@@ -282,7 +307,7 @@ pub(crate) fn load_config_or_default(repo_path: String) -> CoreResult<RepoConfig
         ));
     }
 
-    let connection = open_repo_connection(&repo)?;
+    let connection = open_repo_read_connection(&repo)?;
     read_config(&connection, repo_path)
 }
 
@@ -305,6 +330,7 @@ pub(crate) fn update_config(repo_path: String, new_config: RepoConfig) -> CoreRe
 }
 
 pub(crate) fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileEntry>> {
+    validate_file_filter(&filter)?;
     let repo = PathBuf::from(repo_path);
     let connection = open_repo_connection(&repo)?;
     let limit = filter.limit.clamp(0, 1000);
@@ -332,7 +358,7 @@ pub(crate) fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Ve
             filter.imported_before,
         ])
         .map_err(|error| CoreError::db(error.to_string()))?;
-    collect_file_entries(&mut rows)
+    collect_file_entries(&repo, &mut rows)
 }
 
 fn list_files_status_clause(include_deleted: Option<bool>) -> &'static str {
@@ -343,7 +369,7 @@ fn list_files_status_clause(include_deleted: Option<bool>) -> &'static str {
     }
 }
 
-fn collect_file_entries(rows: &mut Rows<'_>) -> CoreResult<Vec<FileEntry>> {
+fn collect_file_entries(repo: &Path, rows: &mut Rows<'_>) -> CoreResult<Vec<FileEntry>> {
     let mut files = Vec::new();
     while let Some(row) = rows
         .next()
@@ -355,7 +381,7 @@ fn collect_file_entries(rows: &mut Rows<'_>) -> CoreResult<Vec<FileEntry>> {
         let origin_value: String = row
             .get(8)
             .map_err(|error| CoreError::db(error.to_string()))?;
-        files.push(FileEntry {
+        let mut entry = FileEntry {
             id: row
                 .get(0)
                 .map_err(|error| CoreError::db(error.to_string()))?,
@@ -377,8 +403,8 @@ fn collect_file_entries(rows: &mut Rows<'_>) -> CoreResult<Vec<FileEntry>> {
             hash_sha256: row
                 .get(6)
                 .map_err(|error| CoreError::db(error.to_string()))?,
-            storage_mode: storage_mode_from_db(&storage_mode_value)?,
-            origin: origin_from_db(&origin_value)?,
+            storage_mode: metadata_storage_mode_from_db(&storage_mode_value)?,
+            origin: metadata_origin_from_db(&origin_value)?,
             source_path: row
                 .get(9)
                 .map_err(|error| CoreError::db(error.to_string()))?,
@@ -388,9 +414,57 @@ fn collect_file_entries(rows: &mut Rows<'_>) -> CoreResult<Vec<FileEntry>> {
             updated_at: row
                 .get(11)
                 .map_err(|error| CoreError::db(error.to_string()))?,
-        });
+            availability_status: FileAvailabilityStatus::Available,
+        };
+        apply_availability_status(repo, &mut entry);
+        files.push(entry);
     }
     Ok(files)
+}
+
+pub(crate) fn with_availability_status(repo: &Path, mut entry: FileEntry) -> FileEntry {
+    apply_availability_status(repo, &mut entry);
+    entry
+}
+
+fn apply_availability_status(repo: &Path, entry: &mut FileEntry) {
+    entry.availability_status = if entry_backing_file_is_missing(repo, entry) {
+        FileAvailabilityStatus::Missing
+    } else {
+        FileAvailabilityStatus::Available
+    };
+}
+
+fn entry_backing_file_is_missing(repo: &Path, entry: &FileEntry) -> bool {
+    let path = entry_backing_path(repo, entry);
+    matches!(path.try_exists(), Ok(false))
+}
+
+fn entry_backing_path(repo: &Path, entry: &FileEntry) -> PathBuf {
+    if matches!(entry.storage_mode, StorageMode::Copied | StorageMode::Moved) {
+        return repo.join(&entry.path);
+    }
+    if let Some(source_path) = &entry.source_path {
+        return PathBuf::from(source_path);
+    }
+    repo.join(&entry.path)
+}
+
+fn validate_file_filter(filter: &FileFilter) -> CoreResult<()> {
+    if let (Some(after), Some(before)) = (filter.imported_after, filter.imported_before) {
+        if after > before {
+            return Err(CoreError::db("file list imported time range is invalid"));
+        }
+    }
+    Ok(())
+}
+
+fn metadata_storage_mode_from_db(value: &str) -> CoreResult<StorageMode> {
+    storage_mode_from_db(value).map_err(|_| CoreError::db("database error"))
+}
+
+fn metadata_origin_from_db(value: &str) -> CoreResult<FileOrigin> {
+    origin_from_db(value).map_err(|_| CoreError::db("database error"))
 }
 
 pub(crate) fn ensure_initialized(repo_path: &Path) -> CoreResult<()> {
@@ -413,16 +487,117 @@ pub(crate) fn ensure_initialized_readable(repo_path: &Path) -> CoreResult<()> {
     if &header == SQLITE_HEADER {
         Ok(())
     } else {
-        Err(CoreError::db("database error"))
+        Err(CoreError::db("file is not a database"))
     }
 }
 
 pub(super) fn open_repo_connection(repo_path: &Path) -> CoreResult<Connection> {
     ensure_initialized(repo_path)?;
-    let connection =
+    let mut connection =
         Connection::open(db_path(repo_path)).map_err(|error| CoreError::db(error.to_string()))?;
     configure_connection(&connection)?;
+    run_schema_migrations(&mut connection, repo_path)?;
     Ok(connection)
+}
+
+pub(super) fn open_repo_read_connection(repo_path: &Path) -> CoreResult<Connection> {
+    ensure_initialized_readable(repo_path)?;
+    let connection =
+        Connection::open_with_flags(db_path(repo_path), OpenFlags::SQLITE_OPEN_READ_ONLY)
+            .map_err(|error| CoreError::db(error.to_string()))?;
+    configure_read_connection(&connection)?;
+    Ok(connection)
+}
+
+fn run_schema_migrations(connection: &mut Connection, repo_path: &Path) -> CoreResult<()> {
+    let current = current_schema_version(connection)?;
+    let scan_session_columns = table_columns(connection, "scan_sessions")?;
+    let missing_scan_columns = SCAN_SESSION_V2_COLUMNS
+        .iter()
+        .filter(|(name, _)| !scan_session_columns.contains(*name))
+        .copied()
+        .collect::<Vec<_>>();
+
+    if current >= LATEST_SCHEMA_VERSION && missing_scan_columns.is_empty() {
+        return Ok(());
+    }
+
+    checkpoint_wal(connection)?;
+    create_pre_migration_backup(repo_path, LATEST_SCHEMA_VERSION)?;
+    let schema_version_has_applied_by =
+        table_columns(connection, "schema_version")?.contains("applied_by");
+
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    for (_, definition) in missing_scan_columns {
+        tx.execute(
+            &format!("ALTER TABLE scan_sessions ADD COLUMN {definition}"),
+            [],
+        )
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    }
+    insert_schema_version(&tx, LATEST_SCHEMA_VERSION, schema_version_has_applied_by)?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn current_schema_version(connection: &Connection) -> CoreResult<i64> {
+    connection
+        .query_row(
+            "SELECT COALESCE(MAX(version), 0) FROM schema_version",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn table_columns(connection: &Connection, table_name: &str) -> CoreResult<HashSet<String>> {
+    let mut statement = connection
+        .prepare(&format!("PRAGMA table_info({table_name})"))
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    let rows = statement
+        .query_map([], |row| row.get::<_, String>(1))
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    let mut columns = HashSet::new();
+    for row in rows {
+        columns.insert(row.map_err(|error| CoreError::db(error.to_string()))?);
+    }
+    Ok(columns)
+}
+
+fn checkpoint_wal(connection: &Connection) -> CoreResult<()> {
+    connection
+        .execute_batch("PRAGMA wal_checkpoint(FULL);")
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn create_pre_migration_backup(repo_path: &Path, target_version: i64) -> CoreResult<()> {
+    let source = db_path(repo_path);
+    let backup = source.with_file_name(format!("{INDEX_DB_FILE}.pre-v{target_version}.bak"));
+    if path_exists(&backup)? {
+        return Ok(());
+    }
+    fs::copy(&source, &backup)
+        .map(|_| ())
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn insert_schema_version(
+    tx: &Transaction<'_>,
+    version: i64,
+    has_applied_by: bool,
+) -> CoreResult<()> {
+    let sql = if has_applied_by {
+        "INSERT OR IGNORE INTO schema_version (version, applied_at, applied_by)
+         VALUES (?1, strftime('%s', 'now'), 'area_matrix_core')"
+    } else {
+        "INSERT OR IGNORE INTO schema_version (version, applied_at)
+         VALUES (?1, strftime('%s', 'now'))"
+    };
+    tx.execute(sql, params![version])
+        .map(|_| ())
+        .map_err(|error| CoreError::db(error.to_string()))
 }
 
 pub(crate) fn with_write_transaction<T>(
@@ -440,6 +615,38 @@ pub(crate) fn with_write_transaction<T>(
     Ok(result)
 }
 
+pub(crate) fn load_repo_config_record(
+    repo_path: &Path,
+    key: &str,
+) -> CoreResult<Option<(String, i64)>> {
+    let connection = open_repo_connection(repo_path)?;
+    connection
+        .query_row(
+            "SELECT value, updated_at FROM repo_config WHERE key = ?1",
+            params![key],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .optional()
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
+pub(crate) fn upsert_repo_config_record(
+    tx: &Transaction<'_>,
+    key: &str,
+    value: &str,
+    updated_at: i64,
+) -> CoreResult<()> {
+    tx.execute(
+        "INSERT INTO repo_config (key, value, updated_at) \
+         VALUES (?1, ?2, ?3) \
+         ON CONFLICT(key) DO UPDATE SET \
+             value = excluded.value, updated_at = excluded.updated_at",
+        params![key, value, updated_at],
+    )
+    .map(|_| ())
+    .map_err(|error| CoreError::db(error.to_string()))
+}
+
 fn configure_connection(connection: &Connection) -> CoreResult<()> {
     connection
         .execute_batch(
@@ -449,6 +656,16 @@ fn configure_connection(connection: &Connection) -> CoreResult<()> {
              PRAGMA temp_store = MEMORY;
              PRAGMA mmap_size = 268435456;
              PRAGMA cache_size = -65536;
+             PRAGMA busy_timeout = 5000;",
+        )
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn configure_read_connection(connection: &Connection) -> CoreResult<()> {
+    connection
+        .execute_batch(
+            "PRAGMA query_only = ON;
+             PRAGMA foreign_keys = ON;
              PRAGMA busy_timeout = 5000;",
         )
         .map_err(|error| CoreError::db(error.to_string()))

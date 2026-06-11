@@ -1,14 +1,15 @@
+// swiftlint:disable file_length
 import SwiftUI
 import UniformTypeIdentifiers
 
 enum MainRepositoryContentState: Equatable { case empty, list }
-
 struct MainRepositoryContentView: View {
     let opening: RepositoryOpeningResult
     let state: MainRepositoryContentState
     let onImport: () -> Void
     let onDropImport: ([URL], ImportEntryDestination) -> Void
     let onOpenSettings: () -> Void
+    let onOpenAISettings: () -> Void
     let onOpenRepository: () -> Void
     let onOpenHelp: () -> Void
     let onOpenImportConflictBatch: (ImportConflictBatchRoute) -> Void
@@ -29,6 +30,7 @@ struct MainRepositoryContentView: View {
     let onPendingTagSuggestionFocusConsumed: (TagSuggestionPresentationRequest) -> Void
     let importProgressItems: [ImportBatchProgressSnapshot.Item]
     @StateObject var fileListModel: MainFileListModel
+    @StateObject var syncConflictEntryModel: SyncConflictEntryModel
     @State var repositoryTree: RepositoryTreeNodeSnapshot
     @State var selectedSidebarID: String = "inbox"
     @State var selectedFileIDs: Set<Int64> = []
@@ -45,26 +47,36 @@ struct MainRepositoryContentView: View {
     @State var restoreSearchFocusAfterPalette = false
     @State var filterText: String = ""
     @State var searchScope: SearchScopeSnapshot = .all
+    @State var searchMode: SearchModeSnapshot = .normal
     @State var searchSort: SearchSortSnapshot = .newestImported
     @State var searchFilters: SearchFilterStateSnapshot = .empty
     @State var isSearchFiltersPresented = false
     @State var isSidebarTagsFilterPresented = false
+    @State var isSemanticIndexConfirmationPresented = false
+    @State var semanticPrivacyRuleRoute: AIClassificationPrivacyRuleRoute?
+    @State var semanticCallLogRoute: SemanticSearchCallLogRoute?
     @State var savedSearchesBySidebarID: [String: SavedSearchSnapshot] = [:]
     @State var smartListLoadError: CoreErrorMappingSnapshot?
     @State var smartListManagementRoute: SmartListManagementRoute?
+    @State var pendingSyncConflictReviewRoute: SyncConflictReviewRoute?
     @FocusState var isSearchFieldFocused: Bool
     @StateObject var dropPreviewModel: ImportDropPreviewModel
     @StateObject var detailNoteModel: DetailNoteModel
+    @StateObject var summaryExitController: AISummaryEditorExitController
     @State var tableSortOrder: [KeyPathComparator<FileEntrySnapshot>] = [
         .init(\FileEntrySnapshot.importedAt, order: .reverse)
     ]
+    @State var summarySelectionExitState = AISummarySelectionExitState()
 
+    // swiftlint:disable:next function_body_length
+    // swiftlint:disable:next function_body_length
     init(
         opening: RepositoryOpeningResult,
         state: MainRepositoryContentState,
         onImport: @escaping () -> Void,
         onDropImport: @escaping ([URL], ImportEntryDestination) -> Void,
         onOpenSettings: @escaping () -> Void = {},
+        onOpenAISettings: @escaping () -> Void = {},
         onOpenRepository: @escaping () -> Void = {},
         onOpenHelp: @escaping () -> Void = {},
         onOpenImportConflictBatch: @escaping (ImportConflictBatchRoute) -> Void = { _ in },
@@ -85,14 +97,17 @@ struct MainRepositoryContentView: View {
         fileLister: any CoreFileListing = CoreBridge(),
         fileDetailer: any CoreFileDetailing = CoreBridge(),
         searchQuerying: any CoreSearchQuerying = CoreBridge(),
+        semanticSearching: any CoreSemanticSearching = CoreBridge(),
         searchFiltering: any CoreSearchFiltering = CoreBridge(),
         commandIndexer: any CoreCommandIndexing = CoreBridge(),
         fileCategoryMover: any CoreFileCategoryMoving = CoreBridge(),
         batchDeleter: any CoreBatchDeleting = CoreBridge(),
         batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
         batchRenamer: any CoreBatchRenaming = CoreBridge(),
+        syncConflictDetector: any CoreSyncConflictDetecting = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         tagStore: any CoreTagCRUD = CoreBridge(),
+        aiPrivacyRules: any CoreAIPrivacyEvaluating = CoreBridge(),
         undoActionStore: any CoreUndoActionLogging = CoreBridge(),
         redoActionStore: any CoreRedoActionLogging = CoreBridge(),
         changeLogLister: any CoreChangeLogListing = CoreBridge(),
@@ -104,7 +119,8 @@ struct MainRepositoryContentView: View {
     ) {
         self.opening = opening; self.state = state
         self.onImport = onImport; self.onDropImport = onDropImport
-        self.onOpenSettings = onOpenSettings; self.onOpenRepository = onOpenRepository; self.onOpenHelp = onOpenHelp
+        self.onOpenSettings = onOpenSettings; self.onOpenAISettings = onOpenAISettings
+        self.onOpenRepository = onOpenRepository; self.onOpenHelp = onOpenHelp
         self.onOpenImportConflictBatch = onOpenImportConflictBatch
         self.onRetryCurrentList = onRetryCurrentList; self.onCollectDiagnostics = onCollectDiagnostics
         self.onShowInFinder = onShowInFinder; self.onCopyPath = onCopyPath; self.onCopyPaths = onCopyPaths
@@ -125,11 +141,13 @@ struct MainRepositoryContentView: View {
             noteStore: noteStore,
             errorMapper: errorMapper
         ))
+        _summaryExitController = StateObject(wrappedValue: AISummaryEditorExitController())
         _fileListModel = StateObject(wrappedValue: MainFileListModel(
             opening: opening,
             fileLister: fileLister,
             fileDetailer: fileDetailer,
             searchQuerying: searchQuerying,
+            semanticSearching: semanticSearching,
             searchFiltering: searchFiltering,
             commandIndexer: commandIndexer,
             fileCategoryMover: fileCategoryMover,
@@ -137,12 +155,18 @@ struct MainRepositoryContentView: View {
             batchCategoryChanger: batchCategoryChanger,
             iCloudConflictResolver: iCloudConflictResolver,
             tagStore: tagStore,
+            aiPrivacyRules: aiPrivacyRules,
             undoActionStore: undoActionStore,
             redoActionStore: redoActionStore,
             changeLogLister: changeLogLister,
             externalChangesSyncer: externalChangesSyncer,
             errorMapper: errorMapper,
             diagnosticsCollector: diagnosticsCollector
+        ))
+        _syncConflictEntryModel = StateObject(wrappedValue: SyncConflictEntryModel(
+            repoPath: opening.config.repoPath,
+            conflictDetector: syncConflictDetector,
+            errorMapper: errorMapper
         ))
         _repositoryTree = State(initialValue: opening.tree)
         _selectedSidebarID = State(initialValue: Self.defaultSelectedSidebarID(from: opening.tree.sidebarRows))
@@ -166,12 +190,8 @@ extension MainRepositoryContentView {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .overlay(alignment: .center) {
-            dropOverlay
-        }
-        .overlay(alignment: .bottomTrailing) {
-            batchTagUndoToastOverlay.padding(18)
-        }
+        .overlay(alignment: .center) { dropOverlay }
+        .overlay(alignment: .bottomTrailing) { batchTagUndoToastOverlay.padding(18) }
         .task(id: selectedSidebarID) {
             guard state == .list else { return }
             if await restoreSelectedSavedSearchIfNeeded() {
@@ -184,19 +204,17 @@ extension MainRepositoryContentView {
             }
             searchScope = selectedSidebarRow.categoryForFileList == nil ? .all : .current
             let focusedFileID = pendingMovedFileFocusID
-            if let focusedFileID {
-                selectedFileIDs = [focusedFileID]
-            } else {
-                selectedFileIDs = []
-            }
+            selectedFileIDs = focusedFileID.map { [$0] } ?? []
             await fileListModel.loadCurrentCategory(selectedSidebarRow.categoryForFileList, focusingOn: focusedFileID)
-            if pendingMovedFileFocusID == focusedFileID {
-                pendingMovedFileFocusID = nil
-            }
+            if pendingMovedFileFocusID == focusedFileID { pendingMovedFileFocusID = nil }
         }
         .task(id: opening.config.repoPath) {
             guard state == .list else { return }
             await loadSmartLists()
+        }
+        .task(id: opening.config.repoPath) {
+            guard state == .list else { return }
+            await syncConflictEntryModel.loadIfNeeded()
         }
         .task(id: externalCreatedEvent?.id) {
             guard let externalCreatedEvent else { return }
@@ -216,7 +234,8 @@ extension MainRepositoryContentView {
                 scope: searchScope,
                 sort: searchSort,
                 sidebarRow: selectedSidebarRow,
-                filters: effectiveSearchFilters
+                filters: effectiveSearchFilters,
+                mode: searchMode
             )
         }
         .task(id: searchFacetsTaskKey) {
@@ -230,26 +249,75 @@ extension MainRepositoryContentView {
             )
         }
         .onChange(of: selectedFileIDs) { previousIDs, ids in
-            showFailedNoteDraftBannerIfNeeded(leaving: previousIDs)
-            if !ids.isEmpty {
-                selectedImportProgressIDs = []
-            }
-            Task {
-                await fileListModel.selectFiles(ids)
-            }
+            handleSelectedFileIDsChange(previousIDs: previousIDs, ids: ids)
         }
         .onChange(of: selectedImportProgressIDs) { _, ids in
             guard !ids.isEmpty else { return }
             selectedFileIDs = []
         }
+        .confirmationDialog(
+            "Save AI summary changes?",
+            isPresented: Binding(
+                get: { summarySelectionExitState.pendingRequest != nil },
+                set: { if !$0 { cancelPendingSummarySelectionExit() } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Cancel", role: .cancel, action: cancelPendingSummarySelectionExit)
+            Button("Discard changes", role: .destructive) {
+                summaryExitController.discardChanges()
+                finishPendingSummarySelectionExit()
+            }
+            Button("Save changes") {
+                Task { await saveAndFinishPendingSummarySelectionExit() }
+            }
+        } message: {
+            Text("Save or discard the AI summary draft before switching files.")
+        }
+        .confirmationDialog(
+            "Build semantic index?",
+            isPresented: $isSemanticIndexConfirmationPresented,
+            titleVisibility: .visible
+        ) {
+            Button("Start index build") { Task { await fileListModel.buildSemanticIndexForCurrentSearch() } }
+                .disabled(!fileListModel.semanticPrivacyGateState.allowsIndexBuild)
+            semanticIndexRecoveryActions
+            Button("Back") {}
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(semanticIndexConfirmationMessage)
+        }
+        .confirmationDialog(
+            "Cancel semantic index build?",
+            isPresented: Binding(
+                get: {
+                    if case .cancelConfirm = fileListModel.semanticIndexControlState { return true }
+                    return false
+                },
+                set: { if !$0 { fileListModel.keepBuildingSemanticIndexForCurrentSearch() } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Cancel index build", role: .destructive) {
+                Task { await fileListModel.cancelSemanticIndexBuildForCurrentSearch() }
+            }
+            Button("Keep building", role: .cancel) {
+                fileListModel.keepBuildingSemanticIndexForCurrentSearch()
+            }
+        } message: {
+            Text(semanticIndexCancelConfirmationMessage)
+        }
         .sheet(item: actionDestinationBinding, content: actionRoutingSheet)
         .sheet(item: searchDestinationBinding, content: searchRoutingSheet)
+        .sheet(item: $semanticPrivacyRuleRoute, content: semanticPrivacyRuleSheet)
+        .sheet(item: $semanticCallLogRoute, content: semanticCallLogSheet)
         .sheet(item: $pendingBatchAddTagsRoute, content: batchAddTagsRoutingSheet)
         .sheet(item: $pendingBatchChangeCategoryRoute, content: batchChangeCategoryRoutingSheet)
         .sheet(item: $pendingBatchDeleteRoute, content: batchDeleteRoutingSheet)
         .sheet(item: $pendingBatchRenameRoute, content: batchRenameRoutingSheet)
         .sheet(item: $pendingUndoHistoryRequest, content: undoHistorySheet)
         .sheet(item: $smartListManagementRoute, content: smartListManagementSheet)
+        .sheet(item: $pendingSyncConflictReviewRoute, content: syncConflictReviewSheet)
         .onChange(of: pendingImportConflictBatchRoute) { _, route in
             guard let route else { return }; pendingImportConflictBatchRoute = nil
             onOpenImportConflictBatch(route)
@@ -313,6 +381,14 @@ extension MainRepositoryContentView {
                     fileListModel.enterSearch(context: .toolbar)
                 }
                 .accessibilityIdentifier("S2-01-search-field")
+            Picker("Mode", selection: $searchMode) {
+                ForEach(SearchModeSnapshot.allCases) { mode in
+                    Text(mode.displayName).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 170)
+            .accessibilityIdentifier("S3-08-C3-08-search-mode")
             Picker("Scope", selection: $searchScope) {
                 ForEach(SearchScopeSnapshot.allCases) { scope in
                     Text(scope.displayName).tag(scope)

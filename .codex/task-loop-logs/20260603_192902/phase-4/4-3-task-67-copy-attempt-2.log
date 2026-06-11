@@ -1,0 +1,60 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-3/task-67`。
+
+修改文件清单：
+- `core/src/cloud_permission_state.rs`
+- `core/src/api.rs`
+- `core/area_matrix.udl`
+- `core/tests/onedrive_risk_state_implementation.rs`
+- `core/tests/onedrive_risk_state_contract_api.rs`
+- `core/tests/cloud_permission_state_contract_api.rs`
+- `core/tests/cloud_permission_state_validation.rs`
+- `docs/api/core-api.md`
+- `docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
+
+另有本地 task-loop 状态文件已存在变更：`tasks/prompts/_shared/progress.json`、`.codex/task-loop-runs/20260603_192902/`，未作为本次产品修复范围处理。
+
+三、完成情况
+
+核对清单结果：
+- 只实现 C4-14：通过。
+- 输入、输出、DB/文件系统变化和错误映射：通过，新增 `acknowledge_onedrive_risk_notice(repo_path) -> CloudStorageState`，只写已初始化 repo 的 `repo_config`。
+- Rust Core 不依赖平台 UI API：通过，未引入平台 API 或 OneDrive SDK。
+- 最小测试支撑、不做页面接入：通过，未修改 `apps/**`。
+
+完成标准：
+- C4-14 核心行为可被测试或桥接调用验证：通过，UDL 已暴露确认写入入口，测试通过 Core API 持久化并重新读取。
+- 未触碰用户文件安全边界之外行为：通过，测试覆盖用户文件保持不变，未创建未初始化 repo metadata。
+
+Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+代码结构保持在 C4-14 范围内：检测仍只读，确认写入独立窄入口，不混入通用配置 API。新增 public API 已有 rustdoc 和错误说明。错误路径覆盖未初始化 repo、权限/DB 写入失败映射、无 metadata 时只读探测不创建 `.areamatrix`。无 mock-only、硬编码通过态或测试直接写 SQLite 绕路。
+
+五、验证情况
+
+已运行并通过：
+- `cargo test --test onedrive_risk_state_implementation -- --nocapture`
+- `cargo test --test onedrive_risk_state_contract_api -- --nocapture`
+- `git diff --check`
+- `./dev check task 4-3/task-67`
+
+`./dev check task 4-3/task-67` 内部通过：
+- prompt doctor
+- diff check
+- `cargo test --test onedrive_risk_state_contract_api -- --nocapture`
+- `cargo test --test onedrive_risk_state_implementation -- --nocapture`
+
+未运行宽门禁：`./dev check all`、`./dev check core`、`cargo test --workspace`。原因是当前 manifest 只要求 `./dev check task 4-3/task-67`，retry 也不得升级验证等级。
+
+六、风险与后续
+
+剩余风险：未做 Swift 页面接入和生成桥接文件验证，这属于后续页面/集成任务范围；当前 UDL/Rust/API 合同已就绪。
+
+建议下一个任务：进入后续 C4-14 integration 或 S4-WIN-03 页面消费任务，让 UI 通过 `acknowledge_onedrive_risk_notice` 完成确认状态写入。

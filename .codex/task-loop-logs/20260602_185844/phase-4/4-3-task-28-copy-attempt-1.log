@@ -1,0 +1,49 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-3/task-28`，未触碰 `apps/**`。
+
+修改文件：
+- [core/src/storage/validate.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/validate.rs:12)
+- [core/tests/files_import_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/files_import_failure_recovery.rs:1)
+- [core/tests/files_import_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/files_import_implementation.rs:1)
+- 同步更新若干共享 import failure 测试断言：`camera_import_failure_recovery.rs`、`import_copy_file_failure_recovery.rs`、`import_index_file_failure_recovery.rs`、`import_move_file_failure_recovery.rs`、`share_extension_import_failure_recovery.rs`
+
+三、完成情况
+
+核对清单全部完成：
+- 空态、非法输入、权限、IO/DB 错误、错误码映射：已由新增 `files_import_failure_recovery` 覆盖。
+- 写入/导入失败不留半成品：覆盖 staging IO 失败、DB promotion 失败后 final 文件清理、staging 清空、retry 成功。
+- 隐私/AI/远程调用：验证默认 `ai_enabled=false`、无 `remote_provider_config`、无 `ai_call_log` 表副作用。
+- 未吞错：`DuplicateStrategy::Ask` 返回 `DuplicateFile`，权限/iCloud 返回结构化错误。
+
+四、工程质量
+
+`source_file` 现在会验证 source 可打开，并把 `InvalidPath`、`FileNotFound`、`ICloudPlaceholder`、`PermissionDenied` 的 payload 指向实际路径，便于 UI 使用结构化错误上下文。没有新增依赖，没有 mock-only 或硬编码通过态；新增测试使用真实 tempdir、SQLite trigger、真实 FS/DB 断言。
+
+五、验证情况
+
+已通过：
+- `./dev check task 4-3/task-28`
+  - `prompt_pipeline.py doctor`: OK
+  - `git diff --check`: OK
+  - `cargo fmt --all -- --check`: OK
+  - `cargo clippy --all-targets --all-features -- -D warnings`: OK
+  - `files_import_contract_api`: 4 passed
+  - `files_import_failure_recovery`: 8 passed
+  - `files_import_implementation`: 6 passed
+- 额外补跑受共享断言影响的 targeted tests：
+  - `camera_import_failure_recovery`: 5 passed
+  - `import_copy_file_failure_recovery`: 4 passed
+  - `import_index_file_failure_recovery`: 6 passed
+  - `import_move_file_failure_recovery`: 3 passed
+  - `share_extension_import_failure_recovery`: 7 passed
+
+六、风险与后续
+
+剩余风险：未做真实 iOS Files provider / security-scoped URL 手工验证；本任务只验证 Core 接收授权后路径的行为。工作区另有既有运行态变更：`.codex/task-loop-runs/20260602_185844/summary.json`、`tasks/prompts/_shared/progress.json`，我未纳入本次修改范围。
+
+建议下一个任务：`4-3/task-29`，继续做 C4-06 validation。

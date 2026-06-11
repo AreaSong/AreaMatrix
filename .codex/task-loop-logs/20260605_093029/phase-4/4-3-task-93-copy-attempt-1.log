@@ -1,0 +1,48 @@
+一、执行结论
+
+已完成 `4-3/task-93`。
+
+二、执行范围
+
+修改文件：
+- [core/src/repo_scan.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/repo_scan.rs:187)
+- [core/tests/manual_rescan_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/manual_rescan_failure_recovery.rs:1)
+
+未触碰 `apps/**`。开始前已有的 `tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260605_093029/` 仍是既有工作树状态，我没有修改它们。
+
+三、完成情况
+
+核对清单：
+- 空态：新增空 repo rescan 测试，确认返回 completed empty report。
+- 非法输入：新增空白路径、未初始化 repo 测试，确认不创建 `.areamatrix/`、不改用户文件。
+- 权限：新增 Unix unreadable file 测试，确认 `PermissionDenied`、failed session、恢复权限后可 resume。
+- IO/DB 错误与映射：新增 DB trigger 注入失败、错误映射测试。
+- 半成品：DB 失败时断言用户文件未变、未留下 indexed rows；失败 session 明确记录。
+- 隐私/AI/远程调用：本能力不涉及 AI/远程调用，测试和实现没有新增网络或密钥路径。
+- 未吞错：`finish_failed_scan` 在 failed session 持久化也失败时返回 `Db`，并保留原始扫描失败上下文。
+
+四、工程质量
+
+实现保持在现有 `repo_scan` 错误流内，没有新增 public API、依赖、mock-only 分支或一次性脚本。新增测试用真实 temp repo、SQLite trigger 和文件快照验证失败语义及用户文件安全。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+cargo test --test manual_rescan_failure_recovery -- --nocapture
+./dev check task 4-3/task-93
+```
+
+`./dev check task 4-3/task-93` 通过了：
+- prompt doctor
+- git diff check
+- cargo fmt check
+- cargo clippy `-D warnings`
+- `manual_rescan_contract_api`
+- `manual_rescan_failure_recovery`
+- `manual_rescan_implementation`
+
+六、风险与后续
+
+剩余风险：C4-19 当前仍是全库 rescan Core 边界，dry-run preview、Needs Review 分类和 UI 防并发属于后续页面/validation 任务范围，本次没有实现。建议下一个任务继续执行 `4-3/task-94`，补齐 C4-19 validation 证据。

@@ -203,10 +203,7 @@ fn import_move_file_failure_recovery_permission_denied_restores_source() {
 
     fs::set_permissions(&finance_dir, original_permissions).expect("restore target permissions");
 
-    assert_eq!(
-        result,
-        Err(CoreError::permission_denied("permission denied"))
-    );
+    assert!(matches!(result, Err(CoreError::PermissionDenied { .. })));
     assert_eq!(
         fs::read(&source).expect("read source restored after permission failure"),
         b"permission denied recovery"

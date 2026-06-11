@@ -1,0 +1,44 @@
+一、执行结论
+
+已完成 `4-2/task-77`。
+
+二、执行范围
+
+单任务：S3-10 页面中 C3-10 AI fallback 功能点。
+
+修改的产品文件：
+- [SemanticSearchPresentation.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/SemanticSearchPresentation.swift)
+- [SemanticSearchResultsView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SemanticSearchResultsView.swift)
+- [SmartListManagementSheet+Sections.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SmartListManagementSheet+Sections.swift)
+
+工作区另有既有 task-loop/progress 脏文件，未作为产品改动处理：
+- `.codex/task-loop-runs/20260601_122037/summary.json`
+- `tasks/prompts/_shared/progress.json`
+
+三、完成情况
+
+- 核对清单：已只处理 S3-10 + C3-10 的 fallback 动作接入；未实现同页 C3-04/C3-08 之外的新能力。
+- 完成标准：`Open local model status` 现在在语义 fallback 中可见、可点，并进入现有 S3-02 `LocalModelStatusView`；`Configure remote AI` 复用现有远程配置 sheet；未用 mock 或静态状态伪造 Core 闭环。
+- Forbidden Touches：未触碰 `core/src/**`，`git diff --name-only -- core/src` 为空。
+
+四、工程质量
+
+- 复用已有 `LocalModelStatusView`、`RemoteModelConfigSheet` 和 fallback action model，没有新增 Core/UDL/API，也没有改 xcodeproj。
+- 增加了显式 initializer，避免测试调用点被迫传 repoPath，同时产品路径传入真实 `opening.config.repoPath`。
+- 错误/边界：repoPath 为空时回退给宿主 action；repoPath 有效时打开对应恢复 sheet。
+- 未引入占位、硬编码通过态、mock-only wiring 或一次性脚本。
+
+五、验证情况
+
+已运行并通过：
+- `git diff --check`
+- `./dev check task 4-2/task-77`
+
+`./dev check task 4-2/task-77` 结果：PASS；包含 prompt doctor OK、diff check OK、macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO`，最终 `BUILD SUCCEEDED`。Xcode 仍有本机 CoreSimulator/FSEvents/cache 警告，但未导致构建失败。
+
+六、风险与后续
+
+剩余风险：本轮按 manifest 上限未做真实 UI 点击 smoke，只通过编译和 task gate 证明路由可构建；回滚方式是撤回上述 3 个产品文件改动。
+
+建议下一个任务：继续 `4-2/task-78` 做 S3-10 page integration verify，集中验收同页 C3-04、C3-08、C3-10 的完整覆盖。
+

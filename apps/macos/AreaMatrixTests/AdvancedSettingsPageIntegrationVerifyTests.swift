@@ -127,7 +127,7 @@ private func assertS130DiagnosticsAndOverview(_ context: S130IntegrationContext)
     XCTAssertTrue(FileManager.default.fileExists(atPath: context.sourceURL.path))
     XCTAssertEqual(context.model.versionInfo.appVersion, "9.8.7 (654)")
     XCTAssertEqual(context.model.versionInfo.coreVersion, "0.1.0-test")
-    XCTAssertEqual(context.model.versionInfo.repoSchemaVersion, 1)
+    XCTAssertEqual(context.model.versionInfo.repoSchemaVersion, 2)
     XCTAssertNil(context.model.versionError)
     XCTAssertEqual(context.model.diagnosticsState, .collected(context.diagnosticsSnapshot))
     XCTAssertEqual(diagnosticsRepoPaths, [context.repoURL.path])
@@ -139,7 +139,7 @@ private func assertS130CopiedSummary(_ copiedSummaries: [String]) {
     XCTAssertEqual(copiedSummaries.count, 1)
     XCTAssertTrue(copiedSummaries[0].contains("App version: 9.8.7 (654)"))
     XCTAssertTrue(copiedSummaries[0].contains("Core version: 0.1.0-test"))
-    XCTAssertTrue(copiedSummaries[0].contains("Repo schema version: v1"))
+    XCTAssertTrue(copiedSummaries[0].contains("Repo schema version: v2"))
     XCTAssertTrue(copiedSummaries[0].contains("Diagnostics exclude original file contents"))
 }
 

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Features/Onboarding/ChooseRepositoryView.ui" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Features/Onboarding/LocalFolderNoticeView.ui" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Features/Onboarding/RepositoryInitConfirmView.ui" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Features/Onboarding/RepositoryAdoptConfirmView.ui" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Features/Library/MainWindow.ui" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Features/Conflicts/SyncConflictEntryView.ui" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Features/Import/LinuxImportDialog.ui" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Features/Recovery/MissingFileRecoveryView.ui" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Features/System/WatcherStatusView.ui" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Features/System/RescanConfirmView.ui" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Features/Settings/RepositorySettingsView.ui" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

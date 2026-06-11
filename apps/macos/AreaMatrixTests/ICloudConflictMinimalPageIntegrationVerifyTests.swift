@@ -212,6 +212,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
     }
 
     @MainActor
+    // swiftlint:disable:next function_body_length
     private func makeDetailPaneBody(model: MainFileListModel) -> String {
         let detailPane = MainRepositoryDetailPane(
             selection: model.selection,
@@ -229,6 +230,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             detailTagUndoToast: model.detailTagUndoToast,
             detailTabRequest: model.detailTabRequest,
             selectedImportProgressRow: nil,
+            semanticDetail: nil,
             repoPath: "/tmp/s125-repo",
             batchTagStore: model.tagStore,
             batchTagUndoStore: model.undoActionStore,
@@ -253,9 +255,13 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             onBeginRenameFile: model.beginRename,
             onBeginChangeCategoryFile: model.beginChangeCategory,
             onBeginClassifierCorrectionFile: model.beginClassifierCorrection,
+            onBeginAIClassificationSuggestionFile: model.beginAIClassificationSuggestion,
             onBeginDeleteFile: model.beginDelete,
             onBeginICloudConflictResolution: model.beginICloudConflictResolution,
+            onBeginSyncConflictReview: { _ in },
+            onOpenAISettings: {},
             writeActionDisabledReason: model.writeActionDisabledReason,
+            summaryExitController: AISummaryEditorExitController(),
             noteModel: DetailNoteModel(
                 repoPath: "/tmp/s125-repo",
                 noteStore: S125NoopNoteStore(),

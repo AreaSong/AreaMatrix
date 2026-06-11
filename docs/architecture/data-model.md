@@ -63,7 +63,8 @@ PRAGMA temp_store = MEMORY;
 
 CREATE TABLE IF NOT EXISTS schema_version (
   version INTEGER PRIMARY KEY,
-  applied_at INTEGER NOT NULL
+  applied_at INTEGER NOT NULL,
+  applied_by TEXT NOT NULL DEFAULT 'area_matrix_core'
 );
 
 CREATE TABLE IF NOT EXISTS files (
@@ -159,6 +160,10 @@ CREATE TABLE IF NOT EXISTS scan_sessions (
   last_path TEXT,
   inserted INTEGER NOT NULL DEFAULT 0,
   updated INTEGER NOT NULL DEFAULT 0,
+  missing INTEGER NOT NULL DEFAULT 0,
+  conflicts INTEGER NOT NULL DEFAULT 0,
+  unreadable INTEGER NOT NULL DEFAULT 0,
+  unknown INTEGER NOT NULL DEFAULT 0,
   skipped INTEGER NOT NULL DEFAULT 0,
   errors_json TEXT NOT NULL DEFAULT '[]'
 );
@@ -199,8 +204,8 @@ CREATE TABLE IF NOT EXISTS repo_config (
   updated_at INTEGER NOT NULL
 );
 
-INSERT OR IGNORE INTO schema_version (version, applied_at)
-VALUES (1, strftime('%s', 'now'));
+INSERT OR IGNORE INTO schema_version (version, applied_at, applied_by)
+VALUES (2, strftime('%s', 'now'), 'area_matrix_core');
 ```
 
 ---
@@ -270,6 +275,10 @@ erDiagram
         string last_path
         int inserted
         int updated
+        int missing
+        int conflicts
+        int unreadable
+        int unknown
         int skipped
         string errors_json
     }
@@ -422,8 +431,8 @@ VALUES (?, ?, ?, ?);
 ```sql
 INSERT INTO scan_sessions (
   kind, status, started_at, updated_at,
-  inserted, updated, skipped, errors_json
-) VALUES (?, 'running', ?, ?, 0, 0, 0, '[]');
+  inserted, updated, missing, conflicts, unreadable, unknown, skipped, errors_json
+) VALUES (?, 'running', ?, ?, 0, 0, 0, 0, 0, 0, 0, '[]');
 ```
 
 ### scan_sessions: PROGRESS
@@ -434,6 +443,10 @@ UPDATE scan_sessions
        last_path = ?,
        inserted = ?,
        updated = ?,
+       missing = ?,
+       conflicts = ?,
+       unreadable = ?,
+       unknown = ?,
        skipped = ?,
        errors_json = ?
  WHERE id = ? AND status = 'running';
@@ -792,7 +805,7 @@ fn run_migrations(conn: &mut rusqlite::Connection) -> CoreResult<()> {
     let latest: i64 = LATEST_VERSION;
     for v in (current + 1)..=latest {
         let sql = match v {
-            2 => include_str!("migrations/m_002_add_xxx.sql"),
+            2 => include_str!("migrations/m_002_scan_session_review_counts.sql"),
             _ => continue,
         };
         let tx = conn.transaction()?;

@@ -1,0 +1,51 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-3/task-18`，仅触碰 `core/**` 范围，未触碰 `apps/**`。
+
+修改文件：
+- [safe_move.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/safe_move.rs:30)
+- [camera_import_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/camera_import_failure_recovery.rs:1) 新增
+- [camera_import_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/camera_import_contract_api.rs:7) 仅 rustfmt 格式化
+- [camera_import_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/camera_import_implementation.rs:125) 仅 rustfmt 格式化
+
+三、完成情况
+
+核对清单：
+- 空态、非法输入、权限、IO/DB 错误和错误码映射：已覆盖，新增 5 个 C4-04 camera-import failure-edge 测试。
+- 失败不留下半成品：已覆盖，断言无 active/staging 行、无 change_log、无最终文件半成品、staging 为空，DB 失败后可重试。
+- 隐私/AI/远程调用：已覆盖，断言 camera import 不启用 AI、不写 remote provider config、不创建 AI call log。
+- 不吞错/不静默降级：已处理，staging 根被文件占用时明确返回 `CoreError::Io`。
+
+完成标准：
+- C4-04 失败路径有明确返回、可测试证据和用户文件安全保证：满足。
+- 高风险路径具备可回滚或可恢复说明：满足，测试覆盖 DB rollback、staging/final 清理和 retry。
+
+四、工程质量
+
+代码结构保持局部、清晰，没有新增依赖，没有 mock-only、硬编码通过态或一次性脚本化实现。生产代码只补了 staging 目录创建错误映射；主要证据落在真实 `import_file` 集成测试上。未改 UDL，因为现有 `import_file`/`CoreError` 合同已与 C4-04 文档对齐。
+
+五、验证情况
+
+已通过：
+- `cargo test --test camera_import_failure_recovery -- --nocapture`：5 passed
+- `./dev check task 4-3/task-18`：通过
+  - prompt doctor：OK
+  - `git diff --check`：OK
+  - `cargo fmt --all -- --check`：OK
+  - `cargo clippy --all-targets --all-features -- -D warnings`：OK
+  - `camera_import_contract_api`：4 passed
+  - `camera_import_failure_recovery`：5 passed
+  - `camera_import_implementation`：4 passed
+
+失败：无。无法运行：无。
+
+六、风险与后续
+
+剩余风险：当前只覆盖 Core 的 camera-import failure-edge；平台层相机权限、取消、临时文件生命周期仍由后续 S4-IOS-03 页面任务验证。工作树里已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 改动，我未处理它们。
+
+建议下一个任务：`4-3/task-19`，继续 C4-04 validation。
+

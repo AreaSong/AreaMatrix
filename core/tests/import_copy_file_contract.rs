@@ -75,6 +75,7 @@ fn import_copy_file_contract_exposes_documented_outputs() {
         storage_mode: StorageMode::Copied,
         origin: FileOrigin::Imported,
         source_path: Some("/tmp/source/invoice.pdf".to_owned()),
+        availability_status: area_matrix_core::FileAvailabilityStatus::Available,
         imported_at: 10,
         updated_at: 10,
     };

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <!-- page_id: S4-X-06 -->
+  <!-- capability: C4-18 missing-file-recovery -->
+  <requires lib="gtk" version="4.0" />
+  <object class="GtkDialog" id="S4X06MissingFileRecoveryDialog">
+    <property name="title">File is missing</property>
+    <property name="default-width">640</property>
+    <property name="modal">true</property>
+    <child internal-child="content_area">
+      <object class="GtkBox" id="MissingFileRecoveryContent">
+        <property name="orientation">vertical</property>
+        <property name="spacing">14</property>
+        <child>
+          <object class="GtkLabel" id="MissingFileSummaryLabel">
+            <property name="label">File, last known location, last seen, and reason.</property>
+            <property name="xalign">0</property>
+            <accessibility>
+              <property name="label">Missing file summary with relative path, last location, last seen, and reason.</property>
+            </accessibility>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox" id="RecoveryActions">
+            <property name="orientation">horizontal</property>
+            <property name="spacing">8</property>
+            <child>
+              <object class="GtkButton" id="LocateFileButton">
+                <property name="label">Locate File</property>
+                <property name="action-name">recovery.locate-file</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="RelinkFileButton">
+                <property name="label">Relink File</property>
+                <property name="action-name">recovery.relink-file</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="TryAgainButton">
+                <property name="label">Try Again</property>
+                <property name="action-name">recovery.try-again</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="DecideLaterButton">
+                <property name="label">Decide Later</property>
+                <property name="action-name">recovery.decide-later</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="SelectedFileLabel">
+            <property name="label">Selected file will be checked by Core before relinking.</property>
+            <property name="xalign">0</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox" id="RemoveRecordConfirm">
+            <property name="orientation">vertical</property>
+            <property name="spacing">6</property>
+            <child>
+              <object class="GtkLabel" id="RemoveRecordTitle">
+                <property name="label">Remove this record?</property>
+                <property name="xalign">0</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="RemoveRecordSafetyText">
+                <property name="label">This removes the AreaMatrix record only. It will not delete any user file from disk.</property>
+                <property name="wrap">true</property>
+                <property name="xalign">0</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="RemoveRecordConfirmedCheck">
+                <property name="label">I understand this only removes the record.</property>
+                <property name="action-name">recovery.confirm-remove</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="RemoveRecordButton">
+                <property name="label">Remove Record</property>
+                <property name="action-name">recovery.remove-record</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="RecoveryResultLabel">
+            <property name="label">Selected file does not match the missing record.</property>
+            <property name="xalign">0</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

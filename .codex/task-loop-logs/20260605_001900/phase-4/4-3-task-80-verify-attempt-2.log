@@ -1,0 +1,79 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-80`
+- 对应文件路径：`tasks/prompts/phase-4/4-3-stage4-multiplatform/task-80-c4-16-integration-verify.md`
+- Manifest 范围：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- Forbidden Touches：`apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：C4-16 spec 要求两个 API、预览/解决报告、更新 conflict state、写 change log、Replace 二次确认、失败保持 unresolved；Core API 与 UDL 均声明 `preview_sync_conflict_resolution` / `resolve_sync_conflict` 及 preview/request/report 类型；Rust API、plan、apply、DB、contract/implementation/failure/validation 测试均已落地。
+- 涉及文件：`docs/core/.../C4-16-sync-conflict-resolve.md`、`docs/api/core-api.md`、`core/area_matrix.udl`、`core/src/sync_conflict_resolve.rs`、`core/src/sync_conflict_resolve/plan.rs`、`core/src/sync_conflict_resolve/apply.rs`、`core/src/db/sync_conflicts.rs`、`core/tests/sync_conflict_resolve_*`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：S4-X-01 需要 KeepBoth 默认、UseExisting 保留 incoming 可见、UseIncoming 进入 S4-X-09、Impact summary、失败仍 Needs Review；S4-X-09 需要 Replace plan、Trash/Recycle Bin 可用性、二次确认、固定执行顺序和失败保持 existing 可用。实现与测试覆盖这些路径。
+- 涉及文件：`docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md`、`docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 只把 C4-16 绑定到 `S4-X-01` 和 `S4-X-09` 的 conflict resolve / replace confirm；Core API 文档明确不实现内容级 merge、导入冲突批量、QuickLook、云盘 SDK 或 C4-21 平台能力检测。
+- 涉及文件：`docs/architecture/stage-4-control-map.md`、`docs/api/core-api.md`
+
+- 项目：Expected New Paths 是否落地
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均存在并包含 C4-16 API、实现与测试。
+- 涉及文件：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+- 项目：Forbidden Touches 是否违规修改
+- 结果：通过
+- 证据：`git diff --name-only -- apps` 与 `git diff --cached --name-only -- apps` 输出为空，未触碰 `apps/**`。
+- 涉及文件：无
+
+- 项目：只读验收要求
+- 结果：通过
+- 证据：本轮只读取文件、检查 diff、运行 `--check` / test / clippy；未执行修复、formatter 写入、codegen 或文件编辑。
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`preview`、`plan`、`apply`、`db record` 分层清楚，非破坏性和 UseIncoming 路径分离。
+- 注释 / rustdoc / 文档同步：通过，公开 API 有 rustdoc 和 `# Errors`，Core API、UDL、Rust 类型与测试同步。
+- 错误处理与边界处理：通过，覆盖 `Conflict`、`PermissionDenied`、`Io`、`Db`；stale token、DB 写失败、metadata 不可写、未确认 Replace 均保持 unresolved。
+- 测试与验证覆盖：通过，contract 4 项、failure recovery 4 项、implementation 5 项、validation 3 项全部通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试走真实 temp repo、SQLite、用户文件、Trash guard 与 change log 路径，未发现 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+- 说明：当前工作区有 `.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json` 和本 task 相关 `core/**` 本地变更；未发现 `apps/**` 违规 diff。runner/progress 变更按 task-loop 收口时序不作为本 verify 阶段阻断。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-80`
+- 通过：prompt doctor OK；`git diff --check` OK；`cargo fmt --all -- --check` OK；`cargo clippy --all-targets --all-features -- -D warnings` OK。
+- 通过：`cargo test --test sync_conflict_resolve_contract_api -- --nocapture`，4 passed。
+- 通过：`cargo test --test sync_conflict_resolve_failure_recovery -- --nocapture`，4 passed。
+- 通过：`cargo test --test sync_conflict_resolve_implementation -- --nocapture`，5 passed。
+- 通过：`cargo test --test sync_conflict_resolve_validation -- --nocapture`，3 passed。
+- 失败：无。
+- 缺失：远端 CI 未在本只读单任务验收中运行；本地 task-scoped gate 已满足 manifest 要求。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C4-16 可以作为后续 page-feature task 的真实 Core 依赖。
+
+VERIFY_RESULT: PASS

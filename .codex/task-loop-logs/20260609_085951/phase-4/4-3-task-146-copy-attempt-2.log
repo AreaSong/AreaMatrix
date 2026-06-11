@@ -1,0 +1,39 @@
+一、执行结论
+
+- 已完成
+
+二、执行范围
+
+- 单任务：`4-3/task-146`
+- 本次 retry 直接修改：
+  - [ConnectRepositoryView.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryView.swift:419)
+  - [PlatformDifferencesPageFeatureTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrixTests/PlatformDifferencesPageFeatureTests.swift:89)
+
+三、完成情况
+
+- 已修复上次验收失败点：iOS 现在可从 `ConnectRepositoryView` 的 `Help` sheet 进入 `PlatformDifferencesView`，用户可触发 S4-X-02 的 C4-17 平台能力矩阵。
+- 核对清单满足：只补 S4-X-02 + C4-17 的 iOS 可达入口，没有实现同页 C4-01 以外的新能力，也没有扩展相邻页面功能。
+- 完成标准满足：入口可验收；C4-17 仍走现有 `LivePlatformDifferencesCapabilityBridge` / `get_platform_capabilities`，没有用 mock 或静态状态替代生产闭环。
+- Forbidden Touches：未触碰 `core/src/**`，`git diff -- core/src` 无输出。
+
+四、工程质量
+
+- 结构清晰：只在已有 Help sheet 中加一个 `NavigationLink`，复用现有 `PlatformDifferencesView`。
+- 注释 / rustdoc / 文档同步：未新增 Rust public API，不需要 rustdoc；未改 docs/API/UDL。
+- 错误与边界处理：未新增文件系统、DB、用户文件、watcher、rescan、Trash 或危险操作路径。
+- 未引入新依赖、mock-only、硬编码通过态或一次性脚本逻辑。
+
+五、验证情况
+
+- 已运行并通过：`./dev check task 4-3/task-146`
+  - `prompt doctor: OK`
+  - `git diff --check` 通过
+  - `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- 已运行并通过：`swift test --disable-sandbox --package-path apps/ios --filter PlatformDifferencesPageFeatureTests`
+  - 5 个测试，0 failures
+- 未运行：`./dev check all`、`cargo test --workspace`，因为当前 manifest 只要求 `./dev check task 4-3/task-146`，retry 规则也禁止擅自升级宽门禁。
+
+六、风险与后续
+
+- 剩余风险：未做真实 iOS 模拟器点击验证；本轮用 SwiftUI 源入口测试和 task gate 证明可达性。
+- 建议下一个任务：进入 `4-3/task-146` 的 verify-ready 验收；若通过，再继续 `4-3/task-147` 页面 integration verify。

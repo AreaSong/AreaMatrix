@@ -1,0 +1,45 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-2/task-49`。  
+修改文件清单：
+
+- `core/tests/ai_fallback_validation.rs`
+- `core/tests/support/ai_fallback_validation.rs`
+
+未触碰 `apps/**`。当前 worktree 里已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 是本轮外已有改动，我未修改。
+
+三、完成情况
+
+- 补齐测试：新增 C3-10 validation 测试，覆盖 remote failed、privacy skipped、AI disabled、local model unavailable 成功状态，以及 invalid metadata / secret-like code / invalid rule id / invalid call log / invalid retry timestamp 等失败路径。
+- API / UDL / Rust 一致性：新增文本锁定断言，覆盖 `docs/api/core-api.md`、`core/area_matrix.udl`、`core/src/api.rs`、`core/src/lib.rs`、`core/src/ai_fallback.rs`。
+- 未新增业务功能：只新增测试与测试 fixture。
+- Forbidden Touches：未触碰。
+
+四、工程质量
+
+测试 fixture 拆到 `core/tests/support/ai_fallback_validation.rs`，主测试文件保持 328 行，support 文件 273 行，未超过 500 行阈值。新增测试验证 C3-10 不自动切换 provider、不阻断 import / normal search / local classifier，并检查输出不含密钥形态内容。无 mock-only、硬编码通过态或一次性业务实现。
+
+五、验证情况
+
+已运行并通过：
+
+- `cargo test --test ai_fallback_validation -- --nocapture`：3 passed
+- `./dev check task 4-2/task-49`：通过
+  - `prompt_pipeline.py doctor`：OK
+  - `git diff --check`：OK
+  - `ai_fallback_contract_api`：4 passed
+  - `ai_fallback_failure_recovery`：6 passed
+  - `ai_fallback_implementation`：5 passed
+  - `ai_fallback_validation`：3 passed
+
+失败：无最终验证失败。中间有一次在 `core/` 目录下用错 `core/tests/...` 路径的 `rustfmt` 命令，随后已用正确 `tests/...` 路径重跑成功。  
+无法运行：无。
+
+六、风险与后续
+
+剩余风险：未运行全量 `cargo test --workspace` / clippy，因为本 atomic task 的验证上限明确是 `./dev check task 4-2/task-49`，不应升级宽门禁。  
+建议下一个任务：进入 `4-2/task-50` 的 C3-10 integration verify。

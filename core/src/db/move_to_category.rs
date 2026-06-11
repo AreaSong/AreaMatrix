@@ -4,7 +4,7 @@ use rusqlite::{params, OptionalExtension, Row};
 use serde_json::{json, Value};
 use uuid::Uuid;
 
-use crate::{CoreError, CoreResult, FileEntry};
+use crate::{CoreError, CoreResult, FileAvailabilityStatus, FileEntry};
 
 use super::{
     clear_redo_stack_in_tx, open_repo_connection, origin_from_db, storage_mode_from_db, undo,
@@ -320,6 +320,7 @@ fn batch_category_file_entry_from_row(row: &Row<'_>) -> rusqlite::Result<FileEnt
             .map_err(|_| rusqlite::Error::InvalidQuery)?,
         origin: origin_from_db(&origin_value).map_err(|_| rusqlite::Error::InvalidQuery)?,
         source_path: row.get(9)?,
+        availability_status: FileAvailabilityStatus::Available,
         imported_at: row.get(10)?,
         updated_at: row.get(11)?,
     })

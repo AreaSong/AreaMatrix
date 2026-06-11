@@ -1,0 +1,17 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-3/task-58`。本任务改动：
+- `core/src/db/platform_watcher_status.rs`
+- `core/src/platform_watcher_status.rs`
+- `core/tests/platform_watcher_status_failure_recovery.rs`
+
+三、完成情况：已补齐 C4-12 watcher health 的 failure-edge 证据，覆盖空态、非法输入、权限/IO、DB schema 失败、错误码映射，以及失败时不推进 cursor、不改用户文件、不写半成品 metadata。未触碰 `apps/**`。`core/area_matrix.udl` 已核对，无需修改。
+
+四、工程质量：实现保持在现有 `repo_config` metadata 写入路径内，新增写入前可写性检查，并把 metadata 权限失败归一为 `Io`，没有吞错、mock-only、硬编码通过态或一次性脚本逻辑。新增测试均使用 tempdir，不操作真实用户文件。
+
+五、验证情况：
+- `cargo test --test platform_watcher_status_failure_recovery -- --nocapture`：通过，5/5。
+- `./dev check task 4-3/task-58`：通过。包含 prompt doctor、diff check、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`，以及 C4-12 三个目标测试：contract 4/4、failure_recovery 5/5、implementation 4/4。
+- clippy 耗时较长，最终正常退出 0。
+
+六、风险与后续：剩余风险是 macOS/Windows/Linux 平台 watcher UI 消费仍由后续页面任务覆盖；本任务只处理 Core C4-12 failure-edge。回滚方式是撤回上述三个文件的本任务增量。工作树仍有两处本任务前已存在的无关改动：`.codex/task-loop-runs/20260603_103922/summary.json`、`tasks/prompts/_shared/progress.json`，我未回退或纳入本任务。

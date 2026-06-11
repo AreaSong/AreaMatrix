@@ -174,7 +174,7 @@ private func verifyTask31AboutAndRecoveryRoute(_ context: Task31IntegrationConte
     about.requestDiagnosticsExport()
     await about.collectDiagnostics()
 
-    XCTAssertEqual(about.versionInfo.schemaVersion, "v1")
+    XCTAssertEqual(about.versionInfo.schemaVersion, "v2")
     XCTAssertNotEqual(about.versionInfo.coreVersion, "Unknown")
     if case let .collected(snapshot) = about.diagnosticsState {
         let report = try String(contentsOf: URL(fileURLWithPath: snapshot.exportPath)

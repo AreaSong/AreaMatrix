@@ -1,0 +1,77 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-46`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-46-c3-10-contract-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-3-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/error-codes.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_fallback.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_fallback/validation.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/ai_fallback_contract_api.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取 C3-10 能力规格、Stage 3 AI control map、Core API 和错误码
+- 结果：通过
+- 证据：C3-10 规格声明 `get_ai_fallback_status`、输入 `AI operation/provider error/privacy decision`、输出 `fallback kind/user message/retry ability`、错误码 `Config/Internal/PermissionDenied`；control map 将 S3-10 绑定到 C3-04、C3-08、C3-10；Core API 和 UDL 均声明 `get_ai_fallback_status`、`AiFallbackStatusRequest`、`AiFallbackStatus` 与相关 enum。
+- 涉及文件：`docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`，`docs/architecture/stage-3-control-map.md`，`docs/api/core-api.md:3416`，`core/area_matrix.udl:110`
+
+- 项目：确认 API 名称、输入、输出、错误码、权限/隐私边界与能力规格一致
+- 结果：通过
+- 证据：`docs/api/core-api.md:3416-3495` 明确 API、输入字段、输出状态、错误、隐私与副作用边界；`core/src/api.rs:632-659` 有 public API rustdoc 和 `# Errors`；`core/src/ai_fallback.rs:118-178` 定义输入/输出结构；`core/src/ai_fallback/validation.rs:11-40` 校验 repo path、reason signal、call log id、retry timestamp、provider error code、privacy rule id。
+- 涉及文件：`docs/api/core-api.md`，`core/src/api.rs`，`core/src/ai_fallback.rs`，`core/src/ai_fallback/validation.rs`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+- 结果：通过
+- 证据：变更集中在 `core/**`、`core/area_matrix.udl`、`docs/api/core-api.md` 和 contract test；`git diff --name-only -- apps` 无输出，未触碰 `apps/**`。C3-10 只做 fallback 状态归一化和输入校验，未新增 provider failover、AI 生成、隐私规则 CRUD、分类/标签/摘要写入等相邻能力。
+- 涉及文件：`core/src/ai_fallback.rs:180-425`，`core/src/ai_fallback/validation.rs:11-102`
+
+- 项目：记录当前页面消费方是否能从合同中得到所需状态
+- 结果：通过
+- 证据：`docs/api/core-api.md:3487-3495` 明确 S3-10 可从 `kind/category/title/message/retryable/actions/route/call_log_id/privacy_rule_id/retry_after` 渲染失败、禁用、隐私跳过、模型不可用、语义索引未就绪、rate limit、timeout、日志入口和非 AI 回退；S3-04/S3-08 的消费状态也已记录。
+- 涉及文件：`docs/api/core-api.md:3487-3495`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，`ai_fallback.rs` 将类型、状态归一化、action 映射拆分为小函数；`validation.rs` 独立输入校验，未出现跨平台 UI 依赖。
+- 注释 / rustdoc / 文档同步：通过，新增 public Rust 类型和 API 有 rustdoc；Core API 文档、UDL 和 contract test 同步覆盖。
+- 错误处理与边界处理：通过，生产代码未发现 `unwrap()`、`expect()`、`panic!()`；无效输入返回 `CoreError::Config`，文档保留后续 `PermissionDenied/Internal` 边界。
+- 测试与验证覆盖：通过，`core/tests/ai_fallback_contract_api.rs` 覆盖签名、输入输出、错误、文档/API/UDL/control map 对齐和安全边界。
+- 占位、硬编码、mock-only、一次性实现检查：通过，本 task 是 contract-api，不要求完整业务闭环；现有实现不是 mock-only，且未把相邻 implementation task 的 DB 写入或 provider failover 塞入本任务。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-2/task-46`
+- 哪些通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：通过，`tasks: 637`，`manifests: 637`，`high risk tasks: 633`
+  - `git diff --check`：通过
+  - `cargo test --test ai_fallback_contract_api -- --nocapture`：通过，4 passed
+- 哪些失败：无
+- 哪些缺失：未运行 broad gate；本任务 manifest 的验证上限是 `./dev check task 4-2/task-46`，ordinary atomic Core task 不要求扩大到 `./dev check all` 或 `cargo test --workspace`。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C3-10 的 Core API / UDL 合同可被后续 `4-2/task-47` implementation task 直接实现，且未引入 control map 之外的页面能力。
+
+VERIFY_RESULT: PASS

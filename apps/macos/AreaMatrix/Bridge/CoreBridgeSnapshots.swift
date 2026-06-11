@@ -153,6 +153,7 @@ private extension RepoInitModeSnapshot {
 }
 
 private extension RepoPathIssueSnapshot {
+    // swiftlint:disable:next cyclomatic_complexity
     init(coreIssue: RepoPathIssue) {
         switch coreIssue {
         case .missingPath:
@@ -171,6 +172,12 @@ private extension RepoPathIssueSnapshot {
             self = .insideAreaMatrix
         case .iCloudPath:
             self = .iCloudPath
+        case .oneDrivePath:
+            self = .oneDrivePath
+        case .windowsReservedName:
+            self = .windowsReservedName
+        case .windowsCaseInsensitive:
+            self = .windowsCaseInsensitive
         case .unfinishedScanSession:
             self = .unfinishedScanSession
         }
@@ -436,4 +443,51 @@ private extension SearchDateFacetBoundsSnapshot {
         oldestModifiedAt = coreBounds.oldestModifiedAt
         newestModifiedAt = coreBounds.newestModifiedAt
     }
+}
+
+protocol CoreLocalModelStatusReading: Sendable {
+    func getLocalModelStatus(
+        repoPath: String,
+        request: LocalModelStatusRequestState
+    ) async throws -> LocalModelStatusState
+    func locateLocalModelFolder(
+        repoPath: String,
+        request: LocalModelFolderRequestState
+    ) async throws -> LocalModelFolderLocationState
+}
+
+enum LocalModelAvailabilityState: String, Equatable {
+    case unknown, ready, notInstalled, pathUnreadable, versionIncompatible
+    case checking, verifying, loading, corrupted, runtimeFailed, error
+
+    var isBusy: Bool {
+        self == .checking || self == .verifying || self == .loading
+    }
+}
+
+enum LocalModelRecommendedActionState: String, Equatable {
+    case none, checkStatus, retryStatusCheck, openInstallHelp, openModelLocation
+    case runHealthCheck, repairMetadata, openDiagnostics, useNonAiFallback
+}
+
+struct LocalModelFeatureStatusState: Equatable, Identifiable {
+    var feature: AISettingsFeatureKind
+    var available: Bool
+    var unavailableReason: String?
+
+    var id: String {
+        feature.rawValue
+    }
+}
+
+struct LocalModelCachedStatusState: Equatable {
+    var modelID: String
+    var storageLocation: String
+    var availability: LocalModelAvailabilityState
+    var version: String?
+    var sizeBytes: Int64?
+    var lastError: String?
+    var recommendedAction: LocalModelRecommendedActionState
+    var lastCheckedAt: Int64?
+    var diagnosticsSummary: String
 }

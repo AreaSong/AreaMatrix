@@ -2,6 +2,8 @@ import SwiftUI
 
 struct AboutSettingsPane: View {
     @StateObject private var model: AboutSettingsModel
+    private let onOpenRepositorySettings: () -> Void
+    private let onClose: () -> Void
 
     init(
         repoPath: String,
@@ -14,7 +16,9 @@ struct AboutSettingsPane: View {
         stringCopier: any AboutStringCopying = NSPasteboardAboutStringCopier(),
         diagnosticsRevealer: any AboutDiagnosticsRevealing = NSWorkspaceAboutDiagnosticsRevealer(),
         errorMapper: any CoreErrorMapping = LocalAboutCoreErrorMapper(),
-        accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer()
+        accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer(),
+        onOpenRepositorySettings: @escaping () -> Void = {},
+        onClose: @escaping () -> Void = {}
     ) {
         _model = StateObject(wrappedValue: AboutSettingsModel(
             repoPath: repoPath,
@@ -29,6 +33,8 @@ struct AboutSettingsPane: View {
             errorMapper: errorMapper,
             accessibilityAnnouncer: accessibilityAnnouncer
         ))
+        self.onOpenRepositorySettings = onOpenRepositorySettings
+        self.onClose = onClose
     }
 
     var body: some View {
@@ -39,6 +45,11 @@ struct AboutSettingsPane: View {
                     versionErrorBanner
                     actionFeedbackBanner
                     versionsSection
+                    PlatformDifferencesView(
+                        repositoryText: model.repoPath,
+                        onOpenRepositorySettings: onOpenRepositorySettings,
+                        onClose: onClose
+                    )
                     licenseSection
                     linksSection
                     diagnosticsSection

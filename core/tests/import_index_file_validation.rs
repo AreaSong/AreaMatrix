@@ -4,8 +4,9 @@ use std::{
 };
 
 use area_matrix_core::{
-    import_file, init_repo, list_files, CoreError, DuplicateStrategy, FileFilter, FileOrigin,
-    ImportDestination, ImportOptions, OverviewOutput, RepoInitMode, RepoInitOptions, StorageMode,
+    import_file, init_repo, list_files, CoreError, DuplicateStrategy, FileAvailabilityStatus,
+    FileFilter, FileOrigin, ImportDestination, ImportOptions, OverviewOutput, RepoInitMode,
+    RepoInitOptions, StorageMode,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -312,7 +313,9 @@ fn import_index_file_validation_list_files_keeps_deleted_external_source_metadat
     let files = list_files(path_string(repo.path()), empty_filter())
         .expect("list indexed metadata after source removal");
 
-    assert_eq!(files, vec![entry.clone()]);
+    let mut missing_entry = entry.clone();
+    missing_entry.availability_status = FileAvailabilityStatus::Missing;
+    assert_eq!(files, vec![missing_entry]);
     assert_eq!(count_file_rows(repo.path(), "active"), 1);
     assert_eq!(change_log_count(repo.path()), 1);
     assert_eq!(entry.storage_mode, StorageMode::Indexed);

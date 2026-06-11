@@ -1,0 +1,52 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-3/task-135`，只改 `apps/**`，未触碰 `core/src/**`。
+
+修改文件集中在 Linux 端 watcher status：
+- `apps/linux/AreaMatrix/Features/System/*`
+- `apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.WatcherStatus.cs`
+- `apps/linux/AreaMatrix/Core/NativeCoreLibrary.cs`
+- `apps/linux/AreaMatrix/Core/NativeCoreInterop.cs`
+- `apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs`
+- `apps/linux/AreaMatrixTests/System/*`
+- 另更新 Linux 测试入口和 S4-LNX-02 的旧 smoke 断言
+
+工作区已有的 `.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json` 仍是既有脏改动，我未处理。
+
+三、完成情况
+
+核对清单：
+- 只处理 S4-LNX-04 + C4-12：完成。
+- 已读取页面规格、control map、Core API、C4-12 spec：完成。
+- 只接入 C4-12 `record_watcher_health`、状态和错误映射：完成。
+- 未实现 C4-19 rescan、相邻页面或相邻平台能力：完成。
+
+完成标准：
+- S4-LNX-04 watcher status 可通过 Linux shell 打开并触发 snapshot 读取、restart、diagnostics、rescan-confirm handoff：完成。
+- 未用 mock/fixture/静态状态伪造生产闭环；生产路径接真实 `AreaMatrixNativeCoreClient` 和 `LinuxWatcherDiagnostics`：完成。
+- 未触碰 control map 之外 Core 能力：完成。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+代码结构按 Linux 现有 C# 模式拆为 models、CoreBridge、native binding、diagnostics、ViewModel、view 和 tests。C4-12 与 C4-19 明确隔离：没有绑定 `preview_manual_rescan`、`reindex_from_filesystem`、`resume_scan_session`，也没有调用 `sync_external_changes` 或 `set_fs_event_cursor`。
+
+错误和边界处理覆盖了 path missing、permission denied、backend unavailable、limit exceeded、network mount、DB locked、snapshot unavailable。诊断导出只写 `.areamatrix/generated/diagnostics`，且只导出状态元数据和相对路径事件样本，不导出用户文件内容。
+
+五、验证情况
+
+已运行：
+- `dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj`：通过，输出 `AreaMatrix Linux tests passed.`
+- `./dev check task 4-3/task-135`：通过；包含 prompt doctor、`git diff --check`、macOS xcodebuild gate，最终 `BUILD SUCCEEDED`
+
+补充说明：`./dev check task` 当前 page task gate 走 macOS build，不会覆盖 Linux console 自测，所以我额外运行了 Linux 测试入口。
+
+六、风险与后续
+
+剩余风险：未做真实 Linux GUI/窗口级手工操作验证；当前证据覆盖模型、wiring、native binding、状态映射和构建 gate。task 要求的验证已通过。
+
+建议下一个任务：继续执行同页后续能力 `4-3/task-136` / `4-3/task-137`，用于覆盖 S4-LNX-04 中 C4-19 或页面集成验收。

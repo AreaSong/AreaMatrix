@@ -170,13 +170,73 @@ actor RepositorySettingsStaticErrorMapper: CoreErrorMapping {
             severity: .medium,
             suggestedAction: "Retry status",
             recoverability: .retryable,
-            rawContext: "S1-27 C1-04"
+            rawContext: "S4-X-08 C4-20"
         )
     }
 
     func mappedErrors() -> [CoreError] {
         errors
     }
+}
+
+struct RepositorySettingsCapabilityRequest: Equatable {
+    var platform: PlatformIdSnapshot
+    var appVersion: String
+}
+
+actor RepoSettingsCapabilityLoader: CorePlatformCapabilitiesLoading {
+    private let result: Result<PlatformCapabilitiesSnapshot, Error>
+    private var capturedRequests: [RepositorySettingsCapabilityRequest] = []
+
+    init(result: Result<PlatformCapabilitiesSnapshot, Error>) {
+        self.result = result
+    }
+
+    func getPlatformCapabilities(
+        platform: PlatformIdSnapshot,
+        appVersion: String
+    ) async throws -> PlatformCapabilitiesSnapshot {
+        capturedRequests.append(RepositorySettingsCapabilityRequest(
+            platform: platform,
+            appVersion: appVersion
+        ))
+        return try result.get()
+    }
+
+    func requests() -> [RepositorySettingsCapabilityRequest] {
+        capturedRequests
+    }
+}
+
+func repositorySettingsCapabilitySupport(
+    status: PlatformCapabilityStatusSnapshot = .available,
+    uiEnabled: Bool = true,
+    requiresPermission: Bool = false,
+    reason: String? = nil
+) -> PlatformCapabilitySupportSnapshot {
+    PlatformCapabilitySupportSnapshot(
+        status: status,
+        uiEnabled: uiEnabled,
+        requiresPermission: requiresPermission,
+        reason: reason
+    )
+}
+
+func repositorySettingsCapabilitiesFixture(
+    watcher: PlatformCapabilitySupportSnapshot = repositorySettingsCapabilitySupport(),
+    trash: PlatformCapabilitySupportSnapshot = repositorySettingsCapabilitySupport(),
+    cloudPlaceholder: PlatformCapabilitySupportSnapshot = repositorySettingsCapabilitySupport(),
+    securityBookmark: PlatformCapabilitySupportSnapshot = repositorySettingsCapabilitySupport()
+) -> PlatformCapabilitiesSnapshot {
+    PlatformCapabilitiesSnapshot(
+        platform: .macos,
+        appVersion: "1",
+        watcher: watcher,
+        trash: trash,
+        shareExtension: repositorySettingsCapabilitySupport(status: .notAvailable, uiEnabled: false),
+        cloudPlaceholder: cloudPlaceholder,
+        securityBookmark: securityBookmark
+    )
 }
 
 enum RepositorySettingsRevealResult {

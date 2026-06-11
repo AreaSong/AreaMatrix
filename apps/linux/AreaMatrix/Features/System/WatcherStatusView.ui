@@ -1,0 +1,40 @@
+page_id: S4-LNX-04
+title: File watcher status
+description: Linux inotify watcher status with C4-19 manual-rescan confirmation handoff.
+status_card:
+  - Status: Running / Paused / Error / Unavailable
+  - Backend: inotify
+  - Watching: /home/you/AreaMatrix
+  - Watches: 128
+  - Last event
+  - Last sync
+  - Last rescan
+  - Pending events
+  - Latest rescan session
+  - Rescan preview
+states:
+  loading: Checking watcher status...
+  empty: File watcher is not available for this repository.
+  running: AreaMatrix is watching this folder through inotify.
+  limit_exceeded: Linux has reached the inotify watch limit.
+  permission_denied: AreaMatrix cannot watch this folder because of permissions.
+  network_mount: This location may not report all file changes.
+  path_missing: Choose the repository again or reconnect the drive.
+actions:
+  restart_watcher: LinuxWatcherStatusViewModel.RestartWatcherAsync
+  run_rescan_now: LinuxWatcherStatusView.RunRescanNow
+  export_diagnostics: LinuxWatcherStatusViewModel.ExportDiagnosticsAsync
+  open_repository_folder: LinuxWatcherStatusViewModel.OpenRepositoryFolderAsync
+  close: LinuxWatcherStatusView.Close
+disabled_rules:
+  restart_watcher: Disabled while Starting or backend unavailable.
+  run_rescan_now: Disabled while snapshot missing, path missing, DB locked, Starting, backend unavailable, or manual rescan running.
+safety:
+  - The page calls record_watcher_health through LinuxWatcherStatusCoreBridge.
+  - Run rescan now calls get_latest_scan_session and preview_manual_rescan before raising S4-X-07.
+  - The page captures Linux inotify health in LinuxWatcherDiagnostics before recording the Core snapshot.
+  - Run rescan now raises OpenRescanConfirmRequested with LinuxRescanConfirmRequest for S4-X-07 and never calls reindex directly.
+  - Export diagnostics writes only status metadata under .areamatrix/generated/diagnostics.
+  - Recent events are relative path samples only; file contents are not exported.
+  - The page does not call sync_external_changes, set_fs_event_cursor, reindex_from_filesystem, or resume_scan_session.
+  - The page never runs sudo, chmod, or modifies system inotify settings.

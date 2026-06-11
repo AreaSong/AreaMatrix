@@ -1,0 +1,75 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-94`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-94-c4-19-validation.md`
+- 核查范围：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：成功和失败路径测试覆盖
+- 结果：通过
+- 证据：`manual_rescan_validation_success_path_is_ui_ready_and_file_safe` 覆盖成功重扫、跳过 `.areamatrix/generated` / `AREAMATRIX.md` / iCloud placeholder / 临时文件并保持用户文件不变；`manual_rescan_validation_failure_paths_do_not_touch_user_files` 覆盖 invalid path、未初始化 repo、`.areamatrix` 内路径失败且无用户文件副作用。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/manual_rescan_validation.rs:115`
+
+- 项目：Core API / UDL / Rust 实现一致
+- 结果：通过
+- 证据：测试断言 `reindex_from_filesystem`、`get_latest_scan_session`、`resume_scan_session` 的 Rust 签名、Core API 文档、UDL 字典和枚举一致；UDL 明确 C4-19 不暴露 partial subtree / dry-run preview。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/manual_rescan_validation.rs:204`
+
+- 项目：不新增业务功能，只补验证与 fixture
+- 结果：通过
+- 证据：当前 task 范围内仅新增 `core/tests/manual_rescan_validation.rs`；`core/src/**` 和 `core/area_matrix.udl` 未见本轮业务改动。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/manual_rescan_validation.rs:1`
+
+- 项目：验证命令
+- 结果：通过
+- 证据：`./dev check task 4-3/task-94` 通过；实际运行 prompt doctor、diff check，以及 `manual_rescan_contract_api`、`manual_rescan_failure_recovery`、`manual_rescan_implementation`、`manual_rescan_validation` 四个 targeted Rust test target，共 16 个测试通过。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/scripts/dev_tools/checks.py`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/tests/manual_rescan_validation.rs` 已落地；修改范围落在 manifest 允许的 `core/tests/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/manual_rescan_validation.rs`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git status --short apps core/src core/area_matrix.udl core/tests/manual_rescan_validation.rs` 显示未触碰 `apps/**`，只存在 `?? core/tests/manual_rescan_validation.rs`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，新增测试文件 390 行，未超过当前规范阈值；测试拆分为成功、失败、resume noop、合同一致性四个场景，结构清晰。
+- 注释 / rustdoc / 文档同步：通过，公共 Core API 已有 rustdoc 和 `# Errors`；测试同步锁定 task、capability spec、control map、Core API、UDL、Rust 实现和既有测试层。
+- 错误处理与边界处理：通过，覆盖 invalid path、repo 未初始化、`.areamatrix` 内路径、DB 失败、权限失败、completed session resume noop，且验证用户文件未被移动、删除、覆盖。
+- 测试与验证覆盖：通过，manifest 指定验证命令已 fresh 运行并通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试调用真实 `init_repo`、`reindex_from_filesystem`、`get_latest_scan_session`、`resume_scan_session`、`list_files`，使用临时 repo 和真实 DB/文件系统路径，不是 mock-only 闭环。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-94`，通过。
+- 已通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`，`git diff --check`，`cargo test --test manual_rescan_contract_api -- --nocapture`，`cargo test --test manual_rescan_failure_recovery -- --nocapture`，`cargo test --test manual_rescan_implementation -- --nocapture`，`cargo test --test manual_rescan_validation -- --nocapture`。
+- 失败：无。
+- 缺失：无。未运行 `./dev check all` / broad core gate，因为本 task manifest 和 repo-local validation-driver 要求的是 task-scoped 验证。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C4-19 当前有足够测试证明可进入后续 UI 接入；S4-X-07 的页面级 dry-run/preview 诉求与完整消费链路仍应由后续 `4-3/task-95`、`4-3/task-158` 等任务继续验收，不构成本 task-94 的阻塞。
+
+VERIFY_RESULT: PASS

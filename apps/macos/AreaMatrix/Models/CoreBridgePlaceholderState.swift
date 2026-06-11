@@ -82,6 +82,8 @@ struct ConfigLoadFailure: Equatable {
 enum CoreBridgeBoundary: String, CaseIterable, Equatable {
     case getVersion = "get_version"
     case initLogging = "init_logging"
+    case inspectBindingContract = "inspect_binding_contract"
+    case getPlatformCapabilities = "get_platform_capabilities"
     case validateRepoPath = "validate_repo_path"
     case validateInitializedRepoPath = "validate_initialized_repo_path"
     case initRepo = "init_repo"
@@ -105,6 +107,9 @@ enum CoreBridgeBoundary: String, CaseIterable, Equatable {
     case restoreFile = "restore_file"
     case listFiles = "list_files"
     case searchFiles = "search_files"
+    case semanticSearch = "semantic_search"
+    case buildEmbeddingIndex = "build_embedding_index"
+    case getAiFallbackStatus = "get_ai_fallback_status"
     case listFilterFacets = "list_filter_facets"
     case saveClassifierRule = "save_classifier_rule"
     case createSavedSearch = "create_saved_search"
@@ -118,6 +123,9 @@ enum CoreBridgeBoundary: String, CaseIterable, Equatable {
     case listICloudConflicts = "list_icloud_conflicts"
     case previewConflictVersions = "preview_conflict_versions"
     case resolveICloudConflict = "resolve_icloud_conflict"
+    case detectSyncConflicts = "detect_sync_conflicts"
+    case previewSyncConflictResolution = "preview_sync_conflict_resolution"
+    case resolveSyncConflict = "resolve_sync_conflict"
     case readNote = "read_note"
     case writeNote = "write_note"
     case syncExternalChanges = "sync_external_changes"
@@ -302,7 +310,7 @@ enum CoreBridgeError: Error, Equatable, LocalizedError {
 }
 
 struct SQLiteExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
-    private static let supportedSchemaVersion: Int64 = 1
+    private static let supportedSchemaVersion: Int64 = 2
 
     func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
         let dbURL = URL(fileURLWithPath: repoPath)

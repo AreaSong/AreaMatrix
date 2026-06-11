@@ -1,0 +1,81 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-58`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-58-s3-04-c3-10-ai-fallback.md`
+- 代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- 只读验收：未修改文件
+
+三、完成度摘要
+
+- 已覆盖项数：13
+- 未覆盖项数：0
+- 通过项数：13
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S3-04 页面中的 C3-10 功能点
+- 结果：通过
+- 证据：task 绑定 S3-04 + C3-10；实现新增 `S3-04-C3-10-fallback-status`、retry、fallback action 渲染，未改 `core/src/**`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift:123`
+
+- 项目：读取并交叉验收页面规格、control map、Core API、C3-10 能力规格
+- 结果：通过
+- 证据：S3-04 明确“AI 失败时进入 S3-10 ai-fallback”；control map 映射 S3-04 到 C3-10；Core API 定义 `get_ai_fallback_status`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md:93`，`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-3-control-map.md:12`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:3416`
+
+- 项目：只接入 C3-10 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：生产代码通过 `CoreAIClassificationFallbackStatusReading` 调用 `CoreBridge.classificationFallbackStatus`，最终调用 UniFFI `getAiFallbackStatus`
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRemoteProviderConfiguring.swift:34`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRemoteProviderConfiguring.swift:192`
+
+- 项目：不实现相邻页面、相邻平台或同页其他能力
+- 结果：通过
+- 证据：同页 C3-09 只作为已有隐私规则跳转引用；S3-05 只保留 call log id 状态，不读取文件 change log；C3-10 recovery action 仅打开已有设置/模型/provider 页面
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainFileListModel.swift:266`
+
+- 项目：S3-04 中 C3-10 用户可见功能可触发和验收
+- 结果：通过
+- 证据：fallback status、Retry、Classify manually、View AI call、View privacy rule 均有 UI 路径和测试覆盖
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift:247`，`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RemoteProviderProbeRuntimeTests.swift:145`
+
+- 项目：没有 mock、fixture 或静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产默认 `fallbackReader: CoreBridge()`；测试 fake 仅用于 XCTest；Core 既有实现会校验 request 并写入脱敏 call log
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/RemoteProviderConfigState.swift:95`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/ai_fallback.rs:183`
+
+- 项目：未触碰 control map 之外 Core 能力
+- 结果：通过
+- 证据：`git diff -- core/src` 无输出；`core/area_matrix.udl` 未被本轮 diff 修改；生产改动集中在 apps/macOS expected paths
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:110`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。CoreBridge 协议、request 映射、model 状态、panel 展示分层清楚；相关 Swift 文件均低于 500 行。
+- 注释 / rustdoc / 文档同步：通过。当前 task 未新增 Rust public API；既有 C3-10 Core API / UDL / Rust 类型已对齐。
+- 错误处理与边界处理：通过。fallback status 读取失败会映射为 `internalFailure` 并保留 `Classify manually`，不静默吞错。
+- 测试与验证覆盖：通过。覆盖 privacy skipped、provider unavailable、retryable fallback、recovery actions、call log id 分离。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径使用 `CoreBridge`，mock 仅存在于测试辅助 actor。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-58`
+- 通过：`prompt doctor` 通过，输出 `tasks: 637`、`manifests: 637`、`high risk tasks: 633`
+- 通过：`git diff --check`
+- 通过：task-scoped macOS build，`xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination platform=macOS,arch=arm64 build CODE_SIGNING_ALLOWED=NO`，结果 `BUILD SUCCEEDED`
+- 未运行：`./dev check all`、`./dev check core`、`./dev test macos`，原因是本 atomic page-feature task 的 manifest 验证上限为 `./dev check task 4-2/task-58`
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,39 @@
+一、执行结论
+
+已完成 `4-3/task-61`。
+
+二、执行范围
+
+单任务执行，仅修改/新增：
+
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:859)
+- [core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:148)
+- [core/tests/desktop_import_flow_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/desktop_import_flow_contract_api.rs:1)
+
+未触碰 `apps/**`。工作树里原本已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 仍是既有脏改动，我没有回退或改动它们。
+
+三、完成情况
+
+核对清单已完成：已读取 C4-13 能力规格、Stage 4 control map、Core API、错误码；确认 C4-13 复用 `predict_category` / `import_file`，输入为 picker/drop 后的路径和 `ImportOptions`，输出为 `FileEntry` 与结构化错误；明确 Replace 走 C4-21 / `S4-X-09`，平台 picker、Trash/Recycle Bin、批量队列、文件夹递归不进 Core。
+
+完成标准已满足：C4-13 的合同现在可被后续 implementation task 直接实现，并且没有引入 control map 之外的新页面能力。
+
+四、工程质量
+
+代码结构保持在现有模式内：只补 public Rust API rustdoc、UDL 桥接说明和 contract API 测试。没有新增依赖，没有 mock-only、硬编码通过态或一次性实现；错误边界通过合同测试锚定 `DuplicateFile`、`Conflict`、`PermissionDenied`、`InvalidPath`，并明确失败不能显示成功状态。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+cd core && cargo test --test desktop_import_flow_contract_api -- --nocapture
+./dev check task 4-3/task-61
+```
+
+`./dev check task 4-3/task-61` 结果：`doctor: OK`、`git diff --check` 通过、targeted Rust 测试 `desktop_import_flow_contract_api` 4 tests 全部通过。
+
+六、风险与后续
+
+剩余风险：本任务只完成合同/API/UDL/测试锚定，不实现多文件导入、文件夹递归、Move preflight、Trash/Recycle Bin 检测或 Replace 执行。建议下一个任务继续 `4-3/task-62`，实现 C4-13 业务路径时仍需保持 C4-21 Replace 边界独立。
+

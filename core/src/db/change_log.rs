@@ -11,6 +11,7 @@ pub(crate) fn list_changes(
     repo_path: String,
     filter: ChangeFilter,
 ) -> CoreResult<Vec<ChangeLogEntry>> {
+    validate_change_filter(&filter)?;
     let repo = PathBuf::from(repo_path);
     let connection = open_repo_connection(&repo)?;
     let limit = normalized_limit(filter.limit);
@@ -42,6 +43,18 @@ pub(crate) fn list_changes(
         ])
         .map_err(|error| CoreError::db(error.to_string()))?;
     collect_change_entries(&mut rows)
+}
+
+fn validate_change_filter(filter: &ChangeFilter) -> CoreResult<()> {
+    if filter.file_id.is_some_and(|file_id| file_id <= 0) {
+        return Err(CoreError::db("change log file id is invalid"));
+    }
+    if let (Some(since), Some(until)) = (filter.since, filter.until) {
+        if since > until {
+            return Err(CoreError::db("change log time range is invalid"));
+        }
+    }
+    Ok(())
 }
 
 fn collect_change_entries(rows: &mut Rows<'_>) -> CoreResult<Vec<ChangeLogEntry>> {

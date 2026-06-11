@@ -1,0 +1,92 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-36`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-36-c4-08-contract-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/error-codes.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/cloud_permission_state.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/cloud_permission_state_contract_api.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：16
+- 未覆盖项数：0
+- 通过项数：16
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：读取并对齐 C4-08 能力规格、control map、Core API、错误码
+- 结果：通过
+- 证据：C4-08 规格声明 API 为 `detect_cloud_storage_state(repo_path) -> CloudStorageState`，输出 provider/risk/placeholder/permission state，错误码为 `PermissionDenied`、`ICloudPlaceholder`、`Io`；见 `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md:10`、`:18`、`:26`、`:30`。
+- 涉及文件：C4-08 spec、stage-4-control-map、core-api、error-codes
+
+- 项目：API 名称、输入、输出、错误码、权限/隐私边界一致
+- 结果：通过
+- 证据：Core API 文档、UDL、Rust public API 均声明 `detect_cloud_storage_state(string repo_path) -> CloudStorageState`；UDL 字段包含 `provider_kind`、`risk`、`placeholder_state`、`permission_state`、`risk_reasons`、`can_retry`、`requires_reconnect`；Rust API rustdoc 明确只读探测和三类错误。见 `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:363`、`:1698`、`:2062`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1652`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/cloud_permission_state.rs:84`。
+- 涉及文件：`core/area_matrix.udl`、`core/src/api.rs`、`core/src/cloud_permission_state.rs`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+- 结果：通过
+- 证据：实现仅做平台中立的路径、metadata、目录可读性检查；不写 DB、不调用云盘 SDK、不触发下载、不进入 C4-14 OneDrive 风险状态、watcher、rescan、replace 等相邻能力。见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/cloud_permission_state.rs:97`、`:107`、`:124`、`:137`、`:146`、`:171`。
+- 涉及文件：`core/src/cloud_permission_state.rs`
+
+- 项目：记录页面消费方是否能从合同得到所需状态
+- 结果：通过
+- 证据：Core API 文档明确 S4-IOS-06 可消费 `provider_kind`、`placeholder_state`、`permission_state`、`can_retry`、`requires_reconnect`；S4-WIN-03 可消费 `provider_kind = OneDrive`、`risk`、`status_summary`、`risk_reasons`；S4-IOS-01 可路由到权限页。见 `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:5842`。
+- 涉及文件：`docs/api/core-api.md`、S4-IOS-06、S4-WIN-03、S4-IOS-01 页面规格
+
+- 项目：完成标准 1，C4-08 Core API 合同可被后续 implementation task 直接实现
+- 结果：通过
+- 证据：公开 API wrapper、导出类型、UDL dictionary/enum、contract test 均已落地；见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1669`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/lib.rs:120`、`/Users/as/Ai-Project/project/AreaMatrix/core/tests/cloud_permission_state_contract_api.rs:40`。
+- 涉及文件：`core/src/api.rs`、`core/src/lib.rs`、`core/tests/cloud_permission_state_contract_api.rs`
+
+- 项目：完成标准 2，合同没有引入 control map 之外的页面能力
+- 结果：通过
+- 证据：control map 中 C4-08 只服务 S4-IOS-01、S4-IOS-06、S4-WIN-03；Core API 文档也明确“不新增 control map 之外的页面能力”。见 `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:9`、`:14`、`:18`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:5891`。
+- 涉及文件：stage-4-control-map、core-api
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`core/src/**`、`core/area_matrix.udl`、`core/tests/**` 均已落地；新增 `core/src/cloud_permission_state.rs` 与 `core/tests/cloud_permission_state_contract_api.rs` 存在。
+- 涉及文件：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- apps` 和 `git ls-files --others --exclude-standard apps` 均无输出，未触碰 `apps/**`。
+- 涉及文件：`apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`cloud_permission_state.rs` 为 245 行，按类型、入口函数、校验、provider 推断、状态构造、错误映射拆分；新增函数短小，未引入过度抽象。`core/src/api.rs` 是存量超长文件，本 task 仅追加小型 public wrapper，未把存量文件长度债务扩大为新的结构性 blocker。
+- 注释 / rustdoc / 文档同步：通过。新增 public API 和公开类型均有 rustdoc；Core API 文档、UDL、Rust 类型、contract test 互相校验。
+- 错误处理与边界处理：通过。生产路径未发现 `unwrap()`、`expect()`、`panic!()`；权限错误映射为 `PermissionDenied`，占位符映射为 `ICloudPlaceholder`，其他只读文件系统失败映射为 `Io`。
+- 测试与验证覆盖：通过。contract test 覆盖签名/输出/错误、只读无写入、本地目录状态、placeholder 拒绝、文档/API/UDL/control map/page consumer 对齐。
+- 占位、硬编码、mock-only、一次性实现检查：通过。当前实现从真实路径与 filesystem metadata 推导状态；测试未用 mock-only 闭环替代产品路径，也未引入云盘 SDK、下载触发、DB 写入或相邻能力。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-36`
+- 通过：`prompt doctor` 通过，`git diff --check` 通过，`cargo test --test cloud_permission_state_contract_api -- --nocapture` 通过，5 个测试全部通过。
+- 失败：无。
+- 缺失：无本 task 必需验证缺失。未运行 `./dev check all` / `./dev check core` / 远端 CI；按 manifest 与 repo-local validation-driver，普通 atomic Core task 的验收上限是 `./dev check task 4-3/task-36`。当前 `progress.json` 仍为 `in_progress`、Git checkpoint 尚未收口属于 verify PASS 后 runner 阶段，不构成本次 verify 阻断。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

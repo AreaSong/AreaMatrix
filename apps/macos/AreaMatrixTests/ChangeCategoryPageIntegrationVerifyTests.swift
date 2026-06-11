@@ -93,6 +93,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             tagSuggestionPresentationRequest: model.tagSuggestionPresentationRequest,
             detailTagUndoToast: model.detailTagUndoToast, detailTabRequest: model.detailTabRequest,
             selectedImportProgressRow: nil,
+            semanticDetail: nil,
             repoPath: "/tmp/repo",
             batchTagStore: model.tagStore, batchTagUndoStore: model.undoActionStore,
             batchTagErrorMapper: model.errorMapper,
@@ -112,8 +113,12 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             onBeginRenameFile: model.beginRename,
             onBeginChangeCategoryFile: model.beginChangeCategory,
             onBeginClassifierCorrectionFile: model.beginClassifierCorrection,
+            onBeginAIClassificationSuggestionFile: model.beginAIClassificationSuggestion,
             onBeginDeleteFile: model.beginDelete, onBeginICloudConflictResolution: model.beginICloudConflictResolution,
+            onBeginSyncConflictReview: { _ in },
+            onOpenAISettings: {},
             writeActionDisabledReason: model.writeActionDisabledReason,
+            summaryExitController: AISummaryEditorExitController(),
             noteModel: DetailNoteModel(
                 repoPath: "/tmp/repo",
                 noteStore: S135NoopNoteStore(),
@@ -124,6 +129,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
 
         XCTAssertTrue(body.contains("Change Category..."))
         XCTAssertTrue(body.contains("Correct Classification..."))
+        XCTAssertTrue(body.contains("Review AI Suggestion..."))
         pane.onBeginChangeCategoryFile(file.id)
         XCTAssertEqual(model.pendingActionDestination, .changeCategory(fileID: file.id))
         XCTAssertEqual(model.pendingActionDestination?.pageID, "S1-35")
@@ -132,6 +138,10 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(model.pendingActionDestination, .changeCategory(fileID: file.id, mode: .classifierCorrection))
         XCTAssertEqual(model.pendingActionDestination?.pageID, "S2-16")
         XCTAssertEqual(model.pendingActionDestination?.pageTitle, "Correct Classification")
+        pane.onBeginAIClassificationSuggestionFile(file.id)
+        XCTAssertEqual(model.pendingActionDestination, .aiClassificationSuggestion(fileID: file.id))
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "S3-04")
+        XCTAssertEqual(model.pendingActionDestination?.pageTitle, "AI Category Suggestion")
     }
 
     @MainActor

@@ -1,0 +1,44 @@
+一、执行结论
+
+已完成。`4-3/task-116` 的页面集成验收补齐完成，并通过任务指定验证。
+
+二、执行范围
+
+单任务：`4-3/task-116`
+
+本次代码修改：
+- [FilesImportReviewModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrixTests/FilesImportReviewModelTests.swift:200)：补充 Replace 被仓库配置关闭时，不触发 Core preflight、不出现二次确认、不删除源文件的测试。
+- [MobileLibraryModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/ios/AreaMatrixTests/MobileLibraryModelTests.swift:115)：补充移动端资料库入口从 repository config 读取 `allowReplaceDuringImport` 的测试证据。
+
+工作区另有执行器状态文件已存在：`tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260607_011101/`，我没有回滚。
+
+三、完成情况
+
+核对结果：
+- page-feature task 覆盖：`4-3/task-114` 覆盖 C4-06，`4-3/task-115` 覆盖 C4-21，已交叉核对。
+- 页面闭环：入口 `MobileLibraryView` -> Files picker -> `FilesImportReviewSheet` -> CoreBridge import / replace preflight -> 成功刷新列表，已有代码闭环成立。
+- mock / fixture / 硬编码：未发现生产路径 mock-only；新增内容是 XCTest 证据。
+- control map：仅覆盖 S4-IOS-07 声明的 C4-06、C4-21，未新增额外能力。
+- Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+代码结构保持最小改动，只补测试证据，不引入新抽象、不新增依赖。错误与边界覆盖补强在 Replace gate：配置关闭时不会调用 Core replace preflight，也不会产生替换确认或源文件破坏。未涉及 rustdoc / 文档同步，因为没有改 Rust public API 或文档源事实。
+
+五、验证情况
+
+已运行并通过：
+- `swift test --package-path apps/ios --cache-path /private/tmp/areamatrix-spm-cache --config-path /private/tmp/areamatrix-spm-config --security-path /private/tmp/areamatrix-spm-security --scratch-path /private/tmp/areamatrix-ios-build --disable-sandbox --filter 'FilesImportReviewModelTests|MobileLibraryModelTests'`
+  - 17 tests, 0 failures
+- `./dev check task 4-3/task-116`
+  - `doctor: OK`
+  - `git diff --check`: OK
+  - macOS Xcode build: `BUILD SUCCEEDED`
+
+一次 SwiftPM 初跑因 SwiftPM/Clang 用户缓存和 SwiftPM sandbox 权限失败，已用 `/private/tmp` 缓存路径和 `--disable-sandbox` 重跑通过。
+
+六、风险与后续
+
+剩余风险：未做真实 iOS 模拟器 UI 点击冒烟；当前证据是 SwiftPM model/bridge 测试 + task 指定 macOS build gate。
+
+建议下一个任务：继续 `4-3/task-117`，但在开始前先处理或明确当前 task-loop 的 `progress.json` / `.codex/task-loop-runs` 状态归属，避免后续 checkpoint 混入执行器状态。

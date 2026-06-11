@@ -28,16 +28,48 @@ extension MainFileListModel {
     func completeClassifierRuleSave(_ savedRule: ClassifierRuleSnapshot) {
         guard let destination = pendingActionDestination,
               destination.classifierRuleRoute != nil else { return }
-        pendingActionDestination = nil
+        if let handoff = destination.classifierRuleRoute?.handoff, handoff.sourcePageID == "S3-04" {
+            pendingActionDestination = .aiClassificationSuggestion(
+                fileID: handoff.fileID,
+                returnContext: AIClassificationSuggestionReturnContext(
+                    appliedCategory: savedRule.targetCategory,
+                    callLogID: handoff.aiProvenance?.callLogID,
+                    ruleStatus: .saved
+                )
+            )
+        } else {
+            pendingActionDestination = nil
+        }
         statusBanner = .savedClassifierRule(category: savedRule.targetCategory)
     }
 
-    private func beginClassifierRuleRoute(
+    func cancelClassifierRuleRoute() {
+        guard let route = pendingActionDestination?.classifierRuleRoute else {
+            clearPendingActionDestination()
+            return
+        }
+        let handoff = route.handoff
+        if handoff.sourcePageID == "S3-04" {
+            pendingActionDestination = .aiClassificationSuggestion(
+                fileID: handoff.fileID,
+                returnContext: AIClassificationSuggestionReturnContext(
+                    appliedCategory: handoff.targetCategory,
+                    callLogID: handoff.aiProvenance?.callLogID,
+                    ruleStatus: .cancelled
+                )
+            )
+            return
+        }
+        clearPendingActionDestination()
+    }
+
+    func beginClassifierRuleRoute(
         _ route: ClassifierCorrectionRuleRoute,
         handoff: ClassifierRuleHandoff
     ) {
-        guard pendingActionDestination?.isChangeCategory(fileID: handoff.fileID) == true,
-              writeActionDisabledReason(fileID: handoff.fileID) == nil else { return }
+        guard pendingActionDestination?.isChangeCategory(fileID: handoff.fileID) == true ||
+            pendingActionDestination?.isAIClassificationSuggestion(fileID: handoff.fileID) == true,
+            writeActionDisabledReason(fileID: handoff.fileID) == nil else { return }
         pendingActionDestination = .changeCategory(
             fileID: handoff.fileID,
             initialTargetCategory: handoff.targetCategory,
@@ -46,27 +78,44 @@ extension MainFileListModel {
         )
     }
 
-    private func makeClassifierRuleHandoff(
+    func makeClassifierRuleHandoff(
         fileID: Int64,
         targetCategory: String,
         moveFile: Bool
     ) -> ClassifierRuleHandoff? {
         let file = files.first { $0.id == fileID } ??
             selectedFileDetail.flatMap { $0.id == fileID ? $0 : nil }
+        return makeClassifierRuleHandoff(
+            file: file,
+            targetCategory: targetCategory,
+            moveFile: moveFile,
+            sourcePageID: "S2-16",
+            aiProvenance: nil
+        )
+    }
+
+    func makeClassifierRuleHandoff(
+        file: FileEntrySnapshot?,
+        targetCategory: String,
+        moveFile: Bool,
+        sourcePageID: String,
+        aiProvenance: ClassifierRuleAIProvenance?
+    ) -> ClassifierRuleHandoff? {
         guard let file,
               let draft = ClassifierRuleDraftSnapshot.classifierCorrectionDraft(
                   file: file,
                   targetCategory: targetCategory
               ) else { return nil }
         return ClassifierRuleHandoff(
-            sourcePageID: "S2-16",
+            sourcePageID: sourcePageID,
             fileID: file.id,
             fileName: file.currentName,
             sourcePath: file.sourcePath ?? file.path,
             currentCategory: file.category,
             targetCategory: targetCategory,
             moveFile: moveFile,
-            draft: draft
+            draft: draft,
+            aiProvenance: aiProvenance
         )
     }
 }

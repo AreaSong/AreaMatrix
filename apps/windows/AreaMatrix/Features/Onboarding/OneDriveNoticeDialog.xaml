@@ -1,0 +1,172 @@
+<UserControl
+    x:Class="AreaMatrix.Features.Onboarding.OneDriveNoticeDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Padding="40" RowSpacing="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Spacing="6">
+            <TextBlock
+                Text="OneDrive folder detected"
+                Style="{ThemeResource TitleTextBlockStyle}" />
+            <TextBlock
+                TextWrapping="Wrap">
+                <Run Text="This repository is inside OneDrive. AreaMatrix can use it, but sync timing and " />
+                <Run Text="conflict copies are controlled by OneDrive." />
+            </TextBlock>
+        </StackPanel>
+
+        <Border
+            Grid.Row="1"
+            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="4"
+            Padding="16">
+            <StackPanel Spacing="8">
+                <TextBlock
+                    x:Name="FolderTextBlock"
+                    Text="{Binding FolderText}"
+                    TextWrapping="Wrap" />
+                <TextBlock
+                    x:Name="SyncProviderTextBlock"
+                    Text="{Binding SyncProviderText}" />
+                <TextBlock
+                    x:Name="CloudStatusTextBlock"
+                    AutomationProperties.LiveSetting="Polite"
+                    Text="{Binding StatusText}" />
+                <TextBlock
+                    x:Name="StatusSummaryTextBlock"
+                    Text="{Binding StatusSummary}"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="2">
+            <StackPanel Spacing="16">
+                <StackPanel Spacing="8">
+                    <TextBlock
+                        Text="OneDrive risks"
+                        Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <TextBlock
+                        Text="Files may appear before they are fully downloaded."
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Text="Conflict copies may be created when multiple devices edit the same file."
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Text="AreaMatrix will not delete either version automatically."
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        TextWrapping="Wrap">
+                        AreaMatrix cannot control OneDrive sync timing and does not use the OneDrive SDK to manage sync.
+                    </TextBlock>
+                </StackPanel>
+
+                <StackPanel Spacing="8">
+                    <TextBlock
+                        Text="Core status reasons"
+                        Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <ItemsControl
+                        x:Name="RiskReasonsList"
+                        ItemsSource="{Binding RiskReasons}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock
+                                    Text="{Binding}"
+                                    TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <StackPanel Spacing="8">
+                    <TextBlock
+                        Text="Recommended actions"
+                        Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <TextBlock
+                        Text="Wait for OneDrive sync before retrying if status is still changing."
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Text="Open the OneDrive folder to inspect client status outside AreaMatrix."
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        x:Name="ErrorTextBlock"
+                        AutomationProperties.LiveSetting="Polite"
+                        Text="{Binding ErrorText}"
+                        TextWrapping="Wrap" />
+                    <CheckBox
+                        x:Name="RiskConfirmationCheckBox"
+                        Content="I understand OneDrive sync may be delayed or create conflict copies."
+                        IsChecked="{Binding IsRiskNoticeConfirmed, Mode=TwoWay}"
+                        AutomationProperties.HelpText="{Binding ContinueDisabledReason}" />
+                    <TextBlock
+                        x:Name="ContinueDisabledReasonTextBlock"
+                        AutomationProperties.LiveSetting="Polite"
+                        Text="{Binding ContinueDisabledReason}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Row="3" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <ProgressRing
+                x:Name="OneDriveStatusProgressRing"
+                Width="20"
+                Height="20"
+                IsActive="{Binding IsChecking}"
+                IsIndeterminate="{Binding IsChecking}"
+                HorizontalAlignment="Left" />
+
+            <Button
+                x:Name="RetryStatusButton"
+                Grid.Column="1"
+                Content="Retry status check"
+                IsEnabled="{Binding CanRetryStatusCheck}"
+                Click="RetryStatusButton_Click" />
+            <Button
+                x:Name="OpenOneDriveFolderButton"
+                Grid.Column="2"
+                Content="Open OneDrive folder"
+                IsEnabled="{Binding CanOpenOneDriveFolder}"
+                Click="OpenOneDriveFolderButton_Click" />
+            <Button
+                x:Name="OpenWatcherStatusButton"
+                Grid.Column="3"
+                Content="Open watcher status"
+                IsEnabled="{Binding CanOpenWatcherStatus}"
+                Click="OpenWatcherStatusButton_Click" />
+            <Button
+                x:Name="ChooseLocalFolderButton"
+                Grid.Column="4"
+                Content="Choose Local Folder"
+                Click="ChooseLocalFolderButton_Click" />
+            <Button
+                x:Name="ContinueWithOneDriveButton"
+                Grid.Column="5"
+                Content="Continue with OneDrive"
+                IsEnabled="{Binding CanContinueWithOneDrive}"
+                Click="ContinueWithOneDriveButton_Click" />
+            <Button
+                x:Name="CloseButton"
+                Grid.Column="6"
+                Content="Close"
+                Click="CloseButton_Click" />
+        </Grid>
+    </Grid>
+</UserControl>

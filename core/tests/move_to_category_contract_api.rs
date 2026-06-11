@@ -113,6 +113,7 @@ fn move_to_category_contract_documents_outputs_errors_and_scope_boundaries() {
         storage_mode: StorageMode::Copied,
         origin: FileOrigin::Imported,
         source_path: Some("/tmp/source/report.pdf".to_owned()),
+        availability_status: area_matrix_core::FileAvailabilityStatus::Available,
         imported_at: 10,
         updated_at: 20,
     };

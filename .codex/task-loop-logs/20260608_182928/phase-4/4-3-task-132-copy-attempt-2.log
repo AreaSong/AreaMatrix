@@ -1,0 +1,43 @@
+一、执行结论
+
+- 已完成：4-3/task-132 repair retry 已修复上次验收指出的 External drive 缺口。
+
+二、执行范围
+
+- 单任务：`4-3/task-132`
+- 本轮 repair 修改文件：
+  - [LinuxRepositoryModels.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Onboarding/LinuxRepositoryModels.cs:25)
+  - [LinuxRepositoryCoreBridge.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Onboarding/LinuxRepositoryCoreBridge.cs:118)
+  - [LinuxRepositoryDisplayText.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Onboarding/LinuxRepositoryDisplayText.cs:50)
+  - [LocalFolderNoticeViewModel.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Onboarding/LocalFolderNoticeViewModel.cs:288)
+  - [LinuxChooseRepositoryTestSupport.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/ChooseRepository/LinuxChooseRepositoryTestSupport.cs:141)
+  - [LocalFolderNoticeViewModelTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/ChooseRepository/LocalFolderNoticeViewModelTests.cs:76)
+  - [LocalFolderNoticeSmokeTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/ChooseRepository/LocalFolderNoticeSmokeTests.cs:20)
+
+三、完成情况
+
+- 核对清单：通过。只补 S4-LNX-03 + C4-10 的外接盘路径风险状态，未接 C4-17 `GetPlatformCapabilities`，未实现相邻页面或能力。
+- 完成标准：通过。External drive 现在可在 ViewModel 样本中触发，显示 `Type: External drive`，要求风险确认，并提示断开后 repo 不可访问。
+- Forbidden Touches：未触碰。`git diff --name-status -- core/src` 无输出；`core/area_matrix.udl` 也无 diff。
+- 暂存区：`git diff --cached --name-status` 无输出。
+
+四、工程质量
+
+- 结构清晰：只扩展 Linux app 层状态枚举、桥接字符串映射、风险确认判断和展示文案。
+- 注释 / rustdoc / 文档同步：本轮未新增 public Rust API，未改 Core API / UDL，不需要 rustdoc。
+- 错误与边界：不可写、缺失、未知路径等原有错误路径保持不变；External drive 只增加风险提示与确认门禁，不做文件系统写入。
+- 无 mock-only / 硬编码通过态：生产路径仍通过 `LinuxRepositoryCoreBridge.ValidateRepoPathAsync`；测试 fake 只用于覆盖 UI 状态分支。
+
+五、验证情况
+
+- 已运行：`dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj`，通过，输出 `AreaMatrix Linux tests passed.`
+- 已运行：`./dev check task 4-3/task-132`，通过，exit 0；包含 `doctor: OK`、`git diff --check`、macOS build `BUILD SUCCEEDED`。
+- 已运行：`git diff --name-status -- core/src`，无输出。
+- 已运行：`git diff --name-status -- core/area_matrix.udl`，无输出。
+- 已运行：`git diff --cached --name-status`，无输出。
+- 未运行宽门禁：按 manifest，本 task 验证上限是 `./dev check task 4-3/task-132`，未升级到 `./dev check all` / `cargo test --workspace`。
+
+六、风险与后续
+
+- 剩余风险：Linux app 层已能表达 External drive；Core UDL 当前没有外接盘枚举，本轮按 task 边界未修改 Core。若后续要真实探测外接盘来源，应由对应 Core/API 或平台能力任务单独处理。
+- 建议下一个任务：进入该 task 的 verify-ready 验收；通过后再继续 `4-3/task-133` 或该页后续 C4-17 覆盖任务。

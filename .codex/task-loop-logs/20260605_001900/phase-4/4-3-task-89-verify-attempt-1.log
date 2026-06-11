@@ -1,0 +1,74 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-89`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-89-c4-18-validation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：4 个核对清单项全部覆盖
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐成功和失败路径测试
+- 结果：通过
+- 证据：`core/tests/missing_file_recovery_validation.rs` 覆盖 UI-ready 成功路径、未确认动作、hash mismatch 等失败路径；既有 `contract_api`、`implementation`、`failure_recovery` 三层测试也被 validation 测试显式守卫。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/missing_file_recovery_validation.rs`
+
+- 项目：验证 Core API / UDL / Rust 实现一致
+- 结果：通过
+- 证据：UDL 暴露 `get_missing_file_state`、`relink_missing_file`、`remove_missing_file_record` 及 DTO / enum；Rust public API 和 `missing_file_recovery` 实现存在对应签名；validation 测试用函数类型断言和文本守卫交叉验证。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/missing_file_recovery.rs`
+
+- 项目：不新增业务功能，只补验证与必要 fixture
+- 结果：通过
+- 证据：当前新增路径是 `core/tests/missing_file_recovery_validation.rs` 和 `core/tests/support/missing_file_recovery_validation.rs`；未发现 `apps/**` 改动，`core/src/**` 与 UDL 当前仅作为既有实现被验收。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/**`
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：本轮必需验证命令已成功运行，无无法运行项。
+- 涉及文件：无
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，测试按成功路径、失败路径、契约一致性拆分，support fixture 集中在 `core/tests/support/missing_file_recovery_validation.rs`。
+- 注释 / rustdoc / 文档同步：通过，C4-18 public API 与类型已有 rustdoc；Core API 文档、UDL、能力规格、control map 被 validation 测试守卫。
+- 错误处理与边界处理：通过，测试覆盖未确认 `PermissionDenied`、无效/缺失记录 `FileNotFound`、hash mismatch 不改 metadata、不删文件等边界。
+- 测试与验证覆盖：通过，manifest 验证命令通过，targeted tests 共 20 个测试通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，验收看到真实 TempDir + SQLite metadata + 文件系统 fixture 路径，不是 mock-only 或静态通过态。
+
+六、阻塞项
+
+- 未发现阻塞项。
+- 工作区状态说明：存在 `.codex/task-loop-runs/20260605_001900/summary.json`、`tasks/prompts/_shared/progress.json` 本地运行状态改动，以及本 task 预期新增的两个 `core/tests/**` 未跟踪文件；按 verify-ready 时序，这些不构成本 task 阻塞。`git diff --name-only -- apps` 为空，未触碰 Forbidden Touches。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-89`
+- 通过：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`：OK，tasks 637，manifests 637，high risk tasks 633
+  - `git diff --check`：通过
+  - `cargo test --test missing_file_recovery_contract_api -- --nocapture`：4 passed
+  - `cargo test --test missing_file_recovery_failure_recovery -- --nocapture`：9 passed
+  - `cargo test --test missing_file_recovery_implementation -- --nocapture`：4 passed
+  - `cargo test --test missing_file_recovery_validation -- --nocapture`：3 passed
+- 失败：无
+- 缺失：无
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+
+VERIFY_RESULT: PASS

@@ -1,0 +1,73 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-06`
+- 对应文件：`[task-06-c4-02-contract-api.md](</Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-06-c4-02-contract-api.md:1>)`
+- 交叉读取：`[C4-02-mobile-repo-connect.md](</Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md:1>)`、`[stage-4-control-map.md](</Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:7>)`、`[core-api.md](</Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2373>)`、`[error-codes.md](</Users/as/Ai-Project/project/AreaMatrix/docs/api/error-codes.md:2080>)`
+
+三、完成度摘要
+
+- 已覆盖项数：6（核对清单 4 + 完成标准 2）
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：C4-02 能力规格、Stage 4 control map、Core API、错误码对齐
+  - 结果：通过
+  - 证据：`[C4-02-mobile-repo-connect.md:1](</Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md:1>)`、`[stage-4-control-map.md:7](</Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:7>)`、`[core-api.md:2373](</Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:2373>)`、`[error-codes.md:2080](</Users/as/Ai-Project/project/AreaMatrix/docs/api/error-codes.md:2080>)`
+  - 涉及文件：同上
+
+- 项目：API 名称、输入、输出、错误码、权限/隐私边界一致
+  - 结果：通过
+  - 证据：`[core/area_matrix.udl:11](</Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:11>)`、`[core/area_matrix.udl:969](</Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:969>)`、`[core/area_matrix.udl:2092](</Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:2092>)`、`[core/src/api.rs:80](</Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:80>)`
+  - 涉及文件：`core/area_matrix.udl`、`core/src/api.rs`
+
+- 项目：只补合同、类型、桥接声明或文档缺口，不实现相邻能力
+  - 结果：通过
+  - 证据：`[core/src/api.rs:80](</Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:80>)`、`[core/src/api.rs:140](</Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:140>)`、`[core/src/api.rs:160](</Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:160>)` 仅补充合同注释；未见 `apps/**` 变更
+  - 涉及文件：`core/src/api.rs`、`core/tests/mobile_repo_connect_contract_api.rs`
+
+- 项目：当前页面消费方能从合同中得到所需状态
+  - 结果：通过
+  - 证据：`[core/tests/mobile_repo_connect_contract_api.rs:137](</Users/as/Ai-Project/project/AreaMatrix/core/tests/mobile_repo_connect_contract_api.rs:137>)` 验证 `recommended_mode`、`issues`、`is_initialized`、`load_config` 等结构化状态可直接消费；`[S4-IOS-01-connect-repo.md:1](</Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-4-multiplatform/S4-IOS-01-connect-repo.md:1>)`、`[S4-X-04-repository-init-confirm.md:1](</Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md:1>)`、`[S4-X-05-repository-adopt-confirm.md:1](</Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md:1>)` 的状态流与之吻合
+  - 涉及文件：UX 规格、`core/tests/mobile_repo_connect_contract_api.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，证据是 `core/src/api.rs` 仅做合同说明补强，`core/tests/mobile_repo_connect_contract_api.rs` 只做契约与消费状态验证，范围干净
+- 注释 / rustdoc / 文档同步：通过，证据是 `core/src/api.rs:80`、`core/src/api.rs:140`、`core/src/api.rs:160` 已把 C4-02 边界写清；`docs/api/core-api.md:2373` 与 `core/area_matrix.udl` 保持同一合同
+- 错误处理与边界处理：通过，证据是 `docs/api/error-codes.md:2080`、`core/area_matrix.udl:2092`、`core/src/error.rs:256`
+- 测试与验证覆盖：通过，证据是 `./dev check task 4-3/task-06` 跑过 `cargo test --test mobile_repo_connect_contract_api -- --nocapture`，4 个测试全绿
+- 占位、硬编码、mock-only、一次性实现检查：通过，证据是测试直接调用真实 `validate_repo_path`、`init_repo`、`load_config`，使用临时目录和真实返回值，没有 mock-only 或硬编码通过态
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：
+  - `./dev check task 4-3/task-06`
+- 通过：
+  - prompt doctor OK
+  - `git diff --check` OK
+  - `cargo test --test mobile_repo_connect_contract_api -- --nocapture`：4/4 passed
+- 失败：无
+- 缺失：
+  - 未运行 `cargo fmt --all -- --check`
+  - 未运行 `cargo clippy --all-targets --all-features -- -D warnings`
+  - 未运行 `cargo test --workspace`
+  - 原因：本 task 的 manifest 验证门禁是 `./dev check task 4-3/task-06`，属于 atomic Core contract task，任务级 targeted test 已覆盖本次验收所需证据
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+- 代码没有触碰 `apps/**`，也没有扩展到 control map 之外的页面能力。
+
+VERIFY_RESULT: PASS

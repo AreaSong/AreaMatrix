@@ -1,0 +1,47 @@
+**一、执行结论**
+
+已完成。
+
+**二、执行范围**
+
+单任务：`4-3/task-62`。  
+新增文件：`core/tests/desktop_import_flow_implementation.rs`。  
+未触碰 `apps/**`。
+
+**三、完成情况**
+
+C4-13 按规格复用现有真实 Core API：`predict_category` 做桌面导入预览分类，`import_file` 做最终提交导入。没有新增桌面专用 API，也没有实现 C4-21 Replace/Trash 相邻能力。
+
+新增测试覆盖：
+
+- Copy：分类预览后提交导入，FS 和 DB 都可见。
+- Move：源文件被移动到 repo，DB 写入 active 记录。
+- Index：只写外部源文件引用，不复制到 repo。
+- Duplicate + Ask：返回 `DuplicateFile`，不显示成功态，不新增 DB/FS 副作用。
+
+**四、工程质量**
+
+测试使用 `tempfile::TempDir` 隔离文件 IO，没有碰真实用户文件。  
+没有 mock-only、硬编码成功态或一次性脚本实现。  
+错误与边界重点验证了 duplicate 不误报成功、staging 清空、`change_log` 与 active row 一致。
+
+**五、验证情况**
+
+已通过：
+
+```bash
+cargo test --test desktop_import_flow_implementation -- --nocapture
+./dev check task 4-3/task-62
+```
+
+`./dev check task 4-3/task-62` 通过了：
+
+- prompt doctor
+- git diff check
+- `desktop_import_flow_contract_api`
+- `desktop_import_flow_implementation`
+
+**六、风险与后续**
+
+剩余风险：本任务没有实现页面接入，也没有扩展 Replace/Trash 行为；这些属于后续 C4-21 和 S4-WIN/LNX 页面任务。  
+当前工作树另有既有运行状态改动：`.codex/task-loop-runs/20260603_133633/summary.json`、`tasks/prompts/_shared/progress.json`，不是本次业务改动。

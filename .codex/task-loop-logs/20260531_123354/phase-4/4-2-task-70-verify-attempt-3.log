@@ -1,0 +1,68 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-70`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-70-s3-08-page-integration-verify.md`
+- 主要实现路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`
+- 主要测试路径：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+- Existing Code 已核对：`apps/**` 相关 S3-08 实现、`core/area_matrix.udl`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：逐项验收本页所有 page-feature task 是否完成
+- 结果：通过
+- 证据：`4-2/task-67` 对应 C3-08，`CoreBridge.semanticSearch` / `buildEmbeddingIndex` 已接真实 UniFFI；`4-2/task-68` 对应 C3-09，构建索引前调用 `loadAIPrivacyRules` / `evaluateAIPrivacy`；`4-2/task-69` 对应 C3-10，fallback 状态通过 `getAiFallbackStatus` 读取并展示。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreFileDeleting.swift:16`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/MainExternalCreatedFileActions.swift:126`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SmartListManagementSheet+Sections.swift:180`
+
+- 项目：页面状态、入口、退出、错误态和 CoreBridge 调用串成完整页面闭环
+- 结果：通过
+- 证据：搜索模式入口、语义/普通两组结果、分页、dedupe、详情解释、普通搜索回退、构建索引确认、取消确认、隐私规则、call log、fallback actions 均有状态和 UI 路由；`S308PageIntegrationVerifyTests` 覆盖分组、分页和取消生命周期。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/SemanticSearchResultsView.swift:16`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Main/MainRepositoryDetailPane.swift:331`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/S308PageIntegrationVerifyTests.swift:4`
+
+- 项目：移除无法通过最终验收的 mock、fixture 或硬编码状态
+- 结果：通过
+- 证据：生产代码通过 `CoreBridge` 调用 `semantic_search`、`build_embedding_index`、privacy gate 和 fallback API；fixture 只存在于 XCTest。Pause index build 因 C3-08 当前没有 Core pause API，被显式暴露为缺口错误，不伪装成功。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/SemanticIndexBuildControls.swift:38`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Models/SemanticIndexBuildControls.swift:102`
+
+- 项目：不新增 control map 外功能
+- 结果：通过
+- 证据：Stage 3 control map 中 S3-08 只声明 C3-08、C3-09、C3-10；本轮实现均围绕 semantic search、privacy gate、AI fallback，没有新增 control map 外 Core 能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/manifests/phase-4.md:6197`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:115`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。S3-08 展示、presentation、index control、CoreBridge 调用拆分清楚。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 Rust public API；UDL 已包含 `semantic_search`、`build_embedding_index` 和语义结果结构。
+- 错误处理与边界处理：通过。分页错误分组保留，fallback/隐私/取消失败均有用户可见状态；pause API 缺口没有伪装成功。
+- 测试与验证覆盖：通过。存在 `S308PageIntegrationVerifyTests`；本轮按 manifest 运行 `./dev check task 4-2/task-70` 并通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径未见 mock-only 闭环；测试 fixture 未进入生产路径。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-70`
+- 通过：`prompt_pipeline.py doctor` 显示 `doctor: OK`；`git diff --check` 无错误；macOS `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 输出 `BUILD SUCCEEDED`。
+- 失败：无。
+- 缺失：未额外运行 `./dev test macos`、SwiftLint、SwiftFormat；本 task manifest 只要求 `./dev check task 4-2/task-70`，validation-driver 对 page integration task 使用 macOS build gate。
+- Forbidden Touches：`git diff --name-only -- core/src ...` 未显示 `core/src/**`，未发现违规触碰。
+- 工作区状态：存在 task 相关 macOS/UI/test 改动，以及 runner progress/summary 本地状态；按 verify-ready 时序不因 progress/checkpoint 尚未收口而阻断。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。S3-08 已按 page spec 与 control map 覆盖 C3-08、C3-09、C3-10 页面闭环，且必需验证命令通过。
+
+VERIFY_RESULT: PASS

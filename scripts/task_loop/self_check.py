@@ -133,6 +133,7 @@ class Harness:
             list(argv),
             cwd=cwd or self.root,
             env=merged,
+            stdin=subprocess.DEVNULL,
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

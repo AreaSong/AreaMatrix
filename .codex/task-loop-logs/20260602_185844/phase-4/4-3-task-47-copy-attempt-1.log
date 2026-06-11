@@ -1,0 +1,18 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-3/task-47`。仅新增：
+- [linux_repo_connect_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/linux_repo_connect_implementation.rs)
+- [linux_repo_connect_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/linux_repo_connect_failure_recovery.rs)
+
+三、完成情况：C4-10 只使用现有 `validate_repo_path` / `init_repo` Core 行为补齐实现证据，没有实现相邻 C4 能力；覆盖了 Linux 本地路径只读校验、空目录初始化、非空目录接管、结构化风险状态、错误映射、权限失败、损坏 metadata、adopt scan rollback、AI 默认关闭。未触碰 Forbidden Touches：`apps/**` 无改动。
+
+四、工程质量：新增的是 targeted Rust 集成测试，直接调用真实 Core API、真实临时文件系统和 SQLite metadata，不是 mock-only、硬编码通过态或一次性脚本。测试明确验证用户文件快照不变、`.areamatrix/` 失败回滚、错误映射不建议 `sudo/chmod`。未改 public Rust API / UDL，因此无新增 rustdoc 或文档同步需求。
+
+五、验证情况：最终已运行并通过 `./dev check task 4-3/task-47`。该命令包含：
+- `prompt_pipeline.py doctor`：OK，637 tasks / 637 manifests
+- `git diff --check`：通过
+- `cargo test --test linux_repo_connect_contract_api`：5 passed
+- `cargo test --test linux_repo_connect_failure_recovery`：6 passed
+- `cargo test --test linux_repo_connect_implementation`：3 passed
+
+六、风险与后续：未运行 `cargo test --workspace` / clippy / `./dev check all`，因为本 atomic Core task 明确要求以 `./dev check task 4-3/task-47` 为验证上限。工作区仍有本任务外既有改动：`.codex/task-loop-runs/20260602_185844/summary.json`、`tasks/prompts/_shared/progress.json`，我未回退。建议下一个任务进入 `4-3/task-48` 或 C4-10 failure-edge/validation 后续验收链路。

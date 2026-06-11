@@ -24,6 +24,15 @@ pub enum FileOrigin {
     External,
 }
 
+/// Read-only availability of the file behind a metadata row.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum FileAvailabilityStatus {
+    /// The backing file is present or its availability is owned by another platform capability.
+    Available,
+    /// The metadata row is retained but the backing file is missing from its expected location.
+    Missing,
+}
+
 /// Repository initialization mode.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum RepoInitMode {
@@ -52,8 +61,29 @@ pub enum RepoPathIssue {
     InsideAreaMatrix,
     /// The path appears to be managed by iCloud.
     ICloudPath,
+    /// The path appears to be managed by OneDrive.
+    OneDrivePath,
+    /// A Windows path component uses a reserved device name.
+    WindowsReservedName,
+    /// A Windows-shaped path has case-insensitive comparison semantics.
+    WindowsCaseInsensitive,
     /// A previous adopt or reindex scan did not finish cleanly.
     UnfinishedScanSession,
+}
+
+/// Platform-neutral classification of a repository path location.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum PlatformPathKind {
+    /// No cloud or network marker was detected.
+    Local,
+    /// iCloud Drive or CloudDocs-managed path.
+    ICloudDrive,
+    /// OneDrive-managed path.
+    OneDrive,
+    /// Windows UNC or network-share style path.
+    NetworkShare,
+    /// Core cannot identify the location type from path shape alone.
+    Unknown,
 }
 
 /// Where generated overview output is written.
@@ -98,6 +128,69 @@ pub enum ScanSessionStatus {
     Failed,
     /// Scan was interrupted before a clean stop.
     Interrupted,
+}
+
+/// C4-19 manual rescan preview item category.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum ManualRescanPreviewItemKind {
+    /// File would be inserted into AreaMatrix metadata.
+    Added,
+    /// Existing metadata would be updated in place.
+    Updated,
+    /// Metadata row no longer has a backing file at the expected path.
+    Missing,
+    /// Core found a possible rename based on an existing content hash.
+    RenamedCandidate,
+    /// A state requires review before Core can classify it safely.
+    Conflict,
+    /// File or metadata cannot be read with current permissions.
+    Unreadable,
+    /// Core could not classify the item safely.
+    Unknown,
+    /// File is ignored, unchanged, or otherwise not changed by the rescan.
+    Skipped,
+}
+
+/// One display-safe item in a C4-19 dry-run preview.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ManualRescanPreviewItem {
+    /// Preview category for the row.
+    pub kind: ManualRescanPreviewItemKind,
+    /// Repository-relative path, or a display-safe path when the path cannot be classified.
+    pub relative_path: String,
+    /// Human-readable reason for the preview classification.
+    pub reason: String,
+    /// Suggested UI route or user action.
+    pub suggested_action: String,
+}
+
+/// Dry-run summary for C4-19 manual rescan confirmation.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ManualRescanPreviewReport {
+    /// Number of files that would be inserted.
+    pub added: i64,
+    /// Number of existing metadata rows that would be updated.
+    pub updated: i64,
+    /// Number of active metadata rows whose backing file appears missing.
+    pub missing_or_deleted_from_fs: i64,
+    /// Number of possible rename candidates detected by content hash.
+    pub renamed_candidates: i64,
+    /// Number of rows requiring conflict review.
+    pub conflicts: i64,
+    /// Number of unreadable paths.
+    pub unreadable: i64,
+    /// Number of paths Core could not classify safely.
+    pub unknown: i64,
+    /// Number of ignored or unchanged paths.
+    pub skipped: i64,
+    /// Stable snapshot id for the UI to compare against later watcher changes.
+    pub snapshot_id: String,
+    /// Unix timestamp for preview creation.
+    pub created_at: i64,
+    /// Whether the preview is already known to be stale.
+    pub is_stale: bool,
+    /// Bounded sample rows for the confirmation UI.
+    pub items: Vec<ManualRescanPreviewItem>,
 }
 
 /// How duplicate file hashes should be handled.
@@ -196,6 +289,12 @@ pub struct RepoPathValidation {
     pub is_inside_area_matrix: bool,
     /// Whether the path appears to be managed by iCloud.
     pub is_icloud_path: bool,
+    /// Whether the path appears to be managed by OneDrive.
+    pub is_onedrive_path: bool,
+    /// Platform-neutral location classification for UI routing and risk copy.
+    pub platform_path_kind: PlatformPathKind,
+    /// Whether callers should treat path comparison as case-sensitive.
+    pub is_case_sensitive_path: bool,
     /// Whether the latest scan session is still running, paused, failed, or interrupted.
     pub has_unfinished_scan_session: bool,
     /// Suggested initialization mode when the path is eligible.
@@ -219,6 +318,28 @@ pub struct ImportOptions {
     pub override_filename: Option<String>,
     /// Duplicate handling behavior.
     pub duplicate_strategy: DuplicateStrategy,
+}
+
+/// Final source-file outcome for a committed import.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum ImportSourceRemovalStatus {
+    /// Copy or index mode did not request source removal.
+    NotRequested,
+    /// Move mode removed the original source after repository commit.
+    Removed,
+    /// Move mode committed the repository file but could not remove the original source.
+    Retained,
+}
+
+/// Structured result returned by desktop import flows.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ImportResult {
+    /// Active file entry created or replaced by the import.
+    pub entry: FileEntry,
+    /// Source-file outcome after the repository file and metadata are safe.
+    pub source_removal_status: ImportSourceRemovalStatus,
+    /// Failure reason when `source_removal_status` is `Retained`.
+    pub source_removal_failure: Option<String>,
 }
 
 /// Filter used when listing files.
@@ -284,6 +405,8 @@ pub struct FileEntry {
     pub origin: FileOrigin,
     /// Optional original source path.
     pub source_path: Option<String>,
+    /// Read-only file availability status for list/detail consumers.
+    pub availability_status: FileAvailabilityStatus,
     /// Unix timestamp for initial import.
     pub imported_at: i64,
     /// Unix timestamp for last update.
@@ -496,6 +619,11 @@ pub struct RecoveryReport {
 }
 
 /// Filesystem reindex summary.
+///
+/// C4-19 manual rescan consumers use this as the post-confirmation summary for
+/// an entire-repository scan after [`ManualRescanPreviewReport`] has shown the
+/// dry-run impact. Missing, conflict, unreadable, and unknown counts are
+/// review signals; Core does not silently delete or merge those items.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ReindexReport {
     /// Optional scan session identifier.
@@ -504,6 +632,14 @@ pub struct ReindexReport {
     pub inserted: i64,
     /// Number of updated rows.
     pub updated: i64,
+    /// Number of active metadata rows whose backing file appears missing.
+    pub missing: i64,
+    /// Number of rows requiring conflict review.
+    pub conflicts: i64,
+    /// Number of unreadable paths recorded for review.
+    pub unreadable: i64,
+    /// Number of paths Core could not classify safely.
+    pub unknown: i64,
     /// Number of skipped files.
     pub skipped: i64,
     /// Human-readable errors.
@@ -548,6 +684,10 @@ pub struct RepairReport {
 }
 
 /// Persisted scan session state.
+///
+/// C4-19 manual rescan consumers use `kind`, `status`, counters, timestamps,
+/// `last_path`, and `errors` to render progress, completion, retry, and failure
+/// state without parsing logs or inspecting user files.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ScanSession {
     /// Stable database identifier.
@@ -562,6 +702,14 @@ pub struct ScanSession {
     pub inserted: i64,
     /// Number of updated rows.
     pub updated: i64,
+    /// Number of active metadata rows whose backing file appears missing.
+    pub missing: i64,
+    /// Number of rows requiring conflict review.
+    pub conflicts: i64,
+    /// Number of unreadable paths recorded for review.
+    pub unreadable: i64,
+    /// Number of paths Core could not classify safely.
+    pub unknown: i64,
     /// Number of skipped files.
     pub skipped: i64,
     /// Unix timestamp for start.

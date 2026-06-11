@@ -1,0 +1,67 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-65`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-65-c4-13-integration-verify.md`
+- 覆盖文件：`core/src/**`、`core/area_matrix.udl`、`core/tests/**`
+- 只读验收：本轮未修改文件
+
+三、完成度摘要
+
+- 已覆盖项数：4/4 核对清单，2/2 完成标准
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：`C4-13` spec 明确 `predict_category`、`import_file`、`import_file_with_result`，并要求 Move 源文件移除失败返回 `Retained`；`docs/api/core-api.md`、`core/area_matrix.udl`、`core/src/api.rs`、`core/src/domain.rs` 均有 `ImportResult` / `ImportSourceRemovalStatus` / `import_file_with_result`；`core/src/storage/import.rs` 在 repo 文件、DB、change log、overview 提交后才执行 source removal。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`，`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/domain.rs`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/storage/import.rs`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：Windows / Linux import-flow 页面要求 Copy 默认、Move 确认、Move preflight、Duplicate/Conflict/PermissionDenied/InvalidPath、源文件移除失败显示 `Imported, original retained`；Core 当前提供结构化错误与 `source_removal_status/source_removal_failure`，测试覆盖 Copy、Move、Index、Duplicate Ask、DB 失败、权限失败、Move removal failure。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-4-multiplatform/S4-WIN-05-import-flow.md`，`/Users/as/Ai-Project/project/AreaMatrix/docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md`，`/Users/as/Ai-Project/project/AreaMatrix/core/tests/desktop_import_flow_*.rs`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 只把 S4-WIN-05 / S4-LNX-05 的 desktop import 绑定到 C4-13，Replace 绑定到 C4-21 / S4-X-09；当前 Core 注释和测试明确 Trash/Recycle Bin、Replace 二次确认、文件夹批量、拖拽、多项进度仍在平台/UI 或 C4-21 范围内。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md`，`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`，`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+
+- 项目：不得修改文件，只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮只运行读取、diff、validation 命令，未执行 formatter/codegen/写入命令；`git diff --cached --name-status` 为空；`apps/**` 无 staged 或 unstaged diff。
+- 涉及文件：工作区状态、`apps/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`import_file` 复用 `import_file_with_result`，新增结果类型集中在 domain/api/storage 边界，未新增平台层或 UI 逻辑。
+- 注释 / rustdoc / 文档同步：通过。public API 有 rustdoc；Core API 文档和 UDL 均同步新增 `ImportResult`、`ImportSourceRemovalStatus`、`import_file_with_result`。
+- 错误处理与边界处理：通过。pre-commit 失败返回结构化错误且不留下 active row/final 半成品；post-commit source removal 失败返回 `Retained`，不回滚安全导入的 repo 文件。
+- 测试与验证覆盖：通过。覆盖 contract、implementation、failure recovery、validation 四类测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。测试调用真实 `init_repo`、SQLite metadata、文件系统 staging/import 路径；未发现 mock-only 或硬编码通过态。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-65`
+- 结果：通过，exit 0
+- 覆盖：prompt doctor OK；`git diff --check` OK；`cargo fmt --all -- --check` OK；`cargo clippy --all-targets --all-features -- -D warnings` OK。
+- 测试：`desktop_import_flow_contract_api` 4 passed；`desktop_import_flow_failure_recovery` 7 passed；`desktop_import_flow_implementation` 3 passed；`desktop_import_flow_validation` 4 passed。
+- 缺失：无。未运行 `./dev check all`，因为 manifest 只要求 `./dev check task 4-3/task-65`，validation-driver 对 Core capability integration verify 的分层门禁已由该命令覆盖。
+- 工作区边界：`apps/**` 无 diff；runner 的 `progress.json` / `summary.json` 仍为 in-progress 状态，不作为本 verify 阶段阻塞。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C4-13 可以作为后续 S4-WIN-05 / S4-LNX-05 page-feature task 的真实 Core 依赖。
+
+VERIFY_RESULT: PASS

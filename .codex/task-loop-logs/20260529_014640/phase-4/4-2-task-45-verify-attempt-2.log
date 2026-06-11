@@ -1,0 +1,69 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-45`
+- 对应文件路径：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-45-c3-09-integration-verify.md`
+- 核验范围：C3-09 capability spec、Stage 3 control map、Core API、UDL、Rust 实现、C3-09 tests、Forbidden Touches
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+- 完成标准：2/2 满足，C3-09 可作为后续 page-feature task 的真实 Core 依赖
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：C3-09 spec 定义 3 个 API、输入/输出、错误码和保守默认策略；Core API/UDL 均声明 `list_ai_privacy_rules`、`update_ai_privacy_rules`、`evaluate_ai_privacy` 及完整 privacy DTO/enum；Rust 入口有 rustdoc 和真实实现；测试覆盖 contract、implementation、failure、validation。
+- 涉及文件：`docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md:10`，`docs/api/core-api.md:3212`，`core/area_matrix.udl:97`，`core/src/api.rs:558`，`core/src/ai_privacy_rules.rs:314`，`core/tests/ai_privacy_rules_validation.rs:201`
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：C3-09 snapshot 提供 `privacy_gate_enabled`、rules、remote field states、provider scope、`remote_blocked_by_default`；evaluate report 提供 allow/deny/skipped、provider gate reason、matched rule/field、allowed/blocked/sent fields，且隐私阻断时 `sent_fields` 为空。S3-03/S3-09 的 gate/provider/field需求，S3-04/S3-06/S3-07/S3-08 的 privacy skip / View privacy rule / sent fields none 需求均可由该合同承接。
+- 涉及文件：`core/src/ai_privacy_rules.rs:193`，`core/src/ai_privacy_rules.rs:280`，`core/src/ai_privacy_rules/evaluation.rs:12`，`docs/ux/page-specs/stage-3-ai/S3-03-remote-model-enable.md:72`，`docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md:45`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 将 C3-09 绑定到 S3-03、S3-04、S3-06、S3-07、S3-08、S3-09 的 privacy gate / rules / evaluate 语义；C3-09 模块未包含 `disable_remote_ai_provider`、`clear_ai_call_log`、`generate_ai_summary`、`suggest_tags_with_ai`、`semantic_search` 等相邻能力调用。
+- 涉及文件：`docs/architecture/stage-3-control-map.md:11`，`core/src/ai_privacy_rules.rs:303`，`core/tests/ai_privacy_rules_contract_api.rs:498`
+
+- 项目：不得修改文件，只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮未执行修复或格式化写入；`git diff --name-only -- apps` 无输出，未触碰 Forbidden Touches。当前脏改动仅为既有 task-loop/progress 与 C3-09 测试文件变更，不含 `apps/**`。
+- 涉及文件：`apps/**` 无变更；`git status --short` 显示 `.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json`、`core/tests/ai_privacy_rules_validation.rs`、`core/tests/support/ai_privacy_rules_validation.rs`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。C3-09 拆分为 entrypoint、evaluation、persistence、validation、DB adapter，单文件均未超过 500 行。
+- 注释 / rustdoc / 文档同步：通过。C3-09 public API 有 rustdoc 和 `# Errors`，Core API、UDL、capability spec 对齐。
+- 错误处理与边界处理：通过。Config/Db/Permission/Io 路径有结构化错误和回滚测试；生产 C3-09 代码未发现 `unwrap()`、`expect()`、`panic!()`、`TODO`。
+- 测试与验证覆盖：通过。覆盖 contract、实现成功路径、provider gate、field filters、规则匹配、失败回滚、secret 不外泄、用户文件不被触碰。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现连接 repo config DB、remote provider read-only scope 和真实 evaluation path；未用 mock-only 闭环替代产品实现。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-45`
+- 通过：prompt doctor、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`
+- 通过：`cargo test --test ai_privacy_rules_contract_api -- --nocapture`，4 passed
+- 通过：`cargo test --test ai_privacy_rules_failure_recovery -- --nocapture`，8 passed
+- 通过：`cargo test --test ai_privacy_rules_implementation -- --nocapture`，4 passed
+- 通过：`cargo test --test ai_privacy_rules_validation -- --nocapture`，3 passed
+- 失败：无
+- 缺失：无；未扩大到 `./dev check all`，符合 task manifest 与 validation-driver 的 task-scoped 验证边界
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C3-09 的 Core API、UDL、Rust 实现、持久化、评估逻辑、错误处理和测试证据足以支撑后续 S3 page-feature task 接入。
+
+VERIFY_RESULT: PASS

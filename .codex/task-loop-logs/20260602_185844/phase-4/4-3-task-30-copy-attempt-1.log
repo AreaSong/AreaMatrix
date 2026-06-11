@@ -1,0 +1,27 @@
+**一、执行结论**
+已完成。C4-06 files-import 可作为后续 S4-IOS-07 page-feature task 的真实 Core 依赖。
+
+**二、执行范围**
+单任务：`4-3/task-30`。产品实现未改；仅对 [core/tests/files_import_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/files_import_validation.rs:146) 做了 `rustfmt` 机械格式修正，属于 manifest 允许的 `core/tests/**`。未触碰 `apps/**`。工作区另有既有修改：`.codex/task-loop-runs/.../summary.json`、`tasks/prompts/_shared/progress.json`，本轮未回滚。
+
+**三、完成情况**
+核对清单通过：C4-06 capability spec、Core API、UDL、Rust API/实现、测试已交叉核对。`predict_category` / `import_file` 在 `docs/api/core-api.md` 与 `core/area_matrix.udl` 对齐，Rust 入口经 `api.rs` 接到真实 classify/storage 逻辑。
+
+消费页需求通过：S4-IOS-07 所需的授权 Files URL、Copy-only、分类建议、导入结果、`ICloudPlaceholder`、`PermissionDenied`、`DuplicateFile`、`Conflict`、Cancel 不写 DB、Replace 路由到 S4-X-09 均有文档或测试证据。C4-21 不属于当前 task 阻断范围。
+
+未实现 control map 之外能力；未补 UI、未实现 C4-21、未触碰 Forbidden Touches。
+
+**四、工程质量**
+现有 Core 导入链路是真实 staging + hash + DB + change_log + 回滚 guard，不是 mock-only 或硬编码通过态。失败路径覆盖 iCloud placeholder、权限、IO/staging、DB rollback、duplicate ask/skip，且测试验证源文件、最终目录、DB staging/active row、change_log 状态。public API 注释已覆盖 C4-06 边界；本轮未新增 public API 或依赖。
+
+**五、验证情况**
+已运行并通过：
+
+```bash
+./dev check task 4-3/task-30
+```
+
+结果摘要：`doctor: OK`，`git diff --check` 通过，`cargo fmt --all -- --check` 通过，`cargo clippy --all-targets --all-features -- -D warnings` 通过。Targeted tests 全部通过：`files_import_contract_api` 4 个、`files_import_failure_recovery` 8 个、`files_import_implementation` 6 个、`files_import_validation` 4 个，共 22 个测试通过。初次验证因测试文件格式失败，已在允许路径内格式化后重新跑同一命令并 fresh PASS。
+
+**六、风险与后续**
+剩余风险不在当前 Core task：iOS security-scoped access 生命周期、Provider 下载触发、多文件 UI 进度、C4-21 Replace 确认和 S4-IOS-07 页面接入仍由后续页面/平台 task 覆盖。建议后续按队列继续；接 UI 消费链路时重点看 `4-3/task-114`。

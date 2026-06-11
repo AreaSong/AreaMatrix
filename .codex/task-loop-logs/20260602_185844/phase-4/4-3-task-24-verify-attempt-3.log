@@ -1,0 +1,63 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-24`
+- Task 文件：[task-24-c4-05-validation.md](/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-24-c4-05-validation.md:1)
+- 主要验收文件：`core/src/**`、[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:149)、[core/tests/share_extension_import_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/share_extension_import_validation.rs:1)
+
+三、完成度摘要
+
+- 已覆盖项数：6（核对清单 4 项 + 完成标准 2 项）
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐单元测试、集成测试或契约测试，覆盖成功和失败路径
+- 结果：通过
+- 证据：新增 validation 测试覆盖成功导入、取消/缺失/非法路径、重复 skip 和 API/UDL/Rust/test 证据；既有 contract/implementation/failure targets 也全部通过。
+- 涉及文件：[share_extension_import_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/share_extension_import_validation.rs:166)、[share_extension_import_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/share_extension_import_failure_recovery.rs:195)
+
+- 项目：验证 Core API / UDL / Rust 实现三者一致
+- 结果：通过
+- 证据：UDL 暴露 `predict_category` 与 `import_file`；Rust API rustdoc 明确 C4-05 复用边界；validation 测试锁定 API/UDL/Rust 文本和函数签名。
+- 涉及文件：[core/area_matrix.udl](/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:149)、[api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:832)、[share_extension_import_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/share_extension_import_validation.rs:295)
+
+- 项目：不新增业务功能，只补验证与必要测试 fixture
+- 结果：通过
+- 证据：工作区相关新增为 `core/tests/share_extension_import_validation.rs`；`core/src/**` 和 `core/area_matrix.udl` 无 diff；未发现 `apps/**` 改动。
+- 涉及文件：[share_extension_import_validation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/share_extension_import_validation.rs:1)
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：必需验证 `./dev check task 4-3/task-24` 已运行并通过；无必需验证缺失。
+- 涉及文件：manifest Validation
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，新增测试按 helper 拆分，单文件 466 行，未超过 500 行阈值。
+- 注释 / rustdoc / 文档同步：通过，Rust API 已说明 C4-05 平台层与 Core 边界。
+- 错误处理与边界处理：通过，测试覆盖 `InvalidPath`、`PermissionDenied`、`Io`、`Db`、`DuplicateFile` 与无副作用回滚。
+- 测试与验证覆盖：通过，targeted Core gate 共 18 个 C4-05 测试通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，测试调用真实 `predict_category`、`import_file`、SQLite metadata、文件系统导入路径，不是 mock-only。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-24`，exit 0。
+- 通过：prompt doctor OK；`git diff --check` OK；`share_extension_import_contract_api` 4 passed；`share_extension_import_failure_recovery` 7 passed；`share_extension_import_implementation` 3 passed；`share_extension_import_validation` 4 passed。
+- 失败：无。
+- 缺失：无。未运行 broad gate 是因为 manifest 和 validation-driver 对普通 atomic Core task 要求 task-scoped targeted gate。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+VERIFY_RESULT: PASS

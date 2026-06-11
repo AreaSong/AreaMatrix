@@ -222,7 +222,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.summary?.rootFile, "Off")
         XCTAssertEqual(model.summary?.metadataStatus, ".areamatrix/ found")
         XCTAssertEqual(model.healthSummary?.databaseStatus, .ok)
-        XCTAssertEqual(model.healthSummary?.schemaVersion, 1)
+        XCTAssertEqual(model.healthSummary?.schemaVersion, 2)
         XCTAssertEqual(model.healthSummary?.filesIndexed, 0)
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
         XCTAssertFalse(FileManager.default.fileExists(
@@ -307,7 +307,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
 
         do {
             let metadata = try await SQLiteExistingRepositoryMetadataReader().metadata(repoPath: repoURL.path)
-            XCTAssertEqual(metadata.schemaVersion, 1)
+            XCTAssertEqual(metadata.schemaVersion, 2)
         } catch {
             XCTFail("metadata read failed: \(error)")
         }
@@ -390,7 +390,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
 
         XCTAssertEqual(model.summary?.metadataStatus, ".areamatrix/ found")
         XCTAssertEqual(model.healthSummary?.databaseStatus, .ok)
-        XCTAssertEqual(model.healthSummary?.schemaVersion, 1)
+        XCTAssertEqual(model.healthSummary?.schemaVersion, 2)
         XCTAssertEqual(model.healthSummary?.filesIndexed, 1)
         XCTAssertEqual(model.healthSummary?.watcherStatus, .paused)
         XCTAssertNil(model.healthError)
@@ -430,5 +430,36 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         XCTAssertEqual(model.healthError?.databaseStatus, .locked)
         XCTAssertEqual(model.healthError?.message, "数据库错误")
         XCTAssertEqual(model.healthError?.recovery, "Retry status")
+    }
+
+    @MainActor
+    func testS4X08C417LoadsPlatformCapabilitiesAndDisablesDiagnosticsWhenAccessIsLimited() async {
+        let limitedAccess = repositorySettingsCapabilitySupport(
+            status: .limited,
+            uiEnabled: false,
+            requiresPermission: true,
+            reason: "Grant repository access."
+        )
+        let capabilities = repositorySettingsCapabilitiesFixture(securityBookmark: limitedAccess)
+        let loader = RepoSettingsCapabilityLoader(result: .success(capabilities))
+        let model = RepoPlatformCapabilitiesModel(
+            appVersion: "4.3.159",
+            capabilityLoader: loader,
+            errorMapper: RepositorySettingsStaticErrorMapper()
+        )
+
+        await model.load()
+
+        let requests = await loader.requests()
+        XCTAssertEqual(requests, [RepositorySettingsCapabilityRequest(platform: .macos, appVersion: "4.3.159")])
+        XCTAssertEqual(model.state, .loaded(capabilities))
+        XCTAssertEqual(capabilities.repositorySettingsRows.map(\.label), [
+            "Watcher",
+            "Trash / Recycle Bin",
+            "Cloud placeholders",
+            "Repository access"
+        ])
+        XCTAssertFalse(model.allowsDiagnosticsExport)
+        XCTAssertEqual(model.diagnosticsDisabledReason, "Grant repository access.")
     }
 }

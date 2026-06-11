@@ -226,9 +226,12 @@ fn import_index_file_failure_recovery_rejects_icloud_marker_without_db_write() {
         indexed_options(),
     );
 
-    assert_eq!(
-        result,
-        Err(CoreError::icloud_placeholder("icloud placeholder"))
+    assert!(
+        matches!(
+            result,
+            Err(CoreError::ICloudPlaceholder { path }) if path == path_string(&source)
+        ),
+        "iCloud placeholder error should carry the indexed source path"
     );
     assert_eq!(
         fs::read(&source).expect("read iCloud marker source after rejection"),
@@ -280,9 +283,12 @@ fn import_index_file_failure_recovery_permission_denied_leaves_source_and_db_unc
 
     fs::set_permissions(&source, original_permissions).expect("restore source permissions");
 
-    assert_eq!(
-        result,
-        Err(CoreError::permission_denied("permission denied"))
+    assert!(
+        matches!(
+            result,
+            Err(CoreError::PermissionDenied { path }) if path == path_string(&source)
+        ),
+        "permission error should carry the indexed source path"
     );
     assert_eq!(
         fs::read(&source).expect("read source after permission failure"),

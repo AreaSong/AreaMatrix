@@ -67,6 +67,9 @@ enum RepoPathIssueSnapshot: String, Equatable {
     case alreadyInitialized = "AlreadyInitialized"
     case insideAreaMatrix = "InsideAreaMatrix"
     case iCloudPath = "ICloudPath"
+    case oneDrivePath = "OneDrivePath"
+    case windowsReservedName = "WindowsReservedName"
+    case windowsCaseInsensitive = "WindowsCaseInsensitive"
     case unfinishedScanSession = "UnfinishedScanSession"
 }
 
@@ -346,6 +349,8 @@ actor CoreBridge {
     }
 }
 
+extension CoreBridge: CoreVersionLoading {}
+
 extension CoreBridge:
     CoreConfigurationLoading,
     CoreConfigurationUpdating,
@@ -421,7 +426,8 @@ private func snapshot(
     let availability = await availabilityChecker.availability(
         repoPath: repoPath,
         relativePath: coreFile.path,
-        sourcePath: coreFile.sourcePath
+        sourcePath: coreFile.sourcePath,
+        coreStatus: coreFile.availabilityStatus
     )
     return FileEntrySnapshot(coreEntry: coreFile) { _, _ in availability }
 }

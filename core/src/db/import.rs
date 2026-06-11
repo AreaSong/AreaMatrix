@@ -3,7 +3,7 @@ use std::path::Path;
 use rusqlite::{params, OptionalExtension, Row};
 use serde_json::Value;
 
-use crate::{CoreError, CoreResult, FileEntry, FileOrigin, StorageMode};
+use crate::{CoreError, CoreResult, FileAvailabilityStatus, FileEntry, FileOrigin, StorageMode};
 
 use super::{open_repo_connection, origin_from_db, storage_mode_from_db, storage_mode_to_db};
 
@@ -428,6 +428,7 @@ pub(crate) fn file_entry_from_row(row: &Row<'_>) -> rusqlite::Result<FileEntry> 
             .map_err(|_| rusqlite::Error::InvalidQuery)?,
         origin: origin_from_db(&origin_value).map_err(|_| rusqlite::Error::InvalidQuery)?,
         source_path: row.get(9)?,
+        availability_status: FileAvailabilityStatus::Available,
         imported_at: row.get(10)?,
         updated_at: row.get(11)?,
     })

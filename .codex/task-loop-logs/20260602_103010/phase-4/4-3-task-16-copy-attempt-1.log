@@ -1,0 +1,45 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-3/task-16`。本次只修改允许路径：
+
+- [core/src/api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:827)
+- [core/tests/camera_import_contract_api.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/camera_import_contract_api.rs:1)
+
+三、完成情况
+
+核对清单均完成：已读取 C4-04 能力规格、Stage 4 control map、Core API、错误码、S4-IOS-03 页面消费上下文和现有 Core/UDL。确认 C4-04 复用 `predict_category` 与 `import_file`，不新增 camera-specific Core API，不引入 control map 之外能力。
+
+完成标准满足：新增合同测试固定了 API/UDL/文档/Rust surface 一致性；`api.rs` rustdoc 明确平台层负责相机权限、捕获 UI、临时文件生命周期，Core 只接收授权后的临时文件路径和 `ImportOptions`。
+
+Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+代码结构清晰，没有新增依赖、mock-only wiring、业务占位或一次性脚本。新增测试只验证合同与消费状态，不实现 C4-04 业务逻辑；public Rust API 文档补充了 C4-04 边界和错误/文件安全语义。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-3/task-16
+```
+
+实际执行结果：
+
+- prompt doctor：`OK`
+- `git diff --check`：通过
+- `cargo test --test camera_import_contract_api -- --nocapture`：4 tests passed
+
+未运行：未运行 `cargo test --workspace`、`./dev check core/all`，因为本 task manifest 明确验证上限是 `./dev check task 4-3/task-16`。
+
+六、风险与后续
+
+剩余风险：当前只完成合同/API 任务，C4-04 的真实实现、失败边界和验证证据仍由后续 `4-3/task-17`、`4-3/task-18`、`4-3/task-19` 覆盖。工作树中仍有我未修改的既有本地状态变更：`.codex/task-loop-runs/20260602_103010/summary.json` 和 `tasks/prompts/_shared/progress.json`。
+
+建议下一个任务：`4-3/task-17`，实现 C4-04 camera-import 的最小 Core 行为闭环。
+

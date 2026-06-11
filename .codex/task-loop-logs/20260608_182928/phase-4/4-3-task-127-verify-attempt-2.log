@@ -1,0 +1,84 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-127`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-127-s4-win-05-c4-13-desktop-import-flow.md`
+- 实际验收代码：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- Forbidden Touches：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+三、完成度摘要
+
+- 已覆盖项数：7
+- 未覆盖项数：0
+- 通过项数：7
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：只处理 S4-WIN-05 页面中的 C4-13 功能点
+- 结果：通过
+- 证据：Windows 主窗口新增 Import 入口并路由到 `WindowsImportDialog`；实现集中在 `apps/windows/AreaMatrix/Features/Import/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Library/WindowsMainWindow.xaml:19`、`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/MainWindow.xaml.cs:34`
+
+- 项目：读取并对齐页面规格、control map、Core API、C4-13 能力规格
+- 结果：通过
+- 证据：C4-13 明确使用 `predict_category`、`import_file`、`import_file_with_result`；control map 中 S4-WIN-05 为 `C4-13, C4-21`，本 task 仅覆盖 C4-13。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
+
+- 项目：只接入 C4-13 对应 CoreBridge / 状态 / 错误映射
+- 结果：通过
+- 证据：preview 走 `PredictCategoryAsync`，提交走 `ImportFileWithResultAsync`，并映射 `Retained` 为 `Imported, original retained`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Import/DesktopImportCoreBridge.cs:70`、`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Core/AreaMatrixNativeCoreClient.DesktopImport.cs:10`
+
+- 项目：不实现同页其他能力 C4-21
+- 结果：通过
+- 证据：UI 未暴露 Replace / Overwrite；测试显式断言 C4-21 不在本 task 中实现。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrixTests/Import/WindowsImportSmokeTests.cs:42`
+
+- 项目：S4-WIN-05 中 C4-13 用户可见功能可触发和验收
+- 结果：通过
+- 证据：支持 Add files、Add folder、drop、Prepare preview、Import、Move confirmation、results list；按钮事件调用 ViewModel。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Import/WindowsImportDialog.xaml:67`、`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Import/WindowsImportDialog.xaml.cs:142`
+
+- 项目：没有使用 mock / fixture / 静态状态伪造真实 Core 闭环
+- 结果：通过
+- 证据：生产入口构造 `new DesktopImportCoreBridge(coreClient, new WindowsImportFileProbe())`，native client 绑定真实 UniFFI 函数；mock 仅存在测试。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/MainWindow.xaml.cs:35`
+
+- 项目：Forbidden Touches 检查
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出；`core/src/**` 未被修改。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。Bridge、native client、ViewModel、file probe、XAML 分层清楚；最大相关文件 `WindowsImportViewModel.cs` 为 490 行，未超过 500 行阈值。
+- 注释 / rustdoc / 文档同步：通过。本 task 未新增 Rust public API；UDL 已声明 C4-13 的 `predict_category` 与 `import_file_with_result` 合同。
+- 错误处理与边界处理：通过。Core conflict / duplicate 不产生成功结果，Move retained 状态可展示；Move 未确认或 preflight 失败时禁用 Import。
+- 测试与验证覆盖：通过。指定 task 验证通过，Windows 逻辑测试通过；真实 Windows WinUI 启动未在本 macOS 环境验证。
+- 占位、硬编码、mock-only、一次性实现检查：通过。生产路径接入 native Core；mock 仅用于测试。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-127`
+- 结果：通过，exit 0；包含 `doctor: OK`、`git diff --check`、macOS build `** BUILD SUCCEEDED **`。
+- 已运行：`dotnet run --project apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj`
+- 结果：通过，输出 `AreaMatrix Windows tests passed.`
+- 已运行：`dotnet build apps/windows/AreaMatrix/AreaMatrix.Windows.csproj -p:EnableWindowsTargeting=true --no-restore`
+- 结果：失败；当前 macOS 环境无法执行 Windows App SDK 的 `XamlCompiler.exe`，属于 Windows-only 编译器环境限制，不作为 manifest 必需验证阻塞。
+- 缺失：未在真实 Windows 桌面启动 WinUI 做 Explorer 拖拽 / picker 人工 UI smoke。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。Manifest 指定验证通过，C4-13 的 Windows 用户入口、CoreBridge、native Core 调用、Move retained 显示、错误映射和越界检查均有代码与测试证据支撑；`core/src/**` 未被触碰。
+
+
+VERIFY_RESULT: PASS

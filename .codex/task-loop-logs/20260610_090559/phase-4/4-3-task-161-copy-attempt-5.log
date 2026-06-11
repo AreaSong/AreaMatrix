@@ -1,0 +1,48 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-3/task-161`
+
+修改文件：
+- [RepositorySettingsViewModel.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/Settings/RepositorySettingsViewModel.cs:313)
+- [RepositorySettingsViewModelTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/Settings/RepositorySettingsViewModelTests.cs:45)
+
+三、完成情况
+
+核对清单：
+- page-feature 覆盖：已修复 C4-17 在 Linux Repository Settings 的 Access 消费断链。
+- 页面状态闭环：`Access` 现在从 `SecurityBookmark` 的 `status/uiEnabled/reason` 推导，不再固定为 `Available`。
+- mock / fixture / 硬编码状态：已移除生产路径硬编码通过态，并补回归测试。
+- control map 外能力：未新增。
+
+完成标准：
+- S4-X-08 可按 page spec/control map 验收：本轮阻塞项已修复。
+- C4-17 / C4-20 真实接入：Linux Access 已接入 C4-17 capability snapshot；C4-20 路径未改动。
+
+Forbidden Touches：
+- 未触碰 `core/src/**`。`git diff --name-status -- core/src` 与 `git diff --cached --name-status -- core/src` 均无输出。
+
+四、工程质量
+
+代码结构清晰，新增 `AccessText` / `AccessStateText` 小函数，避免把状态映射塞回 `BuildSnapshot`。错误/边界状态覆盖 `Available`、`Limited -> Expired`、`NotAvailable -> Permission denied`、`Unknown`，并保留 capability reason 作为页面解释。未新增依赖、未改 Rust public API，不涉及 rustdoc 或文档同步。
+
+五、验证情况
+
+已运行并通过：
+- `./dev check task 4-3/task-161`
+  - `doctor: OK`
+  - `git diff --check` 通过
+  - `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 最终 `BUILD SUCCEEDED`
+- `dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj`
+  - 输出：`AreaMatrix Linux tests passed.`
+
+未运行：
+- Windows / iOS 平台测试未跑；本轮实际修复点是 Linux，且 manifest 验证上限是 `./dev check task 4-3/task-161`。
+
+六、风险与后续
+
+剩余风险：本地已有大量前序 attempt 的 `apps/**` 改动和未跟踪目录，本轮未回滚也未扩大处理。建议下一个动作是进入 `4-3/task-161` 的 verify-ready 只读验收。
+

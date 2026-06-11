@@ -1,0 +1,33 @@
+**一、执行结论**
+已完成 `4-2/task-54`。
+
+**二、执行范围**
+单任务：S3-03 remote-model-enable 中的 C3-09 `ai-privacy-rules` 功能点。
+
+修改文件：
+- [CoreRemoteProviderConfiguring.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRemoteProviderConfiguring.swift:19)
+- [RemoteProviderConfigState.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/RemoteProviderConfigState.swift:68)
+- [RemoteModelConfigSheet.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/RemoteModelConfigSheet.swift:3)
+- [AdvancedSettingsSupportViews.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/AdvancedSettingsSupportViews.swift:234)
+- [RemoteProviderConfigModelTests.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RemoteProviderConfigModelTests.swift:261)
+- [RemoteProviderConfigTestSupport.swift](/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RemoteProviderConfigTestSupport.swift:118)
+
+**三、完成情况**
+- 核对清单：只处理 S3-03 + C3-09；已接入真实 `CoreBridge` 的 `listAiPrivacyRules` / `updateAiPrivacyRules`；未实现同页 C3-03 以外的新能力。
+- 完成标准：启用 remote AI 后会启用 privacy gate；失败时保留可重试动作，并提供打开 privacy rules / 禁用 remote AI 的用户可见恢复路径。
+- Forbidden Touches：未触碰 `core/src/**`；`core/area_matrix.udl` 未修改。
+
+**四、工程质量**
+- 结构：新增 `RemotePrivacyGateModel`，把 C3-09 状态、保存、错误映射和重试逻辑从 View 中分离。
+- 错误处理：Core 错误经 `CoreErrorMapping` 映射；保存失败不会静默关闭 sheet。
+- 占位/硬编码/mock：生产路径没有 mock 或静态伪造；测试使用隔离 bridge fixture。
+- 依赖：未新增依赖。
+
+**五、验证情况**
+- `./dev check task 4-2/task-54`：通过；包含 `prompt doctor: OK`、`git diff --check`、macOS `xcodebuild ... build`，最终 `BUILD SUCCEEDED`。
+- `./dev test macos --only-testing AreaMatrixTests/RemoteProviderConfigModelTests`：通过；标准 `xcodebuild test` 被本地 sandbox 的 `testmanagerd` 权限阻断，仓库脚本按规则回退到 `xcrun xctest`，最终通过。
+- 未运行宽门禁：未跑 `./dev check all` / Core 全量测试，因 manifest 上限是当前 task gate。
+
+**六、风险与后续**
+剩余风险：未做真实窗口点击级 UI smoke；当前证据覆盖 build、模型状态与 CoreBridge 调用路径。  
+当前工作区还存在 `tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260529_191758/` 运行状态项，未纳入本次任务交付范围。

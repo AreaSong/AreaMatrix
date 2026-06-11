@@ -89,6 +89,24 @@ enum SearchIndexStatusSnapshot: Equatable {
     case unavailable
 }
 
+enum SearchModeSnapshot: String, CaseIterable, Equatable, Identifiable {
+    case normal
+    case semantic
+
+    var id: String {
+        rawValue
+    }
+
+    var displayName: String {
+        switch self {
+        case .normal:
+            "Normal"
+        case .semantic:
+            "Semantic"
+        }
+    }
+}
+
 struct SearchQueryRequestSnapshot: Equatable {
     var query: String
     var scope: SearchScopeSnapshot
@@ -98,6 +116,7 @@ struct SearchQueryRequestSnapshot: Equatable {
     var sort: SearchSortSnapshot
     var limit: Int64
     var offset: Int64
+    var mode: SearchModeSnapshot
 
     init(
         query: String,
@@ -107,7 +126,8 @@ struct SearchQueryRequestSnapshot: Equatable {
         filters: SearchFilterStateSnapshot,
         sort: SearchSortSnapshot,
         limit: Int64,
-        offset: Int64
+        offset: Int64,
+        mode: SearchModeSnapshot = .normal
     ) {
         self.query = query
         self.scope = scope
@@ -117,6 +137,7 @@ struct SearchQueryRequestSnapshot: Equatable {
         self.sort = sort
         self.limit = limit
         self.offset = offset
+        self.mode = mode
     }
 
     static func pageFeature(
@@ -124,7 +145,8 @@ struct SearchQueryRequestSnapshot: Equatable {
         scope: SearchScopeSnapshot,
         sort: SearchSortSnapshot,
         sidebarRow: RepositorySidebarRowSnapshot,
-        filters: SearchFilterStateSnapshot
+        filters: SearchFilterStateSnapshot,
+        mode: SearchModeSnapshot = .normal
     ) -> SearchQueryRequestSnapshot {
         SearchQueryRequestSnapshot(
             query: query,
@@ -134,7 +156,8 @@ struct SearchQueryRequestSnapshot: Equatable {
             filters: filters,
             sort: sort,
             limit: 50,
-            offset: 0
+            offset: 0,
+            mode: mode
         )
     }
 
@@ -208,6 +231,7 @@ struct SearchResultPageSnapshot: Equatable {
     var results: [SearchFileResultSnapshot]
     var diagnostics: [SearchQueryDiagnosticSnapshot]
     var indexStatus: SearchIndexStatusSnapshot
+    var semanticPage: SemanticSearchResultPageSnapshot?
 
     var hasDiagnosticError: Bool {
         diagnostics.contains(where: \.isError)
@@ -221,12 +245,27 @@ enum FileAvailabilitySnapshot: String, Equatable {
 }
 
 protocol FileAvailabilityChecking: Sendable {
-    func availability(repoPath: String, relativePath: String, sourcePath: String?) async -> FileAvailabilitySnapshot
+    func availability(
+        repoPath: String,
+        relativePath: String,
+        sourcePath: String?,
+        coreStatus: FileAvailabilityStatus
+    ) async -> FileAvailabilitySnapshot
 }
 
 struct LocalFileAvailabilityChecker: FileAvailabilityChecking {
-    func availability(repoPath: String, relativePath: String, sourcePath: String?) async -> FileAvailabilitySnapshot {
-        FileAvailabilityResolver.availability(repoPath: repoPath, relativePath: relativePath, sourcePath: sourcePath)
+    func availability(
+        repoPath: String,
+        relativePath: String,
+        sourcePath: String?,
+        coreStatus: FileAvailabilityStatus
+    ) async -> FileAvailabilitySnapshot {
+        FileAvailabilityResolver.availability(
+            repoPath: repoPath,
+            relativePath: relativePath,
+            sourcePath: sourcePath,
+            coreStatus: coreStatus
+        )
     }
 }
 
@@ -403,17 +442,32 @@ extension SearchIndexStatusSnapshot {
 }
 
 private enum FileAvailabilityResolver {
-    static func availability(repoPath: String, relativePath: String, sourcePath: String?) -> FileAvailabilitySnapshot {
+    static func availability(
+        repoPath _: String,
+        relativePath: String,
+        sourcePath: String?,
+        coreStatus: FileAvailabilityStatus
+    ) -> FileAvailabilitySnapshot {
         if isICloudPlaceholder(relativePath) || sourcePath.map(isICloudPlaceholder) == true {
             return .iCloudPlaceholder
         }
 
-        let fileURL = URL(fileURLWithPath: repoPath, isDirectory: true).appendingPathComponent(relativePath)
-        return FileManager.default.fileExists(atPath: fileURL.path) ? .available : .missing
+        return FileAvailabilitySnapshot(coreStatus: coreStatus)
     }
 
     private static func isICloudPlaceholder(_ path: String) -> Bool {
         path.hasSuffix(".icloud") || path.contains(".icloud/")
+    }
+}
+
+private extension FileAvailabilitySnapshot {
+    init(coreStatus: FileAvailabilityStatus) {
+        switch coreStatus {
+        case .available:
+            self = .available
+        case .missing:
+            self = .missing
+        }
     }
 }
 

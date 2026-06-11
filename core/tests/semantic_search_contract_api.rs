@@ -82,6 +82,7 @@ fn search_result() -> SearchFileResult {
             storage_mode: StorageMode::Copied,
             origin: FileOrigin::Imported,
             source_path: None,
+            availability_status: area_matrix_core::FileAvailabilityStatus::Available,
             imported_at: 1_777_300_000,
             updated_at: 1_777_300_900,
         },

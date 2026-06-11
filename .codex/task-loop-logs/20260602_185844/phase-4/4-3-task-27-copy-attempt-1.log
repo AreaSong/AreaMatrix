@@ -1,0 +1,37 @@
+一、执行结论
+
+已完成 `4-3/task-27`。
+
+二、执行范围
+
+单任务：C4-06 files-import Core implementation。  
+修改文件清单：新增 [core/tests/files_import_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/files_import_implementation.rs:1)。  
+未修改 `core/src/**` 和 `core/area_matrix.udl`，因为现有 `import_file` / `predict_category` / UDL 已与 C4-06 合同对齐，本次补齐的是 C4-06 自身的实现验证证据。
+
+三、完成情况
+
+- 只实现 C4-06：通过，未实现相邻 C4 能力。
+- 输入、输出、DB/文件系统变化和错误映射：通过新增测试覆盖授权 Files provider 路径、DB active row、change_log、staging 清理、源文件保留。
+- Rust Core 不依赖平台 UI API：通过，仍复用平台无关 `import_file`。
+- 最小测试支撑：已补。
+- Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+测试结构清晰，覆盖正常导入、Cancel 无 Core 调用、iCloud placeholder、权限失败、重复 hash、同名 KeepBoth 自动编号。没有新增依赖，没有 mock-only、硬编码通过态或一次性脚本。未新增 public Rust API，因此无需新增 rustdoc。
+
+五、验证情况
+
+已通过：
+
+```bash
+cargo test --test files_import_implementation -- --nocapture
+./dev check task 4-3/task-27
+```
+
+`./dev check task` 自动运行了 prompt doctor、diff check、`files_import_contract_api` 4 个测试和 `files_import_implementation` 6 个测试，全部通过。无失败项，无无法运行项。
+
+六、风险与后续
+
+剩余风险：iOS UI 接入和 C4-21 Replace confirm 不属于本任务；更完整的失败/回滚边界由下一任务覆盖。  
+建议下一个任务：`4-3/task-28`，即 C4-06 failure-edge。当前工作区还有既有 modified 文件 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json`，我未回退它们。

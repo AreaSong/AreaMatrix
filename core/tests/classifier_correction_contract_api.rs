@@ -42,6 +42,7 @@ fn classifier_correction_contract_exposes_signature_inputs_outputs_and_errors() 
         storage_mode: StorageMode::Copied,
         origin: FileOrigin::Imported,
         source_path: Some("/tmp/report.pdf".to_owned()),
+        availability_status: area_matrix_core::FileAvailabilityStatus::Available,
         imported_at: 1_000,
         updated_at: 1_200,
     };

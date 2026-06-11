@@ -1,9 +1,11 @@
+// swiftlint:disable file_length
 import SwiftUI
 
 struct MainRepositoryDetailPane: View {
     let selection: MainFileSelectionState
     let multiSelectionSummary: MultiSelectionDetailSummary
     let detailErrorMapping: CoreErrorMappingSnapshot?
+    var syncConflict: SyncConflictSnapshot?
     let isDetailLoading: Bool
     let selectedFileDetail: FileEntrySnapshot?
     let noteWriteBlock: MainDetailNoteWriteBlock?
@@ -16,6 +18,7 @@ struct MainRepositoryDetailPane: View {
     let detailTagUndoToast: DetailTagUndoToast?
     let detailTabRequest: MainDetailTabRequest?
     let selectedImportProgressRow: ImportProgressListRow?
+    let semanticDetail: SemanticSearchDetailPresentation?
     let repoPath: String
     let batchTagStore: any CoreTagCRUD
     let batchTagUndoStore: any CoreUndoActionLogging
@@ -40,11 +43,16 @@ struct MainRepositoryDetailPane: View {
     let onBeginRenameFile: (Int64) -> Void
     let onBeginChangeCategoryFile: (Int64) -> Void
     let onBeginClassifierCorrectionFile: (Int64) -> Void
+    let onBeginAIClassificationSuggestionFile: (Int64) -> Void
     let onBeginDeleteFile: (Int64) -> Void
     let onBeginICloudConflictResolution: (Int64) -> Void
+    let onBeginSyncConflictReview: (FileEntrySnapshot) -> Void
+    let onOpenAISettings: () -> Void
     let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
 
     @State private var selectedTab: DetailPaneTab = .meta
+    @State private var pendingSummaryExitTab: DetailPaneTab?
+    @ObservedObject var summaryExitController: AISummaryEditorExitController
     @ObservedObject var noteModel: DetailNoteModel
 }
 
@@ -69,6 +77,20 @@ extension MainRepositoryDetailPane {
             guard let request else { return }
             applyDetailTabRequest(request)
         }
+        .confirmationDialog(
+            "Save AI summary changes?",
+            isPresented: Binding(
+                get: { pendingSummaryExitTab != nil },
+                set: { if !$0 { pendingSummaryExitTab = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Cancel", role: .cancel) { pendingSummaryExitTab = nil }
+            Button("Discard changes", role: .destructive) {
+                summaryExitController.discardChanges(); finishPendingSummaryExit()
+            }
+            Button("Save changes") { Task { await saveAndFinishPendingSummaryExit() } }
+        } message: { Text("Save or discard the AI summary draft before leaving this file summary.") }
     }
 
     private var multiSelectionDetailPane: some View {
@@ -227,7 +249,11 @@ extension MainRepositoryDetailPane {
                 Text(detail.currentName)
                     .font(.headline)
                     .textSelection(.enabled)
-                Picker("Detail tab", selection: $selectedTab) {
+                SyncConflictDetailBanner(conflict: syncConflict) { _ in
+                    onBeginSyncConflictReview(detail)
+                }
+                semanticSearchDetailBanner
+                Picker("Detail tab", selection: Binding(get: { selectedTab }, set: requestDetailTabChange)) {
                     ForEach(DetailPaneTab.allCases) { tab in
                         Text(tab.title).tag(tab)
                     }
@@ -247,6 +273,15 @@ extension MainRepositoryDetailPane {
         switch selectedTab {
         case .meta:
             detailMetaTabContent(for: detail)
+        case .summary:
+            AISummaryEditor(
+                repoPath: repoPath,
+                fileID: detail.id,
+                privacyContext: summaryPrivacyContext(for: detail),
+                exitController: summaryExitController,
+                onOpenAISettings: onOpenAISettings,
+                onBackToDetail: { requestDetailTabChange(.meta) }
+            )
         case .log:
             DetailLogTabView(
                 selection: selection,
@@ -268,38 +303,65 @@ extension MainRepositoryDetailPane {
         }
     }
 
+    private func summaryPrivacyContext(for detail: FileEntrySnapshot) -> AISummaryPrivacyContext {
+        AISummaryPrivacyContext(file: detail, tags: summaryPrivacyTags(for: detail))
+    }
+
+    private func summaryPrivacyTags(for detail: FileEntrySnapshot) -> [String] {
+        switch detailTagEditorState {
+        case let .loaded(fileID, tagSet) where fileID == detail.id:
+            tagSet.fileTags.map(\.value)
+        case let .loading(fileID, tagSet?) where fileID == detail.id:
+            tagSet.fileTags.map(\.value)
+        case let .failed(fileID, _, _, tagSet?) where fileID == detail.id:
+            tagSet.fileTags.map(\.value)
+        case .notLoaded, .loading, .loaded, .failed:
+            []
+        }
+    }
+
     @ViewBuilder
     private func detailMetaTabContent(for detail: FileEntrySnapshot) -> some View {
         detailStatusSection
         DetailTagSection(
             file: detail,
+            repoPath: repoPath,
             state: detailTagEditorState,
             suggestionState: detailTagSuggestionState,
             suggestionPresentationRequest: tagSuggestionPresentationRequest,
             undoToast: detailTagUndoToast,
             disabledReason: writeActionDisabledReason(detail.id),
-            onLoadTags: tagActions.onLoadTags,
-            onRetryTags: tagActions.onRetryTags,
-            onAddTag: tagActions.onAddTag,
-            onRemoveTag: tagActions.onRemoveTag,
-            onLoadSuggestions: tagActions.onLoadSuggestions,
-            onRetrySuggestions: tagActions.onRetrySuggestions,
-            onToggleSuggestion: tagActions.onToggleSuggestion,
-            onSelectAllSuggestions: tagActions.onSelectAllSuggestions,
-            onClearSuggestions: tagActions.onClearSuggestions,
-            onStartEditingSuggestions: tagActions.onStartEditingSuggestions,
-            onCancelEditingSuggestions: tagActions.onCancelEditingSuggestions,
-            onEditSuggestionDisplayName: tagActions.onEditSuggestionDisplayName,
-            onEditSuggestionSlug: tagActions.onEditSuggestionSlug,
-            onRegenerateSuggestionSlug: tagActions.onRegenerateSuggestionSlug,
-            onApplySuggestions: tagActions.onApplySuggestions,
-            onApplyEditedSuggestions: tagActions.onApplyEditedSuggestions,
-            onRetryFailedSuggestions: tagActions.onRetryFailedSuggestions,
-            onSuggestionPresentationConsumed: tagActions.onSuggestionPresentationConsumed,
-            onUndoTagChange: tagActions.onUndoTagChange,
-            onDismissUndoToast: tagActions.onDismissTagUndoToast
+            tagActions: tagActions
         )
         metadataRows(for: detail)
+    }
+
+    @ViewBuilder
+    private var semanticSearchDetailBanner: some View {
+        if let semanticDetail {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(semanticDetail.title)
+                    .font(.callout.weight(.semibold))
+                Text("Relevance \(semanticDetail.relevance)  \(semanticDetail.routeLabel)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                DisclosureGroup("Why this matched") {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(semanticDetail.matchedReason)
+                        Text(semanticDetail.whyThisMatched)
+                        if semanticDetail.alsoMatchedNormalSearch {
+                            Text("Also matched normal search")
+                        }
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                }
+            }
+            .padding(10)
+            .background(Color.blue.opacity(0.08))
+            .accessibilityIdentifier("S3-08-semantic-detail-explanation")
+        }
     }
 
     private func detailFileActions(for detail: FileEntrySnapshot) -> some View {
@@ -322,6 +384,16 @@ extension MainRepositoryDetailPane {
                 }
                 .disabled(disabledReason != nil)
                 .accessibilityIdentifier("S2-16-correct-classification")
+                Button("Review AI Suggestion...") {
+                    onBeginAIClassificationSuggestionFile(detail.id)
+                }
+                .disabled(disabledReason != nil)
+                .accessibilityIdentifier("S3-04-review-ai-suggestion")
+                Button("Review Sync Conflict...") {
+                    onBeginSyncConflictReview(detail)
+                }
+                .disabled(disabledReason != nil)
+                .accessibilityIdentifier("S4-X-01-C4-15-review-sync-conflict")
                 if detail.hasICloudConflictCopySignal {
                     Button("Resolve iCloud Conflict...") {
                         onBeginICloudConflictResolution(detail.id)
@@ -347,9 +419,28 @@ extension MainRepositoryDetailPane {
     private func applyDetailTabRequest(_ request: MainDetailTabRequest) {
         switch request {
         case let .automatic(tab):
-            selectedTab = tab
+            requestDetailTabChange(tab)
         }
         onDetailTabRequestConsumed(request)
+    }
+
+    private func requestDetailTabChange(_ tab: DetailPaneTab) {
+        guard selectedTab == .summary, tab != .summary, summaryExitController.needsConfirmation else {
+            selectedTab = tab
+            return
+        }
+        pendingSummaryExitTab = tab
+    }
+
+    private func saveAndFinishPendingSummaryExit() async {
+        guard await summaryExitController.saveChanges() else { return }
+        finishPendingSummaryExit()
+    }
+
+    private func finishPendingSummaryExit() {
+        guard let tab = pendingSummaryExitTab else { return }
+        pendingSummaryExitTab = nil
+        selectedTab = tab
     }
 
     @ViewBuilder
@@ -427,15 +518,9 @@ extension MainRepositoryDetailPane {
 }
 
 private enum DetailRemoveFromIndexButtonStyle {
-    case primary
-    case secondary
+    case primary, secondary
 
     var accessibilityIdentifier: String {
-        switch self {
-        case .primary:
-            "S1-12-missing-remove-from-index"
-        case .secondary:
-            "S1-12-inline-remove-from-index"
-        }
+        self == .primary ? "S1-12-missing-remove-from-index" : "S1-12-inline-remove-from-index"
     }
 }

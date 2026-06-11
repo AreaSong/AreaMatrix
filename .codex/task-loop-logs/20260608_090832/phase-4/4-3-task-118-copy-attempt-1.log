@@ -1,0 +1,40 @@
+**一、执行结论**
+已完成 `4-3/task-118`。
+
+**二、执行范围**
+单任务：`S4-WIN-01 + C4-14 onedrive-risk-state`。修改范围限定在 `apps/**`，未触碰 `core/src/**`。
+
+本次主要修改：
+- [WindowsCloudStorageState.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/WindowsCloudStorageState.cs:1)
+- [WindowsRepositoryCoreBridge.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/WindowsRepositoryCoreBridge.cs:1)
+- [ChooseRepositoryViewModel.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Features/Onboarding/ChooseRepositoryViewModel.cs:1)
+- [AreaMatrixNativeCoreClient.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Core/AreaMatrixNativeCoreClient.cs:1)
+- [NativeCoreInterop.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Core/NativeCoreInterop.cs:1)
+- [NativeCoreLibrary.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Core/NativeCoreLibrary.cs:1)
+- [LazyAreaMatrixWindowsCoreClient.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrix/Core/LazyAreaMatrixWindowsCoreClient.cs:1)
+- [AreaMatrix.Windows.Tests.csproj](/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj:1)
+- [ChooseRepositoryViewModelTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrixTests/ChooseRepository/ChooseRepositoryViewModelTests.cs:1)
+- [ChooseRepositoryViewSmokeTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/windows/AreaMatrixTests/ChooseRepository/ChooseRepositoryViewSmokeTests.cs:1)
+
+**三、完成情况**
+核对清单通过：只处理 `S4-WIN-01` 的 `C4-14` OneDrive 风险状态；接入真实 `detect_cloud_storage_state` native/CoreBridge 路径；未实现同页其他能力、相邻页面或相邻平台。
+
+完成标准通过：OneDrive 路径会先读取 `CloudStorageState`，未确认时路由到 `OneDriveNotice`，已确认时继续原有 open/init/adopt 分支；生产代码没有 mock/fixture/静态状态伪造真实闭环。
+
+Forbidden Touches：`core/src/**` 无改动。
+
+**四、工程质量**
+新增状态模型独立拆分，避免继续堆大文件；所有关键文件保持在 500 行以内。错误路径显式处理，C4-14 探测失败会回到页面错误态，不静默吞错。没有新增依赖；测试 fake 只存在测试代码中，生产路径走 native Core binding。
+
+**五、验证情况**
+已通过：
+- `./dev check task 4-3/task-118`
+- `dotnet test apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj --no-restore`
+- `git diff --check`
+
+`./dev check task` 中有 CoreSimulatorService / FSEvents 环境警告，但最终 `BUILD SUCCEEDED`，命令退出码为 0。
+
+**六、风险与后续**
+剩余风险：当前环境不是 Windows 桌面运行环境，未做真实 WinUI 窗口手工点击验证；已用 ViewModel 和 smoke test 覆盖触发、路由、真实 bridge 符号接入。
+
+工作区另有既有 task-loop 状态改动：`tasks/prompts/_shared/progress.json` 和 `.codex/task-loop-runs/20260608_090832/`，它们在我实现前已处于 dirty / untracked 状态，我未回退。建议下一个任务执行 `4-3/task-119` 做 `S4-WIN-01` 页面集成验收。

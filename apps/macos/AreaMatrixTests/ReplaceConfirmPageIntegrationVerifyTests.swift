@@ -3,6 +3,79 @@ import XCTest
 
 final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
     @MainActor
+    func testS4X09SyncConflictReplaceConfirmConnectsPreviewConfirmationApplyAndExit() async throws {
+        let context = makeS4X09ReplaceContext()
+
+        await context.model.load()
+        await context.model.selectResolution(.useIncoming)
+        await context.model.applyResolution()
+        let unresolvedRequests = await context.resolver.recordedResolveRequests()
+        let preview = try XCTUnwrap(context.model.previewState.preview)
+        let panelBody = s4x01MirrorDescription(of: SyncConflictReplaceConfirmationPanel(
+            preview: preview,
+            confirmation: context.model.replaceConfirmation,
+            disabledReason: context.model.replaceConfirmationDisabledReason,
+            onConfirm: { _ in }
+        ).body)
+
+        assertS4X09ReplacePanelBlocksUnconfirmedApply(
+            model: context.model,
+            unresolvedRequests: unresolvedRequests,
+            panelBody: panelBody
+        )
+
+        context.model.confirmReplacePlan(understandsReplace: true)
+        await context.view.applySelectedResolution()
+        let detectRequests = await context.detector.recordedRequests()
+        let previewRequests = await context.resolver.recordedPreviewRequests()
+        let resolveRequests = await context.resolver.recordedResolveRequests()
+
+        assertS4X09ReplaceApplyExit(
+            model: context.model,
+            detectRequests: detectRequests,
+            previewRequests: previewRequests,
+            resolveRequests: resolveRequests,
+            resolvedReports: context.resolvedReports.reports
+        )
+    }
+
+    @MainActor
+    func testS4X09CoreSafetyBackupAllowsReplaceWhenTrashUnavailable() async throws {
+        let resolver = S4X01RecordingSyncConflictResolver(previewResults: [
+            .keepBoth: .success(.s4x01PreviewFixture()),
+            .useIncoming: .success(.s4x01PreviewFixture(
+                resolution: .useIncoming,
+                canApply: false,
+                requiresReplaceConfirmation: true,
+                trashAvailable: false,
+                backupTarget: ".areamatrix/staging/safety-backups/report.pdf",
+                blockedReason: "Replace confirmation required",
+                previewToken: "preview-token-use-incoming"
+            ))
+        ])
+        let model = SyncConflictReviewModel(
+            repoPath: "/tmp/s4x01-repo",
+            conflictDetector: S4X01RecordingSyncConflictDetector(result: .success([.s4x01Fixture()])),
+            conflictResolver: resolver,
+            errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+        )
+
+        await model.load()
+        await model.selectResolution(.useIncoming)
+        let preview = try XCTUnwrap(model.previewState.preview)
+
+        XCTAssertTrue(preview.hasRecoverableOldVersion)
+        XCTAssertNil(model.replaceConfirmationDisabledReason)
+        XCTAssertTrue(model.canConfirmReplacePlan)
+
+        model.confirmReplacePlan(understandsReplace: true)
+        await model.applyResolution()
+        let resolveRequests = await resolver.recordedResolveRequests()
+
+        XCTAssertEqual(resolveRequests, [.s4x01UseIncomingConfirmedRequest])
+    }
+
+    @MainActor
     func testS124SingleFileReplaceConfirmCoversC109AndC110WithoutImmediateCoreImport() async throws {
         let importer = S117RecordingImporter()
         let duplicateModel = ImportSingleFilePreviewModel(
@@ -154,6 +227,88 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(requestsAfterSuccess.map(\.duplicateStrategy), [.overwrite])
     }
+}
+
+private struct S4X09ReplaceContext {
+    let detector: S4X01RecordingSyncConflictDetector
+    let resolver: S4X01RecordingSyncConflictResolver
+    let model: SyncConflictReviewModel
+    let view: SyncConflictReviewView
+    let resolvedReports: S4X09ResolvedReports
+}
+
+private final class S4X09ResolvedReports {
+    var reports: [SyncConflictResolveReportSnapshot] = []
+}
+
+@MainActor
+private func makeS4X09ReplaceContext() -> S4X09ReplaceContext {
+    let detector = S4X01RecordingSyncConflictDetector(result: .success([.s4x01Fixture()]))
+    let resolver = S4X01RecordingSyncConflictResolver(
+        previewResults: [
+            .keepBoth: .success(.s4x01PreviewFixture()),
+            .useIncoming: .success(.s4x01PreviewFixture(
+                resolution: .useIncoming,
+                canApply: false,
+                requiresReplaceConfirmation: true,
+                blockedReason: "Replace confirmation required",
+                previewToken: "preview-token-use-incoming"
+            ))
+        ],
+        resolveResult: .success(.s4x01ResolveFixture(resolution: .useIncoming))
+    )
+    let model = SyncConflictReviewModel(
+        repoPath: "/tmp/s4x01-repo",
+        conflictDetector: detector,
+        conflictResolver: resolver,
+        errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+    )
+    let resolvedReports = S4X09ResolvedReports()
+    let view = SyncConflictReviewView(
+        model: model,
+        onBackToNeedsReview: {},
+        onClose: {},
+        onResolved: { resolvedReports.reports.append($0) }
+    )
+    return S4X09ReplaceContext(
+        detector: detector,
+        resolver: resolver,
+        model: model,
+        view: view,
+        resolvedReports: resolvedReports
+    )
+}
+
+@MainActor
+private func assertS4X09ReplacePanelBlocksUnconfirmedApply(
+    model: SyncConflictReviewModel,
+    unresolvedRequests: [S4X01SyncConflictResolveRequest],
+    panelBody: String
+) {
+    XCTAssertEqual(unresolvedRequests, [])
+    XCTAssertFalse(model.canApplyResolution)
+    XCTAssertTrue(model.canConfirmReplacePlan)
+    XCTAssertTrue(panelBody.contains("Confirm Replace"))
+    XCTAssertTrue(panelBody.contains("Old file path"))
+    XCTAssertTrue(panelBody.contains("Old version will be kept at"))
+    XCTAssertTrue(panelBody.contains("Affected record"))
+    XCTAssertTrue(panelBody.contains("Change log"))
+    XCTAssertTrue(panelBody.contains("Recovery note"))
+}
+
+@MainActor
+private func assertS4X09ReplaceApplyExit(
+    model: SyncConflictReviewModel,
+    detectRequests: [String],
+    previewRequests: [S4X01SyncConflictPreviewRequest],
+    resolveRequests: [S4X01SyncConflictResolveRequest],
+    resolvedReports: [SyncConflictResolveReportSnapshot]
+) {
+    XCTAssertEqual(detectRequests, ["/tmp/s4x01-repo"])
+    XCTAssertEqual(previewRequests.map(\.resolution), [.keepBoth, .useIncoming])
+    XCTAssertEqual(resolveRequests, [.s4x01UseIncomingConfirmedRequest])
+    XCTAssertEqual(resolvedReports, [.s4x01ResolveFixture(resolution: .useIncoming)])
+    XCTAssertEqual(model.applyDisabledReason, "Resolution has already been applied.")
 }
 
 @MainActor

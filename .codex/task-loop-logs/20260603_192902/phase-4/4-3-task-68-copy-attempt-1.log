@@ -1,0 +1,32 @@
+一、执行结论：已完成。
+
+二、执行范围：单任务 `4-3/task-68`。  
+修改文件：新增 [core/tests/onedrive_risk_state_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/onedrive_risk_state_failure_recovery.rs:1)。未触碰 `apps/**`，未修改 `core/src/**` 或 `core/area_matrix.udl`。
+
+三、完成情况：  
+核对清单已覆盖：空态/非法输入、权限拒绝、IO 错误、DB metadata 错误、错误码映射、失败后不留下半成品、密钥内容不进入状态文案、错误不被静默降级。  
+完成标准已满足：C4-14 的失败路径现在有专属可测试证据，并验证用户文件、`.areamatrix` 既有 staging/generated 状态和 `repo_config` 在失败前后保持安全。
+
+四、工程质量：  
+新增的是集成测试，不引入依赖、不加 mock-only 分支、不硬编码通过态。测试使用临时目录、真实 `init_repo`、真实 SQLite `repo_config`、真实 Core API 调用；失败注入通过 DB trigger / schema 破坏验证真实错误路径。代码已格式化，文件约 307 行，未超过规范阈值。
+
+五、验证情况：  
+已通过：
+
+```bash
+cargo test --test onedrive_risk_state_failure_recovery -- --nocapture
+```
+
+6 个测试通过。
+
+最终任务验证也已通过：
+
+```bash
+CARGO_TARGET_DIR=/private/tmp/areamatrix-task-68-target ./dev check task 4-3/task-68
+```
+
+通过内容包括 `prompt doctor`、`git diff --check`、`cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`，以及 `onedrive_risk_state_contract_api`、`onedrive_risk_state_failure_recovery`、`onedrive_risk_state_implementation` targeted tests。
+
+六、风险与后续：  
+仓库里原本已有两处非本次范围脏改动：`.codex/task-loop-runs/20260603_192902/summary.json`、`tasks/prompts/_shared/progress.json`，我没有触碰。  
+另外，第一次默认 `core/target` 验证卡在 Cargo lock；两个残留 Cargo PID `12057`、`74860` 持有 `core/target/debug/.cargo-lock`，当前系统拒绝我发送 signal。后续若直接跑默认 target 的 Cargo 命令仍等待锁，需要在宿主环境清掉这两个进程或换 `CARGO_TARGET_DIR`。建议下一个任务是 `4-3/task-69`。

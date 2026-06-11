@@ -1,0 +1,48 @@
+一、执行结论
+
+- 已完成。
+- C4-12 `platform-watcher-status` 已从合同占位改为可持久化、可测试、可桥接调用的 Core 行为。
+
+二、执行范围
+
+- 单任务：`4-3/task-57`
+- 修改文件：
+  - `core/src/platform_watcher_status.rs`
+  - `core/src/db/mod.rs`
+  - `core/src/db/platform_watcher_status.rs`
+  - `core/tests/platform_watcher_status_implementation.rs`
+- 未修改：`core/area_matrix.udl`
+- 未触碰：`apps/**`
+
+三、完成情况
+
+- 只实现 C4-12：通过，未实现相邻 C4 能力。
+- 输入/输出/DB/错误映射：通过，`record_watcher_health` 校验 signal，生成 `PlatformWatcherSnapshot`，写入 `repo_config.platform_watcher_health`。
+- 文件系统边界：通过，不启动 watcher、不调用 sync/rescan/reindex、不移动/删除/覆盖用户文件。
+- 测试支撑：已补 implementation test，覆盖持久化、更新、invalid signal、未初始化 repo、cursor 不推进和用户文件不变。
+
+四、工程质量
+
+- 代码结构清晰：watcher 业务校验留在 `platform_watcher_status.rs`，DB 写入封装到 `db/platform_watcher_status.rs`。
+- 注释/rustdoc：沿用并更新了 C4-12 API 错误说明。
+- 错误处理：无生产路径 `unwrap/expect/panic`；metadata 写入错误归一到 `Db` / `Io`。
+- 无新增依赖；无 mock-only、硬编码通过态或一次性脚本实现。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+cargo fmt --all -- --check
+cargo test --test platform_watcher_status_implementation -- --nocapture
+cargo test --test platform_watcher_status_contract_api -- --nocapture
+./dev check task 4-3/task-57
+```
+
+`./dev check task 4-3/task-57` 通过内容包括：prompt doctor、diff check、`platform_watcher_status_contract_api`、`platform_watcher_status_implementation`。
+
+六、风险与后续
+
+- 剩余风险：未跑远端 CI、未做 Git checkpoint；当前只证明本地 task gate 通过。
+- 工作树中原本已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 脏改动，我未修改或回退它们。
+- 建议下一个任务：`4-3/task-58`，继续做 C4-12 failure-edge。

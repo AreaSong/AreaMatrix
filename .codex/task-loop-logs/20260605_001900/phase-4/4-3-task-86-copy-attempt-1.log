@@ -1,0 +1,53 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-3/task-86` C4-18 contract-api。
+
+修改文件清单：
+- `core/src/missing_file_recovery.rs`
+- `core/src/api.rs`
+- `core/src/lib.rs`
+- `core/area_matrix.udl`
+- `core/tests/missing_file_recovery_contract_api.rs`
+- `docs/api/core-api.md`
+
+说明：`docs/api/core-api.md` 是本任务 Exact Docs 中的 Core API 源事实，按提示授权同步修复了 C4-18 API/UDL 直接漂移。未修改 `apps/**`。
+
+三、完成情况
+
+核对清单均完成：
+- 已读取 C4-18 能力规格、Stage 4 control map、Core API、错误码。
+- 已对齐 API 名称、输入、输出、错误码、权限/隐私边界。
+- 只补合同、类型、桥接声明和 Core API 文档；未实现相邻能力。
+- 已记录页面消费方：`S4-X-06` 可从 `MissingFileState` 得到缺失摘要、原因、hash 校验线索、按钮可用性、remove-record 确认要求和 rescan 路由状态。
+
+完成标准：
+- C4-18 的 Core API 合同已可供后续 implementation task 实现。
+- 合同只服务 `S4-X-06 missing-file-recovery`，未引入 control map 之外页面能力。
+
+四、工程质量
+
+新增 `missing_file_recovery` 模块集中定义 C4-18 DTO、enum 和三个入口：`get_missing_file_state`、`relink_missing_file`、`remove_missing_file_record`。公共 Rust API 已补 rustdoc 和 `# Errors`。
+
+当前仍是 contract-api：有效输入下返回结构化 `Db` 缺少 metadata 的错误，不写 DB、不写 change log、不读写用户文件。无 mock-only 成功路径、无硬编码通过态、无真实恢复业务逻辑越界实现。
+
+五、验证情况
+
+已运行并通过：
+- `cargo test --test missing_file_recovery_contract_api -- --nocapture`
+- `cargo fmt`
+- `./dev check task 4-3/task-86`
+
+最终 task gate 结果：
+- `prompt doctor`: OK
+- `git diff --check`: OK
+- targeted test `missing_file_recovery_contract_api`: 4 passed
+
+六、风险与后续
+
+剩余风险：真实 DB 查询、hash 校验、path 更新、remove-record change log 写入仍未实现，这是后续 `4-3/task-87` / failure-edge / validation 任务范围。
+
+建议下一个任务：`4-3/task-87` C4-18 implementation。

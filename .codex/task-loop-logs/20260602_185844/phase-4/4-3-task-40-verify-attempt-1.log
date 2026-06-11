@@ -1,0 +1,70 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-40`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-40-c4-08-integration-verify.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/cloud_permission_state.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/cloud_permission_state_*.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：4
+- 未覆盖项数：0
+- 通过项数：4
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：交叉检查 capability spec、Core API、UDL、Rust 实现和测试
+- 结果：通过
+- 证据：C4-08 spec 定义只读探测、输出 provider/risk/placeholder/permission state 和错误码，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md:8`。Core API 与 UDL 均声明 `detect_cloud_storage_state` 和 `CloudStorageState`，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:384`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl:363`。Rust 实现与 public API 已连接，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/cloud_permission_state.rs:99`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs:1669`。测试覆盖 contract、failure、implementation、validation 四层。
+- 涉及文件：上述 Core API、UDL、Rust、tests 文件
+
+- 项目：确认消费页面需要的状态、错误和副作用均已覆盖
+- 结果：通过
+- 证据：Core API 明确服务 `S4-IOS-06`、`S4-WIN-03` 和 `S4-IOS-01` 云盘分支，字段包含 `provider_kind`、`risk`、`placeholder_state`、`permission_state`、`can_retry`、`requires_reconnect`，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:5856`、`/Users/as/Ai-Project/project/AreaMatrix/docs/api/core-api.md:5860`。实现返回 Local/iCloud/OneDrive 结构化状态，错误映射覆盖 placeholder、permission denied、Io，且 failure 测试验证只读无副作用。
+- 涉及文件：`core/src/cloud_permission_state.rs`、`core/tests/cloud_permission_state_failure_recovery.rs`
+
+- 项目：确认没有实现 control map 之外的能力
+- 结果：通过
+- 证据：control map 中 C4-08 只绑定 `S4-IOS-01`、`S4-IOS-06`、`S4-WIN-03`，见 `/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-4-control-map.md:9`、`:14`、`:18`。实现仅做云盘状态只读探测，不写 DB、不管理 SDK、不触发下载，见 `/Users/as/Ai-Project/project/AreaMatrix/core/src/cloud_permission_state.rs:84`。
+- 涉及文件：`docs/architecture/stage-4-control-map.md`、`core/src/cloud_permission_state.rs`
+
+- 项目：不得修改文件；只记录验收证据和阻塞项
+- 结果：通过
+- 证据：本轮验收未执行任何写入/修复命令。当前脏改动中无 `apps/**`；`tasks/prompts/_shared/progress.json` 与 `.codex/task-loop-runs/.../summary.json` 为 runner in_progress 收口时序，按本 prompt 规则不作为 verify 阻断。`core/tests/cloud_permission_state_validation.rs` 的 diff 是任务范围内测试格式拆行。
+- 涉及文件：工作区状态、manifest Forbidden Touches
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。`core/src/cloud_permission_state.rs` 249 行，职责集中；provider 判断、路径校验、目录可检查性、错误映射均拆成小函数。
+- 注释 / rustdoc / 文档同步：通过。public 类型和 API 有 rustdoc；Core API、UDL、Rust re-export 和测试均对齐。
+- 错误处理与边界处理：通过。生产实现无 `unwrap()` / `expect()` / `panic!()`；`PermissionDenied`、`ICloudPlaceholder`、`Io` 均显式处理。
+- 测试与验证覆盖：通过。已运行 task-scoped 验证，覆盖 contract 5、failure 7、implementation 4、validation 3，共 19 个 C4-08 测试。
+- 占位、硬编码、mock-only、一次性实现检查：通过。实现读取真实路径 metadata/read_dir，不写 DB、不创建 `.areamatrix`、不读/改用户文件内容、不调用云盘 SDK。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 跑了哪些验证：`./dev check task 4-3/task-40`
+- 哪些通过：`prompt doctor` 通过；`git diff --check` 通过；`cargo fmt --all -- --check` 通过；`cargo clippy --all-targets --all-features -- -D warnings` 通过；4 个 C4-08 targeted test binary 全部通过。
+- 哪些失败：无
+- 哪些缺失：未运行 `./dev check all` / `cargo test --workspace`；本 task manifest 与 validation-driver 对 core integration verify 要求是 `./dev check task 4-3/task-40`，本轮不需要扩大到全仓宽门禁。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C4-08 可以作为后续 page-feature task 的真实 Core 依赖；没有发现阻塞后续 UI 接入的问题。
+
+VERIFY_RESULT: PASS

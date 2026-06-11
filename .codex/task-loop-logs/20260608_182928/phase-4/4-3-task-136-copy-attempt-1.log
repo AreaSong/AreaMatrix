@@ -1,0 +1,52 @@
+一、执行结论
+
+已完成。`4-3/task-136` 的 S4-LNX-04 + C4-19 manual-rescan 页面功能已接入真实 CoreBridge / native UniFFI 绑定路径，并通过任务指定验证。
+
+二、执行范围
+
+单任务：`4-3/task-136`。改动限制在 `apps/**`，未触碰 `core/src/**`。
+
+修改文件清单：
+- [AreaMatrixNativeCoreClient.WatcherStatus.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.WatcherStatus.cs)
+- [AreaMatrixNativeCoreClient.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.cs)
+- [NativeCoreInterop.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Core/NativeCoreInterop.cs)
+- [NativeCoreLibrary.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Core/NativeCoreLibrary.cs)
+- [LinuxWatcherStatusCoreBridge.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/LinuxWatcherStatusCoreBridge.cs)
+- [LinuxWatcherStatusModels.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/LinuxWatcherStatusModels.cs)
+- [LinuxWatcherStatusView.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/LinuxWatcherStatusView.cs)
+- [LinuxWatcherStatusViewModel.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/LinuxWatcherStatusViewModel.cs)
+- [LinuxWatcherStatusViewModel.Rescan.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/LinuxWatcherStatusViewModel.Rescan.cs)
+- [WatcherStatusView.ui](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrix/Features/System/WatcherStatusView.ui)
+- [LinuxMainWindowSmokeTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/Library/LinuxMainWindowSmokeTests.cs)
+- [LinuxWatcherStatusSmokeTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/System/LinuxWatcherStatusSmokeTests.cs)
+- [LinuxWatcherStatusViewModelTests.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/System/LinuxWatcherStatusViewModelTests.cs)
+- [LinuxWatcherStatusTestDoubles.cs](/Users/as/Ai-Project/project/AreaMatrix/apps/linux/AreaMatrixTests/System/LinuxWatcherStatusTestDoubles.cs)
+
+三、完成情况
+
+核对清单全部完成：只处理 S4-LNX-04 中 C4-19；已读取页面规格、control map、Core API、C4-19 规格；页面只在 `Run rescan now` 时调用 `get_latest_scan_session` 和 `preview_manual_rescan`，然后把 `LinuxRescanConfirmRequest` 交给 S4-X-07；没有顺手实现同页 C4-12 之外的新功能闭环。
+
+完成标准全部满足：用户可见入口可触发并进入确认交接；没有用 mock、fixture 或静态状态伪造生产闭环；S4-LNX-04 不直接调用 `reindex_from_filesystem` / `resume_scan_session`，避免在确认页前启动扫描。
+
+Forbidden Touches：未触碰 `core/src/**`。
+
+四、工程质量
+
+结构上把 rescan 状态和交接逻辑拆到 partial ViewModel，避免继续堆大主文件；CoreBridge 映射、native binding、页面状态和测试边界分层清楚。错误路径显式处理：读取 latest scan session、preview 失败会映射为页面错误；已有 running reindex session 会禁用二次 rescan。没有新增依赖，没有新增 Rust public API，因此无 rustdoc 同步需求。未发现占位、硬编码通过态、mock-only 生产路径或一次性脚本实现。
+
+五、验证情况
+
+已运行并通过：
+- `./dev check task 4-3/task-136`：PASS，包含 `prompt doctor`、`git diff --check`、task 映射出的 macOS build gate；`xcodebuild` 有 CoreSimulator 环境警告，但最终 `BUILD SUCCEEDED`，命令退出码 0。
+- `dotnet run --project apps/linux/AreaMatrixTests/AreaMatrix.Linux.Tests.csproj`：PASS，输出 `AreaMatrix Linux tests passed.`
+- `git diff --name-only -- core/src`：无输出，确认 Forbidden Touches 未被修改。
+- `git diff --check`：PASS，无空白 diff 问题。
+- Linux C# 文件长度扫描：没有超过 500 行的改动文件。
+
+未运行：没有升级到 `./dev check all`、`cargo test --workspace` 或宽门禁；manifest 对本 atomic task 的验证上限是 `./dev check task 4-3/task-136`。
+
+六、风险与后续
+
+剩余风险：当前任务只完成 S4-LNX-04 到 S4-X-07 的手动 rescan 预览与确认交接，不执行真正 reindex；真实确认页执行链路仍应由 `4-3/task-158` 覆盖。工作树里还存在 `.codex/task-loop-runs/20260608_182928/summary.json` 和 `tasks/prompts/_shared/progress.json` 的非产品脏文件，未纳入本任务产品改动。
+
+建议下一个任务：继续执行 S4-X-07 / C4-19 的 rescan-confirm 任务，补齐确认后调用 `reindex_from_filesystem` / `resume_scan_session` 的真实闭环。

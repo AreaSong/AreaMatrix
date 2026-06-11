@@ -1,0 +1,49 @@
+一、执行结论
+
+已完成。
+
+二、执行范围
+
+单任务：`4-3/task-78`，只触碰允许范围内的 Core 文件：
+
+- [core/src/db/sync_conflicts.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/db/sync_conflicts.rs)
+- [core/src/sync_conflict_resolve.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync_conflict_resolve.rs)
+- [core/src/sync_conflict_resolve/apply.rs](/Users/as/Ai-Project/project/AreaMatrix/core/src/sync_conflict_resolve/apply.rs)
+- [core/tests/sync_conflict_resolve_failure_recovery.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_conflict_resolve_failure_recovery.rs)
+- [core/tests/sync_conflict_resolve_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/sync_conflict_resolve_implementation.rs)
+
+本轮实际修复是 `rustfmt` 格式化门禁；未修改 `apps/**`，未修改 UDL。
+
+三、完成情况
+
+核对清单已满足：空态/非法输入、权限、IO/DB 错误、错误码映射、DB 写失败回滚、stale token、replace confirmation、失败保持 unresolved 均有实现和测试证据。隐私/AI/远程调用不在 C4-16 范围，当前实现没有引入网络或密钥路径。
+
+完成标准已满足：C4-16 失败路径有明确 `CoreError` 返回；文件替换路径有 Trash / rollback guard；DB 写失败测试证明用户文件与 conflict state 不留下半成品。
+
+Forbidden Touches：未触碰 `apps/**`。
+
+四、工程质量
+
+代码结构与逻辑清晰，现有 preview / apply / plan / DB 写入分层保持不变；本轮仅格式化。生产路径未发现 `unwrap()`、`expect()`、`panic!()` 或静默吞错。rustdoc/API 文档已有，未新增 public API 或依赖。
+
+五、验证情况
+
+已运行并通过：
+
+```bash
+./dev check task 4-3/task-78
+```
+
+该命令完成：
+
+- prompt doctor：OK
+- git diff --check：通过
+- cargo fmt --all -- --check：通过
+- cargo clippy --all-targets --all-features -- -D warnings：通过
+- `sync_conflict_resolve_contract_api`：4 passed
+- `sync_conflict_resolve_failure_recovery`：4 passed
+- `sync_conflict_resolve_implementation`：4 passed
+
+六、风险与后续
+
+剩余风险：当前工作树仍有已有的 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 脏改动，不属于本任务允许路径，我没有触碰。建议下一个任务按依赖继续 `4-3/task-79`。

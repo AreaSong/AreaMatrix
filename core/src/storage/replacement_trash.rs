@@ -11,7 +11,8 @@ pub(super) struct ReplacementFileGuard {
     original_path: PathBuf,
     archived_path: PathBuf,
     archive_dir: PathBuf,
-    trash_copy_path: Option<PathBuf>,
+    rollback_trash_copy_path: Option<PathBuf>,
+    trash_copy_confirmed: bool,
     armed: bool,
 }
 
@@ -30,13 +31,14 @@ impl ReplacementFileGuard {
             original_path: original_path.to_path_buf(),
             archived_path: archived_path.to_path_buf(),
             archive_dir,
-            trash_copy_path: None,
+            rollback_trash_copy_path: None,
+            trash_copy_confirmed: false,
             armed: true,
         })
     }
 
     pub(super) fn ensure_system_trash_copy(&mut self) -> CoreResult<()> {
-        if self.trash_copy_path.is_some() {
+        if self.trash_copy_confirmed {
             return Ok(());
         }
 
@@ -60,37 +62,41 @@ impl ReplacementFileGuard {
             return Err(CoreError::io("io error"));
         }
 
-        if let Err(error) = send_to_system_trash(&trash_copy_path) {
-            let _cleanup_result = fs::remove_file(&trash_copy_path);
-            let _cleanup_result = fs::remove_dir(&trash_copy_dir);
-            return Err(error);
-        }
-        self.trash_copy_path = Some(trash_copy_path);
+        let trash_destination = match send_to_system_trash(&trash_copy_path) {
+            Ok(path) => path,
+            Err(error) => {
+                let _cleanup_result = fs::remove_file(&trash_copy_path);
+                let _cleanup_result = fs::remove_dir(&trash_copy_dir);
+                return Err(error);
+            }
+        };
+        let _cleanup_result = fs::remove_dir(&trash_copy_dir);
+        self.rollback_trash_copy_path = trash_destination;
+        self.trash_copy_confirmed = true;
         Ok(())
     }
 
     pub(super) fn disarm(&mut self) {
-        self.cleanup_trash_copy();
         let _cleanup_result = fs::remove_file(&self.archived_path);
         let _cleanup_result = fs::remove_dir(&self.archive_dir);
         self.armed = false;
     }
 
-    fn cleanup_trash_copy(&self) {
-        if let Some(trash_copy_path) = &self.trash_copy_path {
+    fn cleanup_rollback_trash_copy(&self) {
+        if let Some(trash_copy_path) = &self.rollback_trash_copy_path {
             let _cleanup_result = fs::remove_file(trash_copy_path);
-            if let Some(parent) = trash_copy_path.parent() {
-                let _cleanup_result = fs::remove_dir(parent);
-            }
         }
     }
 }
 
 impl Drop for ReplacementFileGuard {
     fn drop(&mut self) {
-        self.cleanup_trash_copy();
-        if self.armed && self.archived_path.exists() && !self.original_path.exists() {
-            let _restore_result = move_recoverable_file(&self.archived_path, &self.original_path);
+        if self.armed {
+            self.cleanup_rollback_trash_copy();
+            if self.archived_path.exists() && !self.original_path.exists() {
+                let _restore_result =
+                    move_recoverable_file(&self.archived_path, &self.original_path);
+            }
             let _cleanup_result = fs::remove_dir(&self.archive_dir);
         }
     }

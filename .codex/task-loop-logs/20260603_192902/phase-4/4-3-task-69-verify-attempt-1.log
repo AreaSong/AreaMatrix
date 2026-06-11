@@ -1,0 +1,84 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-3/task-69`
+- 对应文件路径：
+  - `/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-3-stage4-multiplatform/task-69-c4-14-validation.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/cloud_permission_state.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+  - `/Users/as/Ai-Project/project/AreaMatrix/core/tests/onedrive_risk_state_validation.rs`
+
+三、完成度摘要
+
+- 已覆盖项数：6
+- 未覆盖项数：0
+- 通过项数：6
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：补齐测试，覆盖成功和失败路径
+- 结果：通过
+- 证据：`core/tests/onedrive_risk_state_validation.rs:124` 覆盖成功、确认持久化、用户文件不变；`:153` 覆盖空路径、`.areamatrix` 内部路径、placeholder、非目录、未初始化确认失败且不变更文件。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/onedrive_risk_state_validation.rs`
+
+- 项目：验证 Core API / UDL / Rust 实现一致
+- 结果：通过
+- 证据：UDL 暴露 `detect_cloud_storage_state` 与 `acknowledge_onedrive_risk_notice`，见 `core/area_matrix.udl:386`、`:389`；结构字段见 `core/area_matrix.udl:1742`；枚举见 `core/area_matrix.udl:2154`。Rust API 转发和 rustdoc 见 `core/src/api.rs:1741`、`:1766`。实现见 `core/src/cloud_permission_state.rs:128`、`:157`。一致性锁定测试见 `core/tests/onedrive_risk_state_validation.rs:191`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/api.rs`、`/Users/as/Ai-Project/project/AreaMatrix/core/src/cloud_permission_state.rs`
+
+- 项目：不新增业务功能，只补验证与必要测试 fixture
+- 结果：通过
+- 证据：当前 Core 业务代码和 UDL 未出现工作区改动；新增范围仅为 `core/tests/onedrive_risk_state_validation.rs`。`git status --short -- apps core/src core/area_matrix.udl core/tests/onedrive_risk_state_validation.rs` 仅显示 `?? core/tests/onedrive_risk_state_validation.rs`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/tests/onedrive_risk_state_validation.rs`
+
+- 项目：记录无法运行的验证及原因
+- 结果：通过
+- 证据：必需验证 `./dev check task 4-3/task-69` 已运行且通过，无必需验证未运行。宽门禁 `cargo fmt/clippy/cargo test --workspace` 不属于本 task manifest 的默认上限。
+- 涉及文件：task manifest validation
+
+- 项目：C4-14 有足够测试证明可进入 UI 接入
+- 结果：通过
+- 证据：能力规格要求只读探测、确认持久化、不控制 OneDrive 同步、不使用 SDK，见 `docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md:7`、`:21`、`:25`、`:34`；S4-WIN-03 消费要求见 `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-03-onedrive-notice.md:23`、`:71`、`:106`；测试覆盖这些消费字段与边界，见 `core/tests/onedrive_risk_state_validation.rs:95`、`:112`、`:203`、`:317`。
+- 涉及文件：C4-14 spec、S4-WIN-03 spec、validation test
+
+- 项目：Validation 命令通过或失败原因明确记录
+- 结果：通过
+- 证据：`./dev check task 4-3/task-69` exit 0；doctor OK；`git diff --check` OK；4 个 targeted Rust test binary 共 16 个测试全部通过。
+- 涉及文件：验证命令输出
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过。核心实现拆在 `cloud_permission_state.rs`，API 层只做转发；验证 task 只新增测试，没有扩散到业务实现。
+- 注释 / rustdoc / 文档同步：通过。public API rustdoc 覆盖错误边界，见 `core/src/api.rs:1741`、`:1766`；UDL、Core API 文档和 Rust 实现由测试锁定。
+- 错误处理与边界处理：通过。实现对空路径、metadata 内部路径、placeholder、权限、非目录、DB metadata 错误、确认写入失败均返回显式错误；测试见 `core/tests/onedrive_risk_state_failure_recovery.rs:109`、`:165`、`:204`、`:240`、`:269`。
+- 测试与验证覆盖：通过。contract、implementation、failure-recovery、validation 四层 targeted tests 均通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过。没有 UI mock 或 SDK mock；测试走真实 Core API、临时文件系统和 SQLite repo metadata。
+
+六、阻塞项
+
+- 未发现阻塞项。
+
+七、验证情况
+
+- 已运行：`./dev check task 4-3/task-69`
+- 通过：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`，输出 `doctor: OK`、`tasks: 637`、`manifests: 637`。
+- 通过：`git diff --check`
+- 通过：`cargo test --test onedrive_risk_state_contract_api -- --nocapture`，4 passed。
+- 通过：`cargo test --test onedrive_risk_state_failure_recovery -- --nocapture`，6 passed。
+- 通过：`cargo test --test onedrive_risk_state_implementation -- --nocapture`，3 passed。
+- 通过：`cargo test --test onedrive_risk_state_validation -- --nocapture`，3 passed。
+- 缺失：无必需验证缺失。
+- 边界复核：`apps/**` 无改动；无 staged 变更；`progress.json` 和 `.codex/task-loop-runs/.../summary.json` 仅为当前 task-loop in-progress 收口状态，按本 verify 阶段规则不构成失败。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。C4-14 的成功路径、失败路径、只读边界、确认持久化、Core API / UDL / Rust 一致性均有文件和新鲜验证命令证明，可以视为当前单任务验收通过。
+
+VERIFY_RESULT: PASS

@@ -21,8 +21,9 @@ struct ClassifierRuleHandoffRouteView: View {
 
         var note: String {
             self == .saveRule
-                ? "This handoff does not change the current file or save classifier rules."
-                : "No files are reclassified and no rules are saved from this handoff."
+                // swiftlint:disable:next line_length
+                ? "Saving this rule only affects future classifier behavior and does not undo the current classification."
+                : "Previewing impact does not undo the current classification or save a rule."
         }
     }
 
@@ -72,6 +73,7 @@ struct ClassifierRuleHandoffRouteView: View {
             MainFileActionSheetContainer(title: mode.title, pageID: mode.pageID) {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(mode.intro).font(.callout).foregroundStyle(.secondary)
+                    Text(mode.note).font(.caption).foregroundStyle(.secondary)
                     ClassifierRuleHandoffSummary(handoff: handoff)
                     saveRuleContent
                     actionButtons

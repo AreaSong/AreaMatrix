@@ -1,0 +1,89 @@
+一、验收结论
+
+- 通过
+
+二、验收范围
+
+- 单任务：`4-2/task-55`
+- Task 文件：`/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/phase-4/4-2-stage3-ai/task-55-s3-03-page-integration-verify.md`
+- 验收代码范围：`/Users/as/Ai-Project/project/AreaMatrix/apps/**`、`/Users/as/Ai-Project/project/AreaMatrix/core/area_matrix.udl`
+- Expected New Paths：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/**`、`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/**`
+
+三、完成度摘要
+
+- 已覆盖项数：10
+- 未覆盖项数：0
+- 通过项数：10
+- 不通过项数：0
+- 阻塞项数：0
+
+四、逐项验收结果
+
+- 项目：page-feature task 覆盖 C3-03 / C3-09
+- 结果：通过
+- 证据：`task-53` 覆盖 C3-03，`task-54` 覆盖 C3-09；control map 对 S3-03 只声明 `C3-03, C3-09`；`RemoteProviderConfigModelTests` 新增整页集成测试覆盖 enable、privacy gate、disable。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrixTests/RemoteProviderConfigModelTests.swift:327`
+
+- 项目：页面入口、退出、状态闭环
+- 结果：通过
+- 证据：AI 设置页通过 `Configure remote AI` 打开 `RemoteModelConfigSheet`，关闭后刷新 AI settings；sheet 的 Cancel 丢弃草稿，Enable 成功后关闭，Disable 确认后关闭。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Views/Settings/AdvancedSettingsSupportViews.swift:234`
+
+- 项目：C3-03 CoreBridge 真实接入
+- 结果：通过
+- 证据：`CoreBridge` 调用 UniFFI 生成入口 `loadRemoteAiProviderConfig`、`testRemoteAiProvider`、`enableRemoteAiProvider`、`disableRemoteAiProvider`，没有生产 mock。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Bridge/CoreRemoteProviderConfiguring.swift:27`
+
+- 项目：C3-09 privacy gate 真实接入
+- 结果：通过
+- 证据：`RemotePrivacyGateModel` 通过 `listAiPrivacyRules` / `updateAiPrivacyRules` 读写 `privacy_gate_enabled`，并把 provider scope 传入 C3-09 请求。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/RemoteProviderConfigState.swift:116`
+
+- 项目：mock / fixture / 硬编码状态检查
+- 结果：通过
+- 证据：生产路径使用 Keychain、CoreBridge、UniFFI 和 Core；mock/fixture 仅在 XCTest support 中出现。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/RemoteProviderCredentialStore.swift:33`
+
+- 项目：不新增 control map 外能力
+- 结果：通过
+- 证据：生产实现只接入 C3-03 provider config 和 C3-09 privacy gate；未引入 S3-03 control map 外的新 Core 能力。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/docs/architecture/stage-3-control-map.md:9`
+
+- 项目：Expected New Paths
+- 结果：通过
+- 证据：`apps/macos/AreaMatrix/**` 与 `apps/macos/AreaMatrixTests/**` 均存在且包含 S3-03 实现与测试。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/apps/macos/AreaMatrix/Features/AI/RemoteModelConfigSheet.swift:3`
+
+- 项目：Forbidden Touches
+- 结果：通过
+- 证据：`git diff --name-only -- core/src` 无输出，未触碰 `core/src/**`。
+- 涉及文件：`/Users/as/Ai-Project/project/AreaMatrix/core/src/**`
+
+五、工程质量验收
+
+- 代码结构与逻辑：通过，生产文件均低于 500 行，页面、状态、credential store、CoreBridge 分层清晰。
+- 注释 / rustdoc / 文档同步：通过，本 task 未改 Core public API；UDL 与 core-api 已含 C3-03/C3-09 合同。
+- 错误处理与边界处理：通过，覆盖 key draft 回滚、enable 失败 unused credential、privacy gate 失败 retry/disable/open rules。
+- 测试与验证覆盖：通过，`./dev check task 4-2/task-55` 和 `./dev test macos` 均通过。
+- 占位、硬编码、mock-only、一次性实现检查：通过，生产路径未发现 mock-only 闭环；测试 fixture 没有进入生产路径。
+
+六、阻塞项
+
+- 未发现阻塞项
+
+七、验证情况
+
+- 已运行：`./dev check task 4-2/task-55`
+- 结果：通过；`prompt doctor` OK，`git diff --check` 通过，macOS build gate `** BUILD SUCCEEDED **`。
+- 已运行：`./dev test macos`
+- 结果：通过；标准 `xcodebuild test` 在测试结束阶段被本地 `testmanagerd` sandbox 阻断，脚本按规则复用已构建 XCTest bundle，`xcrun xctest` 通过。
+- 失败：无产品构建、测试断言或 task-scoped gate 失败。
+- 缺失：未做真实窗口点击冒烟；当前验收以 SwiftUI build、CoreBridge wiring 和 XCTest 证据为准。
+
+八、最终判定说明
+
+- 本次执行已达到验收标准。
+- 当前仓库状态足以把 `4-2/task-55` 判定为完成；runner 的 progress / summary / Git checkpoint 收口属于 verify PASS 后阶段，不作为本轮阻断。
+
+
+VERIFY_RESULT: PASS

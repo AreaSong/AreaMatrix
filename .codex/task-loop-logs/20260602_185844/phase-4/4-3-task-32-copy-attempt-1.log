@@ -1,0 +1,45 @@
+**一、执行结论**
+
+已完成。
+
+**二、执行范围**
+
+单任务：`4-3/task-32`，仅处理 C4-07 mobile-detail Core 行为闭环。
+
+修改文件：
+- [mobile_detail_implementation.rs](/Users/as/Ai-Project/project/AreaMatrix/core/tests/mobile_detail_implementation.rs)
+
+未触碰 `apps/**`。工作区原本已有 `.codex/task-loop-runs/.../summary.json` 和 `tasks/prompts/_shared/progress.json` 修改，我未回退。
+
+**三、完成情况**
+
+- 只实现 C4-07：通过新增独立 `mobile_detail_implementation` 测试证明 `get_file` + `list_changes` + `read_note` 组合，不实现相邻 C* 能力。
+- 输入/输出/DB/文件系统/错误映射：覆盖 `file_id` 输入、metadata/log/note 输出、DB 只读计数不变、用户文件和 note sidecar 不变、缺失 file_id 映射 `FileNotFound`。
+- Rust Core 不依赖平台 UI API：未引入平台依赖，未改 Swift/UI。
+- 最小测试支撑：新增 3 个 C4-07 implementation 测试。
+
+完成标准满足：C4-07 可由精确 Core test target 验证；未触碰用户文件安全边界之外行为。
+
+**四、工程质量**
+
+测试结构拆成小 helper，避免单个测试函数过长。无占位、硬编码通过态、mock-only wiring 或一次性脚本实现。未新增 public Rust API，因此无新增 rustdoc 需求；未改 Core API/UDL，因为现有合同与实现已满足本 task。
+
+**五、验证情况**
+
+已运行并通过：
+
+```bash
+./dev check task 4-3/task-32
+```
+
+结果：
+- `prompt doctor`: OK
+- `git diff --check`: OK
+- `cargo test --test mobile_detail_contract_api -- --nocapture`: 4 passed
+- `cargo test --test mobile_detail_implementation -- --nocapture`: 3 passed
+
+未运行更宽门禁；按本 task 要求，验证上限是 `./dev check task 4-3/task-32`。
+
+**六、风险与后续**
+
+剩余风险较低：本任务只补 Core 行为验证，未做页面接入。建议下一个任务进入 `4-3/task-33`，补 C4-07 failure-edge 的失败路径与边界语义。

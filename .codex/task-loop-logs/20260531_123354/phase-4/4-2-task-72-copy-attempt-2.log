@@ -1,0 +1,26 @@
+已完成。
+
+**改动**
+- 只修了 `apps/macos/AreaMatrix/Features/AI/AIPrivacyRulesView.swift`
+- 把 `loadPage()` 里 `async let` 并发加载改成顺序 `await`，避免 Swift 6 下读取 `@MainActor` 模型属性时的并发警告
+
+**原因**
+- 上次验收卡在 `model.isLoaded` 的并发访问 warning
+- 这次修复保持功能不变，只收紧了加载时序，避免长期工具链兼容性问题
+
+**验证**
+- `./dev check task 4-2/task-72` 通过
+- 其中包含：
+  - `python3 tasks/prompts/_shared/prompt_pipeline.py doctor` 通过
+  - `git diff --check` 通过
+  - `xcodebuild ... build CODE_SIGNING_ALLOWED=NO` 通过
+- 这次构建里没有再出现之前那条 Swift 并发 warning
+
+**工程质量**
+- 代码结构仍然清晰，没有引入新抽象
+- 错误处理、CoreBridge 路径、mock 边界都没改动
+- 这次修复是最小范围，符合当前 task 的长期维护标准
+
+**风险 / 未验证项**
+- 仍有构建环境噪声来自本机 CoreSimulator/Xcode 服务，但不影响本次 task 的 build 结论
+- 其余工作区已有的未提交改动不属于本次修复范围

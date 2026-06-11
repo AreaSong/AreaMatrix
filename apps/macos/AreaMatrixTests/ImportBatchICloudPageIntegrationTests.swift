@@ -274,28 +274,29 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
 
 extension MainRepositoryDetailPaneTagActions {
     static var noop: MainRepositoryDetailPaneTagActions {
-        MainRepositoryDetailPaneTagActions(
-            onLoadTags: {},
-            onRetryTags: {},
-            onAddTag: { _ in },
-            onRemoveTag: { _ in },
-            onLoadSuggestions: {},
-            onRetrySuggestions: {},
-            onToggleSuggestion: { _ in },
-            onSelectAllSuggestions: {},
-            onClearSuggestions: {},
-            onStartEditingSuggestions: {},
-            onCancelEditingSuggestions: {},
-            onEditSuggestionDisplayName: { _, _ in },
-            onEditSuggestionSlug: { _, _ in },
-            onRegenerateSuggestionSlug: { _ in },
-            onApplySuggestions: {},
-            onApplyEditedSuggestions: {},
-            onRetryFailedSuggestions: {},
-            onSuggestionPresentationConsumed: { _ in },
-            onUndoTagChange: {},
-            onDismissTagUndoToast: {},
-            onBatchTagUndoStateChange: { _ in }
+        let noAction: () -> Void = {}; let noStringAction: (String) -> Void = { _ in }
+        let noEditAction: (String, String) -> Void = { _, _ in }; let noBatchAction: (BatchTagUndoState)
+            -> Void = { _ in
+            }
+        return MainRepositoryDetailPaneTagActions(
+            aiSuggestionState: .idle, aiBatchSuggestionState: .idle, onLoadTags: noAction, onRetryTags: noAction,
+            onAddTag: noStringAction, onRemoveTag: noStringAction,
+            onLoadSuggestions: noAction, onRetrySuggestions: noAction,
+            onToggleSuggestion: noStringAction, onSelectAllSuggestions: noAction,
+            onClearSuggestions: noAction, onStartEditingSuggestions: noAction, onCancelEditingSuggestions: noAction,
+            onEditSuggestionDisplayName: noEditAction, onEditSuggestionSlug: noEditAction,
+            onRegenerateSuggestionSlug: noStringAction, onApplySuggestions: noAction,
+            onApplyEditedSuggestions: noAction, onRetryFailedSuggestions: noAction,
+            onLoadAISuggestions: noAction, onRetryAISuggestions: noAction,
+            onToggleAISuggestion: noStringAction, onApplySingleAISuggestion: noStringAction,
+            onSelectHighConfidenceAISuggestions: noAction,
+            onClearAISuggestions: noAction, onStartEditingAISuggestions: noAction,
+            onCancelEditingAISuggestions: noAction,
+            onEditAISuggestionDisplayName: noEditAction, onEditAISuggestionSlug: noEditAction,
+            onRegenerateAISuggestionSlug: noStringAction, onApplyAISuggestions: noAction,
+            onApplyEditedAISuggestions: noAction, onRetryFailedAISuggestions: noAction,
+            aiBatchActions: .noop, onOpenAISettings: noAction, onSuggestionPresentationConsumed: { _ in },
+            onUndoTagChange: noAction, onDismissTagUndoToast: noAction, onBatchTagUndoStateChange: noBatchAction
         )
     }
 }
