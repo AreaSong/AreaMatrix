@@ -682,12 +682,13 @@ def check_real_status(h: Harness) -> None:
     status = h.run([h.task_loop, "status"]).stdout
     assert_contains(status, "stale_in_progress:", "task-loop status stale count")
     assert_contains(status, "drain_requested:", "task-loop status drain")
-    dev_status = h.run([h.dev, "--lang", "mixed", "status"]).stdout
+    dev_status = h.run([h.dev, "--lang", "mixed", "status", "--once", "--color", "never"]).stdout
     assert_contains(dev_status, "AreaMatrix Dev Console", "dev status dashboard header")
     assert_contains(dev_status, "当前局势", "dev status situation")
     assert_contains(dev_status, "推荐行动链", "dev status recommendation chain")
     assert_contains(dev_status, "进度概览", "dev status progress overview")
-    assert_contains(dev_status, "lang mixed", "dev status language mode")
+    assert_contains(dev_status, "lang", "dev status language label")
+    assert_contains(dev_status, "mixed | snapshot", "dev status language mode")
     assert_contains(dev_status, "v1-mvp live queue", "dev status v1 overview")
     dev_status_zh = h.run([h.dev, "status", "--lang", "zh", "--once", "--color", "never"]).stdout
     assert_contains(dev_status_zh, "语言 zh | 快照", "dev status zh header")
