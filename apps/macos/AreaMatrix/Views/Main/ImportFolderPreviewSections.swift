@@ -319,6 +319,7 @@ struct ImportFolderRowsSection: View {
     }
 }
 
+@MainActor
 struct ImportFolderFooterSection: View {
     let request: ImportEntryRequest
     let model: ImportFolderPreviewModel

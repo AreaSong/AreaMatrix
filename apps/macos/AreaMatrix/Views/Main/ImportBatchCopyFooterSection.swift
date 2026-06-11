@@ -238,6 +238,7 @@ enum RedoLatestEntryPoint: Equatable {
     )
 }
 
+@MainActor
 struct ImportBatchCopyFooterSection: View {
     let request: ImportEntryRequest
     @ObservedObject var batchPreviewModel: ImportBatchPreviewModel
