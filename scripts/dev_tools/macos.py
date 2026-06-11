@@ -140,6 +140,12 @@ def _includes_stage1_perf_tests(only_testing: Sequence[str]) -> bool:
     )
 
 
+def _xcode_test_env(only_testing: Sequence[str]) -> dict[str, str] | None:
+    if _includes_stage1_perf_tests(only_testing):
+        return {"AREAMATRIX_RUN_PERF_TESTS": "1"}
+    return None
+
+
 def _handle_stage1_app_launch_probe_result(probe_rc: int) -> int:
     if probe_rc == 0:
         return 0
@@ -190,6 +196,8 @@ def _run_filtered_xctest_bundle(test_bundle: Path, scheme: str, only_testing: Se
         fail(f"test bundle not found at {test_bundle}.")
 
     env = _fallback_env(products_dir, scheme)
+    if _includes_stage1_perf_tests(only_testing):
+        env["AREAMATRIX_RUN_PERF_TESTS"] = "1"
     filters = _xctest_filter(only_testing)
     print()
     print(f"==> xcrun xctest {' '.join(filters)} {test_bundle}")
@@ -395,7 +403,7 @@ def _run_macos_tests_inner(
     )
     build_base = _build_for_testing_base_args(project_path, scheme, destination, derived_data_dir)
     print("==> xcodebuild test")
-    rc = _run_and_tee(["xcodebuild", "test", *base], test_log_path)
+    rc = _run_and_tee(["xcodebuild", "test", *base], test_log_path, env=_xcode_test_env(only_testing))
     if rc == 0:
         handled_rc = _run_stage1_probe_when_requested(
             root,

@@ -52,6 +52,14 @@ cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftform
 `testmanagerd` 通信时，才改用 `xcrun xctest` 执行已构建的 XCTest bundle；CI
 仍以 `.github/workflows/macos-ci.yml` 中的同一 Python 入口为远端门禁。
 
+`AreaMatrixPerfTests` 是独立 Stage 1 performance gate，默认不参加普通 PR 全量
+`./dev test macos`，避免共享 GitHub macOS runner 的 wall-clock / resident memory
+抖动阻断功能 CI。需要验证性能基线时显式运行：
+
+```bash
+./dev test macos --only-testing AreaMatrixTests/AreaMatrixPerfTests
+```
+
 ## 失败处理
 
 - CI 失败默认阻断合并。

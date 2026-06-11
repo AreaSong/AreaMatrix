@@ -305,13 +305,30 @@ enum AreaMatrixExternalCreatedFileRelay {
         ) else { return }
 
         pendingSignals.append(signal)
-        NotificationCenter.default.post(name: notification, object: nil)
+        NotificationCenter.default.post(name: notification, object: signal)
     }
 
     static func takePendingSignals() -> [MainExternalCreatedFileSignal] {
         let signals = pendingSignals
         pendingSignals.removeAll()
         return signals
+    }
+
+    static func takePendingSignals(matchingRepoPath repoPath: String?) -> [MainExternalCreatedFileSignal] {
+        guard let repoPath, !repoPath.isEmpty else { return [] }
+
+        let normalizedRepoPath = URL(fileURLWithPath: repoPath, isDirectory: true).standardizedFileURL.path
+        var matchingSignals: [MainExternalCreatedFileSignal] = []
+        pendingSignals.removeAll { signal in
+            guard signal.repoPath == normalizedRepoPath else { return false }
+            matchingSignals.append(signal)
+            return true
+        }
+        return matchingSignals
+    }
+
+    static func finishPendingSignal(_ handledSignal: MainExternalCreatedFileSignal) {
+        pendingSignals.removeAll { $0 == handledSignal }
     }
 }
 

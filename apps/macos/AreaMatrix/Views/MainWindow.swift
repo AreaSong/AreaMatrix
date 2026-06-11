@@ -56,9 +56,10 @@ extension MainWindow {
         .onReceive(NotificationCenter.default.publisher(for: AreaMatrixDockOpenRelay.notification)) { _ in
             model.consumePendingDockOpenRequests()
         }
-        .onReceive(NotificationCenter.default.publisher(for: AreaMatrixExternalCreatedFileRelay.notification)) { _ in
-            model.consumePendingExternalCreatedFileSignals()
-        }
+        .onReceive(
+            NotificationCenter.default.publisher(for: AreaMatrixExternalCreatedFileRelay.notification),
+            perform: handleExternalCreatedFileRelayNotification
+        )
         .task(id: activeMainRepositoryPath) {
             if let activeMainRepositoryPath {
                 externalCreatedFileWatcher.start(repoPath: activeMainRepositoryPath)
@@ -116,6 +117,15 @@ extension MainWindow {
             opening.config.repoPath
         default:
             nil
+        }
+    }
+
+    private func handleExternalCreatedFileRelayNotification(_ notification: Notification) {
+        if let signal = notification.object as? MainExternalCreatedFileSignal,
+           model.handleExternalCreatedFile(signal) {
+            AreaMatrixExternalCreatedFileRelay.finishPendingSignal(signal)
+        } else {
+            model.consumePendingExternalCreatedFileSignals()
         }
     }
 

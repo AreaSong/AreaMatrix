@@ -15,6 +15,7 @@ from scripts.dev_tools.macos import (
     _run_macos_tests_inner,
     _xcodebuild_tests_passed_before_sandbox_teardown,
     _xcode_system_content_failure,
+    _xcode_test_env,
 )
 from scripts.dev_tools.macos_stage1_probe import (
     _direct_launch_probe_blocked,
@@ -182,6 +183,18 @@ class MacOSTestRunnerTest(unittest.TestCase):
 
     def test_stage1_launch_probe_keeps_real_probe_failure_red(self) -> None:
         self.assertEqual(_handle_stage1_app_launch_probe_result(42), 42)
+
+    def test_stage1_perf_tests_are_enabled_only_for_explicit_perf_selection(self) -> None:
+        self.assertIsNone(_xcode_test_env([]))
+        self.assertIsNone(_xcode_test_env(["AreaMatrixTests/S306AISummaryPrivacyRuleTests"]))
+        self.assertEqual(
+            _xcode_test_env(["AreaMatrixTests/AreaMatrixPerfTests"]),
+            {"AREAMATRIX_RUN_PERF_TESTS": "1"},
+        )
+        self.assertEqual(
+            _xcode_test_env(["AreaMatrixTests/AreaMatrixPerfTests/testMemoryBaselinesUnderStage1Thresholds"]),
+            {"AREAMATRIX_RUN_PERF_TESTS": "1"},
+        )
 
     def test_sandbox_fallback_passes_when_only_release_launch_is_locally_blocked(self) -> None:
         bundle = self.tmp_path / "AreaMatrixTests.xctest"

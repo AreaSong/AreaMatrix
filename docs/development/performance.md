@@ -349,7 +349,7 @@ final class StoragePerfTests: XCTestCase {
 跑：
 
 ```bash
-xcodebuild test -scheme AreaMatrix -only-testing:AreaMatrixPerfTests
+AREAMATRIX_RUN_PERF_TESTS=1 xcodebuild test -scheme AreaMatrix -only-testing:AreaMatrixTests/AreaMatrixPerfTests
 ```
 
 CI 中维护 baseline，超过阈值（默认 +10%）失败。

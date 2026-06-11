@@ -7,6 +7,13 @@ import SwiftUI
 import XCTest
 
 final class AreaMatrixPerfTests: XCTestCase {
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        guard ProcessInfo.processInfo.environment["AREAMATRIX_RUN_PERF_TESTS"] == "1" else {
+            throw XCTSkip("AreaMatrixPerfTests run only through the explicit Stage 1 performance gate.")
+        }
+    }
+
     @MainActor
     func testApplicationLaunchToFirstScreenBaselineUnderStage1Threshold() async throws {
         let repoURL = try makePerfTemporaryRepoURL("startup-empty")

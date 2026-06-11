@@ -406,18 +406,23 @@ extension SemanticSearchFallbackReason {
 extension OnboardingModel {
     @MainActor
     func consumePendingExternalCreatedFileSignals() {
-        for signal in AreaMatrixExternalCreatedFileRelay.takePendingSignals() {
+        let signals = AreaMatrixExternalCreatedFileRelay.takePendingSignals(
+            matchingRepoPath: currentMainRepositoryPath
+        )
+        for signal in signals {
             handleExternalCreatedFile(signal)
         }
     }
 
     @MainActor
-    func handleExternalCreatedFile(_ signal: MainExternalCreatedFileSignal) {
-        guard let pending = MainPendingExternalCreatedFileEvent(signal: signal) else { return }
-        guard currentMainRepositoryPath == pending.repoPath else { return }
+    @discardableResult
+    func handleExternalCreatedFile(_ signal: MainExternalCreatedFileSignal) -> Bool {
+        guard let pending = MainPendingExternalCreatedFileEvent(signal: signal) else { return false }
+        guard currentMainRepositoryPath == pending.repoPath else { return false }
 
         pendingExternalCreatedFileEvent = pending
         toastMessage = nil
+        return true
     }
 
     @MainActor

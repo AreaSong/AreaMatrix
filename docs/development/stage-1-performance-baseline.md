@@ -54,7 +54,7 @@ release checklist 仍需继续阻断未完成的手工恢复冒烟、Developer I
 | Rust Stage 1 hot path bench | `cargo test --manifest-path core/Cargo.toml --release --bench stage1_hot_paths -- --ignored --nocapture` |
 | Rust Stage 1 release perf | `cargo test --manifest-path core/Cargo.toml --release --test stage1_performance_baseline -- --ignored --test-threads=1 --nocapture` |
 | Swift perf validation gate | `./dev test macos --only-testing AreaMatrixTests/AreaMatrixPerfTests`；先跑标准 `xcodebuild test`，仅在失败日志明确指向 `testmanagerd` sandbox restriction 时 fallback 到同一 XCTest bundle |
-| Swift 标准 perf 入口 | `xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' -only-testing:AreaMatrixTests/AreaMatrixPerfTests CODE_SIGNING_ALLOWED=NO`；本地 sandbox 可能在 `testmanagerd` 通信层阻断，CI 或非 sandbox 桌面会话应补跑 |
+| Swift 标准 perf 入口 | `AREAMATRIX_RUN_PERF_TESTS=1 xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' -only-testing:AreaMatrixTests/AreaMatrixPerfTests CODE_SIGNING_ALLOWED=NO`；本地 sandbox 可能在 `testmanagerd` 通信层阻断，CI 或非 sandbox 桌面会话应补跑 |
 | 真实 `.app` 启动 release gate | Release build + `codesign --verify --deep --strict` + `otool -L` + `xcrun swift scripts/dev_tools/macos_launch_probe.swift --app <Release/AreaMatrix.app>` |
 | Instruments memory audit | Release build + Instruments Allocations；当前 sandbox 中 `xcrun xctrace list templates` 被 `~/Library/Caches/com.apple.dt.InstrumentsCLI` 写权限阻断 |
 
