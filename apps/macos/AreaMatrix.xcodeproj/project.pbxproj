@@ -1581,6 +1581,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 202605101812;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_DEBUG_DYLIB = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1652,6 +1653,7 @@
 		0A0000000000000000000084 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 202605101812;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1667,7 +1669,6 @@
 					"$(BUILT_PRODUCTS_DIR)/AreaMatrix.app/Contents/MacOS",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				OTHER_LDFLAGS = "$(BUILT_PRODUCTS_DIR)/AreaMatrix.app/Contents/MacOS/AreaMatrix.debug.dylib";
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.areamatrix.AreaMatrixTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1677,12 +1678,14 @@
 					"$(SRCROOT)/AreaMatrix/Bridge/UniFFI",
 				);
 				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AreaMatrix.app/Contents/MacOS/AreaMatrix";
 			};
 			name = Debug;
 		};
 		0A0000000000000000000085 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 202605101812;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1698,7 +1701,6 @@
 					"$(BUILT_PRODUCTS_DIR)/AreaMatrix.app/Contents/MacOS",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				OTHER_LDFLAGS = "$(BUILT_PRODUCTS_DIR)/AreaMatrix.app/Contents/MacOS/AreaMatrix.debug.dylib";
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.areamatrix.AreaMatrixTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1708,6 +1710,7 @@
 					"$(SRCROOT)/AreaMatrix/Bridge/UniFFI",
 				);
 				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AreaMatrix.app/Contents/MacOS/AreaMatrix";
 			};
 			name = Release;
 		};
