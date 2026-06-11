@@ -201,6 +201,7 @@ private struct AISettingsFeatureRow: View {
     }
 }
 
+@MainActor
 struct AISettingsPane: View {
     @StateObject private var model: AISettingsModel
     @State private var isLocalModelStatusPresented = false

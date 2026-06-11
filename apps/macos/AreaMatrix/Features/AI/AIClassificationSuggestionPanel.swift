@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct AIClassificationSuggestionRouteView: View {
     let repoPath: String
     let file: FileEntrySnapshot?

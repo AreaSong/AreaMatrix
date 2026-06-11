@@ -65,6 +65,7 @@ struct SemanticSearchResultsView: View {
     }
 }
 
+@MainActor
 struct SemanticSearchFallbackStatusRegion: View {
     let page: SemanticSearchResultPageSnapshot
     let state: SemanticFallbackState
