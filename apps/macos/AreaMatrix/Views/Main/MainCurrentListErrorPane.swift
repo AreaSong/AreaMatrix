@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct MainCurrentListErrorPane: View {
     let error: CoreErrorMappingSnapshot
     let state: MainRepositoryContentState
