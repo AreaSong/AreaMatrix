@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 520" role="img" aria-labelledby="title desc">
+  <title id="title">AreaMatrix V2 Logo Lockup</title>
+  <desc id="desc">AreaMatrix wordmark paired with the Trace Atlas logo mark.</desc>
+  <defs>
+    <linearGradient id="ink" x1="52" y1="78" x2="420" y2="426" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#173A33"/>
+      <stop offset="1" stop-color="#0A201E"/>
+    </linearGradient>
+    <linearGradient id="trace" x1="118" y1="350" x2="340" y2="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#15B49F"/>
+      <stop offset="0.52" stop-color="#37CAB6"/>
+      <stop offset="0.78" stop-color="#F1B84E"/>
+      <stop offset="1" stop-color="#E96D5A"/>
+    </linearGradient>
+    <linearGradient id="matrixText" x1="804" y1="160" x2="1184" y2="338" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#173A33"/>
+      <stop offset="1" stop-color="#15B49F"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#0A201E" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="520" fill="#FFFFFF"/>
+  <g transform="translate(90 50)" filter="url(#shadow)">
+    <rect x="0" y="0" width="420" height="420" rx="96" fill="#F7FBF8"/>
+    <path d="M78 298L120 152C127 129 148 114 172 114H322C350 114 372 136 372 164V296C372 324 350 346 322 346H120C89 346 69 330 78 298Z" fill="url(#ink)"/>
+    <path d="M110 276L144 166C149 152 162 142 177 142H306C322 142 334 154 334 170V278C334 293 322 306 306 306H136C116 306 104 294 110 276Z" fill="#F8FCF8"/>
+    <g opacity="0.96" fill="#CFE3DD">
+      <circle cx="178" cy="178" r="14"/>
+      <circle cx="230" cy="178" r="14"/>
+      <circle cx="282" cy="178" r="14"/>
+      <circle cx="158" cy="230" r="14"/>
+      <circle cx="210" cy="230" r="14"/>
+      <circle cx="262" cy="230" r="14"/>
+      <circle cx="138" cy="282" r="14"/>
+      <circle cx="190" cy="282" r="14"/>
+      <circle cx="242" cy="282" r="14"/>
+    </g>
+    <path d="M70 316C120 238 176 192 236 182C284 174 318 198 354 246" fill="none" stroke="#C7DCD6" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M70 316C144 312 190 266 212 180C222 134 254 108 310 96" fill="none" stroke="url(#trace)" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M164 276H286" stroke="#16B7A2" stroke-width="32" stroke-linecap="round"/>
+    <circle cx="70" cy="316" r="22" fill="#15B49F"/>
+    <circle cx="212" cy="180" r="24" fill="#F1B84E"/>
+    <circle cx="310" cy="96" r="21" fill="#E96D5A"/>
+    <circle cx="286" cy="276" r="17" fill="#173A33"/>
+  </g>
+
+  <g transform="translate(588 0)">
+    <text x="0" y="252"
+      font-family="Inter, SF Pro Display, Segoe UI, Helvetica Neue, Arial, sans-serif"
+      font-size="112"
+      font-weight="760"
+      letter-spacing="0"
+      fill="#173A33">Area</text>
+    <text x="238" y="252"
+      font-family="Inter, SF Pro Display, Segoe UI, Helvetica Neue, Arial, sans-serif"
+      font-size="112"
+      font-weight="760"
+      letter-spacing="0"
+      fill="#15B49F">Matrix</text>
+    <path d="M4 306H604" stroke="#D7E8E2" stroke-width="11" stroke-linecap="round"/>
+    <path d="M4 306C146 306 224 294 302 286C392 277 480 288 604 306" fill="none" stroke="#15B49F" stroke-width="11" stroke-linecap="round"/>
+    <circle cx="226" cy="306" r="10" fill="#F1B84E"/>
+    <circle cx="604" cy="306" r="10" fill="#173A33"/>
+  </g>
+</svg>

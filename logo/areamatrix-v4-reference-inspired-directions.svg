@@ -1,0 +1,276 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2400 1900" role="img" aria-labelledby="title desc">
+  <title id="title">AreaMatrix V4 Reference Inspired Logo Directions</title>
+  <desc id="desc">Twelve AreaMatrix logo directions inspired by clean blue and teal software logo explorations.</desc>
+  <defs>
+    <linearGradient id="pageBg" x1="0" y1="0" x2="2400" y2="1900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FBFCFF"/>
+      <stop offset="1" stop-color="#EEF6FB"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="240" y2="240" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#68B9FF"/>
+      <stop offset="0.52" stop-color="#2687ED"/>
+      <stop offset="1" stop-color="#0E5FD2"/>
+    </linearGradient>
+    <linearGradient id="tealBlue" x1="0" y1="0" x2="240" y2="240" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#57D8CD"/>
+      <stop offset="0.52" stop-color="#2AB8DF"/>
+      <stop offset="1" stop-color="#226FE7"/>
+    </linearGradient>
+    <linearGradient id="softTeal" x1="0" y1="0" x2="240" y2="240" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#65DDD3"/>
+      <stop offset="1" stop-color="#20A7C8"/>
+    </linearGradient>
+    <linearGradient id="lineage" x1="0" y1="230" x2="260" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#20B7A7"/>
+      <stop offset="0.5" stop-color="#2B8CF0"/>
+      <stop offset="1" stop-color="#6A73FF"/>
+    </linearGradient>
+    <linearGradient id="warmNode" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F8C75E"/>
+      <stop offset="1" stop-color="#F06E57"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-8%" y="-8%" width="116%" height="124%">
+      <feDropShadow dx="0" dy="14" stdDeviation="22" flood-color="#1A3654" flood-opacity="0.08"/>
+    </filter>
+    <filter id="markShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#1A3654" flood-opacity="0.16"/>
+    </filter>
+    <style>
+      .title { font-family: Inter, "SF Pro Display", "Segoe UI", Arial, sans-serif; font-weight: 780; fill: #1B3048; }
+      .body { font-family: Inter, "SF Pro Text", "Segoe UI", Arial, sans-serif; font-weight: 520; fill: #607286; }
+      .brand { font-family: Inter, "SF Pro Display", "Segoe UI", Arial, sans-serif; font-weight: 760; fill: #1B3048; letter-spacing: 0; }
+      .tag { font-family: Inter, "SF Pro Text", "Segoe UI", Arial, sans-serif; font-weight: 560; fill: #51657C; letter-spacing: 4px; }
+      .label { font-family: Inter, "SF Pro Text", "Segoe UI", Arial, sans-serif; font-weight: 700; fill: #8A96A5; }
+      .navy { fill: #1B3048; }
+      .navyStroke { stroke: #1B3048; }
+      .grid { fill: #49A6F3; opacity: 0.9; }
+      .pale { fill: #DDECF5; }
+      .node { fill: #26C6BC; }
+      .warm { fill: #F2B94E; }
+    </style>
+  </defs>
+
+  <rect width="2400" height="1900" fill="url(#pageBg)"/>
+  <text class="title" x="90" y="92" font-size="46">AreaMatrix logo explorations</text>
+  <text class="body" x="90" y="134" font-size="22">基于参考图继续扩展：保留蓝青科技感，但加强“本地资料库、智能归档、可追溯关系”的产品特征。</text>
+
+  <!-- Card template positions: 3 columns x 4 rows -->
+
+  <!-- G -->
+  <g transform="translate(90 190)" filter="url(#cardShadow)">
+    <rect width="700" height="380" rx="34" fill="#FFFFFF" opacity="0.94"/>
+    <text class="label" x="34" y="54" font-size="34">G</text>
+    <g transform="translate(238 36) scale(0.72)" filter="url(#markShadow)">
+      <path d="M38 204L124 50C139 23 178 23 193 50L278 204" fill="none" stroke="url(#blue)" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M94 204L138 126H178L222 204" fill="none" stroke="#FFFFFF" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+      <path d="M112 158H213C230 158 244 172 244 189V230C244 247 230 260 213 260H112C95 260 82 247 82 230V189C82 172 95 158 112 158Z" class="navy"/>
+      <path d="M106 144H154L168 158H106Z" class="navy"/>
+      <g transform="translate(264 162)">
+        <rect class="grid" x="0" y="0" width="24" height="24" rx="5"/>
+        <rect class="grid" x="34" y="0" width="24" height="24" rx="5"/>
+        <rect class="grid" x="68" y="0" width="24" height="24" rx="5"/>
+        <rect class="grid" x="0" y="34" width="24" height="24" rx="5"/>
+        <rect class="grid" x="34" y="34" width="24" height="24" rx="5"/>
+        <rect class="grid" x="68" y="34" width="24" height="24" rx="5"/>
+        <rect class="grid" x="0" y="68" width="24" height="24" rx="5"/>
+        <rect class="grid" x="34" y="68" width="24" height="24" rx="5"/>
+      </g>
+    </g>
+    <text class="brand" x="178" y="292" font-size="64">AreaMatrix</text>
+    <text class="tag" x="198" y="340" font-size="20">本地优先・智能归档・可追溯</text>
+  </g>
+
+  <!-- H -->
+  <g transform="translate(850 190)" filter="url(#cardShadow)">
+    <rect width="700" height="380" rx="34" fill="#FFFFFF" opacity="0.94"/>
+    <text class="label" x="34" y="54" font-size="34">H</text>
+    <g transform="translate(250 34) scale(0.72)" filter="url(#markShadow)">
+      <path d="M168 28L292 96V214L168 286L44 214V96Z" fill="#1B3048"/>
+      <path d="M168 28L292 96L168 168L44 96Z" fill="url(#blue)"/>
+      <path d="M76 118V208L168 260V168Z" fill="#F8FBFF"/>
+      <path d="M260 118V208L168 260V168Z" fill="#E8F3FF"/>
+      <g transform="translate(124 126)">
+        <path d="M0 0H74C86 0 96 10 96 22V96C96 108 86 118 74 118H0C-12 118 -22 108 -22 96V22C-22 10 -12 0 0 0Z" class="navy"/>
+        <path d="M-2 24H70M-2 50H70M-2 76H48" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/>
+        <path d="M-10 -16C0 -8 10 -6 22 -8C34 -10 43 -8 52 2" fill="none" stroke="#1B3048" stroke-width="14" stroke-linecap="round"/>
+      </g>
+    </g>
+    <text class="brand" x="178" y="292" font-size="64">AreaMatrix</text>
+    <text class="tag" x="198" y="340" font-size="20">本地优先・智能归档・可追溯</text>
+  </g>
+
+  <!-- I -->
+  <g transform="translate(1610 190)" filter="url(#cardShadow)">
+    <rect width="700" height="380" rx="34" fill="#FFFFFF" opacity="0.94"/>
+    <text class="label" x="34" y="54" font-size="34">I</text>
+    <g transform="translate(252 42) scale(0.72)" filter="url(#markShadow)">
+      <rect x="38" y="42" width="148" height="190" rx="28" fill="url(#softTeal)"/>
+      <rect x="132" y="86" width="148" height="190" rx="28" fill="url(#blue)" opacity="0.96"/>
+      <path d="M112 206L174 92C181 80 198 80 205 92L268 206M146 158H232" fill="none" stroke="#FFFFFF" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M185 152L206 190H164Z" fill="#1B9AD8"/>
+    </g>
+    <text class="brand" x="178" y="292" font-size="64">AreaMatrix</text>
+    <text class="tag" x="198" y="340" font-size="20">本地优先・智能归档・可追溯</text>
+  </g>
+
+  <!-- J -->
+  <g transform="translate(90 620)" filter="url(#cardShadow)">
+    <rect width="700" height="380" rx="34" fill="#FFFFFF" opacity="0.94"/>
+    <text class="label" x="34" y="54" font-size="34">J</text>
+    <g transform="translate(256 36) scale(0.72)" filter="url(#markShadow)">
+      <circle cx="160" cy="142" r="112" fill="none" stroke="url(#tealBlue)" stroke-width="30"/>
+      <path d="M62 194C100 102 152 62 224 72C264 78 286 105 296 138" fill="none" stroke="#E5F0F8" stroke-width="18" stroke-linecap="round"/>
+      <path d="M70 200L150 82C156 74 168 74 174 82L250 200" fill="none" stroke="url(#blue)" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="162" cy="168" r="18" fill="#257FE8"/>
+      <circle cx="70" cy="200" r="16" fill="#25BFB4"/>
+      <circle cx="250" cy="200" r="16" fill="#155AC8"/>
+    </g>
+    <text class="brand" x="178" y="292" font-size="64">AreaMatrix</text>
+    <text class="tag" x="198" y="340" font-size="20">本地优先・智能归档・可追溯</text>
+  </g>
+
+  <!-- K -->
+  <g transform="translate(850 620)" filter="url(#cardShadow)">
+    <rect width="700" height="380" rx="34" fill="#FFFFFF" opacity="0.94"/>
+    <text class="label" x="34" y="54" font-size="34">K</text>
+    <g transform="translate(260 56) scale(0.72)" filter="url(#markShadow)">
+      <path d="M50 178L128 42" stroke="#1B3048" stroke-width="38" stroke-linecap="round"/>
+      <path d="M142 178L220 42" stroke="url(#blue)" stroke-width="38" stroke-linecap="round"/>
+      <path d="M236 164L262 210" stroke="url(#softTeal)" stroke-width="38" stroke-linecap="round"/>
+      <g transform="translate(292 128)">
+        <rect class="grid" x="0" y="0" width="20" height="20" rx="5"/>
+        <rect class="grid" x="30" y="0" width="20" height="20" rx="5"/>
+        <rect class="grid" x="0" y="30" width="20" height="20" rx="5"/>
+        <rect class="grid" x="30" y="30" width="20" height="20" rx="5"/>
+      </g>
+    </g>
+    <text class="brand" x="178" y="292" font-size="64">AreaMatrix</text>
+    <text class="tag" x="198" y="340" font-size="20">本地优先・智能归档・可追溯</text>
+  </g>
+
+  <!-- L -->
+  <g transform="translate(1610 620)" filter="url(#cardShadow)">
+    <rect width="700" height="380" rx="34" fill="#FFFFFF" opacity="0.94"/>
+    <text class="label" x="34" y="54" font-size="34">L</text>
+    <g transform="translate(246 54) scale(0.62)" filter="url(#markShadow)">
+      <path d="M56 74H154L178 100H292C315 100 334 119 334 142V230C334 253 315 272 292 272H56C33 272 14 253 14 230V116C14 93 33 74 56 74Z" fill="none" stroke="#1B3048" stroke-width="20" stroke-linejoin="round"/>
+      <path d="M100 174H254" stroke="#DDECF5" stroke-width="14" stroke-linecap="round"/>
+      <path d="M100 174C134 126 184 126 216 166C234 188 262 194 302 172" fill="none" stroke="url(#tealBlue)" stroke-width="16" stroke-linecap="round"/>
+      <path d="M116 214H252" stroke="#DDECF5" stroke-width="14" stroke-linecap="round"/>
+      <path d="M116 214C166 214 190 200 214 184C238 168 262 158 302 158" fill="none" stroke="url(#blue)" stroke-width="12" stroke-linecap="round"/>
+      <circle class="node" cx="100" cy="174" r="14"/>
+      <circle class="node" cx="302" cy="172" r="14"/>
+      <circle fill="#257FE8" cx="302" cy="158" r="12"/>
+    </g>
+    <text class="brand" x="178" y="292" font-size="64">AreaMatrix</text>
+    <text class="tag" x="198" y="340" font-size="20">本地优先・智能归档・可追溯</text>
+  </g>
+
+  <!-- M -->
+  <g transform="translate(90 1050)" filter="url(#cardShadow)">
+    <rect width="700" height="380" rx="34" fill="#FFFFFF" opacity="0.94"/>
+    <text class="label" x="34" y="54" font-size="34">M</text>
+    <g transform="translate(252 42) scale(0.62)" filter="url(#markShadow)">
+      <path d="M166 28L286 96V232L166 302L46 232V96Z" fill="#1B3048"/>
+      <path d="M98 116H232V236H98Z" fill="#FFFFFF"/>
+      <path d="M124 150H208M124 184H198M124 218H180" stroke="#DDECF5" stroke-width="14" stroke-linecap="round"/>
+      <path d="M74 252C132 230 162 178 170 116C176 70 214 48 268 54" fill="none" stroke="url(#lineage)" stroke-width="34" stroke-linecap="round"/>
+      <circle class="node" cx="74" cy="252" r="18"/>
+      <circle class="warm" cx="170" cy="116" r="20"/>
+      <circle fill="#6A73FF" cx="268" cy="54" r="18"/>
+    </g>
+    <text class="brand" x="178" y="292" font-size="64">AreaMatrix</text>
+    <text class="tag" x="198" y="340" font-size="20">本地优先・智能归档・可追溯</text>
+  </g>
+
+  <!-- N -->
+  <g transform="translate(850 1050)" filter="url(#cardShadow)">
+    <rect width="700" height="380" rx="34" fill="#FFFFFF" opacity="0.94"/>
+    <text class="label" x="34" y="54" font-size="34">N</text>
+    <g transform="translate(256 38) scale(0.72)" filter="url(#markShadow)">
+      <circle cx="150" cy="132" r="92" fill="none" stroke="#1B3048" stroke-width="22"/>
+      <path d="M218 200L286 268" stroke="#1B3048" stroke-width="24" stroke-linecap="round"/>
+      <path d="M88 170C124 112 164 88 210 98" fill="none" stroke="#DDECF5" stroke-width="16" stroke-linecap="round"/>
+      <path d="M72 198C128 190 154 156 166 104C176 64 204 44 250 40" fill="none" stroke="url(#tealBlue)" stroke-width="30" stroke-linecap="round"/>
+      <path d="M122 168H190" stroke="#25BFB4" stroke-width="22" stroke-linecap="round"/>
+      <circle class="node" cx="72" cy="198" r="16"/>
+      <circle class="warm" cx="166" cy="104" r="18"/>
+      <circle fill="#257FE8" cx="250" cy="40" r="16"/>
+    </g>
+    <text class="brand" x="178" y="292" font-size="64">AreaMatrix</text>
+    <text class="tag" x="198" y="340" font-size="20">本地优先・智能归档・可追溯</text>
+  </g>
+
+  <!-- O -->
+  <g transform="translate(1610 1050)" filter="url(#cardShadow)">
+    <rect width="700" height="380" rx="34" fill="#FFFFFF" opacity="0.94"/>
+    <text class="label" x="34" y="54" font-size="34">O</text>
+    <g transform="translate(262 54) scale(0.62)" filter="url(#markShadow)">
+      <path d="M54 84H134L154 108H276C298 108 316 126 316 148V238C316 260 298 278 276 278H54C32 278 14 260 14 238V124C14 102 32 84 54 84Z" fill="#1B3048"/>
+      <rect x="72" y="136" width="190" height="108" rx="26" fill="#FFFFFF"/>
+      <path d="M140 174V156C140 132 158 116 180 116C202 116 220 132 220 156V174" fill="none" stroke="#1B3048" stroke-width="15" stroke-linecap="round"/>
+      <rect x="130" y="168" width="100" height="72" rx="16" fill="#DDECF5"/>
+      <circle cx="180" cy="204" r="10" fill="#1B3048"/>
+      <g transform="translate(250 132)">
+        <rect class="grid" x="0" y="0" width="20" height="20" rx="5"/>
+        <rect class="grid" x="28" y="0" width="20" height="20" rx="5"/>
+        <rect class="grid" x="0" y="28" width="20" height="20" rx="5"/>
+        <rect class="grid" x="28" y="28" width="20" height="20" rx="5"/>
+      </g>
+    </g>
+    <text class="brand" x="178" y="292" font-size="64">AreaMatrix</text>
+    <text class="tag" x="198" y="340" font-size="20">本地优先・智能归档・可追溯</text>
+  </g>
+
+  <!-- P -->
+  <g transform="translate(90 1480)" filter="url(#cardShadow)">
+    <rect width="700" height="330" rx="34" fill="#FFFFFF" opacity="0.94"/>
+    <text class="label" x="34" y="54" font-size="34">P</text>
+    <g transform="translate(250 36) scale(0.66)" filter="url(#markShadow)">
+      <path d="M46 90H286V192C286 224 260 250 228 250H104C72 250 46 224 46 192V90Z" fill="#1B3048"/>
+      <path d="M76 126H256V190C256 208 242 222 224 222H108C90 222 76 208 76 190V126Z" fill="#FFFFFF"/>
+      <path d="M46 90L94 54H238L286 90" fill="#DDECF5"/>
+      <path d="M58 218C114 208 154 178 178 134C202 90 242 64 302 58" fill="none" stroke="url(#lineage)" stroke-width="30" stroke-linecap="round"/>
+      <circle class="node" cx="58" cy="218" r="17"/>
+      <circle class="warm" cx="178" cy="134" r="19"/>
+      <circle fill="#257FE8" cx="302" cy="58" r="17"/>
+    </g>
+    <text class="brand" x="178" y="250" font-size="64">AreaMatrix</text>
+    <text class="tag" x="198" y="298" font-size="20">本地优先・智能归档・可追溯</text>
+  </g>
+
+  <!-- Q -->
+  <g transform="translate(850 1480)" filter="url(#cardShadow)">
+    <rect width="700" height="330" rx="34" fill="#FFFFFF" opacity="0.94"/>
+    <text class="label" x="34" y="54" font-size="34">Q</text>
+    <g transform="translate(258 36) scale(0.66)" filter="url(#markShadow)">
+      <circle cx="168" cy="138" r="104" fill="#1B3048"/>
+      <path d="M114 168L168 94L222 168M140 136H196" fill="none" stroke="#FFFFFF" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M82 202C118 128 170 92 238 98" fill="none" stroke="#DDECF5" stroke-width="13" stroke-linecap="round"/>
+      <path d="M72 212C122 216 156 194 178 146C198 102 230 78 282 76" fill="none" stroke="url(#tealBlue)" stroke-width="24" stroke-linecap="round"/>
+      <circle class="node" cx="72" cy="212" r="15"/>
+      <circle class="warm" cx="178" cy="146" r="17"/>
+      <circle fill="#257FE8" cx="282" cy="76" r="15"/>
+    </g>
+    <text class="brand" x="178" y="250" font-size="64">AreaMatrix</text>
+    <text class="tag" x="198" y="298" font-size="20">本地优先・智能归档・可追溯</text>
+  </g>
+
+  <!-- R -->
+  <g transform="translate(1610 1480)" filter="url(#cardShadow)">
+    <rect width="700" height="330" rx="34" fill="#FFFFFF" opacity="0.94"/>
+    <text class="label" x="34" y="54" font-size="34">R</text>
+    <g transform="translate(258 40) scale(0.66)" filter="url(#markShadow)">
+      <rect x="42" y="44" width="250" height="180" rx="46" fill="#1B3048"/>
+      <rect x="78" y="84" width="178" height="100" rx="28" fill="#FFFFFF"/>
+      <path d="M110 134H224" stroke="#DDECF5" stroke-width="15" stroke-linecap="round"/>
+      <path d="M110 134C138 102 176 100 206 130C224 148 246 152 276 134" fill="none" stroke="url(#tealBlue)" stroke-width="14" stroke-linecap="round"/>
+      <path d="M126 168H206" stroke="#25BFB4" stroke-width="17" stroke-linecap="round"/>
+      <circle class="node" cx="110" cy="134" r="13"/>
+      <circle class="warm" cx="206" cy="130" r="15"/>
+      <circle fill="#257FE8" cx="276" cy="134" r="13"/>
+    </g>
+    <text class="brand" x="178" y="250" font-size="64">AreaMatrix</text>
+    <text class="tag" x="198" y="298" font-size="20">本地优先・智能归档・可追溯</text>
+  </g>
+</svg>

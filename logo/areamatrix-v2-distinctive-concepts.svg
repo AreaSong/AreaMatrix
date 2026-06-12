@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 760" role="img" aria-labelledby="title desc">
+  <title id="title">AreaMatrix V2 Distinctive Logo Concepts</title>
+  <desc id="desc">Three more distinctive AreaMatrix logo directions: Matrix Compass, Local Core, and Trace Atlas.</desc>
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1800" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FBFCF8"/>
+      <stop offset="1" stop-color="#EDF6F1"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="380" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#173A33"/>
+      <stop offset="1" stop-color="#0A201E"/>
+    </linearGradient>
+    <linearGradient id="tealLine" x1="0" y1="0" x2="380" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#16B7A2"/>
+      <stop offset="0.62" stop-color="#42D1BB"/>
+      <stop offset="1" stop-color="#F1B84E"/>
+    </linearGradient>
+    <linearGradient id="coralLine" x1="0" y1="0" x2="380" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#15B49F"/>
+      <stop offset="0.55" stop-color="#F1B84E"/>
+      <stop offset="1" stop-color="#E96D5A"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#0A201E" flood-opacity="0.16"/>
+    </filter>
+    <filter id="tinyShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0A201E" flood-opacity="0.12"/>
+    </filter>
+    <clipPath id="diamondClip">
+      <path d="M190 42L338 116L360 280L190 354L20 280L42 116Z"/>
+    </clipPath>
+  </defs>
+
+  <rect width="1800" height="760" fill="url(#paper)"/>
+  <text x="90" y="86" font-family="Inter, SF Pro Display, Segoe UI, Arial, sans-serif" font-size="36" font-weight="760" fill="#173A33">AreaMatrix logo directions</text>
+  <text x="90" y="124" font-family="Inter, SF Pro Text, Segoe UI, Arial, sans-serif" font-size="19" font-weight="520" fill="#58706A">去掉通用文件夹感，突出本地矩阵、自动归档路径、资料关联。</text>
+
+  <g transform="translate(95 190)">
+    <rect x="0" y="0" width="480" height="500" rx="34" fill="#FFFFFF" opacity="0.78"/>
+    <g transform="translate(50 32)" filter="url(#shadow)">
+      <rect x="0" y="0" width="380" height="380" rx="86" fill="#F7FBF8"/>
+      <g transform="translate(0 0)">
+        <path d="M190 42L338 116L360 280L190 354L20 280L42 116Z" fill="url(#ink)"/>
+        <g clip-path="url(#diamondClip)">
+          <g opacity="0.22" stroke="#DFF0EB" stroke-width="8">
+            <path d="M42 116H338"/>
+            <path d="M20 190H360"/>
+            <path d="M42 264H338"/>
+            <path d="M116 70V310"/>
+            <path d="M190 42V354"/>
+            <path d="M264 70V310"/>
+          </g>
+          <path d="M68 284L154 174L216 238L306 104" fill="none" stroke="url(#tealLine)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M154 174L190 294L216 238" fill="none" stroke="#F7FBF8" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+          <g fill="#F7FBF8">
+            <circle cx="116" cy="116" r="9"/>
+            <circle cx="264" cy="116" r="9"/>
+            <circle cx="116" cy="264" r="9"/>
+            <circle cx="264" cy="264" r="9"/>
+          </g>
+          <circle cx="154" cy="174" r="22" fill="#F1B84E"/>
+          <circle cx="68" cy="284" r="18" fill="#16B7A2"/>
+          <circle cx="306" cy="104" r="18" fill="#E96D5A"/>
+        </g>
+      </g>
+    </g>
+    <text x="48" y="448" font-family="Inter, SF Pro Display, Segoe UI, Arial, sans-serif" font-size="28" font-weight="760" fill="#173A33">01 Matrix Compass</text>
+    <text x="48" y="482" font-family="Inter, SF Pro Text, Segoe UI, Arial, sans-serif" font-size="17" font-weight="520" fill="#58706A">像资料库里的导航罗盘，搜索、路径、回顾感最强。</text>
+  </g>
+
+  <g transform="translate(660 190)">
+    <rect x="0" y="0" width="480" height="500" rx="34" fill="#FFFFFF" opacity="0.78"/>
+    <g transform="translate(50 32)" filter="url(#shadow)">
+      <rect x="0" y="0" width="380" height="380" rx="86" fill="#102C28"/>
+      <path d="M92 88H244C269 88 284 102 294 124L322 184C330 201 326 221 312 234L232 312C220 324 202 330 185 326L84 302C64 297 50 280 50 260V130C50 107 69 88 92 88Z" fill="#F7FBF8"/>
+      <path d="M96 132H252C267 132 280 144 280 160V266C280 281 268 294 252 294H96C81 294 68 282 68 266V160C68 145 81 132 96 132Z" fill="#DFF0EB"/>
+      <path d="M112 160H236" stroke="#173A33" stroke-width="15" stroke-linecap="round"/>
+      <path d="M112 206H236" stroke="#173A33" stroke-width="15" stroke-linecap="round"/>
+      <path d="M112 252H184" stroke="#173A33" stroke-width="15" stroke-linecap="round"/>
+      <path d="M142 304C176 248 204 199 224 157C239 126 271 106 306 106H320" fill="none" stroke="url(#coralLine)" stroke-width="32" stroke-linecap="round"/>
+      <path d="M142 304C190 300 226 284 250 256C276 226 290 182 292 124" fill="none" stroke="#16B7A2" stroke-width="12" stroke-linecap="round" opacity="0.72"/>
+      <circle cx="142" cy="304" r="22" fill="#16B7A2"/>
+      <circle cx="224" cy="157" r="21" fill="#F1B84E"/>
+      <circle cx="320" cy="106" r="18" fill="#E96D5A"/>
+      <g fill="#102C28">
+        <rect x="104" y="154" width="18" height="18" rx="5"/>
+        <rect x="104" y="200" width="18" height="18" rx="5"/>
+        <rect x="104" y="246" width="18" height="18" rx="5"/>
+      </g>
+    </g>
+    <text x="48" y="448" font-family="Inter, SF Pro Display, Segoe UI, Arial, sans-serif" font-size="28" font-weight="760" fill="#173A33">02 Local Core</text>
+    <text x="48" y="482" font-family="Inter, SF Pro Text, Segoe UI, Arial, sans-serif" font-size="17" font-weight="520" fill="#58706A">本地仓库核心符号，文件、索引、AI 路径更集中。</text>
+  </g>
+
+  <g transform="translate(1225 190)">
+    <rect x="0" y="0" width="480" height="500" rx="34" fill="#FFFFFF" opacity="0.78"/>
+    <g transform="translate(50 32)" filter="url(#shadow)">
+      <rect x="0" y="0" width="380" height="380" rx="86" fill="#F7FBF8"/>
+      <path d="M78 266L124 114C130 94 148 80 169 80H302C324 80 342 98 342 120V256C342 278 324 296 302 296H120C93 296 70 292 78 266Z" fill="#173A33"/>
+      <path d="M108 246L146 130C151 116 164 106 179 106H292C305 106 316 117 316 130V246C316 259 305 270 292 270H136C116 270 102 264 108 246Z" fill="#F7FBF8"/>
+      <g opacity="0.9" fill="#D9EAE5">
+        <rect x="152" y="132" width="34" height="34" rx="9"/>
+        <rect x="204" y="132" width="34" height="34" rx="9"/>
+        <rect x="256" y="132" width="34" height="34" rx="9"/>
+        <rect x="136" y="184" width="34" height="34" rx="9"/>
+        <rect x="188" y="184" width="34" height="34" rx="9"/>
+        <rect x="240" y="184" width="34" height="34" rx="9"/>
+        <rect x="120" y="236" width="34" height="34" rx="9"/>
+        <rect x="172" y="236" width="34" height="34" rx="9"/>
+        <rect x="224" y="236" width="34" height="34" rx="9"/>
+      </g>
+      <path d="M72 286C117 216 166 176 220 166C262 158 291 178 322 222" fill="none" stroke="#C6DAD4" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M72 286C137 283 178 244 196 168C205 128 233 104 282 94" fill="none" stroke="url(#tealLine)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M154 252H260" stroke="#16B7A2" stroke-width="26" stroke-linecap="round"/>
+      <circle cx="72" cy="286" r="20" fill="#16B7A2"/>
+      <circle cx="196" cy="168" r="22" fill="#F1B84E"/>
+      <circle cx="282" cy="94" r="19" fill="#E96D5A"/>
+      <circle cx="260" cy="252" r="15" fill="#173A33"/>
+    </g>
+    <text x="48" y="448" font-family="Inter, SF Pro Display, Segoe UI, Arial, sans-serif" font-size="28" font-weight="760" fill="#173A33">03 Trace Atlas</text>
+    <text x="48" y="482" font-family="Inter, SF Pro Text, Segoe UI, Arial, sans-serif" font-size="17" font-weight="520" fill="#58706A">文件流、时间轴、弱链接合成一条资料星图路径。</text>
+  </g>
+</svg>

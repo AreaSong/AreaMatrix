@@ -1,0 +1,243 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2200 1400" role="img" aria-labelledby="title desc">
+  <title id="title">AreaMatrix V3 Logo Directions</title>
+  <desc id="desc">Eight AreaMatrix logo concepts based on the brand idea: let scattered files grow relationships.</desc>
+  <defs>
+    <linearGradient id="pageBg" x1="0" y1="0" x2="2200" y2="1400" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FBFCF8"/>
+      <stop offset="1" stop-color="#EAF5F0"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="420" y2="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#173A33"/>
+      <stop offset="1" stop-color="#0A201E"/>
+    </linearGradient>
+    <linearGradient id="trace" x1="80" y1="340" x2="340" y2="70" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#15B49F"/>
+      <stop offset="0.48" stop-color="#37CAB6"/>
+      <stop offset="0.76" stop-color="#F1B84E"/>
+      <stop offset="1" stop-color="#E96D5A"/>
+    </linearGradient>
+    <linearGradient id="coolTrace" x1="70" y1="310" x2="350" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#16B7A2"/>
+      <stop offset="0.58" stop-color="#67D7C6"/>
+      <stop offset="1" stop-color="#6B8EF5"/>
+    </linearGradient>
+    <linearGradient id="goldTrace" x1="70" y1="330" x2="350" y2="80" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#16B7A2"/>
+      <stop offset="0.55" stop-color="#F1B84E"/>
+      <stop offset="1" stop-color="#E96D5A"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="16" stdDeviation="22" flood-color="#0A201E" flood-opacity="0.08"/>
+    </filter>
+    <filter id="markShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#0A201E" flood-opacity="0.16"/>
+    </filter>
+    <style>
+      .title { font-family: Inter, "SF Pro Display", "Segoe UI", Arial, sans-serif; font-weight: 780; fill: #173A33; }
+      .body { font-family: Inter, "SF Pro Text", "Segoe UI", Arial, sans-serif; font-weight: 520; fill: #58706A; }
+      .label { font-family: Inter, "SF Pro Display", "Segoe UI", Arial, sans-serif; font-weight: 760; fill: #173A33; }
+      .caption { font-family: Inter, "SF Pro Text", "Segoe UI", Arial, sans-serif; font-weight: 520; fill: #5D746E; }
+      .cell { fill: #D7E8E2; opacity: 0.95; }
+      .nodeDark { fill: #173A33; }
+      .nodeTeal { fill: #15B49F; }
+      .nodeGold { fill: #F1B84E; }
+      .nodeCoral { fill: #E96D5A; }
+    </style>
+  </defs>
+
+  <rect width="2200" height="1400" fill="url(#pageBg)"/>
+  <text class="title" x="90" y="92" font-size="44">AreaMatrix logo directions</text>
+  <text class="body" x="90" y="136" font-size="22">主文案：让散落文件长出关系。视觉锚点：本地优先的资料星图，而不是普通文件夹。</text>
+
+  <!-- 01 Trace Atlas -->
+  <g transform="translate(90 205)" filter="url(#cardShadow)">
+    <rect width="480" height="520" rx="36" fill="#FFFFFF" opacity="0.84"/>
+    <g transform="translate(50 32)" filter="url(#markShadow)">
+      <rect x="0" y="0" width="380" height="380" rx="86" fill="#F7FBF8"/>
+      <path d="M78 266L124 114C130 94 148 80 169 80H302C324 80 342 98 342 120V256C342 278 324 296 302 296H120C93 296 70 292 78 266Z" fill="url(#ink)"/>
+      <path d="M108 246L146 130C151 116 164 106 179 106H292C305 106 316 117 316 130V246C316 259 305 270 292 270H136C116 270 102 264 108 246Z" fill="#F7FBF8"/>
+      <g>
+        <rect class="cell" x="152" y="132" width="34" height="34" rx="9"/>
+        <rect class="cell" x="204" y="132" width="34" height="34" rx="9"/>
+        <rect class="cell" x="256" y="132" width="34" height="34" rx="9"/>
+        <rect class="cell" x="136" y="184" width="34" height="34" rx="9"/>
+        <rect class="cell" x="188" y="184" width="34" height="34" rx="9"/>
+        <rect class="cell" x="240" y="184" width="34" height="34" rx="9"/>
+        <rect class="cell" x="120" y="236" width="34" height="34" rx="9"/>
+        <rect class="cell" x="172" y="236" width="34" height="34" rx="9"/>
+        <rect class="cell" x="224" y="236" width="34" height="34" rx="9"/>
+      </g>
+      <path d="M72 286C117 216 166 176 220 166C262 158 291 178 322 222" fill="none" stroke="#C6DAD4" stroke-width="13" stroke-linecap="round"/>
+      <path d="M72 286C137 283 178 244 196 168C205 128 233 104 282 94" fill="none" stroke="url(#trace)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M154 252H260" stroke="#16B7A2" stroke-width="26" stroke-linecap="round"/>
+      <circle class="nodeTeal" cx="72" cy="286" r="20"/>
+      <circle class="nodeGold" cx="196" cy="168" r="22"/>
+      <circle class="nodeCoral" cx="282" cy="94" r="19"/>
+      <circle class="nodeDark" cx="260" cy="252" r="15"/>
+    </g>
+    <text class="label" x="48" y="456" font-size="28">01 Trace Atlas</text>
+    <text class="caption" x="48" y="490" font-size="17">资料流、时间轴、弱链接合成一条星图路径。</text>
+  </g>
+
+  <!-- 02 Matrix Constellation -->
+  <g transform="translate(620 205)" filter="url(#cardShadow)">
+    <rect width="480" height="520" rx="36" fill="#FFFFFF" opacity="0.84"/>
+    <g transform="translate(50 32)" filter="url(#markShadow)">
+      <rect width="380" height="380" rx="86" fill="#102C28"/>
+      <g opacity="0.22" stroke="#DFF0EB" stroke-width="8">
+        <path d="M96 106H284"/>
+        <path d="M76 190H304"/>
+        <path d="M96 274H284"/>
+        <path d="M106 96V284"/>
+        <path d="M190 76V304"/>
+        <path d="M274 96V284"/>
+      </g>
+      <path d="M92 260L150 156L212 210L286 116" fill="none" stroke="url(#coolTrace)" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M150 156L190 276L212 210" fill="none" stroke="#F7FBF8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+      <circle class="nodeTeal" cx="92" cy="260" r="20"/>
+      <circle class="nodeGold" cx="150" cy="156" r="22"/>
+      <circle fill="#6B8EF5" cx="286" cy="116" r="20"/>
+      <g fill="#F7FBF8">
+        <circle cx="106" cy="106" r="9"/>
+        <circle cx="190" cy="106" r="9"/>
+        <circle cx="274" cy="106" r="9"/>
+        <circle cx="106" cy="190" r="9"/>
+        <circle cx="190" cy="190" r="9"/>
+        <circle cx="274" cy="190" r="9"/>
+        <circle cx="106" cy="274" r="9"/>
+        <circle cx="190" cy="274" r="9"/>
+        <circle cx="274" cy="274" r="9"/>
+      </g>
+    </g>
+    <text class="label" x="48" y="456" font-size="28">02 Matrix Constellation</text>
+    <text class="caption" x="48" y="490" font-size="17">最像“知识图谱”，独特、轻量、偏技术品牌。</text>
+  </g>
+
+  <!-- 03 Local Orbit -->
+  <g transform="translate(1150 205)" filter="url(#cardShadow)">
+    <rect width="480" height="520" rx="36" fill="#FFFFFF" opacity="0.84"/>
+    <g transform="translate(50 32)" filter="url(#markShadow)">
+      <rect width="380" height="380" rx="86" fill="#F7FBF8"/>
+      <circle cx="190" cy="190" r="128" fill="#102C28"/>
+      <circle cx="190" cy="190" r="82" fill="#F7FBF8"/>
+      <path d="M128 206C160 138 210 112 274 126" fill="none" stroke="#C6DAD4" stroke-width="16" stroke-linecap="round"/>
+      <path d="M98 248C157 306 258 286 300 198C332 132 298 82 232 74" fill="none" stroke="url(#goldTrace)" stroke-width="34" stroke-linecap="round"/>
+      <path d="M142 174H236M142 214H214" stroke="#173A33" stroke-width="16" stroke-linecap="round"/>
+      <rect x="150" y="138" width="80" height="104" rx="18" fill="#D7E8E2" opacity="0.78"/>
+      <circle class="nodeTeal" cx="98" cy="248" r="20"/>
+      <circle class="nodeGold" cx="300" cy="198" r="20"/>
+      <circle class="nodeCoral" cx="232" cy="74" r="18"/>
+    </g>
+    <text class="label" x="48" y="456" font-size="28">03 Local Orbit</text>
+    <text class="caption" x="48" y="490" font-size="17">本地核心不动，文件和关系围绕它自动入轨。</text>
+  </g>
+
+  <!-- 04 Inbox River -->
+  <g transform="translate(1680 205)" filter="url(#cardShadow)">
+    <rect width="430" height="520" rx="36" fill="#FFFFFF" opacity="0.84"/>
+    <g transform="translate(25 32)" filter="url(#markShadow)">
+      <rect width="380" height="380" rx="86" fill="#F7FBF8"/>
+      <path d="M78 110H302C330 110 352 132 352 160V274C352 302 330 324 302 324H78C50 324 28 302 28 274V160C28 132 50 110 78 110Z" fill="#102C28"/>
+      <path d="M64 150H316V272H64Z" fill="#F7FBF8"/>
+      <g fill="#D7E8E2">
+        <rect x="94" y="176" width="42" height="42" rx="12"/>
+        <rect x="158" y="176" width="42" height="42" rx="12"/>
+        <rect x="222" y="176" width="42" height="42" rx="12"/>
+        <rect x="126" y="236" width="42" height="42" rx="12"/>
+        <rect x="190" y="236" width="42" height="42" rx="12"/>
+      </g>
+      <path d="M36 256C98 220 112 168 170 160C228 152 252 204 330 176" fill="none" stroke="#C6DAD4" stroke-width="16" stroke-linecap="round"/>
+      <path d="M28 278C94 280 136 252 164 202C190 154 234 118 330 104" fill="none" stroke="url(#trace)" stroke-width="34" stroke-linecap="round"/>
+      <circle class="nodeTeal" cx="28" cy="278" r="20"/>
+      <circle class="nodeGold" cx="164" cy="202" r="22"/>
+      <circle class="nodeCoral" cx="330" cy="104" r="19"/>
+    </g>
+    <text class="label" x="48" y="456" font-size="28">04 Inbox River</text>
+    <text class="caption" x="48" y="490" font-size="17">强调“拖进来，它自己归位”的自动导入感。</text>
+  </g>
+
+  <!-- 05 Timeline Spine -->
+  <g transform="translate(90 790)" filter="url(#cardShadow)">
+    <rect width="480" height="520" rx="36" fill="#FFFFFF" opacity="0.84"/>
+    <g transform="translate(50 32)" filter="url(#markShadow)">
+      <rect width="380" height="380" rx="86" fill="#F7FBF8"/>
+      <path d="M92 104H286C310 104 330 124 330 148V282C330 306 310 326 286 326H92C68 326 48 306 48 282V148C48 124 68 104 92 104Z" fill="#102C28"/>
+      <rect x="82" y="136" width="214" height="154" rx="34" fill="#F7FBF8"/>
+      <path d="M106 184H274M106 230H240" stroke="#D7E8E2" stroke-width="16" stroke-linecap="round"/>
+      <path d="M64 318H316" stroke="#C6DAD4" stroke-width="16" stroke-linecap="round"/>
+      <path d="M82 318C118 272 144 238 160 188C174 146 208 118 284 104" fill="none" stroke="url(#goldTrace)" stroke-width="34" stroke-linecap="round"/>
+      <circle class="nodeTeal" cx="82" cy="318" r="20"/>
+      <circle class="nodeGold" cx="160" cy="188" r="22"/>
+      <circle class="nodeCoral" cx="284" cy="104" r="18"/>
+      <circle class="nodeDark" cx="242" cy="318" r="15"/>
+    </g>
+    <text class="label" x="48" y="456" font-size="28">05 Timeline Spine</text>
+    <text class="caption" x="48" y="490" font-size="17">适合强调时间线、可追溯、操作历史。</text>
+  </g>
+
+  <!-- 06 Relation Bloom -->
+  <g transform="translate(620 790)" filter="url(#cardShadow)">
+    <rect width="480" height="520" rx="36" fill="#FFFFFF" opacity="0.84"/>
+    <g transform="translate(50 32)" filter="url(#markShadow)">
+      <rect width="380" height="380" rx="86" fill="#F7FBF8"/>
+      <circle cx="190" cy="190" r="112" fill="#102C28"/>
+      <path d="M190 190L112 122M190 190L280 118M190 190L296 238M190 190L150 294M190 190L84 226" stroke="#C6DAD4" stroke-width="14" stroke-linecap="round"/>
+      <path d="M86 226C116 142 174 102 260 104C306 105 326 142 296 238C276 300 220 322 150 294" fill="none" stroke="url(#coolTrace)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="190" cy="190" r="44" fill="#F7FBF8"/>
+      <path d="M166 202H214M178 178H202" stroke="#173A33" stroke-width="14" stroke-linecap="round"/>
+      <circle class="nodeTeal" cx="86" cy="226" r="18"/>
+      <circle class="nodeGold" cx="112" cy="122" r="18"/>
+      <circle fill="#6B8EF5" cx="280" cy="118" r="18"/>
+      <circle class="nodeCoral" cx="296" cy="238" r="18"/>
+      <circle class="nodeTeal" cx="150" cy="294" r="18"/>
+    </g>
+    <text class="label" x="48" y="456" font-size="28">06 Relation Bloom</text>
+    <text class="caption" x="48" y="490" font-size="17">“长出关系”的隐喻最直接，偏温和、产品感强。</text>
+  </g>
+
+  <!-- 07 Archive Monogram -->
+  <g transform="translate(1150 790)" filter="url(#cardShadow)">
+    <rect width="480" height="520" rx="36" fill="#FFFFFF" opacity="0.84"/>
+    <g transform="translate(50 32)" filter="url(#markShadow)">
+      <rect width="380" height="380" rx="86" fill="#102C28"/>
+      <path d="M92 284L158 112C166 92 194 92 202 112L268 284M126 210H234" fill="none" stroke="url(#trace)" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M204 284V132L256 226L308 132V284" fill="none" stroke="#F7FBF8" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+      <g fill="#D7E8E2" opacity="0.35">
+        <rect x="82" y="86" width="34" height="34" rx="9"/>
+        <rect x="264" y="86" width="34" height="34" rx="9"/>
+        <rect x="82" y="264" width="34" height="34" rx="9"/>
+        <rect x="264" y="264" width="34" height="34" rx="9"/>
+      </g>
+      <circle class="nodeGold" cx="180" cy="112" r="18"/>
+      <circle class="nodeTeal" cx="92" cy="284" r="18"/>
+      <circle class="nodeCoral" cx="268" cy="284" r="18"/>
+    </g>
+    <text class="label" x="48" y="456" font-size="28">07 Archive Monogram</text>
+    <text class="caption" x="48" y="490" font-size="17">把 A/M 做成品牌符号，适合正式应用图标。</text>
+  </g>
+
+  <!-- 08 Quiet Matrix Seal -->
+  <g transform="translate(1680 790)" filter="url(#cardShadow)">
+    <rect width="430" height="520" rx="36" fill="#FFFFFF" opacity="0.84"/>
+    <g transform="translate(25 32)" filter="url(#markShadow)">
+      <rect width="380" height="380" rx="86" fill="#F7FBF8"/>
+      <path d="M190 50L320 126V276L190 350L60 276V126Z" fill="#102C28"/>
+      <path d="M118 144H262V236H118Z" fill="#F7FBF8"/>
+      <g fill="#D7E8E2">
+        <rect x="140" y="164" width="30" height="30" rx="8"/>
+        <rect x="194" y="164" width="30" height="30" rx="8"/>
+        <rect x="248" y="164" width="30" height="30" rx="8"/>
+        <rect x="140" y="214" width="30" height="30" rx="8"/>
+        <rect x="194" y="214" width="30" height="30" rx="8"/>
+      </g>
+      <path d="M88 266C154 246 188 206 196 146C202 98 238 72 292 74" fill="none" stroke="url(#goldTrace)" stroke-width="30" stroke-linecap="round"/>
+      <path d="M132 250H258" stroke="#16B7A2" stroke-width="24" stroke-linecap="round"/>
+      <circle class="nodeTeal" cx="88" cy="266" r="18"/>
+      <circle class="nodeGold" cx="196" cy="146" r="20"/>
+      <circle class="nodeCoral" cx="292" cy="74" r="18"/>
+      <circle class="nodeDark" cx="258" cy="250" r="14"/>
+    </g>
+    <text class="label" x="48" y="456" font-size="28">08 Matrix Seal</text>
+    <text class="caption" x="48" y="490" font-size="17">更稳、更像专业桌面软件，适合作为长期品牌。</text>
+  </g>
+</svg>
