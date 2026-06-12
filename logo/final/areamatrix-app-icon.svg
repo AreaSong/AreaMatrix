@@ -2,10 +2,6 @@
   <title id="title">AreaMatrix V2 App Icon</title>
   <desc id="desc">A distinctive AreaMatrix icon showing a trace atlas: local archive, matrix cells, and a connected import path.</desc>
   <defs>
-    <linearGradient id="bg" x1="120" y1="80" x2="904" y2="944" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FBFCF8"/>
-      <stop offset="1" stop-color="#E7F4EE"/>
-    </linearGradient>
     <linearGradient id="ink" x1="228" y1="226" x2="804" y2="806" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#173A33"/>
       <stop offset="1" stop-color="#0A201E"/>
@@ -23,9 +19,6 @@
       <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#0A201E" flood-opacity="0.12"/>
     </filter>
   </defs>
-
-  <rect width="1024" height="1024" fill="#FFFFFF"/>
-  <rect x="64" y="64" width="896" height="896" rx="212" fill="url(#bg)"/>
   <g filter="url(#shadow)">
     <path d="M262 706L350 404C363 360 403 330 449 330H746C799 330 842 373 842 426V700C842 753 799 796 746 796H350C289 796 244 767 262 706Z" fill="url(#ink)"/>
     <path d="M330 660L400 432C409 404 435 384 464 384H714C746 384 772 410 772 442V668C772 700 746 726 714 726H382C344 726 319 696 330 660Z" fill="#F8FCF8"/>
