@@ -1,0 +1,18 @@
+{
+  "images": [
+    {
+      "filename": "areamatrix-logo-lockup-light.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "areamatrix-logo-lockup-light@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}
