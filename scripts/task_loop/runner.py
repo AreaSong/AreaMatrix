@@ -832,8 +832,8 @@ class TaskLoopRunner:
                 task.task_name,
                 attempt,
                 self.cfg.run_id,
-                str(copy_log),
-                str(verify_log),
+                state.persist_repo_path(self.cfg.root_dir, copy_log),
+                state.persist_repo_path(self.cfg.root_dir, verify_log),
                 self.cfg.progress_file,
                 self.summary_file,
             )
@@ -866,6 +866,7 @@ class TaskLoopRunner:
     def init_summary(self) -> None:
         state.init_summary(
             self.summary_file,
+            self.cfg.root_dir,
             {
                 "run_id": self.cfg.run_id,
                 "root_dir": str(self.cfg.root_dir),
@@ -901,6 +902,7 @@ class TaskLoopRunner:
             state.finalize_summary(
                 self.summary_file,
                 self.cfg.run_summary_root,
+                self.cfg.root_dir,
                 status_name,
                 exit_code,
                 self.done_tasks,
@@ -910,7 +912,7 @@ class TaskLoopRunner:
 
     def update_run_index(self) -> None:
         if self.summary_file.exists():
-            state.update_index(self.cfg.run_summary_root, self.summary_file)
+            state.update_index(self.cfg.run_summary_root, self.summary_file, self.cfg.root_dir)
 
     def record_task_summary(
         self,
@@ -925,14 +927,15 @@ class TaskLoopRunner:
             return
         state.record_summary(
             self.summary_file,
+            self.cfg.root_dir,
             task.label,
             task.phase,
             task.task_name,
             status_name,
             attempt,
             task.risk,
-            str(copy_log),
-            str(verify_log),
+            state.persist_repo_path(self.cfg.root_dir, copy_log),
+            state.persist_repo_path(self.cfg.root_dir, verify_log),
             note,
             self.done_tasks,
             self.retry_total,
@@ -943,11 +946,12 @@ class TaskLoopRunner:
             return
         state.mark_progress(
             self.cfg.progress_file,
+            self.cfg.root_dir,
             task.label,
             status_name,
             note,
-            str(copy_log or ""),
-            str(verify_log or ""),
+            state.persist_repo_path(self.cfg.root_dir, copy_log or ""),
+            state.persist_repo_path(self.cfg.root_dir, verify_log or ""),
             attempts,
             task.risk,
             self.cfg.run_id,
@@ -1541,7 +1545,7 @@ class TaskLoopRunner:
                 self.cfg.start_from = failed_label
                 log_event("INFO", f"resume failed task: {self.cfg.start_from}")
             if resume_stale:
-                stale_label = state.first_stale(self.cfg.progress_file, self.cfg.lock_dir)
+                stale_label = state.first_stale(self.cfg.progress_file, self.cfg.lock_dir, self.cfg.root_dir)
                 if not stale_label:
                     raise TaskLoopError(f"no stale in_progress task found in {self.cfg.progress_file}")
                 self.cfg.start_from = stale_label
@@ -1725,7 +1729,7 @@ def print_loop_status(cfg: RuntimeConfig) -> None:
     print(f"- legacy_state_file: {cfg.state_file}")
     legacy_count = len(cfg.state_file.read_text(encoding="utf-8", errors="replace").splitlines()) if cfg.state_file.exists() else 0
     print(f"- legacy_completed_count: {legacy_count}")
-    print(state.status_fragment(cfg.progress_file, cfg.lock_dir, cfg.log_root, cfg.drain_request_file), end="")
+    print(state.status_fragment(cfg.progress_file, cfg.lock_dir, cfg.log_root, cfg.drain_request_file, cfg.root_dir), end="")
     print()
     sys.stdout.flush()
     pipeline = cfg.root_dir / "tasks/prompts/_shared/prompt_pipeline.py"
@@ -1747,7 +1751,7 @@ def clear_stale(cfg: RuntimeConfig) -> int:
     runner = TaskLoopRunner(cfg, "./task-loop clear-stale")
     runner.acquire_lock("clear-stale")
     try:
-        for line in state.clear_stale(cfg.progress_file, cfg.lock_dir, cfg.progress_backup_root):
+        for line in state.clear_stale(cfg.progress_file, cfg.lock_dir, cfg.progress_backup_root, cfg.root_dir):
             log_event("INFO", line)
         return 0
     finally:

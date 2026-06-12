@@ -1,7 +1,7 @@
 {
-  "codex_bin": "/Applications/Codex.app/Contents/Resources/codex",
+  "codex_bin": "codex",
   "codex_exec_sandbox": "danger-full-access",
-  "copy_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/copy-ready",
+  "copy_root": "tasks/prompts/_shared/copy-ready",
   "dry_run": false,
   "git": {
     "active_branch": "codex/areamatrix-task-loop-20260501_132850",
@@ -10,7 +10,7 @@
     "push_remote": "origin",
     "push_set_upstream": "1"
   },
-  "log_root": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260606_220416",
+  "log_root": ".codex/task-loop-logs/20260606_220416",
   "max_retries": 0,
   "max_tasks": 0,
   "model": "gpt-5.5",
@@ -22,10 +22,10 @@
     "phase-3",
     "phase-4"
   ],
-  "progress_file": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json",
+  "progress_file": "tasks/prompts/_shared/progress.json",
   "risk_gate": "mission-critical",
   "risk_policy": "allow",
-  "root_dir": "/Users/as/Ai-Project/project/AreaMatrix",
+  "root_dir": ".",
   "run_id": "20260606_220416",
   "start_from": "",
   "started_at": "2026-06-06T14:04:16.771882+00:00",
@@ -34,7 +34,7 @@
   "tasks": {
     "4-3/task-115": {
       "attempts": 2,
-      "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260606_220416/phase-4/4-3-task-115-copy-attempt-2.log",
+      "copy_log": ".codex/task-loop-logs/20260606_220416/phase-4/4-3-task-115-copy-attempt-2.log",
       "git": {
         "attempts": 2,
         "branch": "codex/areamatrix-task-loop-20260501_132850",
@@ -61,7 +61,7 @@
           "tasks/prompts/_shared/progress.json"
         ],
         "commit": "5bea4ddb30e259b96e1ee0a0f9a543cf87fdda39",
-        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260606_220416/phase-4/4-3-task-115-copy-attempt-2.log",
+        "copy_log": ".codex/task-loop-logs/20260606_220416/phase-4/4-3-task-115-copy-attempt-2.log",
         "diff_name_status": [
           "M\t.codex/task-loop-runs/index.json",
           "M\tapps/ios/AreaMatrix/Features/Import/FilesImportCoreBridge.swift",
@@ -149,10 +149,10 @@
           "?? apps/ios/AreaMatrix/Features/Import/FilesImportReplaceViews.swift",
           "?? apps/ios/AreaMatrix/Features/Import/FilesImportReviewHelpers.swift"
         ],
-        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260606_220416/summary.json",
+        "summary_file": ".codex/task-loop-runs/20260606_220416/summary.json",
         "task_name": "4-3-task-115",
         "updated_at": "2026-06-06T15:06:27.450673+00:00",
-        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260606_220416/phase-4/4-3-task-115-verify-attempt-2.log"
+        "verify_log": ".codex/task-loop-logs/20260606_220416/phase-4/4-3-task-115-verify-attempt-2.log"
       },
       "note": "自动执行验收通过",
       "phase": "phase-4",
@@ -160,7 +160,7 @@
       "status": "completed",
       "task_name": "4-3-task-115",
       "updated_at": "2026-06-06T15:06:27.194140+00:00",
-      "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260606_220416/phase-4/4-3-task-115-verify-attempt-2.log"
+      "verify_log": ".codex/task-loop-logs/20260606_220416/phase-4/4-3-task-115-verify-attempt-2.log"
     }
   },
   "totals": {
@@ -169,6 +169,6 @@
     "task_count": 637
   },
   "updated_at": "2026-06-06T15:06:27.459520+00:00",
-  "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
+  "verify_root": "tasks/prompts/_shared/verify-ready",
   "version": 1
 }

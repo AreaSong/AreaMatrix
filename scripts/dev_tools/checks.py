@@ -230,11 +230,31 @@ def run_governance_check(root: Path | None = None) -> int:
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check task-loop", "task-loop health")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check prompts", "prompt doctor")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check diff", "diff whitespace check")
+    _require_text(root, failures, ".github/workflows/governance-ci.yml", r"gitleaks/gitleaks-action", "secret scan action")
+    _require_text(root, failures, "scripts/check-secrets.sh", r"args=\(detect", "local secret scan wrapper")
+    _require_text(root, failures, "docs/development/ci-governance.md", "./dev check secrets", "local secret scan docs")
 
     if failures.count:
         print(f"governance health: FAILED ({failures.count} issue(s))", file=os.sys.stderr)
         return 1
     print("governance health: OK")
+    return 0
+
+
+def run_secrets_check(root: Path | None = None) -> int:
+    root = (root or project_root()).resolve()
+    script = root / "scripts" / "check-secrets.sh"
+    if not script.is_file():
+        print(f"secrets check: FAILED (missing {script})", file=os.sys.stderr)
+        return 1
+    proc = run_step(["bash", str(script)], cwd=root, check=False)
+    if proc.returncode != 0:
+        print("secrets check: FAILED", file=os.sys.stderr)
+        return proc.returncode
+    if "SKIP" in (proc.stderr or ""):
+        print("secrets check: SKIP (gitleaks not installed locally)")
+    else:
+        print("secrets check: PASS")
     return 0
 
 
@@ -474,6 +494,7 @@ def _run_common_task_checks(root: Path) -> int:
     for label, func in [
         ("prompt doctor", lambda: run_prompts_check(root)),
         ("diff check", lambda: run_diff_check(root)),
+        ("secrets", lambda: run_secrets_check(root)),
     ]:
         print()
         print(f"==> ./dev check task: {label}", flush=True)
@@ -773,6 +794,7 @@ def run_all_check(root: Path | None = None) -> int:
         ("task-loop", lambda: run_task_loop_check(root)),
         ("prompt doctor", lambda: run_prompts_check(root)),
         ("diff check", lambda: run_diff_check(root)),
+        ("secrets", lambda: run_secrets_check(root)),
         ("core checks", lambda: _run_core_checks(root)),
         ("macOS checks", lambda: _run_macos_checks(root)),
     ]

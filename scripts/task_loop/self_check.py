@@ -1580,6 +1580,28 @@ def check_runner_activity_replace_and_orphan_detection(h: Harness) -> None:
         raise CheckFailure(f"unexpected orphan detection result: {orphaned}")
 
 
+def check_progress_path_persistence(h: Harness) -> None:
+    log("progress paths persist repo-relative")
+    progress = h.tmp / "path-progress.json"
+    root = h.tmp / "repo"
+    root.mkdir()
+    copy_log = root / ".codex/task-loop-logs/run/phase-0/task-copy.log"
+    verify_log = root / ".codex/task-loop-logs/run/phase-0/task-verify.log"
+    copy_log.parent.mkdir(parents=True)
+    verify_log.write_text("VERIFY_RESULT: PASS\n", encoding="utf-8")
+    state.mark_progress(progress, root, "0-1/task-01", "completed", "ok", str(copy_log), str(verify_log), 1)
+    data = json.loads(progress.read_text(encoding="utf-8"))
+    entry = data["tasks"]["0-1/task-01"]
+    if "/Users/" in entry.get("copy_log", "") or entry.get("copy_log", "").startswith("/"):
+        raise CheckFailure(f"copy_log must be repo-relative: {entry.get('copy_log')}" )
+    if "/Users/" in entry.get("verify_log", "") or entry.get("verify_log", "").startswith("/"):
+        raise CheckFailure(f"verify_log must be repo-relative: {entry.get('verify_log')}" )
+    if state.verify_result(entry["verify_log"], root) != "pass":
+        raise CheckFailure("verify_result must resolve repo-relative verify logs")
+
+
+
+
 def check_git_ignore(h: Harness) -> None:
     log("git ignore policy")
     ignored = [
@@ -1630,6 +1652,7 @@ def run_check(root_dir: Path) -> int:
             check_runner_repeated_diff_is_not_progress(harness)
             check_validation_process_detection()
             check_runner_activity_replace_and_orphan_detection(harness)
+            check_progress_path_persistence(harness)
             check_git_ignore(harness)
         except CheckFailure as exc:
             print(f"[task-loop-check] FAIL: {exc}")

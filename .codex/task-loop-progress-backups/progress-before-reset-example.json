@@ -1,0 +1,15 @@
+{
+  "tasks": {
+    "0-1/task-01": {
+      "attempts": 1,
+      "copy_log": ".codex/task-loop-logs/example-run/phase-0/0-1-task-01-copy-attempt-1.log",
+      "note": "example example fixture for task-loop check",
+      "risk": "Low",
+      "run_id": "example000000_000000",
+      "status": "completed",
+      "updated_at": "2026-01-01T00:00:00+00:00",
+      "verify_log": ".codex/task-loop-logs/example-run/phase-0/0-1-task-01-verify-attempt-1.log"
+    }
+  },
+  "version": 1
+}

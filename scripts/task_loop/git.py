@@ -171,8 +171,9 @@ def diff_name_status(root: Path) -> list[str]:
 def path_for_git(root: Path, path: Path | None) -> str | None:
     if not path:
         return None
+    candidate = path if path.is_absolute() else (root / path)
     try:
-        return str(path.resolve().relative_to(root.resolve()))
+        return str(candidate.resolve().relative_to(root.resolve()))
     except ValueError:
         return None
 
@@ -193,6 +194,10 @@ def status_line_paths(line: str) -> list[str]:
 
 def is_task_loop_log_path(path: str) -> bool:
     return path.startswith(".codex/task-loop-logs/")
+
+
+def is_progress_backup_path(path: str) -> bool:
+    return path.startswith(".codex/task-loop-progress-backups/")
 
 
 def is_exec_stream_log_path(path: str) -> bool:

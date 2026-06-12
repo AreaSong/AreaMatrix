@@ -1,7 +1,7 @@
 {
-  "codex_bin": "/Applications/Codex.app/Contents/Resources/codex",
+  "codex_bin": "codex",
   "codex_exec_sandbox": "danger-full-access",
-  "copy_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/copy-ready",
+  "copy_root": "tasks/prompts/_shared/copy-ready",
   "dry_run": false,
   "exit_code": 1,
   "finished_at": "2026-05-27T07:27:51.566602+00:00",
@@ -12,7 +12,7 @@
     "push_remote": "origin",
     "push_set_upstream": "1"
   },
-  "log_root": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260527_141240",
+  "log_root": ".codex/task-loop-logs/20260527_141240",
   "max_retries": 0,
   "max_tasks": 0,
   "model": "gpt-5.5",
@@ -24,10 +24,10 @@
     "phase-3",
     "phase-4"
   ],
-  "progress_file": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json",
+  "progress_file": "tasks/prompts/_shared/progress.json",
   "risk_gate": "mission-critical",
   "risk_policy": "allow",
-  "root_dir": "/Users/as/Ai-Project/project/AreaMatrix",
+  "root_dir": ".",
   "run_id": "20260527_141240",
   "start_from": "",
   "started_at": "2026-05-27T06:12:41.014632+00:00",
@@ -36,7 +36,7 @@
   "tasks": {
     "4-2/task-01": {
       "attempts": 1,
-      "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260527_141240/phase-4/4-2-task-01-copy-attempt-1.log",
+      "copy_log": ".codex/task-loop-logs/20260527_141240/phase-4/4-2-task-01-copy-attempt-1.log",
       "git": {
         "attempts": 1,
         "branch": "codex/areamatrix-task-loop-20260501_132850",
@@ -54,7 +54,7 @@
           "tasks/prompts/_shared/progress.json"
         ],
         "commit": "a898c9267124a63f9d9ca476b6d9afff83bf9406",
-        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260527_141240/phase-4/4-2-task-01-copy-attempt-1.log",
+        "copy_log": ".codex/task-loop-logs/20260527_141240/phase-4/4-2-task-01-copy-attempt-1.log",
         "diff_name_status": [
           "M\t.codex/task-loop-runs/index.json",
           "M\tcore/area_matrix.udl",
@@ -110,10 +110,10 @@
           "?? core/src/ai_settings.rs",
           "?? core/tests/ai_settings_config_contract_api.rs"
         ],
-        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260527_141240/summary.json",
+        "summary_file": ".codex/task-loop-runs/20260527_141240/summary.json",
         "task_name": "4-2-task-01",
         "updated_at": "2026-05-27T06:39:45.368009+00:00",
-        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260527_141240/phase-4/4-2-task-01-verify-attempt-1.log"
+        "verify_log": ".codex/task-loop-logs/20260527_141240/phase-4/4-2-task-01-verify-attempt-1.log"
       },
       "note": "自动执行验收通过",
       "phase": "phase-4",
@@ -121,11 +121,11 @@
       "status": "completed",
       "task_name": "4-2-task-01",
       "updated_at": "2026-05-27T06:39:45.164187+00:00",
-      "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260527_141240/phase-4/4-2-task-01-verify-attempt-1.log"
+      "verify_log": ".codex/task-loop-logs/20260527_141240/phase-4/4-2-task-01-verify-attempt-1.log"
     },
     "4-2/task-02": {
       "attempts": 1,
-      "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260527_141240/phase-4/4-2-task-02-copy-attempt-1.log",
+      "copy_log": ".codex/task-loop-logs/20260527_141240/phase-4/4-2-task-02-copy-attempt-1.log",
       "git": {
         "attempts": 1,
         "branch": "codex/areamatrix-task-loop-20260501_132850",
@@ -142,7 +142,7 @@
           "tasks/prompts/_shared/progress.json"
         ],
         "commit": "253510cc1f864772da61521defb12f7ff3505503",
-        "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260527_141240/phase-4/4-2-task-02-copy-attempt-1.log",
+        "copy_log": ".codex/task-loop-logs/20260527_141240/phase-4/4-2-task-02-copy-attempt-1.log",
         "diff_name_status": [
           "M\t.codex/task-loop-runs/20260527_141240/summary.json",
           "M\t.codex/task-loop-runs/index.json",
@@ -195,10 +195,10 @@
           "?? core/src/db/ai_settings.rs",
           "?? core/tests/ai_settings_config_implementation.rs"
         ],
-        "summary_file": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-runs/20260527_141240/summary.json",
+        "summary_file": ".codex/task-loop-runs/20260527_141240/summary.json",
         "task_name": "4-2-task-02",
         "updated_at": "2026-05-27T07:05:19.156284+00:00",
-        "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260527_141240/phase-4/4-2-task-02-verify-attempt-1.log"
+        "verify_log": ".codex/task-loop-logs/20260527_141240/phase-4/4-2-task-02-verify-attempt-1.log"
       },
       "note": "自动执行验收通过",
       "phase": "phase-4",
@@ -206,18 +206,18 @@
       "status": "completed",
       "task_name": "4-2-task-02",
       "updated_at": "2026-05-27T07:05:18.970953+00:00",
-      "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260527_141240/phase-4/4-2-task-02-verify-attempt-1.log"
+      "verify_log": ".codex/task-loop-logs/20260527_141240/phase-4/4-2-task-02-verify-attempt-1.log"
     },
     "4-2/task-03": {
       "attempts": 1,
-      "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260527_141240/phase-4/4-2-task-03-copy-attempt-1.log",
+      "copy_log": ".codex/task-loop-logs/20260527_141240/phase-4/4-2-task-03-copy-attempt-1.log",
       "note": "执行中：attempt=1 risk=Mission-Critical",
       "phase": "phase-4",
       "risk": "Mission-Critical",
       "status": "in_progress",
       "task_name": "4-2-task-03",
       "updated_at": "2026-05-27T07:05:19.228384+00:00",
-      "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260527_141240/phase-4/4-2-task-03-verify-attempt-1.log"
+      "verify_log": ".codex/task-loop-logs/20260527_141240/phase-4/4-2-task-03-verify-attempt-1.log"
     }
   },
   "totals": {
@@ -226,6 +226,6 @@
     "task_count": 637
   },
   "updated_at": "2026-05-27T07:27:51.566616+00:00",
-  "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
+  "verify_root": "tasks/prompts/_shared/verify-ready",
   "version": 1
 }

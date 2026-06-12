@@ -346,6 +346,7 @@ def status_output(cfg: ConsoleConfig) -> str:
         cfg.runtime.lock_dir,
         cfg.runtime.log_root,
         cfg.runtime.drain_request_file,
+        cfg.runtime.root_dir,
     )
 
 
@@ -497,10 +498,10 @@ def latest_verify_log(log_root: Path) -> Path | None:
     return logs[-1] if logs else None
 
 
-def latest_verify_result(path: Path | None) -> str:
+def latest_verify_result(path: Path | None, root_dir: Path) -> str:
     if not path:
         return "missing"
-    return state.verify_result(str(path))
+    return state.verify_result(str(path), root_dir)
 
 
 def show_latest_failure_summary(cfg: ConsoleConfig) -> None:
@@ -628,11 +629,11 @@ def dashboard_snapshot(cfg: ConsoleConfig) -> DashboardSnapshot:
         progress_counts=runtime_progress_counts(cfg),
         process=process_snapshot(cfg),
         lock=lock,
-        stale_count=len(state.stale_tasks(cfg.runtime.progress_file, cfg.runtime.lock_dir)),
+        stale_count=len(state.stale_tasks(cfg.runtime.progress_file, cfg.runtime.lock_dir, cfg.runtime.root_dir)),
         drain_requested=bool(state.read_control_file(cfg.runtime.drain_request_file)),
         latest_log_dir=latest_log_dir(cfg.runtime.log_root),
         latest_run=latest_run(cfg),
-        latest_verify_result=latest_verify_result(latest_verify),
+        latest_verify_result=latest_verify_result(latest_verify, cfg.runtime.root_dir),
         latest_verify_log=latest_verify,
         interesting_task=current_interesting_task(cfg),
         git_dirty=git_dirty(cfg.runtime.root_dir),

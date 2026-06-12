@@ -167,7 +167,7 @@ State operations:
 ./task-loop resume-stale
 ```
 
-`./task-loop reset-progress` backs up `progress.json` under `.codex/task-loop-progress-backups/` before writing an empty progress file. It does not delete task-loop logs.
+`./task-loop reset-progress` backs up `progress.json` under `.codex/task-loop-progress-backups/` before writing an empty progress file. Backups are local recovery snapshots and stay gitignored; only the sanitized example fixture is tracked. It does not delete task-loop logs.
 
 `./task-loop clear-stale` removes only stale `in_progress` records. It must not alter `completed`, `failed`, or `blocked`.
 

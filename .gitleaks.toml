@@ -1,0 +1,22 @@
+title = "AreaMatrix gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Tracked fixtures and docs that intentionally contain benign examples"
+paths = [
+  '''.codex/task-loop-progress-backups/progress-before-reset-example.json''',
+]
+
+[[rules]]
+id = "areamatrix-local-path-leak"
+description = "Detect committed macOS home directory paths"
+regex = '''/Users/[A-Za-z0-9._-]+/'''
+tags = ["path-leak"]
+
+[rules.allowlist]
+description = "Allow example fixture uses repo-relative sample log paths"
+paths = [
+  '''.codex/task-loop-progress-backups/progress-before-reset-example.json''',
+]

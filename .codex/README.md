@@ -14,7 +14,8 @@
 - `skills-src/`：AreaMatrix repo-local Codex skills 的源事实目录；每个 skill 的细节放在 `references/`。
 - `templates/prompt-task-template.md`：新建 prompt 任务的模板。
 - `templates/prompt-verify-template.md`：验收 prompt 的格式参考；实际优先由 runner 生成。
-- `task-loop-logs/`、`task-loop-runs/`、`task-loop-progress-backups/`：自动任务循环的日志、运行摘要与进度备份，作为可回溯证据保留。
+- `task-loop-logs/`、`.codex/task-loop-runs/`：自动任务循环的日志与运行摘要，作为可回溯证据保留。
+- `task-loop-progress-backups/`：本地 progress 恢复快照（reset/clear-stale 时写入），默认不进 Git；仓库仅跟踪脱敏 example fixture。
 - Task loop 的状态 helper 位于 `scripts/task_loop/state.py`，Git checkpoint helper 位于 `scripts/task_loop/git.py`，完整自检入口是 `./task-loop check`。
 - Prompt 工程质量门禁位于 `tasks/prompts/_shared/engineering-quality-rules.md`；编码规范源事实仍在 `docs/development/coding-standards.md`。
 - 企业治理检查入口是 `bash scripts/check-governance.sh`，源事实在 `CODE_REVIEW.md`、`SECURITY.md` 和 `docs/development/`。

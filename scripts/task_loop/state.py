@@ -10,6 +10,34 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from . import git as git_helpers
+
+
+def resolve_repo_path(root: Path, value: str) -> Path:
+    path = Path(value)
+    if path.is_absolute():
+        return path
+    return (root / path).resolve()
+
+def persist_repo_path(root: Path, value: str | Path | None) -> str:
+    if not value:
+        return ""
+    rel = git_helpers.path_for_git(root, Path(value))
+    return rel or str(value)
+
+def sanitize_codex_bin(value: str, root_dir: Path | None = None) -> str:
+    if not value:
+        return ""
+    path = Path(value)
+    if path.is_absolute():
+        if str(path).startswith("/Applications/") or "Codex.app" in str(path):
+            return path.name or "codex"
+        if root_dir is not None:
+            rel = git_helpers.path_for_git(root_dir, path)
+            if rel:
+                return rel
+    return value
+
 
 VERIFY_PASS_RE = re.compile(r"(?m)^[ \t]*VERIFY_RESULT:[ \t]*PASS[ \t]*$")
 VERIFY_FAIL_RE = re.compile(r"(?m)^[ \t]*VERIFY_RESULT:[ \t]*FAIL[ \t]*$")
@@ -158,10 +186,10 @@ def log_file_status(path_value: Any) -> str:
     return f"exists size={stat.st_size}B updated_ago={age}"
 
 
-def verify_result(path_value: Any) -> str:
+def verify_result(path_value: Any, root_dir: Path | None = None) -> str:
     if not isinstance(path_value, str) or not path_value:
         return "missing"
-    path = Path(path_value)
+    path = resolve_repo_path(root_dir, path_value) if root_dir else Path(path_value)
     if not path.exists():
         return "missing"
     try:
@@ -175,27 +203,31 @@ def verify_result(path_value: Any) -> str:
     return "unfinished"
 
 
-def stale_reason(entry: dict[str, Any], lock: dict[str, Any]) -> str | None:
+def stale_reason(entry: dict[str, Any], lock: dict[str, Any], root_dir: Path) -> str | None:
     if entry.get("status") != "in_progress":
         return None
     active = bool(lock["alive"]) and entry.get("run_id") == lock.get("run_id")
-    result = verify_result(entry.get("verify_log"))
+    result = verify_result(entry.get("verify_log"), root_dir)
     copy_log = entry.get("copy_log")
-    copy_exists = isinstance(copy_log, str) and bool(copy_log) and Path(copy_log).exists()
+    copy_exists = (
+        isinstance(copy_log, str)
+        and bool(copy_log)
+        and resolve_repo_path(root_dir, copy_log).exists()
+    )
     if active or result == "pass":
         return None
     copy_state = "exists" if copy_exists else "missing"
     return f"no active matching lock; copy_log={copy_state}; verify={result}"
 
 
-def stale_tasks(progress_path: Path, lock_dir: Path) -> list[tuple[str, dict[str, Any], str]]:
+def stale_tasks(progress_path: Path, lock_dir: Path, root_dir: Path) -> list[tuple[str, dict[str, Any], str]]:
     data = progress_data(progress_path)
     lock = lock_info(lock_dir)
     stale: list[tuple[str, dict[str, Any], str]] = []
     for label, value in data.get("tasks", {}).items():
         if not isinstance(value, dict):
             continue
-        reason = stale_reason(value, lock)
+        reason = stale_reason(value, lock, root_dir)
         if reason:
             stale.append((label, value, reason))
     return sorted(stale, key=lambda item: task_key(item[0]))
@@ -220,6 +252,7 @@ def task_status(progress_file: Path, label: str) -> str:
 
 def mark_progress(
     progress_file: Path,
+    root_dir: Path,
     label: str,
     status: str,
     note: str,
@@ -237,9 +270,9 @@ def mark_progress(
         tasks[label] = entry
     entry.update({"status": status, "note": note, "updated_at": utc_now()})
     if copy_log:
-        entry["copy_log"] = copy_log
+        entry["copy_log"] = persist_repo_path(root_dir, copy_log)
     if verify_log:
-        entry["verify_log"] = verify_log
+        entry["verify_log"] = persist_repo_path(root_dir, verify_log)
     if attempts:
         entry["attempts"] = attempts
     if risk:
@@ -259,8 +292,8 @@ def first_failed(progress_file: Path) -> str:
     return sorted(failed, key=task_key)[0] if failed else ""
 
 
-def first_stale(progress_file: Path, lock_dir: Path) -> str:
-    stale = stale_tasks(progress_file, lock_dir)
+def first_stale(progress_file: Path, lock_dir: Path, root_dir: Path) -> str:
+    stale = stale_tasks(progress_file, lock_dir, root_dir)
     return stale[0][0] if stale else ""
 
 
@@ -273,10 +306,10 @@ def count_completed(progress_file: Path) -> int:
     )
 
 
-def clear_stale(progress_file: Path, lock_dir: Path, backup_root: Path) -> list[str]:
+def clear_stale(progress_file: Path, lock_dir: Path, backup_root: Path, root_dir: Path) -> list[str]:
     backup = backup_progress(progress_file, backup_root, "clear-stale")
     data = progress_data(progress_file)
-    stale = stale_tasks(progress_file, lock_dir)
+    stale = stale_tasks(progress_file, lock_dir, root_dir)
     for label, _, _ in stale:
         data.get("tasks", {}).pop(label, None)
     data["updated_at"] = utc_now()
@@ -308,7 +341,7 @@ def read_control_file(path: Path) -> dict[str, str]:
     return values
 
 
-def status_fragment(progress_file: Path, lock_dir: Path, log_root: Path, drain_request_file: Path) -> str:
+def status_fragment(progress_file: Path, lock_dir: Path, log_root: Path, drain_request_file: Path, root_dir: Path) -> str:
     lines: list[str] = [f"- lock_dir: {lock_dir}"]
     lock = lock_info(lock_dir)
     if not lock["exists"]:
@@ -427,7 +460,7 @@ def status_fragment(progress_file: Path, lock_dir: Path, log_root: Path, drain_r
         suffix = f" - {note}" if note else ""
         lines.append(f"- recent_{status}: {label}{suffix}")
 
-    stale = stale_tasks(progress_file, lock_dir)
+    stale = stale_tasks(progress_file, lock_dir, root_dir)
     lines.append(f"- stale_in_progress: {len(stale)}")
     for label, entry, reason in stale[:5]:
         note = entry.get("note", "")
@@ -439,7 +472,7 @@ def status_fragment(progress_file: Path, lock_dir: Path, log_root: Path, drain_r
     return "\n".join(lines) + "\n"
 
 
-def update_index(run_summary_root: Path, summary_file: Path) -> None:
+def update_index(run_summary_root: Path, summary_file: Path, root_dir: Path) -> None:
     if not summary_file.exists():
         return
     summary = read_json(summary_file, {})
@@ -454,7 +487,7 @@ def update_index(run_summary_root: Path, summary_file: Path) -> None:
     record = {
         "run_id": run_id,
         "status": summary.get("status", ""),
-        "summary_file": str(summary_file),
+        "summary_file": persist_repo_path(root_dir, summary_file),
         "phases": summary.get("phases", []),
         "start_from": summary.get("start_from", ""),
         "stop_after": summary.get("stop_after", ""),
@@ -474,8 +507,21 @@ def update_index(run_summary_root: Path, summary_file: Path) -> None:
     write_json(index_file, index)
 
 
-def init_summary(summary_file: Path, values: dict[str, Any]) -> None:
+def init_summary(summary_file: Path, root_dir: Path, values: dict[str, Any]) -> None:
     now = utc_now()
+    path_keys = {
+        "root_dir",
+        "progress_file",
+        "log_root",
+        "copy_root",
+        "verify_root",
+    }
+    sanitized = dict(values)
+    for key in path_keys:
+        if key in sanitized:
+            sanitized[key] = persist_repo_path(root_dir, sanitized[key])
+    if "codex_bin" in sanitized:
+        sanitized["codex_bin"] = sanitize_codex_bin(str(sanitized["codex_bin"]))
     summary = {
         "version": 1,
         "status": "running",
@@ -483,13 +529,14 @@ def init_summary(summary_file: Path, values: dict[str, Any]) -> None:
         "updated_at": now,
         "totals": {"task_count": values.pop("total_tasks"), "completed_in_run": 0, "retries": 0},
         "tasks": {},
-        **values,
+        **sanitized,
     }
     write_json(summary_file, summary)
 
 
 def record_summary(
     summary_file: Path,
+    root_dir: Path,
     label: str,
     phase: str,
     task_name: str,
@@ -512,8 +559,8 @@ def record_summary(
         "status": status,
         "attempts": attempts,
         "risk": risk,
-        "copy_log": copy_log,
-        "verify_log": verify_log,
+        "copy_log": persist_repo_path(root_dir, copy_log),
+        "verify_log": persist_repo_path(root_dir, verify_log),
         "note": note,
         "updated_at": utc_now(),
     }
@@ -527,6 +574,7 @@ def record_summary(
 def finalize_summary(
     summary_file: Path,
     run_summary_root: Path,
+    root_dir: Path,
     status: str,
     exit_code: int,
     completed: int,
@@ -546,4 +594,4 @@ def finalize_summary(
     totals["completed_in_run"] = completed
     totals["retries"] = retries
     write_json(summary_file, data)
-    update_index(run_summary_root, summary_file)
+    update_index(run_summary_root, summary_file, root_dir)

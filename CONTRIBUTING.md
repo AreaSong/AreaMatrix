@@ -146,6 +146,7 @@ open apps/macos/AreaMatrix.xcodeproj
 - [ ] 已按 [CODE_REVIEW.md](CODE_REVIEW.md) 自查风险、验证和回滚
 - [ ] 新增依赖已按 dependency policy 说明许可证和供应链风险
 - [ ] CI / governance 检查通过或已说明阻塞原因
+- [ ] 已运行 `./dev check secrets`（本地未安装 gitleaks 时可 SKIP，CI 仍会扫描）
 - [ ] PR 标题清晰描述改动（不超过 72 字符）
 - [ ] PR 描述说明了 **why**、**what**、**how to test**
 - [ ] 不包含未授权的第三方资源 / 商业 logo / 与许可证不兼容的代码

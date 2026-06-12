@@ -1,6 +1,6 @@
 {
-  "codex_bin": "/Applications/Codex.app/Contents/Resources/codex",
-  "copy_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/copy-ready",
+  "codex_bin": "codex",
+  "copy_root": "tasks/prompts/_shared/copy-ready",
   "dry_run": false,
   "git": {
     "active_branch": "codex/areamatrix-task-loop-20260501_132850",
@@ -9,7 +9,7 @@
     "push_remote": "origin",
     "push_set_upstream": "1"
   },
-  "log_root": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260512_165655",
+  "log_root": ".codex/task-loop-logs/20260512_165655",
   "max_retries": 0,
   "max_tasks": 1,
   "model": "gpt-5.5",
@@ -21,10 +21,10 @@
     "phase-3",
     "phase-4"
   ],
-  "progress_file": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/progress.json",
+  "progress_file": "tasks/prompts/_shared/progress.json",
   "risk_gate": "mission-critical",
   "risk_policy": "allow",
-  "root_dir": "/Users/as/Ai-Project/project/AreaMatrix",
+  "root_dir": ".",
   "run_id": "20260512_165655",
   "start_from": "4-1/task-13",
   "started_at": "2026-05-12T08:56:55.916951+00:00",
@@ -33,14 +33,14 @@
   "tasks": {
     "4-1/task-13": {
       "attempts": 3,
-      "copy_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260512_165655/phase-4/4-1-task-13-copy-attempt-3.log",
+      "copy_log": ".codex/task-loop-logs/20260512_165655/phase-4/4-1-task-13-copy-attempt-3.log",
       "note": "修复重试中：attempt=3 risk=High",
       "phase": "phase-4",
       "risk": "High",
       "status": "in_progress",
       "task_name": "4-1-task-13",
       "updated_at": "2026-05-12T12:43:42.784297+00:00",
-      "verify_log": "/Users/as/Ai-Project/project/AreaMatrix/.codex/task-loop-logs/20260512_165655/phase-4/4-1-task-13-verify-attempt-3.log"
+      "verify_log": ".codex/task-loop-logs/20260512_165655/phase-4/4-1-task-13-verify-attempt-3.log"
     }
   },
   "totals": {
@@ -49,6 +49,6 @@
     "task_count": 1
   },
   "updated_at": "2026-05-12T12:43:42.784300+00:00",
-  "verify_root": "/Users/as/Ai-Project/project/AreaMatrix/tasks/prompts/_shared/verify-ready",
+  "verify_root": "tasks/prompts/_shared/verify-ready",
   "version": 1
 }
