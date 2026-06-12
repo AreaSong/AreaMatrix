@@ -5,7 +5,7 @@
 ## 基线结论
 
 - 当前 AreaMatrix 产品主线默认不需要 Vibe 专业领域 skills。
-- 本矩阵只允许未来按具体任务触发单项参考；不安装、不复制、不启用 `/Users/as/Ai-Project/project/Vibe-Skills/**`。
+- 本矩阵只允许未来按具体任务触发单项参考；不安装、不复制、不启用 `../Vibe-Skills/**`。
 - `vibe`、VCO runtime、`.vibeskills/**`、memory plane、specialist router 和 Vibe 全量 skill catalog 不进入 AreaMatrix 主线。
 - 未来任何单项接入必须先走 [External Capability Admission Gate](../../.ai-governance/workflows/external-capability-admission.md)，并形成可复查 admission record。
 - 接入优先吸收方法、检查表、术语或一次性参考，不复制外部 runtime、目录布局、执行器、状态面或同义 repo-local skill。
@@ -16,8 +16,8 @@
 - Current screening: [vibe-skills-capability-screening.md](vibe-skills-capability-screening.md)
 - External admission: [external-capability-admission.md](../../.ai-governance/workflows/external-capability-admission.md)
 - Backlog task: [codex-native-area-vibe-optimization.md](../../tasks/backlog/codex-native-area-vibe-optimization.md)
-- Vibe reference only: `/Users/as/Ai-Project/project/Vibe-Skills/README.zh.md`
-- Vibe runtime reference only: `/Users/as/Ai-Project/project/Vibe-Skills/SKILL.md`
+- Vibe reference only: `../Vibe-Skills/README.zh.md`
+- Vibe runtime reference only: `../Vibe-Skills/SKILL.md`
 
 ## Decision Vocabulary
 

@@ -1,6 +1,6 @@
 # Copy-ready: P0 外部能力接入门禁
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务为外部 skills / workflow 接入建立 admission gate。
+你在 `.` 工作。本任务为外部 skills / workflow 接入建立 admission gate。
 
 ## 目标
 
@@ -23,8 +23,8 @@
 2. `.ai-governance/README.md`
 3. `.codex/references/codex-workflow-and-tools.md`
 4. `tasks/backlog/codex-native-area-vibe-optimization.md`
-5. `/Users/as/Ai-Project/project/Vibe-Skills/docs/install/custom-skill-governance-rules.md`
-6. `/Users/as/Ai-Project/project/Vibe-Skills/references/skill-distillation-rules.md` 如存在
+5. `../Vibe-Skills/docs/install/custom-skill-governance-rules.md`
+6. `../Vibe-Skills/references/skill-distillation-rules.md` 如存在
 7. OpenAI Codex 官方 customization / migrate / skills 文档，优先用 OpenAI Docs MCP 核对当前说法
 
 ## 允许修改
@@ -36,7 +36,7 @@
 ## 禁止修改
 
 - `tasks/prompts/**`
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 - 全局 `~/.codex/**`
 
 ## 执行要求

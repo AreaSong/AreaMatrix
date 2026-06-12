@@ -1,6 +1,6 @@
 # Copy-ready: Backlog Read-only Tests and Docs
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务收口 `./dev backlog` 的测试、文档和 dev console 可发现性。
+你在 `.` 工作。本任务收口 `./dev backlog` 的测试、文档和 dev console 可发现性。
 
 ## 目标
 
@@ -60,7 +60,7 @@
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 - task-loop runtime state directories
 
 ## 执行要求

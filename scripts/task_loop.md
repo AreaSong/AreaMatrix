@@ -34,7 +34,7 @@ Codex CLI：
 
 Repo-local skills：
 - copy-ready / verify-ready prompt 会写明 `.codex/skills-src/` 与 `.agents/skills/` 的正确路径。
-- 验收 prompt 会内嵌 validation-driver 的关键规则，避免 `codex exec` 自己猜 `/Users/as/.codex/skills-src/...`。
+- 验收 prompt 会内嵌 validation-driver 的关键规则，避免 `codex exec` 自己猜 `~/.codex/skills-src/...`。
 
 默认 Git checkpoint：
 - `GIT_CHECKPOINT=commit`

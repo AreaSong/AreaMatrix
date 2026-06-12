@@ -17,6 +17,7 @@ from .paths import (
     CODING_STANDARDS,
     DEPENDENCY_GRAPH,
     ENGINEERING_QUALITY_RULES,
+    GLOBAL_CODEX_SKILL_PATH,
     REPO_LOCAL_SKILLS,
     ROOT,
     SKILL_SOURCE_ROOT,
@@ -26,6 +27,7 @@ from .paths import (
     VALIDATION_DRIVER_SKILL,
     ManifestEntry,
     TaskFile,
+    prompt_rel,
 )
 from .repository import markdown_section, skill_file
 
@@ -95,12 +97,12 @@ def integration_execution_requirement(detail_kind: str) -> str:
 def print_repo_local_skill_paths() -> None:
     print("## Repo-local Skill 路径")
     print()
-    print(f"- Skill 源事实目录：`{SKILL_SOURCE_ROOT}`")
-    print(f"- Skill 发现入口：`{ROOT / '.agents' / 'skills'}`")
-    print("- 禁止猜测全局路径：不要读取 `/Users/as/.codex/skills-src/...`。")
+    print(f"- Skill 源事实目录：`{prompt_rel(SKILL_SOURCE_ROOT)}`")
+    print(f"- Skill 发现入口：`{prompt_rel(ROOT / '.agents' / 'skills')}`")
+    print(f"- 禁止猜测全局路径：不要读取 `{GLOBAL_CODEX_SKILL_PATH}`。")
     print("- 若需要使用 AreaMatrix repo-local skill，只读取以下路径：")
     for name in REPO_LOCAL_SKILLS:
-        print(f"  - `{name}`：`{skill_file(name)}`")
+        print(f"  - `{name}`：`{prompt_rel(skill_file(name))}`")
     print()
 
 
@@ -167,7 +169,7 @@ def print_workdir() -> None:
     print()
     print("## 工作目录")
     print()
-    print(f"`{ROOT}`")
+    print("`.`")
     print()
 
 
@@ -182,15 +184,15 @@ def print_common_metadata(
     print(f"- 任务细分：`{ctx.detail_kind}`")
     print(f"- Phase：`{task.phase}`")
     print(f"- Task 标识：`{task.label}`")
-    print(f"- Task 文件：`{task.path}`")
-    print(f"- 共享规则：`{AUDIT_RULES}`")
-    print(f"- 任务切片规则：`{TASK_SLICING_RULES}`")
-    print(f"- 工程质量规则：`{ENGINEERING_QUALITY_RULES}`")
-    print(f"- 编码规范：`{CODING_STANDARDS}`")
-    print(f"- Repo-local Skills：`{SKILL_SOURCE_ROOT}`")
-    print(f"- Validation Driver：`{VALIDATION_DRIVER_SKILL}`")
-    print(f"- 依赖关系：`{DEPENDENCY_GRAPH}`")
-    print(f"- Phase Manifest：`{entry.manifest_path}`")
+    print(f"- Task 文件：`{prompt_rel(task.path)}`")
+    print(f"- 共享规则：`{prompt_rel(AUDIT_RULES)}`")
+    print(f"- 任务切片规则：`{prompt_rel(TASK_SLICING_RULES)}`")
+    print(f"- 工程质量规则：`{prompt_rel(ENGINEERING_QUALITY_RULES)}`")
+    print(f"- 编码规范：`{prompt_rel(CODING_STANDARDS)}`")
+    print(f"- Repo-local Skills：`{prompt_rel(SKILL_SOURCE_ROOT)}`")
+    print(f"- Validation Driver：`{prompt_rel(VALIDATION_DRIVER_SKILL)}`")
+    print(f"- 依赖关系：`{prompt_rel(DEPENDENCY_GRAPH)}`")
+    print(f"- Phase Manifest：`{prompt_rel(entry.manifest_path)}`")
     print(f"- Manifest 章节：`## {entry.label}`")
     print(f"- 依赖任务：`{ctx.deps}`")
     print(f"- 风险等级：`{entry.risk}`")
@@ -216,7 +218,7 @@ def print_manifest_counts(entry: ManifestEntry) -> None:
 
 def print_copy_start_steps(task: TaskFile, entry: ManifestEntry) -> None:
     print_start_steps_header()
-    print(f"1. 读取 task 文件：`{task.path}`")
+    print(f"1. 读取 task 文件：`{prompt_rel(task.path)}`")
     print_common_start_steps(entry)
     print("10. 逐个读取该章节下的 `Exact Docs`。")
     print("11. 逐个读取当前存在的 `Existing Code`。")
@@ -228,7 +230,7 @@ def print_copy_start_steps(task: TaskFile, entry: ManifestEntry) -> None:
 
 def print_verify_start_steps(task: TaskFile, entry: ManifestEntry) -> None:
     print_start_steps_header()
-    print(f"1. 读取 task 文件：`{task.path}`")
+    print(f"1. 读取 task 文件：`{prompt_rel(task.path)}`")
     print_verify_common_start_steps(entry)
     print("10. 逐个读取该章节下的 `Exact Docs`。")
     print("11. 逐个读取该章节下当前存在的 `Existing Code`。")
@@ -244,24 +246,30 @@ def print_start_steps_header() -> None:
 
 
 def print_common_start_steps(entry: ManifestEntry) -> None:
-    print(f"2. 读取共享规则：`{AUDIT_RULES}`")
-    print(f"3. 读取任务切片规则：`{TASK_SLICING_RULES}`")
-    print(f"4. 读取工程质量规则：`{ENGINEERING_QUALITY_RULES}`")
-    print(f"5. 读取编码规范：`{CODING_STANDARDS}`")
-    print(f"6. 读取 repo-local skill 路径说明：`{SKILL_SOURCE_ROOT}`；不要读取 `/Users/as/.codex/skills-src/...`。")
-    print(f"7. 读取依赖关系：`{DEPENDENCY_GRAPH}`")
-    print(f"8. 读取 phase manifest：`{entry.manifest_path}`")
+    print(f"2. 读取共享规则：`{prompt_rel(AUDIT_RULES)}`")
+    print(f"3. 读取任务切片规则：`{prompt_rel(TASK_SLICING_RULES)}`")
+    print(f"4. 读取工程质量规则：`{prompt_rel(ENGINEERING_QUALITY_RULES)}`")
+    print(f"5. 读取编码规范：`{prompt_rel(CODING_STANDARDS)}`")
+    print(
+        f"6. 读取 repo-local skill 路径说明：`{prompt_rel(SKILL_SOURCE_ROOT)}`；"
+        f"不要读取 `{GLOBAL_CODEX_SKILL_PATH}`。"
+    )
+    print(f"7. 读取依赖关系：`{prompt_rel(DEPENDENCY_GRAPH)}`")
+    print(f"8. 读取 phase manifest：`{prompt_rel(entry.manifest_path)}`")
     print(f"9. 在 manifest 中定位章节：`## {entry.label}`")
 
 
 def print_verify_common_start_steps(entry: ManifestEntry) -> None:
-    print(f"2. 读取共享规则：`{AUDIT_RULES}`")
-    print(f"3. 读取任务切片规则：`{TASK_SLICING_RULES}`")
-    print(f"4. 读取工程质量规则：`{ENGINEERING_QUALITY_RULES}`")
-    print(f"5. 读取编码规范：`{CODING_STANDARDS}`")
-    print(f"6. 读取 validation-driver：`{VALIDATION_DRIVER_SKILL}`；不要读取 `/Users/as/.codex/skills-src/...`。")
-    print(f"7. 读取依赖关系：`{DEPENDENCY_GRAPH}`")
-    print(f"8. 读取 phase manifest：`{entry.manifest_path}`")
+    print(f"2. 读取共享规则：`{prompt_rel(AUDIT_RULES)}`")
+    print(f"3. 读取任务切片规则：`{prompt_rel(TASK_SLICING_RULES)}`")
+    print(f"4. 读取工程质量规则：`{prompt_rel(ENGINEERING_QUALITY_RULES)}`")
+    print(f"5. 读取编码规范：`{prompt_rel(CODING_STANDARDS)}`")
+    print(
+        f"6. 读取 validation-driver：`{prompt_rel(VALIDATION_DRIVER_SKILL)}`；"
+        f"不要读取 `{GLOBAL_CODEX_SKILL_PATH}`。"
+    )
+    print(f"7. 读取依赖关系：`{prompt_rel(DEPENDENCY_GRAPH)}`")
+    print(f"8. 读取 phase manifest：`{prompt_rel(entry.manifest_path)}`")
     print(f"9. 在 manifest 中定位章节：`## {entry.label}`")
 
 

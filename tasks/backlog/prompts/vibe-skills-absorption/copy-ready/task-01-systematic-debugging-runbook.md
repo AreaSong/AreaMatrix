@@ -1,6 +1,6 @@
 # Copy-ready: Systematic Debugging 吸收
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务只吸收 Vibe-Skills 的 `systematic-debugging` 方法价值，不安装、不复制外部仓库。
+你在 `.` 工作。本任务只吸收 Vibe-Skills 的 `systematic-debugging` 方法价值，不安装、不复制外部仓库。
 
 ## 目标
 
@@ -24,7 +24,7 @@
 4. `.codex/skills-src/areamatrix-validation-driver/SKILL.md`
 5. `.codex/skills-src/areamatrix-task-loop/SKILL.md`
 6. `.codex/references/vibe-skills-capability-screening.md`
-7. `/Users/as/Ai-Project/project/Vibe-Skills/bundled/skills/systematic-debugging/SKILL.md`
+7. `../Vibe-Skills/bundled/skills/systematic-debugging/SKILL.md`
 
 ## 允许修改
 
@@ -39,7 +39,7 @@
 - `tasks/prompts/**`
 - `core/**`
 - `apps/**`
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 - task-loop progress、run summaries、live logs
 
 ## 执行要求

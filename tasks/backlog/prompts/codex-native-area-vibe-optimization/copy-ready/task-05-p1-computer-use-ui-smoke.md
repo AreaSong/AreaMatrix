@@ -1,6 +1,6 @@
 # Copy-ready: P1 Computer Use macOS UI smoke runbook
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务为 macOS SwiftUI 验收补充 Computer Use UI smoke runbook。
+你在 `.` 工作。本任务为 macOS SwiftUI 验收补充 Computer Use UI smoke runbook。
 
 ## 目标
 

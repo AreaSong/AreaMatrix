@@ -1,6 +1,6 @@
 # Copy-ready: Automations / Cloud / Worktrees Gate
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务补 Automations / Cloud / Worktrees 的禁写主线门禁，不创建 automation，不启用 Cloud，不切换工作树。
+你在 `.` 工作。本任务补 Automations / Cloud / Worktrees 的禁写主线门禁，不创建 automation，不启用 Cloud，不切换工作树。
 
 ## 目标
 
@@ -62,7 +62,7 @@
 - `apps/**`
 - `workflow/versions/**`
 - task-loop runtime state directories
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 
 ## 执行要求
 

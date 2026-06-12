@@ -1,6 +1,6 @@
 # Copy-ready: Implement `./dev backlog list`
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务实现只读的 backlog package 列表命令。
+你在 `.` 工作。本任务实现只读的 backlog package 列表命令。
 
 ## 目标
 
@@ -63,7 +63,7 @@
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 - task-loop runtime state directories
 
 ## 执行要求

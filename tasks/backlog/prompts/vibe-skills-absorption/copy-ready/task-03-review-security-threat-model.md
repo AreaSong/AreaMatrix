@@ -1,6 +1,6 @@
 # Copy-ready: Code Review + Security Threat Model 吸收
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务用 Vibe-Skills 的 `code-reviewer` 和 `security-threat-model` 补强现有 AreaMatrix governance / file-safety。
+你在 `.` 工作。本任务用 Vibe-Skills 的 `code-reviewer` 和 `security-threat-model` 补强现有 AreaMatrix governance / file-safety。
 
 ## 目标
 
@@ -19,8 +19,8 @@
 4. `.codex/skills-src/areamatrix-enterprise-governance/SKILL.md`
 5. `.codex/skills-src/areamatrix-file-safety/SKILL.md`
 6. `.codex/references/vibe-skills-capability-screening.md`
-7. `/Users/as/Ai-Project/project/Vibe-Skills/bundled/skills/code-reviewer/SKILL.md`
-8. `/Users/as/Ai-Project/project/Vibe-Skills/bundled/skills/security-threat-model/SKILL.md`
+7. `../Vibe-Skills/bundled/skills/code-reviewer/SKILL.md`
+8. `../Vibe-Skills/bundled/skills/security-threat-model/SKILL.md`
 
 ## 允许修改
 
@@ -37,7 +37,7 @@
 - `tasks/prompts/**`
 - `core/**`
 - `apps/**`
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 
 ## 执行要求
 

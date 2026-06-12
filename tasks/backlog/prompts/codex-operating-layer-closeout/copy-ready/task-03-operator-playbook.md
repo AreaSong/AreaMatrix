@@ -1,6 +1,6 @@
 # Copy-ready: Operator Playbook
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务把当前 Codex / AreaMatrix 工作层沉淀成一份短操作手册。
+你在 `.` 工作。本任务把当前 Codex / AreaMatrix 工作层沉淀成一份短操作手册。
 
 ## 目标
 
@@ -63,7 +63,7 @@
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 - task-loop runtime state directories
 
 ## 执行要求

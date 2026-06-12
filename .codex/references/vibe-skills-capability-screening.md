@@ -1,6 +1,6 @@
 # Vibe-Skills Capability Screening Matrix
 
-> 本文件记录 AreaMatrix 对 `/Users/as/Ai-Project/project/Vibe-Skills` 横向能力的 P2 筛选结论。它是候选能力 admission 记录，不是安装清单，也不是 live workflow。
+> 本文件记录 AreaMatrix 对 `../Vibe-Skills` 横向能力的 P2 筛选结论。它是候选能力 admission 记录，不是安装清单，也不是 live workflow。
 
 ## 基线结论
 
@@ -25,9 +25,9 @@ AGENTS.md / .ai-governance
 - AI 治理源事实：`.ai-governance/README.md`
 - Codex 运行参考：`.codex/references/codex-workflow-and-tools.md`
 - 长期优化 backlog：`tasks/backlog/codex-native-area-vibe-optimization.md`
-- Vibe-Skills 总览：`/Users/as/Ai-Project/project/Vibe-Skills/README.zh.md`
-- Vibe runtime 入口：`/Users/as/Ai-Project/project/Vibe-Skills/SKILL.md`
-- Vibe distillation 规则：`/Users/as/Ai-Project/project/Vibe-Skills/references/skill-distillation-rules.md`
+- Vibe-Skills 总览：`../Vibe-Skills/README.zh.md`
+- Vibe runtime 入口：`../Vibe-Skills/SKILL.md`
+- Vibe distillation 规则：`../Vibe-Skills/references/skill-distillation-rules.md`
 - 候选 skill：对应 `core/skills/*/instruction.md` 或 `bundled/skills/*/SKILL.md`
 
 ## 快速矩阵

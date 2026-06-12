@@ -1,6 +1,6 @@
 # Copy-ready: Verification Before Completion 吸收
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务吸收 `verification-before-completion` 的完成声明证据纪律。
+你在 `.` 工作。本任务吸收 `verification-before-completion` 的完成声明证据纪律。
 
 ## 目标
 
@@ -21,7 +21,7 @@
 3. `.codex/skills-src/areamatrix-validation-driver/SKILL.md`
 4. `.codex/skills-src/areamatrix-validation-driver/references/validation-matrix.md`
 5. `.codex/references/vibe-skills-capability-screening.md`
-6. `/Users/as/Ai-Project/project/Vibe-Skills/bundled/skills/verification-before-completion/SKILL.md`
+6. `../Vibe-Skills/bundled/skills/verification-before-completion/SKILL.md`
 
 ## 允许修改
 
@@ -35,7 +35,7 @@
 - `tasks/prompts/**`
 - `core/**`
 - `apps/**`
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 
 ## 执行要求
 

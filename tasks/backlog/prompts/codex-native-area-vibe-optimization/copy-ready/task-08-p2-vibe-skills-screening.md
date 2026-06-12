@@ -1,10 +1,10 @@
 # Copy-ready: P2 Vibe-Skills 横向能力筛选
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务只筛选 Vibe-Skills 候选能力，不安装、不启用、不复制全量仓库。
+你在 `.` 工作。本任务只筛选 Vibe-Skills 候选能力，不安装、不启用、不复制全量仓库。
 
 ## 目标
 
-阅读 `/Users/as/Ai-Project/project/Vibe-Skills`，筛选适合 AreaMatrix 近期吸收的横向能力。
+阅读 `../Vibe-Skills`，筛选适合 AreaMatrix 近期吸收的横向能力。
 
 优先候选：
 
@@ -32,9 +32,9 @@
 2. `.ai-governance/README.md`
 3. `.codex/references/codex-workflow-and-tools.md`
 4. `tasks/backlog/codex-native-area-vibe-optimization.md`
-5. `/Users/as/Ai-Project/project/Vibe-Skills/README.zh.md`
+5. `../Vibe-Skills/README.zh.md`
 6. 候选 skill 的 `SKILL.md` 或 canonical instruction
-7. `/Users/as/Ai-Project/project/Vibe-Skills/references/skill-distillation-rules.md` 如存在
+7. `../Vibe-Skills/references/skill-distillation-rules.md` 如存在
 
 ## 允许修改
 
@@ -43,7 +43,7 @@
 
 ## 禁止修改
 
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 - `tasks/prompts/**`
 - `.codex/skills-src/**`，本任务只筛选，不正式吸收
 - 全局 `~/.codex/**`

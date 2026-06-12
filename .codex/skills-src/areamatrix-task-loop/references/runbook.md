@@ -125,7 +125,7 @@ Repo-local skills live in this repository:
 .agents/skills/<skill>/SKILL.md
 ```
 
-Do not use `/Users/as/.codex/skills-src/<skill>/SKILL.md`; that is not the AreaMatrix repo-local source.
+Do not use `~/.codex/skills-src/<skill>/SKILL.md`; that is not the AreaMatrix repo-local source.
 
 ## Start Points
 

@@ -1,6 +1,6 @@
 # Copy-ready: Operating Layer Inventory
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务是 Codex / AreaMatrix 工作层总收口的第一步：盘点现有能力，不新增能力。
+你在 `.` 工作。本任务是 Codex / AreaMatrix 工作层总收口的第一步：盘点现有能力，不新增能力。
 
 ## 目标
 
@@ -62,7 +62,7 @@
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 - task-loop runtime state directories
 
 ## 执行要求

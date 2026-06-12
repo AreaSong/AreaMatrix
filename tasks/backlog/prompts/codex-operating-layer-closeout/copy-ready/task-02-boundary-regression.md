@@ -1,6 +1,6 @@
 # Copy-ready: Boundary Regression
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务做边界回归核对，确认前三批优化和 `./dev backlog` 没有污染 AreaMatrix 主线。
+你在 `.` 工作。本任务做边界回归核对，确认前三批优化和 `./dev backlog` 没有污染 AreaMatrix 主线。
 
 ## 目标
 
@@ -61,7 +61,7 @@
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 - task-loop runtime state directories
 
 ## 执行要求

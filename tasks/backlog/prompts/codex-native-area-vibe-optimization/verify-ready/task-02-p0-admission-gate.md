@@ -10,7 +10,7 @@
 - Vibe-Skills 只能先作为候选能力池和治理参考。
 - 每个候选都必须说明 source of truth、触发条件、验证方式、owner、是否影响主线。
 - 明确四类结论：吸收、暂缓、只参考、拒绝。
-- 未修改 `/Users/as/Ai-Project/project/Vibe-Skills/**`。
+- 未修改 `../Vibe-Skills/**`。
 - 未修改 `tasks/prompts/**`。
 
 ## 只读检查

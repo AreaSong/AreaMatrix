@@ -1,6 +1,6 @@
 # Copy-ready: P0 主线保护
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务是系统治理文档优化，不是 live queue 任务。
+你在 `.` 工作。本任务是系统治理文档优化，不是 live queue 任务。
 
 ## 目标
 

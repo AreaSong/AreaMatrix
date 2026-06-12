@@ -1,6 +1,6 @@
 # Copy-ready: Vibe Professional Skill Trigger Matrix
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务补 Vibe-Skills 专业领域 skill 白名单与触发矩阵，不安装、不启用、不复制全量仓库。
+你在 `.` 工作。本任务补 Vibe-Skills 专业领域 skill 白名单与触发矩阵，不安装、不启用、不复制全量仓库。
 
 ## 目标
 
@@ -25,7 +25,7 @@
 - Current screening: `.codex/references/vibe-skills-capability-screening.md`
 - External admission: `.ai-governance/workflows/external-capability-admission.md`
 - Backlog task: `tasks/backlog/codex-native-area-vibe-optimization.md`
-- Vibe source for reference only: `/Users/as/Ai-Project/project/Vibe-Skills/README.zh.md`, `/Users/as/Ai-Project/project/Vibe-Skills/SKILL.md`
+- Vibe source for reference only: `../Vibe-Skills/README.zh.md`, `../Vibe-Skills/SKILL.md`
 
 ## Owner / Landing
 
@@ -45,8 +45,8 @@
 3. `.ai-governance/workflows/external-capability-admission.md`
 4. `tasks/backlog/codex-native-area-vibe-optimization.md`
 5. `tasks/backlog/prompts/vibe-skills-absorption/README.md`
-6. `/Users/as/Ai-Project/project/Vibe-Skills/README.zh.md` if present
-7. `/Users/as/Ai-Project/project/Vibe-Skills/SKILL.md` if present
+6. `../Vibe-Skills/README.zh.md` if present
+7. `../Vibe-Skills/SKILL.md` if present
 
 ## 允许修改
 
@@ -59,7 +59,7 @@
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 - `.agents/skills/**` unless explicitly adding a symlink for an approved AreaMatrix repo-local skill, which this task should not need
 
 ## 执行要求

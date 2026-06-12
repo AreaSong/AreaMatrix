@@ -1,6 +1,6 @@
 # Copy-ready: Browser / Chrome / Computer Use Templates
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务补齐 Browser / Chrome / Computer Use 的场景模板，不把它们变成默认主线。
+你在 `.` 工作。本任务补齐 Browser / Chrome / Computer Use 的场景模板，不把它们变成默认主线。
 
 ## 目标
 
@@ -58,7 +58,7 @@
 - `apps/**`
 - `workflow/versions/**`
 - task-loop runtime state directories
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 
 ## 执行要求
 

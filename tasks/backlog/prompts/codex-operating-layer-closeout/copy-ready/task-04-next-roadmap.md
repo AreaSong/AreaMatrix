@@ -1,6 +1,6 @@
 # Copy-ready: Next Roadmap Decision
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务给出下一阶段路线建议，不直接执行路线。
+你在 `.` 工作。本任务给出下一阶段路线建议，不直接执行路线。
 
 ## 目标
 
@@ -58,7 +58,7 @@
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 - task-loop runtime state directories
 
 ## 执行要求

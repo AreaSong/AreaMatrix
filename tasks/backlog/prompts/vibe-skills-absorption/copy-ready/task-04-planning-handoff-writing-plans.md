@@ -1,6 +1,6 @@
 # Copy-ready: Writing Plans / Planning Handoff 吸收
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务吸收 Vibe-Skills `writing-plans` 的 handoff-safe planning 方法价值。
+你在 `.` 工作。本任务吸收 Vibe-Skills `writing-plans` 的 handoff-safe planning 方法价值。
 
 ## 目标
 
@@ -29,7 +29,7 @@
 - Backlog boundary: `tasks/backlog/README.md`
 - Skill owner: `.codex/skills-src/areamatrix-workflow-planning/SKILL.md`
 - Capability screening: `.codex/references/vibe-skills-capability-screening.md`
-- Upstream inspiration only: `/Users/as/Ai-Project/project/Vibe-Skills/bundled/skills/writing-plans/SKILL.md` 或 `core/skills/writing-plans/instruction.md`
+- Upstream inspiration only: `../Vibe-Skills/bundled/skills/writing-plans/SKILL.md` 或 `core/skills/writing-plans/instruction.md`
 
 ## Owner / Landing
 
@@ -46,7 +46,7 @@
 5. `tasks/backlog/README.md`
 6. `tasks/backlog/codex-native-area-vibe-optimization.md`
 7. `.codex/references/vibe-skills-capability-screening.md`
-8. `/Users/as/Ai-Project/project/Vibe-Skills/bundled/skills/writing-plans/SKILL.md` 或 `core/skills/writing-plans/instruction.md` 如存在
+8. `../Vibe-Skills/bundled/skills/writing-plans/SKILL.md` 或 `core/skills/writing-plans/instruction.md` 如存在
 
 ## 允许修改
 
@@ -60,7 +60,7 @@
 - `tasks/prompts/**`
 - `core/**`
 - `apps/**`
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 
 ## 执行要求
 

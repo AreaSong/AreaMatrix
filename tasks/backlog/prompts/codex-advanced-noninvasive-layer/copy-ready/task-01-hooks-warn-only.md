@@ -1,6 +1,6 @@
 # Copy-ready: Hooks Warn-only / Read-only Gate
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务只判断并补齐 hooks 的 warn-only / read-only 启用预案，不默认启用会改变行为的 hook。
+你在 `.` 工作。本任务只判断并补齐 hooks 的 warn-only / read-only 启用预案，不默认启用会改变行为的 hook。
 
 ## 目标
 
@@ -57,7 +57,7 @@
 - `apps/**`
 - `workflow/versions/**`
 - task-loop runtime state directories
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 
 ## 执行要求
 

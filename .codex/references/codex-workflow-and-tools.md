@@ -50,7 +50,7 @@ codex exec -m gpt-5.5 \
   -c model_reasoning_effort=xhigh \
   --full-auto \
   -s danger-full-access \
-  --cd /Users/as/Ai-Project/project/AreaMatrix \
+  --cd . \
   -o .codex/task-loop-logs/<run_id>/<task>-copy-attempt-1.log \
   -
 ```
@@ -346,7 +346,7 @@ AreaMatrix skill 路径规则：
 发现入口：.agents/skills/<skill>/SKILL.md
 ```
 
-不要让 `codex exec` 猜 `/Users/as/.codex/skills-src/...` 这类全局路径；AreaMatrix 任务 prompt 应写明 repo-local skill 路径。
+不要让 `codex exec` 猜 `~/.codex/skills-src/...` 这类全局路径；AreaMatrix 任务 prompt 应写明 repo-local skill 路径。
 
 ## Hooks
 
@@ -375,7 +375,7 @@ Hooks 可从以下位置加载：
 
 ```toml
 notify = [
-  "/Users/as/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient",
+  "~/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient",
   "turn-ended",
 ]
 ```
@@ -607,7 +607,7 @@ Automations / Cloud / Worktrees 的细化门禁见 [Codex Automations / Cloud / 
 
 ### Vibe-Skills 吸收原则
 
-`/Users/as/Ai-Project/project/Vibe-Skills` 当前定位为外部候选能力池和治理参考，不是 AreaMatrix 的 canonical runtime。AreaMatrix 不直接启用 `vibe` 接管主流程，也不把 Vibe-Skills 的目录结构原样并入 `tasks/prompts/**`。具体判断以 [.ai-governance 外部能力接入门禁](../../.ai-governance/workflows/external-capability-admission.md) 为准。
+`../Vibe-Skills` 当前定位为外部候选能力池和治理参考，不是 AreaMatrix 的 canonical runtime。AreaMatrix 不直接启用 `vibe` 接管主流程，也不把 Vibe-Skills 的目录结构原样并入 `tasks/prompts/**`。具体判断以 [.ai-governance 外部能力接入门禁](../../.ai-governance/workflows/external-capability-admission.md) 为准。
 
 | 结论 | 适用条件 | AreaMatrix 落点 |
 |---|---|---|

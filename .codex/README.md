@@ -26,7 +26,7 @@
 - 项目语义变化先更新 `.ai-governance/`，再同步这里。
 - Prompt 任务本体放在 `tasks/prompts/`。
 - Skill 发现入口放在 `.agents/skills/`，源事实仍以 `.codex/skills-src/` 为准。
-- `codex exec` 需要读取 repo-local skill 时，使用本仓库内 `.codex/skills-src/<skill>/SKILL.md` 或 `.agents/skills/<skill>/SKILL.md`；不要使用 `/Users/as/.codex/skills-src/...` 这类全局猜测路径。
+- `codex exec` 需要读取 repo-local skill 时，使用本仓库内 `.codex/skills-src/<skill>/SKILL.md` 或 `.agents/skills/<skill>/SKILL.md`；不要使用 `~/.codex/skills-src/...` 这类全局猜测路径。
 - Skill 变更后运行 `bash scripts/check-skills.sh`。
 - 企业治理变更后运行 `bash scripts/check-governance.sh`。
 - Git checkpoint 策略见 `skills-src/areamatrix-git-checkpoint/`；默认 PASS task 本地 commit，push 需要显式 `GIT_CHECKPOINT=push`。

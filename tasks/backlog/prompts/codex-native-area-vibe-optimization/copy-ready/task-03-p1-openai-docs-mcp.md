@@ -1,6 +1,6 @@
 # Copy-ready: P1 OpenAI Docs MCP 规则
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务固化 OpenAI 官方文档核对规则。
+你在 `.` 工作。本任务固化 OpenAI 官方文档核对规则。
 
 ## 目标
 

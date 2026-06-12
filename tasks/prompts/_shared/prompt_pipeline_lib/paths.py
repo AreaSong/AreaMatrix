@@ -150,8 +150,19 @@ class PageContract:
     line_no: int
 
 
+GLOBAL_CODEX_SKILL_PATH = "~/.codex/skills-src/..."
+
+
 def rel(path: Path) -> str:
     return path.relative_to(ROOT).as_posix()
+
+
+def prompt_rel(path: Path) -> str:
+    """Human-facing repo-relative path for copy/verify-ready prompts."""
+    relative = rel(path)
+    if relative == ".":
+        return "."
+    return f"./{relative}"
 
 
 def label_sort_key(label: str) -> tuple[int, int, int]:

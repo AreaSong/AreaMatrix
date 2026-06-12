@@ -1,6 +1,6 @@
 # Copy-ready: P2 Subagent 使用边界
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务定义 subagent 使用边界。
+你在 `.` 工作。本任务定义 subagent 使用边界。
 
 ## 目标
 
@@ -19,7 +19,7 @@
 3. `.codex/references/codex-workflow-and-tools.md`
 4. `tasks/backlog/codex-native-area-vibe-optimization.md`
 5. OpenAI Codex Subagents 官方文档，优先用 OpenAI Docs MCP 核对当前能力
-6. `/Users/as/Ai-Project/project/Vibe-Skills/references/subagent-role-taxonomy.md` 如存在
+6. `../Vibe-Skills/references/subagent-role-taxonomy.md` 如存在
 
 ## 允许修改
 

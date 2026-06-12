@@ -1,6 +1,6 @@
 # Copy-ready: P1 AreaMatrix repo-local skills 强化
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务强化现有 AreaMatrix repo-local skills，不创建重复 skill。
+你在 `.` 工作。本任务强化现有 AreaMatrix repo-local skills，不创建重复 skill。
 
 ## 目标
 

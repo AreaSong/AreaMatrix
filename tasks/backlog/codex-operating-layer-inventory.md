@@ -8,7 +8,7 @@
 - AI 协作、风险边界和完成门禁仍以 `.ai-governance/**` 为源事实。
 - `.codex/**` 只承载 Codex 运行材料、runbook、checklist 和 repo-local skill 文本，不是产品语义源事实。
 - `tasks/backlog/**` 是 planning / backlog 层，不由 `./task-loop` 扫描、执行、重试、验收或写 progress。
-- `/Users/as/Ai-Project/project/Vibe-Skills/**` 是候选能力池和治理参考，不是 AreaMatrix canonical runtime。
+- `../Vibe-Skills/**` 是候选能力池和治理参考，不是 AreaMatrix canonical runtime。
 - 当前 live mainline 仍是 `AGENTS.md / .ai-governance -> workflow/ planning gate -> tasks/prompts/** -> ./dev / ./task-loop -> repo-local skills`。
 
 ## Governance Rules

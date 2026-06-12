@@ -1,6 +1,6 @@
 # Copy-ready: Dev Backlog Command Boundary
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务只设计并固化 `./dev backlog` 的只读边界，不实现完整功能。
+你在 `.` 工作。本任务只设计并固化 `./dev backlog` 的只读边界，不实现完整功能。
 
 ## 目标
 
@@ -63,7 +63,7 @@
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
-- `/Users/as/Ai-Project/project/Vibe-Skills/**`
+- `../Vibe-Skills/**`
 - `.codex/task-loop-logs/**`
 - `.codex/task-loop-runs/**`
 - task-loop lock/control/checkpoint state

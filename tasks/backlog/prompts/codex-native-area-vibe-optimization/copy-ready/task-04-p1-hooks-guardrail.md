@@ -1,6 +1,6 @@
 # Copy-ready: P1 repo-local 只读 hooks guardrail
 
-你在 `/Users/as/Ai-Project/project/AreaMatrix` 工作。本任务先设计 hooks guardrail，不默认启用会改变行为的 hook。
+你在 `.` 工作。本任务先设计 hooks guardrail，不默认启用会改变行为的 hook。
 
 ## 目标
 

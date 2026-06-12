@@ -42,7 +42,7 @@ Trigger it for validation selection, final evidence reports, blocked checks, pro
 
 ## Guardrails
 
-- Read this repo-local skill from `.codex/skills-src/areamatrix-validation-driver/SKILL.md` or `.agents/skills/areamatrix-validation-driver/SKILL.md`; do not guess `/Users/as/.codex/skills-src/...`.
+- Read this repo-local skill from `.codex/skills-src/areamatrix-validation-driver/SKILL.md` or `.agents/skills/areamatrix-validation-driver/SKILL.md`; do not guess `~/.codex/skills-src/...`.
 - Do not claim completion without executed validation or an explicit blocked reason.
 - Do not skip `doctor` after prompt, manifest, skill, or automation workflow changes.
 - Do not let a passing dry-run replace real execution evidence.

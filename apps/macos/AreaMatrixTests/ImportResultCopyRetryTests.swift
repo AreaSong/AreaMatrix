@@ -152,11 +152,11 @@ final class ImportResultCopyRetryTests: XCTestCase {
 
     func testS121ChangeLogDetailSummaryRedactsImportedSourcePath() {
         let entry = ChangeLogEntrySnapshot.importResultFixture(
-            detailJSON: #"{"source":"/Users/as/private/imported.pdf","mode":"copied","category":"docs"}"#
+            detailJSON: #"{"source":"/Users/example/private/imported.pdf","mode":"copied","category":"docs"}"#
         )
 
         XCTAssertTrue(entry.detailSummary.contains("source: .../imported.pdf"))
-        XCTAssertFalse(entry.detailSummary.contains("/Users/as/private"))
+        XCTAssertFalse(entry.detailSummary.contains("/Users/example/private"))
     }
 
     @MainActor
@@ -341,13 +341,13 @@ private extension ImportResultCopyRetryTests {
         skipped: 1,
         items: [
             ImportBatchProgressSnapshot.Item(
-                sourcePath: "/Users/as/private/imported.pdf",
+                sourcePath: "/Users/example/private/imported.pdf",
                 targetPath: "docs/imported.pdf",
                 phase: .done,
                 errorMessage: nil
             ),
             ImportBatchProgressSnapshot.Item(
-                sourcePath: "/Users/as/private/existing.pdf",
+                sourcePath: "/Users/example/private/existing.pdf",
                 targetPath: "docs/existing.pdf",
                 phase: .pending,
                 errorMessage: "Duplicate skipped",

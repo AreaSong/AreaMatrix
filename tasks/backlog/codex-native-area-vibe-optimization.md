@@ -17,7 +17,7 @@ Codex 官方原生能力做底座
 
 - AreaMatrix 当前主线是 `AGENTS.md`、`.ai-governance/`、`workflow/`、`tasks/prompts/**`、`./dev`、`./task-loop` 和 `.codex/skills-src/**`。
 - Codex 官方能力包括 rules、hooks、skills、plugins、MCP、Computer Use、Browser、subagents、`codex exec`、Automations、Cloud、Worktrees 等。
-- `/Users/as/Ai-Project/project/Vibe-Skills` 是外部 “通用 AI 工作台 + 专业领域 skill 仓库”，可作为候选能力池和治理参考。
+- `../Vibe-Skills` 是外部 “通用 AI 工作台 + 专业领域 skill 仓库”，可作为候选能力池和治理参考。
 - 当前不允许让 Vibe-Skills、Codex Automations、Cloud、Worktrees 或其他外部 runtime 接管 AreaMatrix live queue。
 
 ## P0: 主线保护与接入门禁
@@ -126,7 +126,7 @@ P1.4 owner 范围：
 ## P2.2: Vibe-Skills 横向能力筛选记录
 
 - Screening matrix: [`.codex/references/vibe-skills-capability-screening.md`](../../.codex/references/vibe-skills-capability-screening.md)。
-- Upstream source: `/Users/as/Ai-Project/project/Vibe-Skills/README.zh.md`、`/Users/as/Ai-Project/project/Vibe-Skills/SKILL.md`、`/Users/as/Ai-Project/project/Vibe-Skills/references/skill-distillation-rules.md`，以及各候选 skill 的 `instruction.md` 或 `SKILL.md`。
+- Upstream source: `../Vibe-Skills/README.zh.md`、`../Vibe-Skills/SKILL.md`、`../Vibe-Skills/references/skill-distillation-rules.md`，以及各候选 skill 的 `instruction.md` 或 `SKILL.md`。
 - Live mainline impact: 无。`vibe` / VCO runtime、canonical-entry、`.vibeskills/**` artifacts、Vibe memory plane 和 specialist router 不进入 AreaMatrix 主线。
 - Professional vertical skills: 暂不进入默认工作流；未来只有具体任务明确需要时，先按 [`.codex/references/vibe-professional-skill-trigger-matrix.md`](../../.codex/references/vibe-professional-skill-trigger-matrix.md) 判定类别、owner、触发条件和验证证据，再按 external capability admission gate 单项评估。
 - Decisions:
@@ -142,7 +142,7 @@ P1.4 owner 范围：
 
 ## P2.3: Writing Plans / Planning Handoff 吸收记录
 
-- Upstream source: `/Users/as/Ai-Project/project/Vibe-Skills/bundled/skills/writing-plans/SKILL.md` 或 `core/skills/writing-plans/instruction.md`。
+- Upstream source: `../Vibe-Skills/bundled/skills/writing-plans/SKILL.md` 或 `core/skills/writing-plans/instruction.md`。
 - AreaMatrix gap: planning / backlog prompt 需要更稳定地写出目标、非目标、精确路径、source of truth、owner / landing、执行顺序、验证命令和 blocked / rollback 口径。
 - Dedup with: 不新增 `writing-plans` 同义 repo-local skill；owner 是 `.codex/skills-src/areamatrix-workflow-planning/SKILL.md`。
 - Local source of truth: `workflow/**` lifecycle 与 `tasks/backlog/**` backlog 边界；产品语义仍以 `docs/**` 为准。
@@ -154,7 +154,7 @@ P1.4 owner 范围：
 ## P2.4: Vibe 专业 skill 触发矩阵记录
 
 - Matrix: [`.codex/references/vibe-professional-skill-trigger-matrix.md`](../../.codex/references/vibe-professional-skill-trigger-matrix.md)。
-- Upstream source: `/Users/as/Ai-Project/project/Vibe-Skills/README.zh.md` 的专业能力地图，以及 `/Users/as/Ai-Project/project/Vibe-Skills/SKILL.md` 的 VCO runtime 入口说明；两者只作参考，不成为 AreaMatrix source of truth。
+- Upstream source: `../Vibe-Skills/README.zh.md` 的专业能力地图，以及 `../Vibe-Skills/SKILL.md` 的 VCO runtime 入口说明；两者只作参考，不成为 AreaMatrix source of truth。
 - AreaMatrix gap: 需要把“专业领域 skills 暂缓”拆成可执行判断，包括未来可能有用的类别、当前无收益或应拒绝的类别、触发条件、禁止接入项、owner 和验证证据。
 - Dedup with: 不新增大量同义 repo-local skill；默认 owner 是 `areamatrix-workflow-planning`，具体领域按 docs / planning、validation、governance、file-safety 分配给现有 owner。
 - Local source of truth: 产品语义仍以 `docs/**` 为准，治理语义仍以 `.ai-governance/**` 为准；`.codex/references/**` 只保存操作参考。

@@ -8,6 +8,7 @@ from .paths import (
     CODING_STANDARDS,
     DEPENDENCY_GRAPH,
     ENGINEERING_QUALITY_RULES,
+    GLOBAL_CODEX_SKILL_PATH,
     MANIFEST_ROOT,
     ROOT,
     SKILL_SOURCE_ROOT,
@@ -15,6 +16,7 @@ from .paths import (
     VALIDATION_DRIVER_SKILL,
     ManifestEntry,
     TaskFile,
+    prompt_rel,
 )
 from .rendering import print_repo_local_skill_paths, print_validation_driver_reference
 from .repository import filter_labels, ordered_labels
@@ -55,21 +57,21 @@ def print_phase_header(normalized: str, labels: list[str]) -> None:
     print()
     print("## 工作目录")
     print()
-    print(f"`{ROOT}`")
+    print("`.`")
     print()
     print("## 本次验收对象")
     print()
     print("- 类型：阶段验收")
     print(f"- Phase：`{normalized}`")
     print(f"- 任务数：`{len(labels)}`")
-    print(f"- 共享规则：`{AUDIT_RULES}`")
-    print(f"- 任务切片规则：`{TASK_SLICING_RULES}`")
-    print(f"- 工程质量规则：`{ENGINEERING_QUALITY_RULES}`")
-    print(f"- 编码规范：`{CODING_STANDARDS}`")
-    print(f"- Repo-local Skills：`{SKILL_SOURCE_ROOT}`")
-    print(f"- Validation Driver：`{VALIDATION_DRIVER_SKILL}`")
-    print(f"- 依赖关系：`{DEPENDENCY_GRAPH}`")
-    print(f"- Phase Manifest：`{MANIFEST_ROOT / (normalized + '.md')}`")
+    print(f"- 共享规则：`{prompt_rel(AUDIT_RULES)}`")
+    print(f"- 任务切片规则：`{prompt_rel(TASK_SLICING_RULES)}`")
+    print(f"- 工程质量规则：`{prompt_rel(ENGINEERING_QUALITY_RULES)}`")
+    print(f"- 编码规范：`{prompt_rel(CODING_STANDARDS)}`")
+    print(f"- Repo-local Skills：`{prompt_rel(SKILL_SOURCE_ROOT)}`")
+    print(f"- Validation Driver：`{prompt_rel(VALIDATION_DRIVER_SKILL)}`")
+    print(f"- 依赖关系：`{prompt_rel(DEPENDENCY_GRAPH)}`")
+    print(f"- Phase Manifest：`{prompt_rel(MANIFEST_ROOT / (normalized + '.md'))}`")
     print()
     print("你的任务不是继续实现，而是严格验收该阶段所有 task 是否已经真正达到完成标准。")
     print("这次是验收，不是修复：禁止修改文件，禁止边验边改。")
@@ -79,13 +81,16 @@ def print_phase_header(normalized: str, labels: list[str]) -> None:
 def print_phase_start_steps(normalized: str) -> None:
     print("## 开始前必须按顺序完成")
     print()
-    print(f"1. 读取共享规则：`{AUDIT_RULES}`")
-    print(f"2. 读取任务切片规则：`{TASK_SLICING_RULES}`")
-    print(f"3. 读取工程质量规则：`{ENGINEERING_QUALITY_RULES}`")
-    print(f"4. 读取编码规范：`{CODING_STANDARDS}`")
-    print(f"5. 读取 validation-driver：`{VALIDATION_DRIVER_SKILL}`；不要读取 `/Users/as/.codex/skills-src/...`。")
-    print(f"6. 读取依赖关系：`{DEPENDENCY_GRAPH}`")
-    print(f"7. 读取 phase manifest：`{MANIFEST_ROOT / (normalized + '.md')}`")
+    print(f"1. 读取共享规则：`{prompt_rel(AUDIT_RULES)}`")
+    print(f"2. 读取任务切片规则：`{prompt_rel(TASK_SLICING_RULES)}`")
+    print(f"3. 读取工程质量规则：`{prompt_rel(ENGINEERING_QUALITY_RULES)}`")
+    print(f"4. 读取编码规范：`{prompt_rel(CODING_STANDARDS)}`")
+    print(
+        f"5. 读取 validation-driver：`{prompt_rel(VALIDATION_DRIVER_SKILL)}`；"
+        f"不要读取 `{GLOBAL_CODEX_SKILL_PATH}`。"
+    )
+    print(f"6. 读取依赖关系：`{prompt_rel(DEPENDENCY_GRAPH)}`")
+    print(f"7. 读取 phase manifest：`{prompt_rel(MANIFEST_ROOT / (normalized + '.md'))}`")
     print("8. 按下方顺序逐个验收 task。")
     print("9. 每个 task 都必须回到 task 文件、manifest 章节、实际文件三者交叉验收。")
     print("10. 已存在 capability specs 的 task 必须额外交叉检查 UX 页面、Core 能力规格和对应 control map。")
@@ -112,8 +117,8 @@ def print_phase_task_item(label: str, task: TaskFile, entry: ManifestEntry) -> N
         f"- `{label}` | {task.title} | type: `{task_kind(task, entry)}` | "
         f"risk: `{entry.risk}` | depends: `{deps}`"
     )
-    print(f"  - task: `{task.path}`")
-    print(f"  - manifest: `{entry.manifest_path}` -> `## {entry.label}`")
+    print(f"  - task: `{prompt_rel(task.path)}`")
+    print(f"  - manifest: `{prompt_rel(entry.manifest_path)}` -> `## {entry.label}`")
     print(f"  - UX: `{ux_binding}` | Core: `{capability_binding}`")
 
 

@@ -18,7 +18,7 @@
 | Codex 适配材料、运行参考 | `.codex/references/**`、`.codex/skills-src/**` | 官方文档说明能力语义，但 AreaMatrix 落点仍由本仓库决定 |
 | Live task queue | `tasks/prompts/**`、manifest、`tasks/prompts/_shared/progress.json` | 不得直接写入、替代或旁路 |
 | 本地执行 runtime | `./dev`、`./task-loop`、repo-local skills | 外部 runtime 只能作为候选或未来评估项 |
-| Vibe-Skills | `/Users/as/Ai-Project/project/Vibe-Skills/**` | 候选能力池和治理参考，不是 AreaMatrix canonical runtime |
+| Vibe-Skills | `../Vibe-Skills/**` | 候选能力池和治理参考，不是 AreaMatrix canonical runtime |
 
 ## Admission Checklist
 

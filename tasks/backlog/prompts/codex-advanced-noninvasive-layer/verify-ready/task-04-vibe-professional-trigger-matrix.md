@@ -25,7 +25,7 @@
 ```bash
 git diff --name-only
 rg -n "数据分析|统计|ML|AI 工程|模型解释|科研|文献|生信|医学|数学|仿真|可视化|文档格式|金融|数据库|设计|多媒体|trigger|admission|owner|validation|Vibe|runtime|全量" .codex/references tasks/backlog
-git -C /Users/as/Ai-Project/project/Vibe-Skills status --short
+git -C ../Vibe-Skills status --short
 ./dev check skills
 ./dev check governance
 python3 tasks/prompts/_shared/prompt_pipeline.py doctor
