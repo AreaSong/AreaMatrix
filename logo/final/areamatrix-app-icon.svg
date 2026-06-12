@@ -2,6 +2,11 @@
   <title id="title">AreaMatrix V2 App Icon</title>
   <desc id="desc">A distinctive AreaMatrix icon showing a trace atlas: local archive, matrix cells, and a connected import path.</desc>
   <defs>
+    <linearGradient id="iconBg" x1="120" y1="80" x2="900" y2="980" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F5FCF6"/>
+      <stop offset="0.55" stop-color="#EAF7F1"/>
+      <stop offset="1" stop-color="#DDF1EA"/>
+    </linearGradient>
     <linearGradient id="ink" x1="228" y1="226" x2="804" y2="806" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#173A33"/>
       <stop offset="1" stop-color="#0A201E"/>
@@ -19,29 +24,29 @@
       <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#0A201E" flood-opacity="0.12"/>
     </filter>
   </defs>
-  <g filter="url(#shadow)">
-    <path d="M262 706L350 404C363 360 403 330 449 330H746C799 330 842 373 842 426V700C842 753 799 796 746 796H350C289 796 244 767 262 706Z" fill="url(#ink)"/>
-    <path d="M330 660L400 432C409 404 435 384 464 384H714C746 384 772 410 772 442V668C772 700 746 726 714 726H382C344 726 319 696 330 660Z" fill="#F8FCF8"/>
+  <rect width="1024" height="1024" rx="214" fill="url(#ink)"/>
+  <g transform="translate(512 512) scale(1.34) translate(-512 -512)">
+    <rect x="292" y="306" width="440" height="440" rx="94" fill="#F8FCF8"/>
 
     <g opacity="0.96" fill="#CFE3DD">
-      <circle cx="455" cy="459" r="28"/>
-      <circle cx="557" cy="459" r="28"/>
-      <circle cx="659" cy="459" r="28"/>
-      <circle cx="415" cy="561" r="28"/>
-      <circle cx="517" cy="561" r="28"/>
-      <circle cx="619" cy="561" r="28"/>
-      <circle cx="375" cy="663" r="28"/>
-      <circle cx="477" cy="663" r="28"/>
-      <circle cx="579" cy="663" r="28"/>
+      <circle cx="386" cy="404" r="30"/>
+      <circle cx="512" cy="404" r="30"/>
+      <circle cx="638" cy="404" r="30"/>
+      <circle cx="386" cy="530" r="30"/>
+      <circle cx="512" cy="530" r="30"/>
+      <circle cx="638" cy="530" r="30"/>
+      <circle cx="386" cy="656" r="30"/>
+      <circle cx="512" cy="656" r="30"/>
+      <circle cx="638" cy="656" r="30"/>
     </g>
 
-    <path d="M256 740C357 584 468 493 590 471C685 454 751 500 824 600" fill="none" stroke="#C7DCD6" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M256 740C403 733 495 642 536 470C557 380 622 326 732 304" fill="none" stroke="url(#trace)" stroke-width="78" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M440 658H680" stroke="#16B7A2" stroke-width="62" stroke-linecap="round"/>
+    <path d="M220 706C342 548 472 476 606 494C704 507 775 568 824 640" fill="none" stroke="#C7DCD6" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M220 736C364 722 470 626 520 456C550 354 630 290 770 246" fill="none" stroke="url(#trace)" stroke-width="84" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M394 660H668" stroke="#16B7A2" stroke-width="68" stroke-linecap="round"/>
 
-    <circle cx="256" cy="740" r="43" fill="#15B49F" filter="url(#smallShadow)"/>
-    <circle cx="536" cy="470" r="49" fill="#F1B84E" filter="url(#smallShadow)"/>
-    <circle cx="732" cy="304" r="42" fill="#E96D5A" filter="url(#smallShadow)"/>
-    <circle cx="680" cy="658" r="35" fill="#173A33"/>
+    <circle cx="220" cy="736" r="48" fill="#15B49F" filter="url(#smallShadow)"/>
+    <circle cx="520" cy="456" r="54" fill="#F1B84E" filter="url(#smallShadow)"/>
+    <circle cx="770" cy="246" r="46" fill="#E96D5A" filter="url(#smallShadow)"/>
+    <circle cx="668" cy="660" r="40" fill="#173A33"/>
   </g>
 </svg>
