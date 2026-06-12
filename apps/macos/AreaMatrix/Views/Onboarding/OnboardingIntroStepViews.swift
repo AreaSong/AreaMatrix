@@ -138,8 +138,11 @@ struct WelcomeStepView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("AreaMatrix")
-                .font(.system(size: 40, weight: .semibold, design: .default))
+            Image("AreaMatrixLogoLockup")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 320, height: 104, alignment: .leading)
+                .accessibilityLabel("AreaMatrix")
                 .accessibilityAddTraits(.isHeader)
             Text("把资料放进普通文件夹，让 AreaMatrix 负责索引、分类和记录变化。")
                 .font(.title3)

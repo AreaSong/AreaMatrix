@@ -361,7 +361,10 @@ extension MainRepositoryContentView {
                 Button("Settings", action: onOpenSettings)
             } label: {
                 HStack(spacing: 5) {
-                    Image(systemName: "folder")
+                    Image("AreaMatrixLogoMark")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 18, height: 18)
                     Text("AreaMatrix")
                     Image(systemName: "chevron.down")
                         .font(.caption)
