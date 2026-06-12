@@ -231,7 +231,7 @@ def run_governance_check(root: Path | None = None) -> int:
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check prompts", "prompt doctor")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check diff", "diff whitespace check")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"gitleaks/gitleaks-action", "secret scan action")
-    _require_text(root, failures, "scripts/check-secrets.sh", r"args=\(detect", "local secret scan wrapper")
+    _require_text(root, failures, "scripts/check-secrets.sh", r"AREAMATRIX_GITLEAKS_MODE", "local secret scan diff/history modes")
     _require_text(root, failures, "docs/development/ci-governance.md", "./dev check secrets", "local secret scan docs")
 
     if failures.count:
