@@ -24,7 +24,12 @@ from .common import ToolError, print_error, project_root
 from .discussion import run_workflow_discuss
 from .macos import run_macos_tests
 from .middle_layer import run_workflow_middle
-from .release import DEFAULT_NOTARY_PROFILE, run_release_preflight
+from .release import (
+    DEFAULT_LOCAL_QA_DERIVED_DATA,
+    DEFAULT_NOTARY_PROFILE,
+    run_release_local_qa,
+    run_release_preflight,
+)
 from .workflow_baseline import run_workflow_baseline
 from .workflow_init import run_workflow_init
 from .workflow_projection import run_workflow_closeout, run_workflow_project
@@ -91,6 +96,30 @@ def _build_parser() -> argparse.ArgumentParser:
         "--notary-profile",
         default=DEFAULT_NOTARY_PROFILE,
         help=f"notarytool keychain profile to check; defaults to {DEFAULT_NOTARY_PROFILE}",
+    )
+    release_local_qa = release_sub.add_parser(
+        "local-qa",
+        help="Build a timestamped local QA Release app without Developer ID signing or notarization",
+    )
+    release_local_qa.add_argument("--install", action="store_true", help="Install the built app to /Applications/AreaMatrix.app")
+    release_local_qa.add_argument(
+        "--build-number",
+        help="Override the generated YYYYMMDDHHMM build number; defaults to the current local time",
+    )
+    release_local_qa.add_argument(
+        "--derived-data-path",
+        default=DEFAULT_LOCAL_QA_DERIVED_DATA,
+        help=f"DerivedData output path; defaults to {DEFAULT_LOCAL_QA_DERIVED_DATA}",
+    )
+    release_local_qa.add_argument(
+        "--destination",
+        default="platform=macOS,arch=arm64",
+        help="xcodebuild destination; defaults to platform=macOS,arch=arm64",
+    )
+    release_local_qa.add_argument(
+        "--applications-dir",
+        default="/Applications",
+        help="Applications directory used with --install; defaults to /Applications",
     )
 
     changes = subparsers.add_parser("changes", help="Validate and preview versioned workflow changes")
@@ -267,6 +296,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             return run_bindings_update(root, args.udl, args.out_dir)
         if args.command == "release" and args.release_command == "preflight":
             return run_release_preflight(root, notary_profile=args.notary_profile)
+        if args.command == "release" and args.release_command == "local-qa":
+            return run_release_local_qa(
+                root,
+                install=args.install,
+                build_number=args.build_number,
+                derived_data_path=args.derived_data_path,
+                destination=args.destination,
+                applications_dir=args.applications_dir,
+            )
         if args.command == "changes" and args.changes_command == "doctor":
             return run_changes_doctor(root, args)
         if args.command == "changes" and args.changes_command == "preview":

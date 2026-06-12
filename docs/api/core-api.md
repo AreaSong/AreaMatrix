@@ -21,7 +21,6 @@
 ## 完整 UDL 文件
 
 ```idl
-// core/src/area_matrix.udl
 namespace area_matrix {
     string get_version();
 
@@ -165,9 +164,17 @@ namespace area_matrix {
     [Throws=CoreError]
     RecoveryReport recover_on_startup(string repo_path);
 
+    // C4-19 manual-rescan previews repository impact before S4-X-07 enables
+    // the high-risk confirmation. Preview is read-only: it must not write
+    // files, scan sessions, change log, or database file rows.
     [Throws=CoreError]
     ManualRescanPreviewReport preview_manual_rescan(string repo_path);
 
+    // C4-19 manual-rescan reuses the full repository reindex entry point after
+    // S4-X-07 has shown preview and the high-risk confirmation. The scope is
+    // the entire repository; partial subtree rescan is not exposed by this
+    // contract. Core must only update AreaMatrix metadata and must not move,
+    // delete, rename, overwrite, trash, or download user files.
     [Throws=CoreError]
     ReindexReport reindex_from_filesystem(string repo_path);
 
@@ -177,15 +184,33 @@ namespace area_matrix {
     [Throws=CoreError]
     RepairReport repair_metadata(string repo_path, RepairOptions options);
 
+    // C4-19 consumers read the latest scan session to render manual rescan
+    // progress, completion, failure, interruption, and retry state without
+    // starting or resuming a scan.
     [Throws=CoreError]
     ScanSession? get_latest_scan_session(string repo_path);
 
+    // C4-19 resumes an interrupted or failed whole-repository manual rescan
+    // only after the UI has routed the user through S4-X-07 recovery copy.
     [Throws=CoreError]
     ReindexReport resume_scan_session(string repo_path, i64 scan_session_id);
 
+    // C4-13 desktop-import-flow reuses predict_category for read-only
+    // Windows/Linux import preview state after the platform picker, drop
+    // adapter, or optional shell entry has produced safe display names. Core
+    // does not expand folders, run platform permission preflight, detect
+    // Trash/Recycle Bin support, or manage multi-item progress here.
     [Throws=CoreError]
     ClassifyResult predict_category(string repo_path, string filename);
 
+    // C4-13 desktop-import-flow uses import_file_with_result for the final
+    // committed single-item desktop import result. import_file remains the
+    // backwards-compatible FileEntry entry point for existing Stage 1 callers.
+    // The desktop result includes source removal status so Move can report
+    // Imported, original retained without parsing errors or rolling back a
+    // safely committed repository file. Replace confirmation belongs to
+    // C4-21/S4-X-09; this entry point does not add a desktop-only replace or
+    // platform Trash API.
     [Throws=CoreError]
     FileEntry import_file(
         string repo_path, string source_path, ImportOptions options
@@ -196,6 +221,10 @@ namespace area_matrix {
         string repo_path, string source_path, ImportOptions options
     );
 
+    // C4-21/S4-X-09 may compose this existing deletion contract only for
+    // recoverable repo-owned discarded versions. There is no hard-delete flag;
+    // platforms must disable Replace when Trash or a documented safety backup
+    // is unavailable.
     [Throws=CoreError]
     void delete_file(string repo_path, i64 file_id);
 
@@ -302,6 +331,10 @@ namespace area_matrix {
     [Throws=CoreError]
     FileEntry restore_file(string repo_path, i64 file_id);
 
+    // C4-11 desktop-main-query reuses list_files, get_file, list_tree_json,
+    // and search_files for S4-WIN-02/S4-LNX-02 main-window state. Desktop
+    // shells page through FileFilter.limit/offset and must not scan the repo
+    // directly or hide watcher/import/recovery behavior behind this query set.
     [Throws=CoreError]
     sequence<FileEntry> list_files(string repo_path, FileFilter filter);
 
@@ -391,9 +424,13 @@ namespace area_matrix {
         string repo_path, MissingFileRemoveRecordRequest request
     );
 
+    // C4-07 mobile-detail composes get_file + list_changes + read_note.
+    // FileEntry.availability_status lets S4-IOS-05 route Missing to S4-X-06
+    // without platform-side metadata inference.
     [Throws=CoreError]
     sequence<ChangeLogEntry> list_changes(string repo_path, ChangeFilter filter);
 
+    // C4-11 also uses this read-only tree JSON for desktop sidebar state.
     [Throws=CoreError]
     string list_tree_json(string repo_path, string locale);
 
@@ -1091,6 +1128,10 @@ dictionary ImportOptions {
     string? target_directory;
     string? override_category;
     string? override_filename;
+    // C4-13 desktop and C4-06 iOS import dialogs keep Replace hidden or
+    // disabled until the separate C4-21/S4-X-09 confirmation proves
+    // recoverability. Overwrite is the committed strategy token after that
+    // confirmation, not the preview or platform Trash capability contract.
     DuplicateStrategy duplicate_strategy;
 };
 
@@ -2452,6 +2493,8 @@ enum ErrorRecoverability {
 };
 
 [Error]
+// C1-21 error-mapping contract: Swift maps these structured cases instead of
+// branching on localized strings or string-contains checks.
 interface CoreError {
     Io(string message);
     Db(string message);
@@ -2622,6 +2665,7 @@ interface CoreError {
 | `get_fs_event_cursor(repo)` | sync | √ | Db |
 | `set_fs_event_cursor(repo, id)` | sync | √ | Db |
 | `record_watcher_health(repo, signal)` | sync/watcher | √ | Db / Io |
+| `map_core_error(input)` | error | × | — |
 
 ---
 
@@ -7011,6 +7055,34 @@ watcher status 页面渲染状态卡、禁用条件、错误摘要和诊断预�
 - 两个平台的 `Run rescan now` 只能根据 snapshot 判断入口可用性；真正执行必须先进入
   S4-X-07，不由 C4-12 直接触发。
 - 本合同不新增 control map 之外的页面能力。
+
+---
+
+## error API
+
+### `map_core_error(input: ErrorMappingInput) -> ErrorMapping`
+
+```swift
+let mapping = AreaMatrix.mapCoreError(
+    input: ErrorMappingInput(
+        kind: .permissionDenied,
+        path: repoPath,
+        reason: nil,
+        message: nil
+    )
+)
+```
+
+C1-21 的错误映射入口。输入用稳定的 `ErrorKind` 加可选 `path`、`reason`、`message`
+描述 Core 错误 payload；输出固定返回 `kind`、`user_message`、`severity`、
+`suggested_action`、`recoverability` 和 `raw_context`，供 Swift `AppError`
+做本地化与展示编排。
+
+副作用边界：
+
+- 纯映射函数，不读写文件系统、数据库、日志或 repo 状态。
+- 不替代 `CoreError`；调用方仍应保留原始结构化错误 case。
+- UI 不得用 localized string 或 string contains 作为主分支判断。
 
 ---
 

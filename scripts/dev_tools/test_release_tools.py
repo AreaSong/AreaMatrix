@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import unittest
+from datetime import datetime
+from pathlib import Path
 from unittest.mock import patch
 
 from scripts.dev_tools import release
+from scripts.dev_tools.common import ToolError
 
 
 class ReleaseToolsTest(unittest.TestCase):
@@ -65,6 +68,33 @@ class ReleaseToolsTest(unittest.TestCase):
             patch("scripts.dev_tools.release.check_notary_profile", return_value=checks[1]),
         ):
             self.assertEqual(release.run_release_preflight(__import__("pathlib").Path("/tmp")), 1)
+
+    def test_default_local_qa_build_number_uses_timestamp_format(self) -> None:
+        build_number = release.default_local_qa_build_number(datetime(2026, 6, 12, 12, 34))
+
+        self.assertEqual(build_number, "202606121234")
+
+    def test_local_qa_xcodebuild_command_overrides_build_number(self) -> None:
+        command = release._local_qa_xcodebuild_command(
+            Path("/repo"),
+            build_number="202606121234",
+            derived_data_path=Path("/repo/build/ReleaseReadiness"),
+            destination="platform=macOS,arch=arm64",
+        )
+
+        self.assertIn("CURRENT_PROJECT_VERSION=202606121234", command)
+        self.assertIn("CODE_SIGNING_ALLOWED=NO", command)
+        self.assertIn("-configuration", command)
+        self.assertIn("Release", command)
+
+    def test_release_local_qa_rejects_invalid_build_number(self) -> None:
+        with (
+            patch("scripts.dev_tools.release.require_command"),
+            patch("scripts.dev_tools.release.run_step") as run_step,
+        ):
+            with self.assertRaises(ToolError):
+                release.run_release_local_qa(Path("/repo"), build_number="not-a-build-number")
+            run_step.assert_not_called()
 
 
 if __name__ == "__main__":
