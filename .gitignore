@@ -47,6 +47,7 @@ AreaMatrix-dev/
 .codex/task-loop-progress-backups/*
 !.codex/task-loop-progress-backups/progress-before-reset-example.json
 .codex/local-state-backups/
+.codex/config.toml
 .codex/task-loop-logs/
 .codex/task-loop-lock/
 .codex/task-loop-control/

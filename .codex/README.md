@@ -10,6 +10,7 @@
 
 ## 当前内容
 
+- `config.example.toml`：repo-local Codex 配置模板；复制为本地 `config.toml`（已 gitignore，不入库）。
 - `references/index.md`：Codex 需要快速定位的规则入口。
 - `skills-src/`：AreaMatrix repo-local Codex skills 的源事实目录；每个 skill 的细节放在 `references/`。
 - `templates/prompt-task-template.md`：新建 prompt 任务的模板。
@@ -22,7 +23,7 @@
 
 ## 约束
 
-- 不在本目录放个人模型、权限、token 或密钥。
+- 不在本目录放个人模型、权限、token 或密钥；`config.toml` 仅保留在本机。
 - 项目语义变化先更新 `.ai-governance/`，再同步这里。
 - Prompt 任务本体放在 `tasks/prompts/`。
 - Skill 发现入口放在 `.agents/skills/`，源事实仍以 `.codex/skills-src/` 为准。

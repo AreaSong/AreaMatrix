@@ -1,0 +1,11 @@
+# Copy to `.codex/config.toml` locally. That file is gitignored and must not be committed.
+# Repo-local Codex reads `<repo>/.codex/config.toml` after `~/.codex/config.toml`.
+# Adjust sandbox/network only on your machine; task-loop may require broader access.
+
+sandbox_mode = "danger-full-access"
+
+[features]
+hooks = true
+
+[sandbox_workspace_write]
+network_access = true

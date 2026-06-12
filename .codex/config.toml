@@ -1,7 +1,0 @@
-sandbox_mode = "danger-full-access"
-
-[features]
-hooks = true
-
-[sandbox_workspace_write]
-network_access = true
