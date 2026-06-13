@@ -34,7 +34,7 @@
 		0A0000000000000000000F01 /* WelcomeStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F11 /* WelcomeStepView.swift */; };
 		0A0000000000000000000F02 /* WelcomeAmbientBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F12 /* WelcomeAmbientBackground.swift */; };
 		0A0000000000000000000F03 /* WelcomeStageViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F13 /* WelcomeStageViews.swift */; };
-				0A0000000000000000000F05 /* WelcomeTrackingHelpViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F15 /* WelcomeTrackingHelpViews.swift */; };
+		0A0000000000000000000F05 /* WelcomeTrackingHelpViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F15 /* WelcomeTrackingHelpViews.swift */; };
 		0A0000000000000000000F04 /* WelcomeDioramaViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F14 /* WelcomeDioramaViews.swift */; };
 		0A00000000000000000000F2 /* WindowCloseConfirmationObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F3 /* WindowCloseConfirmationObserver.swift */; };
 		0A00000000000000000000F4 /* InitFailedStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F5 /* InitFailedStepView.swift */; };
@@ -380,7 +380,7 @@
 		0A0000000000000000000F11 /* WelcomeStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WelcomeStepView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000F12 /* WelcomeAmbientBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WelcomeAmbientBackground.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000F13 /* WelcomeStageViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WelcomeStageViews.swift; sourceTree = SOURCE_ROOT; };
-				0A0000000000000000000F15 /* WelcomeTrackingHelpViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WelcomeTrackingHelpViews.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000F15 /* WelcomeTrackingHelpViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WelcomeTrackingHelpViews.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000F14 /* WelcomeDioramaViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WelcomeDioramaViews.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000F3 /* WindowCloseConfirmationObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WindowCloseConfirmationObserver.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000F5 /* InitFailedStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/InitFailedStepView.swift; sourceTree = SOURCE_ROOT; };
@@ -834,7 +834,7 @@
 				0A0000000000000000000F12 /* WelcomeAmbientBackground.swift */,
 				0A0000000000000000000F13 /* WelcomeStageViews.swift */,
 				0A0000000000000000000F14 /* WelcomeDioramaViews.swift */,
-				0A0000000000000000000F15 /* WelcomeTrackingHelpViews.swift */,
+		0A0000000000000000000F15 /* WelcomeTrackingHelpViews.swift */,
 				0A00000000000000000000F3 /* WindowCloseConfirmationObserver.swift */,
 				0A00000000000000000000F5 /* InitFailedStepView.swift */,
 				0A00000000000000000002F2 /* DatabaseRepairConfirmView.swift */,

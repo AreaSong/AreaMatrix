@@ -29,7 +29,7 @@ struct StageClassifyView: View {
         }
     }
 
-    // Phase 0: 文件静止  Phase 1: 飞向 drop zone  Phase 2: 扫描+标签  Phase 3: 文件落位
+    /// Phase 0: 文件静止  Phase 1: 飞向 drop zone  Phase 2: 扫描+标签  Phase 3: 文件落位
     private var classifyDiorama: some View {
         ZStack {
             mockAppWindow.offset(x: 70)
@@ -153,7 +153,7 @@ struct StageSecurityView: View {
                 .font(.system(size: 9, weight: .medium))
                 .foregroundColor(WelcomePalette.teal).offset(y: -40)
             HStack(spacing: 60) {
-                ForEach(0..<3, id: \.self) { _ in
+                ForEach(0 ..< 3, id: \.self) { _ in
                     Circle().fill(WelcomePalette.tealBright).frame(width: 14, height: 14)
                         .shadow(color: WelcomePalette.teal, radius: 10)
                 }
@@ -170,7 +170,7 @@ struct StageSecurityView: View {
             Text("MACOS FILE SYSTEM")
                 .font(.system(size: 9, weight: .medium)).foregroundStyle(.secondary).offset(y: 40)
             HStack(spacing: 42) {
-                ForEach(0..<3, id: \.self) { _ in
+                ForEach(0 ..< 3, id: \.self) { _ in
                     Image(systemName: "folder.fill").font(.system(size: 26)).foregroundColor(.blue)
                 }
             }
@@ -180,7 +180,11 @@ struct StageSecurityView: View {
     private var shieldBarrier: some View {
         ZStack {
             Rectangle()
-                .fill(LinearGradient(colors: [.clear, WelcomePalette.gold, .clear], startPoint: .leading, endPoint: .trailing))
+                .fill(LinearGradient(
+                    colors: [.clear, WelcomePalette.gold, .clear],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ))
                 .frame(width: 440, height: 2)
                 .shadow(color: WelcomePalette.gold.opacity(isAnimating ? 0.5 : 0.2), radius: isAnimating ? 20 : 10)
                 .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isAnimating)
@@ -192,14 +196,20 @@ struct StageSecurityView: View {
 
     private var dataStreams: some View {
         ZStack {
-            ForEach(0..<3, id: \.self) { i in
+            ForEach(0 ..< 3, id: \.self) { index in
                 Rectangle()
-                    .fill(LinearGradient(colors: [.clear, WelcomePalette.tealBright], startPoint: .bottom, endPoint: .top))
+                    .fill(LinearGradient(
+                        colors: [.clear, WelcomePalette.tealBright],
+                        startPoint: .bottom,
+                        endPoint: .top
+                    ))
                     .frame(width: 2, height: 40)
-                    .offset(x: CGFloat([-78, 0, 78][i]), y: isAnimating ? -35 : 35)
+                    .offset(x: CGFloat([-78, 0, 78][index]), y: isAnimating ? -35 : 35)
                     .opacity(isAnimating ? 0 : 1)
                     .animation(
-                        .easeInOut(duration: 3).repeatForever(autoreverses: false).delay(Double([0, 1.5, 0.7][i])),
+                        .easeInOut(duration: 3)
+                            .repeatForever(autoreverses: false)
+                            .delay(Double([0, 1.5, 0.7][index])),
                         value: isAnimating
                     )
             }

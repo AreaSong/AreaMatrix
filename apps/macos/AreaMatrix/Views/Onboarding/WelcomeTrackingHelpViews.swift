@@ -49,7 +49,11 @@ struct StageTrackingView: View {
                                     startPoint: .topLeading, endPoint: .bottomTrailing
                                 ))
                                 .frame(width: 18, height: 18)
-                                .overlay(RoundedRectangle(cornerRadius: 2).fill(Color.white).frame(width: 10, height: 10))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(Color.white)
+                                        .frame(width: 10, height: 10)
+                                )
                             ZStack(alignment: .leading) {
                                 Text("Draft_v1.md").opacity(showNewName ? 0 : 1)
                                 Text("Final_v2.md").foregroundColor(.green).opacity(showNewName ? 1 : 0)
@@ -83,7 +87,9 @@ struct StageTrackingView: View {
                                 .foregroundColor(Color(red: 0.306, green: 0.788, blue: 0.69))
                                 .padding(.horizontal, 4)
                                 .background(
-                                    showNewName ? Color(red: 0.306, green: 0.788, blue: 0.69).opacity(0.3) : Color.clear,
+                                    showNewName
+                                        ? Color(red: 0.306, green: 0.788, blue: 0.69).opacity(0.3)
+                                        : Color.clear,
                                     in: RoundedRectangle(cornerRadius: 3)
                                 )
                                 .opacity(showNewName ? 1 : 0)
@@ -176,13 +182,13 @@ struct StageHelpView: View {
 
     private var circuitPaths: some View {
         ZStack {
-            Path { p in p.move(to: CGPoint(x: 195, y: 85)); p.addLine(to: CGPoint(x: 260, y: 100)) }
+            Path { path in path.move(to: CGPoint(x: 195, y: 85)); path.addLine(to: CGPoint(x: 260, y: 100)) }
                 .stroke(style: StrokeStyle(lineWidth: 2, dash: [4]))
                 .foregroundColor(WelcomePalette.purple.opacity(0.3))
-            Path { p in p.move(to: CGPoint(x: 195, y: 135)); p.addLine(to: CGPoint(x: 260, y: 120)) }
+            Path { path in path.move(to: CGPoint(x: 195, y: 135)); path.addLine(to: CGPoint(x: 260, y: 120)) }
                 .stroke(style: StrokeStyle(lineWidth: 2, dash: [4]))
                 .foregroundColor(WelcomePalette.purple.opacity(0.3))
-            Path { p in p.move(to: CGPoint(x: 345, y: 110)); p.addLine(to: CGPoint(x: 430, y: 110)) }
+            Path { path in path.move(to: CGPoint(x: 345, y: 110)); path.addLine(to: CGPoint(x: 430, y: 110)) }
                 .stroke(style: StrokeStyle(lineWidth: 2, dash: [4]))
                 .foregroundColor(WelcomePalette.emeraldLight.opacity(0.3))
         }
