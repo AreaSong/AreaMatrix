@@ -143,24 +143,27 @@ struct WelcomeStepView: View {
                 .scaledToFit()
                 .frame(width: 320, height: 104, alignment: .leading)
                 .accessibilityLabel("AreaMatrix")
+            Text("给 OneDrive 和本地大文件夹建立本地索引。")
+                .font(.system(size: 34, weight: .semibold, design: .default))
                 .accessibilityAddTraits(.isHeader)
-            Text("把资料放进普通文件夹，让 AreaMatrix 负责索引、分类和记录变化。")
+            Text("首次连接后，AreaMatrix 会扫描目录结构并保存到本机。以后打开先读取本地索引，再后台同步变化。")
                 .font(.title3)
                 .foregroundStyle(.primary)
                 .frame(maxWidth: 620, alignment: .leading)
-            Text("你可以随时用 Finder 打开资料库。")
+            Text("文件仍留在原处。AreaMatrix 默认不下载内容，不移动、不删除、不覆盖已有文件。")
                 .font(.body)
                 .foregroundStyle(.secondary)
+                .frame(maxWidth: 620, alignment: .leading)
         }
     }
 
     private var footer: some View {
         HStack {
-            Button("Learn more...", action: onLearnMore)
+            Button("了解索引如何工作", action: onLearnMore)
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
             Spacer()
-            Button("Continue", action: onContinue)
+            Button("连接文件夹", action: onContinue)
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
         }
@@ -171,24 +174,24 @@ struct WelcomeStepView: View {
 private struct SafetyPromiseList: View {
     private let promises = [
         SafetyPromise(
-            title: "普通文件夹",
-            message: "你的资料库就是一个文件夹，不是封闭数据库。",
-            systemImage: "folder"
+            title: "一次扫描，持续浏览",
+            message: "目录树和文件信息保存到本地，下次打开不必重新等待云盘加载。",
+            systemImage: "folder.badge.clock"
         ),
         SafetyPromise(
-            title: "本地优先",
-            message: "Stage 1 默认不上传任何资料。",
-            systemImage: "lock"
+            title: "适合云盘大目录",
+            message: "支持 OneDrive、iCloud 和本地文件夹，识别同步延迟、占位文件和冲突风险。",
+            systemImage: "cloud"
         ),
         SafetyPromise(
-            title: "可追踪",
-            message: "导入、改名、移动和外部修改会写入时间线。",
-            systemImage: "clock.arrow.circlepath"
+            title: "上下分栏工作台",
+            message: "上方浏览文件夹层级，下方查看列表、预览、详情和变化记录。",
+            systemImage: "rectangle.split.2x1"
         ),
         SafetyPromise(
-            title: "不覆盖已有文档",
-            message: "接管目录时不会覆盖已有 README.md 或用户文件。",
-            systemImage: "doc.badge.shield"
+            title: "不破坏原文件",
+            message: "只建立索引和元数据，不移动、不删除、不覆盖已有内容。",
+            systemImage: "checkmark.shield"
         )
     ]
 
