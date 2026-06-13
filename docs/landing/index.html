@@ -136,7 +136,7 @@
         .drop-zone, .scan-ring, 
         .visual-classify .h-file, .visual-classify .h-file::before, 
         .visual-security .h-grid-item, 
-        .visual-tracking .h-line, .visual-tracking .h-bar, .visual-tracking .h-dot-hollow {
+        .visual-tracking .h-tree, .visual-tracking .h-log-box {
             transition-property: background, background-color, border-color, color, box-shadow;
             transition-duration: 0.6s;
             transition-timing-function: ease;
@@ -198,6 +198,13 @@
             transform: scale(0.95) translateY(20px);
         }
 
+        /* Subtle Noise Texture for physical realism */
+        .mac-window::after {
+            content: ''; position: absolute; inset: 0; z-index: 5; pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+            opacity: 0.8; mix-blend-mode: overlay;
+        }
+
         @keyframes appLaunch { 0% { opacity: 0; transform: scale(0.95) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
 
         /* --------------------------------------
@@ -212,27 +219,45 @@
             pointer-events: none;
         }
         
-        .glow-layer { 
-            position: absolute; inset: 0; opacity: 0; 
-            transition: opacity 0.5s ease-in-out; 
-            will-change: opacity; 
-        }
-        .glow-layer.active { opacity: 1; }
+        .glow-layer { display: none; } /* Deprecated */
         
-        .g-blob { position: absolute; border-radius: 50%; }
+        .g-blob { position: absolute; border-radius: 50%; filter: blur(80px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); will-change: transform, background; opacity: 0.9; }
+        
+        /* Base blob shapes */
+        .g1 { width: 500px; height: 500px; top: -100px; left: -100px; }
+        .g2 { width: 600px; height: 600px; bottom: -200px; right: -100px; }
+        .g3 { width: 400px; height: 400px; top: 20%; left: 30%; }
 
-        .layer-default .g1 { width: 700px; height: 700px; background: radial-gradient(circle, var(--glow-1-t1) 0%, transparent 60%); top: -100px; left: -100px; }
-        .layer-default .g2 { width: 600px; height: 600px; background: radial-gradient(circle, var(--glow-1-t2) 0%, transparent 60%); bottom: -100px; right: -100px; }
-        .layer-feat-1 .g1 { width: 800px; height: 800px; background: radial-gradient(circle, var(--glow-2-t1) 0%, transparent 60%); top: -150px; left: 0px; }
-        .layer-feat-1 .g2 { width: 500px; height: 500px; background: radial-gradient(circle, var(--glow-2-t2) 0%, transparent 60%); bottom: 0px; right: 100px; }
-        .layer-feat-2 .g1 { width: 700px; height: 700px; background: radial-gradient(circle, var(--glow-3-t1) 0%, transparent 60%); top: -50px; left: 100px; }
-        .layer-feat-2 .g2 { width: 700px; height: 700px; background: radial-gradient(circle, var(--glow-3-t2) 0%, transparent 60%); bottom: -150px; right: 0px; }
-        .layer-feat-3 .g1 { width: 700px; height: 700px; background: radial-gradient(circle, var(--glow-4-t1) 0%, transparent 60%); top: -100px; right: 0px; }
-        .layer-feat-3 .g2 { width: 600px; height: 600px; background: radial-gradient(circle, var(--glow-4-t2) 0%, transparent 60%); bottom: 0px; left: 0px; }
-        .layer-feat-4 .g1 { width: 700px; height: 700px; background: radial-gradient(circle, var(--glow-5-t1) 0%, transparent 60%); top: -100px; left: 50px; }
-        .layer-feat-4 .g2 { width: 700px; height: 700px; background: radial-gradient(circle, var(--glow-5-t2) 0%, transparent 60%); bottom: -50px; right: -50px; }
-        .layer-feat-5 .g1 { width: 800px; height: 800px; background: radial-gradient(circle, var(--glow-6-t1) 0%, transparent 60%); top: -50px; left: -150px; }
-        .layer-feat-5 .g2 { width: 700px; height: 700px; background: radial-gradient(circle, var(--glow-6-t2) 0%, transparent 60%); bottom: -200px; right: -150px; }
+        /* States Mapping for Continuous Fluidity */
+        /* Default: Neutral Teal */
+        .ambient.state-default .g1 { background: rgba(21, 180, 159, 0.25); transform: translate(0, 0); }
+        .ambient.state-default .g2 { background: rgba(16, 185, 129, 0.15); transform: translate(0, 0); }
+        .ambient.state-default .g3 { background: rgba(52, 211, 153, 0.1); transform: translate(0, 0); }
+
+        /* Stage 1: TEAL BRIGHT (拖拽归档) */
+        .ambient.state-feat-1 .g1 { background: rgba(21, 180, 159, 0.5); transform: translate(20%, 15%); }
+        .ambient.state-feat-1 .g2 { background: rgba(14, 165, 233, 0.3); transform: translate(-10%, -10%); }
+        .ambient.state-feat-1 .g3 { background: rgba(16, 185, 129, 0.3); transform: translate(-30%, 30%); }
+
+        /* Stage 2: GOLD / YELLOW (零侵入，绝对安全) */
+        .ambient.state-feat-2 .g1 { background: rgba(255, 179, 64, 0.45); transform: translate(40%, 0); }
+        .ambient.state-feat-2 .g2 { background: rgba(251, 146, 60, 0.35); transform: translate(-30%, 10%); }
+        .ambient.state-feat-2 .g3 { background: rgba(250, 204, 21, 0.25); transform: translate(-10%, -20%); }
+
+        /* Stage 3: CORAL / RED (全局概览) */
+        .ambient.state-feat-3 .g1 { background: rgba(255, 107, 107, 0.45); transform: translate(10%, 30%); }
+        .ambient.state-feat-3 .g2 { background: rgba(244, 63, 94, 0.35); transform: translate(-20%, -30%); }
+        .ambient.state-feat-3 .g3 { background: rgba(251, 113, 133, 0.25); transform: translate(30%, -10%); }
+
+        /* Stage 4 (Footer Help Link) */
+        .ambient.state-feat-4 .g1 { background: rgba(168, 85, 247, 0.35); transform: translate(-20%, 30%); }
+        .ambient.state-feat-4 .g2 { background: rgba(99, 102, 241, 0.25); transform: translate(30%, -40%); }
+        .ambient.state-feat-4 .g3 { background: rgba(147, 51, 234, 0.25); transform: translate(10%, 20%); }
+
+        /* Stage 5: Deep Teal / Emerald (Footer Start Button) */
+        .ambient.state-feat-5 .g1 { background: rgba(16, 185, 129, 0.4); transform: translate(-10%, 20%); }
+        .ambient.state-feat-5 .g2 { background: rgba(21, 180, 159, 0.3); transform: translate(20%, -30%); }
+        .ambient.state-feat-5 .g3 { background: rgba(52, 211, 153, 0.2); transform: translate(10%, 10%); }
 
         /* --------------------------------------
            4. UI Layer & Traffic Lights
@@ -249,111 +274,207 @@
         .light svg { width: 8px; height: 8px; color: rgba(0,0,0,0.6); opacity: 0; transition: opacity 0.2s ease; }
         .traffic-lights:hover .light svg { opacity: 1; }
         
-        .title-text { width: 100%; text-align: center; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; user-select: none; }
-        .title-text:hover { color: var(--text-main); }
+        .title-text { position: absolute; left: 50%; transform: translateX(-50%); font-size: 13px; font-weight: 500; color: var(--text-muted); user-select: none; pointer-events: none; }
+        
+        .theme-btn { position: absolute; right: 16px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .theme-btn:hover { background: rgba(150, 150, 150, 0.1); color: var(--text-main); }
+        .theme-btn:active { transform: scale(0.95); }
 
-        .content { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 20px 60px 40px; }
+        .content { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 10px 60px 30px; }
 
         /* --------------------------------------
-           Stage Engine
+           Stage Engine (Made Taller & Larger)
            -------------------------------------- */
-        .stage-container { position: relative; width: 100%; height: 310px; margin-bottom: 20px; }
+        .stage-container { position: relative; width: 100%; height: 350px; margin-bottom: 20px; }
 
         .stage-view { 
             position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            opacity: 0; pointer-events: none; transform: scale(1.04) translateY(-10px); filter: blur(16px);
-            will-change: transform, opacity, filter;
+            opacity: 0; pointer-events: none;
+            will-change: opacity;
+            transition: opacity 0.5s ease;
         }
-        .stage-view.active { opacity: 1; pointer-events: auto; transform: scale(1) translateY(0); filter: blur(0); transition: opacity 0.5s ease-out, transform 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.5s ease-out; }
-        .stage-view.exit { opacity: 0; transform: scale(0.96) translateY(10px); filter: blur(16px); transition: opacity 0.24s ease-in, transform 0.24s ease-in, filter 0.24s ease-in; }
+        .stage-view.active { opacity: 1; pointer-events: auto; z-index: 10; }
+        .stage-view.exit { opacity: 0; z-index: 1; }
 
-        .stage-text { text-align: center; max-width: 560px; margin-top: 24px; }
-        .stage-text h2 { font-size: 22px; font-weight: 600; color: var(--text-main); margin-bottom: 12px; letter-spacing: 0.5px; opacity: 0; transform: translateY(12px); }
-        .stage-text p { font-size: 15px; color: var(--text-secondary); line-height: 1.6; opacity: 0; transform: translateY(12px); }
+        /* Staggered Children Initial State */
+        .stage-view .stage-visual { opacity: 0; transform: translateY(20px) scale(0.96); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); will-change: transform, opacity; }
+        .stage-view .stage-text h2 { opacity: 0; transform: translateY(20px); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); will-change: transform, opacity; }
+        .stage-view .stage-text p { opacity: 0; transform: translateY(20px); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); will-change: transform, opacity; }
 
-        .stage-view.active .stage-text h2 { animation: staggerFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; animation-delay: 0.28s; }
-        .stage-view.active .stage-text p { animation: staggerFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; animation-delay: 0.34s; }
-        @keyframes staggerFade { 0% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: translateY(0); } }
+        /* Active State: Flowing In */
+        .stage-view.active .stage-visual { opacity: 1; transform: translateY(0) scale(1) perspective(1000px) rotateX(calc(var(--mouse-y, 0) * -12deg)) rotateY(calc(var(--mouse-x, 0) * 12deg)); transition-delay: 0s; }
+        .stage-view.active .stage-text h2 { opacity: 1; transform: translateY(0); transition-delay: 0.05s; }
+        .stage-view.active .stage-text p { opacity: 1; transform: translateY(0); transition-delay: 0.1s; }
 
-        .stage-view.active .stage-visual { animation: visualIdle 4s infinite ease-in-out; }
-        @keyframes visualIdle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+        /* Exit State: Flowing Out (Upwards) */
+        .stage-view.exit .stage-visual { opacity: 0; transform: translateY(-16px) scale(0.98); transition: all 0.4s ease 0s; }
+        .stage-view.exit .stage-text h2 { opacity: 0; transform: translateY(-16px); transition: all 0.4s ease 0.03s; }
+        .stage-view.exit .stage-text p { opacity: 0; transform: translateY(-16px); transition: all 0.4s ease 0.06s; }
+
+        .stage-text { text-align: center; max-width: 560px; margin-top: 32px; }
+        .stage-text h2 { font-size: 22px; font-weight: 600; color: var(--text-main); margin-bottom: 12px; letter-spacing: 0.5px; }
+        .stage-text p { font-size: 15px; color: var(--text-secondary); line-height: 1.6; }
 
         /* V-Default */
         #stage-default p { font-size: 15px; line-height: 1.7; color: var(--text-secondary); text-align: center; max-width: 560px; }
-        .hero-punchline { color: var(--text-main); font-weight: 600; font-size: 18px; display: block; margin-bottom: 8px; letter-spacing: 0.5px; }
+        .hero-punchline { 
+            font-weight: 600; font-size: 20px; display: block; margin-bottom: 8px; letter-spacing: 0.5px; 
+            background: linear-gradient(90deg, var(--text-main) 0%, var(--teal-bright) 50%, var(--text-main) 100%);
+            background-size: 200% auto;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: textShine 4s linear infinite;
+        }
+        @keyframes textShine { to { background-position: 200% center; } }
 
-        /* V1 Classify */
-        .visual-classify { position: relative; width: 140px; height: 120px; display: flex; align-items: center; justify-content: center; }
-        .visual-classify .h-folder { width: 120px; height: 80px; background: rgba(21, 180, 159, 0.2); border: 2px solid var(--teal-main); border-radius: 8px 12px 12px 12px; position: absolute; bottom: 0; box-shadow: 0 20px 40px rgba(0,0,0,0.3), inset 0 4px 12px rgba(255,255,255,0.2); backdrop-filter: blur(8px); }
-        .visual-classify .h-folder::before { content: ''; position: absolute; top: -12px; left: -2px; width: 44px; height: 16px; border: 2px solid var(--teal-main); border-bottom: none; border-radius: 8px 8px 0 0; background: rgba(21, 180, 159, 0.2); }
-        .visual-classify .h-file { width: 60px; height: 76px; background: var(--gfx-file-bg); border-radius: 6px; position: absolute; top: -20px; box-shadow: 0 12px 24px rgba(0,0,0,0.2); }
-        .visual-classify .h-file::before { content: ''; position: absolute; top: 0; right: 0; border-width: 0 20px 20px 0; border-style: solid; border-color: var(--gfx-file-fold) var(--gfx-file-fold) var(--gfx-file-bg) var(--gfx-file-bg); border-radius: 0 6px 0 0; }
-        .visual-classify .h-scanner { width: 100px; height: 3px; background: var(--teal-bright); box-shadow: 0 0 20px 4px var(--teal-bright); position: absolute; top: 30px; border-radius: 2px; }
-        .stage-view.active .visual-classify .h-file { animation: hFileDrop 3s infinite cubic-bezier(0.2, 0.8, 0.2, 1); }
-        .stage-view.active .visual-classify .h-scanner { animation: hScan 3s infinite ease-in-out; }
-        .stage-view.active .visual-classify .h-folder { animation: hFolderIdle 3s infinite ease-in-out; }
-        @keyframes hFileDrop { 0% { transform: translateY(-40px) scale(0.8); opacity: 0; } 15% { transform: translateY(0) scale(1); opacity: 1; } 45% { transform: translateY(0) scale(1); opacity: 1; } 60% { transform: translateY(60px) scale(0.6); opacity: 0; } 100% { opacity: 0; } }
-        @keyframes hScan { 0%, 20% { opacity: 0; transform: translateY(-20px) scaleX(0.8); } 25% { opacity: 1; transform: translateY(-20px) scaleX(1.1); } 40% { opacity: 1; transform: translateY(30px) scaleX(1.1); } 45%, 100% { opacity: 0; transform: translateY(30px) scaleX(0.8); } }
-        @keyframes hFolderIdle { 0%, 45% { transform: translateY(0) scale(1); filter: brightness(1); } 55% { transform: translateY(8px) scale(1.05); filter: brightness(1.3); } 65%, 100% { transform: translateY(0) scale(1); filter: brightness(1); } }
+        /* --------------------------------------
+           V1 Classify (Expanded & Complex)
+           -------------------------------------- */
+        .visual-classify { position: relative; width: 260px; height: 180px; display: flex; align-items: center; justify-content: center; }
+        .visual-classify .h-folder { width: 160px; height: 110px; background: rgba(21, 180, 159, 0.15); border: 2px solid var(--teal-main); border-radius: 12px 16px 16px 16px; position: absolute; bottom: 0; box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 4px 20px rgba(21, 180, 159, 0.2); backdrop-filter: blur(12px); z-index: 10; }
+        .visual-classify .h-folder::before { content: ''; position: absolute; top: -16px; left: -2px; width: 56px; height: 20px; border: 2px solid var(--teal-main); border-bottom: none; border-radius: 10px 10px 0 0; background: rgba(21, 180, 159, 0.15); }
+        .visual-classify .h-folder::after { content: 'Auto-Categorized'; position: absolute; bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 10px; font-weight: 600; color: var(--teal-bright); letter-spacing: 1px; opacity: 0.8; }
+        
+        .visual-classify .h-file { width: 64px; height: 84px; background: var(--gfx-file-bg); border-radius: 6px; position: absolute; top: -40px; box-shadow: 0 16px 32px rgba(0,0,0,0.3); z-index: 5; }
+        .visual-classify .h-file::before { content: ''; position: absolute; top: 0; right: 0; border-width: 0 24px 24px 0; border-style: solid; border-color: var(--gfx-file-fold) var(--gfx-file-fold) transparent transparent; border-radius: 0 6px 0 0; }
+        
+        .visual-classify .h-file-1 { left: 40px; animation: hFileDrop 4s infinite cubic-bezier(0.2, 0.8, 0.2, 1) 0s; }
+        .visual-classify .h-file-2 { right: 40px; width: 56px; height: 72px; animation: hFileDrop 4s infinite cubic-bezier(0.2, 0.8, 0.2, 1) 1.2s; }
+        .visual-classify .h-file-2::before { border-width: 0 18px 18px 0; }
+        .visual-classify .h-file-3 { left: 100px; width: 50px; height: 64px; animation: hFileDrop 4s infinite cubic-bezier(0.2, 0.8, 0.2, 1) 2.4s; z-index: 4; }
+        .visual-classify .h-file-3::before { border-width: 0 16px 16px 0; }
+        
+        .visual-classify .h-scanner { width: 180px; height: 4px; background: var(--teal-bright); box-shadow: 0 0 24px 6px var(--teal-bright); position: absolute; top: 40px; border-radius: 2px; z-index: 20; opacity: 0; }
+        
+        .visual-classify .h-tag { position: absolute; padding: 4px 8px; border-radius: 4px; font-size: 9px; font-weight: 600; color: #fff; background: var(--teal-main); opacity: 0; z-index: 15; box-shadow: 0 4px 12px rgba(21, 180, 159, 0.4); }
+        .visual-classify .h-tag-1 { top: 20px; left: -10px; animation: hTagPop 4s infinite 0.6s; }
+        .visual-classify .h-tag-2 { top: 30px; right: -10px; background: var(--coral); box-shadow: 0 4px 12px rgba(233, 109, 90, 0.4); animation: hTagPop 4s infinite 1.8s; }
 
-        /* V2 Security */
-        .visual-security { position: relative; width: 160px; height: 120px; perspective: 1000px; display: flex; align-items: center; justify-content: center; }
-        .visual-security .h-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; transform: rotateX(60deg) rotateZ(45deg); margin-top: 60px; }
-        .visual-security .h-grid-item { width: 36px; height: 36px; background: var(--gfx-glass-bg); border-radius: 6px; border: 1px solid var(--gfx-glass-border); box-shadow: inset 0 2px 6px var(--gfx-glass-bg); backdrop-filter: blur(4px); }
-        .visual-security .h-shield { position: absolute; top: -10px; color: var(--gold); filter: drop-shadow(0 20px 40px rgba(241, 184, 78, 0.4)); }
+        .stage-view.active .visual-classify .h-scanner { animation: hScan 4s infinite ease-in-out; }
+        
+        @keyframes hFileDrop { 0% { transform: translateY(-60px) scale(0.8) rotate(-10deg); opacity: 0; } 15% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; } 45% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; } 60% { transform: translateY(80px) scale(0.5); opacity: 0; } 100% { opacity: 0; } }
+        @keyframes hScan { 0%, 15% { opacity: 0; transform: translateY(-40px) scaleX(0.5); } 20% { opacity: 1; transform: translateY(-40px) scaleX(1); } 50% { opacity: 1; transform: translateY(60px) scaleX(1); } 55%, 100% { opacity: 0; transform: translateY(60px) scaleX(0.5); } }
+        @keyframes hTagPop { 0%, 14% { opacity: 0; transform: scale(0.5) translateY(10px); } 18%, 45% { opacity: 1; transform: scale(1) translateY(0); } 50%, 100% { opacity: 0; transform: scale(0.8) translateY(-10px); } }
+
+        /* --------------------------------------
+           V2 Security (Expanded Shield over System)
+           -------------------------------------- */
+        .visual-security { position: relative; width: 280px; height: 180px; perspective: 1200px; display: flex; align-items: center; justify-content: center; }
+        .visual-security .h-platform { position: absolute; bottom: 10px; width: 240px; height: 120px; transform: rotateX(65deg) rotateZ(45deg); display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; transform-style: preserve-3d; }
+        .visual-security .h-grid-item { width: 44px; height: 44px; background: var(--gfx-glass-bg); border-radius: 8px; border: 1px solid var(--gfx-glass-border); box-shadow: inset 0 2px 10px var(--gfx-glass-bg), 0 10px 20px rgba(0,0,0,0.2); backdrop-filter: blur(4px); transition: all 0.3s; position: relative; }
+        .visual-security .h-grid-item::after { content:''; position:absolute; inset: 12px; background: var(--gfx-line-bright); opacity: 0.1; border-radius: 4px; }
+        
+        .visual-security .h-shield-wrapper { position: absolute; top: -10px; z-index: 20; display: flex; flex-direction: column; align-items: center; }
+        .visual-security .h-shield { color: var(--gold); filter: drop-shadow(0 20px 40px rgba(241, 184, 78, 0.5)); transform-origin: center; }
+        .visual-security .h-dome { position: absolute; top: 40px; width: 220px; height: 110px; background: radial-gradient(ellipse at center, rgba(241, 184, 78, 0.15) 0%, transparent 70%); border-top: 2px solid rgba(241, 184, 78, 0.4); border-radius: 50% 50% 0 0 / 100% 100% 0 0; opacity: 0; transform: translateY(20px); pointer-events: none; }
+        
+        .visual-security .h-particle { position: absolute; width: 8px; height: 8px; background: var(--coral); border-radius: 50%; box-shadow: 0 0 12px var(--coral); opacity: 0; }
+        .visual-security .hp-1 { top: 30px; left: 40px; }
+        .visual-security .hp-2 { top: 50px; right: 40px; }
+
         .stage-view.active .visual-security .h-shield { animation: hShieldFloat 4s infinite ease-in-out; }
-        .stage-view.active .visual-security .h-grid-item:nth-child(even) { animation: hGridPulse 4s infinite ease-in-out 0.2s; }
-        .stage-view.active .visual-security .h-grid-item:nth-child(odd) { animation: hGridPulse 4s infinite ease-in-out 0.8s; }
-        @keyframes hShieldFloat { 0%, 100% { transform: translateY(0) scale(1) rotateY(0deg); filter: drop-shadow(0 20px 40px rgba(241, 184, 78, 0.3)); } 50% { transform: translateY(-16px) scale(1.05) rotateY(10deg); filter: drop-shadow(0 30px 60px rgba(241, 184, 78, 0.6)); } }
-        @keyframes hGridPulse { 0%, 100% { border-color: var(--gfx-glass-border); background: var(--gfx-glass-bg); } 50% { border-color: rgba(241, 184, 78, 0.6); background: rgba(241, 184, 78, 0.2); } }
+        .stage-view.active .visual-security .h-dome { animation: hDomePulse 4s infinite ease-in-out; }
+        .stage-view.active .visual-security .hp-1 { animation: hParticleBounce 4s infinite cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s; }
+        .stage-view.active .visual-security .hp-2 { animation: hParticleBounce2 4s infinite cubic-bezier(0.2, 0.8, 0.2, 1) 2.5s; }
+        
+        @keyframes hShieldFloat { 0%, 100% { transform: translateY(0) scale(1.1); filter: drop-shadow(0 20px 40px rgba(241, 184, 78, 0.4)); } 50% { transform: translateY(-16px) scale(1.15); filter: drop-shadow(0 40px 80px rgba(241, 184, 78, 0.8)); } }
+        @keyframes hDomePulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.05); } }
+        @keyframes hParticleBounce { 0% { opacity: 0; transform: translate(-30px, -40px); } 15% { opacity: 1; transform: translate(10px, 0px); } 30% { opacity: 0; transform: translate(40px, -40px); } 100% { opacity: 0; } }
+        @keyframes hParticleBounce2 { 0% { opacity: 0; transform: translate(30px, -40px); } 15% { opacity: 1; transform: translate(-10px, 0px); } 30% { opacity: 0; transform: translate(-40px, -40px); } 100% { opacity: 0; } }
 
-        /* V3 Tracking */
-        .visual-tracking { position: relative; width: 240px; height: 120px; display: flex; flex-direction: column; justify-content: center; padding-left: 20px; }
-        .visual-tracking .h-line { position: absolute; left: 25px; top: 20px; width: 2px; background: var(--gfx-line); border-radius: 1px; }
-        .visual-tracking .h-node { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; opacity: 0; transform: translateX(-20px); }
-        .visual-tracking .h-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 16px var(--coral); flex-shrink: 0; z-index: 2;}
-        .visual-tracking .h-dot-hollow { width: 12px; height: 12px; border-radius: 50%; border: 3px solid var(--gfx-line-bright); background: var(--bg-window-top); flex-shrink: 0; z-index: 2; }
-        .visual-tracking .h-bar { width: 80px; height: 6px; border-radius: 3px; background: var(--gfx-line); }
-        .visual-tracking .h-log { width: 60px; height: 24px; border-radius: 6px; background: rgba(233, 109, 90, 0.15); border: 1px solid rgba(233, 109, 90, 0.4); margin-left: auto; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(233, 109, 90, 0.1); backdrop-filter: blur(4px); }
-        .visual-tracking .h-log::after { content: ''; width: 30px; height: 3px; background: var(--coral); opacity: 0.8; border-radius: 1.5px;}
-        .stage-view.active .visual-tracking .h-line { animation: hTreeGrow 3s infinite cubic-bezier(0.2, 0.8, 0.2, 1); }
-        .stage-view.active .visual-tracking .h-node:nth-child(2) { animation: hNodeSlide 3s infinite ease-out 0.2s; }
-        .stage-view.active .visual-tracking .h-node:nth-child(3) { animation: hNodeSlide 3s infinite ease-out 0.6s; margin-left: 32px; }
-        .stage-view.active .visual-tracking .h-node:nth-child(4) { animation: hNodeSlide 3s infinite ease-out 1.0s; margin-left: 32px; }
-        @keyframes hTreeGrow { 0%, 10% { height: 0; } 50%, 80% { height: 85px; } 90%, 100% { height: 85px; opacity: 0; } }
-        @keyframes hNodeSlide { 0% { opacity: 0; transform: translateX(-20px); } 15%, 80% { opacity: 1; transform: translateX(0); } 90%, 100% { opacity: 0; transform: translateX(20px); } }
+        /* --------------------------------------
+           V3 Tracking (Git-style Tree Expanded)
+           -------------------------------------- */
+        .visual-tracking { position: relative; width: 340px; height: 180px; display: flex; flex-direction: column; justify-content: center; padding-left: 40px; }
+        .visual-tracking .h-tree { position: absolute; left: 57px; top: 10px; bottom: 10px; width: 2px; background: var(--gfx-line); border-radius: 1px; }
+        .visual-tracking .h-branch { position: absolute; left: 59px; top: 60px; width: 40px; height: 50px; border-left: 2px solid var(--coral); border-bottom: 2px solid var(--coral); border-radius: 0 0 0 12px; opacity: 0; }
+        .visual-tracking .h-dot-branch { width: 14px; height: 14px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 16px var(--coral); flex-shrink: 0; position: absolute; left: 93px; top: 103px; opacity: 0; z-index: 10; }
+        
+        .visual-tracking .h-commit { display: flex; align-items: center; gap: 20px; margin-bottom: 24px; opacity: 0; transform: translateX(-20px); position: relative; z-index: 10; }
+        .visual-tracking .h-dot-main { width: 16px; height: 16px; border-radius: 50%; border: 4px solid var(--gfx-line-bright); background: var(--bg-window-top); flex-shrink: 0; box-shadow: 0 0 0 4px var(--bg-desktop); }
+        
+        .visual-tracking .h-log-box { flex: 1; background: var(--gfx-glass-bg); border: 1px solid var(--gfx-glass-border); border-radius: 8px; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); backdrop-filter: blur(4px); }
+        .visual-tracking .h-log-title { width: 60%; height: 6px; background: var(--gfx-line-bright); border-radius: 3px; opacity: 0.8; }
+        .visual-tracking .h-log-desc { width: 80%; height: 4px; background: var(--gfx-line); border-radius: 2px; }
+        
+        .visual-tracking .h-log-box.is-diff { border-color: rgba(55, 202, 182, 0.4); background: rgba(55, 202, 182, 0.05); }
+        .visual-tracking .h-log-box.is-diff .h-log-title { background: var(--teal-bright); opacity: 1; }
 
-        /* V4 Help */
-        .visual-help { position: relative; width: 160px; height: 120px; display: flex; align-items: center; justify-content: center; perspective: 600px; }
-        .visual-help .h-book { width: 100px; height: 72px; border: 2px solid rgba(168, 85, 247, 0.5); border-radius: 6px; background: rgba(147, 51, 234, 0.15); box-shadow: 0 0 24px rgba(147, 51, 234, 0.3), inset 0 0 12px rgba(168, 85, 247, 0.2); position: relative; transform-style: preserve-3d; backdrop-filter: blur(8px); }
-        .visual-help .h-page { position: absolute; top: 4px; left: 50%; bottom: 4px; width: 42px; border: 1px solid rgba(216, 180, 254, 0.5); background: rgba(216, 180, 254, 0.15); transform-origin: left center; border-radius: 0 4px 4px 0; }
-        .visual-help .h-ring { position: absolute; width: 140px; height: 140px; border-radius: 50%; border: 1px dashed rgba(236, 72, 153, 0.5); }
-        .stage-view.active .visual-help .h-book { animation: hBookFloat 4s infinite ease-in-out; }
-        .stage-view.active .visual-help .h-page { animation: hPageTurn 4s infinite cubic-bezier(0.4, 0, 0.2, 1); }
-        .stage-view.active .visual-help .h-ring { animation: hRingSpin 10s infinite linear; }
-        @keyframes hBookFloat { 0%, 100% { transform: translateY(0) rotateX(20deg) rotateY(-10deg); filter: drop-shadow(0 10px 20px rgba(147, 51, 234, 0.2)); } 50% { transform: translateY(-12px) rotateX(25deg) rotateY(-5deg); filter: drop-shadow(0 20px 40px rgba(147, 51, 234, 0.5)); } }
-        @keyframes hPageTurn { 0%, 20% { transform: rotateY(0deg); opacity: 1; } 40%, 60% { transform: rotateY(-160deg); opacity: 0.8; } 80%, 100% { transform: rotateY(-180deg); opacity: 0; } }
-        @keyframes hRingSpin { 0% { transform: rotateX(75deg) rotateZ(0deg); } 100% { transform: rotateX(75deg) rotateZ(360deg); } }
+        .stage-view.active .visual-tracking .h-tree { animation: hTreeGrow 4s infinite cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .stage-view.active .visual-tracking .h-branch { animation: hBranchGrow 4s infinite cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .stage-view.active .visual-tracking .h-dot-branch { animation: hDotPop 4s infinite cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .stage-view.active .visual-tracking .h-commit { animation: hCommitSlide 4s infinite cubic-bezier(0.2, 0.8, 0.2, 1); }
+        
+        @keyframes hTreeGrow { 0%, 10% { height: 0; } 50%, 80% { height: 160px; } 90%, 100% { height: 160px; opacity: 0; } }
+        @keyframes hCommitSlide { 0%, 10% { opacity: 0; transform: translateX(-30px); } 25%, 80% { opacity: 1; transform: translateX(0); } 90%, 100% { opacity: 0; transform: translateX(30px); } }
+        @keyframes hBranchGrow { 0%, 25% { opacity: 0; clip-path: inset(0 100% 100% 0); } 35%, 80% { opacity: 1; clip-path: inset(0 0 0 0); } 90%, 100% { opacity: 0; } }
+        @keyframes hDotPop { 0%, 35% { opacity: 0; transform: scale(0); } 45%, 80% { opacity: 1; transform: scale(1); } 90%, 100% { opacity: 0; transform: scale(0); } }
 
-        /* V5 Start */
-        .visual-start { position: relative; width: 180px; height: 140px; display: flex; align-items: center; justify-content: center; }
-        .visual-start .h-jumbo-folder { width: 120px; height: 80px; background: rgba(16, 185, 129, 0.2); border: 3px solid var(--teal-bright); border-radius: 12px 16px 16px 16px; position: relative; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 40px rgba(16, 185, 129, 0.4), inset 0 0 20px rgba(52, 211, 153, 0.3); z-index: 10; backdrop-filter: blur(8px); }
-        .visual-start .h-jumbo-folder::before { content: ''; position: absolute; top: -16px; left: -3px; width: 44px; height: 20px; border: 3px solid var(--teal-bright); border-bottom: none; border-radius: 12px 12px 0 0; background: rgba(16, 185, 129, 0.2); }
-        .visual-start .h-plus { color: #fff; width: 40px; height: 40px; filter: drop-shadow(0 0 16px rgba(255,255,255,0.9)); }
-        .visual-start .h-aura { position: absolute; width: 160px; height: 120px; border-radius: 24px; border: 2px solid rgba(52, 211, 153, 0.6); top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .stage-view.active .visual-start .h-jumbo-folder { animation: hJumboPulse 2s infinite cubic-bezier(0.4, 0, 0.2, 1); }
-        .stage-view.active .visual-start .h-aura { animation: hAuraExpand 2s infinite ease-out; }
-        @keyframes hJumboPulse { 0%, 100% { transform: scale(1); filter: brightness(1); box-shadow: 0 0 30px rgba(16, 185, 129, 0.3); } 50% { transform: scale(1.08); filter: brightness(1.2); box-shadow: 0 0 60px rgba(52, 211, 153, 0.6); } }
-        @keyframes hAuraExpand { 0% { transform: translate(-50%, -50%) scale(0.9); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+        /* --------------------------------------
+           V4 Help (Engine / Blueprint)
+           -------------------------------------- */
+        .visual-help { position: relative; width: 220px; height: 180px; display: flex; align-items: center; justify-content: center; }
+        .visual-help .h-ring-1 { position: absolute; width: 180px; height: 180px; border-radius: 50%; border: 2px dashed rgba(168, 85, 247, 0.4); }
+        .visual-help .h-ring-2 { position: absolute; width: 130px; height: 130px; border-radius: 50%; border: 3px solid rgba(236, 72, 153, 0.2); border-top-color: var(--coral); border-bottom-color: var(--teal-bright); }
+        .visual-help .h-core { width: 72px; height: 72px; background: radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, rgba(147, 51, 234, 0.1) 100%); border: 2px solid rgba(216, 180, 254, 0.6); border-radius: 20px; box-shadow: 0 0 40px rgba(147, 51, 234, 0.5), inset 0 0 20px rgba(216, 180, 254, 0.4); display: flex; align-items: center; justify-content: center; position: relative; z-index: 10; backdrop-filter: blur(8px); }
+        .visual-help .h-core svg { color: #fff; opacity: 0.9; width: 36px; height: 36px; }
+        
+        .visual-help .h-data { position: absolute; width: 28px; height: 28px; background: var(--gfx-glass-bg); border: 1px solid var(--gfx-glass-border); border-radius: 6px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; }
+        .visual-help .h-data::after { content: ''; width: 12px; height: 4px; background: var(--gfx-line-bright); border-radius: 2px; opacity: 0.5; }
+        .visual-help .d-1 { top: 10px; left: 10px; }
+        .visual-help .d-2 { bottom: 10px; right: 10px; }
+        .visual-help .d-3 { top: 30px; right: -10px; }
+
+        .stage-view.active .visual-help .h-ring-1 { animation: hSpin 20s linear infinite; }
+        .stage-view.active .visual-help .h-ring-2 { animation: hSpinRev 15s linear infinite; }
+        .stage-view.active .visual-help .d-1 { animation: hFloatA 4s infinite ease-in-out; }
+        .stage-view.active .visual-help .d-2 { animation: hFloatB 5s infinite ease-in-out; }
+        .stage-view.active .visual-help .d-3 { animation: hFloatA 6s infinite ease-in-out reverse; }
+
+        @keyframes hSpin { 100% { transform: rotate(360deg); } }
+        @keyframes hSpinRev { 100% { transform: rotate(-360deg); } }
+        @keyframes hFloatA { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(12px, -12px) rotate(15deg); } }
+        @keyframes hFloatB { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(-15px, 15px) rotate(-15deg); } }
+
+        /* --------------------------------------
+           V5 Start (Jumbo Folder Expanded)
+           -------------------------------------- */
+        .visual-start { position: relative; width: 280px; height: 200px; display: flex; align-items: center; justify-content: center; }
+        .visual-start .h-jumbo-folder { width: 180px; height: 124px; background: rgba(16, 185, 129, 0.15); border: 3px solid var(--teal-bright); border-radius: 16px 20px 20px 20px; position: relative; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 60px rgba(16, 185, 129, 0.3), inset 0 0 30px rgba(52, 211, 153, 0.2); z-index: 10; backdrop-filter: blur(12px); }
+        .visual-start .h-jumbo-folder::before { content: ''; position: absolute; top: -20px; left: -3px; width: 64px; height: 24px; border: 3px solid var(--teal-bright); border-bottom: none; border-radius: 16px 16px 0 0; background: rgba(16, 185, 129, 0.15); }
+        .visual-start .h-plus { color: #fff; width: 56px; height: 56px; filter: drop-shadow(0 0 20px rgba(255,255,255,0.9)); transition: transform 0.3s; }
+        .visual-start .h-jumbo-folder:hover .h-plus { transform: scale(1.1) rotate(90deg); }
+        
+        .visual-start .h-aura { position: absolute; width: 200px; height: 144px; border-radius: 28px; border: 2px solid rgba(52, 211, 153, 0.6); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .visual-start .h-aura-2 { border: 1px solid rgba(52, 211, 153, 0.3); animation-delay: 1s !important; }
+
+        .stage-view.active .visual-start .h-jumbo-folder { animation: hJumboPulse 2.5s infinite cubic-bezier(0.4, 0, 0.2, 1); }
+        .stage-view.active .visual-start .h-aura { animation: hAuraExpand 2.5s infinite ease-out; }
+        
+        @keyframes hJumboPulse { 0%, 100% { transform: scale(1); filter: brightness(1); box-shadow: 0 0 40px rgba(16, 185, 129, 0.3); } 50% { transform: scale(1.05); filter: brightness(1.2); box-shadow: 0 0 80px rgba(52, 211, 153, 0.6); } }
+        @keyframes hAuraExpand { 0% { transform: translate(-50%, -50%) scale(0.9); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.7); opacity: 0; } }
 
         /* --------------------------------------
            Features & Footer
            -------------------------------------- */
-        .features-grid { display: flex; gap: 20px; width: 100%; }
-        .feature-card { flex: 1; background: var(--glass-bg); border: 1px solid var(--border-light); border-radius: 12px; padding: 24px 20px; display: flex; flex-direction: column; position: relative; cursor: pointer; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .features-grid { display: flex; gap: 20px; width: 100%; z-index: 20; }
+        .feature-card { 
+            flex: 1; background: var(--glass-bg); border: 1px solid var(--border-light); border-radius: 12px; padding: 24px 20px; 
+            display: flex; flex-direction: column; position: relative; cursor: pointer; 
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            opacity: 0; transform: translateY(20px);
+            animation: cardEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .features-grid .feature-card:nth-child(1) { animation-delay: 0.4s; }
+        .features-grid .feature-card:nth-child(2) { animation-delay: 0.5s; }
+        .features-grid .feature-card:nth-child(3) { animation-delay: 0.6s; }
+        @keyframes cardEntrance { to { opacity: 1; transform: translateY(0); } }
+
         .feature-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); opacity: 0.5; transition: opacity 0.3s ease; border-radius: 12px 12px 0 0; }
         
-        .trigger-stage.is-hovered { transform: translateY(-4px); background: var(--card-hover-bg); border-color: rgba(255, 255, 255, 0.25); box-shadow: 0 16px 32px var(--shadow-color); z-index: 20; }
+        .feature-card.is-hovered { transform: translateY(-4px); background: var(--card-hover-bg); border-color: rgba(255, 255, 255, 0.25); box-shadow: 0 16px 32px var(--shadow-color); z-index: 20; }
+        .feature-card:active { transform: translateY(0px) scale(0.98); transition: transform 0.1s; } /* Physical Click */
         .feature-card.is-hovered::before { opacity: 1; box-shadow: 0 0 12px var(--accent); }
         .feature-card.is-hovered .icon-box { color: #fff; background: var(--accent); border-color: transparent; box-shadow: 0 4px 16px var(--accent); }
         .feature-card.is-hovered h3 { color: var(--text-main); }
@@ -366,10 +487,12 @@
         
         .link-text { color: var(--text-muted); font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 6px; transition: all 0.2s; padding: 8px 12px; margin-left: -12px; border-radius: 6px; cursor: pointer;}
         .link-text.is-hovered { color: var(--text-main); background: var(--card-hover-bg); }
+        .link-text:active { transform: scale(0.95); }
         
-        .btn-primary { background: linear-gradient(180deg, var(--teal-bright) 0%, var(--teal-main) 100%); color: #071513; border: none; padding: 10px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(21, 180, 159, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.4); transition: all 0.2s; }
+        .btn-primary { background: linear-gradient(180deg, var(--teal-bright) 0%, var(--teal-main) 100%); color: #071513; border: none; padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(21, 180, 159, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.4); transition: all 0.2s; }
         .btn-primary.is-hovered { box-shadow: 0 8px 24px rgba(21, 180, 159, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.8); filter: brightness(1.15); transform: translateY(-2px); }
-        .btn-primary svg { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .btn-primary:active { transform: translateY(0px) scale(0.96); filter: brightness(0.95); transition: transform 0.1s; } /* Physical Click */
+        .btn-primary svg { width: 14px; height: 14px; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
         .btn-primary.is-hovered svg { transform: translateY(-2px); }
 
         /* --------------------------------------
@@ -401,13 +524,10 @@
     <div class="mac-window">
         
         <!-- Ambient Engine NOW INSIDE the window shell -->
-        <div class="ambient">
-            <div class="glow-layer layer-default active"><div class="g-blob g1"></div><div class="g-blob g2"></div></div>
-            <div class="glow-layer layer-feat-1"><div class="g-blob g1"></div><div class="g-blob g2"></div></div>
-            <div class="glow-layer layer-feat-2"><div class="g-blob g1"></div><div class="g-blob g2"></div></div>
-            <div class="glow-layer layer-feat-3"><div class="g-blob g1"></div><div class="g-blob g2"></div></div>
-            <div class="glow-layer layer-feat-4"><div class="g-blob g1"></div><div class="g-blob g2"></div></div>
-            <div class="glow-layer layer-feat-5"><div class="g-blob g1"></div><div class="g-blob g2"></div></div>
+        <div class="ambient state-default" id="ambient-engine">
+            <div class="g-blob g1"></div>
+            <div class="g-blob g2"></div>
+            <div class="g-blob g3"></div>
         </div>
 
         <div class="ui-layer">
@@ -418,7 +538,20 @@
                     <div class="light min"><svg viewBox="0 0 12 12"><path stroke="currentColor" stroke-width="1.2" stroke-linecap="round" d="M3 6h6"></path></svg></div>
                     <div class="light max"><svg viewBox="0 0 12 12"><path fill="currentColor" d="M3.5 8.5h3v-1h-2v-2h-1v3zm5-5h-3v1h2v2h1v-3z"></path></svg></div>
                 </div>
-                <div class="title-text" id="theme-toggle" title="点击切换深浅色">AreaMatrix</div>
+                <div class="title-text">AreaMatrix</div>
+                <button class="theme-btn" id="theme-toggle" title="Switch Theme">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
             </div>
 
             <div class="content">
@@ -436,23 +569,86 @@
                     </div>
 
                     <div class="stage-view" id="stage-feat-1">
-                        <div class="stage-visual visual-classify"><div class="h-folder"></div><div class="h-scanner"></div><div class="h-file"></div></div>
+                        <div class="stage-visual visual-classify">
+                            <div class="h-folder"></div>
+                            <div class="h-scanner"></div>
+                            <div class="h-file h-file-1"></div>
+                            <div class="h-file h-file-2"></div>
+                            <div class="h-file h-file-3"></div>
+                            <div class="h-tag h-tag-1">PDF</div>
+                            <div class="h-tag h-tag-2">Invoice</div>
+                        </div>
                         <div class="stage-text"><h2>智能引擎，自动归档</h2><p>把文件拖入视窗，底层的智能规则与 AI 将自动识别内容、建议命名，并为其在庞大复杂的目录树中寻找到最佳的物理归属。</p></div>
                     </div>
+                    
                     <div class="stage-view" id="stage-feat-2">
-                        <div class="stage-visual visual-security"><div class="h-shield"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div><div class="h-grid"><div class="h-grid-item"></div><div class="h-grid-item"></div><div class="h-grid-item"></div><div class="h-grid-item"></div><div class="h-grid-item"></div><div class="h-grid-item"></div><div class="h-grid-item"></div><div class="h-grid-item"></div></div></div>
+                        <div class="stage-visual visual-security">
+                            <div class="h-platform">
+                                <div class="h-grid-item"></div><div class="h-grid-item"></div><div class="h-grid-item"></div><div class="h-grid-item"></div>
+                                <div class="h-grid-item"></div><div class="h-grid-item"></div><div class="h-grid-item"></div><div class="h-grid-item"></div>
+                            </div>
+                            <div class="h-shield-wrapper">
+                                <div class="h-shield">
+                                    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                                </div>
+                                <div class="h-dome"></div>
+                            </div>
+                            <div class="h-particle hp-1"></div>
+                            <div class="h-particle hp-2"></div>
+                        </div>
                         <div class="stage-text"><h2>零侵入，绝对的安全防线</h2><p>我们仅仅在底层建立一层可视化的超级索引。程序承诺永远不会在后台私自改动、移动或覆盖您宝贵的源文件与已有目录结构。</p></div>
                     </div>
+                    
                     <div class="stage-view" id="stage-feat-3">
-                        <div class="stage-visual visual-tracking"><div class="h-line"></div><div class="h-node"><div class="h-dot-hollow"></div><div class="h-bar"></div></div><div class="h-node"><div class="h-dot"></div><div class="h-bar"></div><div class="h-log"></div></div><div class="h-node"><div class="h-dot"></div><div class="h-bar" style="width:40px;"></div><div class="h-log" style="background:rgba(255,255,255,0.05); border-color:var(--gfx-glass-border);"></div></div></div>
+                        <div class="stage-visual visual-tracking">
+                            <div class="h-tree"></div>
+                            <div class="h-branch"></div>
+                            <div class="h-dot-branch"></div>
+                            
+                            <div class="h-commit" style="animation-delay: 0.1s">
+                                <div class="h-dot-main"></div>
+                                <div class="h-log-box">
+                                    <div class="h-log-title"></div><div class="h-log-desc"></div>
+                                </div>
+                            </div>
+                            <div class="h-commit" style="animation-delay: 0.5s">
+                                <div class="h-dot-main" style="border-color: var(--teal-bright);"></div>
+                                <div class="h-log-box is-diff">
+                                    <div class="h-log-title"></div><div class="h-log-desc" style="width: 50%;"></div>
+                                </div>
+                            </div>
+                            <div class="h-commit" style="animation-delay: 0.9s">
+                                <div class="h-dot-main"></div>
+                                <div class="h-log-box">
+                                    <div class="h-log-title" style="width: 40%;"></div><div class="h-log-desc" style="width: 70%;"></div>
+                                </div>
+                            </div>
+                        </div>
                         <div class="stage-text"><h2>全局概览，时间线级追溯</h2><p>自动生成专属的 Markdown 资料库大纲。您的每一次挪动、修改，哪怕是在系统原生的 Finder 中操作，都会被精准记录并实时回流。</p></div>
                     </div>
+                    
                     <div class="stage-view" id="stage-feat-4">
-                        <div class="stage-visual visual-help"><div class="h-ring"></div><div class="h-book"><div class="h-page"></div></div></div>
+                        <div class="stage-visual visual-help">
+                            <div class="h-ring-1"></div>
+                            <div class="h-ring-2"></div>
+                            <div class="h-data d-1"></div>
+                            <div class="h-data d-2"></div>
+                            <div class="h-data d-3"></div>
+                            <div class="h-core">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                            </div>
+                        </div>
                         <div class="stage-text"><h2>工作流与算法揭秘</h2><p>一分钟了解 AreaMatrix 如何通过轻量级的本地索引引擎和 FSEvents 监听，帮助您彻底终结文件整理的焦虑感。</p></div>
                     </div>
+                    
                     <div class="stage-view" id="stage-feat-5">
-                        <div class="stage-visual visual-start"><div class="h-aura"></div><div class="h-jumbo-folder"><svg class="h-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></div></div>
+                        <div class="stage-visual visual-start">
+                            <div class="h-aura"></div>
+                            <div class="h-aura h-aura-2"></div>
+                            <div class="h-jumbo-folder">
+                                <svg class="h-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            </div>
+                        </div>
                         <div class="stage-text"><h2>立刻开启您的本地知识库</h2><p>放心，我们仅仅是为您指认的文件夹建立一层索引。您可以随时停止使用，没有任何锁定风险。点击即可瞬间接管！</p></div>
                     </div>
 
@@ -529,34 +725,30 @@
             document.documentElement.style.setProperty('--mouse-y', (y - 0.5) * 2);
         });
 
-        // Protected Stage Controller (with Hover Intent Debounce)
+        // Protected Stage Controller (Fluid Instant Sweep)
         const triggers = document.querySelectorAll('.trigger-stage');
         const views = document.querySelectorAll('.stage-view');
         const glows = document.querySelectorAll('.glow-layer');
         let resetTimeout;
-        let hoverIntentTimeout;
 
         triggers.forEach(trigger => {
             trigger.addEventListener('mouseenter', () => {
                 clearTimeout(resetTimeout);
-                clearTimeout(hoverIntentTimeout);
                 
-                hoverIntentTimeout = setTimeout(() => {
-                    triggers.forEach(t => t.classList.remove('is-hovered'));
-                    trigger.classList.add('is-hovered');
-                    
-                    const targetId = trigger.getAttribute('data-target');
-                    switchStage(targetId);
-                }, 60);
+                triggers.forEach(t => t.classList.remove('is-hovered'));
+                trigger.classList.add('is-hovered');
+                
+                const targetId = trigger.getAttribute('data-target');
+                switchStage(targetId);
             });
             
             trigger.addEventListener('mouseleave', () => {
-                clearTimeout(hoverIntentTimeout);
-                trigger.classList.remove('is-hovered');
-                
+                // Return buffer to 100ms. The magic is in the CSS easing curve, 
+                // not aggressively cutting the delay.
                 resetTimeout = setTimeout(() => {
+                    trigger.classList.remove('is-hovered');
                     switchStage('stage-default');
-                }, 200);
+                }, 100);
             });
         });
 
@@ -576,13 +768,9 @@
                 }
             });
             
-            glows.forEach(glow => {
-                if (glow.classList.contains('layer-' + targetId.replace('stage-', ''))) {
-                    glow.classList.add('active');
-                } else {
-                    glow.classList.remove('active');
-                }
-            });
+            // Continuous Background Spatial Shift
+            const stateSuffix = targetId.replace('stage-', '');
+            document.getElementById('ambient-engine').className = 'ambient state-' + stateSuffix;
         }
 
         // Drag / Drop / Scan logic
