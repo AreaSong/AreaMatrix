@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0A0000000000000000000902 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000903 /* AppIcon.icon */; };
 		0A0000000000000000000900 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000901 /* Assets.xcassets */; };
 		0A0000000000000000000002 /* AreaMatrixApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000013 /* AreaMatrixApp.swift */; };
 		0A0000000000000000000003 /* MainWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000014 /* MainWindow.swift */; };
@@ -342,6 +343,7 @@
 
 /* Begin PBXFileReference section */
 		0A0000000000000000000901 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = AreaMatrix/Resources/Assets.xcassets; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000903 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AreaMatrix/Resources/AppIcon.icon; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000011 /* AreaMatrixShellApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix.xcodeproj/Shell/AreaMatrixShellApp.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000012 /* AreaMatrix.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AreaMatrix.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A0000000000000000000013 /* AreaMatrixApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AreaMatrixApp.swift; sourceTree = SOURCE_ROOT; };
@@ -999,6 +1001,7 @@
 		0A0000000000000000000039 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				0A0000000000000000000903 /* AppIcon.icon */,
 				0A0000000000000000000901 /* Assets.xcassets */,
 			);
 			name = Resources;
@@ -1197,6 +1200,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A0000000000000000000902 /* AppIcon.icon in Resources */,
 				0A0000000000000000000900 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

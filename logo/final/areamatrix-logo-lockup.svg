@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 520" role="img" aria-labelledby="title desc">
   <title id="title">AreaMatrix Logo Lockup</title>
-  <desc id="desc">The default AreaMatrix lockup using the dark app icon design and wordmark.</desc>
+  <desc id="desc">The default AreaMatrix lockup using the dark app icon design and light wordmark.</desc>
   <defs>
     <linearGradient id="ink" x1="0" y1="0" x2="420" y2="420" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#173A33"/>
@@ -51,16 +51,16 @@
       font-size="112"
       font-weight="760"
       letter-spacing="0"
-      fill="#173A33">Area</text>
+      fill="#F4FBF8">Area</text>
     <text x="238" y="252"
       font-family="Inter, SF Pro Display, Segoe UI, Helvetica Neue, Arial, sans-serif"
       font-size="112"
       font-weight="760"
       letter-spacing="0"
       fill="#15B49F">Matrix</text>
-    <path d="M4 306H604" stroke="#D7E8E2" stroke-width="11" stroke-linecap="round"/>
+    <path d="M4 306H604" stroke="#2F5F57" stroke-width="11" stroke-linecap="round"/>
     <path d="M4 306C146 306 224 294 302 286C392 277 480 288 604 306" fill="none" stroke="#15B49F" stroke-width="11" stroke-linecap="round"/>
     <circle cx="226" cy="306" r="10" fill="#F1B84E"/>
-    <circle cx="604" cy="306" r="10" fill="#173A33"/>
+    <circle cx="604" cy="306" r="10" fill="#F4FBF8"/>
   </g>
 </svg>
