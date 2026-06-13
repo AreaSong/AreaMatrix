@@ -27,7 +27,12 @@ extension MainWindow {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .frame(minWidth: 760, minHeight: 520)
+        .frame(
+            minWidth: minWindowWidth,
+            maxWidth: maxWindowWidth,
+            minHeight: minWindowHeight,
+            maxHeight: maxWindowHeight
+        )
         .background(WindowCloseConfirmationObserver(
             shouldConfirm: { model.shouldConfirmSetupExit },
             onAttemptClose: model.requestSetupQuit
@@ -93,6 +98,26 @@ extension MainWindow {
     private var isConfirmingInitializationCancel: Bool {
         if case .initializing = model.route { return true }
         return false
+    }
+
+    private var minWindowWidth: CGFloat {
+        if case .welcome = model.route { return 860 }
+        return 760
+    }
+
+    private var maxWindowWidth: CGFloat? {
+        if case .welcome = model.route { return 860 }
+        return nil
+    }
+
+    private var minWindowHeight: CGFloat {
+        if case .welcome = model.route { return 640 }
+        return 520
+    }
+
+    private var maxWindowHeight: CGFloat? {
+        if case .welcome = model.route { return 640 }
+        return nil
     }
 
     private var setupQuitConfirmationTitle: String {

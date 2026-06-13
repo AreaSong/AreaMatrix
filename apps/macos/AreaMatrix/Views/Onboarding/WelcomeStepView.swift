@@ -21,8 +21,7 @@ struct WelcomeStepView: View {
 
             // Main Window Shell
             VStack(spacing: 0) {
-                // Titlebar
-                titlebar
+                // Titlebar removed since macOS window provides it
 
                 // Content Stage
                 ZStack {
@@ -37,7 +36,7 @@ struct WelcomeStepView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, 60)
-                .padding(.top, 10)
+                .padding(.top, 40)
                 .padding(.bottom, 30)
 
                 // Features Grid
@@ -48,20 +47,7 @@ struct WelcomeStepView: View {
                 // Footer
                 footer
             }
-            .frame(width: 860, height: 640)
-            .background(
-                LinearGradient(
-                    colors: [
-                        colorScheme == .dark ? Color(red: 13 / 255, green: 40 / 255, blue: 35 / 255) : .white,
-                        colorScheme == .dark ? Color(red: 7 / 255, green: 21 / 255, blue: 19 / 255) : Color(red: 242 / 255, green: 247 / 255, blue: 245 / 255),
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            .cornerRadius(12)
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
-            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.8 : 0.15), radius: 60, y: 30)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             // If scanning, blur out the main content
             .blur(radius: isScanning ? 12 : 0)
             .scaleEffect(isScanning ? 0.92 : 1)
@@ -73,7 +59,7 @@ struct WelcomeStepView: View {
                 scanOverlay
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(width: 860, height: 640)
     }
 
     private var stageTransition: AnyTransition {
@@ -83,30 +69,6 @@ struct WelcomeStepView: View {
         )
     }
 
-    private var titlebar: some View {
-        HStack {
-            HStack(spacing: 8) {
-                Circle().fill(Color.red).frame(width: 12, height: 12)
-                Circle().fill(Color.yellow).frame(width: 12, height: 12)
-                Circle().fill(Color.green).frame(width: 12, height: 12)
-            }
-            .padding(.leading, 16)
-
-            Spacer()
-            Text("AreaMatrix")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.secondary)
-            Spacer()
-
-            // A mock theme button to balance the title bar
-            Image(systemName: colorScheme == .dark ? "moon.fill" : "sun.max.fill")
-                .font(.system(size: 14))
-                .foregroundStyle(.secondary)
-                .frame(width: 28, height: 28)
-                .padding(.trailing, 16)
-        }
-        .frame(height: 48)
-    }
 
     private var featuresGrid: some View {
         HStack(spacing: 20) {

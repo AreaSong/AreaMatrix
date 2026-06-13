@@ -9,7 +9,7 @@ struct AreaMatrixApp: App {
         WindowGroup {
             MainWindow()
         }
-        .windowResizability(.contentMinSize)
+        .windowResizability(.contentSize)
         .commands {
             CommandGroup(after: .sidebar) {
                 Button("Command Palette") {
