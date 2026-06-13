@@ -31,6 +31,9 @@
 		0A00000000000000000000E0 /* CoreBridgeRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000E1 /* CoreBridgeRepositoryTests.swift */; };
 		0A00000000000000000000E2 /* AreaMatrixPerfTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000E3 /* AreaMatrixPerfTests.swift */; };
 		0A00000000000000000000F0 /* OnboardingIntroStepViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F1 /* OnboardingIntroStepViews.swift */; };
+		0A0000000000000000000F01 /* WelcomeStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F11 /* WelcomeStepView.swift */; };
+		0A0000000000000000000F02 /* WelcomeAmbientBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F12 /* WelcomeAmbientBackground.swift */; };
+		0A0000000000000000000F03 /* WelcomeStageViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F13 /* WelcomeStageViews.swift */; };
 		0A00000000000000000000F2 /* WindowCloseConfirmationObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F3 /* WindowCloseConfirmationObserver.swift */; };
 		0A00000000000000000000F4 /* InitFailedStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F5 /* InitFailedStepView.swift */; };
 		0A00000000000000000000F6 /* DiagnosticsSnapshotState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F7 /* DiagnosticsSnapshotState.swift */; };
@@ -372,6 +375,9 @@
 		0A00000000000000000000E1 /* CoreBridgeRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/CoreBridgeRepositoryTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000E3 /* AreaMatrixPerfTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixPerfTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000F1 /* OnboardingIntroStepViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/OnboardingIntroStepViews.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000F11 /* WelcomeStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WelcomeStepView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000F12 /* WelcomeAmbientBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WelcomeAmbientBackground.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000F13 /* WelcomeStageViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WelcomeStageViews.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000F3 /* WindowCloseConfirmationObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WindowCloseConfirmationObserver.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000F5 /* InitFailedStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/InitFailedStepView.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000F7 /* DiagnosticsSnapshotState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/DiagnosticsSnapshotState.swift; sourceTree = SOURCE_ROOT; };
@@ -820,6 +826,9 @@
 				0A00000000000000000000A0 /* InitializingStepView.swift */,
 				0A00000000000000000000A3 /* InitializingStepRow.swift */,
 				0A00000000000000000000F1 /* OnboardingIntroStepViews.swift */,
+				0A0000000000000000000F11 /* WelcomeStepView.swift */,
+				0A0000000000000000000F12 /* WelcomeAmbientBackground.swift */,
+				0A0000000000000000000F13 /* WelcomeStageViews.swift */,
 				0A00000000000000000000F3 /* WindowCloseConfirmationObserver.swift */,
 				0A00000000000000000000F5 /* InitFailedStepView.swift */,
 				0A00000000000000000002F2 /* DatabaseRepairConfirmView.swift */,
@@ -1412,6 +1421,9 @@
 				0A000000000000000000000C /* InitializingStepView.swift in Sources */,
 				0A00000000000000000000F4 /* InitFailedStepView.swift in Sources */,
 				0A00000000000000000000F0 /* OnboardingIntroStepViews.swift in Sources */,
+				0A0000000000000000000F01 /* WelcomeStepView.swift in Sources */,
+				0A0000000000000000000F02 /* WelcomeAmbientBackground.swift in Sources */,
+				0A0000000000000000000F03 /* WelcomeStageViews.swift in Sources */,
 				0A00000000000000000000F2 /* WindowCloseConfirmationObserver.swift in Sources */,
 				0A000000000000000000000E /* OnboardingInitializationProgress.swift in Sources */,
 				0A000000000000000000000F /* InitializingStepRow.swift in Sources */,
