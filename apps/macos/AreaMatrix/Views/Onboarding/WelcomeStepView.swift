@@ -8,6 +8,9 @@ struct WelcomeStepView: View {
     @State private var activeStage: WelcomeStage = .default
     @State private var hoverStage: WelcomeStage? = nil
     @State private var isScanning = false
+    @State private var ctaGlowing = false
+    /// 用户手动切换的主题偏好：nil = 跟随系统
+    @State private var themeOverride: ColorScheme? = nil
 
     /// Derived stage to show
     private var displayStage: WelcomeStage {
@@ -21,7 +24,8 @@ struct WelcomeStepView: View {
 
             // Main Window Shell
             VStack(spacing: 0) {
-                // Titlebar removed since macOS window provides it
+                // 自定义 Titlebar 区域（匹配 HTML 原型：居中标题 + 右侧主题切换）
+                titlebar
 
                 // Content Stage
                 ZStack {
@@ -60,6 +64,54 @@ struct WelcomeStepView: View {
             }
         }
         .frame(width: 860, height: 640)
+        .preferredColorScheme(themeOverride)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.25).repeatForever(autoreverses: true)) {
+                ctaGlowing = true
+            }
+        }
+    }
+
+    // MARK: - Titlebar（匹配 HTML .titlebar：居中标题 + 右侧主题切换）
+
+    private var titlebar: some View {
+        ZStack {
+            // 居中标题
+            Text("AreaMatrix")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.tertiary)
+
+            // 右侧主题切换按钮
+            HStack {
+                Spacer()
+                Button {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        if themeOverride == nil {
+                            // 首次点击：切换到当前的反面
+                            themeOverride = colorScheme == .dark ? .light : .dark
+                        } else {
+                            themeOverride = themeOverride == .dark ? .light : .dark
+                        }
+                    }
+                } label: {
+                    Image(systemName: (themeOverride ?? colorScheme) == .dark ? "sun.max" : "moon")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.tertiary)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .onHover { hovering in
+                    if hovering {
+                        NSCursor.pointingHand.push()
+                    } else {
+                        NSCursor.pop()
+                    }
+                }
+            }
+            .padding(.trailing, 16)
+        }
+        .frame(height: 48)
     }
 
     private var stageTransition: AnyTransition {
@@ -129,12 +181,16 @@ struct WelcomeStepView: View {
             Rectangle()
                 .fill(accentColor)
                 .frame(height: 3)
-                .opacity(0.5),
+                .opacity(isHovered ? 1 : 0.5),
             alignment: .top
         )
         .shadow(color: Color.black.opacity(isHovered ? 0.15 : 0), radius: 16, y: 8)
         .scaleEffect(isHovered ? 1.02 : 1)
+        // Focus Dimming：非 hover 卡片淡出
+        .opacity(focusDimmingOpacity(for: stage))
+        .saturation(focusDimmingSaturation(for: stage))
         .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isHovered)
+        .animation(.easeOut(duration: 0.4), value: hoverStage)
         .onHover { hovering in
             if hovering {
                 withAnimation { hoverStage = stage }
@@ -149,11 +205,25 @@ struct WelcomeStepView: View {
         }
     }
 
+    /// 当有卡片被 hover 时，其他卡片降低不透明度（匹配 HTML opacity: 0.4）
+    private func focusDimmingOpacity(for stage: WelcomeStage) -> Double {
+        guard let hover = hoverStage,
+              [WelcomeStage.feat1, .feat2, .feat3].contains(hover) else { return 1 }
+        return hover == stage ? 1 : 0.4
+    }
+
+    /// 非 hover 卡片添加灰度（匹配 HTML filter: grayscale(60%)）
+    private func focusDimmingSaturation(for stage: WelcomeStage) -> Double {
+        guard let hover = hoverStage,
+              [WelcomeStage.feat1, .feat2, .feat3].contains(hover) else { return 1 }
+        return hover == stage ? 1 : 0.4
+    }
+
     private var footer: some View {
         HStack {
             Button(action: onLearnMore) {
                 HStack(spacing: 6) {
-                    Image(systemName: "play.circle")
+                    Image(systemName: "questionmark.circle")
                     Text("了解 AreaMatrix 如何工作")
                 }
                 .font(.system(size: 13))
@@ -188,13 +258,18 @@ struct WelcomeStepView: View {
                 .padding(.vertical, 10)
                 .background(
                     LinearGradient(
-                        colors: [Color(red: 55 / 255, green: 202 / 255, blue: 182 / 255), Color(red: 21 / 255, green: 180 / 255, blue: 159 / 255)],
+                        colors: [WelcomePalette.tealBright, WelcomePalette.teal],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 )
                 .cornerRadius(8)
-                .shadow(color: Color(red: 21 / 255, green: 180 / 255, blue: 159 / 255).opacity(0.3), radius: 6, y: 4)
+                // 呼吸脉冲光影（匹配 HTML ctaPulseGlow 动画）
+                .shadow(
+                    color: WelcomePalette.teal.opacity(ctaGlowing ? 0.6 : 0.3),
+                    radius: ctaGlowing ? 16 : 6,
+                    y: 4
+                )
             }
             .buttonStyle(.plain)
             .onHover { hovering in
