@@ -1,12 +1,12 @@
 {
   "images": [
     {
-      "filename": "areamatrix-logo-mark-light.png",
+      "filename": "areamatrix-logo-mark-dark.png",
       "idiom": "universal",
       "scale": "1x"
     },
     {
-      "filename": "areamatrix-logo-mark-light@2x.png",
+      "filename": "areamatrix-logo-mark-dark@2x.png",
       "idiom": "universal",
       "scale": "2x"
     },
@@ -17,7 +17,7 @@
           "value": "dark"
         }
       ],
-      "filename": "areamatrix-logo-mark-dark.png",
+      "filename": "areamatrix-logo-mark-light.png",
       "idiom": "universal",
       "scale": "1x"
     },
@@ -28,7 +28,7 @@
           "value": "dark"
         }
       ],
-      "filename": "areamatrix-logo-mark-dark@2x.png",
+      "filename": "areamatrix-logo-mark-light@2x.png",
       "idiom": "universal",
       "scale": "2x"
     }

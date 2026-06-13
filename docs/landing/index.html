@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AreaMatrix - Premium Welcome</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* --------------------------------------
+           1. Theme & Color Tokens (Light/Dark Mode)
+           -------------------------------------- */
+        :root {
+            /* Dark Mode (Default) */
+            --bg-desktop: #000000;
+            --bg-window-top: #0d2823;
+            --bg-window-bottom: #071513;
+            --teal-main: #15B49F;
+            --teal-bright: #37CAB6;
+            --gold: #F1B84E;
+            --coral: #E96D5A;
+            --text-main: #F8FCF8;
+            --text-secondary: #CFE3DD;
+            --text-muted: rgba(207, 227, 221, 0.5);
+            --border-light: rgba(255, 255, 255, 0.08);
+            --glass-bg: rgba(13, 40, 35, 0.6);
+            --shadow-color: rgba(0, 0, 0, 0.8);
+            --footer-bg: rgba(0, 0, 0, 0.15);
+            --card-hover-bg: rgba(255, 255, 255, 0.05);
+
+            /* Graphic Elements */
+            --gfx-glass-border: rgba(255, 255, 255, 0.15);
+            --gfx-glass-bg: rgba(255, 255, 255, 0.05);
+            --gfx-line: rgba(255, 255, 255, 0.2);
+            --gfx-line-bright: rgba(255, 255, 255, 0.8);
+            --gfx-file-bg: #ffffff;
+            --gfx-file-fold: #eeeeee;
+            --gfx-scan-ring: rgba(255, 255, 255, 0.05);
+            --gfx-icon-bg: rgba(0, 0, 0, 0.2);
+
+            /* Glow Colors */
+            --glow-1-t1: rgba(21, 180, 159, 0.25);
+            --glow-1-t2: rgba(241, 184, 78, 0.15);
+            --glow-2-t1: rgba(55, 202, 182, 0.3);
+            --glow-2-t2: rgba(21, 180, 159, 0.3);
+            --glow-3-t1: rgba(241, 184, 78, 0.25);
+            --glow-3-t2: rgba(218, 140, 33, 0.2);
+            --glow-4-t1: rgba(233, 109, 90, 0.25);
+            --glow-4-t2: rgba(180, 50, 40, 0.2);
+            --glow-5-t1: rgba(147, 51, 234, 0.25);
+            --glow-5-t2: rgba(236, 72, 153, 0.2);
+            --glow-6-t1: rgba(52, 211, 153, 0.25);
+            --glow-6-t2: rgba(14, 165, 233, 0.2);
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root:not([data-theme="dark"]) {
+                --bg-desktop: #e8eceb;
+                --bg-window-top: #ffffff;
+                --bg-window-bottom: #f2f7f5;
+                --text-main: #1a2a27;
+                --text-secondary: #4a5c59;
+                --text-muted: rgba(26, 42, 39, 0.5);
+                --border-light: rgba(0, 0, 0, 0.06);
+                --glass-bg: rgba(255, 255, 255, 0.7);
+                --shadow-color: rgba(0, 0, 0, 0.15);
+                --footer-bg: rgba(0, 0, 0, 0.02);
+                --card-hover-bg: rgba(0, 0, 0, 0.03);
+
+                /* Graphic Elements for Light Mode */
+                --gfx-glass-border: rgba(0, 0, 0, 0.15);
+                --gfx-glass-bg: rgba(0, 0, 0, 0.03);
+                --gfx-line: rgba(0, 0, 0, 0.15);
+                --gfx-line-bright: rgba(0, 0, 0, 0.4);
+                --gfx-file-bg: #f8f9fa;
+                --gfx-file-fold: #e2e8f0;
+                --gfx-scan-ring: rgba(0, 0, 0, 0.08);
+                --gfx-icon-bg: rgba(0, 0, 0, 0.05);
+
+                /* Glow Colors */
+                --glow-1-t1: rgba(21, 180, 159, 0.4);
+                --glow-1-t2: rgba(241, 184, 78, 0.3);
+                --glow-2-t1: rgba(55, 202, 182, 0.5);
+                --glow-2-t2: rgba(21, 180, 159, 0.4);
+                --glow-3-t1: rgba(241, 184, 78, 0.4);
+                --glow-3-t2: rgba(218, 140, 33, 0.3);
+                --glow-4-t1: rgba(233, 109, 90, 0.3);
+                --glow-4-t2: rgba(180, 50, 40, 0.2);
+                --glow-5-t1: rgba(147, 51, 234, 0.3);
+                --glow-5-t2: rgba(236, 72, 153, 0.3);
+                --glow-6-t1: rgba(52, 211, 153, 0.4);
+                --glow-6-t2: rgba(14, 165, 233, 0.3);
+            }
+        }
+
+        :root[data-theme="light"] {
+            --bg-desktop: #e8eceb;
+            --bg-window-top: #ffffff;
+            --bg-window-bottom: #f2f7f5;
+            --text-main: #1a2a27;
+            --text-secondary: #4a5c59;
+            --text-muted: rgba(26, 42, 39, 0.5);
+            --border-light: rgba(0, 0, 0, 0.06);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --shadow-color: rgba(0, 0, 0, 0.15);
+            --footer-bg: rgba(0, 0, 0, 0.02);
+            --card-hover-bg: rgba(0, 0, 0, 0.03);
+
+            --gfx-glass-border: rgba(0, 0, 0, 0.15);
+            --gfx-glass-bg: rgba(0, 0, 0, 0.03);
+            --gfx-line: rgba(0, 0, 0, 0.15);
+            --gfx-line-bright: rgba(0, 0, 0, 0.4);
+            --gfx-file-bg: #f8f9fa;
+            --gfx-file-fold: #e2e8f0;
+            --gfx-scan-ring: rgba(0, 0, 0, 0.08);
+            --gfx-icon-bg: rgba(0, 0, 0, 0.05);
+
+            --glow-1-t1: rgba(21, 180, 159, 0.4);
+            --glow-1-t2: rgba(241, 184, 78, 0.3);
+            --glow-2-t1: rgba(55, 202, 182, 0.5);
+            --glow-2-t2: rgba(21, 180, 159, 0.4);
+            --glow-3-t1: rgba(241, 184, 78, 0.4);
+            --glow-3-t2: rgba(218, 140, 33, 0.3);
+            --glow-4-t1: rgba(233, 109, 90, 0.3);
+            --glow-4-t2: rgba(180, 50, 40, 0.2);
+            --glow-5-t1: rgba(147, 51, 234, 0.3);
+            --glow-5-t2: rgba(236, 72, 153, 0.3);
+            --glow-6-t1: rgba(52, 211, 153, 0.4);
+            --glow-6-t2: rgba(14, 165, 233, 0.3);
+        }
+
+        /* --------------------------------------
+           Smooth Theme Transition Properties
+           -------------------------------------- */
+        .mac-window, .feature-card, .footer, .icon-box, .title-text, 
+        .stage-text h2, .stage-text p, .hero-punchline, .hero-description,
+        .drop-zone, .scan-ring, 
+        .visual-classify .h-file, .visual-classify .h-file::before, 
+        .visual-security .h-grid-item, 
+        .visual-tracking .h-line, .visual-tracking .h-bar, .visual-tracking .h-dot-hollow {
+            transition-property: background, background-color, border-color, color, box-shadow;
+            transition-duration: 0.6s;
+            transition-timing-function: ease;
+        }
+
+        /* SVG Logo Switching Logic via Crossfade */
+        .logo-wrapper { position: relative; height: 100px; margin-bottom: 24px; filter: drop-shadow(0 12px 32px rgba(21, 180, 159, 0.4)); display: inline-flex; justify-content: center; }
+        .logo-dark, .logo-light { height: 100px; width: auto; transition: opacity 0.6s ease; object-fit: contain; }
+        
+        .logo-light { position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none; }
+        .logo-dark { position: relative; opacity: 1; }
+        
+        @media (prefers-color-scheme: light) {
+            :root:not([data-theme="dark"]) .logo-dark { opacity: 0; pointer-events: none; }
+            :root:not([data-theme="dark"]) .logo-light { opacity: 1; }
+        }
+        :root[data-theme="light"] .logo-dark { opacity: 0; pointer-events: none; }
+        :root[data-theme="light"] .logo-light { opacity: 1; }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background: var(--bg-desktop);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            overflow: hidden;
+            transition: background 0.6s ease;
+        }
+
+        /* --------------------------------------
+           2. Window Shell (Clipping the ambient glow)
+           -------------------------------------- */
+        .mac-window {
+            position: relative;
+            z-index: 10;
+            width: 860px;
+            height: 640px;
+            background: linear-gradient(180deg, var(--bg-window-top) 0%, var(--bg-window-bottom) 100%);
+            border-radius: 12px;
+            box-shadow: 
+                calc(var(--mouse-x, 0) * -10px) calc(var(--mouse-y, 0) * -10px + 30px) 60px var(--shadow-color), 
+                inset 0 1px 1px rgba(255, 255, 255, 0.3);
+            border: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
+            
+            animation: appLaunch 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: scale(0.95) translateY(20px);
+        }
+
+        @keyframes appLaunch { 0% { opacity: 0; transform: scale(0.95) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+
+        /* --------------------------------------
+           3. Fluid Ambient (Inside the Window)
+           -------------------------------------- */
+        .ambient {
+            position: absolute;
+            inset: -60px;
+            z-index: 0;
+            transform: translate(calc(var(--mouse-x, 0) * -20px), calc(var(--mouse-y, 0) * -20px));
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            pointer-events: none;
+        }
+        
+        .glow-layer { 
+            position: absolute; inset: 0; opacity: 0; 
+            transition: opacity 0.5s ease-in-out; 
+            will-change: opacity; 
+        }
+        .glow-layer.active { opacity: 1; }
+        
+        .g-blob { position: absolute; border-radius: 50%; }
+
+        .layer-default .g1 { width: 700px; height: 700px; background: radial-gradient(circle, var(--glow-1-t1) 0%, transparent 60%); top: -100px; left: -100px; }
+        .layer-default .g2 { width: 600px; height: 600px; background: radial-gradient(circle, var(--glow-1-t2) 0%, transparent 60%); bottom: -100px; right: -100px; }
+        .layer-feat-1 .g1 { width: 800px; height: 800px; background: radial-gradient(circle, var(--glow-2-t1) 0%, transparent 60%); top: -150px; left: 0px; }
+        .layer-feat-1 .g2 { width: 500px; height: 500px; background: radial-gradient(circle, var(--glow-2-t2) 0%, transparent 60%); bottom: 0px; right: 100px; }
+        .layer-feat-2 .g1 { width: 700px; height: 700px; background: radial-gradient(circle, var(--glow-3-t1) 0%, transparent 60%); top: -50px; left: 100px; }
+        .layer-feat-2 .g2 { width: 700px; height: 700px; background: radial-gradient(circle, var(--glow-3-t2) 0%, transparent 60%); bottom: -150px; right: 0px; }
+        .layer-feat-3 .g1 { width: 700px; height: 700px; background: radial-gradient(circle, var(--glow-4-t1) 0%, transparent 60%); top: -100px; right: 0px; }
+        .layer-feat-3 .g2 { width: 600px; height: 600px; background: radial-gradient(circle, var(--glow-4-t2) 0%, transparent 60%); bottom: 0px; left: 0px; }
+        .layer-feat-4 .g1 { width: 700px; height: 700px; background: radial-gradient(circle, var(--glow-5-t1) 0%, transparent 60%); top: -100px; left: 50px; }
+        .layer-feat-4 .g2 { width: 700px; height: 700px; background: radial-gradient(circle, var(--glow-5-t2) 0%, transparent 60%); bottom: -50px; right: -50px; }
+        .layer-feat-5 .g1 { width: 800px; height: 800px; background: radial-gradient(circle, var(--glow-6-t1) 0%, transparent 60%); top: -50px; left: -150px; }
+        .layer-feat-5 .g2 { width: 700px; height: 700px; background: radial-gradient(circle, var(--glow-6-t2) 0%, transparent 60%); bottom: -200px; right: -150px; }
+
+        /* --------------------------------------
+           4. UI Layer & Traffic Lights
+           -------------------------------------- */
+        .ui-layer { position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 10; transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        body.is-dragging .ui-layer, body.is-scanning .ui-layer { transform: scale(0.92); opacity: 0.05; filter: blur(12px); pointer-events: none; }
+
+        .titlebar { height: 48px; display: flex; align-items: center; padding: 0 16px; position: relative; border-radius: 12px 12px 0 0; }
+        .traffic-lights { display: flex; gap: 8px; position: absolute; left: 16px; }
+        .light { width: 12px; height: 12px; border-radius: 50%; border: 0.5px solid rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .close { background: #FF5F56; } .min { background: #FFBD2E; } .max { background: #27C93F; }
+        
+        .light svg { width: 8px; height: 8px; color: rgba(0,0,0,0.6); opacity: 0; transition: opacity 0.2s ease; }
+        .traffic-lights:hover .light svg { opacity: 1; }
+        
+        .title-text { width: 100%; text-align: center; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; user-select: none; }
+        .title-text:hover { color: var(--text-main); }
+
+        .content { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 20px 60px 40px; }
+
+        /* --------------------------------------
+           Stage Engine
+           -------------------------------------- */
+        .stage-container { position: relative; width: 100%; height: 310px; margin-bottom: 20px; }
+
+        .stage-view { 
+            position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            opacity: 0; pointer-events: none; transform: scale(1.04) translateY(-10px); filter: blur(16px);
+            will-change: transform, opacity, filter;
+        }
+        .stage-view.active { opacity: 1; pointer-events: auto; transform: scale(1) translateY(0); filter: blur(0); transition: opacity 0.5s ease-out, transform 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.5s ease-out; }
+        .stage-view.exit { opacity: 0; transform: scale(0.96) translateY(10px); filter: blur(16px); transition: opacity 0.24s ease-in, transform 0.24s ease-in, filter 0.24s ease-in; }
+
+        .stage-text { text-align: center; max-width: 560px; margin-top: 24px; }
+        .stage-text h2 { font-size: 22px; font-weight: 600; color: var(--text-main); margin-bottom: 12px; letter-spacing: 0.5px; opacity: 0; transform: translateY(12px); }
+        .stage-text p { font-size: 15px; color: var(--text-secondary); line-height: 1.6; opacity: 0; transform: translateY(12px); }
+
+        .stage-view.active .stage-text h2 { animation: staggerFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; animation-delay: 0.28s; }
+        .stage-view.active .stage-text p { animation: staggerFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; animation-delay: 0.34s; }
+        @keyframes staggerFade { 0% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: translateY(0); } }
+
+        .stage-view.active .stage-visual { animation: visualIdle 4s infinite ease-in-out; }
+        @keyframes visualIdle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+        /* V-Default */
+        #stage-default p { font-size: 15px; line-height: 1.7; color: var(--text-secondary); text-align: center; max-width: 560px; }
+        .hero-punchline { color: var(--text-main); font-weight: 600; font-size: 18px; display: block; margin-bottom: 8px; letter-spacing: 0.5px; }
+
+        /* V1 Classify */
+        .visual-classify { position: relative; width: 140px; height: 120px; display: flex; align-items: center; justify-content: center; }
+        .visual-classify .h-folder { width: 120px; height: 80px; background: rgba(21, 180, 159, 0.2); border: 2px solid var(--teal-main); border-radius: 8px 12px 12px 12px; position: absolute; bottom: 0; box-shadow: 0 20px 40px rgba(0,0,0,0.3), inset 0 4px 12px rgba(255,255,255,0.2); backdrop-filter: blur(8px); }
+        .visual-classify .h-folder::before { content: ''; position: absolute; top: -12px; left: -2px; width: 44px; height: 16px; border: 2px solid var(--teal-main); border-bottom: none; border-radius: 8px 8px 0 0; background: rgba(21, 180, 159, 0.2); }
+        .visual-classify .h-file { width: 60px; height: 76px; background: var(--gfx-file-bg); border-radius: 6px; position: absolute; top: -20px; box-shadow: 0 12px 24px rgba(0,0,0,0.2); }
+        .visual-classify .h-file::before { content: ''; position: absolute; top: 0; right: 0; border-width: 0 20px 20px 0; border-style: solid; border-color: var(--gfx-file-fold) var(--gfx-file-fold) var(--gfx-file-bg) var(--gfx-file-bg); border-radius: 0 6px 0 0; }
+        .visual-classify .h-scanner { width: 100px; height: 3px; background: var(--teal-bright); box-shadow: 0 0 20px 4px var(--teal-bright); position: absolute; top: 30px; border-radius: 2px; }
+        .stage-view.active .visual-classify .h-file { animation: hFileDrop 3s infinite cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .stage-view.active .visual-classify .h-scanner { animation: hScan 3s infinite ease-in-out; }
+        .stage-view.active .visual-classify .h-folder { animation: hFolderIdle 3s infinite ease-in-out; }
+        @keyframes hFileDrop { 0% { transform: translateY(-40px) scale(0.8); opacity: 0; } 15% { transform: translateY(0) scale(1); opacity: 1; } 45% { transform: translateY(0) scale(1); opacity: 1; } 60% { transform: translateY(60px) scale(0.6); opacity: 0; } 100% { opacity: 0; } }
+        @keyframes hScan { 0%, 20% { opacity: 0; transform: translateY(-20px) scaleX(0.8); } 25% { opacity: 1; transform: translateY(-20px) scaleX(1.1); } 40% { opacity: 1; transform: translateY(30px) scaleX(1.1); } 45%, 100% { opacity: 0; transform: translateY(30px) scaleX(0.8); } }
+        @keyframes hFolderIdle { 0%, 45% { transform: translateY(0) scale(1); filter: brightness(1); } 55% { transform: translateY(8px) scale(1.05); filter: brightness(1.3); } 65%, 100% { transform: translateY(0) scale(1); filter: brightness(1); } }
+
+        /* V2 Security */
+        .visual-security { position: relative; width: 160px; height: 120px; perspective: 1000px; display: flex; align-items: center; justify-content: center; }
+        .visual-security .h-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; transform: rotateX(60deg) rotateZ(45deg); margin-top: 60px; }
+        .visual-security .h-grid-item { width: 36px; height: 36px; background: var(--gfx-glass-bg); border-radius: 6px; border: 1px solid var(--gfx-glass-border); box-shadow: inset 0 2px 6px var(--gfx-glass-bg); backdrop-filter: blur(4px); }
+        .visual-security .h-shield { position: absolute; top: -10px; color: var(--gold); filter: drop-shadow(0 20px 40px rgba(241, 184, 78, 0.4)); }
+        .stage-view.active .visual-security .h-shield { animation: hShieldFloat 4s infinite ease-in-out; }
+        .stage-view.active .visual-security .h-grid-item:nth-child(even) { animation: hGridPulse 4s infinite ease-in-out 0.2s; }
+        .stage-view.active .visual-security .h-grid-item:nth-child(odd) { animation: hGridPulse 4s infinite ease-in-out 0.8s; }
+        @keyframes hShieldFloat { 0%, 100% { transform: translateY(0) scale(1) rotateY(0deg); filter: drop-shadow(0 20px 40px rgba(241, 184, 78, 0.3)); } 50% { transform: translateY(-16px) scale(1.05) rotateY(10deg); filter: drop-shadow(0 30px 60px rgba(241, 184, 78, 0.6)); } }
+        @keyframes hGridPulse { 0%, 100% { border-color: var(--gfx-glass-border); background: var(--gfx-glass-bg); } 50% { border-color: rgba(241, 184, 78, 0.6); background: rgba(241, 184, 78, 0.2); } }
+
+        /* V3 Tracking */
+        .visual-tracking { position: relative; width: 240px; height: 120px; display: flex; flex-direction: column; justify-content: center; padding-left: 20px; }
+        .visual-tracking .h-line { position: absolute; left: 25px; top: 20px; width: 2px; background: var(--gfx-line); border-radius: 1px; }
+        .visual-tracking .h-node { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; opacity: 0; transform: translateX(-20px); }
+        .visual-tracking .h-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 16px var(--coral); flex-shrink: 0; z-index: 2;}
+        .visual-tracking .h-dot-hollow { width: 12px; height: 12px; border-radius: 50%; border: 3px solid var(--gfx-line-bright); background: var(--bg-window-top); flex-shrink: 0; z-index: 2; }
+        .visual-tracking .h-bar { width: 80px; height: 6px; border-radius: 3px; background: var(--gfx-line); }
+        .visual-tracking .h-log { width: 60px; height: 24px; border-radius: 6px; background: rgba(233, 109, 90, 0.15); border: 1px solid rgba(233, 109, 90, 0.4); margin-left: auto; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(233, 109, 90, 0.1); backdrop-filter: blur(4px); }
+        .visual-tracking .h-log::after { content: ''; width: 30px; height: 3px; background: var(--coral); opacity: 0.8; border-radius: 1.5px;}
+        .stage-view.active .visual-tracking .h-line { animation: hTreeGrow 3s infinite cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .stage-view.active .visual-tracking .h-node:nth-child(2) { animation: hNodeSlide 3s infinite ease-out 0.2s; }
+        .stage-view.active .visual-tracking .h-node:nth-child(3) { animation: hNodeSlide 3s infinite ease-out 0.6s; margin-left: 32px; }
+        .stage-view.active .visual-tracking .h-node:nth-child(4) { animation: hNodeSlide 3s infinite ease-out 1.0s; margin-left: 32px; }
+        @keyframes hTreeGrow { 0%, 10% { height: 0; } 50%, 80% { height: 85px; } 90%, 100% { height: 85px; opacity: 0; } }
+        @keyframes hNodeSlide { 0% { opacity: 0; transform: translateX(-20px); } 15%, 80% { opacity: 1; transform: translateX(0); } 90%, 100% { opacity: 0; transform: translateX(20px); } }
+
+        /* V4 Help */
+        .visual-help { position: relative; width: 160px; height: 120px; display: flex; align-items: center; justify-content: center; perspective: 600px; }
+        .visual-help .h-book { width: 100px; height: 72px; border: 2px solid rgba(168, 85, 247, 0.5); border-radius: 6px; background: rgba(147, 51, 234, 0.15); box-shadow: 0 0 24px rgba(147, 51, 234, 0.3), inset 0 0 12px rgba(168, 85, 247, 0.2); position: relative; transform-style: preserve-3d; backdrop-filter: blur(8px); }
+        .visual-help .h-page { position: absolute; top: 4px; left: 50%; bottom: 4px; width: 42px; border: 1px solid rgba(216, 180, 254, 0.5); background: rgba(216, 180, 254, 0.15); transform-origin: left center; border-radius: 0 4px 4px 0; }
+        .visual-help .h-ring { position: absolute; width: 140px; height: 140px; border-radius: 50%; border: 1px dashed rgba(236, 72, 153, 0.5); }
+        .stage-view.active .visual-help .h-book { animation: hBookFloat 4s infinite ease-in-out; }
+        .stage-view.active .visual-help .h-page { animation: hPageTurn 4s infinite cubic-bezier(0.4, 0, 0.2, 1); }
+        .stage-view.active .visual-help .h-ring { animation: hRingSpin 10s infinite linear; }
+        @keyframes hBookFloat { 0%, 100% { transform: translateY(0) rotateX(20deg) rotateY(-10deg); filter: drop-shadow(0 10px 20px rgba(147, 51, 234, 0.2)); } 50% { transform: translateY(-12px) rotateX(25deg) rotateY(-5deg); filter: drop-shadow(0 20px 40px rgba(147, 51, 234, 0.5)); } }
+        @keyframes hPageTurn { 0%, 20% { transform: rotateY(0deg); opacity: 1; } 40%, 60% { transform: rotateY(-160deg); opacity: 0.8; } 80%, 100% { transform: rotateY(-180deg); opacity: 0; } }
+        @keyframes hRingSpin { 0% { transform: rotateX(75deg) rotateZ(0deg); } 100% { transform: rotateX(75deg) rotateZ(360deg); } }
+
+        /* V5 Start */
+        .visual-start { position: relative; width: 180px; height: 140px; display: flex; align-items: center; justify-content: center; }
+        .visual-start .h-jumbo-folder { width: 120px; height: 80px; background: rgba(16, 185, 129, 0.2); border: 3px solid var(--teal-bright); border-radius: 12px 16px 16px 16px; position: relative; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 40px rgba(16, 185, 129, 0.4), inset 0 0 20px rgba(52, 211, 153, 0.3); z-index: 10; backdrop-filter: blur(8px); }
+        .visual-start .h-jumbo-folder::before { content: ''; position: absolute; top: -16px; left: -3px; width: 44px; height: 20px; border: 3px solid var(--teal-bright); border-bottom: none; border-radius: 12px 12px 0 0; background: rgba(16, 185, 129, 0.2); }
+        .visual-start .h-plus { color: #fff; width: 40px; height: 40px; filter: drop-shadow(0 0 16px rgba(255,255,255,0.9)); }
+        .visual-start .h-aura { position: absolute; width: 160px; height: 120px; border-radius: 24px; border: 2px solid rgba(52, 211, 153, 0.6); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .stage-view.active .visual-start .h-jumbo-folder { animation: hJumboPulse 2s infinite cubic-bezier(0.4, 0, 0.2, 1); }
+        .stage-view.active .visual-start .h-aura { animation: hAuraExpand 2s infinite ease-out; }
+        @keyframes hJumboPulse { 0%, 100% { transform: scale(1); filter: brightness(1); box-shadow: 0 0 30px rgba(16, 185, 129, 0.3); } 50% { transform: scale(1.08); filter: brightness(1.2); box-shadow: 0 0 60px rgba(52, 211, 153, 0.6); } }
+        @keyframes hAuraExpand { 0% { transform: translate(-50%, -50%) scale(0.9); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+
+        /* --------------------------------------
+           Features & Footer
+           -------------------------------------- */
+        .features-grid { display: flex; gap: 20px; width: 100%; }
+        .feature-card { flex: 1; background: var(--glass-bg); border: 1px solid var(--border-light); border-radius: 12px; padding: 24px 20px; display: flex; flex-direction: column; position: relative; cursor: pointer; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .feature-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); opacity: 0.5; transition: opacity 0.3s ease; border-radius: 12px 12px 0 0; }
+        
+        .trigger-stage.is-hovered { transform: translateY(-4px); background: var(--card-hover-bg); border-color: rgba(255, 255, 255, 0.25); box-shadow: 0 16px 32px var(--shadow-color); z-index: 20; }
+        .feature-card.is-hovered::before { opacity: 1; box-shadow: 0 0 12px var(--accent); }
+        .feature-card.is-hovered .icon-box { color: #fff; background: var(--accent); border-color: transparent; box-shadow: 0 4px 16px var(--accent); }
+        .feature-card.is-hovered h3 { color: var(--text-main); }
+
+        .icon-box { width: 40px; height: 40px; border-radius: 10px; background: var(--gfx-icon-bg); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; color: var(--accent); border: 1px solid var(--gfx-glass-border); transition: all 0.3s ease; }
+        .feature-card h3 { font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 8px; transition: color 0.3s ease; }
+        .feature-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+        .footer { height: 80px; background: var(--footer-bg); border-top: 1px solid var(--border-light); border-radius: 0 0 12px 12px; display: flex; justify-content: space-between; align-items: center; padding: 0 40px; z-index: 20; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        
+        .link-text { color: var(--text-muted); font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 6px; transition: all 0.2s; padding: 8px 12px; margin-left: -12px; border-radius: 6px; cursor: pointer;}
+        .link-text.is-hovered { color: var(--text-main); background: var(--card-hover-bg); }
+        
+        .btn-primary { background: linear-gradient(180deg, var(--teal-bright) 0%, var(--teal-main) 100%); color: #071513; border: none; padding: 10px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(21, 180, 159, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.4); transition: all 0.2s; }
+        .btn-primary.is-hovered { box-shadow: 0 8px 24px rgba(21, 180, 159, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.8); filter: brightness(1.15); transform: translateY(-2px); }
+        .btn-primary svg { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .btn-primary.is-hovered svg { transform: translateY(-2px); }
+
+        /* --------------------------------------
+           STATE LAYERS: DRAG & SCAN
+           -------------------------------------- */
+        .drop-zone { position: absolute; inset: 20px; border: 2px dashed rgba(21, 180, 159, 0.6); border-radius: 12px; background: rgba(21, 180, 159, 0.08); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transform: scale(1.05); transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); z-index: 50; }
+        body.is-dragging .drop-zone { opacity: 1; transform: scale(1); }
+        .drop-icon { color: var(--teal-bright); margin-bottom: 24px; animation: bounce 2s infinite ease-in-out; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .drop-zone h2 { color: var(--text-main); font-size: 24px; font-weight: 500; }
+
+        .scan-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transform: scale(0.9); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); z-index: 60; }
+        body.is-scanning .scan-overlay { opacity: 1; transform: scale(1); }
+        .scan-ring-container { position: relative; width: 160px; height: 160px; margin-bottom: 40px; }
+        .scan-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--gfx-scan-ring); border-top-color: var(--teal-bright); border-right-color: var(--teal-main); animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite; }
+        .scan-logo { position: absolute; inset: 30px; display: flex; align-items: center; justify-content: center; }
+        
+        .scan-logo .logo-wrapper { width: 100%; height: 100%; margin: 0; filter: none; display: block; }
+        .scan-logo .logo-dark, .scan-logo .logo-light { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 0 12px var(--teal-bright)); }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .scan-terminal { font-family: 'Menlo', monospace; color: var(--teal-bright); font-size: 14px; letter-spacing: 0.5px; height: 20px; text-shadow: 0 0 8px rgba(21, 180, 159, 0.4); }
+        .scan-terminal::after { content: '█'; animation: blink 1s step-end infinite; margin-left: 4px; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <div class="mac-window">
+        
+        <!-- Ambient Engine NOW INSIDE the window shell -->
+        <div class="ambient">
+            <div class="glow-layer layer-default active"><div class="g-blob g1"></div><div class="g-blob g2"></div></div>
+            <div class="glow-layer layer-feat-1"><div class="g-blob g1"></div><div class="g-blob g2"></div></div>
+            <div class="glow-layer layer-feat-2"><div class="g-blob g1"></div><div class="g-blob g2"></div></div>
+            <div class="glow-layer layer-feat-3"><div class="g-blob g1"></div><div class="g-blob g2"></div></div>
+            <div class="glow-layer layer-feat-4"><div class="g-blob g1"></div><div class="g-blob g2"></div></div>
+            <div class="glow-layer layer-feat-5"><div class="g-blob g1"></div><div class="g-blob g2"></div></div>
+        </div>
+
+        <div class="ui-layer">
+            <!-- Native Traffic Lights -->
+            <div class="titlebar">
+                <div class="traffic-lights">
+                    <div class="light close"><svg viewBox="0 0 12 12"><path stroke="currentColor" stroke-width="1.2" stroke-linecap="round" d="M3.5 3.5l5 5m0-5l-5 5"></path></svg></div>
+                    <div class="light min"><svg viewBox="0 0 12 12"><path stroke="currentColor" stroke-width="1.2" stroke-linecap="round" d="M3 6h6"></path></svg></div>
+                    <div class="light max"><svg viewBox="0 0 12 12"><path fill="currentColor" d="M3.5 8.5h3v-1h-2v-2h-1v3zm5-5h-3v1h2v2h1v-3z"></path></svg></div>
+                </div>
+                <div class="title-text" id="theme-toggle" title="点击切换深浅色">AreaMatrix</div>
+            </div>
+
+            <div class="content">
+                <div class="stage-container">
+                    
+                    <div class="stage-view active" id="stage-default">
+                        <div class="logo-wrapper">
+                            <img class="logo-dark" src="../../logo/final/areamatrix-logo-lockup-dark.svg" alt="AreaMatrix Logo">
+                            <img class="logo-light" src="../../logo/final/areamatrix-logo-lockup-light.svg" alt="AreaMatrix Logo">
+                        </div>
+                        <p class="hero-description">
+                            <span class="hero-punchline">将散乱的文件，化作知识枢纽。</span>
+                            无需搬运，只需指认一个本地文件夹。AreaMatrix 会为你建立结构清晰、无感同步的私人资料库。
+                        </p>
+                    </div>
+
+                    <div class="stage-view" id="stage-feat-1">
+                        <div class="stage-visual visual-classify"><div class="h-folder"></div><div class="h-scanner"></div><div class="h-file"></div></div>
+                        <div class="stage-text"><h2>智能引擎，自动归档</h2><p>把文件拖入视窗，底层的智能规则与 AI 将自动识别内容、建议命名，并为其在庞大复杂的目录树中寻找到最佳的物理归属。</p></div>
+                    </div>
+                    <div class="stage-view" id="stage-feat-2">
+                        <div class="stage-visual visual-security"><div class="h-shield"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div><div class="h-grid"><div class="h-grid-item"></div><div class="h-grid-item"></div><div class="h-grid-item"></div><div class="h-grid-item"></div><div class="h-grid-item"></div><div class="h-grid-item"></div><div class="h-grid-item"></div><div class="h-grid-item"></div></div></div>
+                        <div class="stage-text"><h2>零侵入，绝对的安全防线</h2><p>我们仅仅在底层建立一层可视化的超级索引。程序承诺永远不会在后台私自改动、移动或覆盖您宝贵的源文件与已有目录结构。</p></div>
+                    </div>
+                    <div class="stage-view" id="stage-feat-3">
+                        <div class="stage-visual visual-tracking"><div class="h-line"></div><div class="h-node"><div class="h-dot-hollow"></div><div class="h-bar"></div></div><div class="h-node"><div class="h-dot"></div><div class="h-bar"></div><div class="h-log"></div></div><div class="h-node"><div class="h-dot"></div><div class="h-bar" style="width:40px;"></div><div class="h-log" style="background:rgba(255,255,255,0.05); border-color:var(--gfx-glass-border);"></div></div></div>
+                        <div class="stage-text"><h2>全局概览，时间线级追溯</h2><p>自动生成专属的 Markdown 资料库大纲。您的每一次挪动、修改，哪怕是在系统原生的 Finder 中操作，都会被精准记录并实时回流。</p></div>
+                    </div>
+                    <div class="stage-view" id="stage-feat-4">
+                        <div class="stage-visual visual-help"><div class="h-ring"></div><div class="h-book"><div class="h-page"></div></div></div>
+                        <div class="stage-text"><h2>工作流与算法揭秘</h2><p>一分钟了解 AreaMatrix 如何通过轻量级的本地索引引擎和 FSEvents 监听，帮助您彻底终结文件整理的焦虑感。</p></div>
+                    </div>
+                    <div class="stage-view" id="stage-feat-5">
+                        <div class="stage-visual visual-start"><div class="h-aura"></div><div class="h-jumbo-folder"><svg class="h-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></div></div>
+                        <div class="stage-text"><h2>立刻开启您的本地知识库</h2><p>放心，我们仅仅是为您指认的文件夹建立一层索引。您可以随时停止使用，没有任何锁定风险。点击即可瞬间接管！</p></div>
+                    </div>
+
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card trigger-stage" data-target="stage-feat-1" style="--accent: var(--teal-bright);">
+                        <div class="icon-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg></div>
+                        <h3>拖拽归档，智能分类</h3>
+                        <p>识别、重命名并自动落位</p>
+                    </div>
+                    <div class="feature-card trigger-stage" data-target="stage-feat-2" style="--accent: var(--gold);">
+                        <div class="icon-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
+                        <h3>零侵入，绝对安全</h3>
+                        <p>不碰原文件，真相在文件系统</p>
+                    </div>
+                    <div class="feature-card trigger-stage" data-target="stage-feat-3" style="--accent: var(--coral);">
+                        <div class="icon-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></div>
+                        <h3>全局概览，改动追溯</h3>
+                        <p>生成大纲，双向同步改动日志</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer">
+                <a class="link-text trigger-stage" data-target="stage-feat-4">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    了解 AreaMatrix 如何工作
+                </a>
+                <button class="btn-primary trigger-stage" data-target="stage-feat-5" id="start-btn">
+                    选择本地文件夹
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="drop-zone"><svg class="drop-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg><h2>释放以交由 AreaMatrix 接管</h2></div>
+        
+        <div class="scan-overlay">
+            <div class="scan-ring-container">
+                <div class="scan-ring"></div>
+                <div class="scan-logo">
+                    <div class="logo-wrapper">
+                        <img class="logo-dark" src="../../logo/final/areamatrix-logo-mark-dark.svg">
+                        <img class="logo-light" src="../../logo/final/areamatrix-logo-mark-light.svg">
+                    </div>
+                </div>
+            </div>
+            <div class="scan-terminal">等待系统指令...</div>
+        </div>
+
+    </div>
+
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            if (currentTheme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else if (currentTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'light');
+            } else {
+                const isSystemLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+                document.documentElement.setAttribute('data-theme', isSystemLight ? 'dark' : 'light');
+            }
+        });
+
+        // Parallax Engine
+        document.addEventListener('mousemove', (e) => {
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            document.documentElement.style.setProperty('--mouse-x', (x - 0.5) * 2);
+            document.documentElement.style.setProperty('--mouse-y', (y - 0.5) * 2);
+        });
+
+        // Protected Stage Controller (with Hover Intent Debounce)
+        const triggers = document.querySelectorAll('.trigger-stage');
+        const views = document.querySelectorAll('.stage-view');
+        const glows = document.querySelectorAll('.glow-layer');
+        let resetTimeout;
+        let hoverIntentTimeout;
+
+        triggers.forEach(trigger => {
+            trigger.addEventListener('mouseenter', () => {
+                clearTimeout(resetTimeout);
+                clearTimeout(hoverIntentTimeout);
+                
+                hoverIntentTimeout = setTimeout(() => {
+                    triggers.forEach(t => t.classList.remove('is-hovered'));
+                    trigger.classList.add('is-hovered');
+                    
+                    const targetId = trigger.getAttribute('data-target');
+                    switchStage(targetId);
+                }, 60);
+            });
+            
+            trigger.addEventListener('mouseleave', () => {
+                clearTimeout(hoverIntentTimeout);
+                trigger.classList.remove('is-hovered');
+                
+                resetTimeout = setTimeout(() => {
+                    switchStage('stage-default');
+                }, 200);
+            });
+        });
+
+        function switchStage(targetId) {
+            views.forEach(view => {
+                if (view.id === targetId) {
+                    if (!view.classList.contains('active')) {
+                        view.classList.remove('exit');
+                        void view.offsetWidth; // Force reflow
+                        view.classList.add('active');
+                    }
+                } else {
+                    if (view.classList.contains('active')) {
+                        view.classList.remove('active');
+                        view.classList.add('exit');
+                    }
+                }
+            });
+            
+            glows.forEach(glow => {
+                if (glow.classList.contains('layer-' + targetId.replace('stage-', ''))) {
+                    glow.classList.add('active');
+                } else {
+                    glow.classList.remove('active');
+                }
+            });
+        }
+
+        // Drag / Drop / Scan logic
+        let dragCounter = 0;
+        document.body.addEventListener('dragenter', (e) => { e.preventDefault(); dragCounter++; document.body.classList.add('is-dragging'); });
+        document.body.addEventListener('dragleave', (e) => { dragCounter--; if (dragCounter === 0) document.body.classList.remove('is-dragging'); });
+        document.body.addEventListener('dragover', (e) => e.preventDefault());
+        document.body.addEventListener('drop', (e) => { e.preventDefault(); dragCounter = 0; document.body.classList.remove('is-dragging'); startScanningSequence(); });
+        document.getElementById('start-btn').addEventListener('click', startScanningSequence);
+
+        function startScanningSequence() {
+            if (document.body.classList.contains('is-scanning')) return;
+            document.body.classList.add('is-scanning');
+            const terminal = document.querySelector('.scan-terminal');
+            const logs = ["初始化 AreaMatrix 核心引擎...", "计算 SHA-256 并剔除重复项...", "生成专属 AREAMATRIX.md 概览...", "接管完毕，安全网罩已启动。"];
+            let i = 0; terminal.textContent = logs[0];
+            const scanInterval = setInterval(() => {
+                i++;
+                if(i < logs.length) terminal.textContent = logs[i];
+                else { clearInterval(scanInterval); terminal.textContent = ">>> 进入控制台 <<<"; terminal.style.color = "#F1B84E"; setTimeout(() => { document.body.classList.remove('is-scanning'); terminal.style.color = "var(--teal-bright)"; }, 2000); }
+            }, 750);
+        }
+    </script>
+</body>
+</html>

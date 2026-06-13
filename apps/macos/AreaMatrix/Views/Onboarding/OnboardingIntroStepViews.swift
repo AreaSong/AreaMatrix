@@ -143,14 +143,14 @@ struct WelcomeStepView: View {
                 .scaledToFit()
                 .frame(width: 320, height: 104, alignment: .leading)
                 .accessibilityLabel("AreaMatrix")
-            Text("给 OneDrive 和本地大文件夹建立本地索引。")
-                .font(.system(size: 34, weight: .semibold, design: .default))
+            Text("本地索引你的大文件夹。")
+                .font(.title.weight(.semibold))
                 .accessibilityAddTraits(.isHeader)
-            Text("首次连接后，AreaMatrix 会扫描目录结构并保存到本机。以后打开先读取本地索引，再后台同步变化。")
+            Text("连接 OneDrive、iCloud 或本地目录，首次扫描后先读本地索引，变化再后台同步。")
                 .font(.title3)
                 .foregroundStyle(.primary)
                 .frame(maxWidth: 620, alignment: .leading)
-            Text("文件仍留在原处。AreaMatrix 默认不下载内容，不移动、不删除、不覆盖已有文件。")
+            Text("文件留在原处；默认不下载内容、不移动、不删除、不覆盖。")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 620, alignment: .leading)
@@ -174,23 +174,23 @@ struct WelcomeStepView: View {
 private struct SafetyPromiseList: View {
     private let promises = [
         SafetyPromise(
-            title: "一次扫描，持续浏览",
-            message: "目录树和文件信息保存到本地，下次打开不必重新等待云盘加载。",
+            title: "扫一次",
+            message: "保存目录树和文件信息，后续打开不用等云盘重新加载。",
             systemImage: "folder.badge.clock"
         ),
         SafetyPromise(
-            title: "适合云盘大目录",
-            message: "支持 OneDrive、iCloud 和本地文件夹，识别同步延迟、占位文件和冲突风险。",
+            title: "云盘友好",
+            message: "支持 OneDrive、iCloud 和本地目录，提示占位与冲突风险。",
             systemImage: "cloud"
         ),
         SafetyPromise(
-            title: "上下分栏工作台",
-            message: "上方浏览文件夹层级，下方查看列表、预览、详情和变化记录。",
+            title: "上下分栏",
+            message: "上方看层级，下方看列表、预览、详情和记录。",
             systemImage: "rectangle.split.2x1"
         ),
         SafetyPromise(
-            title: "不破坏原文件",
-            message: "只建立索引和元数据，不移动、不删除、不覆盖已有内容。",
+            title: "原件不动",
+            message: "只建立索引和元数据，不改动已有文件。",
             systemImage: "checkmark.shield"
         )
     ]
