@@ -40,6 +40,7 @@ struct WelcomeStepView: View {
     @State private var scanCursorColor = WelcomePalette.tealBright
     @State private var scanTask: Task<Void, Never>?
     @State private var hoverResetTask: Task<Void, Never>?
+    @State private var scanProgressFraction: CGFloat = 0
     @FocusState private var isLearnMoreFocused: Bool
     @FocusState private var isChooseFolderFocused: Bool
     /// 用户手动切换的主题偏好：nil = 跟随系统
@@ -122,7 +123,8 @@ struct WelcomeStepView: View {
                 WelcomeScanOverlayView(
                     isScanning: isScanning,
                     terminalLines: scanTerminalLines,
-                    cursorColor: scanCursorColor
+                    cursorColor: scanCursorColor,
+                    scanProgressFraction: scanProgressFraction
                 )
                 .scaleEffect(isExiting ? 2.5 : 1)
                 .opacity(isExiting ? 0 : 1)
@@ -185,12 +187,17 @@ struct WelcomeStepView: View {
 private extension WelcomeStepView {
     private var titlebar: some View {
         ZStack {
-            Text("AreaMatrix")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.tertiary)
-                .opacity(titlebarEntered ? 1 : 0)
-                .offset(y: titlebarEntered ? 0 : -8)
-                .animation(.easeOut(duration: 0.5).delay(0.3), value: titlebarEntered)
+            HStack(spacing: 0) {
+                ForEach(Array("AreaMatrix".enumerated()), id: \.offset) { index, char in
+                    Text(String(char))
+                        .opacity(titlebarEntered ? 1 : 0)
+                        .blur(radius: titlebarEntered ? 0 : 4)
+                        .offset(y: titlebarEntered ? 0 : -6)
+                        .animation(.easeOut(duration: 0.4).delay(0.3 + Double(index) * 0.04), value: titlebarEntered)
+                }
+            }
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(.tertiary)
 
             HStack {
                 Spacer()
@@ -211,6 +218,7 @@ private extension WelcomeStepView {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .help("切换明暗模式")
                 .onHover { hovering in
                     if hovering {
                         NSCursor.pointingHand.push()
@@ -234,7 +242,7 @@ private extension WelcomeStepView {
                 description: "识别、重命名并自动落位",
                 accentColor: Color(red: 55 / 255, green: 202 / 255, blue: 182 / 255),
                 stage: .feat1,
-                entranceDelay: 0.4
+                entranceDelay: 0.3
             ))
             featureCard(WelcomeFeatureCardSpec(
                 icon: "checkmark.shield",
@@ -242,7 +250,7 @@ private extension WelcomeStepView {
                 description: "不碰原文件，真相在文件系统",
                 accentColor: Color(red: 241 / 255, green: 184 / 255, blue: 78 / 255),
                 stage: .feat2,
-                entranceDelay: 0.5
+                entranceDelay: 0.55
             ))
             featureCard(WelcomeFeatureCardSpec(
                 icon: "rectangle.split.2x1",
@@ -250,7 +258,7 @@ private extension WelcomeStepView {
                 description: "生成大纲，双向同步改动日志",
                 accentColor: Color(red: 233 / 255, green: 109 / 255, blue: 90 / 255),
                 stage: .feat3,
-                entranceDelay: 0.6
+                entranceDelay: 0.8
             ))
         }
     }
@@ -267,6 +275,7 @@ private extension WelcomeStepView {
                             .font(.system(size: 10, weight: .semibold))
                             .opacity(0.6)
                             .offset(x: isLearnMoreHovered ? 2 : 0, y: isLearnMoreHovered ? -2 : 0)
+                            .symbolEffect(.bounce, value: isLearnMoreHovered)
                     }
                     .font(.system(size: 13))
                     .foregroundStyle(isLearnMoreHovered ? .primary : .secondary)
@@ -327,6 +336,7 @@ private extension WelcomeStepView {
                         )
                     )
                     .cornerRadius(8)
+                    .pulseAura(color: WelcomePalette.teal, duration: 2.5, maxScale: 1.5, cornerRadius: 8)
                     .shadow(
                         color: WelcomePalette.teal.opacity(isCtaHovered ? 0.7 : (ctaGlowing ? 0.6 : 0.3)),
                         radius: isCtaHovered ? 20 : (ctaGlowing ? 16 : 6),
@@ -401,16 +411,20 @@ private extension WelcomeStepView {
         }
     }
 
-    private func navigateStage(direction: Int) {
+    private func navigateStage(direction: Int, wrap: Bool = false) {
         let stages = WelcomeStage.allCases
         let current = stages.firstIndex(of: activeStage) ?? 0
-        let next = max(0, min(stages.count - 1, current + direction))
+        let next: Int
+        if wrap {
+            next = (current + direction + stages.count) % stages.count
+        } else {
+            next = max(0, min(stages.count - 1, current + direction))
+        }
         guard stages[next] != activeStage else { return }
         withAnimation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.8)) {
             activeStage = stages[next]
         }
     }
-
 
     private func updateParallax(from phase: HoverPhase, in size: CGSize) {
         switch phase {
@@ -432,6 +446,7 @@ private extension WelcomeStepView {
         scanTask?.cancel()
         scanTerminalLines = []
         scanCursorColor = WelcomePalette.tealBright
+        scanProgressFraction = 0
         withAnimation { isScanning = true }
 
         scanTask = Task { @MainActor in
@@ -442,14 +457,18 @@ private extension WelcomeStepView {
                 ("接管完毕，安全网罩已启动。", WelcomePalette.gold)
             ]
 
-            for log in logs {
+            for (index, log) in logs.enumerated() {
                 guard await typeScanLog(log.0, color: log.1) else { return }
+                withAnimation(.easeOut(duration: 0.3)) {
+                    scanProgressFraction = CGFloat(index + 1) / 5.0
+                }
                 try? await Task.sleep(for: .milliseconds(240))
             }
 
             try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
             guard await typeScanLog(">>> 授权通过，正在进入 <<<", color: WelcomePalette.gold) else { return }
+            withAnimation(.easeOut(duration: 0.3)) { scanProgressFraction = 1.0 }
 
             try? await Task.sleep(for: .seconds(0.5))
             guard !Task.isCancelled else { return }
@@ -461,6 +480,7 @@ private extension WelcomeStepView {
             onContinue()
             isScanning = false
             isExiting = false
+            scanProgressFraction = 0
         }
     }
 

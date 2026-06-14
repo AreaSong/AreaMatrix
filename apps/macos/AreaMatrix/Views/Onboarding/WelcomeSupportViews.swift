@@ -101,7 +101,23 @@ struct WelcomeFeatureCard: View {
                 .shadow(color: Color.black.opacity(isHovered ? 0.15 : 0), radius: 16, y: 8)
                 .offset(y: hasEntered ? 0 : 16)
                 .opacity(hasEntered ? 1 : 0)
+                .rotation3DEffect(
+                    .degrees(hasEntered ? 0 : 5),
+                    axis: (x: 1, y: 0, z: 0),
+                    perspective: 0.5
+                )
                 .featureCardFocus(isHovered: isHovered, anyCardHovered: anyCardHovered)
+                .rotation3DEffect(
+                    .degrees(isHovered ? (hoverPoint.y - 0.5) * -6 : 0),
+                    axis: (x: 1, y: 0, z: 0),
+                    perspective: 0.8
+                )
+                .rotation3DEffect(
+                    .degrees(isHovered ? (hoverPoint.x - 0.5) * 6 : 0),
+                    axis: (x: 0, y: 1, z: 0),
+                    perspective: 0.8
+                )
+                .animation(.easeOut(duration: 0.15), value: hoverPoint)
                 .allowsHitTesting(false)
                 .animation(.areaMatrixStageFlow.delay(entranceDelay), value: hasEntered)
             }

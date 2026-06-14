@@ -10,12 +10,17 @@ struct StageTrackingView: View {
     @State private var typedMarkdownLines: [TypedMarkdownLine] = []
     @State private var timerTask: Task<Void, Never>?
     @State private var typingTask: Task<Void, Never>?
+    @Environment(\.colorScheme) private var colorScheme
 
-    private let markdownTypewriterLines = [
-        ("## Documents", Color(red: 0.337, green: 0.612, blue: 0.839)),
-        ("- Finance/Invoice.pdf", Color(red: 0.306, green: 0.788, blue: 0.69)),
-        ("- Design/brand.sketch", Color(red: 0.808, green: 0.569, blue: 0.471))
-    ]
+    private var markdownTypewriterLines: [(String, Color)] {
+        [
+            ("## Documents", Color(red: 0.337, green: 0.612, blue: 0.839)),
+            ("- Finance/Invoice.pdf", colorScheme == .dark
+                ? Color(red: 0.306, green: 0.788, blue: 0.69)
+                : WelcomePalette.tealDeep),
+            ("- Design/brand.sketch", Color(red: 0.808, green: 0.569, blue: 0.471))
+        ]
+    }
 
     var body: some View {
         VStack(spacing: 32) {
@@ -128,11 +133,15 @@ struct StageTrackingView: View {
                         ZStack(alignment: .leading) {
                             Text("Draft_v1.md").opacity(showNewName ? 0 : 1)
                             Text("Final_v2.md")
-                                .foregroundColor(Color(red: 0.306, green: 0.788, blue: 0.69))
+                                .foregroundColor(colorScheme == .dark
+                                    ? Color(red: 0.306, green: 0.788, blue: 0.69)
+                                    : WelcomePalette.tealDeep)
                                 .padding(.horizontal, 4)
                                 .background(
                                     showNewName
-                                        ? Color(red: 0.306, green: 0.788, blue: 0.69).opacity(0.3)
+                                        ? (colorScheme == .dark
+                                            ? Color(red: 0.306, green: 0.788, blue: 0.69)
+                                            : WelcomePalette.tealDeep).opacity(0.3)
                                         : Color.clear,
                                     in: RoundedRectangle(cornerRadius: 3)
                                 )
@@ -194,6 +203,7 @@ struct StageHelpView: View {
     @State private var dashPhase: CGFloat = 0
     @State private var fsEventRows: [WelcomeFSEventRow] = []
     @State private var fsEventTask: Task<Void, Never>?
+    @Environment(\.colorScheme) private var colorScheme
 
     private let fsEventActions = [
         "CREATE /docs/draft.md",
@@ -271,14 +281,31 @@ struct StageHelpView: View {
     }
 
     private func fsEvent(time: String, action: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(time).foregroundColor(WelcomePalette.teal).font(.system(size: 9, design: .monospaced))
-            Text(action).fontWeight(.semibold).font(.system(size: 10, design: .monospaced))
+        HStack(spacing: 0) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(colorForAction(action))
+                .frame(width: 3)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(time)
+                    .foregroundColor(colorScheme == .dark ? WelcomePalette.teal : WelcomePalette.tealDeep)
+                    .font(.system(size: 9, design: .monospaced))
+                Text(action).fontWeight(.semibold).font(.system(size: 10, design: .monospaced))
+                    .foregroundColor(colorForAction(action))
+            }
+            .padding(8)
         }
-        .padding(8)
-        .background(Color.black.opacity(0.05)).cornerRadius(4)
-        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.white.opacity(0.1)))
+        .background(Color.primary.opacity(0.06)).cornerRadius(4)
+        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.primary.opacity(0.08)))
         .frame(width: 150)
+    }
+
+    private func colorForAction(_ action: String) -> Color {
+        let isDark = colorScheme == .dark
+        if action.hasPrefix("CREATE") { return isDark ? WelcomePalette.emerald : WelcomePalette.emeraldDeep }
+        if action.hasPrefix("RENAME") { return isDark ? WelcomePalette.gold : WelcomePalette.goldDeep }
+        if action.hasPrefix("DELETE") { return isDark ? WelcomePalette.coral : WelcomePalette.coralDeep }
+        if action.hasPrefix("SYNC") { return WelcomePalette.purple }
+        return isDark ? WelcomePalette.teal : WelcomePalette.tealDeep
     }
 
     private var circuitPaths: some View {
@@ -316,9 +343,18 @@ struct StageHelpView: View {
 
     private var engineCore: some View {
         ZStack {
+            // 外围反向虚线圆环 — 齿轮副轴
+            Circle()
+                .stroke(style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                .foregroundColor(WelcomePalette.purple.opacity(0.25))
+                .frame(width: 105, height: 105)
+                .rotationEffect(.degrees(isAnimating ? -360 : 0))
+                .animation(.linear(duration: 18).repeatForever(autoreverses: false), value: isAnimating)
+
             WelcomeHexagon()
                 .fill(WelcomePalette.purple.opacity(0.1))
                 .overlay(WelcomeHexagon().stroke(WelcomePalette.purple.opacity(0.5), lineWidth: 2))
+                .frame(width: 80, height: 80)
                 .rotationEffect(.degrees(isAnimating ? 360 : 0))
                 .animation(.linear(duration: 12).repeatForever(autoreverses: false), value: isAnimating)
 
@@ -326,25 +362,26 @@ struct StageHelpView: View {
                 .font(.system(size: 34))
                 .foregroundColor(WelcomePalette.purple)
         }
-        .frame(width: 90, height: 90)
+        .frame(width: 110, height: 110)
         .shadow(color: WelcomePalette.purple.opacity(isAnimating ? 0.6 : 0.3), radius: isAnimating ? 30 : 15)
         .scaleEffect(isAnimating ? 1.05 : 1.0)
         .animation(.easeInOut(duration: 0.75).repeatForever(autoreverses: true), value: isAnimating)
     }
 
     private var dbTarget: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "externaldrive.fill").font(.system(size: 24)).foregroundColor(WelcomePalette.emeraldLight)
-            Text("Local DB").font(.system(size: 9, design: .monospaced)).foregroundColor(WelcomePalette.emeraldLight)
+        let accent = colorScheme == .dark ? WelcomePalette.emeraldLight : WelcomePalette.emeraldDeep
+        return VStack(spacing: 12) {
+            Image(systemName: "externaldrive.fill").font(.system(size: 24)).foregroundColor(accent)
+            Text("Local DB").font(.system(size: 9, design: .monospaced)).foregroundColor(accent)
         }
         .frame(width: 100, height: 100)
-        .background(WelcomePalette.emeraldLight.opacity(0.05)).cornerRadius(8)
+        .background(accent.opacity(colorScheme == .dark ? 0.05 : 0.08)).cornerRadius(8)
         .overlay(
             RoundedRectangle(cornerRadius: 8)
                 .stroke(style: StrokeStyle(lineWidth: 2, dash: [4]))
-                .foregroundColor(WelcomePalette.emeraldLight.opacity(isAnimating ? 1 : 0.4))
+                .foregroundColor(accent.opacity(isAnimating ? 1 : 0.4))
         )
-        .shadow(color: WelcomePalette.emeraldLight.opacity(isAnimating ? 0.4 : 0), radius: isAnimating ? 20 : 0)
+        .shadow(color: accent.opacity(isAnimating ? 0.4 : 0), radius: isAnimating ? 20 : 0)
         .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(0.4), value: isAnimating)
     }
 

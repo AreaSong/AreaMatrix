@@ -6,6 +6,8 @@ struct StageClassifyView: View {
     @State private var phase = 0
     @State private var timerTask: Task<Void, Never>?
     @State private var scanProgress: CGFloat = 0
+    @State private var highlightFlash = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: 32) {
@@ -22,6 +24,13 @@ struct StageClassifyView: View {
             if newPhase == 2 {
                 scanProgress = 0
                 withAnimation(.linear(duration: 1.0)) { scanProgress = 1 }
+            }
+            if newPhase == 3 {
+                withAnimation(.easeOut(duration: 0.15)) { highlightFlash = true }
+                Task {
+                    try? await Task.sleep(for: .milliseconds(500))
+                    withAnimation(.easeOut(duration: 0.5)) { highlightFlash = false }
+                }
             }
         }
     }
@@ -45,6 +54,16 @@ struct StageClassifyView: View {
                 .offset(x: phase >= 1 ? 80 : -150, y: phase >= 1 ? -20 : 0)
                 .scaleEffect(phase >= 1 && phase <= 2 ? 0.6 : 1.0)
                 .opacity(phase == 0 || phase == 1 ? 1 : 0)
+
+            // 文件飞行拖尾轨迹
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(LinearGradient(
+                    colors: [WelcomePalette.tealBright.opacity(0.5), .clear],
+                    startPoint: .trailing, endPoint: .leading
+                ))
+                .frame(width: phase == 1 ? 80 : 0, height: 3)
+                .offset(x: phase == 1 ? 30 : -150, y: phase == 1 ? -20 : 0)
+                .animation(.easeInOut(duration: 0.6), value: phase)
         }
         .frame(width: 480, height: 220)
     }
@@ -111,9 +130,9 @@ struct StageClassifyView: View {
                     Label("Invoices", systemImage: "folder.fill").font(.system(size: 10)).padding(.leading, 12)
                     Text("📄 Invoice.pdf")
                         .font(.system(size: 9))
-                        .foregroundColor(WelcomePalette.tealBright)
+                        .foregroundColor(colorScheme == .dark ? WelcomePalette.tealBright : WelcomePalette.tealDeep)
                         .padding(.leading, 8).frame(height: 16)
-                        .background(WelcomePalette.tealBright.opacity(0.15)).cornerRadius(2)
+                        .background((colorScheme == .dark ? WelcomePalette.tealBright : WelcomePalette.tealDeep).opacity(highlightFlash ? 0.45 : 0.15)).cornerRadius(2)
                         .overlay(Rectangle().frame(width: 2).foregroundColor(WelcomePalette.teal), alignment: .leading)
                         .padding(.leading, 24)
                         .opacity(phase == 3 ? 1 : 0)
@@ -131,6 +150,7 @@ struct StageClassifyView: View {
 
 struct StageSecurityView: View {
     @State private var isAnimating = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: 32) {
@@ -149,34 +169,38 @@ struct StageSecurityView: View {
             VStack(spacing: 40) { indexLayer; osLayer }
             shieldBarrier
             dataStreams
+            shieldSparks
+            shieldRipples
         }
         .frame(width: 480, height: 220)
     }
 
     private var indexLayer: some View {
-        ZStack {
+        let accent = colorScheme == .dark ? WelcomePalette.teal : WelcomePalette.tealDeep
+        let accentBright = colorScheme == .dark ? WelcomePalette.tealBright : WelcomePalette.tealDeep
+        return ZStack {
             RoundedRectangle(cornerRadius: 8)
-                .fill(WelcomePalette.teal.opacity(0.05))
+                .fill(accent.opacity(colorScheme == .dark ? 0.05 : 0.1))
                 .frame(width: 380, height: 60)
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(WelcomePalette.teal.opacity(0.3)))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(accent.opacity(colorScheme == .dark ? 0.3 : 0.4)))
             Text("AREAMATRIX INDEX")
                 .font(.system(size: 9, weight: .medium))
-                .foregroundColor(WelcomePalette.teal).offset(y: -40)
+                .foregroundColor(accent).offset(y: -40)
             HStack(spacing: 60) {
                 ForEach(0 ..< 3, id: \.self) { _ in
-                    Circle().fill(WelcomePalette.tealBright).frame(width: 14, height: 14)
-                        .shadow(color: WelcomePalette.teal, radius: 10)
+                    Circle().fill(accentBright).frame(width: 14, height: 14)
+                        .shadow(color: accent, radius: 10)
                 }
             }
-            .background(Rectangle().fill(WelcomePalette.tealBright.opacity(0.3)).frame(width: 200, height: 2))
+            .background(Rectangle().fill(accentBright.opacity(colorScheme == .dark ? 0.3 : 0.5)).frame(width: 200, height: 2))
         }
     }
 
     private var osLayer: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 8)
-                .fill(Color.black.opacity(0.05)).frame(width: 380, height: 60)
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.1)))
+                .fill(Color.primary.opacity(0.06)).frame(width: 380, height: 60)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.1)))
             Text("MACOS FILE SYSTEM")
                 .font(.system(size: 9, weight: .medium)).foregroundStyle(.secondary).offset(y: 40)
             HStack(spacing: 42) {
@@ -212,11 +236,12 @@ struct StageSecurityView: View {
     }
 
     private var dataStreams: some View {
-        ZStack {
+        let streamColor = colorScheme == .dark ? WelcomePalette.tealBright : WelcomePalette.tealDeep
+        return ZStack {
             ForEach(0 ..< 3, id: \.self) { index in
                 Rectangle()
                     .fill(LinearGradient(
-                        colors: [.clear, WelcomePalette.tealBright],
+                        colors: [.clear, streamColor],
                         startPoint: .bottom,
                         endPoint: .top
                     ))
@@ -225,6 +250,46 @@ struct StageSecurityView: View {
                     .opacity(isAnimating ? 0 : 1)
                     .animation(
                         .easeInOut(duration: 3)
+                            .repeatForever(autoreverses: false)
+                            .delay(Double([0, 1.5, 0.7][index])),
+                        value: isAnimating
+                    )
+            }
+        }
+    }
+
+    private var shieldSparks: some View {
+        ZStack {
+            ForEach(0..<3, id: \.self) { index in
+                Circle()
+                    .fill(WelcomePalette.gold)
+                    .frame(width: 6, height: 6)
+                    .shadow(color: WelcomePalette.gold, radius: 10)
+                    .offset(x: CGFloat([-78, 0, 78][index]))
+                    .scaleEffect(isAnimating ? 2.5 : 0.5)
+                    .opacity(isAnimating ? 0 : 0.8)
+                    .animation(
+                        .easeOut(duration: 0.8)
+                            .repeatForever(autoreverses: false)
+                            .delay(Double([0, 1.5, 0.7][index])),
+                        value: isAnimating
+                    )
+            }
+        }
+    }
+
+    // 盾牌碰撞扩散波纹
+    private var shieldRipples: some View {
+        ZStack {
+            ForEach(0..<3, id: \.self) { index in
+                Circle()
+                    .stroke(WelcomePalette.gold.opacity(0.4), lineWidth: 1)
+                    .frame(width: 20, height: 20)
+                    .offset(x: CGFloat([-78, 0, 78][index]))
+                    .scaleEffect(isAnimating ? 3.0 : 0.5)
+                    .opacity(isAnimating ? 0 : 0.6)
+                    .animation(
+                        .easeOut(duration: 1.5)
                             .repeatForever(autoreverses: false)
                             .delay(Double([0, 1.5, 0.7][index])),
                         value: isAnimating

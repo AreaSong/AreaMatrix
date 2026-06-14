@@ -38,7 +38,7 @@ struct WelcomeAmbientBackground: View {
                         transform: blob1Transform,
                         color: blobColor(for: stage, index: 1, isDark: colorScheme == .dark)
                     )
-                    .offset(x: blobBreathing ? 10 : -10, y: blobBreathing ? -8 : 8)
+                    .offset(x: blobBreathing ? 25 : -25, y: blobBreathing ? -20 : 20)
                     .animation(.easeInOut(duration: 7).repeatForever(autoreverses: true), value: blobBreathing)
 
                     // HTML g2: 600x600, bottom: -200px, right: -100px
@@ -48,7 +48,7 @@ struct WelcomeAmbientBackground: View {
                         transform: blob2Transform,
                         color: blobColor(for: stage, index: 2, isDark: colorScheme == .dark)
                     )
-                    .offset(x: blobBreathing ? -12 : 12, y: blobBreathing ? 6 : -6)
+                    .offset(x: blobBreathing ? -28 : 28, y: blobBreathing ? 18 : -18)
                     .animation(.easeInOut(duration: 9).repeatForever(autoreverses: true).delay(1), value: blobBreathing)
 
                     // HTML g3: 400x400, top: 20%, left: 30%
@@ -58,8 +58,18 @@ struct WelcomeAmbientBackground: View {
                         transform: blob3Transform,
                         color: blobColor(for: stage, index: 3, isDark: colorScheme == .dark)
                     )
-                    .offset(x: blobBreathing ? 6 : -6, y: blobBreathing ? 10 : -10)
+                    .offset(x: blobBreathing ? 18 : -18, y: blobBreathing ? 22 : -22)
                     .animation(.easeInOut(duration: 8).repeatForever(autoreverses: true).delay(2), value: blobBreathing)
+
+                    // Blob 4: 紫色系互补色，丰富背景色彩层次
+                    BlobView(
+                        size: 200,
+                        baseOffset: CGSize(width: 180, height: -120),
+                        transform: blob4Transform,
+                        color: blobColor(for: stage, index: 4, isDark: colorScheme == .dark)
+                    )
+                    .offset(x: blobBreathing ? -15 : 15, y: blobBreathing ? 12 : -12)
+                    .animation(.easeInOut(duration: 6).repeatForever(autoreverses: true).delay(3), value: blobBreathing)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .onAppear { blobBreathing = true }
@@ -79,7 +89,7 @@ struct WelcomeAmbientBackground: View {
             RadialGradient(
                 colors: [
                     .clear,
-                    Color.black.opacity(colorScheme == .dark ? 0.25 : 0.04)
+                    Color.black.opacity(colorScheme == .dark ? 0.25 : 0.08)
                 ],
                 center: .center,
                 startRadius: 250,
@@ -99,8 +109,8 @@ struct WelcomeAmbientBackground: View {
             ]
         }
         return [
-            Color(red: 247 / 255, green: 251 / 255, blue: 250 / 255),
-            Color(red: 238 / 255, green: 245 / 255, blue: 243 / 255)
+            Color(red: 250 / 255, green: 251 / 255, blue: 248 / 255),
+            Color(red: 242 / 255, green: 245 / 255, blue: 240 / 255)
         ]
     }
 
@@ -137,6 +147,17 @@ struct WelcomeAmbientBackground: View {
         }
     }
 
+    private var blob4Transform: BlobTransform {
+        switch stage {
+        case .default: return BlobTransform(offset: CGSize(width: 10, height: -10), scale: 0.4)
+        case .feat1:   return BlobTransform(offset: CGSize(width: -80, height: -100), scale: 0.8)
+        case .feat2:   return BlobTransform(offset: CGSize(width: 60, height: 100), scale: 0.8)
+        case .feat3:   return BlobTransform(offset: CGSize(width: -60, height: -60), scale: 0.8)
+        case .feat4:   return BlobTransform(offset: CGSize(width: 100, height: -60), scale: 0.9)
+        case .feat5:   return BlobTransform(offset: CGSize(width: -100, height: 60), scale: 0.8)
+        }
+    }
+
     private func blobColor(for stage: WelcomeStage, index: Int, isDark: Bool) -> Color {
         let op = isDark ? 1.0 : 1.5
         switch (stage, index) {
@@ -163,7 +184,14 @@ struct WelcomeAmbientBackground: View {
         case (.feat5, 1): return Color(red: 16/255, green: 185/255, blue: 129/255).opacity(0.4 * op)
         case (.feat5, 2): return Color(red: 21/255, green: 180/255, blue: 159/255).opacity(0.3 * op)
         case (.feat5, 3): return Color(red: 52/255, green: 211/255, blue: 153/255).opacity(0.2 * op)
-            
+
+        case (.default, 4): return Color(red: 147/255, green: 51/255, blue: 234/255).opacity(0.12 * op)
+        case (.feat1, 4): return Color(red: 147/255, green: 51/255, blue: 234/255).opacity(0.2 * op)
+        case (.feat2, 4): return Color(red: 168/255, green: 85/255, blue: 247/255).opacity(0.2 * op)
+        case (.feat3, 4): return Color(red: 244/255, green: 63/255, blue: 94/255).opacity(0.15 * op)
+        case (.feat4, 4): return Color(red: 99/255, green: 102/255, blue: 241/255).opacity(0.3 * op)
+        case (.feat5, 4): return Color(red: 168/255, green: 85/255, blue: 247/255).opacity(0.2 * op)
+
         default: return .clear
         }
     }

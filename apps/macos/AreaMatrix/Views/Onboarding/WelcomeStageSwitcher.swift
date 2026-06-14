@@ -70,6 +70,7 @@ struct WelcomeStageVisualMotion: ViewModifier {
             .opacity(stagePhase.isVisible ? 1 : 0)
             .offset(y: stagePhase.isVisible ? 0 : verticalOffset)
             .scaleEffect(stagePhase.isVisible ? 1 : scale)
+            .rotationEffect(.degrees(stagePhase.isVisible ? 0 : rotationAngle))
             .rotation3DEffect(
                 .degrees(parallax.vertical * -12),
                 axis: (x: 1, y: 0, z: 0),
@@ -95,6 +96,13 @@ struct WelcomeStageVisualMotion: ViewModifier {
         switch stagePhase {
         case .enter: return 0.94 // Start smaller, expand to 1.0
         case .exit: return 1.06 // Expand outwards while fading
+        }
+    }
+
+    private var rotationAngle: Double {
+        switch stagePhase {
+        case .enter: return 1.5
+        case .exit: return -1.5
         }
     }
 

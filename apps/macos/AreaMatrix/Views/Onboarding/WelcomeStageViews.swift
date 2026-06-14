@@ -11,6 +11,12 @@ enum WelcomePalette {
     static let purpleLight = Color(red: 168 / 255, green: 85 / 255, blue: 247 / 255)
     static let emerald = Color(red: 16 / 255, green: 185 / 255, blue: 129 / 255)
     static let emeraldLight = Color(red: 52 / 255, green: 211 / 255, blue: 153 / 255)
+
+    // 加深变体 — 浅色背景上确保文字对比度
+    static let tealDeep = Color(red: 10 / 255, green: 120 / 255, blue: 106 / 255)
+    static let emeraldDeep = Color(red: 8 / 255, green: 115 / 255, blue: 82 / 255)
+    static let goldDeep = Color(red: 166 / 255, green: 120 / 255, blue: 13 / 255)
+    static let coralDeep = Color(red: 180 / 255, green: 70 / 255, blue: 50 / 255)
 }
 
 struct WelcomeParallax: Equatable {
@@ -50,9 +56,11 @@ struct WelcomeScanOverlayView: View {
     let isScanning: Bool
     let terminalLines: [WelcomeTerminalLine]
     let cursorColor: Color
+    let scanProgressFraction: CGFloat
 
     @Environment(\.colorScheme) private var colorScheme
     @State private var cursorVisible = true
+    @State private var logoPulsing = false
 
     var body: some View {
         VStack(spacing: 40) {
@@ -80,6 +88,8 @@ struct WelcomeScanOverlayView: View {
                     width: 80,
                     height: 80
                 )
+                .scaleEffect(logoPulsing ? 1.06 : 1.0)
+                .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: logoPulsing)
                 .shadow(color: WelcomePalette.tealBright.opacity(0.5), radius: 12)
             }
 
@@ -97,11 +107,27 @@ struct WelcomeScanOverlayView: View {
             .font(.system(size: 14, weight: .medium, design: .monospaced))
             .frame(width: 340, alignment: .leading)
             .shadow(color: cursorColor.opacity(0.4), radius: 8)
+
+            // 扫描进度条
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.primary.opacity(0.08))
+                    .frame(width: 340, height: 3)
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(LinearGradient(
+                        colors: [WelcomePalette.tealBright, WelcomePalette.gold],
+                        startPoint: .leading, endPoint: .trailing
+                    ))
+                    .frame(width: max(0, 340 * scanProgressFraction), height: 3)
+                    .shadow(color: WelcomePalette.tealBright.opacity(0.6), radius: 8)
+                    .animation(.easeOut(duration: 0.3), value: scanProgressFraction)
+            }
         }
         .scaleEffect(isScanning ? 1 : 0.9)
         .opacity(isScanning ? 1 : 0)
         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2), value: isScanning)
         .onAppear {
+            logoPulsing = true
             withAnimation(.easeInOut(duration: 0.45).repeatForever(autoreverses: true)) {
                 cursorVisible = false
             }
@@ -131,6 +157,7 @@ struct WelcomeDropOverlayView: View {
 struct StageDefaultView: View {
     @State private var shimmerOffset: CGFloat = -1.0
     @State private var logoEntered = false
+    @State private var subtitleBreathing = false
 
     var body: some View {
         VStack(spacing: 32) {
@@ -142,10 +169,14 @@ struct StageDefaultView: View {
             )
             .shadow(color: WelcomePalette.teal.opacity(0.4), radius: 16, y: 12)
             .offset(y: logoEntered ? 0 : -20)
-            .animation(.spring(response: 0.9, dampingFraction: 0.65).delay(0.2), value: logoEntered)
+            .scaleEffect(logoEntered ? 1 : 0.85)
+            .animation(.spring(response: 0.75, dampingFraction: 0.55).delay(0.2), value: logoEntered)
             .frame(height: 220)
             .welcomeStageVisualMotion()
-            .onAppear { logoEntered = true }
+            .onAppear {
+                logoEntered = true
+                subtitleBreathing = true
+            }
 
             VStack(spacing: 8) {
                 // 渐变闪光标语——匹配 HTML textShine 动画
@@ -160,6 +191,8 @@ struct StageDefaultView: View {
                     .lineSpacing(4)
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
+                    .opacity(subtitleBreathing ? 0.72 : 1.0)
+                    .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: subtitleBreathing)
             }
             .frame(maxWidth: 560)
             .welcomeStageTextMotion(delay: 0.05)
@@ -206,7 +239,8 @@ struct StageStartView: View {
                             Image(systemName: "plus")
                                 .font(.system(size: 36, weight: .semibold))
                                 .foregroundColor(.white)
-                                .shadow(color: .white.opacity(0.9), radius: 20)
+                                .shadow(color: .white.opacity(0.9), radius: isAnimating ? 28 : 8)
+                                .animation(.easeInOut(duration: 1.25).repeatForever(autoreverses: true), value: isAnimating)
                         )
                 }
                 .shadow(
