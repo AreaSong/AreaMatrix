@@ -48,6 +48,7 @@ struct WelcomeFeatureCard: View {
 
     @State private var hasEntered = false
     @State private var hoverPoint = UnitPoint.center
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         GeometryReader { proxy in
@@ -55,6 +56,12 @@ struct WelcomeFeatureCard: View {
                 // Stable Hit Area (Does not move or scale)
                 Color.clear
                     .contentShape(Rectangle())
+                    .focusable(true)
+                    .focused($isFocused)
+                    .focusEffectDisabled()
+                    .onChange(of: isFocused) { focused in
+                        onHoverChanged(focused)
+                    }
                     .onContinuousHover { phase in
                         updateHover(phase: phase, in: proxy.size)
                     }
@@ -63,6 +70,7 @@ struct WelcomeFeatureCard: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Image(systemName: icon)
                         .font(.system(size: 18, weight: .medium))
+                        .symbolEffect(.bounce, value: isHovered)
                         .foregroundColor(isHovered ? .white : accentColor)
                         .frame(width: 40, height: 40)
                         .background(isHovered ? accentColor : Color.primary.opacity(0.05))
@@ -91,6 +99,7 @@ struct WelcomeFeatureCard: View {
                 .overlay(cardTopAccent, alignment: .top)
                 .overlay(cardGlare)
                 .shadow(color: Color.black.opacity(isHovered ? 0.15 : 0), radius: 16, y: 8)
+                .offset(y: hasEntered ? 0 : 16)
                 .opacity(hasEntered ? 1 : 0)
                 .featureCardFocus(isHovered: isHovered, anyCardHovered: anyCardHovered)
                 .allowsHitTesting(false)
@@ -108,11 +117,16 @@ struct WelcomeFeatureCard: View {
     }
 
     private var cardTopAccent: some View {
-        Rectangle()
-            .fill(accentColor)
-            .frame(height: 3)
-            .opacity(isHovered ? 1 : 0.5)
-            .shadow(color: isHovered ? accentColor.opacity(0.8) : .clear, radius: 12)
+        GeometryReader { geo in
+            Rectangle()
+                .fill(accentColor)
+                .frame(width: isHovered ? geo.size.width : 40, height: 3)
+                .frame(maxWidth: .infinity)
+                .shadow(color: isHovered ? accentColor.opacity(0.8) : .clear, radius: 12)
+        }
+        .frame(height: 3)
+        .opacity(isHovered ? 1 : 0.5)
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isHovered)
     }
 
     private var cardGlare: some View {

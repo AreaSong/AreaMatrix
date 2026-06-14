@@ -130,6 +130,7 @@ struct WelcomeDropOverlayView: View {
 
 struct StageDefaultView: View {
     @State private var shimmerOffset: CGFloat = -1.0
+    @State private var logoEntered = false
 
     var body: some View {
         VStack(spacing: 32) {
@@ -140,8 +141,11 @@ struct StageDefaultView: View {
                 height: 100
             )
             .shadow(color: WelcomePalette.teal.opacity(0.4), radius: 16, y: 12)
+            .offset(y: logoEntered ? 0 : -20)
+            .animation(.spring(response: 0.9, dampingFraction: 0.65).delay(0.2), value: logoEntered)
             .frame(height: 220)
             .welcomeStageVisualMotion()
+            .onAppear { logoEntered = true }
 
             VStack(spacing: 8) {
                 // 渐变闪光标语——匹配 HTML textShine 动画
@@ -175,6 +179,11 @@ struct StageStartView: View {
                     .fill(Color.clear)
                     .frame(width: 200, height: 144)
                     .pulseAura(color: WelcomePalette.emeraldLight)
+
+                // 浮动文件图标
+                floatingDocIcon("doc.text.fill", size: 14, x: -100, y: -25, duration: 2.2, delay: 0)
+                floatingDocIcon("photo.fill", size: 12, x: 105, y: 15, duration: 2.6, delay: 0.5)
+                floatingDocIcon("tablecells.fill", size: 13, x: -85, y: 45, duration: 1.9, delay: 1.0)
 
                 // 大文件夹
                 ZStack {
@@ -214,10 +223,10 @@ struct StageStartView: View {
             .welcomeStageVisualMotion()
 
             VStack(spacing: 12) {
-                Text("立刻开启您的本地知识库")
+                Text("立刻开启你的本地知识库")
                     .font(.system(size: 22, weight: .semibold))
                     .welcomeStageTextMotion(delay: 0.05)
-                Text("放心，我们仅仅是为您指认的文件夹建立一层索引。您可以随时停止使用，没有任何锁定风险。点击即可瞬间接管！")
+                Text("放心，我们仅仅是为你指认的文件夹建立一层索引。你可以随时停止使用，没有任何锁定风险。点击即可瞬间接管！")
                     .font(.system(size: 15))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -230,6 +239,25 @@ struct StageStartView: View {
         }
         .onAppear { isAnimating = true }
     }
+
+    private func floatingDocIcon(
+        _ name: String, size: CGFloat,
+        x: CGFloat, y: CGFloat,
+        duration: Double, delay: Double
+    ) -> some View {
+        Image(systemName: name)
+            .font(.system(size: size))
+            .foregroundColor(WelcomePalette.tealBright.opacity(0.5))
+            .offset(x: x, y: y)
+            .offset(y: isAnimating ? -6 : 6)
+            .opacity(isAnimating ? 0.7 : 0.2)
+            .animation(
+                .easeInOut(duration: duration)
+                    .repeatForever(autoreverses: true)
+                    .delay(delay),
+                value: isAnimating
+            )
+    }
 }
 
 // MARK: - Mock Mini Window (共享组件)
@@ -241,6 +269,7 @@ struct MockMiniWindow<Content: View>: View {
     let height: CGFloat
     var useDarkBackground: Bool = false
     @ViewBuilder let content: () -> Content
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: 0) {
@@ -258,14 +287,14 @@ struct MockMiniWindow<Content: View>: View {
             }
             .padding(.horizontal, 8)
             .frame(height: 24)
-            .background(Color.black.opacity(0.15))
+            .background(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.12))
 
             content()
         }
         .frame(width: width, height: height)
         .background(useDarkBackground ? .ultraThinMaterial : .ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.1), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke((colorScheme == .dark ? Color.white : Color.black).opacity(0.1), lineWidth: 1))
         .shadow(color: Color.black.opacity(0.3), radius: 20, y: 10)
     }
 }

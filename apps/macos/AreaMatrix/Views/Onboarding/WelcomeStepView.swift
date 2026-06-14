@@ -29,6 +29,10 @@ struct WelcomeStepView: View {
     @State private var isDragTargeted = false
     @State private var hasLaunched = false
     @State private var ctaGlowing = false
+    @State private var isCtaHovered = false
+    @State private var isLearnMoreHovered = false
+    @State private var titlebarEntered = false
+    @State private var footerEntered = false
     @State private var mouseParallax = WelcomeParallax.zero
     @State private var scanTerminalLines = [
         WelcomeTerminalLine(text: "等待系统指令...", color: WelcomePalette.tealBright)
@@ -36,6 +40,8 @@ struct WelcomeStepView: View {
     @State private var scanCursorColor = WelcomePalette.tealBright
     @State private var scanTask: Task<Void, Never>?
     @State private var hoverResetTask: Task<Void, Never>?
+    @FocusState private var isLearnMoreFocused: Bool
+    @FocusState private var isChooseFolderFocused: Bool
     /// 用户手动切换的主题偏好：nil = 跟随系统
     @State private var themeOverride: ColorScheme?
 
@@ -62,6 +68,8 @@ struct WelcomeStepView: View {
             .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.8), value: hasLaunched)
             .onAppear {
                 hasLaunched = true
+                titlebarEntered = true
+                footerEntered = true
                 withAnimation(.easeInOut(duration: 1.25).repeatForever(autoreverses: true)) {
                     ctaGlowing = true
                 }
@@ -69,6 +77,16 @@ struct WelcomeStepView: View {
             .onDisappear {
                 scanTask?.cancel()
                 hoverResetTask?.cancel()
+            }
+            .focusable()
+            .focusEffectDisabled()
+            .onKeyPress(.leftArrow) {
+                navigateStage(direction: -1)
+                return .handled
+            }
+            .onKeyPress(.rightArrow) {
+                navigateStage(direction: 1)
+                return .handled
             }
     }
 
@@ -86,6 +104,7 @@ struct WelcomeStepView: View {
         .overlay(
             RoundedRectangle(cornerRadius: WelcomeWindowMetrics.cornerRadius, style: .continuous)
                 .stroke(windowBorderColor, lineWidth: 1)
+                .animation(.easeInOut(duration: 0.8), value: displayStage)
         )
         .shadow(
             color: .black.opacity(colorScheme == .dark ? 0.8 : 0.18),
@@ -145,7 +164,21 @@ struct WelcomeStepView: View {
     }
 
     private var windowBorderColor: Color {
-        colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06)
+        let accent = accentForStage(displayStage)
+        return colorScheme == .dark
+            ? accent.opacity(0.2)
+            : accent.opacity(0.12)
+    }
+
+    private func accentForStage(_ stage: WelcomeStage) -> Color {
+        switch stage {
+        case .default: return WelcomePalette.teal
+        case .feat1:   return WelcomePalette.tealBright
+        case .feat2:   return WelcomePalette.gold
+        case .feat3:   return WelcomePalette.coral
+        case .feat4:   return WelcomePalette.purple
+        case .feat5:   return WelcomePalette.emerald
+        }
     }
 }
 
@@ -155,6 +188,9 @@ private extension WelcomeStepView {
             Text("AreaMatrix")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.tertiary)
+                .opacity(titlebarEntered ? 1 : 0)
+                .offset(y: titlebarEntered ? 0 : -8)
+                .animation(.easeOut(duration: 0.5).delay(0.3), value: titlebarEntered)
 
             HStack {
                 Spacer()
@@ -171,6 +207,7 @@ private extension WelcomeStepView {
                         .font(.system(size: 12))
                         .foregroundStyle(.tertiary)
                         .frame(width: 28, height: 28)
+                        .contentTransition(.symbolEffect(.replace))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -183,6 +220,8 @@ private extension WelcomeStepView {
                 }
             }
             .padding(.trailing, 16)
+            .opacity(titlebarEntered ? 1 : 0)
+            .animation(.easeOut(duration: 0.5).delay(0.4), value: titlebarEntered)
         }
         .frame(height: 48)
     }
@@ -224,22 +263,46 @@ private extension WelcomeStepView {
                     HStack(spacing: 6) {
                         Image(systemName: "questionmark.circle")
                         Text("了解 AreaMatrix 如何工作")
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 10, weight: .semibold))
+                            .opacity(0.6)
+                            .offset(x: isLearnMoreHovered ? 2 : 0, y: isLearnMoreHovered ? -2 : 0)
                     }
                     .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(isLearnMoreHovered ? .primary : .secondary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color.primary.opacity(isLearnMoreHovered ? 0.06 : 0))
+                    )
+                    .animation(.easeOut(duration: 0.2), value: isLearnMoreHovered)
                     .contentShape(Rectangle())
                 }
             )
             .buttonStyle(.plain)
-            .onHover { hovering in
-                if hovering {
+            .focused($isLearnMoreFocused)
+            .focusEffectDisabled()
+            .onChange(of: isLearnMoreFocused) { focused in
+                if focused {
                     activateHoverStage(.feat4)
-                } else {
+                } else if hoverStage == .feat4 {
                     scheduleHoverReset(for: .feat4)
                 }
             }
+            .onHover { hovering in
+                isLearnMoreHovered = hovering
+                if hovering {
+                    NSCursor.pointingHand.push()
+                    activateHoverStage(.feat4)
+                } else {
+                    NSCursor.pop()
+                    scheduleHoverReset(for: .feat4)
+                }
+            }
+            .opacity(footerEntered ? 1 : 0)
+            .offset(y: footerEntered ? 0 : 12)
+            .animation(.easeOut(duration: 0.5).delay(0.5), value: footerEntered)
 
             Spacer()
 
@@ -265,20 +328,38 @@ private extension WelcomeStepView {
                     )
                     .cornerRadius(8)
                     .shadow(
-                        color: WelcomePalette.teal.opacity(ctaGlowing ? 0.6 : 0.3),
-                        radius: ctaGlowing ? 16 : 6,
-                        y: 4
+                        color: WelcomePalette.teal.opacity(isCtaHovered ? 0.7 : (ctaGlowing ? 0.6 : 0.3)),
+                        radius: isCtaHovered ? 20 : (ctaGlowing ? 16 : 6),
+                        y: isCtaHovered ? 6 : 4
                     )
+                    .scaleEffect(isCtaHovered ? 1.04 : 1.0)
+                    .offset(y: isCtaHovered ? -2 : 0)
+                    .animation(.easeOut(duration: 0.2), value: isCtaHovered)
                 }
             )
             .buttonStyle(.plain)
-            .onHover { hovering in
-                if hovering {
+            .focused($isChooseFolderFocused)
+            .focusEffectDisabled()
+            .onChange(of: isChooseFolderFocused) { focused in
+                if focused {
                     activateHoverStage(.feat5)
-                } else {
+                } else if hoverStage == .feat5 {
                     scheduleHoverReset(for: .feat5)
                 }
             }
+            .onHover { hovering in
+                isCtaHovered = hovering
+                if hovering {
+                    NSCursor.pointingHand.push()
+                    activateHoverStage(.feat5)
+                } else {
+                    NSCursor.pop()
+                    scheduleHoverReset(for: .feat5)
+                }
+            }
+            .opacity(footerEntered ? 1 : 0)
+            .offset(y: footerEntered ? 0 : 12)
+            .animation(.easeOut(duration: 0.5).delay(0.6), value: footerEntered)
         }
         .padding(.horizontal, 40)
         .padding(.top, 20)
@@ -319,6 +400,17 @@ private extension WelcomeStepView {
             hoverStage = nil
         }
     }
+
+    private func navigateStage(direction: Int) {
+        let stages = WelcomeStage.allCases
+        let current = stages.firstIndex(of: activeStage) ?? 0
+        let next = max(0, min(stages.count - 1, current + direction))
+        guard stages[next] != activeStage else { return }
+        withAnimation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.8)) {
+            activeStage = stages[next]
+        }
+    }
+
 
     private func updateParallax(from phase: HoverPhase, in size: CGSize) {
         switch phase {

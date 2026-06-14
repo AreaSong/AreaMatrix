@@ -18,6 +18,7 @@ struct WelcomeAmbientBackground: View {
     let stage: WelcomeStage
     let parallax: WelcomeParallax
     @Environment(\.colorScheme) private var colorScheme
+    @State private var blobBreathing = false
 
     var body: some View {
         ZStack {
@@ -37,6 +38,8 @@ struct WelcomeAmbientBackground: View {
                         transform: blob1Transform,
                         color: blobColor(for: stage, index: 1, isDark: colorScheme == .dark)
                     )
+                    .offset(x: blobBreathing ? 10 : -10, y: blobBreathing ? -8 : 8)
+                    .animation(.easeInOut(duration: 7).repeatForever(autoreverses: true), value: blobBreathing)
 
                     // HTML g2: 600x600, bottom: -200px, right: -100px
                     BlobView(
@@ -45,6 +48,8 @@ struct WelcomeAmbientBackground: View {
                         transform: blob2Transform,
                         color: blobColor(for: stage, index: 2, isDark: colorScheme == .dark)
                     )
+                    .offset(x: blobBreathing ? -12 : 12, y: blobBreathing ? 6 : -6)
+                    .animation(.easeInOut(duration: 9).repeatForever(autoreverses: true).delay(1), value: blobBreathing)
 
                     // HTML g3: 400x400, top: 20%, left: 30%
                     BlobView(
@@ -53,19 +58,34 @@ struct WelcomeAmbientBackground: View {
                         transform: blob3Transform,
                         color: blobColor(for: stage, index: 3, isDark: colorScheme == .dark)
                     )
+                    .offset(x: blobBreathing ? 6 : -6, y: blobBreathing ? 10 : -10)
+                    .animation(.easeInOut(duration: 8).repeatForever(autoreverses: true).delay(2), value: blobBreathing)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .onAppear { blobBreathing = true }
                 .offset(
                     x: parallax.horizontal * -20,
                     y: parallax.vertical * -20
                 )
-                // HTML: .g-blob filter: blur(80px)
-                .blur(radius: 80)
-                .blendMode(colorScheme == .dark ? .screen : .normal)
-                .opacity(colorScheme == .dark ? 0.9 : 0.6)
+                // 深色保持大模糊营造发光感；浅色收紧让 multiply 色调更集中
+                .blur(radius: colorScheme == .dark ? 80 : 65)
+                .blendMode(colorScheme == .dark ? .screen : .multiply)
+                .opacity(colorScheme == .dark ? 0.9 : 0.85)
                 .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.8), value: stage)
                 .animation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.2), value: parallax)
             }
+
+            // 边缘暗角，引导视觉聚焦中心
+            RadialGradient(
+                colors: [
+                    .clear,
+                    Color.black.opacity(colorScheme == .dark ? 0.25 : 0.04)
+                ],
+                center: .center,
+                startRadius: 250,
+                endRadius: 550
+            )
+            .allowsHitTesting(false)
         }
         // HTML: transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1)
         .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.8), value: colorScheme)
@@ -79,14 +99,14 @@ struct WelcomeAmbientBackground: View {
             ]
         }
         return [
-            Color.white,
-            Color(red: 242 / 255, green: 247 / 255, blue: 245 / 255)
+            Color(red: 247 / 255, green: 251 / 255, blue: 250 / 255),
+            Color(red: 238 / 255, green: 245 / 255, blue: 243 / 255)
         ]
     }
 
     private var blob1Transform: BlobTransform {
         switch stage {
-        case .default: return BlobTransform(offset: CGSize(width: 340, height: 147), scale: 0.8)
+        case .default: return BlobTransform(offset: CGSize(width: 0, height: 0), scale: 0.5)
         case .feat1:   return BlobTransform(offset: CGSize(width: 100, height: 75), scale: 1.0)
         case .feat2:   return BlobTransform(offset: CGSize(width: 200, height: 0), scale: 1.0)
         case .feat3:   return BlobTransform(offset: CGSize(width: 50, height: 150), scale: 1.0)
@@ -97,7 +117,7 @@ struct WelcomeAmbientBackground: View {
 
     private var blob2Transform: BlobTransform {
         switch stage {
-        case .default: return BlobTransform(offset: CGSize(width: -290, height: -363), scale: 0.6)
+        case .default: return BlobTransform(offset: CGSize(width: 20, height: -20), scale: 0.4)
         case .feat1:   return BlobTransform(offset: CGSize(width: -60, height: -60), scale: 1.0)
         case .feat2:   return BlobTransform(offset: CGSize(width: -180, height: 60), scale: 1.0)
         case .feat3:   return BlobTransform(offset: CGSize(width: -120, height: -180), scale: 1.0)
@@ -108,7 +128,7 @@ struct WelcomeAmbientBackground: View {
 
     private var blob3Transform: BlobTransform {
         switch stage {
-        case .default: return BlobTransform(offset: CGSize(width: -102, height: -55), scale: 0.7)
+        case .default: return BlobTransform(offset: CGSize(width: -20, height: 20), scale: 0.6)
         case .feat1:   return BlobTransform(offset: CGSize(width: -120, height: 120), scale: 1.0)
         case .feat2:   return BlobTransform(offset: CGSize(width: -40, height: -80), scale: 1.0)
         case .feat3:   return BlobTransform(offset: CGSize(width: 120, height: -40), scale: 1.0)
@@ -118,7 +138,7 @@ struct WelcomeAmbientBackground: View {
     }
 
     private func blobColor(for stage: WelcomeStage, index: Int, isDark: Bool) -> Color {
-        let op = isDark ? 1.0 : 0.6
+        let op = isDark ? 1.0 : 1.5
         switch (stage, index) {
         case (.default, 1): return Color(red: 21/255, green: 180/255, blue: 159/255).opacity(0.35 * op)
         case (.default, 2): return Color(red: 241/255, green: 184/255, blue: 78/255).opacity(0.25 * op)

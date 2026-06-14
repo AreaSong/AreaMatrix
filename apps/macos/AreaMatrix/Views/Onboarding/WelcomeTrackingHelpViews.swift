@@ -164,6 +164,13 @@ struct StageTrackingView: View {
                 .shadow(color: WelcomePalette.coral, radius: 8)
                 .offset(x: particleFlying ? 25 : -25)
                 .opacity(particleFlying ? 0 : 1)
+            // 回传粒子（双向同步）
+            Circle()
+                .fill(WelcomePalette.tealBright).frame(width: 5, height: 5)
+                .shadow(color: WelcomePalette.tealBright, radius: 6)
+                .offset(x: particleFlying ? -25 : 25)
+                .opacity(particleFlying ? 0 : 1)
+                .animation(.easeInOut(duration: 2).repeatForever(autoreverses: false).delay(1), value: particleFlying)
             Circle()
                 .fill(.ultraThinMaterial).frame(width: 30, height: 30)
                 .overlay(Circle().stroke(WelcomePalette.coral.opacity(0.5)))
@@ -184,6 +191,7 @@ struct StageHelpView: View {
     @State private var isAnimating = false
     @State private var pulseIn = false
     @State private var pulseOut = false
+    @State private var dashPhase: CGFloat = 0
     @State private var fsEventRows: [WelcomeFSEventRow] = []
     @State private var fsEventTask: Task<Void, Never>?
 
@@ -208,6 +216,7 @@ struct StageHelpView: View {
             isAnimating = true
             withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) { pulseIn = true }
             withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false).delay(0.4)) { pulseOut = true }
+            withAnimation(.linear(duration: 1.0).repeatForever(autoreverses: false)) { dashPhase = 8 }
         }
         .onDisappear {
             fsEventTask?.cancel()
@@ -275,13 +284,13 @@ struct StageHelpView: View {
     private var circuitPaths: some View {
         ZStack {
             Path { path in path.move(to: CGPoint(x: 195, y: 85)); path.addLine(to: CGPoint(x: 260, y: 100)) }
-                .stroke(style: StrokeStyle(lineWidth: 2, dash: [4]))
+                .stroke(style: StrokeStyle(lineWidth: 2, dash: [4], dashPhase: dashPhase))
                 .foregroundColor(WelcomePalette.purple.opacity(0.3))
             Path { path in path.move(to: CGPoint(x: 195, y: 135)); path.addLine(to: CGPoint(x: 260, y: 120)) }
-                .stroke(style: StrokeStyle(lineWidth: 2, dash: [4]))
+                .stroke(style: StrokeStyle(lineWidth: 2, dash: [4], dashPhase: dashPhase))
                 .foregroundColor(WelcomePalette.purple.opacity(0.3))
             Path { path in path.move(to: CGPoint(x: 345, y: 110)); path.addLine(to: CGPoint(x: 430, y: 110)) }
-                .stroke(style: StrokeStyle(lineWidth: 2, dash: [4]))
+                .stroke(style: StrokeStyle(lineWidth: 2, dash: [4], dashPhase: dashPhase))
                 .foregroundColor(WelcomePalette.emeraldLight.opacity(0.3))
         }
         .frame(width: 600, height: 220)

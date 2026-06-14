@@ -4,40 +4,15 @@ struct WelcomeStageSwitcher: View {
     let stage: WelcomeStage
     let parallax: WelcomeParallax
 
-    @State private var currentStage: WelcomeStage = .default
-    @State private var outgoingStage: WelcomeStage?
-    @State private var incomingVisible = true
-    @State private var outgoingVisible = false
-    @State private var transitionToken = UUID()
-    @State private var transitionTask: Task<Void, Never>?
-
     var body: some View {
         ZStack {
-            if let outgoingStage {
-                stageContent(outgoingStage)
-                    .id(WelcomeStageLayerID(stage: outgoingStage, token: transitionToken, role: .outgoing))
-                    .modifier(WelcomeStageShellMotion(mode: .exit, isVisible: outgoingVisible))
-                    .environment(\.welcomeStagePhase, .exit(isVisible: outgoingVisible))
-                    .environment(\.welcomeStageParallax, .zero)
-                    .zIndex(1)
+            ForEach(WelcomeStage.allCases, id: \.self) { s in
+                stageContent(s)
+                    .allowsHitTesting(s == stage)
+                    .environment(\.welcomeStagePhase, s == stage ? .enter(isVisible: true) : .exit(isVisible: false))
+                    .environment(\.welcomeStageParallax, s == stage ? parallax : .zero)
+                    .zIndex(s == stage ? 2 : 1)
             }
-
-            stageContent(currentStage)
-                .id(WelcomeStageLayerID(stage: currentStage, token: transitionToken, role: .incoming))
-                .modifier(WelcomeStageShellMotion(mode: .enter, isVisible: incomingVisible))
-                .environment(\.welcomeStagePhase, .enter(isVisible: incomingVisible))
-                .environment(\.welcomeStageParallax, incomingVisible ? parallax : .zero)
-                .zIndex(2)
-        }
-        .onAppear {
-            currentStage = stage
-            incomingVisible = true
-        }
-        .onChange(of: stage) { nextStage in
-            switchStage(to: nextStage)
-        }
-        .onDisappear {
-            transitionTask?.cancel()
         }
     }
 
@@ -51,68 +26,6 @@ struct WelcomeStageSwitcher: View {
         case .feat4: StageHelpView()
         case .feat5: StageStartView()
         }
-    }
-
-    private func switchStage(to nextStage: WelcomeStage) {
-        guard nextStage != currentStage else { return }
-        transitionTask?.cancel()
-
-        let previousStage = currentStage
-        let nextToken = UUID()
-        var transaction = Transaction()
-        transaction.disablesAnimations = true
-
-        withTransaction(transaction) {
-            outgoingStage = previousStage
-            currentStage = nextStage
-            transitionToken = nextToken
-            incomingVisible = false
-            outgoingVisible = true
-        }
-
-        DispatchQueue.main.async {
-            guard transitionToken == nextToken else { return }
-
-            withAnimation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.6)) {
-                incomingVisible = true
-            }
-            withAnimation(.easeOut(duration: 0.4)) {
-                outgoingVisible = false
-            }
-        }
-
-        transitionTask = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(600))
-            guard !Task.isCancelled, transitionToken == nextToken else { return }
-            outgoingStage = nil
-        }
-    }
-}
-
-private struct WelcomeStageLayerID: Hashable {
-    let stage: WelcomeStage
-    let token: UUID
-    let role: WelcomeStageLayerRole
-}
-
-private enum WelcomeStageLayerRole: Hashable {
-    case incoming
-    case outgoing
-}
-
-private enum WelcomeStageMotionMode {
-    case enter
-    case exit
-}
-
-private struct WelcomeStageShellMotion: ViewModifier {
-    let mode: WelcomeStageMotionMode
-    let isVisible: Bool
-
-    func body(content: Content) -> some View {
-        content
-            .opacity(isVisible ? 1 : 0)
-            .allowsHitTesting(mode == .enter && isVisible)
     }
 }
 
@@ -173,23 +86,20 @@ struct WelcomeStageVisualMotion: ViewModifier {
 
     private var verticalOffset: CGFloat {
         switch stagePhase {
-        case .enter: return 20
-        case .exit: return -16
+        case .enter: return 12  // 从下方轻微滑入
+        case .exit: return -8   // 向上方轻微滑出
         }
     }
 
     private var scale: CGFloat {
         switch stagePhase {
-        case .enter: return 0.96
-        case .exit: return 0.98
+        case .enter: return 0.94 // Start smaller, expand to 1.0
+        case .exit: return 1.06 // Expand outwards while fading
         }
     }
 
     private var animation: Animation {
-        switch stagePhase {
-        case .enter: return .timingCurve(0.16, 1, 0.3, 1, duration: 0.6)
-        case .exit: return .easeOut(duration: 0.4)
-        }
+        .timingCurve(0.16, 1, 0.3, 1, duration: 0.6)
     }
 }
 
@@ -200,21 +110,21 @@ struct WelcomeStageTextMotion: ViewModifier {
     func body(content: Content) -> some View {
         content
             .opacity(stagePhase.isVisible ? 1 : 0)
-            .offset(y: stagePhase.isVisible ? 0 : verticalOffset)
+            .scaleEffect(stagePhase.isVisible ? 1 : scale)
             .animation(animation, value: stagePhase)
     }
 
-    private var verticalOffset: CGFloat {
+    private var scale: CGFloat {
         switch stagePhase {
-        case .enter: return 20
-        case .exit: return -16
+        case .enter: return 0.97 // Text starts slightly smaller
+        case .exit: return 1.03 // Text expands slightly outwards
         }
     }
 
     private var animation: Animation {
         switch stagePhase {
         case .enter: return .timingCurve(0.16, 1, 0.3, 1, duration: 0.6).delay(delay)
-        case .exit: return .easeOut(duration: 0.4).delay(delay)
+        case .exit: return .timingCurve(0.16, 1, 0.3, 1, duration: 0.6)
         }
     }
 }

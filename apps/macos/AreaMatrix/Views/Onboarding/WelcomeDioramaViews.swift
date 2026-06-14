@@ -5,6 +5,7 @@ import SwiftUI
 struct StageClassifyView: View {
     @State private var phase = 0
     @State private var timerTask: Task<Void, Never>?
+    @State private var scanProgress: CGFloat = 0
 
     var body: some View {
         VStack(spacing: 32) {
@@ -17,6 +18,12 @@ struct StageClassifyView: View {
         }
         .onAppear { startCycle() }
         .onDisappear { timerTask?.cancel() }
+        .onChange(of: phase) { _, newPhase in
+            if newPhase == 2 {
+                scanProgress = 0
+                withAnimation(.linear(duration: 1.0)) { scanProgress = 1 }
+            }
+        }
     }
 
     private func startCycle() {
@@ -93,7 +100,8 @@ struct StageClassifyView: View {
                             ))
                             .frame(width: 8)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .transition(.move(edge: .leading))
+                            .offset(x: scanProgress * 280)
+                            .transition(.opacity)
                     }
                 }
                 .frame(height: 64).clipped()
@@ -192,7 +200,14 @@ struct StageSecurityView: View {
                 .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isAnimating)
             Circle().fill(.ultraThinMaterial).frame(width: 28, height: 28)
                 .overlay(Circle().stroke(WelcomePalette.gold, lineWidth: 1))
-                .overlay(Image(systemName: "lock.fill").font(.system(size: 12)).foregroundColor(WelcomePalette.gold))
+                .overlay(
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(WelcomePalette.gold)
+                        .symbolEffect(.pulse, value: isAnimating)
+                )
+                .scaleEffect(isAnimating ? 1.08 : 1.0)
+                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(0.3), value: isAnimating)
         }
     }
 
