@@ -20,6 +20,7 @@ struct StageTrackingView: View {
     var body: some View {
         VStack(spacing: 32) {
             trackingDiorama
+                .welcomeStageVisualMotion()
             DioramaStageText(
                 title: "全局概览，时间线级追溯",
                 description: "自动生成专属的 Markdown 资料库大纲。您的每一次挪动、修改，哪怕是在系统原生的 Finder 中操作，都会被精准记录并实时回流。"
@@ -196,6 +197,7 @@ struct StageHelpView: View {
     var body: some View {
         VStack(spacing: 32) {
             helpDiorama
+                .welcomeStageVisualMotion()
             DioramaStageText(
                 title: "工作流与算法揭秘",
                 description: "一分钟了解 AreaMatrix 如何通过轻量级的本地索引引擎和 FSEvents 监听，帮助您彻底终结文件整理的焦虑感。"

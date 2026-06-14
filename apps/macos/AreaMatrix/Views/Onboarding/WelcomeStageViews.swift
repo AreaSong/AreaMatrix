@@ -140,35 +140,25 @@ struct StageDefaultView: View {
                 height: 100
             )
             .shadow(color: WelcomePalette.teal.opacity(0.4), radius: 16, y: 12)
+            .frame(height: 220)
+            .welcomeStageVisualMotion()
 
             VStack(spacing: 8) {
                 // 渐变闪光标语——匹配 HTML textShine 动画
                 Text("将散乱的文件，化作知识枢纽。")
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(
-                        LinearGradient(
-                            stops: [
-                                .init(color: .primary, location: max(0, shimmerOffset)),
-                                .init(color: WelcomePalette.tealBright, location: min(1, shimmerOffset + 0.5)),
-                                .init(color: .primary, location: min(1, shimmerOffset + 1.0))
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                    .textShimmer(highlight: WelcomePalette.tealBright)
 
                 Text("无需搬运，只需指认一个本地文件夹。AreaMatrix 会为你建立结构清晰、无感同步的私人资料库。")
                     .font(.system(size: 15))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
+                    .lineLimit(nil)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: 560)
-        }
-        .onAppear {
-            withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
-                shimmerOffset = 1.0
-            }
+            .welcomeStageTextMotion(delay: 0.05)
         }
     }
 }
@@ -181,27 +171,10 @@ struct StageStartView: View {
     var body: some View {
         VStack(spacing: 32) {
             ZStack {
-                // 扩散光环 1
                 RoundedRectangle(cornerRadius: 28)
-                    .stroke(WelcomePalette.emeraldLight.opacity(0.6), lineWidth: 2)
+                    .fill(Color.clear)
                     .frame(width: 200, height: 144)
-                    .scaleEffect(isAnimating ? 1.7 : 0.9)
-                    .opacity(isAnimating ? 0 : 1)
-                    .animation(
-                        .easeOut(duration: 2.5).repeatForever(autoreverses: false),
-                        value: isAnimating
-                    )
-
-                // 扩散光环 2（延迟）
-                RoundedRectangle(cornerRadius: 28)
-                    .stroke(WelcomePalette.emeraldLight.opacity(0.3), lineWidth: 1)
-                    .frame(width: 220, height: 164)
-                    .scaleEffect(isAnimating ? 1.7 : 0.9)
-                    .opacity(isAnimating ? 0 : 1)
-                    .animation(
-                        .easeOut(duration: 2.5).repeatForever(autoreverses: false).delay(1),
-                        value: isAnimating
-                    )
+                    .pulseAura(color: WelcomePalette.emeraldLight)
 
                 // 大文件夹
                 ZStack {
@@ -238,14 +211,20 @@ struct StageStartView: View {
                 )
             }
             .frame(height: 220)
+            .welcomeStageVisualMotion()
 
             VStack(spacing: 12) {
                 Text("立刻开启您的本地知识库")
                     .font(.system(size: 22, weight: .semibold))
+                    .welcomeStageTextMotion(delay: 0.05)
                 Text("放心，我们仅仅是为您指认的文件夹建立一层索引。您可以随时停止使用，没有任何锁定风险。点击即可瞬间接管！")
                     .font(.system(size: 15))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+                    .lineSpacing(4)
+                    .lineLimit(nil)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .welcomeStageTextMotion(delay: 0.1)
             }
             .frame(maxWidth: 560)
         }
@@ -297,30 +276,21 @@ struct MockMiniWindow<Content: View>: View {
 struct DioramaStageText: View {
     let title: String
     let description: String
-    @State private var titleVisible = false
-    @State private var descriptionVisible = false
 
     var body: some View {
         VStack(spacing: 12) {
             Text(title)
                 .font(.system(size: 22, weight: .semibold))
-                .opacity(titleVisible ? 1 : 0)
-                .offset(y: titleVisible ? 0 : 20)
+                .welcomeStageTextMotion(delay: 0.05)
             Text(description)
                 .font(.system(size: 15))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .opacity(descriptionVisible ? 1 : 0)
-                .offset(y: descriptionVisible ? 0 : 20)
+                .lineSpacing(4)
+                .lineLimit(nil)
+                .fixedSize(horizontal: false, vertical: true)
+                .welcomeStageTextMotion(delay: 0.1)
         }
         .frame(maxWidth: 560)
-        .onAppear {
-            withAnimation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.6).delay(0.05)) {
-                titleVisible = true
-            }
-            withAnimation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.6).delay(0.1)) {
-                descriptionVisible = true
-            }
-        }
     }
 }

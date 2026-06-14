@@ -9,6 +9,11 @@ enum WelcomeStage: Int, CaseIterable {
     case feat5
 }
 
+private struct BlobTransform: Equatable {
+    let offset: CGSize
+    let scale: CGFloat
+}
+
 struct WelcomeAmbientBackground: View {
     let stage: WelcomeStage
     let parallax: WelcomeParallax
@@ -23,36 +28,46 @@ struct WelcomeAmbientBackground: View {
             )
             .ignoresSafeArea()
 
-            // Blobs
             GeometryReader { proxy in
                 ZStack {
+                    // HTML g1: 500x500, top: -100px, left: -100px
                     BlobView(
-                        color: blobColor(for: stage, index: 1, isDark: colorScheme == .dark),
-                        offset: blobOffset(for: stage, index: 1, in: proxy.size)
+                        size: 500,
+                        baseOffset: CGSize(width: -280, height: -170),
+                        transform: blob1Transform,
+                        color: blobColor(for: stage, index: 1, isDark: colorScheme == .dark)
                     )
 
+                    // HTML g2: 600x600, bottom: -200px, right: -100px
                     BlobView(
-                        color: blobColor(for: stage, index: 2, isDark: colorScheme == .dark),
-                        offset: blobOffset(for: stage, index: 2, in: proxy.size)
+                        size: 600,
+                        baseOffset: CGSize(width: 230, height: 220),
+                        transform: blob2Transform,
+                        color: blobColor(for: stage, index: 2, isDark: colorScheme == .dark)
                     )
 
+                    // HTML g3: 400x400, top: 20%, left: 30%
                     BlobView(
-                        color: blobColor(for: stage, index: 3, isDark: colorScheme == .dark),
-                        offset: blobOffset(for: stage, index: 3, in: proxy.size)
+                        size: 400,
+                        baseOffset: CGSize(width: 28, height: 8),
+                        transform: blob3Transform,
+                        color: blobColor(for: stage, index: 3, isDark: colorScheme == .dark)
                     )
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .offset(
                     x: parallax.horizontal * -20,
                     y: parallax.vertical * -20
                 )
+                // HTML: .g-blob filter: blur(80px)
                 .blur(radius: 80)
-                // In dark mode, plusLighter or screen creates a nice glowing blend effect
                 .blendMode(colorScheme == .dark ? .screen : .normal)
-                .opacity(0.8)
+                .opacity(colorScheme == .dark ? 0.9 : 0.6)
+                .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.8), value: stage)
                 .animation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.2), value: parallax)
             }
         }
-        .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.8), value: stage)
+        // HTML: transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1)
         .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.8), value: colorScheme)
     }
 
@@ -63,115 +78,89 @@ struct WelcomeAmbientBackground: View {
                 Color(red: 7 / 255, green: 21 / 255, blue: 19 / 255)
             ]
         }
-
         return [
             Color.white,
             Color(red: 242 / 255, green: 247 / 255, blue: 245 / 255)
         ]
     }
 
-    private func blobColor(for stage: WelcomeStage, index: Int, isDark: Bool) -> Color {
-        let opacityMultiplier = isDark ? 1.0 : 1.2
-        let colors = blobColors(for: stage, opacityMultiplier: opacityMultiplier)
-        return colors[index - 1]
-    }
-
-    private func blobColors(for stage: WelcomeStage, opacityMultiplier: Double) -> [Color] {
+    private var blob1Transform: BlobTransform {
         switch stage {
-        case .default:
-            [
-                WelcomePalette.teal.opacity(0.35 * opacityMultiplier),
-                WelcomePalette.gold.opacity(0.25 * opacityMultiplier),
-                WelcomePalette.teal.opacity(0.15 * opacityMultiplier)
-            ]
-        case .feat1:
-            [
-                WelcomePalette.teal.opacity(0.5 * opacityMultiplier),
-                Color(red: 14 / 255, green: 165 / 255, blue: 233 / 255).opacity(0.3),
-                WelcomePalette.emerald.opacity(0.3 * opacityMultiplier)
-            ]
-        case .feat2:
-            [
-                Color(red: 1, green: 179 / 255, blue: 64 / 255).opacity(0.45),
-                Color(red: 251 / 255, green: 146 / 255, blue: 60 / 255).opacity(0.35),
-                Color(red: 250 / 255, green: 204 / 255, blue: 21 / 255).opacity(0.25 * opacityMultiplier)
-            ]
-        case .feat3:
-            [
-                Color(red: 1, green: 107 / 255, blue: 107 / 255).opacity(0.45),
-                Color(red: 244 / 255, green: 63 / 255, blue: 94 / 255).opacity(0.35),
-                Color(red: 251 / 255, green: 113 / 255, blue: 133 / 255).opacity(0.25 * opacityMultiplier)
-            ]
-        case .feat4:
-            [
-                WelcomePalette.purpleLight.opacity(0.35 * opacityMultiplier),
-                Color(red: 99 / 255, green: 102 / 255, blue: 241 / 255).opacity(0.25),
-                WelcomePalette.purple.opacity(0.25 * opacityMultiplier)
-            ]
-        case .feat5:
-            [
-                WelcomePalette.emerald.opacity(0.4 * opacityMultiplier),
-                WelcomePalette.teal.opacity(0.3 * opacityMultiplier),
-                WelcomePalette.emeraldLight.opacity(0.2 * opacityMultiplier)
-            ]
+        case .default: return BlobTransform(offset: CGSize(width: 340, height: 147), scale: 0.8)
+        case .feat1:   return BlobTransform(offset: CGSize(width: 100, height: 75), scale: 1.0)
+        case .feat2:   return BlobTransform(offset: CGSize(width: 200, height: 0), scale: 1.0)
+        case .feat3:   return BlobTransform(offset: CGSize(width: 50, height: 150), scale: 1.0)
+        case .feat4:   return BlobTransform(offset: CGSize(width: -100, height: 150), scale: 1.0)
+        case .feat5:   return BlobTransform(offset: CGSize(width: -50, height: 100), scale: 1.0)
         }
     }
 
-    private func blobOffset(for stage: WelcomeStage, index: Int, in _: CGSize) -> CGSize {
-        let offsets = blobOffsets(for: stage)
-        return offsets[index - 1]
+    private var blob2Transform: BlobTransform {
+        switch stage {
+        case .default: return BlobTransform(offset: CGSize(width: -290, height: -363), scale: 0.6)
+        case .feat1:   return BlobTransform(offset: CGSize(width: -60, height: -60), scale: 1.0)
+        case .feat2:   return BlobTransform(offset: CGSize(width: -180, height: 60), scale: 1.0)
+        case .feat3:   return BlobTransform(offset: CGSize(width: -120, height: -180), scale: 1.0)
+        case .feat4:   return BlobTransform(offset: CGSize(width: 180, height: -240), scale: 1.0)
+        case .feat5:   return BlobTransform(offset: CGSize(width: 120, height: -180), scale: 1.0)
+        }
     }
 
-    private func blobOffsets(for stage: WelcomeStage) -> [CGSize] {
+    private var blob3Transform: BlobTransform {
         switch stage {
-        case .default:
-            [
-                CGSize(width: 150, height: -50),
-                CGSize(width: -200, height: 100),
-                CGSize(width: -50, height: -20)
-            ]
-        case .feat1:
-            [
-                CGSize(width: 100, height: -80),
-                CGSize(width: -50, height: -50),
-                CGSize(width: -150, height: 100)
-            ]
-        case .feat2:
-            [
-                CGSize(width: 200, height: 0),
-                CGSize(width: -150, height: 50),
-                CGSize(width: -50, height: -100)
-            ]
-        case .feat3:
-            [
-                CGSize(width: 50, height: 100),
-                CGSize(width: -100, height: -150),
-                CGSize(width: 150, height: -50)
-            ]
-        case .feat4:
-            [
-                CGSize(width: -100, height: 100),
-                CGSize(width: 150, height: -150),
-                CGSize(width: 50, height: 80)
-            ]
-        case .feat5:
-            [
-                CGSize(width: -50, height: 80),
-                CGSize(width: 100, height: -100),
-                CGSize(width: 50, height: 40)
-            ]
+        case .default: return BlobTransform(offset: CGSize(width: -102, height: -55), scale: 0.7)
+        case .feat1:   return BlobTransform(offset: CGSize(width: -120, height: 120), scale: 1.0)
+        case .feat2:   return BlobTransform(offset: CGSize(width: -40, height: -80), scale: 1.0)
+        case .feat3:   return BlobTransform(offset: CGSize(width: 120, height: -40), scale: 1.0)
+        case .feat4:   return BlobTransform(offset: CGSize(width: 40, height: 80), scale: 1.0)
+        case .feat5:   return BlobTransform(offset: CGSize(width: 40, height: 40), scale: 1.0)
+        }
+    }
+
+    private func blobColor(for stage: WelcomeStage, index: Int, isDark: Bool) -> Color {
+        let op = isDark ? 1.0 : 0.6
+        switch (stage, index) {
+        case (.default, 1): return Color(red: 21/255, green: 180/255, blue: 159/255).opacity(0.35 * op)
+        case (.default, 2): return Color(red: 241/255, green: 184/255, blue: 78/255).opacity(0.25 * op)
+        case (.default, 3): return Color(red: 21/255, green: 180/255, blue: 159/255).opacity(0.15 * op)
+            
+        case (.feat1, 1): return Color(red: 21/255, green: 180/255, blue: 159/255).opacity(0.5 * op)
+        case (.feat1, 2): return Color(red: 14/255, green: 165/255, blue: 233/255).opacity(0.3 * op)
+        case (.feat1, 3): return Color(red: 16/255, green: 185/255, blue: 129/255).opacity(0.3 * op)
+            
+        case (.feat2, 1): return Color(red: 255/255, green: 179/255, blue: 64/255).opacity(0.45 * op)
+        case (.feat2, 2): return Color(red: 251/255, green: 146/255, blue: 60/255).opacity(0.35 * op)
+        case (.feat2, 3): return Color(red: 250/255, green: 204/255, blue: 21/255).opacity(0.25 * op)
+            
+        case (.feat3, 1): return Color(red: 255/255, green: 107/255, blue: 107/255).opacity(0.45 * op)
+        case (.feat3, 2): return Color(red: 244/255, green: 63/255, blue: 94/255).opacity(0.35 * op)
+        case (.feat3, 3): return Color(red: 251/255, green: 113/255, blue: 133/255).opacity(0.25 * op)
+            
+        case (.feat4, 1): return Color(red: 168/255, green: 85/255, blue: 247/255).opacity(0.35 * op)
+        case (.feat4, 2): return Color(red: 99/255, green: 102/255, blue: 241/255).opacity(0.25 * op)
+        case (.feat4, 3): return Color(red: 147/255, green: 51/255, blue: 234/255).opacity(0.25 * op)
+            
+        case (.feat5, 1): return Color(red: 16/255, green: 185/255, blue: 129/255).opacity(0.4 * op)
+        case (.feat5, 2): return Color(red: 21/255, green: 180/255, blue: 159/255).opacity(0.3 * op)
+        case (.feat5, 3): return Color(red: 52/255, green: 211/255, blue: 153/255).opacity(0.2 * op)
+            
+        default: return .clear
         }
     }
 }
 
 private struct BlobView: View {
-    var color: Color
-    var offset: CGSize
+    let size: CGFloat
+    let baseOffset: CGSize
+    let transform: BlobTransform
+    let color: Color
 
     var body: some View {
         Circle()
             .fill(color)
-            .frame(width: 400, height: 400)
-            .offset(offset)
+            .frame(width: size, height: size)
+            .offset(baseOffset)
+            .offset(transform.offset)
+            .scaleEffect(transform.scale)
     }
 }

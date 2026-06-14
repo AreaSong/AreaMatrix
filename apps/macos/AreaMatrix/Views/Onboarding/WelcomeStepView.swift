@@ -8,6 +8,15 @@ private enum WelcomeWindowMetrics {
     static let cornerRadius: CGFloat = 12
 }
 
+private struct WelcomeFeatureCardSpec {
+    let icon: String
+    let title: String
+    let description: String
+    let accentColor: Color
+    let stage: WelcomeStage
+    let entranceDelay: Double
+}
+
 struct WelcomeStepView: View {
     let onContinue: () -> Void
     let onLearnMore: () -> Void
@@ -16,6 +25,7 @@ struct WelcomeStepView: View {
     @State private var activeStage: WelcomeStage = .default
     @State private var hoverStage: WelcomeStage?
     @State private var isScanning = false
+    @State private var isExiting = false
     @State private var isDragTargeted = false
     @State private var hasLaunched = false
     @State private var ctaGlowing = false
@@ -25,6 +35,7 @@ struct WelcomeStepView: View {
     ]
     @State private var scanCursorColor = WelcomePalette.tealBright
     @State private var scanTask: Task<Void, Never>?
+    @State private var hoverResetTask: Task<Void, Never>?
     /// 用户手动切换的主题偏好：nil = 跟随系统
     @State private var themeOverride: ColorScheme?
 
@@ -57,6 +68,7 @@ struct WelcomeStepView: View {
             }
             .onDisappear {
                 scanTask?.cancel()
+                hoverResetTask?.cancel()
             }
     }
 
@@ -68,9 +80,6 @@ struct WelcomeStepView: View {
                 welcomeContent
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onContinuousHover { phase in
-                updateParallax(from: phase, in: proxy.size)
-            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: WelcomeWindowMetrics.cornerRadius, style: .continuous))
@@ -96,6 +105,9 @@ struct WelcomeStepView: View {
                     terminalLines: scanTerminalLines,
                     cursorColor: scanCursorColor
                 )
+                .scaleEffect(isExiting ? 2.5 : 1)
+                .opacity(isExiting ? 0 : 1)
+                .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.6), value: isExiting)
             } else if isDragTargeted {
                 WelcomeDropOverlayView()
             }
@@ -113,38 +125,22 @@ struct WelcomeStepView: View {
         VStack(spacing: 0) {
             titlebar
 
-            ZStack {
-                switch displayStage {
-                case .default: StageDefaultView().transition(stageTransition)
-                case .feat1: StageClassifyView().transition(stageTransition)
-                case .feat2: StageSecurityView().transition(stageTransition)
-                case .feat3: StageTrackingView().transition(stageTransition)
-                case .feat4: StageHelpView().transition(stageTransition)
-                case .feat5: StageStartView().transition(stageTransition)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.horizontal, 60)
-            .padding(.top, 10)
-            .padding(.bottom, 20)
-            .rotation3DEffect(
-                .degrees(mouseParallax.vertical * -4),
-                axis: (x: 1, y: 0, z: 0),
-                perspective: 0.7
-            )
-            .rotation3DEffect(
-                .degrees(mouseParallax.horizontal * 4),
-                axis: (x: 0, y: 1, z: 0),
-                perspective: 0.7
-            )
-            .clipped()
+            Spacer()
+
+            WelcomeStageSwitcher(stage: displayStage, parallax: mouseParallax)
+                .frame(height: 340)
+                .padding(.horizontal, 60)
 
             featuresGrid
+                .frame(height: 140)
                 .padding(.horizontal, 40)
-                .padding(.bottom, 20)
+                .padding(.top, 12)
+
+            Spacer()
 
             footer
         }
+        .padding(.bottom, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -165,7 +161,6 @@ private extension WelcomeStepView {
                 Button {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         if themeOverride == nil {
-                            // 首次点击：切换到当前的反面
                             themeOverride = colorScheme == .dark ? .light : .dark
                         } else {
                             themeOverride = themeOverride == .dark ? .light : .dark
@@ -192,52 +187,33 @@ private extension WelcomeStepView {
         .frame(height: 48)
     }
 
-    private var stageTransition: AnyTransition {
-        .asymmetric(
-            insertion: .move(edge: .bottom).combined(with: .opacity),
-            removal: .move(edge: .top).combined(with: .opacity)
-        )
-    }
-
     private var featuresGrid: some View {
         HStack(spacing: 20) {
-            featureCard(
+            featureCard(WelcomeFeatureCardSpec(
                 icon: "arrow.down.doc",
                 title: "拖拽归档，智能分类",
                 description: "识别、重命名并自动落位",
                 accentColor: Color(red: 55 / 255, green: 202 / 255, blue: 182 / 255),
-                stage: .feat1
-            )
-            featureCard(
+                stage: .feat1,
+                entranceDelay: 0.4
+            ))
+            featureCard(WelcomeFeatureCardSpec(
                 icon: "checkmark.shield",
                 title: "零侵入，绝对安全",
                 description: "不碰原文件，真相在文件系统",
                 accentColor: Color(red: 241 / 255, green: 184 / 255, blue: 78 / 255),
-                stage: .feat2
-            )
-            featureCard(
+                stage: .feat2,
+                entranceDelay: 0.5
+            ))
+            featureCard(WelcomeFeatureCardSpec(
                 icon: "rectangle.split.2x1",
                 title: "全局概览，改动追溯",
                 description: "生成大纲，双向同步改动日志",
                 accentColor: Color(red: 233 / 255, green: 109 / 255, blue: 90 / 255),
-                stage: .feat3
-            )
+                stage: .feat3,
+                entranceDelay: 0.6
+            ))
         }
-        .frame(height: 128)
-    }
-
-    /// 当有卡片被 hover 时，其他卡片降低不透明度（匹配 HTML opacity: 0.4）
-    private func focusDimmingOpacity(for stage: WelcomeStage) -> Double {
-        guard let hover = hoverStage,
-              [WelcomeStage.feat1, .feat2, .feat3].contains(hover) else { return 1 }
-        return hover == stage ? 1 : 0.4
-    }
-
-    /// 非 hover 卡片添加灰度（匹配 HTML filter: grayscale(60%)）
-    private func focusDimmingSaturation(for stage: WelcomeStage) -> Double {
-        guard let hover = hoverStage,
-              [WelcomeStage.feat1, .feat2, .feat3].contains(hover) else { return 1 }
-        return hover == stage ? 1 : 0.4
     }
 
     private var footer: some View {
@@ -258,7 +234,11 @@ private extension WelcomeStepView {
             )
             .buttonStyle(.plain)
             .onHover { hovering in
-                withAnimation { hoverStage = hovering ? .feat4 : nil }
+                if hovering {
+                    activateHoverStage(.feat4)
+                } else {
+                    scheduleHoverReset(for: .feat4)
+                }
             }
 
             Spacer()
@@ -293,44 +273,51 @@ private extension WelcomeStepView {
             )
             .buttonStyle(.plain)
             .onHover { hovering in
-                withAnimation { hoverStage = hovering ? .feat5 : nil }
+                if hovering {
+                    activateHoverStage(.feat5)
+                } else {
+                    scheduleHoverReset(for: .feat5)
+                }
             }
         }
         .padding(.horizontal, 40)
-        .frame(height: 60)
-        .background(.ultraThinMaterial)
-        .background(Color.black.opacity(colorScheme == .dark ? 0.15 : 0.02))
-        .clipShape(CustomBottomCorners(radius: 12))
+        .padding(.top, 20)
     }
 
-    private func featureCard(
-        icon: String,
-        title: String,
-        description: String,
-        accentColor: Color,
-        stage: WelcomeStage
-    ) -> some View {
-        let isHovered = hoverStage == stage
+    private func featureCard(_ spec: WelcomeFeatureCardSpec) -> some View {
+        let isHovered = hoverStage == spec.stage
 
         return WelcomeFeatureCard(
-            icon: icon,
-            title: title,
-            description: description,
-            accentColor: accentColor,
+            icon: spec.icon,
+            title: spec.title,
+            description: spec.description,
+            accentColor: spec.accentColor,
             isHovered: isHovered,
-            dimmingOpacity: focusDimmingOpacity(for: stage),
-            dimmingSaturation: focusDimmingSaturation(for: stage),
+            entranceDelay: spec.entranceDelay,
+            anyCardHovered: hoverStage != nil && [WelcomeStage.feat1, .feat2, .feat3].contains(hoverStage!),
             onHoverChanged: { hovering in
                 if hovering {
-                    withAnimation { hoverStage = stage }
-                } else if hoverStage == stage {
-                    withAnimation { hoverStage = nil }
+                    activateHoverStage(spec.stage)
+                } else if hoverStage == spec.stage {
+                    scheduleHoverReset(for: spec.stage)
                 }
-            },
-            onTap: {
-                withAnimation { activeStage = stage }
             }
         )
+    }
+
+    private func activateHoverStage(_ stage: WelcomeStage) {
+        hoverResetTask?.cancel()
+        guard hoverStage != stage else { return }
+        hoverStage = stage
+    }
+
+    private func scheduleHoverReset(for stage: WelcomeStage) {
+        hoverResetTask?.cancel()
+        hoverResetTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(100))
+            guard !Task.isCancelled, hoverStage == stage else { return }
+            hoverStage = nil
+        }
     }
 
     private func updateParallax(from phase: HoverPhase, in size: CGSize) {
@@ -342,13 +329,9 @@ private extension WelcomeStepView {
                 horizontal: ((location.x / width) - 0.5) * 2,
                 vertical: ((location.y / height) - 0.5) * 2
             )
-            withAnimation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.2)) {
-                mouseParallax = next
-            }
+            mouseParallax = next
         case .ended:
-            withAnimation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.2)) {
-                mouseParallax = .zero
-            }
+            mouseParallax = .zero
         }
     }
 
@@ -376,10 +359,16 @@ private extension WelcomeStepView {
             guard !Task.isCancelled else { return }
             guard await typeScanLog(">>> 授权通过，正在进入 <<<", color: WelcomePalette.gold) else { return }
 
-            try? await Task.sleep(for: .seconds(1))
+            try? await Task.sleep(for: .seconds(0.5))
             guard !Task.isCancelled else { return }
+            
+            withAnimation { isExiting = true }
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            
             onContinue()
             isScanning = false
+            isExiting = false
         }
     }
 

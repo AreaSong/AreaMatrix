@@ -9,6 +9,7 @@ struct StageClassifyView: View {
     var body: some View {
         VStack(spacing: 32) {
             classifyDiorama
+                .welcomeStageVisualMotion()
             DioramaStageText(
                 title: "智能引擎，自动归档",
                 description: "把文件拖入视窗，底层的智能规则与 AI 将自动识别内容、建议命名，并为其在庞大复杂的目录树中寻找到最佳的物理归属。"
@@ -126,6 +127,7 @@ struct StageSecurityView: View {
     var body: some View {
         VStack(spacing: 32) {
             securityDiorama
+                .welcomeStageVisualMotion()
             DioramaStageText(
                 title: "零侵入，绝对的安全防线",
                 description: "我们仅仅在底层建立一层可视化的超级索引。程序承诺永远不会在后台私自改动、移动或覆盖您宝贵的源文件与已有目录结构。"
