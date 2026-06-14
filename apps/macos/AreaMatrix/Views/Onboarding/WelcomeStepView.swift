@@ -27,12 +27,13 @@ struct WelcomeStepView: View {
     @State private var isScanning = false
     @State private var isExiting = false
     @State private var isDragTargeted = false
-    @State private var hasLaunched = false
     @State private var ctaGlowing = false
     @State private var isCtaHovered = false
     @State private var isLearnMoreHovered = false
-    @State private var titlebarEntered = false
+    @State private var isThemeHovered = false
     @State private var footerEntered = false
+    
+    static var hasPlayedLaunchAnimation = false
     @State private var mouseParallax = WelcomeParallax.zero
     @State private var scanTerminalLines = [
         WelcomeTerminalLine(text: "等待系统指令...", color: WelcomePalette.tealBright)
@@ -45,6 +46,7 @@ struct WelcomeStepView: View {
     @FocusState private var isChooseFolderFocused: Bool
     /// 用户手动切换的主题偏好：nil = 跟随系统
     @State private var themeOverride: ColorScheme?
+    @State private var shimmerPhase: CGFloat = -1.5
 
     /// Derived stage to show
     private var displayStage: WelcomeStage {
@@ -63,16 +65,18 @@ struct WelcomeStepView: View {
             )
             .background(WelcomeWindowChromeObserver())
             .preferredColorScheme(themeOverride)
-            .scaleEffect(hasLaunched ? 1 : 0.95)
-            .offset(y: hasLaunched ? 0 : 20)
-            .opacity(hasLaunched ? 1 : 0)
-            .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.8), value: hasLaunched)
             .onAppear {
-                hasLaunched = true
-                titlebarEntered = true
-                footerEntered = true
+                if !Self.hasPlayedLaunchAnimation {
+                    footerEntered = true
+                    Self.hasPlayedLaunchAnimation = true
+                } else {
+                    footerEntered = true
+                }
                 withAnimation(.easeInOut(duration: 1.25).repeatForever(autoreverses: true)) {
                     ctaGlowing = true
+                }
+                withAnimation(.linear(duration: 3).repeatForever(autoreverses: false).delay(1)) {
+                    shimmerPhase = 1.5
                 }
             }
             .onDisappear {
@@ -188,13 +192,7 @@ private extension WelcomeStepView {
     private var titlebar: some View {
         ZStack {
             HStack(spacing: 0) {
-                ForEach(Array("AreaMatrix".enumerated()), id: \.offset) { index, char in
-                    Text(String(char))
-                        .opacity(titlebarEntered ? 1 : 0)
-                        .blur(radius: titlebarEntered ? 0 : 4)
-                        .offset(y: titlebarEntered ? 0 : -6)
-                        .animation(.easeOut(duration: 0.4).delay(0.3 + Double(index) * 0.04), value: titlebarEntered)
-                }
+                Text("AreaMatrix")
             }
             .font(.system(size: 13, weight: .medium))
             .foregroundStyle(.tertiary)
@@ -208,18 +206,31 @@ private extension WelcomeStepView {
                         } else {
                             themeOverride = themeOverride == .dark ? .light : .dark
                         }
+                        
+                        // 同步更新全局 NSApp.appearance 以触发 AppDelegate 中的 Dock 图标切换
+                        if themeOverride == .dark {
+                            NSApp.appearance = NSAppearance(named: .darkAqua)
+                        } else if themeOverride == .light {
+                            NSApp.appearance = NSAppearance(named: .aqua)
+                        } else {
+                            NSApp.appearance = nil
+                        }
                     }
                 } label: {
                     Image(systemName: (themeOverride ?? colorScheme) == .dark ? "sun.max" : "moon")
                         .font(.system(size: 12))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(isThemeHovered ? .secondary : .tertiary)
                         .frame(width: 28, height: 28)
+                        .background(Circle().fill(Color.primary.opacity(isThemeHovered ? 0.08 : 0)))
+                        .scaleEffect(isThemeHovered ? 1.15 : 1.0)
                         .contentTransition(.symbolEffect(.replace))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .help("切换明暗模式")
+                .animation(.easeOut(duration: 0.2), value: isThemeHovered)
                 .onHover { hovering in
+                    isThemeHovered = hovering
                     if hovering {
                         NSCursor.pointingHand.push()
                     } else {
@@ -228,8 +239,6 @@ private extension WelcomeStepView {
                 }
             }
             .padding(.trailing, 16)
-            .opacity(titlebarEntered ? 1 : 0)
-            .animation(.easeOut(duration: 0.5).delay(0.4), value: titlebarEntered)
         }
         .frame(height: 48)
     }
@@ -271,6 +280,7 @@ private extension WelcomeStepView {
                     HStack(spacing: 6) {
                         Image(systemName: "questionmark.circle")
                         Text("了解 AreaMatrix 如何工作")
+                            .underline(isLearnMoreHovered)
                         Image(systemName: "arrow.up.right")
                             .font(.system(size: 10, weight: .semibold))
                             .opacity(0.6)
@@ -292,7 +302,7 @@ private extension WelcomeStepView {
             .buttonStyle(.plain)
             .focused($isLearnMoreFocused)
             .focusEffectDisabled()
-            .onChange(of: isLearnMoreFocused) { focused in
+            .onChange(of: isLearnMoreFocused) { _, focused in
                 if focused {
                     activateHoverStage(.feat4)
                 } else if hoverStage == .feat4 {
@@ -323,17 +333,36 @@ private extension WelcomeStepView {
                     HStack(spacing: 6) {
                         Text("选择本地文件夹")
                         Image(systemName: "folder.badge.plus")
+                        Text("⌘O")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 2)
+                            .background(Color.black.opacity(0.15), in: RoundedRectangle(cornerRadius: 4))
+                            .padding(.leading, 4)
                     }
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.black)
-                    .padding(.horizontal, 18)
+                    .shadow(color: .white.opacity(0.15), radius: 0, y: 0.5)
+                    .padding(.leading, 18)
+                    .padding(.trailing, 14)
                     .padding(.vertical, 10)
                     .background(
-                        LinearGradient(
-                            colors: [WelcomePalette.tealBright, WelcomePalette.teal],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
+                        ZStack {
+                            LinearGradient(
+                                colors: [WelcomePalette.tealBright, WelcomePalette.teal],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            
+                            // Shimmer 扫光特效
+                            LinearGradient(
+                                colors: [.clear, .white.opacity(0.4), .clear],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                            .offset(x: shimmerPhase * 200)
+                            .mask(RoundedRectangle(cornerRadius: 8))
+                        }
                     )
                     .cornerRadius(8)
                     .pulseAura(color: WelcomePalette.teal, duration: 2.5, maxScale: 1.5, cornerRadius: 8)
@@ -350,7 +379,7 @@ private extension WelcomeStepView {
             .buttonStyle(.plain)
             .focused($isChooseFolderFocused)
             .focusEffectDisabled()
-            .onChange(of: isChooseFolderFocused) { focused in
+            .onChange(of: isChooseFolderFocused) { _, focused in
                 if focused {
                     activateHoverStage(.feat5)
                 } else if hoverStage == .feat5 {

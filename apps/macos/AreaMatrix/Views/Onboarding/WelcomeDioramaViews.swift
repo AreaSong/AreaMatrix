@@ -139,7 +139,7 @@ struct StageClassifyView: View {
                         .offset(x: phase == 3 ? 0 : -10)
                 }
                 .padding(10).frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.black.opacity(0.05)).cornerRadius(6)
+                .background(Color.primary.opacity(0.06)).cornerRadius(6)
             }
             .padding(16)
         }

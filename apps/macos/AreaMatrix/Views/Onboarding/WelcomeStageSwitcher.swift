@@ -118,21 +118,22 @@ struct WelcomeStageTextMotion: ViewModifier {
     func body(content: Content) -> some View {
         content
             .opacity(stagePhase.isVisible ? 1 : 0)
-            .scaleEffect(stagePhase.isVisible ? 1 : scale)
+            .offset(y: stagePhase.isVisible ? 0 : offsetValue)
+            .blur(radius: stagePhase.isVisible ? 0 : 4)
             .animation(animation, value: stagePhase)
     }
 
-    private var scale: CGFloat {
+    private var offsetValue: CGFloat {
         switch stagePhase {
-        case .enter: return 0.97 // Text starts slightly smaller
-        case .exit: return 1.03 // Text expands slightly outwards
+        case .enter: return 12 // Text slides up from below
+        case .exit: return -12 // Text slides up and out
         }
     }
 
     private var animation: Animation {
         switch stagePhase {
         case .enter: return .timingCurve(0.16, 1, 0.3, 1, duration: 0.6).delay(delay)
-        case .exit: return .timingCurve(0.16, 1, 0.3, 1, duration: 0.6)
+        case .exit: return .timingCurve(0.16, 1, 0.3, 1, duration: 0.4)
         }
     }
 }

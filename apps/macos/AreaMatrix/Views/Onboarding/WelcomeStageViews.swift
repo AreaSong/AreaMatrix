@@ -136,12 +136,15 @@ struct WelcomeScanOverlayView: View {
 }
 
 struct WelcomeDropOverlayView: View {
+    @State private var isBouncing = false
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: "tray.and.arrow.down")
                 .font(.system(size: 46, weight: .light))
                 .foregroundColor(WelcomePalette.tealBright)
-                .symbolEffect(.bounce, options: .repeating)
+                .offset(y: isBouncing ? -6 : 0)
+                .animation(.interpolatingSpring(stiffness: 170, damping: 10).repeatForever(autoreverses: false), value: isBouncing)
+                .onAppear { isBouncing = true }
             Text("释放以交由 AreaMatrix 接管")
                 .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(.primary)
@@ -183,6 +186,7 @@ struct StageDefaultView: View {
                 Text("将散乱的文件，化作知识枢纽。")
                     .font(.system(size: 20, weight: .semibold))
                     .textShimmer(highlight: WelcomePalette.tealBright)
+                    .welcomeStageTextMotion(delay: 0.05)
 
                 Text("无需搬运，只需指认一个本地文件夹。AreaMatrix 会为你建立结构清晰、无感同步的私人资料库。")
                     .font(.system(size: 15))
@@ -193,9 +197,9 @@ struct StageDefaultView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .opacity(subtitleBreathing ? 0.72 : 1.0)
                     .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: subtitleBreathing)
+                    .welcomeStageTextMotion(delay: 0.15)
             }
             .frame(maxWidth: 560)
-            .welcomeStageTextMotion(delay: 0.05)
         }
     }
 }
@@ -218,31 +222,23 @@ struct StageStartView: View {
                 floatingDocIcon("photo.fill", size: 12, x: 105, y: 15, duration: 2.6, delay: 0.5)
                 floatingDocIcon("tablecells.fill", size: 13, x: -85, y: 45, duration: 1.9, delay: 1.0)
 
-                // 大文件夹
-                ZStack {
-                    // 文件夹 tab
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(WelcomePalette.tealBright, lineWidth: 3)
-                        .frame(width: 64, height: 24)
-                        .background(WelcomePalette.emerald.opacity(0.15), in: RoundedRectangle(cornerRadius: 16))
-                        .offset(x: -61, y: -74)
-
-                    // 文件夹主体
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(WelcomePalette.emerald.opacity(0.15))
-                        .frame(width: 180, height: 124)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(WelcomePalette.tealBright, lineWidth: 3)
-                        )
-                        .overlay(
-                            Image(systemName: "plus")
-                                .font(.system(size: 36, weight: .semibold))
-                                .foregroundColor(.white)
-                                .shadow(color: .white.opacity(0.9), radius: isAnimating ? 28 : 8)
-                                .animation(.easeInOut(duration: 1.25).repeatForever(autoreverses: true), value: isAnimating)
-                        )
-                }
+                // 文件夹一体化形状
+                WelcomeFolderShape(tabWidth: 64, tabHeight: 24, cornerRadius: 16)
+                    .fill(WelcomePalette.emerald.opacity(0.15))
+                    .overlay(
+                        WelcomeFolderShape(tabWidth: 64, tabHeight: 24, cornerRadius: 16)
+                            .stroke(WelcomePalette.tealBright, lineWidth: 3)
+                    )
+                    .frame(width: 180, height: 148)
+                    .overlay(
+                        Image(systemName: "plus")
+                            .font(.system(size: 36, weight: .semibold))
+                            .foregroundColor(.white)
+                            .shadow(color: .white.opacity(0.9), radius: isAnimating ? 28 : 8)
+                            .animation(.easeInOut(duration: 1.25).repeatForever(autoreverses: true), value: isAnimating)
+                            .offset(y: 12)
+                    )
+                    .offset(y: -12)
                 .shadow(
                     color: WelcomePalette.emerald.opacity(isAnimating ? 0.6 : 0.3),
                     radius: isAnimating ? 40 : 20
@@ -321,7 +317,7 @@ struct MockMiniWindow<Content: View>: View {
             }
             .padding(.horizontal, 8)
             .frame(height: 24)
-            .background(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.12))
+            .background(Color.primary.opacity(0.08))
 
             content()
         }

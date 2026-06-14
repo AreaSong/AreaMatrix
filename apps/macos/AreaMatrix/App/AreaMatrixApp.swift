@@ -334,6 +334,20 @@ enum AreaMatrixExternalCreatedFileRelay {
 }
 
 final class AreaMatrixDockOpenAppDelegate: NSObject, NSApplicationDelegate {
+    /// 监听系统外观变化，动态切换 Dock 图标
+    private var appearanceObservation: NSKeyValueObservation?
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        updateDockIcon()
+        appearanceObservation = NSApp.observe(
+            \.effectiveAppearance, options: [.new]
+        ) { [weak self] _, _ in
+            DispatchQueue.main.async {
+                self?.updateDockIcon()
+            }
+        }
+    }
+
     func application(_: NSApplication, open urls: [URL]) {
         AreaMatrixDockOpenRelay.publish(urls)
     }
@@ -341,6 +355,18 @@ final class AreaMatrixDockOpenAppDelegate: NSObject, NSApplicationDelegate {
     func application(_ sender: NSApplication, openFiles filenames: [String]) {
         AreaMatrixDockOpenRelay.publish(filenames.map(URL.init(fileURLWithPath:)))
         sender.reply(toOpenOrPrint: .success)
+    }
+
+    /// 根据系统深浅色切换 Dock / Finder 图标
+    private func updateDockIcon() {
+        let isDark = NSApp.effectiveAppearance
+            .bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        let imageName = isDark
+            ? "AreaMatrixLogoMarkDark"
+            : "AreaMatrixLogoMarkLight"
+        if let image = NSImage(named: imageName) {
+            NSApp.applicationIconImage = image
+        }
     }
 }
 

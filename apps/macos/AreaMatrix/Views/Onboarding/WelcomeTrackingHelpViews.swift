@@ -89,7 +89,7 @@ struct StageTrackingView: View {
             // 左：Finder 窗口
             MockMiniWindow(title: "Finder", width: 180, height: 150) {
                 HStack(spacing: 0) {
-                    Rectangle().fill(Color.black.opacity(0.05)).frame(width: 40)
+                    Rectangle().fill(Color.primary.opacity(0.06)).frame(width: 40)
                     VStack(alignment: .leading) {
                         HStack(spacing: 8) {
                             RoundedRectangle(cornerRadius: 4)
@@ -105,7 +105,9 @@ struct StageTrackingView: View {
                                 )
                             ZStack(alignment: .leading) {
                                 Text("Draft_v1.md").opacity(showNewName ? 0 : 1)
-                                Text("Final_v2.md").foregroundColor(.green).opacity(showNewName ? 1 : 0)
+                                Text("Final_v2.md")
+                                    .foregroundColor(colorScheme == .dark ? .green : WelcomePalette.emeraldDeep)
+                                    .opacity(showNewName ? 1 : 0)
                             }
                             .font(.system(size: 10, weight: .medium))
                         }

@@ -29,6 +29,10 @@ struct WelcomeAmbientBackground: View {
             )
             .ignoresSafeArea()
 
+            NoiseOverlay()
+                .opacity(colorScheme == .dark ? 0.035 : 0.025)
+                .ignoresSafeArea()
+
             GeometryReader { proxy in
                 ZStack {
                     // HTML g1: 500x500, top: -100px, left: -100px
@@ -210,5 +214,45 @@ private struct BlobView: View {
             .offset(baseOffset)
             .offset(transform.offset)
             .scaleEffect(transform.scale)
+    }
+}
+
+struct NoiseOverlay: View {
+    @State private var noiseImage: Image?
+
+    var body: some View {
+        Group {
+            if let img = noiseImage {
+                img
+                    .resizable(resizingMode: .tile)
+                    .blendMode(.overlay)
+            } else {
+                Color.clear
+            }
+        }
+        .onAppear {
+            noiseImage = generateNoiseImage()
+        }
+    }
+
+    private func generateNoiseImage() -> Image? {
+        let width = 128
+        let height = 128
+        let colorSpace = CGColorSpaceCreateDeviceGray()
+        var data = [UInt8](repeating: 0, count: width * height)
+        for i in 0..<data.count {
+            data[i] = UInt8.random(in: 0...255)
+        }
+        guard let context = CGContext(
+            data: &data,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: width,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.none.rawValue
+        ) else { return nil }
+        guard let cgImage = context.makeImage() else { return nil }
+        return Image(cgImage, scale: 1, label: Text("Noise"))
     }
 }

@@ -46,6 +46,8 @@ struct WelcomeFeatureCard: View {
     let anyCardHovered: Bool
     let onHoverChanged: (Bool) -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
+
     @State private var hasEntered = false
     @State private var hoverPoint = UnitPoint.center
     @FocusState private var isFocused: Bool
@@ -59,7 +61,7 @@ struct WelcomeFeatureCard: View {
                     .focusable(true)
                     .focused($isFocused)
                     .focusEffectDisabled()
-                    .onChange(of: isFocused) { focused in
+                    .onChange(of: isFocused) { _, focused in
                         onHoverChanged(focused)
                     }
                     .onContinuousHover { phase in
@@ -148,14 +150,15 @@ struct WelcomeFeatureCard: View {
     private var cardGlare: some View {
         RadialGradient(
             colors: [
-                Color.white.opacity(isHovered ? 0.12 : 0),
+                accentColor.opacity(isHovered ? 0.35 : 0),
+                Color.white.opacity(isHovered ? 0.15 : 0),
                 Color.white.opacity(0)
             ],
             center: hoverPoint,
             startRadius: 0,
-            endRadius: 100
+            endRadius: 160
         )
-        .blendMode(.overlay)
+        .blendMode(colorScheme == .dark ? .screen : .plusLighter)
         .allowsHitTesting(false)
     }
 
@@ -229,6 +232,40 @@ struct WelcomeHexagon: Shape {
 
         path.closeSubpath()
         return path
+    }
+}
+
+/// 文件夹图标形状 — tab 与主体一体化绘制，消除描边断裂
+struct WelcomeFolderShape: Shape {
+    let tabWidth: CGFloat
+    let tabHeight: CGFloat
+    let cornerRadius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let r = min(cornerRadius, tabWidth / 2, tabHeight / 2)
+        let br = cornerRadius
+        var p = Path()
+
+        // 从 tab 左上角开始，顺时针绘制
+        p.move(to: CGPoint(x: 0, y: r))
+        p.addArc(center: CGPoint(x: r, y: r), radius: r,
+                 startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false)
+        p.addLine(to: CGPoint(x: tabWidth - r, y: 0))
+        p.addArc(center: CGPoint(x: tabWidth - r, y: r), radius: r,
+                 startAngle: .degrees(270), endAngle: .degrees(0), clockwise: false)
+        p.addLine(to: CGPoint(x: tabWidth, y: tabHeight))
+        p.addLine(to: CGPoint(x: rect.width - br, y: tabHeight))
+        p.addArc(center: CGPoint(x: rect.width - br, y: tabHeight + br), radius: br,
+                 startAngle: .degrees(270), endAngle: .degrees(0), clockwise: false)
+        p.addLine(to: CGPoint(x: rect.width, y: rect.height - br))
+        p.addArc(center: CGPoint(x: rect.width - br, y: rect.height - br), radius: br,
+                 startAngle: .degrees(0), endAngle: .degrees(90), clockwise: false)
+        p.addLine(to: CGPoint(x: br, y: rect.height))
+        p.addArc(center: CGPoint(x: br, y: rect.height - br), radius: br,
+                 startAngle: .degrees(90), endAngle: .degrees(180), clockwise: false)
+        p.closeSubpath()
+
+        return p
     }
 }
 
@@ -390,9 +427,9 @@ struct TextShimmerModifier: ViewModifier {
             .foregroundStyle(
                 LinearGradient(
                     stops: [
-                        .init(color: primaryColor, location: max(0, shimmerOffset)),
-                        .init(color: highlightColor, location: min(1, shimmerOffset + 0.5)),
-                        .init(color: primaryColor, location: min(1, shimmerOffset + 1.0)),
+                        .init(color: primaryColor, location: shimmerOffset),
+                        .init(color: highlightColor, location: shimmerOffset + 0.5),
+                        .init(color: primaryColor, location: shimmerOffset + 1.0),
                     ],
                     startPoint: .leading,
                     endPoint: .trailing
