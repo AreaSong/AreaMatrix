@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 // MARK: - Stage 3 Tracking Diorama
@@ -6,7 +7,15 @@ struct StageTrackingView: View {
     @State private var showNewName = false
     @State private var isSpinning = false
     @State private var particleFlying = false
+    @State private var typedMarkdownLines: [TypedMarkdownLine] = []
     @State private var timerTask: Task<Void, Never>?
+    @State private var typingTask: Task<Void, Never>?
+
+    private let markdownTypewriterLines = [
+        ("## Documents", Color(red: 0.337, green: 0.612, blue: 0.839)),
+        ("- Finance/Invoice.pdf", Color(red: 0.306, green: 0.788, blue: 0.69)),
+        ("- Design/brand.sketch", Color(red: 0.808, green: 0.569, blue: 0.471))
+    ]
 
     var body: some View {
         VStack(spacing: 32) {
@@ -18,10 +27,14 @@ struct StageTrackingView: View {
         }
         .onAppear {
             startCycle()
+            startTyping()
             withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) { isSpinning = true }
             withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: false)) { particleFlying = true }
         }
-        .onDisappear { timerTask?.cancel() }
+        .onDisappear {
+            timerTask?.cancel()
+            typingTask?.cancel()
+        }
     }
 
     private func startCycle() {
@@ -31,6 +44,36 @@ struct StageTrackingView: View {
                 try? await Task.sleep(for: .seconds(2))
                 guard !Task.isCancelled else { return }
                 withAnimation(.easeInOut(duration: 0.4)) { showNewName.toggle() }
+            }
+        }
+    }
+
+    private func startTyping() {
+        typingTask?.cancel()
+        typingTask = Task { @MainActor in
+            while !Task.isCancelled {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    typedMarkdownLines = []
+                }
+
+                for source in markdownTypewriterLines {
+                    let line = TypedMarkdownLine(text: "", color: source.1)
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        typedMarkdownLines.append(line)
+                    }
+
+                    for character in source.0 {
+                        try? await Task.sleep(for: .milliseconds(34))
+                        guard !Task.isCancelled else { return }
+                        if let index = typedMarkdownLines.firstIndex(where: { $0.id == line.id }) {
+                            typedMarkdownLines[index].text.append(character)
+                        }
+                    }
+
+                    try? await Task.sleep(for: .milliseconds(120))
+                }
+
+                try? await Task.sleep(for: .seconds(1.4))
             }
         }
     }
@@ -95,6 +138,11 @@ struct StageTrackingView: View {
                                 .opacity(showNewName ? 1 : 0)
                         }
                     }
+                    ForEach(typedMarkdownLines) { line in
+                        Text(line.text)
+                            .foregroundColor(line.color)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
                     Spacer()
                 }
                 .padding(14)
@@ -135,6 +183,15 @@ struct StageHelpView: View {
     @State private var isAnimating = false
     @State private var pulseIn = false
     @State private var pulseOut = false
+    @State private var fsEventRows: [WelcomeFSEventRow] = []
+    @State private var fsEventTask: Task<Void, Never>?
+
+    private let fsEventActions = [
+        "CREATE /docs/draft.md",
+        "RENAME /docs/final.md",
+        "DELETE /temp/cache.tmp",
+        "SYNC LocalDB_Update"
+    ]
 
     var body: some View {
         VStack(spacing: 32) {
@@ -145,9 +202,40 @@ struct StageHelpView: View {
             )
         }
         .onAppear {
+            startFSEventStream()
             isAnimating = true
             withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) { pulseIn = true }
             withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false).delay(0.4)) { pulseOut = true }
+        }
+        .onDisappear {
+            fsEventTask?.cancel()
+        }
+    }
+
+    private func startFSEventStream() {
+        fsEventTask?.cancel()
+        fsEventRows = fsEventActions.prefix(2).map {
+            WelcomeFSEventRow(time: currentFSEventTime(), action: $0)
+        }
+
+        fsEventTask = Task { @MainActor in
+            var nextIndex = 2
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(850))
+                guard !Task.isCancelled else { return }
+                let nextRow = WelcomeFSEventRow(
+                    time: currentFSEventTime(),
+                    action: fsEventActions[nextIndex % fsEventActions.count]
+                )
+
+                withAnimation(.easeOut(duration: 0.32)) {
+                    fsEventRows.append(nextRow)
+                    if fsEventRows.count > 3 {
+                        fsEventRows.removeFirst()
+                    }
+                }
+                nextIndex += 1
+            }
         }
     }
 
@@ -163,9 +251,11 @@ struct StageHelpView: View {
     }
 
     private var fsEventsColumn: some View {
-        VStack(spacing: 16) {
-            fsEvent(time: "[13:23:28]", action: "CREATE /docs/new.md")
-            fsEvent(time: "[13:23:29]", action: "RENAME /docs/old.md")
+        VStack(spacing: 10) {
+            ForEach(fsEventRows) { event in
+                fsEvent(time: event.time, action: event.action)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
     }
 
@@ -214,19 +304,21 @@ struct StageHelpView: View {
     }
 
     private var engineCore: some View {
-        RoundedRectangle(cornerRadius: 20)
-            .fill(WelcomePalette.purple.opacity(0.1))
-            .frame(width: 90, height: 90)
-            .overlay(RoundedRectangle(cornerRadius: 20).stroke(WelcomePalette.purple.opacity(0.5), lineWidth: 2))
-            .overlay(
-                Image(systemName: "cpu").font(.system(size: 36))
-                    .foregroundColor(WelcomePalette.purple)
-                    .rotationEffect(.degrees(isAnimating ? 360 : 0))
-                    .animation(.linear(duration: 12).repeatForever(autoreverses: false), value: isAnimating)
-            )
-            .shadow(color: WelcomePalette.purple.opacity(isAnimating ? 0.6 : 0.3), radius: isAnimating ? 30 : 15)
-            .scaleEffect(isAnimating ? 1.05 : 1.0)
-            .animation(.easeInOut(duration: 0.75).repeatForever(autoreverses: true), value: isAnimating)
+        ZStack {
+            WelcomeHexagon()
+                .fill(WelcomePalette.purple.opacity(0.1))
+                .overlay(WelcomeHexagon().stroke(WelcomePalette.purple.opacity(0.5), lineWidth: 2))
+                .rotationEffect(.degrees(isAnimating ? 360 : 0))
+                .animation(.linear(duration: 12).repeatForever(autoreverses: false), value: isAnimating)
+
+            Image(systemName: "cpu")
+                .font(.system(size: 34))
+                .foregroundColor(WelcomePalette.purple)
+        }
+        .frame(width: 90, height: 90)
+        .shadow(color: WelcomePalette.purple.opacity(isAnimating ? 0.6 : 0.3), radius: isAnimating ? 30 : 15)
+        .scaleEffect(isAnimating ? 1.05 : 1.0)
+        .animation(.easeInOut(duration: 0.75).repeatForever(autoreverses: true), value: isAnimating)
     }
 
     private var dbTarget: some View {
@@ -244,4 +336,22 @@ struct StageHelpView: View {
         .shadow(color: WelcomePalette.emeraldLight.opacity(isAnimating ? 0.4 : 0), radius: isAnimating ? 20 : 0)
         .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(0.4), value: isAnimating)
     }
+
+    private func currentFSEventTime() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "[HH:mm:ss]"
+        return formatter.string(from: Date())
+    }
+}
+
+private struct TypedMarkdownLine: Identifiable {
+    let id = UUID()
+    var text: String
+    let color: Color
+}
+
+private struct WelcomeFSEventRow: Identifiable {
+    let id = UUID()
+    let time: String
+    let action: String
 }

@@ -13,19 +13,133 @@ enum WelcomePalette {
     static let emeraldLight = Color(red: 52 / 255, green: 211 / 255, blue: 153 / 255)
 }
 
+struct WelcomeParallax: Equatable {
+    var horizontal: CGFloat
+    var vertical: CGFloat
+
+    static let zero = WelcomeParallax(horizontal: 0, vertical: 0)
+}
+
+struct WelcomeCrossfadeAssetImage: View {
+    let darkName: String
+    let lightName: String
+    let width: CGFloat?
+    let height: CGFloat?
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        ZStack {
+            logoImage(lightName)
+                .opacity(colorScheme == .dark ? 0 : 1)
+            logoImage(darkName)
+                .opacity(colorScheme == .dark ? 1 : 0)
+        }
+        .animation(.easeInOut(duration: 0.6), value: colorScheme)
+    }
+
+    private func logoImage(_ name: String) -> some View {
+        Image(name)
+            .resizable()
+            .scaledToFit()
+            .frame(width: width, height: height)
+    }
+}
+
+struct WelcomeScanOverlayView: View {
+    let isScanning: Bool
+    let terminalLines: [WelcomeTerminalLine]
+    let cursorColor: Color
+
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var cursorVisible = true
+
+    var body: some View {
+        VStack(spacing: 40) {
+            ZStack {
+                Circle()
+                    .stroke(colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.08), lineWidth: 2)
+                    .frame(width: 160, height: 160)
+
+                Circle()
+                    .trim(from: 0.0, to: 0.32)
+                    .stroke(
+                        AngularGradient(
+                            colors: [WelcomePalette.tealBright, WelcomePalette.teal, .clear],
+                            center: .center
+                        ),
+                        style: StrokeStyle(lineWidth: 2, lineCap: .round)
+                    )
+                    .frame(width: 160, height: 160)
+                    .rotationEffect(.degrees(isScanning ? 360 : 0))
+                    .animation(.linear(duration: 1).repeatForever(autoreverses: false), value: isScanning)
+
+                WelcomeCrossfadeAssetImage(
+                    darkName: "AreaMatrixLogoMarkDark",
+                    lightName: "AreaMatrixLogoMarkLight",
+                    width: 80,
+                    height: 80
+                )
+                .shadow(color: WelcomePalette.tealBright.opacity(0.5), radius: 12)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(terminalLines) { line in
+                    Text(line.text)
+                        .foregroundColor(line.color)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+
+                Text("█")
+                    .foregroundColor(cursorColor)
+                    .opacity(cursorVisible ? 1 : 0.18)
+            }
+            .font(.system(size: 14, weight: .medium, design: .monospaced))
+            .frame(width: 340, alignment: .leading)
+            .shadow(color: cursorColor.opacity(0.4), radius: 8)
+        }
+        .scaleEffect(isScanning ? 1 : 0.9)
+        .opacity(isScanning ? 1 : 0)
+        .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2), value: isScanning)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.45).repeatForever(autoreverses: true)) {
+                cursorVisible = false
+            }
+        }
+    }
+}
+
+struct WelcomeDropOverlayView: View {
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "tray.and.arrow.down")
+                .font(.system(size: 46, weight: .light))
+                .foregroundColor(WelcomePalette.tealBright)
+                .symbolEffect(.bounce, options: .repeating)
+            Text("释放以交由 AreaMatrix 接管")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(.primary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.black.opacity(0.18))
+        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+    }
+}
+
 // MARK: - Stage Default
 
 struct StageDefaultView: View {
-    @Environment(\.colorScheme) private var colorScheme
     @State private var shimmerOffset: CGFloat = -1.0
 
     var body: some View {
         VStack(spacing: 32) {
-            Image(colorScheme == .dark ? "AreaMatrixLogoLockupDark" : "AreaMatrixLogoLockupLight")
-                .resizable()
-                .scaledToFit()
-                .frame(height: 100)
-                .shadow(color: WelcomePalette.teal.opacity(0.4), radius: 16, y: 12)
+            WelcomeCrossfadeAssetImage(
+                darkName: "AreaMatrixLogoLockupDark",
+                lightName: "AreaMatrixLogoLockupLight",
+                width: nil,
+                height: 100
+            )
+            .shadow(color: WelcomePalette.teal.opacity(0.4), radius: 16, y: 12)
 
             VStack(spacing: 8) {
                 // 渐变闪光标语——匹配 HTML textShine 动画
@@ -36,7 +150,7 @@ struct StageDefaultView: View {
                             stops: [
                                 .init(color: .primary, location: max(0, shimmerOffset)),
                                 .init(color: WelcomePalette.tealBright, location: min(1, shimmerOffset + 0.5)),
-                                .init(color: .primary, location: min(1, shimmerOffset + 1.0)),
+                                .init(color: .primary, location: min(1, shimmerOffset + 1.0))
                             ],
                             startPoint: .leading,
                             endPoint: .trailing
@@ -152,10 +266,10 @@ struct MockMiniWindow<Content: View>: View {
     var body: some View {
         VStack(spacing: 0) {
             // Titlebar
-            HStack(spacing: 4) {
-                Circle().fill(Color(red: 1, green: 0.373, blue: 0.337)).frame(width: 8, height: 8)
-                Circle().fill(Color(red: 1, green: 0.741, blue: 0.18)).frame(width: 8, height: 8)
-                Circle().fill(Color(red: 0.153, green: 0.788, blue: 0.247)).frame(width: 8, height: 8)
+            HStack(spacing: 8) {
+                WelcomeTrafficLights()
+                    .scaleEffect(0.67)
+                    .frame(width: 34, height: 12)
                 Spacer()
                 Text(title)
                     .font(.system(size: 9, design: .monospaced))
@@ -183,16 +297,30 @@ struct MockMiniWindow<Content: View>: View {
 struct DioramaStageText: View {
     let title: String
     let description: String
+    @State private var titleVisible = false
+    @State private var descriptionVisible = false
 
     var body: some View {
         VStack(spacing: 12) {
             Text(title)
                 .font(.system(size: 22, weight: .semibold))
+                .opacity(titleVisible ? 1 : 0)
+                .offset(y: titleVisible ? 0 : 20)
             Text(description)
                 .font(.system(size: 15))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+                .opacity(descriptionVisible ? 1 : 0)
+                .offset(y: descriptionVisible ? 0 : 20)
         }
         .frame(maxWidth: 560)
+        .onAppear {
+            withAnimation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.6).delay(0.05)) {
+                titleVisible = true
+            }
+            withAnimation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.6).delay(0.1)) {
+                descriptionVisible = true
+            }
+        }
     }
 }

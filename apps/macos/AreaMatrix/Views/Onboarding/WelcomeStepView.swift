@@ -1,5 +1,12 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
+
+private enum WelcomeWindowMetrics {
+    static let width: CGFloat = 860
+    static let height: CGFloat = 640
+    static let cornerRadius: CGFloat = 12
+}
 
 struct WelcomeStepView: View {
     let onContinue: () -> Void
@@ -9,7 +16,15 @@ struct WelcomeStepView: View {
     @State private var activeStage: WelcomeStage = .default
     @State private var hoverStage: WelcomeStage?
     @State private var isScanning = false
+    @State private var isDragTargeted = false
+    @State private var hasLaunched = false
     @State private var ctaGlowing = false
+    @State private var mouseParallax = WelcomeParallax.zero
+    @State private var scanTerminalLines = [
+        WelcomeTerminalLine(text: "等待系统指令...", color: WelcomePalette.tealBright)
+    ]
+    @State private var scanCursorColor = WelcomePalette.tealBright
+    @State private var scanTask: Task<Void, Never>?
     /// 用户手动切换的主题偏好：nil = 跟随系统
     @State private var themeOverride: ColorScheme?
 
@@ -19,87 +34,126 @@ struct WelcomeStepView: View {
     }
 
     var body: some View {
-        ZStack {
-            Color.black
-                .ignoresSafeArea()
-
-            ZStack {
-                WelcomeAmbientBackground(stage: displayStage)
-
-                VStack(spacing: 0) {
-                    titlebar
-
-                    ZStack {
-                        switch displayStage {
-                        case .default: StageDefaultView().transition(stageTransition)
-                        case .feat1: StageClassifyView().transition(stageTransition)
-                        case .feat2: StageSecurityView().transition(stageTransition)
-                        case .feat3: StageTrackingView().transition(stageTransition)
-                        case .feat4: StageHelpView().transition(stageTransition)
-                        case .feat5: StageStartView().transition(stageTransition)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.horizontal, 60)
-                    .padding(.top, 10)
-                    .padding(.bottom, 20)
-                    .clipped()
-
-                    featuresGrid
-                        .padding(.horizontal, 40)
-                        .padding(.bottom, 20)
-
-                    footer
+        welcomeSurface
+            .frame(
+                minWidth: WelcomeWindowMetrics.width,
+                idealWidth: WelcomeWindowMetrics.width,
+                maxWidth: .infinity,
+                minHeight: WelcomeWindowMetrics.height,
+                idealHeight: WelcomeWindowMetrics.height,
+                maxHeight: .infinity
+            )
+            .background(WelcomeWindowChromeObserver())
+            .preferredColorScheme(themeOverride)
+            .scaleEffect(hasLaunched ? 1 : 0.95)
+            .offset(y: hasLaunched ? 0 : 20)
+            .opacity(hasLaunched ? 1 : 0)
+            .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.8), value: hasLaunched)
+            .onAppear {
+                hasLaunched = true
+                withAnimation(.easeInOut(duration: 1.25).repeatForever(autoreverses: true)) {
+                    ctaGlowing = true
                 }
             }
-            .frame(width: 860, height: 640)
-            .background(windowBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(windowBorderColor, lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(colorScheme == .dark ? 0.8 : 0.18), radius: 60, y: 30)
-            .blur(radius: isScanning ? 12 : 0)
-            .scaleEffect(isScanning ? 0.92 : 1)
-            .opacity(isScanning ? 0.05 : 1)
-            .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isScanning)
+            .onDisappear {
+                scanTask?.cancel()
+            }
+    }
 
-            // Scanning Overlay
-            if isScanning {
-                scanOverlay
+    private var welcomeSurface: some View {
+        GeometryReader { proxy in
+            ZStack {
+                WelcomeAmbientBackground(stage: displayStage, parallax: mouseParallax)
+
+                welcomeContent
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onContinuousHover { phase in
+                updateParallax(from: phase, in: proxy.size)
             }
         }
-        .frame(width: 860, height: 640)
-        .background(WelcomeWindowChromeObserver())
-        .preferredColorScheme(themeOverride)
-        .onAppear {
-            withAnimation(.easeInOut(duration: 1.25).repeatForever(autoreverses: true)) {
-                ctaGlowing = true
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipShape(RoundedRectangle(cornerRadius: WelcomeWindowMetrics.cornerRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: WelcomeWindowMetrics.cornerRadius, style: .continuous)
+                .stroke(windowBorderColor, lineWidth: 1)
+        )
+        .shadow(
+            color: .black.opacity(colorScheme == .dark ? 0.8 : 0.18),
+            radius: 60,
+            x: mouseParallax.horizontal * -10,
+            y: mouseParallax.vertical * -10 + 30
+        )
+        .blur(radius: isScanning ? 12 : 0)
+        .scaleEffect(isScanning ? 0.92 : 1)
+        .opacity(isScanning ? 0.05 : 1)
+        .ignoresSafeArea(.container, edges: .all)
+        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isScanning)
+        .overlay {
+            if isScanning {
+                WelcomeScanOverlayView(
+                    isScanning: isScanning,
+                    terminalLines: scanTerminalLines,
+                    cursorColor: scanCursorColor
+                )
+            } else if isDragTargeted {
+                WelcomeDropOverlayView()
             }
+        }
+        .onDrop(
+            of: [UTType.fileURL.identifier],
+            isTargeted: $isDragTargeted
+        ) { _ in
+            startScanningSequence()
+            return true
         }
     }
 
-    private var windowBackground: some View {
-        LinearGradient(
-            colors: colorScheme == .dark
-                ? [
-                    Color(red: 13 / 255, green: 40 / 255, blue: 35 / 255),
-                    Color(red: 7 / 255, green: 21 / 255, blue: 19 / 255),
-                ]
-                : [
-                    Color.white,
-                    Color(red: 242 / 255, green: 247 / 255, blue: 245 / 255),
-                ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
+    private var welcomeContent: some View {
+        VStack(spacing: 0) {
+            titlebar
+
+            ZStack {
+                switch displayStage {
+                case .default: StageDefaultView().transition(stageTransition)
+                case .feat1: StageClassifyView().transition(stageTransition)
+                case .feat2: StageSecurityView().transition(stageTransition)
+                case .feat3: StageTrackingView().transition(stageTransition)
+                case .feat4: StageHelpView().transition(stageTransition)
+                case .feat5: StageStartView().transition(stageTransition)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.horizontal, 60)
+            .padding(.top, 10)
+            .padding(.bottom, 20)
+            .rotation3DEffect(
+                .degrees(mouseParallax.vertical * -4),
+                axis: (x: 1, y: 0, z: 0),
+                perspective: 0.7
+            )
+            .rotation3DEffect(
+                .degrees(mouseParallax.horizontal * 4),
+                axis: (x: 0, y: 1, z: 0),
+                perspective: 0.7
+            )
+            .clipped()
+
+            featuresGrid
+                .padding(.horizontal, 40)
+                .padding(.bottom, 20)
+
+            footer
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var windowBorderColor: Color {
         colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06)
     }
+}
 
+private extension WelcomeStepView {
     private var titlebar: some View {
         ZStack {
             Text("AreaMatrix")
@@ -211,11 +265,7 @@ struct WelcomeStepView: View {
 
             Button(
                 action: {
-                    withAnimation { isScanning = true }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                        onContinue()
-                        isScanning = false
-                    }
+                    startScanningSequence()
                 },
                 label: {
                     HStack(spacing: 6) {
@@ -253,33 +303,6 @@ struct WelcomeStepView: View {
         .clipShape(CustomBottomCorners(radius: 12))
     }
 
-    private var scanOverlay: some View {
-        VStack(spacing: 40) {
-            ZStack {
-                Circle()
-                    .stroke(style: StrokeStyle(lineWidth: 2, dash: [4, 8]))
-                    .frame(width: 160, height: 160)
-                    .foregroundColor(Color(red: 55 / 255, green: 202 / 255, blue: 182 / 255))
-                    .rotationEffect(.degrees(isScanning ? 360 : 0))
-                    .animation(.linear(duration: 2).repeatForever(autoreverses: false), value: isScanning)
-
-                Image(colorScheme == .dark ? "AreaMatrixLogoMarkDark" : "AreaMatrixLogoMarkLight")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 80)
-                    .shadow(color: Color(red: 55 / 255, green: 202 / 255, blue: 182 / 255).opacity(0.5), radius: 10)
-            }
-
-            Text("等待系统指令...")
-                .font(.system(size: 14, weight: .medium, design: .monospaced))
-                .foregroundColor(Color(red: 55 / 255, green: 202 / 255, blue: 182 / 255))
-                .shadow(color: Color(red: 55 / 255, green: 202 / 255, blue: 182 / 255).opacity(0.4), radius: 8)
-        }
-        .scaleEffect(isScanning ? 1 : 0.9)
-        .opacity(isScanning ? 1 : 0)
-        .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2), value: isScanning)
-    }
-
     private func featureCard(
         icon: String,
         title: String,
@@ -309,161 +332,75 @@ struct WelcomeStepView: View {
             }
         )
     }
-}
 
-private struct WelcomeFeatureCard: View {
-    let icon: String
-    let title: String
-    let description: String
-    let accentColor: Color
-    let isHovered: Bool
-    let dimmingOpacity: Double
-    let dimmingSaturation: Double
-    let onHoverChanged: (Bool) -> Void
-    let onTap: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(isHovered ? .white : accentColor)
-                .frame(width: 36, height: 36)
-                .background(isHovered ? accentColor : Color.primary.opacity(0.05))
-                .cornerRadius(10)
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
-                .shadow(color: isHovered ? accentColor.opacity(0.5) : .clear, radius: 8, y: 4)
-                .padding(.bottom, 4)
-
-            Text(title)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.primary)
-                .lineLimit(1)
-
-            Text(description)
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-        }
-        .padding(.vertical, 18)
-        .padding(.horizontal, 20)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .background(.ultraThinMaterial)
-        .background(isHovered ? Color.primary.opacity(0.05) : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(isHovered ? Color.primary.opacity(0.2) : Color.primary.opacity(0.05), lineWidth: 1)
-        )
-        .overlay(
-            Rectangle()
-                .fill(accentColor)
-                .frame(height: 3)
-                .opacity(isHovered ? 1 : 0.5),
-            alignment: .top
-        )
-        .shadow(color: Color.black.opacity(isHovered ? 0.15 : 0), radius: 16, y: 8)
-        .scaleEffect(isHovered ? 1.02 : 1)
-        .opacity(dimmingOpacity)
-        .saturation(dimmingSaturation)
-        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isHovered)
-        .animation(.easeOut(duration: 0.4), value: dimmingOpacity)
-        .onHover(perform: onHoverChanged)
-        .onTapGesture(perform: onTap)
-    }
-}
-
-/// Helper for bottom corners
-struct CustomBottomCorners: Shape {
-    var radius: CGFloat = .infinity
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: 0, y: 0))
-        path.addLine(to: CGPoint(x: rect.width, y: 0))
-        path.addLine(to: CGPoint(x: rect.width, y: rect.height - radius))
-        path.addArc(
-            center: CGPoint(x: rect.width - radius, y: rect.height - radius),
-            radius: radius,
-            startAngle: Angle(degrees: 0),
-            endAngle: Angle(degrees: 90),
-            clockwise: false
-        )
-        path.addLine(to: CGPoint(x: radius, y: rect.height))
-        path.addArc(
-            center: CGPoint(x: radius, y: rect.height - radius),
-            radius: radius,
-            startAngle: Angle(degrees: 90),
-            endAngle: Angle(degrees: 180),
-            clockwise: false
-        )
-        path.addLine(to: CGPoint(x: 0, y: 0))
-        return path
-    }
-}
-
-private struct WelcomeWindowChromeObserver: NSViewRepresentable {
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
-    }
-
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView(frame: .zero)
-        DispatchQueue.main.async { context.coordinator.configure(window: view.window) }
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        DispatchQueue.main.async { context.coordinator.configure(window: nsView.window) }
-    }
-
-    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
-        coordinator.restore(window: nsView.window)
-    }
-
-    final class Coordinator {
-        private weak var configuredWindow: NSWindow?
-        private var previousTitleVisibility: NSWindow.TitleVisibility?
-        private var previousTitlebarAppearsTransparent: Bool?
-        private var previousIsMovableByWindowBackground: Bool?
-        private var previousBackgroundColor: NSColor?
-        private var previousStyleMask: NSWindow.StyleMask?
-
-        func configure(window: NSWindow?) {
-            guard let window else { return }
-            if configuredWindow !== window {
-                restore(window: configuredWindow)
-                configuredWindow = window
-                previousTitleVisibility = window.titleVisibility
-                previousTitlebarAppearsTransparent = window.titlebarAppearsTransparent
-                previousIsMovableByWindowBackground = window.isMovableByWindowBackground
-                previousBackgroundColor = window.backgroundColor
-                previousStyleMask = window.styleMask
+    private func updateParallax(from phase: HoverPhase, in size: CGSize) {
+        switch phase {
+        case let .active(location):
+            let width = max(size.width, 1)
+            let height = max(size.height, 1)
+            let next = WelcomeParallax(
+                horizontal: ((location.x / width) - 0.5) * 2,
+                vertical: ((location.y / height) - 0.5) * 2
+            )
+            withAnimation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.2)) {
+                mouseParallax = next
             }
-
-            window.titleVisibility = .hidden
-            window.titlebarAppearsTransparent = true
-            window.isMovableByWindowBackground = true
-            window.backgroundColor = .clear
-            window.styleMask.insert(.fullSizeContentView)
-        }
-
-        func restore(window: NSWindow?) {
-            guard let window,
-                  configuredWindow === window else { return }
-            if let previousTitleVisibility {
-                window.titleVisibility = previousTitleVisibility
-            }
-            if let previousTitlebarAppearsTransparent {
-                window.titlebarAppearsTransparent = previousTitlebarAppearsTransparent
-            }
-            if let previousIsMovableByWindowBackground {
-                window.isMovableByWindowBackground = previousIsMovableByWindowBackground
-            }
-            if let previousBackgroundColor {
-                window.backgroundColor = previousBackgroundColor
-            }
-            if let previousStyleMask {
-                window.styleMask = previousStyleMask
+        case .ended:
+            withAnimation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.2)) {
+                mouseParallax = .zero
             }
         }
+    }
+
+    private func startScanningSequence() {
+        guard !isScanning else { return }
+        scanTask?.cancel()
+        scanTerminalLines = []
+        scanCursorColor = WelcomePalette.tealBright
+        withAnimation { isScanning = true }
+
+        scanTask = Task { @MainActor in
+            let logs = [
+                ("初始化 AreaMatrix 核心引擎...", WelcomePalette.tealBright),
+                ("扫描文件指纹并生成索引...", WelcomePalette.tealBright),
+                ("建立 AREAMATRIX.md 概览映射...", WelcomePalette.teal),
+                ("接管完毕，安全网罩已启动。", WelcomePalette.gold)
+            ]
+
+            for log in logs {
+                guard await typeScanLog(log.0, color: log.1) else { return }
+                try? await Task.sleep(for: .milliseconds(240))
+            }
+
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            guard await typeScanLog(">>> 授权通过，正在进入 <<<", color: WelcomePalette.gold) else { return }
+
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+            onContinue()
+            isScanning = false
+        }
+    }
+
+    private func typeScanLog(_ text: String, color: Color) async -> Bool {
+        let line = WelcomeTerminalLine(text: "", color: color)
+        scanCursorColor = color
+        withAnimation(.easeOut(duration: 0.25)) {
+            scanTerminalLines.append(line)
+            if scanTerminalLines.count > 5 {
+                scanTerminalLines.removeFirst()
+            }
+        }
+
+        for character in text {
+            try? await Task.sleep(for: .milliseconds(18))
+            guard !Task.isCancelled else { return false }
+            if let index = scanTerminalLines.firstIndex(where: { $0.id == line.id }) {
+                scanTerminalLines[index].text.append(character)
+            }
+        }
+
+        return true
     }
 }

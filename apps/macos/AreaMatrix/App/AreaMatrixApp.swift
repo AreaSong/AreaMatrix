@@ -9,6 +9,7 @@ struct AreaMatrixApp: App {
         WindowGroup {
             MainWindow()
         }
+        .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(after: .sidebar) {
