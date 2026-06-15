@@ -26,6 +26,8 @@ struct WelcomeStepView: View {
     @State private var hoverStage: WelcomeStage?
     @State private var isScanning = false
     @State private var isExiting = false
+    @State private var isDeepDiving = false
+    @State private var whiteFlash = false
     @State private var isDragTargeted = false
     @State private var ctaGlowing = false
     @State private var isCtaHovered = false
@@ -46,6 +48,7 @@ struct WelcomeStepView: View {
     @FocusState private var isChooseFolderFocused: Bool
     /// 用户手动切换的主题偏好：nil = 跟随系统
     @State private var themeOverride: ColorScheme?
+    @State private var themeSpin: Double = 0
     @State private var shimmerPhase: CGFloat = -1.5
 
     /// Derived stage to show
@@ -130,13 +133,21 @@ struct WelcomeStepView: View {
                     cursorColor: scanCursorColor,
                     scanProgressFraction: scanProgressFraction
                 )
-                .scaleEffect(isExiting ? 2.5 : 1)
-                .opacity(isExiting ? 0 : 1)
-                .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.6), value: isExiting)
+                .scaleEffect(isDeepDiving ? 2.5 : 1)
+                .opacity(isDeepDiving ? 0 : 1)
+                .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.6), value: isDeepDiving)
             } else if isDragTargeted {
                 WelcomeDropOverlayView()
             }
+            
+            if whiteFlash {
+                Color.white.ignoresSafeArea()
+                    .opacity(whiteFlash ? 1 : 0)
+                    .animation(.easeOut(duration: 0.15), value: whiteFlash)
+            }
         }
+        .scaleEffect(isDeepDiving ? 12.0 : 1.0)
+        .animation(.timingCurve(0.7, 0, 1, 1, duration: 0.6), value: isDeepDiving)
         .onDrop(
             of: [UTType.fileURL.identifier],
             isTargeted: $isDragTargeted
@@ -201,6 +212,7 @@ private extension WelcomeStepView {
                 Spacer()
                 Button {
                     withAnimation(.easeInOut(duration: 0.3)) {
+                        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
                         if themeOverride == nil {
                             themeOverride = colorScheme == .dark ? .light : .dark
                         } else {
@@ -216,6 +228,9 @@ private extension WelcomeStepView {
                             NSApp.appearance = nil
                         }
                     }
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
+                        themeSpin += 360
+                    }
                 } label: {
                     Image(systemName: (themeOverride ?? colorScheme) == .dark ? "sun.max" : "moon")
                         .font(.system(size: 12))
@@ -223,6 +238,7 @@ private extension WelcomeStepView {
                         .frame(width: 28, height: 28)
                         .background(Circle().fill(Color.primary.opacity(isThemeHovered ? 0.08 : 0)))
                         .scaleEffect(isThemeHovered ? 1.15 : 1.0)
+                        .rotationEffect(.degrees(themeSpin))
                         .contentTransition(.symbolEffect(.replace))
                         .contentShape(Rectangle())
                 }
@@ -280,15 +296,27 @@ private extension WelcomeStepView {
                     HStack(spacing: 6) {
                         Image(systemName: "questionmark.circle")
                         Text("了解 AreaMatrix 如何工作")
-                            .underline(isLearnMoreHovered)
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 10, weight: .semibold))
-                            .opacity(0.6)
-                            .offset(x: isLearnMoreHovered ? 2 : 0, y: isLearnMoreHovered ? -2 : 0)
-                            .symbolEffect(.bounce, value: isLearnMoreHovered)
+                            .background(
+                                Rectangle()
+                                    .frame(height: 1)
+                                    .offset(y: 2)
+                                    .opacity(isLearnMoreHovered ? 1 : 0),
+                                alignment: .bottom
+                            )
+                        ZStack {
+                            Image(systemName: "arrow.up.right")
+                                .opacity(isLearnMoreHovered ? 0 : 0.6)
+                                .offset(x: isLearnMoreHovered ? 10 : 0, y: isLearnMoreHovered ? -10 : 0)
+                            Image(systemName: "arrow.up.right")
+                                .opacity(isLearnMoreHovered ? 0.6 : 0)
+                                .offset(x: isLearnMoreHovered ? 0 : -10, y: isLearnMoreHovered ? 10 : 0)
+                        }
+                        .font(.system(size: 10, weight: .semibold))
+                        .frame(width: 12, height: 12)
+                        .clipped()
                     }
                     .font(.system(size: 13))
-                    .foregroundStyle(isLearnMoreHovered ? .primary : .secondary)
+                    .foregroundColor(isLearnMoreHovered ? .primary : .secondary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                     .background(
@@ -332,7 +360,12 @@ private extension WelcomeStepView {
                 label: {
                     HStack(spacing: 6) {
                         Text("选择本地文件夹")
-                        Image(systemName: "folder.badge.plus")
+                        Color.clear
+                            .frame(width: 16, height: 16)
+                            .overlay(
+                                Image(systemName: "folder.badge.plus")
+                                    .symbolEffect(.bounce, value: isCtaHovered)
+                            )
                         Text("⌘O")
                             .font(.system(size: 11, weight: .semibold, design: .rounded))
                             .padding(.horizontal, 4)
@@ -374,6 +407,7 @@ private extension WelcomeStepView {
                     .scaleEffect(isCtaHovered ? 1.04 : 1.0)
                     .offset(y: isCtaHovered ? -2 : 0)
                     .animation(.easeOut(duration: 0.2), value: isCtaHovered)
+                    .magneticHover(intensity: 0.15)
                 }
             )
             .buttonStyle(.plain)
@@ -450,6 +484,7 @@ private extension WelcomeStepView {
             next = max(0, min(stages.count - 1, current + direction))
         }
         guard stages[next] != activeStage else { return }
+        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
         withAnimation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.8)) {
             activeStage = stages[next]
         }
@@ -502,13 +537,18 @@ private extension WelcomeStepView {
             try? await Task.sleep(for: .seconds(0.5))
             guard !Task.isCancelled else { return }
             
-            withAnimation { isExiting = true }
-            try? await Task.sleep(for: .milliseconds(500))
+            withAnimation(.timingCurve(0.7, 0, 1, 1, duration: 0.6)) { isDeepDiving = true }
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            
+            withAnimation(.easeIn(duration: 0.15)) { whiteFlash = true }
+            try? await Task.sleep(for: .milliseconds(200))
             guard !Task.isCancelled else { return }
             
             onContinue()
             isScanning = false
-            isExiting = false
+            isDeepDiving = false
+            whiteFlash = false
             scanProgressFraction = 0
         }
     }

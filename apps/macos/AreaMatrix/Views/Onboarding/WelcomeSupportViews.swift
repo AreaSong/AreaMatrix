@@ -51,6 +51,7 @@ struct WelcomeFeatureCard: View {
     @State private var hasEntered = false
     @State private var hoverPoint = UnitPoint.center
     @FocusState private var isFocused: Bool
+    @State private var idleGlarePhase: CGFloat = -0.5
 
     var body: some View {
         GeometryReader { proxy in
@@ -62,19 +63,24 @@ struct WelcomeFeatureCard: View {
                     .focused($isFocused)
                     .focusEffectDisabled()
                     .onChange(of: isFocused) { _, focused in
+                        if focused {
+                            NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+                        }
                         onHoverChanged(focused)
                     }
                     .onContinuousHover { phase in
                         updateHover(phase: phase, in: proxy.size)
                     }
 
-                // Visual Representation (Moves and scales)
                 VStack(alignment: .leading, spacing: 8) {
-                    Image(systemName: icon)
-                        .font(.system(size: 18, weight: .medium))
-                        .symbolEffect(.bounce, value: isHovered)
-                        .foregroundColor(isHovered ? .white : accentColor)
+                    Color.clear
                         .frame(width: 40, height: 40)
+                        .overlay(
+                            Image(systemName: icon)
+                                .font(.system(size: 18, weight: .medium))
+                                .symbolEffect(.bounce, value: isHovered)
+                                .foregroundColor(isHovered ? .white : accentColor)
+                        )
                         .background(isHovered ? accentColor : Color.primary.opacity(0.05))
                         .cornerRadius(10)
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
@@ -88,19 +94,22 @@ struct WelcomeFeatureCard: View {
 
                     Text(description)
                         .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
+                        .foregroundColor(.secondary)
                         .lineLimit(1)
                 }
                 .padding(.vertical, 24)
                 .padding(.horizontal, 20)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .background(.ultraThinMaterial)
                 .background(isHovered ? Color.primary.opacity(0.05) : Color.clear)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(cardSpotlight)
                 .overlay(cardBorder)
                 .overlay(cardTopAccent, alignment: .top)
                 .overlay(cardGlare)
-                .shadow(color: Color.black.opacity(isHovered ? 0.15 : 0), radius: 16, y: 8)
+                .overlay(cardIdleGlare)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .shadow(color: Color.black.opacity(isHovered ? 0.25 : 0.05), radius: isHovered ? 24 : 10, y: isHovered ? 12 : 4)
                 .offset(y: hasEntered ? 0 : 16)
                 .opacity(hasEntered ? 1 : 0)
                 .rotation3DEffect(
@@ -109,29 +118,59 @@ struct WelcomeFeatureCard: View {
                     perspective: 0.5
                 )
                 .featureCardFocus(isHovered: isHovered, anyCardHovered: anyCardHovered)
-                .rotation3DEffect(
-                    .degrees(isHovered ? (hoverPoint.y - 0.5) * -6 : 0),
-                    axis: (x: 1, y: 0, z: 0),
-                    perspective: 0.8
-                )
-                .rotation3DEffect(
-                    .degrees(isHovered ? (hoverPoint.x - 0.5) * 6 : 0),
-                    axis: (x: 0, y: 1, z: 0),
-                    perspective: 0.8
-                )
                 .animation(.easeOut(duration: 0.15), value: hoverPoint)
                 .allowsHitTesting(false)
                 .animation(.areaMatrixStageFlow.delay(entranceDelay), value: hasEntered)
             }
             .onAppear {
                 hasEntered = true
+                withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false).delay(6.0 + entranceDelay)) {
+                    idleGlarePhase = 1.5
+                }
             }
         }
     }
 
+    private var cardSpotlight: some View {
+        RadialGradient(
+            colors: [
+                Color.primary.opacity(isHovered ? (colorScheme == .dark ? 0.08 : 0.05) : 0),
+                .clear
+            ],
+            center: hoverPoint,
+            startRadius: 0,
+            endRadius: 180
+        )
+        .blendMode(colorScheme == .dark ? .screen : .normal)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    private var cardIdleGlare: some View {
+        LinearGradient(
+            colors: [.clear, .white.opacity(colorScheme == .dark ? 0.35 : 0.7), .clear],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .frame(width: 250)
+        .offset(x: (idleGlarePhase * 800) - 400)
+        .mask(RoundedRectangle(cornerRadius: 8))
+        .opacity(isHovered ? 0 : 1) // 悬停时不播放闲置反光
+        .allowsHitTesting(false)
+    }
+
     private var cardBorder: some View {
         RoundedRectangle(cornerRadius: 8)
-            .stroke(isHovered ? Color.primary.opacity(0.2) : Color.primary.opacity(0.05), lineWidth: 1)
+            .stroke(
+                LinearGradient(
+                    colors: [
+                        isHovered ? Color.primary.opacity(0.3) : Color.primary.opacity(0.1),
+                        Color.primary.opacity(0.02)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 1
+            )
     }
 
     private var cardTopAccent: some View {
@@ -148,17 +187,23 @@ struct WelcomeFeatureCard: View {
     }
 
     private var cardGlare: some View {
-        RadialGradient(
-            colors: [
-                accentColor.opacity(isHovered ? 0.35 : 0),
-                Color.white.opacity(isHovered ? 0.15 : 0),
-                Color.white.opacity(0)
-            ],
-            center: hoverPoint,
-            startRadius: 0,
-            endRadius: 160
-        )
-        .blendMode(colorScheme == .dark ? .screen : .plusLighter)
+        GeometryReader { geo in
+            let w = geo.size.width
+            let h = geo.size.height
+            LinearGradient(
+                colors: [.clear, Color.white.opacity(colorScheme == .dark ? 0.15 : 0.4), .clear],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .frame(width: w * 2, height: h * 2)
+            .rotationEffect(.degrees(-20))
+            .offset(
+                x: (hoverPoint.x - 0.5) * w * 1.5,
+                y: (hoverPoint.y - 0.5) * h * 1.5
+            )
+            .opacity(isHovered ? 1 : 0)
+            .blendMode(colorScheme == .dark ? .plusLighter : .screen)
+        }
         .allowsHitTesting(false)
     }
 
@@ -170,7 +215,7 @@ struct WelcomeFeatureCard: View {
                 y: max(0, min(1, location.y / max(size.height, 1)))
             )
             if !isHovered {
-                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+                NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
                 onHoverChanged(true)
             }
         case .ended:
@@ -400,7 +445,6 @@ struct FeatureCardFocusModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .scaleEffect(isHovered ? 1.02 : 1)
             // Focus Dimming：非 hover 卡片淡出和脱色
             .opacity(anyCardHovered ? (isHovered ? 1.0 : 0.4) : 1.0)
             .saturation(anyCardHovered ? (isHovered ? 1.0 : 0.4) : 1.0)
@@ -491,5 +535,103 @@ struct PulseAuraModifier: ViewModifier {
 public extension View {
     func pulseAura(color: Color, duration: Double = 2.5, maxScale: CGFloat = 1.7, cornerRadius: CGFloat = 28) -> some View {
         modifier(PulseAuraModifier(color: color, duration: duration, maxScale: maxScale, cornerRadius: cornerRadius))
+    }
+}
+
+// MARK: - Magnetic Hover Modifier
+struct MagneticHoverModifier: ViewModifier {
+    @State private var offset: CGSize = .zero
+    let intensity: CGFloat
+    
+    func body(content: Content) -> some View {
+        content
+            .offset(x: offset.width, y: offset.height)
+            .animation(.interpolatingSpring(stiffness: 150, damping: 12), value: offset)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .onContinuousHover { phase in
+                            switch phase {
+                            case .active(let location):
+                                let center = CGPoint(x: proxy.size.width / 2, y: proxy.size.height / 2)
+                                let dx = (location.x - center.x) * intensity
+                                let dy = (location.y - center.y) * intensity
+                                offset = CGSize(width: dx, height: dy)
+                            case .ended:
+                                offset = .zero
+                            }
+                        }
+                }
+            )
+    }
+}
+
+public extension View {
+    func magneticHover(intensity: CGFloat = 0.2) -> some View {
+        modifier(MagneticHoverModifier(intensity: intensity))
+    }
+}
+
+// MARK: - Matrix Decode Text Effect
+
+public struct MatrixText: View {
+    public let text: String
+    public var gradient: LinearGradient?
+    
+    @State private var displayText: String = ""
+    @State private var timerTask: Task<Void, Never>?
+    
+    private let asciiChars = Array("!@#$%^&*()_+-=[]{}|;:',.<>?/ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+    
+    public init(text: String, gradient: LinearGradient? = nil) {
+        self.text = text
+        self.gradient = gradient
+    }
+    
+    public var body: some View {
+        Group {
+            if let gradient = gradient {
+                Text(displayText)
+                    .foregroundStyle(gradient)
+            } else {
+                Text(displayText)
+            }
+        }
+        .onAppear { startDecode() }
+        .onChange(of: text) { _, _ in startDecode() }
+    }
+    
+    private func startDecode() {
+        timerTask?.cancel()
+        displayText = text // 初始值（在第一帧渲染前）
+        
+        timerTask = Task { @MainActor in
+            let targetArray = Array(text)
+            var currentArray = Array(repeating: Character(" "), count: targetArray.count)
+            
+            for i in 0..<targetArray.count {
+                // 闪烁 2 次乱码
+                for _ in 0..<2 {
+                    try? await Task.sleep(for: .milliseconds(12))
+                    guard !Task.isCancelled else { return }
+                    
+                    for j in i..<targetArray.count {
+                        if targetArray[j].isWhitespace {
+                            currentArray[j] = " "
+                        } else {
+                            currentArray[j] = asciiChars.randomElement()!
+                        }
+                    }
+                    displayText = String(currentArray)
+                }
+                
+                // 定格真实字符
+                currentArray[i] = targetArray[i]
+                displayText = String(currentArray)
+            }
+            await MainActor.run {
+                NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
+            }
+        }
     }
 }

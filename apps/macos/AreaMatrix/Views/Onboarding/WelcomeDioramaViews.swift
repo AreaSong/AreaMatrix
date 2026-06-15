@@ -8,6 +8,8 @@ struct StageClassifyView: View {
     @State private var scanProgress: CGFloat = 0
     @State private var highlightFlash = false
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.welcomeStageParallax) private var parallax
+    @Environment(\.welcomeStagePhase) private var stagePhase
 
     var body: some View {
         VStack(spacing: 32) {
@@ -15,11 +17,24 @@ struct StageClassifyView: View {
                 .welcomeStageVisualMotion()
             DioramaStageText(
                 title: "智能引擎，自动归档",
-                description: "把文件拖入视窗，底层的智能规则与 AI 将自动识别内容、建议命名，并为其在庞大复杂的目录树中寻找到最佳的物理归属。"
+                description: "把文件拖入视窗，底层的智能规则与 AI 将自动识别内容、建议命名，并为其在庞大复杂的目录树中寻找到最佳的物理归属。",
+                gradient: LinearGradient(
+                    colors: [
+                        colorScheme == .dark ? WelcomePalette.tealBright : WelcomePalette.tealDeep,
+                        colorScheme == .dark ? WelcomePalette.teal : WelcomePalette.emeraldDeep
+                    ],
+                    startPoint: .leading, endPoint: .trailing
+                )
             )
         }
-        .onAppear { startCycle() }
-        .onDisappear { timerTask?.cancel() }
+        .onChange(of: stagePhase, initial: true) { _, newPhase in
+            if newPhase.isVisible {
+                phase = 0
+                startCycle()
+            } else {
+                timerTask?.cancel()
+            }
+        }
         .onChange(of: phase) { _, newPhase in
             if newPhase == 2 {
                 scanProgress = 0
@@ -49,10 +64,12 @@ struct StageClassifyView: View {
     /// Phase 0: 文件静止  Phase 1: 飞向 drop zone  Phase 2: 扫描+标签  Phase 3: 文件落位
     private var classifyDiorama: some View {
         ZStack {
-            mockAppWindow.offset(x: 70)
+            mockAppWindow
+                .offset(x: 70 + parallax.horizontal * -15, y: parallax.vertical * -10)
             floatingFileView
                 .offset(x: phase >= 1 ? 80 : -150, y: phase >= 1 ? -20 : 0)
                 .scaleEffect(phase >= 1 && phase <= 2 ? 0.6 : 1.0)
+                .rotation3DEffect(.degrees(phase == 1 ? 25 : 0), axis: (x: 0.5, y: 1.0, z: -0.2), perspective: 0.8)
                 .opacity(phase == 0 || phase == 1 ? 1 : 0)
 
             // 文件飞行拖尾轨迹
@@ -151,6 +168,8 @@ struct StageClassifyView: View {
 struct StageSecurityView: View {
     @State private var isAnimating = false
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.welcomeStageParallax) private var parallax
+    @Environment(\.welcomeStagePhase) private var stagePhase
 
     var body: some View {
         VStack(spacing: 32) {
@@ -158,10 +177,26 @@ struct StageSecurityView: View {
                 .welcomeStageVisualMotion()
             DioramaStageText(
                 title: "零侵入，绝对的安全防线",
-                description: "我们仅仅在底层建立一层可视化的超级索引。程序承诺永远不会在后台私自改动、移动或覆盖您宝贵的源文件与已有目录结构。"
+                description: "我们仅仅在底层建立一层可视化的超级索引。程序承诺永远不会在后台私自改动、移动或覆盖您宝贵的源文件与已有目录结构。",
+                gradient: LinearGradient(
+                    colors: [
+                        colorScheme == .dark ? WelcomePalette.gold : WelcomePalette.goldDeep,
+                        colorScheme == .dark ? WelcomePalette.coral : WelcomePalette.coralDeep
+                    ],
+                    startPoint: .topLeading, endPoint: .bottomTrailing
+                )
             )
         }
-        .onAppear { isAnimating = true }
+        .onChange(of: stagePhase, initial: true) { _, newPhase in
+            if newPhase.isVisible {
+                isAnimating = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    isAnimating = true
+                }
+            } else {
+                isAnimating = false
+            }
+        }
     }
 
     private var securityDiorama: some View {
@@ -232,7 +267,12 @@ struct StageSecurityView: View {
                 )
                 .scaleEffect(isAnimating ? 1.08 : 1.0)
                 .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(0.3), value: isAnimating)
+            Image(systemName: "checkmark.shield.fill")
+                .font(.system(size: 40))
+                .foregroundColor(colorScheme == .dark ? WelcomePalette.gold : WelcomePalette.gold)
+                .shadow(color: WelcomePalette.gold.opacity(0.4), radius: 20)
         }
+        .offset(x: parallax.horizontal * 25, y: parallax.vertical * 25)
     }
 
     private var dataStreams: some View {

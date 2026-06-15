@@ -70,7 +70,13 @@ struct WelcomeStageVisualMotion: ViewModifier {
             .opacity(stagePhase.isVisible ? 1 : 0)
             .offset(y: stagePhase.isVisible ? 0 : verticalOffset)
             .scaleEffect(stagePhase.isVisible ? 1 : scale)
+            .blur(radius: stagePhase.isVisible ? 0 : 16)
             .rotationEffect(.degrees(stagePhase.isVisible ? 0 : rotationAngle))
+            .rotation3DEffect(
+                .degrees(stagePhase.isVisible ? 0 : stage3DRotation),
+                axis: (x: 1, y: 0, z: 0),
+                perspective: 0.85
+            )
             .rotation3DEffect(
                 .degrees(parallax.vertical * -12),
                 axis: (x: 1, y: 0, z: 0),
@@ -87,15 +93,15 @@ struct WelcomeStageVisualMotion: ViewModifier {
 
     private var verticalOffset: CGFloat {
         switch stagePhase {
-        case .enter: return 12  // 从下方轻微滑入
-        case .exit: return -8   // 向上方轻微滑出
+        case .enter: return 16  // 从下方轻微滑入
+        case .exit: return -12   // 向上方轻微滑出
         }
     }
 
     private var scale: CGFloat {
         switch stagePhase {
-        case .enter: return 0.94 // Start smaller, expand to 1.0
-        case .exit: return 1.06 // Expand outwards while fading
+        case .enter: return 0.85 // Start smaller, expand to 1.0 (Z-axis push)
+        case .exit: return 1.15 // Expand outwards while fading (Z-axis pull)
         }
     }
 
@@ -103,6 +109,13 @@ struct WelcomeStageVisualMotion: ViewModifier {
         switch stagePhase {
         case .enter: return 1.5
         case .exit: return -1.5
+        }
+    }
+    
+    private var stage3DRotation: Double {
+        switch stagePhase {
+        case .enter: return -10 // 进场时有一个微向后的仰角
+        case .exit: return 10   // 出场时向前倾倒
         }
     }
 

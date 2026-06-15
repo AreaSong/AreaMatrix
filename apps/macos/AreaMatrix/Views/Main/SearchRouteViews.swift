@@ -96,18 +96,19 @@ struct AISummaryEditor: View {
             Text(confirmation?.message ?? "")
         }
         .sheet(item: $privacyRuleRoute) { route in
-            AIPrivacyRulesRouteSheet(repoPath: repoPath, focus: route.focus) {
+            AIPrivacyRulesRouteSheet(repoPath: repoPath, focus: route.focus, onClose: {
                 privacyRuleRoute = nil
-            }
+            })
         }
         .sheet(item: $callLogRoute) { route in
             AIClassificationCallLogDetailSheet(
                 repoPath: repoPath,
                 callLogID: route.callLogID,
-                feature: .summary
-            ) {
-                callLogRoute = nil
-            }
+                feature: .summary,
+                onClose: {
+                    callLogRoute = nil
+                }
+            )
         }
         .onChange(of: AISummaryEditorIdentity(fileID: fileID, privacyContext: privacyContext)) { _, identity in
             model.reset(fileID: identity.fileID)

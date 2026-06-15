@@ -17,6 +17,7 @@ enum WelcomePalette {
     static let emeraldDeep = Color(red: 8 / 255, green: 115 / 255, blue: 82 / 255)
     static let goldDeep = Color(red: 166 / 255, green: 120 / 255, blue: 13 / 255)
     static let coralDeep = Color(red: 180 / 255, green: 70 / 255, blue: 50 / 255)
+    static let purpleDeep = Color(red: 100 / 255, green: 30 / 255, blue: 180 / 255)
 }
 
 struct WelcomeParallax: Equatable {
@@ -161,6 +162,7 @@ struct StageDefaultView: View {
     @State private var shimmerOffset: CGFloat = -1.0
     @State private var logoEntered = false
     @State private var subtitleBreathing = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: 32) {
@@ -185,14 +187,15 @@ struct StageDefaultView: View {
                 // 渐变闪光标语——匹配 HTML textShine 动画
                 Text("将散乱的文件，化作知识枢纽。")
                     .font(.system(size: 20, weight: .semibold))
-                    .textShimmer(highlight: WelcomePalette.tealBright)
+                    .tracking(0.5)
+                    .textShimmer(highlight: colorScheme == .dark ? WelcomePalette.tealBright : WelcomePalette.tealDeep)
                     .welcomeStageTextMotion(delay: 0.05)
 
                 Text("无需搬运，只需指认一个本地文件夹。AreaMatrix 会为你建立结构清晰、无感同步的私人资料库。")
                     .font(.system(size: 15))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .lineSpacing(4)
+                    .lineSpacing(6)
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
                     .opacity(subtitleBreathing ? 0.72 : 1.0)
@@ -321,8 +324,8 @@ struct MockMiniWindow<Content: View>: View {
 
             content()
         }
-        .frame(width: width, height: height)
-        .background(useDarkBackground ? .ultraThinMaterial : .ultraThinMaterial)
+        .frame(width: width, height: height, alignment: .top)
+        .background(Color(NSColor.windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke((colorScheme == .dark ? Color.white : Color.black).opacity(0.1), lineWidth: 1))
         .shadow(color: Color.black.opacity(0.3), radius: 20, y: 10)
@@ -335,17 +338,19 @@ struct MockMiniWindow<Content: View>: View {
 struct DioramaStageText: View {
     let title: String
     let description: String
+    var gradient: LinearGradient? = nil
 
     var body: some View {
         VStack(spacing: 12) {
-            Text(title)
+            MatrixText(text: title, gradient: gradient)
                 .font(.system(size: 22, weight: .semibold))
+                .tracking(0.5)
                 .welcomeStageTextMotion(delay: 0.05)
             Text(description)
                 .font(.system(size: 15))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .lineSpacing(4)
+                .lineSpacing(6)
                 .lineLimit(nil)
                 .fixedSize(horizontal: false, vertical: true)
                 .welcomeStageTextMotion(delay: 0.1)

@@ -197,13 +197,13 @@ struct SemanticSearchFallbackStatusRegion: View {
         if let repoPath = repoPath?.trimmingCharacters(in: .whitespacesAndNewlines), !repoPath.isEmpty {
             switch sheet {
             case .localModelStatus:
-                LocalModelStatusView(model: LocalModelStatusModel(repoPath: repoPath)) {
+                LocalModelStatusView(model: LocalModelStatusModel(repoPath: repoPath), onClose: {
                     recoverySheet = nil
-                }
+                })
             case .remoteConfig:
-                RemoteModelConfigSheet(model: RemoteProviderConfigModel(repoPath: repoPath)) {
+                RemoteModelConfigSheet(model: RemoteProviderConfigModel(repoPath: repoPath), onClose: {
                     recoverySheet = nil
-                }
+                })
             }
         }
     }

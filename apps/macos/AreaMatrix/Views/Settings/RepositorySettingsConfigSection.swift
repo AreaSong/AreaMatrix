@@ -27,7 +27,7 @@ struct RepositorySettingsConfigSection: View {
             content
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .onChange(of: config) { newConfig in
+        .onChange(of: config) { _, newConfig in
             draft = newConfig.map(RepositorySettingsConfigDraft.init(config:)) ?? .empty
             model.resetFeedback()
         }

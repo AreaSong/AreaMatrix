@@ -43,7 +43,9 @@ struct WelcomeAmbientBackground: View {
                         color: blobColor(for: stage, index: 1, isDark: colorScheme == .dark)
                     )
                     .offset(x: blobBreathing ? 25 : -25, y: blobBreathing ? -20 : 20)
+                    .scaleEffect(blobBreathing ? 1.05 : 0.95)
                     .animation(.easeInOut(duration: 7).repeatForever(autoreverses: true), value: blobBreathing)
+                    .offset(x: parallax.horizontal * 60, y: parallax.vertical * 40)
 
                     // HTML g2: 600x600, bottom: -200px, right: -100px
                     BlobView(
@@ -53,7 +55,9 @@ struct WelcomeAmbientBackground: View {
                         color: blobColor(for: stage, index: 2, isDark: colorScheme == .dark)
                     )
                     .offset(x: blobBreathing ? -28 : 28, y: blobBreathing ? 18 : -18)
+                    .scaleEffect(blobBreathing ? 1.08 : 0.92)
                     .animation(.easeInOut(duration: 9).repeatForever(autoreverses: true).delay(1), value: blobBreathing)
+                    .offset(x: parallax.horizontal * -40, y: parallax.vertical * -50)
 
                     // HTML g3: 400x400, top: 20%, left: 30%
                     BlobView(
@@ -63,7 +67,9 @@ struct WelcomeAmbientBackground: View {
                         color: blobColor(for: stage, index: 3, isDark: colorScheme == .dark)
                     )
                     .offset(x: blobBreathing ? 18 : -18, y: blobBreathing ? 22 : -22)
+                    .scaleEffect(blobBreathing ? 1.04 : 0.96)
                     .animation(.easeInOut(duration: 8).repeatForever(autoreverses: true).delay(2), value: blobBreathing)
+                    .offset(x: parallax.horizontal * 30, y: parallax.vertical * -30)
 
                     // Blob 4: 紫色系互补色，丰富背景色彩层次
                     BlobView(
@@ -73,18 +79,23 @@ struct WelcomeAmbientBackground: View {
                         color: blobColor(for: stage, index: 4, isDark: colorScheme == .dark)
                     )
                     .offset(x: blobBreathing ? -15 : 15, y: blobBreathing ? 12 : -12)
+                    .scaleEffect(blobBreathing ? 1.06 : 0.94)
                     .animation(.easeInOut(duration: 6).repeatForever(autoreverses: true).delay(3), value: blobBreathing)
+                    .offset(x: parallax.horizontal * -20, y: parallax.vertical * 20)
+
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .rotationEffect(.degrees(blobBreathing ? 360 : 0))
+                .animation(.linear(duration: 60).repeatForever(autoreverses: false), value: blobBreathing)
                 .onAppear { blobBreathing = true }
                 .offset(
                     x: parallax.horizontal * -20,
                     y: parallax.vertical * -20
                 )
                 // 深色保持大模糊营造发光感；浅色收紧让 multiply 色调更集中
-                .blur(radius: colorScheme == .dark ? 80 : 65)
+                .blur(radius: colorScheme == .dark ? 100 : 75)
                 .blendMode(colorScheme == .dark ? .screen : .multiply)
-                .opacity(colorScheme == .dark ? 0.9 : 0.85)
+                .opacity(colorScheme == .dark ? 0.9 : 0.6)
                 .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.8), value: stage)
                 .animation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.2), value: parallax)
             }

@@ -11,6 +11,8 @@ struct StageTrackingView: View {
     @State private var timerTask: Task<Void, Never>?
     @State private var typingTask: Task<Void, Never>?
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.welcomeStageParallax) private var parallax
+    @Environment(\.welcomeStagePhase) private var stagePhase
 
     private var markdownTypewriterLines: [(String, Color)] {
         [
@@ -28,18 +30,34 @@ struct StageTrackingView: View {
                 .welcomeStageVisualMotion()
             DioramaStageText(
                 title: "全局概览，时间线级追溯",
-                description: "自动生成专属的 Markdown 资料库大纲。您的每一次挪动、修改，哪怕是在系统原生的 Finder 中操作，都会被精准记录并实时回流。"
+                description: "自动生成专属的 Markdown 资料库大纲。您的每一次挪动、修改，哪怕是在系统原生的 Finder 中操作，都会被精准记录并实时回流。",
+                gradient: LinearGradient(
+                    colors: [
+                        colorScheme == .dark ? WelcomePalette.coral : WelcomePalette.coralDeep,
+                        colorScheme == .dark ? WelcomePalette.gold : WelcomePalette.goldDeep
+                    ],
+                    startPoint: .topLeading, endPoint: .bottomTrailing
+                )
             )
         }
-        .onAppear {
-            startCycle()
-            startTyping()
-            withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) { isSpinning = true }
-            withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: false)) { particleFlying = true }
-        }
-        .onDisappear {
-            timerTask?.cancel()
-            typingTask?.cancel()
+        .onChange(of: stagePhase, initial: true) { _, newPhase in
+            if newPhase.isVisible {
+                showNewName = false
+                typedMarkdownLines = []
+                isSpinning = false
+                particleFlying = false
+                startCycle()
+                startTyping()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) { isSpinning = true }
+                    withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: false)) { particleFlying = true }
+                }
+            } else {
+                timerTask?.cancel()
+                typingTask?.cancel()
+                isSpinning = false
+                particleFlying = false
+            }
         }
     }
 
@@ -206,6 +224,8 @@ struct StageHelpView: View {
     @State private var fsEventRows: [WelcomeFSEventRow] = []
     @State private var fsEventTask: Task<Void, Never>?
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.welcomeStageParallax) private var parallax
+    @Environment(\.welcomeStagePhase) private var stagePhase
 
     private let fsEventActions = [
         "CREATE /docs/draft.md",
@@ -218,20 +238,39 @@ struct StageHelpView: View {
         VStack(spacing: 32) {
             helpDiorama
                 .welcomeStageVisualMotion()
+                .offset(x: parallax.horizontal * 10, y: parallax.vertical * 10)
             DioramaStageText(
                 title: "工作流与算法揭秘",
-                description: "一分钟了解 AreaMatrix 如何通过轻量级的本地索引引擎和 FSEvents 监听，帮助您彻底终结文件整理的焦虑感。"
+                description: "一分钟了解 AreaMatrix 如何通过轻量级的本地索引引擎和 FSEvents 监听，帮助您彻底终结文件整理的焦虑感。",
+                gradient: LinearGradient(
+                    colors: [
+                        colorScheme == .dark ? WelcomePalette.purple : WelcomePalette.purpleDeep,
+                        colorScheme == .dark ? WelcomePalette.emerald : WelcomePalette.emeraldDeep
+                    ],
+                    startPoint: .leading, endPoint: .trailing
+                )
             )
         }
-        .onAppear {
-            startFSEventStream()
-            isAnimating = true
-            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) { pulseIn = true }
-            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false).delay(0.4)) { pulseOut = true }
-            withAnimation(.linear(duration: 1.0).repeatForever(autoreverses: false)) { dashPhase = 8 }
-        }
-        .onDisappear {
-            fsEventTask?.cancel()
+        .onChange(of: stagePhase, initial: true) { _, newPhase in
+            if newPhase.isVisible {
+                isAnimating = false
+                pulseIn = false
+                pulseOut = false
+                dashPhase = 0
+                fsEventRows = []
+                startFSEventStream()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    isAnimating = true
+                    withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) { pulseIn = true }
+                    withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false).delay(0.4)) { pulseOut = true }
+                    withAnimation(.linear(duration: 1.0).repeatForever(autoreverses: false)) { dashPhase = 8 }
+                }
+            } else {
+                fsEventTask?.cancel()
+                isAnimating = false
+                pulseIn = false
+                pulseOut = false
+            }
         }
     }
 
@@ -271,6 +310,7 @@ struct StageHelpView: View {
             dbTarget.offset(x: 180)
         }
         .frame(width: 600, height: 220)
+        .offset(x: parallax.horizontal * -20, y: parallax.vertical * -20)
     }
 
     private var fsEventsColumn: some View {

@@ -70,10 +70,11 @@ struct AIClassificationSuggestionRouteView: View {
         .sheet(item: $callLogRoute) { route in
             AIClassificationCallLogDetailSheet(
                 repoPath: repoPath,
-                callLogID: route.callLogID
-            ) {
-                callLogRoute = nil
-            }
+                callLogID: route.callLogID,
+                onClose: {
+                    callLogRoute = nil
+                }
+            )
         }
     }
 
@@ -81,7 +82,7 @@ struct AIClassificationSuggestionRouteView: View {
     private func recoverySheet(_ sheet: AIClassificationRecoverySheet) -> some View {
         switch sheet {
         case .localModelStatus:
-            LocalModelStatusView(model: LocalModelStatusModel(repoPath: repoPath)) { presentedRecoverySheet = nil }
+            LocalModelStatusView(model: LocalModelStatusModel(repoPath: repoPath), onClose: { presentedRecoverySheet = nil })
         case .remoteConfig:
             RemoteModelConfigSheet(model: RemoteProviderConfigModel(repoPath: repoPath), onClose: {
                 presentedRecoverySheet = nil
@@ -186,9 +187,9 @@ struct AIClassificationSuggestionPanel: View {
         .background(.background)
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))
         .sheet(item: $privacyRuleRoute) { route in
-            AIPrivacyRulesRouteSheet(repoPath: model.repoPath, focus: route.focus) {
+            AIPrivacyRulesRouteSheet(repoPath: model.repoPath, focus: route.focus, onClose: {
                 privacyRuleRoute = nil
-            }
+            })
         }
     }
 
