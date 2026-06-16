@@ -96,8 +96,8 @@ struct WelcomeStepView: View {
                 .animation(.areaMatrixOverlayFade, value: displayStage)
         )
         .shadow(
-            color: AreaMatrixTheme.Surfaces.windowShadow(colorScheme: colorScheme),
-            radius: 60,
+            color: isDeepDiving ? .clear : AreaMatrixTheme.Surfaces.windowShadow(colorScheme: colorScheme),
+            radius: isDeepDiving ? 0 : 60,
             x: mouseParallax.horizontal * -10,
             y: mouseParallax.vertical * -10 + 30
         )
@@ -121,7 +121,8 @@ struct WelcomeStepView: View {
                 AreaMatrixWhiteFlashOverlay(isVisible: whiteFlash)
             }
         }
-        .areaMatrixDeepDive(isActive: isDeepDiving, scale: 12.0)
+        .compositingGroup()
+        .areaMatrixDeepDive(isActive: isDeepDiving, scale: 1.05)
         .onDrop(
             of: [UTType.fileURL.identifier],
             isTargeted: $isDragTargeted

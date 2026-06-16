@@ -33,6 +33,13 @@ extension MainWindow {
             minHeight: minWindowHeight,
             maxHeight: maxWindowHeight
         )
+        .background {
+            if case .welcome = model.route {
+                Color.clear
+            } else {
+                Color(nsColor: .windowBackgroundColor)
+            }
+        }
         .background(WindowCloseConfirmationObserver(
             shouldConfirm: { model.shouldConfirmSetupExit },
             onAttemptClose: model.requestSetupQuit

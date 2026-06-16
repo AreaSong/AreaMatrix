@@ -96,17 +96,14 @@ struct AreaMatrixScanOverlay: View {
     }
 
     private var movingColorWash: some View {
-        GeometryReader { proxy in
-            LinearGradient(
-                colors: effectiveScanColors,
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-            .frame(width: proxy.size.width * 5)
-            .offset(x: -proxy.size.width * 4 * progressFraction)
-            .opacity(colorScheme == .dark ? 0.25 : 0.2)
-            .blur(radius: 60)
-        }
+        LinearGradient(
+            colors: effectiveScanColors,
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+        .frame(width: 6000)
+        .offset(x: -4000 * progressFraction)
+        .opacity(colorScheme == .dark ? 0.25 : 0.2)
         .ignoresSafeArea()
         .animation(.easeInOut(duration: 0.8), value: progressFraction)
     }
@@ -115,24 +112,23 @@ struct AreaMatrixScanOverlay: View {
         Circle()
             .fill(
                 RadialGradient(
-                    colors: [accent.opacity(0.6), accent.opacity(0)],
+                    colors: [accent.opacity(0.8), accent.opacity(0)],
                     center: .center,
                     startRadius: 0,
-                    endRadius: 400
+                    endRadius: 200
                 )
             )
-            .frame(width: 800, height: 800)
+            .frame(width: 400, height: 400)
             .scaleEffect(rippleScale)
             .opacity(rippleOpacity)
             .onChange(of: accent) { _, _ in
                 rippleScale = 0.1
                 rippleOpacity = 0.8
                 withAnimation(.easeOut(duration: 1.2)) {
-                    rippleScale = 3.5
+                    rippleScale = 4.0
                     rippleOpacity = 0.0
                 }
             }
-            .blendMode(colorScheme == .dark ? .screen : .plusLighter)
             .allowsHitTesting(false)
     }
 
