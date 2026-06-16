@@ -32,11 +32,9 @@
 		0A00000000000000000000E2 /* AreaMatrixPerfTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000E3 /* AreaMatrixPerfTests.swift */; };
 		0A00000000000000000000F0 /* OnboardingIntroStepViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F1 /* OnboardingIntroStepViews.swift */; };
 		0A0000000000000000000F01 /* WelcomeStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F11 /* WelcomeStepView.swift */; };
-		0A0000000000000000000F02 /* WelcomeAmbientBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F12 /* WelcomeAmbientBackground.swift */; };
 		0A0000000000000000000F03 /* WelcomeStageViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F13 /* WelcomeStageViews.swift */; };
 		0A0000000000000000000F05 /* WelcomeTrackingHelpViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F15 /* WelcomeTrackingHelpViews.swift */; };
 		0A0000000000000000000F04 /* WelcomeDioramaViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F14 /* WelcomeDioramaViews.swift */; };
-		0A0000000000000000000F06 /* WelcomeSupportViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F16 /* WelcomeSupportViews.swift */; };
 		0A0000000000000000000F07 /* WelcomeStageSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F17 /* WelcomeStageSwitcher.swift */; };
 		0A0000000000000000000D01 /* AreaMatrixTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D11 /* AreaMatrixTheme.swift */; };
 		0A0000000000000000000D02 /* AreaMatrixAmbientBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D12 /* AreaMatrixAmbientBackground.swift */; };
@@ -45,6 +43,13 @@
 		0A0000000000000000000D05 /* AreaMatrixWindowChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D15 /* AreaMatrixWindowChrome.swift */; };
 		0A0000000000000000000D06 /* AreaMatrixMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D16 /* AreaMatrixMotion.swift */; };
 		0A0000000000000000000D07 /* AreaMatrixTextEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D17 /* AreaMatrixTextEffects.swift */; };
+		0A0000000000000000000D08 /* AreaMatrixOverlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D19 /* AreaMatrixOverlays.swift */; };
+		0A0000000000000000000D09 /* AreaMatrixStageComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D1A /* AreaMatrixStageComponents.swift */; };
+		0A0000000000000000000D0A /* AreaMatrixFeatureCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D1B /* AreaMatrixFeatureCard.swift */; };
+		0A0000000000000000000D0B /* AreaMatrixClassificationDiorama.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D1C /* AreaMatrixClassificationDiorama.swift */; };
+		0A0000000000000000000D0C /* AreaMatrixProtectionDiorama.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D1D /* AreaMatrixProtectionDiorama.swift */; };
+		0A0000000000000000000D0D /* AreaMatrixTimelineDiorama.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D1E /* AreaMatrixTimelineDiorama.swift */; };
+		0A0000000000000000000D0E /* AreaMatrixWorkflowDiorama.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D1F /* AreaMatrixWorkflowDiorama.swift */; };
 		0A00000000000000000000F2 /* WindowCloseConfirmationObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F3 /* WindowCloseConfirmationObserver.swift */; };
 		0A00000000000000000000F4 /* InitFailedStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F5 /* InitFailedStepView.swift */; };
 		0A00000000000000000000F6 /* DiagnosticsSnapshotState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F7 /* DiagnosticsSnapshotState.swift */; };
@@ -387,11 +392,9 @@
 		0A00000000000000000000E3 /* AreaMatrixPerfTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixPerfTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000F1 /* OnboardingIntroStepViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/OnboardingIntroStepViews.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000F11 /* WelcomeStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WelcomeStepView.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000F12 /* WelcomeAmbientBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WelcomeAmbientBackground.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000F13 /* WelcomeStageViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WelcomeStageViews.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000F15 /* WelcomeTrackingHelpViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WelcomeTrackingHelpViews.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000F14 /* WelcomeDioramaViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WelcomeDioramaViews.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000F16 /* WelcomeSupportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WelcomeSupportViews.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000F17 /* WelcomeStageSwitcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WelcomeStageSwitcher.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D11 /* AreaMatrixTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixTheme.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D12 /* AreaMatrixAmbientBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixAmbientBackground.swift; sourceTree = SOURCE_ROOT; };
@@ -400,6 +403,13 @@
 		0A0000000000000000000D15 /* AreaMatrixWindowChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixWindowChrome.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D16 /* AreaMatrixMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/Effects/AreaMatrixMotion.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D17 /* AreaMatrixTextEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/Effects/AreaMatrixTextEffects.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000D19 /* AreaMatrixOverlays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixOverlays.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000D1A /* AreaMatrixStageComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixStageComponents.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000D1B /* AreaMatrixFeatureCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixFeatureCard.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000D1C /* AreaMatrixClassificationDiorama.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixClassificationDiorama.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000D1D /* AreaMatrixProtectionDiorama.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixProtectionDiorama.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000D1E /* AreaMatrixTimelineDiorama.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixTimelineDiorama.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000D1F /* AreaMatrixWorkflowDiorama.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixWorkflowDiorama.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000F3 /* WindowCloseConfirmationObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WindowCloseConfirmationObserver.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000F5 /* InitFailedStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/InitFailedStepView.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000F7 /* DiagnosticsSnapshotState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/DiagnosticsSnapshotState.swift; sourceTree = SOURCE_ROOT; };
@@ -850,11 +860,9 @@
 				0A00000000000000000000A3 /* InitializingStepRow.swift */,
 				0A00000000000000000000F1 /* OnboardingIntroStepViews.swift */,
 				0A0000000000000000000F11 /* WelcomeStepView.swift */,
-				0A0000000000000000000F12 /* WelcomeAmbientBackground.swift */,
-				0A0000000000000000000F13 /* WelcomeStageViews.swift */,
+					0A0000000000000000000F13 /* WelcomeStageViews.swift */,
 				0A0000000000000000000F14 /* WelcomeDioramaViews.swift */,
 				0A0000000000000000000F15 /* WelcomeTrackingHelpViews.swift */,
-				0A0000000000000000000F16 /* WelcomeSupportViews.swift */,
 				0A0000000000000000000F17 /* WelcomeStageSwitcher.swift */,
 				0A00000000000000000000F3 /* WindowCloseConfirmationObserver.swift */,
 				0A00000000000000000000F5 /* InitFailedStepView.swift */,
@@ -871,7 +879,14 @@
 				0A0000000000000000000D13 /* AreaMatrixControls.swift */,
 				0A0000000000000000000D14 /* AreaMatrixBrandAssets.swift */,
 				0A0000000000000000000D15 /* AreaMatrixWindowChrome.swift */,
-				0A0000000000000000000D18 /* Effects */,
+					0A0000000000000000000D19 /* AreaMatrixOverlays.swift */,
+					0A0000000000000000000D1A /* AreaMatrixStageComponents.swift */,
+					0A0000000000000000000D1B /* AreaMatrixFeatureCard.swift */,
+					0A0000000000000000000D1C /* AreaMatrixClassificationDiorama.swift */,
+					0A0000000000000000000D1D /* AreaMatrixProtectionDiorama.swift */,
+					0A0000000000000000000D1E /* AreaMatrixTimelineDiorama.swift */,
+					0A0000000000000000000D1F /* AreaMatrixWorkflowDiorama.swift */,
+					0A0000000000000000000D18 /* Effects */,
 			);
 			name = DesignSystem;
 			sourceTree = "<group>";
@@ -1471,11 +1486,9 @@
 				0A00000000000000000000F4 /* InitFailedStepView.swift in Sources */,
 				0A00000000000000000000F0 /* OnboardingIntroStepViews.swift in Sources */,
 				0A0000000000000000000F01 /* WelcomeStepView.swift in Sources */,
-				0A0000000000000000000F02 /* WelcomeAmbientBackground.swift in Sources */,
-				0A0000000000000000000F03 /* WelcomeStageViews.swift in Sources */,
+					0A0000000000000000000F03 /* WelcomeStageViews.swift in Sources */,
 				0A0000000000000000000F04 /* WelcomeDioramaViews.swift in Sources */,
 				0A0000000000000000000F05 /* WelcomeTrackingHelpViews.swift in Sources */,
-				0A0000000000000000000F06 /* WelcomeSupportViews.swift in Sources */,
 				0A0000000000000000000F07 /* WelcomeStageSwitcher.swift in Sources */,
 				0A0000000000000000000D01 /* AreaMatrixTheme.swift in Sources */,
 				0A0000000000000000000D02 /* AreaMatrixAmbientBackground.swift in Sources */,
@@ -1484,7 +1497,14 @@
 				0A0000000000000000000D05 /* AreaMatrixWindowChrome.swift in Sources */,
 				0A0000000000000000000D06 /* AreaMatrixMotion.swift in Sources */,
 				0A0000000000000000000D07 /* AreaMatrixTextEffects.swift in Sources */,
-				0A00000000000000000000F2 /* WindowCloseConfirmationObserver.swift in Sources */,
+					0A0000000000000000000D08 /* AreaMatrixOverlays.swift in Sources */,
+					0A0000000000000000000D09 /* AreaMatrixStageComponents.swift in Sources */,
+					0A0000000000000000000D0A /* AreaMatrixFeatureCard.swift in Sources */,
+					0A0000000000000000000D0B /* AreaMatrixClassificationDiorama.swift in Sources */,
+					0A0000000000000000000D0C /* AreaMatrixProtectionDiorama.swift in Sources */,
+					0A0000000000000000000D0D /* AreaMatrixTimelineDiorama.swift in Sources */,
+					0A0000000000000000000D0E /* AreaMatrixWorkflowDiorama.swift in Sources */,
+					0A00000000000000000000F2 /* WindowCloseConfirmationObserver.swift in Sources */,
 				0A000000000000000000000E /* OnboardingInitializationProgress.swift in Sources */,
 				0A000000000000000000000F /* InitializingStepRow.swift in Sources */,
 				0A00000000000000000000B0 /* InitializationFailureActions.swift in Sources */,

@@ -1,13 +1,47 @@
 import AppKit
 import SwiftUI
 
-struct WelcomeTerminalLine: Identifiable {
-    let id = UUID()
-    var text: String
-    let color: Color
+struct AreaMatrixFeatureCardSpec<ID: Hashable>: Identifiable {
+    let id: ID
+    let icon: String
+    let title: String
+    let description: String
+    let accentColor: Color
+    let entranceDelay: Double
 }
 
-struct WelcomeFeatureCard: View {
+struct AreaMatrixFeatureCardGroup<ID: Hashable>: View {
+    let cards: [AreaMatrixFeatureCardSpec<ID>]
+    let activeID: ID?
+    var spacing: CGFloat = 20
+    let onHoverChanged: (ID, Bool) -> Void
+
+    var body: some View {
+        HStack(spacing: spacing) {
+            ForEach(cards) { card in
+                AreaMatrixFeatureCard(
+                    icon: card.icon,
+                    title: card.title,
+                    description: card.description,
+                    accentColor: card.accentColor,
+                    isHovered: activeID == card.id,
+                    entranceDelay: card.entranceDelay,
+                    anyCardHovered: isAnyCardHovered,
+                    onHoverChanged: { hovering in
+                        onHoverChanged(card.id, hovering)
+                    }
+                )
+            }
+        }
+    }
+
+    private var isAnyCardHovered: Bool {
+        guard let activeID else { return false }
+        return cards.contains { $0.id == activeID }
+    }
+}
+
+struct AreaMatrixFeatureCard: View {
     let icon: String
     let title: String
     let description: String
@@ -76,11 +110,7 @@ struct WelcomeFeatureCard: View {
         .shadow(color: Color.black.opacity(isHovered ? 0.25 : 0.05), radius: isHovered ? 24 : 10, y: isHovered ? 12 : 4)
         .offset(y: hasEntered ? 0 : 16)
         .opacity(hasEntered ? 1 : 0)
-        .rotation3DEffect(
-            .degrees(hasEntered ? 0 : 5),
-            axis: (x: 1, y: 0, z: 0),
-            perspective: 0.5
-        )
+        .rotation3DEffect(.degrees(hasEntered ? 0 : 5), axis: (x: 1, y: 0, z: 0), perspective: 0.5)
         .areaMatrixFeatureCardFocus(isHovered: isHovered, anyCardHovered: anyCardHovered)
         .animation(.easeOut(duration: 0.15), value: hoverPoint)
         .allowsHitTesting(false)
@@ -160,10 +190,10 @@ struct WelcomeFeatureCard: View {
     }
 
     private var cardTopAccent: some View {
-        GeometryReader { geo in
+        GeometryReader { proxy in
             Rectangle()
                 .fill(accentColor)
-                .frame(width: isHovered ? geo.size.width : 40, height: 3)
+                .frame(width: isHovered ? proxy.size.width : 40, height: 3)
                 .frame(maxWidth: .infinity)
                 .shadow(color: isHovered ? accentColor.opacity(0.8) : .clear, radius: 12)
         }
@@ -173,19 +203,17 @@ struct WelcomeFeatureCard: View {
     }
 
     private var cardGlare: some View {
-        GeometryReader { geo in
-            let width = geo.size.width
-            let height = geo.size.height
+        GeometryReader { proxy in
             LinearGradient(
                 colors: [.clear, Color.white.opacity(colorScheme == .dark ? 0.15 : 0.4), .clear],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            .frame(width: width * 2, height: height * 2)
+            .frame(width: proxy.size.width * 2, height: proxy.size.height * 2)
             .rotationEffect(.degrees(-20))
             .offset(
-                x: (hoverPoint.x - 0.5) * width * 1.5,
-                y: (hoverPoint.y - 0.5) * height * 1.5
+                x: (hoverPoint.x - 0.5) * proxy.size.width * 1.5,
+                y: (hoverPoint.y - 0.5) * proxy.size.height * 1.5
             )
             .opacity(isHovered ? 1 : 0)
             .blendMode(colorScheme == .dark ? .plusLighter : .screen)

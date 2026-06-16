@@ -119,3 +119,80 @@ struct AreaMatrixPrimaryGlowButton<Label: View>: View {
         }
     }
 }
+
+struct AreaMatrixLinkActionLabel: View {
+    let title: String
+    let iconName: String
+    var trailingIconName = "arrow.up.right"
+    let isHovered: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: iconName)
+            underlinedTitle
+            slidingTrailingIcon
+        }
+        .font(.system(size: 13))
+        .foregroundColor(isHovered ? .primary : .secondary)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.primary.opacity(isHovered ? 0.06 : 0))
+        )
+        .animation(.areaMatrixQuickFade, value: isHovered)
+        .contentShape(Rectangle())
+    }
+
+    private var underlinedTitle: some View {
+        Text(title)
+            .background(
+                Rectangle()
+                    .frame(height: 1)
+                    .offset(y: 2)
+                    .opacity(isHovered ? 1 : 0),
+                alignment: .bottom
+            )
+    }
+
+    private var slidingTrailingIcon: some View {
+        ZStack {
+            Image(systemName: trailingIconName)
+                .opacity(isHovered ? 0 : 0.6)
+                .offset(x: isHovered ? 10 : 0, y: isHovered ? -10 : 0)
+            Image(systemName: trailingIconName)
+                .opacity(isHovered ? 0.6 : 0)
+                .offset(x: isHovered ? 0 : -10, y: isHovered ? 10 : 0)
+        }
+        .font(.system(size: 10, weight: .semibold))
+        .frame(width: 12, height: 12)
+        .clipped()
+    }
+}
+
+struct AreaMatrixPrimaryActionLabel: View {
+    let title: String
+    let iconName: String
+    let shortcut: String?
+    let isHovered: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(title)
+            Color.clear
+                .frame(width: 16, height: 16)
+                .overlay(
+                    Image(systemName: iconName)
+                        .symbolEffect(.bounce, value: isHovered)
+                )
+            if let shortcut {
+                Text(shortcut)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 2)
+                    .background(Color.black.opacity(0.15), in: RoundedRectangle(cornerRadius: 4))
+                    .padding(.leading, 4)
+            }
+        }
+    }
+}

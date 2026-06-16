@@ -21,6 +21,18 @@ extension Animation {
         .timingCurve(0.2, 0.8, 0.2, 1, duration: 0.16)
     }
 
+    static var areaMatrixOverlayFade: Animation {
+        .easeInOut(duration: 0.8)
+    }
+
+    static var areaMatrixProgressStep: Animation {
+        .easeOut(duration: 0.8)
+    }
+
+    static var areaMatrixFlashIn: Animation {
+        .easeIn(duration: 0.15)
+    }
+
     static var areaMatrixQuickFade: Animation {
         .easeOut(duration: 0.2)
     }
@@ -87,6 +99,26 @@ extension EnvironmentValues {
     var areaMatrixStageParallax: AreaMatrixParallax {
         get { self[AreaMatrixStageParallaxKey.self] }
         set { self[AreaMatrixStageParallaxKey.self] = newValue }
+    }
+}
+
+extension AreaMatrixParallax {
+    init(pointerLocation location: CGPoint, in size: CGSize) {
+        let width = max(size.width, 1)
+        let height = max(size.height, 1)
+        self.init(
+            horizontal: ((location.x / width) - 0.5) * 2,
+            vertical: ((location.y / height) - 0.5) * 2
+        )
+    }
+
+    static func fromHoverPhase(_ phase: HoverPhase, in size: CGSize) -> AreaMatrixParallax {
+        switch phase {
+        case let .active(location):
+            AreaMatrixParallax(pointerLocation: location, in: size)
+        case .ended:
+            .zero
+        }
     }
 }
 
@@ -286,6 +318,41 @@ struct AreaMatrixMagneticHoverModifier: ViewModifier {
     }
 }
 
+struct AreaMatrixDelayedEntranceModifier: ViewModifier {
+    let isVisible: Bool
+    let delay: Double
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(isVisible ? 1 : 0)
+            .offset(y: isVisible ? 0 : 12)
+            .animation(.easeOut(duration: 0.5).delay(delay), value: isVisible)
+    }
+}
+
+struct AreaMatrixScanningContentModifier: ViewModifier {
+    let isScanning: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .blur(radius: isScanning ? 12 : 0)
+            .scaleEffect(isScanning ? 0.92 : 1)
+            .opacity(isScanning ? 0 : 1)
+            .animation(.areaMatrixSpring, value: isScanning)
+    }
+}
+
+struct AreaMatrixDeepDiveModifier: ViewModifier {
+    let isActive: Bool
+    let scale: CGFloat
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(isActive ? scale : 1.0)
+            .animation(.areaMatrixDeepDive, value: isActive)
+    }
+}
+
 extension View {
     func areaMatrixStageVisualMotion() -> some View {
         modifier(AreaMatrixStageVisualMotionModifier())
@@ -323,5 +390,17 @@ extension View {
 
     func areaMatrixMagneticHover(intensity: CGFloat = 0.2) -> some View {
         modifier(AreaMatrixMagneticHoverModifier(intensity: intensity))
+    }
+
+    func areaMatrixDelayedEntrance(isVisible: Bool, delay: Double) -> some View {
+        modifier(AreaMatrixDelayedEntranceModifier(isVisible: isVisible, delay: delay))
+    }
+
+    func areaMatrixScanningContent(isScanning: Bool) -> some View {
+        modifier(AreaMatrixScanningContentModifier(isScanning: isScanning))
+    }
+
+    func areaMatrixDeepDive(isActive: Bool, scale: CGFloat) -> some View {
+        modifier(AreaMatrixDeepDiveModifier(isActive: isActive, scale: scale))
     }
 }

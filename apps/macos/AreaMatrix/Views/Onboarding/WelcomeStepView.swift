@@ -8,15 +8,6 @@ private enum WelcomeWindowMetrics {
     static let cornerRadius: CGFloat = 12
 }
 
-private struct WelcomeFeatureCardSpec {
-    let icon: String
-    let title: String
-    let description: String
-    let accentColor: Color
-    let stage: WelcomeStage
-    let entranceDelay: Double
-}
-
 struct WelcomeStepView: View {
     let onContinue: () -> Void
     let onLearnMore: () -> Void
@@ -25,7 +16,6 @@ struct WelcomeStepView: View {
     @State private var activeStage: WelcomeStage = .default
     @State private var hoverStage: WelcomeStage?
     @State private var isScanning = false
-    @State private var isExiting = false
     @State private var isDeepDiving = false
     @State private var whiteFlash = false
     @State private var isDragTargeted = false
@@ -34,11 +24,11 @@ struct WelcomeStepView: View {
     @State private var footerEntered = false
 
     static var hasPlayedLaunchAnimation = false
-    @State private var mouseParallax = WelcomeParallax.zero
+    @State private var mouseParallax = AreaMatrixParallax.zero
     @State private var scanTerminalLines = [
-        WelcomeTerminalLine(text: "等待系统指令...", color: AreaMatrixTheme.Colors.tealBright)
+        AreaMatrixTerminalLine(text: "等待系统指令...", colorToken: AreaMatrixTheme.Colors.tealText)
     ]
-    @State private var scanCursorColor = AreaMatrixTheme.Colors.tealBright
+    @State private var scanCursorColorToken = AreaMatrixTheme.Colors.tealText
     @State private var scanTask: Task<Void, Never>?
     @State private var hoverResetTask: Task<Void, Never>?
     @State private var scanProgressFraction: CGFloat = 0
@@ -91,16 +81,19 @@ struct WelcomeStepView: View {
 
     private var welcomeSurface: some View {
         ZStack {
-            WelcomeAmbientBackground(stage: displayStage, parallax: mouseParallax)
+            AreaMatrixAmbientBackground(scene: displayStage.ambientScene, parallax: mouseParallax)
+                .blur(radius: isScanning ? 16 : 0)
+                .animation(.areaMatrixOverlayFade, value: isScanning)
 
             welcomeContent
+                .areaMatrixScanningContent(isScanning: isScanning)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: WelcomeWindowMetrics.cornerRadius, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: WelcomeWindowMetrics.cornerRadius, style: .continuous)
                 .stroke(windowBorderColor, lineWidth: 1)
-                .animation(.easeInOut(duration: 0.8), value: displayStage)
+                .animation(.areaMatrixOverlayFade, value: displayStage)
         )
         .shadow(
             color: AreaMatrixTheme.Surfaces.windowShadow(colorScheme: colorScheme),
@@ -108,34 +101,27 @@ struct WelcomeStepView: View {
             x: mouseParallax.horizontal * -10,
             y: mouseParallax.vertical * -10 + 30
         )
-        .blur(radius: isScanning ? 12 : 0)
-        .scaleEffect(isScanning ? 0.92 : 1)
-        .opacity(isScanning ? 0.05 : 1)
         .ignoresSafeArea(.container, edges: .all)
-        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isScanning)
         .overlay {
             if isScanning {
-                WelcomeScanOverlayView(
+                AreaMatrixScanOverlay(
                     isScanning: isScanning,
                     terminalLines: scanTerminalLines,
-                    cursorColor: scanCursorColor,
-                    scanProgressFraction: scanProgressFraction
+                    cursorColorToken: scanCursorColorToken,
+                    progressFraction: scanProgressFraction,
+                    accent: displayStage.accentColor
                 )
-                .scaleEffect(isDeepDiving ? 2.5 : 1)
                 .opacity(isDeepDiving ? 0 : 1)
-                .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.6), value: isDeepDiving)
+                .areaMatrixDeepDive(isActive: isDeepDiving, scale: 2.5)
             } else if isDragTargeted {
-                WelcomeDropOverlayView()
+                AreaMatrixDropOverlay()
             }
 
             if whiteFlash {
-                Color.white.ignoresSafeArea()
-                    .opacity(whiteFlash ? 1 : 0)
-                    .animation(.easeOut(duration: 0.15), value: whiteFlash)
+                AreaMatrixWhiteFlashOverlay(isVisible: whiteFlash)
             }
         }
-        .scaleEffect(isDeepDiving ? 12.0 : 1.0)
-        .animation(.timingCurve(0.7, 0, 1, 1, duration: 0.6), value: isDeepDiving)
+        .areaMatrixDeepDive(isActive: isDeepDiving, scale: 12.0)
         .onDrop(
             of: [UTType.fileURL.identifier],
             isTargeted: $isDragTargeted
@@ -169,19 +155,8 @@ struct WelcomeStepView: View {
     }
 
     private var windowBorderColor: Color {
-        let accent = accentForStage(displayStage)
+        let accent = displayStage.accentColor
         return AreaMatrixTheme.Surfaces.windowBorder(accent: accent, colorScheme: colorScheme)
-    }
-
-    private func accentForStage(_ stage: WelcomeStage) -> Color {
-        switch stage {
-        case .default: AreaMatrixTheme.Colors.teal
-        case .feat1: AreaMatrixTheme.Colors.tealBright
-        case .feat2: AreaMatrixTheme.Colors.gold
-        case .feat3: AreaMatrixTheme.Colors.coral
-        case .feat4: AreaMatrixTheme.Colors.purple
-        case .feat5: AreaMatrixTheme.Colors.emerald
-        }
     }
 }
 
@@ -204,32 +179,46 @@ private extension WelcomeStepView {
     }
 
     private var featuresGrid: some View {
-        HStack(spacing: 20) {
-            featureCard(WelcomeFeatureCardSpec(
+        AreaMatrixFeatureCardGroup(
+            cards: featureCards,
+            activeID: hoverStage,
+            onHoverChanged: { stage, hovering in
+                if hovering {
+                    activateHoverStage(stage)
+                } else if hoverStage == stage {
+                    scheduleHoverReset(for: stage)
+                }
+            }
+        )
+    }
+
+    private var featureCards: [AreaMatrixFeatureCardSpec<WelcomeStage>] {
+        [
+            AreaMatrixFeatureCardSpec(
+                id: .feat1,
                 icon: "arrow.down.doc",
                 title: "拖拽归档，智能分类",
                 description: "识别、重命名并自动落位",
                 accentColor: Color(red: 55 / 255, green: 202 / 255, blue: 182 / 255),
-                stage: .feat1,
                 entranceDelay: 0.3
-            ))
-            featureCard(WelcomeFeatureCardSpec(
+            ),
+            AreaMatrixFeatureCardSpec(
+                id: .feat2,
                 icon: "checkmark.shield",
                 title: "零侵入，绝对安全",
                 description: "不碰原文件，真相在文件系统",
                 accentColor: Color(red: 241 / 255, green: 184 / 255, blue: 78 / 255),
-                stage: .feat2,
                 entranceDelay: 0.55
-            ))
-            featureCard(WelcomeFeatureCardSpec(
+            ),
+            AreaMatrixFeatureCardSpec(
+                id: .feat3,
                 icon: "rectangle.split.2x1",
                 title: "全局概览，改动追溯",
                 description: "生成大纲，双向同步改动日志",
                 accentColor: Color(red: 233 / 255, green: 109 / 255, blue: 90 / 255),
-                stage: .feat3,
                 entranceDelay: 0.8
-            ))
-        }
+            )
+        ]
     }
 
     private var footer: some View {
@@ -237,38 +226,11 @@ private extension WelcomeStepView {
             Button(
                 action: onLearnMore,
                 label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "questionmark.circle")
-                        Text("了解 AreaMatrix 如何工作")
-                            .background(
-                                Rectangle()
-                                    .frame(height: 1)
-                                    .offset(y: 2)
-                                    .opacity(isLearnMoreHovered ? 1 : 0),
-                                alignment: .bottom
-                            )
-                        ZStack {
-                            Image(systemName: "arrow.up.right")
-                                .opacity(isLearnMoreHovered ? 0 : 0.6)
-                                .offset(x: isLearnMoreHovered ? 10 : 0, y: isLearnMoreHovered ? -10 : 0)
-                            Image(systemName: "arrow.up.right")
-                                .opacity(isLearnMoreHovered ? 0.6 : 0)
-                                .offset(x: isLearnMoreHovered ? 0 : -10, y: isLearnMoreHovered ? 10 : 0)
-                        }
-                        .font(.system(size: 10, weight: .semibold))
-                        .frame(width: 12, height: 12)
-                        .clipped()
-                    }
-                    .font(.system(size: 13))
-                    .foregroundColor(isLearnMoreHovered ? .primary : .secondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(Color.primary.opacity(isLearnMoreHovered ? 0.06 : 0))
+                    AreaMatrixLinkActionLabel(
+                        title: "了解 AreaMatrix 如何工作",
+                        iconName: "questionmark.circle",
+                        isHovered: isLearnMoreHovered
                     )
-                    .animation(.easeOut(duration: 0.2), value: isLearnMoreHovered)
-                    .contentShape(Rectangle())
                 }
             )
             .buttonStyle(.plain)
@@ -291,9 +253,7 @@ private extension WelcomeStepView {
                     scheduleHoverReset(for: .feat4)
                 }
             }
-            .opacity(footerEntered ? 1 : 0)
-            .offset(y: footerEntered ? 0 : 12)
-            .animation(.easeOut(duration: 0.5).delay(0.5), value: footerEntered)
+            .areaMatrixDelayedEntrance(isVisible: footerEntered, delay: 0.5)
 
             Spacer()
 
@@ -307,21 +267,12 @@ private extension WelcomeStepView {
                         isHovered: isCtaHovered,
                         shimmerPhase: $shimmerPhase
                     ) {
-                        HStack(spacing: 6) {
-                            Text("选择本地文件夹")
-                            Color.clear
-                                .frame(width: 16, height: 16)
-                                .overlay(
-                                    Image(systemName: "folder.badge.plus")
-                                        .symbolEffect(.bounce, value: isCtaHovered)
-                                )
-                            Text("⌘O")
-                                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 2)
-                                .background(Color.black.opacity(0.15), in: RoundedRectangle(cornerRadius: 4))
-                                .padding(.leading, 4)
-                        }
+                        AreaMatrixPrimaryActionLabel(
+                            title: "选择本地文件夹",
+                            iconName: "folder.badge.plus",
+                            shortcut: "⌘O",
+                            isHovered: isCtaHovered
+                        )
                     }
                 }
             )
@@ -345,33 +296,10 @@ private extension WelcomeStepView {
                     scheduleHoverReset(for: .feat5)
                 }
             }
-            .opacity(footerEntered ? 1 : 0)
-            .offset(y: footerEntered ? 0 : 12)
-            .animation(.easeOut(duration: 0.5).delay(0.6), value: footerEntered)
+            .areaMatrixDelayedEntrance(isVisible: footerEntered, delay: 0.6)
         }
         .padding(.horizontal, 40)
         .padding(.top, 20)
-    }
-
-    private func featureCard(_ spec: WelcomeFeatureCardSpec) -> some View {
-        let isHovered = hoverStage == spec.stage
-
-        return WelcomeFeatureCard(
-            icon: spec.icon,
-            title: spec.title,
-            description: spec.description,
-            accentColor: spec.accentColor,
-            isHovered: isHovered,
-            entranceDelay: spec.entranceDelay,
-            anyCardHovered: hoverStage != nil && [WelcomeStage.feat1, .feat2, .feat3].contains(hoverStage!),
-            onHoverChanged: { hovering in
-                if hovering {
-                    activateHoverStage(spec.stage)
-                } else if hoverStage == spec.stage {
-                    scheduleHoverReset(for: spec.stage)
-                }
-            }
-        )
     }
 
     private func activateHoverStage(_ stage: WelcomeStage) {
@@ -399,23 +327,8 @@ private extension WelcomeStepView {
         }
         guard stages[next] != activeStage else { return }
         NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
-        withAnimation(.timingCurve(0.16, 1, 0.3, 1, duration: 0.8)) {
+        withAnimation(.areaMatrixStageEnterExit) {
             activeStage = stages[next]
-        }
-    }
-
-    private func updateParallax(from phase: HoverPhase, in size: CGSize) {
-        switch phase {
-        case let .active(location):
-            let width = max(size.width, 1)
-            let height = max(size.height, 1)
-            let next = WelcomeParallax(
-                horizontal: ((location.x / width) - 0.5) * 2,
-                vertical: ((location.y / height) - 0.5) * 2
-            )
-            mouseParallax = next
-        case .ended:
-            mouseParallax = .zero
         }
     }
 
@@ -423,39 +336,44 @@ private extension WelcomeStepView {
         guard !isScanning else { return }
         scanTask?.cancel()
         scanTerminalLines = []
-        scanCursorColor = AreaMatrixTheme.Colors.tealBright
+        scanCursorColorToken = AreaMatrixTheme.Colors.tealText
         scanProgressFraction = 0
         withAnimation { isScanning = true }
 
         scanTask = Task { @MainActor in
             let logs = [
-                ("初始化 AreaMatrix 核心引擎...", AreaMatrixTheme.Colors.tealBright),
-                ("扫描文件指纹并生成索引...", AreaMatrixTheme.Colors.tealBright),
-                ("建立 AREAMATRIX.md 概览映射...", AreaMatrixTheme.Colors.teal),
-                ("接管完毕，安全网罩已启动。", AreaMatrixTheme.Colors.gold)
+                ("初始化 AreaMatrix 核心引擎...", AreaMatrixTheme.Colors.tealText),
+                ("扫描文件指纹并生成索引...", AreaMatrixTheme.Colors.tealText),
+                ("建立 AREAMATRIX.md 概览映射...", AreaMatrixTheme.Colors.tealText),
+                ("接管完毕，安全网罩已启动。", AreaMatrixTheme.Colors.goldText)
             ]
+            let stages: [WelcomeStage] = [.feat1, .feat2, .feat3, .feat4]
 
             for (index, log) in logs.enumerated() {
-                guard await typeScanLog(log.0, color: log.1) else { return }
-                withAnimation(.easeOut(duration: 0.3)) {
+                guard await typeScanLog(log.0, colorToken: log.1) else { return }
+                withAnimation(.areaMatrixProgressStep) {
                     scanProgressFraction = CGFloat(index + 1) / 5.0
+                    activeStage = stages[index]
                 }
                 try? await Task.sleep(for: .milliseconds(240))
             }
 
             try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
-            guard await typeScanLog(">>> 授权通过，正在进入 <<<", color: AreaMatrixTheme.Colors.gold) else { return }
-            withAnimation(.easeOut(duration: 0.3)) { scanProgressFraction = 1.0 }
+            guard await typeScanLog(">>> 授权通过，正在进入 <<<", colorToken: AreaMatrixTheme.Colors.goldText) else { return }
+            withAnimation(.areaMatrixProgressStep) {
+                scanProgressFraction = 1.0
+                activeStage = .feat5
+            }
 
             try? await Task.sleep(for: .seconds(0.5))
             guard !Task.isCancelled else { return }
 
-            withAnimation(.timingCurve(0.7, 0, 1, 1, duration: 0.6)) { isDeepDiving = true }
+            withAnimation(.areaMatrixDeepDive) { isDeepDiving = true }
             try? await Task.sleep(for: .milliseconds(400))
             guard !Task.isCancelled else { return }
 
-            withAnimation(.easeIn(duration: 0.15)) { whiteFlash = true }
+            withAnimation(.areaMatrixFlashIn) { whiteFlash = true }
             try? await Task.sleep(for: .milliseconds(200))
             guard !Task.isCancelled else { return }
 
@@ -467,24 +385,12 @@ private extension WelcomeStepView {
         }
     }
 
-    private func typeScanLog(_ text: String, color: Color) async -> Bool {
-        let line = WelcomeTerminalLine(text: "", color: color)
-        scanCursorColor = color
-        withAnimation(.easeOut(duration: 0.25)) {
-            scanTerminalLines.append(line)
-            if scanTerminalLines.count > 5 {
-                scanTerminalLines.removeFirst()
-            }
+    private func typeScanLog(_ text: String, colorToken: AreaMatrixColorToken) async -> Bool {
+        let line = AreaMatrixTerminalLine(text: "", colorToken: colorToken)
+        scanCursorColorToken = colorToken
+        scanTerminalLines.appendTerminalLine(line)
+        return await AreaMatrixTerminalLogTypewriter.type(text) { character in
+            scanTerminalLines.appendTerminalCharacter(character, toLineWithID: line.id)
         }
-
-        for character in text {
-            try? await Task.sleep(for: .milliseconds(18))
-            guard !Task.isCancelled else { return false }
-            if let index = scanTerminalLines.firstIndex(where: { $0.id == line.id }) {
-                scanTerminalLines[index].text.append(character)
-            }
-        }
-
-        return true
     }
 }

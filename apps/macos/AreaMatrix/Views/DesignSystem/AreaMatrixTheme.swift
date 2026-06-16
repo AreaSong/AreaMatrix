@@ -98,6 +98,8 @@ enum AreaMatrixTheme {
             dark: Color(red: 7 / 255, green: 21 / 255, blue: 19 / 255)
         )
 
+        static let stageSpectrum = [teal, tealBright, gold, coral, purple, emerald]
+
         static func backgroundGradient(for colorScheme: ColorScheme) -> [Color] {
             [
                 backgroundTop.resolve(colorScheme),
