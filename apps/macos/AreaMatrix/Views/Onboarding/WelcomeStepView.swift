@@ -29,18 +29,16 @@ struct WelcomeStepView: View {
     @State private var isDeepDiving = false
     @State private var whiteFlash = false
     @State private var isDragTargeted = false
-    @State private var ctaGlowing = false
     @State private var isCtaHovered = false
     @State private var isLearnMoreHovered = false
-    @State private var isThemeHovered = false
     @State private var footerEntered = false
-    
+
     static var hasPlayedLaunchAnimation = false
     @State private var mouseParallax = WelcomeParallax.zero
     @State private var scanTerminalLines = [
-        WelcomeTerminalLine(text: "等待系统指令...", color: WelcomePalette.tealBright)
+        WelcomeTerminalLine(text: "等待系统指令...", color: AreaMatrixTheme.Colors.tealBright)
     ]
-    @State private var scanCursorColor = WelcomePalette.tealBright
+    @State private var scanCursorColor = AreaMatrixTheme.Colors.tealBright
     @State private var scanTask: Task<Void, Never>?
     @State private var hoverResetTask: Task<Void, Never>?
     @State private var scanProgressFraction: CGFloat = 0
@@ -48,7 +46,6 @@ struct WelcomeStepView: View {
     @FocusState private var isChooseFolderFocused: Bool
     /// 用户手动切换的主题偏好：nil = 跟随系统
     @State private var themeOverride: ColorScheme?
-    @State private var themeSpin: Double = 0
     @State private var shimmerPhase: CGFloat = -1.5
 
     /// Derived stage to show
@@ -66,7 +63,7 @@ struct WelcomeStepView: View {
                 idealHeight: WelcomeWindowMetrics.height,
                 maxHeight: .infinity
             )
-            .background(WelcomeWindowChromeObserver())
+            .background(AreaMatrixWindowChromeObserver())
             .preferredColorScheme(themeOverride)
             .onAppear {
                 if !Self.hasPlayedLaunchAnimation {
@@ -74,12 +71,6 @@ struct WelcomeStepView: View {
                     Self.hasPlayedLaunchAnimation = true
                 } else {
                     footerEntered = true
-                }
-                withAnimation(.easeInOut(duration: 1.25).repeatForever(autoreverses: true)) {
-                    ctaGlowing = true
-                }
-                withAnimation(.linear(duration: 3).repeatForever(autoreverses: false).delay(1)) {
-                    shimmerPhase = 1.5
                 }
             }
             .onDisappear {
@@ -99,13 +90,10 @@ struct WelcomeStepView: View {
     }
 
     private var welcomeSurface: some View {
-        GeometryReader { proxy in
-            ZStack {
-                WelcomeAmbientBackground(stage: displayStage, parallax: mouseParallax)
+        ZStack {
+            WelcomeAmbientBackground(stage: displayStage, parallax: mouseParallax)
 
-                welcomeContent
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            welcomeContent
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: WelcomeWindowMetrics.cornerRadius, style: .continuous))
@@ -115,7 +103,7 @@ struct WelcomeStepView: View {
                 .animation(.easeInOut(duration: 0.8), value: displayStage)
         )
         .shadow(
-            color: .black.opacity(colorScheme == .dark ? 0.8 : 0.18),
+            color: AreaMatrixTheme.Surfaces.windowShadow(colorScheme: colorScheme),
             radius: 60,
             x: mouseParallax.horizontal * -10,
             y: mouseParallax.vertical * -10 + 30
@@ -139,7 +127,7 @@ struct WelcomeStepView: View {
             } else if isDragTargeted {
                 WelcomeDropOverlayView()
             }
-            
+
             if whiteFlash {
                 Color.white.ignoresSafeArea()
                     .opacity(whiteFlash ? 1 : 0)
@@ -182,19 +170,17 @@ struct WelcomeStepView: View {
 
     private var windowBorderColor: Color {
         let accent = accentForStage(displayStage)
-        return colorScheme == .dark
-            ? accent.opacity(0.2)
-            : accent.opacity(0.12)
+        return AreaMatrixTheme.Surfaces.windowBorder(accent: accent, colorScheme: colorScheme)
     }
 
     private func accentForStage(_ stage: WelcomeStage) -> Color {
         switch stage {
-        case .default: return WelcomePalette.teal
-        case .feat1:   return WelcomePalette.tealBright
-        case .feat2:   return WelcomePalette.gold
-        case .feat3:   return WelcomePalette.coral
-        case .feat4:   return WelcomePalette.purple
-        case .feat5:   return WelcomePalette.emerald
+        case .default: AreaMatrixTheme.Colors.teal
+        case .feat1: AreaMatrixTheme.Colors.tealBright
+        case .feat2: AreaMatrixTheme.Colors.gold
+        case .feat3: AreaMatrixTheme.Colors.coral
+        case .feat4: AreaMatrixTheme.Colors.purple
+        case .feat5: AreaMatrixTheme.Colors.emerald
         }
     }
 }
@@ -210,49 +196,7 @@ private extension WelcomeStepView {
 
             HStack {
                 Spacer()
-                Button {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
-                        if themeOverride == nil {
-                            themeOverride = colorScheme == .dark ? .light : .dark
-                        } else {
-                            themeOverride = themeOverride == .dark ? .light : .dark
-                        }
-                        
-                        // 同步更新全局 NSApp.appearance 以触发 AppDelegate 中的 Dock 图标切换
-                        if themeOverride == .dark {
-                            NSApp.appearance = NSAppearance(named: .darkAqua)
-                        } else if themeOverride == .light {
-                            NSApp.appearance = NSAppearance(named: .aqua)
-                        } else {
-                            NSApp.appearance = nil
-                        }
-                    }
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
-                        themeSpin += 360
-                    }
-                } label: {
-                    Image(systemName: (themeOverride ?? colorScheme) == .dark ? "sun.max" : "moon")
-                        .font(.system(size: 12))
-                        .foregroundStyle(isThemeHovered ? .secondary : .tertiary)
-                        .frame(width: 28, height: 28)
-                        .background(Circle().fill(Color.primary.opacity(isThemeHovered ? 0.08 : 0)))
-                        .scaleEffect(isThemeHovered ? 1.15 : 1.0)
-                        .rotationEffect(.degrees(themeSpin))
-                        .contentTransition(.symbolEffect(.replace))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("切换明暗模式")
-                .animation(.easeOut(duration: 0.2), value: isThemeHovered)
-                .onHover { hovering in
-                    isThemeHovered = hovering
-                    if hovering {
-                        NSCursor.pointingHand.push()
-                    } else {
-                        NSCursor.pop()
-                    }
-                }
+                AreaMatrixThemeToggleButton(themeOverride: $themeOverride)
             }
             .padding(.trailing, 16)
         }
@@ -358,56 +302,27 @@ private extension WelcomeStepView {
                     startScanningSequence()
                 },
                 label: {
-                    HStack(spacing: 6) {
-                        Text("选择本地文件夹")
-                        Color.clear
-                            .frame(width: 16, height: 16)
-                            .overlay(
-                                Image(systemName: "folder.badge.plus")
-                                    .symbolEffect(.bounce, value: isCtaHovered)
-                            )
-                        Text("⌘O")
-                            .font(.system(size: 11, weight: .semibold, design: .rounded))
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 2)
-                            .background(Color.black.opacity(0.15), in: RoundedRectangle(cornerRadius: 4))
-                            .padding(.leading, 4)
-                    }
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.black)
-                    .shadow(color: .white.opacity(0.15), radius: 0, y: 0.5)
-                    .padding(.leading, 18)
-                    .padding(.trailing, 14)
-                    .padding(.vertical, 10)
-                    .background(
-                        ZStack {
-                            LinearGradient(
-                                colors: [WelcomePalette.tealBright, WelcomePalette.teal],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                            
-                            // Shimmer 扫光特效
-                            LinearGradient(
-                                colors: [.clear, .white.opacity(0.4), .clear],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                            .offset(x: shimmerPhase * 200)
-                            .mask(RoundedRectangle(cornerRadius: 8))
+                    AreaMatrixPrimaryGlowButton(
+                        accent: AreaMatrixTheme.Colors.teal,
+                        isHovered: isCtaHovered,
+                        shimmerPhase: $shimmerPhase
+                    ) {
+                        HStack(spacing: 6) {
+                            Text("选择本地文件夹")
+                            Color.clear
+                                .frame(width: 16, height: 16)
+                                .overlay(
+                                    Image(systemName: "folder.badge.plus")
+                                        .symbolEffect(.bounce, value: isCtaHovered)
+                                )
+                            Text("⌘O")
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 2)
+                                .background(Color.black.opacity(0.15), in: RoundedRectangle(cornerRadius: 4))
+                                .padding(.leading, 4)
                         }
-                    )
-                    .cornerRadius(8)
-                    .pulseAura(color: WelcomePalette.teal, duration: 2.5, maxScale: 1.5, cornerRadius: 8)
-                    .shadow(
-                        color: WelcomePalette.teal.opacity(isCtaHovered ? 0.7 : (ctaGlowing ? 0.6 : 0.3)),
-                        radius: isCtaHovered ? 20 : (ctaGlowing ? 16 : 6),
-                        y: isCtaHovered ? 6 : 4
-                    )
-                    .scaleEffect(isCtaHovered ? 1.04 : 1.0)
-                    .offset(y: isCtaHovered ? -2 : 0)
-                    .animation(.easeOut(duration: 0.2), value: isCtaHovered)
-                    .magneticHover(intensity: 0.15)
+                    }
                 }
             )
             .buttonStyle(.plain)
@@ -477,11 +392,10 @@ private extension WelcomeStepView {
     private func navigateStage(direction: Int, wrap: Bool = false) {
         let stages = WelcomeStage.allCases
         let current = stages.firstIndex(of: activeStage) ?? 0
-        let next: Int
-        if wrap {
-            next = (current + direction + stages.count) % stages.count
+        let next: Int = if wrap {
+            (current + direction + stages.count) % stages.count
         } else {
-            next = max(0, min(stages.count - 1, current + direction))
+            max(0, min(stages.count - 1, current + direction))
         }
         guard stages[next] != activeStage else { return }
         NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
@@ -509,16 +423,16 @@ private extension WelcomeStepView {
         guard !isScanning else { return }
         scanTask?.cancel()
         scanTerminalLines = []
-        scanCursorColor = WelcomePalette.tealBright
+        scanCursorColor = AreaMatrixTheme.Colors.tealBright
         scanProgressFraction = 0
         withAnimation { isScanning = true }
 
         scanTask = Task { @MainActor in
             let logs = [
-                ("初始化 AreaMatrix 核心引擎...", WelcomePalette.tealBright),
-                ("扫描文件指纹并生成索引...", WelcomePalette.tealBright),
-                ("建立 AREAMATRIX.md 概览映射...", WelcomePalette.teal),
-                ("接管完毕，安全网罩已启动。", WelcomePalette.gold)
+                ("初始化 AreaMatrix 核心引擎...", AreaMatrixTheme.Colors.tealBright),
+                ("扫描文件指纹并生成索引...", AreaMatrixTheme.Colors.tealBright),
+                ("建立 AREAMATRIX.md 概览映射...", AreaMatrixTheme.Colors.teal),
+                ("接管完毕，安全网罩已启动。", AreaMatrixTheme.Colors.gold)
             ]
 
             for (index, log) in logs.enumerated() {
@@ -531,20 +445,20 @@ private extension WelcomeStepView {
 
             try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
-            guard await typeScanLog(">>> 授权通过，正在进入 <<<", color: WelcomePalette.gold) else { return }
+            guard await typeScanLog(">>> 授权通过，正在进入 <<<", color: AreaMatrixTheme.Colors.gold) else { return }
             withAnimation(.easeOut(duration: 0.3)) { scanProgressFraction = 1.0 }
 
             try? await Task.sleep(for: .seconds(0.5))
             guard !Task.isCancelled else { return }
-            
+
             withAnimation(.timingCurve(0.7, 0, 1, 1, duration: 0.6)) { isDeepDiving = true }
             try? await Task.sleep(for: .milliseconds(400))
             guard !Task.isCancelled else { return }
-            
+
             withAnimation(.easeIn(duration: 0.15)) { whiteFlash = true }
             try? await Task.sleep(for: .milliseconds(200))
             guard !Task.isCancelled else { return }
-            
+
             onContinue()
             isScanning = false
             isDeepDiving = false

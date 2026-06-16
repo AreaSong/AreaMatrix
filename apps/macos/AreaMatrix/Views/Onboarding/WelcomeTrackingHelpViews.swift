@@ -19,7 +19,7 @@ struct StageTrackingView: View {
             ("## Documents", Color(red: 0.337, green: 0.612, blue: 0.839)),
             ("- Finance/Invoice.pdf", colorScheme == .dark
                 ? Color(red: 0.306, green: 0.788, blue: 0.69)
-                : WelcomePalette.tealDeep),
+                : AreaMatrixTheme.Colors.tealDeep),
             ("- Design/brand.sketch", Color(red: 0.808, green: 0.569, blue: 0.471))
         ]
     }
@@ -33,8 +33,8 @@ struct StageTrackingView: View {
                 description: "自动生成专属的 Markdown 资料库大纲。您的每一次挪动、修改，哪怕是在系统原生的 Finder 中操作，都会被精准记录并实时回流。",
                 gradient: LinearGradient(
                     colors: [
-                        colorScheme == .dark ? WelcomePalette.coral : WelcomePalette.coralDeep,
-                        colorScheme == .dark ? WelcomePalette.gold : WelcomePalette.goldDeep
+                        colorScheme == .dark ? AreaMatrixTheme.Colors.coral : AreaMatrixTheme.Colors.coralDeep,
+                        colorScheme == .dark ? AreaMatrixTheme.Colors.gold : AreaMatrixTheme.Colors.goldDeep
                     ],
                     startPoint: .topLeading, endPoint: .bottomTrailing
                 )
@@ -105,14 +105,14 @@ struct StageTrackingView: View {
     private var trackingDiorama: some View {
         HStack(spacing: 20) {
             // 左：Finder 窗口
-            MockMiniWindow(title: "Finder", width: 180, height: 150) {
+            AreaMatrixMiniWindow(title: "Finder", width: 180, height: 150) {
                 HStack(spacing: 0) {
                     Rectangle().fill(Color.primary.opacity(0.06)).frame(width: 40)
                     VStack(alignment: .leading) {
                         HStack(spacing: 8) {
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(LinearGradient(
-                                    colors: [WelcomePalette.tealBright, WelcomePalette.teal],
+                                    colors: [AreaMatrixTheme.Colors.tealBright, AreaMatrixTheme.Colors.teal],
                                     startPoint: .topLeading, endPoint: .bottomTrailing
                                 ))
                                 .frame(width: 18, height: 18)
@@ -124,14 +124,14 @@ struct StageTrackingView: View {
                             ZStack(alignment: .leading) {
                                 Text("Draft_v1.md").opacity(showNewName ? 0 : 1)
                                 Text("Final_v2.md")
-                                    .foregroundColor(colorScheme == .dark ? .green : WelcomePalette.emeraldDeep)
+                                    .foregroundColor(colorScheme == .dark ? .green : AreaMatrixTheme.Colors.emeraldDeep)
                                     .opacity(showNewName ? 1 : 0)
                             }
                             .font(.system(size: 10, weight: .medium))
                         }
                         .padding(8)
                         .background(
-                            showNewName ? WelcomePalette.teal.opacity(0.2) : Color.clear,
+                            showNewName ? AreaMatrixTheme.Colors.teal.opacity(0.2) : Color.clear,
                             in: RoundedRectangle(cornerRadius: 4)
                         )
                         Spacer()
@@ -144,7 +144,7 @@ struct StageTrackingView: View {
             syncBridge
 
             // 右：Editor 窗口
-            MockMiniWindow(title: "AREAMATRIX.md", width: 220, height: 150, useDarkBackground: true) {
+            AreaMatrixMiniWindow(title: "AREAMATRIX.md", width: 220, height: 150, useDarkBackground: true) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("# Index Graph")
                         .foregroundColor(Color(red: 0.337, green: 0.612, blue: 0.839))
@@ -155,13 +155,13 @@ struct StageTrackingView: View {
                             Text("Final_v2.md")
                                 .foregroundColor(colorScheme == .dark
                                     ? Color(red: 0.306, green: 0.788, blue: 0.69)
-                                    : WelcomePalette.tealDeep)
+                                    : AreaMatrixTheme.Colors.tealDeep)
                                 .padding(.horizontal, 4)
                                 .background(
                                     showNewName
                                         ? (colorScheme == .dark
                                             ? Color(red: 0.306, green: 0.788, blue: 0.69)
-                                            : WelcomePalette.tealDeep).opacity(0.3)
+                                            : AreaMatrixTheme.Colors.tealDeep).opacity(0.3)
                                         : Color.clear,
                                     in: RoundedRectangle(cornerRadius: 3)
                                 )
@@ -186,27 +186,27 @@ struct StageTrackingView: View {
         ZStack {
             Rectangle()
                 .stroke(style: StrokeStyle(lineWidth: 2, dash: [4, 8]))
-                .foregroundColor(WelcomePalette.coral.opacity(0.4))
+                .foregroundColor(AreaMatrixTheme.Colors.coral.opacity(0.4))
                 .frame(height: 2)
             Circle()
-                .fill(WelcomePalette.coral).frame(width: 6, height: 6)
-                .shadow(color: WelcomePalette.coral, radius: 8)
+                .fill(AreaMatrixTheme.Colors.coral).frame(width: 6, height: 6)
+                .shadow(color: AreaMatrixTheme.Colors.coral, radius: 8)
                 .offset(x: particleFlying ? 25 : -25)
                 .opacity(particleFlying ? 0 : 1)
             // 回传粒子（双向同步）
             Circle()
-                .fill(WelcomePalette.tealBright).frame(width: 5, height: 5)
-                .shadow(color: WelcomePalette.tealBright, radius: 6)
+                .fill(AreaMatrixTheme.Colors.tealBright).frame(width: 5, height: 5)
+                .shadow(color: AreaMatrixTheme.Colors.tealBright, radius: 6)
                 .offset(x: particleFlying ? -25 : 25)
                 .opacity(particleFlying ? 0 : 1)
                 .animation(.easeInOut(duration: 2).repeatForever(autoreverses: false).delay(1), value: particleFlying)
             Circle()
                 .fill(.ultraThinMaterial).frame(width: 30, height: 30)
-                .overlay(Circle().stroke(WelcomePalette.coral.opacity(0.5)))
+                .overlay(Circle().stroke(AreaMatrixTheme.Colors.coral.opacity(0.5)))
                 .overlay(
                     Image(systemName: "arrow.triangle.2.circlepath")
                         .font(.system(size: 12))
-                        .foregroundColor(WelcomePalette.coral)
+                        .foregroundColor(AreaMatrixTheme.Colors.coral)
                         .rotationEffect(.degrees(isSpinning ? 360 : 0))
                 )
         }
@@ -244,8 +244,8 @@ struct StageHelpView: View {
                 description: "一分钟了解 AreaMatrix 如何通过轻量级的本地索引引擎和 FSEvents 监听，帮助您彻底终结文件整理的焦虑感。",
                 gradient: LinearGradient(
                     colors: [
-                        colorScheme == .dark ? WelcomePalette.purple : WelcomePalette.purpleDeep,
-                        colorScheme == .dark ? WelcomePalette.emerald : WelcomePalette.emeraldDeep
+                        colorScheme == .dark ? AreaMatrixTheme.Colors.purple : AreaMatrixTheme.Colors.purpleDeep,
+                        colorScheme == .dark ? AreaMatrixTheme.Colors.emerald : AreaMatrixTheme.Colors.emeraldDeep
                     ],
                     startPoint: .leading, endPoint: .trailing
                 )
@@ -262,7 +262,9 @@ struct StageHelpView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     isAnimating = true
                     withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) { pulseIn = true }
-                    withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false).delay(0.4)) { pulseOut = true }
+                    withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false).delay(0.4)) {
+                        pulseOut = true
+                    }
                     withAnimation(.linear(duration: 1.0).repeatForever(autoreverses: false)) { dashPhase = 8 }
                 }
             } else {
@@ -329,7 +331,8 @@ struct StageHelpView: View {
                 .frame(width: 3)
             VStack(alignment: .leading, spacing: 4) {
                 Text(time)
-                    .foregroundColor(colorScheme == .dark ? WelcomePalette.teal : WelcomePalette.tealDeep)
+                    .foregroundColor(colorScheme == .dark ? AreaMatrixTheme.Colors.teal : AreaMatrixTheme.Colors
+                        .tealDeep)
                     .font(.system(size: 9, design: .monospaced))
                 Text(action).fontWeight(.semibold).font(.system(size: 10, design: .monospaced))
                     .foregroundColor(colorForAction(action))
@@ -343,41 +346,43 @@ struct StageHelpView: View {
 
     private func colorForAction(_ action: String) -> Color {
         let isDark = colorScheme == .dark
-        if action.hasPrefix("CREATE") { return isDark ? WelcomePalette.emerald : WelcomePalette.emeraldDeep }
-        if action.hasPrefix("RENAME") { return isDark ? WelcomePalette.gold : WelcomePalette.goldDeep }
-        if action.hasPrefix("DELETE") { return isDark ? WelcomePalette.coral : WelcomePalette.coralDeep }
-        if action.hasPrefix("SYNC") { return WelcomePalette.purple }
-        return isDark ? WelcomePalette.teal : WelcomePalette.tealDeep
+        if action
+            .hasPrefix("CREATE") { return isDark ? AreaMatrixTheme.Colors.emerald : AreaMatrixTheme.Colors.emeraldDeep }
+        if action.hasPrefix("RENAME") { return isDark ? AreaMatrixTheme.Colors.gold : AreaMatrixTheme.Colors.goldDeep }
+        if action
+            .hasPrefix("DELETE") { return isDark ? AreaMatrixTheme.Colors.coral : AreaMatrixTheme.Colors.coralDeep }
+        if action.hasPrefix("SYNC") { return AreaMatrixTheme.Colors.purple }
+        return isDark ? AreaMatrixTheme.Colors.teal : AreaMatrixTheme.Colors.tealDeep
     }
 
     private var circuitPaths: some View {
         ZStack {
             Path { path in path.move(to: CGPoint(x: 195, y: 85)); path.addLine(to: CGPoint(x: 260, y: 100)) }
                 .stroke(style: StrokeStyle(lineWidth: 2, dash: [4], dashPhase: dashPhase))
-                .foregroundColor(WelcomePalette.purple.opacity(0.3))
+                .foregroundColor(AreaMatrixTheme.Colors.purple.opacity(0.3))
             Path { path in path.move(to: CGPoint(x: 195, y: 135)); path.addLine(to: CGPoint(x: 260, y: 120)) }
                 .stroke(style: StrokeStyle(lineWidth: 2, dash: [4], dashPhase: dashPhase))
-                .foregroundColor(WelcomePalette.purple.opacity(0.3))
+                .foregroundColor(AreaMatrixTheme.Colors.purple.opacity(0.3))
             Path { path in path.move(to: CGPoint(x: 345, y: 110)); path.addLine(to: CGPoint(x: 430, y: 110)) }
                 .stroke(style: StrokeStyle(lineWidth: 2, dash: [4], dashPhase: dashPhase))
-                .foregroundColor(WelcomePalette.emeraldLight.opacity(0.3))
+                .foregroundColor(AreaMatrixTheme.Colors.emeraldLight.opacity(0.3))
         }
         .frame(width: 600, height: 220)
     }
 
     private var dataPulses: some View {
         ZStack {
-            Circle().fill(WelcomePalette.purple).frame(width: 8, height: 8)
-                .shadow(color: WelcomePalette.purple, radius: 8)
+            Circle().fill(AreaMatrixTheme.Colors.purple).frame(width: 8, height: 8)
+                .shadow(color: AreaMatrixTheme.Colors.purple, radius: 8)
                 .offset(x: pulseIn ? -35 : -100, y: pulseIn ? 0 : -15)
                 .opacity(pulseIn ? 0 : 1)
-            Circle().fill(WelcomePalette.purple).frame(width: 8, height: 8)
-                .shadow(color: WelcomePalette.purple, radius: 8)
+            Circle().fill(AreaMatrixTheme.Colors.purple).frame(width: 8, height: 8)
+                .shadow(color: AreaMatrixTheme.Colors.purple, radius: 8)
                 .offset(x: pulseIn ? -35 : -100, y: pulseIn ? 0 : 15)
                 .opacity(pulseIn ? 0 : 1)
                 .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false).delay(0.75), value: pulseIn)
-            Circle().fill(WelcomePalette.emeraldLight).frame(width: 8, height: 8)
-                .shadow(color: WelcomePalette.emeraldLight, radius: 8)
+            Circle().fill(AreaMatrixTheme.Colors.emeraldLight).frame(width: 8, height: 8)
+                .shadow(color: AreaMatrixTheme.Colors.emeraldLight, radius: 8)
                 .offset(x: pulseOut ? 135 : 50)
                 .opacity(pulseOut ? 0 : 1)
         }
@@ -388,30 +393,30 @@ struct StageHelpView: View {
             // 外围反向虚线圆环 — 齿轮副轴
             Circle()
                 .stroke(style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
-                .foregroundColor(WelcomePalette.purple.opacity(0.25))
+                .foregroundColor(AreaMatrixTheme.Colors.purple.opacity(0.25))
                 .frame(width: 105, height: 105)
                 .rotationEffect(.degrees(isAnimating ? -360 : 0))
                 .animation(.linear(duration: 18).repeatForever(autoreverses: false), value: isAnimating)
 
-            WelcomeHexagon()
-                .fill(WelcomePalette.purple.opacity(0.1))
-                .overlay(WelcomeHexagon().stroke(WelcomePalette.purple.opacity(0.5), lineWidth: 2))
+            AreaMatrixHexagonShape()
+                .fill(AreaMatrixTheme.Colors.purple.opacity(0.1))
+                .overlay(AreaMatrixHexagonShape().stroke(AreaMatrixTheme.Colors.purple.opacity(0.5), lineWidth: 2))
                 .frame(width: 80, height: 80)
                 .rotationEffect(.degrees(isAnimating ? 360 : 0))
                 .animation(.linear(duration: 12).repeatForever(autoreverses: false), value: isAnimating)
 
             Image(systemName: "cpu")
                 .font(.system(size: 34))
-                .foregroundColor(WelcomePalette.purple)
+                .foregroundColor(AreaMatrixTheme.Colors.purple)
         }
         .frame(width: 110, height: 110)
-        .shadow(color: WelcomePalette.purple.opacity(isAnimating ? 0.6 : 0.3), radius: isAnimating ? 30 : 15)
+        .shadow(color: AreaMatrixTheme.Colors.purple.opacity(isAnimating ? 0.6 : 0.3), radius: isAnimating ? 30 : 15)
         .scaleEffect(isAnimating ? 1.05 : 1.0)
         .animation(.easeInOut(duration: 0.75).repeatForever(autoreverses: true), value: isAnimating)
     }
 
     private var dbTarget: some View {
-        let accent = colorScheme == .dark ? WelcomePalette.emeraldLight : WelcomePalette.emeraldDeep
+        let accent = colorScheme == .dark ? AreaMatrixTheme.Colors.emeraldLight : AreaMatrixTheme.Colors.emeraldDeep
         return VStack(spacing: 12) {
             Image(systemName: "externaldrive.fill").font(.system(size: 24)).foregroundColor(accent)
             Text("Local DB").font(.system(size: 9, design: .monospaced)).foregroundColor(accent)
