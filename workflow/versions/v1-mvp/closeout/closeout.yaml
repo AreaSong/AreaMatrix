@@ -6,7 +6,7 @@ blockers:
   - Stage 1 alpha release is not approved; 0.1.0-local-qa is internal QA only.
   - iCloud placeholder real-environment smoke evidence is still blocked.
   - Developer ID signing, notarization, stapling, clean-Mac first launch, and v0.1.0 tag evidence are missing.
-  - 36 completed prompt tasks lack committed Git checkpoint metadata in tasks/prompts/_shared/progress.json.
+  - 3-1/task-05 remains a release-gate review item without task-loop verify evidence.
 evidence:
   live_queue: tasks/prompts
   progress: tasks/prompts/_shared/progress.json
@@ -18,9 +18,12 @@ evidence:
   local_qa_notes: release-notes-0.1.0.md
   checkpoint_gap_query: progress entries where git_checkpoint_status is missing or not committed
   checkpoint_gap_detail: workflow/versions/v1-mvp/closeout/checkpoint-gaps.md
+  checkpoint_accepted_exceptions: workflow/versions/v1-mvp/closeout/checkpoint-accepted-exceptions.md
+  checkpoint_evidence_index: workflow/versions/v1-mvp/closeout/checkpoint-evidence-index.md
 checkpoint_gap_summary:
   total: 36
   reviewed: 36
+  accepted_exceptions: 35
   recoverable_verify_pass_evidence: 35
   tracked_run_summaries: 35
   run_summaries_with_git_checkpoint_off: 35
@@ -35,8 +38,8 @@ checkpoint_gap_summary:
     High: 28
     Mission-Critical: 7
     Unspecified: 1
-  disposition: blocked-pending-evidence-bundle-or-accepted-exceptions
-  note: The 35 task-loop entries have local PASS logs and tracked run summaries, but their run summaries used git.checkpoint=off and copy/verify logs are not tracked in Git. Do not rewrite progress.json or fabricate checkpoint metadata.
+  disposition: accepted-exceptions-recorded
+  note: The 35 task-loop entries are accepted closeout exceptions. They have local PASS logs and tracked run summaries, but their run summaries used git.checkpoint=off and copy/verify logs are not tracked in Git. Do not rewrite progress.json or fabricate checkpoint metadata.
 dirty_worktree_summary:
   generated_xcode_log_removed_from_git_tracking: apps/macos/.derived-data-log-0CA5RPJ1
   ignore_rule: apps/macos/.derived-data-log-*
@@ -45,5 +48,5 @@ remaining_risks:
   - Do not archive v1 until release blockers are either closed or explicitly deferred with owner and rationale.
   - Do not promote new live tasks/prompts work while v1 is still treated as live-running by workflow gates.
   - Do not treat local QA, ad-hoc signing, or same-machine launch smoke as formal alpha distribution evidence.
-  - Do not rewrite progress.json or task-loop logs to paper over checkpoint evidence gaps; create an evidence bundle or record accepted exceptions instead.
+  - Do not rewrite progress.json or task-loop logs to paper over checkpoint evidence gaps; accepted exceptions are recorded, and optional evidence bundling remains a closeout archive decision.
 archive_readiness: blocked

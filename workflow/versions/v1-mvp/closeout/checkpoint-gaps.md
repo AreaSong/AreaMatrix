@@ -20,7 +20,7 @@
 
 ## Evidence Review Result
 
-- `recoverable-evidence / runner-checkpoint-off`: 35 entries.
+- `accepted-exception / runner-checkpoint-off`: 35 entries.
   - `progress.json` marks the task `completed`.
   - The referenced local copy log exists.
   - The referenced local verify log exists and contains `VERIFY_RESULT: PASS`.
@@ -29,61 +29,60 @@
   - The copy / verify logs themselves are not tracked in Git, so these entries still need an archive evidence bundle or an explicitly accepted closeout exception before v1 archive can be considered complete.
 - `release-gate-review`: 1 entry.
   - `3-1/task-05` has a completed local QA / release gate sync note but no task-loop run id, copy log, verify log, or run summary. It must be handled through `docs/development/stage-1-release-checklist.md` and `release-notes-0.1.0.md`.
-- `accepted-exception`: 0 entries at this stage.
+- `accepted-exception`: 35 entries, recorded in `workflow/versions/v1-mvp/closeout/checkpoint-accepted-exceptions.md`.
 - `unrecoverable`: 0 entries found during this review.
 
 ## Disposition Rules
 
 - 不手写或回填 `git_checkpoint_status` / `git_commit`，避免伪造 evidence。
 - 不把本地未跟踪 copy / verify logs 描述成 committed checkpoint evidence。
-- 35 个 `recoverable-evidence` 条目可在 closeout 阶段通过 evidence bundle 或人工 accepted exception 处置。
+- 35 个 `recoverable-evidence` 条目已作为 accepted closeout exceptions 处置，详见 `checkpoint-accepted-exceptions.md` 和 `checkpoint-evidence-index.md`。
 - `3-1/task-05` 不进入 task-loop checkpoint exception；它属于 release gate evidence 处置。
-- 在 evidence bundle / accepted exception 和 release gate review 完成前，`archive_readiness` 继续保持 `blocked`。
+- 在 release gate review 和 release blockers 完成前，`archive_readiness` 继续保持 `blocked`。
 
 ## Gap Table
 
 | Task | Risk | Run | Evidence review | Missing checkpoint cause | Disposition |
 |---|---|---|---|---|---|
-| `1-2/task-16` | Mission-Critical | `20260502_085733` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `2-1/task-15` | High | `20260504_125337` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `2-1/task-18` | High | `20260504_190145` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `2-1/task-20` | High | `20260505_222707` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `2-2/task-01` | High | `20260506_111508` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `2-2/task-06` | High | `20260506_174405` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `2-2/task-08` | High | `20260507_011233` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `2-2/task-17` | High | `20260507_111520` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `2-2/task-21` | High | `20260507_203441` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `2-3/task-34` | High | `20260509_025922` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `3-1/task-02` | Mission-Critical | `20260509_124002` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
+| `1-2/task-16` | Mission-Critical | `20260502_085733` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `2-1/task-15` | High | `20260504_125337` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `2-1/task-18` | High | `20260504_190145` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `2-1/task-20` | High | `20260505_222707` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `2-2/task-01` | High | `20260506_111508` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `2-2/task-06` | High | `20260506_174405` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `2-2/task-08` | High | `20260507_011233` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `2-2/task-17` | High | `20260507_111520` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `2-2/task-21` | High | `20260507_203441` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `2-3/task-34` | High | `20260509_025922` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `3-1/task-02` | Mission-Critical | `20260509_124002` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
 | `3-1/task-05` | Unspecified | none | completed local QA / release gate sync note only | not a task-loop run | release-gate-review |
-| `4-1/task-16` | High | `20260515_171239` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-1/task-17` | High | `20260516_123504` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-1/task-117` | High | `20260524_190717` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-1/task-127` | High | `20260525_114004` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-1/task-134` | High | `20260525_225451` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-1/task-143` | Mission-Critical | `20260527_124638` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-2/task-03` | Mission-Critical | `20260527_153014` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-2/task-06` | High | `20260527_172849` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-2/task-53` | High | `20260529_121328` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-2/task-60` | High | `20260530_125901` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-2/task-63` | High | `20260531_012005` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-2/task-74` | High | `20260601_091326` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-2/task-79` | Mission-Critical | `20260601_223559` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-3/task-19` | High | `20260602_164403` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-3/task-95` | Mission-Critical | `20260605_144547` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-3/task-111` | High | `20260606_181200` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-3/task-114` | High | `20260606_214229` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-3/task-117` | High | `20260607_120307` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-3/task-122` | High | `20260608_115651` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-3/task-126` | High | `20260608_175917` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-3/task-147` | High | `20260609_121309` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-3/task-148` | High | `20260609_192932` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-3/task-164` | High | `20260610_222843` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
-| `4-3/task-165` | Mission-Critical | `20260611_142440` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | recoverable-evidence / runner-checkpoint-off |
+| `4-1/task-16` | High | `20260515_171239` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-1/task-17` | High | `20260516_123504` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-1/task-117` | High | `20260524_190717` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-1/task-127` | High | `20260525_114004` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-1/task-134` | High | `20260525_225451` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-1/task-143` | Mission-Critical | `20260527_124638` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-2/task-03` | Mission-Critical | `20260527_153014` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-2/task-06` | High | `20260527_172849` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-2/task-53` | High | `20260529_121328` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-2/task-60` | High | `20260530_125901` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-2/task-63` | High | `20260531_012005` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-2/task-74` | High | `20260601_091326` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-2/task-79` | Mission-Critical | `20260601_223559` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-3/task-19` | High | `20260602_164403` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-3/task-95` | Mission-Critical | `20260605_144547` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-3/task-111` | High | `20260606_181200` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-3/task-114` | High | `20260606_214229` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-3/task-117` | High | `20260607_120307` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-3/task-122` | High | `20260608_115651` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-3/task-126` | High | `20260608_175917` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-3/task-147` | High | `20260609_121309` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-3/task-148` | High | `20260609_192932` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-3/task-164` | High | `20260610_222843` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
+| `4-3/task-165` | Mission-Critical | `20260611_142440` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
 
 ## Next Review
 
-1. 为 35 个 `recoverable-evidence` 条目决定是否生成 closeout evidence bundle，至少包含对应 copy / verify logs 和 tracked run summaries。
-2. 决定这些历史 `git.checkpoint=off` task 是否作为 accepted closeout exceptions 记录；不要修改 `progress.json` 来回填 checkpoint metadata。
-3. 对 `3-1/task-05` 回到 `docs/development/stage-1-release-checklist.md` 和 `release-notes-0.1.0.md` 决定是否作为 release evidence exception。
-4. 在 evidence bundle / accepted exception 和 release gate review 完成前，`archive_readiness` 继续保持 `blocked`。
+1. 对 `3-1/task-05` 回到 `docs/development/stage-1-release-checklist.md` 和 `release-notes-0.1.0.md` 决定是否作为 release evidence exception。
+2. 决定是否复制本地 copy / verify logs 到长期 archive evidence bundle；当前索引已列出全部路径。
+3. 在 release gate review 和 release blockers 完成前，`archive_readiness` 继续保持 `blocked`。
