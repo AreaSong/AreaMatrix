@@ -14,9 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `AreaMatrix-0.1.0-local-qa.dmg` 和 SHA-256 checksum。
 - 补充 iCloud placeholder、Developer ID / notarization 后续补证模板，并记录同机 local QA
   首启交互 smoke。
-- 准备 `v0.1.0-unnotarized-preview.1` GitHub prerelease 轨道，生成未公证预览 DMG
-  `AreaMatrix-v0.1.0-unnotarized-preview.1.dmg`，SHA-256 为
-  `fcd432348e489e6be8194925f6d02b18dc222331569acce8bb175e0e7073d8d1`。
+- 准备 `v0.1.0-unnotarized-preview.2` GitHub prerelease 轨道，生成未公证预览 DMG
+  `AreaMatrix-v0.1.0-unnotarized-preview.2.dmg`，SHA-256 为
+  `d01d44c82e2287c0f1cd12aea4e78ece46301fe2f4709b2598c5710ba89864b2`。
+  `.1` 未发布，因 GitHub immutable release / tag 规则阻止同一预览号复用。
 
 ### Changed
 - `release-notes-0.1.0.md` 调整为 `0.1.0-local-qa` 内部测试说明，不再暗示正式 alpha 发布。
@@ -70,7 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   TCC 数据库；如需发布机 TCC 数据库级证据，应在后续真实分发环境补测。
 - 当前未加入付费 Apple Developer Program；自签名、ad-hoc signed `.app` 或 local QA DMG
   不能替代 Developer ID 签名、公证、DMG、干净 Mac 首启和 `v0.1.0` tag。
-- `v0.1.0-unnotarized-preview.1` 只是可信测试者 prerelease，不是正式 Stage 1 alpha；
+- `v0.1.0-unnotarized-preview.2` 只是可信测试者 prerelease，不是正式 Stage 1 alpha；
   它未使用 Developer ID 签名，未公证，也未 stapled。
 - 同机 local QA 首启交互 smoke 不能替代干净 Mac 首启、Gatekeeper 或 notarized app 验证。
 

@@ -1,20 +1,24 @@
-# AreaMatrix 0.1.0 Unnotarized Preview 1
+# AreaMatrix 0.1.0 Unnotarized Preview 2
 
 Prerelease date: 2026-06-16
 
 This is a trusted tester preview. It is not the official Stage 1 alpha release.
 The app is not Developer ID signed and has not been notarized by Apple.
 
+`v0.1.0-unnotarized-preview.1` was not published. GitHub immutable release and
+tag rules blocked reusing that preview number after an empty prerelease attempt,
+so this recovery preview uses `v0.1.0-unnotarized-preview.2`.
+
 ## Artifact
 
-- Tag: `v0.1.0-unnotarized-preview.1`
-- Asset: `AreaMatrix-v0.1.0-unnotarized-preview.1.dmg`
+- Tag: `v0.1.0-unnotarized-preview.2`
+- Asset: `AreaMatrix-v0.1.0-unnotarized-preview.2.dmg`
 - SHA-256:
-  `fcd432348e489e6be8194925f6d02b18dc222331569acce8bb175e0e7073d8d1`
+  `d01d44c82e2287c0f1cd12aea4e78ece46301fe2f4709b2598c5710ba89864b2`
 - App version: `0.1.0`
 - Build number: `202606161707`
 - Executable SHA-256:
-  `1482d7564352d461d439df4393f5ee26be8331ec1b2ba7b6656c2b34cda9786e`
+  `1a4881522acb93282cb6e0252810ea3849c7ab1095e74b8583a40e8018f28aea`
 
 ## Install Notes
 
@@ -25,12 +29,12 @@ System Settings > Privacy & Security > Open Anyway. Do not disable Gatekeeper gl
 
 ## Validation Snapshot
 
-- `./dev release local-qa --build-number 202606161707 --derived-data-path build/UnnotarizedPreview-0.1.0-preview.1-cli`
+- `./dev release local-qa --build-number 202606161707 --derived-data-path build/UnnotarizedPreview-0.1.0-preview.2-cli`
   completed successfully.
 - DMG creation completed with `hdiutil create -format UDZO`.
-- `hdiutil attach AreaMatrix-v0.1.0-unnotarized-preview.1.dmg -nobrowse`
+- `hdiutil attach AreaMatrix-v0.1.0-unnotarized-preview.2.dmg -nobrowse`
   completed CRC verification and mounted
-  `/Volumes/AreaMatrix 0.1.0 Unnotarized Preview 1`.
+  `/Volumes/AreaMatrix 0.1.0 Unnotarized Preview 2`.
 - Mounted app version is `0.1.0`, build number is `202606161707`.
 - `codesign --verify --deep --strict --verbose=2` passed for the mounted app.
 - `codesign -dv --verbose=4` reports `Signature=adhoc`,

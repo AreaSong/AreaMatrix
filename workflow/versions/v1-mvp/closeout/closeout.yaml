@@ -3,7 +3,7 @@ status: blocked
 kind: closeout-audit
 projection_status: not-applicable-for-v1-direct-live-queue
 blockers:
-  - Stage 1 alpha release is not approved; 0.1.0-local-qa is internal QA only, and v0.1.0-unnotarized-preview.1 is prerelease-only for trusted testers.
+  - Stage 1 alpha release is not approved; 0.1.0-local-qa is internal QA only, and v0.1.0-unnotarized-preview.2 is prerelease-only for trusted testers.
   - iCloud placeholder real-environment smoke evidence is still blocked.
   - Developer ID signing, notarization, stapling, clean-Mac first launch, and formal v0.1.0 tag evidence are missing.
   - 3-1/task-05 remains a release-gate review item without task-loop verify evidence.
@@ -16,7 +16,7 @@ evidence:
   task_loop_status: ./task-loop status
   release_checklist: docs/development/stage-1-release-checklist.md
   local_qa_notes: release-notes-0.1.0.md
-  unnotarized_preview_notes: release-notes-v0.1.0-unnotarized-preview.1.md
+  unnotarized_preview_notes: release-notes-v0.1.0-unnotarized-preview.2.md
   checkpoint_gap_query: progress entries where git_checkpoint_status is missing or not committed
   checkpoint_gap_detail: workflow/versions/v1-mvp/closeout/checkpoint-gaps.md
   checkpoint_accepted_exceptions: workflow/versions/v1-mvp/closeout/checkpoint-accepted-exceptions.md

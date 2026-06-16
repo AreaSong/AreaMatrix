@@ -155,27 +155,32 @@ Developer ID / notarization 后续补证必须至少包含：
 
 - 只给明确信任本仓库来源的 tester。
 - GitHub Release 必须勾选 **Pre-release**。
-- tag 使用预览命名，例如 `v0.1.0-unnotarized-preview.1`，不得占用正式 `v0.1.0`。
+- tag 使用预览命名，例如 `v0.1.0-unnotarized-preview.2`，不得占用正式 `v0.1.0`。
 - release notes 必须写明 **not Developer ID signed**、**not notarized**、
   **TeamIdentifier=not set**。
 - tester 可使用 Control-click Open 或 System Settings > Privacy & Security > Open Anyway。
 - 不提供、也不建议全局关闭 Gatekeeper 的命令。
 
-`v0.1.0-unnotarized-preview.1` 构建与 DMG：
+`v0.1.0-unnotarized-preview.1` 未发布：首次创建空 prerelease 后，GitHub 返回
+`Cannot upload assets to an immutable release`；删除空 release 后，同名 tag / release 又被
+immutable release 与仓库 tag 创建规则阻止复用。因此当前对外预览版改用
+`v0.1.0-unnotarized-preview.2`。
+
+`v0.1.0-unnotarized-preview.2` 构建与 DMG：
 
 ```bash
 ./dev release local-qa \
   --build-number 202606161707 \
-  --derived-data-path build/UnnotarizedPreview-0.1.0-preview.1-cli
+  --derived-data-path build/UnnotarizedPreview-0.1.0-preview.2-cli
 
-APP_PATH="build/UnnotarizedPreview-0.1.0-preview.1-cli/Build/Products/Release/AreaMatrix.app"
+APP_PATH="build/UnnotarizedPreview-0.1.0-preview.2-cli/Build/Products/Release/AreaMatrix.app"
 hdiutil create \
-  -volname "AreaMatrix 0.1.0 Unnotarized Preview 1" \
+  -volname "AreaMatrix 0.1.0 Unnotarized Preview 2" \
   -srcfolder "$APP_PATH" \
   -ov \
   -format UDZO \
-  AreaMatrix-v0.1.0-unnotarized-preview.1.dmg
-shasum -a 256 AreaMatrix-v0.1.0-unnotarized-preview.1.dmg
+  AreaMatrix-v0.1.0-unnotarized-preview.2.dmg
+shasum -a 256 AreaMatrix-v0.1.0-unnotarized-preview.2.dmg
 ```
 
 本轮产物：
@@ -183,15 +188,15 @@ shasum -a 256 AreaMatrix-v0.1.0-unnotarized-preview.1.dmg
 - app version: `0.1.0`
 - build number: `202606161707`
 - executable SHA-256:
-  `1482d7564352d461d439df4393f5ee26be8331ec1b2ba7b6656c2b34cda9786e`
+  `1a4881522acb93282cb6e0252810ea3849c7ab1095e74b8583a40e8018f28aea`
 - DMG SHA-256:
-  `fcd432348e489e6be8194925f6d02b18dc222331569acce8bb175e0e7073d8d1`
+  `d01d44c82e2287c0f1cd12aea4e78ece46301fe2f4709b2598c5710ba89864b2`
 
 挂载验证：
 
 ```bash
-hdiutil attach AreaMatrix-v0.1.0-unnotarized-preview.1.dmg -nobrowse
-VOL="/Volumes/AreaMatrix 0.1.0 Unnotarized Preview 1"
+hdiutil attach AreaMatrix-v0.1.0-unnotarized-preview.2.dmg -nobrowse
+VOL="/Volumes/AreaMatrix 0.1.0 Unnotarized Preview 2"
 codesign --verify --deep --strict --verbose=2 "$VOL/AreaMatrix.app"
 codesign -dv --verbose=4 "$VOL/AreaMatrix.app"
 otool -L "$VOL/AreaMatrix.app/Contents/MacOS/AreaMatrix"
@@ -208,14 +213,14 @@ hdiutil detach "$VOL"
 创建 GitHub prerelease：
 
 ```bash
-git tag -a v0.1.0-unnotarized-preview.1 \
-  -m "AreaMatrix v0.1.0-unnotarized-preview.1"
-git push origin main v0.1.0-unnotarized-preview.1
-gh release create v0.1.0-unnotarized-preview.1 \
-  --title "AreaMatrix 0.1.0 Unnotarized Preview 1" \
-  --notes-file release-notes-v0.1.0-unnotarized-preview.1.md \
+git tag -a v0.1.0-unnotarized-preview.2 \
+  -m "AreaMatrix v0.1.0-unnotarized-preview.2"
+git push origin main v0.1.0-unnotarized-preview.2
+gh release create v0.1.0-unnotarized-preview.2 \
+  --title "AreaMatrix 0.1.0 Unnotarized Preview 2" \
+  --notes-file release-notes-v0.1.0-unnotarized-preview.2.md \
   --prerelease \
-  AreaMatrix-v0.1.0-unnotarized-preview.1.dmg
+  AreaMatrix-v0.1.0-unnotarized-preview.2.dmg
 ```
 
 该 prerelease 只证明“可信测试者可下载未公证预览包”。正式 Stage 1 alpha 仍需 Developer ID
