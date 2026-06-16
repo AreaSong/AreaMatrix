@@ -24,21 +24,26 @@ struct ValidatePathStepView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .center, spacing: 28) {
             ValidatePathHeader()
-            ValidatePathSummary(displayedPath: displayedPath)
-            ValidatePathChecklist(displayedPath: displayedPath, validation: validation)
-            ValidatePathNotices(
-                displayedPath: displayedPath,
-                validation: validation,
-                existingRepositoryMetadata: existingRepositoryMetadata,
-                latestScanSession: latestScanSession,
-                errorMessage: errorMessage,
-                errorMapping: errorMapping,
-                isValidating: isValidating,
-                isICloudRiskAccepted: isICloudRiskAccepted,
-                onICloudRiskAcceptedChanged: onICloudRiskAcceptedChanged
-            )
+            
+            VStack(spacing: 24) {
+                ValidatePathSummary(displayedPath: displayedPath)
+                ValidatePathChecklist(displayedPath: displayedPath, validation: validation)
+                ValidatePathNotices(
+                    displayedPath: displayedPath,
+                    validation: validation,
+                    existingRepositoryMetadata: existingRepositoryMetadata,
+                    latestScanSession: latestScanSession,
+                    errorMessage: errorMessage,
+                    errorMapping: errorMapping,
+                    isValidating: isValidating,
+                    isICloudRiskAccepted: isICloudRiskAccepted,
+                    onICloudRiskAcceptedChanged: onICloudRiskAcceptedChanged
+                )
+            }
+            .frame(maxWidth: 440)
+            
             ValidatePathFooter(
                 isInitializedRepository: validation?.isInitialized == true,
                 isValidating: isValidating,
@@ -52,9 +57,7 @@ struct ValidatePathStepView: View {
                 onContinue: onContinue
             )
         }
-        .padding(.horizontal, 72)
-        .padding(.vertical, 42)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .areaMatrixOnboardingPanel()
     }
 }
 
@@ -71,13 +74,20 @@ enum ValidatePathNoticeRules {
 
 private struct ValidatePathHeader: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .center, spacing: 14) {
+            Image(systemName: "checklist")
+                .font(.system(size: 48, weight: .light))
+                .foregroundStyle(.blue)
+                .padding(.bottom, 8)
+                
             Text("校验资料库路径")
-                .font(.system(size: 34, weight: .semibold, design: .default))
+                .font(.system(size: 32, weight: .semibold, design: .default))
                 .accessibilityAddTraits(.isHeader)
+                
             Text("AreaMatrix 会先检查路径状态，再进入初始化或打开流程。")
                 .font(.title3)
-                .frame(maxWidth: 620, alignment: .leading)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
     }
 }
@@ -86,17 +96,16 @@ private struct ValidatePathSummary: View {
     let displayedPath: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("当前路径")
-                .font(.headline)
+        VStack(alignment: .center, spacing: 8) {
             Text(displayedPath)
                 .font(.system(.body, design: .monospaced))
                 .textSelection(.enabled)
                 .lineLimit(2)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .frame(maxWidth: 620, alignment: .leading)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
         }
     }
 }
@@ -107,16 +116,15 @@ private struct ValidatePathChecklist: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("检查列表")
-                .font(.headline)
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 ForEach(rows, id: \.title) { row in
                     ValidatePathCheckRowView(row: row)
                 }
             }
-            .padding(14)
-            .frame(maxWidth: 620, alignment: .leading)
-            .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 8))
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
         }
     }
 
@@ -350,9 +358,10 @@ private struct ValidatePathICloudNotice: View {
                 isOn: Binding(get: { isAccepted }, set: onAcceptedChanged)
             )
         }
-        .padding(14)
-        .frame(maxWidth: 620, alignment: .leading)
-        .background(Color.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.blue.opacity(0.15), lineWidth: 1))
     }
 }
 
@@ -373,9 +382,10 @@ private struct ValidatePathNoticeCard: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(14)
-        .frame(maxWidth: 620, alignment: .leading)
-        .background(tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint.opacity(0.15), lineWidth: 1))
     }
 }
 
@@ -400,35 +410,58 @@ private struct ValidatePathFooter: View {
             }
         }
         .disabled(isValidating)
-        .frame(maxWidth: 620)
+        .frame(maxWidth: 440)
+        .padding(.top, 16)
     }
 
     @ViewBuilder
     private var defaultFooter: some View {
-        Button("Back", action: onBack)
+        Button(action: onBack) { Text("返回").font(.body.weight(.medium)) }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            
         if showsCancel {
-            Button("Cancel", action: onCancel)
+            Button(action: onCancel) { Text("取消").font(.body.weight(.medium)) }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
         }
-        Button("Change Path", action: onChangePath)
+        
         Spacer()
-        Button("Retry", action: onRetry)
+        
+        Button(action: onChangePath) { Text("更改") }
+            .controlSize(.large)
+            
+        Button(action: onRetry) { Text("重试") }
+            .controlSize(.large)
+            
         primaryButton
     }
 
     private var existingRepositoryFooter: some View {
         Group {
-            Button("Back", action: onBack)
+            Button(action: onBack) { Text("返回").font(.body.weight(.medium)) }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                
             Spacer()
-            Button("Choose another folder", action: onChangePath)
+            
+            Button(action: onChangePath) { Text("更改位置") }
+                .controlSize(.large)
+                
             primaryButton
         }
     }
 
     private var primaryButton: some View {
-        Button(primaryActionTitle, action: onContinue)
-            .keyboardShortcut(.defaultAction)
-            .buttonStyle(.borderedProminent)
-            .disabled(!canContinue)
+        Button(action: onContinue) {
+            Text(primaryActionTitle)
+                .font(.body.weight(.medium))
+                .frame(minWidth: 80)
+        }
+        .keyboardShortcut(.defaultAction)
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .disabled(!canContinue)
     }
 }
 

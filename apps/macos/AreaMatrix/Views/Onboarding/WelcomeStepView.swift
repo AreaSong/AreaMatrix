@@ -53,7 +53,6 @@ struct WelcomeStepView: View {
                 idealHeight: WelcomeWindowMetrics.height,
                 maxHeight: .infinity
             )
-            .background(AreaMatrixWindowChromeObserver())
             .preferredColorScheme(themeOverride)
             .onAppear {
                 if !Self.hasPlayedLaunchAnimation {

@@ -36,8 +36,16 @@ extension MainWindow {
         .background {
             if case .welcome = model.route {
                 Color.clear
+            } else if isOnboardingRoute {
+                AreaMatrixAmbientBackground(scene: onboardingScene, parallax: .zero)
+                    .ignoresSafeArea()
             } else {
                 Color(nsColor: .windowBackgroundColor)
+            }
+        }
+        .background {
+            if isOnboardingRoute {
+                AreaMatrixWindowChromeObserver()
             }
         }
         .background(WindowCloseConfirmationObserver(
@@ -105,6 +113,29 @@ extension MainWindow {
     private var isConfirmingInitializationCancel: Bool {
         if case .initializing = model.route { return true }
         return false
+    }
+
+    private var isOnboardingRoute: Bool {
+        switch model.route {
+        case .loadingConfiguration, .welcome, .choosePath, .validatePath,
+             .confirmRepositoryInitialization, .initializing, .initializationFailed,
+             .initializationDone, .configurationError:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private var onboardingScene: AreaMatrixAmbientScene {
+        switch model.route {
+        case .choosePath: return .classify
+        case .validatePath: return .security
+        case .confirmRepositoryInitialization: return .security
+        case .initializing: return .tracking
+        case .initializationFailed: return .help
+        case .initializationDone: return .start
+        default: return .home
+        }
     }
 
     private var minWindowWidth: CGFloat {

@@ -256,3 +256,44 @@ struct AreaMatrixDropOverlay: View {
         .onAppear { isBouncing = true }
     }
 }
+
+struct AreaMatrixOnboardingPanelModifier: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        content
+            .padding(40)
+            .background(
+                .thinMaterial,
+                in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+            )
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color.white.opacity(colorScheme == .dark ? 0.03 : 0.4))
+            )
+            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.4 : 0.12), radius: 50, y: 25)
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(colorScheme == .dark ? 0.3 : 0.7),
+                                Color.white.opacity(colorScheme == .dark ? 0.05 : 0.1)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 1
+                    )
+            )
+            // Fix the panel width to avoid it stretching across the entire screen
+            .frame(width: 580)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+extension View {
+    func areaMatrixOnboardingPanel() -> some View {
+        modifier(AreaMatrixOnboardingPanelModifier())
+    }
+}

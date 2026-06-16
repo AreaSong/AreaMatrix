@@ -14,16 +14,19 @@ struct InitFailedStepView: View {
     @State private var isDiagnosticsPrivacyPresented = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
+        VStack(alignment: .center, spacing: 28) {
             header
-            errorSummary
-            recoveryAdvice
-            diagnosticsSection
+            
+            VStack(spacing: 20) {
+                errorSummary
+                recoveryAdvice
+                diagnosticsSection
+            }
+            .frame(maxWidth: 440)
+            
             footer
         }
-        .padding(.horizontal, 72)
-        .padding(.vertical, 48)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .areaMatrixOnboardingPanel()
         .confirmationDialog(
             "Collect diagnostics?",
             isPresented: $isDiagnosticsPrivacyPresented
@@ -39,14 +42,21 @@ struct InitFailedStepView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .center, spacing: 14) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 48, weight: .light))
+                .foregroundStyle(.orange)
+                .padding(.bottom, 8)
+                
             Text("初始化未完成")
-                .font(.system(size: 34, weight: .semibold))
+                .font(.system(size: 32, weight: .semibold))
                 .accessibilityAddTraits(.isHeader)
-            Text("AreaMatrix 没能完成资料库初始化。你的原始文件没有被移动、" +
-                "重命名、删除或覆盖。")
+                
+            Text("AreaMatrix 没能完成资料库初始化。\n你的原始文件没有被移动、重命名、删除或覆盖。")
                 .font(.title3)
-                .frame(maxWidth: 720, alignment: .leading)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
         }
     }
 
@@ -71,9 +81,10 @@ struct InitFailedStepView: View {
             }
         }
         .font(.callout)
-        .padding(14)
-        .frame(maxWidth: 720, alignment: .leading)
-        .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 8))
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
     }
 
     private var recoveryAdvice: some View {
@@ -116,9 +127,10 @@ struct InitFailedStepView: View {
                     .foregroundStyle(.orange)
             }
         }
-        .padding(14)
-        .frame(maxWidth: 720, alignment: .leading)
-        .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 8))
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
     }
 
     private func failedDiagnostics(_ mapping: CoreErrorMappingSnapshot) -> some View {
@@ -130,27 +142,38 @@ struct InitFailedStepView: View {
                 .foregroundStyle(.secondary)
         }
         .font(.callout)
-        .padding(14)
-        .frame(maxWidth: 720, alignment: .leading)
-        .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.red.opacity(0.15), lineWidth: 1))
     }
 
     private var footer: some View {
-        HStack(spacing: 12) {
-            Button("Change Path", action: onChangePath)
-                .disabled(isActionInFlight)
-            Button("Collect Diagnostics...") {
+        HStack {
+            Button(action: onQuit) { Text("退出") }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                
+            Spacer()
+            
+            Button("诊断报告...") {
                 isDiagnosticsPrivacyPresented = true
             }
+            .controlSize(.large)
             .disabled(isActionInFlight)
-            Spacer()
-            Button("Retry", action: onRetry)
+            
+            Button("更改位置", action: onChangePath)
+                .controlSize(.large)
+                .disabled(isActionInFlight)
+                
+            Button("重试", action: onRetry)
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
+                .controlSize(.large)
                 .disabled(!canRetry || isActionInFlight)
-            Button("Quit", role: .destructive, action: onQuit)
         }
-        .frame(maxWidth: 720)
+        .frame(maxWidth: 440)
+        .padding(.top, 16)
     }
 
     private var isActionInFlight: Bool {

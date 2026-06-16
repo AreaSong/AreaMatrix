@@ -22,90 +22,102 @@ struct ChoosePathStepView: View {
     let onContinue: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 26) {
+        VStack(alignment: .center, spacing: 32) {
             header
-            recommendedLocation
-            pathSelection
+            
+            VStack(spacing: 24) {
+                pathSelection
+            }
+            .frame(maxWidth: 440)
+            
             footer
         }
-        .padding(.horizontal, 72)
-        .padding(.vertical, 48)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .areaMatrixOnboardingPanel()
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .center, spacing: 14) {
+            Image(systemName: "folder.badge.gearshape")
+                .font(.system(size: 48, weight: .light))
+                .foregroundStyle(.blue)
+                .padding(.bottom, 8)
+                
             Text("选择资料库位置")
-                .font(.system(size: 34, weight: .semibold, design: .default))
+                .font(.system(size: 32, weight: .semibold, design: .default))
                 .accessibilityAddTraits(.isHeader)
-            Text("资料库是一个普通文件夹，你可以随时在 Finder 中访问。")
+            
+            Text("资料库是一个普通文件夹，你可以随时在 Finder 中访问它。\n接管已有目录不会移动、重命名或删除你的任何原文件。")
                 .font(.title3)
-                .foregroundStyle(.primary)
-                .frame(maxWidth: 620, alignment: .leading)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
         }
-    }
-
-    private var recommendedLocation: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("推荐位置")
-                .font(.headline)
-            Text("~/AreaMatrix/")
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
-        }
-        .frame(maxWidth: 620, alignment: .leading)
     }
 
     private var pathSelection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("路径")
-                .font(.headline)
-            HStack(spacing: 10) {
+        VStack(alignment: .center, spacing: 16) {
+            HStack(spacing: 12) {
                 TextField("Repository path", text: $pathText)
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.plain)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
                     .accessibilityLabel("Repository path")
                     .disabled(isValidating)
-                Button("Choose...", action: onChoose)
-                    .disabled(isValidating)
+                
+                Button(action: onChoose) {
+                    Image(systemName: "ellipsis")
+                        .font(.body.weight(.semibold))
+                        .frame(width: 24)
+                }
+                .buttonStyle(AreaMatrixSecondaryButtonStyle())
+                .controlSize(.large)
+                .disabled(isValidating)
             }
-            .frame(maxWidth: 620)
-            pathHelp
-        }
-    }
-
-    @ViewBuilder
-    private var pathHelp: some View {
-        if let errorMessage {
-            Label(errorMessage, systemImage: "exclamationmark.triangle")
+            
+            if let errorMessage {
+                Label(errorMessage, systemImage: "exclamationmark.triangle")
+                    .font(.callout)
+                    .foregroundStyle(.red)
+            } else {
+                Button(action: onUseDefault) {
+                    Text("恢复推荐默认路径: ~/AreaMatrix/")
+                }
+                .buttonStyle(.plain)
                 .font(.callout)
-                .foregroundStyle(.red)
-        } else {
-            Text("接管已有目录不会移动、改名、删除或覆盖原有内容。")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.blue)
+                .disabled(isValidating)
+            }
         }
     }
 
     private var footer: some View {
         HStack {
-            Button("Back", action: onBack)
-                .disabled(isValidating)
+            Button(action: onBack) {
+                Text("返回")
+            }
+            .buttonStyle(AreaMatrixSecondaryButtonStyle())
+            .disabled(isValidating)
+            
             Spacer()
+            
             if isValidating {
                 ProgressView()
                     .controlSize(.small)
+                    .padding(.trailing, 8)
             }
-            Button("Use default", action: onUseDefault)
-                .disabled(isValidating)
-            Button("Continue", action: onContinue)
-                .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
-                .disabled(!canContinue)
+            
+            Button(action: onContinue) {
+                Text("继续")
+                    .frame(minWidth: 80)
+            }
+            .buttonStyle(AreaMatrixPrimaryButtonStyle())
+            .controlSize(.large)
+            .disabled(!canContinue)
         }
-        .frame(maxWidth: 620)
+        .frame(maxWidth: 440)
+        .padding(.top, 16)
     }
 }
 

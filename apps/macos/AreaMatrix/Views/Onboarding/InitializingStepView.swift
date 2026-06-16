@@ -13,47 +13,54 @@ struct InitializingStepView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
+        VStack(alignment: .center, spacing: 28) {
             header
-            pathBox
-            recoverySection
-            progressSection
-            stepList
-            warningSection
-            safetyText
+            
+            VStack(spacing: 20) {
+                pathBox
+                recoverySection
+                progressSection
+                stepList
+                warningSection
+                safetyText
+            }
+            .frame(maxWidth: 440)
+            
             footer
         }
-        .padding(.horizontal, 72)
-        .padding(.vertical, 48)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .areaMatrixOnboardingPanel()
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ProgressView(statusText)
+        VStack(alignment: .center, spacing: 14) {
+            ProgressView()
                 .controlSize(.large)
                 .accessibilityLabel(accessibilityProgressLabel)
+                .padding(.bottom, 8)
+                
             Text(isCreateMode ? "正在创建资料库" : "正在接管已有目录")
-                .font(.system(size: 34, weight: .semibold))
+                .font(.system(size: 32, weight: .semibold))
                 .accessibilityAddTraits(.isHeader)
+                
             Text(detailText)
                 .font(.title3)
-                .frame(maxWidth: 680, alignment: .leading)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
         }
     }
 
     private var pathBox: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("资料库路径")
-                .font(.headline)
+        VStack(alignment: .center, spacing: 8) {
             Text(draft.validation.repoPath)
                 .font(.system(.body, design: .monospaced))
                 .textSelection(.enabled)
-                .lineLimit(3)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .frame(maxWidth: 680, alignment: .leading)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+                .lineLimit(2)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
         }
     }
 
@@ -67,9 +74,10 @@ struct InitializingStepView: View {
                 Text(currentFileText)
             }
             .font(.callout)
-            .padding(14)
-            .frame(maxWidth: 680, alignment: .leading)
-            .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 8))
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
         }
     }
 
@@ -87,18 +95,17 @@ struct InitializingStepView: View {
                         .foregroundStyle(.orange)
                 }
             }
-            .padding(14)
-            .frame(maxWidth: 680, alignment: .leading)
-            .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 8))
-            .accessibilityElement(children: .combine)
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+        .accessibilityElement(children: .combine)
         }
     }
 
     private var stepList: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("步骤")
-                .font(.headline)
-            VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 10) {
                 ForEach(stepRows, id: \.title) { row in
                     Label(row.title, systemImage: row.systemImage)
                         .font(.callout)
@@ -106,6 +113,10 @@ struct InitializingStepView: View {
                 }
             }
             .accessibilityElement(children: .combine)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
         }
     }
 
@@ -115,7 +126,7 @@ struct InitializingStepView: View {
             Label(progressWarning, systemImage: "exclamationmark.triangle")
                 .font(.callout)
                 .foregroundStyle(.orange)
-                .frame(maxWidth: 680, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
 
         if let scanSession, !scanSession.errors.isEmpty {
@@ -136,24 +147,32 @@ struct InitializingStepView: View {
         Text("AreaMatrix 不会移动、重命名、删除或覆盖用户原文件。")
             .font(.callout)
             .foregroundStyle(.secondary)
-            .frame(maxWidth: 680, alignment: .leading)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private var footer: some View {
-        HStack(spacing: 12) {
+        HStack {
+            Spacer()
+            
             if isCancellationRequested {
                 ProgressView()
                     .controlSize(.small)
                 Text("正在暂停...")
                     .font(.callout)
                     .foregroundStyle(.secondary)
+                    .padding(.trailing, 8)
             }
 
-            Spacer()
-            Button("Cancel", action: onCancel)
-                .disabled(isCancellationRequested)
+            Button(action: onCancel) {
+                Text("取消")
+                    .font(.body.weight(.medium))
+            }
+            .controlSize(.large)
+            .disabled(isCancellationRequested)
         }
-        .frame(maxWidth: 680)
+        .frame(maxWidth: 440)
+        .padding(.top, 16)
     }
 
     private var statusText: String {
@@ -244,56 +263,68 @@ struct InitDoneStepView: View {
     @State private var isOpeningFinder = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
+        VStack(alignment: .center, spacing: 28) {
             header
-            pathBox
-            summarySection
-            openErrorSection
+            
+            VStack(spacing: 20) {
+                pathBox
+                summarySection
+                openErrorSection
+            }
+            .frame(maxWidth: 440)
+            
             footer
         }
-        .padding(.horizontal, 72)
-        .padding(.vertical, 48)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .areaMatrixOnboardingPanel()
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("资料库已准备好", systemImage: "checkmark.circle.fill")
-                .font(.system(size: 34, weight: .semibold))
+        VStack(alignment: .center, spacing: 14) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 48, weight: .light))
                 .foregroundStyle(.green)
+                .padding(.bottom, 8)
+                
+            Text("资料库已准备好")
+                .font(.system(size: 32, weight: .semibold))
                 .accessibilityAddTraits(.isHeader)
-            Text("AreaMatrix 已完成初始化。你现在可以浏览资料库，" +
-                "或把文件拖进窗口开始归档。")
+                
+            Text("AreaMatrix 已完成初始化。\n你现在可以浏览资料库，或把文件拖进窗口开始归档。")
                 .font(.title3)
-                .frame(maxWidth: 720, alignment: .leading)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
         }
     }
 
     private var pathBox: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("资料库路径")
-                .font(.headline)
+        VStack(alignment: .center, spacing: 8) {
             Text(result.repoPath)
                 .font(.system(.body, design: .monospaced))
                 .textSelection(.enabled)
-                .lineLimit(3)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .frame(maxWidth: 720, alignment: .leading)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+                .lineLimit(2)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
         }
     }
 
     private var summarySection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("完成摘要")
-                .font(.headline)
-            ForEach(summaryItems, id: \.self) { item in
-                Label(item, systemImage: "checkmark")
-                    .font(.callout)
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(summaryItems, id: \.self) { item in
+                    Label(item, systemImage: "checkmark")
+                        .font(.callout)
+                        .foregroundStyle(.green)
+                }
             }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
         }
-        .frame(maxWidth: 720, alignment: .leading)
     }
 
     @ViewBuilder
@@ -307,19 +338,22 @@ struct InitDoneStepView: View {
                     .foregroundStyle(.secondary)
             }
             .font(.callout)
-            .padding(14)
-            .frame(maxWidth: 720, alignment: .leading)
-            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.red.opacity(0.15), lineWidth: 1))
         }
     }
 
     private var footer: some View {
-        HStack(spacing: 12) {
-            Button("Open in Finder") {
+        HStack {
+            Button("在 Finder 中打开") {
                 Task {
                     await openInFinder()
                 }
             }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
             .disabled(isOpeningFinder)
 
             if isOpeningFinder {
@@ -328,11 +362,17 @@ struct InitDoneStepView: View {
             }
 
             Spacer()
-            Button(errorMapping == nil ? "Open Repository" : "Retry Open Repository", action: onOpenRepository)
-                .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
+            
+            Button(action: onOpenRepository) {
+                Text(errorMapping == nil ? "打开资料库" : "重试")
+                    .font(.body.weight(.medium))
+            }
+            .keyboardShortcut(.defaultAction)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
         }
-        .frame(maxWidth: 720)
+        .frame(maxWidth: 440)
+        .padding(.top, 16)
     }
 
     @MainActor
