@@ -10,8 +10,8 @@ Git checkpoint 状态。
 
 工作层本身未发现 source-of-truth、execution、state 或 skill owner 污染；`tasks/backlog/**`
 和 `.codex/references/**` 仍只是 planning / 操作投影层。但 AreaMatrix v1 产品收口仍为
-blocked：`workflow/versions/v1-mvp/closeout/closeout.yaml` 记录了 release blocker、
-checkpoint evidence gap 和 dirty worktree blocker。
+blocked：`workflow/versions/v1-mvp/closeout/closeout.yaml` 记录了 release blocker
+和 checkpoint evidence gap；Xcode derived-data dirty state 已单独处置。
 
 ## 回归项
 
@@ -25,14 +25,13 @@ checkpoint evidence gap 和 dirty worktree blocker。
 
 ## 当前 Dirty State
 
-当前工作区存在一个本轮未创建的既有脏文件：
+审计时发现一个既有脏文件：
 
 ```text
 apps/macos/.derived-data-log-0CA5RPJ1
 ```
 
-该文件会阻塞 Git checkpoint 或干净归档，但不应混入工作层 closeout 结论。后续需要单独决定：
-保留并提交、恢复、停止跟踪，或把它纳入生成物清理策略。
+该文件是 Xcode / SDK / systemVersion 访问日志，属于本机派生环境噪声。已从 Git 跟踪中移除但保留本地文件，并通过 `.gitignore` 忽略 `apps/macos/.derived-data-log-*`，避免后续 Git checkpoint 被同类日志污染。
 
 ## 后续判断
 

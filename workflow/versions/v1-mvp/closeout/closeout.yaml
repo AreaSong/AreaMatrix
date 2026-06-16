@@ -7,7 +7,6 @@ blockers:
   - iCloud placeholder real-environment smoke evidence is still blocked.
   - Developer ID signing, notarization, stapling, clean-Mac first launch, and v0.1.0 tag evidence are missing.
   - 36 completed prompt tasks lack committed Git checkpoint metadata in tasks/prompts/_shared/progress.json.
-  - Working tree has pre-existing dirty derived-data log changes outside v1 closeout docs.
 evidence:
   live_queue: tasks/prompts
   progress: tasks/prompts/_shared/progress.json
@@ -18,6 +17,26 @@ evidence:
   release_checklist: docs/development/stage-1-release-checklist.md
   local_qa_notes: release-notes-0.1.0.md
   checkpoint_gap_query: progress entries where git_checkpoint_status is missing or not committed
+  checkpoint_gap_detail: workflow/versions/v1-mvp/closeout/checkpoint-gaps.md
+checkpoint_gap_summary:
+  total: 36
+  verify_pass_with_missing_checkpoint_metadata: 35
+  local_qa_gate_sync_without_verify_log: 1
+  by_phase:
+    phase-1: 1
+    phase-2: 9
+    phase-3: 2
+    phase-4: 24
+  by_risk:
+    High: 28
+    Mission-Critical: 7
+    Unspecified: 1
+  disposition: blocked-pending-evidence-review
+  note: Do not rewrite progress.json or fabricate checkpoint metadata; classify each gap as recoverable evidence, accepted exception, or runner evidence defect.
+dirty_worktree_summary:
+  generated_xcode_log_removed_from_git_tracking: apps/macos/.derived-data-log-0CA5RPJ1
+  ignore_rule: apps/macos/.derived-data-log-*
+  disposition: resolved-for-future-checkpoints
 remaining_risks:
   - Do not archive v1 until release blockers are either closed or explicitly deferred with owner and rationale.
   - Do not promote new live tasks/prompts work while v1 is still treated as live-running by workflow gates.
