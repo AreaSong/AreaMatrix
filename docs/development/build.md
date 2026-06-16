@@ -252,7 +252,9 @@ Stage 1 不做公开发布，但 alpha tester 内部分发仍必须走 Developer
 
 当前若未加入付费 Apple Developer Program，只能制作 local QA build。local QA build 可以用于本机
 或受控测试机验证启动、恢复和包结构，但它不是 Developer ID notarized app，不能替代 Stage 1
-alpha 分发门禁。
+alpha 分发门禁。若需要给可信测试者先下载试用，可以使用
+`v0.1.0-unnotarized-preview.1` 这种 GitHub prerelease 轨道；该轨道仍是未公证预览版，
+不是正式 alpha。
 
 发布凭据预检：
 
@@ -276,6 +278,7 @@ xcodebuild -project apps/macos/AreaMatrix.xcodeproj \
   CODE_SIGN_STYLE=Manual \
   CODE_SIGN_IDENTITY=- \
   DEVELOPMENT_TEAM= \
+  LIBRARY_SEARCH_PATHS="$(pwd)/core/target/aarch64-apple-darwin/release" \
   OTHER_LDFLAGS="$(pwd)/core/target/aarch64-apple-darwin/release/libarea_matrix_core.a"
 
 APP_PATH="build/Build/Products/Release/AreaMatrix.app"
@@ -303,6 +306,50 @@ hdiutil detach "/Volumes/AreaMatrix 0.1.0 Local QA"
 `CODE_SIGN_IDENTITY=-` 只生成 ad-hoc signed app，用于本机包结构和启动行为验证；它不是
 Developer ID 签名。`AreaMatrix-0.1.0-local-qa.dmg` 只能标记为 internal QA artifact，
 不得写成 Developer ID 签名、公证或正式 alpha 分发证据。
+
+### 未公证预览 DMG
+
+`unnotarized-preview` 使用同一条 local QA 构建底座，但可以上传为 GitHub prerelease，供可信
+测试者下载。它必须标记为未公证预览版，不能替代 Developer ID 签名、公证或正式 alpha 门禁。
+
+```bash
+./dev release local-qa \
+  --build-number 202606161707 \
+  --derived-data-path build/UnnotarizedPreview-0.1.0-preview.1-cli
+
+APP_PATH="build/UnnotarizedPreview-0.1.0-preview.1-cli/Build/Products/Release/AreaMatrix.app"
+hdiutil create \
+  -volname "AreaMatrix 0.1.0 Unnotarized Preview 1" \
+  -srcfolder "$APP_PATH" \
+  -ov \
+  -format UDZO \
+  AreaMatrix-v0.1.0-unnotarized-preview.1.dmg
+shasum -a 256 AreaMatrix-v0.1.0-unnotarized-preview.1.dmg
+```
+
+`v0.1.0-unnotarized-preview.1` 当前产物：
+
+- `AreaMatrix-v0.1.0-unnotarized-preview.1.dmg`
+- SHA-256: `fcd432348e489e6be8194925f6d02b18dc222331569acce8bb175e0e7073d8d1`
+- app version: `0.1.0`
+- build number: `202606161707`
+- executable SHA-256:
+  `1482d7564352d461d439df4393f5ee26be8331ec1b2ba7b6656c2b34cda9786e`
+- signing: `Signature=adhoc`，`TeamIdentifier=not set`
+
+预览 DMG 验证：
+
+```bash
+hdiutil attach AreaMatrix-v0.1.0-unnotarized-preview.1.dmg -nobrowse
+VOL="/Volumes/AreaMatrix 0.1.0 Unnotarized Preview 1"
+codesign --verify --deep --strict --verbose=2 "$VOL/AreaMatrix.app"
+codesign -dv --verbose=4 "$VOL/AreaMatrix.app"
+otool -L "$VOL/AreaMatrix.app/Contents/MacOS/AreaMatrix"
+hdiutil detach "$VOL"
+```
+
+验证通过只能说明 DMG 完整、bundle 级 ad-hoc 签名通过、Rust core 已静态链接；它不能证明
+Gatekeeper、Developer ID、notarization、stapler 或干净 Mac 首启。
 
 同机 local QA 首启交互 smoke：
 

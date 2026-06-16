@@ -51,11 +51,12 @@ Implementation-stage pre-alpha. The `v1-mvp` prompt queue has completed
 `637/637` tasks, and the repository now contains the Rust core, the SwiftUI
 macOS app, tests, and early iOS / Windows / Linux surfaces.
 
-`0.1.0-local-qa` is available as an internal QA artifact only. It is not an
-official Stage 1 alpha release. Formal alpha distribution remains blocked on
-release evidence such as iCloud placeholder smoke testing, Developer ID
-signing, notarization, clean-Mac first launch validation, and the final
-`v0.1.0` tag.
+`v0.1.0-unnotarized-preview.1` is prepared as a GitHub prerelease track for
+trusted testers. It is ad-hoc signed, not Developer ID signed, and not notarized.
+`0.1.0-local-qa` remains an internal QA artifact only. Formal alpha distribution
+is still blocked on release evidence such as iCloud placeholder smoke testing,
+Developer ID signing, notarization, clean-Mac first launch validation, and the
+final `v0.1.0` tag.
 
 See [docs/roadmap/milestones.md](docs/roadmap/milestones.md) for the four-stage release plan.
 

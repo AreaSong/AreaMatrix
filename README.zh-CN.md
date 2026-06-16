@@ -59,9 +59,10 @@ AreaMatrix 的所有架构决策围绕三条原则：
 仓库内已经包含 Rust core、SwiftUI macOS app、测试，以及早期 iOS / Windows / Linux
 表面层。
 
-`0.1.0-local-qa` 只作为内部 QA 产物存在，不是正式 Stage 1 alpha 分发版本。正式
-alpha 仍被 release 证据阻断，包括 iCloud placeholder 真实环境冒烟、Developer ID
-签名、公证、干净 Mac 首启验证，以及最终 `v0.1.0` tag。
+`v0.1.0-unnotarized-preview.1` 已准备为 GitHub prerelease 轨道，可提供给可信测试者。
+它是 ad-hoc signed，未使用 Developer ID 签名，也未经过 Apple 公证。`0.1.0-local-qa`
+仍只作为内部 QA 产物存在。正式 alpha 仍被 release 证据阻断，包括 iCloud placeholder
+真实环境冒烟、Developer ID 签名、公证、干净 Mac 首启验证，以及最终 `v0.1.0` tag。
 
 四阶段路线图见 [docs/roadmap/milestones.md](docs/roadmap/milestones.md)。
 

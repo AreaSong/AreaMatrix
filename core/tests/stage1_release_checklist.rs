@@ -8,6 +8,8 @@ const PERFORMANCE_BASELINE: &str =
 const RECOVERY_SCENARIOS: &str = include_str!("../../docs/development/recovery-scenarios.md");
 const TESTING: &str = include_str!("../../docs/development/testing.md");
 const RELEASE_NOTES_010: &str = include_str!("../../release-notes-0.1.0.md");
+const RELEASE_NOTES_PREVIEW_010: &str =
+    include_str!("../../release-notes-v0.1.0-unnotarized-preview.1.md");
 const CARGO_TOML: &str = include_str!("../Cargo.toml");
 const XCODE_PROJECT: &str = include_str!("../../apps/macos/AreaMatrix.xcodeproj/project.pbxproj");
 
@@ -32,6 +34,8 @@ fn release_checklist_answers_alpha_distribution_readiness() {
             "当前结论：**不放行 Stage 1 alpha 分发**",
             "最终集成验收：**不放行**",
             "不得标记为可 alpha 分发",
+            "`v0.1.0-unnotarized-preview.1`：**可作为 GitHub prerelease 提供给可信测试者**",
+            "不代表正式 Stage 1 alpha 可分发",
             "P1-RL-001",
             "P1-RL-002",
             "P1-RL-003",
@@ -139,9 +143,16 @@ fn release_checklist_records_distribution_preflight_blocker_without_release_clai
     assert_contains(RELEASE, "Signature=adhoc");
     assert_contains(RELEASE, "TeamIdentifier=not set");
     assert_contains(RELEASE, "不创建 `v0.1.0` tag");
+    assert_contains(RELEASE, "未公证 GitHub prerelease");
+    assert_contains(RELEASE, "v0.1.0-unnotarized-preview.1");
+    assert_contains(RELEASE, "not Developer ID signed");
+    assert_contains(RELEASE, "not notarized");
+    assert_contains(RELEASE, "可信测试者");
     assert_contains(BUILD, "不付费 local QA 构建");
     assert_contains(BUILD, "CODE_SIGN_IDENTITY=-");
     assert_contains(BUILD, "AreaMatrix-0.1.0-local-qa.dmg");
+    assert_contains(BUILD, "未公证预览 DMG");
+    assert_contains(BUILD, "AreaMatrix-v0.1.0-unnotarized-preview.1.dmg");
     assert_contains(
         RELEASE_NOTES_010,
         "`./dev release preflight` 已补为可复现预检",
@@ -152,8 +163,15 @@ fn release_checklist_records_distribution_preflight_blocker_without_release_clai
     assert_contains(RELEASE_NOTES_010, "# AreaMatrix 0.1.0-local-qa");
     assert_contains(
         RELEASE_NOTES_010,
-        "No `v0.1.0` tag or GitHub Release has been created.",
+        "No formal `v0.1.0` tag or GitHub Release has been created for this local QA artifact.",
     );
+    assert_contains(
+        RELEASE_NOTES_PREVIEW_010,
+        "# AreaMatrix 0.1.0 Unnotarized Preview 1",
+    );
+    assert_contains(RELEASE_NOTES_PREVIEW_010, "not Developer ID signed");
+    assert_contains(RELEASE_NOTES_PREVIEW_010, "has not been notarized");
+    assert_contains(RELEASE_NOTES_PREVIEW_010, "trusted tester preview");
     assert_contains(CHANGELOG, "未加入付费 Apple Developer Program");
 }
 
@@ -187,6 +205,38 @@ fn release_checklist_records_local_qa_artifact_without_alpha_claim() {
     assert_contains(RELEASE_NOTES_010, "internal local QA artifact");
     assert_contains(RELEASE_NOTES_010, "同机 local QA 首启交互 smoke 已通过");
     assert_contains(CHANGELOG, "0.1.0-local-qa");
+}
+
+#[test]
+fn release_checklist_records_unnotarized_preview_without_alpha_claim() {
+    assert_contains(CHECKLIST, "未公证预览 DMG");
+    assert_contains(CHECKLIST, "v0.1.0-unnotarized-preview.1");
+    assert_contains(CHECKLIST, "GitHub prerelease");
+    assert_contains(CHECKLIST, "可信测试者");
+    assert_contains(CHECKLIST, "prerelease only");
+    assert_contains(CHECKLIST, "202606161707");
+    assert_contains(
+        CHECKLIST,
+        "1482d7564352d461d439df4393f5ee26be8331ec1b2ba7b6656c2b34cda9786e",
+    );
+    assert_contains(
+        CHECKLIST,
+        "fcd432348e489e6be8194925f6d02b18dc222331569acce8bb175e0e7073d8d1",
+    );
+    assert_contains(CHECKLIST, "Runtime Version=26.4.0");
+    assert_contains(CHECKLIST, "TeamIdentifier=not set");
+    assert_contains(CHECKLIST, "不能替代正式 alpha");
+    assert_contains(RELEASE, "--prerelease");
+    assert_contains(RELEASE, "release-notes-v0.1.0-unnotarized-preview.1.md");
+    assert_contains(BUILD, "notarization、stapler 或干净 Mac 首启");
+    assert_contains(RELEASE_NOTES_PREVIEW_010, "Do not disable Gatekeeper globally.");
+    assert_contains(RELEASE_NOTES_PREVIEW_010, "Signature=adhoc");
+    assert_contains(RELEASE_NOTES_PREVIEW_010, "TeamIdentifier=not set");
+    assert_contains(
+        RELEASE_NOTES_PREVIEW_010,
+        "This prerelease does not close P1-RL-003",
+    );
+    assert_contains(CHANGELOG, "v0.1.0-unnotarized-preview.1");
 }
 
 #[test]
@@ -242,19 +292,22 @@ fn release_checklist_records_changelog_and_version_state_without_claiming_releas
     assert_contains(CHANGELOG, "拆分批量导入执行和 session persistence 代码");
     assert_contains(CHANGELOG, "### Known Issues");
     assert_contains(RELEASE_NOTES_010, "# AreaMatrix 0.1.0-local-qa");
+    assert_contains(
+        RELEASE_NOTES_PREVIEW_010,
+        "# AreaMatrix 0.1.0 Unnotarized Preview 1",
+    );
     assert_contains(RELEASE_NOTES_010, "Validation Snapshot");
+    assert_contains(RELEASE_NOTES_PREVIEW_010, "Validation Snapshot");
     assert_contains(RELEASE_NOTES_010, "Known Issues");
+    assert_contains(RELEASE_NOTES_PREVIEW_010, "Known Issues");
     assert_contains(CHECKLIST, "`CHANGELOG.md` 已切出 `[0.1.0] - 2026-05-10`");
-    assert_contains(CHECKLIST, "`release-notes-0.1.0.md`");
+    assert_contains(CHECKLIST, "`release-notes-v0.1.0-unnotarized-preview.1.md`");
     assert_contains(CARGO_TOML, "version = \"0.1.0\"");
     assert_contains(XCODE_PROJECT, "MARKETING_VERSION = 0.1.0");
     assert_contains(XCODE_PROJECT, "CURRENT_PROJECT_VERSION = 202605101812");
-    assert_contains(
-        CHECKLIST,
-        "Xcode `CURRENT_PROJECT_VERSION` 已更新为 `202605101812`",
-    );
-    assert_contains(CHECKLIST, "当前工作区尚未提交，因此未创建 `v0.1.0` tag");
-    assert_contains(CHECKLIST, "不得在未提交 release candidate 上提前打 tag");
+    assert_contains(CHECKLIST, "build `202606161707`");
+    assert_contains(CHECKLIST, "正式 `v0.1.0` tag 尚未创建");
+    assert_contains(CHECKLIST, "不得把它当作正式 `v0.1.0` release tag");
 }
 
 #[test]

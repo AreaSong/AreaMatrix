@@ -22,7 +22,8 @@ Closeout status:
 
 - queue: complete (`637/637`)
 - runner: idle, no stale in-progress tasks
-- release: blocked; `0.1.0-local-qa` is internal QA only
+- release: blocked for formal Stage 1 alpha; `0.1.0-local-qa` is internal QA only, and
+  `v0.1.0-unnotarized-preview.1` may be published only as a trusted-tester GitHub prerelease
 - checkpoint evidence: incomplete; 36 completed tasks lack committed checkpoint metadata in `progress.json`
   - 35 have `VERIFY_RESULT: PASS` logs but no committed checkpoint metadata
   - 1 is a local QA / release gate sync entry without task-loop run evidence

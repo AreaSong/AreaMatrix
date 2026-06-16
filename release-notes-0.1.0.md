@@ -3,7 +3,7 @@
 Internal QA date: 2026-05-11
 
 This is an internal local QA artifact, not an official Stage 1 alpha release.
-No `v0.1.0` tag or GitHub Release has been created.
+No formal `v0.1.0` tag or GitHub Release has been created for this local QA artifact.
 
 ## Highlights
 

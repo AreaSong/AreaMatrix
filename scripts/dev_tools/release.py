@@ -143,8 +143,13 @@ def _local_qa_xcodebuild_command(
         destination,
         "-derivedDataPath",
         str(derived_data_path),
-        "CODE_SIGNING_ALLOWED=NO",
+        "CODE_SIGNING_ALLOWED=YES",
+        "CODE_SIGN_STYLE=Manual",
+        "CODE_SIGN_IDENTITY=-",
+        "DEVELOPMENT_TEAM=",
         f"CURRENT_PROJECT_VERSION={build_number}",
+        f"LIBRARY_SEARCH_PATHS={root / 'core/target/aarch64-apple-darwin/release'}",
+        f"OTHER_LDFLAGS={root / 'core/target/aarch64-apple-darwin/release/libarea_matrix_core.a'}",
         "build",
     ]
 
@@ -170,6 +175,21 @@ def _codesign_summary(app_path: Path) -> list[str]:
         if line.startswith(("Identifier=", "Signature=", "TeamIdentifier=")):
             lines.append(line)
     return lines
+
+
+def _verify_app_signature(app_path: Path) -> None:
+    proc = _run_capture(["codesign", "--verify", "--deep", "--strict", "--verbose=2", app_path])
+    if proc.returncode != 0:
+        fail(f"local QA app bundle codesign verification failed: {(proc.stdout or '').strip()}", proc.returncode)
+
+
+def _verify_app_is_self_contained(app_path: Path) -> None:
+    executable = app_path / "Contents/MacOS/AreaMatrix"
+    proc = _run_capture(["otool", "-L", executable])
+    if proc.returncode != 0:
+        fail(f"unable to inspect local QA app dependencies: {(proc.stdout or '').strip()}", proc.returncode)
+    if "libarea_matrix_core.dylib" in (proc.stdout or ""):
+        fail("local QA app links libarea_matrix_core.dylib; rebuild with the static core archive before distribution.")
 
 
 def _is_area_matrix_running() -> bool:
@@ -282,6 +302,9 @@ def run_release_local_qa(
     app_path = derived_data / "Build/Products/Release/AreaMatrix.app"
     if not app_path.is_dir():
         fail(f"xcodebuild succeeded but app bundle was not found at {app_path}.")
+
+    _verify_app_signature(app_path)
+    _verify_app_is_self_contained(app_path)
 
     print()
     _print_local_qa_summary("local QA app", app_path)

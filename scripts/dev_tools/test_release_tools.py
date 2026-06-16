@@ -83,9 +83,34 @@ class ReleaseToolsTest(unittest.TestCase):
         )
 
         self.assertIn("CURRENT_PROJECT_VERSION=202606121234", command)
-        self.assertIn("CODE_SIGNING_ALLOWED=NO", command)
+        self.assertIn("CODE_SIGNING_ALLOWED=YES", command)
+        self.assertIn("CODE_SIGN_STYLE=Manual", command)
+        self.assertIn("CODE_SIGN_IDENTITY=-", command)
+        self.assertIn("DEVELOPMENT_TEAM=", command)
+        self.assertIn("LIBRARY_SEARCH_PATHS=/repo/core/target/aarch64-apple-darwin/release", command)
+        self.assertIn("OTHER_LDFLAGS=/repo/core/target/aarch64-apple-darwin/release/libarea_matrix_core.a", command)
         self.assertIn("-configuration", command)
         self.assertIn("Release", command)
+
+    def test_local_qa_rejects_core_dylib_linkage(self) -> None:
+        completed = type(
+            "Completed",
+            (),
+            {
+                "returncode": 0,
+                "stdout": "/repo/core/target/aarch64-apple-darwin/release/deps/libarea_matrix_core.dylib\n",
+            },
+        )()
+
+        with patch("scripts.dev_tools.release._run_capture", return_value=completed):
+            with self.assertRaises(ToolError):
+                release._verify_app_is_self_contained(Path("/repo/build/AreaMatrix.app"))
+
+    def test_local_qa_accepts_static_core_linkage(self) -> None:
+        completed = type("Completed", (), {"returncode": 0, "stdout": "/usr/lib/libSystem.B.dylib\n"})()
+
+        with patch("scripts.dev_tools.release._run_capture", return_value=completed):
+            release._verify_app_is_self_contained(Path("/repo/build/AreaMatrix.app"))
 
     def test_release_local_qa_rejects_invalid_build_number(self) -> None:
         with (
