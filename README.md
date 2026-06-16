@@ -47,7 +47,15 @@ The Rust core library is platform-agnostic. macOS is the first target; Windows /
 
 ## Status
 
-Pre-alpha. The repository currently ships **documentation only**. Implementation will start when the docs are accepted by the development team.
+Implementation-stage pre-alpha. The `v1-mvp` prompt queue has completed
+`637/637` tasks, and the repository now contains the Rust core, the SwiftUI
+macOS app, tests, and early iOS / Windows / Linux surfaces.
+
+`0.1.0-local-qa` is available as an internal QA artifact only. It is not an
+official Stage 1 alpha release. Formal alpha distribution remains blocked on
+release evidence such as iCloud placeholder smoke testing, Developer ID
+signing, notarization, clean-Mac first launch validation, and the final
+`v0.1.0` tag.
 
 See [docs/roadmap/milestones.md](docs/roadmap/milestones.md) for the four-stage release plan.
 

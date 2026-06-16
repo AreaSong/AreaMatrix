@@ -55,7 +55,13 @@ AreaMatrix 的所有架构决策围绕三条原则：
 
 ## 项目状态
 
-预 alpha 阶段。当前仓库**只提供完整的项目文档**，开发尚未启动。文档经开发团队 review 后，按 [docs/roadmap/stage-1-mvp.md](docs/roadmap/stage-1-mvp.md) 开始 Stage 1 实施。
+实现态 pre-alpha 阶段。`v1-mvp` prompt 队列已完成 `637/637` 个任务，
+仓库内已经包含 Rust core、SwiftUI macOS app、测试，以及早期 iOS / Windows / Linux
+表面层。
+
+`0.1.0-local-qa` 只作为内部 QA 产物存在，不是正式 Stage 1 alpha 分发版本。正式
+alpha 仍被 release 证据阻断，包括 iCloud placeholder 真实环境冒烟、Developer ID
+签名、公证、干净 Mac 首启验证，以及最终 `v0.1.0` tag。
 
 四阶段路线图见 [docs/roadmap/milestones.md](docs/roadmap/milestones.md)。
 
