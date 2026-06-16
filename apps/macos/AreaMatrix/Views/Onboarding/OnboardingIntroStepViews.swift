@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsRepositoryReturnView: View {
     var body: some View {
@@ -12,6 +13,9 @@ struct SettingsRepositoryReturnView: View {
 
 struct ChoosePathStepView: View {
     @Binding var pathText: String
+    
+    @FocusState private var isInputFocused: Bool
+    @State private var isDropTargeted = false
 
     let errorMessage: String?
     let isValidating: Bool
@@ -33,14 +37,41 @@ struct ChoosePathStepView: View {
             footer
         }
         .areaMatrixOnboardingPanel()
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.blue, lineWidth: isDropTargeted ? 3 : 0)
+                .opacity(isDropTargeted ? 0.8 : 0)
+                .animation(.easeInOut(duration: 0.2), value: isDropTargeted)
+        )
+        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
+            if let provider = providers.first(where: { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }) {
+                provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
+                    if let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) {
+                        DispatchQueue.main.async {
+                            pathText = url.path
+                        }
+                    }
+                }
+                return true
+            }
+            return false
+        }
     }
 
     private var header: some View {
         VStack(alignment: .center, spacing: 14) {
-            Image(systemName: "folder.badge.gearshape")
-                .font(.system(size: 48, weight: .light))
-                .foregroundStyle(.blue)
-                .padding(.bottom, 8)
+            ZStack {
+                Image(systemName: "folder.badge.gearshape")
+                    .font(.system(size: 58, weight: .bold))
+                    .foregroundStyle(.blue)
+                    .blur(radius: 20)
+                    .opacity(0.5)
+
+                Image(systemName: "folder.badge.gearshape")
+                    .font(.system(size: 48, weight: .light))
+                    .foregroundStyle(.blue)
+            }
+            .padding(.bottom, 8)
                 
             Text("选择资料库位置")
                 .font(.system(size: 32, weight: .semibold, design: .default))
@@ -52,6 +83,8 @@ struct ChoosePathStepView: View {
                 .multilineTextAlignment(.center)
                 .lineSpacing(4)
         }
+        .opacity(isInputFocused ? 0.4 : 1.0)
+        .animation(.easeInOut(duration: 0.3), value: isInputFocused)
     }
 
     private var pathSelection: some View {
@@ -59,6 +92,7 @@ struct ChoosePathStepView: View {
             HStack(spacing: 12) {
                 TextField("Repository path", text: $pathText)
                     .textFieldStyle(.plain)
+                    .focused($isInputFocused)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
@@ -80,14 +114,18 @@ struct ChoosePathStepView: View {
                 Label(errorMessage, systemImage: "exclamationmark.triangle")
                     .font(.callout)
                     .foregroundStyle(.red)
-            } else {
+            } else if pathText.trimmingCharacters(in: .whitespacesAndNewlines) != "~/AreaMatrix/" && pathText.trimmingCharacters(in: .whitespacesAndNewlines) != (NSHomeDirectory() + "/AreaMatrix/") {
                 Button(action: onUseDefault) {
                     Text("恢复推荐默认路径: ~/AreaMatrix/")
                 }
                 .buttonStyle(.plain)
                 .font(.callout)
-                .foregroundStyle(.blue)
+                .foregroundStyle(.secondary)
                 .disabled(isValidating)
+            } else {
+                Label("系统推荐路径", systemImage: "checkmark.circle.fill")
+                    .font(.callout)
+                    .foregroundStyle(.green)
             }
         }
     }
@@ -95,7 +133,12 @@ struct ChoosePathStepView: View {
     private var footer: some View {
         HStack {
             Button(action: onBack) {
-                Text("返回")
+                HStack(spacing: 4) {
+                    Image(systemName: "escape")
+                        .font(.system(size: 10, weight: .medium))
+                        .opacity(0.6)
+                    Text("返回")
+                }
             }
             .buttonStyle(AreaMatrixSecondaryButtonStyle())
             .disabled(isValidating)
@@ -109,8 +152,13 @@ struct ChoosePathStepView: View {
             }
             
             Button(action: onContinue) {
-                Text("继续")
-                    .frame(minWidth: 80)
+                HStack(spacing: 4) {
+                    Text("继续")
+                    Image(systemName: "return")
+                        .font(.system(size: 12, weight: .bold))
+                        .opacity(0.6)
+                }
+                .frame(minWidth: 80)
             }
             .buttonStyle(AreaMatrixPrimaryButtonStyle())
             .controlSize(.large)
