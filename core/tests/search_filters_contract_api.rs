@@ -6,12 +6,13 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 
 const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md");
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v2/source-docs/architecture/stage-2-control-map.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const SEARCH_FILTERS_PAGE: &str =
-    include_str!("../../workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-02-search-filters.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-02-search-filters.md");
 const TAGS_FILTER_PAGE: &str =
-    include_str!("../../workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const SEARCH_RS: &str = include_str!("../src/search.rs");

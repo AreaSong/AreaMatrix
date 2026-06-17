@@ -10,11 +10,12 @@ use pretty_assertions::assert_eq;
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-1-stage2-experience/task-81-c2-17-contract-api.md");
 const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md"
+    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md"
 );
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v2/source-docs/architecture/stage-2-control-map.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const S2_21_PAGE: &str =
-    include_str!("../../workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md");
 const DEDUP_CONFLICT: &str = include_str!("../../docs/ux/dedup-conflict.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");

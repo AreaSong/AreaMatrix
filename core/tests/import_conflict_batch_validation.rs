@@ -20,9 +20,10 @@ use import_conflict_batch_support::{
 };
 
 const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md"
+    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md"
 );
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v2/source-docs/architecture/stage-2-control-map.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const API_RS: &str = include_str!("../src/api.rs");
 const CONTRACT_RS: &str = include_str!("../src/import_conflict_batch.rs");

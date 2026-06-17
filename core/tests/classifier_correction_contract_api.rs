@@ -5,11 +5,12 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 
 const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md"
+    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md"
 );
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v2/source-docs/architecture/stage-2-control-map.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const CLASSIFIER_CORRECT_PAGE: &str =
-    include_str!("../../workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-16-classifier-correct.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-16-classifier-correct.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");

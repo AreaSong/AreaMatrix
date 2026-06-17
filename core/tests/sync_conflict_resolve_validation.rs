@@ -20,9 +20,10 @@ const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-79-c4-16-validation.md"
 );
 const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md"
+    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md"
 );
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v4/source-docs/architecture/stage-4-control-map.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");

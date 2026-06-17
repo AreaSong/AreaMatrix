@@ -418,10 +418,10 @@ def check_versioned_workflow(h: Harness) -> None:
     assert_contains(template_check, "workflow check-template: OK", "workflow check-template")
     assert_contains(template_check, "[check-template] promotion apply preview: OK", "workflow check-template promotion preview")
 
-    init_preview = h.run([h.dev, "workflow", "init", "--version", "v3"]).stdout
+    init_preview = h.run([h.dev, "workflow", "init", "--version", "v2"]).stdout
     assert_contains(init_preview, "Workflow version init", "workflow init preview")
     assert_contains(init_preview, "mode: preview only; no files written", "workflow init no write")
-    assert_contains(init_preview, "workflow/versions/v3/version.yaml", "workflow init version path")
+    assert_contains(init_preview, "workflow/versions/v2/version.yaml", "workflow init version path")
     assert_contains(init_preview, "local_queue:", "workflow init local queue")
     assert_contains(init_preview, "live_mapping: pending", "workflow init live mapping pending")
     bad_name = h.run([h.dev, "workflow", "init", "--version", "bad-name"], check=False)
@@ -433,8 +433,8 @@ def check_versioned_workflow(h: Harness) -> None:
         raise CheckFailure("workflow init unexpectedly accepted v1-mvp")
     assert_contains(bad_v1.stdout + bad_v1.stderr, "cannot create v1-mvp", "workflow init v1 guard")
 
-    version_out = h.tmp / "v3-version"
-    init_write = h.run([h.dev, "workflow", "init", "--version", "v3", "--write", "--out-dir", str(version_out)]).stdout
+    version_out = h.tmp / "v2-version"
+    init_write = h.run([h.dev, "workflow", "init", "--version", "v2", "--write", "--out-dir", str(version_out)]).stdout
     assert_contains(init_write, "workflow init: wrote files", "workflow init write")
     assert_exists(version_out / "version.yaml", "workflow init version yaml")
     assert_exists(version_out / "discussion/docs-discussion.md", "workflow init docs discussion")
@@ -442,23 +442,23 @@ def check_versioned_workflow(h: Harness) -> None:
     assert_exists(version_out / "discussion/decisions.yaml", "workflow init decisions")
     for layer in ["changes", "plans", "drafts", "queue", "promotion"]:
         assert_exists(version_out / layer / "README.md", f"workflow init {layer} README")
-    second_init_write = h.run([h.dev, "workflow", "init", "--version", "v3", "--write", "--out-dir", str(version_out)], check=False)
+    second_init_write = h.run([h.dev, "workflow", "init", "--version", "v2", "--write", "--out-dir", str(version_out)], check=False)
     if second_init_write.returncode == 0:
         raise CheckFailure("workflow init overwrite unexpectedly succeeded without --force")
     assert_contains(second_init_write.stdout + second_init_write.stderr, "use --force to overwrite", "workflow init overwrite guard")
-    h.run([h.dev, "workflow", "init", "--version", "v3", "--write", "--force", "--out-dir", str(version_out)])
-    bad_init_force = h.run([h.dev, "workflow", "init", "--version", "v3", "--force"], check=False)
+    h.run([h.dev, "workflow", "init", "--version", "v2", "--write", "--force", "--out-dir", str(version_out)])
+    bad_init_force = h.run([h.dev, "workflow", "init", "--version", "v2", "--force"], check=False)
     if bad_init_force.returncode == 0:
         raise CheckFailure("workflow init unexpectedly accepted --force without --write")
     assert_contains(bad_init_force.stdout + bad_init_force.stderr, "--force requires --write", "workflow init force guard")
 
-    init_discussion_errors = validate_discussion_artifacts(h.root, "v3", version_out / "discussion")
+    init_discussion_errors = validate_discussion_artifacts(h.root, "v2", version_out / "discussion")
     if not any("allow_changes must be true" in error for error in init_discussion_errors):
         raise CheckFailure(f"workflow init did not create blocked discussion gate: {init_discussion_errors}")
-    approved_version = h.tmp / "approved-v3-version"
-    write_artifacts(init_artifacts(h.root, "v3", None, str(approved_version)), force=False, label="test workflow init file")
+    approved_version = h.tmp / "approved-v2-version"
+    write_artifacts(init_artifacts(h.root, "v2", None, str(approved_version)), force=False, label="test workflow init file")
     (approved_version / "discussion/decisions.yaml").write_text(
-        """version: v3
+        """version: v2
 status: ready
 allow_changes: true
 exact_docs:
@@ -480,7 +480,7 @@ next_layers:
 """,
         encoding="utf-8",
     )
-    approved_version_errors = validate_discussion_artifacts(h.root, "v3", approved_version / "discussion")
+    approved_version_errors = validate_discussion_artifacts(h.root, "v2", approved_version / "discussion")
     if approved_version_errors:
         raise CheckFailure(f"workflow init approved discussion failed: {approved_version_errors}")
 
@@ -498,14 +498,14 @@ next_layers:
 
     discussion_out = h.tmp / "workflow-discussion"
     discussion_init = h.run(
-        [h.dev, "workflow", "discuss", "--version", "v3", "init", "--write", "--out-dir", str(discussion_out)]
+        [h.dev, "workflow", "discuss", "--version", "v2", "init", "--write", "--out-dir", str(discussion_out)]
     ).stdout
     assert_contains(discussion_init, "workflow discuss init: wrote files", "workflow discuss init write")
     assert_exists(discussion_out / "docs-discussion.md", "workflow discussion docs file")
     assert_exists(discussion_out / "middle-layer-discussion.md", "workflow discussion middle file")
     assert_exists(discussion_out / "decisions.yaml", "workflow discussion decisions file")
     second_discussion_init = h.run(
-        [h.dev, "workflow", "discuss", "--version", "v3", "init", "--write", "--out-dir", str(discussion_out)],
+        [h.dev, "workflow", "discuss", "--version", "v2", "init", "--write", "--out-dir", str(discussion_out)],
         check=False,
     )
     if second_discussion_init.returncode == 0:
@@ -515,23 +515,23 @@ next_layers:
         "use --force to overwrite",
         "workflow discussion overwrite guard",
     )
-    h.run([h.dev, "workflow", "discuss", "--version", "v3", "init", "--write", "--force", "--out-dir", str(discussion_out)])
-    bad_discussion_force = h.run([h.dev, "workflow", "discuss", "--version", "v3", "init", "--force"], check=False)
+    h.run([h.dev, "workflow", "discuss", "--version", "v2", "init", "--write", "--force", "--out-dir", str(discussion_out)])
+    bad_discussion_force = h.run([h.dev, "workflow", "discuss", "--version", "v2", "init", "--force"], check=False)
     if bad_discussion_force.returncode == 0:
         raise CheckFailure("workflow discussion init unexpectedly accepted --force without --write")
     assert_contains(bad_discussion_force.stdout + bad_discussion_force.stderr, "--force requires --write", "workflow discussion force guard")
 
     blocked_discussion = h.tmp / "blocked-discussion"
-    write_artifacts(discussion_artifacts(h.root, "v3", str(blocked_discussion)), force=False, label="test discussion file")
-    blocked_errors = validate_discussion_artifacts(h.root, "v3", blocked_discussion)
+    write_artifacts(discussion_artifacts(h.root, "v2", str(blocked_discussion)), force=False, label="test discussion file")
+    blocked_errors = validate_discussion_artifacts(h.root, "v2", blocked_discussion)
     if not any("allow_changes must be true" in error for error in blocked_errors):
         raise CheckFailure(f"workflow discussion did not reject unapproved decisions: {blocked_errors}")
     if not any("unresolved blocker" in error for error in blocked_errors):
         raise CheckFailure(f"workflow discussion did not reject unresolved blockers: {blocked_errors}")
     approved_discussion = h.tmp / "approved-discussion"
-    write_artifacts(discussion_artifacts(h.root, "v3", str(approved_discussion)), force=False, label="test discussion file")
+    write_artifacts(discussion_artifacts(h.root, "v2", str(approved_discussion)), force=False, label="test discussion file")
     (approved_discussion / "decisions.yaml").write_text(
-        """version: v3
+        """version: v2
 status: ready
 allow_changes: true
 exact_docs:
@@ -553,11 +553,11 @@ next_layers:
 """,
         encoding="utf-8",
     )
-    approved_errors = validate_discussion_artifacts(h.root, "v3", approved_discussion)
+    approved_errors = validate_discussion_artifacts(h.root, "v2", approved_discussion)
     if approved_errors:
         raise CheckFailure(f"workflow discussion approved fixture failed: {approved_errors}")
     (approved_discussion / "decisions.yaml").write_text(
-        """version: v3
+        """version: v2
 status: ready
 allow_changes: true
 exact_docs:
@@ -575,7 +575,7 @@ next_layers:
 """,
         encoding="utf-8",
     )
-    missing_doc_errors = validate_discussion_artifacts(h.root, "v3", approved_discussion)
+    missing_doc_errors = validate_discussion_artifacts(h.root, "v2", approved_discussion)
     if not any("Exact Docs path does not exist" in error for error in missing_doc_errors):
         raise CheckFailure(f"workflow discussion did not reject missing Exact Docs: {missing_doc_errors}")
 

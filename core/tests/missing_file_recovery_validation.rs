@@ -19,12 +19,13 @@ const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-89-c4-18-validation.md"
 );
 const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md"
+    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md"
 );
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v4/source-docs/architecture/stage-4-control-map.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const MISSING_FILE_PAGE: &str =
-    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-06-missing-file-recovery.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-06-missing-file-recovery.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const UDL: &str = include_str!("../area_matrix.udl");

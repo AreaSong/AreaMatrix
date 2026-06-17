@@ -9,11 +9,12 @@ use pretty_assertions::assert_eq;
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-1-stage2-experience/task-76-c2-16-contract-api.md");
 const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md"
+    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md"
 );
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v2/source-docs/architecture/stage-2-control-map.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const S2_20_PAGE: &str =
-    include_str!("../../workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-20-icloud-conflict-visual.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-20-icloud-conflict-visual.md");
 const S1_36_PAGE: &str =
     include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-36-icloud-conflict-list.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");

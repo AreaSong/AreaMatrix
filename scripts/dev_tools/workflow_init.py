@@ -32,7 +32,7 @@ def validate_init_version(version: str) -> list[str]:
     if version == TEMPLATE_REFERENCE_VERSION:
         return ["workflow init cannot recreate v-template; it is the managed template reference instance"]
     if not VERSION_RE.fullmatch(version):
-        return ["workflow init version must look like v2, v3, or v10"]
+        return ["workflow init version must look like v2 or v10"]
     return []
 
 

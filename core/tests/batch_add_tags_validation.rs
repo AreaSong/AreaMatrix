@@ -8,8 +8,9 @@ use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
 
 const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md");
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v2/source-docs/architecture/stage-2-control-map.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");

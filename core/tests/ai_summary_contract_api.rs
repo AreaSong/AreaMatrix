@@ -9,12 +9,14 @@ use pretty_assertions::assert_eq;
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-26-c3-06-contract-api.md");
 const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md");
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v3/source-docs/architecture/stage-3-control-map.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
 const AI_SUMMARY_PAGE: &str =
-    include_str!("../../workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-06-ai-summary-editor.md");
-const FALLBACK_PAGE: &str =
-    include_str!("../../workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-06-ai-summary-editor.md");
+const FALLBACK_PAGE: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md"
+);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");

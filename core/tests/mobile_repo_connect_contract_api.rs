@@ -10,16 +10,17 @@ const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-06-c4-02-contract-api.md"
 );
 const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md"
+    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md"
 );
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v4/source-docs/architecture/stage-4-control-map.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
 const CONNECT_REPO_PAGE: &str =
-    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-01-connect-repo.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-01-connect-repo.md");
 const INIT_CONFIRM_PAGE: &str = include_str!(
-    "../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md"
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md"
 );
 const ADOPT_CONFIRM_PAGE: &str = include_str!(
-    "../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md"
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md"
 );
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");

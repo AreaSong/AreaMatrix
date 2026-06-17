@@ -2,13 +2,14 @@ use area_matrix_core::{save_classifier_rule, ClassifierRule, CoreError, CoreResu
 use pretty_assertions::assert_eq;
 
 const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md"
+    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md"
 );
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v2/source-docs/architecture/stage-2-control-map.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const CLASSIFIER_SAVE_PAGE: &str =
-    include_str!("../../workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-17-classifier-save-rule.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-17-classifier-save-rule.md");
 const CLASSIFIER_IMPACT_PAGE: &str =
-    include_str!("../../workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-18-classifier-impact-preview.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-18-classifier-impact-preview.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const CLASSIFIER_YAML: &str = include_str!("../../docs/api/classifier-yaml.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");

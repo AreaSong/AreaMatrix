@@ -9,8 +9,9 @@ use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 
 const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md");
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v3/source-docs/architecture/stage-3-control-map.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 const AI_SETTINGS_RS: &str = include_str!("../src/ai_settings.rs");

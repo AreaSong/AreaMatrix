@@ -6,14 +6,15 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 
 const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md");
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v2/source-docs/architecture/stage-2-control-map.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const SAVED_SEARCH_PAGE: &str =
-    include_str!("../../workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-03-saved-search-sheet.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-03-saved-search-sheet.md");
 const SMART_LISTS_PAGE: &str =
-    include_str!("../../workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-06-smart-lists.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-06-smart-lists.md");
 const C2_04_SPEC: &str =
-    include_str!("../../workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const SEARCH_RS: &str = include_str!("../src/search.rs");

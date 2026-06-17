@@ -7,13 +7,17 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 
 const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md");
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v3/source-docs/architecture/stage-3-control-map.md");
-const AI_SETTINGS_PAGE: &str =
-    include_str!("../../workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-01-ai-settings.md");
-const AI_PRIVACY_PAGE: &str =
-    include_str!("../../workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md");
-const STAGE_3_INDEX: &str = include_str!("../../workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
+const AI_SETTINGS_PAGE: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-01-ai-settings.md"
+);
+const AI_PRIVACY_PAGE: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md"
+);
+const STAGE_3_INDEX: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const AI_SETTINGS_RS: &str = include_str!("../src/ai_settings.rs");

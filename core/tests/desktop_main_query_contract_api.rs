@@ -9,13 +9,14 @@ const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-51-c4-11-contract-api.md"
 );
 const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md"
+    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md"
 );
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v4/source-docs/architecture/stage-4-control-map.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
 const WINDOWS_MAIN_PAGE: &str =
-    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-02-main-window.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-02-main-window.md");
 const LINUX_MAIN_PAGE: &str =
-    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-02-main-window.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-02-main-window.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");

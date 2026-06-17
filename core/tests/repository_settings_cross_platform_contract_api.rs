@@ -11,11 +11,12 @@ const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-96-c4-20-contract-api.md"
 );
 const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md"
+    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md"
 );
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v4/source-docs/architecture/stage-4-control-map.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
 const REPOSITORY_SETTINGS_PAGE: &str =
-    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-08-repository-settings.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-08-repository-settings.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");

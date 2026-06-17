@@ -8,13 +8,14 @@ const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-71-c4-15-contract-api.md"
 );
 const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md"
+    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md"
 );
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v4/source-docs/architecture/stage-4-control-map.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
 const SYNC_CONFLICT_PAGE: &str =
-    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md");
 const SYNC_CONFLICT_ENTRY_PAGE: &str =
-    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-03-sync-conflict-entry.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-03-sync-conflict-entry.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");

@@ -1567,7 +1567,7 @@ def run_action(cfg: ConsoleConfig, action_id: str, args: Sequence[str] = ()) -> 
     if action_id == "maintenance-menu":
         return submenu_loop(cfg, "maintenance")
     if action_id == "new-version-preview":
-        return dev_tools_cli.main(["workflow", "init", "--version", "v3"])
+        return dev_tools_cli.main(["workflow", "init", "--version", "v2"])
     if action_id == "workflow-status":
         return dev_tools_cli.main(["workflow", "status"])
     if action_id == "workflow-doctor":

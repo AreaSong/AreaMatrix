@@ -9,13 +9,16 @@ use pretty_assertions::assert_eq;
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-11-c3-03-contract-api.md");
 const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md");
-const CONTROL_MAP: &str = include_str!("../../workflow/versions/v3/source-docs/architecture/stage-3-control-map.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
 const REMOTE_MODEL_PAGE: &str =
-    include_str!("../../workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-03-remote-model-enable.md");
-const AI_PRIVACY_PAGE: &str =
-    include_str!("../../workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md");
-const STAGE_3_INDEX: &str = include_str!("../../workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-03-remote-model-enable.md");
+const AI_PRIVACY_PAGE: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md"
+);
+const STAGE_3_INDEX: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");

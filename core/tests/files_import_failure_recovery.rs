@@ -15,7 +15,7 @@ const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-28-c4-06-failure-edge.md"
 );
 const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const TRANSACTIONAL_IMPORT: &str = include_str!("../../docs/architecture/transactional-import.md");
 

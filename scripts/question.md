@@ -1191,7 +1191,7 @@ extensions: {}               # Skill 扩展字段（见下方）
 extensions:
   ux_binding: "S2-13 batch-delete-confirm"
   core_binding: "C2-09 batch-delete-trash"
-  control_map: "docs/architecture/stage2-control-map.md"
+  control_map: "workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md"
 
 # 微信小程序项目的扩展（由 wechat-miniprogram Skill 定义）
 extensions:

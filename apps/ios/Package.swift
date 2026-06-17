@@ -54,8 +54,7 @@ let package = Package(
         .testTarget(
             name: "AreaMatrixIOSTests",
             dependencies: ["AreaMatrixIOS"],
-            path: "AreaMatrixTests",
-            exclude: ["Stage2ExperienceScopeTests.md"]
+            path: "AreaMatrixTests"
         )
     ]
 )
