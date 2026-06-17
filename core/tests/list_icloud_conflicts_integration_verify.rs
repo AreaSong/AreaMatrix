@@ -12,13 +12,14 @@ use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 
 const CAPABILITY_SPEC: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md");
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/mvp-control-map.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const S1_36_ICLOUD_CONFLICT_LIST: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-36-icloud-conflict-list.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-36-icloud-conflict-list.md");
 const S1_25_ICLOUD_CONFLICT_MIN: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md");
 const API_RS: &str = include_str!("../src/api.rs");
 const DOMAIN_RS: &str = include_str!("../src/domain.rs");
 const ICLOUD_CONFLICTS_RS: &str = include_str!("../src/icloud_conflicts.rs");

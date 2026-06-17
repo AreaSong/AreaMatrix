@@ -162,9 +162,14 @@ def last_live_label() -> str:
 def promotion_gate_status(version_record: Any | None, versions: Sequence[Any]) -> tuple[bool, str]:
     by_id = {record.version_id: record for record in versions}
     v1 = by_id.get("v1-mvp")
-    if version_record and version_record.data.get("gate") == "queue-only-until-v1-complete":
+    if version_record and version_record.data.get("gate") in {
+        "queue-only-until-v1-complete",
+        "queue-only-until-explicit-approval-and-live-mapping",
+    }:
         if v1 and v1.data.get("lifecycle_status") == "live-running":
             return True, "promotion blocked: v1-mvp is live-running"
+        if v1 and v1.data.get("lifecycle_status") == "archived":
+            return False, "promotion gate: v1-mvp archived; explicit approval and live mapping still required"
     return False, "promotion gate: open"
 
 

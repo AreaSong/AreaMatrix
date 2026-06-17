@@ -6,8 +6,8 @@
 > depends: `0-2/task-13`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -38,8 +38,8 @@
 > depends: `1-1/task-01`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/adopt-existing-folders.md`
@@ -70,8 +70,8 @@
 > depends: `1-1/task-02`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -101,13 +101,13 @@
 > depends: `1-1/task-03`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-02-choose-path.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-02-choose-path.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
 
 ### Existing Code
 - `core/src/**`
@@ -135,8 +135,8 @@
 > depends: `1-1/task-04`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -166,8 +166,8 @@
 > depends: `1-1/task-05`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/architecture/data-model.md`
 - `docs/architecture/migration.md`
@@ -199,8 +199,8 @@
 > depends: `1-1/task-06`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -231,8 +231,8 @@
 > depends: `1-1/task-07`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -262,13 +262,13 @@
 > depends: `1-1/task-08`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-04-confirm-init.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-04-confirm-init.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md`
 
 ### Existing Code
 - `core/src/**`
@@ -296,8 +296,8 @@
 > depends: `1-1/task-09`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -327,8 +327,8 @@
 > depends: `1-1/task-10`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/architecture/adopt-existing-folders.md`
 - `docs/architecture/source-of-truth.md`
@@ -360,8 +360,8 @@
 > depends: `1-1/task-11`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -392,8 +392,8 @@
 > depends: `1-1/task-12`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -423,13 +423,13 @@
 > depends: `1-1/task-13`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-04-confirm-init.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-04-confirm-init.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
 
 ### Existing Code
 - `core/src/**`
@@ -457,8 +457,8 @@
 > depends: `1-1/task-14`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -488,8 +488,8 @@
 > depends: `1-1/task-15`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/architecture/data-model.md`
 
@@ -519,8 +519,8 @@
 > depends: `1-1/task-16`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -551,8 +551,8 @@
 > depends: `1-1/task-17`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -582,13 +582,13 @@
 > depends: `1-1/task-18`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md`
 
 ### Existing Code
 - `core/src/**`
@@ -616,8 +616,8 @@
 > depends: `1-1/task-19`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -647,8 +647,8 @@
 > depends: `1-2/task-01`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/modules/classify.md`
 - `docs/api/classifier-yaml.md`
@@ -679,8 +679,8 @@
 > depends: `1-2/task-02`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -710,14 +710,14 @@
 > depends: `1-2/task-03`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-16-drag-hover.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-16-drag-hover.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md`
 
 ### Existing Code
 - `core/src/**`
@@ -745,8 +745,8 @@
 > depends: `1-2/task-04`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -776,8 +776,8 @@
 > depends: `1-2/task-05`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/modules/storage.md`
 - `docs/architecture/transactional-import.md`
@@ -809,8 +809,8 @@
 > depends: `1-2/task-06`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -841,8 +841,8 @@
 > depends: `1-2/task-07`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -872,13 +872,13 @@
 > depends: `1-2/task-08`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
 
 ### Existing Code
 - `core/src/**`
@@ -906,8 +906,8 @@
 > depends: `1-2/task-09`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -937,8 +937,8 @@
 > depends: `1-2/task-10`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/modules/storage.md`
 - `docs/architecture/transactional-import.md`
@@ -969,8 +969,8 @@
 > depends: `1-2/task-11`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -1001,8 +1001,8 @@
 > depends: `1-2/task-12`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -1032,13 +1032,13 @@
 > depends: `1-2/task-13`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md`
 
 ### Existing Code
 - `core/src/**`
@@ -1066,8 +1066,8 @@
 > depends: `1-2/task-14`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -1097,8 +1097,8 @@
 > depends: `1-2/task-15`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/modules/storage.md`
 - `docs/architecture/transactional-import.md`
@@ -1129,8 +1129,8 @@
 > depends: `1-2/task-16`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -1161,8 +1161,8 @@
 > depends: `1-2/task-17`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -1192,13 +1192,13 @@
 > depends: `1-2/task-18`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md`
 
 ### Existing Code
 - `core/src/**`
@@ -1226,8 +1226,8 @@
 > depends: `1-2/task-19`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -1257,8 +1257,8 @@
 > depends: `1-2/task-20`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/modules/storage.md`
 - `docs/ux/dedup-conflict.md`
@@ -1289,8 +1289,8 @@
 > depends: `1-2/task-21`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -1321,8 +1321,8 @@
 > depends: `1-2/task-22`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -1352,11 +1352,11 @@
 > depends: `1-2/task-23`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md`
 
 ### Existing Code
 - `core/src/**`
@@ -1384,8 +1384,8 @@
 > depends: `1-2/task-24`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -1415,8 +1415,8 @@
 > depends: `1-2/task-25`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/modules/storage.md`
 - `docs/ux/dedup-conflict.md`
@@ -1447,8 +1447,8 @@
 > depends: `1-2/task-26`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -1479,8 +1479,8 @@
 > depends: `1-2/task-27`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -1510,11 +1510,11 @@
 > depends: `1-2/task-28`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-23-conflict-name.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-23-conflict-name.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md`
 
 ### Existing Code
 - `core/src/**`
@@ -1542,8 +1542,8 @@
 > depends: `1-2/task-29`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -1573,8 +1573,8 @@
 > depends: `1-3/task-01`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/architecture/data-model.md`
 
@@ -1604,8 +1604,8 @@
 > depends: `1-3/task-02`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -1635,13 +1635,13 @@
 > depends: `1-3/task-03`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-15-detail-multi.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-15-detail-multi.md`
 
 ### Existing Code
 - `core/src/**`
@@ -1669,8 +1669,8 @@
 > depends: `1-3/task-04`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -1700,8 +1700,8 @@
 > depends: `1-3/task-05`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/architecture/data-model.md`
 
@@ -1731,8 +1731,8 @@
 > depends: `1-3/task-06`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -1762,11 +1762,11 @@
 > depends: `1-3/task-07`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-12-detail-meta.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-15-detail-multi.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-12-detail-meta.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-15-detail-multi.md`
 
 ### Existing Code
 - `core/src/**`
@@ -1794,8 +1794,8 @@
 > depends: `1-3/task-08`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -1825,8 +1825,8 @@
 > depends: `1-3/task-09`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/modules/change-log.md`
 
@@ -1856,8 +1856,8 @@
 > depends: `1-3/task-10`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -1887,12 +1887,12 @@
 > depends: `1-3/task-11`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
 
 ### Existing Code
 - `core/src/**`
@@ -1920,8 +1920,8 @@
 > depends: `1-3/task-12`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -1951,8 +1951,8 @@
 > depends: `1-3/task-13`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/modules/change-log.md`
 
@@ -1982,8 +1982,8 @@
 > depends: `1-3/task-14`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/modules/change-log.md`
@@ -2014,8 +2014,8 @@
 > depends: `1-3/task-15`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -2045,10 +2045,10 @@
 > depends: `1-3/task-16`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-14-detail-note.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-14-detail-note.md`
 
 ### Existing Code
 - `core/src/**`
@@ -2076,8 +2076,8 @@
 > depends: `1-3/task-17`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -2107,8 +2107,8 @@
 > depends: `1-3/task-18`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/modules/tree-scan.md`
 
@@ -2138,8 +2138,8 @@
 > depends: `1-3/task-19`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -2169,12 +2169,12 @@
 > depends: `1-3/task-20`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
 
 ### Existing Code
 - `core/src/**`
@@ -2202,8 +2202,8 @@
 > depends: `1-3/task-21`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -2233,8 +2233,8 @@
 > depends: `1-4/task-01`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/architecture/transactional-import.md`
 - `docs/development/troubleshooting.md`
@@ -2265,8 +2265,8 @@
 > depends: `1-4/task-02`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -2297,8 +2297,8 @@
 > depends: `1-4/task-03`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -2328,12 +2328,12 @@
 > depends: `1-4/task-04`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
 
 ### Existing Code
 - `core/src/**`
@@ -2361,8 +2361,8 @@
 > depends: `1-4/task-05`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -2392,8 +2392,8 @@
 > depends: `1-4/task-06`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/architecture/fs-watcher.md`
 - `docs/modules/change-log.md`
@@ -2424,8 +2424,8 @@
 > depends: `1-4/task-07`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -2456,8 +2456,8 @@
 > depends: `1-4/task-08`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -2487,12 +2487,12 @@
 > depends: `1-4/task-09`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
 
 ### Existing Code
 - `core/src/**`
@@ -2520,8 +2520,8 @@
 > depends: `1-4/task-10`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -2551,8 +2551,8 @@
 > depends: `1-4/task-11`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/architecture/fs-watcher.md`
 - `docs/modules/change-log.md`
@@ -2583,8 +2583,8 @@
 > depends: `1-4/task-12`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -2615,8 +2615,8 @@
 > depends: `1-4/task-13`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -2646,11 +2646,11 @@
 > depends: `1-4/task-14`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
 
 ### Existing Code
 - `core/src/**`
@@ -2678,8 +2678,8 @@
 > depends: `1-4/task-15`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -2709,8 +2709,8 @@
 > depends: `1-4/task-16`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/architecture/fs-watcher.md`
 - `docs/modules/change-log.md`
@@ -2741,8 +2741,8 @@
 > depends: `1-4/task-17`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -2773,8 +2773,8 @@
 > depends: `1-4/task-18`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -2804,12 +2804,12 @@
 > depends: `1-4/task-19`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
 
 ### Existing Code
 - `core/src/**`
@@ -2837,8 +2837,8 @@
 > depends: `1-4/task-20`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -2868,8 +2868,8 @@
 > depends: `1-4/task-21`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/architecture/overview.md`
 - `docs/modules/overview-gen.md`
@@ -2900,8 +2900,8 @@
 > depends: `1-4/task-22`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -2932,8 +2932,8 @@
 > depends: `1-4/task-23`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -2963,11 +2963,11 @@
 > depends: `1-4/task-24`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md`
 
 ### Existing Code
 - `core/src/**`
@@ -2995,8 +2995,8 @@
 > depends: `1-4/task-25`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -3026,8 +3026,8 @@
 > depends: `1-4/task-26`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/ux/error-messages.md`
@@ -3058,8 +3058,8 @@
 > depends: `1-4/task-27`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -3090,8 +3090,8 @@
 > depends: `1-4/task-28`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -3121,14 +3121,14 @@
 > depends: `1-4/task-29`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-06-init-failed.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-06-init-failed.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
 
 ### Existing Code
 - `core/src/**`
@@ -3156,8 +3156,8 @@
 > depends: `1-4/task-30`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -3187,8 +3187,8 @@
 > depends: `1-5/task-01`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/modules/change-log.md`
 
@@ -3218,8 +3218,8 @@
 > depends: `1-5/task-02`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -3250,8 +3250,8 @@
 > depends: `1-5/task-03`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -3281,10 +3281,10 @@
 > depends: `1-5/task-04`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-33-file-rename-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-33-file-rename-sheet.md`
 
 ### Existing Code
 - `core/src/**`
@@ -3312,8 +3312,8 @@
 > depends: `1-5/task-05`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -3343,8 +3343,8 @@
 > depends: `1-5/task-06`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/modules/change-log.md`
 
@@ -3377,8 +3377,8 @@
 > depends: `1-5/task-07`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -3409,8 +3409,8 @@
 > depends: `1-5/task-08`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -3440,10 +3440,10 @@
 > depends: `1-5/task-09`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-34-file-delete-confirm.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-34-file-delete-confirm.md`
 
 ### Existing Code
 - `core/src/**`
@@ -3471,8 +3471,8 @@
 > depends: `1-5/task-10`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -3502,8 +3502,8 @@
 > depends: `1-5/task-11`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/modules/classify.md`
 - `docs/modules/change-log.md`
@@ -3534,8 +3534,8 @@
 > depends: `1-5/task-12`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -3566,8 +3566,8 @@
 > depends: `1-5/task-13`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -3597,10 +3597,10 @@
 > depends: `1-5/task-14`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-35-change-category-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-35-change-category-sheet.md`
 
 ### Existing Code
 - `core/src/**`
@@ -3628,8 +3628,8 @@
 > depends: `1-5/task-15`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -3659,8 +3659,8 @@
 > depends: `1-5/task-16`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/architecture/fs-watcher.md`
 - `docs/ux/dedup-conflict.md`
@@ -3691,8 +3691,8 @@
 > depends: `1-5/task-17`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -3723,8 +3723,8 @@
 > depends: `1-5/task-18`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -3754,11 +3754,11 @@
 > depends: `1-5/task-19`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-36-icloud-conflict-list.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-36-icloud-conflict-list.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md`
 
 ### Existing Code
 - `core/src/**`
@@ -3786,8 +3786,8 @@
 > depends: `1-5/task-20`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -3817,8 +3817,8 @@
 > depends: `1-5/task-21`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/architecture/migration.md`
 - `docs/development/troubleshooting.md`
@@ -3849,8 +3849,8 @@
 > depends: `1-5/task-22`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -3881,8 +3881,8 @@
 > depends: `1-5/task-23`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 - `docs/development/testing.md`
 
@@ -3912,12 +3912,12 @@
 > depends: `1-5/task-24`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-37-db-repair-confirm.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-37-db-repair-confirm.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
 
 ### Existing Code
 - `core/src/**`

@@ -68,7 +68,7 @@ gantt
 
 ### 验收
 
-详见 [stage-1-mvp.md](stage-1-mvp.md) 完整任务清单与验收清单。
+详见 [v1-mvp Stage 1 source](../../workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md) 完整任务清单与验收清单。
 
 ### 时间预算
 
@@ -246,7 +246,7 @@ gantt
 
 ## Related
 
-- [stage-1-mvp.md](stage-1-mvp.md)
+- [v1-mvp Stage 1 source](../../workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md)
 - [../product/prd.md](../product/prd.md)
 - [../adr/README.md](../adr/README.md)
 - [../../CHANGELOG.md](../../CHANGELOG.md)

@@ -13,14 +13,16 @@ use rusqlite::{params, Connection};
 use serde_json::Value;
 
 const CAPABILITY_SPEC: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md");
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/mvp-control-map.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const API_RS: &str = include_str!("../src/api.rs");
 const DB_NOTE_RS: &str = include_str!("../src/db/note.rs");
 const NOTE_RS: &str = include_str!("../src/note.rs");
-const S1_14_DETAIL_NOTE: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-14-detail-note.md");
+const S1_14_DETAIL_NOTE: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-14-detail-note.md"
+);
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn assert_contains(haystack: &str, needle: &str) {

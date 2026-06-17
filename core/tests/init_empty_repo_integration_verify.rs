@@ -8,17 +8,22 @@ use pretty_assertions::assert_eq;
 use serde_json::Value;
 
 const CAPABILITY_SPEC: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md");
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/mvp-control-map.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
-const S1_04_CONFIRM_INIT: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-04-confirm-init.md");
-const S1_05_INITIALIZING: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md");
-const S1_07_INIT_DONE: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md");
-const S1_08_MAIN_EMPTY: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md");
+const S1_04_CONFIRM_INIT: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-04-confirm-init.md"
+);
+const S1_05_INITIALIZING: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md"
+);
+const S1_07_INIT_DONE: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md"
+);
+const S1_08_MAIN_EMPTY: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md"
+);
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn path_string(path: &Path) -> String {

@@ -152,7 +152,7 @@ Reason 矩阵：
 
 ## 来源
 
-- 组合来源：[AI 失败回退任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-20-s3-10-ai-fallback.md)、[错误文案与恢复路径](../../error-messages.md)。
+- 组合来源：[AI 失败回退任务](../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-77-s3-10-c3-10-ai-fallback.md)、[错误文案与恢复路径](../../error-messages.md)。
 - 依据现有文档推导：`AIFallbackStatusRegion`、reason 矩阵、同 provider/scope 重试、隐私跳过追溯和非 AI 回退规则，遵守 AI 默认关闭与可回退原则。
 
 ---

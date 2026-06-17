@@ -13,6 +13,7 @@
 - 上游事实源：`docs/ux/`、`docs/product/`、`docs/roadmap/`、`tasks/prompts/`。
 - 下游用途：实现 SwiftUI / 多端原生 UI 时，逐页对照开发与验收。
 - 不包含：SwiftUI 代码、像素级视觉稿、平台实现细节、数据库或 Core 算法。
+- Stage 1 MVP 页面规格已归档到 `workflow/versions/v1-mvp/source-docs/ux/page-specs/`；本目录继续保存 Stage 2+ 的长期页面规格入口。
 
 若本目录与功能域 UX 文档冲突，以功能域 UX 文档和架构文档为准；本目录应随后修正。
 
@@ -22,7 +23,7 @@
 
 | 文档 | 范围 | 用途 |
 |---|---|---|
-| [stage-1-mvp.md](stage-1-mvp.md) | macOS MVP | 阶段索引；单页文件在 `stage-1-mvp/` |
+| [v1-mvp archived page specs](../../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp.md) | macOS MVP | 历史阶段索引；单页文件随 v1 archive 保存 |
 | [stage-2-experience.md](stage-2-experience.md) | 体验完善 | 阶段索引；单页文件在 `stage-2-experience/` |
 | [stage-3-ai.md](stage-3-ai.md) | 智能化 | 阶段索引；单页文件在 `stage-3-ai/` |
 | [stage-4-multiplatform.md](stage-4-multiplatform.md) | 多端 | 阶段索引；单页文件在 `stage-4-multiplatform/` |
@@ -30,12 +31,14 @@
 目录结构：
 
 ```text
-docs/ux/page-specs/
+workflow/versions/v1-mvp/source-docs/ux/page-specs/
   stage-1-mvp.md
   stage-1-mvp/
     S1-01-welcome.md
     S1-02-choose-path.md
     ...
+
+docs/ux/page-specs/
   stage-2-experience.md
   stage-2-experience/
     S2-01-search-results.md
@@ -45,8 +48,8 @@ docs/ux/page-specs/
 推荐阅读顺序：
 
 ```text
-stage-1-mvp.md
-  -> stage-2-experience.md
+v1-mvp archived stage-1-mvp.md
+  -> docs/ux/page-specs/stage-2-experience.md
   -> stage-3-ai.md
   -> stage-4-multiplatform.md
 ```
@@ -163,8 +166,8 @@ stage-1-mvp.md
 
 如果要把任务交给 IDE / agent，推荐只提供三类上下文：
 
-1. 阶段索引，例如 [stage-1-mvp.md](stage-1-mvp.md)，用于理解阶段范围。
-2. 单页规格，例如 [S1-17-import-single-sheet.md](stage-1-mvp/S1-17-import-single-sheet.md)，作为本次实现边界。
+1. 阶段索引，例如 [v1-mvp archived page specs](../../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp.md)，用于理解历史阶段范围。
+2. 单页规格，例如 [S1-17-import-single-sheet.md](../../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md)，作为本次实现边界。
 3. 单页 `来源` 字段指向的功能域文档，用于查证事实源。
 
 不要一次性投喂所有页面文件；逐页或按强相关小组投喂更容易保持实现边界。

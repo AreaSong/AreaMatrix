@@ -1,14 +1,13 @@
 # v1-mvp Workflow
 
-`v1-mvp` is the current AreaMatrix prompt queue: 637 tasks under `tasks/prompts/**`.
+`v1-mvp` is the archived AreaMatrix MVP prompt queue record: 637 tasks under `tasks/prompts/**`.
 
 The live queue is complete (`637/637`). The closeout decision is recorded in
 `closeout/closeout-decision.md`: v1 is technically complete, formal Stage 1
 alpha remains blocked, and release blockers are deferred to the formal
-distribution track. Do not move, rename, or regenerate the live prompt queue
-while v1 is still `live-running`. The task-loop continues to read the existing
-prompt files and `tasks/prompts/_shared/progress.json`, preserving completed
-progress and evidence.
+distribution track. The historical prompt files remain in `tasks/prompts/**` for
+traceability; do not rewrite `progress.json`, task-loop runs, or checkpoint
+metadata to make the archive look cleaner.
 
 Current live sources:
 
@@ -33,9 +32,8 @@ Closeout status:
   - 1 is a local QA / release gate sync entry without task-loop run evidence
   - detail: `workflow/versions/v1-mvp/closeout/checkpoint-gaps.md`
 - dirty worktree: Xcode derived-data log removed from Git tracking and ignored via `.gitignore`
-- archive readiness: ready for an optional evidence bundle, but live queue archival / movement is still out of scope while tools treat v1 as `live-running`
+- archive readiness: Stage 1 source docs and release evidence are archived here; optional local log bundling remains a separate evidence decision
 
 Future v2 work may start in `workflow/versions/v2/` discussion, middle-layer,
 changes, plans, drafts, and queue candidates. Promotion / apply into
-`tasks/prompts/**` remains blocked until a later explicit gate changes the live
-queue state.
+`tasks/prompts/**` still requires explicit approval and a configured live mapping.

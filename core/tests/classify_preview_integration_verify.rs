@@ -11,19 +11,21 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 
 const CAPABILITY_SPEC: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md");
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/mvp-control-map.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
-const S1_16_DRAG_HOVER: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-16-drag-hover.md");
+const S1_16_DRAG_HOVER: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-16-drag-hover.md"
+);
 const S1_17_IMPORT_SINGLE: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md");
 const S1_18_IMPORT_BATCH: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md");
 const S1_19_IMPORT_FOLDER: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md");
 const S1_28_SETTINGS_CLASSIFIER: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn path_string(path: &Path) -> String {

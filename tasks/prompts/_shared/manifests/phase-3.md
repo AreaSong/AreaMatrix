@@ -76,7 +76,7 @@
 - `docs/development/testing.md`
 - `docs/development/performance.md`
 - `docs/development/observability.md`
-- `docs/roadmap/stage-1-mvp.md`
+- `workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md`
 
 ### Existing Code
 - `core/**`
@@ -110,7 +110,7 @@
 ### Exact Docs
 - `docs/development/release.md`
 - `docs/development/build.md`
-- `docs/roadmap/stage-1-mvp.md`
+- `workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md`
 - `CHANGELOG.md`
 
 ### Existing Code
@@ -142,12 +142,12 @@
 > depends: `3-1/task-04`
 
 ### Exact Docs
-- `docs/roadmap/stage-1-mvp.md`
+- `workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md`
 - `docs/development/release.md`
 - `docs/development/testing.md`
-- `docs/architecture/mvp-control-map.md`
-- `docs/core/capability-specs/stage-1-mvp.md`
-- `docs/ux/page-specs/stage-1-mvp.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp.md`
 
 ### Existing Code
 - `core/**`

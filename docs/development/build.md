@@ -246,8 +246,8 @@ PR 要全绿才能合并。
 ## 发布构建（Stage 1 alpha 起激活）
 
 Stage 1 不做公开发布，但 alpha tester 内部分发仍必须走 Developer ID 签名、公证、DMG
-和干净 Mac 首启验证。发布放行状态以
-[stage-1-release-checklist.md](stage-1-release-checklist.md) 为准；该清单存在 P0/P1、
+和干净 Mac 首启验证。Stage 1 历史发布放行状态以
+[v1 release checklist](../../workflow/versions/v1-mvp/evidence/release-checklist.md) 为准；该清单存在 P0/P1、
 手工冒烟 pending、性能基线缺口或签名/公证未知时，不得把构建产物标记为可分发。
 
 当前若未加入付费 Apple Developer Program，只能制作 local QA build。local QA build 可以用于本机
@@ -306,6 +306,8 @@ hdiutil detach "/Volumes/AreaMatrix 0.1.0 Local QA"
 `CODE_SIGN_IDENTITY=-` 只生成 ad-hoc signed app，用于本机包结构和启动行为验证；它不是
 Developer ID 签名。`AreaMatrix-0.1.0-local-qa.dmg` 只能标记为 internal QA artifact，
 不得写成 Developer ID 签名、公证或正式 alpha 分发证据。
+Stage 1 已生成的历史 local QA DMG 归档在
+`workflow/versions/v1-mvp/evidence/artifacts/AreaMatrix-0.1.0-local-qa.dmg`。
 
 ### 未公证预览 DMG
 
@@ -329,7 +331,7 @@ shasum -a 256 AreaMatrix-v0.1.0-unnotarized-preview.2.dmg
 
 `v0.1.0-unnotarized-preview.2` 当前产物：
 
-- `AreaMatrix-v0.1.0-unnotarized-preview.2.dmg`
+- `workflow/versions/v1-mvp/evidence/artifacts/AreaMatrix-v0.1.0-unnotarized-preview.2.dmg`（Stage 1 archive copy；原始输出文件名为 `AreaMatrix-v0.1.0-unnotarized-preview.2.dmg`）
 - SHA-256: `d01d44c82e2287c0f1cd12aea4e78ece46301fe2f4709b2598c5710ba89864b2`
 - app version: `0.1.0`
 - build number: `202606161707`

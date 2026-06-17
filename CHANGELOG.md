@@ -11,16 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - 生成 `0.1.0-local-qa` 内部测试产物：ad-hoc signed `AreaMatrix.app`、
-  `AreaMatrix-0.1.0-local-qa.dmg` 和 SHA-256 checksum。
+  `workflow/versions/v1-mvp/evidence/artifacts/AreaMatrix-0.1.0-local-qa.dmg` 和 SHA-256 checksum。
 - 补充 iCloud placeholder、Developer ID / notarization 后续补证模板，并记录同机 local QA
   首启交互 smoke。
 - 准备 `v0.1.0-unnotarized-preview.2` GitHub prerelease 轨道，生成未公证预览 DMG
-  `AreaMatrix-v0.1.0-unnotarized-preview.2.dmg`，SHA-256 为
+  `workflow/versions/v1-mvp/evidence/artifacts/AreaMatrix-v0.1.0-unnotarized-preview.2.dmg`，SHA-256 为
   `d01d44c82e2287c0f1cd12aea4e78ece46301fe2f4709b2598c5710ba89864b2`。
   `.1` 未发布，因 GitHub immutable release / tag 规则阻止同一预览号复用。
 
 ### Changed
-- `release-notes-0.1.0.md` 调整为 `0.1.0-local-qa` 内部测试说明，不再暗示正式 alpha 发布。
+- `workflow/versions/v1-mvp/evidence/release-notes/release-notes-0.1.0.md` 调整为 `0.1.0-local-qa` 内部测试说明，不再暗示正式 alpha 发布。
 - `./dev release local-qa` 改为显式 ad-hoc bundle signing、静态链接 Rust core，并在构建后验证
   bundle 签名和自包含链接状态，避免 preview/local QA 包依赖开发机 dylib。
 

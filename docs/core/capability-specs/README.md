@@ -7,6 +7,7 @@
 - UX 页面规格回答“用户看见什么、如何操作、状态如何变化”。
 - Core 能力规格回答“后端/Core 必须提供什么行为、输入输出和副作用”。
 - MVP control map 负责把页面、能力、API、DB、文件系统、错误态和 prompt 任务绑定起来。
+- Stage 1 MVP 能力规格已随 `v1-mvp` 收口归档；本目录继续保存 Stage 2+ 的长期能力规格入口。
 
 ## 编写规则
 
@@ -33,16 +34,15 @@
 
 | 阶段 | Core 能力索引 | 页面规格 | Control Map |
 |---|---|---|---|
-| Stage 1 MVP | [stage-1-mvp.md](stage-1-mvp.md) | [../ux/page-specs/stage-1-mvp.md](../../ux/page-specs/stage-1-mvp.md) | [mvp-control-map.md](../../architecture/mvp-control-map.md) |
+| Stage 1 MVP archive | [Core ability index](../../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp.md) | [Page specs](../../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp.md) | [Control map](../../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md) |
 | Stage 2 Experience | [stage-2-experience.md](stage-2-experience.md) | [../ux/page-specs/stage-2-experience.md](../../ux/page-specs/stage-2-experience.md) | [stage-2-control-map.md](../../architecture/stage-2-control-map.md) |
 | Stage 3 AI | [stage-3-ai.md](stage-3-ai.md) | [../ux/page-specs/stage-3-ai.md](../../ux/page-specs/stage-3-ai.md) | [stage-3-control-map.md](../../architecture/stage-3-control-map.md) |
 | Stage 4 Multiplatform | [stage-4-multiplatform.md](stage-4-multiplatform.md) | [../ux/page-specs/stage-4-multiplatform.md](../../ux/page-specs/stage-4-multiplatform.md) | [stage-4-control-map.md](../../architecture/stage-4-control-map.md) |
 
 ## Related
 
-- [stage-1-mvp.md](stage-1-mvp.md)
+- [v1-mvp archived Core ability index](../../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp.md)
 - [stage-2-experience.md](stage-2-experience.md)
 - [stage-3-ai.md](stage-3-ai.md)
 - [stage-4-multiplatform.md](stage-4-multiplatform.md)
-- [../architecture/mvp-control-map.md](../../architecture/mvp-control-map.md)
 - [../api/core-api.md](../../api/core-api.md)

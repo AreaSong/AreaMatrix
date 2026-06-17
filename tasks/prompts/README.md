@@ -21,8 +21,8 @@ Manifest：[./_shared/manifests/](./_shared/manifests/)
 7. 任务完成后用 `render --mode verify` 或 `verify` 生成只读验收 prompt。
 8. 需要批量复制时，用 `export --phase` 或 `export --all` 把 copy-ready / verify-ready prompt 导出为静态文件。
 9. Runner 只负责 prompt 生成、进度和状态管理；自动闭环由 `./task-loop run` 调用 `codex exec`。
-10. 当前 637 个任务是 `v1-mvp` live queue；大型新增需求先进入 `workflow/versions/v*/` 规划链路，通过 workflow doctor、changes、plans、drafts、queue 和 promotion preview 检查，不直接改 live queue。
-11. 新 v* 版本在生成执行 / 检查 prompt 之前，必须先完成 `workflow/versions/v*/discussion/` 的 docs 讨论与中间层讨论门禁；`v-template` 只是模板验收实例，v1 继续在本目录 live 执行，完成后再归档到 workflow。
+10. 当前 637 个任务是已完成的 `v1-mvp` 历史 live queue；大型新增需求先进入 `workflow/versions/v*/` 规划链路，通过 workflow doctor、changes、plans、drafts、queue 和 promotion preview 检查，不直接改 live queue。
+11. 新 v* 版本在生成执行 / 检查 prompt 之前，必须先完成 `workflow/versions/v*/discussion/` 的 docs 讨论与中间层讨论门禁；`v-template` 只是模板验收实例，v1 已归档到 `workflow/versions/v1-mvp/`。
 
 ## Runner
 
@@ -183,7 +183,7 @@ Python runner 会在 `.codex/task-loop-logs/<timestamp>/<phase>/` 写入每次�
 
 `workflow/` 是大功能 / 版本 / 重构 / 优化的生命周期系统；`tasks/prompts/**` 是已批准、可执行、可验收的小任务队列；`./task-loop` 只执行 tasks，不做需求决策。
 
-- `workflow/versions/v1-mvp/` 记录当前 637-task live queue，v1 完成后再归档，不移动现有 `tasks/prompts/**`。
+- `workflow/versions/v1-mvp/` 记录已完成的 637-task MVP archive；不要重写现有 `tasks/prompts/**`、`progress.json` 或 task-loop evidence。
 - `workflow/versions/v-template/` 是模板验收实例，用来证明 templates、schema、doctor、promotion preview、projection、closeout/audit 的全链路，不是真实后续版本。
 - 真实新版本使用 `workflow/versions/vN/`，在 promotion apply 前仍不得绕过 v1 live gate。
 

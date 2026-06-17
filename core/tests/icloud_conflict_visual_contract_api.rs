@@ -15,7 +15,7 @@ const CONTROL_MAP: &str = include_str!("../../docs/architecture/stage-2-control-
 const S2_20_PAGE: &str =
     include_str!("../../docs/ux/page-specs/stage-2-experience/S2-20-icloud-conflict-visual.md");
 const S1_36_PAGE: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-36-icloud-conflict-list.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-36-icloud-conflict-list.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");

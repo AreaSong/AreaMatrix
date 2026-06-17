@@ -34,7 +34,7 @@
 发布人执行：
 
 - [ ] Stage 1 alpha 分发前，先更新并通过
-      [stage-1-release-checklist.md](stage-1-release-checklist.md)；若该清单仍有
+      [v1 release checklist](../../workflow/versions/v1-mvp/evidence/release-checklist.md)；若该清单仍有
       P0/P1、check-all 失败、手工冒烟未跑、性能基线缺失或签名/公证状态不明，
       不得放行最终集成验收。
 - [ ] `./dev release preflight` 通过，确认本机存在 Developer ID Application
@@ -58,7 +58,7 @@
 
 未加入付费 Apple Developer Program 时，项目不能获取 Developer ID Application 证书，也不能完成
 notarytool 公证。此时允许制作 **local QA build** 用于本机或受控测试机验证，但它不是正式 alpha
-分发物，不能关闭 [stage-1-release-checklist.md](stage-1-release-checklist.md) 中的 P1-RL-003。
+分发物，不能关闭 [v1 release checklist](../../workflow/versions/v1-mvp/evidence/release-checklist.md) 中的 P1-RL-003。
 
 local QA build 可使用 Xcode 本地构建、ad-hoc signing 或自签名证书验证包结构和启动行为；测试记录
 必须写明以下限制：
@@ -191,6 +191,8 @@ shasum -a 256 AreaMatrix-v0.1.0-unnotarized-preview.2.dmg
   `1a4881522acb93282cb6e0252810ea3849c7ab1095e74b8583a40e8018f28aea`
 - DMG SHA-256:
   `d01d44c82e2287c0f1cd12aea4e78ece46301fe2f4709b2598c5710ba89864b2`
+- archive copy:
+  `workflow/versions/v1-mvp/evidence/artifacts/AreaMatrix-v0.1.0-unnotarized-preview.2.dmg`
 
 挂载验证：
 
@@ -218,7 +220,7 @@ git tag -a v0.1.0-unnotarized-preview.2 \
 git push origin main v0.1.0-unnotarized-preview.2
 gh release create v0.1.0-unnotarized-preview.2 \
   --title "AreaMatrix 0.1.0 Unnotarized Preview 2" \
-  --notes-file release-notes-v0.1.0-unnotarized-preview.2.md \
+  --notes-file workflow/versions/v1-mvp/evidence/release-notes/release-notes-v0.1.0-unnotarized-preview.2.md \
   --prerelease \
   AreaMatrix-v0.1.0-unnotarized-preview.2.dmg
 ```
@@ -408,7 +410,7 @@ gh release create v0.1.0 \
   AreaMatrix.zip
 ```
 
-`release-notes-0.1.0.md` 来自 CHANGELOG 该版本段落 + 致谢 + 已知问题。
+`release-notes-0.1.0.md` 来自 CHANGELOG 该版本段落 + 致谢 + 已知问题；Stage 1 historical local QA notes 已归档在 `workflow/versions/v1-mvp/evidence/release-notes/`。
 
 ---
 

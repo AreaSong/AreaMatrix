@@ -14,12 +14,13 @@ use serde_json::Value;
 
 const API_RS: &str = include_str!("../src/api.rs");
 const CAPABILITY_SPEC: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md");
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/mvp-control-map.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const DB_RENAME_RS: &str = include_str!("../src/db/rename.rs");
 const S1_33_RENAME_SHEET: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-33-file-rename-sheet.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-33-file-rename-sheet.md");
 const STORAGE_RENAME_RS: &str = include_str!("../src/storage/rename.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 

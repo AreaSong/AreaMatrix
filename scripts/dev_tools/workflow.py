@@ -24,6 +24,7 @@ from .changes import (
 )
 from .discussion import (
     DISCUSSION_TEMPLATES,
+    discussion_allows_changes,
     discussion_gate_label,
     discussion_gate_message,
     validate_discussion_records,
@@ -67,6 +68,10 @@ DEFAULT_VERSION = TEMPLATE_REFERENCE_VERSION
 ALLOWED_QUEUE_STATUS = ARTIFACT_STATUSES
 ALLOWED_VERSION_STATUS = VERSION_LIFECYCLE_STATUSES
 ALLOWED_DOC_OPS = {"create", "update", "delete", "reference"}
+ALLOWED_V1_DEPENDENCY_GATES = {
+    "queue-only-until-v1-complete",
+    "queue-only-until-explicit-approval-and-live-mapping",
+}
 REQUIRED_TEMPLATES = [
     "version.yaml",
     "change.example.yaml",
@@ -269,15 +274,29 @@ def validate_v1_gate(root: Path, versions: Sequence[VersionRecord]) -> list[str]
     v1 = by_id.get("v1-mvp")
     if not v1:
         errors.append("missing v1-mvp version record")
-    elif v1.data.get("lifecycle_status") != "live-running":
-        errors.append("v1-mvp lifecycle_status must stay live-running until the 637-task queue is complete")
+        v1_status = ""
+    else:
+        v1_status = str(v1.data.get("lifecycle_status", ""))
+        if v1_status == "live-running":
+            pass
+        elif v1_status == "archived":
+            if v1.data.get("queue_completion_status") != "complete":
+                errors.append("v1-mvp can be archived only after queue_completion_status is complete")
+            if v1.data.get("closeout_status") != "decision-recorded":
+                errors.append("v1-mvp can be archived only after closeout_status is decision-recorded")
+            if not v1.data.get("closeout_decision_source"):
+                errors.append("v1-mvp archived state requires closeout_decision_source")
+        else:
+            errors.append("v1-mvp lifecycle_status must be live-running or archived")
     for record in versions:
         if record.version_id == "v1-mvp" or record.data.get("promotion") == "already-live":
             continue
         if record.version_id == TEMPLATE_REFERENCE_VERSION:
             continue
-        if "v1-mvp" in as_list(record.data.get("depends_on")) and record.data.get("gate") != "queue-only-until-v1-complete":
-            errors.append(f"{record.version_id} gate must be queue-only-until-v1-complete while v1 is live-running")
+        if "v1-mvp" in as_list(record.data.get("depends_on")) and record.data.get("gate") not in ALLOWED_V1_DEPENDENCY_GATES:
+            errors.append(
+                f"{record.version_id} gate must be one of {status_list(ALLOWED_V1_DEPENDENCY_GATES)} until a new live promotion gate is explicitly configured"
+            )
     progress = root / "tasks/prompts/_shared/progress.json"
     if not progress.is_file():
         errors.append("missing live v1 progress file: tasks/prompts/_shared/progress.json")
@@ -529,7 +548,7 @@ def feature_plan_content(root: Path, version: str, record: Any, middle_record: M
             "",
             "- Status: `ready`.",
             "- Kind: queue-candidate review only.",
-            "- Live queue: blocked while `v1-mvp` is `live-running`.",
+            "- Live queue: blocked until explicit promotion approval and live mapping are configured.",
             "- Promotion: explicit only; this plan does not write `tasks/prompts/**`.",
         ]
     )
@@ -594,7 +613,7 @@ def queue_md_content(root: Path, version: str, record: Any) -> str:
         "- Status: `ready`",
         "- Kind: queue-candidate",
         "- Promotion: explicit only",
-        "- Live queue blocked: true while `v1-mvp` is `live-running`",
+        "- Live queue blocked: true until explicit promotion approval and live mapping are configured",
         f"- Source change: `{display_path(root, record.file)}`",
         "",
         "## Candidate Tasks",
@@ -765,11 +784,17 @@ def run_workflow_doctor(root: Path, args: argparse.Namespace) -> int:
     middle_summary: dict[str, int] = {}
     for record in versions:
         if middle_layer_required(record):
+            if not discussion_allows_changes(root, record.version_id, record.data):
+                middle_summary[record.version_id] = 0
+                continue
             change_errors, _, middle_records = collect_workflow(root, record.version_id)
             errors.extend(change_errors)
             middle_summary[record.version_id] = len(middle_records)
     for record in versions:
         if middle_layer_required(record) and record.version_id not in middle_summary:
+            if not discussion_allows_changes(root, record.version_id, record.data):
+                middle_summary[record.version_id] = 0
+                continue
             middle_errors, middle_records, _ = collect_middle_layer_workflow(root, record.version_id, None)
             errors.extend(middle_errors)
             middle_summary[record.version_id] = len(middle_records)
@@ -791,7 +816,7 @@ def run_workflow_doctor(root: Path, args: argparse.Namespace) -> int:
             print(f"- live mapping {record.version_id}: {promotion_mapping_label(record)}")
             print(f"- middle-layer {record.version_id}: {'required' if middle_layer_required(record) else 'skipped'}")
     print("- promotion preview: configured")
-    print("- v1 gate: dependent versions stay queue-only while v1 is live-running")
+    print("- v1 gate: dependent versions stay version-local until explicit promotion approval and live mapping")
     return 0
 
 
@@ -824,7 +849,7 @@ def run_workflow_status(root: Path, args: argparse.Namespace) -> int:
             print("  projection: blocked as expected for template reference")
             print("  closeout: blocked as expected for template reference")
     print()
-    print("Current gate: dependent versions may reach queue candidates, but must not promote to tasks/prompts/** while v1-mvp is live-running.")
+    print("Current gate: dependent versions may reach queue candidates, but must not promote to tasks/prompts/** without explicit approval and live mapping.")
     return 0
 
 

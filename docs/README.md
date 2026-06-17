@@ -6,6 +6,12 @@
 
 ---
 
+## 文档层级
+
+`docs/` 只保存长期源事实：产品、架构、API、UX、开发规范、测试与发布规则。阶段性拆解、执行证据、release checklist、local QA / prerelease 产物、closeout 决策和历史归档放在 `workflow/versions/v*/`。
+
+Stage 1 MVP 已收口为 `v1-mvp` 归档记录；历史任务拆解、Stage 1 page specs、Core capability specs、control map、性能基线、恢复场景和 release checklist 统一从 [workflow/versions/v1-mvp/](../workflow/versions/v1-mvp/) 查阅。后续 Stage 2 起的新阶段先在 `workflow/versions/v2/` 规划，确认后再同步需要长期保留的事实到本目录。
+
 ## 按角色推荐的阅读路径
 
 ### 你是产品经理 / 关心做什么
@@ -163,6 +169,7 @@ docs/adr/README.md  (索引)
 | [development/release.md](development/release.md) | 发布流程 |
 | [development/troubleshooting.md](development/troubleshooting.md) | 常见错误诊断手册 |
 | [development/performance.md](development/performance.md) | 性能工程指南 |
+| [development/recovery.md](development/recovery.md) | 恢复证据与手工冒烟规则 |
 | [development/observability.md](development/observability.md) | 日志与可观测性 |
 
 ### 决策记录 / ADR
@@ -186,7 +193,7 @@ docs/adr/README.md  (索引)
 | 文档 | 说明 |
 |---|---|
 | [roadmap/milestones.md](roadmap/milestones.md) | 四阶段里程碑 |
-| [roadmap/stage-1-mvp.md](roadmap/stage-1-mvp.md) | Stage 1 MVP 任务拆解 |
+| [v1-mvp archive](../workflow/versions/v1-mvp/) | Stage 1 MVP 历史拆解、证据和 closeout 归档 |
 
 ---
 

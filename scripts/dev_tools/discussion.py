@@ -215,14 +215,14 @@ def validate_exact_docs(root: Path, data: dict[str, Any], docs_text: str, prefix
     return errors
 
 
-def validate_decisions(root: Path, version: str, decisions_path: Path, docs_path: Path) -> list[str]:
+def validate_decisions(root: Path, version: str, decisions_path: Path, docs_path: Path, require_approval: bool = True) -> list[str]:
     errors, data = load_decisions(decisions_path)
     if errors or data is None:
         return errors
     prefix = display_path(root, decisions_path)
     if data.get("version") != version:
         errors.append(f"{prefix}: version must be {version}")
-    if data.get("allow_changes") is not True:
+    if require_approval and data.get("allow_changes") is not True:
         errors.append(f"{prefix}: allow_changes must be true before entering changes")
     if not as_list(data.get("risk_boundaries")):
         errors.append(f"{prefix}: risk_boundaries must be a non-empty list")
@@ -230,14 +230,15 @@ def validate_decisions(root: Path, version: str, decisions_path: Path, docs_path
         errors.append(f"{prefix}: decisions must be a non-empty list")
     docs_text = docs_path.read_text(encoding="utf-8", errors="replace") if docs_path.is_file() else ""
     errors.extend(validate_exact_docs(root, data, docs_text, prefix))
-    for key in ["open_questions", "blockers"]:
-        unresolved = unresolved_items(data, key)
-        for item in unresolved:
-            errors.append(f"{prefix}: unresolved {key[:-1]}: {item}")
+    if require_approval:
+        for key in ["open_questions", "blockers"]:
+            unresolved = unresolved_items(data, key)
+            for item in unresolved:
+                errors.append(f"{prefix}: unresolved {key[:-1]}: {item}")
     return errors
 
 
-def validate_discussion_artifacts(root: Path, version: str, directory: Path | None = None) -> list[str]:
+def validate_discussion_artifacts(root: Path, version: str, directory: Path | None = None, require_approval: bool = True) -> list[str]:
     base = directory or discussion_dir(root, version)
     errors: list[str] = []
     paths = {name: base / name for name in REQUIRED_DISCUSSION_FILES}
@@ -253,7 +254,7 @@ def validate_discussion_artifacts(root: Path, version: str, directory: Path | No
     for keyword in ["changes", "plans", "drafts", "queue", "promotion"]:
         if keyword not in middle_text:
             errors.append(f"{display_path(root, paths['middle-layer-discussion.md'])}: missing layer keyword: {keyword}")
-    errors.extend(validate_decisions(root, version, paths["decisions.yaml"], paths["docs-discussion.md"]))
+    errors.extend(validate_decisions(root, version, paths["decisions.yaml"], paths["docs-discussion.md"], require_approval=require_approval))
     from .workflow_baseline import baseline_path, validate_baseline
 
     if baseline_path(root, version).is_file():
@@ -265,7 +266,21 @@ def validate_discussion_artifacts(root: Path, version: str, directory: Path | No
 def validate_discussion_for_version(root: Path, version: str, data: dict[str, Any]) -> list[str]:
     if not discussion_required(version, data):
         return []
-    return validate_discussion_artifacts(root, version)
+    return validate_discussion_artifacts(root, version, require_approval=False)
+
+
+def discussion_allows_changes(root: Path, version: str, data: dict[str, Any]) -> bool:
+    if not discussion_required(version, data):
+        return True
+    decisions_path = discussion_dir(root, version) / "decisions.yaml"
+    errors, decisions = load_decisions(decisions_path)
+    if errors or decisions is None:
+        return False
+    if decisions.get("allow_changes") is not True:
+        return False
+    if unresolved_items(decisions, "open_questions") or unresolved_items(decisions, "blockers"):
+        return False
+    return True
 
 
 def validate_discussion_records(root: Path, records: Sequence[Any]) -> list[str]:

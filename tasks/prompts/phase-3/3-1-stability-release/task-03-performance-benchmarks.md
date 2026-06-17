@@ -14,7 +14,7 @@ atomic
 ## 绑定
 
 - 阶段级性能任务；不绑定单个 UX 页面或 Core 能力。
-- 性能阈值以 `docs/development/performance.md` 和 `docs/roadmap/stage-1-mvp.md` 为准。
+- 性能阈值以 `docs/development/performance.md` 和 `workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md` 为准。
 
 ## 核对清单
 

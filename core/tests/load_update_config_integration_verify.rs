@@ -8,17 +8,18 @@ use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 
 const CAPABILITY_SPEC: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md");
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/mvp-control-map.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const S1_26_SETTINGS_GENERAL: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md");
 const S1_27_SETTINGS_REPOSITORY: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md");
 const S1_28_SETTINGS_CLASSIFIER: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md");
 const S1_30_SETTINGS_ADVANCED: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn path_string(path: &Path) -> String {

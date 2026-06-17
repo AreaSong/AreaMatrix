@@ -15,12 +15,13 @@ use serde_json::Value;
 
 const API_RS: &str = include_str!("../src/api.rs");
 const CAPABILITY_SPEC: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md");
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/mvp-control-map.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const DB_MOVE_TO_CATEGORY_RS: &str = include_str!("../src/db/move_to_category.rs");
 const S1_35_CHANGE_CATEGORY_SHEET: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-35-change-category-sheet.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-35-change-category-sheet.md");
 const STORAGE_MOVE_TO_CATEGORY_RS: &str = include_str!("../src/storage/move_to_category.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 

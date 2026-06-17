@@ -9,7 +9,7 @@ decision:
   release_alpha_status: blocked
   release_blocker_policy: deferred-until-formal-distribution
   v2_planning_status: allowed-before-live-promotion
-  promotion_to_tasks_prompts: blocked-while-v1-live-running
+  promotion_to_tasks_prompts: blocked-until-explicit-approval-and-live-mapping
 blockers:
   - Formal Stage 1 alpha release is not approved; 0.1.0-local-qa is internal QA only, and v0.1.0-unnotarized-preview.2 is prerelease-only for trusted testers.
   - iCloud placeholder real-environment smoke evidence is deferred to the formal distribution track.
@@ -22,9 +22,9 @@ evidence:
   prompt_status: python3 tasks/prompts/_shared/prompt_pipeline.py status
   page_audit: python3 tasks/prompts/_shared/prompt_pipeline.py audit --pages
   task_loop_status: ./task-loop status
-  release_checklist: docs/development/stage-1-release-checklist.md
-  local_qa_notes: release-notes-0.1.0.md
-  unnotarized_preview_notes: release-notes-v0.1.0-unnotarized-preview.2.md
+  release_checklist: workflow/versions/v1-mvp/evidence/release-checklist.md
+  local_qa_notes: workflow/versions/v1-mvp/evidence/release-notes/release-notes-0.1.0.md
+  unnotarized_preview_notes: workflow/versions/v1-mvp/evidence/release-notes/release-notes-v0.1.0-unnotarized-preview.2.md
   closeout_decision: workflow/versions/v1-mvp/closeout/closeout-decision.md
   checkpoint_gap_query: progress entries where git_checkpoint_status is missing or not committed
   checkpoint_gap_detail: workflow/versions/v1-mvp/closeout/checkpoint-gaps.md
@@ -64,12 +64,12 @@ next_allowed_work:
   - Generate v2 middle-layer, changes, plans, drafts, and queue candidates for review.
   - Continue formal alpha release evidence separately.
 next_forbidden_work:
-  - Do not promote v2 or any new work into tasks/prompts/** while v1 is live-running.
+  - Do not promote v2 or any new work into tasks/prompts/** without explicit approval and live mapping.
   - Do not rename, move, regenerate, or archive the live v1 queue during this decision pass.
   - Do not call local QA, unnotarized preview, ad-hoc signing, or same-machine smoke formal alpha evidence.
 remaining_risks:
   - Formal alpha release remains blocked until deferred release blockers are closed with fresh evidence.
-  - Do not promote new live tasks/prompts work while v1 is still treated as live-running by workflow gates.
+  - Do not promote new live tasks/prompts work without explicit approval and live mapping.
   - Do not treat local QA, unnotarized preview, ad-hoc signing, or same-machine launch smoke as formal alpha distribution evidence.
   - Do not rewrite progress.json or task-loop logs to paper over checkpoint evidence gaps; accepted exceptions are recorded, and optional evidence bundling remains a closeout archive decision.
 archive_readiness: evidence-bundle-ready

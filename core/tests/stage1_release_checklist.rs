@@ -1,15 +1,19 @@
-const CHECKLIST: &str = include_str!("../../docs/development/stage-1-release-checklist.md");
+const CHECKLIST: &str =
+    include_str!("../../workflow/versions/v1-mvp/evidence/release-checklist.md");
 const RELEASE: &str = include_str!("../../docs/development/release.md");
 const BUILD: &str = include_str!("../../docs/development/build.md");
-const STAGE1_MVP: &str = include_str!("../../docs/roadmap/stage-1-mvp.md");
+const STAGE1_MVP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md");
 const CHANGELOG: &str = include_str!("../../CHANGELOG.md");
 const PERFORMANCE_BASELINE: &str =
-    include_str!("../../docs/development/stage-1-performance-baseline.md");
-const RECOVERY_SCENARIOS: &str = include_str!("../../docs/development/recovery-scenarios.md");
+    include_str!("../../workflow/versions/v1-mvp/evidence/performance-baseline.md");
+const RECOVERY_SCENARIOS: &str =
+    include_str!("../../workflow/versions/v1-mvp/evidence/recovery-scenarios.md");
 const TESTING: &str = include_str!("../../docs/development/testing.md");
-const RELEASE_NOTES_010: &str = include_str!("../../release-notes-0.1.0.md");
+const RELEASE_NOTES_010: &str =
+    include_str!("../../workflow/versions/v1-mvp/evidence/release-notes/release-notes-0.1.0.md");
 const RELEASE_NOTES_PREVIEW_010: &str =
-    include_str!("../../release-notes-v0.1.0-unnotarized-preview.2.md");
+    include_str!("../../workflow/versions/v1-mvp/evidence/release-notes/release-notes-v0.1.0-unnotarized-preview.2.md");
 const CARGO_TOML: &str = include_str!("../Cargo.toml");
 const XCODE_PROJECT: &str = include_str!("../../apps/macos/AreaMatrix.xcodeproj/project.pbxproj");
 
@@ -152,9 +156,15 @@ fn release_checklist_records_distribution_preflight_blocker_without_release_clai
     assert_contains(RELEASE, "可信测试者");
     assert_contains(BUILD, "不付费 local QA 构建");
     assert_contains(BUILD, "CODE_SIGN_IDENTITY=-");
-    assert_contains(BUILD, "AreaMatrix-0.1.0-local-qa.dmg");
+    assert_contains(
+        BUILD,
+        "workflow/versions/v1-mvp/evidence/artifacts/AreaMatrix-0.1.0-local-qa.dmg",
+    );
     assert_contains(BUILD, "未公证预览 DMG");
-    assert_contains(BUILD, "AreaMatrix-v0.1.0-unnotarized-preview.2.dmg");
+    assert_contains(
+        BUILD,
+        "workflow/versions/v1-mvp/evidence/artifacts/AreaMatrix-v0.1.0-unnotarized-preview.2.dmg",
+    );
     assert_contains(
         RELEASE_NOTES_010,
         "`./dev release preflight` 已补为可复现预检",
@@ -184,7 +194,10 @@ fn release_checklist_records_local_qa_artifact_without_alpha_claim() {
     assert_contains(CHECKLIST, "Signature=adhoc");
     assert_contains(CHECKLIST, "TeamIdentifier=not set");
     assert_contains(CHECKLIST, "Runtime Version=26.2.0");
-    assert_contains(CHECKLIST, "AreaMatrix-0.1.0-local-qa.dmg");
+    assert_contains(
+        CHECKLIST,
+        "workflow/versions/v1-mvp/evidence/artifacts/AreaMatrix-0.1.0-local-qa.dmg",
+    );
     assert_contains(
         CHECKLIST,
         "4e52b8e648326aaf3731fc61f12f4d576bbeeeff7a521d0efe528eec032c617b",
@@ -229,9 +242,12 @@ fn release_checklist_records_unnotarized_preview_without_alpha_claim() {
     assert_contains(CHECKLIST, "TeamIdentifier=not set");
     assert_contains(CHECKLIST, "不能替代正式 alpha");
     assert_contains(RELEASE, "--prerelease");
-    assert_contains(RELEASE, "release-notes-v0.1.0-unnotarized-preview.2.md");
+    assert_contains(RELEASE, "workflow/versions/v1-mvp/evidence/release-notes/release-notes-v0.1.0-unnotarized-preview.2.md");
     assert_contains(BUILD, "notarization、stapler 或干净 Mac 首启");
-    assert_contains(RELEASE_NOTES_PREVIEW_010, "Do not disable Gatekeeper globally.");
+    assert_contains(
+        RELEASE_NOTES_PREVIEW_010,
+        "Do not disable Gatekeeper globally.",
+    );
     assert_contains(RELEASE_NOTES_PREVIEW_010, "Signature=adhoc");
     assert_contains(RELEASE_NOTES_PREVIEW_010, "TeamIdentifier=not set");
     assert_contains(
@@ -243,10 +259,16 @@ fn release_checklist_records_unnotarized_preview_without_alpha_claim() {
 
 #[test]
 fn release_checklist_keeps_release_build_and_stage_one_docs_aligned() {
-    assert_contains(RELEASE, "stage-1-release-checklist.md");
+    assert_contains(
+        RELEASE,
+        "workflow/versions/v1-mvp/evidence/release-checklist.md",
+    );
     assert_contains(RELEASE, "不得放行最终集成验收");
     assert_contains(BUILD, "发布构建（Stage 1 alpha 起激活）");
-    assert_contains(BUILD, "stage-1-release-checklist.md");
+    assert_contains(
+        BUILD,
+        "workflow/versions/v1-mvp/evidence/release-checklist.md",
+    );
     assert!(
         !BUILD.contains("发布构建（Stage 2 起激活）"),
         "build.md must not contradict Stage 1 alpha release gates"
@@ -303,7 +325,7 @@ fn release_checklist_records_changelog_and_version_state_without_claiming_releas
     assert_contains(RELEASE_NOTES_010, "Known Issues");
     assert_contains(RELEASE_NOTES_PREVIEW_010, "Known Issues");
     assert_contains(CHECKLIST, "`CHANGELOG.md` 已切出 `[0.1.0] - 2026-05-10`");
-    assert_contains(CHECKLIST, "`release-notes-v0.1.0-unnotarized-preview.2.md`");
+    assert_contains(CHECKLIST, "`workflow/versions/v1-mvp/evidence/release-notes/release-notes-v0.1.0-unnotarized-preview.2.md`");
     assert_contains(CARGO_TOML, "version = \"0.1.0\"");
     assert_contains(XCODE_PROJECT, "MARKETING_VERSION = 0.1.0");
     assert_contains(XCODE_PROJECT, "CURRENT_PROJECT_VERSION = 202605101812");
@@ -315,7 +337,7 @@ fn release_checklist_records_changelog_and_version_state_without_claiming_releas
 #[test]
 fn release_checklist_rollback_scope_stays_inside_task_expected_paths() {
     for path in [
-        "`docs/development/stage-1-release-checklist.md`",
+        "`workflow/versions/v1-mvp/evidence/release-checklist.md`",
         "`core/tests/stage1_release_checklist.rs`",
         "`docs/development/release.md`",
         "`docs/development/build.md`",

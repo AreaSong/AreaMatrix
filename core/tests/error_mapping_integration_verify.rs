@@ -7,21 +7,26 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 
 const CAPABILITY_SPEC: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md");
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/mvp-control-map.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_RS: &str = include_str!("../src/error.rs");
 const LIB_RS: &str = include_str!("../src/lib.rs");
-const S1_03_VALIDATE_PATH: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md");
-const S1_06_INIT_FAILED: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-06-init-failed.md");
-const S1_11_MAIN_REPO_ERROR: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md");
+const S1_03_VALIDATE_PATH: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md"
+);
+const S1_06_INIT_FAILED: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-06-init-failed.md"
+);
+const S1_11_MAIN_REPO_ERROR: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md"
+);
 const S1_25_ICLOUD_CONFLICT_MIN: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md");
-const S1_32_ERROR_RECOVERY: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md");
+const S1_32_ERROR_RECOVERY: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md"
+);
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn assert_contains(haystack: &str, needle: &str) {

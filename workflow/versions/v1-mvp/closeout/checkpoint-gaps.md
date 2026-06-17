@@ -28,7 +28,7 @@
   - The run summary records `git.checkpoint=off`, so the missing per-task checkpoint fields are a historical runner mode / evidence-policy gap, not evidence that the task failed.
   - The copy / verify logs themselves are not tracked in Git, so these entries still need an archive evidence bundle or an explicitly accepted closeout exception before v1 archive can be considered complete.
 - `release-gate-review`: 1 entry.
-  - `3-1/task-05` has a completed local QA / release gate sync note but no task-loop run id, copy log, verify log, or run summary. It must be handled through `docs/development/stage-1-release-checklist.md` and `release-notes-0.1.0.md`.
+  - `3-1/task-05` has a completed local QA / release gate sync note but no task-loop run id, copy log, verify log, or run summary. It must be handled through `workflow/versions/v1-mvp/evidence/release-checklist.md` and `workflow/versions/v1-mvp/evidence/release-notes/release-notes-0.1.0.md`.
 - `accepted-exception`: 35 entries, recorded in `workflow/versions/v1-mvp/closeout/checkpoint-accepted-exceptions.md`.
 - `unrecoverable`: 0 entries found during this review.
 
@@ -83,6 +83,6 @@
 
 ## Next Review
 
-1. 对 `3-1/task-05` 回到 `docs/development/stage-1-release-checklist.md` 和 `release-notes-0.1.0.md` 决定是否作为 release evidence exception。
+1. 对 `3-1/task-05` 回到 `workflow/versions/v1-mvp/evidence/release-checklist.md` 和 `workflow/versions/v1-mvp/evidence/release-notes/release-notes-0.1.0.md` 决定是否作为 release evidence exception。
 2. 决定是否复制本地 copy / verify logs 到长期 archive evidence bundle；当前索引已列出全部路径。
 3. 在 release gate review 和 release blockers 完成前，`archive_readiness` 继续保持 `blocked`。

@@ -231,8 +231,8 @@ def validate_lifecycle_snapshot(root: Path) -> list[str]:
     if "v-template" not in ids:
         errors.append("lifecycle: missing v-template")
     v1 = next((item for item in snapshot.versions if item.version_id == "v1-mvp"), None)
-    if v1 and v1.status != "live-running":
-        errors.append("lifecycle: v1-mvp must be live-running")
+    if v1 and v1.status not in {"live-running", "archived"}:
+        errors.append("lifecycle: v1-mvp must be live-running or archived")
     template = next((item for item in snapshot.versions if item.version_id == "v-template"), None)
     if template:
         if template.status != "template-reference":

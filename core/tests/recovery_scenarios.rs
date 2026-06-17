@@ -1,22 +1,23 @@
-const SCENARIOS: &str = include_str!("../../docs/development/recovery-scenarios.md");
+const SCENARIOS: &str =
+    include_str!("../../workflow/versions/v1-mvp/evidence/recovery-scenarios.md");
 const MATRIX: &str = include_str!("../../docs/development/error-recovery-matrix.md");
 const TESTING: &str = include_str!("../../docs/development/testing.md");
 const TROUBLESHOOTING: &str = include_str!("../../docs/development/troubleshooting.md");
 const TRANSACTIONAL_IMPORT: &str = include_str!("../../docs/architecture/transactional-import.md");
 const C1_06_COPY: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md");
 const C1_07_MOVE: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md");
 const C1_08_INDEX: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md");
 const C1_16_RECOVERY: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md");
 const C1_21_ERROR_MAPPING: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md");
 const C1_25_ICLOUD: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md");
 const C1_26_REPAIR: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md");
 const IMPORT_COPY_FAILURE: &str = include_str!("import_copy_file_failure_recovery.rs");
 const IMPORT_MOVE_FAILURE: &str = include_str!("import_move_file_failure_recovery.rs");
 const IMPORT_INDEX_FAILURE: &str = include_str!("import_index_file_failure_recovery.rs");
@@ -288,7 +289,10 @@ fn recovery_scenarios_manual_evidence_schema_blocks_release_without_claiming_pas
 
 #[test]
 fn recovery_scenarios_rollback_scope_stays_inside_task_expected_paths() {
-    assert_contains(SCENARIOS, "`docs/development/recovery-scenarios.md`");
+    assert_contains(
+        SCENARIOS,
+        "`workflow/versions/v1-mvp/evidence/recovery-scenarios.md`",
+    );
     assert_contains(SCENARIOS, "`core/tests/recovery_scenarios.rs`");
     assert_contains(SCENARIOS, "不属于本任务回滚范围");
 

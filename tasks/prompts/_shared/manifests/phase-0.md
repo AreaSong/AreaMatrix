@@ -8,7 +8,7 @@
 ### Exact Docs
 - `README.zh-CN.md`
 - `docs/README.md`
-- `docs/roadmap/stage-1-mvp.md`
+- `workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md`
 - `docs/development/coding-standards.md`
 
 ### Existing Code
@@ -46,7 +46,7 @@
 - `README.zh-CN.md`
 - `docs/README.md`
 - `docs/roadmap/milestones.md`
-- `docs/roadmap/stage-1-mvp.md`
+- `workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md`
 
 ### Existing Code
 - None

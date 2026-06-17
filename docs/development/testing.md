@@ -281,7 +281,7 @@ MVP 不强制 UI 测试（手工冒烟覆盖）。
 
 ## 手工冒烟清单
 
-发布前必跑（[stage-1-mvp.md 验收清单](../roadmap/stage-1-mvp.md) 完整版）：
+发布前必跑。Stage 1 历史验收清单归档在 [v1-mvp Stage 1 source](../../workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md)，恢复类手工证据规则见 [recovery.md](recovery.md)：
 
 - [ ] 从干净状态启动 → 首次启动向导 → 选目录 → 完成
 - [ ] 拖单个 PDF → ImportSheet 默认 Copy → 确认 → 列表出现
@@ -451,5 +451,6 @@ fn sigkill_during_import_safe() {
 - [performance.md](performance.md)
 - [observability.md](observability.md)
 - [troubleshooting.md](troubleshooting.md)
+- [recovery.md](recovery.md)
 - [../api/uniffi-recipes.md](../api/uniffi-recipes.md)
-- [../roadmap/stage-1-mvp.md](../roadmap/stage-1-mvp.md)
+- [../../workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md](../../workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md)

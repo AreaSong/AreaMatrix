@@ -250,4 +250,4 @@
 
 - [prd.md](prd.md)
 - [glossary.md](glossary.md)
-- [../roadmap/stage-1-mvp.md](../roadmap/stage-1-mvp.md)
+- [v1-mvp Stage 1 archive](../../workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md)

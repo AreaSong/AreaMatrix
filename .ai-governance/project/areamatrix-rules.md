@@ -21,7 +21,7 @@ AreaMatrix/
 - 架构与目录：`docs/architecture/`
 - Core API：`docs/api/core-api.md`
 - 开发规范：`docs/development/`
-- MVP 拆解：`docs/roadmap/stage-1-mvp.md`
+- MVP 拆解：`workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md`
 - 长期路线图：`docs/roadmap/milestones.md`
 
 ## 高风险项目边界

@@ -11,17 +11,21 @@ use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
 
 const CAPABILITY_SPEC: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md");
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/mvp-control-map.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const API_RS: &str = include_str!("../src/api.rs");
 const RECOVERY_RS: &str = include_str!("../src/recovery.rs");
-const S1_05_INITIALIZING: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md");
-const S1_10_MAIN_LOADING: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md");
-const S1_32_ERROR_RECOVERY: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md");
+const S1_05_INITIALIZING: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md"
+);
+const S1_10_MAIN_LOADING: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md"
+);
+const S1_32_ERROR_RECOVERY: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md"
+);
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn assert_contains(haystack: &str, needle: &str) {

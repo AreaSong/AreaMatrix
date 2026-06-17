@@ -58,8 +58,13 @@ def extract_labels(value: str) -> list[str]:
 
 def load_page_contracts() -> dict[str, PageContract]:
     contracts: dict[str, PageContract] = {}
-    for path in sorted((ROOT / "docs" / "architecture").glob("*control-map.md")):
-        read_control_map(path, contracts)
+    roots = [
+        ROOT / "docs" / "architecture",
+        ROOT / "workflow" / "versions" / "v1-mvp" / "source-docs" / "architecture",
+    ]
+    for root in roots:
+        for path in sorted(root.glob("*control-map.md")):
+            read_control_map(path, contracts)
     return contracts
 
 
@@ -246,4 +251,3 @@ def no_secondary_missing_note(task: TaskFile, entry: ManifestEntry, detail_kind:
     if detail_kind == "core-integration-verify" and entry_page_ids(entry):
         return "消费页面中的其他能力不属于当前 Core task 验收范围；仅检查当前能力是否满足这些页面对该能力的需求"
     return "None"
-

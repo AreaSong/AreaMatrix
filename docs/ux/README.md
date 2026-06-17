@@ -32,7 +32,7 @@ docs/ux/first-launch.md
 | [drag-import-flow.md](drag-import-flow.md) | 拖拽导入与 ImportSheet |
 | [ui-states.md](ui-states.md) | Tree/List/Detail 三件套状态机 |
 | [page-specs/README.md](page-specs/README.md) | 按阶段、逐页面的 UI 开发规格索引 |
-| [page-specs/stage-1-mvp.md](page-specs/stage-1-mvp.md) | Stage 1 页面索引；单页规格在 `page-specs/stage-1-mvp/` |
+| [v1-mvp archived page specs](../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp.md) | Stage 1 历史页面索引；单页规格随 v1 archive 保存 |
 | [page-specs/stage-2-experience.md](page-specs/stage-2-experience.md) | Stage 2 页面索引；单页规格在 `page-specs/stage-2-experience/` |
 | [page-specs/stage-3-ai.md](page-specs/stage-3-ai.md) | Stage 3 页面索引；单页规格在 `page-specs/stage-3-ai/` |
 | [page-specs/stage-4-multiplatform.md](page-specs/stage-4-multiplatform.md) | Stage 4 页面索引；单页规格在 `page-specs/stage-4-multiplatform/` |
@@ -50,7 +50,7 @@ docs/ux/first-launch.md
 
 UX 文档只定义“用户看见什么、点什么、如何恢复”。工程实现细节请回到：
 
-Stage 1 UI 开发时，应优先使用 [page-specs/stage-1-mvp.md](page-specs/stage-1-mvp.md) 的页面跳转图和单页规格；功能域 UX 文档用于追溯来源与校验事实。
+Stage 1 UI 历史核查时，应优先使用 [v1-mvp archived page specs](../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp.md) 的页面跳转图和单页规格；功能域 UX 文档用于追溯来源与校验事实。
 
 - `docs/modules/`：storage/classify/overview-gen/tree-scan/change-log
 - `docs/api/`：core-api/error-codes/classifier-yaml/uniffi-recipes

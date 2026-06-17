@@ -3833,7 +3833,7 @@
 - `docs/ux/page-specs/stage-2-experience/S2-20-icloud-conflict-visual.md`
 - `docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
 
 ### Existing Code
 - `apps/**`
@@ -3862,7 +3862,7 @@
 - `docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
 
 ### Existing Code
 - `apps/**`

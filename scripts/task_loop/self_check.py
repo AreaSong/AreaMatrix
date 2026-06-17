@@ -405,7 +405,7 @@ def check_versioned_workflow(h: Harness) -> None:
     assert_contains(doctor, "middle-layer v-template: required", "workflow template middle layer")
 
     status = h.run([h.dev, "workflow", "status"]).stdout
-    assert_contains(status, "v1-mvp: live-running", "workflow status v1")
+    assert_contains(status, "v1-mvp: archived", "workflow status v1")
     assert_contains(status, "v-template: template-reference", "workflow status template")
     assert_contains(status, "discussion: v-template: managed template reference", "workflow status discussion")
     assert_contains(status, "local_queue: template-reference", "workflow status local queue")
@@ -584,7 +584,7 @@ next_layers:
     assert_contains(plan, "Docs Change Ledger", "workflow plan ledger")
     assert_contains(plan, "17-30", "workflow plan line range")
     assert_contains(plan, "Code Impact", "workflow plan code impact")
-    assert_contains(plan, "blocked while `v1-mvp` is `live-running`", "workflow plan v1 block")
+    assert_contains(plan, "blocked until explicit promotion approval and live mapping", "workflow plan promotion block")
 
     queue = h.run([h.dev, "workflow", "queue", "--version", "v-template", "--feature", "template-docs-contract"]).stdout
     assert_contains(queue, "Workflow queue candidates", "workflow queue header")
@@ -795,7 +795,7 @@ def check_dev_home(h: Harness) -> None:
     assert_contains(processes, "host codex exec", "dev processes full section")
     lifecycle = h.run([h.dev, "--lang", "mixed", "lifecycle"]).stdout
     assert_contains(lifecycle, "Lifecycle Wizard", "dev lifecycle command")
-    assert_contains(lifecycle, "v1-mvp live-running", "dev lifecycle v1")
+    assert_contains(lifecycle, "v1-mvp archived", "dev lifecycle v1")
     assert_contains(lifecycle, "v-template template-reference", "dev lifecycle template")
     live_queue = h.run([h.dev, "--lang", "mixed", "live-queue"]).stdout
     assert_contains(live_queue, "Live Queue", "dev live queue command")

@@ -12,18 +12,22 @@ use rusqlite::Connection;
 use serde_json::Value;
 
 const CAPABILITY_SPEC: &str =
-    include_str!("../../docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md");
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/mvp-control-map.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md");
+const CONTROL_MAP: &str =
+    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const API_RS: &str = include_str!("../src/api.rs");
-const S1_09_MAIN_LIST: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md");
+const S1_09_MAIN_LIST: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md"
+);
 const S1_17_IMPORT_SINGLE: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md");
-const S1_20_IMPORT_PROGRESS: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md");
-const S1_21_IMPORT_RESULT: &str =
-    include_str!("../../docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md");
+    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md");
+const S1_20_IMPORT_PROGRESS: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md"
+);
+const S1_21_IMPORT_RESULT: &str = include_str!(
+    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md"
+);
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn path_string(path: &Path) -> String {

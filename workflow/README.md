@@ -71,5 +71,5 @@ clear bug fixes can go directly to `tasks/prompts/**` or a focused local task.
 
 Promotion preview maps semantic workflow tasks to future live task labels without
 writing the live queue. Real promotion into `tasks/prompts/**` is a later
-explicit step and remains blocked while prerequisite live versions are still
-running.
+explicit step and remains blocked until approval artifacts and live mapping are
+configured, even after prerequisite versions are archived.

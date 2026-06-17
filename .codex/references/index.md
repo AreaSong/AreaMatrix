@@ -35,7 +35,7 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 - 依赖与供应链：`docs/development/dependency-policy.md`
 - CI 治理：`docs/development/ci-governance.md`
 - Prompt 工程质量门禁：`tasks/prompts/_shared/engineering-quality-rules.md`
-- Stage 1 MVP：`docs/roadmap/stage-1-mvp.md`
+- Stage 1 MVP：`workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md`
 - 总路线图：`docs/roadmap/milestones.md`
 
 ## Repo-local Skills

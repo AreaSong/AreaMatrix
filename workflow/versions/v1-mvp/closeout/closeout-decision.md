@@ -8,11 +8,11 @@ Decision date: 2026-06-17 CST
 
 - Technical queue: complete. `tasks/prompts/_shared/progress.json` 记录 `637/637` tasks completed，`./task-loop status` 无 live lock、无 stale in-progress。
 - Formal alpha: blocked. `0.1.0-local-qa` 只允许内部 QA，`v0.1.0-unnotarized-preview.2` 只允许可信测试者 prerelease。
-- Release blockers: deferred for the formal distribution track, not closed. 它们继续由 `docs/development/stage-1-release-checklist.md` 管理。
+- Release blockers: deferred for the formal distribution track, not closed. 它们继续由 `workflow/versions/v1-mvp/evidence/release-checklist.md` 管理。
 - Checkpoint gaps: 35 个 historical checkpoint gaps 已接受为 closeout exceptions；不得回填或伪造 `progress.json` / Git history。
 - Release-gate entry: `3-1/task-05` 作为 release-gate review item 处置，不补造 task-loop verify evidence。
-- Workflow state: `v1-mvp` 继续保持 `lifecycle_status: live-running`，因为当前工具链仍用它保护 live queue promotion gate。
-- v2 planning: allowed for discussion, middle-layer, changes, plans, drafts, and queue candidates. Promotion / apply into `tasks/prompts/**` remains blocked while v1 is live-running.
+- Workflow state: `v1-mvp` 已切换为 `lifecycle_status: archived`。工具链仍要求后续版本使用 explicit approval 和 live mapping，不能自动写入 `tasks/prompts/**`。
+- v2 planning: allowed for discussion, middle-layer, changes, plans, drafts, and queue candidates. Promotion / apply into `tasks/prompts/**` remains blocked until explicit approval and live mapping are configured.
 
 ## What This Is Not
 
@@ -27,7 +27,7 @@ Decision date: 2026-06-17 CST
 
 | Blocker | Status | Owner | Resume condition |
 |---|---|---|---|
-| M-02 iCloud placeholder real-environment smoke | deferred | release QA owner | 有可用 iCloud placeholder 测试环境后，补跑 `docs/development/recovery-scenarios.md` 和 release checklist 证据。 |
+| M-02 iCloud placeholder real-environment smoke | deferred | release QA owner | 有可用 iCloud placeholder 测试环境后，补跑 `workflow/versions/v1-mvp/evidence/recovery-scenarios.md` 和 release checklist 证据。 |
 | Developer ID signing | deferred | release owner | 加入 Apple Developer Program，取得 valid Developer ID Application certificate。 |
 | Notarization and stapling | deferred | release owner | Developer ID signing 可用后，提交 notarytool，记录 accepted log 和 stapler evidence。 |
 | Clean-Mac first launch / Gatekeeper validation | deferred | release owner | 有干净 Mac 或等价可信测试机，使用目标分发产物补首次启动证据。 |
@@ -39,8 +39,8 @@ Decision date: 2026-06-17 CST
 - Prompt doctor/status/page audit are the live queue evidence commands.
 - `workflow/versions/v1-mvp/closeout/checkpoint-accepted-exceptions.md` accepts the 35 historical checkpoint gaps as closeout exceptions.
 - `workflow/versions/v1-mvp/closeout/checkpoint-evidence-index.md` records local PASS log paths and tracked run summaries for those exceptions.
-- `release-notes-0.1.0.md` records internal local QA only.
-- `release-notes-v0.1.0-unnotarized-preview.2.md` records trusted-tester prerelease only.
+- `workflow/versions/v1-mvp/evidence/release-notes/release-notes-0.1.0.md` records internal local QA only.
+- `workflow/versions/v1-mvp/evidence/release-notes/release-notes-v0.1.0-unnotarized-preview.2.md` records trusted-tester prerelease only.
 
 ## Allowed Next Steps
 
@@ -51,7 +51,7 @@ Decision date: 2026-06-17 CST
 
 ## Still Forbidden
 
-- Do not write new v2 work into `tasks/prompts/**` while v1 remains `live-running`.
+- Do not write new v2 work into `tasks/prompts/**` without explicit approval and live mapping.
 - Do not regenerate, rename, move, or archive the live `tasks/prompts/**` queue as part of this decision pass.
 - Do not mark formal alpha released.
 - Do not call ad-hoc signed, local QA, unnotarized preview, or same-machine smoke evidence equivalent to notarized distribution evidence.

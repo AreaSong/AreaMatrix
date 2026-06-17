@@ -6,10 +6,10 @@
 > depends: `1-1/task-19`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-01-welcome.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-01-welcome.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -35,10 +35,10 @@
 > depends: `2-1/task-01`, `1-1/task-04`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-02-choose-path.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-02-choose-path.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -64,10 +64,10 @@
 > depends: `2-1/task-02`, `1-1/task-04`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -93,10 +93,10 @@
 > depends: `2-1/task-03`, `1-1/task-14`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -122,10 +122,10 @@
 > depends: `2-1/task-04`, `1-4/task-30`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -151,12 +151,12 @@
 > depends: `2-1/task-03`, `2-1/task-04`, `2-1/task-05`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -182,10 +182,10 @@
 > depends: `2-1/task-06`, `1-1/task-09`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-04-confirm-init.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-04-confirm-init.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -211,10 +211,10 @@
 > depends: `2-1/task-07`, `1-1/task-14`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-04-confirm-init.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-04-confirm-init.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -240,11 +240,11 @@
 > depends: `2-1/task-07`, `2-1/task-08`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-04-confirm-init.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-04-confirm-init.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -270,10 +270,10 @@
 > depends: `2-1/task-09`, `1-1/task-09`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -299,10 +299,10 @@
 > depends: `2-1/task-10`, `1-1/task-14`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix.xcodeproj/project.pbxproj`
@@ -329,10 +329,10 @@
 > depends: `2-1/task-11`, `1-4/task-05`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -358,12 +358,12 @@
 > depends: `2-1/task-10`, `2-1/task-11`, `2-1/task-12`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -389,10 +389,10 @@
 > depends: `2-1/task-13`, `1-4/task-30`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-06-init-failed.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-06-init-failed.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -418,10 +418,10 @@
 > depends: `2-1/task-14`, `1-1/task-09`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -447,10 +447,10 @@
 > depends: `2-1/task-15`, `1-1/task-14`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -476,11 +476,11 @@
 > depends: `2-1/task-15`, `2-1/task-16`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -506,21 +506,21 @@
 > depends: `2-1/task-17`
 
 ### Exact Docs
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-01-welcome.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-02-choose-path.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-04-confirm-init.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-06-init-failed.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-01-welcome.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-02-choose-path.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-03-validate-path.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-04-confirm-init.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-06-init-failed.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -546,10 +546,10 @@
 > depends: `2-1/task-18`, `1-3/task-04`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -575,10 +575,10 @@
 > depends: `2-1/task-19`, `1-3/task-21`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -604,11 +604,11 @@
 > depends: `2-1/task-19`, `2-1/task-20`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -634,10 +634,10 @@
 > depends: `2-1/task-21`, `1-3/task-04`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -663,10 +663,10 @@
 > depends: `2-1/task-22`, `1-3/task-08`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -692,10 +692,10 @@
 > depends: `2-1/task-23`, `1-3/task-21`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -721,12 +721,12 @@
 > depends: `2-1/task-22`, `2-1/task-23`, `2-1/task-24`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -752,10 +752,10 @@
 > depends: `2-1/task-25`, `1-1/task-14`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -781,10 +781,10 @@
 > depends: `2-1/task-26`, `1-3/task-21`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -810,10 +810,10 @@
 > depends: `2-1/task-27`, `1-4/task-05`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -839,12 +839,12 @@
 > depends: `2-1/task-26`, `2-1/task-27`, `2-1/task-28`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -870,10 +870,10 @@
 > depends: `2-1/task-29`, `1-1/task-04`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -899,10 +899,10 @@
 > depends: `2-1/task-30`, `1-4/task-20`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -928,10 +928,10 @@
 > depends: `2-1/task-31`, `1-4/task-30`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -957,12 +957,12 @@
 > depends: `2-1/task-30`, `2-1/task-31`, `2-1/task-32`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -988,20 +988,20 @@
 > depends: `2-1/task-33`
 
 ### Exact Docs
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-10-main-loading.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-15-build-tree.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1027,10 +1027,10 @@
 > depends: `2-1/task-34`, `1-2/task-04`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-16-drag-hover.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-16-drag-hover.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1056,10 +1056,10 @@
 > depends: `2-2/task-01`, `1-2/task-04`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1085,10 +1085,10 @@
 > depends: `2-2/task-02`, `1-2/task-09`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1114,10 +1114,10 @@
 > depends: `2-2/task-03`, `1-2/task-14`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1143,10 +1143,10 @@
 > depends: `2-2/task-04`, `1-2/task-19`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1172,13 +1172,13 @@
 > depends: `2-2/task-02`, `2-2/task-03`, `2-2/task-04`, `2-2/task-05`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1204,10 +1204,10 @@
 > depends: `2-2/task-06`, `1-2/task-04`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1233,10 +1233,10 @@
 > depends: `2-2/task-07`, `1-2/task-09`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1262,10 +1262,10 @@
 > depends: `2-2/task-08`, `1-2/task-24`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1291,12 +1291,12 @@
 > depends: `2-2/task-07`, `2-2/task-08`, `2-2/task-09`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1322,10 +1322,10 @@
 > depends: `2-2/task-10`, `1-2/task-04`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1351,10 +1351,10 @@
 > depends: `2-2/task-11`, `1-2/task-09`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1380,10 +1380,10 @@
 > depends: `2-2/task-12`, `1-2/task-19`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1409,12 +1409,12 @@
 > depends: `2-2/task-11`, `2-2/task-12`, `2-2/task-13`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1440,10 +1440,10 @@
 > depends: `2-2/task-14`, `1-2/task-09`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1469,10 +1469,10 @@
 > depends: `2-2/task-15`, `1-2/task-14`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1498,10 +1498,10 @@
 > depends: `2-2/task-16`, `1-2/task-19`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1527,12 +1527,12 @@
 > depends: `2-2/task-15`, `2-2/task-16`, `2-2/task-17`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1558,10 +1558,10 @@
 > depends: `2-2/task-18`, `1-2/task-09`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1587,10 +1587,10 @@
 > depends: `2-2/task-19`, `1-3/task-12`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1616,11 +1616,11 @@
 > depends: `2-2/task-19`, `2-2/task-20`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1646,10 +1646,10 @@
 > depends: `2-2/task-21`, `1-2/task-24`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1675,10 +1675,10 @@
 > depends: `2-2/task-22`, `1-2/task-29`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-23-conflict-name.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-23-conflict-name.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1704,10 +1704,10 @@
 > depends: `2-2/task-23`, `1-2/task-24`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1733,10 +1733,10 @@
 > depends: `2-2/task-24`, `1-2/task-29`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1762,11 +1762,11 @@
 > depends: `2-2/task-24`, `2-2/task-25`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1792,24 +1792,24 @@
 > depends: `2-2/task-26`
 
 ### Exact Docs
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-16-drag-hover.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-23-conflict-name.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-16-drag-hover.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-23-conflict-name.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1835,10 +1835,10 @@
 > depends: `2-2/task-27`, `1-3/task-08`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-12-detail-meta.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-12-detail-meta.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1864,10 +1864,10 @@
 > depends: `2-3/task-01`, `1-3/task-12`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1893,10 +1893,10 @@
 > depends: `2-3/task-02`, `1-4/task-10`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1922,10 +1922,10 @@
 > depends: `2-3/task-03`, `1-4/task-15`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1951,10 +1951,10 @@
 > depends: `2-3/task-04`, `1-4/task-20`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -1980,13 +1980,13 @@
 > depends: `2-3/task-02`, `2-3/task-03`, `2-3/task-04`, `2-3/task-05`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2012,10 +2012,10 @@
 > depends: `2-3/task-06`, `1-3/task-17`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-14-detail-note.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-14-detail-note.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2041,10 +2041,10 @@
 > depends: `2-3/task-07`, `1-3/task-04`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-15-detail-multi.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-15-detail-multi.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2070,10 +2070,10 @@
 > depends: `2-3/task-08`, `1-3/task-08`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-15-detail-multi.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-15-detail-multi.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2099,11 +2099,11 @@
 > depends: `2-3/task-08`, `2-3/task-09`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-15-detail-multi.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-15-detail-multi.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2129,19 +2129,19 @@
 > depends: `2-3/task-10`
 
 ### Exact Docs
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-12-detail-meta.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-14-detail-note.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-15-detail-multi.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-12-detail-meta.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-13-detail-log.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-14-detail-note.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-15-detail-multi.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2167,10 +2167,10 @@
 > depends: `2-3/task-11`, `1-1/task-19`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2196,10 +2196,10 @@
 > depends: `2-3/task-12`, `1-2/task-14`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2225,11 +2225,11 @@
 > depends: `2-3/task-12`, `2-3/task-13`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2255,10 +2255,10 @@
 > depends: `2-3/task-14`, `1-1/task-19`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2284,10 +2284,10 @@
 > depends: `2-3/task-15`, `1-2/task-19`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2313,10 +2313,10 @@
 > depends: `2-3/task-16`, `1-4/task-25`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2342,12 +2342,12 @@
 > depends: `2-3/task-15`, `2-3/task-16`, `2-3/task-17`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2373,10 +2373,10 @@
 > depends: `2-3/task-18`, `1-1/task-19`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2402,10 +2402,10 @@
 > depends: `2-3/task-19`, `1-2/task-04`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2431,11 +2431,11 @@
 > depends: `2-3/task-19`, `2-3/task-20`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2461,10 +2461,10 @@
 > depends: `2-3/task-21`, `1-1/task-19`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-29-settings-integrations.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-29-settings-integrations.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2490,10 +2490,10 @@
 > depends: `2-3/task-22`, `1-1/task-19`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2519,10 +2519,10 @@
 > depends: `2-3/task-23`, `1-4/task-05`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2548,10 +2548,10 @@
 > depends: `2-3/task-24`, `1-4/task-25`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2577,12 +2577,12 @@
 > depends: `2-3/task-23`, `2-3/task-24`, `2-3/task-25`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2608,8 +2608,8 @@
 > depends: `2-3/task-26`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-31-settings-about.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-31-settings-about.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
 
 ### Existing Code
@@ -2636,10 +2636,10 @@
 > depends: `2-3/task-27`, `1-4/task-05`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2665,10 +2665,10 @@
 > depends: `2-3/task-28`, `1-4/task-30`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2694,11 +2694,11 @@
 > depends: `2-3/task-28`, `2-3/task-29`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2724,22 +2724,22 @@
 > depends: `2-3/task-30`
 
 ### Exact Docs
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-29-settings-integrations.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-31-settings-about.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-29-settings-integrations.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-31-settings-about.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2765,10 +2765,10 @@
 > depends: `2-3/task-31`, `1-5/task-05`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-33-file-rename-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-33-file-rename-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2794,10 +2794,10 @@
 > depends: `2-3/task-32`, `1-5/task-10`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-34-file-delete-confirm.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-34-file-delete-confirm.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2823,10 +2823,10 @@
 > depends: `2-3/task-33`, `1-5/task-15`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-35-change-category-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-35-change-category-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2852,10 +2852,10 @@
 > depends: `2-3/task-34`, `1-2/task-29`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-35-change-category-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-35-change-category-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2881,11 +2881,11 @@
 > depends: `2-3/task-34`, `2-3/task-35`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-35-change-category-sheet.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-35-change-category-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2911,15 +2911,15 @@
 > depends: `2-3/task-36`
 
 ### Exact Docs
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-33-file-rename-sheet.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-34-file-delete-confirm.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-35-change-category-sheet.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-33-file-rename-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-34-file-delete-confirm.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-35-change-category-sheet.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2945,10 +2945,10 @@
 > depends: `2-3/task-37`, `1-1/task-04`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -2974,10 +2974,10 @@
 > depends: `2-4/task-01`, `1-4/task-30`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -3003,11 +3003,11 @@
 > depends: `2-4/task-01`, `2-4/task-02`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -3033,10 +3033,10 @@
 > depends: `2-4/task-03`, `1-5/task-20`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-36-icloud-conflict-list.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-36-icloud-conflict-list.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -3062,10 +3062,10 @@
 > depends: `2-4/task-04`, `1-5/task-25`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-37-db-repair-confirm.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-37-db-repair-confirm.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -3091,10 +3091,10 @@
 > depends: `2-4/task-05`, `1-4/task-05`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-37-db-repair-confirm.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-37-db-repair-confirm.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -3120,11 +3120,11 @@
 > depends: `2-4/task-05`, `2-4/task-06`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-1-mvp/S1-37-db-repair-confirm.md`
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-37-db-repair-confirm.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
@@ -3150,16 +3150,16 @@
 > depends: `2-4/task-07`
 
 ### Exact Docs
-- `docs/architecture/mvp-control-map.md`
+- `workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-36-icloud-conflict-list.md`
-- `docs/ux/page-specs/stage-1-mvp/S1-37-db-repair-confirm.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
-- `docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-25-icloud-conflict-min.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-36-icloud-conflict-list.md`
+- `workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-37-db-repair-confirm.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-01-validate-repo-path.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md`
+- `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md`
 
 ### Existing Code
 - `apps/macos/AreaMatrix/**`
