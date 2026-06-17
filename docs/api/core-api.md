@@ -2702,7 +2702,7 @@ Stage 2-4 尚未提升的后续接口先以 capability specs 作为合同来源�
   C2-19 非 AI 标签建议（`suggest_tags_for_file`、`apply_tag_suggestions`）
   已提升为本文与 `core/area_matrix.udl` 的稳定合同；
   Redo 和导入冲突批量决策仍见
-  [v2 stage capability specs](../../workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience.md)。
+  [Stage 1 MVP archived Stage 2 capability specs](../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience.md)。
 - Stage 3：C3-01 AI 配置（`load_ai_config`、`update_ai_config`）已提升为本文与
   `core/area_matrix.udl` 的稳定合同；C3-02 本地模型状态
   （`get_local_model_status`、`locate_local_model_folder`）和 C3-03 远程 provider 配置
@@ -2716,7 +2716,7 @@ Stage 2-4 尚未提升的后续接口先以 capability specs 作为合同来源�
 - Stage 4：C4-17 平台能力矩阵（`get_platform_capabilities`）已提升为本文与
   `core/area_matrix.udl` 的稳定合同；iOS/Windows/Linux repo 连接、watcher、
   跨平台导入、同步冲突、缺失恢复、手动重扫等其余接口见
-  [v4 stage capability specs](../../workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform.md)。
+  [Stage 1 MVP archived Stage 4 capability specs](../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform.md)。
 
 进入对应阶段前，应从能力规格中提升确定 API 到本文和 `core/area_matrix.udl`；未提升前不得让 UI 依赖临时 mock 通过最终验收。
 

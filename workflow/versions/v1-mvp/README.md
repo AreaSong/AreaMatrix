@@ -32,8 +32,10 @@ Closeout status:
   - 1 is a local QA / release gate sync entry without task-loop run evidence
   - detail: `workflow/versions/v1-mvp/closeout/checkpoint-gaps.md`
 - dirty worktree: Xcode derived-data log removed from Git tracking and ignored via `.gitignore`
-- archive readiness: Stage 1 source docs and release evidence are archived here; optional local log bundling remains a separate evidence decision
+- archive readiness: Stage 1 MVP historical source docs and release evidence are archived here; optional local log bundling remains a separate evidence decision
+- source docs scope: internal Stage 1/2/3/4 specs from the completed MVP task queue live under `source-docs/`; Stage 2/3/4 here are not future workflow versions
 
-Future v2 work may start in `workflow/versions/v2/` discussion, middle-layer,
-changes, plans, drafts, and queue candidates. Promotion / apply into
-`tasks/prompts/**` still requires explicit approval and a configured live mapping.
+Future v2 work must start from a fresh discussion under `workflow/versions/v2/`;
+it must not reuse the archived Stage 1 internal Stage 2/3/4 specs as current
+version scope. Promotion / apply into `tasks/prompts/**` still requires explicit
+approval and a configured live mapping.

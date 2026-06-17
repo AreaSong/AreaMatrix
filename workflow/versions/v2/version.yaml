@@ -1,14 +1,14 @@
 id: v2
-title: AreaMatrix v2-experience planning workflow
-stage_name: v2-experience
-lifecycle_status: planning
+title: AreaMatrix v2 planning placeholder
+stage_name: v2-not-started
+lifecycle_status: blocked
 depends_on:
   - v1-mvp
 live_queue: ""
 middle_layers: required
 discussion:
   required: true
-  status: required-before-changes
+  status: not-started
 gate: queue-only-until-explicit-approval-and-live-mapping
 promotion: explicit-only
 local_queue:

@@ -174,7 +174,7 @@ Batch apply 确认 sheet：
 
 ## 来源
 
-- 组合来源：[AI 标签建议任务](../../../../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-64-s3-07-c3-07-ai-tags-suggestion.md)、[Stage 3 自动标签](../../../../../../../docs/roadmap/milestones.md#自动标签)、[Stage 2 标签规格](../../../../../../../workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-07-tags-add.md)。
+- 组合来源：[AI 标签建议任务](../../../../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-64-s3-07-c3-07-ai-tags-suggestion.md)、[Stage 3 自动标签](../../../../../../../docs/roadmap/milestones.md#自动标签)、[Stage 2 标签规格](../../../../../../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-07-tags-add.md)。
 - 依据现有文档推导：`AITagSuggestionReviewSheet` 的 single/batch mode、confidence threshold、批量影响汇总和隐私跳过追溯规则。
 
 ---
@@ -185,5 +185,5 @@ Batch apply 确认 sheet：
 - [S3-05 AI 调用日志](S3-05-ai-call-log.md)
 - [S3-09 AI 隐私规则](S3-09-ai-privacy-rules.md)
 - [S3-10 AI 失败回退提示](S3-10-ai-fallback.md)
-- [S2-07 添加标签](../../../../../../../workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-07-tags-add.md)
+- [S2-07 添加标签](../../../../../../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-07-tags-add.md)
 - [逐页 UI 开发规格索引](../../../../../source-docs-guide.md)

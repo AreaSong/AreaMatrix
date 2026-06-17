@@ -4,25 +4,24 @@ allow_changes: false
 exact_docs:
   - docs/README.md
   - docs/roadmap/milestones.md
-  - workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience.md
-  - workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience.md
 decisions:
   - id: docs-scope
     status: open
-    summary: Confirm v2-experience exact scope before writing changes YAML.
+    summary: Confirm real v2 exact scope before writing changes YAML.
   - id: inherited-release-blockers
     status: deferred
     summary: Stage 1 formal distribution blockers stay on the v1 release evidence track.
 open_questions:
   - id: docs-scope
     status: open
-    question: Which Stage 2 user paths and docs sections are in scope for v2-experience?
+    question: Which user paths and docs sections are in scope for real v2?
 blockers:
   - id: discussion-not-approved
     status: open
     summary: Discussion has not approved changes generation yet.
 risk_boundaries:
   - Do not write live tasks/prompts from discussion.
+  - Do not treat archived Stage 1 internal Stage 2/3/4 source docs as current v2 scope.
   - Do not close v1 formal release blockers in v2 planning.
 next_layers:
   changes: blocked

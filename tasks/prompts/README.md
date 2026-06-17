@@ -255,7 +255,7 @@ drafts / queue / promotion preview。真实版本在 explicit approve + apply ga
 | Phase 1 | Stage 1 MVP Core 原子任务：每个 C1 拆为 contract / implementation / failure / validation / integration verify |
 | Phase 2 | Stage 1 MVP macOS 页面功能任务：S1 多能力页面拆为 S1+C1 page-feature，并保留 page / 闭环 integration verify |
 | Phase 3 | Stage 1 稳定、测试、发布准备 |
-| Phase 4 | Stage 2-4 全量精细化任务：C2/C3/C4 每个能力拆 5 步，S2/S3/S4 多能力页面拆为 S+C page-feature，并保留 page / stage integration verify |
+| Phase 4 | Stage 1 MVP 历史内部 Stage 2/3/4 精细化任务：C2/C3/C4 每个能力拆 5 步，S2/S3/S4 多能力页面拆为 S+C page-feature，并保留 page / stage integration verify |
 
 ## 推荐执行顺序
 
@@ -263,4 +263,4 @@ drafts / queue / promotion preview。真实版本在 explicit approve + apply ga
 2. 再执行 Phase 1，跑通 Rust core 与 UniFFI。
 3. 再执行 Phase 2，完成 macOS 端到端闭环。
 4. 再执行 Phase 3，做稳定性和发布准备。
-5. Phase 4 按 `4-1`、`4-2`、`4-3` 串行推进：每段先完成 C2/C3/C4 Core 五步任务，再执行 S2/S3/S4 page-feature task 和 page integration verify，最后跑阶段 integration verify。
+5. Phase 4 按 `4-1`、`4-2`、`4-3` 串行推进：每段先完成 Stage 1 MVP 历史内部 C2/C3/C4 Core 五步任务，再执行 S2/S3/S4 page-feature task 和 page integration verify，最后跑阶段 integration verify。

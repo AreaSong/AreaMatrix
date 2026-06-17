@@ -13,7 +13,7 @@ from scripts.task_loop.runner import RuntimeConfig, TaskFile, TaskLoopRunner
 
 
 class BuildToolsTest(unittest.TestCase):
-    def test_locked_uniffi_version_reads_core_lockfile(self) -> None:
+    def test_locked_uniffi_bindgen_version_reads_core_lockfile(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             core_dir = Path(tmp)
             (core_dir / "Cargo.lock").write_text(
@@ -31,7 +31,7 @@ class BuildToolsTest(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            self.assertEqual(build._locked_uniffi_version(core_dir), "0.28.3")
+            self.assertEqual(build._locked_uniffi_bindgen_version(core_dir), "0.28.3")
 
     def test_uniffi_command_prefers_configured_binary(self) -> None:
         with patch.dict("os.environ", {"UNIFFI_BINDGEN": "/tmp/custom-uniffi-bindgen"}):
@@ -47,8 +47,11 @@ class BuildToolsTest(unittest.TestCase):
 
             build._write_uniffi_wrapper_crate(wrapper_dir, uniffi_source)
 
-            self.assertIn('features = ["cli"]', (wrapper_dir / "Cargo.toml").read_text(encoding="utf-8"))
-            self.assertIn("uniffi_bindgen_main", (wrapper_dir / "src/main.rs").read_text(encoding="utf-8"))
+            self.assertIn(
+                f'uniffi_bindgen = {{ path = "{uniffi_source}" }}',
+                (wrapper_dir / "Cargo.toml").read_text(encoding="utf-8"),
+            )
+            self.assertIn("uniffi_bindgen::generate_bindings", (wrapper_dir / "src/main.rs").read_text(encoding="utf-8"))
 
     def test_root_udl_uses_synthetic_bindgen_crate(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -231,7 +234,7 @@ class BuildToolsTest(unittest.TestCase):
     def test_task_check_discovers_capability_tests_from_spec_slug(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            spec_dir = root / "workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience"
+            spec_dir = root / "workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience"
             tests_dir = root / "core/tests"
             spec_dir.mkdir(parents=True)
             tests_dir.mkdir(parents=True)

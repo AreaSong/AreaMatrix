@@ -6,11 +6,11 @@
 
 ## 定位
 
-`workflow/versions/v*/source-docs/` 保存阶段事实：某个版本/阶段的页面拆解、能力拆解、control map、历史验收边界和执行索引。
+`workflow/versions/v1-mvp/source-docs/` 保存 Stage 1 MVP 历史阶段事实：MVP 任务队列中的页面拆解、能力拆解、control map、历史验收边界和执行索引。当前归档里的 Stage 2/3/4 是 Stage 1 MVP 内部历史材料，不是未来 `v2`、`v3`、`v4` 工作流版本。
 
 `docs/` 只保存长期源事实：产品、架构、API、功能域 UX、模块设计、开发规范、测试与发布规则。若阶段材料沉淀为长期事实，应同步回 `docs/` 对应功能域文档，而不是把 `stage-*`、`S*`、`C*` 文件迁回 `docs/`。
 
-## 目录约定
+## 当前目录约定
 
 ```text
 workflow/versions/v1-mvp/source-docs/
@@ -20,21 +20,18 @@ workflow/versions/v1-mvp/source-docs/
   ux/page-specs/stage-1-mvp.md
   ux/page-specs/stage-1-mvp/S1-*.md
 
-workflow/versions/v2/source-docs/
   architecture/stage-2-control-map.md
   core/capability-specs/stage-2-experience.md
   core/capability-specs/stage-2-experience/C2-*.md
   ux/page-specs/stage-2-experience.md
   ux/page-specs/stage-2-experience/S2-*.md
 
-workflow/versions/v3/source-docs/
   architecture/stage-3-control-map.md
   core/capability-specs/stage-3-ai.md
   core/capability-specs/stage-3-ai/C3-*.md
   ux/page-specs/stage-3-ai.md
   ux/page-specs/stage-3-ai/S3-*.md
 
-workflow/versions/v4/source-docs/
   architecture/stage-4-control-map.md
   core/capability-specs/stage-4-multiplatform.md
   core/capability-specs/stage-4-multiplatform/C4-*.md
@@ -44,17 +41,17 @@ workflow/versions/v4/source-docs/
 
 ## 阶段索引
 
-| 阶段 | Core 能力索引 | 页面规格 | Control Map |
+| Stage 1 MVP 内部材料 | Core 能力索引 | 页面规格 | Control Map |
 |---|---|---|---|
-| Stage 1 MVP archive | [Core ability index](v1-mvp/source-docs/core/capability-specs/stage-1-mvp.md) | [Page specs](v1-mvp/source-docs/ux/page-specs/stage-1-mvp.md) | [Control map](v1-mvp/source-docs/architecture/mvp-control-map.md) |
-| Stage 2 Experience | [Core ability index](v2/source-docs/core/capability-specs/stage-2-experience.md) | [Page specs](v2/source-docs/ux/page-specs/stage-2-experience.md) | [Control map](v2/source-docs/architecture/stage-2-control-map.md) |
-| Stage 3 AI | [Core ability index](v3/source-docs/core/capability-specs/stage-3-ai.md) | [Page specs](v3/source-docs/ux/page-specs/stage-3-ai.md) | [Control map](v3/source-docs/architecture/stage-3-control-map.md) |
-| Stage 4 Multiplatform | [Core ability index](v4/source-docs/core/capability-specs/stage-4-multiplatform.md) | [Page specs](v4/source-docs/ux/page-specs/stage-4-multiplatform.md) | [Control map](v4/source-docs/architecture/stage-4-control-map.md) |
+| Stage 1 MVP | [Core ability index](v1-mvp/source-docs/core/capability-specs/stage-1-mvp.md) | [Page specs](v1-mvp/source-docs/ux/page-specs/stage-1-mvp.md) | [Control map](v1-mvp/source-docs/architecture/mvp-control-map.md) |
+| Stage 2 Experience | [Core ability index](v1-mvp/source-docs/core/capability-specs/stage-2-experience.md) | [Page specs](v1-mvp/source-docs/ux/page-specs/stage-2-experience.md) | [Control map](v1-mvp/source-docs/architecture/stage-2-control-map.md) |
+| Stage 3 AI | [Core ability index](v1-mvp/source-docs/core/capability-specs/stage-3-ai.md) | [Page specs](v1-mvp/source-docs/ux/page-specs/stage-3-ai.md) | [Control map](v1-mvp/source-docs/architecture/stage-3-control-map.md) |
+| Stage 4 Multiplatform | [Core ability index](v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform.md) | [Page specs](v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform.md) | [Control map](v1-mvp/source-docs/architecture/stage-4-control-map.md) |
 
 ## 读取顺序
 
 1. 先读 `docs/` 中对应的长期事实，例如产品、功能域 UX、Core API、模块或架构文档。
-2. 再读当前版本的阶段索引：page specs、Core capability specs 和 control map。
+2. 再读 `v1-mvp/source-docs/` 中的历史阶段索引：page specs、Core capability specs 和 control map。
 3. 执行任务时，以 manifest 的 Exact Docs 和 task 文件为边界；阶段 source docs 只定义本阶段切片，不替代长期源事实。
 4. 若阶段文档与 `docs/` 冲突，先修正长期事实或明确阶段文档过期，再同步阶段文档。
 

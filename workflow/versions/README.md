@@ -1,14 +1,14 @@
 # AreaMatrix Workflow Versions
 
-This directory tracks versioned workflow instances, stage archives, and future planning work.
+This directory tracks versioned workflow instances, Stage 1 MVP archives, and future planning work.
 
 - `v1-mvp/` archives the completed MVP workflow. The 637-task queue is complete and the closeout decision is recorded, but formal alpha remains blocked by deferred release evidence.
-- `v2/` is the Stage 2 `v2-experience` planning skeleton. Its migrated stage source docs live under `v2/source-docs/`.
-- `v3/` is the Stage 3 `v3-ai` planning skeleton. Its migrated stage source docs live under `v3/source-docs/`.
-- `v4/` is the Stage 4 `v4-multiplatform` planning skeleton. Its migrated stage source docs live under `v4/source-docs/`.
-- `source-docs-guide.md` explains how to read and write stage source docs, including page specs, Core capability specs, and control maps.
+- `v1-mvp/source-docs/` also archives the historical internal Stage 1/2/3/4 specs from the MVP task queue. Those numbers are not future workflow versions.
+- `v2/` is only a clean placeholder for the next real planning discussion. It must not inherit the historical Stage 2 Experience source docs.
+- `v3/` and `v4/` are intentionally absent until those real future versions are created.
+- `source-docs-guide.md` explains how to read the archived Stage 1 MVP source docs, including page specs, Core capability specs, and control maps.
 - `v-template/` is the managed template reference instance. It validates the reusable artifact chain and must never promote into `tasks/prompts/**`.
-- Future versions should be created with `./dev workflow init --version v2` or another real `vN`.
+- Future versions should be created or refreshed only after the relevant discussion gate is ready.
 - New versions use version-local numbering (`phase-0 / 0-1 / task-01`) and leave live mapping pending until explicitly configured.
 
 Current live state remains:
@@ -28,7 +28,7 @@ Use:
 ./dev workflow middle --version v-template preview
 ./dev workflow plan
 ./dev workflow queue
-./dev workflow init --version v2
+./dev workflow discuss --version v2 preview
 ```
 
 Real version zero-start path:

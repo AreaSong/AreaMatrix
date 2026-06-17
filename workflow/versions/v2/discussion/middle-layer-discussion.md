@@ -3,7 +3,7 @@
 ## Workflow Carry-forward
 
 - Version: `v2`
-- Stage name: `v2-experience`
+- Stage name: not started.
 - Discussion must feed `changes/*.yaml`.
 - Changes must feed docs-change ledger plans.
 - Plans and drafts must keep docs/API/UDL/task sync targets explicit.
@@ -18,9 +18,9 @@
 
 ## Required Sync Targets
 
-- Docs: `docs/roadmap/milestones.md`, `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience.md`, `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience.md`
-- API: to be confirmed per Stage 2 feature
-- UDL: to be confirmed per Stage 2 feature
+- Docs: `docs/README.md`, `docs/roadmap/milestones.md`
+- API: to be confirmed after real v2 scope is approved
+- UDL: to be confirmed after real v2 scope is approved
 - Tasks: version-local queue candidates only until explicit promotion
 
 ## Layer Decisions

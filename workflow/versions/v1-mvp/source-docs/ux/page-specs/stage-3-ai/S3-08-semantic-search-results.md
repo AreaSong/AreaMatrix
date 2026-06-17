@@ -233,7 +233,7 @@ Cancel index build 确认 sheet：
 ## Related
 
 - [Stage 3 页面索引](../stage-3-ai.md)
-- [S2-03 保存搜索](../../../../../../../workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-03-saved-search-sheet.md)
+- [S2-03 保存搜索](../../../../../../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-03-saved-search-sheet.md)
 - [S3-05 AI 调用日志](S3-05-ai-call-log.md)
 - [S3-09 AI 隐私规则](S3-09-ai-privacy-rules.md)
 - [S3-10 AI 失败回退提示](S3-10-ai-fallback.md)
