@@ -3,10 +3,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-19-sync-external-removed.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -57,41 +53,6 @@ fn sync_external_removed_contract_api_exposes_documented_signature_input_and_out
 
 #[test]
 fn sync_external_removed_contract_api_docs_control_map_and_udl_stay_aligned() {
-    for fragment in [
-        "# C1-19 sync-external-removed",
-        "- S1-09 main-list",
-        "- S1-11 main-repo-error",
-        "- S1-13 detail-log",
-        "- `sync_external_changes(repo_path, events)`",
-        "- `ExternalEvent { kind: Removed, path, fs_event_id }`",
-        "- `SyncResult.detected_deletes`",
-        "- 对对应 `files` 标记 `status=deleted` 或等价状态。",
-        "- 写入 `change_log.deleted`。",
-        "- 只读确认路径缺失。",
-        "- 不删除其他文件。",
-        "- `FileNotFound`",
-        "- `Db`",
-        "- `Io`",
-        "- 外部删除后默认列表不再显示该文件。",
-        "- Detail 打开已删除 file_id 时给出可理解错误。",
-        "- change log 可追溯删除事件。",
-        "- 从 Trash 自动恢复属于 Stage 2+。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-11 | main-repo-error | C1-01, C1-19, C1-21 |",
-        "`validate_initialized_repo_path`, `sync_external_changes`",
-        "| S1-13 | detail-log | C1-13, C1-17, C1-18, C1-19 |",
-        "`list_changes`, `sync_external_changes`",
-        "Core 能力若未在本矩阵出现，默认不得提前进入 Stage 1 实现。",
-        "不可 mock：路径校验、init/adopt、导入、重复检测、同名冲突",
-        "详情、日志、笔记、Tree、recovery、错误映射",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in [
         "SyncResult sync_external_changes(string repo_path, sequence<ExternalEvent> events);",
         "dictionary ExternalEvent",

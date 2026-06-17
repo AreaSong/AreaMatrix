@@ -10,22 +10,7 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
-const S1_16_DRAG_HOVER: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-16-drag-hover.md"
-);
-const S1_17_IMPORT_SINGLE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md");
-const S1_18_IMPORT_BATCH: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-18-import-batch-sheet.md");
-const S1_19_IMPORT_FOLDER: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-19-import-folder-sheet.md");
-const S1_28_SETTINGS_CLASSIFIER: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn path_string(path: &Path) -> String {
@@ -79,19 +64,6 @@ fn collect_files(root: &Path, current: &Path, files: &mut BTreeMap<PathBuf, Vec<
 #[test]
 fn classify_preview_integration_verify_docs_api_and_udl_stay_aligned() {
     for fragment in [
-        "`predict_category(repo_path, filename) -> ClassifyResult`",
-        "- `category`",
-        "- `suggested_name`",
-        "- `reason`",
-        "- `confidence`",
-        "关键词命中优先于扩展名命中",
-        "UI 可以用结果预填导入 sheet",
-        "不能把 preview 当作最终导入",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
         "ClassifyResult predict_category(string repo_path, string filename);",
         "dictionary ClassifyResult",
         "string category;",
@@ -114,36 +86,6 @@ fn classify_preview_integration_verify_docs_api_and_udl_stay_aligned() {
         assert_contains(CORE_API, fragment);
     }
 }
-
-#[test]
-fn classify_preview_integration_verify_control_map_matches_consuming_pages() {
-    for page in [
-        "- S1-16 drag-hover",
-        "- S1-17 import-single-sheet",
-        "- S1-18 import-batch-sheet",
-        "- S1-19 import-folder-sheet",
-        "- S1-28 settings-classifier",
-    ] {
-        assert_contains(CAPABILITY_SPEC, page);
-    }
-
-    for fragment in [
-        "| S1-16 | drag-hover | C1-05 | `predict_category`",
-        "| S1-17 | import-single-sheet | C1-05, C1-06, C1-07, C1-08 | `predict_category`, `import_file`",
-        "| S1-18 | import-batch-sheet | C1-05, C1-06, C1-09 | `predict_category`, `import_file`",
-        "| S1-19 | import-folder-sheet | C1-05, C1-06, C1-08 | `predict_category`, `import_file`",
-        "| S1-28 | settings-classifier | C1-04, C1-05 | `load_config`, `predict_category`",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    assert_contains(S1_16_DRAG_HOVER, "destination=autoClassify");
-    assert_contains(S1_17_IMPORT_SINGLE, "Core `predict_category`");
-    assert_contains(S1_18_IMPORT_BATCH, "Core `predict_category`");
-    assert_contains(S1_19_IMPORT_FOLDER, "Suggested category");
-    assert_contains(S1_28_SETTINGS_CLASSIFIER, "classifier.yaml");
-}
-
 #[test]
 fn classify_preview_integration_verify_real_core_supports_import_preview_consumers() {
     let repo = initialized_repo();

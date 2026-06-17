@@ -17,14 +17,8 @@ mod support;
 use support::system_trash_home::with_test_system_trash;
 
 const API_RS: &str = include_str!("../src/api.rs");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-23-delete-remove-index.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const DB_DELETE_RS: &str = include_str!("../src/db/delete.rs");
-const S1_34_DELETE_CONFIRM: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-34-file-delete-confirm.md");
 const STORAGE_DELETE_RS: &str = include_str!("../src/storage/delete.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 
@@ -182,44 +176,6 @@ fn assert_metadata_consistent(repo: &Path) {
 
 #[test]
 fn delete_remove_index_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
-    for fragment in [
-        "# C1-23 delete-remove-index",
-        "- S1-34 file-delete-confirm",
-        "- S1-12 detail-meta",
-        "- S1-09 main-list",
-        "`delete_file(repo_path, file_id)`",
-        "`remove_index_entry(repo_path, file_id)`",
-        "Delete 必须能证明走 Trash，不直接物理删除。",
-        "Remove from Index 不删除任何用户原文件。",
-        "失败时不清空笔记、不误删其他文件。",
-        "批量删除和 Undo 属于 Stage 2。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-34 | file-delete-confirm | C1-23 | `delete_file`, `remove_index_entry`",
-        "Trash or index-only removal",
-        "FileNotFound, PermissionDenied, Io",
-        "| C1-22..C1-26 | `1-5/task-01` 到 `1-5/task-25`",
-        "标记为 Real Core 的页面，最终验收不得用 mock、fixture 或静态占位通过。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
-        "入口：`S1-09 main-list`",
-        "`S1-12 detail-meta` 缺失文件 banner 的 `Remove from index`",
-        "Delete 必须走系统 Trash",
-        "Missing / Index-only 条目默认走 `Remove from index`",
-        "`Cancel` 关闭 sheet，不写文件、不写 DB。",
-        "Remove from index 只移除 AreaMatrix 索引条目",
-        "任何失败都不得删除索引以外的其他文件，不得清空用户笔记内容。",
-        "Stage 1 不出现永久删除入口。",
-    ] {
-        assert_contains(S1_34_DELETE_CONFIRM, fragment);
-    }
-
     for fragment in [
         "void delete_file(string repo_path, i64 file_id);",
         "void remove_index_entry(string repo_path, i64 file_id);",

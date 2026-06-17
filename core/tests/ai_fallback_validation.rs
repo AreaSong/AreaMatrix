@@ -17,10 +17,6 @@ use validation_support::{
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-49-c3-10-validation.md");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -180,28 +176,6 @@ fn assert_task_and_docs_alignment() {
         "./dev check task 4-2/task-49",
     ] {
         assert_contains(TASK, fragment);
-    }
-
-    for fragment in [
-        "# C3-10 ai-fallback",
-        "计划新增：`get_ai_fallback_status`。",
-        "AI operation、provider error、privacy decision。",
-        "fallback kind、user message、retry ability。",
-        "记录 AI call failure。",
-        "AI 失败不阻断导入、普通搜索、本地规则分类。",
-        "不自动切换远程 provider。",
-        "UI 能展示是失败、禁用、隐私跳过还是模型不可用。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S3-04 | ai-classification-suggestion | C3-04, C3-09, C3-10 |",
-        "| S3-08 | semantic-search-results | C3-08, C3-09, C3-10 |",
-        "| S3-10 | ai-fallback | C3-04, C3-08, C3-10 | fallback status |",
-        "远程调用必须显式启用，且 API key 不进入日志、诊断或错误文案。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
     }
 
     for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`"] {

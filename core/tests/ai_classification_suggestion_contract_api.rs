@@ -7,18 +7,6 @@ use pretty_assertions::assert_eq;
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-16-c3-04-contract-api.md");
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
-const CLASSIFICATION_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md");
-const FALLBACK_PAGE: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md"
-);
-const STAGE_3_INDEX: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -146,36 +134,6 @@ fn ai_classification_suggestion_contract_docs_api_udl_and_control_map_stay_align
     }
 
     for fragment in [
-        "# C3-04 ai-classification-suggestion",
-        "- S3-04 ai-classification-suggestion",
-        "- S3-10 ai-fallback",
-        "计划新增：`suggest_category_with_ai(repo_path, file_id) -> AiCategorySuggestion`",
-        "file_id、上下文提取策略、privacy policy。",
-        "建议分类、confidence、reason、是否本地/远程。",
-        "写 AI call log。",
-        "用户采纳前不改 `files.category`。",
-        "可只读提取文件名、路径、有限文本摘要；受隐私规则限制。",
-        "- `Config`",
-        "- `PermissionDenied`",
-        "- `Internal`",
-        "只在规则分类失败或低置信时介入。",
-        "建议必须等待用户确认。",
-        "隐私规则命中时返回 skipped reason。",
-        "全自动重分类不在 Stage 3。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S3-04 | ai-classification-suggestion | C3-04, C3-09, C3-10 | AI category suggestion | ai_call_log, no write before confirm",
-        "| S3-10 | ai-fallback | C3-04, C3-08, C3-10 | fallback status | ai_call_log",
-        "AI 默认关闭，本地优先。",
-        "AI 结果在用户确认前都是草稿，不直接写分类、标签、摘要。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "AiCategorySuggestion suggest_category_with_ai(",
         "string repo_path, AiCategorySuggestionRequest request",
         "dictionary AiCategorySuggestionRequest",
@@ -230,7 +188,6 @@ fn ai_classification_suggestion_contract_docs_api_udl_and_control_map_stay_align
     }
 
     for error_name in ["Config", "PermissionDenied", "Internal"] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(CORE_API, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
@@ -240,45 +197,6 @@ fn ai_classification_suggestion_contract_docs_api_udl_and_control_map_stay_align
 
 #[test]
 fn ai_classification_suggestion_contract_documents_consumers_and_boundaries() {
-    for fragment in [
-        "AI 只给建议，用户确认前不移动文件、不改分类。",
-        "显示文件当前分类和 AI 建议分类。",
-        "显示置信度和建议理由。",
-        "显示使用的数据范围：文件名、扩展名、摘要、文本片段等。",
-        "支持 `Accept`、`Change...`、`Reject`。",
-        "支持查看 AI 调用日志条目。",
-        "支持用户手动请求 AI 建议，但请求前必须经过 AI 设置、provider 状态和隐私规则 gate。",
-        "Skipped by privacy rule",
-        "AI 失败时进入 `S3-10 ai-fallback`。",
-        "Accept 前只显示目标分类和目标路径预览，不修改分类、不移动文件。",
-        "远程建议能从日志中追溯到 provider。",
-    ] {
-        assert_contains(CLASSIFICATION_PAGE, fragment);
-    }
-
-    for fragment in [
-        "显示 AI 失败原因。",
-        "区分错误、跳过、未配置、不可用。",
-        "提供非 AI 回退动作。",
-        "Retry 只重试同一 provider、同一 model、同一 feature scope 和同一输入快照",
-        "隐私规则命中不是错误",
-        "AI 失败不改变文件、分类、标签或摘要。",
-        "宿主级非 AI 回退映射",
-        "AI 分类宿主：显示 `Classify manually`",
-    ] {
-        assert_contains(FALLBACK_PAGE, fragment);
-    }
-
-    for fragment in [
-        "AI 默认关闭；本地模型为默认推荐路径。",
-        "AI 只在规则分类失败或低置信度时介入；失败时回退到本地规则或 inbox。",
-        "自动摘要、自动标签、AI 分类结果在用户确认前都是建议或草稿",
-        "隐私规则命中必须在对应 AI 页面显示跳过原因，并在 AI 调用日志中可追溯。",
-        "AI 失败不得自动切换远程 provider；本地模型失败不得自动启用远程 AI。",
-    ] {
-        assert_contains(STAGE_3_INDEX, fragment);
-    }
-
     assert_contains(
         AI_CLASSIFICATION_RS,
         "C3-04 AI classification suggestion contract types and entry point",
@@ -290,6 +208,7 @@ fn ai_classification_suggestion_contract_documents_consumers_and_boundaries() {
     ] {
         assert_contains(AI_CLASSIFICATION_RS, fragment);
     }
+
     for fragment in [
         "get_active_file_by_id",
         "requires_user_confirmation: true",
@@ -302,6 +221,7 @@ fn ai_classification_suggestion_contract_documents_consumers_and_boundaries() {
     ] {
         assert_contains(AI_CLASSIFICATION_IMPL_RS, fragment);
     }
+
     for fragment in [
         "CREATE TABLE IF NOT EXISTS ai_call_log",
         "sent_fields_json",

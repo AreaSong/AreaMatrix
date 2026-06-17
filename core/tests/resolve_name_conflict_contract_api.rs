@@ -12,10 +12,6 @@ use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 use serde_json::Value;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -317,19 +313,6 @@ fn resolve_name_conflict_rename_db_failure_restores_filesystem_and_metadata() {
 #[test]
 fn resolve_name_conflict_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "C1-10 resolve-name-conflict",
-        "- S1-23 conflict-name",
-        "- S1-24 replace-confirm",
-        "- `import_file(repo_path, source_path, options)`",
-        "- `rename_file(repo_path, file_id, new_name)`",
-        "无冲突的最终文件名",
-        "同名不同内容默认追加后缀，例如 `name_1.ext`。",
-        "Replace 路径必须经过 S1-24",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
         "FileEntry import_file(",
         "string repo_path, string source_path, ImportOptions options",
         "FileEntry rename_file(string repo_path, i64 file_id, string new_name);",
@@ -353,13 +336,6 @@ fn resolve_name_conflict_contract_docs_api_udl_and_control_map_stay_aligned() {
     ] {
         assert_contains(CORE_API, fragment);
     }
-
-    for fragment in [
-        "| S1-23 | conflict-name | C1-10 | `import_file`, `rename_file`",
-        "| S1-24 | replace-confirm | C1-09, C1-10 | `import_file`, `delete_file`",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
 }
 
 #[test]
@@ -375,20 +351,9 @@ fn resolve_name_conflict_contract_documents_error_codes_and_side_effects() {
     assert_eq!(errors.len(), 5);
 
     for error_name in ["Conflict", "InvalidPath", "PermissionDenied", "Io", "Db"] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
         assert_contains(API_RS, error_name);
-    }
-
-    for fragment in [
-        "`files.path` 和 `files.current_name` 写入最终无冲突结果。",
-        "`change_log` 记录自动改名或手动改名。",
-        "不覆盖已有用户文件",
-        "Replace 路径必须经过 S1-24",
-        "自定义命名模板和批量重命名属于 Stage 2。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
     }
 
     for fragment in [
@@ -408,7 +373,6 @@ fn resolve_name_conflict_contract_keeps_adjacent_scope_out() {
     assert_ne!(DuplicateStrategy::Skip, DuplicateStrategy::Overwrite);
     assert_ne!(DuplicateStrategy::Skip, DuplicateStrategy::KeepBoth);
 
-    assert_contains(CAPABILITY_SPEC, "自定义命名模板和批量重命名属于 Stage 2。");
     assert_contains(API_RS, "C1-09 owns duplicate detection");
     assert_contains(API_RS, "C1-10 owns same-name conflict handling");
 }

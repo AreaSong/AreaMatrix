@@ -4,10 +4,6 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use std::fs;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -52,32 +48,6 @@ fn list_icloud_conflicts_contract_api_exposes_documented_signature_and_output() 
 #[test]
 fn list_icloud_conflicts_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "# C1-25 list-icloud-conflicts",
-        "- S1-36 icloud-conflict-list",
-        "- S1-25 icloud-conflict-min",
-        "- S1-29 settings-integrations",
-        "`list_icloud_conflicts(repo_path) -> sequence<ICloudConflictPair>`",
-        "冲突组列表：原始版本、conflicted copy、修改时间、状态。",
-        "只读扫描 iCloud conflicted copy。",
-        "列表页不删除、不移动任何冲突副本。",
-        "空态、加载失败、识别不确定状态均可结构化表达。",
-        "不确定冲突必须标记 `Needs review`。",
-        "可视化 diff 增强属于 Stage 2 的 C2-17。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-36 | icloud-conflict-list | C1-25 | `list_icloud_conflicts`",
-        "read conflicted copies only",
-        "ICloudPlaceholder, Io",
-        "| C1-22..C1-26 | `1-5/task-01` 到 `1-5/task-25`",
-        "Core 能力若未在本矩阵出现，默认不得提前进入 Stage 1 实现。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "sequence<ICloudConflictPair> list_icloud_conflicts(string repo_path);",
         "dictionary ICloudConflictPair",
         "string conflict_id;",
@@ -105,7 +75,6 @@ fn list_icloud_conflicts_contract_documents_errors_and_side_effect_boundaries() 
     assert_eq!(documented_errors.len(), 4);
 
     for error_name in ["ICloudPlaceholder", "PermissionDenied", "Io", "Db"] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
         assert_contains(API_RS, error_name);

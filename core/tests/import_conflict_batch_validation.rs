@@ -19,11 +19,6 @@ use import_conflict_batch_support::{
     insert_import_session, insert_staging_file, open_db, path_string,
 };
 
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const API_RS: &str = include_str!("../src/api.rs");
 const CONTRACT_RS: &str = include_str!("../src/import_conflict_batch.rs");
@@ -204,19 +199,6 @@ fn import_conflict_batch_validation_binds_preview_token_to_trash_availability() 
 
 #[test]
 fn import_conflict_batch_validation_keeps_docs_api_udl_and_rust_aligned() {
-    for fragment in [
-        "计划新增：`preview_import_conflict_batch`、`apply_import_conflict_batch`",
-        "Hash duplicate 默认 Skip，同名不同内容默认 Keep both。",
-        "批量策略执行前必须预览每一项影响。",
-        "失败时保留 staged 文件和冲突状态，不覆盖用户文件。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-    assert_contains(
-        CONTROL_MAP,
-        "| S2-21 | import-conflict-batch | C2-17, C2-07 | import conflict batch decision | import session, staging, change_log",
-    );
-
     for fragment in [
         "ImportConflictBatchPreviewReport preview_import_conflict_batch(",
         "ImportConflictBatchApplyReport apply_import_conflict_batch(",

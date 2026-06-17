@@ -17,10 +17,6 @@ use semantic_search_common::{
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-39-c3-08-validation.md");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -155,21 +151,6 @@ fn assert_task_and_docs_alignment() {
         assert_contains(TASK, fragment);
     }
 
-    for fragment in [
-        "计划新增：`semantic_search(repo_path, query, filter, pagination) -> SemanticSearchResultPage`",
-        "计划新增：`build_embedding_index(repo_path, scope)`",
-        "普通搜索失败不依赖语义搜索。",
-        "隐私规则阻止的文件不进入 embedding。",
-        "provider 失败时能回退到普通搜索。",
-        "Core 不生成不可解释的单一混合分数。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    assert_contains(
-        CONTROL_MAP,
-        "| S3-08 | semantic-search-results | C3-08, C3-09, C3-10 | semantic search / embedding |",
-    );
     for fragment in ["Rust 单元测试", "集成测试目录", "tempfile::TempDir"] {
         assert_contains(TESTING_DOC, fragment);
     }

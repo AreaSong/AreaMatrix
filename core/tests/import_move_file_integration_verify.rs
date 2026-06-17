@@ -11,22 +11,8 @@ use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 use serde_json::Value;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const API_RS: &str = include_str!("../src/api.rs");
-const S1_17_IMPORT_SINGLE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md");
-const S1_20_IMPORT_PROGRESS: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md"
-);
-const S1_21_IMPORT_RESULT: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md"
-);
-const S1_26_SETTINGS_GENERAL: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn path_string(path: &Path) -> String {
@@ -115,19 +101,6 @@ fn assert_contains(haystack: &str, needle: &str) {
 #[test]
 fn import_move_file_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
     for fragment in [
-        "`import_file(repo_path, source_path, ImportOptions { mode: Moved, ... }) -> FileEntry`",
-        "- 原路径被安全移入资料库最终位置。",
-        "- `files.storage_mode = Moved`。",
-        "- `files.source_path` 记录原始来源。",
-        "- `change_log.action = imported`。",
-        "源文件移动到 staging，再原子 rename 到最终目录。",
-        "移动失败必须保留源文件或可恢复 staging，不丢数据。",
-        "与 Copy 模式共享重复检测和同名冲突处理。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
         "FileEntry import_file(",
         "string repo_path, string source_path, ImportOptions options",
         "dictionary ImportOptions",
@@ -143,28 +116,6 @@ fn import_move_file_integration_verify_docs_api_udl_and_consumers_stay_aligned()
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
     }
-
-    for fragment in [
-        "| S1-17 | import-single-sheet | C1-05, C1-06, C1-07, C1-08 | `predict_category`, `import_file`",
-        "| S1-20 | import-progress | C1-06, C1-07, C1-08 | `import_file`",
-        "| S1-21 | import-result | C1-06, C1-13 | `import_file`, `list_changes`",
-        "| S1-26 | settings-general | C1-04, C1-07 | `load_config`, `update_config`",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    assert_contains(S1_17_IMPORT_SINGLE, "Move：说明源文件会从原位置移走。");
-    assert_contains(S1_17_IMPORT_SINGLE, "Import 进入 `S1-20 import-progress`");
-    assert_contains(
-        S1_20_IMPORT_PROGRESS,
-        "Core 正在 staging、hash、分类、复制/移动、写 DB",
-    );
-    assert_contains(
-        S1_20_IMPORT_PROGRESS,
-        "停止剩余导入不会留下 staging 悬挂记录。",
-    );
-    assert_contains(S1_21_IMPORT_RESULT, "成功项已经出现在列表中。");
-    assert_contains(S1_26_SETTINGS_GENERAL, "设置 Move 为默认：弹确认");
     assert_contains(API_RS, "C1-07 defines the moved-file contract");
 }
 

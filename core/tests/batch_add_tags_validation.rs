@@ -7,10 +7,6 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -292,27 +288,6 @@ fn batch_add_tags_validation_covers_failure_paths_without_side_effects() {
 fn batch_add_tags_validation_locks_core_api_udl_and_rust_alignment() {
     fn assert_signature(_: fn(String, Vec<i64>, Vec<String>) -> CoreResult<BatchMutationReport>) {}
     assert_signature(batch_add_tags);
-
-    for fragment in [
-        "# C2-06 batch-add-tags",
-        "`batch_add_tags(repo_path, file_ids, tags) -> BatchMutationReport`",
-        "成功、跳过、失败明细和 undo token。",
-        "部分失败可追踪，不把失败项显示为成功。",
-        "可撤销项进入 Undo toast/history。",
-        "不修改文件内容或路径。",
-        "批量 AI 标签建议属于 Stage 3。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-09 | batch-add-tags | C2-06, C2-07 | batch tag mutation | tags, undo_actions",
-        "| S2-10 | undo-toast | C2-07 | undo action | undo_actions",
-        "批量操作必须有 preview、确认、执行报告和 undo/action log。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in [
         "BatchMutationReport batch_add_tags(",
         "string repo_path, sequence<i64> file_ids, sequence<string> tags",

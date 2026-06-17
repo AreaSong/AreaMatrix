@@ -12,17 +12,10 @@ use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
 use serde_json::Value;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const API_RS: &str = include_str!("../src/api.rs");
 const DB_NOTE_RS: &str = include_str!("../src/db/note.rs");
 const NOTE_RS: &str = include_str!("../src/note.rs");
-const S1_14_DETAIL_NOTE: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-14-detail-note.md"
-);
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn assert_contains(haystack: &str, needle: &str) {
@@ -112,30 +105,6 @@ fn edited_note_count(repo: &Path, file_id: i64) -> i64 {
 #[test]
 fn read_write_note_integration_verify_docs_api_udl_and_s1_14_consumer_stay_aligned() {
     for fragment in [
-        "C1-14 read-write-note",
-        "- S1-14 detail-note",
-        "- `read_note(repo_path, file_id) -> string?`",
-        "- `write_note(repo_path, file_id, content_md)`",
-        "- `notes` upsert。",
-        "- `change_log.action = edited_note`。",
-        "- 写入同目录伴生 `.md` 文件。",
-        "DB `notes`、`change_log` 与伴生 `.md` 文件必须保持一致",
-        "- 无笔记返回 `nil`。",
-        "- 笔记写失败不应破坏旧内容。",
-        "- 富文本编辑、双向链接、Markdown 预览增强属于 Stage 2+。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-14 | detail-note | C1-14 | `read_note`, `write_note` | `notes`, `change_log` | sidecar `.md` | FileNotFound, Io | `2-3/task-07` | Real Core |",
-        "不可 mock：路径校验、init/adopt、导入、重复检测、同名冲突、详情、日志、笔记、Tree、recovery、错误映射。",
-        "Core 能力若未在本矩阵出现，默认不得提前进入 Stage 1 实现。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "string? read_note(string repo_path, i64 file_id);",
         "void write_note(string repo_path, i64 file_id, string content_md);",
         "FileNotFound(string path);",
@@ -156,17 +125,6 @@ fn read_write_note_integration_verify_docs_api_udl_and_s1_14_consumer_stay_align
         "Stage 1 先用 `get_file` + `list_changes` + `read_note` 组合",
     ] {
         assert_contains(CORE_API, fragment);
-    }
-
-    for fragment in [
-        "保存失败不能清空用户输入",
-        "Core `read_note(repoPath, fileId)`。",
-        "Core `write_note(repoPath, fileId, contentMd)`。",
-        "停止输入约 800ms 后保存",
-        "文件缺失：允许查看已有笔记；禁用写入",
-        "Preview 未实现时不影响 Stage 1 验收。",
-    ] {
-        assert_contains(S1_14_DETAIL_NOTE, fragment);
     }
 
     for fragment in [

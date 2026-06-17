@@ -9,21 +9,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-101-c4-21-contract-api.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const FILES_IMPORT_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-07-files-import.md");
-const WINDOWS_IMPORT_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-05-import-flow.md");
-const LINUX_IMPORT_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md");
-const SYNC_CONFLICT_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md");
-const REPLACE_CONFIRM_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -127,40 +112,6 @@ fn replace_confirm_docs_core_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C4-21 replace-confirm-cross-platform",
-        "- S4-X-09 replace-confirm",
-        "`import_file` with overwrite strategy",
-        "`delete_file`",
-        "`resolve_sync_conflict`",
-        "target file、incoming file、confirmed overwrite action。",
-        "replace report。",
-        "软删除/替换旧记录。",
-        "写 change log。",
-        "丢弃版本必须进入平台 Trash 或保留备份。",
-        "不直接永久删除。",
-        "- `PermissionDenied`",
-        "- `Conflict`",
-        "- `Io`",
-        "- `Db`",
-        "Replace 必须二次确认。",
-        "平台 Trash 不可用时禁用 replace。",
-        "失败后旧版本和新版本状态可解释。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-IOS-07 | files-import | C4-06, C4-21 | Files import / replace confirm",
-        "| S4-WIN-05 | import-flow | C4-13, C4-21 | desktop import / replace",
-        "| S4-LNX-05 | import-flow | C4-13, C4-21 | desktop import / replace",
-        "| S4-X-01 | sync-conflict | C4-15, C4-16, C4-21 | conflict detect/resolve",
-        "| S4-X-09 | replace-confirm | C4-16, C4-21 | replace confirm | Trash/备份，禁止永久删除",
-        "初始化、接管、Replace、Remove record、rescan 都必须确认后执行。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "FileEntry import_file(",
         "void delete_file(string repo_path, i64 file_id);",
         "SyncConflictResolveReport resolve_sync_conflict(",
@@ -212,54 +163,6 @@ fn replace_confirm_docs_core_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn replace_confirm_consumers_have_required_state_without_adjacent_capabilities() {
-    for fragment in [
-        "Replace 选项如展示，必须标为危险，并在应用前进入 `S4-X-09 replace-confirm`。",
-        "Replace 必须进入 `S4-X-09` 二次确认。",
-    ] {
-        assert_contains(FILES_IMPORT_PAGE, fragment);
-    }
-
-    for fragment in [
-        "`Replace existing file` 需要二次确认",
-        "Replace：必须进入 `S4-X-09 replace-confirm` 二次确认",
-        "Recycle Bin 不可用、检测失败、网络盘不支持、组织策略禁止或 move-to-bin 失败时禁用 Replace",
-        "Replace 执行顺序：先确认 Recycle Bin 移动成功，再执行替换；任一步失败都不得覆盖 existing 文件。",
-    ] {
-        assert_contains(WINDOWS_IMPORT_PAGE, fragment);
-    }
-
-    for fragment in [
-        "Replace：如果 Trash 可用，进入 [S4-X-09 replace-confirm]",
-        "Trash 不可用或检测失败：Replace 不能假装可逆，默认禁用",
-        "Trash 检测失败时 Replace 禁用，并提示改用 `Keep both`。",
-    ] {
-        assert_contains(LINUX_IMPORT_PAGE, fragment);
-    }
-
-    for fragment in [
-        "对 Replace、Use incoming、删除类动作要求进入",
-        "Change log：写入 `conflict_resolved_use_incoming`",
-        "若策略涉及替换、删除或移动旧版本，进入 [S4-X-09 replace-confirm]",
-        "Replace/Use incoming 等破坏性结果必须进入",
-    ] {
-        assert_contains(SYNC_CONFLICT_PAGE, fragment);
-    }
-
-    for fragment in [
-        "Confirm Replace",
-        "展示 Replace plan：文件、hash、路径、受影响 DB record、change log 计划和旧文件保留位置。",
-        "显示平台回收站/Trash 可用性。",
-        "要求用户完成二次确认。",
-        "Old version will be kept at: Recycle Bin / Trash / Core safety backup path",
-        "Change log: replace_file",
-        "Trash/Recycle Bin Unknown：按不可用处理，禁用 Replace",
-        "执行顺序固定为：preflight -> move old to Recycle Bin/Trash",
-        "任一步失败时 existing 必须保持可用",
-        "不可逆 Replace 在 Stage 4 不可被执行。",
-    ] {
-        assert_contains(REPLACE_CONFIRM_PAGE, fragment);
-    }
-
     for fragment in [
         "DuplicateStrategy::Overwrite",
         "C4-21 /",

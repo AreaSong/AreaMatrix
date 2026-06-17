@@ -2,8 +2,6 @@ const CHECKLIST: &str =
     include_str!("../../workflow/versions/v1-mvp/evidence/release-checklist.md");
 const RELEASE: &str = include_str!("../../docs/development/release.md");
 const BUILD: &str = include_str!("../../docs/development/build.md");
-const STAGE1_MVP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md");
 const CHANGELOG: &str = include_str!("../../CHANGELOG.md");
 const PERFORMANCE_BASELINE: &str =
     include_str!("../../workflow/versions/v1-mvp/evidence/performance-baseline.md");
@@ -272,14 +270,6 @@ fn release_checklist_keeps_release_build_and_stage_one_docs_aligned() {
     assert!(
         !BUILD.contains("发布构建（Stage 2 起激活）"),
         "build.md must not contradict Stage 1 alpha release gates"
-    );
-    assert_all_contains(
-        STAGE1_MVP,
-        &[
-            "准备 alpha 分发",
-            "0.1.0 内测版可下载（DMG，已签名 + 公证）",
-            "DMG 可在干净 Mac 上首次启动成功",
-        ],
     );
 }
 

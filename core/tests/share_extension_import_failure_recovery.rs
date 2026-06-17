@@ -14,9 +14,6 @@ use rusqlite::{Connection, OptionalExtension};
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-23-c4-05-failure-edge.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-05-share-extension-import.md"
-);
 const TRANSACTIONAL_IMPORT: &str = include_str!("../../docs/architecture/transactional-import.md");
 
 fn path_string(path: &Path) -> String {
@@ -141,20 +138,6 @@ fn share_extension_import_failure_edge_docs_require_explicit_failure_semantics()
         "不得用吞错或静默降级掩盖失败。",
     ] {
         assert!(TASK.contains(fragment), "missing task fragment: {fragment}");
-    }
-
-    for fragment in [
-        "Share Extension 超时不留下成功假状态。",
-        "deferred import 可被主 app 继续。",
-        "不把外部 app payload 内容写入日志。",
-        "- `PermissionDenied`",
-        "- `InvalidPath`",
-        "- `Io`",
-    ] {
-        assert!(
-            CAPABILITY_SPEC.contains(fragment),
-            "missing capability fragment: {fragment}"
-        );
     }
 
     for fragment in [

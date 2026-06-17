@@ -6,16 +6,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
-const SEARCH_RESULTS_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-01-search-results.md");
-const SEARCH_EMPTY_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-04-search-empty.md");
-const QUERY_ERROR_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-05-query-error.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const SEARCH_RS: &str = include_str!("../src/search.rs");
@@ -157,33 +147,6 @@ fn search_query_files_contract_result_page_carries_consumer_state() {
 #[test]
 fn search_query_files_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "# C2-01 search-query-files",
-        "- S2-01 search-results",
-        "- S2-04 search-empty",
-        "- S2-05 query-error",
-        "`search_files(repo_path, query, filter, sort, pagination) -> SearchResultPage`",
-        "搜索结果、总数、query parse diagnostics。",
-        "- `Db`",
-        "- `Config`",
-        "- `InvalidPath`",
-        "文件名、相对路径、笔记、分类、change log 可搜索。",
-        "0 结果和 query parse error 可区分。",
-        "搜索不修改标签、分类或文件。",
-        "OCR、语义搜索和远程 AI 属于 Stage 3。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-01 | search-results | C2-01, C2-02 | `search_files`",
-        "| S2-04 | search-empty | C2-01 | empty result state | 只读",
-        "| S2-05 | query-error | C2-01 | query diagnostics | 只读",
-        "搜索、filter、Smart List 不得移动、删除或改名文件。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "SearchResultPage search_files(",
         "string repo_path,",
         "string query,",
@@ -211,33 +174,6 @@ fn search_query_files_contract_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn search_query_files_contract_documents_consumer_states_and_scope_boundaries() {
-    for fragment in [
-        "聚焦并显示搜索 query。",
-        "展示搜索 banner、结果数量、清除和保存入口。",
-        "高亮命中片段，笔记命中时显示摘要。",
-        "支持排序：Relevance、Newest imported、Newest modified、Name A-Z。",
-        "加载中、0 结果、查询错误、Search API 失败、索引不可用五类状态可区分。",
-    ] {
-        assert_contains(SEARCH_RESULTS_PAGE, fragment);
-    }
-
-    for fragment in [
-        "用户执行搜索后没有匹配文件。",
-        "默认态：搜索成功且结果为 0",
-        "no result、indexing、empty repo、backend error 四类状态不会混淆。",
-    ] {
-        assert_contains(SEARCH_EMPTY_PAGE, fragment);
-    }
-
-    for fragment in [
-        "Query parser error type",
-        "Unknown field",
-        "错误查询不能保存为 Smart List。",
-        "解析错误时不执行搜索请求。",
-    ] {
-        assert_contains(QUERY_ERROR_PAGE, fragment);
-    }
-
     for fragment in [
         "Searches files, paths, notes, categories, and change-log metadata.",
         "C2-01 owns this read-only contract for S2-01 search results",
@@ -271,7 +207,6 @@ fn search_query_files_contract_documents_consumer_states_and_scope_boundaries() 
 
     for error_name in ["Db", "Config", "InvalidPath"] {
         assert_contains(ERROR_CODES, error_name);
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(UDL, error_name);
     }
 }

@@ -8,10 +8,6 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 const AI_SETTINGS_RS: &str = include_str!("../src/ai_settings.rs");
@@ -267,22 +263,6 @@ fn ai_settings_config_validation_locks_core_api_udl_and_rust_contract() {
 
     assert_load_signature(load_ai_config);
     assert_update_signature(update_ai_config);
-
-    for fragment in [
-        "计划新增：`load_ai_config`、`update_ai_config`",
-        "AI 默认关闭。",
-        "配置变更可持久化且不会自动触发远程调用。",
-        "key 只允许平台安全存储，不进入日志或诊断。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-    for fragment in [
-        "| S3-01 | ai-settings | C3-01 | AI config read/write | ai_config",
-        "| S3-09 | ai-privacy-rules | C3-01, C3-03, C3-09 | privacy rule CRUD/evaluate",
-        "远程调用必须显式启用，且 API key 不进入日志、诊断或错误文案。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
     for fragment in [
         "AiConfigSnapshot load_ai_config(string repo_path);",
         "AiConfigSnapshot update_ai_config(string repo_path, AiConfig new_config);",
@@ -300,6 +280,7 @@ fn ai_settings_config_validation_locks_core_api_udl_and_rust_contract() {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
     }
+
     for fragment in [
         "pub(crate) fn load_ai_config",
         "pub(crate) fn update_ai_config",
@@ -310,6 +291,7 @@ fn ai_settings_config_validation_locks_core_api_udl_and_rust_contract() {
     ] {
         assert_contains(AI_SETTINGS_RS, fragment);
     }
+
     for fragment in [
         "pub fn load_ai_config",
         "pub fn update_ai_config",

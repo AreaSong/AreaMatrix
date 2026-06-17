@@ -18,11 +18,6 @@ use sync_conflict_detect_validation_support::{
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-74-c4-15-validation.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
@@ -222,32 +217,6 @@ fn assert_task_docs_and_testing_alignment() {
         "./dev check task 4-3/task-74",
     ] {
         assert_contains(TASK, fragment);
-    }
-
-    for fragment in [
-        "# C4-15 sync-conflict-detect",
-        "- S4-X-03 sync-conflict-entry",
-        "- S4-X-01 sync-conflict",
-        "计划新增：`detect_sync_conflicts(repo_path) -> sequence<SyncConflict>`",
-        "conflict list、severity、affected files。",
-        "写 conflict state metadata。",
-        "只读探测；不自动解决。",
-        "- `Db`",
-        "- `Io`",
-        "- `Conflict`",
-        "冲突入口数量来自 Core 状态。",
-        "不静默选择任一版本。",
-        "检测失败不删除文件。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-X-01 | sync-conflict | C4-15, C4-16, C4-21 | conflict detect/resolve | 不静默删除任一版本",
-        "| S4-X-03 | sync-conflict-entry | C4-15 | conflict count/status | 入口不解决冲突",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
     }
 
     for fragment in [

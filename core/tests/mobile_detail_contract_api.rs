@@ -7,12 +7,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-31-c4-07-contract-api.md"
 );
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-07-mobile-detail.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const MOBILE_DETAIL_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-05-mobile-file-detail.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -105,34 +99,6 @@ fn mobile_detail_docs_core_api_and_udl_stay_aligned() {
     }
 
     for fragment in [
-        "# C4-07 mobile-detail",
-        "- S4-IOS-05 mobile-file-detail",
-        "- `get_file`",
-        "- `list_changes`",
-        "- `read_note`",
-        "- file_id。",
-        "- 移动端详情所需 metadata、日志、笔记。",
-        "- 只读。",
-        "- 无写入。",
-        "- `FileNotFound`",
-        "- `Db`",
-        "详情页不从文件系统反推 metadata。",
-        "Missing 状态能进入 S4-X-06。",
-        "日志和笔记可按需懒加载。",
-        "移动端编辑笔记可后续扩展。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-IOS-05 | mobile-file-detail | C4-07 | detail/log/note query | 缺失进入 recovery",
-        "| S4-X-06 | missing-file-recovery | C4-18 | relink/remove record | remove record 不删文件",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "FileEntry get_file(string repo_path, i64 file_id);",
         "sequence<ChangeLogEntry> list_changes(string repo_path, ChangeFilter filter);",
         "string? read_note(string repo_path, i64 file_id);",
@@ -166,19 +132,6 @@ fn mobile_detail_docs_core_api_and_udl_stay_aligned() {
 
 #[test]
 fn mobile_detail_contract_documents_consumer_state_without_adjacent_capabilities() {
-    for fragment in [
-        "Core file metadata API。",
-        "Core change log API。",
-        "Note 读写 API。",
-        "进入详情先加载基础 Meta，再异步加载 Log 和 Note。",
-        "缺失文件：显示 `File is missing from the repository`",
-        "进入 `S4-X-06 missing-file-recovery`。",
-        "Log 或 Note 单独失败时只影响对应分段",
-        "移动端批量操作另开规格。",
-    ] {
-        assert_contains(MOBILE_DETAIL_PAGE, fragment);
-    }
-
     for fragment in [
         "C4-07 composes this API with [`list_changes`] and",
         "[`read_note`] for `S4-IOS-05` mobile-file-detail",

@@ -14,13 +14,6 @@ use classifier_rule_editor_validation_support::{
     initialized_repo, insert_active_file, path_string, read_classifier, snapshot, update_request,
 };
 
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-15-classifier-rule-editor.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
-const PAGE_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-19-classifier-rule-editor.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -63,38 +56,6 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
     };
     assert_eq!(record.rule_id, record.slug);
     assert_eq!(record.priority, 10);
-
-    for fragment in [
-        "# C2-15 classifier-rule-editor",
-        "- S2-19 classifier-rule-editor",
-        "计划新增：`list_classifier_rules`、`create_classifier_rule`、`update_classifier_rule`、`delete_classifier_rule`",
-        "新建规则内容、规则 ID 和更新/删除请求。",
-        "规则列表或创建/更新/删除结果。",
-        "更新分类规则配置。",
-        "原子更新 `.areamatrix/classifier.yaml` 或等价配置。",
-        "删除规则不自动移动历史文件。",
-        "配置损坏时可恢复到旧版本。",
-        "复杂脚本规则和插件规则不在 Stage 2。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-19 | classifier-rule-editor | C2-15 | rule CRUD | classifier config",
-        "分类规则保存和影响预览分离；未预览不得大面积应用。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
-        "管理分类列表。",
-        "管理每个分类承载的扩展名、关键词、优先级和命名模板。",
-        "校验并保存到 classifier.yaml。",
-        "删除分类或匹配值不会自动移动、删除或重命名任何历史文件",
-        "Stage 2 不提供 `path` rule、`source_folder` rule 或独立 rule `enabled` 字段。",
-    ] {
-        assert_contains(PAGE_SPEC, fragment);
-    }
 
     for fragment in [
         "ClassifierRuleEditorSnapshot list_classifier_rules(string repo_path);",

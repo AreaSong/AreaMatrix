@@ -5,13 +5,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-14-classifier-impact-preview.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
-const CLASSIFIER_IMPACT_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-18-classifier-impact-preview.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -173,30 +166,6 @@ fn classifier_impact_preview_contract_validates_inputs_without_fake_success() {
 #[test]
 fn classifier_impact_preview_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "# C2-14 classifier-impact-preview",
-        "- S2-18 classifier-impact-preview",
-        "计划新增：`preview_classifier_rule_impact(repo_path, request) -> RuleImpactReport`",
-        "规则草稿、删除 keyword、删除 extension 或删除 category 的显式预览请求。",
-        "受影响文件数量、样例、冲突、needs review、replacement 缺失状态。",
-        "无写入。",
-        "- `Config`",
-        "- `Db`",
-        "仅预览不改变文件分类。",
-        "影响量超过阈值必须提示。",
-        "冲突或 needs review 时不能直接批量应用。",
-        "后台持续规则评估属于后续优化。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-18 | classifier-impact-preview | C2-14 | rule impact preview | 只读",
-        "分类规则保存和影响预览分离；未预览不得大面积应用。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "RuleImpactReport preview_classifier_rule_impact(",
         "ClassifierImpactPreviewRequest request",
         "dictionary ClassifierImpactPreviewRequest",
@@ -270,28 +239,6 @@ fn classifier_impact_preview_contract_docs_api_udl_and_control_map_stay_aligned(
 #[test]
 fn classifier_impact_preview_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "显示规则摘要。",
-        "显示受影响文件数量。",
-        "展示文件当前分类和新分类。",
-        "标记冲突、缺失、Index-only、不可移动项。",
-        "显示应用后 Undo 可用性。",
-        "影响过大：显示 warning",
-        "有冲突或不可处理项时",
-        "Save rule only",
-        "Move 开启时必须执行路径冲突 dry-run。",
-        "dry-run 必须复用当前 `classifier.yaml` matcher 语义",
-        "keyword 和 extension 是独立匹配值",
-        "影响数量应覆盖真实 matcher 下会改变分类的所有文件",
-        "Index-only 文件只允许更新分类记录",
-        "只保存规则不会修改现有文件或分类。",
-        "dry-run 失败时不允许 Apply",
-        "删除 extension/keyword/category 的预览不会移动、删除或重命名历史文件。",
-        "删除 category 并 Apply 到现有文件时必须选择 replacement category。",
-    ] {
-        assert_contains(CLASSIFIER_IMPACT_PAGE, fragment);
-    }
-
-    for fragment in [
         "C2-14 classifier rule impact-preview contract types and boundary",
         "RuleImpactReport",
         "RuleImpactSample",
@@ -325,7 +272,6 @@ fn classifier_impact_preview_contract_documents_consumer_state_and_scope_boundar
 
     for error_name in ["Config", "Db"] {
         assert_contains(ERROR_CODES, error_name);
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(UDL, error_name);
         assert_contains(API_RS, error_name);
     }

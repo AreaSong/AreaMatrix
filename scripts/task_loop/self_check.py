@@ -689,7 +689,7 @@ def check_real_status(h: Harness) -> None:
     assert_contains(dev_status, "进度概览", "dev status progress overview")
     assert_contains(dev_status, "lang", "dev status language label")
     assert_contains(dev_status, "mixed | snapshot", "dev status language mode")
-    assert_contains(dev_status, "v1-mvp live queue", "dev status v1 overview")
+    assert_contains(dev_status, "v1-mvp historical queue", "dev status v1 overview")
     dev_status_zh = h.run([h.dev, "status", "--lang", "zh", "--once", "--color", "never"]).stdout
     assert_contains(dev_status_zh, "语言 zh | 快照", "dev status zh header")
     status_help_en = h.run([h.dev, "status", "--lang", "en", "--help"]).stdout
@@ -733,14 +733,14 @@ def check_dev_home(h: Harness) -> None:
     assert_contains(home, "current task:", "dev home current task")
     assert_contains(home, "原因：", "dev home reasons")
     assert_contains(home, "推荐行动链", "dev home action chain")
-    assert_contains(home, "verify PASS 后", "dev home guide after")
+    assert_contains(home, "v1 historical queue", "dev home guide after")
     assert_contains(home, "进度概览", "dev home progress overview")
-    assert_contains(home, "v1-mvp live queue", "dev home v1 card")
+    assert_contains(home, "v1-mvp historical queue", "dev home v1 card")
     assert_contains(home, "v-template reference", "dev home template card")
     assert_contains(home, "去哪里看更多", "dev home navigation")
     assert_contains(home, "recommended guide", "dev home recommended guide")
     assert_contains(home, "lifecycle map", "dev home lifecycle map")
-    assert_contains(home, "live queue details", "dev home live queue details")
+    assert_contains(home, "historical queue details", "dev home historical queue details")
     assert_contains(home, "shortcuts", "dev home shortcuts action")
     assert_contains(home, "当前语言: mixed", "dev home language mode")
     assert_contains(home, "输入 lang 持久切换", "dev home language switch hint")
@@ -775,10 +775,10 @@ def check_dev_home(h: Harness) -> None:
 
     en_help = h.run([h.dev, "--lang", "en", "help"]).stdout
     assert_contains(en_help, "Quick Model:", "dev help en title")
-    assert_contains(en_help, "Live queue:", "dev help en live queue")
+    assert_contains(en_help, "Historical queue recovery:", "dev help en historical queue")
     zh_help = h.run([h.dev, "--lang", "zh", "help"]).stdout
     assert_contains(zh_help, "常用理解：", "dev help zh title")
-    assert_contains(zh_help, "Live queue：", "dev help zh live queue")
+    assert_contains(zh_help, "历史队列恢复：", "dev help zh historical queue")
     assert_contains(zh_help, "./dev lifecycle", "dev help lifecycle command")
 
     env_color_never = h.run([h.dev, "--once"], env={"DEV_COLOR": "never"}).stdout
@@ -798,7 +798,7 @@ def check_dev_home(h: Harness) -> None:
     assert_contains(lifecycle, "v1-mvp archived", "dev lifecycle v1")
     assert_contains(lifecycle, "v-template template-reference", "dev lifecycle template")
     live_queue = h.run([h.dev, "--lang", "mixed", "live-queue"]).stdout
-    assert_contains(live_queue, "Live Queue", "dev live queue command")
+    assert_contains(live_queue, "Historical Queue", "dev live queue command")
     assert_contains(live_queue, "maintenance / danger", "dev live queue maintenance")
     tools = h.run([h.dev, "--lang", "mixed", "tools"]).stdout
     assert_contains(tools, "workflow / 工程检查", "dev tools command")

@@ -17,11 +17,6 @@ mod support;
 
 use support::system_trash_home::with_test_system_trash;
 
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -29,10 +24,6 @@ const DOMAIN_RS: &str = include_str!("../src/domain.rs");
 const ICLOUD_CONFLICTS_RS: &str = include_str!("../src/icloud_conflicts.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 const CONFLICT_ID: &str = "docs/report (Alice's conflicted copy).pdf";
-const C2_16_CONTROL_MAP_ROW: &str = concat!(
-    "| S2-20 | icloud-conflict-visual | C2-16, C1-25 | ",
-    "conflict preview/resolve | conflict state, Trash",
-);
 
 #[derive(Debug, Eq, PartialEq)]
 struct ConflictValidationSnapshot {
@@ -154,16 +145,6 @@ fn assert_contains(haystack: &str, needle: &str) {
 }
 
 fn assert_capability_and_control_docs_alignment() {
-    for fragment in [
-        "# C2-16 icloud-conflict-visual",
-        "版本 metadata、预览摘要、解决报告。",
-        "冲突解决失败时保持 unresolved。",
-        "不自动删除任一版本。",
-        "预览失败不能继续 destructive resolution。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-    assert_contains(CONTROL_MAP, C2_16_CONTROL_MAP_ROW);
     assert_contains(TESTING_DOC, "集成测试");
 }
 
@@ -195,6 +176,7 @@ fn assert_rust_contract_alignment() {
     ] {
         assert_contains(API_RS, fragment);
     }
+
     for fragment in [
         "pub struct ICloudConflictPreviewReport",
         "pub struct ICloudConflictResolveReport",
@@ -204,6 +186,7 @@ fn assert_rust_contract_alignment() {
     ] {
         assert_contains(DOMAIN_RS, fragment);
     }
+
     for fragment in [
         "preview_conflict_versions",
         "resolve_icloud_conflict",

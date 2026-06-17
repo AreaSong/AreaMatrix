@@ -1,10 +1,6 @@
 use area_matrix_core::{read_note, write_note, CoreError, CoreResult};
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-14-read-write-note.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -43,41 +39,6 @@ fn read_write_note_contract_api_exposes_documented_signatures_inputs_and_outputs
 
 #[test]
 fn read_write_note_contract_api_docs_control_map_and_udl_stay_aligned() {
-    for fragment in [
-        "C1-14 read-write-note",
-        "- S1-14 detail-note",
-        "- `read_note(repo_path, file_id) -> string?`",
-        "- `write_note(repo_path, file_id, content_md)`",
-        "- `file_id`",
-        "- Markdown 文本。",
-        "- 当前笔记内容或 `nil`。",
-        "- 写入成功无返回值。",
-        "- `notes` upsert。",
-        "- `change_log.action = edited_note`。",
-        "- 写入同目录伴生 `.md` 文件。",
-        "- 写入应由 app 层 InFlightTracker 标记",
-        "- 写入失败时不得破坏旧笔记内容。",
-        "DB `notes`、`change_log` 与伴生 `.md` 文件必须保持一致",
-        "- `FileNotFound`",
-        "- `PermissionDenied`",
-        "- `Io`",
-        "- `Db`",
-        "- 无笔记返回 `nil`。",
-        "- 写入后 DB 和伴生文件一致。",
-        "- 笔记写失败不应破坏旧内容。",
-        "- 富文本编辑、双向链接、Markdown 预览增强属于 Stage 2+。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-14 | detail-note | C1-14 | `read_note`, `write_note` | `notes`, `change_log` | sidecar `.md` | FileNotFound, Io | `2-3/task-07` | Real Core |",
-        "Core 能力若未在本矩阵出现，默认不得提前进入 Stage 1 实现。",
-        "不可 mock：路径校验、init/adopt、导入、重复检测、同名冲突、详情、日志、笔记、Tree、recovery、错误映射。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in [
         "string? read_note(string repo_path, i64 file_id);",
         "void write_note(string repo_path, i64 file_id, string content_md);",

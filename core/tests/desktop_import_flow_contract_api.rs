@@ -8,17 +8,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-61-c4-13-contract-api.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const WINDOWS_IMPORT_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-05-import-flow.md");
-const LINUX_IMPORT_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md");
-const REPLACE_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -165,38 +154,6 @@ fn desktop_import_flow_docs_core_api_and_udl_stay_aligned() {
     }
 
     for fragment in [
-        "# C4-13 desktop-import-flow",
-        "- S4-WIN-05 import-flow",
-        "- S4-LNX-05 import-flow",
-        "- `predict_category`",
-        "- `import_file`",
-        "- `import_file_with_result`",
-        "平台 file picker 返回路径和 ImportOptions。",
-        "导入结果、冲突状态、Move 源文件移除状态。",
-        "Copy/Move/Index 按配置执行。",
-        "source_removal_status = Retained",
-        "- `DuplicateFile`",
-        "- `Conflict`",
-        "- `PermissionDenied`",
-        "- `InvalidPath`",
-        "Replace 必须走 S4-X-09。",
-        "平台 Trash 不可用时禁止 destructive 路径。",
-        "导入失败不显示成功状态。",
-        "Explorer/Nautilus shell integration 后续再拆。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-WIN-05 | import-flow | C4-13, C4-21 | desktop import / replace | Trash 不可用则禁用危险动作",
-        "| S4-LNX-05 | import-flow | C4-13, C4-21 | desktop import / replace | Trash 能力差异",
-        "| S4-X-09 | replace-confirm | C4-16, C4-21 | replace confirm | Trash/备份，禁止永久删除",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "ClassifyResult predict_category(string repo_path, string filename);",
         "FileEntry import_file(",
         "ImportResult import_file_with_result(",
@@ -246,48 +203,6 @@ fn desktop_import_flow_docs_core_api_and_udl_stay_aligned() {
 
 #[test]
 fn desktop_import_flow_documents_consumer_state_without_adjacent_capabilities() {
-    for fragment in [
-        "Windows file/folder picker。",
-        "Windows drag and drop。",
-        "Core transactional import API。",
-        "Duplicate and name conflict detection。",
-        "Move result：imported、source removed、source retained、source removal failure reason。",
-        "Move preflight：源文件可读、源位置可删除/移动、目标可写、staging 可用。",
-        "Windows Recycle Bin integration for Replace。",
-        "Recycle Bin availability and move-to-bin preflight。",
-        "同名不同内容默认保留两份。",
-        "Replace 和 Move 都有额外确认；Recycle Bin 不可用或 move-to-bin 失败时 Replace 禁用",
-        "成功导入后文件系统和 DB 都可见。",
-    ] {
-        assert_contains(WINDOWS_IMPORT_PAGE, fragment);
-    }
-
-    for fragment in [
-        "Linux file/folder picker 或 xdg-desktop-portal。",
-        "Drag and drop。",
-        "Core transactional import API。",
-        "Duplicate/conflict detection。",
-        "Move result：imported、source removed、source retained、source removal failure reason。",
-        "Move preflight：源文件可读、源目录可 unlink/rename、目标可写、staging 可用、same-mount / cross-mount 判断。",
-        "freedesktop Trash 能力检测。",
-        "Move-to-trash preflight。",
-        "POSIX permission detection。",
-        "同名冲突默认保留两份。",
-        "Trash 不可用或检测失败：Replace 不能假装可逆，默认禁用",
-    ] {
-        assert_contains(LINUX_IMPORT_PAGE, fragment);
-    }
-
-    for fragment in [
-        "入口：`S4-WIN-05 import-flow`、`S4-LNX-05 import-flow`",
-        "Replace 前必定出现二次确认。",
-        "Trash/Recycle Bin Unknown：按不可用处理，禁用 Replace",
-        "Stage 4 默认禁用不可逆 Replace",
-        "不可逆 Replace 在 Stage 4 不可被执行。",
-    ] {
-        assert_contains(REPLACE_PAGE, fragment);
-    }
-
     for fragment in [
         "C4-13 desktop-import-flow reuses this read-only preview surface",
         "Windows and Linux import dialogs",

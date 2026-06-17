@@ -6,15 +6,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
-const BATCH_CHANGE_CATEGORY_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md");
-const UNDO_TOAST_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-10-undo-toast.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -221,30 +212,6 @@ fn batch_change_category_contract_validates_inputs_without_fake_success() {
 #[test]
 fn batch_change_category_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "# C2-08 batch-change-category",
-        "- S2-12 batch-change-category",
-        "- S2-10 undo-toast",
-        "`preview_batch_move_to_category(repo_path, file_ids, target_category, move_repo_owned_files) -> BatchCategoryPreviewReport`",
-        "`batch_move_to_category(repo_path, file_ids, target_category, move_repo_owned_files, preview_token) -> BatchCategoryChangeReport`",
-        "预览报告、执行报告、undo token。",
-        "批量更新 `files.category/path`。",
-        "写 change log 和 undo action。",
-        "Index-only 不移动源文件。",
-        "部分失败有摘要，不静默跳过。",
-        "AI 规则批量重分类属于 C2-14/C2-15 或 Stage 3。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-12 | batch-change-category | C2-08, C2-07 | preview + batch move",
-        "| S2-10 | undo-toast | C2-07 | undo action | undo_actions",
-        "批量操作必须有 preview、确认、执行报告和 undo/action log。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "BatchCategoryPreviewReport preview_batch_move_to_category(",
         "sequence<i64> file_ids",
         "string target_category",
@@ -297,29 +264,6 @@ fn batch_change_category_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn batch_change_category_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "显示选中文件数量和示例。",
-        "显示当前分类分布。",
-        "选择是否移动文件到目标分类目录。",
-        "预览会移动、只更新记录、无法处理的数量。",
-        "应用后写入 change log 并接入 Undo。",
-        "`Preview` 是次按钮，用于刷新并展开完整 dry-run 结果，不写任何数据。",
-        "Apply 必须绑定最近一次 dry-run 结果",
-        "Index-only 文件不能移动源文件，只更新记录。",
-        "部分失败时成功项保留，失败项显示原因；可撤销项进入 Undo stack。",
-    ] {
-        assert_contains(BATCH_CHANGE_CATEGORY_PAGE, fragment);
-    }
-
-    for fragment in [
-        "只有可撤销操作显示 `Undo`。",
-        "Undo action 已过期、被后续写操作阻塞",
-        "Undo 执行中禁用按钮并显示 `Undoing...`。",
-        "Cmd+Z 与 toast Undo 指向同一个操作。",
-    ] {
-        assert_contains(UNDO_TOAST_PAGE, fragment);
-    }
-
-    for fragment in [
         "C2-08 batch category change types and entry points",
         "BatchCategoryPreviewReport",
         "BatchCategoryChangeReport",
@@ -354,7 +298,6 @@ fn batch_change_category_contract_documents_consumer_state_and_scope_boundaries(
         "Db",
     ] {
         assert_contains(ERROR_CODES, error_name);
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(UDL, error_name);
         assert_contains(API_RS, error_name);
     }

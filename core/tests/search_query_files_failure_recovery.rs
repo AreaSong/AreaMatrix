@@ -465,6 +465,7 @@ fn search_query_files_failure_recovery_udl_keeps_declared_error_boundary() {
     ] {
         assert!(udl.contains(fragment), "UDL missing `{fragment}`");
     }
+
     for fragment in [
         "This contract does not include C2-02 facet counts",
         "including tags with Any/All semantics",
@@ -480,6 +481,7 @@ fn search_query_files_failure_recovery_udl_keeps_declared_error_boundary() {
             "search rustdoc missing `{fragment}`"
         );
     }
+
     for fragment in [
         "`InvalidPath`",
         "`Config`",

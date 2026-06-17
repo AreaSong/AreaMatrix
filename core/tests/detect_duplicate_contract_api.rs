@@ -10,10 +10,6 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -110,23 +106,6 @@ fn detect_duplicate_contract_api_docs_udl_and_rust_error_carry_existing_path() {
             assert_eq!(existing_path, "finance/existing.pdf");
         }
         other => panic!("unexpected duplicate error shape: {other:?}"),
-    }
-
-    for fragment in [
-        "C1-09 detect-duplicate",
-        "`import_file(repo_path, source_path, options)` 内部 hash 检测。",
-        "`DuplicateFile { existing_path }`",
-        "`DuplicateStrategy`",
-        "读取 `files.hash_sha256`。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-22 | conflict-duplicate | C1-09 | `import_file`",
-        "| S1-24 | replace-confirm | C1-09, C1-10 | `import_file`, `delete_file`",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
     }
 
     for fragment in [

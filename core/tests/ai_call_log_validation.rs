@@ -16,10 +16,6 @@ use validation_support::{
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-24-c3-05-validation.md");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -247,23 +243,7 @@ fn ai_call_log_validation_locks_core_api_udl_rust_and_docs_alignment() {
     ] {
         assert_contains(TASK, fragment);
     }
-    for fragment in [
-        "# C3-05 ai-call-log",
-        "计划新增：`list_ai_calls`、`clear_ai_call_log`",
-        "AI 调用记录，不包含密钥和完整文件内容。",
-        "读写 `ai_call_log` 或等价审计表。",
-        "本地/远程调用可区分。",
-        "可清除日志，但不影响用户文件。",
-        "日志不包含 API key 或未脱敏隐私内容。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-    for fragment in [
-        "| S3-05 | ai-call-log | C3-05 | list/clear AI log | ai_call_log |",
-        "远程调用必须显式启用，且 API key 不进入日志、诊断或错误文案。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
+
     for fragment in [
         "`core/tests/`，每个文件独立编译",
         "## 关键测试场景",
@@ -271,6 +251,7 @@ fn ai_call_log_validation_locks_core_api_udl_rust_and_docs_alignment() {
     ] {
         assert_contains(TESTING_DOC, fragment);
     }
+
     for fragment in [
         "AiCallLogPage list_ai_calls(",
         "AiCallLogClearReport clear_ai_call_log(",
@@ -288,6 +269,7 @@ fn ai_call_log_validation_locks_core_api_udl_rust_and_docs_alignment() {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
     }
+
     for fragment in [
         "pub fn list_ai_calls(",
         "pub fn clear_ai_call_log(",
@@ -298,6 +280,7 @@ fn ai_call_log_validation_locks_core_api_udl_rust_and_docs_alignment() {
     ] {
         assert_contains(API_RS, fragment);
     }
+
     for fragment in [
         "pub use ai_call_log::{",
         "AiCallLogFilter",
@@ -307,6 +290,7 @@ fn ai_call_log_validation_locks_core_api_udl_rust_and_docs_alignment() {
     ] {
         assert_contains(LIB_RS, fragment);
     }
+
     for fragment in [
         "pub(crate) fn list_ai_calls(",
         "pub(crate) fn clear_ai_call_log(",
@@ -320,6 +304,7 @@ fn ai_call_log_validation_locks_core_api_udl_rust_and_docs_alignment() {
     ] {
         assert_contains(AI_CALL_LOG_RS, fragment);
     }
+
     for fragment in [
         "pub(crate) fn list_ai_call_log_rows(",
         "pub(crate) fn clear_ai_call_log_rows(",
@@ -329,6 +314,7 @@ fn ai_call_log_validation_locks_core_api_udl_rust_and_docs_alignment() {
     ] {
         assert_contains(DB_AI_CALL_LOG_RS, fragment);
     }
+
     for fragment in [
         "CREATE TABLE IF NOT EXISTS ai_call_log",
         "privacy_rules_checked INTEGER NOT NULL DEFAULT 0",

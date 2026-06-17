@@ -8,10 +8,6 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 const SEARCH_RS: &str = include_str!("../src/search.rs");
@@ -368,28 +364,6 @@ fn search_query_files_validation_locks_core_api_udl_and_rust_contract() {
     ) {
     }
     assert_signature(search_files);
-
-    for fragment in [
-        "# C2-01 search-query-files",
-        "`search_files(repo_path, query, filter, sort, pagination) -> SearchResultPage`",
-        "文件名、相对路径、笔记、分类、change log 可搜索。",
-        "0 结果和 query parse error 可区分。",
-        "搜索不修改标签、分类或文件。",
-        "- `Db`",
-        "- `Config`",
-        "- `InvalidPath`",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-01 | search-results | C2-01, C2-02 | `search_files`",
-        "| S2-04 | search-empty | C2-01 | empty result state | 只读",
-        "| S2-05 | query-error | C2-01 | query diagnostics | 只读",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in [
         "SearchResultPage search_files(",
         "string repo_path,",

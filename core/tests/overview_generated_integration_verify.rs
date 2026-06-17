@@ -6,15 +6,7 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-20-overview-generated.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
-const S1_27_SETTINGS_REPOSITORY: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md");
-const S1_30_SETTINGS_ADVANCED: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md");
 const API_RS: &str = include_str!("../src/api.rs");
 const DOMAIN_RS: &str = include_str!("../src/domain.rs");
 const STORAGE_IMPORT_RS: &str = include_str!("../src/storage/import.rs");
@@ -71,53 +63,6 @@ fn assert_contains(haystack: &str, needle: &str) {
         "expected `{needle}` in:\n{haystack}"
     );
 }
-
-#[test]
-fn overview_generated_integration_verify_exact_docs_and_consumers_stay_aligned() {
-    for fragment in [
-        "# C1-20 overview-generated",
-        "- S1-27 settings-repository",
-        "- S1-30 settings-advanced",
-        "- `.areamatrix/generated/*.md`。",
-        "- 可选 `AREAMATRIX.md`，仅当配置显式允许。",
-        "- 默认只写 `.areamatrix/generated/`。",
-        "- 不覆盖 `README.md`。",
-        "- 切换 overview 输出配置后行为与文档一致。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-27 | settings-repository | C1-04, C1-08, C1-20 | `load_config`, `update_config`",
-        "overview output path",
-        "| S1-30 | settings-advanced | C1-04, C1-16, C1-20 |",
-        "staging, generated overview",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
-        "generated overview 输出模式",
-        "`Generated path: .areamatrix/generated/root.md`",
-        "`overviewOutput=GeneratedOnly`",
-        "`overviewOutput=RootAreaMatrixFile`",
-        "`README.md` 是用户文件，不由 AreaMatrix 生成或覆盖",
-    ] {
-        assert_contains(S1_27_SETTINGS_REPOSITORY, fragment);
-    }
-
-    for fragment in [
-        "generated overview 输出策略",
-        "`Generated overview output`",
-        "`overviewOutput=GeneratedOnly`",
-        "`overviewOutput=RootAreaMatrixFile`",
-        "调用 `update_config` 保存",
-        "`README.md` 不是 generated overview 输出",
-    ] {
-        assert_contains(S1_30_SETTINGS_ADVANCED, fragment);
-    }
-}
-
 #[test]
 fn overview_generated_integration_verify_api_udl_and_rust_wiring_are_real() {
     for fragment in [

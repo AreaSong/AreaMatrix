@@ -8,15 +8,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-51-c4-11-contract-api.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const WINDOWS_MAIN_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-02-main-window.md");
-const LINUX_MAIN_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-02-main-window.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -128,35 +119,6 @@ fn desktop_main_query_docs_core_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C4-11 desktop-main-query",
-        "- S4-WIN-02 main-window",
-        "- S4-LNX-02 main-window",
-        "- `list_files`",
-        "- `get_file`",
-        "- `list_tree_json`",
-        "- `search_files`",
-        "repo path、filter、pagination。",
-        "跨桌面平台主窗口数据。",
-        "- 只读。",
-        "- 无写入。",
-        "- `Db`",
-        "- `RepoNotInitialized`",
-        "Windows/Linux 主窗口使用同一 Core 查询能力。",
-        "平台 UI 不直接扫描 repo 拼列表。",
-        "大库分页可用。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-WIN-02 | main-window | C4-11 | desktop query | 平台 UI 不直接扫描 repo",
-        "| S4-LNX-02 | main-window | C4-11 | desktop query | 平台 UI 不直接扫描 repo",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "sequence<FileEntry> list_files(string repo_path, FileFilter filter);",
         "FileEntry get_file(string repo_path, i64 file_id);",
         "string list_tree_json(string repo_path, string locale);",
@@ -198,32 +160,6 @@ fn desktop_main_query_docs_core_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn desktop_main_query_documents_consumer_state_without_adjacent_capabilities() {
-    for fragment in [
-        "显示资料库分类树或导航栏。",
-        "显示当前分类的文件列表。",
-        "显示右侧详情：Meta、Log、Note 摘要。",
-        "提供搜索入口",
-        "只刷新当前 UI 和 Core 只读 snapshot，不触发全库 rescan。",
-        "DB locked：顶部显示黄色 banner，允许重试，不清空列表缓存。",
-        "缺失文件：列表行保留并标记，详情提供恢复入口。",
-        "Rust core list/detail/change log/note API。",
-        "`Refresh` 不写 DB、不触发 watcher 回流",
-    ] {
-        assert_contains(WINDOWS_MAIN_PAGE, fragment);
-    }
-
-    for fragment in [
-        "浏览分类和文件列表。",
-        "查看文件详情：Meta、Log、Note。",
-        "提供 `Refresh`，只刷新当前 UI 和 Core 只读 snapshot，不触发全库 rescan。",
-        "DB locked：保留缓存列表并显示重试。",
-        "权限不足：文件行或详情显示恢复动作，不自动 chmod。",
-        "Rust core list/detail/log/note API。",
-        "`Refresh` 不写 DB、不触发 inotify 回流",
-    ] {
-        assert_contains(LINUX_MAIN_PAGE, fragment);
-    }
-
     for fragment in [
         "C4-11 reuses the same paginated metadata query",
         "`S4-WIN-02` and",

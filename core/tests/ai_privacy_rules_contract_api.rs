@@ -12,18 +12,6 @@ use pretty_assertions::assert_eq;
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-41-c3-09-contract-api.md");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
-const AI_PRIVACY_PAGE: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md"
-);
-const FALLBACK_PAGE: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md"
-);
-const STAGE_3_INDEX: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -321,33 +309,6 @@ fn ai_privacy_rules_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C3-09 ai-privacy-rules",
-        "- S3-09 ai-privacy-rules",
-        "- S3-10 ai-fallback",
-        "计划新增：`list_ai_privacy_rules`、`update_ai_privacy_rules`、`evaluate_ai_privacy`",
-        "目录规则、关键词规则、字段过滤规则、`privacy_gate_enabled`、provider scope snapshot。",
-        "allow/deny/skipped reason。",
-        "provider gate reason，例如 `privacy_gate_disabled`、`scope_not_allowed`、`provider_not_verified`。",
-        "- `Config`",
-        "- `Db`",
-        "默认策略偏保守。",
-        "关闭 `privacy_gate_enabled` 只阻止远程调用，不删除 provider 配置、Keychain key 或既有 AI 结果。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S3-03 | remote-model-enable | C3-03, C3-09 | provider test/enable | provider metadata, Keychain ref",
-        "| S3-04 | ai-classification-suggestion | C3-04, C3-09, C3-10 | AI category suggestion | ai_call_log",
-        "| S3-06 | ai-summary-editor | C3-06, C3-09 | generate/save/clear summary | summary metadata, ai_call_log",
-        "| S3-07 | ai-tags-suggestion | C3-07, C3-09 | suggest/apply tags | tags after confirm, ai_call_log",
-        "| S3-08 | semantic-search-results | C3-08, C3-09, C3-10 | semantic search / embedding | embedding metadata, ai_call_log",
-        "| S3-09 | ai-privacy-rules | C3-01, C3-03, C3-09 | privacy rule CRUD/evaluate | ai_privacy_rules",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "AiPrivacyRulesSnapshot list_ai_privacy_rules(string repo_path);",
         "AiPrivacyRulesSnapshot update_ai_privacy_rules(",
         "string repo_path, AiPrivacyRulesUpdateRequest request",
@@ -410,7 +371,6 @@ fn ai_privacy_rules_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for error_name in ["Config", "Db"] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(CORE_API, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
@@ -419,44 +379,6 @@ fn ai_privacy_rules_contract_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn ai_privacy_rules_contract_documents_consumers_and_forbidden_adjacent_behavior() {
-    for fragment in [
-        "Remote AI privacy gate",
-        "Block remote AI with privacy gate",
-        "本区是隐私 gate，不是 provider 禁用页",
-        "`Block remote AI with privacy gate` 不得被实现为 S3-03 的 `Disable remote AI`",
-        "provider_configured",
-        "provider_verified",
-        "remote_provider_enabled",
-        "feature_scope",
-        "Remote allowed fields",
-        "`note summary` 说明：`Derived from your note. Full note text is never sent.`",
-        "Folder、Category、Keyword、Extension、Tag 五类规则均可编辑。",
-        "Test rules 能显示 provider/scope/gate 三类阻断来源",
-        "远程 gate 或字段过滤命中时 AI 页面显示跳过",
-    ] {
-        assert_contains(AI_PRIVACY_PAGE, fragment);
-    }
-
-    for fragment in [
-        "Skipped by privacy rule",
-        "`privacy_skipped`",
-        "This file matches a privacy rule, so AI was skipped.",
-        "Retry 不应重复发送被隐私规则禁止的内容。",
-        "隐私跳过可跳转规则详情",
-        "sent fields none",
-    ] {
-        assert_contains(FALLBACK_PAGE, fragment);
-    }
-
-    for fragment in [
-        "AI 默认关闭；本地模型为默认推荐路径。",
-        "远程模型必须由用户显式配置 key、选择使用范围、测试连接成功并确认数据流向后启用",
-        "远程 AI 可发送的字段类型必须逐项展示，并在调用前经过 S3-09 隐私规则 gate",
-        "AI 失败不得自动切换远程 provider；本地模型失败不得自动启用远程 AI。",
-    ] {
-        assert_contains(STAGE_3_INDEX, fragment);
-    }
-
     for fragment in [
         "C3-09 AI privacy rules contract types and entry points",
         "pub enum AiPrivacyRuleKind",

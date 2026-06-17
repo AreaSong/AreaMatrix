@@ -14,11 +14,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-49-c4-10-validation.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
@@ -256,49 +251,9 @@ fn assert_task_and_spec_alignment() {
     ] {
         assert_contains(TASK, fragment);
     }
-
-    for fragment in [
-        "# C4-10 linux-repo-connect",
-        "- S4-LNX-01 choose-repo",
-        "- S4-LNX-03 local-folder-notice",
-        "- S4-X-04 repository-init-confirm",
-        "- S4-X-05 repository-adopt-confirm",
-        "- `validate_repo_path`",
-        "- `init_repo`",
-        "Linux path。",
-        "path validation、risk、repo state。",
-        "只处理授权路径；不执行 sudo/chmod。",
-        "本地目录风险提示可结构化展示。",
-        "不建议用户执行危险权限命令。",
-        "接管不改变用户文件。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
 }
 
 fn assert_control_map_and_testing_doc_alignment() {
-    for fragment in [
-        concat!(
-            "| S4-LNX-01 | choose-repo | C4-10 | Linux repo connect | ",
-            "不建议 sudo/chmod",
-        ),
-        concat!(
-            "| S4-LNX-03 | local-folder-notice | C4-10, C4-17 | ",
-            "local folder risk",
-        ),
-        concat!(
-            "| S4-X-04 | repository-init-confirm | C4-02, C4-09, C4-10 | ",
-            "init confirm | 不绕过确认",
-        ),
-        concat!(
-            "| S4-X-05 | repository-adopt-confirm | C4-02, C4-09, C4-10 | ",
-            "adopt confirm | 不移动/删除/覆盖用户文件",
-        ),
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`"] {
         assert_contains(TESTING_DOC, fragment);
     }

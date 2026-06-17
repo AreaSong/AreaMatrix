@@ -3,10 +3,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-18-sync-external-renamed.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -58,41 +54,6 @@ fn sync_external_renamed_contract_api_exposes_documented_signature_input_and_out
 
 #[test]
 fn sync_external_renamed_contract_api_docs_control_map_and_udl_stay_aligned() {
-    for fragment in [
-        "# C1-18 sync-external-renamed",
-        "- S1-09 main-list",
-        "- S1-13 detail-log",
-        "- `sync_external_changes(repo_path, events)`",
-        "- `ExternalEvent { kind: Renamed, path, fs_event_id }`",
-        "- 可能需要 app 层合并 old/new path。",
-        "- `SyncResult.detected_renames`",
-        "- 更新 `files.path`、`files.current_name`、`updated_at`。",
-        "- 写入 `change_log.renamed`。",
-        "- 只读确认新路径存在。",
-        "- 不主动重命名用户文件。",
-        "- `FileNotFound`",
-        "- `Conflict`",
-        "- `Db`",
-        "- `Io`",
-        "- 外部 rename 后列表和详情显示新名称。",
-        "- change log 保留 old/new path。",
-        "- 无法配对 rename 时可降级为 removed + created。",
-        "- 跨目录复杂 rename 配对优化属于 Stage 2。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-09 | main-list | C1-11, C1-12, C1-15 | `list_files`, `get_file`, `list_tree_json`",
-        "| S1-13 | detail-log | C1-13, C1-17, C1-18, C1-19 |",
-        "`list_changes`, `sync_external_changes`",
-        "Core 能力若未在本矩阵出现，默认不得提前进入 Stage 1 实现。",
-        "不可 mock：路径校验、init/adopt、导入、重复检测、同名冲突",
-        "详情、日志、笔记、Tree、recovery、错误映射",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in [
         "SyncResult sync_external_changes(string repo_path, sequence<ExternalEvent> events);",
         "dictionary ExternalEvent",

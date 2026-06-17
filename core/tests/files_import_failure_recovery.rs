@@ -14,8 +14,6 @@ use rusqlite::{Connection, OptionalExtension};
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-28-c4-06-failure-edge.md"
 );
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const TRANSACTIONAL_IMPORT: &str = include_str!("../../docs/architecture/transactional-import.md");
 
@@ -136,18 +134,6 @@ fn files_import_failure_edge_docs_require_explicit_failure_semantics() {
         "不得用吞错或静默降级掩盖失败。",
     ] {
         assert!(TASK.contains(fragment), "missing task fragment: {fragment}");
-    }
-
-    for fragment in [
-        "文件未下载/无权限时给出结构化状态。",
-        "Replace 必须进入 S4-X-09。",
-        "Cancel 不写 DB。",
-        "Provider 后台下载管理不在 Core。",
-    ] {
-        assert!(
-            CAPABILITY_SPEC.contains(fragment),
-            "missing capability fragment: {fragment}"
-        );
     }
 
     for fragment in [

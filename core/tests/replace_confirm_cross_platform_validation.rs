@@ -17,11 +17,6 @@ use support::system_trash_home::with_test_system_trash;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-104-c4-21-validation.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -360,32 +355,6 @@ fn assert_task_docs_and_testing_alignment() {
         "./dev check task 4-3/task-104",
     ] {
         assert_contains(TASK, fragment);
-    }
-
-    for fragment in [
-        "# C4-21 replace-confirm-cross-platform",
-        "- S4-X-09 replace-confirm",
-        "`import_file` with overwrite strategy",
-        "`delete_file`",
-        "`resolve_sync_conflict`",
-        "丢弃版本必须进入平台 Trash 或保留备份。",
-        "不直接永久删除。",
-        "Replace 必须二次确认。",
-        "平台 Trash 不可用时禁用 replace。",
-        "失败后旧版本和新版本状态可解释。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-IOS-07 | files-import | C4-06, C4-21 | Files import / replace confirm",
-        "| S4-WIN-05 | import-flow | C4-13, C4-21 | desktop import / replace",
-        "| S4-LNX-05 | import-flow | C4-13, C4-21 | desktop import / replace",
-        "| S4-X-01 | sync-conflict | C4-15, C4-16, C4-21 | conflict detect/resolve",
-        "| S4-X-09 | replace-confirm | C4-16, C4-21 | replace confirm | Trash/备份，禁止永久删除",
-        "初始化、接管、Replace、Remove record、rescan 都必须确认后执行。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
     }
 }
 

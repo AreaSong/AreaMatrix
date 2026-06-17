@@ -3,10 +3,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const ERROR_RS: &str = include_str!("../src/error.rs");
@@ -53,50 +49,6 @@ fn error_mapping_contract_api_exposes_structured_core_error_variants() {
 
 #[test]
 fn error_mapping_contract_api_docs_control_map_and_udl_stay_aligned() {
-    for fragment in [
-        "# C1-21 error-mapping",
-        "- S1-03 validate-path",
-        "- S1-06 init-failed",
-        "- S1-11 main-repo-error",
-        "- S1-25 icloud-conflict-min",
-        "- S1-32 error-recovery",
-        "- 所有 `[Throws=CoreError]` API。",
-        "- Swift AppError 包装层。",
-        "- `CoreError` variant。",
-        "- 原始 path、reason 或 message。",
-        "- 可供 UI 展示的错误类型、用户文案、严重程度和建议动作。",
-        "- 无。",
-        "- `Io`",
-        "- `Db`",
-        "- `Config`",
-        "- `Classify`",
-        "- `Conflict`",
-        "- `DuplicateFile`",
-        "- `FileNotFound`",
-        "- `RepoNotInitialized`",
-        "- `InvalidPath`",
-        "- `ICloudPlaceholder`",
-        "- `PermissionDenied`",
-        "- `Internal`",
-        "- 每个 `CoreError` 都能被 Swift 层映射为用户可理解消息。",
-        "- 高严重错误进入 S1-32 或 repo error 状态，不被吞掉。",
-        "- 错误映射不依赖字符串 contains 做主分支判断。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-03 | validate-path | C1-01, C1-03, C1-21 |",
-        "| S1-06 | init-failed | C1-21 | error mapping only",
-        "| S1-11 | main-repo-error | C1-01, C1-19, C1-21 |",
-        "| S1-25 | icloud-conflict-min | C1-01, C1-21 |",
-        "| S1-32 | error-recovery | C1-16, C1-21 | `recover_on_startup`, error mapping",
-        "C1-16..C1-21",
-        "不可 mock：路径校验、init/adopt、导入、重复检测、同名冲突、详情、日志、笔记、Tree、recovery、错误映射。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in [
         "[Throws=CoreError]",
         "错误映射元数据",

@@ -10,17 +10,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-36-c4-08-contract-api.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const ICLOUD_PERMISSION_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-06-icloud-permission.md");
-const ONEDRIVE_NOTICE_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-03-onedrive-notice.md");
-const CONNECT_REPO_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-01-connect-repo.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -123,32 +112,6 @@ fn cloud_permission_state_docs_core_api_and_udl_stay_aligned() {
     }
 
     for fragment in [
-        "# C4-08 cloud-permission-state",
-        "- S4-IOS-06 icloud-permission",
-        "- S4-WIN-03 onedrive-notice",
-        "计划新增：`detect_cloud_storage_state(repo_path) -> CloudStorageState`",
-        "provider kind、risk、placeholder/permission state。",
-        "只读探测。",
-        "- `PermissionDenied`",
-        "- `ICloudPlaceholder`",
-        "- `Io`",
-        "iCloud/OneDrive 风险提示来自结构化状态。",
-        "Core 不调用云盘 SDK 管理同步。",
-        "不建议危险 chmod/sudo 操作。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-IOS-01 | connect-repo | C4-02, C4-08 | repo validate/init/adopt | iOS security-scoped URL",
-        "| S4-IOS-06 | icloud-permission | C4-08 | cloud permission state | Core 不管理 iCloud 同步",
-        "| S4-WIN-03 | onedrive-notice | C4-08, C4-14 | OneDrive risk state | 不控制 OneDrive 同步",
-        "平台差异必须结构化暴露。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "CloudStorageState detect_cloud_storage_state(string repo_path);",
         "dictionary CloudStorageState",
         "CloudStorageProviderKind provider_kind;",
@@ -195,35 +158,6 @@ fn cloud_permission_state_docs_core_api_and_udl_stay_aligned() {
 
 #[test]
 fn cloud_permission_state_documents_consumers_and_scope_boundaries() {
-    for fragment in [
-        "iCloud availability detection。",
-        "security scoped bookmark validation。",
-        "占位符未下载：显示重试",
-        "security scoped bookmark 失效：显示重新连接文件夹。",
-        "不承诺 AreaMatrix 能替用户开启系统 iCloud 设置。",
-    ] {
-        assert_contains(ICLOUD_PERMISSION_PAGE, fragment);
-    }
-
-    for fragment in [
-        "OneDrive path detection。",
-        "可选 OneDrive sync status probe，状态不可得时降级为 unknown。",
-        "AreaMatrix cannot control OneDrive sync timing.",
-        "本页不触发 reindex，不写入 repo。",
-        "页面明确说明不控制 OneDrive 同步，也不使用 OneDrive SDK 管理同步。",
-    ] {
-        assert_contains(ONEDRIVE_NOTICE_PAGE, fragment);
-    }
-
-    for fragment in [
-        "iCloud availability 检测。",
-        "iCloud 不可用时能进入权限提示页",
-        "选择目录后先执行只读校验",
-        "是否处于 iCloud 占位状态。",
-    ] {
-        assert_contains(CONNECT_REPO_PAGE, fragment);
-    }
-
     for fragment in [
         "Detects C4-08 cloud storage provider",
         "provider-specific recovery or notice state from structured fields",

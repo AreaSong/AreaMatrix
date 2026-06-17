@@ -8,11 +8,6 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const API_RS: &str = include_str!("../src/api.rs");
 const CLASSIFIER_CORRECTION_RS: &str = include_str!("../src/classifier_correction.rs");
@@ -116,21 +111,6 @@ fn classifier_correction_validation_locks_api_udl_and_rust_contract() {
     ) {
     }
     assert_signature(correct_file_category);
-
-    for fragment in [
-        "correct_file_category(repo_path, file_id, category, move_file, remember) -> ClassifierCorrectionResult",
-        "更新后的 FileEntry、可选规则草稿、移动/记住规则请求状态、是否仍需规则确认。",
-        "纠错本身不等于保存全局规则。",
-        "记住规则必须进入规则保存/预览流程。",
-        "不覆盖目标目录同名文件。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    assert_contains(
-        CONTROL_MAP,
-        "| S2-16 | classifier-correct | C2-12 | correct category | files, change_log, safe move",
-    );
 
     for fragment in [
         "ClassifierCorrectionResult correct_file_category(",

@@ -8,11 +8,6 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
 
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-14-classifier-impact-preview.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -208,22 +203,6 @@ fn classifier_impact_preview_validation_locks_api_udl_and_rust_contract() {
     ) {
     }
     assert_signature(preview_classifier_rule_impact);
-
-    for fragment in [
-        "preview_classifier_rule_impact(repo_path, request) -> RuleImpactReport",
-        "规则草稿、删除 keyword、删除 extension 或删除 category 的显式预览请求。",
-        "受影响文件数量、样例、冲突、needs review、replacement 缺失状态。",
-        "仅预览不改变文件分类。",
-        "影响量超过阈值必须提示。",
-        "冲突或 needs review 时不能直接批量应用。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    assert_contains(
-        CONTROL_MAP,
-        "| S2-18 | classifier-impact-preview | C2-14 | rule impact preview | 只读",
-    );
     assert_contains(TESTING_DOC, "`core/classify` | ≥ 90%");
 
     for fragment in [

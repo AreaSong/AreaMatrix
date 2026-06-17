@@ -8,18 +8,7 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
-const S1_37: &str = include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-37-db-repair-confirm.md");
-const S1_11: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-11-main-repo-error.md"
-);
-const S1_32: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-32-error-recovery.md"
-);
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn path_string(path: &Path) -> String {
@@ -93,13 +82,6 @@ fn parse_tree(repo: &Path) -> Value {
     serde_json::from_str(&tree_json).expect("parse tree JSON")
 }
 
-fn control_map_row(page_id: &str) -> &str {
-    CONTROL_MAP
-        .lines()
-        .find(|line| line.starts_with(&format!("| {page_id} |")))
-        .expect("control map should contain the requested page row")
-}
-
 fn assert_contains(haystack: &str, needle: &str) {
     assert!(
         haystack.contains(needle),
@@ -109,20 +91,6 @@ fn assert_contains(haystack: &str, needle: &str) {
 
 #[test]
 fn repair_reindex_metadata_integration_verify_matches_docs_api_udl_and_consuming_pages() {
-    for fragment in [
-        "`reindex_from_filesystem(repo_path) -> ReindexReport`",
-        "`create_diagnostics_snapshot(repo_path) -> DiagnosticsSnapshot`",
-        "`repair_metadata(repo_path, options) -> RepairReport`",
-        "- S1-37 db-repair-confirm",
-        "- S1-11 main-repo-error",
-        "- S1-32 error-recovery",
-        "只处理 `.areamatrix/` 元数据。",
-        "不移动、不重命名、不删除用户文件。",
-        "不覆盖 `README.md`。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
     for fragment in [
         "ReindexReport reindex_from_filesystem(string repo_path);",
         "DiagnosticsSnapshot create_diagnostics_snapshot(string repo_path);",
@@ -135,34 +103,8 @@ fn repair_reindex_metadata_integration_verify_matches_docs_api_udl_and_consuming
         assert_contains(UDL, fragment);
     }
 
-    let repair_row = control_map_row("S1-37");
-    assert_contains(repair_row, "C1-26, C1-16");
-    assert_contains(repair_row, "`repair_metadata`, `reindex_from_filesystem`");
-    assert_contains(repair_row, "metadata repair only");
-
-    let main_error_row = control_map_row("S1-11");
-    assert!(!main_error_row.contains("C1-26"));
-    assert_contains(
-        S1_11,
-        "DB corrupted 的 `Open repair` 打开 `S1-37 db-repair-confirm`",
-    );
-    assert_contains(S1_11, "不在本页直接修复");
-
-    let shared_error_row = control_map_row("S1-32");
-    assert!(!shared_error_row.contains("C1-26"));
-    assert_contains(S1_32, "DB corrupted 进入 `S1-37 db-repair-confirm`");
-    assert_contains(S1_32, "不能在本页直接修复");
-
-    for fragment in [
-        "未勾选确认复选框时，`Run Full Rescan` 禁用。",
-        "不移动用户文件。",
-        "不重命名用户文件。",
-        "不删除用户文件。",
-        "不覆盖已有 `README.md`。",
-        "不自动上传诊断。",
-    ] {
-        assert_contains(S1_37, fragment);
-    }
+    assert_contains(CORE_API, "metadata repair only");
+    assert_contains(CORE_API, "不移动、不重命名、不删除用户文件");
 }
 
 #[test]

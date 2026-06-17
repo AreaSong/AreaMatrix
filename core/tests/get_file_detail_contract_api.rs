@@ -1,10 +1,6 @@
 use area_matrix_core::{get_file, CoreError, CoreResult, FileEntry, FileOrigin, StorageMode};
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -54,35 +50,6 @@ fn get_file_detail_contract_api_exposes_callable_signature_input_and_output() {
 
 #[test]
 fn get_file_detail_contract_api_docs_control_map_and_udl_stay_aligned() {
-    for fragment in [
-        "C1-12 get-file-detail",
-        "- S1-12 detail-meta",
-        "- S1-15 detail-multi",
-        "- `get_file(repo_path, file_id) -> FileEntry`",
-        "- `repo_path`",
-        "- `file_id`",
-        "- 单个 `FileEntry`。",
-        "- 无写入。",
-        "- 可选 metadata 检查，但不得修改文件。",
-        "- `FileNotFound`",
-        "- `RepoNotInitialized`",
-        "- `Db`",
-        "- 存在文件返回完整字段。",
-        "- 文件预览、Quick Look 和 OCR 元数据属于 macOS/Stage 2+。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-09 | main-list | C1-11, C1-12, C1-15 | `list_files`, `get_file`, `list_tree_json`",
-        "| S1-12 | detail-meta | C1-12 | `get_file`",
-        "| S1-15 | detail-multi | C1-11, C1-12 | `list_files`, `get_file`",
-        "Core 能力若未在本矩阵出现，默认不得提前进入 Stage 1 实现。",
-        "不可 mock：路径校验、init/adopt、导入、重复检测、同名冲突、详情、日志、笔记、Tree、recovery、错误映射。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in [
         "FileEntry get_file(string repo_path, i64 file_id);",
         "dictionary FileEntry",

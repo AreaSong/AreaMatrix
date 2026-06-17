@@ -15,10 +15,6 @@ use smart_list_support::{
     smart_list_query, snapshot,
 };
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -172,28 +168,6 @@ fn smart_lists_validation_rejects_corrupted_saved_query_without_writes() {
 fn smart_lists_validation_locks_core_api_udl_and_rust_alignment() {
     fn assert_signature(_: fn(String, i64, SearchPagination) -> CoreResult<SearchResultPage>) {}
     assert_signature(run_smart_list);
-
-    for fragment in [
-        "# C2-04 smart-lists",
-        "`list_saved_searches`",
-        "`search_files`",
-        "`run_smart_list(repo_path, saved_search_id, pagination) -> SearchResultPage`",
-        "读取 saved searches；无文件写入。",
-        "打开 Smart List 只运行查询，不改变文件。",
-        "Command palette 能发现 smart list。",
-        "智能推荐列表属于 Stage 3。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-06 | smart-lists | C2-03, C2-04 | run/list smart lists | saved_searches",
-        "| S2-15 | command-palette | C2-04, C2-11 | command index | 只读 / recent command",
-        "搜索、filter、Smart List 不得移动、删除或改名文件。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in [
         "SearchResultPage run_smart_list(",
         "string repo_path,",

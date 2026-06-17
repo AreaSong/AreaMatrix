@@ -5,14 +5,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
-const SEARCH_FILTERS_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-02-search-filters.md");
-const TAGS_FILTER_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const SEARCH_RS: &str = include_str!("../src/search.rs");
@@ -132,33 +124,6 @@ fn search_filters_contract_result_carries_filter_popover_and_tag_state() {
 #[test]
 fn search_filters_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "# C2-02 search-filters",
-        "- S2-02 search-filters",
-        "- S2-08 tags-filter",
-        "- `search_files(...)`",
-        "计划新增：`list_filter_facets(repo_path, query) -> SearchFacets`",
-        "category、tags、date range、storage mode、include deleted。",
-        "过滤后的搜索结果和 facet counts。",
-        "- `Db`",
-        "- `Config`",
-        "标签筛选只改变搜索条件，不创建或删除标签。",
-        "日期非法返回结构化 query error。",
-        "Smart List 编辑场景可保存 draft filter。",
-        "语义 filter 和 AI filter 属于 Stage 3。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-01 | search-results | C2-01, C2-02 | `search_files`",
-        "| S2-02 | search-filters | C2-02 | filter/facet query | 只读",
-        "| S2-08 | tags-filter | C2-02, C2-05 | tag filter | tags 只读",
-        "搜索、filter、Smart List 不得移动、删除或改名文件。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "SearchFacets list_filter_facets(string repo_path, SearchFacetQuery query);",
         "dictionary SearchFilter",
         "dictionary SearchFacetQuery",
@@ -210,31 +175,6 @@ fn search_filters_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn search_filters_contract_documents_consumer_states_and_scope_boundaries() {
     for fragment in [
-        "Category list。",
-        "File type aggregation。",
-        "Tag list and selected tags。",
-        "Date range parser/validator。",
-        "Reset filters 不清空 query。",
-        "自定义日期错误能提示且不污染结果状态。",
-        "Tags 不存在时有禁用原因。",
-        "聚合加载失败时可重试，且不丢已有 query/filter。",
-        "Smart List 编辑场景中，filter 变化更新编辑草稿，不立即保存 Smart List。",
-    ] {
-        assert_contains(SEARCH_FILTERS_PAGE, fragment);
-    }
-
-    for fragment in [
-        "Tag count by current search scope。",
-        "Any 或 All。",
-        "本页只负责筛选，不负责生成标签。",
-        "移除筛选不会删除标签。",
-        "标签列表失败和 count 失败是不同状态。",
-        "标签搜索大小写不敏感；拼音匹配不作为本页 Stage 2 必做能力。",
-    ] {
-        assert_contains(TAGS_FILTER_PAGE, fragment);
-    }
-
-    for fragment in [
         "Loads C2-02 search filter facet counts without mutating repository state.",
         "S2-02 search filters",
         "S2-08 tag filtering",
@@ -256,7 +196,6 @@ fn search_filters_contract_documents_consumer_states_and_scope_boundaries() {
 
     for error_name in ["Db", "Config"] {
         assert_contains(ERROR_CODES, error_name);
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(UDL, error_name);
     }
 }

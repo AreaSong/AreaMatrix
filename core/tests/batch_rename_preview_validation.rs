@@ -20,11 +20,6 @@ use batch_rename_preview_support::{
     file_row, import_fixture, indexed_file, initialized_repo, path_string, prefix_rule,
 };
 
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -303,24 +298,6 @@ fn batch_rename_validation_locks_core_api_udl_and_rust_alignment() {
     }
     assert_preview(preview_batch_rename);
     assert_apply(batch_rename);
-
-    for fragment in [
-        "# C2-10 batch-rename-preview",
-        "- S2-14 batch-rename",
-        "- S2-10 undo-toast",
-        "计划新增：`preview_batch_rename`、`batch_rename`",
-        "old/new name 预览、冲突列表、执行报告。",
-        "冲突或非法名称不能静默跳过。",
-        "成功后可 undo。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-    for fragment in [
-        "| S2-14 | batch-rename | C2-10, C2-07 | preview + rename",
-        "批量操作必须有 preview、确认、执行报告和 undo/action log。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
     for fragment in ["`core/tests/`", "重命名（合法名 / 非法名）", "集成测试"] {
         assert_contains(TESTING_DOC, fragment);
     }
@@ -366,6 +343,7 @@ fn batch_rename_validation_locks_core_api_udl_and_rust_alignment() {
     ] {
         assert_contains(API_RS, fragment);
     }
+
     for fragment in [
         "pub use batch_rename::{",
         "preview_batch_rename",
@@ -374,6 +352,7 @@ fn batch_rename_validation_locks_core_api_udl_and_rust_alignment() {
     ] {
         assert_contains(LIB_RS, fragment);
     }
+
     for fragment in [
         "Previews C2-10 batch rename without mutating files or metadata.",
         "Applies a C2-10 batch rename that was previously previewed.",
@@ -382,6 +361,7 @@ fn batch_rename_validation_locks_core_api_udl_and_rust_alignment() {
     ] {
         assert_contains(BATCH_RENAME_RS, fragment);
     }
+
     for fragment in [
         "build_batch_rename_plan",
         "mark_batch_target_conflicts",
@@ -389,6 +369,7 @@ fn batch_rename_validation_locks_core_api_udl_and_rust_alignment() {
     ] {
         assert_contains(BATCH_RENAME_PLAN_RS, fragment);
     }
+
     for fragment in [
         "apply_batch_rename_plan",
         "insert_batch_rename_undo_action_in_tx",

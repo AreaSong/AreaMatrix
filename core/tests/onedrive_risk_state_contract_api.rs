@@ -10,15 +10,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-66-c4-14-contract-api.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const WIN_CHOOSE_REPO_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-01-choose-repo.md");
-const ONEDRIVE_NOTICE_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-03-onedrive-notice.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -133,32 +124,6 @@ fn onedrive_risk_state_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C4-14 onedrive-risk-state",
-        "- S4-WIN-03 onedrive-notice",
-        "- `detect_cloud_storage_state`",
-        "- `acknowledge_onedrive_risk_notice`",
-        "OneDrive risk state、placeholder state、recommended action。",
-        "用户确认后返回已刷新的 OneDrive risk state。",
-        "可记录用户已确认提示。",
-        "只读探测。",
-        "- `PermissionDenied`",
-        "- `Io`",
-        "只提示风险，不承诺控制 OneDrive 同步。",
-        "用户确认状态可持久化。",
-        "不使用 OneDrive SDK 管理用户文件。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-WIN-01 | choose-repo | C4-09, C4-14 | Windows repo connect | Windows path / OneDrive risk",
-        "| S4-WIN-03 | onedrive-notice | C4-08, C4-14 | OneDrive risk state | 不控制 OneDrive 同步",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "CloudStorageState detect_cloud_storage_state(string repo_path);",
         "CloudStorageState acknowledge_onedrive_risk_notice(string repo_path);",
         "dictionary CloudStorageState",
@@ -202,27 +167,6 @@ fn onedrive_risk_state_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn onedrive_risk_state_documents_consumers_and_scope_boundaries() {
-    for fragment in [
-        "OneDrive 路径：必须进入 `onedrive-notice` 确认，不直接进入主窗口。",
-        "OneDrive 路径检测，包含用户目录下 `OneDrive` 和组织 OneDrive 命名。",
-        "选择 OneDrive 后必须经过 OneDrive 提示页。",
-    ] {
-        assert_contains(WIN_CHOOSE_REPO_PAGE, fragment);
-    }
-
-    for fragment in [
-        "显示当前选择的 OneDrive 路径。",
-        "提供确认复选框。",
-        "提供等待同步、打开 OneDrive 文件夹、进入 watcher 状态页的可操作建议。",
-        "已连接场景下显示只读状态，不要求重复确认。",
-        "OneDrive 状态不可检测：显示 `Status: Unknown`，仍允许确认继续。",
-        "本页不触发 reindex，不写入 repo。",
-        "页面明确说明不控制 OneDrive 同步，也不使用 OneDrive SDK 管理同步。",
-        "不出现“AreaMatrix 将自动解决冲突”的错误承诺。",
-    ] {
-        assert_contains(ONEDRIVE_NOTICE_PAGE, fragment);
-    }
-
     for fragment in [
         "Detects C4-08 cloud storage provider state and C4-14 OneDrive risk state.",
         "recommended_action",

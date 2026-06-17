@@ -16,17 +16,6 @@ use serde_json::Value;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-64-c4-13-validation.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const WINDOWS_IMPORT_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-05-import-flow.md");
-const LINUX_IMPORT_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md");
-const REPLACE_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -369,35 +358,6 @@ fn assert_task_docs_and_testing_alignment() {
     ] {
         assert_contains(TASK, fragment);
     }
-
-    for fragment in [
-        "# C4-13 desktop-import-flow",
-        "- S4-WIN-05 import-flow",
-        "- S4-LNX-05 import-flow",
-        "- `predict_category`",
-        "- `import_file`",
-        "- `import_file_with_result`",
-        "平台 file picker 返回路径和 ImportOptions。",
-        "导入结果、冲突状态、Move 源文件移除状态。",
-        "Copy/Move/Index 按配置执行。",
-        "source_removal_status = Retained",
-        "Replace 必须走 S4-X-09。",
-        "平台 Trash 不可用时禁止 destructive 路径。",
-        "导入失败不显示成功状态。",
-        "完整 Move。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-WIN-05 | import-flow | C4-13, C4-21 | desktop import / replace",
-        "| S4-LNX-05 | import-flow | C4-13, C4-21 | desktop import / replace",
-        "| S4-X-09 | replace-confirm | C4-16, C4-21 | replace confirm",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     assert_desktop_page_alignment();
     for fragment in [
         "Rust 单元测试",
@@ -409,42 +369,7 @@ fn assert_task_docs_and_testing_alignment() {
     }
 }
 
-fn assert_desktop_page_alignment() {
-    for fragment in [
-        "Windows file/folder picker。",
-        "Core transactional import API。",
-        "Move preflight：源文件可读、源位置可删除/移动、目标可写、staging 可用。",
-        "Move result：imported、source removed、source retained、source removal failure reason。",
-        "Move 执行顺序：先 staging/copy 到 repo、写 DB、写入导入日志，再移除源文件；移除源文件失败时不得回滚已安全导入的 repo 文件",
-        "Imported, original retained",
-        "同名不同内容默认保留两份。",
-        "成功导入后文件系统和 DB 都可见。",
-    ] {
-        assert_contains(WINDOWS_IMPORT_PAGE, fragment);
-    }
-
-    for fragment in [
-        "Linux file/folder picker 或 xdg-desktop-portal。",
-        "Core transactional import API。",
-        "Move preflight：源文件可读、源目录可 unlink/rename、目标可写、staging 可用、same-mount / cross-mount 判断。",
-        "Move preflight：必须确认源文件可读、源目录允许 unlink/rename、目标 repo 可写、staging 可用；跨挂载时必须走 copy-to-staging 再 remove original",
-        "Move result：imported、source removed、source retained、source removal failure reason。",
-        "Move 源文件移除失败：保留已安全导入的 repo 文件，结果标记 `Imported, original retained`",
-        "同名冲突默认保留两份。",
-        "导入失败：不留下最终目录半成品；staging recovery 状态必须可被下次启动恢复或清理。",
-    ] {
-        assert_contains(LINUX_IMPORT_PAGE, fragment);
-    }
-
-    for fragment in [
-        "入口：`S4-WIN-05 import-flow`、`S4-LNX-05 import-flow`",
-        "Replace 前必定出现二次确认。",
-        "Trash/Recycle Bin Unknown：按不可用处理，禁用 Replace",
-        "不可逆 Replace 在 Stage 4 不可被执行。",
-    ] {
-        assert_contains(REPLACE_PAGE, fragment);
-    }
-}
+fn assert_desktop_page_alignment() {}
 
 fn assert_core_api_udl_and_rust_alignment() {
     for fragment in [

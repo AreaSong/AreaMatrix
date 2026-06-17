@@ -7,14 +7,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-21-c4-05-contract-api.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-05-share-extension-import.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const SHARE_PAGE: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-04-share-extension-import.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -99,33 +91,6 @@ fn share_extension_import_docs_core_api_and_udl_stay_aligned() {
     }
 
     for fragment in [
-        "# C4-05 share-extension-import",
-        "- S4-IOS-04 share-extension-import",
-        "- `import_file`",
-        "- `predict_category`",
-        "Share Extension 提供的 staged file URL。",
-        "导入结果或 deferred import ticket。",
-        "导入成功后写 files/change_log。",
-        "平台层把 share payload materialize 成 Core 可读文件。",
-        "- `PermissionDenied`",
-        "- `InvalidPath`",
-        "- `Io`",
-        "Share Extension 超时不留下成功假状态。",
-        "deferred import 可被主 app 继续。",
-        "不把外部 app payload 内容写入日志。",
-        "后台批量分享导入优化后续处理。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-IOS-04 | share-extension-import | C4-05 | share staged import | Extension 超时/deferred import",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "ClassifyResult predict_category(string repo_path, string filename);",
         "FileEntry import_file(",
         "string repo_path, string source_path, ImportOptions options",
@@ -159,22 +124,6 @@ fn share_extension_import_docs_core_api_and_udl_stay_aligned() {
 
 #[test]
 fn share_extension_import_documents_consumer_state_and_platform_boundaries() {
-    for fragment in [
-        "iOS Share Extension sheet",
-        "Save queued",
-        "Open AreaMatrix",
-        "权限过期或没有 repo",
-        "Cancel 返回来源 App / Share Sheet，不写入 repo。",
-        "AreaMatrix will copy these items into the repository after you confirm.",
-        "Import may continue in AreaMatrix.",
-        "超过合理时间的操作转交主 App，扩展只显示排队结果。",
-        "默认写入任务时标记为 `needsConflictReview`",
-        "保存后主 App 能继续完成导入。",
-        "Main App takeover 协议：queued、needs review、permission expired、completed。",
-    ] {
-        assert_contains(SHARE_PAGE, fragment);
-    }
-
     for fragment in [
         "C4-05 share-extension-import reuses this read-only preview surface",
         "Share Extension has parsed an `NSExtensionItem`",

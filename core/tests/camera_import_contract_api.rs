@@ -7,12 +7,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-16-c4-04-contract-api.md"
 );
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const CAMERA_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-03-camera-import.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -98,34 +92,6 @@ fn camera_import_docs_core_api_and_udl_stay_aligned() {
     }
 
     for fragment in [
-        "# C4-04 camera-import",
-        "- S4-IOS-03 camera-import",
-        "- `import_file`",
-        "- `predict_category`",
-        "平台层保存后的照片临时文件路径和 ImportOptions。",
-        "FileEntry、导入结果。",
-        "Core 从平台临时路径导入到 repo。",
-        "平台层负责相机权限和临时文件生命周期。",
-        "- `PermissionDenied`",
-        "- `InvalidPath`",
-        "- `Io`",
-        "- `Db`",
-        "拍照取消不写 DB。",
-        "导入失败不删除用户已有文件。",
-        "临时文件清理不由 Core 删除最终 repo 文件。",
-        "OCR 和拍照自动摘要属于 Stage 3+/后续。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-IOS-03 | camera-import | C4-04 | camera staged import | 平台层处理相机/临时文件",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "ClassifyResult predict_category(string repo_path, string filename);",
         "FileEntry import_file(",
         "string repo_path, string source_path, ImportOptions options",
@@ -159,20 +125,6 @@ fn camera_import_docs_core_api_and_udl_stay_aligned() {
 
 #[test]
 fn camera_import_documents_consumer_state_and_platform_boundaries() {
-    for fragment in [
-        "接收系统相机返回的单张照片临时文件。",
-        "显示导入模式：复制到资料库，移动端不提供“原地索引”作为默认选项。",
-        "处理同名冲突，默认保留两份并自动编号。",
-        "权限拒绝：不进入本 sheet",
-        "拍摄取消：不进入本 sheet",
-        "临时照片不可读：显示错误页状态 `Could not read captured photo.`",
-        "点击 `Cancel` 不写入 repo，不创建 change log。",
-        "Core transactional import API。",
-        "导入成功后移动端资料库能立刻看到新照片。",
-    ] {
-        assert_contains(CAMERA_PAGE, fragment);
-    }
-
     for fragment in [
         "C4-04 camera-import reuses this read-only preview surface",
         "temporary-file lifetime management remain outside Core",

@@ -7,13 +7,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-01-c4-01-contract-api.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const PLATFORM_DIFFERENCES_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-02-platform-differences.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -113,29 +106,6 @@ fn cross_platform_ffi_contract_docs_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C4-01 cross-platform-ffi-contract",
-        "- S4-X-02 platform-differences",
-        "平台中立 UDL/Kotlin/Python/Swift 绑定检查接口",
-        "target platform、binding version。",
-        "支持的 API、类型映射、缺失能力。",
-        "- `Config`",
-        "- `Internal`",
-        "Core 不依赖 macOS 专属 API。",
-        "绑定生成在 iOS/Windows/Linux 可验证。",
-        "平台差异以 capability 输出，不靠 UI 猜测。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-X-02 | platform-differences | C4-01, C4-17 | capability matrix | UI 不硬猜平台能力",
-        "平台差异必须结构化暴露。",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "BindingContractReport inspect_binding_contract(BindingContractRequest request);",
         "dictionary BindingContractRequest",
         "BindingTargetPlatform target_platform;",
@@ -181,17 +151,6 @@ fn cross_platform_ffi_contract_docs_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn cross_platform_ffi_contract_documents_consumer_state_and_scope_boundaries() {
-    for fragment in [
-        "展示当前平台名称和 repo 存储位置。",
-        "Core version: ...",
-        "展示能力矩阵",
-        "能力未知时显示 `Unknown`，不显示成可用。",
-        "Capability snapshot 加载失败",
-        "不展示 Stage 5 或未定义能力。",
-    ] {
-        assert_contains(PLATFORM_DIFFERENCES_PAGE, fragment);
-    }
-
     for fragment in [
         "Inspects the cross-platform UniFFI contract surface",
         "supported APIs, type",

@@ -9,13 +9,6 @@ use pretty_assertions::assert_eq;
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-46-c3-10-contract-api.md");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
-const FALLBACK_PAGE: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -214,33 +207,6 @@ fn ai_fallback_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C3-10 ai-fallback",
-        "- S3-10 ai-fallback",
-        "计划新增：`get_ai_fallback_status`。",
-        "AI operation、provider error、privacy decision。",
-        "fallback kind、user message、retry ability。",
-        "记录 AI call failure。",
-        "- `Config`",
-        "- `Internal`",
-        "- `PermissionDenied`",
-        "AI 失败不阻断导入、普通搜索、本地规则分类。",
-        "不自动切换远程 provider。",
-        "UI 能展示是失败、禁用、隐私跳过还是模型不可用。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S3-04 | ai-classification-suggestion | C3-04, C3-09, C3-10 | AI category suggestion | ai_call_log, no write before confirm",
-        "| S3-08 | semantic-search-results | C3-08, C3-09, C3-10 | semantic search / embedding | embedding metadata, ai_call_log",
-        "| S3-10 | ai-fallback | C3-04, C3-08, C3-10 | fallback status | ai_call_log",
-        "| S3-06 | ai-summary-editor | C3-06, C3-09 | generate/save/clear summary",
-        "| S3-07 | ai-tags-suggestion | C3-07, C3-09 | suggest/apply tags",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "AiFallbackStatus get_ai_fallback_status(",
         "string repo_path, AiFallbackStatusRequest request",
         "dictionary AiFallbackStatusRequest",
@@ -281,18 +247,6 @@ fn ai_fallback_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn ai_fallback_contract_documents_consumer_state_and_safety_boundaries() {
     for fragment in [
-        "显示 AI 失败原因。",
-        "区分错误、跳过、未配置、不可用。",
-        "`Retry` 禁用条件",
-        "远程失败不得自动改用另一个 provider。",
-        "本地失败不得自动启用远程 AI。",
-        "AI 失败不改变文件、分类、标签或摘要。",
-        "隐私跳过可跳转规则详情，并在调用日志中以 sent fields none 追溯。",
-    ] {
-        assert_contains(FALLBACK_PAGE, fragment);
-    }
-
-    for fragment in [
         "Normalizes C3-10 AI fallback metadata",
         "must not include raw provider output",
         "does not execute AI calls, switch providers, enable remote AI",
@@ -322,7 +276,6 @@ fn ai_fallback_contract_documents_consumer_state_and_safety_boundaries() {
 
     for error_name in ["Config", "Internal", "PermissionDenied"] {
         assert_contains(ERROR_CODES, error_name);
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(UDL, error_name);
     }
 }

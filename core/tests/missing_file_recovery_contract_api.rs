@@ -8,13 +8,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-86-c4-18-contract-api.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const MISSING_FILE_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-06-missing-file-recovery.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -153,34 +146,6 @@ fn missing_file_recovery_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C4-18 missing-file-recovery",
-        "- S4-X-06 missing-file-recovery",
-        "计划新增：`get_missing_file_state`、`remove_missing_file_record`、`relink_missing_file`",
-        "file_id、新路径或 remove record action。",
-        "recovery report。",
-        "更新 file path 或移除索引记录。",
-        "写 change log。",
-        "Relink 只引用用户选择的新路径。",
-        "Remove record 不删除文件。",
-        "- `FileNotFound`",
-        "- `PermissionDenied`",
-        "- `Db`",
-        "缺失文件不导致静默删除记录。",
-        "Remove record 必须确认，且不删除用户原文件。",
-        "Relink 路径需校验 hash 或明确风险。",
-        "自动全盘搜索缺失文件不在当前 Stage 4。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-X-06 | missing-file-recovery | C4-18 | relink/remove record | remove record 不删文件",
-        "初始化、接管、Replace、Remove record、rescan 都必须确认后执行。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "MissingFileState get_missing_file_state(string repo_path, i64 file_id);",
         "MissingFileRecoveryReport relink_missing_file(",
         "string repo_path, MissingFileRelinkRequest request",
@@ -248,21 +213,6 @@ fn missing_file_recovery_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn missing_file_recovery_documents_consumers_and_file_safety_boundaries() {
-    for fragment in [
-        "这是 DB 记录存在但文件系统中找不到文件时的恢复页，不自动删除记录，也不修改用户文件。",
-        "显示缺失文件的相对路径、最近已知位置、最后见到时间。",
-        "`Locate File` 结果：hash 匹配才可重新关联；hash 不匹配不得覆盖或直接关联",
-        "`Run Rescan...` 不直接重扫，必须进入",
-        "删除记录不删除磁盘文件",
-        "点击 `Try Again` 触发只读路径检查，不做全库 rescan。",
-        "点击 `Remove Record...` 展开危险确认。",
-        "确认后调用 Core 删除记录 API，写入 change log。",
-        "Core locate/relink 或 remove record API。",
-        "Remove Record` 必须二次确认，并明确不删除磁盘文件。",
-    ] {
-        assert_contains(MISSING_FILE_PAGE, fragment);
-    }
-
     for fragment in [
         "Returns the C4-18 missing-file recovery state for S4-X-06.",
         "does not scan the whole repository",

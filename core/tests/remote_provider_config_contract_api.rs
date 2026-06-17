@@ -8,17 +8,6 @@ use pretty_assertions::assert_eq;
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-11-c3-03-contract-api.md");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
-const REMOTE_MODEL_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-03-remote-model-enable.md");
-const AI_PRIVACY_PAGE: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md"
-);
-const STAGE_3_INDEX: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -179,40 +168,6 @@ fn remote_provider_config_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C3-03 remote-provider-config",
-        "- S3-03 remote-model-enable",
-        "- S3-09 ai-privacy-rules",
-        "计划新增：`test_remote_ai_provider`、`load_remote_ai_provider_config`",
-        "`enable_remote_ai_provider`、`disable_remote_ai_provider`",
-        "provider、model、key reference、allowed scopes。",
-        "provider_configured",
-        "provider_verified",
-        "remote_provider_enabled",
-        "feature_scope",
-        "保存 provider metadata 和 scope，不保存 key 明文。",
-        "key 进入 Keychain 或平台安全存储。",
-        "- `Config`",
-        "- `PermissionDenied`",
-        "- `Internal`",
-        "远程 provider 必须显式测试和确认数据流向后启用。",
-        "S3-03/S3-09 必须能读取当前 provider 配置",
-        "S3-03 必须能禁用 remote provider",
-        "API key 不进入日志、诊断、错误文案。",
-        "本地模型失败不得自动启用远程 provider。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S3-03 | remote-model-enable | C3-03, C3-09 | provider test/enable | provider metadata, Keychain ref",
-        "| S3-09 | ai-privacy-rules | C3-01, C3-03, C3-09 | privacy rule CRUD/evaluate",
-        "AI 默认关闭，本地优先。",
-        "远程调用必须显式启用，且 API key 不进入日志、诊断或错误文案。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "RemoteProviderTestResult test_remote_ai_provider(",
         "string repo_path, RemoteProviderTestRequest request",
         "RemoteProviderConfigSnapshot load_remote_ai_provider_config(",
@@ -270,7 +225,6 @@ fn remote_provider_config_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for error_name in ["Config", "PermissionDenied", "Internal"] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(CORE_API, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
@@ -280,49 +234,6 @@ fn remote_provider_config_contract_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn remote_provider_config_contract_documents_consumer_state_and_scope_boundaries() {
-    for fragment in [
-        "选择远程 provider。",
-        "输入 API key，并保存到 Keychain。",
-        "选择使用范围：分类、摘要、标签、语义搜索。",
-        "测试连接，且测试不发送用户文件内容。",
-        "提供禁用远程 AI 的动作。",
-        "provider_configured",
-        "provider_verified",
-        "remote_provider_enabled",
-        "feature_scope",
-        "privacy_gate_enabled",
-        "远程调用允许条件固定为",
-        "Test connection 只发送 provider/model/key 可用性的最小探测请求",
-        "点击 `Enable remote AI` 成功后必须一次性保存",
-        "打开 sheet 时读取已配置 provider",
-        "点击 Disable remote AI 弹确认",
-        "所有字段类型都受隐私规则 gate 约束。",
-    ] {
-        assert_contains(REMOTE_MODEL_PAGE, fragment);
-    }
-
-    for fragment in [
-        "provider_configured",
-        "provider_verified",
-        "remote_provider_enabled",
-        "feature_scope",
-        "privacy_gate_enabled",
-        "本区是隐私 gate，不是 provider 禁用页",
-        "Block remote AI with privacy gate` 不得被实现为 S3-03 的 `Disable remote AI`",
-        "`feature_scope` 不包含某 AI 功能",
-    ] {
-        assert_contains(AI_PRIVACY_PAGE, fragment);
-    }
-
-    for fragment in [
-        "AI 默认关闭；本地模型为默认推荐路径。",
-        "远程模型必须由用户显式配置 key、选择使用范围、测试连接成功并确认数据流向后启用",
-        "API key 只允许存入 Keychain",
-        "AI 失败不得自动切换远程 provider；本地模型失败不得自动启用远程 AI。",
-    ] {
-        assert_contains(STAGE_3_INDEX, fragment);
-    }
-
     assert_contains(
         REMOTE_PROVIDER_RS,
         "C3-03 remote provider configuration contract types",

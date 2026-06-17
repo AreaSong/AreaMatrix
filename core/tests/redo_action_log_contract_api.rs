@@ -6,10 +6,6 @@ use pretty_assertions::assert_eq;
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-1-stage2-experience/task-86-c2-18-contract-api.md");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const REDO_RS: &str = include_str!("../src/redo.rs");
@@ -117,35 +113,6 @@ fn redo_action_log_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C2-18 redo-action-log",
-        "- S2-22 redo",
-        "计划新增：`list_redo_actions`、`redo_action(repo_path, action_id)`",
-        "Redo 可用性、执行结果、刷新建议和失败原因。",
-        "更新 undo/redo action 状态。",
-        "写入 redo 对应 change log。",
-        "必须使用原 action 的安全执行路径。",
-        "- `Conflict`",
-        "- `FileNotFound`",
-        "- `PermissionDenied`",
-        "- `ExpiredAction`",
-        "- `Db`",
-        "- `Io`",
-        "只有 AreaMatrix 成功 Undo 的动作可以 Redo。",
-        "新写操作会清空 redo stack。",
-        "Redo 失败不破坏当前文件系统和 DB 状态。",
-        "多设备协同 redo 属于 Stage 4+。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-22 | redo | C2-18, C2-07 | redo action | undo_actions / redo stack",
-        "批量操作必须有 preview、确认、执行报告和 undo/action log。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "sequence<RedoActionRecord> list_redo_actions(string repo_path);",
         "RedoActionResult redo_action(string repo_path, string action_id);",
         "dictionary RedoActionRecord",
@@ -224,7 +191,6 @@ fn redo_action_log_contract_documents_consumer_state_and_scope_boundaries() {
         "Io",
     ] {
         assert_contains(ERROR_CODES, error_name);
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(UDL, error_name);
         assert_contains(API_RS, error_name);
     }

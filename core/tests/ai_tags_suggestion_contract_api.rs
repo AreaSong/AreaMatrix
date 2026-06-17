@@ -10,12 +10,6 @@ use pretty_assertions::assert_eq;
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-31-c3-07-contract-api.md");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
-const AI_TAGS_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-07-ai-tags-suggestion.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -261,32 +255,6 @@ fn ai_tags_suggestion_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C3-07 ai-tags-suggestion",
-        "- S3-07 ai-tags-suggestion",
-        "计划新增：`suggest_tags_with_ai`、`apply_ai_tag_suggestions`",
-        "file_id、候选标签、privacy policy。",
-        "标签建议、confidence、reason。",
-        "用户采纳后写 `tags`、change log 和 AI call log。",
-        "- `Config`",
-        "- `FileNotFound`",
-        "- `Db`",
-        "建议不自动写入标签。",
-        "用户可以编辑、删除、采纳部分建议。",
-        "隐私规则命中时不调用 provider。",
-        "团队标签词库不在 Stage 3。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S3-07 | ai-tags-suggestion | C3-07, C3-09 | suggest/apply tags | tags after confirm, ai_call_log |",
-        "AI 默认关闭，本地优先。",
-        "AI 结果在用户确认前都是草稿，不直接写分类、标签、摘要。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "AiTagSuggestionReport suggest_tags_with_ai(",
         "string repo_path, AiTagSuggestionRequest request",
         "AiTagSuggestionApplyReport apply_ai_tag_suggestions(",
@@ -332,7 +300,6 @@ fn ai_tags_suggestion_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for error_name in ["Config", "FileNotFound", "Db"] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(CORE_API, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
@@ -342,23 +309,6 @@ fn ai_tags_suggestion_contract_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn ai_tags_suggestion_contract_documents_consumers_and_scope_boundaries() {
-    for fragment in [
-        "AI 自动标签默认是建议状态，用户采纳前不写入文件标签集合。",
-        "显示 AI 建议标签 chips。",
-        "显示每个标签的置信度或理由。",
-        "支持采纳单个/全部高置信度标签。",
-        "支持编辑标签名。",
-        "支持合并到已有标签。",
-        "支持拒绝建议。",
-        "支持查看 AI 调用日志。",
-        "Review before adding tags. AI suggestions are not applied until you accept them.",
-        "Skipped by privacy rule",
-        "生成建议前必须校验 AI 总开关、`Auto tags` 功能开关、provider 状态、远程显式启用、usage scope、隐私规则和调用日志写入能力。",
-        "点击 `Accept selected` 时，single mode 立即写入选中标签；batch mode 先显示批量影响确认 sheet",
-    ] {
-        assert_contains(AI_TAGS_PAGE, fragment);
-    }
-
     for fragment in [
         "C3-07 AI tag suggestion contract types and entry points",
         "pub enum AiTagSuggestionRoute",

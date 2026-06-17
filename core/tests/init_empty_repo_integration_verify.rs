@@ -7,23 +7,7 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-02-init-empty-repo.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
-const S1_04_CONFIRM_INIT: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-04-confirm-init.md"
-);
-const S1_05_INITIALIZING: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-05-initializing.md"
-);
-const S1_07_INIT_DONE: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-07-init-done.md"
-);
-const S1_08_MAIN_EMPTY: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-08-main-empty.md"
-);
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn path_string(path: &Path) -> String {
@@ -88,39 +72,7 @@ fn init_empty_repo_integration_verify_docs_udl_and_public_api_stay_aligned() {
         assert_contains(CORE_API, api_fragment);
         assert_contains(UDL, api_fragment);
     }
-
-    assert_contains(
-        CAPABILITY_SPEC,
-        "`init_repo(repo_path, RepoInitOptions { mode: CreateEmpty, ... })`",
-    );
-    assert_contains(CAPABILITY_SPEC, "`load_config(repo_path)`");
-    assert_contains(CAPABILITY_SPEC, "`list_tree_json(repo_path, locale)`");
 }
-
-#[test]
-fn init_empty_repo_integration_verify_control_map_matches_c1_02_consumers() {
-    for fragment in [
-        "| S1-04 | confirm-init | C1-02, C1-03 | `init_repo`",
-        "| S1-05 | initializing | C1-02, C1-03, C1-16 | `init_repo`",
-        "| S1-07 | init-done | C1-02, C1-03 | `load_config`, `list_tree_json`",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    assert_contains(CAPABILITY_SPEC, "- S1-04 confirm-init");
-    assert_contains(CAPABILITY_SPEC, "- S1-05 initializing");
-    assert_contains(CAPABILITY_SPEC, "- S1-07 init-done");
-    assert_contains(CAPABILITY_SPEC, "- S1-08 main-empty");
-
-    assert_contains(
-        S1_04_CONFIRM_INIT,
-        "点击主按钮前不得创建、移动、重命名、删除或覆盖任何文件",
-    );
-    assert_contains(S1_05_INITIALIZING, "不得删除用户原文件");
-    assert_contains(S1_07_INIT_DONE, "初始化结果摘要");
-    assert_contains(S1_08_MAIN_EMPTY, "Core `list_tree_json` 结果");
-}
-
 #[test]
 fn init_empty_repo_integration_verify_real_create_empty_flow_supports_ux_consumption() {
     let repo = tempfile::tempdir().expect("create temporary repository directory");

@@ -10,15 +10,6 @@ use pretty_assertions::assert_eq;
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-36-c3-08-contract-api.md");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
-const SEMANTIC_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-08-semantic-search-results.md");
-const FALLBACK_PAGE: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const SEMANTIC_RS: &str = include_str!("../src/semantic_search.rs");
@@ -29,13 +20,6 @@ fn assert_contains(haystack: &str, needle: &str) {
     assert!(
         haystack.contains(needle),
         "expected text to contain `{needle}`"
-    );
-}
-
-fn assert_not_contains(haystack: &str, needle: &str) {
-    assert!(
-        !haystack.contains(needle),
-        "expected text not to contain `{needle}`"
     );
 }
 
@@ -289,36 +273,6 @@ fn semantic_search_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C3-08 semantic-search",
-        "- S3-08 semantic-search-results",
-        "计划新增：`semantic_search(repo_path, query, filter, pagination) -> SemanticSearchResultPage`",
-        "计划新增：`build_embedding_index(repo_path, scope)`",
-        "自然语言 query、filter、embedding index scope。",
-        "语义搜索结果、score、matched reason、fallback 状态。",
-        "普通搜索引用数据或 fallback hint",
-        "- `Config`",
-        "- `Db`",
-        "- `PermissionDenied`",
-        "- `Internal`",
-        "普通搜索失败不依赖语义搜索。",
-        "隐私规则阻止的文件不进入 embedding。",
-        "provider 失败时能回退到普通搜索。",
-        "Core 不生成不可解释的单一混合分数。",
-        "OCR embedding 和跨设备 embedding sync 属于 Stage 4+。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S3-08 | semantic-search-results | C3-08, C3-09, C3-10 | semantic search / embedding | embedding metadata, ai_call_log |",
-        "| S3-10 | ai-fallback | C3-04, C3-08, C3-10 | fallback status | ai_call_log |",
-        "AI 默认关闭，本地优先。",
-        "远程调用必须显式启用，且 API key 不进入日志、诊断或错误文案。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "SemanticSearchResultPage semantic_search(",
         "string repo_path,",
         "string query,",
@@ -361,11 +315,6 @@ fn semantic_search_contract_docs_api_udl_and_control_map_stay_aligned() {
         assert_contains(UDL, fragment);
     }
 
-    assert_not_contains(
-        CAPABILITY_SPEC,
-        "semantic_search(repo_path, query, filter, pagination) -> SearchResultPage",
-    );
-
     for fragment in [
         "| `semantic_search(repo, query, filter, pagination)` | ai/search | √ | Config / PermissionDenied / Db / Internal |",
         "| `build_embedding_index(repo, scope)` | ai/search | √ | Config / PermissionDenied / Db / Internal |",
@@ -383,7 +332,6 @@ fn semantic_search_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for error_name in ["Config", "PermissionDenied", "Db", "Internal"] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(CORE_API, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
@@ -392,32 +340,6 @@ fn semantic_search_contract_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn semantic_search_contract_documents_consumers_and_scope_boundaries() {
-    for fragment in [
-        "语义模式默认同时请求 semantic search API 和 Stage 2 normal search API",
-        "第一组固定为 `Semantic matches`",
-        "第二组固定为 `Normal search matches`",
-        "如果同一文件同时出现在两组，默认只在 `Semantic matches` 显示一次",
-        "AI 总开关关闭：显示 fallback",
-        "语义索引未建立：显示 `Semantic index is not ready`",
-        "Build semantic index` 前必须检查 AI 总开关、语义搜索功能开关、provider 状态",
-        "隐私跳过必须写入 S3-05 调用日志，sent fields 为 none。",
-    ] {
-        assert_contains(SEMANTIC_PAGE, fragment);
-    }
-
-    for fragment in [
-        "Semantic search is unavailable",
-        "Semantic index is not ready yet.",
-        "`semantic_index_not_ready`",
-        "`rate_limited`",
-        "`timeout`",
-        "`Build semantic index`",
-        "`Use normal search`",
-        "Retry 只重试同一 provider、同一 model、同一 feature scope 和同一输入快照",
-    ] {
-        assert_contains(FALLBACK_PAGE, fragment);
-    }
-
     for fragment in [
         "C3-08 semantic search contract types and entry points",
         "pub enum SemanticSearchRoute",

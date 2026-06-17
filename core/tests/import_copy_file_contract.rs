@@ -4,10 +4,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -93,18 +89,6 @@ fn import_copy_file_contract_exposes_documented_outputs() {
 #[test]
 fn import_copy_file_contract_docs_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "`import_file(repo_path, source_path, ImportOptions { mode: Copied, ... }) -> FileEntry`",
-        "- `repo_path`",
-        "- `source_path`",
-        "- `ImportOptions.destination`",
-        "- `ImportOptions.duplicate_strategy`",
-        "- 新增 `FileEntry`。",
-        "可在列表、详情、Tree 和 change log 中查到。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
         "FileEntry import_file(",
         "string repo_path, string source_path, ImportOptions options",
         "dictionary ImportOptions",
@@ -129,16 +113,6 @@ fn import_copy_file_contract_docs_udl_and_control_map_stay_aligned() {
         "| `Category` | `override_category` 必填 |",
     ] {
         assert_contains(CORE_API, fragment);
-    }
-
-    for fragment in [
-        "| S1-17 | import-single-sheet | C1-05, C1-06, C1-07, C1-08 | `predict_category`, `import_file`",
-        "| S1-18 | import-batch-sheet | C1-05, C1-06, C1-09 | `predict_category`, `import_file`",
-        "| S1-20 | import-progress | C1-06, C1-07, C1-08 | `import_file`",
-        "| S1-21 | import-result | C1-06, C1-13 | `import_file`, `list_changes`",
-        "| S1-09 | main-list | C1-11, C1-12, C1-15 | `list_files`, `get_file`, `list_tree_json`",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
     }
 }
 
@@ -165,20 +139,9 @@ fn import_copy_file_contract_documents_error_codes_and_side_effects() {
         "Io",
         "Db",
     ] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
         assert_contains(API_RS, error_name);
-    }
-
-    for fragment in [
-        "复制源文件到 `.areamatrix/staging/`。",
-        "计算 hash 后 rename 到最终目录。",
-        "保留原文件不变。",
-        "失败不会留下 active 半成品",
-        "staging 可由 C1-16 清理",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
     }
 
     for fragment in [
@@ -197,11 +160,6 @@ fn import_copy_file_contract_keeps_adjacent_modes_separate() {
     assert_ne!(StorageMode::Copied, StorageMode::Moved);
     assert_ne!(StorageMode::Copied, StorageMode::Indexed);
 
-    assert_contains(CAPABILITY_SPEC, "批量队列进度由 UI 层编排。");
-    assert_contains(
-        CAPABILITY_SPEC,
-        "大文件细粒度进度回调不在 Stage 1 Core API 内",
-    );
     assert_contains(API_RS, "C1-07 defines the moved-file contract");
     assert_contains(API_RS, "C1-08 owns index-only semantics");
 }

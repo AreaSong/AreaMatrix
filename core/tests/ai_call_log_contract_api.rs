@@ -7,13 +7,6 @@ use pretty_assertions::assert_eq;
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-21-c3-05-contract-api.md");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
-const AI_CALL_LOG_PAGE: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-05-ai-call-log.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const DATA_MODEL: &str = include_str!("../../docs/architecture/data-model.md");
@@ -209,29 +202,6 @@ fn ai_call_log_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C3-05 ai-call-log",
-        "- S3-05 ai-call-log",
-        "计划新增：`list_ai_calls`、`clear_ai_call_log`",
-        "filter、pagination、clear scope。",
-        "AI 调用记录，不包含密钥和完整文件内容。",
-        "读写 `ai_call_log` 或等价审计表。",
-        "- `Db`",
-        "- `PermissionDenied`",
-        "本地/远程调用可区分。",
-        "可清除日志，但不影响用户文件。",
-        "日志不包含 API key 或未脱敏隐私内容。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S3-05 | ai-call-log | C3-05 | list/clear AI log | ai_call_log |",
-        "远程调用必须显式启用，且 API key 不进入日志、诊断或错误文案。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "AiCallLogPage list_ai_calls(",
         "string repo_path, AiCallLogFilter filter, AiCallLogPagination pagination",
         "AiCallLogClearReport clear_ai_call_log(",
@@ -287,7 +257,6 @@ fn ai_call_log_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for error_name in ["Db", "PermissionDenied"] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(CORE_API, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
@@ -306,20 +275,6 @@ fn ai_call_log_contract_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn ai_call_log_contract_documents_consumers_and_privacy_boundaries() {
-    for fragment in [
-        "用户能看到 AI 调用时间、功能、provider、状态和是否远程。",
-        "远程调用和隐私跳过记录可区分。",
-        "Provider Test` feature 展示",
-        "sent fields 为 `none`",
-        "Provider Test 记录和导出日志不包含 API key、key 片段、用户文件名、路径、摘要、提取文本、标签、Note、prompt 或 provider 原始响应体。",
-        "详情只显示发送字段类型，不默认展示敏感全文。",
-        "清除日志需要确认，且不影响文件、AI 结果、标签、摘要、Note、AI 设置或 API key。",
-        "删除选中日志需要确认，且不影响文件、AI 结果、标签、摘要、Note 或设置。",
-        "默认保留策略显示为 90 天，可手动清除。",
-    ] {
-        assert_contains(AI_CALL_LOG_PAGE, fragment);
-    }
-
     for fragment in [
         "pub enum AiCallLogFeature",
         "pub enum AiCallLogRoute",

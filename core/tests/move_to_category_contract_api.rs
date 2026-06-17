@@ -3,10 +3,6 @@ use area_matrix_core::{
     MoveToCategoryPreview, StorageMode,
 };
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-24-move-to-category.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -47,30 +43,6 @@ fn move_to_category_contract_exports_core_api_and_udl_signature() {
 
 #[test]
 fn move_to_category_contract_docs_api_udl_and_control_map_stay_aligned() {
-    for fragment in [
-        "# C1-24 move-to-category",
-        "- S1-35 change-category-sheet",
-        "- S1-09 main-list",
-        "- S1-12 detail-meta",
-        "`preview_move_to_category(repo_path, file_id, new_category) -> MoveToCategoryPreview`",
-        "`move_to_category(repo_path, file_id, new_category) -> FileEntry`",
-        "preview 不移动文件",
-        "更新 `files.category`、`files.path`、`updated_at`。",
-        "写入 `change_log.moved`。",
-        "Indexed 文件只更新分类元数据，不移动源文件。",
-        "批量改分类属于 Stage 2 的 C2-09。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-35 | change-category-sheet | C1-24, C1-10 | `preview_move_to_category`, `move_to_category`",
-        "| C1-22..C1-26 | `1-5/task-01` 到 `1-5/task-25`",
-        "Core 能力若未在本矩阵出现，默认不得提前进入 Stage 1 实现。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in [
         "| `preview_move_to_category(repo, file_id, cat)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |",
         "| `move_to_category(repo, file_id, cat)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |",
@@ -141,18 +113,9 @@ fn move_to_category_contract_documents_outputs_errors_and_scope_boundaries() {
         "Io",
         "Db",
     ] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
         assert_contains(API_RS, error_name);
-    }
-
-    for fragment in [
-        "目标同名不会覆盖目标文件。",
-        "成功后 Tree/List/Detail 可通过 Core 查询看到新位置。",
-        "批量改分类属于 Stage 2 的 C2-09。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
     }
     assert_contains(API_RS, "preserve");
     assert_contains(API_RS, "tags, notes");

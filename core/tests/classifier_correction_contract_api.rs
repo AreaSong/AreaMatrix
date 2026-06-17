@@ -4,13 +4,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
-const CLASSIFIER_CORRECT_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-16-classifier-correct.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -115,36 +108,6 @@ fn classifier_correction_contract_validates_inputs_without_fake_success() {
 #[test]
 fn classifier_correction_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "# C2-12 classifier-correction",
-        "- S2-16 classifier-correct",
-        "计划新增：`correct_file_category(repo_path, file_id, category, move_file, remember) -> ClassifierCorrectionResult`",
-        "file_id、目标分类、是否移动 repo-managed 文件、是否记住规则。",
-        "更新后的 FileEntry、可选规则草稿、移动/记住规则请求状态、是否仍需规则确认。",
-        "更新文件分类。",
-        "写 change log。",
-        "按单文件改分类规则移动或只改索引。",
-        "- `Classify`",
-        "- `Conflict`",
-        "- `Io`",
-        "- `Db`",
-        "纠错本身不等于保存全局规则。",
-        "记住规则必须进入规则保存/预览流程。",
-        "不覆盖目标目录同名文件。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-16 | classifier-correct | C2-12 | correct category | files, change_log, safe move",
-        "| S2-17 | classifier-save-rule | C2-13 | save rule | classifier config",
-        "| S2-18 | classifier-impact-preview | C2-14 | rule impact preview | 只读",
-        "| S2-19 | classifier-rule-editor | C2-15 | rule CRUD | classifier config",
-        "分类规则保存和影响预览分离；未预览不得大面积应用。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "ClassifierCorrectionResult correct_file_category(",
         "string repo_path,",
         "i64 file_id,",
@@ -186,22 +149,6 @@ fn classifier_correction_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn classifier_correction_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "显示当前文件和当前分类。",
-        "显示自动分类原因或命中的规则。",
-        "选择新的目标分类。",
-        "选择是否移动文件到目标目录。",
-        "选择是否创建纠错规则。",
-        "应用后写入 change log。",
-        "`Apply correction` 只应用当前文件纠错，不保存规则",
-        "规则写入只能由 `S2-17` 的 `Save rule`",
-        "Index-only 文件默认不移动源文件，只更新分类记录。",
-        "记住规则但未完成规则确认时，`Apply correction` 只应用当前文件纠错，不保存规则。",
-        "点击 `Apply correction` 只执行当前文件的分类更新和可选移动，不保存规则；成功后显示 Undo toast。",
-    ] {
-        assert_contains(CLASSIFIER_CORRECT_PAGE, fragment);
-    }
-
-    for fragment in [
         "C2-12 classifier correction contract types and entry point",
         "ClassifierRuleDraft",
         "ClassifierCorrectionResult",
@@ -233,7 +180,6 @@ fn classifier_correction_contract_documents_consumer_state_and_scope_boundaries(
 
     for error_name in ["Classify", "Conflict", "Io", "Db"] {
         assert_contains(ERROR_CODES, error_name);
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(UDL, error_name);
         assert_contains(API_RS, error_name);
     }

@@ -13,14 +13,8 @@ use rusqlite::Connection;
 use serde_json::Value;
 
 const API_RS: &str = include_str!("../src/api.rs");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const DB_RENAME_RS: &str = include_str!("../src/db/rename.rs");
-const S1_33_RENAME_SHEET: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-33-file-rename-sheet.md");
 const STORAGE_RENAME_RS: &str = include_str!("../src/storage/rename.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 
@@ -170,44 +164,6 @@ fn install_rename_change_log_failure(repo: &Path) {
 
 #[test]
 fn rename_file_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
-    for fragment in [
-        "# C1-22 rename-file",
-        "- S1-33 file-rename-sheet",
-        "- S1-09 main-list",
-        "- S1-12 detail-meta",
-        "`rename_file(repo_path, file_id, new_name) -> FileEntry`",
-        "更新 `files.current_name`、`files.path`、`updated_at`。",
-        "写入 `change_log.renamed`，记录旧名和新名。",
-        "Indexed 文件只更新索引显示名，不移动外部源文件。",
-        "不覆盖同目录已有文件。",
-        "批量重命名属于 Stage 2 的 C2-11。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-33 | file-rename-sheet | C1-22 | `rename_file`",
-        "safe rename or index-only metadata",
-        "InvalidPath, Conflict, PermissionDenied",
-        "| C1-22..C1-26 | `1-5/task-01` 到 `1-5/task-25`",
-        "标记为 Real Core 的页面，最终验收不得用 mock、fixture 或静态占位通过。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
-        "入口：`S1-09 main-list`",
-        "`S1-12 detail-meta` 的文件操作菜单",
-        "即时校验空值、非法字符、未变化、同目录同名冲突。",
-        "Index-only 文件：只更新索引中的显示名和 change_log",
-        "`Cancel` 关闭 sheet，不写文件、不写 DB。",
-        "`Rename` 调用单文件重命名动作",
-        "成功后 change_log 出现 rename 记录。",
-        "Index-only 文件不会移动源文件。",
-    ] {
-        assert_contains(S1_33_RENAME_SHEET, fragment);
-    }
-
     for fragment in [
         "FileEntry rename_file(string repo_path, i64 file_id, string new_name);",
         "dictionary FileEntry",

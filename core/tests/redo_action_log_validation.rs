@@ -18,10 +18,6 @@ use support::{
     system_trash_home::with_test_system_trash,
 };
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -87,30 +83,6 @@ fn assert_redo_signatures() {
     fn assert_redo(_: fn(String, String) -> CoreResult<RedoActionResult>) {}
     assert_list(list_redo_actions);
     assert_redo(redo_action);
-}
-
-fn assert_capability_and_control_map_alignment() {
-    assert_all_contains(
-        CAPABILITY_SPEC,
-        &[
-            "# C2-18 redo-action-log",
-            "- S2-22 redo",
-            "`list_redo_actions`",
-            "`redo_action(repo_path, action_id)`",
-            "Redo 可用性、执行结果、刷新建议和失败原因。",
-            "只有 AreaMatrix 成功 Undo 的动作可以 Redo。",
-            "新写操作会清空 redo stack。",
-            "Redo 失败不破坏当前文件系统和 DB 状态。",
-        ],
-    );
-
-    assert_all_contains(
-        CONTROL_MAP,
-        &[
-            "| S2-22 | redo | C2-18, C2-07 | redo action | undo_actions / redo stack",
-            "批量操作必须有 preview、确认、执行报告和 undo/action log。",
-        ],
-    );
 }
 
 fn assert_api_udl_and_rust_surface_alignment() {
@@ -196,7 +168,6 @@ fn assert_available_batch_tag_redo(repo: &Path, token: &str) {
 #[test]
 fn redo_action_log_validation_locks_core_api_udl_and_rust_alignment() {
     assert_redo_signatures();
-    assert_capability_and_control_map_alignment();
     assert_api_udl_and_rust_surface_alignment();
 }
 

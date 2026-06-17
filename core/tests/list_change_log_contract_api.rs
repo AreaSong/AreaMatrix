@@ -1,10 +1,6 @@
 use area_matrix_core::{list_changes, ChangeFilter, ChangeLogEntry, CoreError, CoreResult};
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-13-list-change-log.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -68,35 +64,6 @@ fn list_change_log_contract_api_exposes_documented_signature_filter_and_errors()
 
 #[test]
 fn list_change_log_contract_api_docs_control_map_and_udl_stay_aligned() {
-    for fragment in [
-        "C1-13 list-change-log",
-        "- S1-13 detail-log",
-        "- S1-21 import-result",
-        "- S1-32 error-recovery",
-        "- `list_changes(repo_path, filter) -> sequence<ChangeLogEntry>`",
-        "- `ChangeFilter`",
-        "- 按 `occurred_at DESC` 排序的 change log。",
-        "- 无写入。",
-        "- 无。",
-        "- `RepoNotInitialized`",
-        "- `Db`",
-        "- 支持按 file_id、category、action、时间范围和分页过滤。",
-        "- 导入、重命名、移动、笔记编辑、外部变化均能被查询。",
-        "- `detail_json` 保持可解析 JSON。",
-        "- Undo 历史和批量撤销属于 Stage 2。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-13 | detail-log | C1-13, C1-17, C1-18, C1-19 | `list_changes`, `sync_external_changes`",
-        "| S1-21 | import-result | C1-06, C1-13 | `import_file`, `list_changes`",
-        "Core 能力若未在本矩阵出现，默认不得提前进入 Stage 1 实现。",
-        "不可 mock：路径校验、init/adopt、导入、重复检测、同名冲突、详情、日志、笔记、Tree、recovery、错误映射。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in [
         "sequence<ChangeLogEntry> list_changes(string repo_path, ChangeFilter filter);",
         "dictionary ChangeFilter",

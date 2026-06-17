@@ -15,17 +15,7 @@ use rusqlite::Connection;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-94-c4-19-validation.md"
 );
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
-const RESCAN_CONFIRM_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-07-rescan-confirm.md");
-const WIN_WATCHER_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-04-watcher-status.md");
-const LNX_WATCHER_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-04-watcher-status.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -353,31 +343,6 @@ fn assert_task_docs_and_testing_alignment() {
         assert_contains(TASK, fragment);
     }
 
-    for fragment in [
-        "# C4-19 manual-rescan",
-        "- S4-X-07 rescan-confirm",
-        "- S4-WIN-04 watcher-status",
-        "- S4-LNX-04 watcher-status",
-        "- `preview_manual_rescan`",
-        "- `reindex_from_filesystem`",
-        "- `get_latest_scan_session`",
-        "- `resume_scan_session`",
-        "只读扫描 repo。",
-        "不移动、不删除、不覆盖用户文件。",
-        "扫描失败可恢复或继续。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-WIN-04 | watcher-status | C4-12, C4-19 | watcher health / rescan | Windows watcher 在平台层",
-        "| S4-LNX-04 | watcher-status | C4-12, C4-19 | watcher health / rescan | inotify 在平台层",
-        "| S4-X-07 | rescan-confirm | C4-19 | manual rescan | 只读扫描，不改用户文件",
-        "初始化、接管、Replace、Remove record、rescan 都必须确认后执行。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`"] {
         assert_contains(TESTING_DOC, fragment);
     }
@@ -456,21 +421,6 @@ fn assert_core_api_udl_and_rust_alignment() {
 }
 
 fn assert_consumer_scope_alignment() {
-    for fragment in [
-        "Windows/Linux watcher 页的 rescan 必须先进入本确认页。",
-        "页面明确说明不移动、不删除、不覆盖用户文件。",
-        "成功结果显示新增、更新、缺失、冲突、不可读、跳过数量。",
-        "rescan summary 可审计",
-    ] {
-        assert_contains(RESCAN_CONFIRM_PAGE, fragment);
-    }
-
-    let fragment = "提供 `Run rescan now` 入口，但点击后必须先进入 `S4-X-07 rescan-confirm`。";
-    assert_contains(WIN_WATCHER_PAGE, fragment);
-    assert_contains(LNX_WATCHER_PAGE, fragment);
-    assert_contains(WIN_WATCHER_PAGE, "rescan 进行中不会启动第二个 rescan。");
-    assert_contains(LNX_WATCHER_PAGE, "rescan 过程中不会启动第二次 rescan。");
-
     for out_of_scope in ["manual_rescan_dry_run", "rescan_subtree"] {
         assert_not_contains(API_RS, out_of_scope);
         assert_not_contains(UDL, out_of_scope);

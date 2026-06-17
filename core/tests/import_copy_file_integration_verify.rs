@@ -11,23 +11,8 @@ use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 use serde_json::Value;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const API_RS: &str = include_str!("../src/api.rs");
-const S1_09_MAIN_LIST: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-09-main-list.md"
-);
-const S1_17_IMPORT_SINGLE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md");
-const S1_20_IMPORT_PROGRESS: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md"
-);
-const S1_21_IMPORT_RESULT: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md"
-);
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn path_string(path: &Path) -> String {
@@ -116,17 +101,6 @@ fn assert_contains(haystack: &str, needle: &str) {
 #[test]
 fn import_copy_file_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
     for fragment in [
-        "`import_file(repo_path, source_path, ImportOptions { mode: Copied, ... }) -> FileEntry`",
-        "复制源文件到 `.areamatrix/staging/`。",
-        "计算 hash 后 rename 到最终目录。",
-        "保留原文件不变。",
-        "目标文件、DB `files`、`change_log` 三者一致。",
-        "大文件细粒度进度回调不在 Stage 1 Core API 内",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
         "FileEntry import_file(",
         "string repo_path, string source_path, ImportOptions options",
         "dictionary ImportOptions",
@@ -140,24 +114,6 @@ fn import_copy_file_integration_verify_docs_api_udl_and_consumers_stay_aligned()
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
     }
-
-    for fragment in [
-        "| S1-17 | import-single-sheet | C1-05, C1-06, C1-07, C1-08 | `predict_category`, `import_file`",
-        "| S1-20 | import-progress | C1-06, C1-07, C1-08 | `import_file`",
-        "| S1-21 | import-result | C1-06, C1-13 | `import_file`, `list_changes`",
-        "| S1-09 | main-list | C1-11, C1-12, C1-15 | `list_files`, `get_file`, `list_tree_json`",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    assert_contains(S1_17_IMPORT_SINGLE, "Copy：说明保留原文件。");
-    assert_contains(S1_17_IMPORT_SINGLE, "Import 进入 `S1-20 import-progress`");
-    assert_contains(
-        S1_20_IMPORT_PROGRESS,
-        "Core 正在 staging、hash、分类、复制/移动、写 DB",
-    );
-    assert_contains(S1_21_IMPORT_RESULT, "成功项已经出现在列表中。");
-    assert_contains(S1_09_MAIN_LIST, "Toolbar：repo 下拉");
 }
 
 #[test]

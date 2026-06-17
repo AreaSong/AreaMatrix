@@ -22,10 +22,6 @@ use support::{
     system_trash_home::with_test_system_trash,
 };
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -267,23 +263,6 @@ fn batch_delete_trash_validation_locks_core_api_udl_and_rust_alignment() {
     }
     assert_preview(preview_batch_delete);
     assert_apply(batch_delete_to_trash);
-
-    for fragment in [
-        "# C2-09 batch-delete-trash",
-        "计划新增：`preview_batch_delete`、`batch_delete_to_trash`",
-        "预览报告、执行报告、undo token。",
-        "Copy / Move 文件进入 Trash。",
-        "Indexed / Missing 条目只移除索引。",
-        "失败项不被当作成功删除。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-    for fragment in [
-        "| S2-13 | batch-delete-confirm | C2-09, C2-07 | preview + Trash delete",
-        "批量操作必须有 preview、确认、执行报告和 undo/action log。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
     for fragment in [
         "BatchDeletePreviewReport preview_batch_delete(",
         "BatchDeleteReport batch_delete_to_trash(",
@@ -434,6 +413,7 @@ fn assert_rust_surface_fragments() {
     ] {
         assert_contains(LIB_RS, fragment);
     }
+
     for fragment in [
         "side-effect free",
         "not touch external source files",
@@ -442,6 +422,7 @@ fn assert_rust_surface_fragments() {
     ] {
         assert_contains(BATCH_DELETE_RS, fragment);
     }
+
     for fragment in [
         "pub fn preview_batch_delete(",
         "batch_delete::preview_batch_delete",
@@ -453,6 +434,7 @@ fn assert_rust_surface_fragments() {
     ] {
         assert_contains(API_RS, fragment);
     }
+
     for fragment in [
         "insert_batch_undo",
         "rollback_after_undo_failure",
@@ -461,6 +443,7 @@ fn assert_rust_surface_fragments() {
     ] {
         assert_contains(BATCH_DELETE_APPLY_RS, fragment);
     }
+
     for fragment in [
         "preview_trash_available",
         "BatchDeletePreviewStatus::Blocked",

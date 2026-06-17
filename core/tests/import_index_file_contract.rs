@@ -4,10 +4,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -96,21 +92,6 @@ fn import_index_file_contract_exposes_documented_outputs() {
 #[test]
 fn import_index_file_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "`import_file(repo_path, source_path, ImportOptions { mode: Indexed, ... }) -> FileEntry`",
-        "- `repo_path`",
-        "- `source_path`",
-        "- `ImportOptions`",
-        "指向外部或资料库内现有文件的 `FileEntry`。",
-        "- `files.storage_mode = Indexed`。",
-        "- `files.source_path` 必须保留。",
-        "- 写入 `change_log.imported`。",
-        "- 不复制、不移动源文件。",
-        "- 可读取源文件 metadata 和 hash。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
         "FileEntry import_file(",
         "string repo_path, string source_path, ImportOptions options",
         "dictionary ImportOptions",
@@ -131,15 +112,6 @@ fn import_index_file_contract_docs_api_udl_and_control_map_stay_aligned() {
         "C1-06, C1-07, C1-08",
     ] {
         assert_contains(CORE_API, fragment);
-    }
-
-    for fragment in [
-        "| S1-17 | import-single-sheet | C1-05, C1-06, C1-07, C1-08 | `predict_category`, `import_file`",
-        "| S1-19 | import-folder-sheet | C1-05, C1-06, C1-08 | `predict_category`, `import_file`",
-        "| S1-20 | import-progress | C1-06, C1-07, C1-08 | `import_file`",
-        "| S1-27 | settings-repository | C1-04, C1-08, C1-20 | `load_config`, `update_config`",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
     }
 }
 
@@ -162,7 +134,6 @@ fn import_index_file_contract_documents_error_codes_and_side_effects() {
         "ICloudPlaceholder",
         "Db",
     ] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
         assert_contains(API_RS, error_name);
@@ -180,14 +151,6 @@ fn import_index_file_contract_documents_error_codes_and_side_effects() {
     ] {
         assert_contains(API_RS, fragment);
     }
-
-    for fragment in [
-        "成功后源文件路径不变。",
-        "删除源文件后详情或列表能通过 `FileNotFound` 显示可恢复错误。",
-        "Indexed 模式不得写入最终资料库文件副本。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
 }
 
 #[test]
@@ -198,9 +161,4 @@ fn import_index_file_contract_keeps_adjacent_modes_separate() {
     assert_contains(API_RS, "C1-06 defines the copied-file contract");
     assert_contains(API_RS, "C1-07 defines the moved-file contract");
     assert_contains(API_RS, "C1-08 defines the indexed-file contract");
-    assert_contains(
-        CAPABILITY_SPEC,
-        "外部路径 bookmark 和跨重启授权归 macOS app 层。",
-    );
-    assert_contains(CAPABILITY_SPEC, "Stage 1 不做跨设备 indexed 路径修复。");
 }

@@ -4,6 +4,8 @@
 
 pipeline 的职责是说明：一个版本或大功能如何从 docs 讨论，逐步进入账本、计划、草稿、候选队列、promotion preview，最后变成 `tasks/prompts/**` 中可由 task-loop 执行和验收的 live 任务。
 
+当前 `tasks/prompts/**` 保存的是已完成的 `v1-mvp` 历史 live queue。新版本不得直接在这里续写或重排任务；必须先从 `workflow/versions/v2/discussion/` 这样的版本讨论入口开始，直到 promotion approval 和 explicit promote 通过后，才允许写入新的 live queue 内容。
+
 ## Pipeline Overview
 
 ```text
@@ -339,6 +341,7 @@ version init
 - preview 不写 live files。
 - preview 不修改 progress。
 - preview pass 不等于 promote。
+- v1 已完成并归档时，preview 仍只能把 `tasks/prompts/**` 当历史基线和 collision target；不能把历史队列重新解释成当前 v2 范围。
 
 **Failure return**：回到 drafts 或 queue candidates，取决于失败来源。
 
@@ -378,6 +381,9 @@ version init
 - live mapping records。
 
 **Gate**：
+
+- 必须有 promotion approval 和 live mapping。
+- 必须确认写入的是新版本任务，而不是清理、重排或重写 v1 历史队列。
 
 - 必须是显式动作。
 - 必须保留 preview evidence。

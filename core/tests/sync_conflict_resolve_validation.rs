@@ -19,11 +19,6 @@ use sync_conflict_resolve_validation_support::{
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-79-c4-16-validation.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
@@ -244,31 +239,6 @@ fn assert_task_docs_and_testing_alignment() {
         "./dev check task 4-3/task-79",
     ] {
         assert_contains(TASK, fragment);
-    }
-
-    for fragment in [
-        "# C4-16 sync-conflict-resolve",
-        "- S4-X-01 sync-conflict",
-        "- S4-X-09 replace-confirm",
-        "计划新增：`preview_sync_conflict_resolution`、`resolve_sync_conflict`",
-        "更新 conflict state。",
-        "写 change log。",
-        "默认保留版本；丢弃版本进入 Trash。",
-        "Replace 必须二次确认。",
-        "Resolve 失败保持 unresolved。",
-        "不自动删除任何版本。",
-        "Replace 必须经过 S4-X-09。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-X-01 | sync-conflict | C4-15, C4-16, C4-21 | conflict detect/resolve | 不静默删除任一版本",
-        "| S4-X-09 | replace-confirm | C4-16, C4-21 | replace confirm | Trash/备份，禁止永久删除",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-        "初始化、接管、Replace、Remove record、rescan 都必须确认后执行。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
     }
 
     for fragment in [

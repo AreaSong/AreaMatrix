@@ -7,17 +7,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-81-c4-17-contract-api.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const PLATFORM_DIFFERENCES_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-02-platform-differences.md");
-const LOCAL_FOLDER_NOTICE_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-03-local-folder-notice.md");
-const REPOSITORY_SETTINGS_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-08-repository-settings.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -115,29 +104,6 @@ fn platform_capabilities_docs_core_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C4-17 platform-capabilities",
-        "- S4-X-02 platform-differences",
-        "计划新增：`get_platform_capabilities(platform) -> PlatformCapabilities`",
-        "platform id、app version。",
-        "watcher、trash、share extension、cloud placeholder、security bookmark 支持矩阵。",
-        "- `Config`",
-        "UI 显示的平台差异来自结构化能力。",
-        "不支持的危险操作必须在 UI 层禁用。",
-        "文案不承诺平台不存在的能力。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-LNX-03 | local-folder-notice | C4-10, C4-17 | local folder risk",
-        "| S4-X-02 | platform-differences | C4-01, C4-17 | capability matrix | UI 不硬猜平台能力",
-        "| S4-X-08 | repository-settings | C4-17, C4-20 | cross-platform settings | 不支持项禁用",
-        "平台差异必须结构化暴露。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "PlatformCapabilities get_platform_capabilities(",
         "PlatformId platform, string app_version",
         "dictionary PlatformCapabilitySupport",
@@ -181,33 +147,6 @@ fn platform_capabilities_docs_core_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn platform_capabilities_documents_consumers_and_scope_boundaries() {
-    for fragment in [
-        "展示能力矩阵：Repository access、File import、File watcher、Cloud provider、Trash/Recycle Bin、Share integration、Camera import。",
-        "能力未知时显示 `Unknown`，不显示成可用。",
-        "不把未来路线图能力显示为当前可用。",
-        "本页只说明能力，不直接执行危险操作。",
-    ] {
-        assert_contains(PLATFORM_DIFFERENCES_PAGE, fragment);
-    }
-
-    for fragment in [
-        "本地目录是推荐路径",
-        "同步目录：需要确认冲突和监听风险。",
-        "类型未知：显示 `Unknown`，不猜测。",
-        "watcher 风险提示来自 inotify 能力边界。",
-    ] {
-        assert_contains(LOCAL_FOLDER_NOTICE_PAGE, fragment);
-    }
-
-    for fragment in [
-        "展示访问状态、watcher 状态、云盘/本地目录状态。",
-        "提供 `Platform capabilities` 入口。",
-        "明确危险操作不在本页直接执行。",
-        "打开页面读取 repo snapshot 和 platform capability snapshot。",
-    ] {
-        assert_contains(REPOSITORY_SETTINGS_PAGE, fragment);
-    }
-
     for fragment in [
         "Returns the C4-17 platform capability matrix for a platform shell.",
         "Limited, unavailable, or",

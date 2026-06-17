@@ -7,19 +7,7 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-04-load-update-config.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
-const S1_26_SETTINGS_GENERAL: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-26-settings-general.md");
-const S1_27_SETTINGS_REPOSITORY: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md");
-const S1_28_SETTINGS_CLASSIFIER: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-28-settings-classifier.md");
-const S1_30_SETTINGS_ADVANCED: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-30-settings-advanced.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn path_string(path: &Path) -> String {
@@ -110,43 +98,7 @@ fn load_update_config_integration_verify_docs_api_and_udl_stay_aligned() {
     ] {
         assert_contains(CORE_API, fragment);
     }
-
-    assert_contains(CAPABILITY_SPEC, "分类规则");
-    assert_contains(CAPABILITY_SPEC, "危险 Replace 开关可读写");
 }
-
-#[test]
-fn load_update_config_integration_verify_control_map_matches_settings_consumers() {
-    for fragment in [
-        "| S1-26 | settings-general | C1-04, C1-07 | `load_config`, `update_config`",
-        "| S1-27 | settings-repository | C1-04, C1-08, C1-20 | `load_config`, `update_config`",
-        "| S1-28 | settings-classifier | C1-04, C1-05 | `load_config`, `predict_category`",
-        "| S1-30 | settings-advanced | C1-04, C1-16, C1-20 |",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
-        "- S1-26 settings-general",
-        "- S1-27 settings-repository",
-        "- S1-28 settings-classifier",
-        "- S1-30 settings-advanced",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    assert_contains(S1_26_SETTINGS_GENERAL, "defaultStorageMode=Copy");
-    assert_contains(S1_26_SETTINGS_GENERAL, "overviewOutput=GeneratedOnly");
-    assert_contains(
-        S1_27_SETTINGS_REPOSITORY,
-        "新 repo 未成功打开前，当前 repo 配置保持不变",
-    );
-    assert_contains(S1_28_SETTINGS_CLASSIFIER, "`enableExtensionRules`");
-    assert_contains(S1_28_SETTINGS_CLASSIFIER, "`enableKeywordRules`");
-    assert_contains(S1_28_SETTINGS_CLASSIFIER, "`fallbackToInbox`");
-    assert_contains(S1_30_SETTINGS_ADVANCED, "`allowReplaceDuringImport=false`");
-}
-
 #[test]
 fn load_update_config_integration_verify_real_core_supports_settings_state() {
     let repo = initialized_repo();

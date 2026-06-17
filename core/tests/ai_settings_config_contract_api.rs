@@ -6,18 +6,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
-const AI_SETTINGS_PAGE: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-01-ai-settings.md"
-);
-const AI_PRIVACY_PAGE: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md"
-);
-const STAGE_3_INDEX: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const AI_SETTINGS_RS: &str = include_str!("../src/ai_settings.rs");
@@ -176,29 +164,6 @@ fn ai_settings_config_contract_rejects_invalid_updates_without_fake_success() {
 #[test]
 fn ai_settings_config_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "# C3-01 ai-settings-config",
-        "- S3-01 ai-settings",
-        "- S3-09 ai-privacy-rules",
-        "计划新增：`load_ai_config`、`update_ai_config`",
-        "AI enabled、provider preference、本地/远程开关、隐私策略引用。",
-        "当前 AI 配置和可用能力。",
-        "AI 默认关闭。",
-        "配置变更可持久化且不会自动触发远程调用。",
-        "key 只允许平台安全存储，不进入日志或诊断。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S3-01 | ai-settings | C3-01 | AI config read/write | ai_config",
-        "| S3-09 | ai-privacy-rules | C3-01, C3-03, C3-09 | privacy rule CRUD/evaluate",
-        "AI 默认关闭，本地优先。",
-        "远程调用必须显式启用，且 API key 不进入日志、诊断或错误文案。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "AiConfigSnapshot load_ai_config(string repo_path);",
         "AiConfigSnapshot update_ai_config(string repo_path, AiConfig new_config);",
         "dictionary AiConfig",
@@ -230,7 +195,6 @@ fn ai_settings_config_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for error_name in ["Config", "PermissionDenied", "Io"] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(CORE_API, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
@@ -239,35 +203,6 @@ fn ai_settings_config_contract_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn ai_settings_config_contract_documents_consumer_state_and_scope_boundaries() {
-    for fragment in [
-        "显示 AI 总开关。",
-        "分功能开关：分类建议、摘要、自动标签、语义搜索。",
-        "远程 AI 不能通过本页普通 toggle 直接开启。",
-        "Pause all AI 立即阻止后续调用，不删除已有结果。",
-        "Clear AI generated suggestions 只清理未采纳建议和草稿摘要",
-    ] {
-        assert_contains(AI_SETTINGS_PAGE, fragment);
-    }
-
-    for fragment in [
-        "privacy_gate_enabled",
-        "provider_configured",
-        "provider_verified",
-        "remote_provider_enabled",
-        "feature_scope",
-        "本页关闭 `privacy_gate_enabled` 只阻止远程调用",
-    ] {
-        assert_contains(AI_PRIVACY_PAGE, fragment);
-    }
-
-    for fragment in [
-        "AI 默认关闭；本地模型为默认推荐路径。",
-        "API key 只允许存入 Keychain",
-        "自动摘要、自动标签、AI 分类结果在用户确认前都是建议或草稿",
-    ] {
-        assert_contains(STAGE_3_INDEX, fragment);
-    }
-
     assert_contains(AI_SETTINGS_RS, "C3-01 AI settings contract types");
     for fragment in [
         "This contract accepts only settings metadata.",
@@ -278,6 +213,7 @@ fn ai_settings_config_contract_documents_consumer_state_and_scope_boundaries() {
     ] {
         assert_contains(API_RS, fragment);
     }
+
     for fragment in [
         "load_ai_config_record",
         "update_ai_config_record",

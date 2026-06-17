@@ -5,10 +5,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-03-adopt-existing-repo.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -108,7 +104,6 @@ fn adopt_existing_repo_contract_exposes_documented_error_codes() {
 
     assert_eq!(errors.len(), 5);
     for error_name in ["PermissionDenied", "InvalidPath", "Io", "Db", "Config"] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
     }
@@ -135,30 +130,10 @@ fn adopt_existing_repo_contract_udl_matches_public_core_api() {
         assert_contains(CORE_API, api_fragment);
         assert_contains(UDL, api_fragment);
     }
-
-    assert_contains(
-        CAPABILITY_SPEC,
-        "`init_repo(repo_path, RepoInitOptions { mode: AdoptExisting, ... })`",
-    );
-    assert_contains(CAPABILITY_SPEC, "`get_latest_scan_session(repo_path)`");
-    assert_contains(
-        CAPABILITY_SPEC,
-        "`resume_scan_session(repo_path, scan_session_id)`",
-    );
 }
 
 #[test]
 fn adopt_existing_repo_contract_documents_side_effect_boundaries() {
-    for fragment in [
-        "只创建 `.areamatrix/**` 管理目录",
-        "不移动、不重命名、不删除、不覆盖任何已有用户文件",
-        "跳过 `.areamatrix/`、系统临时文件和 AreaMatrix generated overview",
-        "`README.md` 作为普通用户文件索引",
-        "`AREAMATRIX.md` 与 generated overview 按文档规则跳过",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
     assert_contains(
         CORE_API,
         "`AdoptExisting`：目录可以非空；不移动、不重命名、不删除、不覆盖已有内容",
@@ -167,25 +142,4 @@ fn adopt_existing_repo_contract_documents_side_effect_boundaries() {
         CORE_API,
         "仅当 `overview_output = RootAreaMatrixFile` 时写入/维护根目录",
     );
-}
-
-#[test]
-fn adopt_existing_repo_contract_control_map_consumers_are_declared() {
-    for fragment in [
-        "| S1-03 | validate-path | C1-01, C1-03, C1-21 |",
-        "| S1-04 | confirm-init | C1-02, C1-03 | `init_repo`",
-        "| S1-05 | initializing | C1-02, C1-03, C1-16 | `init_repo`",
-        "| S1-10 | main-loading | C1-03, C1-15, C1-16 |",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for page in [
-        "- S1-03 validate-path",
-        "- S1-04 confirm-init",
-        "- S1-05 initializing",
-        "- S1-10 main-loading",
-    ] {
-        assert_contains(CAPABILITY_SPEC, page);
-    }
 }

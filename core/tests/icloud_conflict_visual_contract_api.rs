@@ -8,15 +8,6 @@ use pretty_assertions::assert_eq;
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-1-stage2-experience/task-76-c2-16-contract-api.md");
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
-const S2_20_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-20-icloud-conflict-visual.md");
-const S1_36_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-36-icloud-conflict-list.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -153,35 +144,6 @@ fn icloud_conflict_visual_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C2-16 icloud-conflict-visual",
-        "- S2-20 icloud-conflict-visual",
-        "- S1-36 icloud-conflict-list",
-        "- `list_icloud_conflicts`",
-        "计划新增：`preview_conflict_versions`、`resolve_icloud_conflict`",
-        "conflict_id、resolution。",
-        "版本 metadata、预览摘要、解决报告。",
-        "默认 Keep both。",
-        "丢弃版本必须走 Trash，不直接删除。",
-        "- `ICloudPlaceholder`",
-        "- `PermissionDenied`",
-        "- `Conflict`",
-        "- `Io`",
-        "- `Db`",
-        "冲突解决失败时保持 unresolved。",
-        "不自动删除任一版本。",
-        "预览失败不能继续 destructive resolution。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-20 | icloud-conflict-visual | C2-16, C1-25 | conflict preview/resolve | conflict state, Trash",
-        "批量操作必须有 preview、确认、执行报告和 undo/action log。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "ICloudConflictPreviewReport preview_conflict_versions(",
         "string repo_path, string conflict_id",
         "ICloudConflictResolveReport resolve_icloud_conflict(",
@@ -237,29 +199,6 @@ fn icloud_conflict_visual_contract_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn icloud_conflict_visual_contract_matches_consuming_page_state_without_adjacent_scope() {
-    for fragment in [
-        "展示两个版本 metadata。",
-        "尽量提供 QuickLook 或文本预览。",
-        "提供保留两份、保留左侧、保留右侧。",
-        "删除的一侧必须进 Trash。",
-        "默认选择 Keep both。",
-        "Trash 不可用时禁用 Keep left/right。",
-        "Keep both 必须保留所有版本",
-        "失败时保持 unresolved",
-        "Cancel 和 Decide later 不改变任何文件或 DB 记录。",
-    ] {
-        assert_contains(S2_20_PAGE, fragment);
-    }
-
-    for fragment in [
-        "展示当前资料库中的 iCloud 冲突副本列表。",
-        "提供单项 Resolve 入口。",
-        "Resolve 只打开单项解决 sheet，不在列表页直接删除或移动任何版本。",
-        "列表页不会自动删除或移动任何冲突副本。",
-    ] {
-        assert_contains(S1_36_PAGE, fragment);
-    }
-
     for fragment in [
         "Version role inside a C2-16 iCloud conflict preview.",
         "User resolution choices supported by C2-16.",

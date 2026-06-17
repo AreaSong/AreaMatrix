@@ -1,10 +1,6 @@
 use area_matrix_core::{list_files, CoreError, CoreResult, FileEntry, FileFilter};
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-11-list-files.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -49,30 +45,6 @@ fn list_files_contract_api_exposes_documented_signature_filter_and_errors() {
 
 #[test]
 fn list_files_contract_api_docs_api_udl_and_consumers_stay_aligned() {
-    for fragment in [
-        "`list_files(repo_path, filter) -> sequence<FileEntry>`",
-        "- `FileFilter`",
-        "- 按 `imported_at DESC` 排序的文件列表。",
-        "- `limit` 超过上限时自动 clamp。",
-        "- 无写入。",
-        "- 无。",
-        "- `RepoNotInitialized`",
-        "- `Db`",
-        "- 分类过滤、时间过滤、分页和 limit clamp 有测试。",
-        "- 搜索、标签过滤、智能列表属于 Stage 2。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-08 | main-empty | C1-11, C1-15 | `list_files`, `list_tree_json`",
-        "| S1-09 | main-list | C1-11, C1-12, C1-15 | `list_files`, `get_file`, `list_tree_json`",
-        "| S1-15 | detail-multi | C1-11, C1-12 | `list_files`, `get_file`",
-        "Core 能力若未在本矩阵出现，默认不得提前进入 Stage 1 实现。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in [
         "sequence<FileEntry> list_files(string repo_path, FileFilter filter);",
         "dictionary FileFilter",

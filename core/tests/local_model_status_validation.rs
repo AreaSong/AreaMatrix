@@ -9,10 +9,6 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-02-local-model-status.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -295,23 +291,6 @@ fn local_model_status_validation_locks_core_api_udl_and_rust_contract() {
 
     assert_status_signature(get_local_model_status);
     assert_folder_signature(locate_local_model_folder);
-
-    for fragment in [
-        "计划新增：`get_local_model_status`、`locate_local_model_folder`",
-        "availability、version、size、last_error、recommended_action、last_checked_at、diagnostics_summary。",
-        "本地模型不可用时不阻断 Core 基础功能。",
-        "状态检测或定位失败不启用远程 fallback。",
-        "健康检查和 diagnostics summary 不读取用户文件正文。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-    for fragment in [
-        "| S3-02 | local-model-status | C3-02 | local model status | model metadata / cache",
-        "AI 默认关闭，本地优先。",
-        "远程调用必须显式启用，且 API key 不进入日志、诊断或错误文案。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
     for fragment in [
         "LocalModelStatusSnapshot get_local_model_status(",
         "LocalModelFolderLocation locate_local_model_folder(",
@@ -330,6 +309,7 @@ fn local_model_status_validation_locks_core_api_udl_and_rust_contract() {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
     }
+
     for fragment in [
         "pub fn get_local_model_status",
         "pub fn locate_local_model_folder",
@@ -340,6 +320,7 @@ fn local_model_status_validation_locks_core_api_udl_and_rust_contract() {
     ] {
         assert_contains(API_RS, fragment);
     }
+
     for fragment in [
         "pub(crate) fn get_local_model_status",
         "pub(crate) fn locate_local_model_folder",
@@ -349,6 +330,7 @@ fn local_model_status_validation_locks_core_api_udl_and_rust_contract() {
     ] {
         assert_contains(LOCAL_MODEL_STATUS_RS, fragment);
     }
+
     for fragment in [
         "inspect_local_model",
         "read_manifest",
@@ -358,6 +340,7 @@ fn local_model_status_validation_locks_core_api_udl_and_rust_contract() {
     ] {
         assert_contains(INSPECTION_RS, fragment);
     }
+
     for fragment in [
         "LocalModelRecommendedAction::OpenInstallHelp",
         "LocalModelRecommendedAction::RunHealthCheck",

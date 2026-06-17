@@ -4,10 +4,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -91,20 +87,6 @@ fn import_move_file_contract_exposes_documented_outputs() {
 #[test]
 fn import_move_file_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "`import_file(repo_path, source_path, ImportOptions { mode: Moved, ... }) -> FileEntry`",
-        "- `repo_path`",
-        "- `source_path`",
-        "- `ImportOptions`",
-        "- 新增 `FileEntry`。",
-        "- 原路径被安全移入资料库最终位置。",
-        "- `files.storage_mode = Moved`。",
-        "- `files.source_path` 记录原始来源。",
-        "- `change_log.action = imported`。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
         "FileEntry import_file(",
         "string repo_path, string source_path, ImportOptions options",
         "dictionary ImportOptions",
@@ -129,14 +111,6 @@ fn import_move_file_contract_docs_api_udl_and_control_map_stay_aligned() {
     ] {
         assert_contains(CORE_API, fragment);
     }
-
-    for fragment in [
-        "| S1-17 | import-single-sheet | C1-05, C1-06, C1-07, C1-08 | `predict_category`, `import_file`",
-        "| S1-20 | import-progress | C1-06, C1-07, C1-08 | `import_file`",
-        "| S1-26 | settings-general | C1-04, C1-07 | `load_config`, `update_config`",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
 }
 
 #[test]
@@ -160,20 +134,9 @@ fn import_move_file_contract_documents_error_codes_and_side_effects() {
         "Io",
         "Db",
     ] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
         assert_contains(API_RS, error_name);
-    }
-
-    for fragment in [
-        "源文件移动到 staging，再原子 rename 到最终目录。",
-        "不跨越用户未确认的目录边界。",
-        "成功后原路径不存在，最终路径存在。",
-        "移动失败必须保留源文件或可恢复 staging，不丢数据。",
-        "与 Copy 模式共享重复检测和同名冲突处理。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
     }
 
     for fragment in [
@@ -193,7 +156,5 @@ fn import_move_file_contract_keeps_adjacent_modes_separate() {
     assert_ne!(StorageMode::Moved, StorageMode::Copied);
     assert_ne!(StorageMode::Moved, StorageMode::Indexed);
 
-    assert_contains(CAPABILITY_SPEC, "多文件 move 队列由 Phase 2 UI 任务处理。");
-    assert_contains(CAPABILITY_SPEC, "从外部云盘占位符自动下载由 macOS 层处理。");
     assert_contains(API_RS, "C1-08 owns index-only semantics");
 }

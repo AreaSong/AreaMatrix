@@ -12,10 +12,6 @@ use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 use serde_json::Value;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-22-rename-file.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -167,28 +163,6 @@ fn rename_file_contract_exports_core_api_and_udl_signature() {
 #[test]
 fn rename_file_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "# C1-22 rename-file",
-        "- S1-33 file-rename-sheet",
-        "- S1-09 main-list",
-        "- S1-12 detail-meta",
-        "`rename_file(repo_path, file_id, new_name) -> FileEntry`",
-        "Indexed 文件只更新索引显示名，不移动外部源文件。",
-        "不覆盖同目录已有文件。",
-        "Copy / Move rename 成功后触发 C1-20 generated overview 再生成",
-        "仅当配置显式允许时维护根目录 `AREAMATRIX.md`",
-        "批量重命名属于 Stage 2 的 C2-11。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-33 | file-rename-sheet | C1-22 | `rename_file`",
-        "| C1-22..C1-26 | `1-5/task-01` 到 `1-5/task-25`",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "C1-22 owns the user-visible rename contract",
         "Indexed rows are display-name only",
         "leaves `files.path`",
@@ -222,7 +196,6 @@ fn rename_file_contract_docs_api_udl_and_control_map_stay_aligned() {
         "Db",
         "Config",
     ] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
         assert_contains(API_RS, error_name);

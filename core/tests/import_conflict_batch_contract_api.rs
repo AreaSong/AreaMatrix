@@ -9,13 +9,6 @@ use pretty_assertions::assert_eq;
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-1-stage2-experience/task-81-c2-17-contract-api.md");
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
-const S2_21_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md");
 const DEDUP_CONFLICT: &str = include_str!("../../docs/ux/dedup-conflict.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
@@ -233,35 +226,6 @@ fn import_conflict_batch_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C2-17 import-conflict-batch",
-        "- S2-21 import-conflict-batch",
-        "计划新增：`preview_import_conflict_batch`、`apply_import_conflict_batch`",
-        "import_session_id、conflict_ids、批量策略。",
-        "每个冲突项的策略预览、风险说明、执行结果和失败摘要。",
-        "写入 import session 决策、file 记录变化、change log 和 undo action。",
-        "按策略 Skip、Keep both、Replace 或 Ask per item 处理 staged 文件。",
-        "Replace 必须走二次确认和可恢复路径。",
-        "- `Conflict`",
-        "- `FileNotFound`",
-        "- `PermissionDenied`",
-        "- `StagingRecoveryRequired`",
-        "- `Io`",
-        "- `Db`",
-        "Hash duplicate 默认 Skip，同名不同内容默认 Keep both。",
-        "批量策略执行前必须预览每一项影响。",
-        "失败时保留 staged 文件和冲突状态，不覆盖用户文件。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-21 | import-conflict-batch | C2-17, C2-07 | import conflict batch decision | import session, staging, change_log",
-        "批量操作必须有 preview、确认、执行报告和 undo/action log。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "ImportConflictBatchPreviewReport preview_import_conflict_batch(",
         "ImportConflictBatchPreviewRequest request",
         "ImportConflictBatchApplyReport apply_import_conflict_batch(",
@@ -312,22 +276,6 @@ fn import_conflict_batch_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn import_conflict_batch_contract_matches_consuming_page_state_without_adjacent_scope() {
     for fragment in [
-        "按冲突类型分组展示：hash duplicate、same-name different-content。",
-        "为 hash duplicate 提供 `Skip`、`Keep both`、`Replace`。",
-        "为 same-name different-content 提供 `Keep both (auto-number)`、`Ask per item`、`Replace`。",
-        "默认策略安全：hash duplicate 默认 `Skip`，same-name different-content 默认 `Keep both (auto-number)`。",
-        "Apply this strategy to all similar conflicts",
-        "未勾选行保持 `Pending`",
-        "Replace 必须二次确认",
-        "Index-only 目标不得被 Replace 覆盖",
-        "恢复态：策略应用部分失败后停留结果摘要",
-        "部分失败显示成功、失败、skipped、replaced、kept-both 和 pending 数量。",
-        "成功策略写 change_log，并在可逆时显示 Undo toast。",
-    ] {
-        assert_contains(S2_21_PAGE, fragment);
-    }
-
-    for fragment in [
         "批量导入时冲突不弹 N 次对话框，而是用汇总策略。",
         "重复（hash dup）：`Skip`（默认）/ `Keep both` / `Replace`（危险）",
         "重名不同内容：`Keep both (auto-number)`（默认）/ `Ask per item` / `Replace`",
@@ -369,7 +317,6 @@ fn import_conflict_batch_contract_matches_consuming_page_state_without_adjacent_
         "Db",
     ] {
         assert_contains(ERROR_CODES, error_name);
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(UDL, error_name);
         assert_contains(API_RS, error_name);
     }

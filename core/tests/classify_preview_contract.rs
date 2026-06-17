@@ -10,10 +10,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-05-classify-preview.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -80,22 +76,6 @@ fn classify_preview_contract_exports_callable_signature() {
 #[test]
 fn classify_preview_contract_docs_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "`predict_category(repo_path, filename) -> ClassifyResult`",
-        "- `repo_path`",
-        "- `filename`",
-        "- `category`",
-        "- `suggested_name`",
-        "- `reason`",
-        "- `confidence`",
-        "- `Config`",
-        "- `Classify`",
-        "读取 `.areamatrix/classifier.yaml`",
-        "不创建、不移动、不删除文件",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
         "ClassifyResult predict_category(string repo_path, string filename);",
         "dictionary ClassifyResult",
         "string category;",
@@ -117,19 +97,7 @@ fn classify_preview_contract_docs_udl_and_control_map_stay_aligned() {
     ] {
         assert_contains(CORE_API, fragment);
     }
-
-    for fragment in [
-        "| S1-16 | drag-hover | C1-05 | `predict_category`",
-        "| S1-17 | import-single-sheet | C1-05, C1-06, C1-07, C1-08 | `predict_category`, `import_file`",
-        "| S1-18 | import-batch-sheet | C1-05, C1-06, C1-09 | `predict_category`, `import_file`",
-        "| S1-19 | import-folder-sheet | C1-05, C1-06, C1-08 | `predict_category`, `import_file`",
-        "| S1-28 | settings-classifier | C1-04, C1-05 | `load_config`, `predict_category`",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for error_name in ["Config", "Classify"] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(CORE_API, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);

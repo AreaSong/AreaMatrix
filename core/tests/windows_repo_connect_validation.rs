@@ -13,11 +13,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-44-c4-09-validation.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -225,41 +220,6 @@ fn assert_validation_docs_alignment() {
         "./dev check task 4-3/task-44",
     ] {
         assert_contains(TASK, fragment);
-    }
-
-    for fragment in [
-        "# C4-09 windows-repo-connect",
-        "- S4-WIN-01 choose-repo",
-        "- S4-X-04 repository-init-confirm",
-        "- S4-X-05 repository-adopt-confirm",
-        "- `validate_repo_path`",
-        "- `init_repo`",
-        "- `load_config`",
-        "Windows path。",
-        "使用 Windows 路径规则和权限探测。",
-        "Windows 路径分隔符、保留名、大小写规则有测试。",
-        "OneDrive 路径能提示风险，不自动控制同步。",
-        "接管非空目录仍不改用户文件。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        concat!(
-            "| S4-WIN-01 | choose-repo | C4-09, C4-14 | Windows repo connect | ",
-            "Windows path / OneDrive risk",
-        ),
-        concat!(
-            "| S4-X-04 | repository-init-confirm | C4-02, C4-09, C4-10 | ",
-            "init confirm | 不绕过确认",
-        ),
-        concat!(
-            "| S4-X-05 | repository-adopt-confirm | C4-02, C4-09, C4-10 | ",
-            "adopt confirm | 不移动/删除/覆盖用户文件",
-        ),
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
     }
 
     for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`"] {

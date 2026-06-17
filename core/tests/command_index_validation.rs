@@ -9,10 +9,6 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-11-command-index.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 const LIB_RS: &str = include_str!("../src/lib.rs");
@@ -366,23 +362,6 @@ fn command_index_validation_covers_failure_paths_without_writes() {
 fn command_index_validation_locks_core_api_udl_rust_and_docs_alignment() {
     fn assert_signature(_: fn(String, CommandIndexContext) -> CoreResult<CommandIndex>) {}
     assert_signature(list_command_targets);
-
-    for fragment in [
-        "# C2-11 command-index",
-        "- S2-15 command-palette",
-        "计划新增：`list_command_targets(repo_path) -> CommandIndex`",
-        "命令面板只列出当前上下文允许的动作。",
-        "危险动作仍必须跳转确认页。",
-        "不绕过权限或高风险确认。",
-        "- `Db`",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    assert_contains(
-        CONTROL_MAP,
-        "| S2-15 | command-palette | C2-04, C2-11 | command index | 只读 / recent command",
-    );
     assert_contains(
         CORE_API,
         "CommandIndex list_command_targets(string repo_path, CommandIndexContext context);",

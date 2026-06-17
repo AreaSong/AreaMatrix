@@ -18,10 +18,6 @@ use rusqlite::{params, Connection};
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-29-c3-06-validation.md");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -369,25 +365,7 @@ fn ai_summary_validation_locks_core_api_udl_rust_and_docs_alignment() {
     ] {
         assert_contains(TASK, fragment);
     }
-    for fragment in [
-        "# C3-06 ai-summary",
-        "计划新增：`generate_ai_summary`、`save_ai_summary`、`clear_ai_summary`",
-        "保存摘要 metadata。",
-        "写 AI call log 和 change log。",
-        "可写伴生 summary metadata；不得覆盖用户原文件。",
-        "生成结果默认是草稿，用户保存后才持久化。",
-        "Clear 只清摘要，不删文件和笔记。",
-        "远程摘要必须受隐私规则控制。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-    for fragment in [
-        "| S3-06 | ai-summary-editor | C3-06, C3-09 | generate/save/clear summary | summary metadata, ai_call_log |",
-        "远程调用必须显式启用，且 API key 不进入日志、诊断或错误文案。",
-        "AI 结果在用户确认前都是草稿，不直接写分类、标签、摘要。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
+
     for fragment in [
         "`core/tests/`，每个文件独立编译",
         "### 共享 fixtures",
@@ -396,6 +374,7 @@ fn ai_summary_validation_locks_core_api_udl_rust_and_docs_alignment() {
     ] {
         assert_contains(TESTING_DOC, fragment);
     }
+
     for fragment in [
         "AiSummaryDraft generate_ai_summary(",
         "AiSummarySaveReport save_ai_summary(",
@@ -417,6 +396,7 @@ fn ai_summary_validation_locks_core_api_udl_rust_and_docs_alignment() {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
     }
+
     for fragment in [
         "pub fn generate_ai_summary",
         "pub fn save_ai_summary",
@@ -429,6 +409,7 @@ fn ai_summary_validation_locks_core_api_udl_rust_and_docs_alignment() {
     ] {
         assert_contains(API_RS, fragment);
     }
+
     for fragment in [
         "pub enum AiSummaryProviderScope",
         "pub enum AiSummaryContextPolicy",
@@ -443,6 +424,7 @@ fn ai_summary_validation_locks_core_api_udl_rust_and_docs_alignment() {
     ] {
         assert_contains(AI_SUMMARY_RS, fragment);
     }
+
     for fragment in [
         "summary_capability",
         "privacy_blocks",
@@ -455,6 +437,7 @@ fn ai_summary_validation_locks_core_api_udl_rust_and_docs_alignment() {
     ] {
         assert_contains(AI_SUMMARY_IMPL_RS, fragment);
     }
+
     for fragment in [
         "CREATE TABLE IF NOT EXISTS ai_summaries",
         "summary_text TEXT NOT NULL",

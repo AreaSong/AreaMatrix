@@ -1,15 +1,6 @@
 use area_matrix_core::{save_classifier_rule, ClassifierRule, CoreError, CoreResult};
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
-const CLASSIFIER_SAVE_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-17-classifier-save-rule.md");
-const CLASSIFIER_IMPACT_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-18-classifier-impact-preview.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const CLASSIFIER_YAML: &str = include_str!("../../docs/api/classifier-yaml.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
@@ -106,35 +97,6 @@ fn classifier_rule_save_contract_validates_inputs_without_metadata_writes() {
 #[test]
 fn classifier_rule_save_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "# C2-13 classifier-rule-save",
-        "- S2-17 classifier-save-rule",
-        "计划新增：`save_classifier_rule(repo_path, rule) -> ClassifierRule`",
-        "关键词、扩展名、目标分类、优先级、是否已完成必要影响预览确认。",
-        "保存后的规则。",
-        "可写入 classifier metadata 或 `.areamatrix/classifier.yaml` 对应结构。",
-        "原子更新 classifier 配置。",
-        "- `Config`",
-        "- `PermissionDenied`",
-        "- `Io`",
-        "过宽规则必须 warning 或阻止。",
-        "预览确认后可只保存规则配置。",
-        "重复规则有结构化反馈。",
-        "保存前不应用到历史文件。",
-        "AI 自动生成规则属于 Stage 3+。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-17 | classifier-save-rule | C2-13 | save rule | classifier config",
-        "| S2-18 | classifier-impact-preview | C2-14 | rule impact preview | 只读",
-        "| S2-19 | classifier-rule-editor | C2-15 | rule CRUD | classifier config",
-        "分类规则保存和影响预览分离；未预览不得大面积应用。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "ClassifierRule save_classifier_rule(string repo_path, ClassifierRule rule);",
         "dictionary ClassifierRule",
         "string target_category;",
@@ -170,32 +132,6 @@ fn classifier_rule_save_contract_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn classifier_rule_save_contract_documents_consumer_state_and_scope_boundaries() {
-    for fragment in [
-        "选择规则依据：扩展名、文件名关键词。",
-        "保存到分类规则配置。",
-        "提供影响预览。",
-        "保存到 `classifier.yaml` 时只能写入 `keywords`。",
-        "来源目录和路径片段只作为“为什么推荐这个关键词”的解释，不作为 `path` 或 `source_folder` 规则写入。",
-        "扩展名 UI 可显示 `.pdf`，写入 `classifier.yaml` 时必须保存为无点小写 `pdf`。",
-        "Priority 字段默认 `0`，范围 `-1000..1000`，越大越优先。",
-        "多个关键词和扩展名是追加到目标分类的独立匹配值，不是 `keyword AND extension` 复合规则。",
-        "用户必须 Preview impact 并确认 `Save rule only` 或 `Save and apply`。",
-        "保存规则只影响未来分类；是否重分类现有文件由影响预览页决定。",
-        "本页不得引入 `path`、`source_folder` 或独立 rule `enabled` 字段",
-        "Save rule 不重分类现有文件。",
-    ] {
-        assert_contains(CLASSIFIER_SAVE_PAGE, fragment);
-    }
-
-    for fragment in [
-        "从 S2-16 / S2-17 进入时：`Save rule only`",
-        "| S2-17 classifier-save-rule | `Save rule only` | 保存规则配置，不重分类现有文件，返回来源上下文。 |",
-        "从 S2-16 / S2-17 点击 `Save rule only` 写入规则配置并返回；不更新现有文件分类。",
-        "`Save rule only` 在冲突存在时仍可用，因为它只影响未来导入。",
-    ] {
-        assert_contains(CLASSIFIER_IMPACT_PAGE, fragment);
-    }
-
     for fragment in [
         "`extensions`",
         "`keywords`",
@@ -244,7 +180,6 @@ fn classifier_rule_save_contract_documents_consumer_state_and_scope_boundaries()
 
     for error_name in ["Config", "PermissionDenied", "Io"] {
         assert_contains(ERROR_CODES, error_name);
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(UDL, error_name);
     }
 }

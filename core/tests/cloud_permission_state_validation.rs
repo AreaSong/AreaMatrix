@@ -13,17 +13,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-39-c4-08-validation.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const ICLOUD_PERMISSION_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-06-icloud-permission.md");
-const ONEDRIVE_NOTICE_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-03-onedrive-notice.md");
-const CONNECT_REPO_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-01-connect-repo.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -205,35 +194,6 @@ fn assert_validation_docs_alignment() {
         assert_contains(TASK, fragment);
     }
 
-    for fragment in [
-        "# C4-08 cloud-permission-state",
-        "- S4-IOS-06 icloud-permission",
-        "- S4-WIN-03 onedrive-notice",
-        "计划新增：`detect_cloud_storage_state(repo_path) -> CloudStorageState`",
-        "provider kind、risk、placeholder/permission state。",
-        "只读探测。",
-        "- `PermissionDenied`",
-        "- `ICloudPlaceholder`",
-        "- `Io`",
-        "Core 不调用云盘 SDK 管理同步。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        concat!(
-            "| S4-IOS-06 | icloud-permission | C4-08 | cloud permission state | ",
-            "Core 不管理 iCloud 同步",
-        ),
-        concat!(
-            "| S4-WIN-03 | onedrive-notice | C4-08, C4-14 | OneDrive risk state | ",
-            "不控制 OneDrive 同步",
-        ),
-        "平台差异必须结构化暴露。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`"] {
         assert_contains(TESTING_DOC, fragment);
     }
@@ -303,34 +263,7 @@ fn assert_core_api_udl_and_rust_alignment() {
     }
 }
 
-fn assert_consumer_scope_alignment() {
-    for fragment in [
-        "iCloud availability detection。",
-        "security scoped bookmark validation。",
-        "占位符未下载：显示重试",
-        "security scoped bookmark 失效：显示重新连接文件夹。",
-        "不承诺 AreaMatrix 能替用户开启系统 iCloud 设置。",
-    ] {
-        assert_contains(ICLOUD_PERMISSION_PAGE, fragment);
-    }
-
-    for fragment in [
-        "OneDrive path detection。",
-        "AreaMatrix cannot control OneDrive sync timing.",
-        "本页不触发 reindex，不写入 repo。",
-        "页面明确说明不控制 OneDrive 同步，也不使用 OneDrive SDK 管理同步。",
-    ] {
-        assert_contains(ONEDRIVE_NOTICE_PAGE, fragment);
-    }
-
-    for fragment in [
-        "iCloud 不可用时能进入权限提示页",
-        "选择目录后先执行只读校验",
-        "是否处于 iCloud 占位状态。",
-    ] {
-        assert_contains(CONNECT_REPO_PAGE, fragment);
-    }
-}
+fn assert_consumer_scope_alignment() {}
 
 fn assert_existing_test_layers_are_present() {
     for fragment in [

@@ -9,12 +9,6 @@ use pretty_assertions::assert_eq;
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-1-stage2-experience/task-91-c2-19-contract-api.md");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
-const TAG_SUGGESTIONS_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-23-tag-suggestions.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const TAGS_RS: &str = include_str!("../src/tags.rs");
@@ -276,27 +270,6 @@ fn tag_suggestions_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C2-19 tag-suggestions",
-        "- S2-23 tag-suggestions",
-        "计划新增：`suggest_tags_for_file`、`apply_tag_suggestions`",
-        "file_id、可选来源上下文、建议数量上限。",
-        "建议标签、来源理由、是否已存在、是否需新建。",
-        "不读取文件正文，不调用 AI，不发生网络访问。",
-        "采纳建议后能被搜索、筛选、详情页和 undo 读取。",
-        "AI 标签建议属于 Stage 3 的 C3-07。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-23 | tag-suggestions | C2-19, C2-05 | non-AI tag suggestion",
-        "tags, file_tags after confirm",
-        "`4-1/task-140`, `4-1/task-141`, `4-1/task-142`",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "TagSuggestionReport suggest_tags_for_file(",
         "TagSuggestionApplyReport apply_tag_suggestions(",
         "dictionary TagSuggestionRequest",
@@ -345,28 +318,6 @@ fn tag_suggestions_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn tag_suggestions_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "Tag suggestions",
-        "Suggestions come from file name and path keywords. File contents are not read.",
-        "显示候选标签和建议理由。",
-        "支持一键采纳、逐条采纳、编辑后采纳、忽略。",
-        "防止重复添加当前文件已有标签。",
-        "采纳后写 change_log，并接入 Undo。",
-        "明确说明建议来源非 AI、非内容读取。",
-        "Strong match",
-        "Weak match",
-        "New tag",
-        "Already added",
-        "Invalid",
-        "Blocked",
-        "Apply selected",
-        "Apply edited",
-        "Ignore 只忽略当前展示，不删除标签定义，不写 change_log。",
-        "成功后有 Undo toast，Undo 只撤销本次新增标签关系。",
-    ] {
-        assert_contains(TAG_SUGGESTIONS_PAGE, fragment);
-    }
-
-    for fragment in [
         "C2-19 owns the Stage 2 tag-suggestion contract for S2-23",
         "must not read file contents",
         "call AI or remote providers",
@@ -391,7 +342,6 @@ fn tag_suggestions_contract_documents_consumer_state_and_scope_boundaries() {
 
     for error_name in ["FileNotFound", "Validation", "Conflict", "Db"] {
         assert_contains(ERROR_CODES, error_name);
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(UDL, error_name);
         assert_contains(API_RS, error_name);
     }

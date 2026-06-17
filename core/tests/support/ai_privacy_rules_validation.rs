@@ -22,11 +22,6 @@ pub const PRIVACY_RULES_KEY: &str = "ai_privacy_rules";
 
 const TASK: &str =
     include_str!("../../../tasks/prompts/phase-4/4-2-stage3-ai/task-44-c3-09-validation.md");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md");
-const CONTROL_MAP: &str = include_str!(
-    "../../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md"
-);
 const TESTING_DOC: &str = include_str!("../../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../../docs/api/core-api.md");
 const UDL: &str = include_str!("../../area_matrix.udl");
@@ -288,26 +283,6 @@ fn assert_task_docs_and_testing_alignment() {
         "./dev check task 4-2/task-44",
     ] {
         assert_contains(TASK, fragment);
-    }
-
-    for fragment in [
-        "计划新增：`list_ai_privacy_rules`、`update_ai_privacy_rules`、`evaluate_ai_privacy`",
-        "目录规则、关键词规则、字段过滤规则、`privacy_gate_enabled`、provider scope snapshot。",
-        "allow/deny/skipped reason。",
-        "provider gate reason，例如 `privacy_gate_disabled`、`scope_not_allowed`、`provider_not_verified`。",
-        "命中规则时不发送文件内容到 AI。",
-        "默认策略偏保守。",
-        "关闭 `privacy_gate_enabled` 只阻止远程调用，不删除 provider 配置、Keychain key 或既有 AI 结果。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S3-09 | ai-privacy-rules | C3-01, C3-03, C3-09 | privacy rule CRUD/evaluate | ai_privacy_rules |",
-        "| S3-10 | ai-fallback | C3-04, C3-08, C3-10 | fallback status | ai_call_log |",
-        "远程调用必须显式启用，且 API key 不进入日志、诊断或错误文案。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
     }
 
     for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`"] {

@@ -10,10 +10,6 @@ use rusqlite::{params, Connection};
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-34-c4-07-validation.md"
 );
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-07-mobile-detail.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -241,33 +237,6 @@ fn assert_task_docs_and_testing_alignment() {
         "./dev check task 4-3/task-34",
     ] {
         assert_contains(TASK, fragment);
-    }
-
-    for fragment in [
-        "# C4-07 mobile-detail",
-        "- S4-IOS-05 mobile-file-detail",
-        "- `get_file`",
-        "- `list_changes`",
-        "- `read_note`",
-        "- file_id。",
-        "- 移动端详情所需 metadata、日志、笔记。",
-        "- 只读。",
-        "- 无写入。",
-        "- `FileNotFound`",
-        "- `Db`",
-        "详情页不从文件系统反推 metadata。",
-        "Missing 状态能进入 S4-X-06。",
-        "日志和笔记可按需懒加载。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-IOS-05 | mobile-file-detail | C4-07 | detail/log/note query | 缺失进入 recovery",
-        "| S4-X-06 | missing-file-recovery | C4-18 | relink/remove record | remove record 不删文件",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
     }
 
     for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`"] {

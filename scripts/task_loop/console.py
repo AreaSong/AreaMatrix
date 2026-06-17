@@ -692,6 +692,8 @@ def recommended_action(cfg: ConsoleConfig, snapshot: DashboardSnapshot) -> tuple
         return tr(cfg, "action.continue_blocked"), "RISK_POLICY=allow START_FROM=<label> ./task-loop run"
     if snapshot.lifecycle.promotion_blockers:
         return tr(cfg, "action.review_workflow"), "./dev workflow status"
+    if snapshot.prompt.total and snapshot.prompt.pending == 0:
+        return tr(cfg, "action.review_workflow"), "./dev workflow status"
     return tr(cfg, "action.continue_queue"), "RISK_POLICY=allow MAX_RETRIES=1 ./task-loop run"
 
 
@@ -828,6 +830,8 @@ def recommended_chain_steps(cfg: ConsoleConfig, snapshot: DashboardSnapshot) -> 
             final_step = tr(cfg, "guide.step.resume_stale")
         elif snapshot.progress_counts.get("failed", 0):
             final_step = tr(cfg, "guide.step.resume_failed")
+        elif snapshot.prompt.total and snapshot.prompt.pending == 0:
+            final_step = tr(cfg, "guide.step.workflow_status")
         else:
             final_step = tr(cfg, "guide.step.run_queue")
         return [tr(cfg, "guide.step.git_status"), tr(cfg, "guide.step.save_worktree"), final_step]
@@ -838,6 +842,8 @@ def recommended_chain_steps(cfg: ConsoleConfig, snapshot: DashboardSnapshot) -> 
     if snapshot.progress_counts.get("blocked", 0):
         return [tr(cfg, "guide.step.review_blocked")]
     if snapshot.lifecycle.promotion_blockers:
+        return [tr(cfg, "guide.step.workflow_status")]
+    if snapshot.prompt.total and snapshot.prompt.pending == 0:
         return [tr(cfg, "guide.step.workflow_status")]
     return [tr(cfg, "guide.step.run_queue")]
 

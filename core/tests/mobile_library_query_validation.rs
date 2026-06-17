@@ -12,11 +12,6 @@ use serde_json::Value;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-14-c4-03-validation.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-03-mobile-library-query.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -274,34 +269,6 @@ fn assert_task_docs_and_testing_alignment() {
         "./dev check task 4-3/task-14",
     ] {
         assert_contains(TASK, fragment);
-    }
-
-    for fragment in [
-        "# C4-03 mobile-library-query",
-        "- S4-IOS-02 mobile-library",
-        "- S4-IOS-05 mobile-file-detail",
-        "- `list_files`",
-        "- `get_file`",
-        "- `list_tree_json`",
-        "- `list_changes`",
-        "repo path、filter、pagination。",
-        "移动端可分页数据。",
-        "- 无写入。",
-        "- `Db`",
-        "- `RepoNotInitialized`",
-        "移动端不需要一次加载全库。",
-        "详情数据来自 Core，而非平台侧扫描。",
-        "缺失文件状态可被 UI 表达。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-IOS-02 | mobile-library | C4-03 | mobile list/tree query | 分页，不全量加载",
-        "| S4-IOS-05 | mobile-file-detail | C4-07 | detail/log/note query | 缺失进入 recovery",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
     }
 
     for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`"] {

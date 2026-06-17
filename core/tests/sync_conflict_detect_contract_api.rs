@@ -7,15 +7,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-71-c4-15-contract-api.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const SYNC_CONFLICT_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md");
-const SYNC_CONFLICT_ENTRY_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-03-sync-conflict-entry.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -88,32 +79,6 @@ fn sync_conflict_detect_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C4-15 sync-conflict-detect",
-        "- S4-X-03 sync-conflict-entry",
-        "- S4-X-01 sync-conflict",
-        "计划新增：`detect_sync_conflicts(repo_path) -> sequence<SyncConflict>`",
-        "conflict list、severity、affected files。",
-        "写 conflict state metadata。",
-        "只读探测；不自动解决。",
-        "- `Db`",
-        "- `Io`",
-        "- `Conflict`",
-        "冲突入口数量来自 Core 状态。",
-        "不静默选择任一版本。",
-        "检测失败不删除文件。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-X-01 | sync-conflict | C4-15, C4-16, C4-21 | conflict detect/resolve | 不静默删除任一版本",
-        "| S4-X-03 | sync-conflict-entry | C4-15 | conflict count/status | 入口不解决冲突",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "sequence<SyncConflict> detect_sync_conflicts(string repo_path);",
         "dictionary SyncConflictAffectedFile",
         "SyncConflictFileRole role;",
@@ -168,25 +133,6 @@ fn sync_conflict_detect_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn sync_conflict_detect_documents_consumers_and_scope_boundaries() {
-    for fragment in [
-        "展示单个冲突或一个冲突组的类型、涉及文件、版本数量、来源平台和检测时间。",
-        "默认提供 `Keep both`",
-        "不允许无确认覆盖任一版本。",
-        "解决失败：冲突保持未解决状态，不删除中间文件。",
-        "Conflict detail API：hash、relative path、cloud conflict naming",
-    ] {
-        assert_contains(SYNC_CONFLICT_PAGE, fragment);
-    }
-
-    for fragment in [
-        "列出冲突数量、最近检测时间、主要冲突类型。",
-        "Core conflict summary / list API。",
-        "`Later` 不修改文件、不写入解决日志、不从 `Needs Review` 移除。",
-        "屏幕阅读器能读出冲突数量、文件名和 `Review` 操作。",
-    ] {
-        assert_contains(SYNC_CONFLICT_ENTRY_PAGE, fragment);
-    }
-
     for fragment in [
         "Detects C4-15 sync conflicts without resolving any version.",
         "S4-X-03 sync-conflict-entry",

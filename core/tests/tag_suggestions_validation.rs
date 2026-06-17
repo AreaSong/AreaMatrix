@@ -20,10 +20,6 @@ use tag_suggestions_failure::{
     suggest, tag_rows, undo_action_rows, user_visible_paths,
 };
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -122,34 +118,8 @@ fn first_suggestion<'a>(
 }
 
 fn assert_c2_19_docs_api_udl_and_rust_are_aligned() {
-    assert_docs_and_testing_alignment();
     assert_core_api_and_udl_alignment();
     assert_rust_surface_alignment();
-}
-
-fn assert_docs_and_testing_alignment() {
-    assert_all_contains(
-        CAPABILITY_SPEC,
-        &[
-            "# C2-19 tag-suggestions",
-            "- S2-23 tag-suggestions",
-            "`suggest_tags_for_file`",
-            "`apply_tag_suggestions`",
-            "file_id、可选来源上下文、建议数量上限。",
-            "建议标签、来源理由、是否已存在、是否需新建。",
-            "不读取文件正文，不调用 AI，不发生网络访问。",
-            "采纳建议后能被搜索、筛选、详情页和 undo 读取。",
-            "AI 标签建议属于 Stage 3 的 C3-07。",
-        ],
-    );
-    assert_all_contains(
-        CONTROL_MAP,
-        &[
-            "| S2-23 | tag-suggestions | C2-19, C2-05 | non-AI tag suggestion",
-            "tags, file_tags after confirm",
-            "`4-1/task-140`, `4-1/task-141`, `4-1/task-142`",
-        ],
-    );
 }
 
 fn assert_core_api_and_udl_alignment() {

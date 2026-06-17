@@ -4,14 +4,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
-const BATCH_ADD_TAGS_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-09-batch-add-tags.md");
-const UNDO_TOAST_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-10-undo-toast.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const DATA_MODEL: &str = include_str!("../../docs/architecture/data-model.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
@@ -118,33 +110,6 @@ fn batch_add_tags_contract_validates_inputs_without_fake_success() {
 #[test]
 fn batch_add_tags_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "# C2-06 batch-add-tags",
-        "- S2-09 batch-add-tags",
-        "- S2-10 undo-toast",
-        "`batch_add_tags(repo_path, file_ids, tags) -> BatchMutationReport`",
-        "file_ids、tags。",
-        "成功、跳过、失败明细和 undo token。",
-        "批量写 `tags`。",
-        "写入 change log 和 undo action。",
-        "- `Db`",
-        "- `FileNotFound`",
-        "部分失败可追踪，不把失败项显示为成功。",
-        "可撤销项进入 Undo toast/history。",
-        "不修改文件内容或路径。",
-        "批量 AI 标签建议属于 Stage 3。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-09 | batch-add-tags | C2-06, C2-07 | batch tag mutation | tags, undo_actions",
-        "| S2-10 | undo-toast | C2-07 | undo action | undo_actions",
-        "批量操作必须有 preview、确认、执行报告和 undo/action log。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "BatchMutationReport batch_add_tags(",
         "string repo_path, sequence<i64> file_ids, sequence<string> tags",
         "dictionary BatchMutationItemResult",
@@ -205,31 +170,6 @@ fn batch_add_tags_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn batch_add_tags_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "显示已选择文件数量。",
-        "输入或选择标签。",
-        "展示会影响多少文件。",
-        "完成后显示 Undo toast。",
-        "显示重复标签跳过数量和部分失败详情。",
-        "Pending tag chip 状态：`Ready`、`Already selected`、`Invalid`、`Blocked`。",
-        "Apply 前再次运行 tag normalization 和 duplicate validator",
-        "结果摘要必须区分 `Added`、`Already had tag`、`Failed`",
-        "成功新增的标签关系写入 change_log 并进入 Undo stack",
-        "原本已有的标签关系不进入 Undo 反向操作。",
-    ] {
-        assert_contains(BATCH_ADD_TAGS_PAGE, fragment);
-    }
-
-    for fragment in [
-        "Added tag “finance” to 24 files.",
-        "只有可撤销操作显示 `Undo`。",
-        "Undo action 已过期、被后续写操作阻塞",
-        "toast 自动隐藏不等于 Undo 过期",
-        "View history",
-    ] {
-        assert_contains(UNDO_TOAST_PAGE, fragment);
-    }
-
-    for fragment in [
         "C2-06 batch tag mutation contract",
         "S2-09 uses this API",
         "S2-10 consumes the returned undo token",
@@ -243,7 +183,6 @@ fn batch_add_tags_contract_documents_consumer_state_and_scope_boundaries() {
 
     for error_name in ["FileNotFound", "Db"] {
         assert_contains(ERROR_CODES, error_name);
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(UDL, error_name);
     }
 }

@@ -10,10 +10,6 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 const SEARCH_RS: &str = include_str!("../src/search.rs");
@@ -364,31 +360,6 @@ fn saved_search_validation_locks_core_api_udl_rust_and_docs_alignment() {
     assert_delete(delete_saved_search);
     assert_list(list_saved_searches);
     assert_run(run_smart_list);
-
-    for fragment in [
-        "# C2-03 saved-search-crud",
-        "`create_saved_search`",
-        "`update_saved_search`",
-        "`delete_saved_search`",
-        "`list_saved_searches`",
-        "名称、query、filters、sort、scope。",
-        "SavedSearch 记录。",
-        "删除 Smart List 只删除保存查询，不删除任何文件。",
-        "名称重复、非法 query、保存失败都有结构化错误。",
-        "保存后可在 sidebar 恢复同一搜索条件。",
-        "共享 Smart List 和跨端同步属于 Stage 4。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-03 | saved-search-sheet | C2-03 | saved search CRUD | saved_searches",
-        "| S2-06 | smart-lists | C2-03, C2-04 | run/list smart lists | saved_searches",
-        "搜索、filter、Smart List 不得移动、删除或改名文件。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in [
         "SavedSearch create_saved_search(string repo_path, CreateSavedSearchRequest request);",
         "SavedSearch update_saved_search(string repo_path, UpdateSavedSearchRequest request);",

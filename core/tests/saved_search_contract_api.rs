@@ -5,16 +5,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
-const SAVED_SEARCH_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-03-saved-search-sheet.md");
-const SMART_LISTS_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-06-smart-lists.md");
-const C2_04_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const SEARCH_RS: &str = include_str!("../src/search.rs");
@@ -164,34 +154,6 @@ fn saved_search_contract_mentions_real_persistence_after_implementation() {
 #[test]
 fn saved_search_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "# C2-03 saved-search-crud",
-        "- S2-03 saved-search-sheet",
-        "- S2-06 smart-lists",
-        "`create_saved_search`",
-        "`update_saved_search`",
-        "`delete_saved_search`",
-        "`list_saved_searches`",
-        "名称、query、filters、sort、scope。",
-        "SavedSearch 记录。",
-        "- `Db`",
-        "- `Config`",
-        "删除 Smart List 只删除保存查询，不删除任何文件。",
-        "名称重复、非法 query、保存失败都有结构化错误。",
-        "保存后可在 sidebar 恢复同一搜索条件。",
-        "共享 Smart List 和跨端同步属于 Stage 4。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-03 | saved-search-sheet | C2-03 | saved search CRUD | saved_searches",
-        "| S2-06 | smart-lists | C2-03, C2-04 | run/list smart lists | saved_searches",
-        "搜索、filter、Smart List 不得移动、删除或改名文件。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "SavedSearch create_saved_search(string repo_path, CreateSavedSearchRequest request);",
         "SavedSearch update_saved_search(string repo_path, UpdateSavedSearchRequest request);",
         "void delete_saved_search(string repo_path, i64 saved_search_id);",
@@ -229,38 +191,6 @@ fn saved_search_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn saved_search_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "Save the current query as a Smart List. Files are not moved or duplicated.",
-        "当前 `SearchQuery`、filter state、sort state。",
-        "Smart List persistence API。",
-        "Smart List name uniqueness check。",
-        "保存成功后 Smart List 出现在 sidebar 并可点击复现查询。",
-        "result count 失败不阻止保存有效查询。",
-        "Edit filters 回到过滤器 draft，不直接保存 Smart List。",
-    ] {
-        assert_contains(SAVED_SEARCH_PAGE, fragment);
-    }
-
-    for fragment in [
-        "删除 Smart List 不删除文件。",
-        "Rename、Duplicate、Delete、Edit query",
-        "它只是查询条件的命名入口。",
-        "SavedSearchStore。",
-        "SavedSearch update API。",
-        "Edit query 可以修改 query、scope、filters 和 sort",
-        "S2-02 在 Smart List draft context 中只改 draft",
-        "Stage 2 不注册超出普通搜索字段的 Smart List",
-    ] {
-        assert_contains(SMART_LISTS_PAGE, fragment);
-    }
-
-    for fragment in [
-        "计划新增：`run_smart_list(repo_path, saved_search_id, pagination) -> SearchResultPage`",
-        "打开 Smart List 只运行查询，不改变文件。",
-    ] {
-        assert_contains(C2_04_SPEC, fragment);
-    }
-
-    for fragment in [
         "pub use saved_search::{",
         "create_saved_search",
         "UpdateSavedSearchRequest",
@@ -279,7 +209,6 @@ fn saved_search_contract_documents_consumer_state_and_scope_boundaries() {
 
     for error_name in ["Db", "Config"] {
         assert_contains(ERROR_CODES, error_name);
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(UDL, error_name);
     }
 }

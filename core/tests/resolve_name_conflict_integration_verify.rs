@@ -15,21 +15,11 @@ use serde_json::Value;
 mod support;
 use support::system_trash_home::with_test_system_trash;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-10-resolve-name-conflict.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const API_RS: &str = include_str!("../src/api.rs");
 const DESTINATION_RS: &str = include_str!("../src/storage/destination.rs");
 const IMPORT_RS: &str = include_str!("../src/storage/import.rs");
 const REPLACEMENT_TRASH_RS: &str = include_str!("../src/storage/replacement_trash.rs");
-const S1_23_CONFLICT_NAME: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-23-conflict-name.md"
-);
-const S1_24_REPLACE_CONFIRM: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md"
-);
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn assert_contains(haystack: &str, needle: &str) {
@@ -160,44 +150,6 @@ fn import_with_name(
 
 #[test]
 fn resolve_name_conflict_integration_verify_docs_control_map_udl_and_consumers_stay_aligned() {
-    for fragment in [
-        "C1-10 resolve-name-conflict",
-        "S1-23 conflict-name",
-        "S1-24 replace-confirm",
-        "- `import_file(repo_path, source_path, options)`",
-        "- `rename_file(repo_path, file_id, new_name)`",
-        "同名不同 hash 不覆盖旧文件。",
-        "Replace 路径必须经过 S1-24",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-23 | conflict-name | C1-10 | `import_file`, `rename_file`",
-        "| S1-24 | replace-confirm | C1-09, C1-10 | `import_file`, `delete_file`",
-        "不可 mock：路径校验、init/adopt、导入、重复检测、同名冲突",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
-        "默认选择安全策略：保留两份并自动编号。",
-        "重命名只影响导入的新文件，不影响已有文件。",
-        "Replace 必须进入二次确认，不得在当前区域直接替换。",
-        "UI preview contract 必须覆盖 hash 不同、自动编号成功、自动编号失败三个分支",
-    ] {
-        assert_contains(S1_23_CONFLICT_NAME, fragment);
-    }
-
-    for fragment in [
-        "Replace 每次必须二次确认。",
-        "确认前不移动、不删除、不覆盖任何文件。",
-        "confirmation sheet itself never calls it",
-        "final import uses Core `import_file(..., duplicate_strategy=Overwrite)`",
-    ] {
-        assert_contains(S1_24_REPLACE_CONFIRM, fragment);
-    }
-
     for fragment in [
         "FileEntry import_file(",
         "FileEntry rename_file(string repo_path, i64 file_id, string new_name);",

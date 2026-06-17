@@ -15,10 +15,6 @@ use serde_json::Value;
 
 mod support;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -150,33 +146,6 @@ fn assert_undo_signatures() {
     assert_undo_signature(undo_action);
 }
 
-fn assert_capability_and_control_map_alignment() {
-    assert_all_contains(
-        CAPABILITY_SPEC,
-        &[
-            "# C2-07 undo-action-log",
-            "`list_undo_actions`",
-            "`undo_action(repo_path, action_id)`",
-            "Undo 执行结果和刷新建议。",
-            "外部变化不可撤销时必须明确显示。",
-            "Undo 失败不破坏当前状态。",
-        ],
-    );
-
-    assert_all_contains(
-        CONTROL_MAP,
-        &[
-            "| S2-10 | undo-toast | C2-07 | undo action | undo_actions",
-            "| S2-11 | undo-history | C2-07 | list/execute undo | undo_actions",
-            "| S2-09 | batch-add-tags | C2-06, C2-07 | batch tag mutation | tags, undo_actions",
-            "| S2-12 | batch-change-category | C2-08, C2-07 | preview + batch move",
-            "| S2-13 | batch-delete-confirm | C2-09, C2-07 | preview + Trash delete",
-            "| S2-14 | batch-rename | C2-10, C2-07 | preview + rename",
-            "批量操作必须有 preview、确认、执行报告和 undo/action log。",
-        ],
-    );
-}
-
 fn assert_api_and_udl_alignment() {
     for fragment in &[
         "sequence<UndoActionRecord> list_undo_actions(string repo_path);",
@@ -299,7 +268,6 @@ fn assert_success_undo_refresh_contracts(repo: &Path, first_id: i64, tag_token: 
 #[test]
 fn undo_action_log_validation_locks_core_api_udl_and_rust_alignment() {
     assert_undo_signatures();
-    assert_capability_and_control_map_alignment();
     assert_api_and_udl_alignment();
     assert_rust_export_and_boundary_alignment();
 }

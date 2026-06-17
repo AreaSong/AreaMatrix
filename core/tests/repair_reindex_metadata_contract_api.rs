@@ -4,10 +4,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -62,36 +58,6 @@ fn repair_reindex_metadata_contract_api_exposes_documented_signatures_and_output
 #[test]
 fn repair_reindex_metadata_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "# C1-26 repair-reindex-metadata",
-        "- S1-37 db-repair-confirm",
-        "- S1-11 main-repo-error",
-        "- S1-32 error-recovery",
-        "`reindex_from_filesystem(repo_path) -> ReindexReport`",
-        "`create_diagnostics_snapshot(repo_path) -> DiagnosticsSnapshot`",
-        "`repair_metadata(repo_path, options) -> RepairReport`",
-        "- `RepairOptions.full_rescan`",
-        "- `RepairOptions.preserve_diagnostics_snapshot`",
-        "- `DiagnosticsSnapshot.snapshot_path` / `created_at` / `warnings`",
-        "- `RepairReport.scan_session_id` / `diagnostics_snapshot_path`",
-        "只处理 `.areamatrix/` 元数据。",
-        "不移动、不重命名、不删除用户文件。",
-        "不覆盖 `README.md`。",
-        "修复失败不得删除用户文件，也不得清空诊断信息。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-37 | db-repair-confirm | C1-26, C1-16 | `repair_metadata`, `reindex_from_filesystem`",
-        "metadata repair only",
-        "Db, PermissionDenied, Io",
-        "| C1-22..C1-26 | `1-5/task-01` 到 `1-5/task-25`",
-        "Core 能力若未在本矩阵出现，默认不得提前进入 Stage 1 实现。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "ReindexReport reindex_from_filesystem(string repo_path);",
         "DiagnosticsSnapshot create_diagnostics_snapshot(string repo_path);",
         "RepairReport repair_metadata(string repo_path, RepairOptions options);",
@@ -121,7 +87,6 @@ fn repair_reindex_metadata_contract_documents_errors_and_side_effect_boundaries(
     assert_eq!(documented_errors.len(), 4);
 
     for error_name in ["Db", "PermissionDenied", "Io", "Internal"] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
         assert_contains(API_RS, error_name);

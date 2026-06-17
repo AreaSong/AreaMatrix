@@ -1,6 +1,8 @@
 # AreaMatrix Prompt 任务库
 
-> 目标：以 `docs/` 为 SSOT，把 AreaMatrix 从文档态推进到可执行实现态。
+> 状态：`v1-mvp` 历史执行队列已完成 `637/637`。本目录现在主要用于审计、追溯、恢复和读取 v1 任务证据；新版本或大型新增需求先从 `workflow/versions/v2/discussion/` 进入规划链路。
+
+`tasks/prompts/**` 曾是 v1 MVP 的 live queue。Stage 1 MVP 收口后，不应为了开启 v2 而重写这些历史 task、`progress.json` 或 task-loop evidence。未来版本只有在 discussion、middle-layer、changes、plans、drafts、queue、promotion preview 和显式 approval 都通过后，才允许把新任务 promote 到 live queue。
 
 共享规则：[./_shared/audit-rules.md](./_shared/audit-rules.md)  
 任务切片规则：[./_shared/task-slicing-rules.md](./_shared/task-slicing-rules.md)  
@@ -10,21 +12,17 @@ Manifest：[./_shared/manifests/](./_shared/manifests/)
 执行模式说明：[./_shared/copy-ready/README.md](./_shared/copy-ready/README.md)  
 验收模式说明：[./_shared/verify-ready/README.md](./_shared/verify-ready/README.md)
 
-## 执行基线
+## 历史队列基线
 
 1. 任务文件定义目标、范围、核对清单和完成标准。
 2. Manifest 定义精确文档、现有代码、预期新增路径、禁止触碰路径、风险等级和验证命令。
-3. 已存在 capability specs 的 task 必须绑定 UX 页面或 Core 能力，并交叉读取 capability specs 与对应 control map。
-4. AreaMatrix 当前是 greenfield build：`Expected New Paths` 可以是尚不存在但允许创建的路径。
-5. 执行任务前先运行 `doctor`，再用 `render --mode copy` 生成可复制执行 prompt。
-6. 执行与验收都必须应用 `engineering-quality-rules.md` 和 `docs/development/coding-standards.md`。
-7. 任务完成后用 `render --mode verify` 或 `verify` 生成只读验收 prompt。
-8. 需要批量复制时，用 `export --phase` 或 `export --all` 把 copy-ready / verify-ready prompt 导出为静态文件。
-9. Runner 只负责 prompt 生成、进度和状态管理；自动闭环由 `./task-loop run` 调用 `codex exec`。
-10. 当前 637 个任务是已完成的 `v1-mvp` 历史 live queue；大型新增需求先进入 `workflow/versions/v*/` 规划链路，通过 workflow doctor、changes、plans、drafts、queue 和 promotion preview 检查，不直接改 live queue。
-11. 新 v* 版本在生成执行 / 检查 prompt 之前，必须先完成 `workflow/versions/v*/discussion/` 的 docs 讨论与中间层讨论门禁；`v-template` 只是模板验收实例，v1 已归档到 `workflow/versions/v1-mvp/`。
+3. v1 历史 task 绑定的是 `workflow/versions/v1-mvp/source-docs/**` 中的 Stage 1 MVP 内部分段资料；这些资料是 archive，不是当前 v2 范围。
+4. 执行或复查历史任务前先运行 `doctor`，再用 `render --mode copy` / `render --mode verify` 生成对应 prompt。
+5. 执行与验收都必须应用 `engineering-quality-rules.md` 和 `docs/development/coding-standards.md`。
+6. Runner 只负责 prompt 生成、进度和状态管理；`./task-loop run` 保留为历史队列恢复工具，不是 v2 起点。
+7. 新 v* 版本在生成执行 / 检查 prompt 之前，必须先完成 `workflow/versions/v*/discussion/` 的 docs 讨论与中间层讨论门禁；`v-template` 只是模板验收实例，v1 已归档到 `workflow/versions/v1-mvp/`。
 
-## Runner
+## 历史队列检查命令
 
 ```bash
 python3 tasks/prompts/_shared/prompt_pipeline.py doctor
@@ -56,7 +54,7 @@ python3 tasks/prompts/_shared/prompt_pipeline.py status
 
 ## 静态 Prompt 文件
 
-`render` / `verify` 会把 prompt 输出到终端；`export` 会把同一份内容写入文件，方便直接复制给 Codex。
+`render` / `verify` 会把 prompt 输出到终端；`export` 会把同一份内容写入文件，方便直接复制给 Codex。v1 收口后，默认不要重新导出全量静态 prompt；只有历史 task、manifest 或共享规则确实变更时才刷新。
 
 ```bash
 python3 tasks/prompts/_shared/prompt_pipeline.py export --all
@@ -76,22 +74,22 @@ tasks/prompts/_shared/verify-ready/phase-0..phase-4/*.md
 4-3/task-165 -> 4-3-task-165.md
 ```
 
-后续 task、manifest 或共享规则变化后，重新运行 `export --all` 刷新静态 prompt 文件。
+历史 task、manifest 或共享规则变化后，重新运行 `export --all` 刷新静态 prompt 文件。
 
 ## 进度记录
 
-Runner 默认不自动执行任务，也不会自动判断完成。需要人工记录进度时使用：
+Runner 默认不自动执行任务，也不会自动判断完成。v1 已完成后，不应为了“归档更干净”重写 `progress.json`。只有在恢复历史执行现场或修复明确的历史证据问题时，才使用：
 
 ```bash
 python3 tasks/prompts/_shared/prompt_pipeline.py mark --task 0-1/task-01 --status in_progress
 python3 tasks/prompts/_shared/prompt_pipeline.py mark --task 0-1/task-01 --status completed
 ```
 
-进度写入本地文件 `tasks/prompts/_shared/progress.json`，默认不提交。`next` 和 `status` 会读取这个文件来判断下一个可执行任务。
+进度写入本地文件 `tasks/prompts/_shared/progress.json`，默认不提交。当前 v1 状态已完成，`next` / `status` 主要用于审计历史队列。
 
-## 自动化执行 Runner（可选）
+## 自动化执行 Runner（历史恢复）
 
-仓库提供 `./task-loop run`，可将 copy-ready + verify-ready 做成闭环执行：
+仓库保留 `./task-loop run`，用于恢复 v1 历史队列中断、失败或 blocked 的同一任务。不要把它作为 v2 的默认入口；v2 先走 `./dev workflow status` 和 `workflow/versions/v2/discussion/`。
 
 1. 读取 copy-ready 并调用 `codex exec` 执行。
 2. 再读取 verify-ready 进行只读验收。
@@ -129,13 +127,13 @@ RISK_POLICY=pause
 
 `RISK_POLICY=allow` 会向 copy prompt 注入静默授权：High / Mission-Critical task 仍需记录影响、风险、验证和回滚，但不再停下来等人工确认；若验收指出直接相关的 Exact Docs / Core API / UDL / manifest 漂移，也可以在不触碰 Forbidden Touches 的前提下同步修复。
 
-基本用法（全量执行）：
+历史恢复基本用法：
 
 ```bash
 MAX_RETRIES=1 ./task-loop run
 ```
 
-全静默执行：
+历史恢复全静默执行：
 
 ```bash
 RISK_POLICY=allow \
@@ -143,7 +141,7 @@ RISK_POLICY=allow \
   ./task-loop run
 ```
 
-只执行某个起点和阶段，便于试跑：
+只执行某个历史起点和阶段，便于试跑或恢复：
 
 ```bash
 MAX_RETRIES=1 \
@@ -151,7 +149,7 @@ MAX_RETRIES=1 \
   ./task-loop run --phase phase-1 --max-tasks 5
 ```
 
-`MAX_RETRIES=0` 仍表示无限重试，只在明确要长期无人值守时显式使用；普通任务默认一次 repair retry 后停下。
+`MAX_RETRIES=0` 仍表示无限重试，只在明确要长期无人值守恢复历史队列时显式使用；普通任务默认一次 repair retry 后停下。
 
 Dry-run（预演，不改文件）：
 
@@ -163,7 +161,7 @@ DRY_RUN=1 \
 ```
 
 Python runner 会在 `.codex/task-loop-logs/<timestamp>/<phase>/` 写入每次执行和验收日志。最终 copy / verify `.log` 是 `codex exec -o` 的完成输出；`.exec.log` 是 stdout/stderr 实时诊断流，只用于确认 CLI 是否启动、是否有工具命令开始/结束、失败前最后发生了什么。`.exec.log` 文件增长本身不代表任务健康推进，重复 diff 或模型自述不会被当作真实执行进展。runner 判断健康状态时以最终 `.log` 进展、Codex 子进程树里的真实验证进程和命令事件为准；默认只在无验证、无进展连续 15 分钟时重启，不再用 90 分钟墙钟硬超时杀掉正在运行的 `./dev check all`、`cargo test` 或 `xcodebuild`。该目录默认本地忽略；任务通过后，Git checkpoint 只强制提交成功 attempt 对应的最终 copy / verify `.log`，`.exec.log` 等实时诊断流只留本地排障。
-进度统一写入 `tasks/prompts/_shared/progress.json`，因此 `next` 和 `status` 会直接反映自动执行结果。
+进度统一写入 `tasks/prompts/_shared/progress.json`，因此 `next` 和 `status` 会直接反映历史执行结果。
 
 查看或恢复：
 
@@ -177,15 +175,15 @@ Python runner 会在 `.codex/task-loop-logs/<timestamp>/<phase>/` 写入每次�
 ./task-loop resume-failed
 ```
 
-`./dev` 是 AreaMatrix Dev Console 总控入口，默认展示局势诊断首页，而不是把所有 task-loop 命令平铺在首页。首页只回答：现在安全吗、为什么、下一步按什么顺序做、v1 live queue 与 workflow 规划层当前处在哪。当前 live queue 来自 `tasks/prompts/**`；`workflow/` 是后续版本和大型变更的规划生命周期，不直接修改 live queue。首页主要入口是 `1 recommended guide`、`2 lifecycle map`、`3 live queue details`、`4 tools`、`? shortcuts`、`h help`、`q quit`；`1` 只展示行动链，不自动执行命令；危险操作只在 `live queue -> maintenance/danger`。直接按 Enter 只看完整状态，不启动任务；输入 `?` 查看全部快捷键。`./dev --once` 渲染一次首页后退出，便于截图或脚本检查。语言优先级是 `./dev --lang mixed|zh|en` > `DEV_LANG=mixed|zh|en` > `.codex/dev-console/config.json` > `mixed`；交互模式输入 `lang` 会保存本仓库本地偏好，该目录已被 `.gitignore` 忽略。`./dev` 壳层文案由 `scripts/task_loop/locales/{mixed,zh,en}.json` 管理，动作结构由 `scripts/task_loop/actions.py` 统一登记，命令、路径、环境变量、task label 和底层 runner / workflow 透传输出不翻译。颜色可用 `./dev --color never` 或 `NO_COLOR=1` 关闭；完整进程命令用 `./dev processes` 查看。旧版长输出保留在 `./dev status --verbose`。
+`./dev` 是 AreaMatrix Dev Console 总控入口，默认展示局势诊断首页，而不是把所有 task-loop 命令平铺在首页。首页只回答：现在安全吗、为什么、下一步按什么顺序做、v1 历史队列与 workflow 规划层当前处在哪。v1 队列完成后，推荐向导默认转向 `./dev workflow status`；只有存在 stale / failed / blocked 历史任务时，才推荐对应恢复动作。首页主要入口是 `1 recommended guide`、`2 lifecycle map`、`3 historical queue details`、`4 tools`、`? shortcuts`、`h help`、`q quit`；`1` 只展示行动链，不自动执行命令；危险操作只在 `historical queue -> maintenance/danger`。直接按 Enter 只看完整状态，不启动任务；输入 `?` 查看全部快捷键。`./dev --once` 渲染一次首页后退出，便于截图或脚本检查。语言优先级是 `./dev --lang mixed|zh|en` > `DEV_LANG=mixed|zh|en` > `.codex/dev-console/config.json` > `mixed`；交互模式输入 `lang` 会保存本仓库本地偏好，该目录已被 `.gitignore` 忽略。`./dev` 壳层文案由 `scripts/task_loop/locales/{mixed,zh,en}.json` 管理，动作结构由 `scripts/task_loop/actions.py` 统一登记，命令、路径、环境变量、task label 和底层 runner / workflow 透传输出不翻译。颜色可用 `./dev --color never` 或 `NO_COLOR=1` 关闭；完整进程命令用 `./dev processes` 查看。旧版长输出保留在 `./dev status --verbose`。
 
 ## Workflow 与版本化变更
 
-`workflow/` 是大功能 / 版本 / 重构 / 优化的生命周期系统；`tasks/prompts/**` 是已批准、可执行、可验收的小任务队列；`./task-loop` 只执行 tasks，不做需求决策。
+`workflow/` 是大功能 / 版本 / 重构 / 优化的生命周期系统；`tasks/prompts/**` 是已完成的 v1 历史队列，也是未来经显式 promotion 后才会写入的新 live queue；`./task-loop` 只执行已批准 tasks，不做需求决策。
 
 - `workflow/versions/v1-mvp/` 记录已完成的 637-task MVP archive；不要重写现有 `tasks/prompts/**`、`progress.json` 或 task-loop evidence。
 - `workflow/versions/v-template/` 是模板验收实例，用来证明 templates、schema、doctor、promotion preview、projection、closeout/audit 的全链路，不是真实后续版本。
-- 真实新版本使用 `workflow/versions/vN/`，在 promotion apply 前仍不得绕过 v1 live gate。
+- 真实新版本使用 `workflow/versions/vN/`，在 promotion apply 前仍不得绕过 discussion / approval / live mapping gate。
 
 版本工作流入口：
 

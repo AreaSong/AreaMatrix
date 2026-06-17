@@ -8,15 +8,6 @@ use pretty_assertions::assert_eq;
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-26-c3-06-contract-api.md");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
-const AI_SUMMARY_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-06-ai-summary-editor.md");
-const FALLBACK_PAGE: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -227,36 +218,6 @@ fn ai_summary_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C3-06 ai-summary",
-        "- S3-06 ai-summary-editor",
-        "计划新增：`generate_ai_summary`、`save_ai_summary`、`clear_ai_summary`",
-        "file_id、summary draft、provider scope。",
-        "摘要草稿或保存结果。",
-        "保存摘要 metadata。",
-        "写 AI call log 和 change log。",
-        "可写伴生 summary metadata；不得覆盖用户原文件。",
-        "- `Config`",
-        "- `FileNotFound`",
-        "- `PermissionDenied`",
-        "- `Db`",
-        "生成结果默认是草稿，用户保存后才持久化。",
-        "Clear 只清摘要，不删文件和笔记。",
-        "远程摘要必须受隐私规则控制。",
-        "多文档摘要和知识库摘要属于后续阶段。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S3-06 | ai-summary-editor | C3-06, C3-09 | generate/save/clear summary | summary metadata, ai_call_log |",
-        "AI 默认关闭，本地优先。",
-        "远程调用必须显式启用，且 API key 不进入日志、诊断或错误文案。",
-        "AI 结果在用户确认前都是草稿，不直接写分类、标签、摘要。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "AiSummaryDraft generate_ai_summary(",
         "string repo_path, AiSummaryGenerationRequest request",
         "AiSummarySaveReport save_ai_summary(",
@@ -316,7 +277,6 @@ fn ai_summary_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for error_name in ["Config", "FileNotFound", "PermissionDenied", "Db"] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(CORE_API, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
@@ -326,33 +286,6 @@ fn ai_summary_contract_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn ai_summary_contract_documents_consumers_and_boundaries() {
-    for fragment in [
-        "生成结果默认先进入草稿态，用户点击 `Save` 前不写入正式摘要",
-        "不得覆盖用户 Note，也不得写入用户原文件。",
-        "显示当前 AI 摘要。",
-        "显示摘要来源：本地/远程、生成时间、模型。",
-        "支持重新生成。",
-        "支持清除摘要。",
-        "显示隐私规则跳过状态。",
-        "`Skipped by privacy rule`",
-        "`View AI call`",
-        "`View privacy rule`",
-        "生成摘要前必须校验 AI 总开关、`Auto summaries` 功能开关、provider 状态、远程显式启用、usage scope、隐私规则和调用日志写入能力。",
-        "清除摘要只删除 AI 派生摘要，不删除 Note、原文件、提取文本、标签或调用日志。",
-        "保存失败时草稿不丢失；清除失败时原已保存摘要不丢失。",
-        "远程摘要显示远程标记并可追溯到调用日志。",
-    ] {
-        assert_contains(AI_SUMMARY_PAGE, fragment);
-    }
-
-    for fragment in [
-        "AI 摘要宿主：显示 `Edit summary manually`",
-        "AI 失败不改变文件、分类、标签或摘要。",
-        "摘要进入手动编辑",
-    ] {
-        assert_contains(FALLBACK_PAGE, fragment);
-    }
-
     for fragment in [
         "C3-06 AI summary contract types and entry points",
         "pub enum AiSummaryProviderScope",

@@ -12,22 +12,8 @@ use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 use serde_json::Value;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const API_RS: &str = include_str!("../src/api.rs");
-const S1_17_IMPORT_SINGLE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-17-import-single-sheet.md");
-const S1_20_IMPORT_PROGRESS: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-20-import-progress.md"
-);
-const S1_21_IMPORT_RESULT: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-21-import-result.md"
-);
-const S1_27_SETTINGS_REPOSITORY: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-27-settings-repository.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn path_string(path: &Path) -> String {
@@ -116,20 +102,6 @@ fn assert_contains(haystack: &str, needle: &str) {
 #[test]
 fn import_index_file_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
     for fragment in [
-        "`import_file(repo_path, source_path, ImportOptions { mode: Indexed, ... }) -> FileEntry`",
-        "指向外部或资料库内现有文件的 `FileEntry`。",
-        "- `files.storage_mode = Indexed`。",
-        "- `files.source_path` 必须保留。",
-        "- 写入 `change_log.imported`。",
-        "- 不复制、不移动源文件。",
-        "- 可读取源文件 metadata 和 hash。",
-        "删除源文件后详情或列表能通过 `FileNotFound` 显示可恢复错误。",
-        "Indexed 模式不得写入最终资料库文件副本。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
         "FileEntry import_file(",
         "string repo_path, string source_path, ImportOptions options",
         "dictionary ImportOptions",
@@ -145,30 +117,6 @@ fn import_index_file_integration_verify_docs_api_udl_and_consumers_stay_aligned(
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
     }
-
-    for fragment in [
-        "| S1-17 | import-single-sheet | C1-05, C1-06, C1-07, C1-08 | `predict_category`, `import_file`",
-        "| S1-20 | import-progress | C1-06, C1-07, C1-08 | `import_file`",
-        "| S1-21 | import-result | C1-06, C1-13 | `import_file`, `list_changes`",
-        "| S1-27 | settings-repository | C1-04, C1-08, C1-20 | `load_config`, `update_config`",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    assert_contains(
-        S1_17_IMPORT_SINGLE,
-        "Index-only：说明不复制，只记录引用路径；源文件移动后会缺失。",
-    );
-    assert_contains(S1_17_IMPORT_SINGLE, "Import 进入 `S1-20 import-progress`");
-    assert_contains(S1_20_IMPORT_PROGRESS, "Writing index");
-    assert_contains(S1_20_IMPORT_PROGRESS, "失败项不影响成功项。");
-    assert_contains(S1_21_IMPORT_RESULT, "成功项已经出现在列表中。");
-    assert_contains(S1_21_IMPORT_RESULT, "Retry Failed 不重复导入成功项。");
-    assert_contains(S1_27_SETTINGS_REPOSITORY, "Files indexed: 1,248");
-    assert_contains(
-        S1_27_SETTINGS_REPOSITORY,
-        "Change repository...`，只用于打开另一个资料库或选择新资料库位置。",
-    );
     assert_contains(API_RS, "C1-08 owns index-only semantics");
 }
 

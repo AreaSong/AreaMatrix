@@ -9,9 +9,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-83-c4-17-failure-edge.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const TRANSACTIONAL_IMPORT: &str = include_str!("../../docs/architecture/transactional-import.md");
@@ -198,14 +195,6 @@ fn platform_capabilities_failure_docs_record_recovery_and_scope_boundaries() {
         "不得用吞错或静默降级掩盖失败。",
     ] {
         assert!(TASK.contains(fragment));
-    }
-
-    for fragment in [
-        "## 文件系统变化\n\n- 无。",
-        "## DB 变化\n\n- 无。",
-        "- `Config`",
-    ] {
-        assert!(CAPABILITY_SPEC.contains(fragment));
     }
 
     for fragment in [

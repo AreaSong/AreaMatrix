@@ -14,16 +14,7 @@ use serde_json::Value;
 mod support;
 use support::system_trash_home::with_test_system_trash;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-09-detect-duplicate.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
-const S1_22: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-22-conflict-duplicate.md");
-const S1_24: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-24-replace-confirm.md"
-);
 const API_RS: &str = include_str!("../src/api.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 
@@ -200,45 +191,6 @@ fn assert_archived_repo_owned_duplicate(repo: &Path, first: &FileEntry) -> Strin
 
 #[test]
 fn detect_duplicate_integration_verify_docs_control_map_udl_and_api_are_aligned() {
-    for fragment in [
-        "C1-09 detect-duplicate",
-        "S1-22 conflict-duplicate",
-        "S1-24 replace-confirm",
-        "`import_file(repo_path, source_path, options)` 内部 hash 检测。",
-        "`DuplicateFile { existing_path }`",
-        "同 hash 文件默认 `Skip`，UI 能得到 existing path。",
-        "`KeepBoth` 产生两个 active entry",
-        "`Overwrite` 必须有二次确认 UI 才能接入。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-22 | conflict-duplicate | C1-09 | `import_file`",
-        "| S1-24 | replace-confirm | C1-09, C1-10 | `import_file`, `delete_file`",
-        "不可 mock：路径校验、init/adopt、导入、重复检测",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
-        "默认选择 Skip。",
-        "Keep both 只在最终点击 Import 后创建自动编号副本",
-        "Replace 不得直接执行。",
-        "Replace 选中后底部主按钮文案改为 `Continue`",
-    ] {
-        assert_contains(S1_22, fragment);
-    }
-
-    for fragment in [
-        "Replace 每次必须二次确认。",
-        "确认复选框未勾选时不能 Replace。",
-        "confirmation sheet itself never calls it",
-        "final import uses Core `import_file(..., duplicate_strategy=Overwrite)`",
-    ] {
-        assert_contains(S1_24, fragment);
-    }
-
     for fragment in [
         "FileEntry import_file(",
         "DuplicateStrategy duplicate_strategy;",

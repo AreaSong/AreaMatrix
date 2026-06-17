@@ -17,11 +17,6 @@ use rusqlite::{params, Connection};
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-19-c3-04-validation.md");
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -356,22 +351,7 @@ fn ai_classification_suggestion_validation_locks_api_udl_rust_and_docs_alignment
     ] {
         assert_contains(TASK, fragment);
     }
-    for fragment in [
-        "计划新增：`suggest_category_with_ai(repo_path, file_id) -> AiCategorySuggestion`",
-        "建议分类、confidence、reason、是否本地/远程。",
-        "写 AI call log。",
-        "用户采纳前不改 `files.category`。",
-        "隐私规则命中时返回 skipped reason。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-    for fragment in [
-        "| S3-04 | ai-classification-suggestion | C3-04, C3-09, C3-10 | AI category suggestion | ai_call_log, no write before confirm",
-        "| S3-10 | ai-fallback | C3-04, C3-08, C3-10 | fallback status | ai_call_log",
-        "AI 结果在用户确认前都是草稿，不直接写分类、标签、摘要。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
+
     for fragment in [
         "`core/tests/`，每个文件独立编译",
         "## 关键测试场景",
@@ -381,6 +361,7 @@ fn ai_classification_suggestion_validation_locks_api_udl_rust_and_docs_alignment
     ] {
         assert_contains(TESTING_DOC, fragment);
     }
+
     for fragment in [
         "AiCategorySuggestion suggest_category_with_ai(",
         "string repo_path, AiCategorySuggestionRequest request",
@@ -396,6 +377,7 @@ fn ai_classification_suggestion_validation_locks_api_udl_rust_and_docs_alignment
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
     }
+
     for fragment in [
         "pub fn suggest_category_with_ai",
         "Requests a C3-04 AI category suggestion without applying it.",
@@ -406,6 +388,7 @@ fn ai_classification_suggestion_validation_locks_api_udl_rust_and_docs_alignment
     ] {
         assert_contains(API_RS, fragment);
     }
+
     for fragment in [
         "pub struct AiCategorySuggestionRequest",
         "pub struct AiCategorySuggestion",
@@ -415,6 +398,7 @@ fn ai_classification_suggestion_validation_locks_api_udl_rust_and_docs_alignment
     ] {
         assert_contains(AI_CLASSIFICATION_RS, fragment);
     }
+
     for fragment in [
         "classification_capability",
         "privacy_blocks",
@@ -427,6 +411,7 @@ fn ai_classification_suggestion_validation_locks_api_udl_rust_and_docs_alignment
     ] {
         assert_contains(AI_CLASSIFICATION_IMPL_RS, fragment);
     }
+
     for fragment in [
         "CREATE TABLE IF NOT EXISTS ai_call_log",
         "status TEXT NOT NULL CHECK",

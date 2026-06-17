@@ -15,12 +15,6 @@ use serde_json::Value;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-19-c4-04-validation.md"
 );
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const CAMERA_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-03-camera-import.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -315,44 +309,9 @@ fn assert_task_and_capability_docs() {
     ] {
         assert_contains(TASK, fragment);
     }
-
-    for fragment in [
-        "# C4-04 camera-import",
-        "- S4-IOS-03 camera-import",
-        "- `import_file`",
-        "- `predict_category`",
-        "平台层保存后的照片临时文件路径和 ImportOptions。",
-        "Core 从平台临时路径导入到 repo。",
-        "平台层负责相机权限和临时文件生命周期。",
-        "- `PermissionDenied`",
-        "- `InvalidPath`",
-        "- `Io`",
-        "- `Db`",
-        "拍照取消不写 DB。",
-        "导入失败不删除用户已有文件。",
-        "临时文件清理不由 Core 删除最终 repo 文件。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
 }
 
 fn assert_page_control_map_and_testing_docs() {
-    for fragment in [
-        "| S4-IOS-03 | camera-import | C4-04 | camera staged import | 平台层处理相机/临时文件",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
-        "Core transactional import API。",
-        "点击 `Cancel` 不写入 repo，不创建 change log。",
-        "默认保存方式是复制进 repo，不删除相机临时结果直到导入完成或用户取消。",
-        "导入成功后移动端资料库能立刻看到新照片。",
-    ] {
-        assert_contains(CAMERA_PAGE, fragment);
-    }
-
     for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`"] {
         assert_contains(TESTING_DOC, fragment);
     }

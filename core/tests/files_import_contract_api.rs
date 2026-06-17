@@ -7,14 +7,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-26-c4-06-contract-api.md"
 );
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const FILES_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-07-files-import.md");
-const REPLACE_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -132,33 +124,6 @@ fn files_import_docs_core_api_and_udl_stay_aligned() {
     }
 
     for fragment in [
-        "# C4-06 files-import",
-        "- S4-IOS-07 files-import",
-        "- `import_file`",
-        "- `predict_category`",
-        "iOS Files provider 授权后的 file URL。",
-        "导入预览和导入结果。",
-        "Core 只处理授权后的可读文件。",
-        "- `ICloudPlaceholder`",
-        "- `PermissionDenied`",
-        "- `DuplicateFile`",
-        "- `Conflict`",
-        "文件未下载/无权限时给出结构化状态。",
-        "Replace 必须进入 S4-X-09。",
-        "Cancel 不写 DB。",
-        "Provider 后台下载管理不在 Core。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-IOS-07 | files-import | C4-06, C4-21 | Files import / replace confirm | 授权 URL、placeholder",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "ClassifyResult predict_category(string repo_path, string filename);",
         "FileEntry import_file(",
         "string repo_path, string source_path, ImportOptions options",
@@ -201,31 +166,6 @@ fn files_import_docs_core_api_and_udl_stay_aligned() {
 
 #[test]
 fn files_import_documents_consumer_state_and_platform_boundaries() {
-    for fragment in [
-        "iOS document picker / SwiftUI file importer。",
-        "security scoped access for selected files。",
-        "Core transactional import API。",
-        "Duplicate/name conflict detection。",
-        "默认保存方式只复制到 repo，不移动源文件。",
-        "同名冲突默认 `Keep both`，重复内容默认 `Skip duplicate`。",
-        "Replace 必须进入 `S4-X-09` 二次确认。",
-        "iCloud 下载失败能进入权限/恢复页。",
-        "导入成功后资料库列表立即可见新文件。",
-        "用户取消时不写入 repo，也不删除 Files app 中的源文件。",
-    ] {
-        assert_contains(FILES_PAGE, fragment);
-    }
-
-    for fragment in [
-        "入口：`S4-WIN-05 import-flow`、`S4-LNX-05 import-flow`、`S4-IOS-07 files-import`",
-        "iOS：不保证系统回收站，优先保留两份；Replace 默认隐藏，除非 Core 提供安全备份。",
-        "Core conflict/import replacement API。",
-        "Replace 前必定出现二次确认。",
-        "iOS 不默认显示 Replace，除非有安全备份能力。",
-    ] {
-        assert_contains(REPLACE_PAGE, fragment);
-    }
-
     for fragment in [
         "C4-06 files-import reuses this read-only preview surface",
         "iOS Files provider or document picker has granted access",

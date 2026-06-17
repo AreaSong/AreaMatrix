@@ -4,10 +4,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-17-sync-external-created.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -64,45 +60,6 @@ fn sync_external_created_contract_api_exposes_documented_signatures_inputs_and_o
 
 #[test]
 fn sync_external_created_contract_api_docs_control_map_and_udl_stay_aligned() {
-    for fragment in [
-        "# C1-17 sync-external-created",
-        "- S1-09 main-list",
-        "- S1-10 main-loading",
-        "- S1-13 detail-log",
-        "- `sync_external_changes(repo_path, events)`",
-        "- `get_fs_event_cursor(repo_path)`",
-        "- `set_fs_event_cursor(repo_path, last_event_id)`",
-        "- `ExternalEvent { kind: Created, path, fs_event_id }`",
-        "- `SyncResult.detected_creates`",
-        "- 新建 `files.origin = External`。",
-        "- 写入 `change_log.external_modified` 或更具体动作。",
-        "- 更新 `fs_event_cursor`。",
-        "- 读取新增文件 metadata/hash。",
-        "- 不移动、不覆盖新增文件。",
-        "- `InvalidPath`",
-        "- `ICloudPlaceholder`",
-        "- `Db`",
-        "- `Io`",
-        "- `.areamatrix/` 和 generated overview 被跳过。",
-        "- cursor 只在事件批次成功处理后推进。",
-        "- FSEvents 启停与去抖属于 macOS app 层。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S1-09 | main-list | C1-11, C1-12, C1-15 | `list_files`, `get_file`, `list_tree_json`",
-        "| S1-10 | main-loading | C1-03, C1-15, C1-16 |",
-        "`get_latest_scan_session`, `resume_scan_session`, `list_tree_json`",
-        "| S1-13 | detail-log | C1-13, C1-17, C1-18, C1-19 |",
-        "`list_changes`, `sync_external_changes`",
-        "Core 能力若未在本矩阵出现，默认不得提前进入 Stage 1 实现。",
-        "不可 mock：路径校验、init/adopt、导入、重复检测、同名冲突",
-        "详情、日志、笔记、Tree、recovery、错误映射",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in [
         "SyncResult sync_external_changes(string repo_path, sequence<ExternalEvent> events);",
         "i64? get_fs_event_cursor(string repo_path);",

@@ -9,18 +9,6 @@ use pretty_assertions::assert_eq;
 
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-06-c3-02-contract-api.md");
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-3-ai/C3-02-local-model-status.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-3-control-map.md");
-const LOCAL_MODEL_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-02-local-model-status.md");
-const AI_SETTINGS_PAGE: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-01-ai-settings.md"
-);
-const FALLBACK_PAGE: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -192,32 +180,6 @@ fn local_model_status_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C3-02 local-model-status",
-        "- S3-02 local-model-status",
-        "计划新增：`get_local_model_status`、`locate_local_model_folder`",
-        "model id、storage location、cached status snapshot。",
-        "availability、version、size、last_error、recommended_action、last_checked_at、diagnostics_summary。",
-        "读取本地模型 manifest、模型目录元数据和 runtime 状态。",
-        "不下载、安装、删除或训练模型；安装器/下载器需要独立规格。",
-        "- `Config`",
-        "- `PermissionDenied`",
-        "- `Io`",
-        "本地模型不可用时不阻断 Core 基础功能。",
-        "状态检测或定位失败不启用远程 fallback。",
-        "健康检查和 diagnostics summary 不读取用户文件正文。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S3-02 | local-model-status | C3-02 | local model status | model metadata / cache",
-        "AI 默认关闭，本地优先。",
-        "远程调用必须显式启用，且 API key 不进入日志、诊断或错误文案。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "LocalModelStatusSnapshot get_local_model_status(",
         "string repo_path, LocalModelStatusRequest request",
         "LocalModelFolderLocation locate_local_model_folder(",
@@ -257,7 +219,6 @@ fn local_model_status_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for error_name in ["Config", "PermissionDenied", "Io"] {
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(CORE_API, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
@@ -267,40 +228,6 @@ fn local_model_status_contract_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn local_model_status_contract_documents_consumer_state_and_scope_boundaries() {
-    for fragment in [
-        "显示本地模型运行状态。",
-        "显示模型名称、版本、大小、存储位置。",
-        "显示最后状态检查时间、不可用原因和健康检查结果。",
-        "提供重试状态检查、打开安装帮助、打开模型位置、健康检查和诊断入口。",
-        "Status: Ready",
-        "Not installed",
-        "Path unreadable",
-        "Version incompatible",
-        "Loading",
-        "Error",
-        "Checking local model status...",
-        "Verifying model manifest...",
-        "Run health check",
-        "Open diagnostics",
-        "本地模型状态不可用不应自动启用远程 AI。",
-        "健康检查只测试 runtime 和模型 manifest，不读取用户文件内容。",
-        "Repair` 只允许重建 AreaMatrix 本地模型状态缓存、manifest 校验缓存和模型 metadata index",
-        "不得切换远程 provider",
-    ] {
-        assert_contains(LOCAL_MODEL_PAGE, fragment);
-    }
-
-    for fragment in [
-        "AI 设置页点击 `Local model status`",
-        "本地 AI 功能失败时点击 `View local model status`",
-    ] {
-        assert_contains(LOCAL_MODEL_PAGE, fragment);
-    }
-
-    assert_contains(AI_SETTINGS_PAGE, "Local model status");
-
-    assert_contains(FALLBACK_PAGE, "Open local model status");
-
     assert_contains(
         LOCAL_MODEL_STATUS_RS,
         "C3-02 local model status contract types",

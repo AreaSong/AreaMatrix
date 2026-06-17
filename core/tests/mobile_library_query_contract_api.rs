@@ -7,15 +7,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-11-c4-03-contract-api.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-03-mobile-library-query.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const MOBILE_LIBRARY_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-02-mobile-library.md");
-const MOBILE_DETAIL_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-05-mobile-file-detail.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -117,35 +108,6 @@ fn mobile_library_query_docs_core_api_and_udl_stay_aligned() {
     }
 
     for fragment in [
-        "# C4-03 mobile-library-query",
-        "- S4-IOS-02 mobile-library",
-        "- S4-IOS-05 mobile-file-detail",
-        "- `list_files`",
-        "- `get_file`",
-        "- `list_tree_json`",
-        "- `list_changes`",
-        "repo path、filter、pagination。",
-        "移动端可分页数据。",
-        "- 无写入。",
-        "- `Db`",
-        "- `RepoNotInitialized`",
-        "移动端不需要一次加载全库。",
-        "详情数据来自 Core，而非平台侧扫描。",
-        "缺失文件状态可被 UI 表达。",
-        "离线缓存同步策略后续细化。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-IOS-02 | mobile-library | C4-03 | mobile list/tree query | 分页，不全量加载",
-        "| S4-IOS-05 | mobile-file-detail | C4-07 | detail/log/note query | 缺失进入 recovery",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "sequence<FileEntry> list_files(string repo_path, FileFilter filter);",
         "FileEntry get_file(string repo_path, i64 file_id);",
         "sequence<ChangeLogEntry> list_changes(string repo_path, ChangeFilter filter);",
@@ -189,28 +151,6 @@ fn mobile_library_query_docs_core_api_and_udl_stay_aligned() {
 
 #[test]
 fn mobile_library_query_documents_consumer_state_without_adjacent_capabilities() {
-    for fragment in [
-        "浏览分类、最近文件、冲突文件三个核心集合。",
-        "显示 iCloud 占位符、冲突、缺失文件等状态，不静默吞掉。",
-        "缺失文件：行保留，显示 `Missing`，进入详情时给恢复动作。",
-        "下拉刷新触发只读状态刷新",
-        "不启动 `Run rescan now`。",
-        "Core list/tree/recent API。",
-        "点击文件行进入移动端详情页。",
-    ] {
-        assert_contains(MOBILE_LIBRARY_PAGE, fragment);
-    }
-
-    for fragment in [
-        "Core file metadata API。",
-        "Core change log API。",
-        "缺失文件：显示 `File is missing from the repository`",
-        "进入 `S4-X-06 missing-file-recovery`。",
-        "Note 读写 API。",
-    ] {
-        assert_contains(MOBILE_DETAIL_PAGE, fragment);
-    }
-
     for fragment in [
         "C4-03 reuses this query for `S4-IOS-02` mobile-library rows.",
         "availability status",

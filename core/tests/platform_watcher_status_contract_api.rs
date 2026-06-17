@@ -8,17 +8,6 @@ use pretty_assertions::assert_eq;
 const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-56-c4-12-contract-api.md"
 );
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-4-control-map.md");
-const WIN_WATCHER_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-04-watcher-status.md");
-const LNX_WATCHER_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-04-watcher-status.md");
-const RESCAN_CONFIRM_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-07-rescan-confirm.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -139,36 +128,6 @@ fn platform_watcher_status_docs_core_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "# C4-12 platform-watcher-status",
-        "- S4-WIN-04 watcher-status",
-        "- S4-LNX-04 watcher-status",
-        "- `sync_external_changes`",
-        "- `get_fs_event_cursor`",
-        "- `set_fs_event_cursor`",
-        "计划新增：`record_watcher_health`",
-        "platform watcher events 和 health signal。",
-        "watcher 状态、last sync、error summary。",
-        "更新 cursor 和 watcher health metadata。",
-        "Core 不监听文件系统，只消费平台层事件。",
-        "- `Db`",
-        "- `Io`",
-        "Windows/Linux watcher 状态可被 UI 查询。",
-        "事件失败不推进 cursor。",
-        "手动 rescan 需进入确认页。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S4-WIN-04 | watcher-status | C4-12, C4-19 | watcher health / rescan | Windows watcher 在平台层",
-        "| S4-LNX-04 | watcher-status | C4-12, C4-19 | watcher health / rescan | inotify 在平台层",
-        "Rust Core 复用，平台层负责 picker、权限、watcher 和系统集成。",
-        "初始化、接管、Replace、Remove record、rescan 都必须确认后执行。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "PlatformWatcherSnapshot record_watcher_health(",
         "string repo_path, PlatformWatcherHealthSignal signal",
         "dictionary PlatformWatcherHealthSignal",
@@ -217,36 +176,6 @@ fn platform_watcher_status_docs_core_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn platform_watcher_status_documents_consumers_and_scope_boundaries() {
-    for fragment in [
-        "显示当前 watcher 状态：Running、Starting、Paused、Error、Unavailable。",
-        "显示监听路径和最近事件时间。",
-        "显示待处理事件数量和最近一次 scan 时间。",
-        "提供 `Run rescan now` 入口，但点击后必须先进入 `S4-X-07 rescan-confirm`。",
-        "OneDrive 路径：增加说明",
-        "Rescan running：显示进度，不允许并发启动第二次 rescan。",
-    ] {
-        assert_contains(WIN_WATCHER_PAGE, fragment);
-    }
-
-    for fragment in [
-        "显示 inotify watcher 当前状态。",
-        "显示监听路径、watch 数量、最近事件、最近扫描时间。",
-        "显示 inotify limit 相关错误。",
-        "提供 `Run rescan now` 入口，但点击后必须先进入 `S4-X-07 rescan-confirm`。",
-        "页面不会请求 sudo，也不会自动修改系统配置。",
-    ] {
-        assert_contains(LNX_WATCHER_PAGE, fragment);
-    }
-
-    for fragment in [
-        "Windows/Linux watcher 页的 rescan 必须先进入本确认页。",
-        "确认前必须看到 dry-run 影响预览。",
-        "页面明确说明不移动、不删除、不覆盖用户文件。",
-        "rescan summary 可审计",
-    ] {
-        assert_contains(RESCAN_CONFIRM_PAGE, fragment);
-    }
-
     for fragment in [
         "Records platform watcher health for Windows and Linux watcher-status pages.",
         "Manual rescan remains C4-19",

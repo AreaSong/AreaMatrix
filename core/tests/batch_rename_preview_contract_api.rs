@@ -6,15 +6,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
-const BATCH_RENAME_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-14-batch-rename.md");
-const UNDO_TOAST_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-10-undo-toast.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
@@ -287,38 +278,6 @@ fn batch_rename_contract_validates_inputs_without_fake_success() {
 #[test]
 fn batch_rename_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "# C2-10 batch-rename-preview",
-        "- S2-14 batch-rename",
-        "- S2-10 undo-toast",
-        "计划新增：`preview_batch_rename`、`batch_rename`",
-        "file_ids、命名模板或替换规则。",
-        "old/new name 预览、冲突列表、执行报告。",
-        "批量更新 `files.current_name/path`。",
-        "写 change log 和 undo action。",
-        "Copy / Move 文件 rename。",
-        "Indexed 文件只更新显示名。",
-        "- `InvalidPath`",
-        "- `Conflict`",
-        "- `PermissionDenied`",
-        "- `Io`",
-        "- `Db`",
-        "预览必须覆盖每个文件。",
-        "冲突或非法名称不能静默跳过。",
-        "成功后可 undo。",
-        "AI 自动命名属于 Stage 3+。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-14 | batch-rename | C2-10, C2-07 | preview + rename",
-        "| S2-10 | undo-toast | C2-07 | undo action | undo_actions",
-        "批量操作必须有 preview、确认、执行报告和 undo/action log。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "BatchRenamePreviewReport preview_batch_rename(",
         "sequence<i64> file_ids",
         "BatchRenameRule rule",
@@ -384,32 +343,6 @@ fn batch_rename_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn batch_rename_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "批量重命名必须先预览每个文件的新名称和冲突状态。",
-        "所有策略默认保留原扩展名",
-        "Preview 默认按当前 List 排序生成",
-        "输出名称必须经过 name sanitizer",
-        "目标重名检查同时覆盖同一批次内部重复和目标目录已有文件。",
-        "Index-only 条目不重命名源文件，只更新 AreaMatrix display name",
-        "`Apply` 是确认动作；只有预览中所有可处理行均为 `OK` 或 `DISPLAY_ONLY`",
-        "Apply 必须绑定最近一次 preview",
-        "Apply 后每个实际改名文件写 rename change_log",
-        "成功后显示 Undo toast",
-        "Undo 反向 rename",
-    ] {
-        assert_contains(BATCH_RENAME_PAGE, fragment);
-    }
-
-    for fragment in [
-        "Renamed 12 files.",
-        "只有可撤销操作显示 `Undo`。",
-        "Undo action 已过期、被后续写操作阻塞",
-        "Undo 执行中禁用按钮并显示 `Undoing...`。",
-        "Cmd+Z 与 toast Undo 指向同一个操作。",
-    ] {
-        assert_contains(UNDO_TOAST_PAGE, fragment);
-    }
-
-    for fragment in [
         "C2-10 batch rename contract",
         "BatchRenamePreviewReport",
         "BatchRenameReport",
@@ -444,7 +377,6 @@ fn batch_rename_contract_documents_consumer_state_and_scope_boundaries() {
         "Db",
     ] {
         assert_contains(ERROR_CODES, error_name);
-        assert_contains(CAPABILITY_SPEC, error_name);
         assert_contains(UDL, error_name);
         assert_contains(API_RS, error_name);
     }

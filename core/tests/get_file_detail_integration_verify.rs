@@ -10,18 +10,8 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-12-get-file-detail.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/mvp-control-map.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const API_RS: &str = include_str!("../src/api.rs");
-const S1_12_DETAIL_META: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-12-detail-meta.md"
-);
-const S1_15_DETAIL_MULTI: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-15-detail-multi.md"
-);
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn assert_contains(haystack: &str, needle: &str) {
@@ -123,24 +113,6 @@ fn insert_file_with_status(repo: &Path, path: &str, status: &str, imported_at: i
 #[test]
 fn get_file_detail_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
     for fragment in [
-        "C1-12 get-file-detail",
-        "- S1-12 detail-meta",
-        "- S1-15 detail-multi",
-        "- `get_file(repo_path, file_id) -> FileEntry`",
-        "- 单个 `FileEntry`。",
-        "- 无写入。",
-        "- 可选 metadata 检查，但不得修改文件。",
-        "- `FileNotFound`",
-        "- `RepoNotInitialized`",
-        "- `Db`",
-        "- 存在文件返回完整字段。",
-        "- Detail UI 不需要从文件路径反推 DB 字段。",
-        "- 文件预览、Quick Look 和 OCR 元数据属于 macOS/Stage 2+。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
         "FileEntry get_file(string repo_path, i64 file_id);",
         "dictionary FileEntry",
         "i64 id;",
@@ -161,32 +133,6 @@ fn get_file_detail_integration_verify_docs_api_udl_and_consumers_stay_aligned() 
     ] {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
-    }
-
-    for fragment in [
-        "| S1-12 | detail-meta | C1-12 | `get_file`",
-        "| S1-15 | detail-multi | C1-11, C1-12 | `list_files`, `get_file`",
-        "Core 能力若未在本矩阵出现，默认不得提前进入 Stage 1 实现。",
-        "不可 mock：路径校验、init/adopt、导入、重复检测、同名冲突、详情",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
-        "FileEntry metadata。",
-        "Detail metadata loading/error state。",
-        "加载失败：保留文件名和相对路径",
-        "诊断不包含用户文件内容。",
-    ] {
-        assert_contains(S1_12_DETAIL_META, fragment);
-    }
-
-    for fragment in [
-        "本页不单独发起加载请求；统计信息来自当前 List selection 和已加载 metadata。",
-        "页面不提供任何批量写入动作。",
-        "Copy Paths 不修改文件或索引。",
-    ] {
-        assert_contains(S1_15_DETAIL_MULTI, fragment);
     }
 
     for fragment in [

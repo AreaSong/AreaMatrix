@@ -20,11 +20,6 @@ use batch_category_support::{
     user_visible_paths,
 };
 
-const CAPABILITY_SPEC: &str = include_str!(
-    "../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md"
-);
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -325,26 +320,6 @@ fn batch_change_category_validation_locks_core_api_udl_and_rust_alignment() {
     }
     assert_preview(preview_batch_move_to_category);
     assert_apply(batch_move_to_category);
-
-    for fragment in [
-        "# C2-08 batch-change-category",
-        "`preview_batch_move_to_category(repo_path, file_ids, target_category, move_repo_owned_files) -> BatchCategoryPreviewReport`",
-        "`batch_move_to_category(repo_path, file_ids, target_category, move_repo_owned_files, preview_token) -> BatchCategoryChangeReport`",
-        "预览报告、执行报告、undo token。",
-        "批量更新 `files.category/path`。",
-        "Index-only 不移动源文件。",
-        "部分失败有摘要，不静默跳过。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-12 | batch-change-category | C2-08, C2-07 | preview + batch move",
-        "批量操作必须有 preview、确认、执行报告和 undo/action log。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
     for fragment in [
         "BatchCategoryPreviewReport preview_batch_move_to_category(",
         "sequence<i64> file_ids",

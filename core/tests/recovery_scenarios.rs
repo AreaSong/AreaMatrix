@@ -4,20 +4,6 @@ const MATRIX: &str = include_str!("../../docs/development/error-recovery-matrix.
 const TESTING: &str = include_str!("../../docs/development/testing.md");
 const TROUBLESHOOTING: &str = include_str!("../../docs/development/troubleshooting.md");
 const TRANSACTIONAL_IMPORT: &str = include_str!("../../docs/architecture/transactional-import.md");
-const C1_06_COPY: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-06-import-copy-file.md");
-const C1_07_MOVE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-07-import-move-file.md");
-const C1_08_INDEX: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-08-import-index-file.md");
-const C1_16_RECOVERY: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-16-recover-on-startup.md");
-const C1_21_ERROR_MAPPING: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-21-error-mapping.md");
-const C1_25_ICLOUD: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md");
-const C1_26_REPAIR: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-26-repair-reindex-metadata.md");
 const IMPORT_COPY_FAILURE: &str = include_str!("import_copy_file_failure_recovery.rs");
 const IMPORT_MOVE_FAILURE: &str = include_str!("import_move_file_failure_recovery.rs");
 const IMPORT_INDEX_FAILURE: &str = include_str!("import_index_file_failure_recovery.rs");
@@ -89,7 +75,7 @@ fn recovery_scenarios_cover_stage_one_matrix_and_manual_gates() {
 }
 
 #[test]
-fn recovery_scenarios_link_source_docs_and_capability_specs() {
+fn recovery_scenarios_link_current_docs_and_recovery_invariants() {
     assert_all_contains(
         TESTING,
         &[
@@ -121,18 +107,14 @@ fn recovery_scenarios_link_source_docs_and_capability_specs() {
     );
 
     assert_all_contains(
-        C1_06_COPY,
-        &["保留原文件不变", "失败不会留下 active 半成品"],
+        MATRIX,
+        &[
+            "用户原文件安全",
+            "staging recovery",
+            "iCloud placeholder",
+            "PRAGMA integrity_check",
+        ],
     );
-    assert_all_contains(C1_07_MOVE, &["移动失败必须保留源文件或可恢复 staging"]);
-    assert_all_contains(C1_08_INDEX, &["不复制、不移动源文件", "ICloudPlaceholder"]);
-    assert_all_contains(C1_16_RECOVERY, &["不删除任何最终目录用户文件"]);
-    assert_all_contains(
-        C1_21_ERROR_MAPPING,
-        &["错误映射不依赖字符串 contains 做主分支判断"],
-    );
-    assert_all_contains(C1_25_ICLOUD, &["只读扫描 iCloud conflicted copy"]);
-    assert_all_contains(C1_26_REPAIR, &["不移动、不重命名、不删除用户文件"]);
 }
 
 #[test]

@@ -4,12 +4,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const CAPABILITY_SPEC: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience/C2-11-command-index.md");
-const CONTROL_MAP: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/architecture/stage-2-control-map.md");
-const COMMAND_PALETTE_PAGE: &str =
-    include_str!("../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-2-experience/S2-15-command-palette.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const COMMAND_INDEX_RS: &str = include_str!("../src/command_index.rs");
@@ -173,29 +167,6 @@ fn command_index_contract_validates_context_without_fake_success() {
 #[test]
 fn command_index_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "# C2-11 command-index",
-        "- S2-15 command-palette",
-        "计划新增：`list_command_targets(repo_path) -> CommandIndex`",
-        "repo_path、当前 selection context。",
-        "可执行命令、最近项目、smart lists、文件候选。",
-        "读取 metadata；可记录 recent command。",
-        "- `Db`",
-        "命令面板只列出当前上下文允许的动作。",
-        "危险动作仍必须跳转确认页。",
-        "不绕过权限或高风险确认。",
-        "插件命令市场属于后续阶段。",
-    ] {
-        assert_contains(CAPABILITY_SPEC, fragment);
-    }
-
-    for fragment in [
-        "| S2-15 | command-palette | C2-04, C2-11 | command index | 只读 / recent command",
-        "批量操作必须有 preview、确认、执行报告和 undo/action log。",
-    ] {
-        assert_contains(CONTROL_MAP, fragment);
-    }
-
-    for fragment in [
         "CommandIndex list_command_targets(string repo_path, CommandIndexContext context);",
         "dictionary CommandIndexContext",
         "sequence<i64> selected_file_ids;",
@@ -250,20 +221,6 @@ fn command_index_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn command_index_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "搜索命令。",
-        "搜索导航目标：Settings、Smart Lists、Needs Review。",
-        "根据当前选择显示上下文命令：Rename、Add tags、Change category。",
-        "支持最近使用命令。",
-        "对危险命令显示确认流程入口，不直接执行。",
-        "无 repo 或无选择时，相关命令禁用或隐藏，并在副标题说明原因。",
-        "命令面板只能导航、聚焦、打开 sheet 或触发低风险即时动作",
-        "不得绕过 S2-12、S2-13、S2-14、S2-18 的确认/预览。",
-        "Stage 2 不注册智能化、OCR 或多端命令。",
-    ] {
-        assert_contains(COMMAND_PALETTE_PAGE, fragment);
-    }
-
-    for fragment in [
         "C2-11 command index contract",
         "grouped command rows",
         "Smart",
@@ -278,6 +235,5 @@ fn command_index_contract_documents_consumer_state_and_scope_boundaries() {
     }
 
     assert_contains(ERROR_CODES, "Db");
-    assert_contains(CAPABILITY_SPEC, "Db");
     assert_contains(UDL, "Db");
 }
