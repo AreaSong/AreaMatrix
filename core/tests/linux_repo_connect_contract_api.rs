@@ -10,18 +10,18 @@ const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-46-c4-10-contract-api.md"
 );
 const CAPABILITY_SPEC: &str = include_str!(
-    "../../docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md"
+    "../../workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md"
 );
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/stage-4-control-map.md");
+const CONTROL_MAP: &str = include_str!("../../workflow/versions/v4/source-docs/architecture/stage-4-control-map.md");
 const LINUX_CHOOSE_REPO_PAGE: &str =
-    include_str!("../../docs/ux/page-specs/stage-4-multiplatform/S4-LNX-01-choose-repo.md");
+    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-01-choose-repo.md");
 const LOCAL_FOLDER_NOTICE_PAGE: &str =
-    include_str!("../../docs/ux/page-specs/stage-4-multiplatform/S4-LNX-03-local-folder-notice.md");
+    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-03-local-folder-notice.md");
 const INIT_CONFIRM_PAGE: &str = include_str!(
-    "../../docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md"
+    "../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md"
 );
 const ADOPT_CONFIRM_PAGE: &str = include_str!(
-    "../../docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md"
+    "../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md"
 );
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");

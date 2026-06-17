@@ -8,12 +8,12 @@ const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-26-c4-06-contract-api.md"
 );
 const CAPABILITY_SPEC: &str =
-    include_str!("../../docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md");
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/stage-4-control-map.md");
+    include_str!("../../workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md");
+const CONTROL_MAP: &str = include_str!("../../workflow/versions/v4/source-docs/architecture/stage-4-control-map.md");
 const FILES_PAGE: &str =
-    include_str!("../../docs/ux/page-specs/stage-4-multiplatform/S4-IOS-07-files-import.md");
+    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-07-files-import.md");
 const REPLACE_PAGE: &str =
-    include_str!("../../docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md");
+    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");

@@ -22,6 +22,7 @@ from .paths import (
     TaskFile,
     label_sort_key,
     rel,
+    workflow_source_doc_paths,
 )
 from .repository import (
     discovery_skill_file,
@@ -96,6 +97,9 @@ def markdown_link_audit_paths() -> list[Path]:
     paths.extend(sorted((ROOT / "docs" / "ux" / "page-specs").glob("*.md")))
     paths.extend(sorted((ROOT / "docs" / "core" / "capability-specs").glob("*.md")))
     paths.extend(sorted((ROOT / "docs" / "architecture").glob("*control-map.md")))
+    paths.extend(workflow_source_doc_paths("ux", "page-specs", pattern="**/*.md"))
+    paths.extend(workflow_source_doc_paths("core", "capability-specs", pattern="**/*.md"))
+    paths.extend(workflow_source_doc_paths("architecture", pattern="*control-map.md"))
     return unique_paths(paths)
 
 

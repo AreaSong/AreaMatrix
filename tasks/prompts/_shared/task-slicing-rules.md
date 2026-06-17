@@ -28,9 +28,9 @@
 
 执行任何已存在 capability specs 的 task 时，除了共享规则和 manifest，还必须按顺序读取：
 
-1. 绑定的 UX 页面规格：`docs/ux/page-specs/**/S*.md`。
-2. 绑定的 Core 能力规格：`docs/core/capability-specs/**/C*.md`。
-3. 对应阶段的 control map：`docs/architecture/*control-map.md`。
+1. 绑定的 UX 页面规格：`workflow/versions/v*/source-docs/ux/page-specs/**/S*.md`。
+2. 绑定的 Core 能力规格：`workflow/versions/v*/source-docs/core/capability-specs/**/C*.md`。
+3. 对应阶段的 control map：`workflow/versions/v*/source-docs/architecture/*control-map.md`。
 4. Manifest 中列出的 API、architecture、module 文档。
 
 ## 验收要求

@@ -231,7 +231,7 @@ class BuildToolsTest(unittest.TestCase):
     def test_task_check_discovers_capability_tests_from_spec_slug(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            spec_dir = root / "docs/core/capability-specs/stage-2-experience"
+            spec_dir = root / "workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience"
             tests_dir = root / "core/tests"
             spec_dir.mkdir(parents=True)
             tests_dir.mkdir(parents=True)

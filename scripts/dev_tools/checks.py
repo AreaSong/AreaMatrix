@@ -590,12 +590,22 @@ def _discover_capability_test_targets(root: Path, capability: str) -> list[str]:
 
 def _capability_test_prefixes(root: Path, capability: str) -> list[str]:
     prefixes: list[str] = []
-    for path in sorted((root / "docs/core/capability-specs").glob(f"**/{capability}-*.md")):
+    for path in _capability_spec_paths(root, capability):
         slug = path.stem.removeprefix(f"{capability}-")
         prefix = _slug_to_test_prefix(slug)
         if prefix:
             prefixes.append(prefix)
     return _unique_strings(prefixes)
+
+
+def _capability_spec_paths(root: Path, capability: str) -> list[Path]:
+    paths = sorted((root / "docs/core/capability-specs").glob(f"**/{capability}-*.md"))
+    versions_root = root / "workflow/versions"
+    if versions_root.is_dir():
+        for version_dir in sorted(path for path in versions_root.iterdir() if path.is_dir()):
+            spec_root = version_dir / "source-docs/core/capability-specs"
+            paths.extend(sorted(spec_root.glob(f"**/{capability}-*.md")))
+    return paths
 
 
 def _slug_to_test_prefix(slug: str) -> str:

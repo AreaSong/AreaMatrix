@@ -15,6 +15,7 @@ from .paths import (
     ManifestEntry,
     PageContract,
     TaskFile,
+    workflow_source_doc_paths,
 )
 
 
@@ -58,13 +59,10 @@ def extract_labels(value: str) -> list[str]:
 
 def load_page_contracts() -> dict[str, PageContract]:
     contracts: dict[str, PageContract] = {}
-    roots = [
-        ROOT / "docs" / "architecture",
-        ROOT / "workflow" / "versions" / "v1-mvp" / "source-docs" / "architecture",
-    ]
-    for root in roots:
-        for path in sorted(root.glob("*control-map.md")):
-            read_control_map(path, contracts)
+    paths = sorted((ROOT / "docs" / "architecture").glob("*control-map.md"))
+    paths.extend(workflow_source_doc_paths("architecture", pattern="*control-map.md"))
+    for path in paths:
+        read_control_map(path, contracts)
     return contracts
 
 

@@ -12,8 +12,8 @@ use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection, OptionalExtension};
 
 const CAPABILITY_SPEC: &str =
-    include_str!("../../../docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md");
-const CONTROL_MAP: &str = include_str!("../../../docs/architecture/stage-3-control-map.md");
+    include_str!("../../../workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md");
+const CONTROL_MAP: &str = include_str!("../../../workflow/versions/v3/source-docs/architecture/stage-3-control-map.md");
 const TESTING_DOC: &str = include_str!("../../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../../docs/api/core-api.md");
 const UDL: &str = include_str!("../../area_matrix.udl");
@@ -22,9 +22,9 @@ const REMOTE_PROVIDER_RS: &str = include_str!("../../src/remote_provider_config.
 const DB_REMOTE_PROVIDER_RS: &str = include_str!("../../src/db/remote_provider_config.rs");
 const PROBE_RS: &str = include_str!("../../src/remote_provider_config/probe.rs");
 const REMOTE_MODEL_PAGE: &str =
-    include_str!("../../../docs/ux/page-specs/stage-3-ai/S3-03-remote-model-enable.md");
+    include_str!("../../../workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-03-remote-model-enable.md");
 const PRIVACY_PAGE: &str =
-    include_str!("../../../docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md");
+    include_str!("../../../workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md");
 
 const TEST_SECRET_ENV: &str = "AREAMATRIX_REMOTE_PROVIDER_VALIDATION_KEY";
 const SECRET_VALUE: &str = "validation-provider-secret";

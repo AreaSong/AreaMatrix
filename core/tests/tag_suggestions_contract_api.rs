@@ -10,10 +10,10 @@ use pretty_assertions::assert_eq;
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-1-stage2-experience/task-91-c2-19-contract-api.md");
 const CAPABILITY_SPEC: &str =
-    include_str!("../../docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md");
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/stage-2-control-map.md");
+    include_str!("../../workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md");
+const CONTROL_MAP: &str = include_str!("../../workflow/versions/v2/source-docs/architecture/stage-2-control-map.md");
 const TAG_SUGGESTIONS_PAGE: &str =
-    include_str!("../../docs/ux/page-specs/stage-2-experience/S2-23-tag-suggestions.md");
+    include_str!("../../workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-23-tag-suggestions.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const TAGS_RS: &str = include_str!("../src/tags.rs");

@@ -19,6 +19,7 @@ COPY_READY_ROOT = SHARED_ROOT / "copy-ready"
 VERIFY_READY_ROOT = SHARED_ROOT / "verify-ready"
 SKILL_SOURCE_ROOT = ROOT / ".codex" / "skills-src"
 SKILL_DISCOVERY_ROOT = ROOT / ".agents" / "skills"
+WORKFLOW_VERSIONS_ROOT = ROOT / "workflow" / "versions"
 
 REPO_LOCAL_SKILLS = (
     "areamatrix-task-loop",
@@ -163,6 +164,18 @@ def prompt_rel(path: Path) -> str:
     if relative == ".":
         return "."
     return f"./{relative}"
+
+
+def workflow_source_doc_paths(*parts: str, pattern: str) -> list[Path]:
+    result: list[Path] = []
+    if not WORKFLOW_VERSIONS_ROOT.is_dir():
+        return result
+    for version_dir in sorted(path for path in WORKFLOW_VERSIONS_ROOT.iterdir() if path.is_dir()):
+        source_root = version_dir / "source-docs"
+        if not source_root.is_dir():
+            continue
+        result.extend(sorted((source_root.joinpath(*parts)).glob(pattern)))
+    return result
 
 
 def label_sort_key(label: str) -> tuple[int, int, int]:

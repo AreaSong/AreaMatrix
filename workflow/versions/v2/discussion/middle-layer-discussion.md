@@ -18,7 +18,7 @@
 
 ## Required Sync Targets
 
-- Docs: `docs/roadmap/milestones.md`, `docs/ux/page-specs/stage-2-experience.md`, `docs/core/capability-specs/stage-2-experience.md`
+- Docs: `docs/roadmap/milestones.md`, `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience.md`, `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience.md`
 - API: to be confirmed per Stage 2 feature
 - UDL: to be confirmed per Stage 2 feature
 - Tasks: version-local queue candidates only until explicit promotion

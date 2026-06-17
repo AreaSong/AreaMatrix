@@ -13,16 +13,16 @@ const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-59-c4-12-validation.md"
 );
 const CAPABILITY_SPEC: &str = include_str!(
-    "../../docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md"
+    "../../workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md"
 );
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/stage-4-control-map.md");
+const CONTROL_MAP: &str = include_str!("../../workflow/versions/v4/source-docs/architecture/stage-4-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const WIN_WATCHER_PAGE: &str =
-    include_str!("../../docs/ux/page-specs/stage-4-multiplatform/S4-WIN-04-watcher-status.md");
+    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-04-watcher-status.md");
 const LNX_WATCHER_PAGE: &str =
-    include_str!("../../docs/ux/page-specs/stage-4-multiplatform/S4-LNX-04-watcher-status.md");
+    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-04-watcher-status.md");
 const RESCAN_CONFIRM_PAGE: &str =
-    include_str!("../../docs/ux/page-specs/stage-4-multiplatform/S4-X-07-rescan-confirm.md");
+    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-07-rescan-confirm.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const UDL: &str = include_str!("../area_matrix.udl");

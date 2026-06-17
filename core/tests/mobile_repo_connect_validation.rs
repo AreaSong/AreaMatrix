@@ -11,9 +11,9 @@ const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-09-c4-02-validation.md"
 );
 const CAPABILITY_SPEC: &str = include_str!(
-    "../../docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md"
+    "../../workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md"
 );
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/stage-4-control-map.md");
+const CONTROL_MAP: &str = include_str!("../../workflow/versions/v4/source-docs/architecture/stage-4-control-map.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");

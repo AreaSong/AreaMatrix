@@ -13,12 +13,14 @@ from .contracts import (
     task_detail_kind,
     task_kind,
 )
-from .paths import ManifestEntry, PageContract, TaskFile, ROOT, label_sort_key, rel
+from .paths import ManifestEntry, PageContract, TaskFile, ROOT, label_sort_key, rel, workflow_source_doc_paths
 
 
 def capability_specs() -> dict[str, Path]:
     specs: dict[str, Path] = {}
-    for path in sorted((ROOT / "docs" / "core" / "capability-specs").glob("**/C*.md")):
+    paths = sorted((ROOT / "docs" / "core" / "capability-specs").glob("**/C*.md"))
+    paths.extend(workflow_source_doc_paths("core", "capability-specs", pattern="**/C*.md"))
+    for path in paths:
         match = re.search(r"(C[1-4]-\d+)", path.name)
         if match:
             specs[match.group(1)] = path

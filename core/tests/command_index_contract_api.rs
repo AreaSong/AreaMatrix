@@ -5,10 +5,10 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 
 const CAPABILITY_SPEC: &str =
-    include_str!("../../docs/core/capability-specs/stage-2-experience/C2-11-command-index.md");
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/stage-2-control-map.md");
+    include_str!("../../workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-11-command-index.md");
+const CONTROL_MAP: &str = include_str!("../../workflow/versions/v2/source-docs/architecture/stage-2-control-map.md");
 const COMMAND_PALETTE_PAGE: &str =
-    include_str!("../../docs/ux/page-specs/stage-2-experience/S2-15-command-palette.md");
+    include_str!("../../workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-15-command-palette.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const COMMAND_INDEX_RS: &str = include_str!("../src/command_index.rs");

@@ -8,10 +8,10 @@ use pretty_assertions::assert_eq;
 const TASK: &str =
     include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-21-c3-05-contract-api.md");
 const CAPABILITY_SPEC: &str =
-    include_str!("../../docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md");
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/stage-3-control-map.md");
+    include_str!("../../workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md");
+const CONTROL_MAP: &str = include_str!("../../workflow/versions/v3/source-docs/architecture/stage-3-control-map.md");
 const AI_CALL_LOG_PAGE: &str =
-    include_str!("../../docs/ux/page-specs/stage-3-ai/S3-05-ai-call-log.md");
+    include_str!("../../workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-05-ai-call-log.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const DATA_MODEL: &str = include_str!("../../docs/architecture/data-model.md");

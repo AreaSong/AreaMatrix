@@ -8,9 +8,9 @@
 
 ## 文档层级
 
-`docs/` 只保存长期源事实：产品、架构、API、UX、开发规范、测试与发布规则。阶段性拆解、执行证据、release checklist、local QA / prerelease 产物、closeout 决策和历史归档放在 `workflow/versions/v*/`。
+`docs/` 只保存长期源事实：产品、架构、API、UX、开发规范、测试与发布规则。阶段性拆解、阶段 page specs、阶段 Core capability specs、阶段 control map、执行证据、release checklist、local QA / prerelease 产物、closeout 决策和历史归档放在 `workflow/versions/v*/`。
 
-Stage 1 MVP 已收口为 `v1-mvp` 归档记录；历史任务拆解、Stage 1 page specs、Core capability specs、control map、性能基线、恢复场景和 release checklist 统一从 [workflow/versions/v1-mvp/](../workflow/versions/v1-mvp/) 查阅。后续 Stage 2 起的新阶段先在 `workflow/versions/v2/` 规划，确认后再同步需要长期保留的事实到本目录。
+Stage 1 MVP 已收口为 `v1-mvp` 归档记录；历史任务拆解、Stage 1 page specs、Core capability specs、control map、性能基线、恢复场景和 release checklist 统一从 [workflow/versions/v1-mvp/](../workflow/versions/v1-mvp/) 查阅。Stage 2/3/4 的阶段规格已迁入 [workflow/versions/v2/](../workflow/versions/v2/)、[workflow/versions/v3/](../workflow/versions/v3/) 和 [workflow/versions/v4/](../workflow/versions/v4/) 的 `source-docs/`；阶段 source docs 的读法和写法约定见 [workflow/versions/source-docs-guide.md](../workflow/versions/source-docs-guide.md)。确认需要长期保留的事实后，再同步回本目录对应的产品、架构、API 或 UX 功能域文档。
 
 ## 按角色推荐的阅读路径
 

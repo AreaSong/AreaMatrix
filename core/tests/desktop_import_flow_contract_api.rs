@@ -9,15 +9,15 @@ const TASK: &str = include_str!(
     "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-61-c4-13-contract-api.md"
 );
 const CAPABILITY_SPEC: &str = include_str!(
-    "../../docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md"
+    "../../workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md"
 );
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/stage-4-control-map.md");
+const CONTROL_MAP: &str = include_str!("../../workflow/versions/v4/source-docs/architecture/stage-4-control-map.md");
 const WINDOWS_IMPORT_PAGE: &str =
-    include_str!("../../docs/ux/page-specs/stage-4-multiplatform/S4-WIN-05-import-flow.md");
+    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-05-import-flow.md");
 const LINUX_IMPORT_PAGE: &str =
-    include_str!("../../docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md");
+    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md");
 const REPLACE_PAGE: &str =
-    include_str!("../../docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md");
+    include_str!("../../workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");

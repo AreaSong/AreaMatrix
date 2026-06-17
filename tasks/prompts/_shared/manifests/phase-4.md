@@ -6,8 +6,8 @@
 > depends: `3-1/task-05`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -35,8 +35,8 @@
 > depends: `4-1/task-01`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -65,8 +65,8 @@
 > depends: `4-1/task-02`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -96,8 +96,8 @@
 > depends: `4-1/task-03`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -124,12 +124,12 @@
 > depends: `4-1/task-04`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-01-search-results.md`
-- `docs/ux/page-specs/stage-2-experience/S2-04-search-empty.md`
-- `docs/ux/page-specs/stage-2-experience/S2-05-query-error.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-01-search-results.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-04-search-empty.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-05-query-error.md`
 
 ### Existing Code
 - `core/src/**`
@@ -155,8 +155,8 @@
 > depends: `4-1/task-05`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -184,8 +184,8 @@
 > depends: `4-1/task-06`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -214,8 +214,8 @@
 > depends: `4-1/task-07`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -245,8 +245,8 @@
 > depends: `4-1/task-08`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -273,12 +273,12 @@
 > depends: `4-1/task-09`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-01-search-results.md`
-- `docs/ux/page-specs/stage-2-experience/S2-02-search-filters.md`
-- `docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-01-search-results.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-02-search-filters.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md`
 
 ### Existing Code
 - `core/src/**`
@@ -304,8 +304,8 @@
 > depends: `4-1/task-10`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -333,8 +333,8 @@
 > depends: `4-1/task-11`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -363,8 +363,8 @@
 > depends: `4-1/task-12`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -394,8 +394,8 @@
 > depends: `4-1/task-13`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -422,11 +422,11 @@
 > depends: `4-1/task-14`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-03-saved-search-sheet.md`
-- `docs/ux/page-specs/stage-2-experience/S2-06-smart-lists.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-03-saved-search-sheet.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-06-smart-lists.md`
 
 ### Existing Code
 - `core/src/**`
@@ -452,8 +452,8 @@
 > depends: `4-1/task-15`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -481,8 +481,8 @@
 > depends: `4-1/task-16`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -511,8 +511,8 @@
 > depends: `4-1/task-17`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -542,8 +542,8 @@
 > depends: `4-1/task-18`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -570,11 +570,11 @@
 > depends: `4-1/task-19`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-06-smart-lists.md`
-- `docs/ux/page-specs/stage-2-experience/S2-15-command-palette.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-06-smart-lists.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-15-command-palette.md`
 
 ### Existing Code
 - `core/src/**`
@@ -600,8 +600,8 @@
 > depends: `4-1/task-20`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -629,8 +629,8 @@
 > depends: `4-1/task-21`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -659,8 +659,8 @@
 > depends: `4-1/task-22`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -690,8 +690,8 @@
 > depends: `4-1/task-23`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -718,12 +718,12 @@
 > depends: `4-1/task-24`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-07-tags-add.md`
-- `docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md`
-- `docs/ux/page-specs/stage-2-experience/S2-23-tag-suggestions.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-07-tags-add.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-23-tag-suggestions.md`
 
 ### Existing Code
 - `core/src/**`
@@ -749,8 +749,8 @@
 > depends: `4-1/task-25`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -778,8 +778,8 @@
 > depends: `4-1/task-26`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -808,8 +808,8 @@
 > depends: `4-1/task-27`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -839,8 +839,8 @@
 > depends: `4-1/task-28`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -867,10 +867,10 @@
 > depends: `4-1/task-29`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-09-batch-add-tags.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-09-batch-add-tags.md`
 
 ### Existing Code
 - `core/src/**`
@@ -896,8 +896,8 @@
 > depends: `4-1/task-30`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -925,8 +925,8 @@
 > depends: `4-1/task-31`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -955,8 +955,8 @@
 > depends: `4-1/task-32`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -986,8 +986,8 @@
 > depends: `4-1/task-33`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -1014,17 +1014,17 @@
 > depends: `4-1/task-34`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-09-batch-add-tags.md`
-- `docs/ux/page-specs/stage-2-experience/S2-10-undo-toast.md`
-- `docs/ux/page-specs/stage-2-experience/S2-11-undo-history.md`
-- `docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md`
-- `docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md`
-- `docs/ux/page-specs/stage-2-experience/S2-14-batch-rename.md`
-- `docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md`
-- `docs/ux/page-specs/stage-2-experience/S2-22-redo.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-09-batch-add-tags.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-10-undo-toast.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-11-undo-history.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-14-batch-rename.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-22-redo.md`
 
 ### Existing Code
 - `core/src/**`
@@ -1050,8 +1050,8 @@
 > depends: `4-1/task-35`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -1079,8 +1079,8 @@
 > depends: `4-1/task-36`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -1109,8 +1109,8 @@
 > depends: `4-1/task-37`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -1140,8 +1140,8 @@
 > depends: `4-1/task-38`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -1168,10 +1168,10 @@
 > depends: `4-1/task-39`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md`
 
 ### Existing Code
 - `core/src/**`
@@ -1197,8 +1197,8 @@
 > depends: `4-1/task-40`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -1226,8 +1226,8 @@
 > depends: `4-1/task-41`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -1256,8 +1256,8 @@
 > depends: `4-1/task-42`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -1287,8 +1287,8 @@
 > depends: `4-1/task-43`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -1315,10 +1315,10 @@
 > depends: `4-1/task-44`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md`
 
 ### Existing Code
 - `core/src/**`
@@ -1344,8 +1344,8 @@
 > depends: `4-1/task-45`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -1373,8 +1373,8 @@
 > depends: `4-1/task-46`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -1403,8 +1403,8 @@
 > depends: `4-1/task-47`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -1434,8 +1434,8 @@
 > depends: `4-1/task-48`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -1462,10 +1462,10 @@
 > depends: `4-1/task-49`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-14-batch-rename.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-14-batch-rename.md`
 
 ### Existing Code
 - `core/src/**`
@@ -1491,8 +1491,8 @@
 > depends: `4-1/task-50`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-11-command-index.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-11-command-index.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -1520,8 +1520,8 @@
 > depends: `4-1/task-51`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-11-command-index.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-11-command-index.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -1550,8 +1550,8 @@
 > depends: `4-1/task-52`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-11-command-index.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-11-command-index.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -1581,8 +1581,8 @@
 > depends: `4-1/task-53`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-11-command-index.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-11-command-index.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -1609,10 +1609,10 @@
 > depends: `4-1/task-54`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-11-command-index.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-11-command-index.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-15-command-palette.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-15-command-palette.md`
 
 ### Existing Code
 - `core/src/**`
@@ -1638,8 +1638,8 @@
 > depends: `4-1/task-55`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -1667,8 +1667,8 @@
 > depends: `4-1/task-56`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -1697,8 +1697,8 @@
 > depends: `4-1/task-57`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -1728,8 +1728,8 @@
 > depends: `4-1/task-58`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -1756,10 +1756,10 @@
 > depends: `4-1/task-59`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-16-classifier-correct.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-16-classifier-correct.md`
 
 ### Existing Code
 - `core/src/**`
@@ -1785,8 +1785,8 @@
 > depends: `4-1/task-60`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -1814,8 +1814,8 @@
 > depends: `4-1/task-61`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -1844,8 +1844,8 @@
 > depends: `4-1/task-62`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -1875,8 +1875,8 @@
 > depends: `4-1/task-63`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -1903,10 +1903,10 @@
 > depends: `4-1/task-64`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-17-classifier-save-rule.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-17-classifier-save-rule.md`
 
 ### Existing Code
 - `core/src/**`
@@ -1932,8 +1932,8 @@
 > depends: `4-1/task-65`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-14-classifier-impact-preview.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-14-classifier-impact-preview.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -1961,8 +1961,8 @@
 > depends: `4-1/task-66`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-14-classifier-impact-preview.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-14-classifier-impact-preview.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -1991,8 +1991,8 @@
 > depends: `4-1/task-67`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-14-classifier-impact-preview.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-14-classifier-impact-preview.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -2022,8 +2022,8 @@
 > depends: `4-1/task-68`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-14-classifier-impact-preview.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-14-classifier-impact-preview.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -2050,10 +2050,10 @@
 > depends: `4-1/task-69`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-14-classifier-impact-preview.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-14-classifier-impact-preview.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-18-classifier-impact-preview.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-18-classifier-impact-preview.md`
 
 ### Existing Code
 - `core/src/**`
@@ -2079,8 +2079,8 @@
 > depends: `4-1/task-70`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-15-classifier-rule-editor.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-15-classifier-rule-editor.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -2108,8 +2108,8 @@
 > depends: `4-1/task-71`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-15-classifier-rule-editor.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-15-classifier-rule-editor.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -2138,8 +2138,8 @@
 > depends: `4-1/task-72`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-15-classifier-rule-editor.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-15-classifier-rule-editor.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -2169,8 +2169,8 @@
 > depends: `4-1/task-73`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-15-classifier-rule-editor.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-15-classifier-rule-editor.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -2197,10 +2197,10 @@
 > depends: `4-1/task-74`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-15-classifier-rule-editor.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-15-classifier-rule-editor.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-19-classifier-rule-editor.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-19-classifier-rule-editor.md`
 
 ### Existing Code
 - `core/src/**`
@@ -2226,8 +2226,8 @@
 > depends: `4-1/task-75`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -2255,8 +2255,8 @@
 > depends: `4-1/task-76`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -2285,8 +2285,8 @@
 > depends: `4-1/task-77`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -2316,8 +2316,8 @@
 > depends: `4-1/task-78`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -2344,10 +2344,10 @@
 > depends: `4-1/task-79`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-20-icloud-conflict-visual.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-20-icloud-conflict-visual.md`
 
 ### Existing Code
 - `core/src/**`
@@ -2373,8 +2373,8 @@
 > depends: `4-1/task-80`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -2402,8 +2402,8 @@
 > depends: `4-1/task-81`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -2432,8 +2432,8 @@
 > depends: `4-1/task-82`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -2463,8 +2463,8 @@
 > depends: `4-1/task-83`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -2491,10 +2491,10 @@
 > depends: `4-1/task-84`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md`
 
 ### Existing Code
 - `core/src/**`
@@ -2520,8 +2520,8 @@
 > depends: `4-1/task-85`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -2549,8 +2549,8 @@
 > depends: `4-1/task-86`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -2579,8 +2579,8 @@
 > depends: `4-1/task-87`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -2610,8 +2610,8 @@
 > depends: `4-1/task-88`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -2638,10 +2638,10 @@
 > depends: `4-1/task-89`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-22-redo.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-22-redo.md`
 
 ### Existing Code
 - `core/src/**`
@@ -2667,8 +2667,8 @@
 > depends: `4-1/task-90`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -2696,8 +2696,8 @@
 > depends: `4-1/task-91`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -2726,8 +2726,8 @@
 > depends: `4-1/task-92`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -2757,8 +2757,8 @@
 > depends: `4-1/task-93`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -2785,10 +2785,10 @@
 > depends: `4-1/task-94`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-2-experience/S2-23-tag-suggestions.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-23-tag-suggestions.md`
 
 ### Existing Code
 - `core/src/**`
@@ -2814,10 +2814,10 @@
 > depends: `4-1/task-95`, `4-1/task-05`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-01-search-results.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-01-search-results.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
 
 ### Existing Code
 - `apps/**`
@@ -2842,10 +2842,10 @@
 > depends: `4-1/task-96`, `4-1/task-10`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-01-search-results.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-01-search-results.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
 
 ### Existing Code
 - `apps/**`
@@ -2870,11 +2870,11 @@
 > depends: `4-1/task-96`, `4-1/task-97`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-01-search-results.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-01-search-results.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
-- `docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
 
 ### Existing Code
 - `apps/**`
@@ -2899,10 +2899,10 @@
 > depends: `4-1/task-98`, `4-1/task-10`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-02-search-filters.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-02-search-filters.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
 
 ### Existing Code
 - `apps/**`
@@ -2927,10 +2927,10 @@
 > depends: `4-1/task-99`, `4-1/task-15`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-03-saved-search-sheet.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-03-saved-search-sheet.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`
 
 ### Existing Code
 - `apps/**`
@@ -2955,10 +2955,10 @@
 > depends: `4-1/task-100`, `4-1/task-05`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-04-search-empty.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-04-search-empty.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
 
 ### Existing Code
 - `apps/**`
@@ -2983,10 +2983,10 @@
 > depends: `4-1/task-101`, `4-1/task-05`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-05-query-error.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-05-query-error.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-01-search-query-files.md`
 
 ### Existing Code
 - `apps/**`
@@ -3011,10 +3011,10 @@
 > depends: `4-1/task-102`, `4-1/task-15`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-06-smart-lists.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-06-smart-lists.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`
 
 ### Existing Code
 - `apps/**`
@@ -3039,10 +3039,10 @@
 > depends: `4-1/task-103`, `4-1/task-20`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-06-smart-lists.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-06-smart-lists.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
 
 ### Existing Code
 - `apps/**`
@@ -3067,11 +3067,11 @@
 > depends: `4-1/task-103`, `4-1/task-104`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-06-smart-lists.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-06-smart-lists.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`
-- `docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-03-saved-search-crud.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
 
 ### Existing Code
 - `apps/**`
@@ -3096,10 +3096,10 @@
 > depends: `4-1/task-105`, `4-1/task-25`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-07-tags-add.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-07-tags-add.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
 
 ### Existing Code
 - `apps/**`
@@ -3124,10 +3124,10 @@
 > depends: `4-1/task-106`, `4-1/task-10`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
 
 ### Existing Code
 - `apps/**`
@@ -3152,10 +3152,10 @@
 > depends: `4-1/task-107`, `4-1/task-25`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
 
 ### Existing Code
 - `apps/**`
@@ -3180,11 +3180,11 @@
 > depends: `4-1/task-107`, `4-1/task-108`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-08-tags-filter.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
-- `docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-02-search-filters.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
 
 ### Existing Code
 - `apps/**`
@@ -3209,10 +3209,10 @@
 > depends: `4-1/task-109`, `4-1/task-30`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-09-batch-add-tags.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-09-batch-add-tags.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md`
 
 ### Existing Code
 - `apps/**`
@@ -3237,10 +3237,10 @@
 > depends: `4-1/task-110`, `4-1/task-35`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-09-batch-add-tags.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-09-batch-add-tags.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
 
 ### Existing Code
 - `apps/**`
@@ -3265,11 +3265,11 @@
 > depends: `4-1/task-110`, `4-1/task-111`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-09-batch-add-tags.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-09-batch-add-tags.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md`
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-06-batch-add-tags.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
 
 ### Existing Code
 - `apps/**`
@@ -3294,10 +3294,10 @@
 > depends: `4-1/task-112`, `4-1/task-35`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-10-undo-toast.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-10-undo-toast.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
 
 ### Existing Code
 - `apps/**`
@@ -3322,10 +3322,10 @@
 > depends: `4-1/task-113`, `4-1/task-35`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-11-undo-history.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-11-undo-history.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
 
 ### Existing Code
 - `apps/**`
@@ -3350,10 +3350,10 @@
 > depends: `4-1/task-114`, `4-1/task-40`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
 
 ### Existing Code
 - `apps/**`
@@ -3378,10 +3378,10 @@
 > depends: `4-1/task-115`, `4-1/task-35`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
 
 ### Existing Code
 - `apps/**`
@@ -3406,11 +3406,11 @@
 > depends: `4-1/task-115`, `4-1/task-116`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-12-batch-change-category.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-08-batch-change-category.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
 
 ### Existing Code
 - `apps/**`
@@ -3435,10 +3435,10 @@
 > depends: `4-1/task-117`, `4-1/task-45`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`
 
 ### Existing Code
 - `apps/**`
@@ -3463,10 +3463,10 @@
 > depends: `4-1/task-118`, `4-1/task-35`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
 
 ### Existing Code
 - `apps/**`
@@ -3491,11 +3491,11 @@
 > depends: `4-1/task-118`, `4-1/task-119`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-13-batch-delete-confirm.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-09-batch-delete-trash.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
 
 ### Existing Code
 - `apps/**`
@@ -3520,10 +3520,10 @@
 > depends: `4-1/task-120`, `4-1/task-50`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-14-batch-rename.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-14-batch-rename.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md`
 
 ### Existing Code
 - `apps/**`
@@ -3548,10 +3548,10 @@
 > depends: `4-1/task-121`, `4-1/task-35`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-14-batch-rename.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-14-batch-rename.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
 
 ### Existing Code
 - `apps/**`
@@ -3576,11 +3576,11 @@
 > depends: `4-1/task-121`, `4-1/task-122`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-14-batch-rename.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-14-batch-rename.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md`
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
 
 ### Existing Code
 - `apps/**`
@@ -3605,10 +3605,10 @@
 > depends: `4-1/task-123`, `4-1/task-20`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-15-command-palette.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-15-command-palette.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
 
 ### Existing Code
 - `apps/**`
@@ -3633,10 +3633,10 @@
 > depends: `4-1/task-124`, `4-1/task-55`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-15-command-palette.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-15-command-palette.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-11-command-index.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-11-command-index.md`
 
 ### Existing Code
 - `apps/**`
@@ -3661,11 +3661,11 @@
 > depends: `4-1/task-124`, `4-1/task-125`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-15-command-palette.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-15-command-palette.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
-- `docs/core/capability-specs/stage-2-experience/C2-11-command-index.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-04-smart-lists.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-11-command-index.md`
 
 ### Existing Code
 - `apps/**`
@@ -3690,10 +3690,10 @@
 > depends: `4-1/task-126`, `4-1/task-60`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-16-classifier-correct.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-16-classifier-correct.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-12-classifier-correction.md`
 
 ### Existing Code
 - `apps/**`
@@ -3718,10 +3718,10 @@
 > depends: `4-1/task-127`, `4-1/task-65`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-17-classifier-save-rule.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-17-classifier-save-rule.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-13-classifier-rule-save.md`
 
 ### Existing Code
 - `apps/**`
@@ -3746,10 +3746,10 @@
 > depends: `4-1/task-128`, `4-1/task-70`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-18-classifier-impact-preview.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-18-classifier-impact-preview.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-14-classifier-impact-preview.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-14-classifier-impact-preview.md`
 
 ### Existing Code
 - `apps/**`
@@ -3774,10 +3774,10 @@
 > depends: `4-1/task-129`, `4-1/task-75`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-19-classifier-rule-editor.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-19-classifier-rule-editor.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-15-classifier-rule-editor.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-15-classifier-rule-editor.md`
 
 ### Existing Code
 - `apps/**`
@@ -3802,10 +3802,10 @@
 > depends: `4-1/task-130`, `4-1/task-80`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-20-icloud-conflict-visual.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-20-icloud-conflict-visual.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md`
 
 ### Existing Code
 - `apps/**`
@@ -3830,8 +3830,8 @@
 > depends: `4-1/task-131`, `1-5/task-20`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-20-icloud-conflict-visual.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-20-icloud-conflict-visual.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
 - `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
 
@@ -3858,10 +3858,10 @@
 > depends: `4-1/task-131`, `4-1/task-132`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-20-icloud-conflict-visual.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-20-icloud-conflict-visual.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-16-icloud-conflict-visual.md`
 - `workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-1-mvp/C1-25-list-icloud-conflicts.md`
 
 ### Existing Code
@@ -3887,10 +3887,10 @@
 > depends: `4-1/task-133`, `4-1/task-85`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md`
 
 ### Existing Code
 - `apps/**`
@@ -3915,10 +3915,10 @@
 > depends: `4-1/task-134`, `4-1/task-35`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
 
 ### Existing Code
 - `apps/**`
@@ -3943,11 +3943,11 @@
 > depends: `4-1/task-134`, `4-1/task-135`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-21-import-conflict-batch.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md`
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-17-import-conflict-batch.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
 
 ### Existing Code
 - `apps/**`
@@ -3972,10 +3972,10 @@
 > depends: `4-1/task-136`, `4-1/task-90`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-22-redo.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-22-redo.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md`
 
 ### Existing Code
 - `apps/**`
@@ -4000,10 +4000,10 @@
 > depends: `4-1/task-137`, `4-1/task-35`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-22-redo.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-22-redo.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
 
 ### Existing Code
 - `apps/**`
@@ -4028,11 +4028,11 @@
 > depends: `4-1/task-137`, `4-1/task-138`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-22-redo.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-22-redo.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md`
-- `docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-18-redo-action-log.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-07-undo-action-log.md`
 
 ### Existing Code
 - `apps/**`
@@ -4057,10 +4057,10 @@
 > depends: `4-1/task-139`, `4-1/task-95`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-23-tag-suggestions.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-23-tag-suggestions.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md`
 
 ### Existing Code
 - `apps/**`
@@ -4085,10 +4085,10 @@
 > depends: `4-1/task-140`, `4-1/task-25`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-23-tag-suggestions.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-23-tag-suggestions.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
 
 ### Existing Code
 - `apps/**`
@@ -4113,11 +4113,11 @@
 > depends: `4-1/task-140`, `4-1/task-141`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-2-experience/S2-23-tag-suggestions.md`
-- `docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-23-tag-suggestions.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md`
-- `docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-19-tag-suggestions.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-05-tag-crud.md`
 
 ### Existing Code
 - `apps/**`
@@ -4142,9 +4142,9 @@
 > depends: `4-1/task-142`
 
 ### Exact Docs
-- `docs/architecture/stage-2-control-map.md`
-- `docs/core/capability-specs/stage-2-experience.md`
-- `docs/ux/page-specs/stage-2-experience.md`
+- `workflow/versions/v2/source-docs/architecture/stage-2-control-map.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -4182,8 +4182,8 @@
 > depends: `4-1/task-143`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -4211,8 +4211,8 @@
 > depends: `4-2/task-01`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -4241,8 +4241,8 @@
 > depends: `4-2/task-02`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -4272,8 +4272,8 @@
 > depends: `4-2/task-03`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -4300,11 +4300,11 @@
 > depends: `4-2/task-04`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-3-ai/S3-01-ai-settings.md`
-- `docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-01-ai-settings.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md`
 
 ### Existing Code
 - `core/src/**`
@@ -4330,8 +4330,8 @@
 > depends: `4-2/task-05`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-02-local-model-status.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-02-local-model-status.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -4359,8 +4359,8 @@
 > depends: `4-2/task-06`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-02-local-model-status.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-02-local-model-status.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -4389,8 +4389,8 @@
 > depends: `4-2/task-07`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-02-local-model-status.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-02-local-model-status.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -4420,8 +4420,8 @@
 > depends: `4-2/task-08`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-02-local-model-status.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-02-local-model-status.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -4448,10 +4448,10 @@
 > depends: `4-2/task-09`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-02-local-model-status.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-02-local-model-status.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-3-ai/S3-02-local-model-status.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-02-local-model-status.md`
 
 ### Existing Code
 - `core/src/**`
@@ -4477,8 +4477,8 @@
 > depends: `4-2/task-10`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -4506,8 +4506,8 @@
 > depends: `4-2/task-11`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -4536,8 +4536,8 @@
 > depends: `4-2/task-12`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -4567,8 +4567,8 @@
 > depends: `4-2/task-13`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -4595,11 +4595,11 @@
 > depends: `4-2/task-14`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-3-ai/S3-03-remote-model-enable.md`
-- `docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-03-remote-model-enable.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md`
 
 ### Existing Code
 - `core/src/**`
@@ -4625,8 +4625,8 @@
 > depends: `4-2/task-15`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -4654,8 +4654,8 @@
 > depends: `4-2/task-16`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -4684,8 +4684,8 @@
 > depends: `4-2/task-17`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -4715,8 +4715,8 @@
 > depends: `4-2/task-18`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -4743,11 +4743,11 @@
 > depends: `4-2/task-19`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md`
-- `docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md`
 
 ### Existing Code
 - `core/src/**`
@@ -4773,8 +4773,8 @@
 > depends: `4-2/task-20`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -4802,8 +4802,8 @@
 > depends: `4-2/task-21`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -4832,8 +4832,8 @@
 > depends: `4-2/task-22`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -4863,8 +4863,8 @@
 > depends: `4-2/task-23`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -4891,10 +4891,10 @@
 > depends: `4-2/task-24`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-3-ai/S3-05-ai-call-log.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-05-ai-call-log.md`
 
 ### Existing Code
 - `core/src/**`
@@ -4920,8 +4920,8 @@
 > depends: `4-2/task-25`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -4949,8 +4949,8 @@
 > depends: `4-2/task-26`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -4979,8 +4979,8 @@
 > depends: `4-2/task-27`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -5010,8 +5010,8 @@
 > depends: `4-2/task-28`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -5038,10 +5038,10 @@
 > depends: `4-2/task-29`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-3-ai/S3-06-ai-summary-editor.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-06-ai-summary-editor.md`
 
 ### Existing Code
 - `core/src/**`
@@ -5067,8 +5067,8 @@
 > depends: `4-2/task-30`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -5096,8 +5096,8 @@
 > depends: `4-2/task-31`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -5126,8 +5126,8 @@
 > depends: `4-2/task-32`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -5157,8 +5157,8 @@
 > depends: `4-2/task-33`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -5185,10 +5185,10 @@
 > depends: `4-2/task-34`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-3-ai/S3-07-ai-tags-suggestion.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-07-ai-tags-suggestion.md`
 
 ### Existing Code
 - `core/src/**`
@@ -5214,8 +5214,8 @@
 > depends: `4-2/task-35`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -5243,8 +5243,8 @@
 > depends: `4-2/task-36`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -5273,8 +5273,8 @@
 > depends: `4-2/task-37`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -5304,8 +5304,8 @@
 > depends: `4-2/task-38`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -5332,11 +5332,11 @@
 > depends: `4-2/task-39`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-3-ai/S3-08-semantic-search-results.md`
-- `docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-08-semantic-search-results.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md`
 
 ### Existing Code
 - `core/src/**`
@@ -5362,8 +5362,8 @@
 > depends: `4-2/task-40`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -5391,8 +5391,8 @@
 > depends: `4-2/task-41`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -5421,8 +5421,8 @@
 > depends: `4-2/task-42`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -5452,8 +5452,8 @@
 > depends: `4-2/task-43`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -5480,15 +5480,15 @@
 > depends: `4-2/task-44`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-3-ai/S3-03-remote-model-enable.md`
-- `docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md`
-- `docs/ux/page-specs/stage-3-ai/S3-06-ai-summary-editor.md`
-- `docs/ux/page-specs/stage-3-ai/S3-07-ai-tags-suggestion.md`
-- `docs/ux/page-specs/stage-3-ai/S3-08-semantic-search-results.md`
-- `docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-03-remote-model-enable.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-06-ai-summary-editor.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-07-ai-tags-suggestion.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-08-semantic-search-results.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md`
 
 ### Existing Code
 - `core/src/**`
@@ -5514,8 +5514,8 @@
 > depends: `4-2/task-45`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -5543,8 +5543,8 @@
 > depends: `4-2/task-46`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -5573,8 +5573,8 @@
 > depends: `4-2/task-47`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -5604,8 +5604,8 @@
 > depends: `4-2/task-48`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -5632,12 +5632,12 @@
 > depends: `4-2/task-49`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md`
-- `docs/ux/page-specs/stage-3-ai/S3-08-semantic-search-results.md`
-- `docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-08-semantic-search-results.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md`
 
 ### Existing Code
 - `core/src/**`
@@ -5663,10 +5663,10 @@
 > depends: `4-2/task-50`, `4-2/task-05`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-01-ai-settings.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-01-ai-settings.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md`
 
 ### Existing Code
 - `apps/**`
@@ -5691,10 +5691,10 @@
 > depends: `4-2/task-51`, `4-2/task-10`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-02-local-model-status.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-02-local-model-status.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-02-local-model-status.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-02-local-model-status.md`
 
 ### Existing Code
 - `apps/**`
@@ -5719,10 +5719,10 @@
 > depends: `4-2/task-52`, `4-2/task-15`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-03-remote-model-enable.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-03-remote-model-enable.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
 
 ### Existing Code
 - `apps/**`
@@ -5747,10 +5747,10 @@
 > depends: `4-2/task-53`, `4-2/task-45`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-03-remote-model-enable.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-03-remote-model-enable.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
 
 ### Existing Code
 - `apps/**`
@@ -5775,11 +5775,11 @@
 > depends: `4-2/task-53`, `4-2/task-54`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-03-remote-model-enable.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-03-remote-model-enable.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
 
 ### Existing Code
 - `apps/**`
@@ -5804,10 +5804,10 @@
 > depends: `4-2/task-55`, `4-2/task-20`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
 
 ### Existing Code
 - `apps/**`
@@ -5832,10 +5832,10 @@
 > depends: `4-2/task-56`, `4-2/task-45`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
 
 ### Existing Code
 - `apps/**`
@@ -5860,10 +5860,10 @@
 > depends: `4-2/task-57`, `4-2/task-50`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
 
 ### Existing Code
 - `apps/**`
@@ -5888,12 +5888,12 @@
 > depends: `4-2/task-56`, `4-2/task-57`, `4-2/task-58`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-04-ai-classification-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
-- `docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
 
 ### Existing Code
 - `apps/**`
@@ -5918,10 +5918,10 @@
 > depends: `4-2/task-59`, `4-2/task-25`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-05-ai-call-log.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-05-ai-call-log.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-05-ai-call-log.md`
 
 ### Existing Code
 - `apps/**`
@@ -5946,10 +5946,10 @@
 > depends: `4-2/task-60`, `4-2/task-30`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-06-ai-summary-editor.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-06-ai-summary-editor.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md`
 
 ### Existing Code
 - `apps/**`
@@ -5974,10 +5974,10 @@
 > depends: `4-2/task-61`, `4-2/task-45`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-06-ai-summary-editor.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-06-ai-summary-editor.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
 
 ### Existing Code
 - `apps/**`
@@ -6002,11 +6002,11 @@
 > depends: `4-2/task-61`, `4-2/task-62`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-06-ai-summary-editor.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-06-ai-summary-editor.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md`
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-06-ai-summary.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
 
 ### Existing Code
 - `apps/**`
@@ -6031,10 +6031,10 @@
 > depends: `4-2/task-63`, `4-2/task-35`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-07-ai-tags-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-07-ai-tags-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md`
 
 ### Existing Code
 - `apps/**`
@@ -6059,10 +6059,10 @@
 > depends: `4-2/task-64`, `4-2/task-45`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-07-ai-tags-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-07-ai-tags-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
 
 ### Existing Code
 - `apps/**`
@@ -6087,11 +6087,11 @@
 > depends: `4-2/task-64`, `4-2/task-65`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-07-ai-tags-suggestion.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-07-ai-tags-suggestion.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md`
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-07-ai-tags-suggestion.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
 
 ### Existing Code
 - `apps/**`
@@ -6116,10 +6116,10 @@
 > depends: `4-2/task-66`, `4-2/task-40`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-08-semantic-search-results.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-08-semantic-search-results.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
 
 ### Existing Code
 - `apps/**`
@@ -6144,10 +6144,10 @@
 > depends: `4-2/task-67`, `4-2/task-45`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-08-semantic-search-results.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-08-semantic-search-results.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
 
 ### Existing Code
 - `apps/**`
@@ -6172,10 +6172,10 @@
 > depends: `4-2/task-68`, `4-2/task-50`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-08-semantic-search-results.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-08-semantic-search-results.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
 
 ### Existing Code
 - `apps/**`
@@ -6200,12 +6200,12 @@
 > depends: `4-2/task-67`, `4-2/task-68`, `4-2/task-69`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-08-semantic-search-results.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-08-semantic-search-results.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
-- `docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
 
 ### Existing Code
 - `apps/**`
@@ -6230,10 +6230,10 @@
 > depends: `4-2/task-70`, `4-2/task-05`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md`
 
 ### Existing Code
 - `apps/**`
@@ -6258,10 +6258,10 @@
 > depends: `4-2/task-71`, `4-2/task-15`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
 
 ### Existing Code
 - `apps/**`
@@ -6286,10 +6286,10 @@
 > depends: `4-2/task-72`, `4-2/task-45`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
 
 ### Existing Code
 - `apps/**`
@@ -6314,12 +6314,12 @@
 > depends: `4-2/task-71`, `4-2/task-72`, `4-2/task-73`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md`
-- `docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
-- `docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-01-ai-settings-config.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-03-remote-provider-config.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-09-ai-privacy-rules.md`
 
 ### Existing Code
 - `apps/**`
@@ -6344,10 +6344,10 @@
 > depends: `4-2/task-74`, `4-2/task-20`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
 
 ### Existing Code
 - `apps/**`
@@ -6372,10 +6372,10 @@
 > depends: `4-2/task-75`, `4-2/task-40`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
 
 ### Existing Code
 - `apps/**`
@@ -6400,10 +6400,10 @@
 > depends: `4-2/task-76`, `4-2/task-50`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
 
 ### Existing Code
 - `apps/**`
@@ -6428,12 +6428,12 @@
 > depends: `4-2/task-75`, `4-2/task-76`, `4-2/task-77`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md`
-- `docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai/S3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
-- `docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
-- `docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-04-ai-classification-suggestion.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-08-semantic-search.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai/C3-10-ai-fallback.md`
 
 ### Existing Code
 - `apps/**`
@@ -6458,9 +6458,9 @@
 > depends: `4-2/task-78`
 
 ### Exact Docs
-- `docs/architecture/stage-3-control-map.md`
-- `docs/core/capability-specs/stage-3-ai.md`
-- `docs/ux/page-specs/stage-3-ai.md`
+- `workflow/versions/v3/source-docs/architecture/stage-3-control-map.md`
+- `workflow/versions/v3/source-docs/core/capability-specs/stage-3-ai.md`
+- `workflow/versions/v3/source-docs/ux/page-specs/stage-3-ai.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -6498,8 +6498,8 @@
 > depends: `4-2/task-79`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -6527,8 +6527,8 @@
 > depends: `4-3/task-01`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -6557,8 +6557,8 @@
 > depends: `4-3/task-02`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -6588,8 +6588,8 @@
 > depends: `4-3/task-03`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -6616,10 +6616,10 @@
 > depends: `4-3/task-04`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-02-platform-differences.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-02-platform-differences.md`
 
 ### Existing Code
 - `core/src/**`
@@ -6645,8 +6645,8 @@
 > depends: `4-3/task-05`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -6674,8 +6674,8 @@
 > depends: `4-3/task-06`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -6704,8 +6704,8 @@
 > depends: `4-3/task-07`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -6735,8 +6735,8 @@
 > depends: `4-3/task-08`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -6763,12 +6763,12 @@
 > depends: `4-3/task-09`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-01-connect-repo.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-01-connect-repo.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md`
 
 ### Existing Code
 - `core/src/**`
@@ -6794,8 +6794,8 @@
 > depends: `4-3/task-10`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-03-mobile-library-query.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-03-mobile-library-query.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -6823,8 +6823,8 @@
 > depends: `4-3/task-11`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-03-mobile-library-query.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-03-mobile-library-query.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -6853,8 +6853,8 @@
 > depends: `4-3/task-12`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-03-mobile-library-query.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-03-mobile-library-query.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -6884,8 +6884,8 @@
 > depends: `4-3/task-13`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-03-mobile-library-query.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-03-mobile-library-query.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -6912,10 +6912,10 @@
 > depends: `4-3/task-14`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-03-mobile-library-query.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-03-mobile-library-query.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-02-mobile-library.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-02-mobile-library.md`
 
 ### Existing Code
 - `core/src/**`
@@ -6941,8 +6941,8 @@
 > depends: `4-3/task-15`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -6970,8 +6970,8 @@
 > depends: `4-3/task-16`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -7000,8 +7000,8 @@
 > depends: `4-3/task-17`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -7031,8 +7031,8 @@
 > depends: `4-3/task-18`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -7059,10 +7059,10 @@
 > depends: `4-3/task-19`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-03-camera-import.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-03-camera-import.md`
 
 ### Existing Code
 - `core/src/**`
@@ -7088,8 +7088,8 @@
 > depends: `4-3/task-20`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-05-share-extension-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-05-share-extension-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -7117,8 +7117,8 @@
 > depends: `4-3/task-21`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-05-share-extension-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-05-share-extension-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -7147,8 +7147,8 @@
 > depends: `4-3/task-22`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-05-share-extension-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-05-share-extension-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -7178,8 +7178,8 @@
 > depends: `4-3/task-23`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-05-share-extension-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-05-share-extension-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -7206,10 +7206,10 @@
 > depends: `4-3/task-24`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-05-share-extension-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-05-share-extension-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-04-share-extension-import.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-04-share-extension-import.md`
 
 ### Existing Code
 - `core/src/**`
@@ -7235,8 +7235,8 @@
 > depends: `4-3/task-25`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -7264,8 +7264,8 @@
 > depends: `4-3/task-26`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -7294,8 +7294,8 @@
 > depends: `4-3/task-27`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -7325,8 +7325,8 @@
 > depends: `4-3/task-28`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -7353,10 +7353,10 @@
 > depends: `4-3/task-29`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-07-files-import.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-07-files-import.md`
 
 ### Existing Code
 - `core/src/**`
@@ -7382,8 +7382,8 @@
 > depends: `4-3/task-30`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-07-mobile-detail.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-07-mobile-detail.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -7411,8 +7411,8 @@
 > depends: `4-3/task-31`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-07-mobile-detail.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-07-mobile-detail.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -7441,8 +7441,8 @@
 > depends: `4-3/task-32`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-07-mobile-detail.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-07-mobile-detail.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -7472,8 +7472,8 @@
 > depends: `4-3/task-33`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-07-mobile-detail.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-07-mobile-detail.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -7500,10 +7500,10 @@
 > depends: `4-3/task-34`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-07-mobile-detail.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-07-mobile-detail.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-05-mobile-file-detail.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-05-mobile-file-detail.md`
 
 ### Existing Code
 - `core/src/**`
@@ -7529,8 +7529,8 @@
 > depends: `4-3/task-35`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -7558,8 +7558,8 @@
 > depends: `4-3/task-36`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -7588,8 +7588,8 @@
 > depends: `4-3/task-37`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -7619,8 +7619,8 @@
 > depends: `4-3/task-38`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -7647,12 +7647,12 @@
 > depends: `4-3/task-39`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-01-connect-repo.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-06-icloud-permission.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-03-onedrive-notice.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-01-connect-repo.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-06-icloud-permission.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-03-onedrive-notice.md`
 
 ### Existing Code
 - `core/src/**`
@@ -7678,8 +7678,8 @@
 > depends: `4-3/task-40`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -7707,8 +7707,8 @@
 > depends: `4-3/task-41`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -7737,8 +7737,8 @@
 > depends: `4-3/task-42`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -7768,8 +7768,8 @@
 > depends: `4-3/task-43`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -7796,12 +7796,12 @@
 > depends: `4-3/task-44`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-01-choose-repo.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-01-choose-repo.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md`
 
 ### Existing Code
 - `core/src/**`
@@ -7827,8 +7827,8 @@
 > depends: `4-3/task-45`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -7856,8 +7856,8 @@
 > depends: `4-3/task-46`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -7886,8 +7886,8 @@
 > depends: `4-3/task-47`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -7917,8 +7917,8 @@
 > depends: `4-3/task-48`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -7945,13 +7945,13 @@
 > depends: `4-3/task-49`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-01-choose-repo.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-03-local-folder-notice.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-01-choose-repo.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-03-local-folder-notice.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md`
 
 ### Existing Code
 - `core/src/**`
@@ -7977,8 +7977,8 @@
 > depends: `4-3/task-50`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -8006,8 +8006,8 @@
 > depends: `4-3/task-51`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -8036,8 +8036,8 @@
 > depends: `4-3/task-52`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -8067,8 +8067,8 @@
 > depends: `4-3/task-53`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -8095,11 +8095,11 @@
 > depends: `4-3/task-54`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-02-main-window.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-02-main-window.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-02-main-window.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-02-main-window.md`
 
 ### Existing Code
 - `core/src/**`
@@ -8125,8 +8125,8 @@
 > depends: `4-3/task-55`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -8154,8 +8154,8 @@
 > depends: `4-3/task-56`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -8184,8 +8184,8 @@
 > depends: `4-3/task-57`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -8215,8 +8215,8 @@
 > depends: `4-3/task-58`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -8243,11 +8243,11 @@
 > depends: `4-3/task-59`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-04-watcher-status.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-04-watcher-status.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-04-watcher-status.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-04-watcher-status.md`
 
 ### Existing Code
 - `core/src/**`
@@ -8273,8 +8273,8 @@
 > depends: `4-3/task-60`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -8302,8 +8302,8 @@
 > depends: `4-3/task-61`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -8332,8 +8332,8 @@
 > depends: `4-3/task-62`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -8363,8 +8363,8 @@
 > depends: `4-3/task-63`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -8391,11 +8391,11 @@
 > depends: `4-3/task-64`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-05-import-flow.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-05-import-flow.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md`
 
 ### Existing Code
 - `core/src/**`
@@ -8421,8 +8421,8 @@
 > depends: `4-3/task-65`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -8450,8 +8450,8 @@
 > depends: `4-3/task-66`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -8480,8 +8480,8 @@
 > depends: `4-3/task-67`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -8511,8 +8511,8 @@
 > depends: `4-3/task-68`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -8539,11 +8539,11 @@
 > depends: `4-3/task-69`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-01-choose-repo.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-03-onedrive-notice.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-01-choose-repo.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-03-onedrive-notice.md`
 
 ### Existing Code
 - `core/src/**`
@@ -8569,8 +8569,8 @@
 > depends: `4-3/task-70`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -8598,8 +8598,8 @@
 > depends: `4-3/task-71`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -8628,8 +8628,8 @@
 > depends: `4-3/task-72`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -8659,8 +8659,8 @@
 > depends: `4-3/task-73`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -8687,11 +8687,11 @@
 > depends: `4-3/task-74`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-03-sync-conflict-entry.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-03-sync-conflict-entry.md`
 
 ### Existing Code
 - `core/src/**`
@@ -8717,8 +8717,8 @@
 > depends: `4-3/task-75`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -8746,8 +8746,8 @@
 > depends: `4-3/task-76`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -8776,8 +8776,8 @@
 > depends: `4-3/task-77`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -8807,8 +8807,8 @@
 > depends: `4-3/task-78`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -8835,11 +8835,11 @@
 > depends: `4-3/task-79`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md`
 
 ### Existing Code
 - `core/src/**`
@@ -8865,8 +8865,8 @@
 > depends: `4-3/task-80`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -8894,8 +8894,8 @@
 > depends: `4-3/task-81`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -8924,8 +8924,8 @@
 > depends: `4-3/task-82`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -8955,8 +8955,8 @@
 > depends: `4-3/task-83`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -8983,12 +8983,12 @@
 > depends: `4-3/task-84`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-03-local-folder-notice.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-02-platform-differences.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-08-repository-settings.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-03-local-folder-notice.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-02-platform-differences.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-08-repository-settings.md`
 
 ### Existing Code
 - `core/src/**`
@@ -9014,8 +9014,8 @@
 > depends: `4-3/task-85`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -9043,8 +9043,8 @@
 > depends: `4-3/task-86`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -9073,8 +9073,8 @@
 > depends: `4-3/task-87`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -9104,8 +9104,8 @@
 > depends: `4-3/task-88`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -9132,10 +9132,10 @@
 > depends: `4-3/task-89`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-06-missing-file-recovery.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-06-missing-file-recovery.md`
 
 ### Existing Code
 - `core/src/**`
@@ -9161,8 +9161,8 @@
 > depends: `4-3/task-90`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -9190,8 +9190,8 @@
 > depends: `4-3/task-91`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -9220,8 +9220,8 @@
 > depends: `4-3/task-92`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -9251,8 +9251,8 @@
 > depends: `4-3/task-93`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -9279,12 +9279,12 @@
 > depends: `4-3/task-94`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-04-watcher-status.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-04-watcher-status.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-07-rescan-confirm.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-04-watcher-status.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-04-watcher-status.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-07-rescan-confirm.md`
 
 ### Existing Code
 - `core/src/**`
@@ -9310,8 +9310,8 @@
 > depends: `4-3/task-95`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -9339,8 +9339,8 @@
 > depends: `4-3/task-96`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -9369,8 +9369,8 @@
 > depends: `4-3/task-97`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -9400,8 +9400,8 @@
 > depends: `4-3/task-98`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -9428,10 +9428,10 @@
 > depends: `4-3/task-99`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-08-repository-settings.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-08-repository-settings.md`
 
 ### Existing Code
 - `core/src/**`
@@ -9457,8 +9457,8 @@
 > depends: `4-3/task-100`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 
@@ -9486,8 +9486,8 @@
 > depends: `4-3/task-101`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/data-model.md`
@@ -9516,8 +9516,8 @@
 > depends: `4-3/task-102`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
 - `docs/api/error-codes.md`
 - `docs/architecture/transactional-import.md`
@@ -9547,8 +9547,8 @@
 > depends: `4-3/task-103`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/development/testing.md`
 
 ### Existing Code
@@ -9575,14 +9575,14 @@
 > depends: `4-3/task-104`
 
 ### Exact Docs
-- `docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-07-files-import.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-05-import-flow.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md`
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-07-files-import.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-05-import-flow.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md`
 
 ### Existing Code
 - `core/src/**`
@@ -9608,10 +9608,10 @@
 > depends: `4-3/task-105`, `4-3/task-10`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-01-connect-repo.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-01-connect-repo.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
 
 ### Existing Code
 - `apps/**`
@@ -9635,10 +9635,10 @@
 > depends: `4-3/task-106`, `4-3/task-40`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-01-connect-repo.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-01-connect-repo.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
 
 ### Existing Code
 - `apps/**`
@@ -9662,11 +9662,11 @@
 > depends: `4-3/task-106`, `4-3/task-107`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-01-connect-repo.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-01-connect-repo.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
 
 ### Existing Code
 - `apps/**`
@@ -9690,10 +9690,10 @@
 > depends: `4-3/task-108`, `4-3/task-15`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-02-mobile-library.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-02-mobile-library.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-03-mobile-library-query.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-03-mobile-library-query.md`
 
 ### Existing Code
 - `apps/**`
@@ -9717,10 +9717,10 @@
 > depends: `4-3/task-109`, `4-3/task-20`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-03-camera-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-03-camera-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-04-camera-import.md`
 
 ### Existing Code
 - `apps/**`
@@ -9744,10 +9744,10 @@
 > depends: `4-3/task-110`, `4-3/task-25`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-04-share-extension-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-04-share-extension-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-05-share-extension-import.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-05-share-extension-import.md`
 
 ### Existing Code
 - `apps/**`
@@ -9771,10 +9771,10 @@
 > depends: `4-3/task-111`, `4-3/task-35`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-05-mobile-file-detail.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-05-mobile-file-detail.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-07-mobile-detail.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-07-mobile-detail.md`
 
 ### Existing Code
 - `apps/**`
@@ -9798,10 +9798,10 @@
 > depends: `4-3/task-112`, `4-3/task-40`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-06-icloud-permission.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-06-icloud-permission.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
 
 ### Existing Code
 - `apps/**`
@@ -9825,10 +9825,10 @@
 > depends: `4-3/task-113`, `4-3/task-30`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-07-files-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-07-files-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md`
 
 ### Existing Code
 - `apps/**`
@@ -9852,10 +9852,10 @@
 > depends: `4-3/task-114`, `4-3/task-105`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-07-files-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-07-files-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
 
 ### Existing Code
 - `apps/**`
@@ -9879,11 +9879,11 @@
 > depends: `4-3/task-114`, `4-3/task-115`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-IOS-07-files-import.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-IOS-07-files-import.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-06-files-import.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
 
 ### Existing Code
 - `apps/**`
@@ -9907,10 +9907,10 @@
 > depends: `4-3/task-116`, `4-3/task-45`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-01-choose-repo.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-01-choose-repo.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
 
 ### Existing Code
 - `apps/**`
@@ -9934,10 +9934,10 @@
 > depends: `4-3/task-117`, `4-3/task-70`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-01-choose-repo.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-01-choose-repo.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
 
 ### Existing Code
 - `apps/**`
@@ -9961,11 +9961,11 @@
 > depends: `4-3/task-117`, `4-3/task-118`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-01-choose-repo.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-01-choose-repo.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
 
 ### Existing Code
 - `apps/**`
@@ -9989,10 +9989,10 @@
 > depends: `4-3/task-119`, `4-3/task-55`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-02-main-window.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-02-main-window.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md`
 
 ### Existing Code
 - `apps/**`
@@ -10016,10 +10016,10 @@
 > depends: `4-3/task-120`, `4-3/task-40`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-03-onedrive-notice.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-03-onedrive-notice.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
 
 ### Existing Code
 - `apps/**`
@@ -10043,10 +10043,10 @@
 > depends: `4-3/task-121`, `4-3/task-70`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-03-onedrive-notice.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-03-onedrive-notice.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
 
 ### Existing Code
 - `apps/**`
@@ -10070,11 +10070,11 @@
 > depends: `4-3/task-121`, `4-3/task-122`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-03-onedrive-notice.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-03-onedrive-notice.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-08-cloud-permission-state.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-14-onedrive-risk-state.md`
 
 ### Existing Code
 - `apps/**`
@@ -10098,10 +10098,10 @@
 > depends: `4-3/task-123`, `4-3/task-60`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-04-watcher-status.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-04-watcher-status.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
 
 ### Existing Code
 - `apps/**`
@@ -10125,10 +10125,10 @@
 > depends: `4-3/task-124`, `4-3/task-95`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-04-watcher-status.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-04-watcher-status.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
 
 ### Existing Code
 - `apps/**`
@@ -10152,11 +10152,11 @@
 > depends: `4-3/task-124`, `4-3/task-125`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-04-watcher-status.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-04-watcher-status.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
 
 ### Existing Code
 - `apps/**`
@@ -10180,10 +10180,10 @@
 > depends: `4-3/task-126`, `4-3/task-65`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-05-import-flow.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-05-import-flow.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
 
 ### Existing Code
 - `apps/**`
@@ -10207,10 +10207,10 @@
 > depends: `4-3/task-127`, `4-3/task-105`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-05-import-flow.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-05-import-flow.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
 
 ### Existing Code
 - `apps/**`
@@ -10234,11 +10234,11 @@
 > depends: `4-3/task-127`, `4-3/task-128`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-WIN-05-import-flow.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-WIN-05-import-flow.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
 
 ### Existing Code
 - `apps/**`
@@ -10262,10 +10262,10 @@
 > depends: `4-3/task-129`, `4-3/task-50`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-01-choose-repo.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-01-choose-repo.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
 
 ### Existing Code
 - `apps/**`
@@ -10289,10 +10289,10 @@
 > depends: `4-3/task-130`, `4-3/task-55`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-02-main-window.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-02-main-window.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-11-desktop-main-query.md`
 
 ### Existing Code
 - `apps/**`
@@ -10316,10 +10316,10 @@
 > depends: `4-3/task-131`, `4-3/task-50`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-03-local-folder-notice.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-03-local-folder-notice.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
 
 ### Existing Code
 - `apps/**`
@@ -10343,10 +10343,10 @@
 > depends: `4-3/task-132`, `4-3/task-85`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-03-local-folder-notice.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-03-local-folder-notice.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
 
 ### Existing Code
 - `apps/**`
@@ -10370,11 +10370,11 @@
 > depends: `4-3/task-132`, `4-3/task-133`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-03-local-folder-notice.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-03-local-folder-notice.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
 
 ### Existing Code
 - `apps/**`
@@ -10398,10 +10398,10 @@
 > depends: `4-3/task-134`, `4-3/task-60`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-04-watcher-status.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-04-watcher-status.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
 
 ### Existing Code
 - `apps/**`
@@ -10425,10 +10425,10 @@
 > depends: `4-3/task-135`, `4-3/task-95`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-04-watcher-status.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-04-watcher-status.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
 
 ### Existing Code
 - `apps/**`
@@ -10452,11 +10452,11 @@
 > depends: `4-3/task-135`, `4-3/task-136`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-04-watcher-status.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-04-watcher-status.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-12-platform-watcher-status.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
 
 ### Existing Code
 - `apps/**`
@@ -10480,10 +10480,10 @@
 > depends: `4-3/task-137`, `4-3/task-65`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
 
 ### Existing Code
 - `apps/**`
@@ -10507,10 +10507,10 @@
 > depends: `4-3/task-138`, `4-3/task-105`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
 
 ### Existing Code
 - `apps/**`
@@ -10534,11 +10534,11 @@
 > depends: `4-3/task-138`, `4-3/task-139`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-LNX-05-import-flow.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-13-desktop-import-flow.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
 
 ### Existing Code
 - `apps/**`
@@ -10562,10 +10562,10 @@
 > depends: `4-3/task-140`, `4-3/task-75`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md`
 
 ### Existing Code
 - `apps/**`
@@ -10589,10 +10589,10 @@
 > depends: `4-3/task-141`, `4-3/task-80`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
 
 ### Existing Code
 - `apps/**`
@@ -10616,10 +10616,10 @@
 > depends: `4-3/task-142`, `4-3/task-105`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
 
 ### Existing Code
 - `apps/**`
@@ -10643,12 +10643,12 @@
 > depends: `4-3/task-141`, `4-3/task-142`, `4-3/task-143`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-01-sync-conflict.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
 
 ### Existing Code
 - `apps/**`
@@ -10672,10 +10672,10 @@
 > depends: `4-3/task-144`, `4-3/task-05`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-02-platform-differences.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-02-platform-differences.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md`
 
 ### Existing Code
 - `apps/**`
@@ -10699,10 +10699,10 @@
 > depends: `4-3/task-145`, `4-3/task-85`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-02-platform-differences.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-02-platform-differences.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
 
 ### Existing Code
 - `apps/**`
@@ -10726,11 +10726,11 @@
 > depends: `4-3/task-145`, `4-3/task-146`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-02-platform-differences.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-02-platform-differences.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-01-cross-platform-ffi-contract.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
 
 ### Existing Code
 - `apps/**`
@@ -10754,10 +10754,10 @@
 > depends: `4-3/task-147`, `4-3/task-75`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-03-sync-conflict-entry.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-03-sync-conflict-entry.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-15-sync-conflict-detect.md`
 
 ### Existing Code
 - `apps/**`
@@ -10781,10 +10781,10 @@
 > depends: `4-3/task-148`, `4-3/task-10`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
 
 ### Existing Code
 - `apps/**`
@@ -10808,10 +10808,10 @@
 > depends: `4-3/task-149`, `4-3/task-45`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
 
 ### Existing Code
 - `apps/**`
@@ -10835,10 +10835,10 @@
 > depends: `4-3/task-150`, `4-3/task-50`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
 
 ### Existing Code
 - `apps/**`
@@ -10862,12 +10862,12 @@
 > depends: `4-3/task-149`, `4-3/task-150`, `4-3/task-151`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-04-repository-init-confirm.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
 
 ### Existing Code
 - `apps/**`
@@ -10891,10 +10891,10 @@
 > depends: `4-3/task-152`, `4-3/task-10`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
 
 ### Existing Code
 - `apps/**`
@@ -10918,10 +10918,10 @@
 > depends: `4-3/task-153`, `4-3/task-45`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
 
 ### Existing Code
 - `apps/**`
@@ -10945,10 +10945,10 @@
 > depends: `4-3/task-154`, `4-3/task-50`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
 
 ### Existing Code
 - `apps/**`
@@ -10972,12 +10972,12 @@
 > depends: `4-3/task-153`, `4-3/task-154`, `4-3/task-155`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-05-repository-adopt-confirm.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-02-mobile-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-09-windows-repo-connect.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-10-linux-repo-connect.md`
 
 ### Existing Code
 - `apps/**`
@@ -11001,10 +11001,10 @@
 > depends: `4-3/task-156`, `4-3/task-90`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-06-missing-file-recovery.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-06-missing-file-recovery.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-18-missing-file-recovery.md`
 
 ### Existing Code
 - `apps/**`
@@ -11028,10 +11028,10 @@
 > depends: `4-3/task-157`, `4-3/task-95`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-07-rescan-confirm.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-07-rescan-confirm.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-19-manual-rescan.md`
 
 ### Existing Code
 - `apps/**`
@@ -11055,10 +11055,10 @@
 > depends: `4-3/task-158`, `4-3/task-85`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-08-repository-settings.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-08-repository-settings.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
 
 ### Existing Code
 - `apps/**`
@@ -11082,10 +11082,10 @@
 > depends: `4-3/task-159`, `4-3/task-100`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-08-repository-settings.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-08-repository-settings.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md`
 
 ### Existing Code
 - `apps/**`
@@ -11109,11 +11109,11 @@
 > depends: `4-3/task-159`, `4-3/task-160`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-08-repository-settings.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-08-repository-settings.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-17-platform-capabilities.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-20-repository-settings-cross-platform.md`
 
 ### Existing Code
 - `apps/**`
@@ -11137,10 +11137,10 @@
 > depends: `4-3/task-161`, `4-3/task-80`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
 
 ### Existing Code
 - `apps/**`
@@ -11164,10 +11164,10 @@
 > depends: `4-3/task-162`, `4-3/task-105`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
 
 ### Existing Code
 - `apps/**`
@@ -11191,11 +11191,11 @@
 > depends: `4-3/task-162`, `4-3/task-163`
 
 ### Exact Docs
-- `docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md`
-- `docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform/S4-X-09-replace-confirm.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
 - `docs/api/core-api.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
-- `docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-16-sync-conflict-resolve.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform/C4-21-replace-confirm-cross-platform.md`
 
 ### Existing Code
 - `apps/**`
@@ -11219,9 +11219,9 @@
 > depends: `4-3/task-164`
 
 ### Exact Docs
-- `docs/architecture/stage-4-control-map.md`
-- `docs/core/capability-specs/stage-4-multiplatform.md`
-- `docs/ux/page-specs/stage-4-multiplatform.md`
+- `workflow/versions/v4/source-docs/architecture/stage-4-control-map.md`
+- `workflow/versions/v4/source-docs/core/capability-specs/stage-4-multiplatform.md`
+- `workflow/versions/v4/source-docs/ux/page-specs/stage-4-multiplatform.md`
 - `docs/development/testing.md`
 
 ### Existing Code

@@ -11,8 +11,8 @@
 
 - `docs/README.md`
 - `docs/roadmap/milestones.md`
-- `docs/ux/page-specs/stage-2-experience.md`
-- `docs/core/capability-specs/stage-2-experience.md`
+- `workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience.md`
+- `workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience.md`
 
 ## Contention Points
 

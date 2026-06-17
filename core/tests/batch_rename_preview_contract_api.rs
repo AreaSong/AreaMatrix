@@ -7,13 +7,13 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 
 const CAPABILITY_SPEC: &str = include_str!(
-    "../../docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md"
+    "../../workflow/versions/v2/source-docs/core/capability-specs/stage-2-experience/C2-10-batch-rename-preview.md"
 );
-const CONTROL_MAP: &str = include_str!("../../docs/architecture/stage-2-control-map.md");
+const CONTROL_MAP: &str = include_str!("../../workflow/versions/v2/source-docs/architecture/stage-2-control-map.md");
 const BATCH_RENAME_PAGE: &str =
-    include_str!("../../docs/ux/page-specs/stage-2-experience/S2-14-batch-rename.md");
+    include_str!("../../workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-14-batch-rename.md");
 const UNDO_TOAST_PAGE: &str =
-    include_str!("../../docs/ux/page-specs/stage-2-experience/S2-10-undo-toast.md");
+    include_str!("../../workflow/versions/v2/source-docs/ux/page-specs/stage-2-experience/S2-10-undo-toast.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const API_RS: &str = include_str!("../src/api.rs");
