@@ -2,7 +2,7 @@
 
 This directory tracks versioned workflow instances without moving the live v1 task queue.
 
-- `v1-mvp/` records the current `tasks/prompts/**` queue as the active MVP workflow. The 637-task queue is complete, but v1 remains in closeout until release blockers, checkpoint evidence gaps, and archive readiness are resolved.
+- `v1-mvp/` records the current `tasks/prompts/**` queue as the active MVP workflow. The 637-task queue is complete and the closeout decision is recorded, but formal alpha remains blocked and promotion into live `tasks/prompts/**` stays gated while v1 is `live-running`.
 - `v-template/` is the managed template reference instance. It validates the reusable artifact chain and must never promote into `tasks/prompts/**`.
 - Future versions should be created with `./dev workflow init --version v2` or another real `vN`.
 - New versions use version-local numbering (`phase-0 / 0-1 / task-01`) and leave live mapping pending until explicitly configured.

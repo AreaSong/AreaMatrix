@@ -2,11 +2,19 @@ version: v1-mvp
 status: blocked
 kind: closeout-audit
 projection_status: not-applicable-for-v1-direct-live-queue
+decision:
+  source: workflow/versions/v1-mvp/closeout/closeout-decision.md
+  decided_at: "2026-06-17 CST"
+  technical_completion: complete
+  release_alpha_status: blocked
+  release_blocker_policy: deferred-until-formal-distribution
+  v2_planning_status: allowed-before-live-promotion
+  promotion_to_tasks_prompts: blocked-while-v1-live-running
 blockers:
-  - Stage 1 alpha release is not approved; 0.1.0-local-qa is internal QA only, and v0.1.0-unnotarized-preview.2 is prerelease-only for trusted testers.
-  - iCloud placeholder real-environment smoke evidence is still blocked.
-  - Developer ID signing, notarization, stapling, clean-Mac first launch, and formal v0.1.0 tag evidence are missing.
-  - 3-1/task-05 remains a release-gate review item without task-loop verify evidence.
+  - Formal Stage 1 alpha release is not approved; 0.1.0-local-qa is internal QA only, and v0.1.0-unnotarized-preview.2 is prerelease-only for trusted testers.
+  - iCloud placeholder real-environment smoke evidence is deferred to the formal distribution track.
+  - Developer ID signing, notarization, stapling, clean-Mac first launch, and formal v0.1.0 tag evidence are deferred to the formal distribution track.
+  - 3-1/task-05 remains a release-gate review item without task-loop verify evidence; it is deferred to release evidence review and must not be papered over.
 evidence:
   live_queue: tasks/prompts
   progress: tasks/prompts/_shared/progress.json
@@ -17,6 +25,7 @@ evidence:
   release_checklist: docs/development/stage-1-release-checklist.md
   local_qa_notes: release-notes-0.1.0.md
   unnotarized_preview_notes: release-notes-v0.1.0-unnotarized-preview.2.md
+  closeout_decision: workflow/versions/v1-mvp/closeout/closeout-decision.md
   checkpoint_gap_query: progress entries where git_checkpoint_status is missing or not committed
   checkpoint_gap_detail: workflow/versions/v1-mvp/closeout/checkpoint-gaps.md
   checkpoint_accepted_exceptions: workflow/versions/v1-mvp/closeout/checkpoint-accepted-exceptions.md
@@ -41,13 +50,26 @@ checkpoint_gap_summary:
     Unspecified: 1
   disposition: accepted-exceptions-recorded
   note: The 35 task-loop entries are accepted closeout exceptions. They have local PASS logs and tracked run summaries, but their run summaries used git.checkpoint=off and copy/verify logs are not tracked in Git. Do not rewrite progress.json or fabricate checkpoint metadata.
+release_gate_review:
+  entry: 3-1/task-05
+  disposition: deferred-to-formal-release-evidence-review
+  reason: local QA / release gate sync entry without task-loop run id, copy log, verify log, or run summary
+  guardrail: do not fabricate task-loop verify evidence or checkpoint metadata
 dirty_worktree_summary:
   generated_xcode_log_removed_from_git_tracking: apps/macos/.derived-data-log-0CA5RPJ1
   ignore_rule: apps/macos/.derived-data-log-*
   disposition: resolved-for-future-checkpoints
+next_allowed_work:
+  - Start v2 discussion and planning under workflow/versions/v2.
+  - Generate v2 middle-layer, changes, plans, drafts, and queue candidates for review.
+  - Continue formal alpha release evidence separately.
+next_forbidden_work:
+  - Do not promote v2 or any new work into tasks/prompts/** while v1 is live-running.
+  - Do not rename, move, regenerate, or archive the live v1 queue during this decision pass.
+  - Do not call local QA, unnotarized preview, ad-hoc signing, or same-machine smoke formal alpha evidence.
 remaining_risks:
-  - Do not archive v1 until release blockers are either closed or explicitly deferred with owner and rationale.
+  - Formal alpha release remains blocked until deferred release blockers are closed with fresh evidence.
   - Do not promote new live tasks/prompts work while v1 is still treated as live-running by workflow gates.
   - Do not treat local QA, unnotarized preview, ad-hoc signing, or same-machine launch smoke as formal alpha distribution evidence.
   - Do not rewrite progress.json or task-loop logs to paper over checkpoint evidence gaps; accepted exceptions are recorded, and optional evidence bundling remains a closeout archive decision.
-archive_readiness: blocked
+archive_readiness: evidence-bundle-ready

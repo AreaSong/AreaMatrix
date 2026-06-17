@@ -29,6 +29,11 @@ bundle 签名和自包含链接验证；没有 Developer ID 签名、公证、st
 
 本清单只汇总发布门禁和证据，不补产品功能。当前日期：2026-06-16。
 
+v1 closeout decision 已记录在
+`workflow/versions/v1-mvp/closeout/closeout-decision.md`：637-task live queue
+按技术完成处置，正式 Stage 1 alpha 仍不放行；本清单中的发布阻断项延期到正式分发轨道继续补证，
+不得用 local QA、未公证预览、ad-hoc 签名或同机 smoke 替代。
+
 ## 2. 证据来源
 
 本清单交叉读取以下源事实：
@@ -37,6 +42,7 @@ bundle 签名和自包含链接验证；没有 Developer ID 签名、公证、st
 - [build.md](build.md)
 - [stage-1-mvp.md](../roadmap/stage-1-mvp.md)
 - [CHANGELOG.md](../../CHANGELOG.md)
+- [v1-mvp closeout decision](../../workflow/versions/v1-mvp/closeout/closeout-decision.md)
 - [release-notes-v0.1.0-unnotarized-preview.2.md](../../release-notes-v0.1.0-unnotarized-preview.2.md)
 - [testing.md](testing.md)
 - [recovery-scenarios.md](recovery-scenarios.md)
