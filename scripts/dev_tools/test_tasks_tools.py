@@ -85,6 +85,35 @@ class LightweightTasksToolsTest(unittest.TestCase):
     def _doctor_args(self) -> Namespace:
         return Namespace(tasks_command="doctor", task_id=None, task=False, verify=False, evidence=False)
 
+    def _create_args(
+        self,
+        *,
+        title: str = "Add Settings Button",
+        slug: str | None = None,
+        write: bool = False,
+        validation: list[str] | None = None,
+    ) -> Namespace:
+        return Namespace(
+            tasks_command="create",
+            task_id=None,
+            task=False,
+            verify=False,
+            evidence=False,
+            title=title,
+            slug=slug,
+            priority="p2",
+            kind="feature",
+            risk="low",
+            layer="frontend",
+            area="apps/macos",
+            feature="settings",
+            touch=[],
+            forbid=[],
+            validation=validation or ["./dev check"],
+            date="2026-06-18",
+            write=write,
+        )
+
     def _show_args(self, task_id: int, *, task: bool = False, verify: bool = False, evidence: bool = False) -> Namespace:
         return Namespace(tasks_command="show", task_id=task_id, task=task, verify=verify, evidence=evidence)
 
@@ -174,6 +203,77 @@ class LightweightTasksToolsTest(unittest.TestCase):
             with contextlib.redirect_stdout(stdout):
                 self.assertEqual(run_tasks_command(root, self._doctor_args()), 1)
             self.assertIn("lightweight tasks doctor: FAILED", stdout.getvalue())
+
+    def test_doctor_reports_invalid_classification_values(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_task(root, "tasks/active", 1, "add-settings-button")
+            yaml_path = root / "tasks/active/1.add-settings-button/task.yaml"
+            text = yaml_path.read_text(encoding="utf-8")
+            text = text.replace("priority: p2", "priority: p9")
+            text = text.replace("kind: feature", "kind: random")
+            text = text.replace("risk: low", "risk: huge")
+            text = text.replace("layer: frontend", "layer: random")
+            yaml_path.write_text(text, encoding="utf-8")
+
+            errors = validate_lightweight_tasks(root)
+
+            self.assertTrue(any("priority must be one of" in error for error in errors), errors)
+            self.assertTrue(any("kind must be one of" in error for error in errors), errors)
+            self.assertTrue(any("risk must be one of" in error for error in errors), errors)
+            self.assertTrue(any("scope.layer must be one of" in error for error in errors), errors)
+
+    def test_create_preview_is_read_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            before = file_snapshot(root)
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(run_tasks_command(root, self._create_args()), 0)
+
+            output = stdout.getvalue()
+            self.assertEqual(file_snapshot(root), before)
+            self.assertIn("Lightweight task create preview", output)
+            self.assertIn("tasks/active/1.add-settings-button/", output)
+            self.assertIn("Add --write to create this task", output)
+
+    def test_create_write_creates_standard_active_task(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_task(root, "tasks/done/2026", 1, "old-task", status="done")
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(run_tasks_command(root, self._create_args(write=True)), 0)
+
+            task_dir = root / "tasks/active/2.add-settings-button"
+            self.assertTrue(task_dir.is_dir())
+            for file_name in ["task.yaml", "task.md", "verify.md", "evidence.md"]:
+                self.assertTrue((task_dir / file_name).is_file(), file_name)
+            yaml_text = (task_dir / "task.yaml").read_text(encoding="utf-8")
+            self.assertIn("id: 2\n", yaml_text)
+            self.assertIn("slug: add-settings-button\n", yaml_text)
+            self.assertIn("status: todo\n", yaml_text)
+            self.assertIn("scope:\n  layer: frontend\n  area: apps/macos\n  feature: settings\n", yaml_text)
+            self.assertIn("workflow/versions/*/execution/", yaml_text)
+            self.assertIn("./dev check", yaml_text)
+            self.assertIn("created lightweight task: tasks/active/2.add-settings-button/", stdout.getvalue())
+            self.assertFalse((root / "workflow/versions/v1-mvp/execution").exists())
+
+            self.assertEqual(validate_lightweight_tasks(root), [])
+
+    def test_create_rejects_unhealthy_existing_tasks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_task(root, "tasks/active", 1, "add-settings-button", status="done")
+
+            with self.assertRaises(ToolError) as ctx:
+                run_tasks_command(root, self._create_args(write=True))
+
+            self.assertEqual(ctx.exception.code, 1)
+            self.assertIn("run ./dev tasks doctor", str(ctx.exception))
+            self.assertFalse((root / "tasks/active/2.add-settings-button").exists())
 
     def test_show_prints_detail_and_task_markdown(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

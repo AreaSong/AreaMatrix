@@ -225,6 +225,7 @@
     "  ./dev tasks doctor",
     "  ./dev tasks status",
     "  ./dev tasks list",
+    "  ./dev tasks create --title \"Add Settings Button\" --layer frontend --area apps/macos --feature settings",
     "  ./dev tasks show 1",
     "  ./dev backlog list",
     "  ./dev backlog show <package>",

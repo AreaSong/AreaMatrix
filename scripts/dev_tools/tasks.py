@@ -1,4 +1,4 @@
-"""Read-only lightweight task browser."""
+"""Lightweight task browser and structure validation."""
 
 from __future__ import annotations
 
@@ -22,6 +22,10 @@ DONE_YEAR_PATTERN = re.compile(r"^[0-9]{4}$")
 TASK_STATUSES = {"todo", "in_progress", "blocked", "verify_ready", "done", "archived"}
 ACTIVE_STATUSES = {"todo", "in_progress", "blocked", "verify_ready"}
 DONE_STATUSES = {"done", "archived"}
+TASK_PRIORITIES = {"p0", "p1", "p2", "p3"}
+TASK_KINDS = {"feature", "bugfix", "refactor", "docs", "test", "tooling", "governance", "chore"}
+TASK_RISKS = {"low", "medium", "high", "mission-critical"}
+TASK_LAYERS = {"frontend", "backend", "core", "app", "scripts", "docs", "workflow", "governance", "assets"}
 TASK_FILES = {"task": "task.md", "verify": "verify.md", "evidence": "evidence.md"}
 
 
@@ -150,8 +154,10 @@ def discover_lightweight_tasks(root: Path, *, include_done: bool = True) -> list
         if task is None:
             continue
         if task.id in seen:
+            first_path = _display_path(seen[task.id], root)
+            second_path = _display_path(task.path, root)
             raise ToolError(
-                f"duplicate lightweight task id {task.id}: {_display_path(seen[task.id], root)} and {_display_path(task.path, root)}",
+                f"duplicate lightweight task id {task.id}: {first_path} and {second_path}",
                 code=1,
             )
         seen[task.id] = task.path
@@ -213,6 +219,18 @@ def validate_lightweight_tasks(root: Path) -> list[str]:
         ]:
             if not value:
                 errors.append(f"{_display_path(task.yaml_path, root)}: missing {field_name}")
+        if task.priority and task.priority not in TASK_PRIORITIES:
+            allowed = ", ".join(sorted(TASK_PRIORITIES))
+            errors.append(f"{_display_path(task.yaml_path, root)}: priority must be one of {allowed}")
+        if task.kind and task.kind not in TASK_KINDS:
+            allowed = ", ".join(sorted(TASK_KINDS))
+            errors.append(f"{_display_path(task.yaml_path, root)}: kind must be one of {allowed}")
+        if task.risk and task.risk not in TASK_RISKS:
+            allowed = ", ".join(sorted(TASK_RISKS))
+            errors.append(f"{_display_path(task.yaml_path, root)}: risk must be one of {allowed}")
+        if task.layer and task.layer not in TASK_LAYERS:
+            allowed = ", ".join(sorted(TASK_LAYERS))
+            errors.append(f"{_display_path(task.yaml_path, root)}: scope.layer must be one of {allowed}")
 
     try:
         discover_lightweight_tasks(root)
@@ -222,10 +240,21 @@ def validate_lightweight_tasks(root: Path) -> list[str]:
 
 
 def _format_task_rows(tasks: list[LightweightTask]) -> list[str]:
-    return [
-        f"{task.id} | {task.path.name} | {task.location} | {task.status} | {task.priority} | {task.kind} | {task.layer} | {task.area} | {task.feature}"
-        for task in tasks
-    ]
+    rows: list[str] = []
+    for task in tasks:
+        cells = [
+            str(task.id),
+            task.path.name,
+            task.location,
+            task.status,
+            task.priority,
+            task.kind,
+            task.layer,
+            task.area,
+            task.feature,
+        ]
+        rows.append(" | ".join(cells))
+    return rows
 
 
 def _format_task_table(title: str, tasks: list[LightweightTask]) -> str:
@@ -368,7 +397,7 @@ def run_tasks_show(root: Path, args: Namespace) -> int:
 
 
 def run_tasks_command(root: Path, args: Namespace) -> int:
-    """Run a read-only lightweight task browser command."""
+    """Run a lightweight task command."""
 
     if args.tasks_command == "status":
         return run_tasks_status(root)
@@ -376,6 +405,10 @@ def run_tasks_command(root: Path, args: Namespace) -> int:
         return run_tasks_list(root)
     if args.tasks_command == "doctor":
         return run_tasks_doctor(root)
+    if args.tasks_command == "create":
+        from .task_create import run_tasks_create
+
+        return run_tasks_create(root, args)
     if args.tasks_command == "show":
         if args.task_id < 1:
             raise ToolError("./dev tasks show requires a positive numeric task id.", code=2)

@@ -30,7 +30,7 @@ from .release import (
     run_release_local_qa,
     run_release_preflight,
 )
-from .tasks import run_tasks_command
+from .tasks import TASK_KINDS, TASK_LAYERS, TASK_PRIORITIES, TASK_RISKS, run_tasks_command
 from .workflow_baseline import run_workflow_baseline
 from .workflow_init import run_workflow_init
 from .workflow_projection import run_workflow_closeout, run_workflow_project
@@ -147,11 +147,25 @@ def _build_parser() -> argparse.ArgumentParser:
     backlog_show.add_argument("--task", type=int, help="1-based task number inside the package")
     backlog_show.add_argument("--mode", choices=["copy", "verify"], help="Prompt mode to print when --task is provided")
 
-    tasks = subparsers.add_parser("tasks", help="Browse lightweight tasks without touching live queues")
+    tasks = subparsers.add_parser("tasks", help="Manage lightweight tasks without touching live queues")
     tasks_sub = tasks.add_subparsers(dest="tasks_command", required=True)
     tasks_sub.add_parser("doctor", help="Validate lightweight task structure")
     tasks_sub.add_parser("status", help="Show active, done, and backlog summary")
     tasks_sub.add_parser("list", help="List lightweight tasks from active and done")
+    tasks_create = tasks_sub.add_parser("create", help="Preview or create a lightweight task under tasks/active")
+    tasks_create.add_argument("--title", required=True, help="Task title")
+    tasks_create.add_argument("--slug", help="Directory slug; defaults to a slug derived from --title")
+    tasks_create.add_argument("--priority", choices=sorted(TASK_PRIORITIES), default="p2", help="Task priority")
+    tasks_create.add_argument("--kind", choices=sorted(TASK_KINDS), default="feature", help="Task kind")
+    tasks_create.add_argument("--risk", choices=sorted(TASK_RISKS), default="low", help="Task risk")
+    tasks_create.add_argument("--layer", choices=sorted(TASK_LAYERS), required=True, help="Task layer, such as frontend or scripts")
+    tasks_create.add_argument("--area", required=True, help="Task area, such as apps/macos or scripts/dev_tools")
+    tasks_create.add_argument("--feature", required=True, help="Feature or component name")
+    tasks_create.add_argument("--touch", action="append", default=[], help="Allowed path; may be repeated. Defaults to --area/")
+    tasks_create.add_argument("--forbid", action="append", default=[], help="Additional forbidden path; may be repeated")
+    tasks_create.add_argument("--validation", action="append", default=[], help="Validation command; may be repeated")
+    tasks_create.add_argument("--date", help="Creation date in YYYY-MM-DD format; defaults to today")
+    tasks_create.add_argument("--write", action="store_true", help="Create files instead of printing a preview")
     tasks_show = tasks_sub.add_parser("show", help="Show one lightweight task by numeric id")
     tasks_show.add_argument("task_id", type=int, help="Lightweight task id, for example 1")
     tasks_show.add_argument("--task", action="store_true", help="Print only task.md")

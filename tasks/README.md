@@ -166,6 +166,16 @@ Read-only commands:
 ./dev tasks show 1 --evidence
 ```
 
+Guarded write command:
+
+```bash
+./dev tasks create --title "Add Settings Button" --layer frontend --area apps/macos --feature settings
+./dev tasks create --title "Add Settings Button" --layer frontend --area apps/macos --feature settings --write
+```
+
+`create` previews by default. It writes only when `--write` is present, and the
+write target is limited to `tasks/active/<next-number>.<slug>/`.
+
 Expected lookup behavior:
 
 - `./dev tasks show 1` first checks `tasks/active/1.*/`.
@@ -175,6 +185,9 @@ Expected lookup behavior:
 - `./dev backlog list` remains the read-only browser for backlog prompt
   packages.
 - `./dev workflow status` remains the version workflow progress surface.
+- `./dev tasks create` creates a lightweight active task record only; it does
+  not execute the task, promote workflow queue candidates, update
+  `progress.json`, or touch task-loop runtime state.
 
 Keep these surfaces distinct:
 
