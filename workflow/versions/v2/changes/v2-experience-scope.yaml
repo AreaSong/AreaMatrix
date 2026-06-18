@@ -1,0 +1,66 @@
+id: v2-experience-scope-change
+title: Stage 2 experience improvement scope ledger
+version: v2
+status: ready
+features:
+  - id: v2-experience-scope
+    module: roadmap
+    intent: Record the formal Stage 2 Experience Improvement roadmap as the initial v2 planning source before implementation slices are generated.
+    depends_on: []
+    docs:
+      source:
+        - docs/README.md
+        - docs/roadmap/milestones.md
+      update:
+        - workflow/versions/v2/README.md
+        - workflow/versions/v2/discussion/docs-discussion.md
+        - workflow/versions/v2/discussion/middle-layer-discussion.md
+      api: []
+      udl: []
+    doc_changes:
+      - file: docs/README.md
+        operation: reference
+        line_start: 9
+        line_end: 13
+        heading: 文档层级
+        excerpt: "`docs/` 只保存长期源事实"
+        summary: The docs layer defines long-term source facts, while workflow versions carry stage planning and execution evidence.
+        depends_on: []
+        tasks:
+          - docs-scope-ledger
+      - file: docs/roadmap/milestones.md
+        operation: reference
+        line_start: 81
+        line_end: 128
+        heading: Stage 2：体验完善
+        excerpt: 把 MVP 打磨到"日常用 30 天不出大问题"
+        summary: The Stage 2 roadmap defines v2's initial product planning themes.
+        depends_on:
+          - docs/README.md
+        tasks:
+          - docs-scope-ledger
+    code_impacts:
+      existing:
+        - docs/README.md
+        - docs/roadmap/milestones.md
+      expected:
+        - workflow/versions/v2/plans/v2-experience-scope.plan.md
+        - workflow/versions/v2/drafts/v2-experience-scope/**
+      tests:
+        - scripts/dev_tools/discussion.py
+        - scripts/dev_tools/middle_layer.py
+        - scripts/dev_tools/workflow.py
+    risk:
+      level: Low
+      boundaries:
+        - Does not write workflow/versions/v2/execution.
+        - Does not treat archived v1-mvp source docs as current v2 requirements.
+        - Does not close v1 formal release blockers in v2 planning.
+        - Does not generate drafts, queue candidates, or promotion preview before their gates pass.
+    task_split:
+      - id: docs-scope-ledger
+        title: Approve and validate the v2 Stage 2 source-of-truth scope ledger.
+        validation:
+          - ./dev workflow discuss --version v2 doctor
+          - ./dev workflow middle --version v2 doctor
+          - ./dev workflow doctor

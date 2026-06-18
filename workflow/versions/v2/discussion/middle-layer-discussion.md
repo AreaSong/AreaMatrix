@@ -3,8 +3,9 @@
 ## Workflow Carry-forward
 
 - Version: `v2`
-- Stage name: not started.
-- Discussion must feed `changes/*.yaml`.
+- Stage name: Stage 2 Experience Improvement.
+- Discussion feeds `middle-layer/*.yaml`.
+- Middle-layer feeds `changes/*.yaml`.
 - Changes must feed docs-change ledger plans.
 - Plans and drafts must keep docs/API/UDL/task sync targets explicit.
 - Queue candidates use the version-local queue before live promotion mapping is configured.
@@ -19,13 +20,14 @@
 ## Required Sync Targets
 
 - Docs: `docs/README.md`, `docs/roadmap/milestones.md`
-- API: to be confirmed after real v2 scope is approved
-- UDL: to be confirmed after real v2 scope is approved
+- API: deferred until a specific Stage 2 feature changes public Core API
+- UDL: deferred until a specific Stage 2 feature changes UniFFI contracts
 - Tasks: version-local queue candidates only until explicit promotion
 
 ## Layer Decisions
 
-- `changes`: waiting for discussion approval.
+- `middle-layer`: ready for the initial v2 scope ledger.
+- `changes`: ready for the initial v2 docs-change ledger.
 - `plans`: waiting for changes.
 - `drafts`: waiting for plans.
 - `queue`: waiting for drafts.

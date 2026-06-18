@@ -1,30 +1,33 @@
 version: v2
-status: draft
-allow_changes: false
+status: ready
+allow_changes: true
 exact_docs:
   - docs/README.md
   - docs/roadmap/milestones.md
 decisions:
   - id: docs-scope
-    status: open
-    summary: Confirm real v2 exact scope before writing changes YAML.
+    status: accepted
+    summary: v2 begins from the formal roadmap Stage 2 Experience Improvement scope in docs/roadmap/milestones.md.
   - id: inherited-release-blockers
     status: deferred
     summary: Stage 1 formal distribution blockers stay on the v1 release evidence track.
 open_questions:
   - id: docs-scope
-    status: open
+    status: resolved
     question: Which user paths and docs sections are in scope for real v2?
+    resolution: Use docs/roadmap/milestones.md Stage 2 lines as the v2 planning source; keep docs/README.md as documentation-layer boundary.
 blockers:
   - id: discussion-not-approved
-    status: open
-    summary: Discussion has not approved changes generation yet.
+    status: resolved
+    summary: Discussion approves entering v2 middle-layer and changes for the initial scope ledger.
 risk_boundaries:
   - Do not write live workflow/versions/v2/execution from discussion.
   - Do not treat archived Stage 1 internal Stage 2/3/4 source docs as current v2 scope.
   - Do not close v1 formal release blockers in v2 planning.
+  - Do not generate drafts, queue candidates, promotion preview, or execution files until their own gates pass.
 next_layers:
-  changes: blocked
+  middle-layer: ready
+  changes: ready
   plans: blocked
   drafts: blocked
   queue: blocked

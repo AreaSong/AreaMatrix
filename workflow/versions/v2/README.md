@@ -1,6 +1,7 @@
 # v2 Workflow Placeholder
 
-`v2` is a clean placeholder for the next real planning discussion after Stage 1 MVP closeout.
+`v2` is the real planning track for Stage 2 Experience Improvement after Stage
+1 MVP historical execution closeout.
 
 Historical Stage 2 Experience specs are archived under `workflow/versions/v1-mvp/source-docs/` because they belong to the Stage 1 MVP task history. They are reference material only and do not define the future v2 scope.
 
@@ -26,7 +27,8 @@ remains until the hard migration is approved.
 
 Current status:
 
-- discussion: not started, not approved
-- changes / plans / drafts / queue: blocked until discussion gate passes
+- discussion: approved for initial middle-layer and changes ledgers
+- changes / middle-layer: allowed for initial v2 scope ledger
+- plans / drafts / queue: blocked until their own gates pass
 - execution promotion: blocked until explicit approval and execution mapping
 - inherited release blockers: Developer ID / notarization evidence remains on the v1 formal distribution track, not inside v2 planning
