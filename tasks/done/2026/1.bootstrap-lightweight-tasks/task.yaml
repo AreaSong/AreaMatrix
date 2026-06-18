@@ -1,0 +1,40 @@
+id: 1
+slug: bootstrap-lightweight-tasks
+title: Bootstrap lightweight task tracking
+status: done
+priority: p2
+kind: tooling
+risk: low
+
+scope:
+  layer: scripts
+  area: scripts/dev_tools
+  feature: lightweight-tasks
+
+paths:
+  touch:
+    - tasks/
+    - scripts/dev_tools/tasks.py
+    - scripts/dev_tools/test_tasks_tools.py
+    - scripts/dev_tools/cli.py
+    - scripts/task_loop/
+  forbid:
+    - workflow/versions/*/execution/
+    - .codex/task-loop-logs/
+    - .codex/task-loop-runs/
+    - .codex/task-loop-lock/
+
+validation:
+  - python3 -m py_compile scripts/dev_tools/*.py scripts/task_loop/*.py
+  - python3 -m unittest scripts.dev_tools.test_tasks_tools scripts.dev_tools.test_backlog_tools
+  - ./dev tasks status
+  - ./dev tasks list
+  - ./dev tasks show 1
+  - ./task-loop check
+  - ./dev check governance
+  - ./dev check prompts
+  - git diff --check
+
+created: 2026-06-18
+updated: 2026-06-18
+owner: tasks
