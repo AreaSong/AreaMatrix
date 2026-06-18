@@ -7,13 +7,26 @@
 ```text
 AreaMatrix/
 ├── core/              # Rust 核心库
-├── apps/macos/        # SwiftUI macOS App
-├── scripts/           # 构建与检查脚本
-├── docs/              # 项目文档
-├── tasks/prompts/     # 可执行 prompt 任务库
+├── apps/              # 平台原生应用，macOS 为当前主目标
+├── docs/              # 产品、架构、API、开发与路线图源事实
+├── assets/brand/      # 品牌资产
+├── scripts/           # 构建、检查与 task-loop 支撑脚本
+├── workflow/          # 版本讨论、计划、预览与 promotion gate
+├── tasks/prompts/     # 历史可执行 prompt 任务库
+├── tasks/backlog/     # 规划和治理排期，不进入 live runner
 ├── .ai-governance/    # AI 治理源事实
-└── .codex/            # Codex 适配材料
+├── .codex/            # Codex skills 源、模板、引用和本地运行材料
+├── .agents/skills/    # repo-local skills 的发现投影
+├── .github/           # GitHub issue、PR 与 CI 配置
+├── dev                # 本地检查入口
+└── task-loop          # prompt task-loop 入口
 ```
+
+`.codex/skills-src/`、`.agents/skills/`、`tasks/prompts/`、`workflow/`、`dev`
+和 `task-loop` 是固定工具入口，目录收紧时不得为了视觉简洁而移动或重命名。
+`.build/`、`build/`、`core/target/`、`apps/*/.build`、`apps/**/bin`、
+`apps/**/obj`、`apps/macos/DerivedData/` 等本地生成物应通过 ignore / editor
+exclude 隐藏，不纳入源码目录语义。
 
 ## 文档源事实
 

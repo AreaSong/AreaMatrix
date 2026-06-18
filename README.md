@@ -60,6 +60,20 @@ final `v0.1.0` tag.
 
 See [docs/roadmap/milestones.md](docs/roadmap/milestones.md) for the four-stage release plan.
 
+## Repository layout
+
+AreaMatrix keeps source, planning, and local runtime material separate:
+
+| Layer | Paths | Notes |
+|---|---|---|
+| Product source | `core/`, `apps/`, `docs/` | Rust core, native app surfaces, and authoritative product docs. |
+| Product assets | `assets/brand/` | Canonical brand assets and archived logo explorations. |
+| Planning and governance | `.ai-governance/`, `workflow/`, `tasks/prompts/`, `tasks/backlog/` | AI collaboration rules, version planning gates, the historical executable prompt queue, and backlog material. |
+| Codex runtime | `.codex/`, `.agents/skills/`, `dev`, `task-loop`, `scripts/` | Repo-local Codex skills, discovery entrypoints, and task-loop tooling. These are stable tool entrypoints and should not be moved just to reduce visual clutter. |
+| Local generated output | `.build/`, `build/`, `core/target/`, `apps/*/.build`, `apps/**/bin`, `apps/**/obj`, `apps/macos/DerivedData/` | Ignored local build products. They are not part of the source layout. |
+
+Fixed paths such as `.codex/skills-src/`, `.agents/skills/`, `tasks/prompts/`, `workflow/`, `dev`, and `task-loop` are intentionally kept in place because local Codex skills and task-loop scripts rely on them.
+
 ## Quick links
 
 | For | Read |

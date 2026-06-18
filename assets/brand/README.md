@@ -5,7 +5,7 @@
 ## 目录结构
 
 ```text
-logo/
+assets/brand/
 ├── final/                 # 权威源（canonical）
 │   ├── areamatrix-app-icon-dark.svg
 │   ├── areamatrix-app-icon-light.svg
@@ -30,15 +30,15 @@ logo/
 
 | 场景 | 引用路径 |
 |------|----------|
-| App Icon 深色设计 | `logo/final/areamatrix-app-icon-dark.svg` 或 `logo/final/app-icon/*-dark-*` |
-| App Icon 浅色设计 | `logo/final/areamatrix-app-icon-light.svg` 或 `logo/final/app-icon/*-light-*` |
-| 横版 Logo 深色背景版本 | `logo/final/areamatrix-logo-lockup-dark.svg` 或 `logo/final/lockup/*-dark-*` |
-| 横版 Logo 浅色背景版本 | `logo/final/areamatrix-logo-lockup-light.svg` 或 `logo/final/lockup/*-light-*` |
-| 横版 Logo 默认设计 | `logo/final/areamatrix-logo-lockup.svg` 或 `logo/final/lockup/areamatrix-logo-lockup-1600x520.png` |
-| 单独 Logo Mark 深色设计 | `logo/final/areamatrix-logo-mark-dark.svg` 或 `logo/final/mark/*-dark-*` |
-| 单独 Logo Mark 浅色设计 | `logo/final/areamatrix-logo-mark-light.svg` 或 `logo/final/mark/*-light-*` |
-| 单色 Mark 深色设计 | `logo/final/areamatrix-logo-mark-mono-dark.svg` 或 `logo/final/mark/*-mono-dark-*` |
-| 单色 Mark 浅色设计 | `logo/final/areamatrix-logo-mark-mono-light.svg` 或 `logo/final/mark/*-mono-light-*` |
+| App Icon 深色设计 | `assets/brand/final/areamatrix-app-icon-dark.svg` 或 `assets/brand/final/app-icon/*-dark-*` |
+| App Icon 浅色设计 | `assets/brand/final/areamatrix-app-icon-light.svg` 或 `assets/brand/final/app-icon/*-light-*` |
+| 横版 Logo 深色背景版本 | `assets/brand/final/areamatrix-logo-lockup-dark.svg` 或 `assets/brand/final/lockup/*-dark-*` |
+| 横版 Logo 浅色背景版本 | `assets/brand/final/areamatrix-logo-lockup-light.svg` 或 `assets/brand/final/lockup/*-light-*` |
+| 横版 Logo 默认设计 | `assets/brand/final/areamatrix-logo-lockup.svg` 或 `assets/brand/final/lockup/areamatrix-logo-lockup-1600x520.png` |
+| 单独 Logo Mark 深色设计 | `assets/brand/final/areamatrix-logo-mark-dark.svg` 或 `assets/brand/final/mark/*-dark-*` |
+| 单独 Logo Mark 浅色设计 | `assets/brand/final/areamatrix-logo-mark-light.svg` 或 `assets/brand/final/mark/*-light-*` |
+| 单色 Mark 深色设计 | `assets/brand/final/areamatrix-logo-mark-mono-dark.svg` 或 `assets/brand/final/mark/*-mono-dark-*` |
+| 单色 Mark 浅色设计 | `assets/brand/final/areamatrix-logo-mark-mono-light.svg` 或 `assets/brand/final/mark/*-mono-light-*` |
 | 应用 bundle 内资源 | 从 `final/` 派生复制到 `apps/macos/AreaMatrix/Resources/Assets.xcassets/`，不直接引用 `archive/` |
 
 ## 尺寸说明
