@@ -1,14 +1,20 @@
 # AreaMatrix Backlog Tasks
 
-本目录记录尚未进入 `workflow/versions/<version>/execution/**` live queue 的短期规划任务。
+本目录是 `tasks/` 轻量任务系统里的候选池，记录尚未进入
+`tasks/active/**` 或 `workflow/versions/<version>/execution/**` 的短期规划
+任务和治理排期材料。
 
-这些任务用于讨论、评估和治理排期，不由 `./task-loop` 自动执行；只有通过 `workflow/` 规划、promotion preview 和人工确认后，才可能拆成正式 prompt task。
+这些任务用于讨论、评估和治理排期，不代表当前轻量任务进度，也不由
+`./task-loop` 自动执行。候选材料可以人工拆成 `tasks/active/<number>.<slug>/`
+轻量任务；只有通过 `workflow/` 规划、promotion preview 和人工确认后，才可能
+拆成正式 version execution prompt task。
 
 当前 live queue 标准路径是 `workflow/versions/<version>/execution/**`；v1 历史队列已经完成并迁入 `workflow/versions/v1-mvp/execution/**`，进度源事实是 `workflow/versions/v1-mvp/execution/_shared/progress.json`。
 
 ## 边界
 
 - `tasks/backlog/**` 不是 live queue，不由 `./task-loop` 扫描、执行、重试或验收。
+- `tasks/backlog/**` 不是 `tasks/active/**`，不参与 `./dev tasks status` 的当前任务进度，只能作为 backlog package 统计或浏览。
 - backlog prompt 包只能手工复制或经 `workflow/` planning gate 重新拆分；不得直接 promotion 成 `workflow/versions/<version>/execution/**`。
 - 本目录不得引入第二套 runner、progress、queue、checkpoint 或 promotion 机制。
 - backlog prompt 不得写 `workflow/versions/<version>/execution/**`、`workflow/versions/<version>/execution/_shared/progress.json`、task-loop logs、run summaries、runner lock 或 Git checkpoint 状态。

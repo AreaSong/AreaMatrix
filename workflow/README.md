@@ -76,8 +76,9 @@ later explicit apply gate passes; `v-template` itself can never apply to live
 `workflow/versions/v-template/execution/**`.
 
 Large features and versioned work go through `workflow` first. Small, already
-clear bug fixes may use the future lightweight `tasks/` structure or a focused
-local task without creating a full workflow version.
+clear bug fixes may use the lightweight `tasks/active/<number>.<slug>/`
+structure without creating a full workflow version. `tasks/backlog/` remains a
+candidate pool and is not current task progress.
 
 Promotion preview maps semantic workflow tasks to future live task labels without
 writing execution files. Real promotion into `workflow/versions/<version>/execution/**`

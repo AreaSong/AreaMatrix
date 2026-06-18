@@ -1,0 +1,25 @@
+id: 1
+slug: example-task
+title: Example task
+status: todo
+priority: p2
+kind: feature
+risk: low
+
+scope:
+  layer: frontend
+  area: apps/macos
+  feature: example
+
+paths:
+  touch:
+    - apps/macos/
+  forbid:
+    - workflow/versions/*/execution/
+
+validation:
+  - ./dev check
+
+created: 2026-06-18
+updated: 2026-06-18
+owner: tasks

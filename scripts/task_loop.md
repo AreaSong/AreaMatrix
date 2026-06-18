@@ -229,7 +229,7 @@ DRY_RUN_RESULT=PASS \
 
 ## 四、v* Workflow 规划（不进 live 队列）
 
-`workflow/` 是大功能 / 版本 / 重构 / 优化的生命周期系统；`workflow/versions/<version>/execution/**` 是已批准的小任务执行队列；`./task-loop` 只执行 tasks。
+`workflow/` 是大功能 / 版本 / 重构 / 优化的生命周期系统；`workflow/versions/<version>/execution/**` 是已批准的版本内执行队列；`./task-loop` 只执行 version execution queue。轻量独立任务记录在 `tasks/active/**` / `tasks/done/**`，候选材料记录在 `tasks/backlog/**`，二者都不是 task-loop live queue。
 
 模板验收实例位于：
 
