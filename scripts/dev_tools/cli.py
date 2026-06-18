@@ -149,6 +149,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     tasks = subparsers.add_parser("tasks", help="Browse lightweight tasks without touching live queues")
     tasks_sub = tasks.add_subparsers(dest="tasks_command", required=True)
+    tasks_sub.add_parser("doctor", help="Validate lightweight task structure")
     tasks_sub.add_parser("status", help="Show active, done, and backlog summary")
     tasks_sub.add_parser("list", help="List lightweight tasks from active and done")
     tasks_show = tasks_sub.add_parser("show", help="Show one lightweight task by numeric id")

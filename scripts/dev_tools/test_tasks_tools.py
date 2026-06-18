@@ -10,7 +10,7 @@ from argparse import Namespace
 from pathlib import Path
 
 from scripts.dev_tools.common import ToolError
-from scripts.dev_tools.tasks import discover_lightweight_tasks, run_tasks_command
+from scripts.dev_tools.tasks import discover_lightweight_tasks, run_tasks_command, validate_lightweight_tasks
 
 
 def write_file(root: Path, relative: str, text: str) -> None:
@@ -82,6 +82,9 @@ class LightweightTasksToolsTest(unittest.TestCase):
     def _list_args(self) -> Namespace:
         return Namespace(tasks_command="list", task_id=None, task=False, verify=False, evidence=False)
 
+    def _doctor_args(self) -> Namespace:
+        return Namespace(tasks_command="doctor", task_id=None, task=False, verify=False, evidence=False)
+
     def _show_args(self, task_id: int, *, task: bool = False, verify: bool = False, evidence: bool = False) -> Namespace:
         return Namespace(tasks_command="show", task_id=task_id, task=task, verify=verify, evidence=evidence)
 
@@ -133,6 +136,45 @@ class LightweightTasksToolsTest(unittest.TestCase):
             self.assertIn("Lightweight tasks (active and done)", stdout.getvalue())
             self.assertIn("1 | 1.add-settings-button | active | todo | p2 | feature | frontend | apps/macos | settings", stdout.getvalue())
 
+    def test_doctor_passes_valid_structure(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_task(root, "tasks/active", 1, "add-settings-button")
+            write_task(root, "tasks/done/2026", 2, "done-task", status="done")
+            write_file(root, "tasks/backlog/prompts/alpha/README.md", "# Alpha Package\n")
+            write_file(root, "tasks/backlog/prompts/alpha/copy-ready/task-01.md", "copy\n")
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(run_tasks_command(root, self._doctor_args()), 0)
+
+            output = stdout.getvalue()
+            self.assertIn("lightweight tasks doctor: OK", output)
+            self.assertIn("- active: 1", output)
+            self.assertIn("- done: 1", output)
+            self.assertIn("- backlog packages: 1", output)
+
+    def test_doctor_reports_structure_errors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_task(root, "tasks/active", 1, "add-settings-button", status="done")
+            (root / "tasks/active/1.add-settings-button/verify.md").unlink()
+            write_task(root, "tasks/done/current", 2, "bad-year", status="todo")
+            write_file(root, "tasks/active/not-number/task.yaml", "id: 3\nslug: not-number\nstatus: todo\n")
+
+            errors = validate_lightweight_tasks(root)
+
+            self.assertTrue(any("missing required task file" in error for error in errors), errors)
+            self.assertTrue(any("active task status must be one of" in error for error in errors), errors)
+            self.assertTrue(any("done archive directory must be YYYY" in error for error in errors), errors)
+            self.assertTrue(any("done task status must be one of" in error for error in errors), errors)
+            self.assertTrue(any("task directory must use <number>.<slug>" in error for error in errors), errors)
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(run_tasks_command(root, self._doctor_args()), 1)
+            self.assertIn("lightweight tasks doctor: FAILED", stdout.getvalue())
+
     def test_show_prints_detail_and_task_markdown(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -179,6 +221,7 @@ class LightweightTasksToolsTest(unittest.TestCase):
             before = file_snapshot(root)
 
             with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(run_tasks_command(root, self._doctor_args()), 0)
                 self.assertEqual(run_tasks_command(root, self._status_args()), 0)
                 self.assertEqual(run_tasks_command(root, self._list_args()), 0)
                 self.assertEqual(run_tasks_command(root, self._show_args(1)), 0)
@@ -192,6 +235,7 @@ class LightweightTasksToolsTest(unittest.TestCase):
 
             assert_forbidden_state_absent(self, root)
             with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(run_tasks_command(root, self._doctor_args()), 0)
                 self.assertEqual(run_tasks_command(root, self._status_args()), 0)
                 self.assertEqual(run_tasks_command(root, self._list_args()), 0)
                 self.assertEqual(run_tasks_command(root, self._show_args(1, task=True)), 0)

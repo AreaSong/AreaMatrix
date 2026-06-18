@@ -159,6 +159,7 @@ Read-only commands:
 ```bash
 ./dev tasks status
 ./dev tasks list
+./dev tasks doctor
 ./dev tasks show 1
 ./dev tasks show 1 --task
 ./dev tasks show 1 --verify

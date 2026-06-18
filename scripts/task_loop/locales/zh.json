@@ -222,6 +222,7 @@
     "  ./dev workflow plan --version v-template",
     "  ./dev workflow queue --version v-template",
     "  ./dev workflow promote --version v-template --preview",
+    "  ./dev tasks doctor",
     "  ./dev tasks status",
     "  ./dev tasks list",
     "  ./dev tasks show 1",

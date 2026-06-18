@@ -18,7 +18,10 @@ TASKS_ROOT = Path("tasks")
 ACTIVE_ROOT = TASKS_ROOT / "active"
 DONE_ROOT = TASKS_ROOT / "done"
 TASK_DIR_PATTERN = re.compile(r"^(?P<id>[1-9][0-9]*)\.(?P<slug>[a-z0-9][a-z0-9-]*)$")
+DONE_YEAR_PATTERN = re.compile(r"^[0-9]{4}$")
 TASK_STATUSES = {"todo", "in_progress", "blocked", "verify_ready", "done", "archived"}
+ACTIVE_STATUSES = {"todo", "in_progress", "blocked", "verify_ready"}
+DONE_STATUSES = {"done", "archived"}
 TASK_FILES = {"task": "task.md", "verify": "verify.md", "evidence": "evidence.md"}
 
 
@@ -130,6 +133,10 @@ def _done_task_dirs(root: Path) -> list[Path]:
     return task_dirs
 
 
+def _candidate_task_dirs(root: Path) -> list[Path]:
+    return [*_active_task_dirs(root), *_done_task_dirs(root)]
+
+
 def discover_lightweight_tasks(root: Path, *, include_done: bool = True) -> list[LightweightTask]:
     """Return lightweight tasks sorted by numeric id and location."""
 
@@ -150,6 +157,68 @@ def discover_lightweight_tasks(root: Path, *, include_done: bool = True) -> list
         seen[task.id] = task.path
         tasks.append(task)
     return sorted(tasks, key=lambda task: (task.id, task.location, task.slug))
+
+
+def validate_lightweight_tasks(root: Path) -> list[str]:
+    """Return structural errors for lightweight task directories."""
+
+    errors: list[str] = []
+    active_root = root / ACTIVE_ROOT
+    done_root = root / DONE_ROOT
+
+    for task_dir in _active_task_dirs(root):
+        if not TASK_DIR_PATTERN.match(task_dir.name):
+            errors.append(f"{_display_path(task_dir, root)}: task directory must use <number>.<slug>")
+        if not (task_dir / "task.yaml").is_file():
+            errors.append(f"{_display_path(task_dir, root)}: missing task.yaml")
+
+    if done_root.is_dir():
+        for year_dir in sorted(path for path in done_root.iterdir() if path.is_dir()):
+            if not DONE_YEAR_PATTERN.match(year_dir.name):
+                errors.append(f"{_display_path(year_dir, root)}: done archive directory must be YYYY")
+            for task_dir in sorted(path for path in year_dir.iterdir() if path.is_dir()):
+                if not TASK_DIR_PATTERN.match(task_dir.name):
+                    errors.append(f"{_display_path(task_dir, root)}: task directory must use <number>.<slug>")
+                if not (task_dir / "task.yaml").is_file():
+                    errors.append(f"{_display_path(task_dir, root)}: missing task.yaml")
+
+    for task_dir in _candidate_task_dirs(root):
+        if not TASK_DIR_PATTERN.match(task_dir.name) or not (task_dir / "task.yaml").is_file():
+            continue
+        try:
+            task = _parse_task_dir(task_dir, root)
+        except ToolError as exc:
+            errors.append(str(exc))
+            continue
+        if task is None:
+            continue
+        missing = [file_name for file_name in TASK_FILES.values() if not (task_dir / file_name).is_file()]
+        for file_name in missing:
+            errors.append(f"{_display_path(task_dir / file_name, root)}: missing required task file")
+        if task.location == "active" and task.status not in ACTIVE_STATUSES:
+            allowed = ", ".join(sorted(ACTIVE_STATUSES))
+            errors.append(f"{_display_path(task.yaml_path, root)}: active task status must be one of {allowed}")
+        if task.location.startswith("done/") and task.status not in DONE_STATUSES:
+            allowed = ", ".join(sorted(DONE_STATUSES))
+            errors.append(f"{_display_path(task.yaml_path, root)}: done task status must be one of {allowed}")
+        for field_name, value in [
+            ("title", task.title),
+            ("priority", task.priority),
+            ("kind", task.kind),
+            ("risk", task.risk),
+            ("scope.layer", task.layer),
+            ("scope.area", task.area),
+            ("scope.feature", task.feature),
+            ("updated", task.updated),
+        ]:
+            if not value:
+                errors.append(f"{_display_path(task.yaml_path, root)}: missing {field_name}")
+
+    try:
+        discover_lightweight_tasks(root)
+    except ToolError as exc:
+        errors.append(str(exc))
+    return errors
 
 
 def _format_task_rows(tasks: list[LightweightTask]) -> list[str]:
@@ -221,6 +290,22 @@ def run_tasks_list(root: Path) -> int:
     return 0
 
 
+def run_tasks_doctor(root: Path) -> int:
+    errors = validate_lightweight_tasks(root)
+    if errors:
+        print("lightweight tasks doctor: FAILED")
+        for error in errors:
+            print(f"- {error}")
+        return 1
+    tasks = discover_lightweight_tasks(root)
+    counts = _summary_counts(root, tasks)
+    print("lightweight tasks doctor: OK")
+    print(f"- active: {counts['active']}")
+    print(f"- done: {counts['done']}")
+    print(f"- backlog packages: {counts['backlog_packages']}")
+    return 0
+
+
 def _find_task(root: Path, task_id: int) -> LightweightTask:
     tasks = discover_lightweight_tasks(root)
     for task in tasks:
@@ -289,6 +374,8 @@ def run_tasks_command(root: Path, args: Namespace) -> int:
         return run_tasks_status(root)
     if args.tasks_command == "list":
         return run_tasks_list(root)
+    if args.tasks_command == "doctor":
+        return run_tasks_doctor(root)
     if args.tasks_command == "show":
         if args.task_id < 1:
             raise ToolError("./dev tasks show requires a positive numeric task id.", code=2)
