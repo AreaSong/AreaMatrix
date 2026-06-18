@@ -114,6 +114,18 @@ class LightweightTasksToolsTest(unittest.TestCase):
             write=write,
         )
 
+    def _complete_args(self, task_id: int, *, write: bool = False, confirm_pass: bool = False) -> Namespace:
+        return Namespace(
+            tasks_command="complete",
+            task_id=task_id,
+            task=False,
+            verify=False,
+            evidence=False,
+            date="2026-06-18",
+            write=write,
+            confirm_pass=confirm_pass,
+        )
+
     def _show_args(self, task_id: int, *, task: bool = False, verify: bool = False, evidence: bool = False) -> Namespace:
         return Namespace(tasks_command="show", task_id=task_id, task=task, verify=verify, evidence=evidence)
 
@@ -274,6 +286,64 @@ class LightweightTasksToolsTest(unittest.TestCase):
             self.assertEqual(ctx.exception.code, 1)
             self.assertIn("run ./dev tasks doctor", str(ctx.exception))
             self.assertFalse((root / "tasks/active/2.add-settings-button").exists())
+
+    def test_complete_preview_is_read_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_task(root, "tasks/active", 1, "add-settings-button", status="verify_ready")
+            before = file_snapshot(root)
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(run_tasks_command(root, self._complete_args(1)), 0)
+
+            output = stdout.getvalue()
+            self.assertEqual(file_snapshot(root), before)
+            self.assertIn("Lightweight task complete preview", output)
+            self.assertIn("tasks/active/1.add-settings-button/", output)
+            self.assertIn("tasks/done/2026/1.add-settings-button/", output)
+
+    def test_complete_write_requires_confirm_pass(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_task(root, "tasks/active", 1, "add-settings-button", status="verify_ready")
+
+            with self.assertRaises(ToolError) as ctx:
+                run_tasks_command(root, self._complete_args(1, write=True))
+
+            self.assertEqual(ctx.exception.code, 2)
+            self.assertIn("--confirm-pass", str(ctx.exception))
+            self.assertTrue((root / "tasks/active/1.add-settings-button").is_dir())
+
+    def test_complete_write_archives_active_task(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_task(root, "tasks/active", 1, "add-settings-button", status="verify_ready")
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(run_tasks_command(root, self._complete_args(1, write=True, confirm_pass=True)), 0)
+
+            active_dir = root / "tasks/active/1.add-settings-button"
+            done_dir = root / "tasks/done/2026/1.add-settings-button"
+            self.assertFalse(active_dir.exists())
+            self.assertTrue(done_dir.is_dir())
+            yaml_text = (done_dir / "task.yaml").read_text(encoding="utf-8")
+            self.assertIn("status: done\n", yaml_text)
+            self.assertIn("updated: 2026-06-18\n", yaml_text)
+            self.assertIn("archived lightweight task: tasks/done/2026/1.add-settings-button/", stdout.getvalue())
+            self.assertEqual(validate_lightweight_tasks(root), [])
+
+    def test_complete_rejects_done_task_id(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_task(root, "tasks/done/2026", 1, "done-task", status="done")
+
+            with self.assertRaises(ToolError) as ctx:
+                run_tasks_command(root, self._complete_args(1, write=True, confirm_pass=True))
+
+            self.assertEqual(ctx.exception.code, 1)
+            self.assertIn("unknown active lightweight task id", str(ctx.exception))
 
     def test_show_prints_detail_and_task_markdown(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

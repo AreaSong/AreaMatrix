@@ -226,6 +226,7 @@
     "  ./dev tasks status",
     "  ./dev tasks list",
     "  ./dev tasks create --title \"Add Settings Button\" --layer frontend --area apps/macos --feature settings",
+    "  ./dev tasks complete 2 --write --confirm-pass",
     "  ./dev tasks show 1",
     "  ./dev backlog list",
     "  ./dev backlog show <package>",

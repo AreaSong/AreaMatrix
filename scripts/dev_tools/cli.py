@@ -166,6 +166,15 @@ def _build_parser() -> argparse.ArgumentParser:
     tasks_create.add_argument("--validation", action="append", default=[], help="Validation command; may be repeated")
     tasks_create.add_argument("--date", help="Creation date in YYYY-MM-DD format; defaults to today")
     tasks_create.add_argument("--write", action="store_true", help="Create files instead of printing a preview")
+    tasks_complete = tasks_sub.add_parser("complete", help="Preview or archive a completed active lightweight task")
+    tasks_complete.add_argument("task_id", type=int, help="Active lightweight task id, for example 2")
+    tasks_complete.add_argument("--date", help="Completion date in YYYY-MM-DD format; defaults to today")
+    tasks_complete.add_argument("--write", action="store_true", help="Move the task from active to done")
+    tasks_complete.add_argument(
+        "--confirm-pass",
+        action="store_true",
+        help="Required with --write; records the operator's PASS decision",
+    )
     tasks_show = tasks_sub.add_parser("show", help="Show one lightweight task by numeric id")
     tasks_show.add_argument("task_id", type=int, help="Lightweight task id, for example 1")
     tasks_show.add_argument("--task", action="store_true", help="Print only task.md")

@@ -171,10 +171,14 @@ Guarded write command:
 ```bash
 ./dev tasks create --title "Add Settings Button" --layer frontend --area apps/macos --feature settings
 ./dev tasks create --title "Add Settings Button" --layer frontend --area apps/macos --feature settings --write
+./dev tasks complete 2
+./dev tasks complete 2 --write --confirm-pass
 ```
 
 `create` previews by default. It writes only when `--write` is present, and the
 write target is limited to `tasks/active/<next-number>.<slug>/`.
+`complete` also previews by default. It archives an active task only when
+`--write --confirm-pass` is present.
 
 Expected lookup behavior:
 
@@ -188,6 +192,9 @@ Expected lookup behavior:
 - `./dev tasks create` creates a lightweight active task record only; it does
   not execute the task, promote workflow queue candidates, update
   `progress.json`, or touch task-loop runtime state.
+- `./dev tasks complete` records an operator-confirmed lightweight task archive;
+  it does not run verification and does not replace `verify.md` or
+  `evidence.md`.
 
 Keep these surfaces distinct:
 
@@ -208,3 +215,11 @@ When a lightweight task is complete:
    `tasks/done/YYYY/<number>.<slug>/`.
 
 Do not renumber completed tasks.
+
+The guarded helper for this archive step is:
+
+```bash
+./dev tasks complete <number> --write --confirm-pass
+```
+
+Use it only after the task's validation and evidence are already complete.

@@ -409,6 +409,10 @@ def run_tasks_command(root: Path, args: Namespace) -> int:
         from .task_create import run_tasks_create
 
         return run_tasks_create(root, args)
+    if args.tasks_command == "complete":
+        from .task_complete import run_tasks_complete
+
+        return run_tasks_complete(root, args)
     if args.tasks_command == "show":
         if args.task_id < 1:
             raise ToolError("./dev tasks show requires a positive numeric task id.", code=2)
