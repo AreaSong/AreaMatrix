@@ -1576,6 +1576,8 @@ def run_action(cfg: ConsoleConfig, action_id: str, args: Sequence[str] = ()) -> 
         return dev_tools_cli.main(["workflow", "init", "--version", "v2"])
     if action_id == "workflow-status":
         return dev_tools_cli.main(["workflow", "status"])
+    if action_id == "tasks-status":
+        return dev_tools_cli.main(["tasks", "status"])
     if action_id == "workflow-doctor":
         return dev_tools_cli.main(["workflow", "doctor"])
     if action_id == "changes-preview":

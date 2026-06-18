@@ -111,6 +111,7 @@ NO_COLOR=1 ./dev
 ```bash
 ./dev lifecycle
 ./dev live-queue
+./dev tasks status
 ./dev tools
 ./dev shortcuts
 ./dev lang
@@ -229,7 +230,7 @@ DRY_RUN_RESULT=PASS \
 
 ## 四、v* Workflow 规划（不进 live 队列）
 
-`workflow/` 是大功能 / 版本 / 重构 / 优化的生命周期系统；`workflow/versions/<version>/execution/**` 是已批准的版本内执行队列；`./task-loop` 只执行 version execution queue。轻量独立任务记录在 `tasks/active/**` / `tasks/done/**`，候选材料记录在 `tasks/backlog/**`，二者都不是 task-loop live queue。
+`workflow/` 是大功能 / 版本 / 重构 / 优化的生命周期系统；`workflow/versions/<version>/execution/**` 是已批准的版本内执行队列；`./task-loop` 只执行 version execution queue。轻量独立任务记录在 `tasks/active/**` / `tasks/done/**`，可用 `./dev tasks status` 只读查看；候选材料记录在 `tasks/backlog/**`，可用 `./dev backlog list` 浏览。二者都不是 task-loop live queue。
 
 模板验收实例位于：
 

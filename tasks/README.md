@@ -151,10 +151,10 @@ assets
 
 ## Script Visibility
 
-The directory protocol is designed so a future `./dev tasks` command can index
-all lightweight task state without reading workflow execution internals.
+The directory protocol is designed so `./dev tasks` can index all lightweight
+task state without reading workflow execution internals.
 
-Planned read-only commands:
+Read-only commands:
 
 ```bash
 ./dev tasks status

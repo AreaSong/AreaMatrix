@@ -119,6 +119,7 @@ _ACTION_SPECS = (
     ActionSpec("maintenance-menu", group="live", label_key="action.maintenance-menu.label", note_key="action.maintenance-menu.note"),
     ActionSpec("new-version-preview", group="workflow", label_key="action.new-version-preview.label", note_key="action.new-version-preview.note"),
     ActionSpec("workflow-status", group="workflow", label_key="action.workflow-status.label", note_key="action.workflow-status.note"),
+    ActionSpec("tasks-status", group="workflow", label_key="action.tasks-status.label", note_key="action.tasks-status.note"),
     ActionSpec("workflow-doctor", group="workflow", label_key="action.workflow-doctor.label", note_key="action.workflow-doctor.note"),
     ActionSpec("changes-preview", group="workflow", label_key="action.changes-preview.label", note_key="action.changes-preview.note"),
     ActionSpec("check", command="check", shortcuts=("c",), group="tool", label_key="action.check.label", note_key="action.check.note", passthrough=True),
@@ -128,6 +129,7 @@ _ACTION_SPECS = (
     ActionSpec("release", command="release", group="tool", label_key="action.release.label", note_key="action.release.note", passthrough=True),
     ActionSpec("changes", command="changes", group="workflow", label_key="action.changes.label", note_key="action.changes.note", passthrough=True),
     ActionSpec("workflow", command="workflow", group="workflow", label_key="action.workflow.label", note_key="action.workflow.note", passthrough=True),
+    ActionSpec("tasks", command="tasks", group="workflow", label_key="action.tasks.label", note_key="action.tasks.note", passthrough=True),
     ActionSpec("backlog", command="backlog", group="workflow", label_key="action.backlog.label", note_key="action.backlog.note", passthrough=True),
 )
 
@@ -161,7 +163,7 @@ MENUS = {
     "tools": MenuSpec(
         "tools",
         "submenu.tools.title",
-        ("check", "release", "processes", "workflow-status", "workflow-doctor", "changes-preview", "language-menu", "help"),
+        ("check", "release", "processes", "workflow-status", "tasks-status", "workflow-doctor", "changes-preview", "language-menu", "help"),
     ),
 }
 
@@ -211,6 +213,7 @@ REQUIRED_COMMANDS = (
     "release",
     "changes",
     "workflow",
+    "tasks",
     "backlog",
 )
 
