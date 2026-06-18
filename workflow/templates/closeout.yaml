@@ -7,7 +7,7 @@ blockers:
 evidence:
   projection: workflow/versions/v*/projection/projection.yaml
   promotion: workflow/versions/v*/promotion/promotion.yaml
-  progress: tasks/prompts/_shared/progress.json
+  progress: workflow/versions/v1-mvp/execution/_shared/progress.json
   verify: missing
   checkpoint: missing
 remaining_risks:

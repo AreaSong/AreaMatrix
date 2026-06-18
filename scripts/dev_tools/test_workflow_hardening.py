@@ -36,10 +36,10 @@ class WorkflowHardeningTest(unittest.TestCase):
             "workflow",
             "scripts/dev_tools",
             "scripts/task_loop",
-            "tasks/prompts/_shared",
+            "workflow/versions/v1-mvp/execution/_shared",
         ]:
             copy_tree(ROOT / rel, self.root / rel)
-        for rel in ["scripts/__init__.py", "tasks/__init__.py", "tasks/prompts/__init__.py"]:
+        for rel in ["scripts/__init__.py"]:
             source = ROOT / rel
             if source.exists():
                 copy_tree(source, self.root / rel)

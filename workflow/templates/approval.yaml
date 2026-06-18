@@ -11,6 +11,6 @@ apply_allowed: false
 tasks:
   - semantic_id: v*-feature-id/docs-contract
     live_label: 5-1/task-01
-    task_file: tasks/prompts/phase-5/5-1-v-next/task-01-docs-contract.md
-    copy_ready: tasks/prompts/_shared/copy-ready/phase-5/5-1-task-01.md
-    verify_ready: tasks/prompts/_shared/verify-ready/phase-5/5-1-task-01.md
+    task_file: workflow/versions/<version>/execution/phase-5/5-1-v-next/task-01-docs-contract.md
+    copy_ready: workflow/versions/<version>/execution/_shared/copy-ready/phase-5/5-1-task-01.md
+    verify_ready: workflow/versions/<version>/execution/_shared/verify-ready/phase-5/5-1-task-01.md

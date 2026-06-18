@@ -10,7 +10,7 @@ Reviewed at: `2026-06-16T08:54:09Z`
 - Decision: accept 35 historical checkpoint gaps as closeout exceptions.
 - Reason: these runs were interrupted / resumed or otherwise executed with `git.checkpoint=off`; task completion evidence exists locally and in tracked run summaries, but per-task Git checkpoint metadata was not produced.
 - Scope: checkpoint evidence only. This does not release Stage 1 alpha, does not close release blockers, and does not apply to `3-1/task-05`.
-- Guardrail: do not rewrite `tasks/prompts/_shared/progress.json`, task-loop logs, run summaries, or Git history to fabricate checkpoint metadata.
+- Guardrail: do not rewrite `workflow/versions/v1-mvp/execution/_shared/progress.json`, task-loop logs, run summaries, or Git history to fabricate checkpoint metadata.
 
 ## Acceptance Criteria Used
 

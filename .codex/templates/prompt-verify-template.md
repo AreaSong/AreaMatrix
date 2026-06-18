@@ -3,8 +3,8 @@
 > 通常不手写本文件；优先使用 runner 生成：
 >
 > ```bash
-> python3 tasks/prompts/_shared/prompt_pipeline.py verify --task <task-label>
-> python3 tasks/prompts/_shared/prompt_pipeline.py verify --phase <phase>
+> python3 workflow/versions/<version>/execution/_shared/prompt_pipeline.py verify --task <task-label>
+> python3 workflow/versions/<version>/execution/_shared/prompt_pipeline.py verify --phase <phase>
 > ```
 
 ## 验收原则
@@ -31,4 +31,3 @@
 六、验证情况
 
 七、最终判定说明
-

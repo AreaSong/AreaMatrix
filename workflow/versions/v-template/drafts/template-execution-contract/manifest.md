@@ -18,14 +18,14 @@
 
 ### Sync Targets
 - `workflow/templates/README.md`
-- `tasks/prompts/README.md`
+- `workflow/versions/v1-mvp/execution/README.md`
 
 ### Risk Level
 - Low
 
 ### Risk Boundaries
 - Promotion apply write is blocked for v-template.
-- Preview commands must not write tasks/prompts or progress.json.
+- Preview commands must not write workflow/versions/v-template/execution or progress.json.
 - Closeout cannot claim done without verify pass and checkpoint evidence.
 
 ### Validation
@@ -49,14 +49,14 @@
 
 ### Sync Targets
 - `workflow/templates/README.md`
-- `tasks/prompts/README.md`
+- `workflow/versions/v1-mvp/execution/README.md`
 
 ### Risk Level
 - Low
 
 ### Risk Boundaries
 - Promotion apply write is blocked for v-template.
-- Preview commands must not write tasks/prompts or progress.json.
+- Preview commands must not write workflow/versions/v-template/execution or progress.json.
 - Closeout cannot claim done without verify pass and checkpoint evidence.
 
 ### Validation
@@ -80,14 +80,14 @@
 
 ### Sync Targets
 - `workflow/templates/README.md`
-- `tasks/prompts/README.md`
+- `workflow/versions/v1-mvp/execution/README.md`
 
 ### Risk Level
 - Low
 
 ### Risk Boundaries
 - Promotion apply write is blocked for v-template.
-- Preview commands must not write tasks/prompts or progress.json.
+- Preview commands must not write workflow/versions/v-template/execution or progress.json.
 - Closeout cannot claim done without verify pass and checkpoint evidence.
 
 ### Validation

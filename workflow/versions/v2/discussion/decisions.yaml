@@ -20,7 +20,7 @@ blockers:
     status: open
     summary: Discussion has not approved changes generation yet.
 risk_boundaries:
-  - Do not write live tasks/prompts from discussion.
+  - Do not write live workflow/versions/v2/execution from discussion.
   - Do not treat archived Stage 1 internal Stage 2/3/4 source docs as current v2 scope.
   - Do not close v1 formal release blockers in v2 planning.
 next_layers:

@@ -26,7 +26,7 @@ links:
 code_impacts:
   existing:
     - workflow/pipeline.md
-    - tasks/prompts/README.md
+    - workflow/versions/v1-mvp/execution/README.md
     - scripts/dev_tools/workflow.py
     - scripts/dev_tools/promotion.py
     - scripts/dev_tools/workflow_projection.py
@@ -71,7 +71,7 @@ slice_plan:
     purpose: Prove projection and closeout stay evidence-based instead of task-existence-based.
     inputs:
       - workflow/versions/v-template/promotion/promotion.yaml
-      - tasks/prompts/_shared/progress.json
+      - workflow/versions/v1-mvp/execution/_shared/progress.json
     outputs:
       - workflow/versions/v-template/projection/projection.yaml
       - workflow/versions/v-template/closeout/closeout.yaml
@@ -79,6 +79,6 @@ slice_plan:
       - ./dev workflow project --version v-template doctor
       - ./dev workflow closeout --version v-template doctor
 risk_boundaries:
-  - Promotion preview does not write live tasks/prompts.
+  - Promotion preview does not write live workflow/versions/v-template/execution.
   - Promotion apply write is blocked for v-template.
   - Closeout cannot claim done without verify and checkpoint evidence.

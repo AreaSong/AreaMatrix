@@ -159,7 +159,7 @@ Disable remote AI 确认 sheet：
 
 ## 来源
 
-- 组合来源：[远程 provider 配置任务](../../../../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-53-s3-03-c3-03-remote-provider-config.md)、[Stage 3 隐私与可控](../../../../../../../docs/roadmap/milestones.md#隐私与可控)。
+- 组合来源：[远程 provider 配置任务](../../../../execution/phase-4/4-2-stage3-ai/task-53-s3-03-c3-03-remote-provider-config.md)、[Stage 3 隐私与可控](../../../../../../../docs/roadmap/milestones.md#隐私与可控)。
 - 依据现有文档推导：远程 AI 显式启用、Keychain 存储、测试连接成功后才能启用和禁用远程确认规则，遵守项目隐私不变量。
 
 ---

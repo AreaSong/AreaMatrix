@@ -15,7 +15,7 @@ local_queue:
   batch_slug: v-next
   start_task: 1
 promotion_preview:
-  target_queue: tasks/prompts
+  target_queue: workflow/versions/<version>/execution
   live_mapping: pending
 execution:
   root: workflow/versions/v*/execution

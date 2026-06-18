@@ -15,17 +15,17 @@
 
 ## 必须同步检查
 - `workflow/templates/README.md`
-- `tasks/prompts/README.md`
+- `workflow/versions/v1-mvp/execution/README.md`
 
 ## 风险边界
 - Promotion apply write is blocked for v-template.
-- Preview commands must not write tasks/prompts or progress.json.
+- Preview commands must not write workflow/versions/v-template/execution or progress.json.
 - Closeout cannot claim done without verify pass and checkpoint evidence.
 
 ## 执行要求
 - 先读取 Source change、Exact Docs、Sync Targets，再决定实现范围。
 - 若涉及 Core API，必须保持 `docs/api/core-api.md` 与 `core/area_matrix.udl` 一致。
-- 不得移动、删除、覆盖用户原文件；不得把 v-template 草稿直接写入 `tasks/prompts/**`。
+- 不得移动、删除、覆盖用户原文件；不得把 v-template 草稿直接写入 `workflow/versions/v-template/execution/**`。
 - 完成后记录实际改动、验证命令、风险处理和未覆盖项。
 
 ## 建议验证

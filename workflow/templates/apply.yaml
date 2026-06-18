@@ -7,10 +7,10 @@ template_reference: false
 apply_allowed: false
 gate_message: promotion blocked: prerequisite version is live-running
 files_to_write:
-  - tasks/prompts/phase-5/5-1-v-next/task-01-docs-contract.md
-  - tasks/prompts/_shared/copy-ready/phase-5/5-1-task-01.md
-  - tasks/prompts/_shared/verify-ready/phase-5/5-1-task-01.md
-  - tasks/prompts/_shared/manifests/phase-5.md
+  - workflow/versions/<version>/execution/phase-5/5-1-v-next/task-01-docs-contract.md
+  - workflow/versions/<version>/execution/_shared/copy-ready/phase-5/5-1-task-01.md
+  - workflow/versions/<version>/execution/_shared/verify-ready/phase-5/5-1-task-01.md
+  - workflow/versions/v1-mvp/execution/_shared/manifests/phase-5.md
 required_gates:
   - promotion approval is ready and approved
   - preview evidence is current

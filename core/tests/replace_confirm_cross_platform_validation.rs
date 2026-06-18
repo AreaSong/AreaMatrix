@@ -15,7 +15,7 @@ mod support;
 use support::system_trash_home::with_test_system_trash;
 
 const TASK: &str = include_str!(
-    "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-104-c4-21-validation.md"
+    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-104-c4-21-validation.md"
 );
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");

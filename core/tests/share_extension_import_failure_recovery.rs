@@ -12,7 +12,7 @@ use pretty_assertions::assert_eq;
 use rusqlite::{Connection, OptionalExtension};
 
 const TASK: &str = include_str!(
-    "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-23-c4-05-failure-edge.md"
+    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-23-c4-05-failure-edge.md"
 );
 const TRANSACTIONAL_IMPORT: &str = include_str!("../../docs/architecture/transactional-import.md");
 

@@ -16,7 +16,7 @@ use sync_conflict_detect_validation_support::{
 };
 
 const TASK: &str = include_str!(
-    "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-74-c4-15-validation.md"
+    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-74-c4-15-validation.md"
 );
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");

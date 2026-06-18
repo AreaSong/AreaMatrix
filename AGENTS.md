@@ -3,21 +3,21 @@
 ## 定位
 
 - 本仓库是 AreaMatrix：Rust 核心库 + SwiftUI macOS 原生应用 + UniFFI 桥接的桌面资料管理工具。
-- 当前仓库以文档为主，开发从 `tasks/prompts/` 的可执行 prompt 任务开始推进。
+- 当前仓库以文档为主，v1 历史 prompt 执行队列已硬迁移到 `workflow/versions/v1-mvp/execution/`。
 - 对话、说明、提交说明、任务汇报默认使用中文；代码标识符、类型名、文件名中的技术标识保持英文。
 
 ## 入口顺序
 
 1. 先读本文件。
 2. 再按目标路径读取最近的局部 `AGENTS.md`。当前首轮不创建空的 `core/AGENTS.md` 或 `apps/macos/AGENTS.md`；这些文件由后续工程骨架任务在对应目录出现时补充。
-3. 再读与任务匹配的 `docs/` 文档、`.ai-governance/` 规则和 `tasks/prompts/` 任务文件。
+3. 再读与任务匹配的 `docs/` 文档、`.ai-governance/` 规则和 `workflow/versions/<version>/execution/` 任务文件。
 
 ## 源事实
 
 - 产品、架构、API、开发规范的权威来源是 `docs/`。
 - AI 协作规则的统一源事实是 `.ai-governance/`。
 - Codex 专用运行材料放在 `.codex/`，不是业务语义的权威来源。
-- Prompt 任务库在 `tasks/prompts/`，任务执行时以 task 文件和 manifest 的组合为边界。
+- Prompt 执行层在 `workflow/versions/<version>/execution/`，任务执行时以 task 文件和 manifest 的组合为边界；v1 历史队列位于 `workflow/versions/v1-mvp/execution/`。
 - 对外 Core API 变化必须先对齐 `docs/api/core-api.md`，再更新 `core/area_matrix.udl`。
 
 ## 工作方式
@@ -51,8 +51,7 @@
 
 ## 验证要求
 
-- Prompt 体系变更：运行 `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`，并按需要运行 `plan`、`render`、`status`。
+- Prompt 体系变更：运行 `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor`，并按需要运行 `plan`、`render`、`status`。
 - Rust core 变更：运行 `cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`。
 - macOS app 变更：运行相关 `xcodebuild`、SwiftFormat、SwiftLint 检查。
 - 无法运行的检查必须在汇报中明确说明原因。
-

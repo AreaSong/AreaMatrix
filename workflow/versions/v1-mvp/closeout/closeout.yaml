@@ -16,11 +16,11 @@ blockers:
   - Developer ID signing, notarization, stapling, clean-Mac first launch, and formal v0.1.0 tag evidence are deferred to the formal distribution track.
   - 3-1/task-05 remains a release-gate review item without task-loop verify evidence; it is deferred to release evidence review and must not be papered over.
 evidence:
-  live_queue: tasks/prompts
-  progress: tasks/prompts/_shared/progress.json
-  prompt_doctor: python3 tasks/prompts/_shared/prompt_pipeline.py doctor
-  prompt_status: python3 tasks/prompts/_shared/prompt_pipeline.py status
-  page_audit: python3 tasks/prompts/_shared/prompt_pipeline.py audit --pages
+  live_queue: workflow/versions/v1-mvp/execution
+  progress: workflow/versions/v1-mvp/execution/_shared/progress.json
+  prompt_doctor: python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
+  prompt_status: python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py status
+  page_audit: python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py audit --pages
   task_loop_status: ./task-loop status
   release_checklist: workflow/versions/v1-mvp/evidence/release-checklist.md
   local_qa_notes: workflow/versions/v1-mvp/evidence/release-notes/release-notes-0.1.0.md
@@ -64,12 +64,12 @@ next_allowed_work:
   - Generate v2 middle-layer, changes, plans, drafts, and queue candidates for review.
   - Continue formal alpha release evidence separately.
 next_forbidden_work:
-  - Do not promote v2 or any new work into tasks/prompts/** without explicit approval and live mapping.
+  - Do not promote v2 or any new work into workflow/versions/v1-mvp/execution/** without explicit approval and live mapping.
   - Do not rename, move, regenerate, or archive the live v1 queue during this decision pass.
   - Do not call local QA, unnotarized preview, ad-hoc signing, or same-machine smoke formal alpha evidence.
 remaining_risks:
   - Formal alpha release remains blocked until deferred release blockers are closed with fresh evidence.
-  - Do not promote new live tasks/prompts work without explicit approval and live mapping.
+  - Do not promote new live workflow/versions/v1-mvp/execution work without explicit approval and live mapping.
   - Do not treat local QA, unnotarized preview, ad-hoc signing, or same-machine launch smoke as formal alpha distribution evidence.
   - Do not rewrite progress.json or task-loop logs to paper over checkpoint evidence gaps; accepted exceptions are recorded, and optional evidence bundling remains a closeout archive decision.
 archive_readiness: evidence-bundle-ready

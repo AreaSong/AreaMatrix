@@ -17,4 +17,4 @@ docs discussion
 Each feature ledger records Exact Docs line references, insertion points, related
 feature links, code impact, dependencies, slice plan, risk boundaries, and
 acceptance inputs. It is a review artifact and must not write live
-`tasks/prompts/**` or `progress.json`.
+`workflow/versions/v2/execution/**` or `progress.json`.

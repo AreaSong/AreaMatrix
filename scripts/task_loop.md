@@ -14,7 +14,7 @@
 - copy / verify 都会读取工程质量规则和编码规范，验收不只看能否运行，也看代码是否可维护、可测试、可长期演进。
 - 验收必须通过（日志里出现 `VERIFY_RESULT: PASS`）才会继续下一任务。
 - 失败则会把功能、验证和工程质量失败摘要注入下一次 copy 提示，继续重试修复。
-- 进度统一写入 `tasks/prompts/_shared/progress.json`，可直接被 `prompt_pipeline.py status/next` 读取。
+- 进度统一写入 `workflow/versions/v1-mvp/execution/_shared/progress.json`，可直接被 `prompt_pipeline.py status/next` 读取。
 - 每次执行会持有 `.codex/task-loop-lock/` 运行锁，避免两个 runner 同时写 progress/logs。
 - 每次执行会写 `.codex/task-loop-runs/<run_id>/summary.json`，作为可上传、可续工的运行摘要。
 - 每次执行结束会更新 `.codex/task-loop-runs/index.json`，用于快速查看最近 run 的状态。
@@ -81,7 +81,7 @@ task-loop 默认会在一次 repair retry 后停下，避免小任务长时间�
 ```
 
 `./dev` 是 AreaMatrix Dev Console 总控入口，默认展示局势诊断首页。首页只回答三件事：现在安全吗、推荐下一步是什么、去哪里看更多。
-控制台按版本组织 `docs -> workflow discussion -> changes -> plans -> drafts -> queue -> promotion preview -> tasks/prompts -> task-loop -> archive`。当前 live queue 仍来自 `tasks/prompts/**`；`workflow/` 是后续版本和大型变更的规划生命周期，不会直接修改 live queue。
+控制台按版本组织 `docs -> workflow discussion -> changes -> plans -> drafts -> queue -> promotion preview -> execution -> task-loop -> archive`。当前 v1 历史执行队列来自 `workflow/versions/v1-mvp/execution/**`；`workflow/` 是后续版本和大型变更的规划生命周期，不会直接修改 execution queue。
 控制台默认显示四段：`当前局势` 说明安全结论和原因，`推荐行动链` 给出只读恢复步骤，`进度概览` 用两行版本卡展示 `v1-mvp live queue` 与 `template reference`，`去哪里看更多` 放主入口。最近 run、verify 日志、完整 pid 和长路径改到 `./dev status --verbose`、`./dev processes`、`./dev logs`。
 下方只显示主要入口：`1 recommended guide`、`2 lifecycle map`、`3 live queue details`、`4 tools`、`? shortcuts`、`h help`、`q quit`。直接按 Enter 只看完整状态，不启动任务；`1` 只打开推荐向导，不自动执行命令。
 启动或继续任务时，控制台会先阻止重复 live runner，再选择前台/后台、Git checkpoint 模式和任务数量上限；默认 Git 为本地 `commit`，任务数量为无限。
@@ -229,7 +229,7 @@ DRY_RUN_RESULT=PASS \
 
 ## 四、v* Workflow 规划（不进 live 队列）
 
-`workflow/` 是大功能 / 版本 / 重构 / 优化的生命周期系统；`tasks/prompts/**` 是已批准的小任务执行队列；`./task-loop` 只执行 tasks。
+`workflow/` 是大功能 / 版本 / 重构 / 优化的生命周期系统；`workflow/versions/<version>/execution/**` 是已批准的小任务执行队列；`./task-loop` 只执行 tasks。
 
 模板验收实例位于：
 
@@ -269,7 +269,7 @@ workflow/versions/v-template/changes/*.yaml
 - `<task-id>.copy.md`
 - `<task-id>.verify.md`
 
-plans、drafts 和 queue candidates 都只是 review artifact，不会写 `tasks/prompts/**`，不会修改 `progress.json`，不会启动 `./task-loop`。`v-template` 是模板验收实例，不允许 apply 写入 live queue。
+plans、drafts 和 queue candidates 都只是 review artifact，不会写 `workflow/versions/<version>/execution/**`，不会修改 `progress.json`，不会启动 `./task-loop`。`v-template` 是模板验收实例，不允许 apply 写入 execution queue。
 
 ---
 
@@ -306,7 +306,7 @@ Git checkpoint 证据会写入 progress 和 summary：
 通过任务的进度会记录到：
 
 ```
-tasks/prompts/_shared/progress.json
+workflow/versions/v1-mvp/execution/_shared/progress.json
 ```
 
 旧版 `.codex/task-loop-state.txt` 只作为兼容读取，不再作为主进度源。
@@ -373,7 +373,7 @@ tasks/prompts/_shared/progress.json
 这个 Python runner 是“自动执行器”，不是 prompt 体系本体。
 你仍然需要先确保：
 
-- `copy-ready` / `verify-ready` 已经用 `python3 tasks/prompts/_shared/prompt_pipeline.py export --all` 生成；
+- `copy-ready` / `verify-ready` 已经用 `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py export --all` 生成；
 - 对应任务本身在文档与 manifest 上自洽；
 - 阶段通过后再做后续阶段。
 
@@ -381,7 +381,7 @@ tasks/prompts/_shared/progress.json
 
 ## 六、后续版本变更追踪
 
-当前 637 个任务仍是 v1-mvp 队列，继续由 `tasks/prompts/**` 与 `tasks/prompts/_shared/progress.json` 驱动，不移动、不重置。
+当前 637 个任务仍是 v1-mvp 历史执行队列，继续由 `workflow/versions/v1-mvp/execution/**` 与 `workflow/versions/v1-mvp/execution/_shared/progress.json` 驱动，不重写、不清空、不重置。
 
 后续新增功能先进入真实 `vN` workflow；模板验收实例只用于检查链路：
 

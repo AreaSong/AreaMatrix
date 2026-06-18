@@ -11,6 +11,7 @@ from pathlib import Path
 
 from .build import run_core_build
 from .common import fail, project_root, require_command, require_file, run_step
+from .execution_paths import manifest_root, prompt_pipeline_path, shared_root, task_root
 from .macos import run_macos_tests
 from .skills import SimpleYAMLError, parse_frontmatter, parse_simple_yaml
 
@@ -151,7 +152,7 @@ def run_governance_check(root: Path | None = None) -> int:
         "docs/development/git-workflow.md",
         "docs/development/dependency-policy.md",
         "docs/development/ci-governance.md",
-        "tasks/prompts/_shared/engineering-quality-rules.md",
+        "workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md",
     ]
     for rel_path in required_files:
         _check_file(root, failures, rel_path)
@@ -191,14 +192,14 @@ def run_governance_check(root: Path | None = None) -> int:
     _require_text(
         root,
         failures,
-        "tasks/prompts/_shared/engineering-quality-rules.md",
+        "workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md",
         "CODE_REVIEW.md",
         "enterprise review gate",
     )
     _require_text(
         root,
         failures,
-        "tasks/prompts/_shared/engineering-quality-rules.md",
+        "workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md",
         "dependency-policy.md",
         "dependency gate",
     )
@@ -351,7 +352,7 @@ def run_skills_check(root: Path | None = None) -> int:
 
 def run_prompts_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
-    return run_step(["python3", "tasks/prompts/_shared/prompt_pipeline.py", "doctor"], cwd=root, check=False).returncode
+    return run_step(["python3", prompt_pipeline_path(root), "doctor"], cwd=root, check=False).returncode
 
 
 def run_task_loop_check(root: Path | None = None) -> int:
@@ -370,7 +371,7 @@ def _task_path(root: Path, label: str) -> Path:
     if not match:
         fail(f"task label must look like '4-1/task-15', got {label!r}.")
     batch, number = match.groups()
-    matches = sorted((root / "tasks/prompts").glob(f"phase-*/{batch}-*/task-{number}-*.md"))
+    matches = sorted(task_root(root).glob(f"phase-*/{batch}-*/task-{number}-*.md"))
     if not matches:
         fail(f"task prompt not found for {label}.")
     if len(matches) > 1:
@@ -385,7 +386,7 @@ def _task_text(root: Path, label: str) -> str:
 
 def _task_manifest_entry(root: Path, label: str) -> TaskManifestEntry:
     phase = label.split("-", 1)[0]
-    path = root / "tasks/prompts/_shared/manifests" / f"phase-{phase}.md"
+    path = manifest_root(root) / f"phase-{phase}.md"
     if not path.is_file():
         return TaskManifestEntry("", "Unspecified", (), (), (), (), ())
     text = _read(path)

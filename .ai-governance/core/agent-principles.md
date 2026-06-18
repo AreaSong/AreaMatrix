@@ -35,7 +35,7 @@
 
 - 原因不明的失败先复现、收证、分层归因、提出单一可证伪假设，再修复。
 - 不把 copy、verify、validation command、runner、Git checkpoint、docs/API/UDL/prompt 漂移或文件安全边界混成一个笼统的“失败”。
-- task-loop 失败先看 `./dev status --verbose`、`./task-loop status`、`tasks/prompts/_shared/progress.json`、run summary、copy / verify logs，再决定归因层。
+- task-loop 失败先看 `./dev status --verbose`、`./task-loop status`、`workflow/versions/v1-mvp/execution/_shared/progress.json`、run summary、copy / verify logs，再决定归因层。
 - 失败跨越多组件时，先检查组件边界的输入、输出、配置和状态传播；不要直接在最深层症状处补丁。
 - 调试和归因参考 `.codex/references/debugging-failure-attribution-runbook.md`；具体 owner 仍由 repo-local skills 分担。
 

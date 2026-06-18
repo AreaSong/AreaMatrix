@@ -20,7 +20,7 @@ blockers:
     status: none
     summary: No blockers for template reference checks.
 risk_boundaries:
-  - Do not write live tasks/prompts from v-template.
+  - Do not write live workflow/versions/v-template/execution from v-template.
   - Do not use v-template as a product roadmap version.
   - Do not start task-loop from v-template.
 next_layers:

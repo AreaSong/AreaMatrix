@@ -345,7 +345,7 @@ docs discussion
 Each feature ledger records Exact Docs line references, insertion points, related
 feature links, code impact, dependencies, slice plan, risk boundaries, and
 acceptance inputs. It is a review artifact and must not write live
-`tasks/prompts/**` or `progress.json`.
+`workflow/versions/{version}/execution/**` or `progress.json`.
 """
 
 
@@ -394,7 +394,7 @@ slice_plan:
     acceptance:
       - ./dev workflow doctor
 risk_boundaries:
-  - Do not write live tasks/prompts from middle-layer planning.
+  - Do not write workflow/versions/{version}/execution/** from middle-layer planning.
 """
 
 

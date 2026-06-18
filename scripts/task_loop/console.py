@@ -21,6 +21,15 @@ from .i18n import normalize_lang_mode, t, t_lines
 from .lifecycle import LIFECYCLE_STAGES, LifecycleSnapshot, VersionLifecycle, load_lifecycle_snapshot
 from .runner import RuntimeConfig, print_loop_status
 from scripts.dev_tools import cli as dev_tools_cli
+from scripts.dev_tools.execution_paths import prompt_pipeline_path
+from scripts.dev_tools.execution_repository import (
+    load_manifests,
+    load_progress,
+    ordered_labels,
+    ready_for_next,
+    scan_task_files,
+    task_status,
+)
 
 
 def package_root() -> Path:
@@ -53,7 +62,7 @@ class ConsoleConfig:
         runtime = RuntimeConfig.from_env()
         root = package_root()
         task_loop_bin = Path(os.environ.get("TASK_LOOP_BIN", root / "task-loop"))
-        pipeline = Path(os.environ.get("PIPELINE", runtime.root_dir / "tasks/prompts/_shared/prompt_pipeline.py"))
+        pipeline = Path(os.environ.get("PIPELINE", prompt_pipeline_path(runtime.root_dir)))
         console_log_root = Path(os.environ.get("CONSOLE_LOG_ROOT", runtime.root_dir / ".codex/task-loop-console"))
         return cls(runtime=runtime, task_loop_bin=task_loop_bin, pipeline=pipeline, console_log_root=console_log_root)
 
@@ -527,18 +536,9 @@ def git_dirty(root: Path) -> bool:
 
 def load_prompt_snapshot(cfg: ConsoleConfig) -> PromptSnapshot:
     try:
-        from tasks.prompts._shared.prompt_pipeline_lib.repository import (
-            load_manifests,
-            load_progress,
-            ordered_labels,
-            ready_for_next,
-            scan_task_files,
-            task_status,
-        )
-
-        tasks = scan_task_files()
-        manifests = load_manifests()
-        progress = load_progress()
+        tasks = scan_task_files(cfg.runtime.root_dir)
+        manifests = load_manifests(cfg.runtime.root_dir)
+        progress = load_progress(cfg.runtime.root_dir)
         labels = ordered_labels(tasks, manifests)
         by_status: dict[str, int] = {}
         by_phase: dict[str, int] = {}

@@ -8,8 +8,8 @@ a real product version or a live execution queue.
 ## Boundaries
 
 - It is a golden reference for templates and doctors.
-- It must not be promoted into version execution or live `tasks/prompts/**`.
-- It must not write `tasks/prompts/_shared/progress.json`.
+- It must not be promoted into version execution or `workflow/versions/v-template/execution/**`.
+- It must not write `workflow/versions/v1-mvp/execution/_shared/progress.json`.
 - `./dev workflow init --version v-template` is intentionally rejected.
 - Future real versions can still use normal `vN` names, including `v2`.
 

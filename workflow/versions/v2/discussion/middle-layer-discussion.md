@@ -8,7 +8,7 @@
 - Changes must feed docs-change ledger plans.
 - Plans and drafts must keep docs/API/UDL/task sync targets explicit.
 - Queue candidates use the version-local queue before live promotion mapping is configured.
-- Promotion preview must not write live `tasks/prompts/**`.
+- Promotion preview must not write `workflow/versions/v2/execution/**`.
 
 ## Local Queue
 

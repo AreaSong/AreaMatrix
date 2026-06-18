@@ -6,7 +6,7 @@ docs:
     line_end: 30
     heading: 'Architecture Layers'
     excerpt: '七层模型描述的是抽象依赖关系，不是执行步骤。'
-    sha256: 'b7317602b0632f83e837a97868173df492813e1b62f83201272145c1a3636a19'
+    sha256: '7244ebf95bc2ae8f054f213f3e19b21237fa3480ae99f1a19de6e045c31da027'
     source: 'changes:template-docs-contract'
   - file: 'workflow/pipeline.md'
     line_start: 72
@@ -20,7 +20,7 @@ docs:
     line_end: 394
     heading: 'queue candidates'
     excerpt: 'dry-run 预览候选队列进入版本内 `execution/` 的结果。'
-    sha256: 'b2b83f9fc0b13d34aa3c0fa557671c3f8cb8efdca95704d41e7c7a1b995245c9'
+    sha256: '1b35304b4d4fb5f7af9e05a1f232a846ceecf0c860aa92211d7b91372fff8cd7'
     source: 'changes:template-execution-contract'
   - file: 'workflow/pipeline.md'
     line_start: 461

@@ -8,8 +8,8 @@
 - Writes live queue: `false`
 - Template reference: `true`
 - Apply allowed: `false`
-- Gate: promotion blocked: v-template is a template reference and cannot apply to live tasks/prompts/**
-- Target queue: `tasks/prompts`
+- Gate: promotion blocked: v-template is a template reference and cannot apply to live workflow/versions/v-template/execution/**
+- Target queue: `workflow/versions/v-template/execution`
 - Future phase: `phase-5`
 - Future batch: `5-1` (`template-reference`)
 - Root dependency: `4-3/task-165`
@@ -19,11 +19,11 @@
 
 | Semantic task | Future live label | Depends | Task file |
 |---|---|---|---|
-| `template-docs-contract/docs-baseline` | `5-1/task-01` | `4-3/task-165` | `tasks/prompts/phase-5/5-1-template-reference/task-01-docs-baseline.md` |
-| `template-docs-contract/discussion-gate` | `5-1/task-02` | `5-1/task-01` | `tasks/prompts/phase-5/5-1-template-reference/task-02-discussion-gate.md` |
-| `template-execution-contract/queue-candidate` | `5-1/task-03` | `5-1/task-02` | `tasks/prompts/phase-5/5-1-template-reference/task-03-queue-candidate.md` |
-| `template-execution-contract/promotion-preview` | `5-1/task-04` | `5-1/task-03` | `tasks/prompts/phase-5/5-1-template-reference/task-04-promotion-preview.md` |
-| `template-execution-contract/projection-closeout` | `5-1/task-05` | `5-1/task-04` | `tasks/prompts/phase-5/5-1-template-reference/task-05-projection-closeout.md` |
+| `template-docs-contract/docs-baseline` | `5-1/task-01` | `4-3/task-165` | `workflow/versions/v-template/execution/phase-5/5-1-template-reference/task-01-docs-baseline.md` |
+| `template-docs-contract/discussion-gate` | `5-1/task-02` | `5-1/task-01` | `workflow/versions/v-template/execution/phase-5/5-1-template-reference/task-02-discussion-gate.md` |
+| `template-execution-contract/queue-candidate` | `5-1/task-03` | `5-1/task-02` | `workflow/versions/v-template/execution/phase-5/5-1-template-reference/task-03-queue-candidate.md` |
+| `template-execution-contract/promotion-preview` | `5-1/task-04` | `5-1/task-03` | `workflow/versions/v-template/execution/phase-5/5-1-template-reference/task-04-promotion-preview.md` |
+| `template-execution-contract/projection-closeout` | `5-1/task-05` | `5-1/task-04` | `workflow/versions/v-template/execution/phase-5/5-1-template-reference/task-05-projection-closeout.md` |
 
 ## Future Manifest Sections
 
@@ -106,7 +106,7 @@
 
 ### Existing Code
 - `workflow/pipeline.md`
-- `tasks/prompts/README.md`
+- `workflow/versions/v1-mvp/execution/README.md`
 - `scripts/dev_tools/workflow.py`
 - `scripts/dev_tools/promotion.py`
 - `scripts/dev_tools/workflow_projection.py`
@@ -141,7 +141,7 @@
 
 ### Existing Code
 - `workflow/pipeline.md`
-- `tasks/prompts/README.md`
+- `workflow/versions/v1-mvp/execution/README.md`
 - `scripts/dev_tools/workflow.py`
 - `scripts/dev_tools/promotion.py`
 - `scripts/dev_tools/workflow_projection.py`
@@ -176,7 +176,7 @@
 
 ### Existing Code
 - `workflow/pipeline.md`
-- `tasks/prompts/README.md`
+- `workflow/versions/v1-mvp/execution/README.md`
 - `scripts/dev_tools/workflow.py`
 - `scripts/dev_tools/promotion.py`
 - `scripts/dev_tools/workflow_projection.py`
@@ -200,7 +200,7 @@
 
 ## Future Task File Drafts
 
-### tasks/prompts/phase-5/5-1-template-reference/task-01-docs-baseline.md
+### workflow/versions/v-template/execution/phase-5/5-1-template-reference/task-01-docs-baseline.md
 
 ```markdown
 # 5-1/task-01 template-docs-contract/docs-baseline
@@ -232,7 +232,7 @@ Prove that template workflow artifacts keep Exact Docs, discussion decisions, an
 
 ## 风险边界
 - Does not define product behavior.
-- Does not write live tasks/prompts.
+- Does not write live workflow/versions/v-template/execution.
 - Docs drift must block downstream template gates.
 
 ## 完成标准
@@ -245,7 +245,7 @@ Prove that template workflow artifacts keep Exact Docs, discussion decisions, an
 - ./dev workflow doctor
 ```
 
-### tasks/prompts/phase-5/5-1-template-reference/task-02-discussion-gate.md
+### workflow/versions/v-template/execution/phase-5/5-1-template-reference/task-02-discussion-gate.md
 
 ```markdown
 # 5-1/task-02 template-docs-contract/discussion-gate
@@ -277,7 +277,7 @@ Prove that template workflow artifacts keep Exact Docs, discussion decisions, an
 
 ## 风险边界
 - Does not define product behavior.
-- Does not write live tasks/prompts.
+- Does not write live workflow/versions/v-template/execution.
 - Docs drift must block downstream template gates.
 
 ## 完成标准
@@ -289,7 +289,7 @@ Prove that template workflow artifacts keep Exact Docs, discussion decisions, an
 - ./dev workflow doctor
 ```
 
-### tasks/prompts/phase-5/5-1-template-reference/task-03-queue-candidate.md
+### workflow/versions/v-template/execution/phase-5/5-1-template-reference/task-03-queue-candidate.md
 
 ```markdown
 # 5-1/task-03 template-execution-contract/queue-candidate
@@ -317,11 +317,11 @@ Prove that plans, drafts, queue candidates, promotion preview, projection, and c
 
 ## Sync Targets
 - `workflow/templates/README.md`
-- `tasks/prompts/README.md`
+- `workflow/versions/v1-mvp/execution/README.md`
 
 ## 风险边界
 - Promotion apply write is blocked for v-template.
-- Preview commands must not write tasks/prompts or progress.json.
+- Preview commands must not write workflow/versions/v-template/execution or progress.json.
 - Closeout cannot claim done without verify pass and checkpoint evidence.
 
 ## 完成标准
@@ -333,7 +333,7 @@ Prove that plans, drafts, queue candidates, promotion preview, projection, and c
 - ./dev workflow queue --version v-template doctor
 ```
 
-### tasks/prompts/phase-5/5-1-template-reference/task-04-promotion-preview.md
+### workflow/versions/v-template/execution/phase-5/5-1-template-reference/task-04-promotion-preview.md
 
 ```markdown
 # 5-1/task-04 template-execution-contract/promotion-preview
@@ -361,11 +361,11 @@ Prove that plans, drafts, queue candidates, promotion preview, projection, and c
 
 ## Sync Targets
 - `workflow/templates/README.md`
-- `tasks/prompts/README.md`
+- `workflow/versions/v1-mvp/execution/README.md`
 
 ## 风险边界
 - Promotion apply write is blocked for v-template.
-- Preview commands must not write tasks/prompts or progress.json.
+- Preview commands must not write workflow/versions/v-template/execution or progress.json.
 - Closeout cannot claim done without verify pass and checkpoint evidence.
 
 ## 完成标准
@@ -377,7 +377,7 @@ Prove that plans, drafts, queue candidates, promotion preview, projection, and c
 - ./dev workflow promote --version v-template apply --preview
 ```
 
-### tasks/prompts/phase-5/5-1-template-reference/task-05-projection-closeout.md
+### workflow/versions/v-template/execution/phase-5/5-1-template-reference/task-05-projection-closeout.md
 
 ```markdown
 # 5-1/task-05 template-execution-contract/projection-closeout
@@ -405,11 +405,11 @@ Prove that plans, drafts, queue candidates, promotion preview, projection, and c
 
 ## Sync Targets
 - `workflow/templates/README.md`
-- `tasks/prompts/README.md`
+- `workflow/versions/v1-mvp/execution/README.md`
 
 ## 风险边界
 - Promotion apply write is blocked for v-template.
-- Preview commands must not write tasks/prompts or progress.json.
+- Preview commands must not write workflow/versions/v-template/execution or progress.json.
 - Closeout cannot claim done without verify pass and checkpoint evidence.
 
 ## 完成标准
@@ -426,14 +426,14 @@ Prove that plans, drafts, queue candidates, promotion preview, projection, and c
 
 | Live label | Copy-ready | Verify-ready |
 |---|---|---|
-| `5-1/task-01` | `tasks/prompts/_shared/copy-ready/phase-5/5-1-task-01.md` | `tasks/prompts/_shared/verify-ready/phase-5/5-1-task-01.md` |
-| `5-1/task-02` | `tasks/prompts/_shared/copy-ready/phase-5/5-1-task-02.md` | `tasks/prompts/_shared/verify-ready/phase-5/5-1-task-02.md` |
-| `5-1/task-03` | `tasks/prompts/_shared/copy-ready/phase-5/5-1-task-03.md` | `tasks/prompts/_shared/verify-ready/phase-5/5-1-task-03.md` |
-| `5-1/task-04` | `tasks/prompts/_shared/copy-ready/phase-5/5-1-task-04.md` | `tasks/prompts/_shared/verify-ready/phase-5/5-1-task-04.md` |
-| `5-1/task-05` | `tasks/prompts/_shared/copy-ready/phase-5/5-1-task-05.md` | `tasks/prompts/_shared/verify-ready/phase-5/5-1-task-05.md` |
+| `5-1/task-01` | `workflow/versions/v-template/execution/_shared/copy-ready/phase-5/5-1-task-01.md` | `workflow/versions/v-template/execution/_shared/verify-ready/phase-5/5-1-task-01.md` |
+| `5-1/task-02` | `workflow/versions/v-template/execution/_shared/copy-ready/phase-5/5-1-task-02.md` | `workflow/versions/v-template/execution/_shared/verify-ready/phase-5/5-1-task-02.md` |
+| `5-1/task-03` | `workflow/versions/v-template/execution/_shared/copy-ready/phase-5/5-1-task-03.md` | `workflow/versions/v-template/execution/_shared/verify-ready/phase-5/5-1-task-03.md` |
+| `5-1/task-04` | `workflow/versions/v-template/execution/_shared/copy-ready/phase-5/5-1-task-04.md` | `workflow/versions/v-template/execution/_shared/verify-ready/phase-5/5-1-task-04.md` |
+| `5-1/task-05` | `workflow/versions/v-template/execution/_shared/copy-ready/phase-5/5-1-task-05.md` | `workflow/versions/v-template/execution/_shared/verify-ready/phase-5/5-1-task-05.md` |
 
 ## Safety
 
-- This preview does not write `tasks/prompts/**`.
-- This preview does not write `tasks/prompts/_shared/progress.json`.
+- This preview does not write `workflow/versions/v-template/execution/**`.
+- This preview does not write `workflow/versions/v1-mvp/execution/_shared/progress.json`.
 - A future apply step must run separately after v1 is complete and gates pass.

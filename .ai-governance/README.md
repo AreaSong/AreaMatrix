@@ -12,7 +12,7 @@
 
 1. 项目语义先改这里，再同步到 `.codex/` 或其他工具适配层。
 2. `.codex/` 只承载 Codex 运行材料，不作为业务规则权威来源。
-3. `tasks/prompts/` 是任务执行边界，不替代长期治理规则。
+3. `workflow/versions/<version>/execution/` 是任务执行边界，不替代长期治理规则。
 4. 高风险边界必须显式记录，不能只靠临场判断。
 5. 企业治理规则先落到 `CODE_REVIEW.md`、`SECURITY.md` 和 `docs/development/`，再同步到 `.codex/` skills 或 prompt 门禁。
 
@@ -23,12 +23,12 @@ AreaMatrix v1 阶段唯一 live execution 主线是：
 ```text
 AGENTS.md / .ai-governance
 -> workflow/ planning gate
--> tasks/prompts/** live queue
+-> workflow/versions/<version>/execution/** live queue
 -> ./dev / ./task-loop
 -> repo-local skills
 ```
 
-- `workflow/` 只负责讨论、规划、预览和 promotion gate；通过明确 apply 前不得直接写入 live `tasks/prompts/**`。
+- `workflow/` 负责讨论、规划、预览、promotion gate 和版本内 execution；通过明确 apply 前不得直接写入 live `workflow/versions/<version>/execution/**`。
 - `tasks/backlog/**` 只记录规划、评估和治理排期，不进入 `./task-loop`，不写 `progress.json`，不替代 live queue。
 - Codex Automations、Cloud、Worktrees、Vibe-Skills、SDK、app-server、remote-control 只能作为候选能力或未来评估项；v1 live queue 阶段不得接管主线。
 - 不创建第二套 runner、progress、queue 或 promotion 机制；任何外部能力接入必须先通过 [外部能力接入门禁](workflows/external-capability-admission.md)，证明不会改变上述主线和源事实层级。
@@ -45,7 +45,7 @@ AGENTS.md / .ai-governance
 
 - 根规则：[../AGENTS.md](../AGENTS.md)
 - Codex 材料：[../.codex/README.md](../.codex/README.md)
-- Prompt 任务库：[../tasks/prompts/README.md](../tasks/prompts/README.md)
+- v1 历史执行队列：[../workflow/versions/v1-mvp/execution/README.md](../workflow/versions/v1-mvp/execution/README.md)
 - 代码评审：[../CODE_REVIEW.md](../CODE_REVIEW.md)
 - 安全政策：[../SECURITY.md](../SECURITY.md)
 - CI 治理：[../docs/development/ci-governance.md](../docs/development/ci-governance.md)

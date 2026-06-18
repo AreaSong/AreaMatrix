@@ -30,7 +30,7 @@
 - 验收失败时，脚本把失败摘要注入下一轮执行，继续修复同一个 task。
 - 失败摘要必须保留功能、验证和工程质量阻塞点；下一轮按“全部全面修复”处理。
 - 只有验收输出 `VERIFY_RESULT: PASS` 后才进入下一个 task。
-- 自动进度统一写入 `tasks/prompts/_shared/progress.json`。
+- 自动进度统一写入 `workflow/versions/v1-mvp/execution/_shared/progress.json`。
 - 默认 `RISK_GATE=mission-critical` 且 `RISK_POLICY=pause`；确认要全静默时必须显式设置 `RISK_POLICY=allow`。
 - `RISK_POLICY=allow` 会向 copy prompt 注入用户已授权静默执行的上下文；High / Mission-Critical task 仍需记录风险、验证和回滚，但不再停下来等人工确认。
 - 需要关机、额度不足或临时收尾时，使用 `./task-loop drain` 请求 live runner 跑完当前 task、完成 verify 与 Git checkpoint 后停止；它不得跳过当前 task 的 repair retry、验收或 checkpoint，也不得进入下一个 task。
@@ -70,7 +70,7 @@ Codex subagents 可以用于当前任务内的并行协作，但不能替代 pro
 - `Forbidden Touches`：除非重新确认，否则不得触碰的路径。
 - `Risk Level`：Low / Medium / High / Mission-Critical。
 - `Validation`：任务完成后必须尝试的检查。
-- `Engineering Quality`：由 `tasks/prompts/_shared/engineering-quality-rules.md` 和 `docs/development/coding-standards.md` 共同定义的质量门禁。
+- `Engineering Quality`：由 `workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md` 和 `docs/development/coding-standards.md` 共同定义的质量门禁。
 
 ## 验收规则
 

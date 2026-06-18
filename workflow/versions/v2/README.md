@@ -21,7 +21,7 @@ discussion
 
 The version-local queue starts at `phase-0 / 0-1 / task-01`. Future execution
 mapping is pending and must be configured before promotion preview can target
-`workflow/versions/v2/execution/**`. Historical `tasks/prompts/**` compatibility
+`workflow/versions/v2/execution/**`. Historical `workflow/versions/v2/execution/**` compatibility
 remains until the hard migration is approved.
 
 Current status:

@@ -7,14 +7,14 @@ This directory tracks versioned workflow instances, Stage 1 MVP archives, and fu
 - `v2/` is only a clean placeholder for the next real planning discussion. It must not inherit the historical Stage 2 Experience source docs.
 - `v3/` and `v4/` are intentionally absent until those real future versions are created.
 - `source-docs-guide.md` explains how to read the archived Stage 1 MVP source docs, including page specs, Core capability specs, and control maps.
-- `v-template/` is the managed template reference instance. It validates the reusable artifact chain and must never promote into `tasks/prompts/**`.
+- `v-template/` is the managed template reference instance. It validates the reusable artifact chain and must never promote into `workflow/versions/v-template/execution/**`.
 - Future versions should be created or refreshed only after the relevant discussion gate is ready.
 - New versions use version-local numbering (`phase-0 / 0-1 / task-01`) and leave live mapping pending until explicitly configured.
 
-Current live state remains:
+Current v1 execution state:
 
-- prompts: `tasks/prompts/**`
-- progress: `tasks/prompts/_shared/progress.json`
+- prompts: `workflow/versions/v1-mvp/execution/**`
+- progress: `workflow/versions/v1-mvp/execution/_shared/progress.json`
 - runner: `./task-loop`
 - console: `./dev`
 

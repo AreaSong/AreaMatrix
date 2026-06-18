@@ -95,7 +95,7 @@ def migrate_file(root: Path, path: Path) -> int:
 
 
 def targets(root: Path) -> list[Path]:
-    files = [root / "tasks/prompts/_shared/progress.json", root / ".codex/task-loop-runs/index.json"]
+    files = [root / "workflow/versions/v1-mvp/execution/_shared/progress.json", root / ".codex/task-loop-runs/index.json"]
     files += sorted((root / ".codex/task-loop-runs").glob("*/summary.json"))
     return [path for path in files if path.is_file()]
 
@@ -117,4 +117,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

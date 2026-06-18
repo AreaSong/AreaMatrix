@@ -13,7 +13,7 @@ use rusqlite::Connection;
 use serde_json::Value;
 
 const TASK: &str = include_str!(
-    "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-24-c4-05-validation.md"
+    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-24-c4-05-validation.md"
 );
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const UDL: &str = include_str!("../area_matrix.udl");

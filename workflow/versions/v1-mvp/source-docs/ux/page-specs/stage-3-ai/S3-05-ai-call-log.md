@@ -192,7 +192,7 @@ Delete selected 确认：
 
 ## 来源
 
-- 组合来源：[AI 调用日志任务](../../../../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-60-s3-05-c3-05-ai-call-log.md)、[Stage 3 隐私与可控](../../../../../../../docs/roadmap/milestones.md#隐私与可控)。
+- 组合来源：[AI 调用日志任务](../../../../execution/phase-4/4-2-stage3-ai/task-60-s3-05-c3-05-ai-call-log.md)、[Stage 3 隐私与可控](../../../../../../../docs/roadmap/milestones.md#隐私与可控)。
 - 依据现有文档推导：日志脱敏、90 天默认本地保留、隐私跳过记录字段和导出确认规则，遵守项目隐私不变量。
 
 ---

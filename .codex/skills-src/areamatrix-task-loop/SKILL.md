@@ -14,8 +14,8 @@ Trigger it for questions about `./task-loop`, `./dev` runner actions, copy-ready
 1. [AGENTS.md](../../../AGENTS.md)
 2. [.ai-governance/workflows/prompt-task-runtime.md](../../../.ai-governance/workflows/prompt-task-runtime.md)
 3. [scripts/task_loop.md](../../../scripts/task_loop.md)
-4. [tasks/prompts/README.md](../../../tasks/prompts/README.md)
-5. [tasks/prompts/_shared/engineering-quality-rules.md](../../../tasks/prompts/_shared/engineering-quality-rules.md)
+4. [workflow/versions/v1-mvp/execution/README.md](../../../workflow/versions/v1-mvp/execution/README.md)
+5. [workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md](../../../workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md)
 
 ## References
 
@@ -25,13 +25,13 @@ Trigger it for questions about `./task-loop`, `./dev` runner actions, copy-ready
 - [../../references/codex-automations-cloud-worktrees-gate.md](../../references/codex-automations-cloud-worktrees-gate.md): why Automations / Cloud / Worktrees must not become a second task-loop runner or state surface.
 - [../areamatrix-git-checkpoint/SKILL.md](../areamatrix-git-checkpoint/SKILL.md): Git checkpoint policy for PASS tasks.
 - [../areamatrix-validation-driver/SKILL.md](../areamatrix-validation-driver/SKILL.md): choose checks when runner or prompt infrastructure changed.
-- [../areamatrix-workflow-planning/SKILL.md](../areamatrix-workflow-planning/SKILL.md): keep future v* planning outside the live queue until promoted.
+- [../areamatrix-workflow-planning/SKILL.md](../areamatrix-workflow-planning/SKILL.md): keep future v* planning outside version execution until promoted.
 
 ## Workflow
 
-1. Check health with `python3 tasks/prompts/_shared/prompt_pipeline.py doctor`.
+1. Check health with `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor`.
 2. Check task-loop health with `./task-loop check` when runner behavior changed.
-3. Check current queue state with `python3 tasks/prompts/_shared/prompt_pipeline.py status`.
+3. Check current queue state with `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py status`.
 4. Check task-loop state with `./task-loop status`.
 5. Load the Git checkpoint skill before changing commit or push behavior.
 6. Load the runbook before recommending a live command.
@@ -46,4 +46,4 @@ Trigger it for questions about `./task-loop`, `./dev` runner actions, copy-ready
 - Do not delete progress or logs unless the user explicitly wants a fresh run.
 - Do not present dry-run success as real task completion.
 - Do not continue after a Git checkpoint failure; fix or recover Git state first.
-- Do not treat `workflow/versions/**`, backlog prompts, Codex Automations, Cloud, Worktrees, or Vibe-Skills as live queue inputs unless they have been explicitly promoted into `tasks/prompts/**`.
+- Do not treat backlog prompts, Codex Automations, Cloud, Worktrees, or Vibe-Skills as live queue inputs unless they have been explicitly promoted into `workflow/versions/<version>/execution/**`.

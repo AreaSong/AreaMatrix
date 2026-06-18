@@ -17,7 +17,7 @@ use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
 
 const TASK: &str =
-    include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-29-c3-06-validation.md");
+    include_str!("../../workflow/versions/v1-mvp/execution/phase-4/4-2-stage3-ai/task-29-c3-06-validation.md");
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");

@@ -18,9 +18,9 @@ v2_planning_gate:
   queue_candidates: allowed
   promotion_to_tasks_prompts: blocked
 depends_on: []
-live_queue: tasks/prompts
-live_task_count_source: tasks/prompts/_shared/prompt_pipeline.py doctor
-progress_source: tasks/prompts/_shared/progress.json
+live_queue: workflow/versions/v1-mvp/execution
+live_task_count_source: workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
+progress_source: workflow/versions/v1-mvp/execution/_shared/progress.json
 runner: ./task-loop
 console: ./dev
 middle_layers: skipped
@@ -33,6 +33,6 @@ gate: none
 promotion: already-live
 archive_policy: archived-after-complete
 archive_evidence_after_complete:
-  - tasks/prompts/_shared/progress.json
+  - workflow/versions/v1-mvp/execution/_shared/progress.json
   - .codex/task-loop-runs
-  - tasks/prompts/_shared/manifests
+  - workflow/versions/v1-mvp/execution/_shared/manifests

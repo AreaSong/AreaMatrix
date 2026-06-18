@@ -162,7 +162,7 @@ Regenerate 确认 sheet：
 
 ## 来源
 
-- 组合来源：[AI 摘要任务](../../../../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-61-s3-06-c3-06-ai-summary.md)、[Stage 1 Detail Note 规格](../../../../../../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-14-detail-note.md)。
+- 组合来源：[AI 摘要任务](../../../../execution/phase-4/4-2-stage3-ai/task-61-s3-06-c3-06-ai-summary.md)、[Stage 1 Detail Note 规格](../../../../../../../workflow/versions/v1-mvp/source-docs/ux/page-specs/stage-1-mvp/S1-14-detail-note.md)。
 - 依据现有文档推导：摘要草稿、保存确认、清除摘要和隐私跳过追溯规则，遵守 AI 派生内容不覆盖用户 Note 或原文件的边界。
 
 ---

@@ -109,4 +109,4 @@ Control map 负责把页面、Core 能力、API、DB、文件系统、错误态�
 - [Workflow versions](README.md)
 - [Workflow overview](../README.md)
 - [Docs navigation](../../docs/README.md)
-- [Prompt task library](../../tasks/prompts/README.md)
+- [Prompt execution library](./v1-mvp/execution/README.md)

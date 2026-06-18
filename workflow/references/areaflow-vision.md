@@ -40,7 +40,7 @@
 ```
 docs 讨论 → middle-layer 账本 → changes 账本 → plans 整体提示词
 → drafts 小颗粒度提示词 → queue candidate → promotion preview
-→ tasks/prompts → task-loop 执行验收闭环
+→ workflow/versions/<version>/execution → task-loop 执行验收闭环
 ```
 
 ### 1.2 各环节说明
@@ -54,7 +54,7 @@ docs 讨论 → middle-layer 账本 → changes 账本 → plans 整体提示词
 | **drafts 小颗粒度提示词** | 精细化拆分，防止上下文过大导致幻觉 | 包含 Expected Paths、Verify Commands、禁止越界声明 |
 | **queue candidate** | 版本化的候选队列（phase/task 编号） | — |
 | **promotion preview** | dry-run 映射、撞名检查、scope 检查 | preview fail 退回 drafts 修正 |
-| **tasks/prompts** | 真实 live 任务库（显式确认后才写入） | — |
+| **workflow/versions/<version>/execution** | 真实版本内执行队列（显式确认后才写入） | — |
 | **task-loop** | execute → verify → repair → checkpoint 闭环 | verify fail 在当前会话内修复 |
 
 ### 1.3 前端任务的特殊路径
@@ -1285,7 +1285,7 @@ flowchart TD
   G["queue candidates<br/>候选队列<br/>version-local phase/task 编号"]
   H["promotion preview<br/>推广预览<br/>dry-run 映射 / 撞名检查 / scope 检查"]
   I{"explicit promote<br/>显式推广"}
-  J["tasks/prompts<br/>真实 live 任务库"]
+  J["workflow/versions/<version>/execution<br/>真实版本内执行队列"]
   K["task-loop<br/>execute / verify / repair / checkpoint"]
   L["workflow result projection<br/>结果回写<br/>change/plan/draft 完成状态投影"]
 

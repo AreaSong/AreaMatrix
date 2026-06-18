@@ -6,13 +6,13 @@ Decision date: 2026-06-17 CST
 
 ## Decision Summary
 
-- Technical queue: complete. `tasks/prompts/_shared/progress.json` 记录 `637/637` tasks completed，`./task-loop status` 无 live lock、无 stale in-progress。
+- Technical queue: complete. `workflow/versions/v1-mvp/execution/_shared/progress.json` 记录 `637/637` tasks completed，`./task-loop status` 无 live lock、无 stale in-progress。
 - Formal alpha: blocked. `0.1.0-local-qa` 只允许内部 QA，`v0.1.0-unnotarized-preview.2` 只允许可信测试者 prerelease。
 - Release blockers: deferred for the formal distribution track, not closed. 它们继续由 `workflow/versions/v1-mvp/evidence/release-checklist.md` 管理。
 - Checkpoint gaps: 35 个 historical checkpoint gaps 已接受为 closeout exceptions；不得回填或伪造 `progress.json` / Git history。
 - Release-gate entry: `3-1/task-05` 作为 release-gate review item 处置，不补造 task-loop verify evidence。
-- Workflow state: `v1-mvp` 已切换为 `lifecycle_status: archived`。工具链仍要求后续版本使用 explicit approval 和 live mapping，不能自动写入 `tasks/prompts/**`。
-- v2 planning: allowed for discussion, middle-layer, changes, plans, drafts, and queue candidates. Promotion / apply into `tasks/prompts/**` remains blocked until explicit approval and live mapping are configured.
+- Workflow state: `v1-mvp` 已切换为 `lifecycle_status: archived`。工具链仍要求后续版本使用 explicit approval 和 live mapping，不能自动写入 `workflow/versions/v1-mvp/execution/**`。
+- v2 planning: allowed for discussion, middle-layer, changes, plans, drafts, and queue candidates. Promotion / apply into `workflow/versions/v1-mvp/execution/**` remains blocked until explicit approval and live mapping are configured.
 
 ## What This Is Not
 
@@ -51,8 +51,8 @@ Decision date: 2026-06-17 CST
 
 ## Still Forbidden
 
-- Do not write new v2 work into `tasks/prompts/**` without explicit approval and live mapping.
-- Do not regenerate, rename, move, or archive the live `tasks/prompts/**` queue as part of this decision pass.
+- Do not write new v2 work into `workflow/versions/v1-mvp/execution/**` without explicit approval and live mapping.
+- Do not regenerate, rename, move, or archive the `workflow/versions/v1-mvp/execution/**` queue as part of this decision pass.
 - Do not mark formal alpha released.
 - Do not call ad-hoc signed, local QA, unnotarized preview, or same-machine smoke evidence equivalent to notarized distribution evidence.
 - Do not rewrite `progress.json` or task-loop evidence to hide checkpoint gaps.

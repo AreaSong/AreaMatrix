@@ -8,7 +8,7 @@ Standard location:
 workflow/versions/<version>/execution/
 ```
 
-Initial hard migration should preserve the historical `tasks/prompts/**` internal
+Initial hard migration should preserve the historical `workflow/versions/<version>/execution/**` internal
 shape inside this directory before any deeper naming cleanup:
 
 ```text

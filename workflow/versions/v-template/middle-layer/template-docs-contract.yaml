@@ -63,4 +63,4 @@ slice_plan:
 risk_boundaries:
   - The template reference does not define product behavior.
   - Exact Docs drift must block downstream template gates.
-  - The template reference must not write live tasks/prompts.
+  - The template reference must not write live workflow/versions/v-template/execution.

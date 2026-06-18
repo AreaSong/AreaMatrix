@@ -1,6 +1,6 @@
 # AreaMatrix Workflow Architecture
 
-本文描述 AreaMatrix workflow 的概念架构。它不是产品文档，不定义产品行为；产品源事实仍然是 `docs/`。标准化后，版本内执行材料应归属 `workflow/versions/<version>/execution/`；当前 `tasks/prompts/**` 仍是 Stage 1 历史执行队列和兼容运行入口，等待硬迁移。
+本文描述 AreaMatrix workflow 的概念架构。它不是产品文档，不定义产品行为；产品源事实仍然是 `docs/`。标准化后，版本内执行材料归属 `workflow/versions/<version>/execution/`；Stage 1 历史执行队列已硬迁移到 `workflow/versions/v1-mvp/execution/**`。
 
 workflow 的职责是把已经讨论清楚的产品意图，稳定地转成可追踪、可检查、可推广、可验收的小任务。
 
@@ -26,7 +26,7 @@ AreaMatrix workflow 分成三种视角：
 | L4 | Gate Layer | 什么时候允许进入下一层？ | discussion gate、plan doctor、draft doctor、promotion approval |
 | L3 | Trace Layer | 每个产物从哪里来，到哪里去？ | docs -> change -> plan -> draft -> queue -> task -> result 的追踪关系 |
 | L2 | Schema Layer | 每类产物长什么样？ | discussion、change、plan、draft、queue、promotion、runtime 的字段契约 |
-| L1 | Artifact Layer | 东西实际落在哪里？ | `docs/`、`workflow/versions/v*/`、`workflow/versions/v*/execution/`、历史 `tasks/prompts/**`、progress、logs、checkpoints |
+| L1 | Artifact Layer | 东西实际落在哪里？ | `docs/`、`workflow/versions/v*/`、`workflow/versions/v*/execution/`、progress、logs、checkpoints |
 
 ## Layer Responsibilities
 
@@ -127,7 +127,7 @@ version init
 - `drafts/` 和 `queue/` 仍是候选材料，不是 live execution scope。
 - `promotion/` 先 preview，再 approval，最后 explicit promote。
 - `execution/` 是 task-loop 可消费的版本内真实执行层。
-- `tasks/prompts/**` 是当前历史兼容执行入口；硬迁移前不得移动或重写。
+- `workflow/versions/v1-mvp/execution/**` 是 v1 历史执行队列；不得为了整理重写历史 progress、logs 或 checkpoint evidence。
 - `result projection` 和 `closeout/audit` 用于把执行结果回写到 workflow 视角。
 
 ## Stability Criteria

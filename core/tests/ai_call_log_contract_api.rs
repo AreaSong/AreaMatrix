@@ -6,7 +6,7 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 
 const TASK: &str =
-    include_str!("../../tasks/prompts/phase-4/4-2-stage3-ai/task-21-c3-05-contract-api.md");
+    include_str!("../../workflow/versions/v1-mvp/execution/phase-4/4-2-stage3-ai/task-21-c3-05-contract-api.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const DATA_MODEL: &str = include_str!("../../docs/architecture/data-model.md");

@@ -109,7 +109,7 @@ Core `CoreError` variant 覆盖状态：
 必须运行：
 
 ```bash
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 cargo test --workspace recovery
 cargo test --workspace error_mapping
 ```

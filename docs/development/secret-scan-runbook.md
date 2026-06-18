@@ -13,7 +13,7 @@
 
 ```bash
 ./dev check secrets
-rg '/Users/[A-Za-z0-9._-]+/' tasks/prompts/_shared/progress.json .codex/task-loop-runs || true
+rg '/Users/[A-Za-z0-9._-]+/' workflow/versions/v1-mvp/execution/_shared/progress.json .codex/task-loop-runs || true
 ```
 
 工作区干净且没有领先 `origin/main` 的 commit 时，会输出 `nothing to scan` 并 **PASS**。

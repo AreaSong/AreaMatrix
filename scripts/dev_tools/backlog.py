@@ -12,7 +12,7 @@ from .common import ToolError
 
 
 BACKLOG_ROOT = Path("tasks/backlog/prompts")
-LIVE_QUEUE_ROOT = Path("tasks/prompts")
+LIVE_EXECUTION_ROOT = Path("workflow/versions/v1-mvp/execution")
 PROMPT_MODES = {"copy": "copy-ready", "verify": "verify-ready"}
 PROMPT_LINK_PATTERN = re.compile(r"`((?:copy-ready|verify-ready)/[^`]+\.md)`")
 

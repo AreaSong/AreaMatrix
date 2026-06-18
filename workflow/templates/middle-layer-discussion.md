@@ -5,7 +5,7 @@
 - Discussion feeds `changes/*.yaml`.
 - Changes feed docs-change ledger plans.
 - Plans and drafts keep docs/API/UDL/task sync targets explicit.
-- Queue candidates and promotion preview must not write live `tasks/prompts/**`.
+- Queue candidates and promotion preview must not write `workflow/versions/<version>/execution/**`.
 
 ## Required Sync Targets
 

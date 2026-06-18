@@ -17,7 +17,7 @@ Trigger it for new `v*` versions, discussion gate decisions, workflow templates,
 4. [workflow/README.md](../../../workflow/README.md)
 5. [workflow/templates/README.md](../../../workflow/templates/README.md)
 6. [tasks/backlog/README.md](../../../tasks/backlog/README.md) when backlog prompt packages are involved.
-7. [tasks/prompts/README.md](../../../tasks/prompts/README.md) when prompt drafts or live queue boundaries are involved.
+7. [workflow/versions/v1-mvp/execution/README.md](../../../workflow/versions/v1-mvp/execution/README.md) when prompt drafts or live execution boundaries are involved.
 
 ## References
 
@@ -26,7 +26,7 @@ Trigger it for new `v*` versions, discussion gate decisions, workflow templates,
 - [../../references/planning-handoff-runbook.md](../../references/planning-handoff-runbook.md): handoff-safe planning fields, copy-ready / verify-ready split, and backlog boundary.
 - [../../references/codex-automations-cloud-worktrees-gate.md](../../references/codex-automations-cloud-worktrees-gate.md): Automations / Cloud / Worktrees trigger conditions, forbidden writes, owners, and validation.
 - [../areamatrix-doc-sync/SKILL.md](../areamatrix-doc-sync/SKILL.md): source-of-truth alignment for docs and planning artifacts.
-- [../areamatrix-task-loop/SKILL.md](../areamatrix-task-loop/SKILL.md): live execution begins only after approved promotion into `tasks/prompts/**`.
+- [../areamatrix-task-loop/SKILL.md](../areamatrix-task-loop/SKILL.md): live execution begins only after approved promotion into `workflow/versions/<version>/execution/**`.
 
 ## Workflow
 
@@ -42,10 +42,10 @@ Trigger it for new `v*` versions, discussion gate decisions, workflow templates,
 
 ## Guardrails
 
-- Do not write `tasks/prompts/**` from discussion, plan, queue, or promotion preview work.
+- Do not write `workflow/versions/<version>/execution/**` from discussion, plan, queue, or promotion preview work.
 - Do not treat promotion preview as live promote/apply.
 - Do not use workflow docs as the product source of truth; product behavior remains in `docs/`.
-- Do not let backlog prompt packages write live progress, checkpoint state, run summaries, or `tasks/prompts/_shared/progress.json`.
+- Do not let backlog prompt packages write live progress, checkpoint state, run summaries, or execution `progress.json`.
 - Do not collapse copy-ready and verify-ready into one prompt; implementation and acceptance evidence must remain separable.
 - Do not bypass the discussion gate for new versions just because a change YAML can be written.
 - Keep this skill focused on planning and gates; use `areamatrix-doc-sync` for drift checks.

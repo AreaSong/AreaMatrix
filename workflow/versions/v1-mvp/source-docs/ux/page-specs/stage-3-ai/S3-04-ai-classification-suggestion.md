@@ -154,7 +154,7 @@ Stage 1/2 的规则分类可能无法处理模糊文件。Stage 3 可以基于�
 
 ## 来源
 
-- 组合来源：[AI 分类建议任务](../../../../../../../tasks/prompts/phase-4/4-2-stage3-ai/task-56-s3-04-c3-04-ai-classification-suggestion.md)、[分类器调教](../../../../../../../docs/ux/classifier-calibration.md)。
+- 组合来源：[AI 分类建议任务](../../../../execution/phase-4/4-2-stage3-ai/task-56-s3-04-c3-04-ai-classification-suggestion.md)、[分类器调教](../../../../../../../docs/ux/classifier-calibration.md)。
 - 依据现有文档推导：AI 建议确认、目标路径预览、移动确认、隐私跳过追溯和失败恢复规则，遵守“用户确认前不改分类/不移动文件”的高风险边界。
 
 ---

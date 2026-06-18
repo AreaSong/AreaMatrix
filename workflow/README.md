@@ -2,22 +2,23 @@
 
 `workflow/` tracks large feature, version, refactor, and optimization lifecycles.
 The target standard keeps version planning and version execution together under
-`workflow/versions/<version>/`. The historical Stage 1 execution queue still
-lives in `tasks/prompts/**` until an explicit hard migration updates scripts and
-validation.
+`workflow/versions/<version>/`. The historical Stage 1 execution queue has been
+hard-migrated to `workflow/versions/v1-mvp/execution/**`.
 
 ## Layers
 
 - `workflow/`: requirement flow, version planning, middle-layer ledgers, docs-change ledger, drafts, queue candidates, execution evidence, projection, and archive policy.
 - `workflow/versions/<version>/execution/`: target standard location for approved copy-ready / verify-ready task execution materials.
-- `tasks/prompts/**`: historical Stage 1 executable queue and current compatibility runtime until hard migration.
+- `workflow/versions/v1-mvp/execution/**`: Stage 1 historical execution queue and current v1 task-loop runtime.
 - `./task-loop`: runner that executes approved tasks; it does not make requirement decisions.
 
 For the conceptual architecture behind these boundaries, see
 [`architecture.md`](architecture.md).
 For the detailed docs-to-task-loop execution flow, see
 [`pipeline.md`](pipeline.md). For the execution layer contract, see
-[`execution.md`](execution.md).
+[`execution.md`](execution.md). For the hard migration record from historical
+`tasks/prompts/**` into version-local execution, see
+[`references/execution-hard-migration-plan.md`](references/execution-hard-migration-plan.md).
 
 ## Standard Flow
 
@@ -57,7 +58,7 @@ Create a new version skeleton with:
 ```
 
 Each v* has its own version-local queue numbering, starting at
-`phase-0 / 0-1 / task-01`. Live `tasks/prompts/**` labels remain globally unique;
+`phase-0 / 0-1 / task-01`. Execution labels remain version-local;
 new versions keep `promotion_preview.live_mapping: pending` until a later
 explicit mapping step.
 
@@ -70,7 +71,7 @@ Check the managed template reference with:
 `v-template` is only the golden reference for templates and doctors. It may show
 future live paths in promotion preview, but those paths are not written unless a
 later explicit apply gate passes; `v-template` itself can never apply to live
-`tasks/prompts/**`.
+`workflow/versions/v-template/execution/**`.
 
 Large features and versioned work go through `workflow` first. Small, already
 clear bug fixes may use the future lightweight `tasks/` structure or a focused
@@ -79,6 +80,4 @@ local task without creating a full workflow version.
 Promotion preview maps semantic workflow tasks to future live task labels without
 writing execution files. Real promotion into `workflow/versions/<version>/execution/**`
 is a later explicit step and remains blocked until approval artifacts and live
-mapping are configured, even after prerequisite versions are archived. During the
-transition, scripts may still target `tasks/prompts/**`; those paths must not be
-moved until the hard migration plan is approved and verified.
+mapping are configured, even after prerequisite versions are archived.

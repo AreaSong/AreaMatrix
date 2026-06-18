@@ -58,7 +58,7 @@ Prove that template workflow artifacts keep Exact Docs, discussion decisions, an
 
 ## Risk Boundaries
 - Does not define product behavior.
-- Does not write live tasks/prompts.
+- Does not write live workflow/versions/v-template/execution.
 - Docs drift must block downstream template gates.
 
 ## Task Split
@@ -70,4 +70,4 @@ Prove that template workflow artifacts keep Exact Docs, discussion decisions, an
 - Status: `ready`.
 - Kind: queue-candidate review only.
 - Live queue: blocked while `v1-mvp` is `live-running`.
-- Promotion: explicit only; this plan does not write `tasks/prompts/**`.
+- Promotion: explicit only; this plan does not write `workflow/versions/v-template/execution/**`.

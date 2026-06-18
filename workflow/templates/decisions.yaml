@@ -16,7 +16,7 @@ blockers:
     status: open
     summary: Discussion has not approved changes generation yet.
 risk_boundaries:
-  - Do not write live tasks/prompts from discussion.
+  - Do not write live workflow/versions/<version>/execution from discussion.
 next_layers:
   changes: blocked
   plans: blocked

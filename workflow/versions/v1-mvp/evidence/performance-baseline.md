@@ -49,7 +49,7 @@ release checklist 仍需继续阻断未完成的手工恢复冒烟、Developer I
 
 | 范围 | 命令或入口 |
 |---|---|
-| Prompt doctor | `python3 tasks/prompts/_shared/prompt_pipeline.py doctor` |
+| Prompt doctor | `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor` |
 | Manifest Rust bench 编译 | `cargo bench --manifest-path core/Cargo.toml --workspace --no-run`；必须出现 `Executable benches/stage1_hot_paths.rs` |
 | Rust Stage 1 hot path bench | `cargo test --manifest-path core/Cargo.toml --release --bench stage1_hot_paths -- --ignored --nocapture` |
 | Rust Stage 1 release perf | `cargo test --manifest-path core/Cargo.toml --release --test stage1_performance_baseline -- --ignored --test-threads=1 --nocapture` |

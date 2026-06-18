@@ -20,7 +20,7 @@
 
 ## Non-goals
 
-- Do not modify live `tasks/prompts/**` during discussion.
+- Do not modify `workflow/versions/v2/execution/**` during discussion.
 - Do not generate copy-ready / verify-ready prompts before decisions are approved.
 - Do not treat `workflow/versions/v1-mvp/source-docs/stage-*` historical specs as current v2 requirements.
 - Do not close Developer ID, notarization, stapler, clean-Mac first launch, iCloud placeholder M-02, or formal `v0.1.0` tag blockers in v2 planning.

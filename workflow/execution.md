@@ -22,13 +22,13 @@ baseline
 -> closeout
 ```
 
-在 Stage 1 历史实现中，执行层内容放在根目录 `tasks/prompts/**`。标准化后，版本级执行材料应归属到：
+在 Stage 1 历史实现中，执行层内容曾放在根目录 `tasks/prompts/**`。标准化后，版本级执行材料归属到：
 
 ```text
 workflow/versions/<version>/execution/
 ```
 
-当前仓库在脚本迁移完成前仍保留 `tasks/prompts/**` 作为历史 live queue 和兼容运行入口；不得在没有硬迁移计划和验证的情况下移动、重写或清空历史队列。
+当前仓库已经把 v1 历史执行队列硬迁移到 `workflow/versions/v1-mvp/execution/**`。`tasks/prompts/**` 不再作为 runtime 兼容入口存在；历史引用只允许保留在明确归档或迁移记录语境中。
 
 ## Responsibilities
 
@@ -50,7 +50,7 @@ workflow/versions/<version>/execution/
 
 ## Standard Shape
 
-第一轮硬迁移应优先保留现有 `tasks/prompts/**` 内部结构，降低脚本迁移风险：
+第一轮硬迁移保留了原 Stage 1 队列内部结构，降低脚本迁移风险：
 
 ```text
 workflow/versions/<version>/execution/
@@ -62,7 +62,7 @@ workflow/versions/<version>/execution/
   phase-4/
 ```
 
-迁移完成并验证稳定后，可以在 execution 内进一步标准化运行材料：
+后续如果需要进一步收紧 execution，可以在新版本内标准化运行材料：
 
 ```text
 workflow/versions/<version>/execution/
@@ -138,14 +138,19 @@ projection 再把这些结果投影回 change、plan、draft、queue 和 promoti
 
 无法证明通过时，closeout 必须保持 blocked、partial 或 risk-accepted，而不是手写 done。
 
-## Current Migration Boundary
+## Current Migration State
 
-当前文档只定义目标标准，不执行硬迁移。
+当前文档定义已经启用的 execution 标准。v1 历史队列位于：
 
-硬迁移必须另行计划，并至少覆盖：
+```text
+workflow/versions/v1-mvp/execution/
+```
 
-- `tasks/prompts/**` 到 `workflow/versions/<version>/execution/**` 的路径映射。
-- `prompt_pipeline.py`、`./task-loop`、`./dev workflow`、self-check、governance check 的路径更新。
-- 历史 progress、logs、checkpoint、run summary 的证据归属。
-- README、workflow docs、governance docs、repo-local skills 的口径同步。
-- 回滚方式和验证命令。
+脚本硬迁移方案与执行记录见 [`references/execution-hard-migration-plan.md`](references/execution-hard-migration-plan.md)。
+
+当前 runtime 要求：
+
+- `prompt_pipeline.py`、`./task-loop`、`./dev workflow`、self-check 和 governance check 默认读取 version-local execution 路径。
+- v1 `progress.json` 归属于 `workflow/versions/v1-mvp/execution/_shared/progress.json`。
+- README、workflow docs、governance docs 和 repo-local skills 必须把 `workflow/versions/<version>/execution/**` 作为执行层口径。
+- `tasks/prompts/**` 不得作为兼容路径、fallback 路径或第二套 live queue 恢复。

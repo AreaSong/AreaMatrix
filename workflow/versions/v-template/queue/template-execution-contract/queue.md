@@ -14,6 +14,6 @@
 
 ## Promotion Notes
 
-- Do not write `tasks/prompts/**` in this phase.
+- Do not write `workflow/versions/v-template/execution/**` in this phase.
 - Promotion must be a later explicit command after gates pass.
 - Queue candidates can be reviewed while v1 is still running.

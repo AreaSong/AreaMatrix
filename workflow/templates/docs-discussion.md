@@ -16,7 +16,7 @@
 
 ## Non-goals
 
-- Do not modify live `tasks/prompts/**` during discussion.
+- Do not modify `workflow/versions/<version>/execution/**` during discussion.
 - Do not generate copy-ready / verify-ready prompts before decisions are approved.
 
 ## Acceptance Boundary

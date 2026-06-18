@@ -17,8 +17,8 @@ Trigger it for validation selection, final evidence reports, blocked checks, pro
 4. [CODE_REVIEW.md](../../../CODE_REVIEW.md)
 5. [docs/development/dependency-policy.md](../../../docs/development/dependency-policy.md)
 6. [docs/development/ci-governance.md](../../../docs/development/ci-governance.md)
-7. [tasks/prompts/README.md](../../../tasks/prompts/README.md)
-8. [tasks/prompts/_shared/engineering-quality-rules.md](../../../tasks/prompts/_shared/engineering-quality-rules.md)
+7. [workflow/versions/v1-mvp/execution/README.md](../../../workflow/versions/v1-mvp/execution/README.md)
+8. [workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md](../../../workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md)
 9. The nearest path-local `AGENTS.md` for changed files, when present.
 
 ## References

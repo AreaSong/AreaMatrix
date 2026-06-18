@@ -16,8 +16,8 @@
 
 ## Non-goals
 
-- Do not write `tasks/prompts/**`.
-- Do not write `tasks/prompts/_shared/progress.json`.
+- Do not write `workflow/versions/<version>/execution/**`.
+- Do not write `workflow/versions/v1-mvp/execution/_shared/progress.json`.
 - Do not claim live task-loop execution or checkpoint evidence.
 
 ## Source of Truth
@@ -64,14 +64,14 @@
 
 ```bash
 ./dev workflow doctor
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 ```
 
 ## Rollback / Blocked
 
 - If source paths, owner / landing, exact paths, or validation commands are missing, keep status `blocked`.
 - If promotion approval is missing, leave live mapping pending and do not write live queue files.
-- If a preview artifact is wrong, fix or revert only the workflow/backlog artifact; do not repair by editing `tasks/prompts/**`.
+- If a preview artifact is wrong, fix or revert only the workflow/backlog artifact; do not repair by editing `workflow/versions/<version>/execution/**`.
 
 ## Task Split
 
@@ -79,4 +79,4 @@ python3 tasks/prompts/_shared/prompt_pipeline.py doctor
 
 ## Queue Readiness
 
-- Candidate only; not promoted to `tasks/prompts/**`.
+- Candidate only; not promoted to `workflow/versions/<version>/execution/**`.

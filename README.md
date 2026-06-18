@@ -68,11 +68,11 @@ AreaMatrix keeps source, planning, and local runtime material separate:
 |---|---|---|
 | Product source | `core/`, `apps/`, `docs/` | Rust core, native app surfaces, and authoritative product docs. |
 | Product assets | `assets/brand/` | Canonical brand assets and archived logo explorations. |
-| Planning and governance | `.ai-governance/`, `workflow/`, `tasks/prompts/`, `tasks/backlog/` | AI collaboration rules, version planning gates, the historical executable prompt queue, and backlog material. |
+| Planning and governance | `.ai-governance/`, `workflow/`, `tasks/backlog/` | AI collaboration rules, version planning gates, version-local execution queues, and backlog material. |
 | Codex runtime | `.codex/`, `.agents/skills/`, `dev`, `task-loop`, `scripts/` | Repo-local Codex skills, discovery entrypoints, and task-loop tooling. These are stable tool entrypoints and should not be moved just to reduce visual clutter. |
 | Local generated output | `.build/`, `build/`, `core/target/`, `apps/*/.build`, `apps/**/bin`, `apps/**/obj`, `apps/macos/DerivedData/` | Ignored local build products. They are not part of the source layout. |
 
-Fixed paths such as `.codex/skills-src/`, `.agents/skills/`, `tasks/prompts/`, `workflow/`, `dev`, and `task-loop` are intentionally kept in place because local Codex skills and task-loop scripts rely on them.
+Fixed paths such as `.codex/skills-src/`, `.agents/skills/`, `workflow/`, `dev`, and `task-loop` are intentionally kept in place because local Codex skills and task-loop scripts rely on them. The historical v1 prompt queue now lives under `workflow/versions/v1-mvp/execution/`.
 
 ## Quick links
 

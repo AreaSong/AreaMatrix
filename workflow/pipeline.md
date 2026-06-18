@@ -4,7 +4,7 @@
 
 pipeline 的职责是说明：一个版本或大功能如何从 docs 讨论，逐步进入账本、计划、草稿、候选队列、promotion preview，最后变成版本内 `execution/` 中可由 task-loop 执行和验收的 live 任务。
 
-当前 `tasks/prompts/**` 保存的是已完成的 `v1-mvp` 历史 live queue，也是脚本硬迁移前的兼容运行入口。新版本不得直接在这里续写或重排任务；必须先从 `workflow/versions/v2/discussion/` 这样的版本讨论入口开始，直到 promotion approval 和 explicit promote 通过后，才允许写入版本内 execution 内容。
+当前 `workflow/versions/v1-mvp/execution/**` 保存的是已完成的 `v1-mvp` 历史 live queue。新版本不得直接续写或重排 v1 历史队列；必须先从 `workflow/versions/v2/discussion/` 这样的版本讨论入口开始，直到 promotion approval 和 explicit promote 通过后，才允许写入对应版本的 execution 内容。
 
 ## Pipeline Overview
 
@@ -115,7 +115,7 @@ version init
 
 **Gate**：
 
-- 不写 `tasks/prompts/**`。
+- 不写 `workflow/versions/<version>/execution/**`。
 - 不生成 copy-ready / verify-ready prompts。
 - 不把 workflow 文档当成产品源事实。
 
@@ -221,8 +221,8 @@ version init
 
 **Gate**：
 
-- 不抢 live task label。
-- 不写 `tasks/prompts/**`。
+- 不抢 execution task label。
+- 不写 `workflow/versions/<version>/execution/**`。
 - 每个 plan item 都能追踪到 change。
 
 **Failure return**：回到 plans。
@@ -301,9 +301,9 @@ version init
 
 **Gate**：
 
-- version-local 编号不等于 live label。
+- version-local 编号不等于 approved execution label。
 - live mapping 仍可保持 pending。
-- 不能写 `tasks/prompts/**`。
+- 不能写 `workflow/versions/<version>/execution/**`。
 
 **Failure return**：回到 queue candidates；如果任务边界错误，回到 drafts。
 
@@ -330,7 +330,7 @@ version init
 - queue candidates。
 - execution task label policy。
 - existing execution 状态。
-- hard migration 完成前的历史 `tasks/prompts/**` 状态。
+- `workflow/versions/v1-mvp/execution/**` 历史基线状态。
 
 **Output**：
 
@@ -345,7 +345,7 @@ version init
 - preview 不写 live files。
 - preview 不修改 progress。
 - preview pass 不等于 promote。
-- v1 已完成并归档时，preview 仍只能把 `tasks/prompts/**` 当历史基线和兼容 collision target；不能把历史队列重新解释成当前 v2 范围。
+- v1 已完成并归档时，preview 只能把 `workflow/versions/v1-mvp/execution/**` 当历史基线；不能把历史队列重新解释成当前 v2 范围。
 
 **Failure return**：回到 drafts 或 queue candidates，取决于失败来源。
 

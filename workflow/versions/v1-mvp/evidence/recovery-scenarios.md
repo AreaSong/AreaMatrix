@@ -231,7 +231,7 @@ CoreBridge 映射测试是本清单的输入证据，不属于本任务回滚范
 必须运行：
 
 ```bash
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 cargo test --workspace recovery
 cargo test --workspace transactional_import
 xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO

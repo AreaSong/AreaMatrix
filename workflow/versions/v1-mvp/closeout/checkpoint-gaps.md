@@ -1,6 +1,6 @@
 # v1-mvp Checkpoint Gap Review
 
-本文件记录 `tasks/prompts/_shared/progress.json` 中已完成但缺少 committed Git checkpoint metadata 的条目。
+本文件记录 `workflow/versions/v1-mvp/execution/_shared/progress.json` 中已完成但缺少 committed Git checkpoint metadata 的条目。
 它只做收口审计，不修改 `progress.json`、task-loop logs、run summaries 或 Git 历史。
 
 ## Summary

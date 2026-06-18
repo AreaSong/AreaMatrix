@@ -1,10 +1,10 @@
 # Promotion Preview Template
 
-Promotion preview maps semantic workflow tasks to future live `tasks/prompts/**`
+Promotion preview maps semantic workflow tasks to future `workflow/versions/<version>/execution/**`
 labels without writing the live queue.
 
 - Mode: preview only
-- Target queue: `tasks/prompts`
+- Target queue: `workflow/versions/<version>/execution`
 - Version-local label example: `phase-0 / 0-1 / task-01`
 - Live mapping: pending until explicitly configured
 - Future live label example after mapping: `v*-feature-id/docs-contract` -> `5-1/task-01`

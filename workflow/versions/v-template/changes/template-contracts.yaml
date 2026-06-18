@@ -53,7 +53,7 @@ features:
       level: Low
       boundaries:
         - Does not define product behavior.
-        - Does not write live tasks/prompts.
+        - Does not write live workflow/versions/v-template/execution.
         - Docs drift must block downstream template gates.
     task_split:
       - id: docs-baseline
@@ -75,7 +75,7 @@ features:
         - workflow/pipeline.md
       update:
         - workflow/templates/README.md
-        - tasks/prompts/README.md
+        - workflow/versions/v1-mvp/execution/README.md
       api: []
       udl: []
     doc_changes:
@@ -105,7 +105,7 @@ features:
     code_impacts:
       existing:
         - workflow/pipeline.md
-        - tasks/prompts/README.md
+        - workflow/versions/v1-mvp/execution/README.md
         - scripts/dev_tools/workflow.py
         - scripts/dev_tools/promotion.py
         - scripts/dev_tools/workflow_projection.py
@@ -122,7 +122,7 @@ features:
       level: Low
       boundaries:
         - Promotion apply write is blocked for v-template.
-        - Preview commands must not write tasks/prompts or progress.json.
+        - Preview commands must not write workflow/versions/v-template/execution or progress.json.
         - Closeout cannot claim done without verify pass and checkpoint evidence.
     task_split:
       - id: queue-candidate

@@ -7,7 +7,7 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 
 const TASK: &str = include_str!(
-    "../../tasks/prompts/phase-4/4-3-stage4-multiplatform/task-41-c4-09-contract-api.md"
+    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-41-c4-09-contract-api.md"
 );
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");

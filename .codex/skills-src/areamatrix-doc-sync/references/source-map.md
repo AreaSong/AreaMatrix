@@ -8,7 +8,7 @@ Use this map to decide what file is authoritative before synchronizing docs or g
 |---|---|---|
 | Product and architecture | `docs/` | Product behavior, architecture, APIs, UX, testing. |
 | AI governance | `.ai-governance/` | Collaboration rules, workflow semantics, project invariants. |
-| Prompt tasks | `tasks/prompts/` | Executable task boundaries, manifests, copy-ready and verify-ready prompts. |
+| Prompt execution | `workflow/versions/<version>/execution/` | Executable task boundaries, manifests, copy-ready and verify-ready prompts. |
 | Codex runtime | `.codex/` | Codex-only templates, references, skills, and local run material. |
 | Discovery projection | `.agents/skills/` | Symlink entrypoints for repo-local skills. |
 | User-facing summaries | `README.md`, `README.zh-CN.md` | Navigation and overview, not detailed behavior SSOT. |
@@ -27,8 +27,8 @@ For public Core API changes:
 
 For prompt task changes:
 
-1. task file under `tasks/prompts/phase-*`
-2. matching manifest section under `tasks/prompts/_shared/manifests/`
+1. task file under `workflow/versions/<version>/execution/phase-*`
+2. matching manifest section under `workflow/versions/<version>/execution/_shared/manifests/`
 3. shared rules only when the rule applies across many tasks
 4. rendered `copy-ready` / `verify-ready` outputs
 

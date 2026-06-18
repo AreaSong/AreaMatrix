@@ -11,8 +11,7 @@ AreaMatrix/
 ├── docs/              # 产品、架构、API、开发与路线图源事实
 ├── assets/brand/      # 品牌资产
 ├── scripts/           # 构建、检查与 task-loop 支撑脚本
-├── workflow/          # 版本讨论、计划、预览与 promotion gate
-├── tasks/prompts/     # 历史可执行 prompt 任务库
+├── workflow/          # 版本讨论、计划、预览、promotion gate 与版本内执行层
 ├── tasks/backlog/     # 规划和治理排期，不进入 live runner
 ├── .ai-governance/    # AI 治理源事实
 ├── .codex/            # Codex skills 源、模板、引用和本地运行材料
@@ -22,8 +21,9 @@ AreaMatrix/
 └── task-loop          # prompt task-loop 入口
 ```
 
-`.codex/skills-src/`、`.agents/skills/`、`tasks/prompts/`、`workflow/`、`dev`
+`.codex/skills-src/`、`.agents/skills/`、`workflow/`、`dev`
 和 `task-loop` 是固定工具入口，目录收紧时不得为了视觉简洁而移动或重命名。
+v1 历史 prompt 执行队列位于 `workflow/versions/v1-mvp/execution/`。
 `.build/`、`build/`、`core/target/`、`apps/*/.build`、`apps/**/bin`、
 `apps/**/obj`、`apps/macos/DerivedData/` 等本地生成物应通过 ignore / editor
 exclude 隐藏，不纳入源码目录语义。
@@ -62,7 +62,7 @@ exclude 隐藏，不纳入源码目录语义。
 
 ## 验证基线
 
-- Prompt 执行体系：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- Prompt 执行体系：`python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor`
 - Rust：`cargo fmt`、`cargo clippy`、`cargo test`
 - Swift：`xcodebuild test`、SwiftFormat、SwiftLint
 - 发布前：按 `docs/development/testing.md` 的手工冒烟清单验证。

@@ -20,6 +20,12 @@ from typing import Sequence
 
 from . import git as git_helpers
 from . import state
+from scripts.dev_tools.execution_paths import (
+    copy_ready_root,
+    progress_path,
+    prompt_pipeline_path,
+    verify_ready_root,
+)
 
 
 PHASES = ("phase-0", "phase-1", "phase-2", "phase-3", "phase-4")
@@ -141,9 +147,9 @@ class RuntimeConfig:
         cfg.model_reasoning_effort = os.environ.get("MODEL_REASONING_EFFORT", "xhigh")
         cfg.codex_bin = os.environ.get("CODEX_BIN", "")
         cfg.codex_exec_sandbox = os.environ.get("CODEX_EXEC_SANDBOX", "danger-full-access")
-        cfg.copy_root = Path(os.environ.get("COPY_ROOT", root / "tasks/prompts/_shared/copy-ready"))
-        cfg.verify_root = Path(os.environ.get("VERIFY_ROOT", root / "tasks/prompts/_shared/verify-ready"))
-        cfg.progress_file = Path(os.environ.get("PROGRESS_FILE", root / "tasks/prompts/_shared/progress.json"))
+        cfg.copy_root = Path(os.environ.get("COPY_ROOT", copy_ready_root(root)))
+        cfg.verify_root = Path(os.environ.get("VERIFY_ROOT", verify_ready_root(root)))
+        cfg.progress_file = Path(os.environ.get("PROGRESS_FILE", progress_path(root)))
         cfg.state_file = Path(os.environ.get("STATE_FILE", root / ".codex/task-loop-state.txt"))
         cfg.log_root = Path(os.environ.get("LOG_ROOT", root / ".codex/task-loop-logs"))
         cfg.run_summary_root = Path(os.environ.get("RUN_SUMMARY_ROOT", root / ".codex/task-loop-runs"))
@@ -182,7 +188,7 @@ class RuntimeConfig:
 
     @property
     def default_progress_file(self) -> Path:
-        return self.root_dir / "tasks/prompts/_shared/progress.json"
+        return progress_path(self.root_dir)
 
     def selected_phases(self) -> list[str]:
         return self.target_phases or list(PHASES)
@@ -1732,7 +1738,7 @@ def print_loop_status(cfg: RuntimeConfig) -> None:
     print(state.status_fragment(cfg.progress_file, cfg.lock_dir, cfg.log_root, cfg.drain_request_file, cfg.root_dir), end="")
     print()
     sys.stdout.flush()
-    pipeline = cfg.root_dir / "tasks/prompts/_shared/prompt_pipeline.py"
+    pipeline = prompt_pipeline_path(cfg.root_dir)
     subprocess.run([cfg.python_bin, str(pipeline), "status"], cwd=cfg.root_dir, check=False)
 
 

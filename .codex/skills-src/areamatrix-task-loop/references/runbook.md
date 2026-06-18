@@ -8,8 +8,8 @@ Run these before live execution:
 
 ```bash
 ./task-loop check
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
-python3 tasks/prompts/_shared/prompt_pipeline.py status
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py status
 ./task-loop status
 ```
 
@@ -20,7 +20,7 @@ Check that:
 - `status` shows the expected first pending task.
 - live Git checkpoint mode has a clean worktree before execution.
 - copy-ready / verify-ready prompts have been regenerated after shared rule changes.
-- `progress_file` is `tasks/prompts/_shared/progress.json`.
+- `progress_file` is `workflow/versions/v1-mvp/execution/_shared/progress.json`.
 - `lock_alive` is not `yes` unless the operator intentionally has a runner active.
 - `latest_log_dir` is understood; `None` is fine before the first run.
 
@@ -95,7 +95,7 @@ Use these commands before creating review artifacts:
 ./dev changes generate --write --force
 ```
 
-Plans, queue candidates, and drafts are review artifacts only: they are not `tasks/prompts/**`, do not change `progress.json`, and must not be treated as live task-loop work. While `v1-mvp` is `live-running`, v2 may reach queue candidates but must not promote into `tasks/prompts/**`.
+Plans, queue candidates, and drafts are review artifacts only: they are not version execution, do not change `progress.json`, and must not be treated as live task-loop work. New versions may reach queue candidates but must not promote into `workflow/versions/<version>/execution/**` without explicit approval and mapping.
 
 ## Graceful Drain
 
@@ -147,7 +147,7 @@ The runner validates explicit `START_FROM` / `--start-from` and `STOP_AFTER` / `
 Primary progress:
 
 ```text
-tasks/prompts/_shared/progress.json
+workflow/versions/v1-mvp/execution/_shared/progress.json
 ```
 
 Expected statuses:

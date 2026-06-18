@@ -14,7 +14,7 @@ Trigger it for changes to `docs/**`, Core API, `core/area_matrix.udl`, prompt ma
 1. [AGENTS.md](../../../AGENTS.md)
 2. [.ai-governance/README.md](../../../.ai-governance/README.md)
 3. [docs/README.md](../../../docs/README.md)
-4. [tasks/prompts/README.md](../../../tasks/prompts/README.md) when prompts or manifests are involved.
+4. [workflow/versions/v1-mvp/execution/README.md](../../../workflow/versions/v1-mvp/execution/README.md) when prompts or manifests are involved.
 
 ## References
 

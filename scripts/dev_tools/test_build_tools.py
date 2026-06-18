@@ -200,7 +200,7 @@ class BuildToolsTest(unittest.TestCase):
     def test_task_check_path_resolves_phase_task_label(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            task = root / "tasks/prompts/phase-4/4-1-stage2-experience/task-15-c2-03-integration-verify.md"
+            task = root / "workflow/versions/v1-mvp/execution/phase-4/4-1-stage2-experience/task-15-c2-03-integration-verify.md"
             task.parent.mkdir(parents=True)
             task.write_text("# 4-1/task-15\n", encoding="utf-8")
 
@@ -359,7 +359,7 @@ class BuildToolsTest(unittest.TestCase):
     def test_task_manifest_entry_reads_phase_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            manifest = root / "tasks/prompts/_shared/manifests/phase-4.md"
+            manifest = root / "workflow/versions/v1-mvp/execution/_shared/manifests/phase-4.md"
             manifest.parent.mkdir(parents=True)
             manifest.write_text(
                 "\n".join(
@@ -446,7 +446,7 @@ class BuildToolsTest(unittest.TestCase):
             cfg = console.ConsoleConfig(
                 runtime=RuntimeConfig(root_dir=root),
                 task_loop_bin=root / "task-loop",
-                pipeline=root / "tasks/prompts/_shared/prompt_pipeline.py",
+                pipeline=root / "workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py",
                 console_log_root=root / ".codex/task-loop-console",
             )
 

@@ -29,6 +29,7 @@ from .discussion import (
     discussion_gate_message,
     validate_discussion_records,
 )
+from .execution_paths import progress_path, repo_relative
 from .middle_layer import (
     MiddleLayerRecord,
     collect_middle_layer_workflow,
@@ -298,9 +299,9 @@ def validate_v1_gate(root: Path, versions: Sequence[VersionRecord]) -> list[str]
             errors.append(
                 f"{record.version_id} gate must be one of {status_list(ALLOWED_V1_DEPENDENCY_GATES)} until a new live promotion gate is explicitly configured"
             )
-    progress = root / "tasks/prompts/_shared/progress.json"
+    progress = progress_path(root, "v1-mvp")
     if not progress.is_file():
-        errors.append("missing live v1 progress file: tasks/prompts/_shared/progress.json")
+        errors.append(f"missing v1 execution progress file: {repo_relative(root, progress)}")
     return errors
 
 
@@ -550,7 +551,7 @@ def feature_plan_content(root: Path, version: str, record: Any, middle_record: M
             "- Status: `ready`.",
             "- Kind: queue-candidate review only.",
             "- Live queue: blocked until explicit promotion approval and live mapping are configured.",
-            "- Promotion: explicit only; this plan does not write `tasks/prompts/**`.",
+            f"- Promotion: explicit only; this plan does not write `workflow/versions/{version}/execution/**`.",
         ]
     )
     return "\n".join(lines).rstrip() + "\n"
@@ -627,7 +628,7 @@ def queue_md_content(root: Path, version: str, record: Any) -> str:
             "",
             "## Promotion Notes",
             "",
-            "- Do not write `tasks/prompts/**` in this phase.",
+            f"- Do not write `workflow/versions/{version}/execution/**` in this phase.",
             "- Promotion must be a later explicit command after gates pass.",
             "- Queue candidates can be reviewed while v1 is still running.",
         ]
@@ -690,7 +691,7 @@ def validate_drafts_gate(root: Path, version: str, feature: str | None = None) -
                 if section not in text:
                     errors.append(f"{display_path(root, path)}: missing section {section}")
         elif path.name.endswith(".copy.md"):
-            for snippet in ["## Exact Docs", "## 建议验证", f"不得把 {version} 草稿直接写入 `tasks/prompts/**`"]:
+            for snippet in ["## Exact Docs", "## 建议验证", f"不得把 {version} 草稿直接写入 `workflow/versions/{version}/execution/**`"]:
                 if snippet not in text:
                     errors.append(f"{display_path(root, path)}: missing copy boundary: {snippet}")
         elif path.name.endswith(".verify.md"):
@@ -850,7 +851,7 @@ def run_workflow_status(root: Path, args: argparse.Namespace) -> int:
             print("  projection: blocked as expected for template reference")
             print("  closeout: blocked as expected for template reference")
     print()
-    print("Current gate: dependent versions may reach queue candidates, but must not promote to tasks/prompts/** without explicit approval and live mapping.")
+    print("Current gate: dependent versions may reach queue candidates, but must not promote into version execution without explicit approval and live mapping.")
     return 0
 
 
@@ -1025,7 +1026,7 @@ def run_workflow_promote(root: Path, args: argparse.Namespace) -> int:
     blocked, gate_message = promotion_gate_status(version_record, versions)
     if args.version == TEMPLATE_REFERENCE_VERSION:
         blocked = True
-        gate_message = "promotion blocked: v-template is a template reference and cannot apply to live tasks/prompts/**"
+        gate_message = "promotion blocked: v-template is a template reference and cannot apply to version execution"
     tasks = build_promotion_tasks(root, args.version, config, records, root_dependency)
     if mode == "approve":
         artifact = approval_artifact(root, args.version, blocked, gate_message, tasks)

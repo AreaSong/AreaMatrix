@@ -9,7 +9,7 @@ Use this map to decide where AreaMatrix enterprise governance rules belong.
 | Dependency and license policy | `docs/development/dependency-policy.md` | PR template, validation driver |
 | CI policy | `docs/development/ci-governance.md` | `.github/workflows/*`, governance check |
 | Git workflow | `docs/development/git-workflow.md` | git checkpoint skill |
-| Prompt task quality | `tasks/prompts/_shared/engineering-quality-rules.md` | copy-ready / verify-ready generated prompts |
+| Prompt task quality | `workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md` | copy-ready / verify-ready generated prompts |
 | Skill navigation | `.codex/skills-src/README.md` | `.agents/skills` symlinks |
 
 When policy changes:

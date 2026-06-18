@@ -6,7 +6,7 @@ target_kind: preview-only
 writes_live_queue: false
 template_reference: false
 apply_allowed: false
-target_queue: tasks/prompts
+target_queue: workflow/versions/<version>/execution
 live_mapping: pending
 local_phase: phase-0
 local_batch: 0-1
@@ -24,9 +24,9 @@ tasks:
     feature: v*-feature-id
     task_key: docs-contract
     title: Align docs and public contracts.
-    task_file: tasks/prompts/phase-5/5-1-v-next/task-01-docs-contract.md
-    manifest: tasks/prompts/_shared/manifests/phase-5.md
-    copy_ready: tasks/prompts/_shared/copy-ready/phase-5/5-1-task-01.md
-    verify_ready: tasks/prompts/_shared/verify-ready/phase-5/5-1-task-01.md
+    task_file: workflow/versions/<version>/execution/phase-5/5-1-v-next/task-01-docs-contract.md
+    manifest: workflow/versions/v1-mvp/execution/_shared/manifests/phase-5.md
+    copy_ready: workflow/versions/<version>/execution/_shared/copy-ready/phase-5/5-1-task-01.md
+    verify_ready: workflow/versions/<version>/execution/_shared/verify-ready/phase-5/5-1-task-01.md
     depends_on:
       - 4-3/task-165

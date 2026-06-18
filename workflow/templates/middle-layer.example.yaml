@@ -41,4 +41,4 @@ slice_plan:
     acceptance:
       - ./dev workflow doctor
 risk_boundaries:
-  - Do not write live tasks/prompts from middle-layer planning.
+  - Do not write live workflow/versions/<version>/execution from middle-layer planning.

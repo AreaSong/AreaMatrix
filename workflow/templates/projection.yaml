@@ -1,7 +1,7 @@
 version: v*
 status: blocked
 kind: result-projection
-source: tasks/prompts/_shared/progress.json
+source: workflow/versions/v1-mvp/execution/_shared/progress.json
 tasks:
   - semantic_id: v*-feature-id/docs-contract
     live_label: 5-1/task-01

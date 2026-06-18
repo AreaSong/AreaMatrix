@@ -25,7 +25,7 @@
 
 ### Risk Boundaries
 - Does not define product behavior.
-- Does not write live tasks/prompts.
+- Does not write live workflow/versions/v-template/execution.
 - Docs drift must block downstream template gates.
 
 ### Validation
@@ -57,7 +57,7 @@
 
 ### Risk Boundaries
 - Does not define product behavior.
-- Does not write live tasks/prompts.
+- Does not write live workflow/versions/v-template/execution.
 - Docs drift must block downstream template gates.
 
 ### Validation

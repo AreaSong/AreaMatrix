@@ -14,7 +14,7 @@ docs
 -> drafts
 -> queue
 -> promotion preview
--> tasks/prompts/**
+-> workflow/versions/<version>/execution/**
 ```
 
 Layer responsibilities:
@@ -26,7 +26,7 @@ Layer responsibilities:
 - `drafts`: reviewable manifest plus separate copy-ready and verify-ready prompt drafts.
 - `queue`: candidate tasks, still outside live runner and still not progress state.
 - `promotion preview`: semantic-to-numeric task mapping, no live writes.
-- `tasks/prompts/**`: approved small-task live queue only.
+- `workflow/versions/<version>/execution/**`: approved version-local execution queue only.
 
 `v1-mvp` remains live-running until its current queue completes. `v-template`
 is a managed template reference instance for doctor coverage and is not a real
@@ -43,7 +43,7 @@ Create future versions with:
 ```
 
 New versions use version-local numbering starting at `phase-0 / 0-1 / task-01`;
-live `tasks/prompts/**` mapping remains pending until a later explicit promotion
+live `workflow/versions/<version>/execution/**` mapping remains pending until a later explicit promotion
 mapping step. Do not enter baseline, middle-layer, changes, plans, drafts,
 queue, or promotion preview until the discussion gate is explicitly ready.
 
@@ -51,5 +51,5 @@ Planning handoff requirements:
 
 - Every plan must include goal, non-goals, source of truth, owner / landing, exact file paths, ordered execution steps, validation commands, and blocked / rollback wording.
 - Copy-ready and verify-ready artifacts stay separate; copy-ready may implement, verify-ready is read-only acceptance.
-- Backlog prompt packages stay outside live queue and must not write `tasks/prompts/**`, `tasks/prompts/_shared/progress.json`, checkpoints, run summaries, or runner locks.
+- Backlog prompt packages stay outside live queue and must not write `workflow/versions/<version>/execution/**`, `workflow/versions/<version>/execution/_shared/progress.json`, checkpoints, run summaries, or runner locks.
 - If any required source, path, validation command, owner, or promotion approval is missing, keep the artifact `blocked` or `not-ready` instead of promoting it.

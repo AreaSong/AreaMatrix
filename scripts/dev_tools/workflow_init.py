@@ -65,7 +65,7 @@ local_queue:
   batch_slug: {version}-planning
   start_task: 1
 promotion_preview:
-  target_queue: tasks/prompts
+  target_queue: workflow/versions/<version>/execution
   live_mapping: pending
 execution:
   root: workflow/versions/{version}/execution
@@ -94,7 +94,8 @@ def docs_discussion(version: str) -> str:
 
 ## Non-goals
 
-- Do not modify version execution or historical `tasks/prompts/**` during discussion.
+- Do not modify `workflow/versions/{version}/execution/**` during discussion.
+- Do not modify historical `workflow/versions/v1-mvp/execution/**` during discussion.
 - Do not generate copy-ready / verify-ready prompts before decisions are approved.
 
 ## Acceptance Boundary
@@ -114,7 +115,7 @@ def middle_layer_discussion(version: str) -> str:
 - Changes must feed docs-change ledger plans.
 - Plans and drafts must keep docs/API/UDL/task sync targets explicit.
 - Queue candidates use the version-local queue before execution mapping is configured.
-- Promotion preview must not write version execution or historical `tasks/prompts/**`.
+- Promotion preview must not write version execution or historical `workflow/versions/v1-mvp/execution/**`.
 
 ## Local Queue
 
@@ -159,7 +160,7 @@ blockers:
     status: open
     summary: Discussion has not approved changes generation yet.
 risk_boundaries:
-  - Do not write version execution or historical tasks/prompts from discussion.
+  - Do not write version execution or historical workflow/versions/v1-mvp/execution from discussion.
 next_layers:
   changes: blocked
   plans: blocked
@@ -182,15 +183,15 @@ def layer_readme(version: str, layer: str, title: str) -> str:
     elif layer == "execution":
         detail = "Execution is the version-local target for approved copy-ready, verify-ready, manifest, progress, checkpoint, log, and report material."
     else:
-        detail = f"{title} are review artifacts for {version}; they do not write version execution or historical tasks/prompts."
+        detail = f"{title} are review artifacts for {version}; they do not write version execution or historical v1 execution."
     return f"""# {version} {title}
 
 {detail}
 
 - Version-local queue starts at `phase-0 / 0-1 / task-01`.
 - Execution root: `workflow/versions/{version}/execution/`.
-- Historical `tasks/prompts/**` compatibility remains until the hard migration is approved.
-- Do not modify execution files, `tasks/prompts/**`, or `tasks/prompts/_shared/progress.json` from this layer unless the layer is explicit promoted execution.
+- Historical v1 execution root: `workflow/versions/v1-mvp/execution/`.
+- Do not modify execution files or progress from this layer unless the layer is explicit promoted execution.
 """
 
 
@@ -216,8 +217,8 @@ discussion
 
 The version-local queue starts at `phase-0 / 0-1 / task-01`. Future execution
 mapping is pending and must be configured before promotion preview can target
-`workflow/versions/{version}/execution/**`. Historical `tasks/prompts/**`
-compatibility remains until the hard migration is approved.
+`workflow/versions/{version}/execution/**`. Historical v1 execution now lives at
+`workflow/versions/v1-mvp/execution/**`.
 """
 
 

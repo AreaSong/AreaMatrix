@@ -23,7 +23,7 @@ Templates define the reusable shape for future `workflow/versions/v*/` instances
 
 Use templates as references only. `workflow/versions/v-template/` is the managed
 template reference instance that proves these templates and doctors agree; it is
-not a real product workflow and cannot be applied to live `tasks/prompts/**`.
+not a real product workflow and cannot be applied to `workflow/versions/<version>/execution/**`.
 Real work lives under `workflow/versions/v*/`. For new versions, prefer
 `./dev workflow init --version v2` or another real `vN`; it renders a full
 skeleton and keeps live promotion mapping pending by default.

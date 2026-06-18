@@ -40,13 +40,13 @@ Prove that plans, drafts, queue candidates, promotion preview, projection, and c
 
 ## Sync Targets
 - `workflow/templates/README.md`
-- `tasks/prompts/README.md`
+- `workflow/versions/v1-mvp/execution/README.md`
 
 ## Code Impact
 
 ### Existing
 - `workflow/pipeline.md`
-- `tasks/prompts/README.md`
+- `workflow/versions/v1-mvp/execution/README.md`
 - `scripts/dev_tools/workflow.py`
 - `scripts/dev_tools/promotion.py`
 - `scripts/dev_tools/workflow_projection.py`
@@ -64,7 +64,7 @@ Prove that plans, drafts, queue candidates, promotion preview, projection, and c
 
 ## Risk Boundaries
 - Promotion apply write is blocked for v-template.
-- Preview commands must not write tasks/prompts or progress.json.
+- Preview commands must not write workflow/versions/v-template/execution or progress.json.
 - Closeout cannot claim done without verify pass and checkpoint evidence.
 
 ## Task Split
@@ -77,4 +77,4 @@ Prove that plans, drafts, queue candidates, promotion preview, projection, and c
 - Status: `ready`.
 - Kind: queue-candidate review only.
 - Live queue: blocked while `v1-mvp` is `live-running`.
-- Promotion: explicit only; this plan does not write `tasks/prompts/**`.
+- Promotion: explicit only; this plan does not write `workflow/versions/v-template/execution/**`.

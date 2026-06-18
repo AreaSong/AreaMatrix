@@ -13,6 +13,7 @@ from typing import Callable, Sequence
 
 from scripts.dev_tools.checks import run_skills_check
 from scripts.dev_tools.discussion import discussion_artifacts, validate_discussion_artifacts
+from scripts.dev_tools.execution_paths import copy_ready_root, progress_path, prompt_pipeline_path, verify_ready_root
 from scripts.dev_tools.changes import write_artifacts
 from scripts.dev_tools.workflow_init import init_artifacts
 from scripts.task_loop.runner import (
@@ -212,8 +213,8 @@ def add_prompt_fixture(repo: Path, labels: Sequence[str]) -> None:
     for label in labels:
         phase = f"phase-{label.split('-', 1)[0]}"
         task_name = label.replace("/task-", "-task-")
-        copy_file = repo / "tasks/prompts/_shared/copy-ready" / phase / f"{task_name}.md"
-        verify_file = repo / "tasks/prompts/_shared/verify-ready" / phase / f"{task_name}.md"
+        copy_file = copy_ready_root(repo) / phase / f"{task_name}.md"
+        verify_file = verify_ready_root(repo) / phase / f"{task_name}.md"
         copy_file.parent.mkdir(parents=True, exist_ok=True)
         verify_file.parent.mkdir(parents=True, exist_ok=True)
         copy_file.write_text(f"# copy {label}\n风险等级：`Medium`\n", encoding="utf-8")
@@ -325,13 +326,13 @@ def check_repo_health(h: Harness) -> None:
     log("repo health")
     if run_skills_check(h.root) != 0:
         raise CheckFailure("skill health failed")
-    h.run([h.python, "tasks/prompts/_shared/prompt_pipeline.py", "doctor"])
+    h.run([h.python, str(prompt_pipeline_path(h.root)), "doctor"])
     check_exported_prompt_validation_strategy(h)
 
 
 def check_exported_prompt_validation_strategy(h: Harness) -> None:
     log("exported prompt validation strategy")
-    for root in [h.root / "tasks/prompts/_shared/copy-ready", h.root / "tasks/prompts/_shared/verify-ready"]:
+    for root in [copy_ready_root(h.root), verify_ready_root(h.root)]:
         phase4_dir = root / "phase-4"
         for path in sorted(phase4_dir.glob("*.md")):
             text = path.read_text(encoding="utf-8")
@@ -412,7 +413,7 @@ def check_versioned_workflow(h: Harness) -> None:
     assert_contains(status, "live_mapping: configured (phase-5/5-1)", "workflow status live mapping")
     assert_contains(status, "projection: blocked as expected for template reference", "workflow status template projection note")
     assert_contains(status, "closeout: blocked as expected for template reference", "workflow status template closeout note")
-    assert_contains(status, "must not promote to tasks/prompts/**", "workflow promote gate")
+    assert_contains(status, "must not promote into version execution", "workflow promote gate")
 
     template_check = h.run([h.dev, "workflow", "check-template"]).stdout
     assert_contains(template_check, "workflow check-template: OK", "workflow check-template")
@@ -470,7 +471,7 @@ decisions:
 open_questions: []
 blockers: []
 risk_boundaries:
-  - Do not write live tasks/prompts from discussion.
+  - Do not write workflow/versions/v2/execution/** from discussion.
 next_layers:
   changes: allowed
   plans: blocked
@@ -543,7 +544,7 @@ decisions:
 open_questions: []
 blockers: []
 risk_boundaries:
-  - Do not write live tasks/prompts from discussion.
+  - Do not write workflow/versions/v2/execution/** from discussion.
 next_layers:
   changes: allowed
   plans: blocked
@@ -569,7 +570,7 @@ decisions:
 open_questions: []
 blockers: []
 risk_boundaries:
-  - Do not write live tasks/prompts from discussion.
+  - Do not write workflow/versions/v2/execution/** from discussion.
 next_layers:
   changes: allowed
 """,
@@ -601,9 +602,9 @@ next_layers:
     assert_contains(promote, "Future live paths below are previews only", "workflow promote future path warning")
     assert_contains(promote, "template-docs-contract/docs-baseline", "workflow promote semantic task")
     assert_contains(promote, "5-1/task-01", "workflow promote live label")
-    assert_contains(promote, "tasks/prompts/phase-5/5-1-template-reference/task-01-docs-baseline.md", "workflow promote task path")
-    assert_contains(promote, "tasks/prompts/_shared/manifests/phase-5.md", "workflow promote manifest path")
-    assert_contains(promote, "tasks/prompts/_shared/copy-ready/phase-5/5-1-task-01.md", "workflow promote copy-ready path")
+    assert_contains(promote, "workflow/versions/v-template/execution/phase-5/5-1-template-reference/task-01-docs-baseline.md", "workflow promote task path")
+    assert_contains(promote, "workflow/versions/v-template/execution/_shared/manifests/phase-5.md", "workflow promote manifest path")
+    assert_contains(promote, "workflow/versions/v-template/execution/_shared/copy-ready/phase-5/5-1-task-01.md", "workflow promote copy-ready path")
     assert_contains(promote, "Live queue: not modified", "workflow promote no live writes")
 
     promote_feature = h.run([h.dev, "workflow", "promote", "--version", "v-template", "--feature", "template-docs-contract", "--preview"]).stdout
@@ -1050,7 +1051,7 @@ def check_git_helpers(h: Harness) -> None:
         raise CheckFailure(f"bad git preflight: {preflight}")
     if git_helpers.current_branch(git_repo) != "codex/areamatrix-task-loop-check001":
         raise CheckFailure("auto branch was not created")
-    progress = git_repo / "tasks/prompts/_shared/progress.json"
+    progress = progress_path(git_repo)
     summary = git_repo / ".codex/task-loop-runs/check001/summary.json"
     write_json(progress, {"version": 1, "tasks": {"0-1/task-01": {"status": "completed"}}})
     write_json(summary, {"version": 1, "tasks": {"0-1/task-01": {"status": "completed"}}})
@@ -1100,7 +1101,7 @@ def check_git_helpers(h: Harness) -> None:
     push_fail_repo = h.tmp / "git-push-fail"
     init_temp_git_repo(push_fail_repo)
     subprocess.run(["git", "checkout", "-q", "-b", "codex/push-fail"], cwd=push_fail_repo, check=True)
-    push_progress = push_fail_repo / "tasks/prompts/_shared/progress.json"
+    push_progress = progress_path(push_fail_repo)
     push_summary = push_fail_repo / ".codex/task-loop-runs/pushfail/summary.json"
     write_json(push_progress, {"version": 1, "tasks": {"0-1/task-01": {"status": "completed"}}})
     write_json(push_summary, {"version": 1, "tasks": {"0-1/task-01": {"status": "completed"}}})
@@ -1177,7 +1178,7 @@ fi
         [h.task_loop, "run", "--phase", "phase-0", "--max-tasks", "1"],
         env={
             "ROOT_DIR": str(runner_repo),
-            "PROGRESS_FILE": str(runner_repo / "tasks/prompts/_shared/progress.json"),
+            "PROGRESS_FILE": str(progress_path(runner_repo)),
             "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
             "RUN_SUMMARY_ROOT": str(runner_repo / ".codex/task-loop-runs"),
             "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
@@ -1199,7 +1200,7 @@ fi
     assert_contains(result.stdout, "    state:", "runner live log state")
     assert_contains(result.stdout, "current command | heartbeat=1s | command_elapsed=", "runner live command status line")
     assert_contains(result.stdout, " | command=", "runner live command text")
-    progress = runner_repo / "tasks/prompts/_shared/progress.json"
+    progress = progress_path(runner_repo)
     assert_json(
         progress,
         lambda data: data["tasks"]["0-1/task-01"]["status"] == "completed" and len(data["tasks"]["0-1/task-01"].get("git_commit", "")) >= 7,  # type: ignore[index]
@@ -1271,7 +1272,7 @@ fi
     env.update(
         {
             "ROOT_DIR": str(runner_repo),
-            "PROGRESS_FILE": str(runner_repo / "tasks/prompts/_shared/progress.json"),
+            "PROGRESS_FILE": str(progress_path(runner_repo)),
             "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
             "RUN_SUMMARY_ROOT": str(runner_repo / ".codex/task-loop-runs"),
             "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
@@ -1303,7 +1304,7 @@ fi
     combined = result.stdout + result.stderr
     assert_contains(combined, "live activity no-output timeout", "no-output timeout heartbeat")
     assert_contains(combined, "codex exec no-output timeout; restart copy task=0-1/task-01", "no-output restart event")
-    progress = runner_repo / "tasks/prompts/_shared/progress.json"
+    progress = progress_path(runner_repo)
     assert_json(
         progress,
         lambda data: data["tasks"]["0-1/task-01"]["status"] == "completed",  # type: ignore[index]
@@ -1370,7 +1371,7 @@ fi
     env.update(
         {
             "ROOT_DIR": str(runner_repo),
-            "PROGRESS_FILE": str(runner_repo / "tasks/prompts/_shared/progress.json"),
+            "PROGRESS_FILE": str(progress_path(runner_repo)),
             "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
             "RUN_SUMMARY_ROOT": str(runner_repo / ".codex/task-loop-runs"),
             "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
@@ -1500,7 +1501,7 @@ fi
     env.update(
         {
             "ROOT_DIR": str(runner_repo),
-            "PROGRESS_FILE": str(runner_repo / "tasks/prompts/_shared/progress.json"),
+            "PROGRESS_FILE": str(progress_path(runner_repo)),
             "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
             "RUN_SUMMARY_ROOT": str(runner_repo / ".codex/task-loop-runs"),
             "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
@@ -1614,7 +1615,7 @@ def check_git_ignore(h: Harness) -> None:
         ".codex/dev-console/config.json",
     ]
     tracked = [
-        "tasks/prompts/_shared/progress.json",
+        "workflow/versions/v1-mvp/execution/_shared/progress.json",
         ".codex/task-loop-runs/index.json",
         ".codex/task-loop-runs/example/summary.json",
         ".codex/task-loop-progress-backups/progress-before-reset-example.json",

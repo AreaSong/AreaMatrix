@@ -16,13 +16,13 @@
 ## Contention Points
 
 - `v-template` is not a product feature and does not define AreaMatrix product behavior.
-- `v-template` may preview promotion artifacts but must never apply them to live `tasks/prompts/**`.
+- `v-template` may preview promotion artifacts but must never apply them to `workflow/versions/v-template/execution/**`.
 
 ## Non-goals
 
 - Do not use this instance as a real v* product roadmap.
 - Do not start task-loop from this instance.
-- Do not modify live `tasks/prompts/**` or `progress.json`.
+- Do not modify `workflow/versions/v-template/execution/**` or `progress.json`.
 
 ## Acceptance Boundary
 

@@ -9,7 +9,7 @@
 - Plans feed task drafts.
 - Drafts feed queue candidates.
 - Queue candidates feed promotion preview.
-- Promotion preview feeds projection and closeout checks only; it must not write live `tasks/prompts/**`.
+- Promotion preview feeds projection and closeout checks only; it must not write `workflow/versions/v-template/execution/**`.
 
 ## Required Sync Targets
 

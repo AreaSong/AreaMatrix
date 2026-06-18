@@ -17,7 +17,7 @@ local_queue:
   batch_slug: template-reference
   start_task: 1
 promotion_preview:
-  target_queue: tasks/prompts
+  target_queue: workflow/versions/v-template/execution
   phase: phase-5
   batch: 5-1
   batch_slug: template-reference

@@ -26,4 +26,4 @@ platform test scope notes。这里的 Stage 2 Experience 是 Stage 1 MVP 历史
 
 - [v1-mvp source docs archive](../source-docs/README.md)
 - [Stage source docs guide](../../source-docs-guide.md)
-- [Stage 2 Experience integration verify](../../../tasks/prompts/phase-4/4-1-stage2-experience/task-143-stage-2-experience-integration-verify.md)
+- [Stage 2 Experience integration verify](../execution/phase-4/4-1-stage2-experience/task-143-stage-2-experience-integration-verify.md)

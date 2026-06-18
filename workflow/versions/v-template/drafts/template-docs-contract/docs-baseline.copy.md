@@ -19,13 +19,13 @@
 
 ## 风险边界
 - Does not define product behavior.
-- Does not write live tasks/prompts.
+- Does not write live workflow/versions/v-template/execution.
 - Docs drift must block downstream template gates.
 
 ## 执行要求
 - 先读取 Source change、Exact Docs、Sync Targets，再决定实现范围。
 - 若涉及 Core API，必须保持 `docs/api/core-api.md` 与 `core/area_matrix.udl` 一致。
-- 不得移动、删除、覆盖用户原文件；不得把 v-template 草稿直接写入 `tasks/prompts/**`。
+- 不得移动、删除、覆盖用户原文件；不得把 v-template 草稿直接写入 `workflow/versions/v-template/execution/**`。
 - 完成后记录实际改动、验证命令、风险处理和未覆盖项。
 
 ## 建议验证

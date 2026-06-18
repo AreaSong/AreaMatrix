@@ -18,9 +18,9 @@ from .changes import (
     sync_targets,
     task_validation,
 )
+from .execution_paths import copy_ready_root, manifest_root, task_root, verify_ready_root
+from .execution_repository import label_sort_key, scan_task_files
 from .workflow_states import ARTIFACT_STATUSES, status_list
-from tasks.prompts._shared.prompt_pipeline_lib.paths import COPY_READY_ROOT, VERIFY_READY_ROOT, label_sort_key
-from tasks.prompts._shared.prompt_pipeline_lib.repository import scan_task_files
 
 
 PROMOTION_ROOT_NAME = "promotion"
@@ -65,6 +65,13 @@ def int_field(value: Any) -> int | None:
     return None
 
 
+def allowed_target_queues(version: str | None) -> set[str]:
+    values = {"workflow/versions/<version>/execution"}
+    if version:
+        values.add(f"workflow/versions/{version}/execution")
+    return values
+
+
 def validate_promotion_preview_configs(root: Path, records: Sequence[Any]) -> list[str]:
     errors: list[str] = []
     for record in records:
@@ -75,17 +82,18 @@ def validate_promotion_preview_configs(root: Path, records: Sequence[Any]) -> li
         if not isinstance(config, dict):
             errors.append(f"{prefix} must be a mapping")
             continue
-        errors.extend(validate_promotion_preview_config(prefix, config))
+        errors.extend(validate_promotion_preview_config(prefix, config, record.version_id))
     return errors
 
 
-def validate_promotion_preview_config(prefix: str, config: dict[str, Any]) -> list[str]:
+def validate_promotion_preview_config(prefix: str, config: dict[str, Any], version: str | None = None) -> list[str]:
     errors: list[str] = []
     for key in ["target_queue"]:
         if key not in config:
             errors.append(f"{prefix}: missing field: {key}")
-    if config.get("target_queue") != "tasks/prompts":
-        errors.append(f"{prefix}: target_queue must be tasks/prompts")
+    if config.get("target_queue") not in allowed_target_queues(version):
+        expected = " or ".join(sorted(allowed_target_queues(version)))
+        errors.append(f"{prefix}: target_queue must be {expected}")
     if config.get("live_mapping") == "pending":
         return errors
     for key in ["phase", "batch", "batch_slug", "start_task"]:
@@ -113,7 +121,7 @@ def promotion_config_from_record(root: Path, record: Any) -> tuple[list[str], Pr
         return [f"{prefix} must be a mapping"], None
     if config.get("live_mapping") == "pending":
         return [f"{prefix}: live_mapping is pending; configure live phase/batch before promotion preview"], None
-    errors = validate_promotion_preview_config(prefix, config)
+    errors = validate_promotion_preview_config(prefix, config, record.version_id)
     if errors:
         return errors, None
     return (
@@ -183,7 +191,7 @@ def build_promotion_tasks(
     tasks: list[PromotionTask] = []
     last_label_by_feature: dict[str, str] = {}
     task_number = config.start_task
-    manifest_path = root / "tasks/prompts/_shared/manifests" / f"{config.phase}.md"
+    manifest_path = manifest_root(root, version) / f"{config.phase}.md"
     for record in ordered_features(records):
         feature_last_label = ""
         previous_label_in_feature = ""
@@ -200,7 +208,7 @@ def build_promotion_tasks(
                 previous_label_in_feature,
                 root_dependency,
             )
-            task_path = root / config.target_queue / config.phase / config.batch_dir / task_filename(task_number, task_key)
+            task_path = task_root(root, version) / config.phase / config.batch_dir / task_filename(task_number, task_key)
             export_name = prompt_export_filename(live_label)
             tasks.append(
                 PromotionTask(
@@ -211,8 +219,8 @@ def build_promotion_tasks(
                     live_label=live_label,
                     depends_on=tuple(deps),
                     task_path=task_path,
-                    copy_ready_path=COPY_READY_ROOT / config.phase / export_name,
-                    verify_ready_path=VERIFY_READY_ROOT / config.phase / export_name,
+                    copy_ready_path=copy_ready_root(root, version) / config.phase / export_name,
+                    verify_ready_path=verify_ready_root(root, version) / config.phase / export_name,
                     manifest_path=manifest_path,
                     task_content=render_promoted_task_file(root, version, record, raw_task, live_label, semantic_id),
                     manifest_section=render_promoted_manifest_section(root, record, raw_task, live_label, deps),
@@ -584,8 +592,8 @@ def promotion_md_content(
             "",
             "## Safety",
             "",
-            "- This preview does not write `tasks/prompts/**`.",
-            "- This preview does not write `tasks/prompts/_shared/progress.json`.",
+            "- This preview does not write version execution files.",
+            "- This preview does not write version execution progress.",
             "- A future apply step must run separately after v1 is complete and gates pass.",
         ]
     )

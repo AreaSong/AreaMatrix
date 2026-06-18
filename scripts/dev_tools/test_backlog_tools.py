@@ -29,7 +29,7 @@ def file_snapshot(root: Path) -> dict[str, str]:
 
 def assert_forbidden_state_absent(test: unittest.TestCase, root: Path) -> None:
     for relative in [
-        "tasks/prompts",
+        "workflow/versions/v1-mvp/execution",
         ".codex/task-loop-logs",
         ".codex/task-loop-runs",
         ".codex/task-loop-lock",
@@ -100,7 +100,7 @@ class BacklogToolsTest(unittest.TestCase):
             root = Path(tmp)
             write_file(root, "tasks/backlog/prompts/alpha/README.md", "# Alpha Package\n")
             write_file(root, "tasks/backlog/prompts/alpha/copy-ready/task-01.md", "copy\n")
-            write_file(root, "tasks/prompts/_shared/progress.json", "{}\n")
+            write_file(root, "workflow/versions/v1-mvp/execution/_shared/progress.json", "{}\n")
             before = file_snapshot(root)
 
             stdout = io.StringIO()
@@ -310,7 +310,7 @@ class BacklogToolsTest(unittest.TestCase):
             )
             write_file(root, "tasks/backlog/prompts/alpha/copy-ready/task-01.md", "# Copy\n")
             write_file(root, "tasks/backlog/prompts/alpha/verify-ready/task-01.md", "# Verify\n")
-            write_file(root, "tasks/prompts/_shared/progress.json", "{}\n")
+            write_file(root, "workflow/versions/v1-mvp/execution/_shared/progress.json", "{}\n")
             before = file_snapshot(root)
 
             stdout = io.StringIO()

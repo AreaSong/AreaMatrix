@@ -18,14 +18,14 @@
 - `task-loop-logs/`、`.codex/task-loop-runs/`：自动任务循环的日志与运行摘要，作为可回溯证据保留。
 - `task-loop-progress-backups/`：本地 progress 恢复快照（reset/clear-stale 时写入），默认不进 Git；仓库仅跟踪脱敏 example fixture。
 - Task loop 的状态 helper 位于 `scripts/task_loop/state.py`，Git checkpoint helper 位于 `scripts/task_loop/git.py`，完整自检入口是 `./task-loop check`。
-- Prompt 工程质量门禁位于 `tasks/prompts/_shared/engineering-quality-rules.md`；编码规范源事实仍在 `docs/development/coding-standards.md`。
+- Prompt 工程质量门禁位于 `workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md`；编码规范源事实仍在 `docs/development/coding-standards.md`。
 - 企业治理检查入口是 `bash scripts/check-governance.sh`，源事实在 `CODE_REVIEW.md`、`SECURITY.md` 和 `docs/development/`。
 
 ## 约束
 
 - 不在本目录放个人模型、权限、token 或密钥；`config.toml` 仅保留在本机。
 - 项目语义变化先更新 `.ai-governance/`，再同步这里。
-- Prompt 任务本体放在 `tasks/prompts/`。
+- Prompt 执行任务本体放在 `workflow/versions/<version>/execution/`；v1 历史执行队列位于 `workflow/versions/v1-mvp/execution/`。
 - Skill 发现入口放在 `.agents/skills/`，源事实仍以 `.codex/skills-src/` 为准。
 - `codex exec` 需要读取 repo-local skill 时，使用本仓库内 `.codex/skills-src/<skill>/SKILL.md` 或 `.agents/skills/<skill>/SKILL.md`；不要使用 `~/.codex/skills-src/...` 这类全局猜测路径。
 - Skill 变更后运行 `bash scripts/check-skills.sh`。

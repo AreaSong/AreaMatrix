@@ -8,9 +8,10 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from .changes import DraftArtifact, as_list, display_path, parse_yaml_subset, write_artifacts
+from .execution_paths import progress_path, repo_relative
+from .execution_repository import load_manifests
 from .workflow_baseline import validate_baseline
 from .workflow_states import ARTIFACT_STATUSES, status_list
-from tasks.prompts._shared.prompt_pipeline_lib.repository import load_manifests
 from scripts.task_loop.state import progress_data, verify_result
 
 
@@ -18,7 +19,6 @@ VERSION_ROOT = Path("workflow/versions")
 PROJECTION_ROOT_NAME = "projection"
 CLOSEOUT_ROOT_NAME = "closeout"
 PROMOTION_ROOT_NAME = "promotion"
-PROGRESS_FILE = Path("tasks/prompts/_shared/progress.json")
 TEMPLATE_REFERENCE_VERSION = "v-template"
 
 
@@ -71,8 +71,8 @@ def load_promotion(root: Path, version: str) -> tuple[list[str], dict[str, Any] 
     return read_yaml(path)
 
 
-def progress_entry(root: Path, label: str) -> dict[str, Any]:
-    progress_file = root / PROGRESS_FILE
+def progress_entry(root: Path, version: str, label: str) -> dict[str, Any]:
+    progress_file = progress_path(root, version)
     if not progress_file.is_file():
         return {}
     data = progress_data(progress_file)
@@ -80,9 +80,9 @@ def progress_entry(root: Path, label: str) -> dict[str, Any]:
     return entry if isinstance(entry, dict) else {}
 
 
-def manifest_trace_ok(label: str, semantic_id: str) -> bool:
+def manifest_trace_ok(root: Path, version: str, label: str, semantic_id: str) -> bool:
     try:
-        manifests = load_manifests()
+        manifests = load_manifests(root, version)
     except Exception:
         return False
     entry = manifests.get(label)
@@ -115,7 +115,7 @@ def collect_projected_tasks(root: Path, version: str) -> tuple[list[str], list[P
         if not semantic_id or not live_label:
             errors.append(f"{display_path(root, promotion_path(root, version))}: tasks #{index}: semantic_id and live_label are required")
             continue
-        entry = progress_entry(root, live_label)
+        entry = progress_entry(root, version, live_label)
         verify = verify_result(entry.get("verify_log"))
         checkpoint = str(entry.get("git_checkpoint_status", "missing") or "missing")
         status = projected_status(entry, verify, checkpoint)
@@ -128,7 +128,7 @@ def collect_projected_tasks(root: Path, version: str) -> tuple[list[str], list[P
                 status=status,
                 verify=verify,
                 checkpoint=checkpoint,
-                trace_ok=manifest_trace_ok(live_label, semantic_id),
+                trace_ok=manifest_trace_ok(root, version, live_label, semantic_id),
             )
         )
     return errors, tasks, promotion
@@ -146,12 +146,12 @@ def projection_decision(tasks: Sequence[ProjectedTask], promotion: dict[str, Any
     return "blocked"
 
 
-def projection_content(version: str, tasks: Sequence[ProjectedTask], decision: str) -> str:
+def projection_content(root: Path, version: str, tasks: Sequence[ProjectedTask], decision: str) -> str:
     lines = [
         f"version: {version}",
         f"status: {decision}",
         "kind: result-projection",
-        "source: tasks/prompts/_shared/progress.json",
+        f"source: {repo_relative(root, progress_path(root, version))}",
         "tasks:",
     ]
     for task in tasks:
@@ -183,7 +183,7 @@ def projection_artifact(root: Path, version: str) -> tuple[list[str], DraftArtif
     decision = projection_decision(tasks, promotion)
     if errors:
         return errors, None, tasks, decision
-    artifact = DraftArtifact(projection_path(root, version), projection_content(version, tasks, decision))
+    artifact = DraftArtifact(projection_path(root, version), projection_content(root, version, tasks, decision))
     return [], artifact, tasks, decision
 
 
@@ -229,7 +229,7 @@ def validate_projection(root: Path, version: str, require_file: bool) -> tuple[l
     return errors, data
 
 
-def closeout_content(version: str, projection_status: str, decision: str, blockers: Sequence[str]) -> str:
+def closeout_content(root: Path, version: str, projection_status: str, decision: str, blockers: Sequence[str]) -> str:
     lines = [
         f"version: {version}",
         f"status: {decision}",
@@ -247,7 +247,7 @@ def closeout_content(version: str, projection_status: str, decision: str, blocke
             "evidence:",
             f"  projection: workflow/versions/{version}/projection/projection.yaml",
             f"  promotion: workflow/versions/{version}/promotion/promotion.yaml",
-            "  progress: tasks/prompts/_shared/progress.json",
+            f"  progress: {repo_relative(root, progress_path(root, version))}",
             "  verify: required-for-done",
             "  checkpoint: required-for-done",
             "remaining_risks:",
@@ -271,7 +271,7 @@ def closeout_artifact(root: Path, version: str) -> tuple[list[str], DraftArtifac
     if projection_status != "done":
         blockers.append(f"projection status is {projection_status}, expected done")
     decision = "done" if not blockers else "blocked"
-    artifact = DraftArtifact(closeout_path(root, version), closeout_content(version, projection_status, decision, blockers))
+    artifact = DraftArtifact(closeout_path(root, version), closeout_content(root, version, projection_status, decision, blockers))
     return [], artifact, decision
 
 

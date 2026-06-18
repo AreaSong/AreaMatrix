@@ -95,7 +95,7 @@ def docs_discussion_template(version: str) -> str:
 
 ## Non-goals
 
-- Do not modify live `tasks/prompts/**` during discussion.
+- Do not modify `workflow/versions/{version}/execution/**` during discussion.
 
 ## Acceptance Boundary
 
@@ -113,7 +113,7 @@ def middle_layer_template(version: str) -> str:
 - Discussion must feed `changes/*.yaml`.
 - Changes must feed docs-change ledger plans.
 - Plans and drafts must keep docs/API/UDL/task sync targets explicit.
-- Queue candidates and promotion preview must not write live `tasks/prompts/**`.
+- Queue candidates and promotion preview must not write `workflow/versions/{version}/execution/**`.
 
 ## Required Sync Targets
 
@@ -151,7 +151,7 @@ blockers:
     status: open
     summary: Discussion has not approved changes generation yet.
 risk_boundaries:
-  - Do not write live tasks/prompts from discussion.
+  - Do not write workflow/versions/{version}/execution/** from discussion.
 next_layers:
   changes: blocked
   plans: blocked

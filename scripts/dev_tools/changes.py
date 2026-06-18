@@ -531,7 +531,7 @@ def render_copy_prompt(root: Path, version: str, record: FeatureRecord, task: di
         "## 执行要求",
         "- 先读取 Source change、Exact Docs、Sync Targets，再决定实现范围。",
         "- 若涉及 Core API，必须保持 `docs/api/core-api.md` 与 `core/area_matrix.udl` 一致。",
-        f"- 不得移动、删除、覆盖用户原文件；不得把 {version} 草稿直接写入 `tasks/prompts/**`。",
+        f"- 不得移动、删除、覆盖用户原文件；不得把 {version} 草稿直接写入 `workflow/versions/{version}/execution/**`。",
         "- 完成后记录实际改动、验证命令、风险处理和未覆盖项。",
         "",
         "## 建议验证",
