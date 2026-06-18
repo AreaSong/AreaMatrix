@@ -22,4 +22,8 @@ promotion_preview:
   batch: 5-1
   batch_slug: template-reference
   start_task: 1
+execution:
+  root: workflow/versions/v-template/execution
+  status: template-reference-blocked
+  migration: hard-migration-required
 archive_policy: not-applicable

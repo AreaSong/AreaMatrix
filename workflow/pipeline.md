@@ -2,9 +2,9 @@
 
 本文描述 AreaMatrix workflow 的执行流转路径。它不是产品文档，不定义产品行为；产品源事实仍然是 `docs/`。它也不是抽象分层模型；抽象层级见 [`architecture.md`](architecture.md)。
 
-pipeline 的职责是说明：一个版本或大功能如何从 docs 讨论，逐步进入账本、计划、草稿、候选队列、promotion preview，最后变成 `tasks/prompts/**` 中可由 task-loop 执行和验收的 live 任务。
+pipeline 的职责是说明：一个版本或大功能如何从 docs 讨论，逐步进入账本、计划、草稿、候选队列、promotion preview，最后变成版本内 `execution/` 中可由 task-loop 执行和验收的 live 任务。
 
-当前 `tasks/prompts/**` 保存的是已完成的 `v1-mvp` 历史 live queue。新版本不得直接在这里续写或重排任务；必须先从 `workflow/versions/v2/discussion/` 这样的版本讨论入口开始，直到 promotion approval 和 explicit promote 通过后，才允许写入新的 live queue 内容。
+当前 `tasks/prompts/**` 保存的是已完成的 `v1-mvp` 历史 live queue，也是脚本硬迁移前的兼容运行入口。新版本不得直接在这里续写或重排任务；必须先从 `workflow/versions/v2/discussion/` 这样的版本讨论入口开始，直到 promotion approval 和 explicit promote 通过后，才允许写入版本内 execution 内容。
 
 ## Pipeline Overview
 
@@ -24,7 +24,7 @@ version init
 -> promotion preview
 -> promotion approval
 -> explicit promote
--> tasks/prompts
+-> workflow/versions/v*/execution
 -> prompt pipeline doctor/render/status
 -> task-loop execute/verify/repair/checkpoint
 -> result projection
@@ -36,7 +36,7 @@ version init
 - **Discussion segment**：从 version init 到 decision gate，目标是把 docs 源事实讨论清楚。
 - **Ledger segment**：从 middle-layer ledger 到 changes ledger，目标是记录 docs 如何变成变更单元。
 - **Planning segment**：从 workflow plans 到 queue candidates，目标是把变更组织成可执行任务候选。
-- **Promotion segment**：从 promotion preview 到 tasks/prompts，目标是安全进入 live 队列。
+- **Promotion segment**：从 promotion preview 到 execution，目标是安全进入版本内执行层。
 - **Execution segment**：从 prompt pipeline checks 到 closeout/audit，目标是执行、验收、修复、checkpoint 和回写。
 
 ## Stage Contracts
@@ -62,6 +62,9 @@ version init
 - `workflow/versions/v*/drafts/`
 - `workflow/versions/v*/queue/`
 - `workflow/versions/v*/promotion/`
+- `workflow/versions/v*/execution/`
+- `workflow/versions/v*/projection/`
+- `workflow/versions/v*/closeout/`
 
 **Gate**：
 
@@ -320,17 +323,18 @@ version init
 
 ### 13. promotion preview
 
-**Purpose**：dry-run 预览候选队列进入 live `tasks/prompts/**` 的结果。
+**Purpose**：dry-run 预览候选队列进入版本内 `execution/` 的结果。
 
 **Input**：
 
 - queue candidates。
-- live task label policy。
-- existing `tasks/prompts/**` 状态。
+- execution task label policy。
+- existing execution 状态。
+- hard migration 完成前的历史 `tasks/prompts/**` 状态。
 
 **Output**：
 
-- live label mapping preview。
+- execution label mapping preview。
 - files-to-create preview。
 - manifest impact preview。
 - scope check。
@@ -341,13 +345,13 @@ version init
 - preview 不写 live files。
 - preview 不修改 progress。
 - preview pass 不等于 promote。
-- v1 已完成并归档时，preview 仍只能把 `tasks/prompts/**` 当历史基线和 collision target；不能把历史队列重新解释成当前 v2 范围。
+- v1 已完成并归档时，preview 仍只能把 `tasks/prompts/**` 当历史基线和兼容 collision target；不能把历史队列重新解释成当前 v2 范围。
 
 **Failure return**：回到 drafts 或 queue candidates，取决于失败来源。
 
 ### 14. promotion approval
 
-**Purpose**：显式确认是否允许把 preview 结果推广到 live 队列。
+**Purpose**：显式确认是否允许把 preview 结果推广到版本内 execution。
 
 **Input**：
 
@@ -368,7 +372,7 @@ version init
 
 ### 15. explicit promote
 
-**Purpose**：真正写入 live `tasks/prompts/**`。
+**Purpose**：真正写入版本内 `execution/`。
 
 **Input**：
 
@@ -376,9 +380,9 @@ version init
 
 **Output**：
 
-- live task files。
-- live manifest updates。
-- live mapping records。
+- execution task files。
+- execution manifest updates。
+- execution mapping records。
 
 **Gate**：
 
@@ -391,13 +395,13 @@ version init
 
 **Failure return**：停止 promote，并恢复到 promotion preview / queue candidates 状态。
 
-### 16. tasks/prompts
+### 16. workflow/versions/v*/execution
 
-**Purpose**：承载 task-loop 可消费的真实任务。
+**Purpose**：承载 task-loop 可消费的版本内真实任务。
 
 **Input**：
 
-- explicit promote 生成的 live tasks。
+- explicit promote 生成的 execution tasks。
 
 **Output**：
 
@@ -405,14 +409,16 @@ version init
 - verify-ready prompts。
 - manifests。
 - progress-compatible live queue。
+- logs / checkpoints / reports。
 
 **Gate**：
 
 - live task 必须有 manifest 边界。
 - live task 必须有 copy-ready 和 verify-ready。
 - live task 必须能追踪到 workflow source。
+- task-scope verify 与 repo-wide gate 必须分层记录。
 
-**Failure return**：回到 live prompt 修正；必要时回到 promotion preview。
+**Failure return**：回到 execution prompt 修正；必要时回到 promotion preview。
 
 ### 17. prompt pipeline doctor/render/status
 
@@ -426,7 +432,7 @@ version init
 - manifest consistency。
 - Missing Expected Paths。
 
-**Failure return**：回到 `tasks/prompts/**` 修正；若源头错，回到 drafts 或 queue。
+**Failure return**：回到 `execution/` 修正；若源头错，回到 drafts 或 queue。
 
 ### 18. task-loop execute/verify/repair/checkpoint
 
@@ -448,6 +454,7 @@ copy-ready execute
 - verify pass 才能进入 checkpoint。
 - checkpoint 必须拒绝 scope drift。
 - dirty worktree、越界文件、gate fail 都应 blocked，而不是伪装 pass。
+- capacity、toolchain、permission 等环境失败必须进入 triage，不得无限 repair。
 
 **Failure return**：留在当前 live task 修复重验。
 
@@ -460,6 +467,7 @@ copy-ready execute
 - task-loop progress。
 - checkpoint result。
 - verification evidence。
+- execution logs / reports。
 
 **Output**：
 
@@ -496,7 +504,7 @@ copy-ready execute
 **Gate**：
 
 - 无法证明通过，就不能宣称 complete。
-- workflow、live queue、task-loop runtime 必须一致。
+- workflow、execution、task-loop runtime 必须一致。
 - 未验证项必须明确留下。
 
 **Failure return**：回到 result projection、task-loop 或对应上游修复层。
@@ -518,9 +526,11 @@ copy-ready execute
 | queue label 冲突 | queue candidates |
 | promotion preview 撞名 | queue candidates |
 | promotion scope bleed | task drafts 或 queue candidates |
-| prompt manifest 不一致 | `tasks/prompts/**` |
+| prompt manifest 不一致 | `execution/` |
 | verify fail | 当前 live task repair |
 | checkpoint scope drift | 当前 live task repair / checkpoint gate |
+| environment fail | execution report / operator triage |
+| runaway retry | stop and triage |
 | result projection 不一致 | result projection / task-loop status audit |
 | closeout 证据不足 | closeout/audit 或对应上游层 |
 
@@ -532,7 +542,7 @@ copy-ready execute
 - `ready`：通过当前层 gate，可进入下一层。
 - `blocked`：存在 unresolved blocker。
 - `deferred`：明确延期，不阻塞当前目标。
-- `promoted`：已进入 live `tasks/prompts/**`。
+- `promoted`：已进入版本内 execution。
 - `done`：执行和验收已完成。
 - `superseded`：被后续版本或变更替代。
 
@@ -577,9 +587,9 @@ flowchart TD
 
   M["promotion preview<br/>推广预览<br/>dry-run 映射 / 撞名检查 / scope 检查"]
   N{"promotion approval<br/>推广确认"}
-  O["explicit promote<br/>显式推广<br/>写入 live tasks/prompts"]
+  O["explicit promote<br/>显式推广<br/>写入 version execution"]
 
-  P["tasks/prompts<br/>真实任务库<br/>task-loop 可消费"]
+  P["execution<br/>版本内真实任务库<br/>copy-ready / verify-ready / manifests / progress"]
   Q{"prompt pipeline doctor/render/status<br/>任务库检查"}
   R["task-loop<br/>execute / verify / repair / checkpoint"]
 

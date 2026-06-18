@@ -1,6 +1,6 @@
 # AreaMatrix Workflow Architecture
 
-本文描述 AreaMatrix workflow 的概念架构。它不是产品文档，不定义产品行为；产品源事实仍然是 `docs/`。它也不是 live 任务队列；真正可执行的任务仍然在 `tasks/prompts/**`。
+本文描述 AreaMatrix workflow 的概念架构。它不是产品文档，不定义产品行为；产品源事实仍然是 `docs/`。标准化后，版本内执行材料应归属 `workflow/versions/<version>/execution/`；当前 `tasks/prompts/**` 仍是 Stage 1 历史执行队列和兼容运行入口，等待硬迁移。
 
 workflow 的职责是把已经讨论清楚的产品意图，稳定地转成可追踪、可检查、可推广、可验收的小任务。
 
@@ -26,7 +26,7 @@ AreaMatrix workflow 分成三种视角：
 | L4 | Gate Layer | 什么时候允许进入下一层？ | discussion gate、plan doctor、draft doctor、promotion approval |
 | L3 | Trace Layer | 每个产物从哪里来，到哪里去？ | docs -> change -> plan -> draft -> queue -> task -> result 的追踪关系 |
 | L2 | Schema Layer | 每类产物长什么样？ | discussion、change、plan、draft、queue、promotion、runtime 的字段契约 |
-| L1 | Artifact Layer | 东西实际落在哪里？ | `docs/`、`workflow/versions/v*/`、`tasks/prompts/**`、progress、logs、checkpoints |
+| L1 | Artifact Layer | 东西实际落在哪里？ | `docs/`、`workflow/versions/v*/`、`workflow/versions/v*/execution/`、历史 `tasks/prompts/**`、progress、logs、checkpoints |
 
 ## Layer Responsibilities
 
@@ -91,7 +91,7 @@ version init
 -> promotion preview
 -> promotion approval
 -> explicit promote
--> tasks/prompts
+-> version execution
 -> prompt pipeline doctor/render/status
 -> task-loop execute/verify/repair/checkpoint
 -> result projection
@@ -101,8 +101,8 @@ version init
 关键边界：
 
 - `docs discussion` 到 `decision gate` 之前，只讨论源事实，不生成 live tasks。
-- `promotion preview` 只做 dry-run，不写 `tasks/prompts/**`。
-- `explicit promote` 是进入 live 队列的唯一动作。
+- `promotion preview` 只做 dry-run，不写 execution live files。
+- `explicit promote` 是进入版本内 execution 的唯一动作。
 - `task-loop` 只执行已批准的 live queue，不负责需求讨论或 promotion 审批。
 
 详细的阶段契约、失败回退、状态语义和执行流转图见 [`pipeline.md`](pipeline.md)。
@@ -126,7 +126,8 @@ version init
 - `changes/` 记录“要变什么”；`plans/` 记录“如何组织执行”。
 - `drafts/` 和 `queue/` 仍是候选材料，不是 live execution scope。
 - `promotion/` 先 preview，再 approval，最后 explicit promote。
-- `tasks/prompts/**` 是 task-loop 可消费的真实队列。
+- `execution/` 是 task-loop 可消费的版本内真实执行层。
+- `tasks/prompts/**` 是当前历史兼容执行入口；硬迁移前不得移动或重写。
 - `result projection` 和 `closeout/audit` 用于把执行结果回写到 workflow 视角。
 
 ## Stability Criteria
@@ -137,7 +138,7 @@ version init
 - 每层都有最小 schema 和 doctor gate。
 - preview 与 promote 强分离。
 - docs drift 能触发回审。
-- task-loop 结果能投影回 change/plan/draft 状态。
+- task-loop 结果能从 execution 投影回 change/plan/draft 状态。
 - 失败后能知道回到哪一层修复。
 
 ## Mermaid Overview

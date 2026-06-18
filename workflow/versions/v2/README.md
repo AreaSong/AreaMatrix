@@ -14,16 +14,19 @@ discussion
 -> drafts
 -> queue
 -> promotion preview
--> future explicit promote into tasks/prompts/**
+-> execution
+-> projection
+-> closeout
 ```
 
-The version-local queue starts at `phase-0 / 0-1 / task-01`. Future live mapping
-is pending and must be configured before promotion preview can target global
-`tasks/prompts/**` labels.
+The version-local queue starts at `phase-0 / 0-1 / task-01`. Future execution
+mapping is pending and must be configured before promotion preview can target
+`workflow/versions/v2/execution/**`. Historical `tasks/prompts/**` compatibility
+remains until the hard migration is approved.
 
 Current status:
 
 - discussion: not started, not approved
 - changes / plans / drafts / queue: blocked until discussion gate passes
-- live promotion: blocked until explicit approval and live mapping
+- execution promotion: blocked until explicit approval and execution mapping
 - inherited release blockers: Developer ID / notarization evidence remains on the v1 formal distribution track, not inside v2 planning

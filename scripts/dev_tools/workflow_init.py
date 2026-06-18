@@ -21,6 +21,7 @@ LAYER_READMES = {
     "drafts": "Drafts",
     "queue": "Queue Candidates",
     "promotion": "Promotion Preview",
+    "execution": "Execution",
     "projection": "Result Projection",
     "closeout": "Closeout Audit",
 }
@@ -66,6 +67,10 @@ local_queue:
 promotion_preview:
   target_queue: tasks/prompts
   live_mapping: pending
+execution:
+  root: workflow/versions/{version}/execution
+  status: blocked-until-promotion
+  migration: hard-migration-required
 archive_policy: archive-after-complete
 """
 
@@ -89,7 +94,7 @@ def docs_discussion(version: str) -> str:
 
 ## Non-goals
 
-- Do not modify live `tasks/prompts/**` during discussion.
+- Do not modify version execution or historical `tasks/prompts/**` during discussion.
 - Do not generate copy-ready / verify-ready prompts before decisions are approved.
 
 ## Acceptance Boundary
@@ -108,8 +113,8 @@ def middle_layer_discussion(version: str) -> str:
 - Discussion must feed `changes/*.yaml`.
 - Changes must feed docs-change ledger plans.
 - Plans and drafts must keep docs/API/UDL/task sync targets explicit.
-- Queue candidates use the version-local queue before live promotion mapping is configured.
-- Promotion preview must not write live `tasks/prompts/**`.
+- Queue candidates use the version-local queue before execution mapping is configured.
+- Promotion preview must not write version execution or historical `tasks/prompts/**`.
 
 ## Local Queue
 
@@ -130,7 +135,8 @@ def middle_layer_discussion(version: str) -> str:
 - `plans`: waiting for changes.
 - `drafts`: waiting for plans.
 - `queue`: waiting for drafts.
-- `promotion`: blocked until live mapping is configured.
+- `promotion`: blocked until execution mapping is configured.
+- `execution`: blocked until promotion is approved.
 """
 
 
@@ -153,13 +159,14 @@ blockers:
     status: open
     summary: Discussion has not approved changes generation yet.
 risk_boundaries:
-  - Do not write live tasks/prompts from discussion.
+  - Do not write version execution or historical tasks/prompts from discussion.
 next_layers:
   changes: blocked
   plans: blocked
   drafts: blocked
   queue: blocked
   promotion: blocked
+  execution: blocked
 """
 
 
@@ -171,16 +178,19 @@ def layer_readme(version: str, layer: str, title: str) -> str:
     elif layer == "baseline":
         detail = "Docs baselines record Exact Docs line ranges and hashes for drift detection."
     elif layer == "promotion":
-        detail = "Promotion preview is blocked until live mapping is explicitly configured."
+        detail = "Promotion preview is blocked until execution mapping is explicitly configured."
+    elif layer == "execution":
+        detail = "Execution is the version-local target for approved copy-ready, verify-ready, manifest, progress, checkpoint, log, and report material."
     else:
-        detail = f"{title} are review artifacts for {version}; they do not write live tasks/prompts."
+        detail = f"{title} are review artifacts for {version}; they do not write version execution or historical tasks/prompts."
     return f"""# {version} {title}
 
 {detail}
 
 - Version-local queue starts at `phase-0 / 0-1 / task-01`.
-- Live `tasks/prompts/**` mapping is pending and must be configured later.
-- Do not modify `tasks/prompts/**` or `tasks/prompts/_shared/progress.json` from this layer.
+- Execution root: `workflow/versions/{version}/execution/`.
+- Historical `tasks/prompts/**` compatibility remains until the hard migration is approved.
+- Do not modify execution files, `tasks/prompts/**`, or `tasks/prompts/_shared/progress.json` from this layer unless the layer is explicit promoted execution.
 """
 
 
@@ -199,12 +209,15 @@ discussion
 -> drafts
 -> queue
 -> promotion preview
--> future explicit promote into tasks/prompts/**
+-> execution
+-> projection
+-> closeout
 ```
 
-The version-local queue starts at `phase-0 / 0-1 / task-01`. Future live mapping
-is pending and must be configured before promotion preview can target global
-`tasks/prompts/**` labels.
+The version-local queue starts at `phase-0 / 0-1 / task-01`. Future execution
+mapping is pending and must be configured before promotion preview can target
+`workflow/versions/{version}/execution/**`. Historical `tasks/prompts/**`
+compatibility remains until the hard migration is approved.
 """
 
 

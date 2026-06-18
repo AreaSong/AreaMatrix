@@ -17,6 +17,7 @@ Templates define the reusable shape for future `workflow/versions/v*/` instances
 - `promotion.md`: human-readable promotion preview shape.
 - `approval.yaml`: explicit promotion approval ledger shape.
 - `apply.yaml`: explicit promote/apply preview shape; templates never write live queue.
+- `execution.md`: version-local execution layer shape after approved promotion.
 - `projection.yaml`: result projection shape from task-loop runtime back to workflow.
 - `closeout.yaml`: closeout/audit evidence shape.
 

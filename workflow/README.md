@@ -1,18 +1,23 @@
 # AreaMatrix Workflow
 
 `workflow/` tracks large feature, version, refactor, and optimization lifecycles.
-It is separate from `tasks/prompts/**`, which is the approved small-task execution queue.
+The target standard keeps version planning and version execution together under
+`workflow/versions/<version>/`. The historical Stage 1 execution queue still
+lives in `tasks/prompts/**` until an explicit hard migration updates scripts and
+validation.
 
 ## Layers
 
-- `workflow/`: requirement flow, version planning, middle-layer ledgers, docs-change ledger, drafts, queue candidates, and archive policy.
-- `tasks/prompts/**`: executable copy-ready / verify-ready task queue.
+- `workflow/`: requirement flow, version planning, middle-layer ledgers, docs-change ledger, drafts, queue candidates, execution evidence, projection, and archive policy.
+- `workflow/versions/<version>/execution/`: target standard location for approved copy-ready / verify-ready task execution materials.
+- `tasks/prompts/**`: historical Stage 1 executable queue and current compatibility runtime until hard migration.
 - `./task-loop`: runner that executes approved tasks; it does not make requirement decisions.
 
 For the conceptual architecture behind these boundaries, see
 [`architecture.md`](architecture.md).
 For the detailed docs-to-task-loop execution flow, see
-[`pipeline.md`](pipeline.md).
+[`pipeline.md`](pipeline.md). For the execution layer contract, see
+[`execution.md`](execution.md).
 
 ## Standard Flow
 
@@ -27,9 +32,10 @@ docs
 -> workflow/versions/v*/drafts
 -> workflow/versions/v*/queue
 -> workflow/versions/v*/promotion preview
--> tasks/prompts/**
+-> workflow/versions/v*/execution
 -> ./task-loop run
--> workflow/versions/v*/archive
+-> workflow/versions/v*/projection
+-> workflow/versions/v*/closeout
 ```
 
 New v* versions must pass the discussion gate before writing changes. The
@@ -67,9 +73,12 @@ later explicit apply gate passes; `v-template` itself can never apply to live
 `tasks/prompts/**`.
 
 Large features and versioned work go through `workflow` first. Small, already
-clear bug fixes can go directly to `tasks/prompts/**` or a focused local task.
+clear bug fixes may use the future lightweight `tasks/` structure or a focused
+local task without creating a full workflow version.
 
 Promotion preview maps semantic workflow tasks to future live task labels without
-writing the live queue. Real promotion into `tasks/prompts/**` is a later
-explicit step and remains blocked until approval artifacts and live mapping are
-configured, even after prerequisite versions are archived.
+writing execution files. Real promotion into `workflow/versions/<version>/execution/**`
+is a later explicit step and remains blocked until approval artifacts and live
+mapping are configured, even after prerequisite versions are archived. During the
+transition, scripts may still target `tasks/prompts/**`; those paths must not be
+moved until the hard migration plan is approved and verified.

@@ -86,6 +86,7 @@ REQUIRED_TEMPLATES = [
     "promotion.md",
     "approval.yaml",
     "apply.yaml",
+    "execution.md",
     "projection.yaml",
     "closeout.yaml",
 ]
@@ -94,7 +95,7 @@ REQUIRED_ARCHITECTURE_DOCS = {
     "architecture.md": [
         "`docs/` 是产品源事实",
         "`promotion preview` 只做 dry-run",
-        "`explicit promote` 是进入 live 队列的唯一动作",
+        "`explicit promote` 是进入版本内 execution 的唯一动作",
         "`task-loop` 只执行已批准的 live queue",
     ],
     "pipeline.md": [

@@ -6,26 +6,26 @@ docs:
     line_end: 30
     heading: 'Architecture Layers'
     excerpt: '七层模型描述的是抽象依赖关系，不是执行步骤。'
-    sha256: 'ed9387024ac3938b3177eea7f175b1b6f69c51bc2c8e33eec6bdcd86e38280f2'
+    sha256: 'b7317602b0632f83e837a97868173df492813e1b62f83201272145c1a3636a19'
     source: 'changes:template-docs-contract'
   - file: 'workflow/pipeline.md'
     line_start: 72
     line_end: 91
     heading: 'docs baseline snapshot'
     excerpt: '记录本轮讨论基于哪些 docs 源事实，防止后续 docs drift。'
-    sha256: '50c74d15ae2c52dd65e5a436f62aab7528038d717c7ca9c7dddfc47d21958b51'
+    sha256: '0e21963dc996ef276744aaf776e348fbac5e5d227065cac289385b212e487d61'
     source: 'changes:template-docs-contract'
   - file: 'workflow/pipeline.md'
-    line_start: 282
-    line_end: 386
+    line_start: 287
+    line_end: 394
     heading: 'queue candidates'
-    excerpt: 'dry-run 预览候选队列进入 live `tasks/prompts/**` 的结果。'
-    sha256: '5b6eccfae1b128566865622a1afb44186876a0d2bf85e4a0fe6f20a83dfd07f4'
+    excerpt: 'dry-run 预览候选队列进入版本内 `execution/` 的结果。'
+    sha256: 'b2b83f9fc0b13d34aa3c0fa557671c3f8cb8efdca95704d41e7c7a1b995245c9'
     source: 'changes:template-execution-contract'
   - file: 'workflow/pipeline.md'
-    line_start: 448
-    line_end: 496
+    line_start: 461
+    line_end: 508
     heading: 'result projection'
     excerpt: '把 task-loop 结果回写到 workflow 视角。'
-    sha256: 'cfd2e72c60df33b1783b50a1cc4cd7a84f4b54b6d90c6ac7fe62bea5f8a11cd4'
+    sha256: 'cb569609268f44fd7649b16b5e8c375edffee7d450d681f856fc34a977323869'
     source: 'changes:template-execution-contract'

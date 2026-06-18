@@ -1,3 +1,8 @@
+# AreaFlow Vision Reference
+
+> 本文件由旧 `scripts/question.md` 迁入，保存 AreaMatrix 工作流优化讨论、事故复盘和 AreaFlow 未来产品愿景。
+> 它是参考资料，不是当前 AreaMatrix workflow 的执行标准；当前标准见 [`../execution.md`](../execution.md) 和 [`../pipeline.md`](../pipeline.md)。
+
 # AreaMatrix 工作流优化需求汇总 → AreaFlow 产品规划
 
 > **文档性质**：工作流优化需求收集 + 讨论结论 + 完整产品愿景
