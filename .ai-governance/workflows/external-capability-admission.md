@@ -5,7 +5,7 @@
 ## 基线结论
 
 - 目录存在不等于启用。任何外部目录、skill、plugin、workflow、runtime 或 prompt 包即使已经在本机存在，也不能自动参与 AreaMatrix 路由、任务执行或验收。
-- 外部 runtime 不得成为 AreaMatrix canonical runtime。AreaMatrix v1 live execution 仍以 `./dev + ./task-loop + workflow/versions/v1-mvp/execution/**` 为唯一主线。
+- 外部 runtime 不得成为 AreaMatrix canonical runtime。AreaMatrix live execution 仍以 `./dev + ./task-loop + workflow/versions/<version>/execution/**` 为唯一主线；`workflow/versions/v1-mvp/execution/**` 只是已完成的 v1 历史执行实例。
 - 外部资料只能先作为候选能力、上游语义证据或治理参考；是否吸收由本门禁记录判断。
 - 涉及 OpenAI / Codex 能力语义时，优先用 OpenAI 官方文档核对。Codex 官方当前建议的接入顺序是先 `AGENTS.md`，再 hooks / linters，已有可复用 workflow 才考虑 plugin / skill，需要外部系统时再接 MCP，适合委派时再考虑 subagents。
 

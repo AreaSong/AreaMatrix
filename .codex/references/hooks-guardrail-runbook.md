@@ -237,7 +237,7 @@ hooks = false
 2. 删除或还原新增的 `.codex/hooks/*.py` 脚本。
 3. 若只是临时停用，在用户 config 中设置 `[features] hooks = false`，或在 `/hooks` 中禁用单个非 managed hook。
 4. 重启 Codex session 或用 `/hooks` 重新检查。
-5. 运行 `./dev check governance`、`./dev check skills`、`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`。
+5. 运行 `./dev check governance`、`./dev check skills`、`python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor`。
 
 ## 验证清单
 
@@ -246,7 +246,7 @@ hooks = false
 ```bash
 ./dev check governance
 ./dev check skills
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .codex/references .codex/hooks.json tasks/backlog
 ```
 

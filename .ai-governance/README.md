@@ -18,7 +18,7 @@
 
 ## Live 主线保护
 
-AreaMatrix v1 阶段唯一 live execution 主线是：
+AreaMatrix 唯一 live execution 主线是：
 
 ```text
 AGENTS.md / .ai-governance
@@ -29,8 +29,9 @@ AGENTS.md / .ai-governance
 ```
 
 - `workflow/` 负责讨论、规划、预览、promotion gate 和版本内 execution；通过明确 apply 前不得直接写入 live `workflow/versions/<version>/execution/**`。
+- `workflow/versions/v1-mvp/execution/**` 是已完成的 v1 历史执行队列；不得为了整理或接入外部能力重写历史 progress、checkpoint 或 task-loop evidence。
 - `tasks/backlog/**` 只记录规划、评估和治理排期，不进入 `./task-loop`，不写 `progress.json`，不替代 live queue。
-- Codex Automations、Cloud、Worktrees、Vibe-Skills、SDK、app-server、remote-control 只能作为候选能力或未来评估项；v1 live queue 阶段不得接管主线。
+- Codex Automations、Cloud、Worktrees、Vibe-Skills、SDK、app-server、remote-control 只能作为候选能力或未来评估项；不得接管主线。
 - 不创建第二套 runner、progress、queue 或 promotion 机制；任何外部能力接入必须先通过 [外部能力接入门禁](workflows/external-capability-admission.md)，证明不会改变上述主线和源事实层级。
 
 ## 目录结构

@@ -15,7 +15,7 @@
 - AI 协作与风险规则：`.ai-governance/**`。
 - Workflow 生命周期：`workflow/**`。
 - Backlog prompt 包：`tasks/backlog/**`，只作候选和手工复制材料。
-- Live queue：`tasks/prompts/**`，只有 workflow promotion 通过后才可写入。
+- Live queue：`workflow/versions/<version>/execution/**`，只有 workflow promotion 通过后才可写入。
 
 ## 必填字段
 
@@ -39,7 +39,7 @@
 ## Backlog 边界
 
 - `tasks/backlog/**` 不是 live queue，不由 `./task-loop` 执行。
-- Backlog prompt 不写 `tasks/prompts/**`，不写 `tasks/prompts/_shared/progress.json`，不创建 checkpoint、run summary、runner lock 或 promotion state。
+- Backlog prompt 不写 `workflow/versions/<version>/execution/**`，不写 `workflow/versions/<version>/execution/_shared/progress.json`，不创建 checkpoint、run summary、runner lock 或 promotion state。
 - Backlog prompt 只能作为候选材料；进入 live queue 必须经过 `workflow/` planning gate、promotion preview 和明确批准。
 
 ## Blocked / Rollback 口径
@@ -54,7 +54,7 @@
 ```bash
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 ./dev workflow doctor
 git diff --check -- workflow .codex/references .codex/skills-src tasks/backlog
 ```

@@ -1,6 +1,6 @@
 # Codex Operating Layer Inventory
 
-本 inventory 只盘点 AreaMatrix / Codex 工作层现状，不新增能力，不进入 `tasks/prompts/**` live queue。
+本 inventory 只盘点 AreaMatrix / Codex 工作层现状，不新增能力，不进入 `workflow/versions/<version>/execution/**` live queue。
 
 ## 基线结论
 
@@ -9,7 +9,7 @@
 - `.codex/**` 只承载 Codex 运行材料、runbook、checklist 和 repo-local skill 文本，不是产品语义源事实。
 - `tasks/backlog/**` 是 planning / backlog 层，不由 `./task-loop` 扫描、执行、重试、验收或写 progress。
 - `../Vibe-Skills/**` 是候选能力池和治理参考，不是 AreaMatrix canonical runtime。
-- 当前 live mainline 仍是 `AGENTS.md / .ai-governance -> workflow/ planning gate -> tasks/prompts/** -> ./dev / ./task-loop -> repo-local skills`。
+- 当前 live mainline 仍是 `AGENTS.md / .ai-governance -> workflow/ planning gate -> workflow/versions/<version>/execution/** -> ./dev / ./task-loop -> repo-local skills`。
 
 ## Governance Rules
 
@@ -67,7 +67,7 @@
 |---|---|---|---|---|
 | `./dev backlog list` | `scripts/dev_tools/backlog.py` + `tasks/backlog/README.md` | `areamatrix-workflow-planning` | 已成为只读浏览入口；列出 package slug、title、task 数 | 否；只读打印 backlog package |
 | `./dev backlog show <package>` | `scripts/dev_tools/backlog.py` + package README | `areamatrix-workflow-planning` | 已成为只读浏览入口；打印 README 和 task index | 否；不执行 prompt |
-| `./dev backlog show <package> --task N --mode copy|verify` | `scripts/dev_tools/backlog.py` + package prompt 文件 | `areamatrix-workflow-planning` | 已成为只读浏览入口；打印指定 prompt 内容 | 否；不写 `tasks/prompts/**`、progress、logs 或 checkpoint |
+| `./dev backlog show <package> --task N --mode copy|verify` | `scripts/dev_tools/backlog.py` + package prompt 文件 | `areamatrix-workflow-planning` | 已成为只读浏览入口；打印指定 prompt 内容 | 否；不写 `workflow/versions/<version>/execution/**`、progress、logs 或 checkpoint |
 | Console passthrough | `scripts/task_loop/actions.py` + `scripts/dev_tools/cli.py` | `areamatrix-task-loop` | 已接入 action registry passthrough | 否；控制台只负责可发现性和透传 |
 
 ## Absorbed / Candidate / Deferred
@@ -86,10 +86,10 @@
 | `tdd-guide`、`architecture-patterns`、`docs-review` | 只参考 | `.codex/references/vibe-skills-capability-screening.md` | 无 |
 | Vibe-Skills professional vertical skills | 暂缓 | `tasks/backlog/**` 或后续 admission record | 无；具体任务明确需要时单项评估 |
 | Vibe runtime / VCO / `.vibeskills/**` / memory plane / specialist router | 拒绝进入默认主线 | 筛选记录 | 无；不安装、不启用、不触发 |
-| Automations / Cloud / Worktrees / GitHub Action | 暂缓 | `tasks/backlog/codex-native-area-vibe-optimization.md` | 无；v1 live queue 完成前不接主线 |
+| Automations / Cloud / Worktrees / GitHub Action | 暂缓 | `tasks/backlog/codex-native-area-vibe-optimization.md` | 无；不接管主线 |
 | SDK / app-server / remote-control / Slack / Linear | 暂缓 | `tasks/backlog/codex-native-area-vibe-optimization.md` | 无；平台化需求明确后再设计 |
 
 ## Inventory Gaps
 
-- 已补充本 inventory 的导航入口；未发现需要修改 `tasks/prompts/**` 才能成立的 inventory gap。
+- 已补充本 inventory 的导航入口；未发现需要修改 `workflow/versions/<version>/execution/**` 才能成立的 inventory gap。
 - 本文件不证明后续 boundary regression 已通过；边界污染回归由 `codex-operating-layer-closeout` 的后续 prompt 继续验收。

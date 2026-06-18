@@ -5,7 +5,7 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 1. 根规则：[../../AGENTS.md](../../AGENTS.md)
 2. AI 治理：[../../.ai-governance/README.md](../../.ai-governance/README.md)
 3. 文档导航：[../../docs/README.md](../../docs/README.md)
-4. Prompt 任务库：[../../tasks/prompts/README.md](../../tasks/prompts/README.md)
+4. v1 历史执行队列：[../../workflow/versions/v1-mvp/execution/README.md](../../workflow/versions/v1-mvp/execution/README.md)
 5. Repo-local skills：[../skills-src/README.md](../skills-src/README.md)
 
 ## 常用文档
@@ -34,7 +34,7 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 - 代码评审：`CODE_REVIEW.md`
 - 依赖与供应链：`docs/development/dependency-policy.md`
 - CI 治理：`docs/development/ci-governance.md`
-- Prompt 工程质量门禁：`tasks/prompts/_shared/engineering-quality-rules.md`
+- Prompt 工程质量门禁：`workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md`
 - Stage 1 MVP：`workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md`
 - 总路线图：`docs/roadmap/milestones.md`
 
@@ -52,7 +52,7 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 
 - Skills：`./dev check skills`
 - Governance：`./dev check governance`
-- Prompt runner：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
+- Prompt runner：`python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor`
 - Task loop full check：`./task-loop check`
 - Task loop：`./task-loop status`
 - Task loop reset：`./task-loop reset-progress`

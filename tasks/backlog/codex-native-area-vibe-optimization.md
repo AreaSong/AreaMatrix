@@ -2,7 +2,7 @@
 
 ## 定位
 
-本任务记录近期要做的系统层优化。它不是 `tasks/prompts/**` live queue 的一部分，不由 `./task-loop` 自动执行。
+本任务记录近期要做的系统层优化。它不是 `workflow/versions/<version>/execution/**` live queue 的一部分，不由 `./task-loop` 自动执行。
 
 核心方向：
 
@@ -15,7 +15,7 @@ Codex 官方原生能力做底座
 
 ## 背景
 
-- AreaMatrix 当前主线是 `AGENTS.md`、`.ai-governance/`、`workflow/`、`tasks/prompts/**`、`./dev`、`./task-loop` 和 `.codex/skills-src/**`。
+- AreaMatrix 当前主线是 `AGENTS.md`、`.ai-governance/`、`workflow/`、`workflow/versions/<version>/execution/**`、`./dev`、`./task-loop` 和 `.codex/skills-src/**`。
 - Codex 官方能力包括 rules、hooks、skills、plugins、MCP、Computer Use、Browser、subagents、`codex exec`、Automations、Cloud、Worktrees 等。
 - `../Vibe-Skills` 是外部 “通用 AI 工作台 + 专业领域 skill 仓库”，可作为候选能力池和治理参考。
 - 当前不允许让 Vibe-Skills、Codex Automations、Cloud、Worktrees 或其他外部 runtime 接管 AreaMatrix live queue。
@@ -24,7 +24,7 @@ Codex 官方原生能力做底座
 
 | 项 | 内容 | 交付物 | 完成标准 |
 |---|---|---|---|
-| P0.1 | 明确 `./dev + ./task-loop + tasks/prompts/**` 是唯一 live execution 主线 | `.codex/references/codex-workflow-and-tools.md` 记录 | 不新增第二 runner，不修改 live queue 边界 |
+| P0.1 | 明确 `./dev + ./task-loop + workflow/versions/<version>/execution/**` 是唯一 live execution 主线 | `.codex/references/codex-workflow-and-tools.md` 记录 | 不新增第二 runner，不修改 live queue 边界 |
 | P0.2 | 为外部 skills / workflow 建 admission gate | [`.ai-governance/workflows/external-capability-admission.md`](../../.ai-governance/workflows/external-capability-admission.md) | 每个候选必须说明 source of truth、触发条件、验证方式、owner、是否影响主线，并给出吸收、暂缓、只参考或拒绝结论 |
 | P0.3 | 明确 Vibe-Skills 只能先作为候选能力池 | Vibe-Skills 吸收原则 | 不直接安装全量 skills，不让 `vibe` 成为 AreaMatrix canonical runtime |
 
@@ -65,22 +65,22 @@ P1.4 owner 范围：
 - Upstream source: OpenAI Codex Automations、Codex Cloud / web、Codex Cloud environments / internet access、Codex App Worktree support / Worktrees 官方文档。
 - AreaMatrix gap: 需要把 Automations、Cloud、Worktrees 从泛泛“暂缓”推进到有触发条件、禁写路径、owner 和验证口径的 admission record。
 - Dedup with: 不新增同义 runner、skill 或 workflow；门禁源事实落在 `.ai-governance/workflows/external-capability-admission.md`，Codex 操作投影落在 `.codex/references/codex-automations-cloud-worktrees-gate.md`。
-- Local source of truth: `.ai-governance/**` 仍是治理源事实；live execution 仍是 `./dev + ./task-loop + tasks/prompts/**`。
+- Local source of truth: `.ai-governance/**` 仍是治理源事实；live execution 仍是 `./dev + ./task-loop + workflow/versions/<version>/execution/**`。
 - Trigger condition: Automations 只允许提醒、周期性只读检查、状态汇报或人工 triage 候选；Cloud 只作为未来隔离执行 / review / PR 候选；Worktrees 只作为隔离实验、spike 或并行独立任务候选。
-- Live mainline impact: 无。三者不得写 `tasks/prompts/**`、`tasks/prompts/_shared/progress.json`、task-loop logs、run summaries、runner lock、checkpoint、branch、commit、push 或 promotion state，也不得启动、停止、恢复、drain 或替代 `./task-loop`。
+- Live mainline impact: 无。三者不得写 `workflow/versions/<version>/execution/**`、`workflow/versions/<version>/execution/_shared/progress.json`、task-loop logs、run summaries、runner lock、checkpoint、branch、commit、push 或 promotion state，也不得启动、停止、恢复、drain 或替代 `./task-loop`。
 - User-file / privacy / remote-call impact: 命中真实用户文件、隐私、远程 AI 调用、凭证、secrets、DB、staging、FSEvents、iCloud 或破坏性操作时转 `areamatrix-file-safety` / Mission-Critical。
-- Verification: `./dev check skills`、`./dev check governance`、`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`、`git diff --check -- .ai-governance .codex/references .codex/skills-src tasks/backlog`。
+- Verification: `./dev check skills`、`./dev check governance`、`python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor`、`git diff --check -- .ai-governance .codex/references .codex/skills-src tasks/backlog`。
 - Owner / landing: `areamatrix-workflow-planning` owns；support owners 是 `areamatrix-task-loop`、`areamatrix-git-checkpoint`、`areamatrix-file-safety`；landing 是 `.codex/references/codex-automations-cloud-worktrees-gate.md` 和本 backlog 记录。
 - Decision: Automations = Trigger-based only；Cloud = Defer；Worktrees = Defer；任何第二 runner / 第二 state surface = Reject。
 
 ## Next Roadmap Decision
 
-本节是 closeout 后的路线判断记录，不是 live task approval，不进入 `tasks/prompts/**`，也不授权 hooks、Automations、Cloud、Worktrees、Vibe-Skills、Browser / Chrome、Computer Use 或 subagents 接管 AreaMatrix 主线。
+本节是 closeout 后的路线判断记录，不是 live task approval，不进入 `workflow/versions/<version>/execution/**`，也不授权 hooks、Automations、Cloud、Worktrees、Vibe-Skills、Browser / Chrome、Computer Use 或 subagents 接管 AreaMatrix 主线。
 
 ### Baseline 判断
 
 - 当前 Codex / AreaMatrix 工作层可以视为有条件稳定基线：inventory 已明确 source of truth、execution、state、skill owner 分层；backlog 和 playbook 只做 planning / 操作投影；边界回归记录见 [Codex Operating Layer Boundary Regression](codex-operating-layer-boundary-regression.md)。
-- 默认路线应回到 AreaMatrix 产品主线收口和产品验证，而不是继续扩展工作层。当前 v1 live queue 已完成，但 v1 closeout 仍有 release blocker、checkpoint evidence gap 和 dirty worktree blocker；正式恢复新 live 产品任务前，应先处理这些 blocker。
+- 默认路线应回到 AreaMatrix 产品主线收口和产品验证，而不是继续扩展工作层。当前 v1 historical execution queue 已完成，但 v1 closeout 仍有 release blocker、checkpoint evidence gap 和 dirty worktree blocker；正式恢复新 live 产品任务前，应先处理这些 blocker。
 - 若后续发现 source-of-truth、execution、state 或 skill owner 污染，路线第一项立即改为污染修复；在 blocker 清零前，不再宣称稳定基线。
 - 后续任何外部能力都必须先通过 [外部能力接入门禁](../../.ai-governance/workflows/external-capability-admission.md)，并形成缺口、去重、source of truth、触发条件、live 主线影响、用户文件 / 隐私影响、验证、owner / landing 和结论记录。
 
@@ -89,7 +89,7 @@ P1.4 owner 范围：
 | 分类 | 项 | 路线判断 | 触发条件 | 门禁 |
 |---|---|---|---|---|
 | Recommended now | AreaMatrix v1 收口 | 先关闭 release / checkpoint / dirty-worktree blocker，再决定归档或下一版本 | live queue 已 637/637 completed，但 v1 closeout 仍 blocked | 使用 `workflow/versions/v1-mvp/closeout/closeout.yaml`、release checklist、progress/checkpoint evidence 和 Git 状态作为收口源 |
-| Recommended next | AreaMatrix 产品主线 | blocker 关闭或明确 defer 后，回到已批准的产品实现、验收和 task-loop 主线 | v1 closeout 无 blocker；live queue / progress / checkpoint 未被外部层污染 | 继续按 `docs/** -> workflow/ planning gate -> tasks/prompts/** -> ./dev / ./task-loop -> repo-local skills` 执行 |
+| Recommended next | AreaMatrix 产品主线 | blocker 关闭或明确 defer 后，回到已批准的产品实现、验收和 task-loop 主线 | v1 closeout 无 blocker；live queue / progress / checkpoint 未被外部层污染 | 继续按 `docs/** -> workflow/ planning gate -> workflow/versions/<version>/execution/** -> ./dev / ./task-loop -> repo-local skills` 执行 |
 | Recommended now | 当前 Codex / AreaMatrix 工作层 | 作为稳定基线保留 | 日常开发、验收、失败归因、规划 handoff | `.ai-governance/**` 仍是治理源事实；`.codex/**` 只做操作投影；backlog 不执行 |
 | Recommended now | Browser / Chrome | 只作为场景化验证工具，不作为主线能力改造；模板见 [UI evidence tool templates](../../.codex/references/ui-evidence-tool-templates.md) | Browser：localhost / file URL / 本地 web 预览；Chrome：需要用户 profile、cookies、扩展或远程登录态 | 不替代命令门禁；不处理账号、安全、支付、隐私或不可逆设置；必要时单项 admission |
 | Trigger-based only | Computer Use | 仅用于 macOS SwiftUI UI smoke 补证；通用模板见 [UI evidence tool templates](../../.codex/references/ui-evidence-tool-templates.md) | 任务需要真实窗口、点击、输入、菜单、sheet、alert、截图或 GUI-only bug 复现 | 先跑命令门禁；使用 fixture / QA repo；不点击系统权限、密码、隐私授权或真实用户文件破坏性确认 |
@@ -100,12 +100,12 @@ P1.4 owner 范围：
 | Defer | Cloud | 暂不接入 AreaMatrix 主线 | 需要远端隔离执行、review 或云端协作，且本地 runner 不适合 | local env、凭证、隐私、用户文件边界、网络、diff apply、local validation 和 checkpoint 方案通过 admission；不得成为 canonical runtime |
 | Defer | Worktrees | 暂不作为默认执行方式 | 需要隔离大改、并行版本、独立 spike 或实验分支，且当前 checkout 风险过高 | 明确 worktree owner、同步/回收、checkpoint、冲突解决和 forbidden paths；不绕过 workflow planning gate 或 live task labels |
 | Reject / do not adopt | Vibe runtime / VCO / `.vibeskills/**` / memory plane / specialist router | 不进入 AreaMatrix 默认主线 | 无默认触发 | 需要第二 runtime、source-of-truth 或 state surface 的方案直接拒绝 |
-| Reject / do not adopt | 第二套 runner / progress / queue / checkpoint / promotion | 不采用 | 无默认触发 | 与 `./dev + ./task-loop + tasks/prompts/**` 主线冲突，直接拒绝 |
+| Reject / do not adopt | 第二套 runner / progress / queue / checkpoint / promotion | 不采用 | 无默认触发 | 与 `./dev + ./task-loop + workflow/versions/<version>/execution/**` 主线冲突，直接拒绝 |
 | Reject / do not adopt | 用 backlog roadmap 批准 live task | 不采用 | 无默认触发 | roadmap 只能记录决策；真正执行仍需已批准 task、workflow promotion 或人工明确任务 |
 
 ### 后续优先级
 
-1. 产品主线优先：继续推进 AreaMatrix v1 live queue 或已批准产品任务。
+1. 产品主线优先：继续推进 AreaMatrix v1 closeout 或已批准产品任务。
 2. 只在任务触发时使用 Browser / Chrome、Computer Use 和 subagents 补证或并行分析。
 3. hooks、Automations、Cloud、Worktrees 维持 deferred，等真实痛点出现后单项 admission。
 4. Vibe professional skills 维持 trigger-based only；没有具体专业任务时不继续吸收。
@@ -118,7 +118,7 @@ P1.4 owner 范围：
 - Dedup with: 不新增同义 skill；规则落在 `.ai-governance/workflows/subagent-boundaries.md`，Codex 操作投影落在 `.codex/references/subagent-boundaries-runbook.md`。
 - Local source of truth: `.ai-governance/**`，其中 subagent 具体边界以 `workflows/subagent-boundaries.md` 为准。
 - Trigger condition: explicit-only；只有用户或当前任务明确要求 subagents / parallel agent work 时使用。
-- Live mainline impact: 不影响 `./dev + ./task-loop + tasks/prompts/**` 主线；不得写 progress、logs、run summaries 或 checkpoint。
+- Live mainline impact: 不影响 `./dev + ./task-loop + workflow/versions/<version>/execution/**` 主线；不得写 progress、logs、run summaries 或 checkpoint。
 - User-file / privacy / remote-call impact: 默认禁止 subagent 触碰用户文件高风险边界；命中 Mission-Critical 时仍需主 agent 先确认影响、验证和回滚。
 - Verification: `./dev check governance`、`./dev check skills`、prompt doctor、路径级 diff check。
 - Owner / landing: `.ai-governance/workflows/subagent-boundaries.md` + `.codex/references/subagent-boundaries-runbook.md`。
@@ -147,7 +147,7 @@ P1.4 owner 范围：
 - AreaMatrix gap: planning / backlog prompt 需要更稳定地写出目标、非目标、精确路径、source of truth、owner / landing、执行顺序、验证命令和 blocked / rollback 口径。
 - Dedup with: 不新增 `writing-plans` 同义 repo-local skill；owner 是 `.codex/skills-src/areamatrix-workflow-planning/SKILL.md`。
 - Local source of truth: `workflow/**` lifecycle 与 `tasks/backlog/**` backlog 边界；产品语义仍以 `docs/**` 为准。
-- Live mainline impact: 无。backlog prompt 不进入 `tasks/prompts/**`，不写 `tasks/prompts/_shared/progress.json`，不创建 checkpoint 或 runner state。
+- Live mainline impact: 无。backlog prompt 不进入 `workflow/versions/<version>/execution/**`，不写 `workflow/versions/<version>/execution/_shared/progress.json`，不创建 checkpoint 或 runner state。
 - Landing: `.codex/references/planning-handoff-runbook.md`、`workflow/templates/**`、`.codex/skills-src/areamatrix-workflow-planning/**`、`tasks/backlog/**` prompt 包说明。
 - Verification: `./dev check skills`、`./dev check governance`、prompt doctor、`./dev workflow doctor`、路径级 diff check。
 - Decision: 吸收 handoff-safe planning 字段和 copy-ready / verify-ready 分离方法；拒绝 Vibe 的 dedicated worktree、执行 skill handoff、自动 commit 或外部 runtime 语义。
@@ -160,25 +160,25 @@ P1.4 owner 范围：
 - Dedup with: 不新增大量同义 repo-local skill；默认 owner 是 `areamatrix-workflow-planning`，具体领域按 docs / planning、validation、governance、file-safety 分配给现有 owner。
 - Local source of truth: 产品语义仍以 `docs/**` 为准，治理语义仍以 `.ai-governance/**` 为准；`.codex/references/**` 只保存操作参考。
 - Trigger condition: 只有出现明确专业任务、现有 repo-local owner 无法覆盖、且能写出 admission record 时，才允许作为 trigger-based reference 或 trigger candidate。
-- Live mainline impact: 无。不得安装 Vibe-Skills、启用 `vibe` / VCO、复制 `.vibeskills/**`、写 `tasks/prompts/**`、写 progress / logs / checkpoint 或创建第二 runtime / state surface。
+- Live mainline impact: 无。不得安装 Vibe-Skills、启用 `vibe` / VCO、复制 `.vibeskills/**`、写 `workflow/versions/<version>/execution/**`、写 progress / logs / checkpoint 或创建第二 runtime / state surface。
 - Decisions:
   - `trigger-based reference`: 数据分析 / 统计、ML / AI 工程、模型解释 / 评估、数学 / 科学计算 / 仿真、可视化 / 图表 / 信息图、文档格式处理、设计 / 创作 / 多媒体。
   - `defer`: 科研 / 文献 / 学术写作、生命科学 / 生信、数据库专项。
   - `reject`: 医学 / 临床决策、金融 / 外部数据源。
-- Verification: `./dev check skills`、`./dev check governance`、`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`、`git diff --check -- .codex/references tasks/backlog`。
+- Verification: `./dev check skills`、`./dev check governance`、`python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor`、`git diff --check -- .codex/references tasks/backlog`。
 - Decision: 只收敛判断矩阵；不全量接入、不安装、不启用、不复制 Vibe-Skills。
 
 | 优先级 | 项 | 当前处理 |
 |---|---|---|
 | P3 | Browser / Chrome 场景化 | 只记录使用边界，不作为 macOS app 主验收 |
-| P4 | Automations / Cloud / Worktrees / GitHub Action | v1 live queue 完成前不接入主线 |
+| P4 | Automations / Cloud / Worktrees / GitHub Action | 不接管主线 |
 | P5 | SDK / app-server / remote-control / Slack / Linear | 仅记录，等平台化需求明确后再设计 |
 
 ## Prompt 包
 
 可执行提示词放在 [prompts/codex-native-area-vibe-optimization/](prompts/codex-native-area-vibe-optimization/)。
 
-该 prompt 包只供新对话手工复制使用，不接入 `tasks/prompts/**`，不由 `./task-loop` 自动执行。
+该 prompt 包只供新对话手工复制使用，不接入 `workflow/versions/<version>/execution/**`，不由 `./task-loop` 自动执行。
 
 第二批能力吸收提示词放在 [prompts/vibe-skills-absorption/](prompts/vibe-skills-absorption/)，用于把已筛选出的横向能力继续转成 AreaMatrix 自有 runbook、checklist 或 repo-local skill 补强。
 
@@ -195,13 +195,13 @@ P1.4 owner 范围：
 ```bash
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .ai-governance .codex/references tasks/backlog
 ```
 
 ## 非目标
 
-- 不修改 `tasks/prompts/**` live queue。
+- 不修改 `workflow/versions/<version>/execution/**` live queue。
 - 不启动第二个 `./task-loop`。
 - 不安装或启用 Vibe-Skills 全量 skill 仓库。
-- 不让外部 runtime 替代 AreaMatrix 的 `docs/`、`.ai-governance/`、`workflow/` 和 `tasks/prompts/**`。
+- 不让外部 runtime 替代 AreaMatrix 的 `docs/`、`.ai-governance/`、`workflow/` 和 `workflow/versions/<version>/execution/**`。

@@ -42,7 +42,7 @@ docs
 
 - `workflow/` 不能在讨论、预览、plan、queue 或 promotion preview 阶段写 live execution 材料。
 - `middle-layer/` 不能替代 `docs/` 的产品语义；它只承接和细化已确认的 docs 意图。
-- v1 live queue 已完成并归档为 `workflow/versions/v1-mvp/execution/`；不得重写历史 execution、`progress.json` 或 task-loop evidence。
+- v1 historical execution queue 已完成并归档为 `workflow/versions/v1-mvp/execution/`；不得重写历史 execution、`progress.json` 或 task-loop evidence。
 - promotion preview 只是映射预演，不等于真实 promote/apply。
 - 产品行为仍以 `docs/` 为源事实；workflow 只能记录、拆分和追踪，不替代 docs。
 

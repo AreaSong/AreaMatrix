@@ -1,18 +1,18 @@
 # AreaMatrix Backlog Tasks
 
-本目录记录尚未进入 `tasks/prompts/**` live queue 的短期规划任务。
+本目录记录尚未进入 `workflow/versions/<version>/execution/**` live queue 的短期规划任务。
 
 这些任务用于讨论、评估和治理排期，不由 `./task-loop` 自动执行；只有通过 `workflow/` 规划、promotion preview 和人工确认后，才可能拆成正式 prompt task。
 
-当前 live queue 仍然是 `tasks/prompts/**`，进度源事实仍然是 `tasks/prompts/_shared/progress.json`。
+当前 live queue 标准路径是 `workflow/versions/<version>/execution/**`；v1 历史队列已经完成并迁入 `workflow/versions/v1-mvp/execution/**`，进度源事实是 `workflow/versions/v1-mvp/execution/_shared/progress.json`。
 
 ## 边界
 
 - `tasks/backlog/**` 不是 live queue，不由 `./task-loop` 扫描、执行、重试或验收。
-- backlog prompt 包只能手工复制或经 `workflow/` planning gate 重新拆分；不得直接 promotion 成 `tasks/prompts/**`。
+- backlog prompt 包只能手工复制或经 `workflow/` planning gate 重新拆分；不得直接 promotion 成 `workflow/versions/<version>/execution/**`。
 - 本目录不得引入第二套 runner、progress、queue、checkpoint 或 promotion 机制。
-- backlog prompt 不得写 `tasks/prompts/**`、`tasks/prompts/_shared/progress.json`、task-loop logs、run summaries、runner lock 或 Git checkpoint 状态。
-- Codex Automations、Cloud、Worktrees、Vibe-Skills、SDK、app-server、remote-control 等外部能力只能作为候选记录；v1 live queue 阶段不得接管 AreaMatrix 主线。
+- backlog prompt 不得写 `workflow/versions/<version>/execution/**`、`workflow/versions/<version>/execution/_shared/progress.json`、task-loop logs、run summaries、runner lock 或 Git checkpoint 状态。
+- Codex Automations、Cloud、Worktrees、Vibe-Skills、SDK、app-server、remote-control 等外部能力只能作为候选记录；不得接管 AreaMatrix 主线。
 - 外部能力候选必须先通过 [外部能力接入门禁](../../.ai-governance/workflows/external-capability-admission.md)，才能从候选记录进入 AreaMatrix 规则、skill、workflow 或 live task 边界。
 
 ## Backlog Prompt Handoff
@@ -33,7 +33,7 @@
 ./dev backlog show <package> --task 1 --mode verify
 ```
 
-该工具不得执行 prompt、不得启动 `./task-loop`、不得调用 `codex exec`、不得写 `tasks/prompts/**`、`tasks/prompts/_shared/progress.json`、logs、run summaries、runner lock 或 Git checkpoint。它只是把 backlog 材料更稳定地展示给人工复制或后续 planning gate 使用。
+该工具不得执行 prompt、不得启动 `./task-loop`、不得调用 `codex exec`、不得写 `workflow/versions/<version>/execution/**`、`workflow/versions/<version>/execution/_shared/progress.json`、logs、run summaries、runner lock 或 Git checkpoint。它只是把 backlog 材料更稳定地展示给人工复制或后续 planning gate 使用。
 
 命令接入边界：
 

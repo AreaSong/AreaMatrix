@@ -52,7 +52,7 @@
 - Dedup with: 为什么现有 repo-local owner 不足，或如何只补现有 owner。
 - Local source of truth: 产品语义仍落在 `docs/**`，治理语义仍落在 `.ai-governance/**`。
 - Trigger condition: 精确关键词、任务类型、风险等级和 explicit-only 边界。
-- Live mainline impact: 默认无。不得写 `tasks/prompts/**`、progress、logs、run summaries、runner lock、checkpoint 或 promotion state。
+- Live mainline impact: 默认无。不得写 `workflow/versions/<version>/execution/**`、progress、logs、run summaries、runner lock、checkpoint 或 promotion state。
 - User-file / privacy / remote-call impact: 命中用户文件、隐私、远程 AI、凭证、DB、staging、FSEvents 或 iCloud 时，先转 `areamatrix-file-safety`。
 - Verification: 至少运行本文件底部最小验证，并按实际影响面补充 Rust、Swift、docs、workflow 或 UI 检查。
 - Owner / landing: 优先落到既有 AreaMatrix owner；若只是一次性参考，记录在 `.codex/references/**` 或 `tasks/backlog/**`。
@@ -71,7 +71,7 @@
 
 ## Rollback
 
-本文件只是参考矩阵。若判断过宽，可删除或收紧本文件与 backlog 记录，不涉及 runtime 回滚、不涉及 Vibe-Skills 源目录、不影响 `tasks/prompts/**` live queue。
+本文件只是参考矩阵。若判断过宽，可删除或收紧本文件与 backlog 记录，不涉及 runtime 回滚、不涉及 Vibe-Skills 源目录、不影响 `workflow/versions/<version>/execution/**` live queue。
 
 ## Minimal Validation
 
@@ -80,6 +80,6 @@
 ```bash
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .codex/references tasks/backlog
 ```

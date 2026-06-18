@@ -8,7 +8,7 @@
 - Subagent 适合把独立、嘈杂、可汇总的工作移出主线程，例如只读探索、日志归因、测试输出归纳或分模块审计。
 - 写入型 subagent 只能在 owner、允许路径和 disjoint write set 已经明确时使用；共享文件、共享状态和 live runner 状态默认由主 agent 串行处理。
 - 主 agent 始终拥有任务契约、边界解释、验证选择、diff 复核、最终结论和用户汇报责任。Subagent 输出只是证据输入，不能替代验收。
-- AreaMatrix v1 live execution 主线仍是 `./dev + ./task-loop + workflow/versions/v1-mvp/execution/**`。Subagent 不得接管 live queue、progress、checkpoint、promotion 或 repo-local skill 主线。
+- AreaMatrix live execution 主线仍是 `./dev + ./task-loop + workflow/versions/<version>/execution/**`。Subagent 不得接管 live queue、progress、checkpoint、promotion 或 repo-local skill 主线；v1 历史执行实例位于 `workflow/versions/v1-mvp/execution/**`。
 
 ## 角色与权限
 

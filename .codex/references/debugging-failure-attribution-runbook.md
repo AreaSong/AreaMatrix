@@ -57,7 +57,7 @@ When `./task-loop` or `./dev` reports a failed, blocked, stale, or stopped run, 
 2. `./task-loop status`
    Use this to cross-check progress counts, `lock_alive`, stale detection, latest log directory, and live runner status.
 
-3. `tasks/prompts/_shared/progress.json`
+3. `workflow/versions/v1-mvp/execution/_shared/progress.json`
    Treat this as the primary progress source. For the affected task, inspect `status`, `note`, `attempts`, `risk`, `run_id`, `copy_log`, `verify_log`, `git_checkpoint_status`, `git_push_status`, `git_branch`, `git_commit`, and `git_changed_files`.
 
 4. `.codex/task-loop-runs/index.json`

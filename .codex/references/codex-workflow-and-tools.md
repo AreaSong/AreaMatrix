@@ -20,7 +20,7 @@ AGENTS.md / rules
 AreaMatrix 当前对应关系：
 
 - `workflow/`：大功能、版本、重构和优化的规划生命周期。
-- `tasks/prompts/**`：已经批准的 live task queue。
+- `workflow/versions/<version>/execution/**`：已经批准的版本内 live task queue；v1 历史队列位于 `workflow/versions/v1-mvp/execution/**`。
 - `./task-loop`：串联 copy-ready 与 verify-ready 的自动执行闭环。
 - `.codex/skills-src/**`：AreaMatrix repo-local skills 的源事实。
 - `.agents/skills/**`：repo-local skill 发现入口。
@@ -457,18 +457,19 @@ AreaMatrix 当前有两层：
 workflow/
   大版本、大功能、重构、优化的规划生命周期
 
-tasks/prompts/**
-  已批准、可执行、可验收的 live queue
+workflow/versions/<version>/execution/**
+  已批准、可执行、可验收的版本内 live queue
 ```
 
-当前 live queue：
+当前 v1 历史执行队列：
 
 - `v1-mvp`
 - `637` tasks
-- 进度源事实：`tasks/prompts/_shared/progress.json`
-- 健康检查：`python3 tasks/prompts/_shared/prompt_pipeline.py doctor`
-- 状态检查：`python3 tasks/prompts/_shared/prompt_pipeline.py status`
-- 自动执行：`./task-loop run`
+- 状态：`637/637` completed，Stage 1 MVP 已收口
+- 进度源事实：`workflow/versions/v1-mvp/execution/_shared/progress.json`
+- 健康检查：`python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor`
+- 状态检查：`python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py status`
+- 历史恢复执行：`./task-loop run`
 - 总控入口：`./dev`
 
 `./task-loop` 闭环：
@@ -512,21 +513,21 @@ RISK_POLICY=allow MAX_RETRIES=0 ./task-loop run
 
 ### P0 主线保护
 
-AreaMatrix v1 live execution 的唯一主线是：
+AreaMatrix live execution 的唯一主线是：
 
 ```text
 AGENTS.md / .ai-governance
 -> workflow/ planning gate
--> tasks/prompts/** live queue
+-> workflow/versions/<version>/execution/** live queue
 -> ./dev / ./task-loop
 -> repo-local skills
 ```
 
-`tasks/backlog/**` 是规划记录和可复制提示词暂存区，不进入 `./task-loop`，不写 `tasks/prompts/_shared/progress.json`，也不替代 `workflow/` 的 planning gate。Codex Automations、Cloud、Worktrees、Vibe-Skills、SDK、app-server、remote-control 目前只能作为候选能力、参考资料或未来评估项；v1 live queue 阶段不得接管 `tasks/prompts/**`、`./dev`、`./task-loop`、progress、checkpoint 或 repo-local skill 主线。
+`tasks/backlog/**` 是规划记录和可复制提示词暂存区，不进入 `./task-loop`，不写 `workflow/versions/<version>/execution/_shared/progress.json`，也不替代 `workflow/` 的 planning gate。Codex Automations、Cloud、Worktrees、Vibe-Skills、SDK、app-server、remote-control 目前只能作为候选能力、参考资料或未来评估项；不得接管 `workflow/versions/<version>/execution/**`、`./dev`、`./task-loop`、progress、checkpoint 或 repo-local skill 主线。
 
 因此，任何优化都不得新增第二套 runner、progress、queue 或 promotion 机制。需要接入外部能力时，先经过 [.ai-governance 外部能力接入门禁](../../.ai-governance/workflows/external-capability-admission.md) 与 `workflow/` gate，并说明 source of truth、触发条件、验证方式、owner，以及是否影响 live 主线。
 
-Automations / Cloud / Worktrees 的细化门禁见 [Codex Automations / Cloud / Worktrees Gate](codex-automations-cloud-worktrees-gate.md)。当前结论是：Automations 只允许提醒、周期性只读检查和状态汇报候选；Cloud 只作为未来隔离执行候选；Worktrees 只作为隔离实验或并行独立任务候选。三者都不得写 `tasks/prompts/**`、progress、task-loop logs、run summaries、runner lock、checkpoint 或替代 `./task-loop`。
+Automations / Cloud / Worktrees 的细化门禁见 [Codex Automations / Cloud / Worktrees Gate](codex-automations-cloud-worktrees-gate.md)。当前结论是：Automations 只允许提醒、周期性只读检查和状态汇报候选；Cloud 只作为未来隔离执行候选；Worktrees 只作为隔离实验或并行独立任务候选。三者都不得写 `workflow/versions/<version>/execution/**`、progress、task-loop logs、run summaries、runner lock、checkpoint 或替代 `./task-loop`。
 
 ## AreaMatrix 对比矩阵
 
@@ -535,7 +536,7 @@ Automations / Cloud / Worktrees 的细化门禁见 [Codex Automations / Cloud / 
 - `已有`：当前项目已有稳定对应物，短期不需要另起一套。
 - `部分已有`：已有基础，但缺制度化规则、runbook 或边界。
 - `缺失-建议补`：当前缺口会影响稳定性、证据链或人工负担，建议纳入近期治理。
-- `暂不接入`：官方有能力，但当前 v1 live queue 阶段不适合接入主线。
+- `暂不接入`：官方有能力，但当前 AreaMatrix 主线不适合接入。
 - `仅记录`：只作为官方能力跟踪或未来选项。
 
 | 官方能力 / 工作层面 | AreaMatrix 当前对应物 | 当前状态 | 为什么是这个状态 | 是否建议补 | 补了满足什么 | 风险与边界 | 优先级 |
@@ -543,8 +544,8 @@ Automations / Cloud / Worktrees 的细化门禁见 [Codex Automations / Cloud / 
 | AGENTS.md / project instructions | 根 `AGENTS.md`、局部规则读取顺序 | 已有 | 已定义入口顺序、源事实、高风险边界和验证要求 | 不补主结构 | 继续稳定 Codex 行为边界 | 不把 `.codex/` 当产品语义源事实 | P0 保持 |
 | Rules / governance | `.ai-governance/`、工程质量规则、file-safety、validation-driver | 已有 | 已覆盖 Quick / Change / Mission-Critical、Forbidden Touches、验证门禁 | 不补主结构 | 继续保证文档驱动和风险分级 | 高风险任务仍需显式说明影响、验证、回滚 | P0 保持 |
 | Docs as source of truth | `docs/`、`docs/api/core-api.md`、capability specs、UX specs | 已有 | 项目已明确产品、架构、API、UX 的权威来源 | 不补主结构 | 避免 Codex runtime 文档反客为主 | 代码与 docs 冲突时先按 SSOT 查证 | P0 保持 |
-| Workflow / large feature lifecycle | `workflow/`、discussion gate、middle-layer、changes、plans、drafts、queue、promotion preview | 已有 | 已区分规划层和 live queue，v1 live-running 时 dependent versions 不得 promote | 不补主结构 | 保障新 v* 不绕过讨论和规划门禁 | 不从 `workflow/` 直接写 `tasks/prompts/**` | P0 保持 |
-| Live task queue | `tasks/prompts/**`、637-task v1-mvp queue、manifest、copy-ready / verify-ready | 已有 | 当前 265/637 完成，`4-1/task-16` 正在跑 | 不补主结构 | 继续作为唯一 live 执行面 | 不启动第二个 live runner | P0 保持 |
+| Workflow / large feature lifecycle | `workflow/`、discussion gate、middle-layer、changes、plans、drafts、queue、promotion preview | 已有 | 已区分规划层和 live queue，真实 promotion 前不得写 version-local execution | 不补主结构 | 保障新 v* 不绕过讨论和规划门禁 | 不从 `workflow/` 绕过 promotion 直接写 `workflow/versions/<version>/execution/**` | P0 保持 |
+| Live task queue | `workflow/versions/<version>/execution/**`、637-task v1-mvp historical queue、manifest、copy-ready / verify-ready | 已有 | v1-mvp 已完成 `637/637` 并硬迁移到 `workflow/versions/v1-mvp/execution/**` | 不补主结构 | 继续作为唯一批准执行面 | 不启动第二个 live runner | P0 保持 |
 | Non-interactive CLI | `codex exec` 由 `./task-loop` 调用 | 已有 | task-loop 已用 `gpt-5.5`、`xhigh`、`danger-full-access` 执行 copy / verify | 不补主结构 | 保持自动闭环能力 | `codex exec` 真实配置以启动参数和 header 为准 | P0 保持 |
 | Dev console / local operator UX | `./dev`、`./dev status`、`./dev processes`、`./dev check ...` | 已有 | 已封装状态、进程、恢复、健康检查，避免记忆长命令 | 小幅优化即可 | 降低操作失误和状态误读 | 当前 live runner + dirty worktree 时不能继续启动 | P0 保持 |
 | Task-loop closed repair loop | `./task-loop run`、verify fail retry、summary、progress、lock | 已有 | 已实现 copy -> verify -> retry -> PASS -> checkpoint | 不补主结构 | 支撑长队列静默推进 | checkpoint 失败后不得继续下一 task | P0 保持 |
@@ -559,14 +560,14 @@ Automations / Cloud / Worktrees 的细化门禁见 [Codex Automations / Cloud / 
 | Hooks | Codex hooks feature enabled；AreaMatrix 无 repo-local `.codex/hooks.json` | 缺失-建议补 | 当前靠人工记忆检查 live runner、dirty worktree、危险路径 | 建议补 warn-only / read-only hooks | 在 session start / pre-tool 提醒重复 runner、checkpoint 风险、危险边界 | hooks 是 guardrail，不是完整 enforcement boundary；不自动修改文件，不 block / deny / continue | P1 |
 | Plugin hooks | `plugin_hooks` disabled / under development | 暂不接入 | 官方和本机都显示仍在开发中 | 不补 | 等成熟后再评估 | 不依赖其做关键门禁 | P4 |
 | Subagents | Codex multi-agent feature enabled；已有边界 runbook | 已有边界 | 可用于读/审计/验证；并行写必须有 owner 和 disjoint write set | 不补主结构 | 加速大范围只读审计、日志归因、分模块验证 | 不碰 live runner / progress / checkpoint；不把同一 live task 拆给多个 writer | P2 |
-| Automations | Codex app automations 官方存在；项目用 `./task-loop` | Trigger-based only | 官方 automations 是后台无人值守，local mode 可能修改正在编辑的文件；v1 live queue 已有稳定 runner | 不补主线 | 未来可做提醒、周期性只读检查或状态汇报候选 | 不写 repo state；不创建第二套进度源；不替代 `./task-loop` | P4 |
+| Automations | Codex app automations 官方存在；项目用 `./task-loop` | Trigger-based only | 官方 automations 是后台无人值守，local mode 可能修改正在编辑的文件；AreaMatrix 已有稳定 runner | 不补主线 | 未来可做提醒、周期性只读检查或状态汇报候选 | 不写 repo state；不创建第二套进度源；不替代 `./task-loop` | P4 |
 | Codex Cloud | `codex cloud` CLI 存在；AreaMatrix 当前本地 live runner | 暂缓 | Cloud 会改变执行环境，需要 local env、凭证、隐私、网络、diff apply 和 checkpoint 方案 | 暂不接 | 未来可做隔离 review / PR 实验 | 不作为 canonical runtime；不绕过 `workflow/` gate 和 local validation | P4 |
 | Worktrees | 官方存在；AreaMatrix 直接跑当前 checkout | 暂缓 | Worktree 只能隔离文件变更，不能定义 AreaMatrix task 语义；并行会放大状态复杂度 | 暂不接 | 未来可隔离 vN 规划、spike 或独立并行任务 | 不作为 live queue 默认执行环境；不抢占 live task label | P4 |
 | Local Environments | 官方存在；AreaMatrix 用本机 dev tools | 仅记录 | 当前项目依赖 macOS/Xcode、本机状态和 task-loop | 不补 | 未来 Cloud/remote 执行前再设计 | 不把环境初始化写成破坏性脚本 | P4 |
 | GitHub Action | 官方存在；项目已有本地 `./dev check ...` 和 CI 治理 | 暂不接入 | 当前主要问题是 live queue 收口，不是 GitHub 触发 Codex | 暂不接 | 未来用于 PR review / repair bot | 不让 GitHub Action 修改 live progress | P4 |
 | IDE Extension / Web | 官方存在；项目主路径是 Codex app / CLI / local runner | 仅记录 | 对当前自动闭环不是必要入口 | 不补 | 作为个人使用入口即可 | 不作为验收证据源 | P4 |
 | Slack / Linear integrations | 官方存在；项目未使用 | 仅记录 | 与当前本地开发闭环无直接关系 | 不补 | 未来团队协作时再接 | 不把外部 issue 状态当 task truth | P5 |
-| Codex SDK / app-server / remote-control / exec-server | 官方/CLI 存在，多为实验或嵌入能力 | 仅记录 | 当前不需要自己嵌入 Codex runtime | 不补 | 未来平台化 `./dev` 或外部 dashboard 时再评估 | 不接入 v1 live runner 主线 | P5 |
+| Codex SDK / app-server / remote-control / exec-server | 官方/CLI 存在，多为实验或嵌入能力 | 仅记录 | 当前不需要自己嵌入 Codex runtime | 不补 | 未来平台化 `./dev` 或外部 dashboard 时再评估 | 不接入 AreaMatrix live runner 主线 | P5 |
 | Security / administration / access tokens | 官方存在；项目不保存凭证 | 部分已有 | 本机 config 有 auth/MCP，但仓库规则禁止存密钥 | 只补提醒 | 明确凭证不进 repo，不在 `.codex/` 写 token | 任何远程/企业配置先确认 | P2 |
 | Changelog / Feature Maturity | 官方存在；文档已列入口 | 部分已有 | 已记录要查，但尚无固定刷新节奏 | 建议补轻流程 | 每次声称“最新”前打开官方目录核对 | 不把旧记忆当最新事实 | P2 |
 | Image generation | feature enabled，项目当前非视觉资产主线 | 仅记录 | AreaMatrix 当前以原生 UI 和 docs 为主 | 不补 | 未来需要营销/图示/bitmap asset 时再用 | 不替代 UI 实现或截图验证 | P5 |
@@ -583,16 +584,16 @@ Automations / Cloud / Worktrees 的细化门禁见 [Codex Automations / Cloud / 
 | P1 | 固化 OpenAI Docs MCP 使用规则 | 官方 Codex / model / API 更新快 | 容易用过期记忆判断“最新” |
 | P2 | 定义 Subagent 使用边界 | 大范围审计可以并行，但写入冲突风险高 | 并行 agent 可能互相覆盖或重复工作 |
 | P2 | 增加 Changelog / Feature Maturity 刷新流程 | Codex 能力变化快 | 文档会逐渐落后官网 |
-| P4 | 暂缓 Automations / Cloud / Worktrees / GitHub Action 接主线 | v1 live queue 仍在跑，本地 runner 已能闭环 | 过早接入会多一个状态系统；Automations 仅允许非写入提醒 / 检查 / 汇报候选 |
+| P4 | 暂缓 Automations / Cloud / Worktrees / GitHub Action 接主线 | 本地 runner 已能闭环，v1 队列已完成归档 | 过早接入会多一个状态系统；Automations 仅允许非写入提醒 / 检查 / 汇报候选 |
 | P5 | 暂缓 SDK / app-server / remote-control / Slack / Linear | 当前不是平台化 Codex runtime 的阶段 | 增加复杂度但不提高当前验收质量 |
 
 ### 短期任务清单
 
-短期优化记录在 [../../tasks/backlog/codex-native-area-vibe-optimization.md](../../tasks/backlog/codex-native-area-vibe-optimization.md)。该 backlog 不是 `tasks/prompts/**` live queue，不由 `./task-loop` 自动执行。
+短期优化记录在 [../../tasks/backlog/codex-native-area-vibe-optimization.md](../../tasks/backlog/codex-native-area-vibe-optimization.md)。该 backlog 不是 `workflow/versions/<version>/execution/**` live queue，不由 `./task-loop` 自动执行。
 
 | 优先级 | 工作包 | 要做什么 | 吸收来源 | 交付物 | 完成口径 |
 |---|---|---|---|---|---|
-| P0 | 主线保护 | 明确当前 `./dev + ./task-loop + tasks/prompts/**` 仍是唯一 live execution 主线 | Codex 官方 workflow / AreaMatrix 当前体系 | 文档规则和 backlog 任务边界 | 不新增第二 runner，不让 Vibe/Codex Automations/Cloud 接管 live queue |
+| P0 | 主线保护 | 明确当前 `./dev + ./task-loop + workflow/versions/<version>/execution/**` 仍是唯一 live execution 主线 | Codex 官方 workflow / AreaMatrix 当前体系 | 文档规则和 backlog 任务边界 | 不新增第二 runner，不让 Vibe/Codex Automations/Cloud 接管 live queue |
 | P0 | 外部能力接入门禁 | 定义 Vibe-Skills 或其他外部 skills 的 admission gate | Vibe-Skills custom skill governance、Codex migrate/customization docs | [外部能力接入门禁](../../.ai-governance/workflows/external-capability-admission.md) | 目录存在不等于启用；外部 runtime 不得成为 AreaMatrix canonical runtime；必须说明 source of truth、触发条件、验证和 owner |
 | P1 | OpenAI Docs MCP 规则 | 固化“涉及 OpenAI/Codex/API/model 最新判断时优先查官方 MCP” | Codex 官方 docs、openaiDeveloperDocs MCP | `.ai-governance` 或 `.codex/references` 规则补充 | 以后不靠旧记忆声称最新 |
 | P1 | repo-local warn-only / read-only hooks | 设计只读 hooks guardrail，先提示 live runner、dirty worktree、危险路径和验证缺口 | Codex hooks | [hooks guardrail runbook](hooks-guardrail-runbook.md)；未来再评估 `.codex/hooks.json` | hooks 只提醒或补充上下文，不自动修改文件，不 block / deny / continue |
@@ -602,12 +603,12 @@ Automations / Cloud / Worktrees 的细化门禁见 [Codex Automations / Cloud / 
 | P2 | Vibe-Skills 横向能力筛选 | 从 Vibe-Skills 中筛选调试、TDD、验证、审查、安全、架构、文档类能力 | Vibe-Skills bundled skills | 候选吸收矩阵 | 每个候选标注吸收/不吸收/参考、原因和落点 |
 | P2 | 官方变更刷新 | 建立 Codex changelog / feature maturity 的刷新习惯 | Codex Releases / Feature Maturity | 轻量刷新步骤 | 每次更新“最新 Codex 工作流”前重新打开官方文档 |
 | P3 | Browser / Chrome 场景化 | 只为 docs preview、localhost、登录态网页建立使用边界 | Codex Browser / Chrome plugin | 场景说明 | 不把 Browser/Chrome 当 macOS app 主验收 |
-| P4 | Automations / Cloud / Worktrees gate | 暂缓接入主线，只记录未来评估条件和禁写边界 | Codex Automations / Cloud / Worktrees | [Automations / Cloud / Worktrees gate](codex-automations-cloud-worktrees-gate.md) | v1 live queue 完成前不新增状态源；三者先过 external admission |
+| P4 | Automations / Cloud / Worktrees gate | 暂缓接入主线，只记录未来评估条件和禁写边界 | Codex Automations / Cloud / Worktrees | [Automations / Cloud / Worktrees gate](codex-automations-cloud-worktrees-gate.md) | 不新增状态源；三者先过 external admission |
 | P5 | SDK / app-server / remote-control | 仅记录，不进入近期实现 | Codex SDK / app-server / remote-control | 无近期交付 | 等需要平台化 Codex runtime 时再设计 |
 
 ### Vibe-Skills 吸收原则
 
-`../Vibe-Skills` 当前定位为外部候选能力池和治理参考，不是 AreaMatrix 的 canonical runtime。AreaMatrix 不直接启用 `vibe` 接管主流程，也不把 Vibe-Skills 的目录结构原样并入 `tasks/prompts/**`。具体判断以 [.ai-governance 外部能力接入门禁](../../.ai-governance/workflows/external-capability-admission.md) 为准。
+`../Vibe-Skills` 当前定位为外部候选能力池和治理参考，不是 AreaMatrix 的 canonical runtime。AreaMatrix 不直接启用 `vibe` 接管主流程，也不把 Vibe-Skills 的目录结构原样并入 `workflow/versions/<version>/execution/**`。具体判断以 [.ai-governance 外部能力接入门禁](../../.ai-governance/workflows/external-capability-admission.md) 为准。
 
 | 结论 | 适用条件 | AreaMatrix 落点 |
 |---|---|---|
@@ -621,7 +622,7 @@ Automations / Cloud / Worktrees 的细化门禁见 [Codex Automations / Cloud / 
 短期：
 
 - 保持 AreaMatrix 当前 `./dev + ./task-loop + repo-local skills` 结构。
-- 不把 `workflow/` 直接写入 live `tasks/prompts/**`。
+- 不把 `workflow/` 绕过 promotion 直接写入 live `workflow/versions/<version>/execution/**`。
 - 将 Computer Use 作为 macOS UI smoke 的补充证据。
 - 使用 OpenAI Docs MCP 查最新 Codex / model / API 文档。
 
@@ -637,7 +638,7 @@ Automations / Cloud / Worktrees 的细化门禁见 [Codex Automations / Cloud / 
 - 不用 hooks 自动修改用户文件。
 - 不用 hooks 自动启动/停止 runner、控制 Git、block / deny / continue 或替代 verify-ready。
 - 不用 Computer Use 自动处理密码、支付、系统权限、隐私授权。
-- 不在 v1 live queue 未完成前移动、重命名或归档 `tasks/prompts/**`。
+- 不为了视觉整理重写、清空或重置 `workflow/versions/v1-mvp/execution/**`。
 - 不把 `.codex/` 文档当作产品行为源事实。
 
 ## 常用检查命令
@@ -657,8 +658,8 @@ AreaMatrix：
 ```bash
 ./dev status --once
 ./dev processes
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
-python3 tasks/prompts/_shared/prompt_pipeline.py status
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py status
 ./task-loop status
 ./dev workflow doctor
 ./dev workflow status

@@ -6,12 +6,12 @@
 
 - 不安装、不启用、不复制 Vibe-Skills 全量仓库。
 - `vibe` / VCO runtime 不进入 AreaMatrix 主线，不创建第二套 requirement / plan / execution / memory surface。
-- AreaMatrix v1 live execution 主线仍是：
+- AreaMatrix live execution 主线仍是：
 
 ```text
 AGENTS.md / .ai-governance
 -> workflow/ planning gate
--> tasks/prompts/** live queue
+-> workflow/versions/<version>/execution/** live queue
 -> ./dev / ./task-loop
 -> repo-local skills
 ```
@@ -141,6 +141,6 @@ AGENTS.md / .ai-governance
 ```bash
 ./dev check governance
 ./dev check skills
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .codex/references tasks/backlog
 ```

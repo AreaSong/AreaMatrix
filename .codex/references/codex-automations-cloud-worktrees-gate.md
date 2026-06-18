@@ -19,7 +19,7 @@ AreaMatrix live execution 仍是：
 docs/**
 -> .ai-governance/**
 -> workflow/ planning gate
--> tasks/prompts/** live queue
+-> workflow/versions/<version>/execution/** live queue
 -> ./dev / ./task-loop
 -> repo-local skills
 ```
@@ -31,7 +31,7 @@ Automations、Cloud 和 Worktrees 都不得写入或替代这条主线。三者�
 | Capability | Decision | Trigger condition | Forbidden writes / substitutions | Owner | Validation |
 |---|---|---|---|---|---|
 | Current AreaMatrix mainline | Recommended | live queue implementation, verify-ready acceptance, progress, checkpoint, recovery | 不适用；继续由主线自己写 state | `areamatrix-task-loop` + `areamatrix-git-checkpoint` | task / phase 要求的验证、`VERIFY_RESULT: PASS`、Git checkpoint、review / CI evidence |
-| Automations | Trigger-based only | reminders, periodic read-only checks, status briefings, non-writing triage candidates; creation or update requires explicit separate confirmation | `tasks/prompts/**`; `tasks/prompts/_shared/progress.json`; `.codex/task-loop-logs/**`; `.codex/task-loop-runs/**`; `.codex/task-loop-lock/**`; checkpoint state; branch / commit / push; starting, stopping, resuming, draining, or replacing `./task-loop` | `areamatrix-workflow-planning`; support: `areamatrix-task-loop`, `areamatrix-git-checkpoint`, `areamatrix-file-safety` | manual prompt test before scheduling; `./dev check skills`; `./dev check governance`; prompt doctor; path-level diff check |
+| Automations | Trigger-based only | reminders, periodic read-only checks, status briefings, non-writing triage candidates; creation or update requires explicit separate confirmation | `workflow/versions/<version>/execution/**`; `workflow/versions/<version>/execution/_shared/progress.json`; `.codex/task-loop-logs/**`; `.codex/task-loop-runs/**`; `.codex/task-loop-lock/**`; checkpoint state; branch / commit / push; starting, stopping, resuming, draining, or replacing `./task-loop` | `areamatrix-workflow-planning`; support: `areamatrix-task-loop`, `areamatrix-git-checkpoint`, `areamatrix-file-safety` | manual prompt test before scheduling; `./dev check skills`; `./dev check governance`; prompt doctor; path-level diff check |
 | Cloud | Defer | future isolated execution, remote review, PR experiment, or cloud-only collaboration after an admission record closes environment and privacy risks | same live queue and task-loop state paths; no direct `codex apply` into the canonical checkout without review, local validation, and checkpoint plan; no canonical runtime replacement | `areamatrix-workflow-planning`; support: `areamatrix-file-safety`, `areamatrix-git-checkpoint`, `areamatrix-task-loop` | local environment plan; credential / secret plan; privacy and network review; diff apply plan; local validation plan; checkpoint / rollback plan; standard governance checks |
 | Worktrees | Defer | isolated spike, parallel independent task, future version planning, or risky experiment where the current checkout must stay untouched | same live queue and task-loop state paths; no default live queue execution; no bypass of `workflow/**` planning / promotion gate; no reuse of live task labels outside promotion | `areamatrix-workflow-planning`; support: `areamatrix-git-checkpoint`, `areamatrix-task-loop`, `areamatrix-file-safety` | worktree owner; base branch; sync / handoff plan; ignored-file caveat; cleanup plan; conflict plan; local validation and checkpoint plan |
 | Any second runner / state surface | Reject | any design that would turn Automations, Cloud, or Worktrees into another `./task-loop` | runner, progress, queue, logs, run summaries, checkpoint, promotion, task labels, or canonical runtime state | `areamatrix-workflow-planning` | reject during admission; design fails before implementation |
@@ -47,6 +47,5 @@ Worktrees isolate file changes but do not define task semantics. Codex App workt
 ## Blocked / Rollback
 
 - If a request asks to actually create an automation, enable a Cloud task, create a worktree, or apply a Cloud diff, stop and ask for separate confirmation.
-- If an automation, Cloud run, or worktree would write `tasks/prompts/**`, progress, task-loop logs, run summaries, lock, checkpoint, branch, commit, push, or promotion state, reject the design.
+- If an automation, Cloud run, or worktree would write `workflow/versions/<version>/execution/**`, progress, task-loop logs, run summaries, lock, checkpoint, branch, commit, push, or promotion state, reject the design.
 - If user files, privacy, remote AI calls, credentials, secrets, DB, staging, FSEvents, iCloud, or destructive file operations are involved, route through `areamatrix-file-safety` and Mission-Critical review before implementation.
-

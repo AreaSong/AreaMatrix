@@ -55,7 +55,7 @@
 
 | Worker | Owner | Allowed write set | Forbidden touches | Validation |
 |---|---|---|---|---|
-| worker-a | 例：docs adapter | `docs/foo.md` | `tasks/prompts/**`, progress, checkpoints | `./dev check ...` |
+| worker-a | 例：docs adapter | `docs/foo.md` | `workflow/versions/<version>/execution/**`, progress, checkpoints | `./dev check ...` |
 | worker-b | 例：tests only | `core/tests/foo.rs` | production files, lockfiles | `cargo test ...` |
 
 worker prompt 必须包含：
@@ -75,7 +75,7 @@ Validation:
 
 以下文件或目录默认不能多 worker 并行写：
 
-- `tasks/prompts/**`、manifest、`tasks/prompts/_shared/progress.json`
+- `workflow/versions/<version>/execution/**`、manifest、`workflow/versions/<version>/execution/_shared/progress.json`
 - `.codex/task-loop-logs/**`、`.codex/task-loop-runs/**`、task-loop lock
 - Git checkpoint evidence、branch、commit、stash、reset、clean 相关状态
 - DB migration、schema、rollback、staging recovery

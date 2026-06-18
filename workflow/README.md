@@ -14,7 +14,8 @@ hard-migrated to `workflow/versions/v1-mvp/execution/**`.
 
 For the conceptual architecture behind these boundaries, see
 [`architecture.md`](architecture.md).
-For the detailed docs-to-task-loop execution flow, see
+For the pre-discussion question and routing entry, see
+[`intake.md`](intake.md). For the detailed docs-to-task-loop execution flow, see
 [`pipeline.md`](pipeline.md). For the execution layer contract, see
 [`execution.md`](execution.md). For the hard migration record from historical
 `tasks/prompts/**` into version-local execution, see
@@ -23,7 +24,8 @@ For the detailed docs-to-task-loop execution flow, see
 ## Standard Flow
 
 ```text
-docs
+intake
+-> docs
 -> workflow/templates
 -> workflow/versions/v*/version.yaml
 -> workflow/versions/v*/discussion
