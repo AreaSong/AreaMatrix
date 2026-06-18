@@ -8,7 +8,7 @@
 
 本文件归档 Stage 1 MVP 历史任务 `4-1/task-143` 的 Stage 2 Experience
 platform test scope notes。这里的 Stage 2 Experience 是 Stage 1 MVP 历史
-任务拆解中的内部阶段材料，不代表未来 `workflow/versions/v2` 已经开始。
+任务拆解中的内部阶段材料，不代表未来 `v2` 已经开始，也不要求当前存在 `workflow/versions/v2/`。
 
 这些 notes 原先分散在各平台测试目录下，只用于说明 Stage 2 closeout 不应新增
 对应平台的产品实现或可执行平台测试 wiring。现在统一归档在 v1 MVP evidence 下，

@@ -211,8 +211,8 @@ AreaMatrix/                            # Git 仓库
 │
 ├── workflow/
 │   └── versions/                      # prompt workflow version tracking
-│       ├── v1-mvp/                    # current 637-task queue archive placeholder
-│       └── v2/changes/                # future feature change YAML, preview only
+│       ├── v1-mvp/                    # completed 637-task queue archive
+│       └── v-template/                # template reference, not a product version
 │
 └── docs/                              # 项目文档（本目录）
 ```

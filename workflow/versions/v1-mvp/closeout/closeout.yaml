@@ -8,7 +8,7 @@ decision:
   technical_completion: complete
   release_alpha_status: blocked
   release_blocker_policy: deferred-until-formal-distribution
-  v2_planning_status: allowed-before-live-promotion
+  future_version_planning_status: allowed-after-real-version-init-before-live-promotion
   promotion_to_tasks_prompts: blocked-until-explicit-approval-and-live-mapping
 blockers:
   - Formal Stage 1 alpha release is not approved; 0.1.0-local-qa is internal QA only, and v0.1.0-unnotarized-preview.2 is prerelease-only for trusted testers.
@@ -60,11 +60,11 @@ dirty_worktree_summary:
   ignore_rule: apps/macos/.derived-data-log-*
   disposition: resolved-for-future-checkpoints
 next_allowed_work:
-  - Start v2 discussion and planning under workflow/versions/v2.
-  - Generate v2 middle-layer, changes, plans, drafts, and queue candidates for review.
+  - Create a future real version, for example v2, with ./dev workflow init --version v2 --write before discussion.
+  - Generate future-version middle-layer, changes, plans, drafts, and queue candidates for review only after the discussion gate is ready.
   - Continue formal alpha release evidence separately.
 next_forbidden_work:
-  - Do not promote v2 or any new work into workflow/versions/v1-mvp/execution/** without explicit approval and live mapping.
+  - Do not promote future-version work into workflow/versions/v1-mvp/execution/** without explicit approval and live mapping.
   - Do not rename, move, regenerate, or archive the live v1 queue during this decision pass.
   - Do not call local QA, unnotarized preview, ad-hoc signing, or same-machine smoke formal alpha evidence.
 remaining_risks:

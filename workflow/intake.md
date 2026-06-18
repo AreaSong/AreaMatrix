@@ -39,7 +39,7 @@ intake
 
 ### 3. Version And Scope
 
-- 目标版本是现有 `v2`，还是需要创建新的 `workflow/versions/<version>/`？
+- 目标版本是否已经存在；如果不存在，是否需要先用 workflow init 创建新的 `workflow/versions/<version>/`？
 - 哪些内容明确在本轮范围内？
 - 哪些内容明确不是本轮目标？
 - 是否依赖 v1 closeout、release evidence、外部环境或人工决策？

@@ -1,6 +1,6 @@
 # AreaMatrix Prompt 任务库
 
-> 状态：`v1-mvp` 历史执行队列已完成 `637/637`。本目录现在主要用于审计、追溯、恢复和读取 v1 任务证据；新版本或大型新增需求先从 `workflow/versions/v2/discussion/` 进入规划链路。
+> 状态：`v1-mvp` 历史执行队列已完成 `637/637`。本目录现在主要用于审计、追溯、恢复和读取 v1 任务证据；新版本或大型新增需求先创建真实版本目录，再从 `workflow/versions/<version>/discussion/` 进入规划链路。
 
 `workflow/versions/v1-mvp/execution/**` 曾是 v1 MVP 的 live queue。Stage 1 MVP 收口后，不应为了开启 v2 而重写这些历史 task、`progress.json` 或 task-loop evidence。未来版本只有在 discussion、middle-layer、changes、plans、drafts、queue、promotion preview 和显式 approval 都通过后，才允许把新任务 promote 到 live queue。
 
@@ -89,7 +89,7 @@ python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py mark --tas
 
 ## 自动化执行 Runner（历史恢复）
 
-仓库保留 `./task-loop run`，用于恢复 v1 历史队列中断、失败或 blocked 的同一任务。不要把它作为 v2 的默认入口；v2 先走 `./dev workflow status` 和 `workflow/versions/v2/discussion/`。
+仓库保留 `./task-loop run`，用于恢复 v1 历史队列中断、失败或 blocked 的同一任务。不要把它作为新版本的默认入口；新版本先走 `./dev workflow init --version <version>`、`./dev workflow status` 和 `workflow/versions/<version>/discussion/`。
 
 1. 读取 copy-ready 并调用 `codex exec` 执行。
 2. 再读取 verify-ready 进行只读验收。

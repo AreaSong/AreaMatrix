@@ -8,7 +8,7 @@
 
 本目录保存已完成 Stage 1 MVP 任务队列使用过的阶段性材料，包括内部 Stage 1/2/3/4 的 page specs、Core capability specs 和 control maps。
 
-这里的 Stage 2/3/4 是 Stage 1 MVP 历史任务拆解中的内部阶段材料，不代表未来 `workflow/versions/v2`、`v3` 或 `v4` 已经开始。真正的新 v2 必须重新通过 `workflow/versions/v2/` 的 discussion gate 定义范围。
+这里的 Stage 2/3/4 是 Stage 1 MVP 历史任务拆解中的内部阶段材料，不代表未来 `v2`、`v3` 或 `v4` 已经开始。真正的新 v2 必须先创建真实版本目录，再通过 `workflow/versions/v2/` 的 discussion gate 定义范围。
 
 ## 索引
 

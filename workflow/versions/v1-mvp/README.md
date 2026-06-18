@@ -35,7 +35,8 @@ Closeout status:
 - archive readiness: Stage 1 MVP historical source docs and release evidence are archived here; optional local log bundling remains a separate evidence decision
 - source docs scope: internal Stage 1/2/3/4 specs from the completed MVP task queue live under `source-docs/`; Stage 2/3/4 here are not future workflow versions
 
-Future v2 work must start from a fresh discussion under `workflow/versions/v2/`;
+Future v* work must start by creating a real version from the workflow template,
+then passing a fresh discussion under `workflow/versions/<version>/`;
 it must not reuse the archived Stage 1 internal Stage 2/3/4 specs as current
 version scope. Promotion / apply into `workflow/versions/<version>/execution/**` still requires explicit
 approval and a configured live mapping.

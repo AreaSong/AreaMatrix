@@ -69,7 +69,7 @@ Dry-run proves only runner flow. It does not prove implementation, verification,
 Future v* requirements are tracked outside the live v1 queue:
 
 ```text
-workflow/versions/v2/changes/*.yaml
+workflow/versions/<version>/changes/*.yaml
 ```
 
 Use these commands before creating review artifacts:
@@ -77,6 +77,7 @@ Use these commands before creating review artifacts:
 ```bash
 ./dev workflow doctor
 ./dev workflow status
+./dev workflow init --version v2
 ./dev workflow plan --version v2
 ./dev workflow queue --version v2
 ./dev changes doctor
@@ -87,6 +88,7 @@ Use these commands before creating review artifacts:
 `workflow plan` creates the docs-change ledger. `workflow queue` creates queue candidates. `changes generate` creates the draft manifest / copy / verify package. All default to stdout preview and write nothing. Explicit writes require `--write`, and `--out-dir` should be used for temp validation:
 
 ```bash
+./dev workflow init --version v2 --write
 ./dev workflow plan --version v2 --write --out-dir /tmp/areamatrix-v2-plans
 ./dev workflow queue --version v2 --write --out-dir /tmp/areamatrix-v2-queue
 ./dev changes generate --feature v2-search-query

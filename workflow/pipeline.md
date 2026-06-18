@@ -4,7 +4,7 @@
 
 pipeline 的职责是说明：一个版本或大功能如何从 docs 讨论，逐步进入账本、计划、草稿、候选队列、promotion preview，最后变成版本内 `execution/` 中可由 task-loop 执行和验收的 live 任务。
 
-当前 `workflow/versions/v1-mvp/execution/**` 保存的是已完成的 `v1-mvp` 历史 live queue。新版本不得直接续写或重排 v1 历史队列；必须先从 `workflow/versions/v2/discussion/` 这样的版本讨论入口开始，直到 promotion approval 和 explicit promote 通过后，才允许写入对应版本的 execution 内容。
+当前 `workflow/versions/v1-mvp/execution/**` 保存的是已完成的 `v1-mvp` 历史 live queue。新版本不得直接续写或重排 v1 历史队列；必须先用 `./dev workflow init --version <version> --write` 创建真实版本目录，再从 `workflow/versions/<version>/discussion/` 进入讨论入口。直到 promotion approval 和 explicit promote 通过后，才允许写入对应版本的 execution 内容。
 
 ## Pipeline Overview
 
