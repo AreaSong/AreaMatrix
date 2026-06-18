@@ -1044,7 +1044,7 @@ def run_workflow_promote(root: Path, args: argparse.Namespace) -> int:
         return 0
     if mode == "apply":
         approval_errors = validate_approval(root, args.version)
-        apply_errors = validate_apply(root, tasks)
+        apply_errors = validate_apply(root, args.version, tasks)
         dirty = git_worktree_dirty(root)
         if dirty and args.write:
             apply_errors.append("git worktree must be clean before promotion apply --write")
@@ -1058,7 +1058,7 @@ def run_workflow_promote(root: Path, args: argparse.Namespace) -> int:
             for error in [*approval_errors, *gate_errors, *apply_errors]:
                 print(f"- {error}")
             return 1
-        artifacts = promotion_apply_artifacts(tasks)
+        artifacts = promotion_apply_artifacts(root, args.version, tasks)
         if not args.write:
             preview = promotion_apply_preview_artifact(root, args.version, tasks, blocked, gate_message, [*approval_errors, *apply_errors])
             print_named_artifacts(root, "Workflow promotion apply preview", [preview, *artifacts])

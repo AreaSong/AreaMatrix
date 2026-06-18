@@ -28,7 +28,8 @@ from scripts.dev_tools.execution_paths import (
 )
 
 
-PHASES = ("phase-0", "phase-1", "phase-2", "phase-3", "phase-4")
+DEFAULT_PHASES = ("phase-0", "phase-1", "phase-2", "phase-3", "phase-4")
+PHASE_RE = re.compile(r"^phase-\d+$")
 CODEX_SANDBOX_MODES = {"read-only", "workspace-write", "danger-full-access"}
 VALIDATION_PROCESS_MARKERS = (
     "./dev check",
@@ -191,7 +192,11 @@ class RuntimeConfig:
         return progress_path(self.root_dir)
 
     def selected_phases(self) -> list[str]:
-        return self.target_phases or list(PHASES)
+        return self.target_phases or self.discovered_phases()
+
+    def discovered_phases(self) -> list[str]:
+        phases = phase_dirs(self.copy_root) & phase_dirs(self.verify_root)
+        return sorted(phases, key=phase_sort_key) if phases else list(DEFAULT_PHASES)
 
     def should_write_progress(self) -> bool:
         return not self.dry_run or self.progress_file.resolve() != self.default_progress_file.resolve()
@@ -256,6 +261,16 @@ def label_to_task_ref(label: str) -> str:
     number = label.split("/task-", 1)[1]
     phase_number = batch.split("-", 1)[0]
     return f"phase-{phase_number}/{batch}-task-{number}"
+
+
+def phase_dirs(root: Path) -> set[str]:
+    if not root.is_dir():
+        return set()
+    return {path.name for path in root.iterdir() if path.is_dir() and PHASE_RE.match(path.name)}
+
+
+def phase_sort_key(phase: str) -> int:
+    return int(phase.split("-", 1)[1]) if PHASE_RE.match(phase) else 999
 
 
 def normalize_task_ref(value: str) -> str:
@@ -593,7 +608,7 @@ class TaskLoopRunner:
         if self.cfg.orphan_codex_policy not in {"fail", "terminate", "ignore"}:
             raise TaskLoopError("ORPHAN_CODEX_POLICY must be fail, terminate, or ignore")
         for phase in self.cfg.selected_phases():
-            if phase not in PHASES:
+            if not PHASE_RE.match(phase):
                 raise TaskLoopError(f"invalid phase: {phase}")
 
     def acquire_lock(self, operation: str) -> None:
@@ -1739,6 +1754,9 @@ def print_loop_status(cfg: RuntimeConfig) -> None:
     print()
     sys.stdout.flush()
     pipeline = prompt_pipeline_path(cfg.root_dir)
+    if not pipeline.is_file():
+        print(f"prompt_pipeline: missing ({pipeline})")
+        return
     subprocess.run([cfg.python_bin, str(pipeline), "status"], cwd=cfg.root_dir, check=False)
 
 
@@ -1846,7 +1864,7 @@ def apply_run_args(cfg: RuntimeConfig, args: argparse.Namespace) -> RuntimeConfi
 
 def add_run_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--dry-run", action="store_true", help="仅模拟执行，不调用 codex")
-    parser.add_argument("--phase", action="append", choices=list(PHASES), help="仅运行指定 phase，可重复")
+    parser.add_argument("--phase", action="append", help="仅运行指定 phase，可重复，例如 phase-0 或 phase-5")
     parser.add_argument("--max-tasks", type=int, help="最多执行 n 个 task（0 表示不限制）")
     parser.add_argument("--max-retries", type=int, help="最多重试次数（0 表示无限）")
     parser.add_argument("--start-from", help="从某个 task 开始，例如 phase-1/1-1-task-01 或 1-1/task-01")

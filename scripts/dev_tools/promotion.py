@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
@@ -18,7 +19,7 @@ from .changes import (
     sync_targets,
     task_validation,
 )
-from .execution_paths import copy_ready_root, manifest_root, task_root, verify_ready_root
+from .execution_paths import copy_ready_root, manifest_root, shared_root, task_root, verify_ready_root
 from .execution_repository import label_sort_key, scan_task_files
 from .workflow_states import ARTIFACT_STATUSES, status_list
 
@@ -26,6 +27,15 @@ from .workflow_states import ARTIFACT_STATUSES, status_list
 PROMOTION_ROOT_NAME = "promotion"
 APPROVAL_FILE_NAME = "approval.yaml"
 TEMPLATE_REFERENCE_VERSION = "v-template"
+EXECUTION_SHARED_BOOTSTRAP_FILES = (
+    "audit-rules.md",
+    "task-slicing-rules.md",
+    "engineering-quality-rules.md",
+    "dependency-graph.md",
+    "prompt_pipeline.py",
+)
+EXECUTION_SHARED_BOOTSTRAP_DIRS = ("prompt_pipeline_lib",)
+EXECUTION_SHARED_RUNTIME_DIRS = ("copy-ready", "verify-ready", "manifests")
 
 
 @dataclass(frozen=True)
@@ -426,9 +436,9 @@ def validate_approval(root: Path, version: str) -> list[str]:
     return errors
 
 
-def validate_apply(root: Path, tasks: Sequence[PromotionTask]) -> list[str]:
+def validate_apply(root: Path, version: str, tasks: Sequence[PromotionTask]) -> list[str]:
     errors: list[str] = []
-    existing_labels = set(scan_task_files())
+    existing_labels = set(scan_task_files(root, version))
     seen_labels: set[str] = set()
     for task in tasks:
         if task.live_label in existing_labels:
@@ -446,8 +456,83 @@ def validate_apply(root: Path, tasks: Sequence[PromotionTask]) -> list[str]:
     return errors
 
 
-def promotion_apply_artifacts(tasks: Sequence[PromotionTask]) -> list[DraftArtifact]:
+def execution_bootstrap_artifacts(root: Path, version: str) -> list[DraftArtifact]:
+    source = shared_root(root, "v1-mvp")
+    target = shared_root(root, version)
+    readme = target / "README.md"
     artifacts: list[DraftArtifact] = []
+    if not readme.exists():
+        artifacts.append(DraftArtifact(readme, execution_shared_readme(version)))
+    for name in EXECUTION_SHARED_BOOTSTRAP_FILES:
+        source_path = source / name
+        target_path = target / name
+        if source_path.is_file() and not target_path.exists():
+            artifacts.append(DraftArtifact(target_path, source_path.read_text(encoding="utf-8")))
+    for name in EXECUTION_SHARED_BOOTSTRAP_DIRS:
+        artifacts.extend(copy_tree_artifacts(source / name, target / name))
+    for name in EXECUTION_SHARED_RUNTIME_DIRS:
+        target_path = target / name / "README.md"
+        if not target_path.exists():
+            artifacts.append(DraftArtifact(target_path, execution_runtime_readme(name, version)))
+    progress = target / "progress.json"
+    if not progress.exists():
+        artifacts.append(DraftArtifact(progress, empty_progress_content(version)))
+    return artifacts
+
+
+def copy_tree_artifacts(source: Path, target: Path) -> list[DraftArtifact]:
+    artifacts: list[DraftArtifact] = []
+    if not source.is_dir():
+        return artifacts
+    for path in sorted(item for item in source.rglob("*") if item.is_file()):
+        if path.name == ".DS_Store":
+            continue
+        target_path = target / path.relative_to(source)
+        if not target_path.exists():
+            artifacts.append(DraftArtifact(target_path, path.read_text(encoding="utf-8")))
+    return artifacts
+
+
+def execution_runtime_readme(name: str, version: str) -> str:
+    title = name.replace("-", " ").title()
+    lines = [
+        f"# {title}",
+        "",
+        f"This directory is initialized for `{version}` execution runtime artifacts.",
+        "Promotion apply writes version-local task artifacts here; historical v1 task",
+        "content and progress are not copied into this version.",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def execution_shared_readme(version: str) -> str:
+    pipeline = f"workflow/versions/{version}/execution/_shared/prompt_pipeline.py"
+    lines = [
+        "# Prompt Shared Runtime",
+        "",
+        f"This directory contains shared prompt runtime material for `{version}`.",
+        "It is initialized from the current runtime template during promotion apply,",
+        "without copying historical v1 manifests, exported prompts, or progress.",
+        "",
+        "## Common Commands",
+        "",
+        "```bash",
+        f"python3 {pipeline} doctor",
+        f"python3 {pipeline} plan --all",
+        f"python3 {pipeline} next",
+        f"python3 {pipeline} status",
+        "```",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def empty_progress_content(version: str) -> str:
+    data = {"version": 1, "execution_version": version, "tasks": {}}
+    return json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+
+
+def promotion_apply_artifacts(root: Path, version: str, tasks: Sequence[PromotionTask]) -> list[DraftArtifact]:
+    artifacts: list[DraftArtifact] = execution_bootstrap_artifacts(root, version)
     manifest_sections: dict[Path, list[str]] = {}
     for task in tasks:
         artifacts.append(DraftArtifact(task.task_path, task.task_content))
@@ -458,6 +543,24 @@ def promotion_apply_artifacts(tasks: Sequence[PromotionTask]) -> list[DraftArtif
         header = f"# {path.stem}\n\n" if not path.exists() else path.read_text(encoding="utf-8").rstrip() + "\n\n"
         artifacts.append(DraftArtifact(path, header + "\n\n".join(section.rstrip() for section in sections) + "\n"))
     return artifacts
+
+
+def promotion_apply_paths(root: Path, version: str, tasks: Sequence[PromotionTask]) -> list[Path]:
+    paths: list[Path] = []
+    seen: set[Path] = set()
+    for artifact in execution_bootstrap_artifacts(root, version):
+        append_unique_path(paths, seen, artifact.path)
+    for task in tasks:
+        for path in [task.task_path, task.copy_ready_path, task.verify_ready_path, task.manifest_path]:
+            append_unique_path(paths, seen, path)
+    return paths
+
+
+def append_unique_path(paths: list[Path], seen: set[Path], path: Path) -> None:
+    if path in seen:
+        return
+    paths.append(path)
+    seen.add(path)
 
 
 def promotion_yaml_content(
@@ -527,9 +630,8 @@ def promotion_apply_preview_artifact(root: Path, version: str, tasks: Sequence[P
         f"gate_message: {gate_message}",
         "files_to_write:",
     ]
-    for task in tasks:
-        for path in [task.task_path, task.copy_ready_path, task.verify_ready_path, task.manifest_path]:
-            lines.append(f"  - {display_path(root, path)}")
+    for path in promotion_apply_paths(root, version, tasks):
+        lines.append(f"  - {display_path(root, path)}")
     lines.append("blocked_by:")
     if blocked or errors:
         for error in ([gate_message] if blocked else []):

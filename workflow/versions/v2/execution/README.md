@@ -2,11 +2,12 @@
 
 This is the version-local execution target for `v2`.
 
-It stays empty except for this README until promotion is explicitly approved and
-the hard migration from historical `workflow/versions/v2/execution/**` compatibility paths is
-planned and validated.
+It stays empty except for this README until promotion is explicitly approved.
+The explicit apply step initializes `_shared/` runtime files and then writes
+version-local task, manifest, copy-ready, verify-ready, and progress artifacts.
+It must not copy v1 historical progress or task-loop evidence.
 
-Expected initial shape after hard migration:
+Expected initial shape after promotion apply:
 
 ```text
 execution/
@@ -16,4 +17,6 @@ execution/
   phase-2/
   phase-3/
   phase-4/
+  phase-5/
+  ...
 ```

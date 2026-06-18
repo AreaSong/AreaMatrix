@@ -60,6 +60,8 @@ workflow/versions/<version>/execution/
   phase-2/
   phase-3/
   phase-4/
+  phase-5/
+  ...
 ```
 
 后续如果需要进一步收紧 execution，可以在新版本内标准化运行材料：
@@ -76,10 +78,24 @@ workflow/versions/<version>/execution/
 其中：
 
 - `_shared/`：prompt pipeline、manifests、copy-ready、verify-ready、progress、audit rules 等共享执行材料。
-- `phase-*` 或 `phases/`：具体任务包，保持可独立执行和验收。
+- `phase-*` 或 `phases/`：具体任务包，保持可独立执行和验收；`./task-loop` 按 version-local copy-ready / verify-ready 目录动态发现 `phase-*`。
 - `logs/`：版本内 copy、verify、repair、runner 日志；日志跟随版本，不归入 `.codex/` 作为 canonical evidence。
 - `checkpoints/`：Git branch、changed files、commit、runner resume/stale 状态。
 - `reports/`：phase verify、task-scope verify、repo-wide gate 和最终执行报告。
+
+## Bootstrap Contract
+
+显式 promotion apply 写入某个新版本的 execution 时，必须先初始化该版本的
+`_shared/` runtime：
+
+- 写入 `prompt_pipeline.py` 与 `prompt_pipeline_lib/`。
+- 写入共享规则文件，如 `audit-rules.md`、`task-slicing-rules.md`、`engineering-quality-rules.md` 和 `dependency-graph.md`。
+- 创建 version-local `copy-ready/`、`verify-ready/`、`manifests/` 和空的 `progress.json`。
+- 不复制 v1 历史 manifests、copy-ready / verify-ready 导出内容、`progress.json` 或 task-loop evidence。
+
+v1 `doctor` 保留全产品覆盖审计。后续版本的 `doctor` 默认检查 version-local
+execution 包内部一致性；整仓库产品覆盖仍由对应版本的 workflow / projection /
+closeout gate 汇总。
 
 ## Validation Layers
 

@@ -11,6 +11,7 @@ from .paths import (
     DEPENDENCY_GRAPH,
     ENGINEERING_QUALITY_RULES,
     EXTERNAL_LINK_RE,
+    EXECUTION_VERSION,
     MANIFEST_ROOT,
     MARKDOWN_LINK_RE,
     REPO_LOCAL_SKILLS,
@@ -86,9 +87,15 @@ def visit_dependency(
     trail: list[str],
 ) -> None:
     if dep not in tasks:
+        if allows_external_dependencies():
+            return
         errors.append(f"{label}: unknown dependency {dep}")
         return
     visit_graph_label(dep, tasks, manifests, errors, visiting, visited, [*trail, label])
+
+
+def allows_external_dependencies() -> bool:
+    return EXECUTION_VERSION != "v1-mvp"
 
 
 def markdown_link_audit_paths() -> list[Path]:
@@ -198,10 +205,15 @@ def collect_doctor_findings() -> tuple[list[str], list[str], dict[str, TaskFile]
     append_task_manifest_errors(errors, tasks, manifests)
     append_orphan_manifest_warnings(warnings, tasks, manifests)
     errors.extend(validate_graph(tasks, manifests))
-    errors.extend(validate_page_contract_coverage(tasks, manifests))
-    errors.extend(validate_core_task_coverage(tasks, manifests))
+    if requires_product_coverage():
+        errors.extend(validate_page_contract_coverage(tasks, manifests))
+        errors.extend(validate_core_task_coverage(tasks, manifests))
     errors.extend(validate_markdown_links())
     return errors, warnings, tasks, manifests
+
+
+def requires_product_coverage() -> bool:
+    return EXECUTION_VERSION == "v1-mvp"
 
 
 def load_task_and_manifest_state() -> tuple[dict[str, TaskFile], dict[str, ManifestEntry], list[str]]:
@@ -258,7 +270,7 @@ def append_task_manifest_errors(
 
 def validate_task_manifest(task: TaskFile, entry: ManifestEntry) -> list[str]:
     errors: list[str] = []
-    if entry.source_task and entry.source_task != rel(task.path):
+    if entry.source_task and not source_task_matches(task, entry):
         errors.append(f"{task.label}: source task mismatch: {entry.source_task} != {rel(task.path)}")
     append_exact_doc_errors(errors, task.label, entry)
     append_expected_path_errors(errors, task.label, entry)
@@ -267,6 +279,12 @@ def validate_task_manifest(task: TaskFile, entry: ManifestEntry) -> list[str]:
     append_section_errors(errors, task.label, entry)
     errors.extend(validate_granularity(task, entry))
     return errors
+
+
+def source_task_matches(task: TaskFile, entry: ManifestEntry) -> bool:
+    if entry.source_task == rel(task.path):
+        return True
+    return EXECUTION_VERSION != "v1-mvp" and entry.source_task.startswith("workflow:")
 
 
 def append_exact_doc_errors(errors: list[str], label: str, entry: ManifestEntry) -> None:

@@ -25,7 +25,7 @@ tasks:
     task_key: docs-contract
     title: Align docs and public contracts.
     task_file: workflow/versions/<version>/execution/phase-5/5-1-v-next/task-01-docs-contract.md
-    manifest: workflow/versions/v1-mvp/execution/_shared/manifests/phase-5.md
+    manifest: workflow/versions/<version>/execution/_shared/manifests/phase-5.md
     copy_ready: workflow/versions/<version>/execution/_shared/copy-ready/phase-5/5-1-task-01.md
     verify_ready: workflow/versions/<version>/execution/_shared/verify-ready/phase-5/5-1-task-01.md
     depends_on:

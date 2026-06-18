@@ -221,6 +221,18 @@ def add_prompt_fixture(repo: Path, labels: Sequence[str]) -> None:
         verify_file.write_text(f"# verify {label}\n", encoding="utf-8")
 
 
+def add_execution_prompt_fixture(execution_root: Path, labels: Sequence[str]) -> None:
+    for label in labels:
+        phase = f"phase-{label.split('-', 1)[0]}"
+        task_name = label.replace("/task-", "-task-")
+        copy_file = execution_root / "_shared/copy-ready" / phase / f"{task_name}.md"
+        verify_file = execution_root / "_shared/verify-ready" / phase / f"{task_name}.md"
+        copy_file.parent.mkdir(parents=True, exist_ok=True)
+        verify_file.parent.mkdir(parents=True, exist_ok=True)
+        copy_file.write_text(f"# copy {label}\n风险等级：`Medium`\n", encoding="utf-8")
+        verify_file.write_text(f"# verify {label}\n", encoding="utf-8")
+
+
 def write_live_lock(lock_dir: Path, run_id: str, operation: str = "run") -> None:
     lock_dir.mkdir(parents=True, exist_ok=True)
     (lock_dir / "pid").write_text(f"{os.getpid()}\n", encoding="utf-8")
@@ -627,6 +639,8 @@ next_layers:
     assert_contains(apply_preview, "writes_live_queue: false", "workflow apply preview no writes")
     assert_contains(apply_preview, "template_reference: true", "workflow apply preview template")
     assert_contains(apply_preview, "apply_allowed: false", "workflow apply preview blocked")
+    assert_contains(apply_preview, "workflow/versions/v-template/execution/_shared/prompt_pipeline.py", "workflow apply preview bootstrap pipeline")
+    assert_contains(apply_preview, "workflow/versions/v-template/execution/_shared/progress.json", "workflow apply preview bootstrap progress")
     apply_write = h.run([h.dev, "workflow", "promote", "--version", "v-template", "apply", "--write"], check=False)
     if apply_write.returncode == 0:
         raise CheckFailure("workflow promote apply --write unexpectedly accepted v-template")
@@ -937,6 +951,21 @@ def check_runner_core(h: Harness) -> None:
     assert_json(summary, lambda data: data["status"] == "completed" and data["totals"]["completed_in_run"] == 1, "pass summary")  # type: ignore[index]
     assert_json(h.tmp / "pass/runs/index.json", lambda data: data["runs"][0]["status"] == "completed", "pass index")  # type: ignore[index]
     assert_not_exists(h.tmp / "pass/lock", "pass lock release")
+
+    log("runner dynamically discovers phase-5 prompts")
+    future_execution = h.tmp / "future-execution"
+    add_execution_prompt_fixture(future_execution, ["5-1/task-01"])
+    future = h.task_loop_run(
+        "future-phase",
+        ["run", "--dry-run", "--max-tasks", "1"],
+        extra_env={
+            "AREAMATRIX_EXECUTION_ROOT": str(future_execution),
+            "DRY_RUN_RESULT": "PASS",
+            "MAX_RETRIES": "1",
+        },
+    )
+    assert_contains(future.stdout, "PHASES=phase-5", "future phase discovery")
+    assert_json(h.tmp / "future-phase/progress.json", lambda data: data["tasks"]["5-1/task-01"]["status"] == "completed", "future phase progress")  # type: ignore[index]
 
     log("runner validates explicit start and stop targets before execution")
     start_guard = h.task_loop_run("start-target-guard", ["run", "--dry-run", "--phase", "phase-0", "--start-from", "2-1/task-19", "--max-tasks", "1"], check=False)

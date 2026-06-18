@@ -6,7 +6,7 @@ import sys
 
 from .coverage import core_coverage_stats, page_feature_audit
 from .doctor import collect_doctor_findings
-from .paths import COPY_READY_ROOT, PROGRESS_PATH, VERIFY_READY_ROOT, label_sort_key, rel
+from .paths import COPY_READY_ROOT, PROGRESS_PATH, SHARED_ROOT, VERIFY_READY_ROOT, label_sort_key, rel
 from .phase_rendering import print_phase_verify_prompt
 from .rendering import (
     capture_task_prompt,
@@ -145,7 +145,7 @@ def print_next_task_details(label: str, task, entry, status: str) -> None:
     print(f"{label} [{task.phase}] {task.title}")
     print(f"risk: {entry.risk}")
     print(f"status: {status}")
-    pipeline = "workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py"
+    pipeline = rel(SHARED_ROOT / "prompt_pipeline.py")
     print(f"render: python3 {pipeline} render --task {label}")
     print(f"verify: python3 {pipeline} verify --task {label}")
 

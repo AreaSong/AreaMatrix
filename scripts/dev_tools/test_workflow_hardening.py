@@ -13,6 +13,13 @@ from pathlib import Path
 from scripts.dev_tools.changes import parse_yaml_subset
 from scripts.dev_tools.workflow import run_workflow_doctor, validate_queue_gate
 from scripts.dev_tools.workflow_baseline import validate_baseline
+from scripts.dev_tools.changes import FeatureRecord
+from scripts.dev_tools.promotion import (
+    PromotionConfig,
+    build_promotion_tasks,
+    promotion_apply_artifacts,
+    validate_apply,
+)
 from scripts.dev_tools.workflow_projection import validate_closeout, validate_projection
 from scripts.dev_tools.workflow_states import ARTIFACT_STATUSES
 
@@ -22,7 +29,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def copy_tree(src: Path, dst: Path) -> None:
     if src.is_dir():
-        shutil.copytree(src, dst)
+        shutil.copytree(src, dst, dirs_exist_ok=True)
     else:
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
@@ -102,6 +109,23 @@ class WorkflowHardeningTest(unittest.TestCase):
         self.assertIs(data.get("writes_live_queue"), False)
         self.assertIs(data.get("template_reference"), True)
         self.assertIs(data.get("apply_allowed"), False)
+
+    def test_promotion_apply_is_version_local_and_bootstraps_runtime(self) -> None:
+        config = PromotionConfig("workflow/versions/v2/execution", "phase-0", "0-1", "v2-planning", 1)
+        change = self.root / "workflow/versions/v-template/changes/template-contracts.yaml"
+        data = parse_yaml_subset(change.read_text(encoding="utf-8"), change)
+        record = FeatureRecord(change, data["id"], data["features"][0])
+
+        tasks = build_promotion_tasks(self.root, "v2", config, [record], "None")
+        errors = validate_apply(self.root, "v2", tasks)
+        artifacts = promotion_apply_artifacts(self.root, "v2", tasks)
+        by_path = {artifact.path.resolve().relative_to(self.root.resolve()).as_posix(): artifact.content for artifact in artifacts}
+
+        self.assertEqual(errors, [])
+        self.assertIn("workflow/versions/v2/execution/_shared/prompt_pipeline.py", by_path)
+        self.assertIn("workflow/versions/v2/execution/_shared/progress.json", by_path)
+        self.assertIn('"tasks": {}', by_path["workflow/versions/v2/execution/_shared/progress.json"])
+        self.assertNotIn("4-3/task-165", by_path["workflow/versions/v2/execution/_shared/progress.json"])
 
 
 if __name__ == "__main__":

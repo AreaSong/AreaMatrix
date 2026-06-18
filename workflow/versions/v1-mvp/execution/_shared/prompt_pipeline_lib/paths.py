@@ -19,6 +19,7 @@ def find_project_root(start: Path) -> Path:
 
 SHARED_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_ROOT = SHARED_ROOT.parent
+EXECUTION_VERSION = PROMPTS_ROOT.parent.name if PROMPTS_ROOT.parent.name else ""
 ROOT = find_project_root(SHARED_ROOT)
 MANIFEST_ROOT = SHARED_ROOT / "manifests"
 AUDIT_RULES = SHARED_ROOT / "audit-rules.md"
