@@ -12,6 +12,7 @@ from .common import ToolError
 
 
 BACKLOG_ROOT = Path("tasks/backlog/prompts")
+BACKLOG_RECORD_ROOT = Path("tasks/backlog")
 PROMPT_MODES = {"copy": "copy-ready", "verify": "verify-ready"}
 PROMPT_LINK_PATTERN = re.compile(r"`((?:copy-ready|verify-ready)/[^`]+\.md)`")
 
@@ -23,6 +24,13 @@ class BacklogPackage:
     task_count: int
     copy_ready_count: int
     verify_ready_count: int
+
+
+@dataclass(frozen=True)
+class BacklogRecord:
+    slug: str
+    title: str
+    path: Path
 
 
 @dataclass(frozen=True)
@@ -63,6 +71,27 @@ def _relative_display(path: Path, root: Path) -> str:
 def _read_title(readme: Path) -> str:
     first_line = readme.read_text(encoding="utf-8").splitlines()[0].strip()
     return first_line.lstrip("#").strip() or readme.parent.name
+
+
+def discover_records(root: Path) -> list[BacklogRecord]:
+    """Return top-level backlog records that are not prompt packages."""
+
+    record_root = root / BACKLOG_RECORD_ROOT
+    if not record_root.is_dir():
+        return []
+
+    records: list[BacklogRecord] = []
+    for path in sorted(record_root.glob("*.md")):
+        if path.name == "README.md":
+            continue
+        records.append(
+            BacklogRecord(
+                slug=path.stem,
+                title=_read_title(path),
+                path=path,
+            )
+        )
+    return records
 
 
 def discover_packages(root: Path) -> list[BacklogPackage]:
@@ -108,6 +137,17 @@ def _format_packages(packages: list[BacklogPackage]) -> str:
         f"{package.slug} | {package.title} | {package.task_count} | {package.copy_ready_count} | {package.verify_ready_count}"
         for package in packages
     )
+    return "\n".join(rows)
+
+
+def _format_records(root: Path, records: list[BacklogRecord]) -> str:
+    rows = [
+        "",
+        "Backlog records (top-level notes, not prompt packages)",
+        "slug | title | path",
+        "--- | --- | ---",
+    ]
+    rows.extend(f"{record.slug} | {record.title} | {_relative_display(record.path, root)}" for record in records)
     return "\n".join(rows)
 
 
@@ -234,6 +274,7 @@ def _format_task_index(package_dir: Path, tasks: list[BacklogTask]) -> str:
 
 def run_backlog_list(root: Path) -> int:
     packages = discover_packages(root)
+    records = discover_records(root)
     if not packages:
         raise ToolError(
             "\n".join(
@@ -245,6 +286,8 @@ def run_backlog_list(root: Path) -> int:
             code=1,
         )
     print(_format_packages(packages))
+    if records:
+        print(_format_records(root, records))
     return 0
 
 

@@ -9,7 +9,7 @@ import re
 import sys
 from typing import Any
 
-from .backlog import discover_packages
+from .backlog import discover_packages, discover_records
 from .changes import ChangeYAMLError, parse_yaml_subset
 from .common import ToolError
 
@@ -276,6 +276,7 @@ def _summary_counts(root: Path, tasks: list[LightweightTask]) -> dict[str, int]:
         "blocked": sum(1 for task in active if task.status == "blocked"),
         "verify_ready": sum(1 for task in active if task.status == "verify_ready"),
         "backlog_packages": len(discover_packages(root)),
+        "backlog_records": len(discover_records(root)),
     }
 
 
@@ -289,7 +290,8 @@ def run_tasks_status(root: Path) -> int:
     print(f"- done: {counts['done']}")
     print(f"- blocked: {counts['blocked']}")
     print(f"- verify_ready: {counts['verify_ready']}")
-    print(f"- backlog packages: {counts['backlog_packages']}")
+    print(f"- backlog prompt packages: {counts['backlog_packages']}")
+    print(f"- backlog records: {counts['backlog_records']}")
     if not tasks:
         print()
         print("No lightweight tasks found under tasks/active or tasks/done.")
@@ -305,7 +307,8 @@ def run_tasks_status(root: Path) -> int:
         print(_format_task_table("Done", done))
     print()
     print("Backlog")
-    print(f"- packages: {counts['backlog_packages']}")
+    print(f"- prompt packages: {counts['backlog_packages']}")
+    print(f"- records: {counts['backlog_records']}")
     print("- hint: ./dev backlog list")
     return 0
 
@@ -331,7 +334,8 @@ def run_tasks_doctor(root: Path) -> int:
     print("lightweight tasks doctor: OK")
     print(f"- active: {counts['active']}")
     print(f"- done: {counts['done']}")
-    print(f"- backlog packages: {counts['backlog_packages']}")
+    print(f"- backlog prompt packages: {counts['backlog_packages']}")
+    print(f"- backlog records: {counts['backlog_records']}")
     return 0
 
 

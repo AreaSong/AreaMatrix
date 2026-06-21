@@ -4,7 +4,7 @@
 `tasks/active/**` 或 `workflow/versions/<version>/execution/**` 的短期规划
 任务和治理排期材料。
 
-这些任务用于讨论、评估和治理排期，不代表当前轻量任务进度，也不由
+这些材料用于讨论、评估和治理排期，不代表当前轻量任务进度，也不由
 `./task-loop` 自动执行。候选材料可以人工拆成 `tasks/active/<number>.<slug>/`
 轻量任务；只有通过 `workflow/` 规划、promotion preview 和人工确认后，才可能
 拆成正式 version execution prompt task。
@@ -14,7 +14,9 @@
 ## 边界
 
 - `tasks/backlog/**` 不是 live queue，不由 `./task-loop` 扫描、执行、重试或验收。
-- `tasks/backlog/**` 不是 `tasks/active/**`，不参与 `./dev tasks status` 的当前任务进度，只能作为 backlog package 统计或浏览。
+- `tasks/backlog/**` 不是 `tasks/active/**`，不参与 `./dev tasks status` 的当前任务进度。
+- `tasks/backlog/prompts/*` 是脚本可浏览的 backlog prompt package。
+- `tasks/backlog/*.md` 是顶层 backlog record / governance record / historical note，不是 prompt package。
 - backlog prompt 包只能手工复制或经 `workflow/` planning gate 重新拆分；不得直接 promotion 成 `workflow/versions/<version>/execution/**`。
 - 本目录不得引入第二套 runner、progress、queue、checkpoint 或 promotion 机制。
 - backlog prompt 不得写 `workflow/versions/<version>/execution/**`、`workflow/versions/<version>/execution/_shared/progress.json`、task-loop logs、run summaries、runner lock 或 Git checkpoint 状态。
@@ -30,7 +32,8 @@
 
 ## Read-only Backlog Tooling
 
-计划中的 `./dev backlog` 只用于浏览和打印本目录下的 backlog prompt package：
+`./dev backlog` 只用于浏览和打印本目录下的 backlog prompt package，并在 `list`
+里附带顶层 backlog record 的只读索引：
 
 ```bash
 ./dev backlog list
@@ -45,7 +48,8 @@
 
 - 根入口 `dev` 先进入 `scripts/task_loop/console.py`；非交互命令由 action registry 决定是否透传到底层开发工具。
 - `backlog` 必须作为 `scripts/dev_tools/cli.py` 子命令存在；控制台菜单文案只负责可发现性，不承载读取逻辑。
-- `list` 只列出 `tasks/backlog/prompts/*/README.md` 对应 package，并展示稳定的 package 索引。
+- `list` 列出 `tasks/backlog/prompts/*/README.md` 对应 package，并展示稳定的 package 索引。
+- `list` 还会列出 `tasks/backlog/*.md` 顶层 record；这些 record 不支持 `show <package>`，也不能当 prompt package 执行。
 - `show <package>` 打印 package README，并追加简短 `Task Index`；用户可按索引用 `--task N --mode copy|verify` 打印具体 prompt。
 - `--task N` 优先按 package README 表格中的 prompt 路径顺序映射；若 package README 没有可解析 prompt 表格，则按 prompt 文件名排序映射，保证稳定。
 - `show <package> --task N --mode copy|verify` 只打印对应 `copy-ready` 或 `verify-ready` markdown 文件内容。
@@ -53,10 +57,19 @@
 
 ## Prompt Packages
 
-- [Codex Operating Layer Inventory](codex-operating-layer-inventory.md)
-- [Codex Operating Layer Boundary Regression](codex-operating-layer-boundary-regression.md)
+以下条目位于 `tasks/backlog/prompts/*`，可由 `./dev backlog show <package>`
+按 package slug 浏览：
+
 - [Codex Native / AreaMatrix / Vibe-Skills 基础治理](prompts/codex-native-area-vibe-optimization/)
 - [Vibe-Skills 横向能力吸收](prompts/vibe-skills-absorption/)
 - [Dev Backlog Tooling](prompts/dev-backlog-tooling/)
 - [Codex Operating Layer Closeout](prompts/codex-operating-layer-closeout/)
 - [Codex Advanced Non-invasive Layer](prompts/codex-advanced-noninvasive-layer/)
+
+## Backlog Records
+
+以下条目是顶层记录，不是 prompt package。它们只作为治理、盘点或历史判断材料：
+
+- [Codex Operating Layer Inventory](codex-operating-layer-inventory.md)
+- [Codex Operating Layer Boundary Regression](codex-operating-layer-boundary-regression.md)
+- [Codex Native / AreaMatrix / Vibe-Skills 长期优化任务](codex-native-area-vibe-optimization.md)

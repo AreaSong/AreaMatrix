@@ -697,6 +697,29 @@ next_layers:
     assert_contains(bad_promotion_force.stdout + bad_promotion_force.stderr, "--force requires --write", "workflow promote force guard")
 
 
+def check_lightweight_tasks_and_backlog(h: Harness) -> None:
+    log("lightweight tasks and backlog surfaces")
+    task_status = h.run([h.dev, "tasks", "status"]).stdout
+    assert_contains(task_status, "Lightweight tasks", "tasks status header")
+    assert_contains(task_status, "backlog prompt packages: 5", "tasks status backlog packages")
+    assert_contains(task_status, "backlog records: 3", "tasks status backlog records")
+    assert_contains(task_status, "Backlog", "tasks status backlog section")
+    assert_contains(task_status, "prompt packages: 5", "tasks status backlog package section")
+    assert_contains(task_status, "records: 3", "tasks status backlog record section")
+
+    task_doctor = h.run([h.dev, "tasks", "doctor"]).stdout
+    assert_contains(task_doctor, "lightweight tasks doctor: OK", "tasks doctor")
+    assert_contains(task_doctor, "backlog prompt packages: 5", "tasks doctor backlog packages")
+    assert_contains(task_doctor, "backlog records: 3", "tasks doctor backlog records")
+
+    backlog_list = h.run([h.dev, "backlog", "list"]).stdout
+    assert_contains(backlog_list, "Backlog prompt packages", "backlog list packages")
+    assert_contains(backlog_list, "dev-backlog-tooling", "backlog list package slug")
+    assert_contains(backlog_list, "Backlog records", "backlog list records")
+    assert_contains(backlog_list, "codex-operating-layer-inventory", "backlog list record slug")
+    assert_contains(backlog_list, "top-level notes, not prompt packages", "backlog list record boundary")
+
+
 def check_real_status(h: Harness) -> None:
     log("real status is readable")
     status = h.run([h.task_loop, "status"]).stdout
@@ -1675,6 +1698,7 @@ def run_check(root_dir: Path) -> int:
             check_repo_health(harness)
             check_template_changes(harness)
             check_versioned_workflow(harness)
+            check_lightweight_tasks_and_backlog(harness)
             check_real_status(harness)
             check_dev_home(harness)
             check_dev_console(harness)
