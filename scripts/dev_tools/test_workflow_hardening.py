@@ -19,6 +19,7 @@ from scripts.dev_tools.promotion import (
     build_promotion_tasks,
     promotion_apply_artifacts,
     validate_apply,
+    validate_promotion_preview_config,
 )
 from scripts.dev_tools.workflow_projection import validate_closeout, validate_projection
 from scripts.dev_tools.workflow_states import ARTIFACT_STATUSES
@@ -109,6 +110,15 @@ class WorkflowHardeningTest(unittest.TestCase):
         self.assertIs(data.get("writes_live_queue"), False)
         self.assertIs(data.get("template_reference"), True)
         self.assertIs(data.get("apply_allowed"), False)
+
+    def test_real_version_rejects_placeholder_target_queue(self) -> None:
+        errors = validate_promotion_preview_config(
+            "fixture: promotion_preview",
+            {"target_queue": "workflow/versions/<version>/execution", "live_mapping": "pending"},
+            "v2",
+        )
+
+        self.assertTrue(any("workflow/versions/v2/execution" in error for error in errors), errors)
 
     def test_promotion_apply_is_version_local_and_bootstraps_runtime(self) -> None:
         config = PromotionConfig("workflow/versions/v2/execution", "phase-0", "0-1", "v2-planning", 1)

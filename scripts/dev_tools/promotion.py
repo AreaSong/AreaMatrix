@@ -76,10 +76,9 @@ def int_field(value: Any) -> int | None:
 
 
 def allowed_target_queues(version: str | None) -> set[str]:
-    values = {"workflow/versions/<version>/execution"}
     if version:
-        values.add(f"workflow/versions/{version}/execution")
-    return values
+        return {f"workflow/versions/{version}/execution"}
+    return {"workflow/versions/<version>/execution"}
 
 
 def validate_promotion_preview_configs(root: Path, records: Sequence[Any]) -> list[str]:

@@ -436,7 +436,9 @@ def check_versioned_workflow(h: Harness) -> None:
     assert_contains(init_preview, "mode: preview only; no files written", "workflow init no write")
     assert_contains(init_preview, "workflow/versions/v2/version.yaml", "workflow init version path")
     assert_contains(init_preview, "local_queue:", "workflow init local queue")
+    assert_contains(init_preview, "target_queue: workflow/versions/v2/execution", "workflow init target queue")
     assert_contains(init_preview, "live_mapping: pending", "workflow init live mapping pending")
+    assert_not_contains(init_preview, "target_queue: workflow/versions/<version>/execution", "workflow init no placeholder queue")
     bad_name = h.run([h.dev, "workflow", "init", "--version", "bad-name"], check=False)
     if bad_name.returncode == 0:
         raise CheckFailure("workflow init unexpectedly accepted bad version name")
@@ -450,6 +452,9 @@ def check_versioned_workflow(h: Harness) -> None:
     init_write = h.run([h.dev, "workflow", "init", "--version", "v2", "--write", "--out-dir", str(version_out)]).stdout
     assert_contains(init_write, "workflow init: wrote files", "workflow init write")
     assert_exists(version_out / "version.yaml", "workflow init version yaml")
+    init_version_text = (version_out / "version.yaml").read_text(encoding="utf-8")
+    assert_contains(init_version_text, "target_queue: workflow/versions/v2/execution", "workflow init written target queue")
+    assert_not_contains(init_version_text, "workflow/versions/<version>/execution", "workflow init written no placeholder queue")
     assert_exists(version_out / "discussion/docs-discussion.md", "workflow init docs discussion")
     assert_exists(version_out / "discussion/middle-layer-discussion.md", "workflow init middle discussion")
     assert_exists(version_out / "discussion/decisions.yaml", "workflow init decisions")

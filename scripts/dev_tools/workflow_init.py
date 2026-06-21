@@ -65,7 +65,7 @@ local_queue:
   batch_slug: {version}-planning
   start_task: 1
 promotion_preview:
-  target_queue: workflow/versions/<version>/execution
+  target_queue: workflow/versions/{version}/execution
   live_mapping: pending
 execution:
   root: workflow/versions/{version}/execution
