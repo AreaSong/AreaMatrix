@@ -42,4 +42,4 @@ When `.codex/skills-src` changes:
 
 - keep `.agents/skills` symlinks valid
 - update `.codex/references/index.md` only if navigation changed
-- run `bash scripts/check-skills.sh`
+- run `./dev check skills`
