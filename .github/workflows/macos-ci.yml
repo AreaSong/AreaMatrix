@@ -12,7 +12,7 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-      - run: python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+      - run: python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 
   build:
     name: Xcode build & test

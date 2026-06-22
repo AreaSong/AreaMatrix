@@ -9,7 +9,7 @@
 ## 入口顺序
 
 1. 先读本文件。
-2. 再按目标路径读取最近的局部 `AGENTS.md`。当前首轮不创建空的 `core/AGENTS.md` 或 `apps/macos/AGENTS.md`；这些文件由后续工程骨架任务在对应目录出现时补充。
+2. 再按目标路径读取最近的局部 `AGENTS.md`；当前已有 `core/AGENTS.md`、`apps/macos/AGENTS.md` 与 `workflow/AGENTS.md`。
 3. 再读与任务匹配的 `docs/` 文档、`.ai-governance/` 规则和 `workflow/versions/<version>/execution/` 任务文件。
 
 ## 源事实
