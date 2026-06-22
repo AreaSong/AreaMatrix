@@ -204,7 +204,7 @@ class BuildToolsTest(unittest.TestCase):
             task.parent.mkdir(parents=True)
             task.write_text("# 4-1/task-15\n", encoding="utf-8")
 
-            self.assertEqual(checks._task_path(root, "4-1/task-15"), task)
+            self.assertEqual(checks._task_path(root, "4-1/task-15").resolve(), task.resolve())
 
     def test_task_check_maps_c2_03_to_saved_search_tests(self) -> None:
         text = "Core ability C2-03 saved-search-crud"
@@ -447,7 +447,7 @@ class BuildToolsTest(unittest.TestCase):
                 runtime=RuntimeConfig(root_dir=root),
                 task_loop_bin=root / "task-loop",
                 pipeline=root / "workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py",
-                console_log_root=root / ".codex/task-loop-console",
+                console_log_root=root / ".codex/runtime/task-loop/console",
             )
 
             with (

@@ -63,7 +63,7 @@ class ConsoleConfig:
         root = package_root()
         task_loop_bin = Path(os.environ.get("TASK_LOOP_BIN", root / "task-loop"))
         pipeline = Path(os.environ.get("PIPELINE", prompt_pipeline_path(runtime.root_dir)))
-        console_log_root = Path(os.environ.get("CONSOLE_LOG_ROOT", runtime.root_dir / ".codex/task-loop-console"))
+        console_log_root = Path(os.environ.get("CONSOLE_LOG_ROOT", runtime.root_dir / ".codex/runtime/task-loop/console"))
         return cls(runtime=runtime, task_loop_bin=task_loop_bin, pipeline=pipeline, console_log_root=console_log_root)
 
 

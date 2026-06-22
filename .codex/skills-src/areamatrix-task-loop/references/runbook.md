@@ -114,7 +114,7 @@ The same operation is available from `./dev` as the “一键优雅收尾” men
 ./dev drain
 ```
 
-`./task-loop drain` requires a live runner lock. It writes a local control request under `.codex/task-loop-control/`; that directory is not workflow evidence and stays ignored by git.
+`./task-loop drain` requires a live runner lock. It writes a local control request under `.codex/runtime/task-loop/control/`; that directory is not workflow evidence and stays ignored by git.
 
 The active runner checks the request only after the current task reaches `VERIFY_RESULT: PASS`, writes progress, runs the configured Git checkpoint or push, records run summary/index, and then exits with status `drained`. It does not skip verify, bypass repair retries, or advance into the next task.
 
@@ -169,7 +169,7 @@ State operations:
 ./task-loop resume-stale
 ```
 
-`./task-loop reset-progress` backs up `progress.json` under `.codex/task-loop-progress-backups/` before writing an empty progress file. Backups are local recovery snapshots and stay gitignored; only the sanitized example fixture is tracked. It does not delete task-loop logs.
+`./task-loop reset-progress` backs up `progress.json` under `.codex/runtime/task-loop/progress-backups/` before writing an empty progress file. Backups are local recovery snapshots and stay gitignored; only the sanitized example fixture is tracked. It does not delete task-loop logs.
 
 `./task-loop clear-stale` removes only stale `in_progress` records. It must not alter `completed`, `failed`, or `blocked`.
 
@@ -180,7 +180,7 @@ State operations:
 Runner lock:
 
 ```text
-.codex/task-loop-lock/
+.codex/runtime/task-loop/lock/
 ```
 
 The lock records `pid`, `run_id`, operation, command, and start time. It is local coordination state and should stay ignored by git.
@@ -217,7 +217,7 @@ If the current branch is `main`, `GIT_BRANCH_POLICY=auto` creates `codex/areamat
 Legacy state:
 
 ```text
-.codex/task-loop-state.txt
+.codex/runtime/task-loop/state.txt
 ```
 
 Treat it as compatibility input only. Do not write new progress there.
@@ -227,7 +227,7 @@ Treat it as compatibility input only. Do not write new progress there.
 Logs live under:
 
 ```text
-.codex/task-loop-logs/<timestamp>/<phase>/
+.codex/runtime/task-loop/logs/<timestamp>/<phase>/
 ```
 
 Per attempt:

@@ -25,7 +25,7 @@ rg '/Users/[A-Za-z0-9._-]+/' workflow/versions/v1-mvp/execution/_shared/progress
 ```bash
 # 需要本地安装 gitleaks：brew install gitleaks
 AREAMATRIX_GITLEAKS_MODE=history GITLEAKS_LOG_OPTS="--all" ./dev check secrets
-git log -p -- .codex/task-loop-progress-backups/ > /tmp/areamatrix-progress-backups-history.patch
+git log -p -- .codex/runtime/task-loop/progress-backups/ > /tmp/areamatrix-progress-backups-history.patch
 ```
 
 报告写入 `.gitleaks-report.json`（已在 `.gitignore`）。

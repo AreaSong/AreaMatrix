@@ -198,7 +198,7 @@ def init_temp_git_repo(repo: Path) -> None:
     subprocess.run(["git", "config", "user.email", "task-loop-check@example.invalid"], cwd=repo, check=True)
     subprocess.run(["git", "config", "user.name", "AreaMatrix Task Loop Check"], cwd=repo, check=True)
     (repo / ".gitignore").write_text(
-        ".codex/task-loop-logs/\n.codex/task-loop-lock/\n.codex/task-loop-tmp/\n.codex/task-loop-control/\n",
+        ".codex/runtime/task-loop/logs/\n.codex/runtime/task-loop/lock/\n.codex/runtime/task-loop/tmp/\n.codex/runtime/task-loop/control/\n",
         encoding="utf-8",
     )
     (repo / "README.md").write_text("baseline\n", encoding="utf-8")
@@ -1118,9 +1118,9 @@ def check_git_helpers(h: Harness) -> None:
     summary = task_loop_runs_root(git_repo) / "check001/summary.json"
     write_json(progress, {"version": 1, "tasks": {"0-1/task-01": {"status": "completed"}}})
     write_json(summary, {"version": 1, "tasks": {"0-1/task-01": {"status": "completed"}}})
-    copy_log = git_repo / ".codex/task-loop-logs/check001/phase-0/copy.log"
-    verify_log = git_repo / ".codex/task-loop-logs/check001/phase-0/verify.log"
-    exec_log = git_repo / ".codex/task-loop-logs/check001/phase-0/copy.exec.log"
+    copy_log = git_repo / ".codex/runtime/task-loop/logs/check001/phase-0/copy.log"
+    verify_log = git_repo / ".codex/runtime/task-loop/logs/check001/phase-0/verify.log"
+    exec_log = git_repo / ".codex/runtime/task-loop/logs/check001/phase-0/copy.exec.log"
     copy_log.parent.mkdir(parents=True, exist_ok=True)
     copy_log.write_text("copy evidence\n", encoding="utf-8")
     verify_log.write_text("verify evidence\nVERIFY_RESULT: PASS\n", encoding="utf-8")
@@ -1147,9 +1147,9 @@ def check_git_helpers(h: Harness) -> None:
     if git_helpers.status_short(git_repo):
         raise CheckFailure("git checkpoint left dirty worktree")
     tracked = subprocess.run(["git", "ls-files"], cwd=git_repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True).stdout
-    assert_contains(tracked, ".codex/task-loop-logs/check001/phase-0/copy.log", "git checkpoint force-adds copy log")
-    assert_contains(tracked, ".codex/task-loop-logs/check001/phase-0/verify.log", "git checkpoint force-adds verify log")
-    assert_not_contains(tracked, ".codex/task-loop-logs/check001/phase-0/copy.exec.log", "git checkpoint skips exec stream log")
+    assert_contains(tracked, ".codex/runtime/task-loop/logs/check001/phase-0/copy.log", "git checkpoint force-adds copy log")
+    assert_contains(tracked, ".codex/runtime/task-loop/logs/check001/phase-0/verify.log", "git checkpoint force-adds verify log")
+    assert_not_contains(tracked, ".codex/runtime/task-loop/logs/check001/phase-0/copy.exec.log", "git checkpoint skips exec stream log")
 
     dirty_repo = h.tmp / "git-dirty"
     init_temp_git_repo(dirty_repo)
@@ -1242,11 +1242,11 @@ fi
         env={
             "ROOT_DIR": str(runner_repo),
             "PROGRESS_FILE": str(progress_path(runner_repo)),
-            "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
+            "LOG_ROOT": str(runner_repo / ".codex/runtime/task-loop/logs"),
             "RUN_SUMMARY_ROOT": str(task_loop_runs_root(runner_repo)),
-            "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
-            "LOCK_DIR": str(runner_repo / ".codex/task-loop-lock"),
-            "CONTROL_DIR": str(runner_repo / ".codex/task-loop-control"),
+            "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/runtime/task-loop/progress-backups"),
+            "LOCK_DIR": str(runner_repo / ".codex/runtime/task-loop/lock"),
+            "CONTROL_DIR": str(runner_repo / ".codex/runtime/task-loop/control"),
             "CODEX_BIN": str(fake_codex),
             "FAKE_CODEX_ARGS_LOG": str(h.tmp / "fake-codex-args.log"),
             "GIT_CHECKPOINT": "commit",
@@ -1279,7 +1279,7 @@ fi
     if not git_helpers.current_branch(runner_repo).startswith("codex/areamatrix-task-loop-"):
         raise CheckFailure("runner did not auto-create task branch")
     tracked = subprocess.run(["git", "ls-files"], cwd=runner_repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True).stdout
-    assert_contains(tracked, ".codex/task-loop-logs/", "runner git checkpoint tracks final task logs")
+    assert_contains(tracked, ".codex/runtime/task-loop/logs/", "runner git checkpoint tracks final task logs")
     assert_not_contains(tracked, ".exec.log", "runner git checkpoint leaves exec stream logs local")
 
 
@@ -1336,11 +1336,11 @@ fi
         {
             "ROOT_DIR": str(runner_repo),
             "PROGRESS_FILE": str(progress_path(runner_repo)),
-            "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
+            "LOG_ROOT": str(runner_repo / ".codex/runtime/task-loop/logs"),
             "RUN_SUMMARY_ROOT": str(task_loop_runs_root(runner_repo)),
-            "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
-            "LOCK_DIR": str(runner_repo / ".codex/task-loop-lock"),
-            "CONTROL_DIR": str(runner_repo / ".codex/task-loop-control"),
+            "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/runtime/task-loop/progress-backups"),
+            "LOCK_DIR": str(runner_repo / ".codex/runtime/task-loop/lock"),
+            "CONTROL_DIR": str(runner_repo / ".codex/runtime/task-loop/control"),
             "CODEX_BIN": str(fake_codex),
             "GIT_CHECKPOINT": "off",
             "RISK_POLICY": "allow",
@@ -1373,9 +1373,9 @@ fi
         lambda data: data["tasks"]["0-1/task-01"]["status"] == "completed",  # type: ignore[index]
         "no-output timeout restart progress",
     )
-    if (runner_repo / ".codex/task-loop-lock").exists():
+    if (runner_repo / ".codex/runtime/task-loop/lock").exists():
         raise CheckFailure("runner no-output timeout restart left live lock")
-    exec_logs = list((runner_repo / ".codex/task-loop-logs").glob("*/phase-0/0-1-task-01-copy-attempt-1.exec.log"))
+    exec_logs = list((runner_repo / ".codex/runtime/task-loop/logs").glob("*/phase-0/0-1-task-01-copy-attempt-1.exec.log"))
     if not exec_logs:
         raise CheckFailure("missing no-output copy exec stream log")
     copy_exec_log = exec_logs[0]
@@ -1435,11 +1435,11 @@ fi
         {
             "ROOT_DIR": str(runner_repo),
             "PROGRESS_FILE": str(progress_path(runner_repo)),
-            "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
+            "LOG_ROOT": str(runner_repo / ".codex/runtime/task-loop/logs"),
             "RUN_SUMMARY_ROOT": str(task_loop_runs_root(runner_repo)),
-            "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
-            "LOCK_DIR": str(runner_repo / ".codex/task-loop-lock"),
-            "CONTROL_DIR": str(runner_repo / ".codex/task-loop-control"),
+            "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/runtime/task-loop/progress-backups"),
+            "LOCK_DIR": str(runner_repo / ".codex/runtime/task-loop/lock"),
+            "CONTROL_DIR": str(runner_repo / ".codex/runtime/task-loop/control"),
             "CODEX_BIN": str(fake_codex),
             "GIT_CHECKPOINT": "off",
             "RISK_POLICY": "allow",
@@ -1565,11 +1565,11 @@ fi
         {
             "ROOT_DIR": str(runner_repo),
             "PROGRESS_FILE": str(progress_path(runner_repo)),
-            "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
+            "LOG_ROOT": str(runner_repo / ".codex/runtime/task-loop/logs"),
             "RUN_SUMMARY_ROOT": str(task_loop_runs_root(runner_repo)),
-            "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
-            "LOCK_DIR": str(runner_repo / ".codex/task-loop-lock"),
-            "CONTROL_DIR": str(runner_repo / ".codex/task-loop-control"),
+            "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/runtime/task-loop/progress-backups"),
+            "LOCK_DIR": str(runner_repo / ".codex/runtime/task-loop/lock"),
+            "CONTROL_DIR": str(runner_repo / ".codex/runtime/task-loop/control"),
             "CODEX_BIN": str(fake_codex),
             "GIT_CHECKPOINT": "off",
             "RISK_POLICY": "allow",
@@ -1630,11 +1630,11 @@ def check_runner_activity_replace_and_orphan_detection(h: Harness) -> None:
         raise CheckFailure("replace_lock_activity retained stale finished fields")
 
     root = Path("/tmp/AreaMatrix")
-    log_root = root / ".codex/task-loop-logs"
+    log_root = root / ".codex/runtime/task-loop/logs"
     lines = [
         f" 111 1 111 Ss 10:00 /Applications/Codex.app/Contents/Resources/codex exec -m gpt-5.5 --cd {root} -o {log_root}/run/phase-4/task-copy.log -",
         f" 222 111 222 Ss 00:10 /Applications/Codex.app/Contents/Resources/codex exec -m gpt-5.5 --cd {root} -o {log_root}/run/phase-4/task-copy.log -",
-        " 333 1 333 Ss 10:00 /Applications/Codex.app/Contents/Resources/codex exec -m gpt-5.5 --cd /tmp/Other -o /tmp/Other/.codex/task-loop-logs/x.log -",
+        " 333 1 333 Ss 10:00 /Applications/Codex.app/Contents/Resources/codex exec -m gpt-5.5 --cd /tmp/Other -o /tmp/Other/.codex/runtime/task-loop/logs/x.log -",
     ]
     matches = task_loop_codex_exec_processes_from_ps(lines, root, log_root)
     if [proc.pid for proc in matches] != [111, 222]:
@@ -1649,8 +1649,8 @@ def check_progress_path_persistence(h: Harness) -> None:
     progress = h.tmp / "path-progress.json"
     root = h.tmp / "repo"
     root.mkdir()
-    copy_log = root / ".codex/task-loop-logs/run/phase-0/task-copy.log"
-    verify_log = root / ".codex/task-loop-logs/run/phase-0/task-verify.log"
+    copy_log = root / ".codex/runtime/task-loop/logs/run/phase-0/task-copy.log"
+    verify_log = root / ".codex/runtime/task-loop/logs/run/phase-0/task-verify.log"
     copy_log.parent.mkdir(parents=True)
     verify_log.write_text("VERIFY_RESULT: PASS\n", encoding="utf-8")
     state.mark_progress(progress, root, "0-1/task-01", "completed", "ok", str(copy_log), str(verify_log), 1)
@@ -1675,19 +1675,19 @@ def check_progress_path_persistence(h: Harness) -> None:
 def check_git_ignore(h: Harness) -> None:
     log("git ignore policy")
     ignored = [
-        ".codex/task-loop-logs/example/phase-0/example.log",
-        ".codex/task-loop-logs/example/phase-0/example.exec.log",
-        ".codex/task-loop-lock/foo",
-        ".codex/task-loop-control/drain.request",
-        ".codex/task-loop-tmp/foo",
-        ".codex/task-loop-console/foo.log",
-        ".codex/dev-console/config.json",
+        ".codex/runtime/task-loop/logs/example/phase-0/example.log",
+        ".codex/runtime/task-loop/logs/example/phase-0/example.exec.log",
+        ".codex/runtime/task-loop/lock/foo",
+        ".codex/runtime/task-loop/control/drain.request",
+        ".codex/runtime/task-loop/tmp/foo",
+        ".codex/runtime/task-loop/console/foo.log",
+        ".codex/runtime/dev-console/config.json",
     ]
     tracked = [
         "workflow/versions/v1-mvp/execution/_shared/progress.json",
         "workflow/versions/v1-mvp/evidence/task-loop-runs/index.json",
         "workflow/versions/v1-mvp/evidence/task-loop-runs/example/summary.json",
-        ".codex/task-loop-progress-backups/progress-before-reset-example.json",
+        ".codex/runtime/task-loop/progress-backups/progress-before-reset-example.json",
     ]
     for item in ignored:
         proc = h.run(["git", "check-ignore", "-q", item], check=False)
@@ -1729,14 +1729,14 @@ def run_check(root_dir: Path) -> int:
             print(f"[task-loop-check] FAIL: {exc}")
             print(f"[task-loop-check] temp dir: {tmp}")
             if keep:
-                preserved = root / ".codex/task-loop-tmp" / tmp.name
+                preserved = root / ".codex/runtime/task-loop/tmp" / tmp.name
                 preserved.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copytree(tmp, preserved, dirs_exist_ok=True)
                 print(f"[task-loop-check] kept temp dir: {preserved}")
                 return 1
             return 1
         if keep:
-            preserved = root / ".codex/task-loop-tmp" / tmp.name
+            preserved = root / ".codex/runtime/task-loop/tmp" / tmp.name
             preserved.parent.mkdir(parents=True, exist_ok=True)
             shutil.copytree(tmp, preserved, dirs_exist_ok=True)
             print(f"[task-loop-check] kept temp dir: {preserved}")

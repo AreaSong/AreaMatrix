@@ -193,11 +193,11 @@ def status_line_paths(line: str) -> list[str]:
 
 
 def is_task_loop_log_path(path: str) -> bool:
-    return path.startswith(".codex/task-loop-logs/")
+    return path.startswith(".codex/runtime/task-loop/logs/") or path.startswith(".codex/task-loop-logs/")
 
 
 def is_progress_backup_path(path: str) -> bool:
-    return path.startswith(".codex/task-loop-progress-backups/")
+    return path.startswith(".codex/runtime/task-loop/progress-backups/") or path.startswith(".codex/task-loop-progress-backups/")
 
 
 def is_exec_stream_log_path(path: str) -> bool:

@@ -31,6 +31,8 @@ from scripts.dev_tools.execution_paths import (
 
 DEFAULT_PHASES = ("phase-0", "phase-1", "phase-2", "phase-3", "phase-4")
 PHASE_RE = re.compile(r"^phase-\d+$")
+RUNTIME_ROOT = Path(".codex/runtime")
+TASK_LOOP_RUNTIME_ROOT = RUNTIME_ROOT / "task-loop"
 CODEX_SANDBOX_MODES = {"read-only", "workspace-write", "danger-full-access"}
 VALIDATION_PROCESS_MARKERS = (
     "./dev check",
@@ -152,12 +154,12 @@ class RuntimeConfig:
         cfg.copy_root = Path(os.environ.get("COPY_ROOT", copy_ready_root(root)))
         cfg.verify_root = Path(os.environ.get("VERIFY_ROOT", verify_ready_root(root)))
         cfg.progress_file = Path(os.environ.get("PROGRESS_FILE", progress_path(root)))
-        cfg.state_file = Path(os.environ.get("STATE_FILE", root / ".codex/task-loop-state.txt"))
-        cfg.log_root = Path(os.environ.get("LOG_ROOT", root / ".codex/task-loop-logs"))
+        cfg.state_file = Path(os.environ.get("STATE_FILE", root / TASK_LOOP_RUNTIME_ROOT / "state.txt"))
+        cfg.log_root = Path(os.environ.get("LOG_ROOT", root / TASK_LOOP_RUNTIME_ROOT / "logs"))
         cfg.run_summary_root = Path(os.environ.get("RUN_SUMMARY_ROOT", task_loop_runs_root(root)))
-        cfg.progress_backup_root = Path(os.environ.get("PROGRESS_BACKUP_ROOT", root / ".codex/task-loop-progress-backups"))
-        cfg.lock_dir = Path(os.environ.get("LOCK_DIR", root / ".codex/task-loop-lock"))
-        cfg.control_dir = Path(os.environ.get("CONTROL_DIR", root / ".codex/task-loop-control"))
+        cfg.progress_backup_root = Path(os.environ.get("PROGRESS_BACKUP_ROOT", root / TASK_LOOP_RUNTIME_ROOT / "progress-backups"))
+        cfg.lock_dir = Path(os.environ.get("LOCK_DIR", root / TASK_LOOP_RUNTIME_ROOT / "lock"))
+        cfg.control_dir = Path(os.environ.get("CONTROL_DIR", root / TASK_LOOP_RUNTIME_ROOT / "control"))
         cfg.git_checkpoint = os.environ.get("GIT_CHECKPOINT", "commit")
         cfg.git_branch_policy = os.environ.get("GIT_BRANCH_POLICY", "auto")
         cfg.git_push_remote = os.environ.get("GIT_PUSH_REMOTE", "origin")

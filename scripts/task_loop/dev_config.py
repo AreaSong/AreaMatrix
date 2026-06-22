@@ -9,7 +9,7 @@ from typing import Any
 from .i18n import normalize_lang_mode
 
 
-CONFIG_RELATIVE_PATH = Path(".codex/dev-console/config.json")
+CONFIG_RELATIVE_PATH = Path(".codex/runtime/dev-console/config.json")
 
 
 def config_path(root: Path) -> Path:

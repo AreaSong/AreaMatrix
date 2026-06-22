@@ -123,7 +123,7 @@ open apps/macos/AreaMatrix.xcodeproj
 自动任务循环会按 `copy -> verify(read-only) -> repair retry -> PASS -> Git checkpoint -> next` 执行。相关贡献必须保留：
 
 - `workflow/versions/v1-mvp/execution/_shared/progress.json`
-- `.codex/task-loop-logs/**`
+- `.codex/runtime/task-loop/logs/**`
 - `workflow/versions/v1-mvp/evidence/task-loop-runs/**`
 - PASS task 的 Git checkpoint 证据
 

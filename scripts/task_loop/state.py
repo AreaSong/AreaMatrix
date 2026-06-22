@@ -14,6 +14,18 @@ from . import git as git_helpers
 
 LEGACY_RUN_SUMMARY_PREFIX = ".codex/task-loop-runs/"
 RUN_SUMMARY_PREFIX = "workflow/versions/v1-mvp/evidence/task-loop-runs/"
+LEGACY_RUNTIME_PREFIXES = {
+    ".codex/task-loop-logs/": ".codex/runtime/task-loop/logs/",
+    ".codex/task-loop-progress-backups/": ".codex/runtime/task-loop/progress-backups/",
+    ".codex/task-loop-lock/": ".codex/runtime/task-loop/lock/",
+    ".codex/task-loop-control/": ".codex/runtime/task-loop/control/",
+    ".codex/task-loop-tmp/": ".codex/runtime/task-loop/tmp/",
+    ".codex/task-loop-console/": ".codex/runtime/task-loop/console/",
+    ".codex/dev-console/": ".codex/runtime/dev-console/",
+}
+LEGACY_RUNTIME_FILES = {
+    ".codex/task-loop-state.txt": ".codex/runtime/task-loop/state.txt",
+}
 
 
 def resolve_repo_path(root: Path, value: str) -> Path:
@@ -21,7 +33,14 @@ def resolve_repo_path(root: Path, value: str) -> Path:
     if path.is_absolute():
         return path
     resolved = (root / path).resolve()
-    if resolved.exists() or not value.startswith(LEGACY_RUN_SUMMARY_PREFIX):
+    if resolved.exists():
+        return resolved
+    for legacy, current in LEGACY_RUNTIME_PREFIXES.items():
+        if value.startswith(legacy):
+            return (root / (current + value.removeprefix(legacy))).resolve()
+    if value in LEGACY_RUNTIME_FILES:
+        return (root / LEGACY_RUNTIME_FILES[value]).resolve()
+    if not value.startswith(LEGACY_RUN_SUMMARY_PREFIX):
         return resolved
     migrated = RUN_SUMMARY_PREFIX + value.removeprefix(LEGACY_RUN_SUMMARY_PREFIX)
     return (root / migrated).resolve()

@@ -31,10 +31,10 @@ def assert_forbidden_state_absent(test: unittest.TestCase, root: Path) -> None:
     for relative in [
         "workflow/versions/v1-mvp/execution",
         "workflow/versions/v1-mvp/evidence/task-loop-runs",
-        ".codex/task-loop-logs",
+        ".codex/runtime/task-loop/logs",
         ".codex/task-loop-runs",
-        ".codex/task-loop-lock",
-        ".codex/task-loop-control",
+        ".codex/runtime/task-loop/lock",
+        ".codex/runtime/task-loop/control",
     ]:
         test.assertFalse((root / relative).exists(), f"unexpected live state path created: {relative}")
 

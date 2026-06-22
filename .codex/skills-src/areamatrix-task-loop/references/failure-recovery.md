@@ -112,7 +112,7 @@ Action:
 
 ## Legacy State File
 
-If `.codex/task-loop-state.txt` exists:
+If `.codex/runtime/task-loop/state.txt` exists:
 
 - Treat it as historical completion hints.
 - Do not use it as the source of truth.
