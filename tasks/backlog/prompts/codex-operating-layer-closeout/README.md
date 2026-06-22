@@ -2,6 +2,10 @@
 
 本目录保存第四批“Codex / AreaMatrix 工作层总收口”可复制提示词。它不是 `workflow/versions/<version>/execution/**` live queue，不由 `./task-loop` 自动执行。
 
+- status: closed
+- closed: 2026-06-22
+- closeout: tasks/backlog/codex-operating-layer-boundary-regression.md
+
 本批不继续新增能力，而是把前三批优化和已实现的 `./dev backlog` 工具做一次基线验收：确认 source of truth、execution、state、skill owner 和外部能力边界没有被污染，并给出下一阶段是否回到产品主线的判断。
 
 这里的“污染”指边界污染，不是普通代码脏：

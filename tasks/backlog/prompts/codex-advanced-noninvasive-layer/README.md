@@ -2,6 +2,10 @@
 
 本目录保存第五批“高级但非侵入式 Codex 能力”可复制提示词。它不是 `workflow/versions/<version>/execution/**` live queue，不由 `./task-loop` 自动执行。
 
+- status: closed
+- closed: 2026-06-22
+- closeout: tasks/backlog/codex-operating-layer-boundary-regression.md
+
 本批用于把此前暂缓项补成“有判断、有门禁、有触发条件”的状态，而不是默认启用或接管主线：
 
 - hooks：只允许 warn-only / read-only 方案或预案，不自动修改文件、提交、启动/停止 runner。

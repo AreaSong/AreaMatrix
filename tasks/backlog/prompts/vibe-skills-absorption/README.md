@@ -2,6 +2,10 @@
 
 本目录保存第二批“能力吸收类”可复制提示词。它不是 `workflow/versions/<version>/execution/**` live queue，不由 `./task-loop` 自动执行。
 
+- status: closed
+- closed: 2026-06-22
+- closeout: tasks/backlog/codex-operating-layer-boundary-regression.md
+
 本批只吸收方法价值，不安装、不启用、不复制 `../Vibe-Skills` 全量仓库，也不让 `vibe` / VCO runtime 接管 AreaMatrix。
 
 建议按顺序执行：

@@ -15,12 +15,14 @@ BACKLOG_ROOT = Path("tasks/backlog/prompts")
 BACKLOG_RECORD_ROOT = Path("tasks/backlog")
 PROMPT_MODES = {"copy": "copy-ready", "verify": "verify-ready"}
 PROMPT_LINK_PATTERN = re.compile(r"`((?:copy-ready|verify-ready)/[^`]+\.md)`")
+PACKAGE_STATUS_PATTERN = re.compile(r"^\s*-\s*status:\s*([a-z][a-z0-9-]*)\s*$", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
 class BacklogPackage:
     slug: str
     title: str
+    status: str
     task_count: int
     copy_ready_count: int
     verify_ready_count: int
@@ -73,6 +75,16 @@ def _read_title(readme: Path) -> str:
     return first_line.lstrip("#").strip() or readme.parent.name
 
 
+def _read_status(readme: Path) -> str:
+    """Return a package status declared as '- status: <value>' in README."""
+
+    for line in readme.read_text(encoding="utf-8").splitlines():
+        match = PACKAGE_STATUS_PATTERN.match(line)
+        if match:
+            return match.group(1).lower()
+    return "open"
+
+
 def discover_records(root: Path) -> list[BacklogRecord]:
     """Return top-level backlog records that are not prompt packages."""
 
@@ -119,6 +131,7 @@ def discover_packages(root: Path) -> list[BacklogPackage]:
             BacklogPackage(
                 slug=package_dir.name,
                 title=_read_title(readme),
+                status=_read_status(readme),
                 task_count=len(task_stems),
                 copy_ready_count=len(copy_ready_files),
                 verify_ready_count=len(verify_ready_files),
@@ -130,11 +143,11 @@ def discover_packages(root: Path) -> list[BacklogPackage]:
 def _format_packages(packages: list[BacklogPackage]) -> str:
     rows = [
         "Backlog prompt packages (sorted by slug)",
-        "slug | title | tasks | copy-ready | verify-ready",
-        "--- | --- | ---: | ---: | ---:",
+        "slug | status | title | tasks | copy-ready | verify-ready",
+        "--- | --- | --- | ---: | ---: | ---:",
     ]
     rows.extend(
-        f"{package.slug} | {package.title} | {package.task_count} | {package.copy_ready_count} | {package.verify_ready_count}"
+        f"{package.slug} | {package.status} | {package.title} | {package.task_count} | {package.copy_ready_count} | {package.verify_ready_count}"
         for package in packages
     )
     return "\n".join(rows)

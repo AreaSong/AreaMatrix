@@ -56,16 +56,17 @@
 
 | Package | Source of truth | Owner | 状态 | 是否影响 live mainline |
 |---|---|---|---|---|
-| `codex-native-area-vibe-optimization` | `tasks/backlog/prompts/codex-native-area-vibe-optimization/README.md` | `areamatrix-workflow-planning` | 8 个 copy / verify prompt；P0-P2 多数已吸收，P3-P5 暂缓 | 否；backlog planning |
-| `vibe-skills-absorption` | `tasks/backlog/prompts/vibe-skills-absorption/README.md` | `areamatrix-workflow-planning` | 4 个 copy / verify prompt；只吸收方法价值 | 否；不安装、不启用 Vibe-Skills |
-| `dev-backlog-tooling` | `tasks/backlog/prompts/dev-backlog-tooling/README.md` | `areamatrix-workflow-planning` | 4 个 copy / verify prompt；`./dev backlog list/show` 已可用 | 否；只读浏览 |
-| `codex-operating-layer-closeout` | `tasks/backlog/prompts/codex-operating-layer-closeout/README.md` | `areamatrix-workflow-planning` | 4 个 copy / verify prompt；当前 closeout 包 | 否；总收口检查，不进入 live queue |
+| `codex-advanced-noninvasive-layer` | `tasks/backlog/prompts/codex-advanced-noninvasive-layer/README.md` | `areamatrix-workflow-planning` | closed；4 个 copy / verify prompt；高级非侵入能力已形成门禁和触发条件 | 否；不启用 hooks、automation、cloud、worktree 或 Vibe runtime |
+| `codex-native-area-vibe-optimization` | `tasks/backlog/prompts/codex-native-area-vibe-optimization/README.md` | `areamatrix-workflow-planning` | closed；8 个 copy / verify prompt；P0-P2 已吸收，P3-P5 已形成暂缓 / trigger-based / reject 判断 | 否；backlog planning |
+| `vibe-skills-absorption` | `tasks/backlog/prompts/vibe-skills-absorption/README.md` | `areamatrix-workflow-planning` | closed；4 个 copy / verify prompt；只吸收方法价值 | 否；不安装、不启用 Vibe-Skills |
+| `dev-backlog-tooling` | `tasks/backlog/prompts/dev-backlog-tooling/README.md` | `areamatrix-workflow-planning` | closed；4 个 copy / verify prompt；`./dev backlog list/show` 已可用 | 否；只读浏览 |
+| `codex-operating-layer-closeout` | `tasks/backlog/prompts/codex-operating-layer-closeout/README.md` | `areamatrix-workflow-planning` | closed；4 个 copy / verify prompt；工作层 closeout 已形成 PASS with product-closeout caveat | 否；总收口检查，不进入 live queue |
 
 ## `./dev backlog` Status
 
 | 能力 | Source of truth | Owner | 状态 | 是否影响 live mainline |
 |---|---|---|---|---|
-| `./dev backlog list` | `scripts/dev_tools/backlog.py` + `tasks/backlog/README.md` | `areamatrix-workflow-planning` | 已成为只读浏览入口；列出 package slug、title、task 数 | 否；只读打印 backlog package |
+| `./dev backlog list` | `scripts/dev_tools/backlog.py` + `tasks/backlog/README.md` | `areamatrix-workflow-planning` | 已成为只读浏览入口；列出 package slug、status、title、task 数 | 否；只读打印 backlog package |
 | `./dev backlog show <package>` | `scripts/dev_tools/backlog.py` + package README | `areamatrix-workflow-planning` | 已成为只读浏览入口；打印 README 和 task index | 否；不执行 prompt |
 | `./dev backlog show <package> --task N --mode copy|verify` | `scripts/dev_tools/backlog.py` + package prompt 文件 | `areamatrix-workflow-planning` | 已成为只读浏览入口；打印指定 prompt 内容 | 否；不写 `workflow/versions/<version>/execution/**`、progress、logs 或 checkpoint |
 | Console passthrough | `scripts/task_loop/actions.py` + `scripts/dev_tools/cli.py` | `areamatrix-task-loop` | 已接入 action registry passthrough | 否；控制台只负责可发现性和透传 |
@@ -92,4 +93,5 @@
 ## Inventory Gaps
 
 - 已补充本 inventory 的导航入口；未发现需要修改 `workflow/versions/<version>/execution/**` 才能成立的 inventory gap。
-- 本文件不证明后续 boundary regression 已通过；边界污染回归由 `codex-operating-layer-closeout` 的后续 prompt 继续验收。
+- 已补齐 5 个 backlog prompt package 的 inventory 行，并把当前包状态收口为 `closed`。
+- boundary regression 已记录为 `PASS with product-closeout caveat`；这只证明 Codex / AreaMatrix 工作层无污染，不等于 v1 产品发布收口完成。

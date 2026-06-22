@@ -26,6 +26,10 @@
 ## Backlog Prompt Handoff
 
 - 每个 prompt 包必须拆成 `copy-ready/` 与 `verify-ready/` 两类材料。
+- 每个 prompt 包可以在 README 顶部声明 `- status: open|closed`，供
+  `./dev backlog list` 和 `./dev tasks status` 只读展示。
+- `open` 表示仍是待处理候选；`closed` 表示已经完成、吸收、拒绝或有明确
+  closeout 记录。`closed` 包仍可浏览，用于追溯和人工复制，但不是当前活跃工作。
 - `copy-ready` 写实施范围、精确路径、source of truth、owner / landing、执行顺序、验证命令和 blocked / rollback 口径。
 - `verify-ready` 写只读验收范围、必须读取路径、证据检查、验证命令和 PASS / FAIL 输出口径。
 - 若缺少精确路径、验证命令、owner、source of truth 或 promotion gate 说明，prompt 包保持 `blocked` / `not-ready`，不能进入 live queue。
@@ -58,7 +62,8 @@
 ## Prompt Packages
 
 以下条目位于 `tasks/backlog/prompts/*`，可由 `./dev backlog show <package>`
-按 package slug 浏览：
+按 package slug 浏览。当前 5 个包均为 `closed`：已完成工作层吸收 / closeout
+判断，继续保留为历史候选材料和可复制证据，不代表仍有待执行 backlog。
 
 - [Codex Native / AreaMatrix / Vibe-Skills 基础治理](prompts/codex-native-area-vibe-optimization/)
 - [Vibe-Skills 横向能力吸收](prompts/vibe-skills-absorption/)

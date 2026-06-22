@@ -52,7 +52,7 @@ class BacklogToolsTest(unittest.TestCase):
             write_file(root, "tasks/backlog/prompts/zeta/README.md", "# Zeta Package\n")
             write_file(root, "tasks/backlog/prompts/zeta/copy-ready/task-02.md", "copy\n")
             write_file(root, "tasks/backlog/prompts/zeta/verify-ready/task-02.md", "verify\n")
-            write_file(root, "tasks/backlog/prompts/alpha/README.md", "# Alpha Package\n")
+            write_file(root, "tasks/backlog/prompts/alpha/README.md", "# Alpha Package\n\n- status: closed\n")
             write_file(root, "tasks/backlog/prompts/alpha/copy-ready/task-01.md", "copy\n")
             write_file(root, "tasks/backlog/prompts/alpha/copy-ready/task-02.md", "copy\n")
             write_file(root, "tasks/backlog/prompts/no-readme/copy-ready/task-01.md", "copy\n")
@@ -62,9 +62,11 @@ class BacklogToolsTest(unittest.TestCase):
 
             self.assertEqual([package.slug for package in packages], ["alpha", "zeta"])
             self.assertEqual(packages[0].title, "Alpha Package")
+            self.assertEqual(packages[0].status, "closed")
             self.assertEqual(packages[0].task_count, 2)
             self.assertEqual(packages[0].copy_ready_count, 2)
             self.assertEqual(packages[0].verify_ready_count, 0)
+            self.assertEqual(packages[1].status, "open")
             self.assertEqual(packages[1].task_count, 1)
             self.assertEqual(packages[1].copy_ready_count, 1)
             self.assertEqual(packages[1].verify_ready_count, 1)
@@ -75,7 +77,7 @@ class BacklogToolsTest(unittest.TestCase):
             write_file(root, "tasks/backlog/prompts/zeta/README.md", "# Zeta Package\n")
             write_file(root, "tasks/backlog/prompts/zeta/copy-ready/task-02.md", "copy\n")
             write_file(root, "tasks/backlog/prompts/zeta/verify-ready/task-02.md", "verify\n")
-            write_file(root, "tasks/backlog/prompts/alpha/README.md", "# Alpha Package\n")
+            write_file(root, "tasks/backlog/prompts/alpha/README.md", "# Alpha Package\n\n- status: closed\n")
             write_file(root, "tasks/backlog/prompts/alpha/copy-ready/task-01.md", "copy\n")
 
             stdout = io.StringIO()
@@ -87,10 +89,10 @@ class BacklogToolsTest(unittest.TestCase):
                 "\n".join(
                     [
                         "Backlog prompt packages (sorted by slug)",
-                        "slug | title | tasks | copy-ready | verify-ready",
-                        "--- | --- | ---: | ---: | ---:",
-                        "alpha | Alpha Package | 1 | 1 | 0",
-                        "zeta | Zeta Package | 1 | 1 | 1",
+                        "slug | status | title | tasks | copy-ready | verify-ready",
+                        "--- | --- | --- | ---: | ---: | ---:",
+                        "alpha | closed | Alpha Package | 1 | 1 | 0",
+                        "zeta | open | Zeta Package | 1 | 1 | 1",
                     ]
                 )
                 + "\n",
@@ -109,7 +111,7 @@ class BacklogToolsTest(unittest.TestCase):
                 self.assertEqual(run_backlog_command(root, self._list_args()), 0)
 
             self.assertEqual(file_snapshot(root), before)
-            self.assertIn("alpha | Alpha Package | 1 | 1 | 0", stdout.getvalue())
+            self.assertIn("alpha | open | Alpha Package | 1 | 1 | 0", stdout.getvalue())
 
     def test_empty_package_root_returns_clear_error(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

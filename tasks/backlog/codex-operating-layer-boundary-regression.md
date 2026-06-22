@@ -13,6 +13,10 @@ Git checkpoint 状态。
 blocked：`workflow/versions/v1-mvp/closeout/closeout.yaml` 记录了 release blocker
 和 checkpoint evidence gap；Xcode derived-data dirty state 已单独处置。
 
+当前 backlog prompt package 收口状态：5 个 package 均为 `closed`，`./dev tasks status`
+应显示 `backlog open: 0` / `backlog closed: 5`。这些包继续保留为只读浏览和历史候选证据，
+不进入 `workflow/versions/<version>/execution/**`，也不代表 v2 或 release 已启动。
+
 ## 回归项
 
 | 类型 | 结论 | 证据 | 说明 |

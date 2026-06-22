@@ -151,6 +151,8 @@ class LightweightTasksToolsTest(unittest.TestCase):
             write_task(root, "tasks/done/2026", 3, "update-docs-layout", status="done", layer="docs")
             write_file(root, "tasks/backlog/prompts/alpha/README.md", "# Alpha Package\n")
             write_file(root, "tasks/backlog/prompts/alpha/copy-ready/task-01.md", "copy\n")
+            write_file(root, "tasks/backlog/prompts/beta/README.md", "# Beta Package\n\n- status: closed\n")
+            write_file(root, "tasks/backlog/prompts/beta/copy-ready/task-01.md", "copy\n")
 
             stdout = io.StringIO()
             with contextlib.redirect_stdout(stdout):
@@ -162,7 +164,9 @@ class LightweightTasksToolsTest(unittest.TestCase):
             self.assertIn("- done: 1\n", output)
             self.assertIn("- blocked: 1\n", output)
             self.assertIn("- verify_ready: 1\n", output)
-            self.assertIn("- backlog prompt packages: 1\n", output)
+            self.assertIn("- backlog prompt packages: 2\n", output)
+            self.assertIn("- backlog open: 1\n", output)
+            self.assertIn("- backlog closed: 1\n", output)
             self.assertIn("1 | 1.add-settings-button | active | verify_ready", output)
             self.assertIn("3 | 3.update-docs-layout | done/2026 | done", output)
 
@@ -195,6 +199,8 @@ class LightweightTasksToolsTest(unittest.TestCase):
             self.assertIn("- active: 1", output)
             self.assertIn("- done: 1", output)
             self.assertIn("- backlog prompt packages: 1", output)
+            self.assertIn("- backlog open: 1", output)
+            self.assertIn("- backlog closed: 0", output)
 
     def test_doctor_reports_structure_errors(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
