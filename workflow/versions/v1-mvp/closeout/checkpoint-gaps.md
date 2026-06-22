@@ -24,7 +24,7 @@
   - `progress.json` marks the task `completed`.
   - The referenced local copy log exists.
   - The referenced local verify log exists and contains `VERIFY_RESULT: PASS`.
-  - The matching `.codex/task-loop-runs/<run_id>/summary.json` exists and is tracked in Git.
+  - The matching `workflow/versions/v1-mvp/evidence/task-loop-runs/<run_id>/summary.json` exists and is tracked in Git.
   - The run summary records `git.checkpoint=off`, so the missing per-task checkpoint fields are a historical runner mode / evidence-policy gap, not evidence that the task failed.
   - The copy / verify logs themselves are not tracked in Git, so these entries still need an archive evidence bundle or an explicitly accepted closeout exception before v1 archive can be considered complete.
 - `release-gate-review`: 1 entry.

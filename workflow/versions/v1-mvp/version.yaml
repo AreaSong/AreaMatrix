@@ -34,5 +34,5 @@ promotion: already-live
 archive_policy: archived-after-complete
 archive_evidence_after_complete:
   - workflow/versions/v1-mvp/execution/_shared/progress.json
-  - .codex/task-loop-runs
+  - workflow/versions/v1-mvp/evidence/task-loop-runs
   - workflow/versions/v1-mvp/execution/_shared/manifests

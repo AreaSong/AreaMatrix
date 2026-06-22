@@ -16,8 +16,8 @@
 - 失败则会把功能、验证和工程质量失败摘要注入下一次 copy 提示，继续重试修复。
 - 进度统一写入 `workflow/versions/v1-mvp/execution/_shared/progress.json`，可直接被 `prompt_pipeline.py status/next` 读取。
 - 每次执行会持有 `.codex/task-loop-lock/` 运行锁，避免两个 runner 同时写 progress/logs。
-- 每次执行会写 `.codex/task-loop-runs/<run_id>/summary.json`，作为可上传、可续工的运行摘要。
-- 每次执行结束会更新 `.codex/task-loop-runs/index.json`，用于快速查看最近 run 的状态。
+- 每次执行会写 `workflow/versions/v1-mvp/evidence/task-loop-runs/<run_id>/summary.json`，作为可上传、可续工的运行摘要。
+- 每次执行结束会更新 `workflow/versions/v1-mvp/evidence/task-loop-runs/index.json`，用于快速查看最近 run 的状态。
 - 需要优雅收尾时，可用 `./task-loop drain` 请求 live runner 完成当前 task、Git checkpoint / push 和 summary 后停止，不进入下一个 task。
 - progress / stale / lock status / summary 逻辑集中在 `scripts/task_loop/state.py`；Python runner 负责 CLI、调度与 `codex exec`。
 - Git checkpoint 逻辑集中在 `scripts/task_loop/git.py`；默认每个 PASS task 自动本地 commit。
@@ -287,8 +287,8 @@ verify 日志会保留简明验收报告。失败时脚本从日志尾部提取�
 运行摘要：
 
 ```
-.codex/task-loop-runs/<run_id>/summary.json
-.codex/task-loop-runs/index.json
+workflow/versions/v1-mvp/evidence/task-loop-runs/<run_id>/summary.json
+workflow/versions/v1-mvp/evidence/task-loop-runs/index.json
 ```
 
 `summary.json` 记录单次运行的参数、任务 attempts、copy/verify log 和最终状态。`index.json` 记录最近运行列表，便于上传或恢复上下文。

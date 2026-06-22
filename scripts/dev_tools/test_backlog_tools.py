@@ -30,6 +30,7 @@ def file_snapshot(root: Path) -> dict[str, str]:
 def assert_forbidden_state_absent(test: unittest.TestCase, root: Path) -> None:
     for relative in [
         "workflow/versions/v1-mvp/execution",
+        "workflow/versions/v1-mvp/evidence/task-loop-runs",
         ".codex/task-loop-logs",
         ".codex/task-loop-runs",
         ".codex/task-loop-lock",

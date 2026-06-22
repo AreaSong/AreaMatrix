@@ -21,6 +21,7 @@ from .tasks import (
 SLUG_CHAR_PATTERN = re.compile(r"[^a-z0-9]+")
 DEFAULT_FORBID_PATHS = [
     "workflow/versions/*/execution/",
+    "workflow/versions/*/evidence/task-loop-runs/",
     ".codex/task-loop-logs/",
     ".codex/task-loop-runs/",
     ".codex/task-loop-lock/",

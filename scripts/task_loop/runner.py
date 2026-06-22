@@ -24,6 +24,7 @@ from scripts.dev_tools.execution_paths import (
     copy_ready_root,
     progress_path,
     prompt_pipeline_path,
+    task_loop_runs_root,
     verify_ready_root,
 )
 
@@ -153,7 +154,7 @@ class RuntimeConfig:
         cfg.progress_file = Path(os.environ.get("PROGRESS_FILE", progress_path(root)))
         cfg.state_file = Path(os.environ.get("STATE_FILE", root / ".codex/task-loop-state.txt"))
         cfg.log_root = Path(os.environ.get("LOG_ROOT", root / ".codex/task-loop-logs"))
-        cfg.run_summary_root = Path(os.environ.get("RUN_SUMMARY_ROOT", root / ".codex/task-loop-runs"))
+        cfg.run_summary_root = Path(os.environ.get("RUN_SUMMARY_ROOT", task_loop_runs_root(root)))
         cfg.progress_backup_root = Path(os.environ.get("PROGRESS_BACKUP_ROOT", root / ".codex/task-loop-progress-backups"))
         cfg.lock_dir = Path(os.environ.get("LOCK_DIR", root / ".codex/task-loop-lock"))
         cfg.control_dir = Path(os.environ.get("CONTROL_DIR", root / ".codex/task-loop-control"))
@@ -800,7 +801,12 @@ class TaskLoopRunner:
                 patterns.append(str(path.resolve().relative_to(self.cfg.root_dir.resolve())))
             except ValueError:
                 pass
-        patterns.extend([".codex/task-loop-runs/**"])
+        patterns.extend(
+            [
+                "workflow/versions/v1-mvp/evidence/task-loop-runs/**",
+                ".codex/task-loop-runs/**",
+            ]
+        )
         return sorted(dict.fromkeys(patterns))
 
     def configure_resume_stale_preflight(self) -> None:

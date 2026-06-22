@@ -19,7 +19,7 @@ Each accepted exception below satisfied all of these checks:
 - `progress.json` status is `completed`.
 - The referenced final copy log exists locally.
 - The referenced final verify log exists locally and contains `VERIFY_RESULT: PASS`.
-- The matching `.codex/task-loop-runs/<run_id>/summary.json` exists and is tracked in Git.
+- The matching `workflow/versions/v1-mvp/evidence/task-loop-runs/<run_id>/summary.json` exists and is tracked in Git.
 - The tracked run summary records the task as `completed`.
 - The tracked run summary records `git.checkpoint=off`, explaining why per-task checkpoint metadata is absent.
 

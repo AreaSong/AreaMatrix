@@ -12,12 +12,19 @@ from typing import Any
 
 from . import git as git_helpers
 
+LEGACY_RUN_SUMMARY_PREFIX = ".codex/task-loop-runs/"
+RUN_SUMMARY_PREFIX = "workflow/versions/v1-mvp/evidence/task-loop-runs/"
+
 
 def resolve_repo_path(root: Path, value: str) -> Path:
     path = Path(value)
     if path.is_absolute():
         return path
-    return (root / path).resolve()
+    resolved = (root / path).resolve()
+    if resolved.exists() or not value.startswith(LEGACY_RUN_SUMMARY_PREFIX):
+        return resolved
+    migrated = RUN_SUMMARY_PREFIX + value.removeprefix(LEGACY_RUN_SUMMARY_PREFIX)
+    return (root / migrated).resolve()
 
 def persist_repo_path(root: Path, value: str | Path | None) -> str:
     if not value:

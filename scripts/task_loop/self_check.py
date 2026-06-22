@@ -13,7 +13,13 @@ from typing import Callable, Sequence
 
 from scripts.dev_tools.checks import run_skills_check
 from scripts.dev_tools.discussion import discussion_artifacts, validate_discussion_artifacts
-from scripts.dev_tools.execution_paths import copy_ready_root, progress_path, prompt_pipeline_path, verify_ready_root
+from scripts.dev_tools.execution_paths import (
+    copy_ready_root,
+    progress_path,
+    prompt_pipeline_path,
+    task_loop_runs_root,
+    verify_ready_root,
+)
 from scripts.dev_tools.changes import write_artifacts
 from scripts.dev_tools.workflow_init import init_artifacts
 from scripts.task_loop.runner import (
@@ -1109,7 +1115,7 @@ def check_git_helpers(h: Harness) -> None:
     if git_helpers.current_branch(git_repo) != "codex/areamatrix-task-loop-check001":
         raise CheckFailure("auto branch was not created")
     progress = progress_path(git_repo)
-    summary = git_repo / ".codex/task-loop-runs/check001/summary.json"
+    summary = task_loop_runs_root(git_repo) / "check001/summary.json"
     write_json(progress, {"version": 1, "tasks": {"0-1/task-01": {"status": "completed"}}})
     write_json(summary, {"version": 1, "tasks": {"0-1/task-01": {"status": "completed"}}})
     copy_log = git_repo / ".codex/task-loop-logs/check001/phase-0/copy.log"
@@ -1159,7 +1165,7 @@ def check_git_helpers(h: Harness) -> None:
     init_temp_git_repo(push_fail_repo)
     subprocess.run(["git", "checkout", "-q", "-b", "codex/push-fail"], cwd=push_fail_repo, check=True)
     push_progress = progress_path(push_fail_repo)
-    push_summary = push_fail_repo / ".codex/task-loop-runs/pushfail/summary.json"
+    push_summary = task_loop_runs_root(push_fail_repo) / "pushfail/summary.json"
     write_json(push_progress, {"version": 1, "tasks": {"0-1/task-01": {"status": "completed"}}})
     write_json(push_summary, {"version": 1, "tasks": {"0-1/task-01": {"status": "completed"}}})
     (push_fail_repo / "push-fail.txt").write_text("push fail\n", encoding="utf-8")
@@ -1237,7 +1243,7 @@ fi
             "ROOT_DIR": str(runner_repo),
             "PROGRESS_FILE": str(progress_path(runner_repo)),
             "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
-            "RUN_SUMMARY_ROOT": str(runner_repo / ".codex/task-loop-runs"),
+            "RUN_SUMMARY_ROOT": str(task_loop_runs_root(runner_repo)),
             "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
             "LOCK_DIR": str(runner_repo / ".codex/task-loop-lock"),
             "CONTROL_DIR": str(runner_repo / ".codex/task-loop-control"),
@@ -1331,7 +1337,7 @@ fi
             "ROOT_DIR": str(runner_repo),
             "PROGRESS_FILE": str(progress_path(runner_repo)),
             "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
-            "RUN_SUMMARY_ROOT": str(runner_repo / ".codex/task-loop-runs"),
+            "RUN_SUMMARY_ROOT": str(task_loop_runs_root(runner_repo)),
             "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
             "LOCK_DIR": str(runner_repo / ".codex/task-loop-lock"),
             "CONTROL_DIR": str(runner_repo / ".codex/task-loop-control"),
@@ -1430,7 +1436,7 @@ fi
             "ROOT_DIR": str(runner_repo),
             "PROGRESS_FILE": str(progress_path(runner_repo)),
             "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
-            "RUN_SUMMARY_ROOT": str(runner_repo / ".codex/task-loop-runs"),
+            "RUN_SUMMARY_ROOT": str(task_loop_runs_root(runner_repo)),
             "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
             "LOCK_DIR": str(runner_repo / ".codex/task-loop-lock"),
             "CONTROL_DIR": str(runner_repo / ".codex/task-loop-control"),
@@ -1560,7 +1566,7 @@ fi
             "ROOT_DIR": str(runner_repo),
             "PROGRESS_FILE": str(progress_path(runner_repo)),
             "LOG_ROOT": str(runner_repo / ".codex/task-loop-logs"),
-            "RUN_SUMMARY_ROOT": str(runner_repo / ".codex/task-loop-runs"),
+            "RUN_SUMMARY_ROOT": str(task_loop_runs_root(runner_repo)),
             "PROGRESS_BACKUP_ROOT": str(runner_repo / ".codex/task-loop-progress-backups"),
             "LOCK_DIR": str(runner_repo / ".codex/task-loop-lock"),
             "CONTROL_DIR": str(runner_repo / ".codex/task-loop-control"),
@@ -1657,6 +1663,12 @@ def check_progress_path_persistence(h: Harness) -> None:
     if state.verify_result(entry["verify_log"], root) != "pass":
         raise CheckFailure("verify_result must resolve repo-relative verify logs")
 
+    migrated_summary = root / "workflow/versions/v1-mvp/evidence/task-loop-runs/run/summary.json"
+    migrated_summary.parent.mkdir(parents=True)
+    migrated_summary.write_text("{}\n", encoding="utf-8")
+    resolved = state.resolve_repo_path(root, ".codex/task-loop-runs/run/summary.json")
+    if resolved != migrated_summary.resolve():
+        raise CheckFailure(f"legacy task-loop-runs path did not resolve to workflow evidence: {resolved}")
 
 
 
@@ -1673,8 +1685,8 @@ def check_git_ignore(h: Harness) -> None:
     ]
     tracked = [
         "workflow/versions/v1-mvp/execution/_shared/progress.json",
-        ".codex/task-loop-runs/index.json",
-        ".codex/task-loop-runs/example/summary.json",
+        "workflow/versions/v1-mvp/evidence/task-loop-runs/index.json",
+        "workflow/versions/v1-mvp/evidence/task-loop-runs/example/summary.json",
         ".codex/task-loop-progress-backups/progress-before-reset-example.json",
     ]
     for item in ignored:

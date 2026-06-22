@@ -67,6 +67,7 @@ def write_task(root: Path, base: str, task_id: int, slug: str, *, status: str = 
 def assert_forbidden_state_absent(test: unittest.TestCase, root: Path) -> None:
     for relative in [
         "workflow/versions/v1-mvp/execution",
+        "workflow/versions/v1-mvp/evidence/task-loop-runs",
         ".codex/task-loop-logs",
         ".codex/task-loop-runs",
         ".codex/task-loop-lock",
@@ -161,7 +162,7 @@ class LightweightTasksToolsTest(unittest.TestCase):
             self.assertIn("- done: 1\n", output)
             self.assertIn("- blocked: 1\n", output)
             self.assertIn("- verify_ready: 1\n", output)
-            self.assertIn("- backlog packages: 1\n", output)
+            self.assertIn("- backlog prompt packages: 1\n", output)
             self.assertIn("1 | 1.add-settings-button | active | verify_ready", output)
             self.assertIn("3 | 3.update-docs-layout | done/2026 | done", output)
 
@@ -193,7 +194,7 @@ class LightweightTasksToolsTest(unittest.TestCase):
             self.assertIn("lightweight tasks doctor: OK", output)
             self.assertIn("- active: 1", output)
             self.assertIn("- done: 1", output)
-            self.assertIn("- backlog packages: 1", output)
+            self.assertIn("- backlog prompt packages: 1", output)
 
     def test_doctor_reports_structure_errors(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

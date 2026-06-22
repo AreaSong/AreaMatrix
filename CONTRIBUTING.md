@@ -124,7 +124,7 @@ open apps/macos/AreaMatrix.xcodeproj
 
 - `workflow/versions/v1-mvp/execution/_shared/progress.json`
 - `.codex/task-loop-logs/**`
-- `.codex/task-loop-runs/**`
+- `workflow/versions/v1-mvp/evidence/task-loop-runs/**`
 - PASS task 的 Git checkpoint 证据
 
 ## 文档要求

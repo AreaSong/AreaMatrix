@@ -188,8 +188,8 @@ The lock records `pid`, `run_id`, operation, command, and start time. It is loca
 Run summaries:
 
 ```text
-.codex/task-loop-runs/<run_id>/summary.json
-.codex/task-loop-runs/index.json
+workflow/versions/v1-mvp/evidence/task-loop-runs/<run_id>/summary.json
+workflow/versions/v1-mvp/evidence/task-loop-runs/index.json
 ```
 
 The summary records model, reasoning effort, phase filter, start/max settings, risk policy, progress file, log root, task attempts, copy/verify logs, final status, and exit code. Treat it as resumable workflow evidence.
