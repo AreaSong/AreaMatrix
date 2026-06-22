@@ -8,7 +8,6 @@
     ".codex/dev-console": true,
     ".codex/task-loop-console": true,
     ".codex/task-loop-control": true,
-    ".codex/task-loop-logs": true,
     "core/target": true,
     "apps/ios/.build": true,
     "apps/macos/DerivedData": true,
