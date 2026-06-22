@@ -36,7 +36,7 @@
 
 ## 禁止修改
 
-- `tasks/prompts/**`
+- `workflow/versions/<version>/execution/**`
 - `core/**`
 - `apps/**`
 - `../Vibe-Skills/**`
@@ -56,6 +56,6 @@
 ```bash
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .ai-governance .codex/references .codex/skills-src tasks/backlog
 ```

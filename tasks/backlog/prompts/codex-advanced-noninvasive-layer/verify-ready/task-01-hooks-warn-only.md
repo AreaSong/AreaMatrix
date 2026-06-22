@@ -27,7 +27,7 @@ git diff --name-only
 rg -n "hooks|plugin_hooks|warn-only|read-only|runner|task-loop|commit|push|reset|clean|stash|progress|checkpoint|VERIFY_RESULT|验证" .codex .ai-governance tasks/backlog
 ./dev check governance
 ./dev check skills
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .codex/references .codex/hooks.json tasks/backlog
 ```
 

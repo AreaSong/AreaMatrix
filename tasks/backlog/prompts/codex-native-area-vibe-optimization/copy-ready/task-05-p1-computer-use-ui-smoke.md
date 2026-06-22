@@ -31,7 +31,7 @@ Computer Use 只能作为 UI smoke 补充，不能替代：
 
 ## 禁止修改
 
-- `tasks/prompts/**`
+- `workflow/versions/<version>/execution/**`
 - `core/**`
 - `apps/**`
 - 任何系统权限、密码、支付、隐私授权自动化
@@ -49,7 +49,7 @@ Computer Use 只能作为 UI smoke 补充，不能替代：
 ```bash
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .codex/references .codex/skills-src tasks/backlog
 ```
 

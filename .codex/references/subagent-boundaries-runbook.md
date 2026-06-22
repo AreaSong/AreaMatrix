@@ -76,7 +76,7 @@ Validation:
 以下文件或目录默认不能多 worker 并行写：
 
 - `workflow/versions/<version>/execution/**`、manifest、`workflow/versions/<version>/execution/_shared/progress.json`
-- `.codex/task-loop-logs/**`、`workflow/versions/v1-mvp/evidence/task-loop-runs/**`、task-loop lock
+- `.codex/runtime/task-loop/logs/**`、`workflow/versions/v1-mvp/evidence/task-loop-runs/**`、task-loop lock
 - Git checkpoint evidence、branch、commit、stash、reset、clean 相关状态
 - DB migration、schema、rollback、staging recovery
 - `core/area_matrix.udl`、Core API、Swift bridge 的破坏性变化

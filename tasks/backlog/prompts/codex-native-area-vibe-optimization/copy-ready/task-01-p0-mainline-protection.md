@@ -9,7 +9,7 @@
 ```text
 AGENTS.md / .ai-governance
 -> workflow/ planning gate
--> tasks/prompts/** live queue
+-> workflow/versions/<version>/execution/** live queue
 -> ./dev / ./task-loop
 -> repo-local skills
 ```
@@ -21,7 +21,7 @@ Codex Automations、Cloud、Worktrees、Vibe-Skills、SDK、app-server、remote-
 1. `AGENTS.md`
 2. `.ai-governance/README.md`
 3. `workflow/AGENTS.md`
-4. `tasks/prompts/README.md`
+4. `workflow/versions/v1-mvp/execution/README.md`
 5. `.codex/references/codex-workflow-and-tools.md`
 6. `tasks/backlog/codex-native-area-vibe-optimization.md`
 
@@ -33,7 +33,7 @@ Codex Automations、Cloud、Worktrees、Vibe-Skills、SDK、app-server、remote-
 
 ## 禁止修改
 
-- `tasks/prompts/**`
+- `workflow/versions/<version>/execution/**`
 - `core/**`
 - `apps/**`
 - `docs/api/core-api.md`
@@ -52,9 +52,9 @@ Codex Automations、Cloud、Worktrees、Vibe-Skills、SDK、app-server、remote-
 
 ```bash
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .ai-governance .codex/references tasks/backlog
 ```
 
-汇报时说明改了什么、为什么、验证结果和未触碰 `tasks/prompts/**`。
+汇报时说明改了什么、为什么、验证结果和未触碰 `workflow/versions/<version>/execution/**`。
 

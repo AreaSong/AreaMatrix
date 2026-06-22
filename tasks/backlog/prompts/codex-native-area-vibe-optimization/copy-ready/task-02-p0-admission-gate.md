@@ -12,7 +12,7 @@
 - 是否与现有 AreaMatrix skill / rule / workflow 重复？
 - source of truth 是谁？
 - 触发条件是什么？
-- 是否影响 `./task-loop`、`tasks/prompts/**` 或用户文件安全？
+- 是否影响 `./task-loop`、`workflow/versions/<version>/execution/**` 或用户文件安全？
 - 验证方式是什么？
 - owner / 落点在哪里？
 - 是吸收、暂缓、只参考，还是拒绝？
@@ -35,7 +35,7 @@
 
 ## 禁止修改
 
-- `tasks/prompts/**`
+- `workflow/versions/<version>/execution/**`
 - `../Vibe-Skills/**`
 - 全局 `~/.codex/**`
 
@@ -52,7 +52,7 @@
 ```bash
 ./dev check governance
 ./dev check skills
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .ai-governance .codex/references tasks/backlog
 ```
 

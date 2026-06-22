@@ -160,7 +160,7 @@ DRY_RUN=1 \
   ./task-loop run --phase phase-1 --max-tasks 1
 ```
 
-Python runner 会在 `.codex/task-loop-logs/<timestamp>/<phase>/` 写入每次执行和验收日志。最终 copy / verify `.log` 是 `codex exec -o` 的完成输出；`.exec.log` 是 stdout/stderr 实时诊断流，只用于确认 CLI 是否启动、是否有工具命令开始/结束、失败前最后发生了什么。`.exec.log` 文件增长本身不代表任务健康推进，重复 diff 或模型自述不会被当作真实执行进展。runner 判断健康状态时以最终 `.log` 进展、Codex 子进程树里的真实验证进程和命令事件为准；默认只在无验证、无进展连续 15 分钟时重启，不再用 90 分钟墙钟硬超时杀掉正在运行的 `./dev check all`、`cargo test` 或 `xcodebuild`。该目录默认本地忽略；任务通过后，Git checkpoint 只强制提交成功 attempt 对应的最终 copy / verify `.log`，`.exec.log` 等实时诊断流只留本地排障。
+Python runner 会在 `.codex/runtime/task-loop/logs/<timestamp>/<phase>/` 写入每次执行和验收日志。最终 copy / verify `.log` 是 `codex exec -o` 的完成输出；`.exec.log` 是 stdout/stderr 实时诊断流，只用于确认 CLI 是否启动、是否有工具命令开始/结束、失败前最后发生了什么。`.exec.log` 文件增长本身不代表任务健康推进，重复 diff 或模型自述不会被当作真实执行进展。runner 判断健康状态时以最终 `.log` 进展、Codex 子进程树里的真实验证进程和命令事件为准；默认只在无验证、无进展连续 15 分钟时重启，不再用 90 分钟墙钟硬超时杀掉正在运行的 `./dev check all`、`cargo test` 或 `xcodebuild`。该目录默认本地忽略；任务通过后，Git checkpoint 只强制提交成功 attempt 对应的最终 copy / verify `.log`，`.exec.log` 等实时诊断流只留本地排障。
 进度统一写入 `workflow/versions/v1-mvp/execution/_shared/progress.json`，因此 `next` 和 `status` 会直接反映历史执行结果。
 
 查看或恢复：
@@ -175,7 +175,7 @@ Python runner 会在 `.codex/task-loop-logs/<timestamp>/<phase>/` 写入每次�
 ./task-loop resume-failed
 ```
 
-`./dev` 是 AreaMatrix Dev Console 总控入口，默认展示局势诊断首页，而不是把所有 task-loop 命令平铺在首页。首页只回答：现在安全吗、为什么、下一步按什么顺序做、v1 历史队列与 workflow 规划层当前处在哪。v1 队列完成后，推荐向导默认转向 `./dev workflow status`；只有存在 stale / failed / blocked 历史任务时，才推荐对应恢复动作。首页主要入口是 `1 recommended guide`、`2 lifecycle map`、`3 historical queue details`、`4 tools`、`? shortcuts`、`h help`、`q quit`；`1` 只展示行动链，不自动执行命令；危险操作只在 `historical queue -> maintenance/danger`。直接按 Enter 只看完整状态，不启动任务；输入 `?` 查看全部快捷键。`./dev --once` 渲染一次首页后退出，便于截图或脚本检查。语言优先级是 `./dev --lang mixed|zh|en` > `DEV_LANG=mixed|zh|en` > `.codex/dev-console/config.json` > `mixed`；交互模式输入 `lang` 会保存本仓库本地偏好，该目录已被 `.gitignore` 忽略。`./dev` 壳层文案由 `scripts/task_loop/locales/{mixed,zh,en}.json` 管理，动作结构由 `scripts/task_loop/actions.py` 统一登记，命令、路径、环境变量、task label 和底层 runner / workflow 透传输出不翻译。颜色可用 `./dev --color never` 或 `NO_COLOR=1` 关闭；完整进程命令用 `./dev processes` 查看。旧版长输出保留在 `./dev status --verbose`。
+`./dev` 是 AreaMatrix Dev Console 总控入口，默认展示局势诊断首页，而不是把所有 task-loop 命令平铺在首页。首页只回答：现在安全吗、为什么、下一步按什么顺序做、v1 历史队列与 workflow 规划层当前处在哪。v1 队列完成后，推荐向导默认转向 `./dev workflow status`；只有存在 stale / failed / blocked 历史任务时，才推荐对应恢复动作。首页主要入口是 `1 recommended guide`、`2 lifecycle map`、`3 historical queue details`、`4 tools`、`? shortcuts`、`h help`、`q quit`；`1` 只展示行动链，不自动执行命令；危险操作只在 `historical queue -> maintenance/danger`。直接按 Enter 只看完整状态，不启动任务；输入 `?` 查看全部快捷键。`./dev --once` 渲染一次首页后退出，便于截图或脚本检查。语言优先级是 `./dev --lang mixed|zh|en` > `DEV_LANG=mixed|zh|en` > `.codex/runtime/dev-console/config.json` > `mixed`；交互模式输入 `lang` 会保存本仓库本地偏好，该目录已被 `.gitignore` 忽略。`./dev` 壳层文案由 `scripts/task_loop/locales/{mixed,zh,en}.json` 管理，动作结构由 `scripts/task_loop/actions.py` 统一登记，命令、路径、环境变量、task label 和底层 runner / workflow 透传输出不翻译。颜色可用 `./dev --color never` 或 `NO_COLOR=1` 关闭；完整进程命令用 `./dev processes` 查看。旧版长输出保留在 `./dev status --verbose`。
 
 ## Workflow 与版本化变更
 

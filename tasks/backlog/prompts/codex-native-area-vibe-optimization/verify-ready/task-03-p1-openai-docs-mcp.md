@@ -18,7 +18,7 @@ git diff --name-only
 rg -n "OpenAI|Codex|官方|最新|MCP|openaiDeveloperDocs|source of truth|源事实" .ai-governance .codex/references tasks/backlog
 ./dev check governance
 ./dev check skills
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .ai-governance .codex/references tasks/backlog
 ```
 

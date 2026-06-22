@@ -32,7 +32,7 @@ python3 -m unittest scripts.dev_tools.test_backlog_tools
 ./dev backlog list
 git status --short
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 ./task-loop check
 git diff --check -- scripts/dev_tools scripts/task_loop tasks/backlog
 ```
@@ -40,7 +40,7 @@ git diff --check -- scripts/dev_tools scripts/task_loop tasks/backlog
 ## 重点核对
 
 - `./dev backlog list` 运行前后 `git status --short` 不应出现由命令运行产生的新变化。
-- 实现不得读取或写入 `tasks/prompts/_shared/progress.json`。
+- 实现不得读取或写入 `workflow/versions/<version>/execution/_shared/progress.json`。
 - 实现不得调用 `./task-loop`、`codex exec`、Git checkpoint、promotion apply。
 
 ## 判定

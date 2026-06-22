@@ -53,7 +53,7 @@ codex exec -m gpt-5.5 \
   --full-auto \
   -s danger-full-access \
   --cd . \
-  -o .codex/task-loop-logs/<run_id>/<task>-copy-attempt-1.log \
+  -o .codex/runtime/task-loop/logs/<run_id>/<task>-copy-attempt-1.log \
   -
 ```
 

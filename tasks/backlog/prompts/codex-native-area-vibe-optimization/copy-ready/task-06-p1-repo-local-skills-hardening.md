@@ -34,7 +34,7 @@
 
 ## 禁止修改
 
-- `tasks/prompts/**`
+- `workflow/versions/<version>/execution/**`
 - 新增重复 skill 来覆盖现有 skill
 - 改变产品语义 source of truth
 
@@ -50,7 +50,7 @@
 ```bash
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .codex/skills-src .agents/skills .codex/references tasks/backlog
 ```
 

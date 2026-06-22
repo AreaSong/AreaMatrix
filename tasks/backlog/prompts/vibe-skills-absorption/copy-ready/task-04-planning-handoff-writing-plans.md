@@ -14,14 +14,14 @@
 - 验证命令
 - rollback / blocked 口径
 - copy-ready / verify-ready 分离
-- 不直接进入 `tasks/prompts/**`，除非经过 workflow promotion
+- 不直接进入 `workflow/versions/<version>/execution/**`，除非经过 workflow promotion
 
 ## 非目标
 
 - 不新增 `writing-plans` 同义 repo-local skill。
 - 不安装、启用或修改 Vibe-Skills runtime。
-- 不修改 `tasks/prompts/**` live queue。
-- 不写 `tasks/prompts/_shared/progress.json`、checkpoint、run summary、runner lock 或 task-loop live logs。
+- 不修改 `workflow/versions/<version>/execution/**` live queue。
+- 不写 `workflow/versions/<version>/execution/_shared/progress.json`、checkpoint、run summary、runner lock 或 task-loop live logs。
 
 ## Source of Truth
 
@@ -57,7 +57,7 @@
 
 ## 禁止修改
 
-- `tasks/prompts/**`
+- `workflow/versions/<version>/execution/**`
 - `core/**`
 - `apps/**`
 - `../Vibe-Skills/**`
@@ -83,7 +83,7 @@
 
 ## Rollback / Blocked
 
-- 若发现必须修改 `tasks/prompts/**` 才能满足目标，停止并标记 blocked。
+- 若发现必须修改 `workflow/versions/<version>/execution/**` 才能满足目标，停止并标记 blocked。
 - 若 Vibe-Skills 文件缺失，只记录为 upstream evidence unavailable，不阻塞 AreaMatrix 本地规则补强。
 - 若验证失败，按失败命令归因；不要通过扩大到 core/apps 或 live queue 来绕过。
 
@@ -92,7 +92,7 @@
 ```bash
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 ./dev workflow doctor
 git diff --check -- workflow .codex/references .codex/skills-src tasks/backlog
 ```

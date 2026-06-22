@@ -66,7 +66,7 @@ When `./task-loop` or `./dev` reports a failed, blocked, stale, or stopped run, 
 5. `workflow/versions/v1-mvp/evidence/task-loop-runs/<run_id>/summary.json`
    Inspect run-level `status`, `exit_code`, `note`, `totals`, phase / start filters, risk policy, Git mode, and per-task `copy_log` / `verify_log` paths.
 
-6. `.codex/task-loop-logs/<timestamp>/<phase>/`
+6. `.codex/runtime/task-loop/logs/<timestamp>/<phase>/`
    Open the affected `*-copy-attempt-<n>.log` first when copy failed or no verify evidence exists. Open `*-verify-attempt-<n>.log` first when verify ran and produced blockers.
 
 7. Git evidence.

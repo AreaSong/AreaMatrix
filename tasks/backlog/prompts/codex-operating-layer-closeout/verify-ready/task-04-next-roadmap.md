@@ -10,7 +10,7 @@
 - 明确是否推荐回到 AreaMatrix 产品主线。
 - 明确 hooks / Automations / Cloud / Worktrees / Browser / Computer Use / subagents / Vibe professional skills 的后续触发条件。
 - 明确外部能力仍需 admission gate。
-- 未修改 `tasks/prompts/**`、progress 或 runner state。
+- 未修改 `workflow/versions/<version>/execution/**`、progress 或 runner state。
 
 ## 必须读取
 
@@ -28,7 +28,7 @@ git diff --name-only
 rg -n "Recommended now|Defer|Trigger|Reject|hooks|Automations|Cloud|Worktrees|Browser|Computer Use|subagent|Vibe|admission|稳定基线|产品主线" tasks/backlog .codex/references
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- tasks/backlog .codex/references
 ```
 

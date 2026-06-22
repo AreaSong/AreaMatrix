@@ -1,6 +1,6 @@
 # Codex Native / AreaMatrix / Vibe-Skills Prompt Package
 
-本目录保存短期系统优化的可复制提示词。它不是 `tasks/prompts/**` live queue，不由 `./task-loop` 自动执行。
+本目录保存短期系统优化的可复制提示词。它不是 `workflow/versions/<version>/execution/**` live queue，不由 `./task-loop` 自动执行。
 
 建议在新对话中按顺序执行：
 
@@ -19,8 +19,8 @@
 
 通用边界：
 
-- 不修改 `tasks/prompts/**` live queue。
+- 不修改 `workflow/versions/<version>/execution/**` live queue。
 - 不启动第二个 `./task-loop`。
 - 不安装或启用 Vibe-Skills 全量 skill 仓库。
-- 不让外部 runtime 替代 AreaMatrix 的 `docs/`、`.ai-governance/`、`workflow/` 和 `tasks/prompts/**`。
+- 不让外部 runtime 替代 AreaMatrix 的 `docs/`、`.ai-governance/`、`workflow/` 和 `workflow/versions/<version>/execution/**`。
 

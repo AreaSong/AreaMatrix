@@ -11,7 +11,7 @@
 - 每个候选都必须说明 source of truth、触发条件、验证方式、owner、是否影响主线。
 - 明确四类结论：吸收、暂缓、只参考、拒绝。
 - 未修改 `../Vibe-Skills/**`。
-- 未修改 `tasks/prompts/**`。
+- 未修改 `workflow/versions/<version>/execution/**`。
 
 ## 只读检查
 
@@ -22,7 +22,7 @@ git diff --name-only
 rg -n "admission|接入|Vibe-Skills|source of truth|触发|验证|owner|只参考|暂缓|拒绝" .ai-governance .codex/references tasks/backlog
 ./dev check governance
 ./dev check skills
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .ai-governance .codex/references tasks/backlog
 ```
 

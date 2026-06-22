@@ -28,7 +28,7 @@ rg -n "数据分析|统计|ML|AI 工程|模型解释|科研|文献|生信|医学
 git -C ../Vibe-Skills status --short
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .codex/references tasks/backlog
 ```
 
