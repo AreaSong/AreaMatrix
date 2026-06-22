@@ -1,5 +1,9 @@
 const fs = require('fs');
-let html = fs.readFileSync('index.html', 'utf8');
+const path = require('path');
+
+const prototypeRoot = path.resolve(__dirname, '..');
+const indexPath = path.join(prototypeRoot, 'index.html');
+let html = fs.readFileSync(indexPath, 'utf8');
 
 // 1. Throttle the mousemove with requestAnimationFrame
 html = html.replace(
@@ -34,5 +38,5 @@ html = html.replace(
     '.g-blob {$1will-change: transform;\n            transition: transform'
 );
 
-fs.writeFileSync('index.html', html);
+fs.writeFileSync(indexPath, html);
 console.log('Performance optimized!');

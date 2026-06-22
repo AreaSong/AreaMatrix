@@ -1,5 +1,9 @@
 const fs = require('fs');
-let content = fs.readFileSync('index.html', 'utf8');
+const path = require('path');
+
+const prototypeRoot = path.resolve(__dirname, '..');
+const indexPath = path.join(prototypeRoot, 'index.html');
+let content = fs.readFileSync(indexPath, 'utf8');
 
 // Replace the placeholder triggerStage(targetId) with glare and click
 content = content.replace(/triggers\.forEach\(trigger => \{([\s\S]*?)\}\);/g, `triggers.forEach(trigger => {
@@ -54,4 +58,4 @@ let glareCss = `
 `;
 content = content.replace('.feature-card::before {', glareCss + '\n        .feature-card::before {');
 
-fs.writeFileSync('index.html', content);
+fs.writeFileSync(indexPath, content);

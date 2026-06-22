@@ -1,5 +1,9 @@
 const fs = require('fs');
-let html = fs.readFileSync('index.html', 'utf8');
+const path = require('path');
+
+const prototypeRoot = path.resolve(__dirname, '..');
+const indexPath = path.join(prototypeRoot, 'index.html');
+let html = fs.readFileSync(indexPath, 'utf8');
 
 // 1. Add CTA CSS
 const ctaCss = `
@@ -48,5 +52,5 @@ html = html.replace(/const triggers = document\.querySelectorAll\('\.trigger-sta
 // Set hasUserInteracted to true on mouseenter
 html = html.replace(/trigger\.addEventListener\('mouseenter', \(\) => \{/g, match => match + '\n                hasUserInteracted = true;\n                clearInterval(autoPlayTimer);');
 
-fs.writeFileSync('index.html', html);
+fs.writeFileSync(indexPath, html);
 console.log('Patched auto-play and CTA glow');

@@ -169,52 +169,47 @@ sequenceDiagram
 
 ```
 AreaMatrix/                            # Git 仓库
-├── core/                              # Rust 核心库（独立 cargo crate）
+├── core/                              # Rust 核心库（Cargo crate）
 │   ├── Cargo.toml
-│   ├── build.rs                       # uniffi scaffolding 生成
+│   ├── build.rs                       # UniFFI / staticlib 构建入口
 │   ├── area_matrix.udl                # UniFFI 接口定义
-│   ├── src/
-│   │   ├── lib.rs                     # 入口
-│   │   ├── api.rs                     # FFI 边界
-│   │   ├── domain.rs                  # 类型
-│   │   ├── error.rs                   # 错误体系
-│   │   ├── config.rs                  # 配置
-│   │   ├── classify/{mod,rules,naming}.rs
-│   │   ├── storage/{mod,ops,hash,conflict}.rs
-│   │   ├── overview/{mod,category,root}.rs
-│   │   ├── tree/mod.rs
-│   │   ├── sync/mod.rs
-│   │   └── db/{mod,schema.sql,migrations,repo}.rs
-│   ├── tests/                         # 集成测试
-│   └── resources/
-│       └── classifier.yaml            # 默认分类规则
+│   ├── src/                           # 平台无关业务逻辑
+│   ├── tests/                         # Core API / 行为 / 回归测试
+│   ├── benches/                       # 性能基线
+│   └── resources/                     # 默认配置资源
 │
-├── apps/macos/                        # SwiftUI Xcode 项目
-│   ├── AreaMatrix.xcodeproj
-│   └── AreaMatrix/
-│       ├── App/
-│       ├── Bridge/
-│       │   ├── CoreBridge.swift
-│       │   └── Generated/             # uniffi 生成（不入版本控制）
-│       ├── Watcher/
-│       │   ├── FSWatcher.swift
-│       │   ├── Debouncer.swift
-│       │   ├── InFlightTracker.swift
-│       │   └── ICloudCoordinator.swift
-│       ├── Models/                    # @Observable stores
-│       ├── Views/                     # SwiftUI views
-│       └── Resources/
+├── apps/                              # 平台原生应用
+│   ├── macos/                         # SwiftUI Xcode 项目（当前主目标）
+│   ├── ios/                           # iOS / Share Extension surface
+│   ├── windows/                       # Windows surface
+│   └── linux/                         # Linux surface
 │
-├── scripts/
-│   ├── dev_tools/                     # ./dev check/build/test/bindings/changes
-│   └── task_loop/                     # ./task-loop runner
+├── assets/                            # 项目级静态资产
+│   ├── brand/                         # 品牌资产；final/ 是权威可引用版本
+│   └── prototypes/                    # landing / workspace 视觉原型，非源事实
 │
-├── workflow/
-│   └── versions/                      # prompt workflow version tracking
+├── docs/                              # 产品、架构、API、UX、开发与路线图源事实
+│   ├── product/
+│   ├── architecture/
+│   ├── api/
+│   ├── ux/
+│   ├── modules/
+│   ├── development/
+│   ├── adr/
+│   └── roadmap/
+│
+├── scripts/                           # ./dev 与 task-loop 支撑脚本
+├── workflow/                          # 版本讨论、计划、预览、execution 和 closeout
+│   └── versions/
 │       ├── v1-mvp/                    # completed 637-task queue archive
 │       └── v-template/                # template reference, not a product version
 │
-└── docs/                              # 项目文档（本目录）
+├── tasks/                             # lightweight task progress and backlog
+├── .ai-governance/                    # AI 协作规则源事实
+├── .codex/                            # Codex-only skills, references, runtime material
+├── .agents/skills/                    # repo-local skill discovery projection
+├── dev                                # 本地开发控制台入口
+└── task-loop                          # prompt task-loop runner 入口
 ```
 
 ## 资料库目录结构（用户实际看到的）

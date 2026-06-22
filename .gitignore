@@ -13,6 +13,7 @@ target/
 build/
 DerivedData/
 apps/macos/.derived-data-log-*
+apps/macos/build_log*.txt
 *.xcuserstate
 xcuserdata/
 *.xccheckout

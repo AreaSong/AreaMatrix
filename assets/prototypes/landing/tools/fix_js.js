@@ -1,5 +1,9 @@
 const fs = require('fs');
-let content = fs.readFileSync('index.html', 'utf8');
+const path = require('path');
+
+const prototypeRoot = path.resolve(__dirname, '..');
+const indexPath = path.join(prototypeRoot, 'index.html');
+let content = fs.readFileSync(indexPath, 'utf8');
 
 // 1. Remove duplicate mouseleave
 const target = `            trigger.addEventListener('mouseleave', () => {
@@ -129,4 +133,4 @@ const typingScript = `
 
 content = content.replace('// Drag / Drop / Scan logic', typingScript + '\n        // Drag / Drop / Scan logic');
 
-fs.writeFileSync('index.html', content);
+fs.writeFileSync(indexPath, content);

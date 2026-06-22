@@ -1,5 +1,9 @@
 const fs = require('fs');
-let html = fs.readFileSync('index.html', 'utf8');
+const path = require('path');
+
+const prototypeRoot = path.resolve(__dirname, '..');
+const indexPath = path.join(prototypeRoot, 'index.html');
+let html = fs.readFileSync(indexPath, 'utf8');
 
 // 1. Connecting Lines HTML
 html = html.replace(
@@ -44,5 +48,5 @@ const extraCss = `
 `;
 html = html.replace('</style>', extraCss + '\n    </style>');
 
-fs.writeFileSync('index.html', html);
+fs.writeFileSync(indexPath, html);
 console.log('Opt2 applied!');

@@ -9,7 +9,7 @@ AreaMatrix/
 ├── core/              # Rust 核心库
 ├── apps/              # 平台原生应用，macOS 为当前主目标
 ├── docs/              # 产品、架构、API、开发与路线图源事实
-├── assets/brand/      # 品牌资产
+├── assets/            # 品牌资产与非源事实视觉原型
 ├── scripts/           # 构建、检查与 task-loop 支撑脚本
 ├── workflow/          # 版本讨论、计划、预览、promotion gate 与版本内执行层
 ├── tasks/             # 轻量任务进度、完成归档、候选池和模板
@@ -39,6 +39,12 @@ exclude 隐藏，不纳入源码目录语义。
 - 开发规范：`docs/development/`
 - MVP 拆解：`workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md`
 - 长期路线图：`docs/roadmap/milestones.md`
+
+## 资产与原型边界
+
+- `assets/brand/` 是品牌资产入口；`assets/brand/final/` 是权威可引用版本。
+- `assets/prototypes/` 只保存 landing、workspace 等视觉原型和辅助脚本；它不定义产品、架构、API、UX 或任务执行源事实。
+- 若视觉原型中的内容需要成为长期产品事实，必须先同步到 `docs/` 的对应产品、架构、API 或 UX 文档。
 
 ## 高风险项目边界
 

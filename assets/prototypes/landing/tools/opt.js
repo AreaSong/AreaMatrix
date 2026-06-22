@@ -1,5 +1,9 @@
 const fs = require('fs');
-let html = fs.readFileSync('index.html', 'utf8');
+const path = require('path');
+
+const prototypeRoot = path.resolve(__dirname, '..');
+const indexPath = path.join(prototypeRoot, 'index.html');
+let html = fs.readFileSync(indexPath, 'utf8');
 
 // --- 1. Grand Finale Flash ---
 // Add success-flash div
@@ -105,5 +109,5 @@ const f2Css = `
 `;
 html = html.replace('</style>', f2Css + '\n    </style>');
 
-fs.writeFileSync('index.html', html);
+fs.writeFileSync(indexPath, html);
 console.log('Optimizations applied!');

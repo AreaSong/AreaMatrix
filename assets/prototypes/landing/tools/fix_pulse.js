@@ -1,5 +1,9 @@
 const fs = require('fs');
-let html = fs.readFileSync('index.html', 'utf8');
+const path = require('path');
+
+const prototypeRoot = path.resolve(__dirname, '..');
+const indexPath = path.join(prototypeRoot, 'index.html');
+let html = fs.readFileSync(indexPath, 'utf8');
 
 html = html.replace(
     /animation: e-pulseIn 1\.5s infinite;/g,
@@ -26,5 +30,5 @@ const newKeyframes = `
 `;
 html = html.replace(/@keyframes e-pulseIn \{[\s\S]*?100% \{ transform: translate\(65px, 0px\); opacity: 0; \}\s*\}/, newKeyframes);
 
-fs.writeFileSync('index.html', html);
+fs.writeFileSync(indexPath, html);
 console.log('Fixed pulses');

@@ -8,6 +8,7 @@
     "core/target": true,
     "apps/ios/.build": true,
     "apps/macos/DerivedData": true,
+    "apps/macos/build_log*.txt": true,
     "apps/macos/AreaMatrix/Bridge/Generated": true,
     "apps/**/bin": true,
     "apps/**/obj": true
@@ -26,6 +27,7 @@
     "core/target": true,
     "apps/ios/.build": true,
     "apps/macos/DerivedData": true,
+    "apps/macos/build_log*.txt": true,
     "apps/macos/AreaMatrix/Bridge/Generated": true,
     "apps/**/bin": true,
     "apps/**/obj": true

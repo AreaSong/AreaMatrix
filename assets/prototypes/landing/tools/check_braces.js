@@ -1,5 +1,8 @@
 const fs = require('fs');
-const html = fs.readFileSync('index.html', 'utf8');
+const path = require('path');
+
+const prototypeRoot = path.resolve(__dirname, '..');
+const html = fs.readFileSync(path.join(prototypeRoot, 'index.html'), 'utf8');
 
 const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/);
 if (!styleMatch) process.exit(0);

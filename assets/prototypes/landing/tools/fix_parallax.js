@@ -1,5 +1,9 @@
 const fs = require('fs');
-let content = fs.readFileSync('index.html', 'utf8');
+const path = require('path');
+
+const prototypeRoot = path.resolve(__dirname, '..');
+const indexPath = path.join(prototypeRoot, 'index.html');
+let content = fs.readFileSync(indexPath, 'utf8');
 
 // 1. Add preserve-3d to dioramas
 const dioramas = ['.visual-classify-diorama', '.visual-security-diorama', '.visual-tracking-diorama', '.visual-help-diorama', '.visual-start'];
@@ -34,4 +38,4 @@ content = content.replace(/@keyframes e-coreBeat \{([^\}]+)\}/, `@keyframes e-co
 content = content.replace(/@keyframes hJumboPulse \{([^\}]+)\}/, `@keyframes hJumboPulse { 0%, 100% { transform: scale(1) translateZ(60px); filter: brightness(1); box-shadow: 0 0 40px rgba(16, 185, 129, 0.3); } 50% { transform: scale(1.05) translateZ(60px); filter: brightness(1.2); box-shadow: 0 0 80px rgba(52, 211, 153, 0.6); } }`);
 content = content.replace(/@keyframes hAuraExpand \{([^\}]+)\}/, `@keyframes hAuraExpand { 0% { transform: translate(-50%, -50%) scale(0.9) translateZ(20px); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.7) translateZ(20px); opacity: 0; } }`);
 
-fs.writeFileSync('index.html', content);
+fs.writeFileSync(indexPath, content);

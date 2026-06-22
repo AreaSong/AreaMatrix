@@ -73,7 +73,7 @@ AreaMatrix 把源码、规划治理和本地运行材料分开看：
 | 层次 | 路径 | 说明 |
 |---|---|---|
 | 产品源码 | `core/`、`apps/`、`docs/` | Rust core、各平台原生应用和权威产品文档。 |
-| 产品资产 | `assets/brand/` | 权威品牌资产和历史 logo 探索稿。 |
+| 产品资产与原型 | `assets/brand/`、`assets/prototypes/` | 权威品牌资产，以及不作为产品源事实的 landing / workspace 视觉原型。 |
 | 规划与治理 | `.ai-governance/`、`workflow/`、`tasks/` | AI 协作规则、版本规划 gate、版本内执行队列、轻量任务进度和 backlog 材料。 |
 | Codex 运行入口 | `.codex/`、`.agents/skills/`、`dev`、`task-loop`、`scripts/` | 仓库内 Codex skills、发现入口和 task-loop 工具。这些是稳定工具入口，不应为了视觉收紧而移动。 |
 | 本地生成物 | `.build/`、`build/`、`core/target/`、`apps/*/.build`、`apps/**/bin`、`apps/**/obj`、`apps/macos/DerivedData/` | 已忽略的本地构建产物，不属于源码目录形态。 |
@@ -90,6 +90,7 @@ AreaMatrix 把源码、规划治理和本地运行材料分开看：
 | 集成方想了解 API | [docs/api/core-api.md](docs/api/core-api.md) |
 | 新加入想搭环境 | [docs/development/setup.md](docs/development/setup.md) |
 | 想了解决策来龙去脉 | [docs/adr/](docs/adr/) |
+| 想查看视觉原型 | [assets/prototypes/](assets/prototypes/) |
 | 想贡献代码 | [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 ## 系统要求
