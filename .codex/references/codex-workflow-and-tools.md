@@ -3,6 +3,8 @@
 本文档记录当前 Codex 工作流、原生工具、hooks、MCP、plugins、skills、Computer Use / Browser Use 以及它们在 AreaMatrix 中的落点。
 
 > 说明：本文只描述 Codex 运行材料和协作方式，不是 AreaMatrix 产品语义的源事实。产品、架构、API 和用户体验仍以 `docs/` 为准。
+>
+> 读法：本文是能力盘点和历史吸收记录，不是日常任务入口；日常分流先读 [Codex Operating Layer Playbook](codex-operating-layer-playbook.md)，涉及 OpenAI / Codex 当前行为时重新核对官方文档。
 
 ## 当前结论
 
