@@ -18,6 +18,8 @@ small docs updates, and follow-up bugs from a completed workflow.
 - `tasks/done/`: completed lightweight task archive.
 - `tasks/backlog/`: candidate pool and planning/governance prompt packages. It
   is not current progress and does not enter the live runner.
+- `tasks/indexes/`: read-only task-facing indexes, including residual items that
+  may or may not be convertible into lightweight tasks.
 - `tasks/templates/`: reusable lightweight task templates.
 
 `tasks/` must not create a second workflow system. Do not add phase trees,
@@ -37,6 +39,7 @@ tasks/
 │       └── evidence.md
 ├── done/
 │   └── 2026/
+├── indexes/
 ├── backlog/
 └── templates/
     ├── task.yaml
@@ -47,6 +50,7 @@ tasks/
 
 `active/`, `done/`, and `templates/` may be absent until the first lightweight
 task is created. `backlog/` already exists and keeps its candidate-pool meaning.
+`indexes/` is read-only by default and must not become a second task state store.
 
 ## Naming
 
@@ -202,6 +206,7 @@ Keep these surfaces distinct:
 workflow status      version workflow progress, keyed by v1 / v2 / v-template
 lightweight tasks    small independent task progress, keyed by 1 / 2 / 3
 backlog packages     candidate package browser, keyed by package slug
+residual indexes     release/reference/template leftovers, keyed by residual id
 ```
 
 ## Archive Rule

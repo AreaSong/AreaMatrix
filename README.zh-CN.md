@@ -85,6 +85,9 @@ AreaMatrix 把源码、规划治理和本地运行材料分开看：
 `workflow/` 承载规划、归档和参考材料；轻量任务状态只看 `tasks/active/` 与
 `tasks/done/`；已 closed 的 backlog prompt package 只是历史候选材料；`.codex/`、
 `.agents/skills/`、`dev`、`task-loop` 和 `scripts/` 是 Codex 运行工具层，不是产品源事实。
+release / reference / template 遗留项统一索引在 `workflow/residuals/` 和
+`workflow/versions/<version>/residuals/`；这些索引只链接回源文件，不替代 `docs/`、
+release evidence 或任务状态。
 
 ## 文档导览
 

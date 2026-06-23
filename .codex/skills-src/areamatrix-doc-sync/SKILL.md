@@ -15,6 +15,7 @@ Trigger it for changes to `docs/**`, Core API, `core/area_matrix.udl`, prompt ma
 2. [.ai-governance/README.md](../../../.ai-governance/README.md)
 3. [docs/README.md](../../../docs/README.md)
 4. [workflow/versions/v1-mvp/execution/README.md](../../../workflow/versions/v1-mvp/execution/README.md) when prompts or manifests are involved.
+5. [workflow/residuals/README.md](../../../workflow/residuals/README.md) when a change affects blocker/reference/template/task residual status.
 
 ## References
 
@@ -23,6 +24,7 @@ Trigger it for changes to `docs/**`, Core API, `core/area_matrix.udl`, prompt ma
 - [../areamatrix-file-safety/SKILL.md](../areamatrix-file-safety/SKILL.md): file-safety invariants when docs or prompts mention user files, metadata, import, recovery, reindex, FSEvents, or iCloud.
 - [../areamatrix-workflow-planning/SKILL.md](../areamatrix-workflow-planning/SKILL.md): v* workflow docs are planning artifacts until promoted.
 - [../areamatrix-validation-driver/SKILL.md](../areamatrix-validation-driver/SKILL.md): choose checks after drift fixes.
+- [../areamatrix-residual-ledger/SKILL.md](../areamatrix-residual-ledger/SKILL.md): residual ledger is an index layer and must point back to authoritative docs, evidence, or closeout sources.
 
 ## Workflow
 
@@ -36,3 +38,4 @@ Trigger it for changes to `docs/**`, Core API, `core/area_matrix.udl`, prompt ma
 - Do not make `.codex/` the authority for product behavior.
 - Do not broaden task scope while syncing docs.
 - Do not change product semantics in `.codex/skills-src/**`, `.agents/skills/**`, `.codex/references/**`, or `tasks/backlog/**`; update `docs/**` or `.ai-governance/**` first when the source rule itself changes.
+- Do not make `workflow/residuals/**` the only place where product behavior, release evidence, or task state is defined.

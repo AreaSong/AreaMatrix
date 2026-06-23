@@ -3,6 +3,7 @@
 This directory tracks versioned workflow instances, Stage 1 MVP archives, and future planning work.
 
 - `v1-mvp/` archives the completed MVP workflow. The 637-task queue is complete and the closeout decision is recorded, but formal alpha remains blocked by deferred release evidence.
+- `v1-mvp/residuals/` indexes remaining release evidence blockers, accepted exceptions, and historical markers without moving the evidence or closeout sources.
 - `v1-mvp/source-docs/` also archives the historical internal Stage 1/2/3/4 specs from the MVP task queue. Those numbers are not future workflow versions.
 - `v2/`, `v3/`, and `v4/` are intentionally absent until those real future versions are created.
 - `source-docs-guide.md` explains how to read the archived Stage 1 MVP source docs, including page specs, Core capability specs, and control maps.

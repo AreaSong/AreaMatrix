@@ -18,6 +18,7 @@ Trigger it for new `v*` versions, discussion gate decisions, workflow templates,
 5. [workflow/templates/README.md](../../../workflow/templates/README.md)
 6. [tasks/backlog/README.md](../../../tasks/backlog/README.md) when backlog prompt packages are involved.
 7. [workflow/versions/v1-mvp/execution/README.md](../../../workflow/versions/v1-mvp/execution/README.md) when prompt drafts or live execution boundaries are involved.
+8. [workflow/residuals/README.md](../../../workflow/residuals/README.md) when planning may be affected by existing blockers, accepted exceptions, or historical references.
 
 ## References
 
@@ -27,6 +28,7 @@ Trigger it for new `v*` versions, discussion gate decisions, workflow templates,
 - [../../references/codex-automations-cloud-worktrees-gate.md](../../references/codex-automations-cloud-worktrees-gate.md): Automations / Cloud / Worktrees trigger conditions, forbidden writes, owners, and validation.
 - [../areamatrix-doc-sync/SKILL.md](../areamatrix-doc-sync/SKILL.md): source-of-truth alignment for docs and planning artifacts.
 - [../areamatrix-task-loop/SKILL.md](../areamatrix-task-loop/SKILL.md): live execution begins only after approved promotion into `workflow/versions/<version>/execution/**`.
+- [../areamatrix-residual-ledger/SKILL.md](../areamatrix-residual-ledger/SKILL.md): distinguish real blockers, accepted exceptions, reference-only, and template-only residuals before planning new work.
 
 ## Workflow
 
@@ -36,9 +38,10 @@ Trigger it for new `v*` versions, discussion gate decisions, workflow templates,
 4. Review `docs-discussion.md` for Exact Docs, user paths, non-goals, contention points, and acceptance boundary.
 5. Review `middle-layer-discussion.md` for how changes, plans, drafts, queue, and promotion preview will carry the feature.
 6. Review `decisions.yaml`; do not enter `changes/` until `allow_changes: true` and blockers/open questions are resolved or explicitly deferred.
-7. For every plan, draft, queue candidate, or backlog prompt package, require goal, non-goals, source of truth, owner / landing, exact file paths, ordered steps, validation commands, and blocked / rollback wording.
-8. Keep copy-ready implementation prompts and verify-ready read-only acceptance prompts as separate artifacts.
-9. Run `./dev workflow discuss --version <version> doctor`, then `./dev workflow doctor`.
+7. Check the residual ledger for relevant open, blocked-external, blocked-decision, accepted-exception, reference-only, or template-only items.
+8. For every plan, draft, queue candidate, or backlog prompt package, require goal, non-goals, source of truth, owner / landing, exact file paths, ordered steps, validation commands, and blocked / rollback wording.
+9. Keep copy-ready implementation prompts and verify-ready read-only acceptance prompts as separate artifacts.
+10. Run `./dev workflow discuss --version <version> doctor`, then `./dev workflow doctor`.
 
 ## Guardrails
 
@@ -50,3 +53,4 @@ Trigger it for new `v*` versions, discussion gate decisions, workflow templates,
 - Do not bypass the discussion gate for new versions just because a change YAML can be written.
 - Keep this skill focused on planning and gates; use `areamatrix-doc-sync` for drift checks.
 - Do not reuse global live task labels for future versions; keep version-local numbering until an explicit promotion mapping exists.
+- Do not treat residual ledger entries as live tasks unless they are explicitly converted through `tasks/active/**` or workflow promotion with approval.

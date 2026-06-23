@@ -5,6 +5,7 @@
 - `workflow/` 是大功能、版本、重构和优化的生命周期系统。
 - `workflow/versions/<version>/execution/` 是标准化后的版本内执行层，用于承载通过 promotion 的 copy-ready / verify-ready / manifest / progress / checkpoint / reports。
 - `workflow/versions/v1-mvp/execution/**` 是 Stage 1 历史执行队列；不得为了视觉整理重写、清空或重置。
+- `workflow/residuals/**` 与 `workflow/versions/<version>/residuals/**` 是遗留项索引层；只记录来源、状态、影响和关闭条件，不替代 `docs/`、evidence、closeout、tasks 或 execution。
 - `./task-loop` 只执行 live queue，不负责需求讨论、版本决策或 promotion 审批。
 
 ## 标准顺序
@@ -43,6 +44,7 @@ docs
 - `workflow/` 不能在讨论、预览、plan、queue 或 promotion preview 阶段写 live execution 材料。
 - `middle-layer/` 不能替代 `docs/` 的产品语义；它只承接和细化已确认的 docs 意图。
 - v1 historical execution queue 已完成并归档为 `workflow/versions/v1-mvp/execution/`；不得重写历史 execution、`progress.json` 或 task-loop evidence。
+- residual ledger 不能写 live execution、`progress.json`、task-loop logs、runner lock、checkpoint 或 run summaries，也不能把 reference-only / template-only / accepted-exception 自动转成任务。
 - promotion preview 只是映射预演，不等于真实 promote/apply。
 - 产品行为仍以 `docs/` 为源事实；workflow 只能记录、拆分和追踪，不替代 docs。
 

@@ -80,6 +80,10 @@ Status boundaries: product facts come from `docs/`, `core/`, `apps/`, and
 closed backlog prompt packages are historical candidates; Codex runtime
 material in `.codex/`, `.agents/skills/`, `dev`, `task-loop`, and `scripts/`
 is tooling, not product source of truth.
+Residual release / reference / template items are indexed under
+`workflow/residuals/` and `workflow/versions/<version>/residuals/`; those indexes
+link back to their source files and do not replace `docs/`, release evidence, or
+task state.
 
 ## Quick links
 

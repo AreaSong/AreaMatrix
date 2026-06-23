@@ -1,0 +1,68 @@
+version: 1
+updated: "2026-06-23"
+scope: global
+authority: index-only
+source_of_truth:
+  product: docs/
+  release_evidence: workflow/versions/<version>/evidence/
+  closeout: workflow/versions/<version>/closeout/
+  task_state: tasks/active/ and tasks/done/
+statuses:
+  - open
+  - blocked-external
+  - blocked-decision
+  - deferred
+  - reference-only
+  - template-only
+  - accepted-exception
+  - closed
+items:
+  - id: global-ref-areaflow
+    status: reference-only
+    type: historical-reference
+    title: AreaFlow vision reference
+    source: workflow/references/areaflow-vision.md
+    owner: workflow-planning
+    current_impact: none
+    executable_task: false
+    promotion_required: true
+    close_condition: Keep marked as non-current reference unless AreaFlow is separately chartered as an independent project.
+    notes: Does not define current AreaMatrix product scope, active backlog, or task-loop work.
+  - id: global-template-vtemplate
+    status: template-only
+    type: template-reference
+    title: v-template blocked-by-design artifacts
+    source: workflow/versions/v-template/README.md
+    owner: workflow-planning
+    current_impact: none
+    executable_task: false
+    promotion_required: true
+    close_condition: Remains template-only; real versions must be created separately from discussion gate.
+    notes: apply --write is intentionally blocked for v-template.
+  - id: global-ref-closed-backlog-packages
+    status: reference-only
+    type: backlog-reference
+    title: Closed backlog prompt packages
+    source: tasks/backlog/README.md
+    owner: workflow-planning
+    current_impact: none
+    executable_task: false
+    promotion_required: true
+    close_condition: Keep closed packages read-only unless a future planning gate explicitly re-slices them.
+    notes: Current backlog prompt package count is 5 closed, 0 open.
+  - id: global-marker-product-doc-status-words
+    status: reference-only
+    type: product-doc-marker
+    title: Product docs use unfinished/pending/blocked as product behavior states
+    source: docs/product/user-stories.md
+    owner: doc-sync
+    current_impact: none
+    executable_task: false
+    promotion_required: false
+    close_condition: Product docs avoid task-like checkbox ambiguity while retaining product behavior semantics.
+    notes: Examples include unfinished import recovery and iCloud downloading states; these are product behavior, not task state.
+version_residuals:
+  - version: v1-mvp
+    source: workflow/versions/v1-mvp/residuals/residuals.yaml
+    status: blocked-external
+    summary: Formal Stage 1 alpha remains blocked by release evidence; technical queue is complete.

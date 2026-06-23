@@ -31,6 +31,8 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 - Vibe-Skills 横向能力筛选矩阵：`.codex/references/vibe-skills-capability-screening.md`
 - Vibe 专业 skill 触发矩阵：`.codex/references/vibe-professional-skill-trigger-matrix.md`
 - 外部能力接入门禁：`.ai-governance/workflows/external-capability-admission.md`
+- Residual ledger：`workflow/residuals/README.md`
+- v1-mvp residuals：`workflow/versions/v1-mvp/residuals/README.md`
 
 ## 项目源事实快捷入口
 
@@ -56,6 +58,7 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 - `areamatrix-doc-sync`：检查 docs / API / UDL / prompt manifest 漂移。
 - `areamatrix-file-safety`：用户文件、`.areamatrix/` 元数据与恢复边界。
 - `areamatrix-workflow-planning`：v* 版本 planning gate、middle-layer handoff 和 prompt 生成前门禁。
+- `areamatrix-residual-ledger`：release blocker、accepted exception、historical reference、template-only 与 task-facing residual 索引。
 
 ## Health Checks
 

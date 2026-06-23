@@ -10,6 +10,7 @@ hard-migrated to `workflow/versions/v1-mvp/execution/**`.
 - `workflow/`: requirement flow, version planning, middle-layer ledgers, docs-change ledger, drafts, queue candidates, execution evidence, projection, and archive policy.
 - `workflow/versions/<version>/execution/`: target standard location for approved copy-ready / verify-ready task execution materials.
 - `workflow/versions/v1-mvp/execution/**`: Stage 1 historical execution queue and current v1 task-loop runtime.
+- `workflow/residuals/`: cross-version residual index for release blockers, accepted exceptions, historical references, and template-only material. It is index-only and does not replace `docs/`, `evidence/`, `closeout/`, `tasks/active/**`, or live execution queues.
 - `./task-loop`: runner that executes approved tasks; it does not make requirement decisions.
 
 For the conceptual architecture behind these boundaries, see

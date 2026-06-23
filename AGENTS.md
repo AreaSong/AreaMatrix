@@ -18,6 +18,7 @@
 - AI 协作规则的统一源事实是 `.ai-governance/`。
 - Codex 专用运行材料放在 `.codex/`，不是业务语义的权威来源。
 - Prompt 执行层在 `workflow/versions/<version>/execution/`，任务执行时以 task 文件和 manifest 的组合为边界；v1 历史队列位于 `workflow/versions/v1-mvp/execution/`。
+- 遗留问题索引位于 `workflow/residuals/**` 和 `workflow/versions/<version>/residuals/**`；它只链接权威源文件，不替代 `docs/`、evidence、closeout、tasks 或 execution。
 - 对外 Core API 变化必须先对齐 `docs/api/core-api.md`，再更新 `core/area_matrix.udl`。
 
 ## 工作方式

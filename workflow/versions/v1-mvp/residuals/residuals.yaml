@@ -1,0 +1,99 @@
+version: 1
+updated: "2026-06-23"
+scope: v1-mvp
+authority: index-only
+version_status:
+  technical_queue: complete
+  task_count: 637
+  formal_alpha: blocked
+  release_blocker_policy: deferred-until-formal-distribution
+source_of_truth:
+  release_checklist: workflow/versions/v1-mvp/evidence/release-checklist.md
+  recovery_scenarios: workflow/versions/v1-mvp/evidence/recovery-scenarios.md
+  closeout_decision: workflow/versions/v1-mvp/closeout/closeout-decision.md
+  closeout_yaml: workflow/versions/v1-mvp/closeout/closeout.yaml
+  checkpoint_accepted_exceptions: workflow/versions/v1-mvp/closeout/checkpoint-accepted-exceptions.md
+items:
+  - id: v1-rl-002
+    status: blocked-external
+    type: release-evidence
+    title: iCloud placeholder real-environment smoke
+    source: workflow/versions/v1-mvp/evidence/release-checklist.md
+    supporting_sources:
+      - workflow/versions/v1-mvp/evidence/recovery-scenarios.md
+    owner: release
+    current_impact: formal-alpha-blocked
+    executable_task: false
+    promotion_required: false
+    blocker: no-real-icloud-placeholder-environment
+    close_condition: Real iCloud placeholder smoke evidence is recorded and release checklist is updated.
+    validation:
+      - Manual smoke on a real iCloud placeholder environment.
+      - Record mdls downloading status, UI action, retry result, repo file state, and DB row evidence.
+  - id: v1-rl-003
+    status: blocked-external
+    type: release-evidence
+    title: Developer ID signing, notarization, stapling, formal DMG, and clean Mac first launch
+    source: workflow/versions/v1-mvp/evidence/release-checklist.md
+    supporting_sources:
+      - docs/development/release.md
+      - docs/development/build.md
+    owner: release
+    current_impact: formal-alpha-blocked
+    executable_task: false
+    promotion_required: false
+    blocker: no-paid-apple-developer-program-and-no-clean-mac-evidence
+    close_condition: Developer ID signed app, accepted notarization log, stapled DMG, formal checksum, and clean Mac first launch evidence are recorded.
+    validation:
+      - ./dev release preflight
+      - xcrun notarytool submit
+      - stapler validation
+      - clean Mac first-launch smoke
+  - id: v1-rl-004
+    status: blocked-decision
+    type: release-evidence
+    title: Final v0.1.0 tag
+    source: workflow/versions/v1-mvp/evidence/release-checklist.md
+    owner: release
+    current_impact: formal-alpha-blocked
+    executable_task: false
+    promotion_required: false
+    blocker: formal-alpha-gates-not-closed
+    close_condition: Formal release candidate commit exists, release gates are closed, and final v0.1.0 tag is created and pushed.
+  - id: v1-rl-006
+    status: blocked-decision
+    type: release-evidence
+    title: Alpha tester feedback channel
+    source: workflow/versions/v1-mvp/evidence/release-checklist.md
+    owner: release
+    current_impact: formal-alpha-blocked
+    executable_task: false
+    promotion_required: false
+    blocker: no-alpha-tester-list-or-feedback-entry-recorded
+    close_condition: Alpha tester list, GitHub Discussions or issue template entry, and feedback route are recorded.
+  - id: v1-ex-001
+    status: accepted-exception
+    type: closeout-exception
+    title: 35 historical checkpoint gaps accepted as closeout exceptions
+    source: workflow/versions/v1-mvp/closeout/checkpoint-accepted-exceptions.md
+    supporting_sources:
+      - workflow/versions/v1-mvp/closeout/checkpoint-gaps.md
+      - workflow/versions/v1-mvp/closeout/checkpoint-evidence-index.md
+    owner: git-checkpoint
+    current_impact: none
+    executable_task: false
+    promotion_required: false
+    close_condition: Already accepted; do not rewrite progress.json, task-loop logs, run summaries, or Git history.
+  - id: v1-ref-003-1-task-05
+    status: deferred
+    type: release-evidence
+    title: 3-1/task-05 release-gate review item without task-loop verify evidence
+    source: workflow/versions/v1-mvp/closeout/checkpoint-gaps.md
+    supporting_sources:
+      - workflow/versions/v1-mvp/evidence/release-checklist.md
+      - workflow/versions/v1-mvp/evidence/release-notes/release-notes-0.1.0.md
+    owner: release
+    current_impact: formal-alpha-blocked
+    executable_task: false
+    promotion_required: false
+    close_condition: Handle through release evidence review; do not fabricate task-loop verify evidence.

@@ -1,0 +1,6 @@
+interface:
+  display_name: "AreaMatrix Residual Ledger"
+  short_description: "Inspect unresolved release, reference, and task residues"
+  default_prompt: "Use $areamatrix-residual-ledger to explain which AreaMatrix residual items are real blockers, references, templates, or task candidates."
+policy:
+  allow_implicit_invocation: true
