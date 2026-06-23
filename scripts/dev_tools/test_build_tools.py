@@ -169,6 +169,88 @@ class BuildToolsTest(unittest.TestCase):
                 ],
             )
 
+    def test_quality_check_passes_minimal_owner_fixture(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            files = {
+                "docs/development/coding-standards.md": "\n".join(
+                    [
+                        "# 编码规范",
+                        "注释解释 why",
+                        "单函数 ≤ 50 行",
+                        "嵌套 ≤ 3 层",
+                        "./dev check quality",
+                    ]
+                ),
+                "CODE_REVIEW.md": "# Review\n\n阻断项\n\n数据流、控制流、错误流\n",
+                "workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md": "注释只解释 WHY\nmock-only\n",
+                "scripts/dev_tools/swiftlint.yml": "function_body_length: 50\nfile_length: 500\n",
+                "scripts/dev_tools/swiftformat.conf": "--maxwidth 120\n",
+                "core/AGENTS.md": "Core 保持平台无关\n",
+                "apps/macos/AGENTS.md": "SwiftUI 视图只做展示\nCoreBridge\n",
+                "docs/architecture/data-model.md": "# Data model\n",
+                "docs/architecture/migration.md": "migration rollback 回滚\n",
+                "docs/development/release.md": "Developer ID notarization 公证\n",
+                "scripts/dev_tools/release.py": "# release helper\n",
+                ".codex/skills-src/README.md": "areamatrix-residual-ledger\n",
+                ".codex/references/index.md": "./dev check quality\n",
+                ".codex/references/codex-workflow-and-tools.md": "已有 8 个 AreaMatrix skills\n",
+                "tasks/backlog/codex-operating-layer-boundary-regression.md": "现有 8 个 repo-local skills\n",
+                "docs/development/ci-governance.md": "./dev check quality\n",
+                ".github/workflows/governance-ci.yml": "./dev check quality\n",
+                ".codex/skills-src/areamatrix-validation-driver/SKILL.md": "macOS app\n",
+                ".codex/skills-src/areamatrix-doc-sync/SKILL.md": "Core API and UDL\n",
+                ".codex/skills-src/areamatrix-file-safety/SKILL.md": "DB metadata and migrations\n",
+                ".codex/skills-src/areamatrix-enterprise-governance/SKILL.md": "CI workflows\n",
+                ".codex/skills-src/areamatrix-residual-ledger/SKILL.md": "release blockers\n",
+                ".codex/skills-src/areamatrix-workflow-planning/SKILL.md": "v* workflow\n",
+                ".codex/skills-src/areamatrix-git-checkpoint/SKILL.md": "checkpoint\n",
+            }
+            for relative, text in files.items():
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(text, encoding="utf-8")
+
+            self.assertEqual(checks.run_quality_check(root), 0)
+
+    def test_quality_check_rejects_stale_skill_count(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            required = {
+                "docs/development/coding-standards.md": "注释解释 why\n单函数 ≤ 50 行\n嵌套 ≤ 3 层\n./dev check quality\n",
+                "CODE_REVIEW.md": "阻断项\n数据流、控制流、错误流\n",
+                "workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md": "注释只解释 WHY\nmock-only\n",
+                "scripts/dev_tools/swiftlint.yml": "function_body_length: 50\nfile_length: 500\n",
+                "scripts/dev_tools/swiftformat.conf": "--maxwidth 120\n",
+                "core/AGENTS.md": "平台无关\n",
+                "apps/macos/AGENTS.md": "SwiftUI 视图只做展示\nCoreBridge\n",
+                "docs/architecture/data-model.md": "",
+                "docs/architecture/migration.md": "rollback\n",
+                "docs/development/release.md": "notarization\n",
+                "scripts/dev_tools/release.py": "",
+                ".codex/skills-src/README.md": "areamatrix-residual-ledger\n",
+                ".codex/references/index.md": "./dev check quality\n",
+                ".codex/references/codex-workflow-and-tools.md": "已有 " + "7 个 " + "AreaMatrix skills\n",
+                "tasks/backlog/codex-operating-layer-boundary-regression.md": "现有 8 个 repo-local skills\n",
+                "docs/development/ci-governance.md": "./dev check quality\n",
+                ".github/workflows/governance-ci.yml": "./dev check quality\n",
+                ".codex/skills-src/areamatrix-validation-driver/SKILL.md": "macOS app\n",
+                ".codex/skills-src/areamatrix-doc-sync/SKILL.md": "Core API UDL\n",
+                ".codex/skills-src/areamatrix-file-safety/SKILL.md": "DB metadata migrations\n",
+                ".codex/skills-src/areamatrix-enterprise-governance/SKILL.md": "CI workflows\n",
+                ".codex/skills-src/areamatrix-residual-ledger/SKILL.md": "release blockers\n",
+                ".codex/skills-src/areamatrix-workflow-planning/SKILL.md": "v* workflow\n",
+                ".codex/skills-src/areamatrix-git-checkpoint/SKILL.md": "checkpoint\n",
+            }
+            for relative, text in required.items():
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(text, encoding="utf-8")
+
+            self.assertEqual(checks.run_quality_check(root), 1)
+
     def test_core_build_checks_required_targets_before_bindgen_fallback(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

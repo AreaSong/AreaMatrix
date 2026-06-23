@@ -34,6 +34,7 @@ Use these gates when reviewing enterprise governance impact.
 ```bash
 ./dev check governance
 ./dev check skills
+./dev check quality
 ./dev check task-loop
 ./dev check prompts
 ./dev check diff

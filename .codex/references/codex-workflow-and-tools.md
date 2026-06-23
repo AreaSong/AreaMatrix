@@ -553,7 +553,7 @@ Automations / Cloud / Worktrees 的细化门禁见 [Codex Automations / Cloud / 
 | Task-loop closed repair loop | `./task-loop run`、verify fail retry、summary、progress、lock | 已有 | 已实现 copy -> verify -> retry -> PASS -> checkpoint | 不补主结构 | 支撑长队列静默推进 | checkpoint 失败后不得继续下一 task | P0 保持 |
 | Git checkpoint | `GIT_CHECKPOINT=commit|push|off`、git-checkpoint skill、summary evidence | 已有 | PASS task 默认本地 commit，push 显式 opt-in | 不补主结构 | 保留可回溯证据链 | dirty worktree 会挡 checkpoint，不能混入既有改动 | P0 保持 |
 | Validation matrix | validation-driver、`./dev check task`、Rust/macOS/docs/prompt gates | 已有 | 已按改动路径选择最小充分验证集 | 不补主结构 | 防止每个 task 都跑过宽或过窄验证 | macOS test fallback 只适用于明确 sandbox 限制 | P0 保持 |
-| Repo-local Skills | `.codex/skills-src/**`、`.agents/skills/**` | 已有 | 已有 7 个 AreaMatrix skills，且 `./dev check skills` 通过 | 继续强化内容 | 把重复治理知识固化为可复用视角 | skill 语义变更先同步 `.ai-governance/` | P1 持续 |
+| Repo-local Skills | `.codex/skills-src/**`、`.agents/skills/**` | 已有 | 已有 8 个 AreaMatrix skills，且 `./dev check skills` / `./dev check quality` 通过 | 继续强化内容 | 把重复治理知识固化为可复用视角 | skill 语义变更先同步 `.ai-governance/` | P1 持续 |
 | OpenAI Docs MCP | `openaiDeveloperDocs` MCP 已启用 | 部分已有 | 工具已启用，但使用规则还未成为所有 OpenAI/Codex 判断的硬习惯 | 建议补规则 | 涉及 OpenAI/Codex/API/model 时默认先查官方 | 不把 OpenAI docs 用作 AreaMatrix 产品 SSOT | P1 |
 | Context7 / DeepWiki / time MCP | `context7`、`mcp-deepwiki`、`mcp-server-time` | 部分已有 | 工具已启用，但按场景选用的规则还可更清晰 | 建议补轻规则 | 第三方库、外部 repo、时间查询不靠记忆 | 外部资料不能覆盖本仓库 docs | P2 |
 | Browser Use | Browser plugin、in-app browser feature | 部分已有 | 能力启用，但 AreaMatrix 是 macOS 原生 app，不是主验收面 | 不急补 | 用于 docs preview、localhost、file URL 验证 | 不替代 macOS app 测试 | P3 |
@@ -600,7 +600,7 @@ Automations / Cloud / Worktrees 的细化门禁见 [Codex Automations / Cloud / 
 | P1 | OpenAI Docs MCP 规则 | 固化“涉及 OpenAI/Codex/API/model 最新判断时优先查官方 MCP” | Codex 官方 docs、openaiDeveloperDocs MCP | `.ai-governance` 或 `.codex/references` 规则补充 | 以后不靠旧记忆声称最新 |
 | P1 | repo-local warn-only / read-only hooks | 设计只读 hooks guardrail，先提示 live runner、dirty worktree、危险路径和验证缺口 | Codex hooks | [hooks guardrail runbook](hooks-guardrail-runbook.md)；未来再评估 `.codex/hooks.json` | hooks 只提醒或补充上下文，不自动修改文件，不 block / deny / continue |
 | P1 | Computer Use UI smoke | 为 macOS SwiftUI 任务补真实 UI smoke 路径 | Codex Computer Use | [Computer Use macOS UI smoke runbook](computer-use-macos-ui-smoke-runbook.md) | UI 任务除命令验证外有窗口、点击、截图或操作证据 |
-| P1 | AreaMatrix skills 强化 | 强化现有 7 个 repo-local skills 的触发和边界 | AreaMatrix 当前 skills | skills-src / index / validation matrix 的小步补强 | 不新增重复 skill；先复用现有 skill owner |
+| P1 | AreaMatrix skills 强化 | 强化现有 8 个 repo-local skills 的触发和边界 | AreaMatrix 当前 skills | skills-src / index / validation matrix / quality smoke 的小步补强 | 不新增重复 skill；先复用现有 skill owner |
 | P2 | Subagent 边界 | 定义并行 agent 的使用边界、ownership 和禁止区 | Codex Subagents、Vibe subagent patterns | [subagent boundaries runbook](subagent-boundaries-runbook.md) / `.ai-governance` 规则 | 只读审计可并行；写入必须拆分 disjoint write set |
 | P2 | Vibe-Skills 横向能力筛选 | 从 Vibe-Skills 中筛选调试、TDD、验证、审查、安全、架构、文档类能力 | Vibe-Skills bundled skills | 候选吸收矩阵 | 每个候选标注吸收/不吸收/参考、原因和落点 |
 | P2 | 官方变更刷新 | 建立 Codex changelog / feature maturity 的刷新习惯 | Codex Releases / Feature Maturity | 轻量刷新步骤 | 每次更新“最新 Codex 工作流”前重新打开官方文档 |
