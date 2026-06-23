@@ -15,7 +15,7 @@ struct InitializingStepView: View {
     var body: some View {
         VStack(alignment: .center, spacing: 28) {
             header
-            
+
             VStack(spacing: 20) {
                 pathBox
                 recoverySection
@@ -25,7 +25,7 @@ struct InitializingStepView: View {
                 safetyText
             }
             .frame(maxWidth: 440)
-            
+
             footer
         }
         .areaMatrixOnboardingPanel()
@@ -37,11 +37,11 @@ struct InitializingStepView: View {
                 .controlSize(.large)
                 .accessibilityLabel(accessibilityProgressLabel)
                 .padding(.bottom, 8)
-                
+
             Text(isCreateMode ? "正在创建资料库" : "正在接管已有目录")
                 .font(.system(size: 32, weight: .semibold))
                 .accessibilityAddTraits(.isHeader)
-                
+
             Text(detailText)
                 .font(.title3)
                 .foregroundStyle(.secondary)
@@ -95,11 +95,11 @@ struct InitializingStepView: View {
                         .foregroundStyle(.orange)
                 }
             }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
-        .accessibilityElement(children: .combine)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+            .accessibilityElement(children: .combine)
         }
     }
 
@@ -154,7 +154,7 @@ struct InitializingStepView: View {
     private var footer: some View {
         HStack {
             Spacer()
-            
+
             if isCancellationRequested {
                 ProgressView()
                     .controlSize(.small)
@@ -265,14 +265,14 @@ struct InitDoneStepView: View {
     var body: some View {
         VStack(alignment: .center, spacing: 28) {
             header
-            
+
             VStack(spacing: 20) {
                 pathBox
                 summarySection
                 openErrorSection
             }
             .frame(maxWidth: 440)
-            
+
             footer
         }
         .areaMatrixOnboardingPanel()
@@ -284,11 +284,11 @@ struct InitDoneStepView: View {
                 .font(.system(size: 48, weight: .light))
                 .foregroundStyle(.green)
                 .padding(.bottom, 8)
-                
+
             Text("资料库已准备好")
                 .font(.system(size: 32, weight: .semibold))
                 .accessibilityAddTraits(.isHeader)
-                
+
             Text("AreaMatrix 已完成初始化。\n你现在可以浏览资料库，或把文件拖进窗口开始归档。")
                 .font(.title3)
                 .foregroundStyle(.secondary)
@@ -362,7 +362,7 @@ struct InitDoneStepView: View {
             }
 
             Spacer()
-            
+
             Button(action: onOpenRepository) {
                 Text(errorMapping == nil ? "打开资料库" : "重试")
                     .font(.body.weight(.medium))

@@ -163,22 +163,32 @@ struct AreaMatrixWorkflowDiorama: View {
         ZStack {
             pulse(
                 color: AreaMatrixTheme.Colors.purple,
-                x: pulseIn ? -35 : -100,
-                y: pulseIn ? 0 : -15,
+                offsetX: pulseIn ? -35 : -100,
+                offsetY: pulseIn ? 0 : -15,
                 visible: !pulseIn
             )
-            pulse(color: AreaMatrixTheme.Colors.purple, x: pulseIn ? -35 : -100, y: pulseIn ? 0 : 15, visible: !pulseIn)
-                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false).delay(0.75), value: pulseIn)
-            pulse(color: AreaMatrixTheme.Colors.emeraldLight, x: pulseOut ? 135 : 50, y: 0, visible: !pulseOut)
+            pulse(
+                color: AreaMatrixTheme.Colors.purple,
+                offsetX: pulseIn ? -35 : -100,
+                offsetY: pulseIn ? 0 : 15,
+                visible: !pulseIn
+            )
+            .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false).delay(0.75), value: pulseIn)
+            pulse(
+                color: AreaMatrixTheme.Colors.emeraldLight,
+                offsetX: pulseOut ? 135 : 50,
+                offsetY: 0,
+                visible: !pulseOut
+            )
         }
     }
 
-    private func pulse(color: Color, x: CGFloat, y: CGFloat, visible: Bool) -> some View {
+    private func pulse(color: Color, offsetX: CGFloat, offsetY: CGFloat, visible: Bool) -> some View {
         Circle()
             .fill(color)
             .frame(width: 8, height: 8)
             .shadow(color: color, radius: 8)
-            .offset(x: x, y: y)
+            .offset(x: offsetX, y: offsetY)
             .opacity(visible ? 1 : 0)
     }
 

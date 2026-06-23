@@ -199,7 +199,7 @@ struct AreaMatrixPrimaryActionLabel: View {
 
 struct AreaMatrixPrimaryButtonStyle: ButtonStyle {
     @State private var isHovered = false
-    
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body.weight(.medium))
@@ -224,7 +224,7 @@ struct AreaMatrixPrimaryButtonStyle: ButtonStyle {
 
 struct AreaMatrixSecondaryButtonStyle: ButtonStyle {
     @State private var isHovered = false
-    
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body.weight(.medium))

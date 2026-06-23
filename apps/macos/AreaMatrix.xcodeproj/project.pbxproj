@@ -18,6 +18,7 @@
 		0A0000000000000000000008 /* AreaMatrixShellTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000001A /* AreaMatrixShellTests.swift */; };
 		0A0000000000000000000009 /* area_matrix.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000001C /* area_matrix.swift */; };
 		0A000000000000000000000A /* ValidatePathStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000001F /* ValidatePathStepView.swift */; };
+		0A0000000000000000000F18 /* ValidatePathDisplaySupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F19 /* ValidatePathDisplaySupport.swift */; };
 		0A000000000000000000000B /* ValidatePathIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000020 /* ValidatePathIntegrationTests.swift */; };
 		0A000000000000000000000C /* InitializingStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000A0 /* InitializingStepView.swift */; };
 		0A000000000000000000000D /* InitializingStepIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000A1 /* InitializingStepIntegrationTests.swift */; };
@@ -378,6 +379,7 @@
 		0A000000000000000000001D /* area_matrixFFI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AreaMatrix/Bridge/UniFFI/area_matrixFFI.h; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000001E /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = AreaMatrix/Bridge/UniFFI/module.modulemap; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000001F /* ValidatePathStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/ValidatePathStepView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000F19 /* ValidatePathDisplaySupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/ValidatePathDisplaySupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000020 /* ValidatePathIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ValidatePathIntegrationTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000A0 /* InitializingStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/InitializingStepView.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000A1 /* InitializingStepIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/InitializingStepIntegrationTests.swift; sourceTree = SOURCE_ROOT; };
@@ -856,6 +858,7 @@
 				0A000000000000000000060B /* SearchRouteViews.swift */,
 				0A0000000000000000000617 /* CommandPaletteView.swift */,
 				0A000000000000000000001F /* ValidatePathStepView.swift */,
+				0A0000000000000000000F19 /* ValidatePathDisplaySupport.swift */,
 				0A00000000000000000000A0 /* InitializingStepView.swift */,
 				0A00000000000000000000A3 /* InitializingStepRow.swift */,
 				0A00000000000000000000F1 /* OnboardingIntroStepViews.swift */,
@@ -1482,6 +1485,7 @@
 				0A00000000000000000000D0 /* MainRepositoryContentView.swift in Sources */,
 				0A0000000000000000000009 /* area_matrix.swift in Sources */,
 				0A000000000000000000000A /* ValidatePathStepView.swift in Sources */,
+				0A0000000000000000000F18 /* ValidatePathDisplaySupport.swift in Sources */,
 				0A000000000000000000000C /* InitializingStepView.swift in Sources */,
 				0A00000000000000000000F4 /* InitFailedStepView.swift in Sources */,
 				0A00000000000000000000F0 /* OnboardingIntroStepViews.swift in Sources */,

@@ -82,7 +82,10 @@ struct AIClassificationSuggestionRouteView: View {
     private func recoverySheet(_ sheet: AIClassificationRecoverySheet) -> some View {
         switch sheet {
         case .localModelStatus:
-            LocalModelStatusView(model: LocalModelStatusModel(repoPath: repoPath), onClose: { presentedRecoverySheet = nil })
+            LocalModelStatusView(
+                model: LocalModelStatusModel(repoPath: repoPath),
+                onClose: { presentedRecoverySheet = nil }
+            )
         case .remoteConfig:
             RemoteModelConfigSheet(model: RemoteProviderConfigModel(repoPath: repoPath), onClose: {
                 presentedRecoverySheet = nil

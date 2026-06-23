@@ -16,14 +16,14 @@ struct InitFailedStepView: View {
     var body: some View {
         VStack(alignment: .center, spacing: 28) {
             header
-            
+
             VStack(spacing: 20) {
                 errorSummary
                 recoveryAdvice
                 diagnosticsSection
             }
             .frame(maxWidth: 440)
-            
+
             footer
         }
         .areaMatrixOnboardingPanel()
@@ -47,11 +47,11 @@ struct InitFailedStepView: View {
                 .font(.system(size: 48, weight: .light))
                 .foregroundStyle(.orange)
                 .padding(.bottom, 8)
-                
+
             Text("初始化未完成")
                 .font(.system(size: 32, weight: .semibold))
                 .accessibilityAddTraits(.isHeader)
-                
+
             Text("AreaMatrix 没能完成资料库初始化。\n你的原始文件没有被移动、重命名、删除或覆盖。")
                 .font(.title3)
                 .foregroundStyle(.secondary)
@@ -153,19 +153,19 @@ struct InitFailedStepView: View {
             Button(action: onQuit) { Text("退出") }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                
+
             Spacer()
-            
+
             Button("诊断报告...") {
                 isDiagnosticsPrivacyPresented = true
             }
             .controlSize(.large)
             .disabled(isActionInFlight)
-            
+
             Button("更改位置", action: onChangePath)
                 .controlSize(.large)
                 .disabled(isActionInFlight)
-                
+
             Button("重试", action: onRetry)
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)

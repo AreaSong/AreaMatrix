@@ -109,5 +109,5 @@ jobs:
         run: brew install swiftformat
       - name: Run SwiftFormat (check)
         if: steps.macos_sources.outputs.present == 'true'
-        run: swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI --cache ignore
+        run: swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData --cache ignore
         working-directory: apps/macos
