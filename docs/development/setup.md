@@ -107,7 +107,7 @@ cargo install cargo-edit        # cargo add/rm/upgrade
 ## 第 5 步：克隆仓库
 
 ```bash
-git clone https://github.com/<your-org>/AreaMatrix.git
+git clone https://github.com/AreaSong/AreaMatrix.git
 cd AreaMatrix
 ```
 

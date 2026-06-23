@@ -159,8 +159,9 @@ def run_governance_check(root: Path | None = None) -> int:
 
     _require_text(root, failures, "SECURITY.md", "GitHub Security Advisory", "private security advisory reporting")
     _forbid_text(root, failures, "SECURITY.md", "security@<your-domain>", "placeholder security email")
-    _require_text(root, failures, ".github/CODEOWNERS", "@AreaMatrix/maintainers", "AreaMatrix maintainers owner placeholder")
-    _require_text(root, failures, ".github/CODEOWNERS", "TODO: Replace @AreaMatrix/maintainers", "replacement note for placeholder owner")
+    _require_text(root, failures, ".github/CODEOWNERS", "@AreaSong", "AreaSong repository owner")
+    placeholder_owner_pattern = "|".join((r"<your" r"-org>", r"@" r"AreaMatrix/[A-Za-z0-9_.-]+"))
+    _forbid_text(root, failures, ".github/CODEOWNERS", placeholder_owner_pattern, "placeholder owner")
     _require_text(root, failures, ".github/PULL_REQUEST_TEMPLATE.md", "安全与风险|Security and Risk", "security and risk section")
     _require_text(
         root,
