@@ -838,7 +838,7 @@ def _run_core_checks(root: Path) -> int:
 def _swiftformat_lint_args(root: Path) -> list[str | Path]:
     config = root / "scripts/dev_tools/swiftformat.conf"
     require_file(config, "SwiftFormat configuration")
-    generated_excludes = "AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI"
+    generated_excludes = "AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData"
     return [
         "swiftformat",
         "--lint",

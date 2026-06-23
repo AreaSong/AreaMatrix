@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import AppKit
 import SwiftUI
 
@@ -120,21 +121,21 @@ extension MainWindow {
         case .loadingConfiguration, .welcome, .choosePath, .validatePath,
              .confirmRepositoryInitialization, .initializing, .initializationFailed,
              .initializationDone, .configurationError:
-            return true
+            true
         default:
-            return false
+            false
         }
     }
 
     private var onboardingScene: AreaMatrixAmbientScene {
         switch model.route {
-        case .choosePath: return .classify
-        case .validatePath: return .security
-        case .confirmRepositoryInitialization: return .security
-        case .initializing: return .tracking
-        case .initializationFailed: return .help
-        case .initializationDone: return .start
-        default: return .home
+        case .choosePath: .classify
+        case .validatePath: .security
+        case .confirmRepositoryInitialization: .security
+        case .initializing: .tracking
+        case .initializationFailed: .help
+        case .initializationDone: .start
+        default: .home
         }
     }
 

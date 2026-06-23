@@ -26,7 +26,7 @@ struct ValidatePathStepView: View {
     var body: some View {
         VStack(alignment: .center, spacing: 28) {
             ValidatePathHeader()
-            
+
             VStack(spacing: 24) {
                 ValidatePathSummary(displayedPath: displayedPath)
                 ValidatePathChecklist(displayedPath: displayedPath, validation: validation)
@@ -43,7 +43,7 @@ struct ValidatePathStepView: View {
                 )
             }
             .frame(maxWidth: 440)
-            
+
             ValidatePathFooter(
                 isInitializedRepository: validation?.isInitialized == true,
                 isValidating: isValidating,
@@ -79,11 +79,11 @@ private struct ValidatePathHeader: View {
                 .font(.system(size: 48, weight: .light))
                 .foregroundStyle(.blue)
                 .padding(.bottom, 8)
-                
+
             Text("校验资料库路径")
                 .font(.system(size: 32, weight: .semibold, design: .default))
                 .accessibilityAddTraits(.isHeader)
-                
+
             Text("AreaMatrix 会先检查路径状态，再进入初始化或打开流程。")
                 .font(.title3)
                 .foregroundStyle(.secondary)
@@ -419,21 +419,21 @@ private struct ValidatePathFooter: View {
         Button(action: onBack) { Text("返回").font(.body.weight(.medium)) }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
-            
+
         if showsCancel {
             Button(action: onCancel) { Text("取消").font(.body.weight(.medium)) }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
         }
-        
+
         Spacer()
-        
+
         Button(action: onChangePath) { Text("更改") }
             .controlSize(.large)
-            
+
         Button(action: onRetry) { Text("重试") }
             .controlSize(.large)
-            
+
         primaryButton
     }
 
@@ -442,12 +442,12 @@ private struct ValidatePathFooter: View {
             Button(action: onBack) { Text("返回").font(.body.weight(.medium)) }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                
+
             Spacer()
-            
+
             Button(action: onChangePath) { Text("更改位置") }
                 .controlSize(.large)
-                
+
             primaryButton
         }
     }
@@ -462,70 +462,5 @@ private struct ValidatePathFooter: View {
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
         .disabled(!canContinue)
-    }
-}
-
-private extension CoreErrorSeveritySnapshot {
-    var displayName: String {
-        switch self {
-        case .low: "Low"
-        case .medium: "Medium"
-        case .high: "High"
-        case .critical: "Critical"
-        }
-    }
-
-    var tint: Color {
-        switch self {
-        case .low: .yellow
-        case .medium: .orange
-        case .high: .red
-        case .critical: .purple
-        }
-    }
-}
-
-private extension CoreErrorRecoverabilitySnapshot {
-    var displayName: String {
-        switch self {
-        case .retryable: "Retryable"
-        case .userActionRequired: "User action required"
-        case .refreshRequired: "Refresh required"
-        case .fatal: "Fatal"
-        }
-    }
-}
-
-private enum ValidatePathCheckStatus: Equatable {
-    case checking
-    case passed
-    case warning
-    case failed
-
-    var text: String {
-        switch self {
-        case .checking: "Checking"
-        case .passed: "Passed"
-        case .warning: "Warning"
-        case .failed: "Failed"
-        }
-    }
-
-    var systemImage: String {
-        switch self {
-        case .checking: "clock"
-        case .passed: "checkmark.circle.fill"
-        case .warning: "exclamationmark.triangle.fill"
-        case .failed: "xmark.octagon.fill"
-        }
-    }
-
-    var tint: Color {
-        switch self {
-        case .checking: .secondary
-        case .passed: .green
-        case .warning: .orange
-        case .failed: .red
-        }
     }
 }

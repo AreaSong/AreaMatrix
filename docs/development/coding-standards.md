@@ -122,14 +122,14 @@ pub fn import_file(...) -> CoreResult<FileEntry> { ... }
 
 ### 工具
 
-- SwiftFormat: `cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI --cache ignore`
+- SwiftFormat: `cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData --cache ignore`
 - SwiftLint: `cd apps/macos && swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache`
 
 ### `scripts/dev_tools/swiftformat.conf`
 
 ```
 --swiftversion 5.9
---exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI
+--exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData
 --indent 4
 --maxwidth 120
 --trailing-commas never
@@ -146,8 +146,9 @@ pub fn import_file(...) -> CoreResult<FileEntry> { ... }
 disabled_rules:
   - trailing_comma
 excluded:
-  - AreaMatrix/Bridge/Generated
-  - AreaMatrix/Bridge/UniFFI
+  - ../../apps/macos/AreaMatrix/Bridge/Generated
+  - ../../apps/macos/AreaMatrix/Bridge/UniFFI
+  - ../../apps/macos/DerivedData
 line_length: 120
 file_length: 500
 function_body_length: 50
@@ -339,7 +340,7 @@ PR 必须通过：
 - [ ] `cargo clippy -- -D warnings`
 - [ ] `cargo test --workspace`
 - [ ] `cargo llvm-cov --fail-under-lines 70`（核心模块）
-- [ ] `cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI --cache ignore`
+- [ ] `cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData --cache ignore`
 - [ ] `cd apps/macos && swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache`
 - [ ] `xcodebuild test`
 - [ ] `./dev check quality`

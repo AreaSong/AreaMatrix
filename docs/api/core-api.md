@@ -4357,8 +4357,9 @@ let report = try await Task.detached(priority: .userInitiated) {
 
 C1-26 的用户确认后 metadata repair 入口。`RepairOptions.full_rescan = true`
 表示执行全量 filesystem rescan 并返回 `scan_session_id`；`false` 只允许执行
-metadata 层可恢复修复。`preserve_diagnostics_snapshot = true` 时，修复前必须先
-保留诊断快照，并在 `RepairReport.diagnostics_snapshot_path` 返回引用。
+metadata 层可恢复修复（metadata repair only）。`preserve_diagnostics_snapshot = true`
+时，修复前必须先保留诊断快照，并在 `RepairReport.diagnostics_snapshot_path`
+返回引用。
 
 输入：
 
@@ -4378,7 +4379,7 @@ metadata 层可恢复修复。`preserve_diagnostics_snapshot = true` 时，修�
 - `PermissionDenied`：`.areamatrix/` 诊断、DB 或 metadata 写入被阻断。
 - `Io`：文件系统遍历、诊断材料复制或 metadata 读取失败。
 - `Internal`：修复后 DB/FS 一致性检查无法满足。
-- 修复只处理 `.areamatrix/` metadata；不移动、不重命名、不删除、不覆盖用户文件。
+- 修复只处理 `.areamatrix/` metadata；不移动、不重命名、不删除用户文件，也不覆盖用户文件。
 - 修复失败不得删除用户文件，也不得清空已生成的诊断信息。
 - 成功后 Tree/List 可通过 `list_tree_json` / `list_files` 重新加载。
 

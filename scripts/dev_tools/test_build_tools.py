@@ -150,7 +150,7 @@ class BuildToolsTest(unittest.TestCase):
                     "--config",
                     config_dir / "swiftformat.conf",
                     "--exclude",
-                    "AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI",
+                    "AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData",
                     "--cache",
                     "ignore",
                 ],

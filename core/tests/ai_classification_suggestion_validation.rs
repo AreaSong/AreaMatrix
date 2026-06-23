@@ -15,8 +15,9 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
 
-const TASK: &str =
-    include_str!("../../workflow/versions/v1-mvp/execution/phase-4/4-2-stage3-ai/task-19-c3-04-validation.md");
+const TASK: &str = include_str!(
+    "../../workflow/versions/v1-mvp/execution/phase-4/4-2-stage3-ai/task-19-c3-04-validation.md"
+);
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");

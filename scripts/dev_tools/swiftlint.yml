@@ -2,8 +2,9 @@ disabled_rules:
   - trailing_comma
 
 excluded:
-  - AreaMatrix/Bridge/Generated
-  - AreaMatrix/Bridge/UniFFI
+  - ../../apps/macos/AreaMatrix/Bridge/Generated
+  - ../../apps/macos/AreaMatrix/Bridge/UniFFI
+  - ../../apps/macos/DerivedData
 
 line_length: 120
 file_length: 500

@@ -20,8 +20,9 @@ use area_matrix_core::{enable_remote_ai_provider, test_remote_ai_provider};
 
 pub const PRIVACY_RULES_KEY: &str = "ai_privacy_rules";
 
-const TASK: &str =
-    include_str!("../../../workflow/versions/v1-mvp/execution/phase-4/4-2-stage3-ai/task-44-c3-09-validation.md");
+const TASK: &str = include_str!(
+    "../../../workflow/versions/v1-mvp/execution/phase-4/4-2-stage3-ai/task-44-c3-09-validation.md"
+);
 const TESTING_DOC: &str = include_str!("../../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../../docs/api/core-api.md");
 const UDL: &str = include_str!("../../area_matrix.udl");

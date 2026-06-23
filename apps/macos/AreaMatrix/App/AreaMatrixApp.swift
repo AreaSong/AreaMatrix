@@ -337,7 +337,7 @@ final class AreaMatrixDockOpenAppDelegate: NSObject, NSApplicationDelegate {
     /// 监听系统外观变化，动态切换 Dock 图标
     private var appearanceObservation: NSKeyValueObservation?
 
-    func applicationDidFinishLaunching(_ notification: Notification) {
+    func applicationDidFinishLaunching(_: Notification) {
         updateDockIcon()
         appearanceObservation = NSApp.observe(
             \.effectiveAppearance, options: [.new]
