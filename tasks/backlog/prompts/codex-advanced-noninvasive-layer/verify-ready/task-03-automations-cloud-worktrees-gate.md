@@ -25,11 +25,11 @@
 
 ```bash
 git diff --name-only
-rg -n "Automation|Automations|Cloud|Worktree|worktrees|admission|progress|tasks/prompts|checkpoint|runner|canonical runtime|禁写|门禁" .ai-governance .codex tasks/backlog
+rg -n "Automation|Automations|Cloud|Worktree|worktrees|admission|progress|workflow/versions/<version>/execution|checkpoint|runner|canonical runtime|禁写|门禁" .ai-governance .codex tasks/backlog
 git worktree list
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .ai-governance .codex/references .codex/skills-src tasks/backlog
 ```
 

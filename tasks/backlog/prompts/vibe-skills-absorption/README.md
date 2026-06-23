@@ -1,6 +1,11 @@
 # Vibe-Skills Absorption Prompt Package
 
-本目录保存第二批“能力吸收类”可复制提示词。它不是 `tasks/prompts/**` live queue，不由 `./task-loop` 自动执行。
+本目录保存第二批“能力吸收类”可复制提示词。它不是 `workflow/versions/<version>/execution/**` live queue，不由 `./task-loop` 自动执行。
+
+- status: closed
+- closed: 2026-06-22
+- closeout: tasks/backlog/codex-operating-layer-boundary-regression.md
+- execution: not-live；仅作历史追溯和人工参考，不代表当前待执行任务
 
 本批只吸收方法价值，不安装、不启用、不复制 `../Vibe-Skills` 全量仓库，也不让 `vibe` / VCO runtime 接管 AreaMatrix。
 
@@ -15,8 +20,8 @@
 
 通用边界：
 
-- 不修改 `tasks/prompts/**` live queue。
-- 不写 `tasks/prompts/_shared/progress.json`、task-loop logs、run summaries、runner lock 或 Git checkpoint 状态。
+- 不修改 `workflow/versions/<version>/execution/**` live queue。
+- 不写 `workflow/versions/<version>/execution/_shared/progress.json`、task-loop logs、run summaries、runner lock 或 Git checkpoint 状态。
 - 不启动第二个 `./task-loop`。
 - 不安装或启用 Vibe-Skills 全量 skill 仓库。
 - 不新增重复 repo-local skill；优先补现有 AreaMatrix skill owner。

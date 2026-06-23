@@ -27,11 +27,11 @@
 ```bash
 git diff --name-only
 find .ai-governance .codex/references .codex/skills-src tasks/backlog/prompts -maxdepth 3 -type f | sort
-rg -n "source of truth|源事实|owner|live mainline|tasks/prompts|progress|Vibe|runtime|candidate|候选" tasks/backlog .ai-governance .codex/references .codex/skills-src
+rg -n "source of truth|源事实|owner|live mainline|workflow/versions/<version>/execution|progress|Vibe|runtime|candidate|候选" tasks/backlog .ai-governance .codex/references .codex/skills-src
 ./dev backlog list
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- tasks/backlog .codex/references
 ```
 

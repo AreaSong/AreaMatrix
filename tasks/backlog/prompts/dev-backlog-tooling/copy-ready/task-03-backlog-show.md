@@ -18,7 +18,7 @@
 
 - 不执行 prompt。
 - 不自动进入验收。
-- 不修改 `tasks/prompts/**`。
+- 不修改 `workflow/versions/<version>/execution/**`。
 - 不写 progress、logs、run summaries、runner lock、checkpoint。
 - 不提供 promotion/apply。
 
@@ -56,7 +56,7 @@
 
 ## 禁止修改
 
-- `tasks/prompts/**`
+- `workflow/versions/<version>/execution/**`
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
@@ -89,9 +89,9 @@ python3 -m unittest scripts.dev_tools.test_backlog_tools
 ./dev backlog show dev-backlog-tooling --task 1 --mode copy
 ./dev backlog show dev-backlog-tooling --task 1 --mode verify
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 ./task-loop check
 git diff --check -- scripts/dev_tools scripts/task_loop tasks/backlog
 ```
 
-汇报时说明 task 映射规则、错误语义、只读保证和未触碰 `tasks/prompts/**`。
+汇报时说明 task 映射规则、错误语义、只读保证和未触碰 `workflow/versions/<version>/execution/**`。

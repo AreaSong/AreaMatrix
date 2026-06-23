@@ -23,14 +23,21 @@
 
 ## 自动任务循环
 
-任务量较大时，可以用 `./task-loop run` 串联 copy-ready 与 verify-ready：
+任务量较大且任务已通过 workflow promotion 进入版本内 `execution/` 后，可以用
+`./task-loop run` 串联 copy-ready 与 verify-ready。当前仓库中的 v1 实例已经完成
+并归档，`./task-loop` 主要用于 v1 历史队列审计、恢复或未来经显式 approval /
+live mapping 后的版本执行；它不是 v2 或新需求的起点。
 
-- 执行阶段使用 `codex exec` + `workspace-write`。
-- 验收阶段使用 `codex exec` + `read-only`。
+- copy-ready 是实施阶段，允许按 task / manifest 边界修改文件。
+- verify-ready 是验收阶段，语义上必须只读：不得修改文件、不得修复失败项，只输出 PASS / FAIL / BLOCKED 证据。
+- 当前 runner 默认对 copy / verify 子进程都使用 `CODEX_EXEC_SANDBOX=danger-full-access`，以避免 macOS XCTest 在低权限 sandbox 下触发本机 `testmanagerd` fallback；只读性由 verify prompt、runner 重试规则和验收门禁共同约束。
+- 只有排障时才临时覆盖 `CODEX_EXEC_SANDBOX=workspace-write` 或 `CODEX_EXEC_SANDBOX=read-only`，不能把 read-only dry-run 成功当成 task 完成证据。
 - 验收失败时，脚本把失败摘要注入下一轮执行，继续修复同一个 task。
 - 失败摘要必须保留功能、验证和工程质量阻塞点；下一轮按“全部全面修复”处理。
 - 只有验收输出 `VERIFY_RESULT: PASS` 后才进入下一个 task。
-- 自动进度统一写入 `workflow/versions/v1-mvp/execution/_shared/progress.json`。
+- v1 历史恢复的自动进度写入
+  `workflow/versions/v1-mvp/execution/_shared/progress.json`；未来真实版本必须使用对应版本的
+  execution progress，不得复用或重写 v1 历史进度来表示新工作。
 - 默认 `RISK_GATE=mission-critical` 且 `RISK_POLICY=pause`；确认要全静默时必须显式设置 `RISK_POLICY=allow`。
 - `RISK_POLICY=allow` 会向 copy prompt 注入用户已授权静默执行的上下文；High / Mission-Critical task 仍需记录风险、验证和回滚，但不再停下来等人工确认。
 - 需要关机、额度不足或临时收尾时，使用 `./task-loop drain` 请求 live runner 跑完当前 task、完成 verify 与 Git checkpoint 后停止；它不得跳过当前 task 的 repair retry、验收或 checkpoint，也不得进入下一个 task。

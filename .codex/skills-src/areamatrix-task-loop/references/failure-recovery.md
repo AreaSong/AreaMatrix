@@ -11,8 +11,8 @@ Inspect these fields before choosing a recovery command:
 1. `./dev status --verbose`: current operator view, latest task, latest verify excerpt, runner process and recovery hint.
 2. `./task-loop status`: progress counts, lock state, stale detection, latest log directory.
 3. `workflow/versions/v1-mvp/execution/_shared/progress.json`: `status`, `note`, `attempts`, `risk`, `run_id`, `copy_log`, `verify_log`, `git_checkpoint_status`, `git_push_status`, `git_branch`, `git_commit`, `git_changed_files`.
-4. `.codex/task-loop-runs/index.json`: latest `run_id`, `status`, `summary_file`, `completed`, `retries`, `exit_code`.
-5. `.codex/task-loop-runs/<run_id>/summary.json`: run-level `status`, `exit_code`, `note`, `totals`, risk policy, Git mode, and per-task logs.
+4. `workflow/versions/v1-mvp/evidence/task-loop-runs/index.json`: latest `run_id`, `status`, `summary_file`, `completed`, `retries`, `exit_code`.
+5. `workflow/versions/v1-mvp/evidence/task-loop-runs/<run_id>/summary.json`: run-level `status`, `exit_code`, `note`, `totals`, risk policy, Git mode, and per-task logs.
 6. `*-copy-attempt-<n>.log` and `*-verify-attempt-<n>.log`: stage-specific evidence.
 7. `git status --short` and `git diff --check`: dirty worktree evidence when verify passed but checkpoint failed.
 
@@ -112,7 +112,7 @@ Action:
 
 ## Legacy State File
 
-If `.codex/task-loop-state.txt` exists:
+If `.codex/runtime/task-loop/state.txt` exists:
 
 - Treat it as historical completion hints.
 - Do not use it as the source of truth.

@@ -60,13 +60,13 @@ When `./task-loop` or `./dev` reports a failed, blocked, stale, or stopped run, 
 3. `workflow/versions/v1-mvp/execution/_shared/progress.json`
    Treat this as the primary progress source. For the affected task, inspect `status`, `note`, `attempts`, `risk`, `run_id`, `copy_log`, `verify_log`, `git_checkpoint_status`, `git_push_status`, `git_branch`, `git_commit`, and `git_changed_files`.
 
-4. `.codex/task-loop-runs/index.json`
+4. `workflow/versions/v1-mvp/evidence/task-loop-runs/index.json`
    Find the latest `run_id`, `status`, `summary_file`, `completed`, `retries`, `exit_code`, `started_at`, and `finished_at`.
 
-5. `.codex/task-loop-runs/<run_id>/summary.json`
+5. `workflow/versions/v1-mvp/evidence/task-loop-runs/<run_id>/summary.json`
    Inspect run-level `status`, `exit_code`, `note`, `totals`, phase / start filters, risk policy, Git mode, and per-task `copy_log` / `verify_log` paths.
 
-6. `.codex/task-loop-logs/<timestamp>/<phase>/`
+6. `.codex/runtime/task-loop/logs/<timestamp>/<phase>/`
    Open the affected `*-copy-attempt-<n>.log` first when copy failed or no verify evidence exists. Open `*-verify-attempt-<n>.log` first when verify ran and produced blockers.
 
 7. Git evidence.

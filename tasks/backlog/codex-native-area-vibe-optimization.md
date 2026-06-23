@@ -20,6 +20,20 @@ Codex 官方原生能力做底座
 - `../Vibe-Skills` 是外部 “通用 AI 工作台 + 专业领域 skill 仓库”，可作为候选能力池和治理参考。
 - 当前不允许让 Vibe-Skills、Codex Automations、Cloud、Worktrees 或其他外部 runtime 接管 AreaMatrix live queue。
 
+## Backlog Closeout
+
+当前 5 个 backlog prompt package 均已标记为 `closed`：
+
+- `codex-native-area-vibe-optimization`
+- `vibe-skills-absorption`
+- `dev-backlog-tooling`
+- `codex-operating-layer-closeout`
+- `codex-advanced-noninvasive-layer`
+
+`closed` 只表示这些工作层候选包已经完成吸收、暂缓、拒绝或 closeout
+判断，并继续保留为人工浏览和历史证据。它不表示 v1 产品 release /
+checkpoint closeout 已完成，也不授权进入 v2 或新 release。
+
 ## P0: 主线保护与接入门禁
 
 | 项 | 内容 | 交付物 | 完成标准 |

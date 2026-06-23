@@ -9,7 +9,8 @@ hard-migrated to `workflow/versions/v1-mvp/execution/**`.
 
 - `workflow/`: requirement flow, version planning, middle-layer ledgers, docs-change ledger, drafts, queue candidates, execution evidence, projection, and archive policy.
 - `workflow/versions/<version>/execution/`: target standard location for approved copy-ready / verify-ready task execution materials.
-- `workflow/versions/v1-mvp/execution/**`: Stage 1 historical execution queue and current v1 task-loop runtime.
+- `workflow/versions/v1-mvp/execution/**`: archived Stage 1 historical execution queue; `./task-loop` remains available for audit/recovery, not as the v2 starting point.
+- `workflow/residuals/`: cross-version residual index for release blockers, accepted exceptions, historical references, and template-only material. It is index-only and does not replace `docs/`, `evidence/`, `closeout/`, `tasks/active/**`, or live execution queues.
 - `./task-loop`: runner that executes approved tasks; it does not make requirement decisions.
 
 For the conceptual architecture behind these boundaries, see
@@ -44,6 +45,10 @@ intake
 New v* versions must pass the discussion gate before writing changes. The
 discussion gate records docs intent, middle-layer carry-forward rules, decisions,
 open questions, blockers, and whether the version may enter `changes/`.
+Unresolved discussion questions stay in `discussion/decisions.yaml` until a
+decision turns them into durable residuals. V1 formal-alpha residuals do not
+block v2 discussion, middle-layer, changes, plans, drafts, or queue candidates;
+they only block claims that v1 formal distribution residuals are closed.
 
 `middle-layer/*.yaml` records feature-level implementation intent after docs
 discussion: Exact Docs line references, insertion points, related feature links,

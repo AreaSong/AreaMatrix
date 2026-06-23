@@ -19,7 +19,7 @@ git diff --name-only
 rg -n "subagent|agent|并行|只读|write set|owner|ownership|task-loop|checkpoint|progress" .ai-governance .codex/references tasks/backlog
 ./dev check governance
 ./dev check skills
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .ai-governance .codex/references tasks/backlog
 ```
 

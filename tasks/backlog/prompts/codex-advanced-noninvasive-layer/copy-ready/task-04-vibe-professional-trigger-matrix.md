@@ -18,7 +18,7 @@
 - 不复制 Vibe-Skills 内容。
 - 不创建大量 AreaMatrix 同义 skill。
 - 不启用 Vibe runtime、VCO、`.vibeskills/**`、memory plane、specialist router。
-- 不修改 `tasks/prompts/**`。
+- 不修改 `workflow/versions/<version>/execution/**`。
 
 ## Source of Truth
 
@@ -55,7 +55,7 @@
 
 ## 禁止修改
 
-- `tasks/prompts/**`
+- `workflow/versions/<version>/execution/**`
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
@@ -91,8 +91,8 @@
 ```bash
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .codex/references tasks/backlog
 ```
 
-汇报时说明每类专业 skill 的判断、触发条件、owner、为什么不全量接入和未触碰 `tasks/prompts/**`。
+汇报时说明每类专业 skill 的判断、触发条件、owner、为什么不全量接入和未触碰 `workflow/versions/<version>/execution/**`。

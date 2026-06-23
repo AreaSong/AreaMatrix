@@ -27,7 +27,7 @@ from .repository import (
 
 
 def command_export(args: argparse.Namespace) -> int:
-    errors, warnings, tasks, manifests = collect_doctor_findings()
+    errors, warnings, tasks, manifests = collect_doctor_findings(include_static_prompts=False)
     if errors:
         return print_command_errors("export: doctor failed", errors, warnings)
     labels = export_labels(args, tasks, manifests)
@@ -78,7 +78,7 @@ def write_export_prompts(labels: list[str], tasks: dict, manifests: dict, phase_
 
 
 def write_prompt(path: Path, task, entry, mode: str) -> None:
-    path.write_text(capture_task_prompt(task, entry, mode), encoding="utf-8")
+    path.write_text(capture_task_prompt(task, entry, mode, output_path=path), encoding="utf-8")
 
 
 def print_export_summary(labels: list[str], tasks: dict, copy_count: int, verify_count: int, warnings: list[str]) -> None:

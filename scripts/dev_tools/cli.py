@@ -14,6 +14,7 @@ from .checks import (
     run_diff_check,
     run_governance_check,
     run_prompts_check,
+    run_quality_check,
     run_quick_check,
     run_secrets_check,
     run_skills_check,
@@ -51,7 +52,11 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     check = subparsers.add_parser("check", help="Run repo health checks")
-    check.add_argument("target", nargs="?", choices=["governance", "skills", "task-loop", "prompts", "diff", "secrets", "all", "task"])
+    check.add_argument(
+        "target",
+        nargs="?",
+        choices=["governance", "skills", "quality", "task-loop", "prompts", "diff", "secrets", "all", "task"],
+    )
     check.add_argument("task_label", nargs="?", help="Task label for './dev check task', for example 4-1/task-15")
 
     build = subparsers.add_parser("build", help="Build developer artifacts")
@@ -298,6 +303,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 return run_governance_check(root)
             if args.target == "skills":
                 return run_skills_check(root)
+            if args.target == "quality":
+                return run_quality_check(root)
             if args.target == "task-loop":
                 return run_task_loop_check(root)
             if args.target == "prompts":

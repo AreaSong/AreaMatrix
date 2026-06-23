@@ -51,8 +51,9 @@ Vibe-Skills 的 role taxonomy 可作为命名和 permission bundle 参考，但 
 
 不适合并行写入的范围：
 
-- `workflow/versions/v1-mvp/execution/**` live queue、manifest、`workflow/versions/v1-mvp/execution/_shared/progress.json`。
-- `.codex/task-loop-logs/**`、`.codex/task-loop-runs/**`、task-loop lock、checkpoint evidence。
+- `workflow/versions/<version>/execution/**` live queue、manifest 和 progress；其中
+  `workflow/versions/v1-mvp/execution/**` 是已归档的 v1 历史执行实例，不得作为新工作状态面重写。
+- `.codex/runtime/task-loop/logs/**`、`workflow/versions/v1-mvp/evidence/task-loop-runs/**`、task-loop lock、checkpoint evidence。
 - DB schema、migration、rollback、staging recovery、reindex、FSEvents、iCloud、隐私或 AI 远程调用。
 - Core API / UDL / Swift bridge 的破坏性变化。
 - `Cargo.lock`、SwiftPM lockfile、CI workflow、global config、CODEOWNERS 等需要全局一致性的共享文件，除非明确指定单一 owner。

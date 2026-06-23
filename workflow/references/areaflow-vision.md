@@ -2,13 +2,14 @@
 
 > 本文件由旧 `scripts/question.md` 迁入，保存 AreaMatrix 工作流优化讨论、事故复盘和 AreaFlow 未来产品愿景。
 > 它是参考资料，不是当前 AreaMatrix workflow 的执行标准；当前标准见 [`../execution.md`](../execution.md) 和 [`../pipeline.md`](../pipeline.md)。
+> **当前 AreaMatrix 状态**：Non-current reference。本文不定义 AreaMatrix 当前产品范围，不进入 `./task-loop`，不代表 active backlog，不阻断后续 `workflow/versions/<version>/` planning；若要启动 AreaFlow，必须作为独立产品或项目重新立项。
 
 # AreaMatrix 工作流优化需求汇总 → AreaFlow 产品规划
 
 > **文档性质**：工作流优化需求收集 + 讨论结论 + 完整产品愿景
 > **创建时间**：2026-05
 > **讨论日期**：2026-05-24 / 2026-05-25
-> **状态**：需求已确认，AreaFlow 已升级为 AI 开发项目管理平台；等 AreaMatrix MVP 完成后启动
+> **历史状态（2026-05 讨论原文）**：需求已确认，AreaFlow 已升级为 AI 开发项目管理平台；等 AreaMatrix MVP 完成后启动
 
 ---
 

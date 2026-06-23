@@ -123,8 +123,8 @@ open apps/macos/AreaMatrix.xcodeproj
 自动任务循环会按 `copy -> verify(read-only) -> repair retry -> PASS -> Git checkpoint -> next` 执行。相关贡献必须保留：
 
 - `workflow/versions/v1-mvp/execution/_shared/progress.json`
-- `.codex/task-loop-logs/**`
-- `.codex/task-loop-runs/**`
+- `.codex/runtime/task-loop/logs/**`
+- `workflow/versions/v1-mvp/evidence/task-loop-runs/**`
 - PASS task 的 Git checkpoint 证据
 
 ## 文档要求
@@ -146,7 +146,7 @@ open apps/macos/AreaMatrix.xcodeproj
 - [ ] 已按 [CODE_REVIEW.md](CODE_REVIEW.md) 自查风险、验证和回滚
 - [ ] 新增依赖已按 dependency policy 说明许可证和供应链风险
 - [ ] CI / governance 检查通过或已说明阻塞原因
-- [ ] 已运行 `./dev check secrets`（默认 diff 模式；全历史审计见 [secret-scan-runbook.md](secret-scan-runbook.md)）
+- [ ] 已运行 `./dev check secrets`（默认 diff 模式；全历史审计见 [secret-scan-runbook.md](docs/development/secret-scan-runbook.md)）
 - [ ] PR 标题清晰描述改动（不超过 72 字符）
 - [ ] PR 描述说明了 **why**、**what**、**how to test**
 - [ ] 不包含未授权的第三方资源 / 商业 logo / 与许可证不兼容的代码

@@ -15,7 +15,7 @@
 
 - 不新增执行器。
 - 不新增 progress、checkpoint、runner state。
-- 不修改 `tasks/prompts/**`。
+- 不修改 `workflow/versions/<version>/execution/**`。
 - 不自动复制、执行或验收 prompt。
 - 不把 backlog package promotion 成 live queue。
 
@@ -56,7 +56,7 @@
 
 ## 禁止修改
 
-- `tasks/prompts/**`
+- `workflow/versions/<version>/execution/**`
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
@@ -77,7 +77,7 @@
    - 命令运行不写 progress 或 live queue
 2. 若新增 console action/help 文案，更新所有 locale 并让 `validate_actions` / `./task-loop check` 通过。
 3. 文档必须明确 `./dev backlog` 只读，仅打印 backlog prompt package，不执行、不验收、不 promotion。
-4. 不要把 backlog package 加入 `tasks/prompts/_shared` export 或 manifest。
+4. 不要把 backlog package 加入 `workflow/versions/<version>/execution/_shared` export 或 manifest。
 5. 若发现现有测试环境会因为当前脏工作树误判，只记录风险，不通过修改 unrelated 文件绕过。
 
 ## Rollback / Blocked
@@ -95,9 +95,9 @@ python3 -m unittest scripts.dev_tools.test_backlog_tools
 ./dev backlog show dev-backlog-tooling --task 1 --mode copy
 ./dev backlog show dev-backlog-tooling --task 1 --mode verify
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 ./task-loop check
 git diff --check -- scripts/dev_tools scripts/task_loop tasks/backlog
 ```
 
-汇报时说明测试覆盖、文档更新、只读证据、未覆盖风险和未触碰 `tasks/prompts/**`。
+汇报时说明测试覆盖、文档更新、只读证据、未覆盖风险和未触碰 `workflow/versions/<version>/execution/**`。

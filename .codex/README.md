@@ -13,10 +13,18 @@
 - `config.example.toml`：repo-local Codex 配置模板；复制为本地 `config.toml`（已 gitignore，不入库）。
 - `references/index.md`：Codex 需要快速定位的规则入口。
 - `skills-src/`：AreaMatrix repo-local Codex skills 的源事实目录；每个 skill 的细节放在 `references/`。
+- `../.agents/skills/`：Codex 官方 repo-local skill 发现入口；当前以 symlink 方式指向本目录下的 `skills-src/`。
 - `templates/prompt-task-template.md`：新建 prompt 任务的模板。
 - `templates/prompt-verify-template.md`：验收 prompt 的格式参考；实际优先由 runner 生成。
-- `task-loop-logs/`、`.codex/task-loop-runs/`：自动任务循环的日志与运行摘要，作为可回溯证据保留。
-- `task-loop-progress-backups/`：本地 progress 恢复快照（reset/clear-stale 时写入），默认不进 Git；仓库仅跟踪脱敏 example fixture。
+- `runtime/`：本机运行态统一目录；只放日志、锁、控制请求、本地偏好和恢复快照，不作为业务源事实。
+  - `runtime/task-loop/logs/`：自动任务循环的本地原始日志；`*.exec.log` 只作本机排障，不作为完成证据。
+  - `runtime/task-loop/console/`：后台 Dev Console 输出。
+  - `runtime/task-loop/control/`：drain 等本地控制请求。
+  - `runtime/task-loop/lock/`：live runner 锁。
+  - `runtime/task-loop/tmp/`：本地临时保留目录。
+  - `runtime/task-loop/progress-backups/`：本地 progress 恢复快照（reset/clear-stale 时写入），默认不进 Git；仓库仅跟踪脱敏 example fixture。
+  - `runtime/dev-console/`：本地 Dev Console 偏好。
+- `workflow/versions/v1-mvp/evidence/task-loop-runs/`：可追溯、可提交的 run summary / index 证据，不属于 `.codex/` 的业务源事实。
 - Task loop 的状态 helper 位于 `scripts/task_loop/state.py`，Git checkpoint helper 位于 `scripts/task_loop/git.py`，完整自检入口是 `./task-loop check`。
 - Prompt 工程质量门禁位于 `workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md`；编码规范源事实仍在 `docs/development/coding-standards.md`。
 - 企业治理检查入口是 `bash scripts/check-governance.sh`，源事实在 `CODE_REVIEW.md`、`SECURITY.md` 和 `docs/development/`。
@@ -26,9 +34,10 @@
 - 不在本目录放个人模型、权限、token 或密钥；`config.toml` 仅保留在本机。
 - 项目语义变化先更新 `.ai-governance/`，再同步这里。
 - Prompt 执行任务本体放在 `workflow/versions/<version>/execution/`；v1 历史执行队列位于 `workflow/versions/v1-mvp/execution/`。
-- Skill 发现入口放在 `.agents/skills/`，源事实仍以 `.codex/skills-src/` 为准。
+- Skill 发现入口放在 `.agents/skills/`，源事实仍以 `.codex/skills-src/` 为准；这是官方发现路径 + repo 内源事实目录的投影关系，不是第二份 skill。
 - `codex exec` 需要读取 repo-local skill 时，使用本仓库内 `.codex/skills-src/<skill>/SKILL.md` 或 `.agents/skills/<skill>/SKILL.md`；不要使用 `~/.codex/skills-src/...` 这类全局猜测路径。
-- Skill 变更后运行 `bash scripts/check-skills.sh`。
+- Skill 变更后运行 `./dev check skills`。
 - 企业治理变更后运行 `bash scripts/check-governance.sh`。
 - Git checkpoint 策略见 `skills-src/areamatrix-git-checkpoint/`；默认 PASS task 本地 commit，push 需要显式 `GIT_CHECKPOINT=push`。
-- Task loop 的运行锁 `.codex/task-loop-lock/` 是本地协调缓存，不作为证据提交。
+- Task loop 的运行锁 `.codex/runtime/task-loop/lock/` 是本地协调缓存，不作为证据提交。
+- 旧路径 `.codex/task-loop-logs/`、`.codex/task-loop-progress-backups/`、`.codex/task-loop-lock/`、`.codex/task-loop-control/`、`.codex/task-loop-console/`、`.codex/dev-console/` 只作历史兼容读取；新运行态写入 `runtime/`。

@@ -9,7 +9,7 @@
 ## 入口顺序
 
 1. 先读本文件。
-2. 再按目标路径读取最近的局部 `AGENTS.md`。当前首轮不创建空的 `core/AGENTS.md` 或 `apps/macos/AGENTS.md`；这些文件由后续工程骨架任务在对应目录出现时补充。
+2. 再按目标路径读取最近的局部 `AGENTS.md`；当前已有 `core/AGENTS.md`、`apps/macos/AGENTS.md` 与 `workflow/AGENTS.md`。
 3. 再读与任务匹配的 `docs/` 文档、`.ai-governance/` 规则和 `workflow/versions/<version>/execution/` 任务文件。
 
 ## 源事实
@@ -18,6 +18,8 @@
 - AI 协作规则的统一源事实是 `.ai-governance/`。
 - Codex 专用运行材料放在 `.codex/`，不是业务语义的权威来源。
 - Prompt 执行层在 `workflow/versions/<version>/execution/`，任务执行时以 task 文件和 manifest 的组合为边界；v1 历史队列位于 `workflow/versions/v1-mvp/execution/`。
+- 遗留问题索引位于 `workflow/residuals/**` 和 `workflow/versions/<version>/residuals/**`；它只链接权威源文件，不替代 `docs/`、evidence、closeout、tasks 或 execution。
+- 宽泛查询“还有什么没解决 / 未完成”时，必须从 `workflow/residuals/README.md` 全量 ID 清单和 `workflow/residuals/residuals.yaml` 的 `version_residuals[].source` 开始；不得只看 release blockers、`tasks/active/**` 或 execution 状态。
 - 对外 Core API 变化必须先对齐 `docs/api/core-api.md`，再更新 `core/area_matrix.udl`。
 
 ## 工作方式

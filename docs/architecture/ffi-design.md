@@ -28,7 +28,9 @@ flowchart LR
     XcodeProject -->|build| App[AreaMatrix.app]
 ```
 
-构建脚本：`./dev build core`，详见 [../development/build.md](../development/build.md)。
+构建入口：`./dev build core`，详见 [../development/build.md](../development/build.md)。默认输出目录
+`apps/macos/AreaMatrix/Bridge/Generated/` 用于本地检查；当前 Xcode 工程消费 tracked
+`apps/macos/AreaMatrix/Bridge/UniFFI/` bindings，并链接 `core/target/.../libarea_matrix_core.a`。
 
 ---
 
@@ -546,7 +548,10 @@ Rust 实现把 tracing 输出到 OSLog 或 stdout（开发期）。
 
 ### binding 查看
 
-每次 `./dev build core` 后，看 `apps/macos/AreaMatrix/Bridge/Generated/area_matrix.swift` 确认生成的 API 符合预期。
+每次 `./dev build core` 后，可查看
+`apps/macos/AreaMatrix/Bridge/Generated/area_matrix.swift` 确认默认导出的最新 API。若公开 UDL
+接口变化需要提交给 Xcode 使用，还要显式更新
+`apps/macos/AreaMatrix/Bridge/UniFFI/area_matrix.swift`。
 
 ---
 

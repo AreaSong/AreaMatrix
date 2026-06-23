@@ -20,6 +20,7 @@ Trigger it for validation selection, final evidence reports, blocked checks, pro
 7. [workflow/versions/v1-mvp/execution/README.md](../../../workflow/versions/v1-mvp/execution/README.md)
 8. [workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md](../../../workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md)
 9. The nearest path-local `AGENTS.md` for changed files, when present.
+10. [workflow/residuals/README.md](../../../workflow/residuals/README.md) when validation or completion claims depend on unresolved, deferred, or accepted residual items.
 
 ## References
 
@@ -31,6 +32,7 @@ Trigger it for validation selection, final evidence reports, blocked checks, pro
 - [../areamatrix-doc-sync/SKILL.md](../areamatrix-doc-sync/SKILL.md): source-of-truth and drift checks when docs, APIs, UDL, prompts, or Codex materials change.
 - [../areamatrix-file-safety/SKILL.md](../areamatrix-file-safety/SKILL.md): additional evidence for user-file, DB, staging, recovery, reindex, FSEvents, or iCloud risks.
 - [../areamatrix-enterprise-governance/SKILL.md](../areamatrix-enterprise-governance/SKILL.md): review, security, dependency, CI, and ownership gates.
+- [../areamatrix-residual-ledger/SKILL.md](../areamatrix-residual-ledger/SKILL.md): report whether relevant residual items remain open, blocked, deferred, or accepted.
 
 ## Workflow
 
@@ -38,7 +40,8 @@ Trigger it for validation selection, final evidence reports, blocked checks, pro
 2. Choose the smallest sufficient checks, widening only for cross-layer or high-risk changes.
 3. Load the validation matrix before choosing commands.
 4. When a command fails, classify whether it is a validation-command failure or evidence of copy / verify / runner / checkpoint / drift / file-safety failure before recommending a fix.
-5. Use the report format when handing off results.
+5. Check whether the change closes, creates, or leaves relevant residual ledger items.
+6. Use the report format when handing off results.
 
 ## Guardrails
 
@@ -50,3 +53,4 @@ Trigger it for validation selection, final evidence reports, blocked checks, pro
 - Do not report PASS when coding-standard or engineering-quality blockers remain.
 - Do not report PASS when review, dependency, security, CI, or Git evidence blockers remain.
 - Do not make validation larger than needed by default; widen with a concrete risk, manifest, cross-layer change, or prior failure reason.
+- Do not report release or closeout PASS while relevant residual ledger items remain `open`, `blocked-external`, or `blocked-decision`.

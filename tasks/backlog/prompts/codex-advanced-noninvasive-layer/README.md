@@ -1,6 +1,11 @@
 # Codex Advanced Non-invasive Layer Prompt Package
 
-本目录保存第五批“高级但非侵入式 Codex 能力”可复制提示词。它不是 `tasks/prompts/**` live queue，不由 `./task-loop` 自动执行。
+本目录保存第五批“高级但非侵入式 Codex 能力”可复制提示词。它不是 `workflow/versions/<version>/execution/**` live queue，不由 `./task-loop` 自动执行。
+
+- status: closed
+- closed: 2026-06-22
+- closeout: tasks/backlog/codex-operating-layer-boundary-regression.md
+- execution: not-live；仅作历史追溯和人工参考，不代表当前待执行任务
 
 本批用于把此前暂缓项补成“有判断、有门禁、有触发条件”的状态，而不是默认启用或接管主线：
 
@@ -20,8 +25,8 @@
 
 通用边界：
 
-- 不修改 `tasks/prompts/**` live queue。
-- 不写 `tasks/prompts/_shared/progress.json`、task-loop logs、run summaries、runner lock 或 Git checkpoint 状态。
+- 不修改 `workflow/versions/<version>/execution/**` live queue。
+- 不写 `workflow/versions/<version>/execution/_shared/progress.json`、task-loop logs、run summaries、runner lock 或 Git checkpoint 状态。
 - 不启动第二个 `./task-loop`。
 - 不安装或启用 Vibe-Skills 全量仓库。
 - 不创建 Codex Automation，不启用 Cloud / Worktree 作为 AreaMatrix canonical runtime。

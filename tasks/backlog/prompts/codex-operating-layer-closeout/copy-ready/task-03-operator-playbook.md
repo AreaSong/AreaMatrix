@@ -10,7 +10,7 @@
 - 什么时候用 AreaMatrix repo-local skills。
 - 什么时候用 `tasks/backlog/**` 和 `./dev backlog`。
 - 什么时候进入 `workflow/**`。
-- 什么时候回到 `tasks/prompts/**` 和 `./task-loop`。
+- 什么时候回到 `workflow/versions/<version>/execution/**` 和 `./task-loop`。
 - 遇到 Vibe-Skills / hooks / subagents / Computer Use / Automations 时怎么判断是否接入。
 - 如何避免污染 source of truth、execution、state、skill owner。
 
@@ -19,7 +19,7 @@
 - 不写长篇手册。
 - 不新增能力。
 - 不改变 runner。
-- 不修改 `tasks/prompts/**`。
+- 不修改 `workflow/versions/<version>/execution/**`。
 - 不执行 backlog prompt。
 
 ## Source of Truth
@@ -59,7 +59,7 @@
 
 ## 禁止修改
 
-- `tasks/prompts/**`
+- `workflow/versions/<version>/execution/**`
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
@@ -75,7 +75,7 @@
    - 治理和边界看 `.ai-governance/**`。
    - Codex 操作投影看 `.codex/references/**` 和 repo-local skills。
    - backlog 用 `./dev backlog` 浏览，不执行。
-   - live execution 只从批准的 `tasks/prompts/**` 和 `./task-loop` 进入。
+   - live execution 只从批准的 `workflow/versions/<version>/execution/**` 和 `./task-loop` 进入。
 3. 明确四类污染的快速检查方式。
 4. 不把 playbook 写成新的源事实；它只能索引和解释现有规则。
 
@@ -90,8 +90,8 @@
 ```bash
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .codex/references tasks/backlog
 ```
 
-汇报时说明手册落点、覆盖的决策点、引用的源事实和未触碰 `tasks/prompts/**`。
+汇报时说明手册落点、覆盖的决策点、引用的源事实和未触碰 `workflow/versions/<version>/execution/**`。

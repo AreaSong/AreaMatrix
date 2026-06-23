@@ -101,9 +101,10 @@ flowchart TB
 
 - `core/area_matrix.udl`：手写的接口定义
 - `core/build.rs`：scaffolding 生成
-- `apps/macos/AreaMatrix/Bridge/Generated/area_matrix.swift`：自动生成
-- `apps/macos/AreaMatrix/Bridge/Generated/area_matrixFFI.h`：自动生成
-- `apps/macos/AreaMatrix/Bridge/Generated/libarea_matrix_core.a`：lipo 后的 universal staticlib
+- `apps/macos/AreaMatrix/Bridge/UniFFI/area_matrix.swift`：Xcode 工程当前消费的 tracked Swift binding
+- `apps/macos/AreaMatrix/Bridge/UniFFI/area_matrixFFI.h`：Xcode 工程当前消费的 tracked C header
+- `apps/macos/AreaMatrix/Bridge/Generated/`：`.gitignore` 忽略的本地生成产物目录，用于检查
+  `./dev build core` 输出的 universal staticlib 与最新 bindings
 
 ### 允许
 

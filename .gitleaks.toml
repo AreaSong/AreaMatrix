@@ -6,6 +6,7 @@ useDefault = true
 [allowlist]
 description = "Tracked fixtures and docs that intentionally contain benign examples"
 paths = [
+  '''.codex/runtime/task-loop/progress-backups/progress-before-reset-example.json''',
   '''.codex/task-loop-progress-backups/progress-before-reset-example.json''',
 ]
 
@@ -18,5 +19,6 @@ tags = ["path-leak"]
 [rules.allowlist]
 description = "Allow example fixture uses repo-relative sample log paths"
 paths = [
+  '''.codex/runtime/task-loop/progress-backups/progress-before-reset-example.json''',
   '''.codex/task-loop-progress-backups/progress-before-reset-example.json''',
 ]

@@ -13,7 +13,7 @@
 
 ```bash
 ./dev check secrets
-rg '/Users/[A-Za-z0-9._-]+/' workflow/versions/v1-mvp/execution/_shared/progress.json .codex/task-loop-runs || true
+rg '/Users/[A-Za-z0-9._-]+/' workflow/versions/v1-mvp/execution/_shared/progress.json workflow/versions/v1-mvp/evidence/task-loop-runs || true
 ```
 
 工作区干净且没有领先 `origin/main` 的 commit 时，会输出 `nothing to scan` 并 **PASS**。
@@ -25,7 +25,7 @@ rg '/Users/[A-Za-z0-9._-]+/' workflow/versions/v1-mvp/execution/_shared/progress
 ```bash
 # 需要本地安装 gitleaks：brew install gitleaks
 AREAMATRIX_GITLEAKS_MODE=history GITLEAKS_LOG_OPTS="--all" ./dev check secrets
-git log -p -- .codex/task-loop-progress-backups/ > /tmp/areamatrix-progress-backups-history.patch
+git log -p -- .codex/runtime/task-loop/progress-backups/ > /tmp/areamatrix-progress-backups-history.patch
 ```
 
 报告写入 `.gitleaks-report.json`（已在 `.gitignore`）。

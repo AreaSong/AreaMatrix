@@ -159,8 +159,9 @@ def run_governance_check(root: Path | None = None) -> int:
 
     _require_text(root, failures, "SECURITY.md", "GitHub Security Advisory", "private security advisory reporting")
     _forbid_text(root, failures, "SECURITY.md", "security@<your-domain>", "placeholder security email")
-    _require_text(root, failures, ".github/CODEOWNERS", "@AreaMatrix/maintainers", "AreaMatrix maintainers owner placeholder")
-    _require_text(root, failures, ".github/CODEOWNERS", "TODO: Replace @AreaMatrix/maintainers", "replacement note for placeholder owner")
+    _require_text(root, failures, ".github/CODEOWNERS", "@AreaSong", "AreaSong repository owner")
+    placeholder_owner_pattern = "|".join((r"<your" r"-org>", r"@" r"AreaMatrix/[A-Za-z0-9_.-]+"))
+    _forbid_text(root, failures, ".github/CODEOWNERS", placeholder_owner_pattern, "placeholder owner")
     _require_text(root, failures, ".github/PULL_REQUEST_TEMPLATE.md", "安全与风险|Security and Risk", "security and risk section")
     _require_text(
         root,
@@ -228,6 +229,7 @@ def run_governance_check(root: Path | None = None) -> int:
     _check_workflow_has_no_paths_filter(root, failures, ".github/workflows/macos-ci.yml")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check governance", "governance check")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check skills", "skill health")
+    _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check quality", "quality smoke")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check task-loop", "task-loop health")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check prompts", "prompt doctor")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check diff", "diff whitespace check")
@@ -347,6 +349,142 @@ def run_skills_check(root: Path | None = None) -> int:
         print(f"skill health: FAILED ({failures.count} issue(s))", file=os.sys.stderr)
         return 1
     print(f"skill health: OK ({found} skill(s))")
+    return 0
+
+
+def run_quality_check(root: Path | None = None) -> int:
+    root = (root or project_root()).resolve()
+    failures = FailureCollector()
+
+    quality_files = [
+        "docs/development/coding-standards.md",
+        "CODE_REVIEW.md",
+        "workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md",
+        "scripts/dev_tools/swiftlint.yml",
+        "scripts/dev_tools/swiftformat.conf",
+        "core/AGENTS.md",
+        "apps/macos/AGENTS.md",
+        "docs/architecture/data-model.md",
+        "docs/architecture/migration.md",
+        "docs/development/release.md",
+        "scripts/dev_tools/release.py",
+        ".codex/skills-src/README.md",
+        ".codex/references/index.md",
+        ".codex/references/codex-workflow-and-tools.md",
+        "tasks/backlog/codex-operating-layer-boundary-regression.md",
+    ]
+    for rel_path in quality_files:
+        _check_file(root, failures, rel_path)
+
+    _require_text(root, failures, "docs/development/coding-standards.md", "注释解释 why", "comment policy")
+    _require_text(root, failures, "docs/development/coding-standards.md", "单函数 ≤ 50 行", "function length policy")
+    _require_text(root, failures, "docs/development/coding-standards.md", "嵌套 ≤ 3 层", "nesting policy")
+    _require_text(root, failures, "docs/development/coding-standards.md", r"\./dev check quality", "quality smoke command")
+    _require_text(root, failures, "CODE_REVIEW.md", "数据流、控制流、错误流", "control-flow review gate")
+    _require_text(root, failures, "CODE_REVIEW.md", "阻断项", "review blockers")
+    _require_text(
+        root,
+        failures,
+        "workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md",
+        "注释只解释 WHY",
+        "prompt quality comment gate",
+    )
+    _require_text(
+        root,
+        failures,
+        "workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md",
+        "mock-only",
+        "real implementation gate",
+    )
+    _require_text(root, failures, "scripts/dev_tools/swiftlint.yml", "function_body_length: 50", "Swift function length")
+    _require_text(root, failures, "scripts/dev_tools/swiftlint.yml", "file_length: 500", "Swift file length")
+    _require_text(root, failures, "scripts/dev_tools/swiftformat.conf", "--maxwidth 120", "SwiftFormat max width")
+
+    _require_text(root, failures, "core/AGENTS.md", "平台无关", "Core platform boundary")
+    _require_text(root, failures, "apps/macos/AGENTS.md", "CoreBridge", "macOS CoreBridge boundary")
+    _require_text(root, failures, "apps/macos/AGENTS.md", "SwiftUI 视图只做展示", "SwiftUI view boundary")
+    _require_text(root, failures, "docs/architecture/migration.md", "rollback|回滚", "DB migration rollback boundary")
+    _require_text(root, failures, "docs/development/release.md", "notarization|notary|公证", "release notarization boundary")
+
+    _require_text(
+        root,
+        failures,
+        ".codex/skills-src/areamatrix-validation-driver/SKILL.md",
+        "macOS app",
+        "macOS validation owner",
+    )
+    _require_text(
+        root,
+        failures,
+        ".codex/skills-src/areamatrix-doc-sync/SKILL.md",
+        "Core API.*UDL|UDL.*Core API",
+        "Core API / UDL owner",
+    )
+    _require_text(
+        root,
+        failures,
+        ".codex/skills-src/areamatrix-file-safety/SKILL.md",
+        "DB metadata|migrations",
+        "DB and migration safety owner",
+    )
+    _require_text(
+        root,
+        failures,
+        ".codex/skills-src/areamatrix-enterprise-governance/SKILL.md",
+        "CI workflows",
+        "CI governance owner",
+    )
+    _require_text(
+        root,
+        failures,
+        ".codex/skills-src/areamatrix-residual-ledger/SKILL.md",
+        "release blockers",
+        "release blocker owner",
+    )
+    _require_text(
+        root,
+        failures,
+        ".codex/skills-src/areamatrix-workflow-planning/SKILL.md",
+        "v\\* workflow",
+        "workflow planning owner",
+    )
+    _require_text(
+        root,
+        failures,
+        ".codex/skills-src/areamatrix-git-checkpoint/SKILL.md",
+        "commit / push|checkpoint",
+        "Git checkpoint owner",
+    )
+    _require_text(
+        root,
+        failures,
+        ".codex/skills-src/README.md",
+        "areamatrix-residual-ledger",
+        "8th residual-ledger skill navigation",
+    )
+    _require_text(root, failures, ".codex/references/index.md", "./dev check quality", "quality smoke reference")
+    _require_text(root, failures, "docs/development/ci-governance.md", "./dev check quality", "CI quality smoke docs")
+    _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check quality", "CI quality smoke step")
+
+    stale_skill_count_patterns = (
+        r"现有 " + r"7 个",
+        r"已有 " + r"7 个",
+        r"7 个 " + r"AreaMatrix skills",
+        r"强化现有 " + r"7",
+    )
+    stale_count_pattern = "|".join(stale_skill_count_patterns)
+    for rel_path in [
+        ".codex/references/codex-workflow-and-tools.md",
+        "tasks/backlog/codex-operating-layer-boundary-regression.md",
+        ".codex/skills-src/README.md",
+        ".codex/references/index.md",
+    ]:
+        _forbid_text(root, failures, rel_path, stale_count_pattern, "stale 7-skill count")
+
+    if failures.count:
+        print(f"quality smoke: FAILED ({failures.count} issue(s))", file=os.sys.stderr)
+        return 1
+    print("quality smoke: OK")
     return 0
 
 
@@ -802,6 +940,7 @@ def run_all_check(root: Path | None = None) -> int:
     steps = [
         ("governance", lambda: run_governance_check(root)),
         ("skills", lambda: run_skills_check(root)),
+        ("quality smoke", lambda: run_quality_check(root)),
         ("task-loop", lambda: run_task_loop_check(root)),
         ("prompt doctor", lambda: run_prompts_check(root)),
         ("diff check", lambda: run_diff_check(root)),

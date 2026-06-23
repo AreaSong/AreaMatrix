@@ -8,7 +8,7 @@
 
 - 命令只读取 `tasks/backlog/prompts/**`。
 - 命令不执行 prompt，不启动 `./task-loop`，不调用 `codex exec`。
-- 命令不写 `tasks/prompts/**`、`tasks/prompts/_shared/progress.json`、logs、run summaries、runner lock 或 checkpoint。
+- 命令不写 `workflow/versions/<version>/execution/**`、`workflow/versions/<version>/execution/_shared/progress.json`、logs、run summaries、runner lock 或 checkpoint。
 - 已核对 `dev`、`scripts/task_loop/console.py`、`scripts/task_loop/actions.py`、`scripts/dev_tools/cli.py` 的真实入口关系。
 - 后续实现任务有明确 landing、错误语义和验证命令。
 
@@ -18,7 +18,7 @@
 2. `tasks/backlog/README.md`
 3. `workflow/AGENTS.md`
 4. `workflow/README.md`
-5. `tasks/prompts/README.md`
+5. `workflow/versions/v1-mvp/execution/README.md`
 6. `.ai-governance/workflows/prompt-task-runtime.md`
 7. `dev`
 8. `scripts/task_loop/console.py`
@@ -31,9 +31,9 @@
 
 ```bash
 git diff --name-only
-rg -n "backlog|tasks/backlog|tasks/prompts|progress|task-loop|codex exec|checkpoint|read-only|只读" tasks/backlog scripts/dev_tools scripts/task_loop
+rg -n "backlog|tasks/backlog|workflow/versions/<version>/execution|progress|task-loop|codex exec|checkpoint|read-only|只读" tasks/backlog scripts/dev_tools scripts/task_loop
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- tasks/backlog scripts/dev_tools scripts/task_loop
 ```
 

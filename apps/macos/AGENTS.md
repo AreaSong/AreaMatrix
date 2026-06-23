@@ -4,14 +4,16 @@
 
 - 本目录是 AreaMatrix 的 SwiftUI macOS 原生应用。
 - macOS 层负责 UI、平台适配、CoreBridge、watcher 和系统能力封装。
-- Phase 0 只允许维护可编译空壳，不实现真实产品闭环。
+- macOS app 已进入实现态；继续遵守 SwiftUI / CoreBridge / 平台能力分层，不用 mock 或静态数据伪装真实闭环。
 
 ## 边界
 
 - SwiftUI 视图只做展示和用户交互，不直接做文件 IO。
 - 平台能力放在 Swift 平台层；Core 层仍保持平台无关。
 - CoreBridge 是 Swift 调用 Core 的唯一入口，后续不得让视图直接调用 UniFFI 生成代码。
-- `Bridge/Generated/` 是生成产物目录，不手写业务代码。
+- `Bridge/Generated/` 是 `.gitignore` 忽略的本地生成产物目录，不手写业务代码。
+- `Bridge/UniFFI/` 是当前 Xcode 工程消费的 tracked UniFFI binding，也不要手写业务逻辑；
+  UDL 变化后用仓库命令重新生成。
 
 ## 高风险约束
 

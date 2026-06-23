@@ -11,7 +11,7 @@
 - 说明与 AreaMatrix 现有 skills / governance 的关系。
 - 没有修改 Vibe-Skills 仓库。
 - 没有把 `vibe` runtime 设为 AreaMatrix 主线。
-- 没有修改 `tasks/prompts/**`。
+- 没有修改 `workflow/versions/<version>/execution/**`。
 
 ## 只读检查
 
@@ -20,7 +20,7 @@ git diff --name-only
 rg -n "systematic-debugging|tdd-guide|verification-before-completion|code-reviewer|security-threat-model|architecture-patterns|docs-review|writing-plans|只参考|暂缓|拒绝|吸收" .codex/references tasks/backlog
 ./dev check governance
 ./dev check skills
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .codex/references tasks/backlog
 ```
 

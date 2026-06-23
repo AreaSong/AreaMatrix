@@ -17,7 +17,7 @@
 - 不启用 destructive hook。
 - 不写会自动修改文件的 hook 脚本。
 - 不启动或停止 task-loop。
-- 不修改 `tasks/prompts/**`。
+- 不修改 `workflow/versions/<version>/execution/**`。
 - 不接入 plugin-bundled hooks。
 
 ## Source of Truth
@@ -52,7 +52,7 @@
 
 ## 禁止修改
 
-- `tasks/prompts/**`
+- `workflow/versions/<version>/execution/**`
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
@@ -81,8 +81,8 @@
 ```bash
 ./dev check governance
 ./dev check skills
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .codex/references .codex/hooks.json tasks/backlog
 ```
 
-汇报时说明 hooks 决策、是否新增草案、验证结果和未触碰 `tasks/prompts/**`。
+汇报时说明 hooks 决策、是否新增草案、验证结果和未触碰 `workflow/versions/<version>/execution/**`。

@@ -26,6 +26,7 @@ Trigger it for questions about `./task-loop`, `./dev` runner actions, copy-ready
 - [../areamatrix-git-checkpoint/SKILL.md](../areamatrix-git-checkpoint/SKILL.md): Git checkpoint policy for PASS tasks.
 - [../areamatrix-validation-driver/SKILL.md](../areamatrix-validation-driver/SKILL.md): choose checks when runner or prompt infrastructure changed.
 - [../areamatrix-workflow-planning/SKILL.md](../areamatrix-workflow-planning/SKILL.md): keep future v* planning outside version execution until promoted.
+- [../areamatrix-residual-ledger/SKILL.md](../areamatrix-residual-ledger/SKILL.md): residual ledger entries are not live queue inputs unless explicitly converted or promoted.
 
 ## Workflow
 
@@ -47,3 +48,4 @@ Trigger it for questions about `./task-loop`, `./dev` runner actions, copy-ready
 - Do not present dry-run success as real task completion.
 - Do not continue after a Git checkpoint failure; fix or recover Git state first.
 - Do not treat backlog prompts, Codex Automations, Cloud, Worktrees, or Vibe-Skills as live queue inputs unless they have been explicitly promoted into `workflow/versions/<version>/execution/**`.
+- Do not treat `workflow/residuals/**`, `workflow/versions/<version>/residuals/**`, or `tasks/indexes/**` as live queue inputs.

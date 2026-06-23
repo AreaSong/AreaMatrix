@@ -16,7 +16,7 @@
 
 - 不启动 UI 自动化。
 - 不修改产品代码。
-- 不修改 `tasks/prompts/**`。
+- 不修改 `workflow/versions/<version>/execution/**`。
 - 不保存真实用户数据或截图。
 - 不点击系统权限、支付、删除、隐私授权或不可逆 UI 操作。
 
@@ -53,7 +53,7 @@
 
 ## 禁止修改
 
-- `tasks/prompts/**`
+- `workflow/versions/<version>/execution/**`
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
@@ -82,8 +82,8 @@
 ```bash
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .codex/references .codex/skills-src tasks/backlog
 ```
 
-汇报时说明模板落点、触发条件、禁止动作和未触碰 `tasks/prompts/**`。
+汇报时说明模板落点、触发条件、禁止动作和未触碰 `workflow/versions/<version>/execution/**`。

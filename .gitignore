@@ -13,6 +13,7 @@ target/
 build/
 DerivedData/
 apps/macos/.derived-data-log-*
+apps/macos/build_log*.txt
 *.xcuserstate
 xcuserdata/
 *.xccheckout
@@ -53,10 +54,19 @@ AreaMatrix-dev/
 # AreaMatrix task-loop progress and run summaries are tracked as resumable workflow evidence.
 # Raw live logs stay local by default; checkpoint force-adds the final PASS copy/verify logs.
 # Progress reset/clear-stale backups are local recovery snapshots only.
+.codex/config.toml
+.codex/runtime/task-loop/progress-backups/*
+!.codex/runtime/task-loop/progress-backups/progress-before-reset-example.json
+.codex/runtime/task-loop/logs/
+.codex/runtime/task-loop/lock/
+.codex/runtime/task-loop/control/
+.codex/runtime/task-loop/tmp/
+.codex/runtime/task-loop/console/
+.codex/runtime/dev-console/
+.codex/runtime/local-state-backups/
 .codex/task-loop-progress-backups/*
 !.codex/task-loop-progress-backups/progress-before-reset-example.json
 .codex/local-state-backups/
-.codex/config.toml
 .codex/task-loop-logs/
 .codex/task-loop-lock/
 .codex/task-loop-control/

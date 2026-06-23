@@ -40,7 +40,7 @@ python3 -m unittest scripts.dev_tools.test_backlog_tools
 ./dev backlog show dev-backlog-tooling --task 999 --mode copy
 git status --short
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 ./task-loop check
 git diff --check -- scripts/dev_tools scripts/task_loop tasks/backlog
 ```
@@ -50,7 +50,7 @@ git diff --check -- scripts/dev_tools scripts/task_loop tasks/backlog
 - `tasks/backlog/README.md` 必须说清：只读打印，不执行，不写 progress，不进入 `./task-loop`。
 - 测试不能只测 happy path；必须包含错误路径。
 - 运行命令后不应产生新的 runtime state 变更。
-- `tasks/prompts/**` 不应因为本任务出现改动。
+- `workflow/versions/<version>/execution/**` 不应因为本任务出现改动。
 
 ## 判定
 

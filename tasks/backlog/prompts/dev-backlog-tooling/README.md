@@ -1,6 +1,11 @@
 # Dev Backlog Tooling Prompt Package
 
-本目录保存第三批“backlog 提示词浏览工具”可复制提示词。它不是 `tasks/prompts/**` live queue，不由 `./task-loop` 自动执行。
+本目录保存第三批“backlog 提示词浏览工具”可复制提示词。它不是 `workflow/versions/<version>/execution/**` live queue，不由 `./task-loop` 自动执行。
+
+- status: closed
+- closed: 2026-06-22
+- closeout: tasks/backlog/codex-operating-layer-boundary-regression.md
+- execution: not-live；仅作历史追溯和人工参考，不代表当前待执行任务
 
 本批目标是让 `tasks/backlog/prompts/**` 的 copy-ready / verify-ready 材料可以通过 `./dev backlog` 只读浏览，减少手工找文件和复制路径的摩擦；它不是第二套 runner，也不负责执行、验收、promotion、checkpoint 或 progress 写入。
 
@@ -15,8 +20,8 @@
 
 通用边界：
 
-- 不修改 `tasks/prompts/**` live queue。
-- 不写 `tasks/prompts/_shared/progress.json`、task-loop logs、run summaries、runner lock 或 Git checkpoint 状态。
+- 不修改 `workflow/versions/<version>/execution/**` live queue。
+- 不写 `workflow/versions/<version>/execution/_shared/progress.json`、task-loop logs、run summaries、runner lock 或 Git checkpoint 状态。
 - 不启动第二个 `./task-loop`。
 - 不让 backlog prompt package 直接 promotion 成 live queue。
 - 不自动执行 copy-ready 或 verify-ready prompt；`./dev backlog` 只负责列出和打印文本。

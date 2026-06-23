@@ -3,16 +3,19 @@
 ## 定位
 
 - 本目录是 AreaMatrix 的 Rust 核心库工程根。
-- `Cargo.toml` 必须声明真实 package / workspace 元数据和 Cargo 可识别的最小 lib target。
+- `Cargo.toml` 必须声明真实 package / workspace 元数据和 Cargo 可识别的 lib target。
 - Core 层保持平台无关，不依赖 AppKit、SwiftUI、FSEvents 或其他 macOS 专属 API。
-- 对外接口在后续 Core API / UDL task 落地时，以 `../docs/api/core-api.md` 和 `area_matrix.udl` 对齐。
+- Core 已进入实现态；对外接口、UDL、Rust 实现和测试都按当前仓库真实状态维护。
+- 对外 Core API 变化必须先对齐 `../docs/api/core-api.md`，再同步 `area_matrix.udl`、Rust 实现和平台桥接。
 
 ## 工作边界
 
-- 执行 `0-2/task-01` 时只维护 crate 元数据；`src/lib.rs` 只能作为 Cargo 最小 lib target，保留 crate 级文档。
-- `0-2/task-02` 到达前，不新增模块声明、re-export、业务类型或业务函数。
-- `area_matrix.udl`、`build.rs`、`resources/**`、`tests/**` 与业务模块由各自 manifest task 维护。
-- 后续任务到达对应 manifest 后，再按该任务边界创建或调整模块、UniFFI、资源或测试。
+- `src/lib.rs` 保持轻量：只放 crate 文档、module declaration 和必要 re-export，不堆业务逻辑。
+- 业务能力放在对应模块中，优先沿用现有模块边界和测试命名模式。
+- `area_matrix.udl` 是 Swift / 其他平台桥接的接口合同；新增、删除或重命名公开函数时必须与 `../docs/api/core-api.md` 保持一致。
+- `build.rs` 负责 UniFFI scaffolding，当前从 `./area_matrix.udl` 生成；不要改成已不存在的 `src/area_matrix.udl` 路径。
+- `tests/**` 承载 Core API 合同、实现、失败恢复、验证和集成回归；新增能力优先补匹配粒度的测试。
+- `resources/**`、DB schema、migration、staging、recovery、sync、import、reindex 等文件安全边界按根 `AGENTS.md` 的高风险规则处理。
 
 ## 高风险约束
 
@@ -22,16 +25,24 @@
 
 ## 验证
 
-- Cargo metadata task 至少运行：
+- Core 文档或低风险元数据改动可至少运行：
 
 ```bash
 cd core && cargo metadata --no-deps
 ```
 
-- Rust target 存在时同步补充：
+- Rust Core 行为、API、UDL 或测试改动按影响面运行：
 
 ```bash
-cargo clippy --all-targets --all-features -- -D warnings
 cargo fmt --all -- --check
+cargo clippy --all-targets --all-features -- -D warnings
 cargo test --workspace
 ```
+
+- Prompt task 内的 Core 改动优先使用 task-scoped gate：
+
+```bash
+./dev check task <label>
+```
+
+- 若改动影响 Swift bridge 或生成物，同步运行对应 `./dev build core` / `./dev bindings update` 检查，并说明无法运行的原因。

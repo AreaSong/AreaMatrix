@@ -55,14 +55,15 @@ AreaMatrix 的所有架构决策围绕三条原则：
 
 ## 项目状态
 
-实现态 pre-alpha 阶段。`v1-mvp` prompt 队列已完成 `637/637` 个任务，
-仓库内已经包含 Rust core、SwiftUI macOS app、测试，以及早期 iOS / Windows / Linux
-表面层。
+实现态 pre-alpha 阶段。`v1-mvp` 技术 prompt 队列已完成 `637/637` 个任务，
+仓库内已经包含 Rust core、SwiftUI macOS app、测试，以及早期 iOS / Windows /
+Linux 表面层。
 
 `v0.1.0-unnotarized-preview.2` 已准备为 GitHub prerelease 轨道，可提供给可信测试者。
 它是 ad-hoc signed，未使用 Developer ID 签名，也未经过 Apple 公证。`0.1.0-local-qa`
-仍只作为内部 QA 产物存在。正式 alpha 仍被 release 证据阻断，包括 iCloud placeholder
-真实环境冒烟、Developer ID 签名、公证、干净 Mac 首启验证，以及最终 `v0.1.0` tag。
+仍只作为内部 QA 产物存在；local QA 和 unnotarized preview 都不等于正式 alpha。
+正式 alpha 仍被 release 证据阻断，包括 iCloud placeholder 真实环境冒烟、Developer ID
+签名、公证、干净 Mac 首启验证，以及最终 `v0.1.0` tag。
 
 四阶段路线图见 [docs/roadmap/milestones.md](docs/roadmap/milestones.md)。
 
@@ -73,12 +74,20 @@ AreaMatrix 把源码、规划治理和本地运行材料分开看：
 | 层次 | 路径 | 说明 |
 |---|---|---|
 | 产品源码 | `core/`、`apps/`、`docs/` | Rust core、各平台原生应用和权威产品文档。 |
-| 产品资产 | `assets/brand/` | 权威品牌资产和历史 logo 探索稿。 |
+| 产品资产与原型 | `assets/brand/`、`assets/prototypes/` | 权威品牌资产，以及不作为产品源事实的 landing / workspace 视觉原型。 |
 | 规划与治理 | `.ai-governance/`、`workflow/`、`tasks/` | AI 协作规则、版本规划 gate、版本内执行队列、轻量任务进度和 backlog 材料。 |
 | Codex 运行入口 | `.codex/`、`.agents/skills/`、`dev`、`task-loop`、`scripts/` | 仓库内 Codex skills、发现入口和 task-loop 工具。这些是稳定工具入口，不应为了视觉收紧而移动。 |
 | 本地生成物 | `.build/`、`build/`、`core/target/`、`apps/*/.build`、`apps/**/bin`、`apps/**/obj`、`apps/macos/DerivedData/` | 已忽略的本地构建产物，不属于源码目录形态。 |
 
 `.codex/skills-src/`、`.agents/skills/`、`workflow/`、`dev`、`task-loop` 这类固定路径需要保留在原位；Codex skills 和任务循环脚本会依赖它们。v1 历史 prompt 队列现在位于 `workflow/versions/v1-mvp/execution/`。轻量独立任务放在 `tasks/active/` 和 `tasks/done/`；`tasks/backlog/` 保持候选池语义，不代表当前任务进度。
+
+状态边界：产品事实以 `docs/`、`core/`、`apps/` 和 `assets/brand/final/` 为准；
+`workflow/` 承载规划、归档和参考材料；轻量任务状态只看 `tasks/active/` 与
+`tasks/done/`；已 closed 的 backlog prompt package 只是历史候选材料；`.codex/`、
+`.agents/skills/`、`dev`、`task-loop` 和 `scripts/` 是 Codex 运行工具层，不是产品源事实。
+release / reference / template 遗留项统一索引在 `workflow/residuals/` 和
+`workflow/versions/<version>/residuals/`；这些索引只链接回源文件，不替代 `docs/`、
+release evidence 或任务状态。
 
 ## 文档导览
 
@@ -88,8 +97,14 @@ AreaMatrix 把源码、规划治理和本地运行材料分开看：
 | 架构师想了解怎么搭 | [docs/architecture/overview.md](docs/architecture/overview.md) |
 | 实现者想了解每块怎么写 | [docs/modules/](docs/modules/) |
 | 集成方想了解 API | [docs/api/core-api.md](docs/api/core-api.md) |
+| 规划 v* workflow / v2 discussion | [workflow/README.md](workflow/README.md) |
+| 查看 workflow versions | [workflow/versions/README.md](workflow/versions/README.md) |
+| 查看轻量任务 | [tasks/README.md](tasks/README.md) |
+| 查询当前未解决问题 / residual ledger | [workflow/residuals/README.md](workflow/residuals/README.md) |
+| 查看 Codex skills | [.codex/skills-src/README.md](.codex/skills-src/README.md) |
 | 新加入想搭环境 | [docs/development/setup.md](docs/development/setup.md) |
 | 想了解决策来龙去脉 | [docs/adr/](docs/adr/) |
+| 想查看视觉原型 | [assets/prototypes/](assets/prototypes/) |
 | 想贡献代码 | [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 ## 系统要求

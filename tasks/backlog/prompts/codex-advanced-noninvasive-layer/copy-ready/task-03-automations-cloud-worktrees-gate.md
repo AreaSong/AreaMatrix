@@ -9,7 +9,7 @@
 - Automations：只允许提醒、周期性检查、状态汇报类候选；不写 repo state。
 - Cloud：暂不作为 AreaMatrix canonical runtime；仅作为未来隔离执行候选。
 - Worktrees：可作为隔离实验方案；不作为 live queue 默认执行环境。
-- 明确三者都不能写 `tasks/prompts/**`、progress、logs、checkpoint 或替代 `./task-loop`。
+- 明确三者都不能写 `workflow/versions/<version>/execution/**`、progress、logs、checkpoint 或替代 `./task-loop`。
 
 ## 非目标
 
@@ -57,7 +57,7 @@
 
 ## 禁止修改
 
-- `tasks/prompts/**`
+- `workflow/versions/<version>/execution/**`
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
@@ -88,8 +88,8 @@
 ```bash
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .ai-governance .codex/references .codex/skills-src tasks/backlog
 ```
 
-汇报时说明三类能力的判断、门禁、未创建 automation / cloud / worktree、未触碰 `tasks/prompts/**`。
+汇报时说明三类能力的判断、门禁、未创建 automation / cloud / worktree、未触碰 `workflow/versions/<version>/execution/**`。

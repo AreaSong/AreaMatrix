@@ -1,4 +1,4 @@
-"""Rewrite tracked task-loop evidence JSON to repo-relative paths."""
+"""Rewrite tracked task-loop evidence JSON after evidence path migrations."""
 
 from __future__ import annotations
 
@@ -7,6 +7,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+RUN_SUMMARY_REL = Path("workflow/versions/v1-mvp/evidence/task-loop-runs")
+LEGACY_RUN_SUMMARY_REL = Path(".codex/task-loop-runs")
 
 
 def path_for_git(root: Path, path: Path) -> str | None:
@@ -16,10 +18,9 @@ def path_for_git(root: Path, path: Path) -> str | None:
     except ValueError:
         return None
 
-PATH_KEYS = {
+ABSOLUTE_PATH_KEYS = {
     "copy_log",
     "verify_log",
-    "summary_file",
     "root_dir",
     "progress_file",
     "log_root",
@@ -47,7 +48,9 @@ def sanitize_value(root: Path, key: str, value: object) -> object:
         return value
     if key == "codex_bin":
         return sanitize_codex_bin(root, value)
-    if key in PATH_KEYS or (value.startswith(str(root)) or "/Users/" in value):
+    if key == "summary_file" and value.startswith(f"{LEGACY_RUN_SUMMARY_REL}/"):
+        return str(RUN_SUMMARY_REL / value.removeprefix(f"{LEGACY_RUN_SUMMARY_REL}/"))
+    if key in ABSOLUTE_PATH_KEYS or (value.startswith(str(root)) or "/Users/" in value):
         if value.startswith(str(root)):
             path = Path(value)
         elif value.startswith("/"):
@@ -95,8 +98,10 @@ def migrate_file(root: Path, path: Path) -> int:
 
 
 def targets(root: Path) -> list[Path]:
-    files = [root / "workflow/versions/v1-mvp/execution/_shared/progress.json", root / ".codex/task-loop-runs/index.json"]
-    files += sorted((root / ".codex/task-loop-runs").glob("*/summary.json"))
+    files = [root / "workflow/versions/v1-mvp/execution/_shared/progress.json"]
+    for summary_root in [root / RUN_SUMMARY_REL, root / LEGACY_RUN_SUMMARY_REL]:
+        files.append(summary_root / "index.json")
+        files += sorted(summary_root.glob("*/summary.json"))
     return [path for path in files if path.is_file()]
 
 

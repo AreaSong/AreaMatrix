@@ -10,7 +10,7 @@
 - 手册说明了 Vibe-Skills、hooks、subagents、Computer Use、Automations 的接入判断。
 - 手册说明了 source-of-truth / execution / state / skill owner 污染检查。
 - 手册链接或引用现有源事实，没有替代它们。
-- 未修改 `tasks/prompts/**`。
+- 未修改 `workflow/versions/<version>/execution/**`。
 
 ## 必须读取
 
@@ -26,10 +26,10 @@
 
 ```bash
 git diff --name-only
-rg -n "OpenAI|Codex|docs/|\\.ai-governance|\\.codex|tasks/backlog|tasks/prompts|workflow|Vibe|hooks|subagent|Computer Use|Automations|污染|source of truth|源事实" .codex/references tasks/backlog
+rg -n "OpenAI|Codex|docs/|\\.ai-governance|\\.codex|tasks/backlog|workflow/versions/<version>/execution|workflow|Vibe|hooks|subagent|Computer Use|Automations|污染|source of truth|源事实" .codex/references tasks/backlog
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .codex/references tasks/backlog
 ```
 

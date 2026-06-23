@@ -28,9 +28,13 @@ Layer responsibilities:
 - `promotion preview`: semantic-to-numeric task mapping, no live writes.
 - `workflow/versions/<version>/execution/**`: approved version-local execution queue only.
 
-`v1-mvp` remains live-running until its current queue completes. `v-template`
-is a managed template reference instance for doctor coverage and is not a real
-product workflow. Future real versions must pass discussion before changes.
+`v1-mvp` is archived with its technical queue complete. Its formal alpha
+release residuals still block formal distribution, but they do not block future
+version discussion, middle-layer, changes, plans, drafts, or queue candidates.
+They do block claims that the v1 release / closeout residuals are closed.
+`v-template` is a managed template reference instance for doctor coverage and is
+not a real product workflow. Future real versions must pass discussion before
+changes.
 
 Check the managed template reference with `./dev workflow check-template`.
 
@@ -46,6 +50,13 @@ New versions use version-local numbering starting at `phase-0 / 0-1 / task-01`;
 live `workflow/versions/<version>/execution/**` mapping remains pending until a later explicit promotion
 mapping step. Do not enter baseline, middle-layer, changes, plans, drafts,
 queue, or promotion preview until the discussion gate is explicitly ready.
+
+V2 bootstrap rule:
+
+- Start with `workflow/versions/v2/discussion/` and keep open product scope questions in `discussion/decisions.yaml`.
+- Do not turn discussion-period open questions into residual ledger items unless they become durable `blocked-decision`, `blocked-external`, `deferred`, `accepted-exception`, `reference-only`, or `template-only` states after the discussion gate decision.
+- If v2 creates its own durable residuals, add `workflow/versions/v2/residuals/README.md` and `residuals.yaml`, then add a matching `version_residuals` entry in `workflow/residuals/residuals.yaml`.
+- V2 can reach queue candidates while v1 release residuals remain open, but promotion into `workflow/versions/v2/execution/**` still requires explicit approval and live mapping.
 
 Planning handoff requirements:
 

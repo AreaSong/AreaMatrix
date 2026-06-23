@@ -270,12 +270,15 @@ def _format_task_table(title: str, tasks: list[LightweightTask]) -> str:
 def _summary_counts(root: Path, tasks: list[LightweightTask]) -> dict[str, int]:
     active = [task for task in tasks if task.location == "active"]
     done = [task for task in tasks if task.location.startswith("done/")]
+    backlog_packages = discover_packages(root)
     return {
         "active": len(active),
         "done": len(done),
         "blocked": sum(1 for task in active if task.status == "blocked"),
         "verify_ready": sum(1 for task in active if task.status == "verify_ready"),
-        "backlog_packages": len(discover_packages(root)),
+        "backlog_packages": len(backlog_packages),
+        "backlog_open": sum(1 for package in backlog_packages if package.status != "closed"),
+        "backlog_closed": sum(1 for package in backlog_packages if package.status == "closed"),
         "backlog_records": len(discover_records(root)),
     }
 
@@ -291,6 +294,8 @@ def run_tasks_status(root: Path) -> int:
     print(f"- blocked: {counts['blocked']}")
     print(f"- verify_ready: {counts['verify_ready']}")
     print(f"- backlog prompt packages: {counts['backlog_packages']}")
+    print(f"- backlog open: {counts['backlog_open']}")
+    print(f"- backlog closed: {counts['backlog_closed']}")
     print(f"- backlog records: {counts['backlog_records']}")
     if not tasks:
         print()
@@ -308,6 +313,8 @@ def run_tasks_status(root: Path) -> int:
     print()
     print("Backlog")
     print(f"- prompt packages: {counts['backlog_packages']}")
+    print(f"- open: {counts['backlog_open']}")
+    print(f"- closed: {counts['backlog_closed']}")
     print(f"- records: {counts['backlog_records']}")
     print("- hint: ./dev backlog list")
     return 0
@@ -335,6 +342,8 @@ def run_tasks_doctor(root: Path) -> int:
     print(f"- active: {counts['active']}")
     print(f"- done: {counts['done']}")
     print(f"- backlog prompt packages: {counts['backlog_packages']}")
+    print(f"- backlog open: {counts['backlog_open']}")
+    print(f"- backlog closed: {counts['backlog_closed']}")
     print(f"- backlog records: {counts['backlog_records']}")
     return 0
 

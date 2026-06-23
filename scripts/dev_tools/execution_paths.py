@@ -50,6 +50,16 @@ def progress_path(root: Path | None = None, version: str | None = None) -> Path:
     return shared_root(root, version) / "progress.json"
 
 
+def evidence_root(root: Path | None = None, version: str | None = None) -> Path:
+    base = (root or project_root()).resolve()
+    version_id = version or default_execution_version()
+    return base / VERSION_ROOT / version_id / "evidence"
+
+
+def task_loop_runs_root(root: Path | None = None, version: str | None = None) -> Path:
+    return evidence_root(root, version) / "task-loop-runs"
+
+
 def copy_ready_root(root: Path | None = None, version: str | None = None) -> Path:
     return shared_root(root, version) / "copy-ready"
 

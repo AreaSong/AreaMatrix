@@ -30,6 +30,7 @@ Use this checklist before declaring docs, API, UDL, prompts, and Codex materials
 - `.codex/` should not define business behavior absent from `docs/` or `.ai-governance/`.
 - Skill changes should point to source docs instead of duplicating long specs.
 - `.agents/skills` must remain a projection, not a second source.
+- If residual wording changed, do `workflow/residuals/README.md`, `workflow/residuals/schema.md`, `workflow/residuals/residuals.yaml`, version residual indexes, `tasks/indexes/residuals.md`, and README navigation still agree?
 
 ## Final Evidence
 

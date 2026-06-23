@@ -19,7 +19,7 @@ git diff --name-only
 rg -n "Computer Use|macOS|SwiftUI|UI smoke|Browser|Chrome|截图|权限|隐私|密码|证据" .codex tasks/backlog docs apps 2>/dev/null
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .codex/references .codex/skills-src tasks/backlog
 ```
 

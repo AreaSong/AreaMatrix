@@ -16,10 +16,16 @@ Approval requirements:
 - `open_questions` and `blockers` are empty, closed, resolved, accepted, deferred, or not-applicable.
 - `risk_boundaries` is non-empty.
 
+Open question and residual boundary:
+
+- During discussion, unresolved product scope, Exact Docs, non-goals, v1 inheritance, or execution timing questions stay in `decisions.yaml`.
+- Do not create `workflow/versions/<version>/residuals/**` for ordinary discussion questions.
+- Create version residuals only when a discussion decision intentionally leaves a durable blocker, deferred item, accepted exception, reference-only item, or template-only item that must remain visible after discussion handoff.
+- When version residuals are created, synchronize both the version residual index and the global `workflow/residuals/residuals.yaml` `version_residuals` list.
+
 Use:
 
 ```bash
 ./dev workflow discuss --version <version> doctor
 ./dev workflow discuss --version <version> preview
 ```
-

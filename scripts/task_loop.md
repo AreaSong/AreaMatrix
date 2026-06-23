@@ -15,9 +15,9 @@
 - 验收必须通过（日志里出现 `VERIFY_RESULT: PASS`）才会继续下一任务。
 - 失败则会把功能、验证和工程质量失败摘要注入下一次 copy 提示，继续重试修复。
 - 进度统一写入 `workflow/versions/v1-mvp/execution/_shared/progress.json`，可直接被 `prompt_pipeline.py status/next` 读取。
-- 每次执行会持有 `.codex/task-loop-lock/` 运行锁，避免两个 runner 同时写 progress/logs。
-- 每次执行会写 `.codex/task-loop-runs/<run_id>/summary.json`，作为可上传、可续工的运行摘要。
-- 每次执行结束会更新 `.codex/task-loop-runs/index.json`，用于快速查看最近 run 的状态。
+- 每次执行会持有 `.codex/runtime/task-loop/lock/` 运行锁，避免两个 runner 同时写 progress/logs。
+- 每次执行会写 `workflow/versions/v1-mvp/evidence/task-loop-runs/<run_id>/summary.json`，作为可上传、可续工的运行摘要。
+- 每次执行结束会更新 `workflow/versions/v1-mvp/evidence/task-loop-runs/index.json`，用于快速查看最近 run 的状态。
 - 需要优雅收尾时，可用 `./task-loop drain` 请求 live runner 完成当前 task、Git checkpoint / push 和 summary 后停止，不进入下一个 task。
 - progress / stale / lock status / summary 逻辑集中在 `scripts/task_loop/state.py`；Python runner 负责 CLI、调度与 `codex exec`。
 - Git checkpoint 逻辑集中在 `scripts/task_loop/git.py`；默认每个 PASS task 自动本地 commit。
@@ -52,7 +52,7 @@ Repo-local skills：
 
 runner 会在 `codex exec` 子进程活着但目标 copy / verify 最终输出日志没有生成，且没有真实执行进展时持续显示 no-output 状态。真实执行进展指最终 `.log` 变化、Codex 子进程树中存在 `./dev check`、`xcodebuild`、`cargo`、`swift test` 等验证子进程，或 `.exec.log` 中出现新的命令开始 / 命令结束事件。`.exec.log` 文件大小增长本身只代表诊断流仍在写入，重复 diff、模型自述或长文本输出不再重置 idle 计时。如果 Codex 子进程树没有验证子进程，超过 `CODEX_IDLE_TIMEOUT_SECONDS` 会按 Codex / 模型 / 工具等待卡住处理，先终止并重启同一步骤；如果检测到验证子进程仍在运行，即使 `./dev check all`、`cargo test` 或 `xcodebuild` 超过 90 分钟，也不会因为默认墙钟硬超时被杀。`NO_OUTPUT_TIMEOUT_SECONDS` 默认是 `0`，表示禁用 legacy 硬超时；只有手动设置为正数且没有验证子进程时才会作为额外兜底。超过 `NO_OUTPUT_RESTART_LIMIT` 仍无输出时，才把当前 task 标记为失败；`CODEX_IDLE_TIMEOUT_SECONDS=0` 可临时禁用早期 idle 超时。
 
-`output` 指向 `codex exec -o` 的 final message 文件，不是实时流式日志；`exec` 指向 runner 捕获的 stdout/stderr stream，用来确认 CLI 曾经启动、工具调用输出了什么、失败前最后发生了什么。`.exec.log` 是本地诊断流，不是完成证据，也不是单独的健康证据，默认不进入 Git checkpoint。正式 run 启动新 child 前会扫描同仓库 `.codex/task-loop-logs` 下的孤儿 `codex exec`。默认 `ORPHAN_CODEX_POLICY=fail` 会阻止继续启动；确认要自动清理时可显式使用 `ORPHAN_CODEX_POLICY=terminate`。
+`output` 指向 `codex exec -o` 的 final message 文件，不是实时流式日志；`exec` 指向 runner 捕获的 stdout/stderr stream，用来确认 CLI 曾经启动、工具调用输出了什么、失败前最后发生了什么。`.exec.log` 是本地诊断流，不是完成证据，也不是单独的健康证据，默认不进入 Git checkpoint。正式 run 启动新 child 前会扫描同仓库 `.codex/runtime/task-loop/logs` 下的孤儿 `codex exec`。默认 `ORPHAN_CODEX_POLICY=fail` 会阻止继续启动；确认要自动清理时可显式使用 `ORPHAN_CODEX_POLICY=terminate`。
 
 正式执行前工作区必须干净。若当前在 `main`，runner 会自动创建 `codex/areamatrix-task-loop-<run_id>` 分支；dry-run 永远不会真实 commit 或 push。
 
@@ -87,9 +87,9 @@ task-loop 默认会在一次 repair retry 后停下，避免小任务长时间�
 启动或继续任务时，控制台会先阻止重复 live runner，再选择前台/后台、Git checkpoint 模式和任务数量上限；默认 Git 为本地 `commit`，任务数量为无限。
 优化或排查控制台时，优先用 `./dev preview` 预览命令，或用 `./dev dry-run` 跑临时目录演练；这两者都不会写真实 progress。
 
-默认语言为 `mixed`：命令、状态术语和 runtime 关键词保留英文，解释使用中文。首页顶部会显示当前 `lang mixed|zh|en`；语言优先级是 `./dev --lang mixed|zh|en` > `DEV_LANG=mixed|zh|en` > `.codex/dev-console/config.json` > `mixed`。交互模式输入 `lang` 会写入本仓库本地偏好，下次 `./dev` 自动沿用；命令和路径不翻译。
+默认语言为 `mixed`：命令、状态术语和 runtime 关键词保留英文，解释使用中文。首页顶部会显示当前 `lang mixed|zh|en`；语言优先级是 `./dev --lang mixed|zh|en` > `DEV_LANG=mixed|zh|en` > `.codex/runtime/dev-console/config.json` > `mixed`。交互模式输入 `lang` 会写入本仓库本地偏好，下次 `./dev` 自动沿用；命令和路径不翻译。
 `./dev` 自己打印的控制台文案由 `scripts/task_loop/locales/{mixed,zh,en}.json` 管理，并通过 `scripts/task_loop/i18n.py` 做 key、类型和 placeholder 完整性校验。首页、子菜单、快捷键和顶层命令的动作结构集中在 `scripts/task_loop/actions.py`；语言文件只放 `action.<id>.label/note` 等展示文案，实际执行函数仍在 `scripts/task_loop/console.py`。命令、路径、环境变量、task label 和底层 runner / workflow 透传输出不翻译。
-本地偏好目录 `.codex/dev-console/` 已在 `.gitignore` 中忽略，避免个人显示设置进入 git diff。
+本地偏好目录 `.codex/runtime/dev-console/` 已在 `.gitignore` 中忽略，避免个人显示设置进入 git diff。
 
 颜色默认强制开启；需要关闭时使用：
 
@@ -276,19 +276,19 @@ plans、drafts 和 queue candidates 都只是 review artifact，不会写 `workf
 
 ## 五、日志与进度
 
-runner 默认在 `.codex/task-loop-logs/<timestamp>/phase/...` 生成日志：
+runner 默认在 `.codex/runtime/task-loop/logs/<timestamp>/phase/...` 生成日志：
 
 - `*-copy-attempt-<n>.log`：第 n 次 copy 执行日志
 - `*-verify-attempt-<n>.log`：第 n 次 verify 日志；最后一行必须是 `VERIFY_RESULT: PASS` 或 `VERIFY_RESULT: FAIL`
 - `*.exec.log`：runner 捕获的 `codex exec` stdout/stderr 实时诊断流，本地排障用，不作为任务完成证据上传。
 
-verify 日志会保留简明验收报告。失败时脚本从日志尾部提取失败上下文，下一轮 copy 会按“全部全面修复”处理同一 task，不会进入下一个 task。`.codex/task-loop-logs/` 默认被 `.gitignore` 忽略；任务 `VERIFY_RESULT: PASS` 后，Git checkpoint 只会强制纳入该成功 attempt 对应的最终 copy / verify `.log`，不会纳入 `.exec.log` 或其他失败 / 卡住 attempt 的原始日志。
+verify 日志会保留简明验收报告。失败时脚本从日志尾部提取失败上下文，下一轮 copy 会按“全部全面修复”处理同一 task，不会进入下一个 task。`.codex/runtime/task-loop/logs/` 默认被 `.gitignore` 忽略；任务 `VERIFY_RESULT: PASS` 后，Git checkpoint 只会强制纳入该成功 attempt 对应的最终 copy / verify `.log`，不会纳入 `.exec.log` 或其他失败 / 卡住 attempt 的原始日志。
 
 运行摘要：
 
 ```
-.codex/task-loop-runs/<run_id>/summary.json
-.codex/task-loop-runs/index.json
+workflow/versions/v1-mvp/evidence/task-loop-runs/<run_id>/summary.json
+workflow/versions/v1-mvp/evidence/task-loop-runs/index.json
 ```
 
 `summary.json` 记录单次运行的参数、任务 attempts、copy/verify log 和最终状态。`index.json` 记录最近运行列表，便于上传或恢复上下文。
@@ -310,7 +310,7 @@ Git checkpoint 证据会写入 progress 和 summary：
 workflow/versions/v1-mvp/execution/_shared/progress.json
 ```
 
-旧版 `.codex/task-loop-state.txt` 只作为兼容读取，不再作为主进度源。
+旧版 `.codex/runtime/task-loop/state.txt` 只作为兼容读取，不再作为主进度源。
 
 查看自动执行状态：
 

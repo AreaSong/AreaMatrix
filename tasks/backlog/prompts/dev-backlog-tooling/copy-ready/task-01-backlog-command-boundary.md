@@ -18,8 +18,8 @@
 ## 非目标
 
 - 不实现 task-loop runner。
-- 不修改 `tasks/prompts/**`。
-- 不写 `tasks/prompts/_shared/progress.json`、logs、run summaries、runner lock 或 checkpoint。
+- 不修改 `workflow/versions/<version>/execution/**`。
+- 不写 `workflow/versions/<version>/execution/_shared/progress.json`、logs、run summaries、runner lock 或 checkpoint。
 - 不把 backlog prompt package promotion 成 live queue。
 - 不改 Vibe-Skills 仓库，不接入外部 runtime。
 
@@ -27,7 +27,7 @@
 
 - Backlog boundary: `tasks/backlog/README.md`
 - Workflow boundary: `workflow/AGENTS.md`、`workflow/README.md`
-- Live queue boundary: `tasks/prompts/README.md`
+- Live queue boundary: `workflow/versions/v1-mvp/execution/README.md`
 - Runtime governance: `.ai-governance/workflows/prompt-task-runtime.md`
 - Dev console architecture: `dev`、`scripts/task_loop/console.py`、`scripts/task_loop/actions.py`、`scripts/dev_tools/cli.py`
 
@@ -43,7 +43,7 @@
 2. `tasks/backlog/README.md`
 3. `workflow/AGENTS.md`
 4. `workflow/README.md`
-5. `tasks/prompts/README.md`
+5. `workflow/versions/v1-mvp/execution/README.md`
 6. `.ai-governance/workflows/prompt-task-runtime.md`
 7. `dev`
 8. `scripts/task_loop/console.py`
@@ -59,13 +59,13 @@
 
 ## 禁止修改
 
-- `tasks/prompts/**`
+- `workflow/versions/<version>/execution/**`
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
 - `../Vibe-Skills/**`
-- `.codex/task-loop-logs/**`
-- `.codex/task-loop-runs/**`
+- `.codex/runtime/task-loop/logs/**`
+- `workflow/versions/v1-mvp/evidence/task-loop-runs/**`
 - task-loop lock/control/checkpoint state
 
 ## 执行要求
@@ -77,7 +77,7 @@
    - `show <package>`: 打印 package README 或任务索引。
    - `show <package> --task N --mode copy|verify`: 打印对应 prompt 文件内容。
 4. 明确错误语义：未知 package、未知 task、缺少 mode、文件缺失都返回非零并给出可操作错误。
-5. 明确只读约束：命令不得调用 `./task-loop`、不得调用 `codex exec`、不得写 progress、不得修改 `tasks/prompts/**`。
+5. 明确只读约束：命令不得调用 `./task-loop`、不得调用 `codex exec`、不得写 progress、不得修改 `workflow/versions/<version>/execution/**`。
 6. 若新增设计说明，保持简短；不要生成低价值大报告。
 
 ## Rollback / Blocked
@@ -90,8 +90,8 @@
 
 ```bash
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- tasks/backlog scripts/dev_tools scripts/task_loop
 ```
 
-汇报时说明命令边界、接入点、后续任务是否可以继续，以及本任务未触碰 `tasks/prompts/**`。
+汇报时说明命令边界、接入点、后续任务是否可以继续，以及本任务未触碰 `workflow/versions/<version>/execution/**`。

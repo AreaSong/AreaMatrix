@@ -27,7 +27,7 @@ git diff --name-only
 rg -n "Browser|Chrome|Computer Use|UI smoke|GUI|screenshot|xcodebuild|cargo|prompt doctor|Mission-Critical|隐私|用户文件|不可逆" .codex tasks/backlog
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .codex/references .codex/skills-src tasks/backlog
 ```
 

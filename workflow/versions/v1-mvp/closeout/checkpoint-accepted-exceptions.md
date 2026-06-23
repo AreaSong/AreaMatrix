@@ -19,7 +19,7 @@ Each accepted exception below satisfied all of these checks:
 - `progress.json` status is `completed`.
 - The referenced final copy log exists locally.
 - The referenced final verify log exists locally and contains `VERIFY_RESULT: PASS`.
-- The matching `.codex/task-loop-runs/<run_id>/summary.json` exists and is tracked in Git.
+- The matching `workflow/versions/v1-mvp/evidence/task-loop-runs/<run_id>/summary.json` exists and is tracked in Git.
 - The tracked run summary records the task as `completed`.
 - The tracked run summary records `git.checkpoint=off`, explaining why per-task checkpoint metadata is absent.
 
@@ -77,6 +77,6 @@ Each accepted exception below satisfied all of these checks:
 
 ## Remaining Closeout Work
 
-- Keep `archive_readiness` blocked until release blockers are closed or explicitly deferred.
-- Decide whether to archive the local copy / verify logs as a separate evidence bundle, or rely on this accepted-exception record plus tracked run summaries.
+- `archive_readiness` is now `evidence-bundle-ready` in `version.yaml` and `closeout.yaml`; formal alpha release remains blocked separately by the deferred release blockers.
+- The current closeout decision relies on this accepted-exception record plus tracked run summaries. Copy / verify logs remain local runtime evidence indexed by `checkpoint-evidence-index.md`; a separate evidence bundle is optional and should not rewrite `progress.json` or task-loop history.
 - Handle `3-1/task-05` through release evidence review.

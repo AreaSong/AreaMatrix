@@ -20,7 +20,7 @@ git diff --name-only
 rg -n "hooks|hook|只读|guardrail|dirty worktree|live runner|checkpoint|plugin_hooks|回滚" .codex .ai-governance tasks/backlog
 ./dev check governance
 ./dev check skills
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .ai-governance .codex tasks/backlog
 ```
 

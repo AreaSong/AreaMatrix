@@ -18,7 +18,7 @@
 - 不实现新功能。
 - 不新增 skill。
 - 不安装或启用 Vibe-Skills。
-- 不修改 `tasks/prompts/**`。
+- 不修改 `workflow/versions/<version>/execution/**`。
 - 不写 progress、runner state、checkpoint 或 run summary。
 
 ## Source of Truth
@@ -26,7 +26,7 @@
 - Product behavior: `docs/**`
 - Governance behavior: `.ai-governance/**`
 - Codex operating material: `.codex/references/**` and `.codex/skills-src/**`
-- Live queue: `tasks/prompts/**`
+- Live queue: `workflow/versions/<version>/execution/**`
 - Backlog planning: `tasks/backlog/**`
 - Workflow planning: `workflow/**`
 
@@ -58,7 +58,7 @@
 
 ## 禁止修改
 
-- `tasks/prompts/**`
+- `workflow/versions/<version>/execution/**`
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
@@ -75,7 +75,7 @@
 
 ## Rollback / Blocked
 
-- 若发现 inventory 需要修改 `tasks/prompts/**` 才能成立，停止并标记 blocked。
+- 若发现 inventory 需要修改 `workflow/versions/<version>/execution/**` 才能成立，停止并标记 blocked。
 - 若发现某能力已经污染 live queue 或 progress，只记录证据和风险，不在本任务修复。
 - 若 `./dev backlog` 不可用，记录为 inventory gap，后续回到 dev-backlog-tooling 修复。
 
@@ -85,8 +85,8 @@
 ./dev backlog list
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- tasks/backlog .codex/references
 ```
 
-汇报时说明盘点范围、发现的 gap、验证结果和未触碰 `tasks/prompts/**`。
+汇报时说明盘点范围、发现的 gap、验证结果和未触碰 `workflow/versions/<version>/execution/**`。

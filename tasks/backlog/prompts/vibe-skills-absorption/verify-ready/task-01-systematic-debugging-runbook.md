@@ -10,7 +10,7 @@
 - 明确原因不明时先复现和收证，不直接猜测修复。
 - 能区分 copy / verify / validation / runner / checkpoint / docs drift / file safety 等失败层。
 - 使用现有 AreaMatrix skill owner，不新增重复 `systematic-debugging` skill。
-- 未修改 `tasks/prompts/**`。
+- 未修改 `workflow/versions/<version>/execution/**`。
 - 未修改 Vibe-Skills 仓库。
 
 ## 只读检查
@@ -20,7 +20,7 @@ git diff --name-only
 rg -n "debug|调试|失败归因|root cause|复现|收证|copy|verify|checkpoint|dirty worktree|doc-sync|file-safety" .ai-governance .codex/references .codex/skills-src tasks/backlog
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .ai-governance .codex/references .codex/skills-src tasks/backlog
 ```
 

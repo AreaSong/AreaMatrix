@@ -54,7 +54,7 @@
 
 只读检查：
 
-- 读取 `.codex/task-loop-lock/pid`、`.codex/task-loop-lock/run_id`、`.codex/task-loop-lock/activity.json`。
+- 读取 `.codex/runtime/task-loop/lock/pid`、`.codex/runtime/task-loop/lock/run_id`、`.codex/runtime/task-loop/lock/activity.json`。
 - 对 `pid` 执行 `kill -0 <pid>` 或等价只读进程存在性检查。
 - 可辅助读取 `./task-loop status`，但 hook 脚本不得调用 `run`、`drain`、`reset-progress`、`clear-stale`、`resume-stale`。
 

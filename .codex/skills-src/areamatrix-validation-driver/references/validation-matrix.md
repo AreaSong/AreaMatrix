@@ -28,8 +28,8 @@ If required validation cannot run, or any review, security, dependency, CI, or G
 | prompt manifests or shared rules | add `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py status` and render one affected task |
 | prompt coverage or control maps | add `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py audit --pages` |
 | `task-loop`, `dev`, `scripts/task_loop/**`, `scripts/dev_tools/**` | `python3 -m py_compile scripts/task_loop/*.py scripts/dev_tools/*.py`; `./task-loop status`; `./dev preflight`; `./task-loop check` |
-| `.codex/skills-src/**` or `.agents/skills/**` | `./dev check skills`; `./dev check prompts` |
-| governance docs, PR/issue templates, CODEOWNERS, CI workflows | `./dev check governance`; `./dev check skills`; `./dev check prompts`; YAML parse workflows |
+| `.codex/skills-src/**` or `.agents/skills/**` | `./dev check skills`; `./dev check quality`; `./dev check prompts` |
+| governance docs, PR/issue templates, CODEOWNERS, CI workflows | `./dev check governance`; `./dev check skills`; `./dev check quality`; `./dev check prompts`; YAML parse workflows |
 
 Dry-run examples:
 
@@ -131,7 +131,7 @@ For mixed changes, combine relevant rows. Examples:
 - `core/**` + `docs/api/**`: run Rust core checks and doc-sync checks.
 - `workflow/versions/<version>/execution/**` + `scripts/**`: run prompt doctor and script syntax/status/dry-run checks.
 - file safety behavior + docs: run implementation tests plus file-safety acceptance evidence.
-- governance docs + skills + CI: run governance check, skill health, prompt doctor, and YAML parse.
+- governance docs + skills + CI: run governance check, skill health, quality smoke, prompt doctor, and YAML parse.
 
 ## When To Widen
 

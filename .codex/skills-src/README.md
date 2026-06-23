@@ -22,6 +22,7 @@
 - `areamatrix-doc-sync`
 - `areamatrix-file-safety`
 - `areamatrix-workflow-planning`：v* 版本规划、docs 讨论、中间层讨论和 prompt 生成前门禁。
+- `areamatrix-residual-ledger`：release blocker、accepted exception、historical reference、template-only 和 task-facing residual 索引。
 
 ## Owner 边界
 
@@ -34,6 +35,7 @@
 | `areamatrix-file-safety` | 用户文件、`.areamatrix/` 元数据、DB、staging、reindex、FSEvents / iCloud、生成概览安全 | 验证命令交给 `areamatrix-validation-driver`；Core API / UDL 对齐交给 `areamatrix-doc-sync` |
 | `areamatrix-workflow-planning` | `workflow/versions/v*` discussion gate、middle-layer handoff、changes / plans / drafts / queue / promotion preview | promoted `workflow/versions/<version>/execution/**` 执行交给 `areamatrix-task-loop`；源事实漂移交给 `areamatrix-doc-sync` |
 | `areamatrix-enterprise-governance` | review、安全、依赖、CI、CODEOWNERS、PR 模板、治理漂移 | 最小验证集交给 `areamatrix-validation-driver`；Git checkpoint 机制交给 `areamatrix-git-checkpoint` |
+| `areamatrix-residual-ledger` | release / reference / template / backlog / product-marker 遗留项索引 | 产品语义交给 `areamatrix-doc-sync`；可执行任务进入 `tasks/active/**` 前交给 `areamatrix-workflow-planning` 或对应任务 owner；release 证据仍以 `workflow/versions/<version>/evidence/**` 为准 |
 
 交叉引用只用于交接 owner，不把一个 skill 的完整规则复制到另一个 skill。
 
@@ -47,4 +49,4 @@
 
 - 变更 skill 时，同时检查 `agents/openai.yaml` 是否仍与 `SKILL.md` 匹配。
 - 不在 skill 目录内添加 README、变更日志或低价值说明文件。
-- 验收时先运行 `./dev check skills`；涉及 task-loop 时再运行 `./task-loop check` 和 prompt runner 基线。
+- 验收时先运行 `./dev check skills` 和 `./dev check quality`；涉及 task-loop 时再运行 `./task-loop check` 和 prompt runner 基线。

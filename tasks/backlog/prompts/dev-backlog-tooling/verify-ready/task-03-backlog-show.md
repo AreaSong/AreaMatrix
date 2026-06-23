@@ -35,7 +35,7 @@ python3 -m unittest scripts.dev_tools.test_backlog_tools
 ./dev backlog show dev-backlog-tooling --task 999 --mode copy
 git status --short
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 ./task-loop check
 git diff --check -- scripts/dev_tools scripts/task_loop tasks/backlog
 ```

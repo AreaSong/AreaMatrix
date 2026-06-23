@@ -11,7 +11,7 @@
 - threat model checklist 覆盖资产、信任边界、入口、攻击能力、abuse path、缓解措施和 residual risk。
 - 没有新增重复 `code-reviewer` 或 `security-threat-model` repo-local skill。
 - 用户文件、DB、staging、iCloud/FSEvents、隐私、远程 AI 调用仍按高风险边界处理。
-- 未修改 `tasks/prompts/**` 和 Vibe-Skills 仓库。
+- 未修改 `workflow/versions/<version>/execution/**` 和 Vibe-Skills 仓库。
 
 ## 只读检查
 
@@ -20,7 +20,7 @@ git diff --name-only
 rg -n "findings|review|correctness|regression|missing tests|security|threat|asset|trust boundary|abuse|residual risk|用户文件|隐私|iCloud|FSEvents|远程" CODE_REVIEW.md SECURITY.md .ai-governance .codex/references .codex/skills-src tasks/backlog
 ./dev check skills
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- CODE_REVIEW.md SECURITY.md .ai-governance .codex/references .codex/skills-src tasks/backlog
 ```
 

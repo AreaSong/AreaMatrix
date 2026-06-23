@@ -19,6 +19,9 @@ jobs:
       - name: Skill health
         run: ./dev check skills
 
+      - name: Quality smoke
+        run: ./dev check quality
+
       - name: Task-loop health
         run: ./dev check task-loop
 

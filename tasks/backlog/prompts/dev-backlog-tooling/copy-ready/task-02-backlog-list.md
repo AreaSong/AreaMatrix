@@ -16,7 +16,7 @@
 
 - 不实现 `show`。
 - 不执行 copy-ready 或 verify-ready prompt。
-- 不修改 `tasks/prompts/**`。
+- 不修改 `workflow/versions/<version>/execution/**`。
 - 不写 progress、logs、run summaries、runner lock、checkpoint。
 - 不接入第二套 runner 或 promotion 机制。
 
@@ -59,7 +59,7 @@
 
 ## 禁止修改
 
-- `tasks/prompts/**`
+- `workflow/versions/<version>/execution/**`
 - `core/**`
 - `apps/**`
 - `workflow/versions/**`
@@ -93,9 +93,9 @@ python3 -m py_compile scripts/dev_tools/*.py scripts/task_loop/*.py
 python3 -m unittest scripts.dev_tools.test_backlog_tools
 ./dev backlog list
 ./dev check governance
-python3 tasks/prompts/_shared/prompt_pipeline.py doctor
+python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 ./task-loop check
 git diff --check -- scripts/dev_tools scripts/task_loop tasks/backlog
 ```
 
-汇报时说明输出示例、测试结果、只读保证和未触碰 `tasks/prompts/**`。
+汇报时说明输出示例、测试结果、只读保证和未触碰 `workflow/versions/<version>/execution/**`。
