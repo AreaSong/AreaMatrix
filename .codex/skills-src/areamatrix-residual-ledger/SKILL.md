@@ -22,8 +22,10 @@ Use this skill to answer “what remains unresolved?” without confusing produc
 2. Load [references/classification-guide.md](references/classification-guide.md) before deciding whether something can become a task.
 3. Start from the residual ledger, then open the linked source file for authoritative details.
 4. Report the residual `id`, `status`, `type`, source file, current impact, and close condition.
-5. If a user wants implementation work, check `executable_task` before suggesting `tasks/active/**` or workflow promotion.
-6. If updating residuals, update the authoritative source first, then the residual ledger.
+5. For broad questions such as "what remains unresolved?", report the full residual ID inventory from `workflow/residuals/README.md`, not only the current release blockers. Include `reference-only`, `template-only`, `accepted-exception`, closed backlog references, and product-doc markers as a separate "indexed but not current tasks" group.
+6. Phrase the conclusion as two scopes: current blockers / executable task state, and full residual ledger state. Do not say or imply that release blockers are the only residual items.
+7. If a user wants implementation work, check `executable_task` before suggesting `tasks/active/**` or workflow promotion.
+8. If updating residuals, update the authoritative source first, then the residual ledger.
 
 ## Guardrails
 

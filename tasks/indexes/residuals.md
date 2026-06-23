@@ -15,17 +15,22 @@
 | `tasks/backlog/prompts/**` | 5 closed / 0 open |
 | `workflow/versions/v1-mvp/execution/**` | 637 / 637 complete |
 
-## 不自动转任务的 residuals
+## 全量 residual task 视角
 
 | ID | 状态 | 原因 | 来源 |
 |---|---|---|---|
 | `v1-rl-002` | `blocked-external` | 需要真实 iCloud placeholder 环境。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
 | `v1-rl-003` | `blocked-external` | 需要 Apple Developer Program、Developer ID、notarization、clean Mac。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
 | `v1-rl-004` | `blocked-decision` | 正式 tag 依赖 release decision。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
+| `v1-rl-006` | `blocked-decision` | alpha tester 名单、反馈入口和反馈路径需要 release decision。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
+| `v1-ref-003-1-task-05` | `deferred` | 走 release evidence review，不补造 task-loop verify evidence。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
 | `v1-ex-001` | `accepted-exception` | 已接受 checkpoint gaps，不补造历史。 | [accepted exceptions](../../workflow/versions/v1-mvp/residuals/accepted-exceptions.md) |
 | `global-ref-areaflow` | `reference-only` | 历史愿景，不是 AreaMatrix 当前任务。 | [non-current references](../../workflow/residuals/non-current-references.md) |
 | `global-template-vtemplate` | `template-only` | 模板参考实例，blocked-by-design。 | [non-current references](../../workflow/residuals/non-current-references.md) |
 | `global-ref-closed-backlog-packages` | `reference-only` | 5 个 backlog prompt package 均 closed。 | [tasks backlog](../backlog/README.md) |
+| `global-marker-product-doc-status-words` | `reference-only` | 产品文档状态词是产品行为/API 状态，不是 task state。 | [non-current references](../../workflow/residuals/non-current-references.md) |
+
+宽泛查询“还有什么问题没有解决”时，不允许只输出当前阻塞项；必须同时列出本表里的非当前待办项，并明确它们不是 active task。
 
 ## 转成 task 的条件
 

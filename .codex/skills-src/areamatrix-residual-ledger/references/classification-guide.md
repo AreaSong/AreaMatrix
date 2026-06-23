@@ -24,6 +24,27 @@ Use this guide to keep AreaMatrix residual tracking separate from product docs, 
 - Use `accepted-exception` for closeout-approved historical gaps.
 - Use `closed` only when the linked source confirms closure.
 
+## Reporting Rule
+
+When answering broad questions like "还有什么问题没有解决", "还有哪些未完成", or "what remains unresolved", use two groups:
+
+1. **Current unresolved blockers**: `open`, `blocked-external`, `blocked-decision`, and relevant `deferred` items that still affect release, planning, or execution.
+2. **Indexed but not current tasks**: `reference-only`, `template-only`, `accepted-exception`, and closed backlog references.
+
+Always include both groups when they exist. The answer must cover every ID in `workflow/residuals/README.md` "全量 residual ID 清单" and must not compress non-current items into prose. For example, AreaFlow must appear as `global-ref-areaflow` / `reference-only`, with the explanation that it is historical vision material and not a current AreaMatrix task.
+
+Conclusion wording:
+
+- Good: "当前没有 active task；当前阻塞正式 alpha 的是 release evidence / release decision。完整 residual ledger 还包括 reference-only、template-only、accepted-exception、closed backlog 和 product-doc marker 项。"
+- Avoid: "真正没解决的只有正式 Stage 1 alpha 发布证据。" This hides indexed residuals unless followed immediately by the full residual inventory.
+
+Completeness check before answering:
+
+1. Read `workflow/residuals/README.md`.
+2. Read every `version_residuals[].source` from `workflow/residuals/residuals.yaml`.
+3. Compare the response against the full residual ID inventory.
+4. If any ID is omitted, fix the response before sending it.
+
 ## Docs Boundary
 
 Do not move product docs into `workflow/residuals/**` just because they contain unfinished-sounding words. Keep product requirements in `docs/**`; remove task-like formatting when needed, then add or update a residual index entry only when the wording can affect planning, release, or collaboration judgment.
