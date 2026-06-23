@@ -104,6 +104,12 @@ Task-loop 的 `VERIFY_RESULT: PASS` 是单任务验收证据。合并前仍需 C
 
 它不替代 `cargo fmt`、`cargo clippy`、SwiftLint、SwiftFormat、XCTest、review 或 release evidence，只负责把“该读哪个规则、该触发哪个 owner”固定成可执行检查。
 
+## Secret Scan Checkout
+
+`governance-ci.yml` 必须用 `actions/checkout` 的 `fetch-depth: 0`。`gitleaks/gitleaks-action`
+在 push / merge commit 上会扫描 Git revision range；浅克隆缺少 parent commit 时会把
+`<before>..<after>` 解析成 ambiguous revision，导致扫描未完成并以错误退出。
+
 ## Related
 
 - [testing.md](testing.md)
