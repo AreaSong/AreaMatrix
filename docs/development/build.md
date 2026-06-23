@@ -31,54 +31,34 @@ flowchart LR
 
 ---
 
-## 完整构建脚本
+## Core 构建入口
 
-文件：`./dev build core`
+`./dev build core` 是仓库根目录 `./dev` 的 CLI 子命令，不是独立脚本文件。
+命令定义在 `scripts/dev_tools/cli.py`，构建实现位于 `scripts/dev_tools/build.py`。
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CORE_DIR="${PROJECT_ROOT}/core"
-OUT_DIR="${PROJECT_ROOT}/apps/macos/AreaMatrix/Bridge/Generated"
-PROFILE="${BUILD_PROFILE:-release}"
-
-echo "==> Building core ($PROFILE)"
-
-cd "${CORE_DIR}"
-
-# 1. 构建两个 target 的 staticlib
-cargo build --${PROFILE} --target aarch64-apple-darwin
-cargo build --${PROFILE} --target x86_64-apple-darwin
-
-# 2. 创建输出目录
-mkdir -p "${OUT_DIR}"
-
-# 3. lipo 合并
-lipo -create \
-    "target/aarch64-apple-darwin/${PROFILE}/libarea_matrix_core.a" \
-    "target/x86_64-apple-darwin/${PROFILE}/libarea_matrix_core.a" \
-    -output "${OUT_DIR}/libarea_matrix_core.a"
-
-# 4. 生成 Swift bindings
-echo "==> Generating Swift bindings"
-uniffi-bindgen generate \
-    --library "target/aarch64-apple-darwin/${PROFILE}/libarea_matrix_core.dylib" \
-    --language swift \
-    --out-dir "${OUT_DIR}"
-
-# 5. 报告
-echo "==> Done"
-echo "    staticlib: ${OUT_DIR}/libarea_matrix_core.a"
-echo "    swift:     ${OUT_DIR}/area_matrix.swift"
-echo "    header:    ${OUT_DIR}/area_matrixFFI.h"
+./dev build core --help
 ```
 
-赋可执行权限：
+当前子命令执行以下步骤：
+
+1. 检查 `cargo`、`rustc`、`lipo`、`core/Cargo.toml`、`core/area_matrix.udl` 和 `core/build.rs`。
+2. 确认当前 host 是 macOS Rust host。
+3. 构建 `aarch64-apple-darwin` 与 `x86_64-apple-darwin` 两个 target。
+4. 用 `lipo` 合并 `apps/macos/AreaMatrix/Bridge/Generated/libarea_matrix_core.a`。
+5. 使用 host dylib 与 `core/area_matrix.udl` 生成 Swift bindings。
+
+默认输出目录 `apps/macos/AreaMatrix/Bridge/Generated/` 是 `.gitignore` 忽略的本地生成产物目录，
+用于检查 universal staticlib 与最新 bindings。当前 Xcode 工程消费的 tracked bindings 位于
+`apps/macos/AreaMatrix/Bridge/UniFFI/`，并直接链接 `core/target/aarch64-apple-darwin/<profile>/libarea_matrix_core.a`。
+
+常用参数：
 
 ```bash
-chmod +x ./dev build core
+./dev build core
+./dev build core --profile debug
+./dev build core --out-dir /tmp/areamatrix-generated
+./dev build core --deployment-target 14.0
 ```
 
 ---
@@ -97,7 +77,7 @@ publish = false
 
 [lib]
 name = "area_matrix_core"
-crate-type = ["staticlib", "cdylib"]
+crate-type = ["rlib", "staticlib", "cdylib"]
 
 [dependencies]
 uniffi = { version = "0.28", features = ["build"] }
@@ -140,31 +120,36 @@ fn main() {
 
 ## Xcode 集成
 
-### 添加 staticlib
+当前 `apps/macos/AreaMatrix.xcodeproj` 已配置好 Core 静态库和 tracked UniFFI bindings：
 
-1. Xcode 项目导航 → 右键项目 → Add Files To "AreaMatrix"
-2. 选 `apps/macos/AreaMatrix/Bridge/Generated/libarea_matrix_core.a`
-3. Target Membership 勾上 AreaMatrix
+- Build Phase `Build Core Static Library` 构建 `core/target/aarch64-apple-darwin/$(AREAMATRIX_CORE_PROFILE)/libarea_matrix_core.a`。
+- `LIBRARY_SEARCH_PATHS` 指向 `$(SRCROOT)/../../core/target/aarch64-apple-darwin/$(AREAMATRIX_CORE_PROFILE)`。
+- `OTHER_LDFLAGS` 使用 `-larea_matrix_core`。
+- Swift source 引用 `AreaMatrix/Bridge/UniFFI/area_matrix.swift`。
+- Bridging header 引用 `Bridge/UniFFI/area_matrixFFI.h`。
 
-### 添加生成的 Swift 文件
+### 更新 tracked bindings
 
-1. 同样方式添加 `area_matrix.swift`
+如果 `core/area_matrix.udl` 的公开接口变更，并且需要提交 Xcode 工程实际消费的 Swift bindings，
+将 bindings 显式生成到 `Bridge/UniFFI/`：
+
+```bash
+./dev bindings update --udl core/area_matrix.udl --out-dir apps/macos/AreaMatrix/Bridge/UniFFI
+```
 
 ### Bridging Header 配置
-
-虽然 Swift 与 Rust 通过自动生成的 `area_matrix.swift` 通信，但 UniFFI 仍需要 C 头：
 
 `apps/macos/AreaMatrix/AreaMatrix-Bridging-Header.h`：
 
 ```c
-#import "Bridge/Generated/area_matrixFFI.h"
+#import "Bridge/UniFFI/area_matrixFFI.h"
 ```
 
 在 Build Settings 中：
 
 - `Objective-C Bridging Header` → `AreaMatrix/AreaMatrix-Bridging-Header.h`
-- `Header Search Paths` → `$(SRCROOT)/AreaMatrix/Bridge/Generated`
-- `Library Search Paths` → `$(SRCROOT)/AreaMatrix/Bridge/Generated`
+- `Header Search Paths` → `$(SRCROOT)/AreaMatrix/Bridge/UniFFI`
+- `Library Search Paths` → `$(SRCROOT)/../../core/target/aarch64-apple-darwin/$(AREAMATRIX_CORE_PROFILE)`
 - `Other Linker Flags` → `-larea_matrix_core`
 
 ---

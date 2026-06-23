@@ -8,6 +8,7 @@ from .contracts import task_detail_kind
 from .paths import (
     AUDIT_RULES,
     CODING_STANDARDS,
+    COPY_READY_ROOT,
     DEPENDENCY_GRAPH,
     ENGINEERING_QUALITY_RULES,
     EXTERNAL_LINK_RE,
@@ -19,6 +20,7 @@ from .paths import (
     TASK_SLICING_RULES,
     VALIDATION_DRIVER_MATRIX,
     VALIDATION_DRIVER_REPORT,
+    VERIFY_READY_ROOT,
     ManifestEntry,
     TaskFile,
     label_sort_key,
@@ -98,8 +100,10 @@ def allows_external_dependencies() -> bool:
     return EXECUTION_VERSION != "v1-mvp"
 
 
-def markdown_link_audit_paths() -> list[Path]:
+def markdown_link_audit_paths(*, include_static_prompts: bool = True) -> list[Path]:
     paths = base_markdown_link_paths()
+    if include_static_prompts:
+        paths.extend(static_prompt_markdown_link_paths())
     paths.extend(sorted(MANIFEST_ROOT.glob("phase-*.md")))
     paths.extend(sorted((ROOT / "docs" / "ux" / "page-specs").glob("*.md")))
     paths.extend(sorted((ROOT / "docs" / "core" / "capability-specs").glob("*.md")))
@@ -110,12 +114,21 @@ def markdown_link_audit_paths() -> list[Path]:
     return unique_paths(paths)
 
 
+def static_prompt_markdown_link_paths() -> list[Path]:
+    paths: list[Path] = []
+    paths.extend(sorted(COPY_READY_ROOT.glob("phase-*/*.md")))
+    paths.extend(sorted(VERIFY_READY_ROOT.glob("phase-*/*.md")))
+    return paths
+
+
 def base_markdown_link_paths() -> list[Path]:
     from .paths import PROMPTS_ROOT, SHARED_ROOT
 
     return [
         PROMPTS_ROOT / "README.md",
         SHARED_ROOT / "README.md",
+        COPY_READY_ROOT / "README.md",
+        VERIFY_READY_ROOT / "README.md",
         AUDIT_RULES,
         TASK_SLICING_RULES,
         ENGINEERING_QUALITY_RULES,
@@ -147,9 +160,9 @@ def markdown_link_target(raw_target: str) -> str | None:
     return target or None
 
 
-def validate_markdown_links() -> list[str]:
+def validate_markdown_links(*, include_static_prompts: bool = True) -> list[str]:
     errors: list[str] = []
-    for path in markdown_link_audit_paths():
+    for path in markdown_link_audit_paths(include_static_prompts=include_static_prompts):
         errors.extend(validate_markdown_file_links(path))
     return errors
 
@@ -196,7 +209,9 @@ def validate_markdown_target(
     return []
 
 
-def collect_doctor_findings() -> tuple[list[str], list[str], dict[str, TaskFile], dict[str, ManifestEntry]]:
+def collect_doctor_findings(
+    *, include_static_prompts: bool = True
+) -> tuple[list[str], list[str], dict[str, TaskFile], dict[str, ManifestEntry]]:
     tasks, manifests, errors = load_task_and_manifest_state()
     if errors:
         return errors, [], tasks, manifests
@@ -208,7 +223,7 @@ def collect_doctor_findings() -> tuple[list[str], list[str], dict[str, TaskFile]
     if requires_product_coverage():
         errors.extend(validate_page_contract_coverage(tasks, manifests))
         errors.extend(validate_core_task_coverage(tasks, manifests))
-    errors.extend(validate_markdown_links())
+    errors.extend(validate_markdown_links(include_static_prompts=include_static_prompts))
     return errors, warnings, tasks, manifests
 
 

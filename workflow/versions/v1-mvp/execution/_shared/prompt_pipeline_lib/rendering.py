@@ -3,7 +3,9 @@ from __future__ import annotations
 from contextlib import redirect_stdout
 from dataclasses import dataclass
 import io
+import os
 from pathlib import Path
+import re
 
 from .contracts import (
     binding_summary,
@@ -27,9 +29,13 @@ from .paths import (
     VALIDATION_DRIVER_SKILL,
     ManifestEntry,
     TaskFile,
+    rel,
     prompt_rel,
 )
 from .repository import markdown_section, skill_file
+
+
+PROMPT_MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[([^\]]+)\]\(([^)]+)\)")
 
 
 @dataclass(frozen=True)
@@ -51,7 +57,7 @@ class PromptContext:
 
 
 def build_prompt_context(task: TaskFile, entry: ManifestEntry) -> PromptContext:
-    task_text = task.path.read_text(encoding="utf-8")
+    task_text = prompt_markdown(task.path)
     expected, covered, missing, extra = page_contract_summary(task, entry)
     ux_binding, capability_binding = binding_summary(entry)
     return PromptContext(
@@ -113,15 +119,15 @@ def print_validation_driver_reference() -> None:
     print()
     print("### Skill")
     print()
-    print(VALIDATION_DRIVER_SKILL.read_text(encoding="utf-8").strip())
+    print(prompt_markdown(VALIDATION_DRIVER_SKILL).strip())
     print()
     print("### Validation Matrix")
     print()
-    print(VALIDATION_DRIVER_MATRIX.read_text(encoding="utf-8").strip())
+    print(prompt_markdown(VALIDATION_DRIVER_MATRIX).strip())
     print()
     print("### Report Format")
     print()
-    print(VALIDATION_DRIVER_REPORT.read_text(encoding="utf-8").strip())
+    print(prompt_markdown(VALIDATION_DRIVER_REPORT).strip())
     print()
 
 
@@ -320,15 +326,15 @@ def print_verify_body(entry: ManifestEntry, ctx: PromptContext) -> None:
 def print_shared_docs(include_validation: bool) -> None:
     print("## 共享规则")
     print()
-    print(AUDIT_RULES.read_text(encoding="utf-8").strip())
+    print(prompt_markdown(AUDIT_RULES).strip())
     print()
     print("## 任务切片规则")
     print()
-    print(TASK_SLICING_RULES.read_text(encoding="utf-8").strip())
+    print(prompt_markdown(TASK_SLICING_RULES).strip())
     print()
     print("## 工程质量规则")
     print()
-    print(ENGINEERING_QUALITY_RULES.read_text(encoding="utf-8").strip())
+    print(prompt_markdown(ENGINEERING_QUALITY_RULES).strip())
     print()
     print_repo_local_skill_paths()
     if include_validation:
@@ -491,9 +497,9 @@ def print_verify_forbidden() -> None:
         print(f"- {item}")
 
 
-def capture_task_prompt(task: TaskFile, entry: ManifestEntry, mode: str) -> str:
+def capture_task_prompt(task: TaskFile, entry: ManifestEntry, mode: str, *, output_path: Path | None = None) -> str:
     buffer = io.StringIO()
-    with redirect_stdout(buffer):
+    with PromptLinkOutputPath(output_path), redirect_stdout(buffer):
         if mode == "copy":
             print_copy_prompt(task, entry)
         elif mode == "verify":
@@ -502,6 +508,106 @@ def capture_task_prompt(task: TaskFile, entry: ManifestEntry, mode: str) -> str:
             raise ValueError(f"unknown prompt mode: {mode}")
     text = buffer.getvalue()
     return text if text.endswith("\n") else text + "\n"
+
+
+_PROMPT_LINK_OUTPUT_PATH: Path | None = None
+
+
+class PromptLinkOutputPath:
+    def __init__(self, output_path: Path | None) -> None:
+        self.output_path = output_path
+        self.previous: Path | None = None
+
+    def __enter__(self) -> None:
+        global _PROMPT_LINK_OUTPUT_PATH
+        self.previous = _PROMPT_LINK_OUTPUT_PATH
+        _PROMPT_LINK_OUTPUT_PATH = self.output_path
+
+    def __exit__(self, *_exc: object) -> None:
+        global _PROMPT_LINK_OUTPUT_PATH
+        _PROMPT_LINK_OUTPUT_PATH = self.previous
+
+
+def prompt_markdown(source_path: Path) -> str:
+    text = source_path.read_text(encoding="utf-8")
+    return rewrite_prompt_markdown_links(text, source_path, _PROMPT_LINK_OUTPUT_PATH)
+
+
+def rewrite_prompt_markdown_links(text: str, source_path: Path, output_path: Path | None) -> str:
+    lines: list[str] = []
+    in_fence = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            lines.append(line)
+            in_fence = not in_fence
+            continue
+        lines.append(line if in_fence else rewrite_prompt_markdown_line(line, source_path, output_path))
+    suffix = "\n" if text.endswith("\n") else ""
+    return "\n".join(lines) + suffix
+
+
+def rewrite_prompt_markdown_line(line: str, source_path: Path, output_path: Path | None) -> str:
+    def replace(match: re.Match[str]) -> str:
+        label = match.group(1)
+        raw_target = match.group(2)
+        rewritten = rewrite_prompt_markdown_target(raw_target, source_path, output_path)
+        return f"[{label}]({rewritten})"
+
+    return PROMPT_MARKDOWN_LINK_RE.sub(replace, line)
+
+
+def rewrite_prompt_markdown_target(raw_target: str, source_path: Path, output_path: Path | None) -> str:
+    target, suffix = split_markdown_target(raw_target)
+    if not target or target.startswith("#") or re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", target):
+        return raw_target
+    path_part, anchor = split_anchor(target)
+    resolved = resolve_prompt_markdown_target(source_path, path_part)
+    if resolved is None:
+        return raw_target
+    rewritten = path_for_prompt_link(resolved, output_path)
+    return f"{rewritten}{anchor}{suffix}"
+
+
+def split_markdown_target(raw_target: str) -> tuple[str, str]:
+    stripped = raw_target.strip()
+    if stripped.startswith("<") and ">" in stripped:
+        close = stripped.find(">")
+        return stripped[1:close], stripped[close + 1 :]
+    if " " not in stripped:
+        return stripped, ""
+    target, suffix = stripped.split(" ", 1)
+    return target, f" {suffix}"
+
+
+def resolve_prompt_markdown_target(source_path: Path, path_part: str) -> Path | None:
+    if not path_part:
+        return None
+    candidates = [(source_path.parent / path_part).resolve()]
+    normalized = path_part[2:] if path_part.startswith("./") else path_part
+    candidates.append((ROOT / normalized).resolve())
+    for candidate in candidates:
+        try:
+            candidate.relative_to(ROOT)
+        except ValueError:
+            continue
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def split_anchor(target: str) -> tuple[str, str]:
+    if "#" not in target:
+        return target, ""
+    path_part, anchor = target.split("#", 1)
+    return path_part, f"#{anchor}"
+
+
+def path_for_prompt_link(target_path: Path, output_path: Path | None) -> str:
+    if output_path is None:
+        return f"./{rel(target_path)}"
+    relative = os.path.relpath(target_path, output_path.parent)
+    return Path(relative).as_posix()
 
 
 def prompt_export_filename(label: str) -> str:

@@ -92,23 +92,26 @@ ld: symbol(s) not found for architecture arm64
 
 **可能原因**：
 
-- libffi 未链接
-- Rust XCFramework 未生成或未导入到 Xcode 工程
+- Rust universal staticlib 或 UniFFI Swift bindings 未生成
+- `Bridge/UniFFI/` 里的 tracked header / Swift 文件与当前 UDL 不一致
+- Xcode 的 staticlib 搜索路径没有指向当前 `core/target/...` 构建产物
 - Build Phase 顺序错误
 
 **检查**：
 
 ```bash
-xcodebuild -project apps/macos/AreaMatrix.xcodeproj -showBuildSettings | grep -i framework
-ls apps/macos/AreaMatrix/Frameworks/
-otool -L apps/macos/AreaMatrix/Frameworks/AreaMatrixCore.framework/AreaMatrixCore
+xcodebuild -project apps/macos/AreaMatrix.xcodeproj -showBuildSettings | grep -E 'LIBRARY_SEARCH_PATHS|OTHER_LDFLAGS'
+ls apps/macos/AreaMatrix/Bridge/UniFFI/
+file core/target/aarch64-apple-darwin/release/libarea_matrix_core.a
 ```
 
 **解决**：
 
 1. 重新生成 Core 静态库与 Swift bindings：`./dev build core`
-2. 在 Xcode → Build Phases → Link Binary With Libraries 添加 `AreaMatrixCore.xcframework`
-3. 在 Build Phases → Embed Frameworks 也加入
+2. 若 UDL 公开接口变化，更新 Xcode 消费的 tracked bindings：
+   `./dev bindings update --udl core/area_matrix.udl --out-dir apps/macos/AreaMatrix/Bridge/UniFFI`
+3. 确认 Xcode target 引用了 `Bridge/UniFFI/area_matrix.swift`、`Bridge/UniFFI/area_matrixFFI.h`
+   和 `core/target/.../libarea_matrix_core.a`
 4. Clean Build Folder（⇧⌘K）后重试
 
 ---
@@ -154,15 +157,10 @@ error: target may not be installed: aarch64-apple-darwin
 rustup target add aarch64-apple-darwin x86_64-apple-darwin
 ```
 
-XCFramework 构建脚本：
+universal staticlib 构建步骤由 `./dev build core` 执行：
 
 ```bash
-cargo build --release --target aarch64-apple-darwin
-cargo build --release --target x86_64-apple-darwin
-lipo -create \
-  target/aarch64-apple-darwin/release/libarea_matrix.a \
-  target/x86_64-apple-darwin/release/libarea_matrix.a \
-  -output target/universal/libarea_matrix.a
+./dev build core
 ```
 
 ---
@@ -174,22 +172,21 @@ lipo -create \
 **检查**：
 
 ```bash
-ls apps/macos/AreaMatrix/Generated/
-cat apps/macos/AreaMatrix/Generated/area_matrix.swift | head -30
+ls apps/macos/AreaMatrix/Bridge/UniFFI/
+cat apps/macos/AreaMatrix/Bridge/UniFFI/area_matrix.swift | head -30
 ```
 
 **解决**：
 
 ```bash
-./dev bindings update --udl core/area_matrix.udl --out-dir apps/macos/AreaMatrix/Bridge/Generated
+./dev bindings update --udl core/area_matrix.udl --out-dir apps/macos/AreaMatrix/Bridge/UniFFI
 ```
 
 确保 build script（`core/build.rs`）在 udl 改动时触发：
 
 ```rust
 fn main() {
-    println!("cargo:rerun-if-changed=src/area_matrix.udl");
-    uniffi::generate_scaffolding("src/area_matrix.udl").unwrap();
+    uniffi::generate_scaffolding("./area_matrix.udl").expect("generate UniFFI scaffolding");
 }
 ```
 
@@ -780,13 +777,16 @@ unsafe impl Sync for MyCallback {}
 
 **可能原因**：
 
-- 缺少 Frameworks 内嵌
+- Rust core staticlib 未被正确链接，或仍意外依赖开发机上的 `libarea_matrix_core.dylib`
 - arch 不匹配（用户 Intel Mac 装了 arm64-only 包）
 
 **解决**：
 
 - 构建 universal binary（lipo）
-- 确认 Embed Frameworks phase 配了
+- 用 `otool -L /path/to/AreaMatrix.app/Contents/MacOS/AreaMatrix` 确认不依赖
+  `libarea_matrix_core.dylib` 或仓库绝对路径
+- 确认 Xcode 的 `LIBRARY_SEARCH_PATHS` / `OTHER_LDFLAGS` 指向当前构建出的
+  `libarea_matrix_core.a`
 
 ---
 

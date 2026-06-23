@@ -119,15 +119,17 @@ cd AreaMatrix
 ./dev build core
 ```
 
-这个脚本做了：
+这个 CLI 子命令做了：
 
 1. `cargo build --release --target aarch64-apple-darwin`
 2. `cargo build --release --target x86_64-apple-darwin`
 3. `lipo` 合并为 universal staticlib
 4. `uniffi-bindgen` 生成 Swift bindings
-5. 拷贝到 `apps/macos/AreaMatrix/Bridge/Generated/`
+5. 写入默认本地导出目录 `apps/macos/AreaMatrix/Bridge/Generated/`
 
-如果脚本不存在（仓库初始阶段），见 [build.md](build.md) 手动步骤。
+`Bridge/Generated/` 是 `.gitignore` 忽略的生成产物目录。当前 Xcode 工程实际消费的 tracked
+bindings 位于 `apps/macos/AreaMatrix/Bridge/UniFFI/`，构建参数、Xcode 集成和 binding 更新方式见
+[build.md](build.md)。
 
 ---
 
@@ -176,7 +178,7 @@ xcodebuild test \
 ./dev check all
 ```
 
-如果脚本不存在：
+如果需要手动拆开检查：
 
 ```bash
 # Rust
@@ -220,7 +222,8 @@ cd ../..
 
 ### Q1: `linker error` / `library not found`
 
-**原因**：Bridge/Generated/ 中的 staticlib 路径错。
+**原因**：Core staticlib 没有构建到 Xcode 当前配置的 `core/target/...` 路径，或 `LIBRARY_SEARCH_PATHS`
+/ `OTHER_LDFLAGS` 没指向当前 profile。
 
 **修复**：
 
@@ -236,11 +239,12 @@ cd ../..
 **修复**：
 
 ```bash
-ls apps/macos/AreaMatrix/Bridge/Generated/
-# 应有：area_matrix.swift / area_matrixFFI.h / libarea_matrix_core.a
+ls apps/macos/AreaMatrix/Bridge/UniFFI/
+# Xcode 应引用：area_matrix.swift / area_matrixFFI.h / module.modulemap
 ```
 
-如果文件存在但 Xcode 没识别 → 在 Xcode 项目导航中右键 → Add Files To...
+如果 `core/area_matrix.udl` 刚修改过，先按 [build.md](build.md) 的 tracked bindings 更新命令重生
+`Bridge/UniFFI/` 后再 Clean Build Folder。
 
 ### Q3: `cargo test` 失败 with rusqlite linking issue
 
@@ -295,21 +299,26 @@ cargo install uniffi-bindgen --version 0.28
 
 ---
 
-## Cargo 工作区结构
+## Cargo 工程结构
 
-`core/Cargo.toml` 是 workspace：
+当前 `core/Cargo.toml` 是 `area_matrix_core` 单 crate 的 manifest，并在同一文件中声明
+Cargo workspace resolver：
 
 ```toml
+[package]
+name = "area_matrix_core"
+version = "0.1.0"
+edition = "2021"
+
 [workspace]
-members = ["area_matrix_core"]
 resolver = "2"
 
-[workspace.dependencies]
-serde = { version = "1", features = ["derive"] }
-# ...
+[lib]
+name = "area_matrix_core"
+crate-type = ["rlib", "staticlib", "cdylib"]
 ```
 
-子 crate `area_matrix_core` 是 staticlib + cdylib。
+如果未来拆成多 crate，再同步更新 `core/Cargo.toml`、本文档和构建脚本。
 
 ---
 

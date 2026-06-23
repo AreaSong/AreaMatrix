@@ -11,7 +11,9 @@
 - SwiftUI 视图只做展示和用户交互，不直接做文件 IO。
 - 平台能力放在 Swift 平台层；Core 层仍保持平台无关。
 - CoreBridge 是 Swift 调用 Core 的唯一入口，后续不得让视图直接调用 UniFFI 生成代码。
-- `Bridge/Generated/` 是生成产物目录，不手写业务代码。
+- `Bridge/Generated/` 是 `.gitignore` 忽略的本地生成产物目录，不手写业务代码。
+- `Bridge/UniFFI/` 是当前 Xcode 工程消费的 tracked UniFFI binding，也不要手写业务逻辑；
+  UDL 变化后用仓库命令重新生成。
 
 ## 高风险约束
 
