@@ -58,7 +58,7 @@ jobs:
 
       - name: Build & test
         if: steps.macos_project.outputs.present == 'true'
-        run: ./dev test macos --destination 'platform=macOS,arch=arm64' --result-bundle-path TestResults.xcresult
+        run: ./dev test macos --destination 'platform=macOS,arch=arm64' --result-bundle-path TestResults.xcresult --disable-parallel-testing
 
       - uses: actions/upload-artifact@v4
         if: always() && steps.macos_project.outputs.present == 'true'

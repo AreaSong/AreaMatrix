@@ -83,6 +83,11 @@ def _build_parser() -> argparse.ArgumentParser:
     macos.add_argument("--build-log", help="xcodebuild build-for-testing log path")
     macos.add_argument("--result-bundle-path", help="Optional xcodebuild result bundle path")
     macos.add_argument(
+        "--disable-parallel-testing",
+        action="store_true",
+        help="Pass -parallel-testing-enabled NO to xcodebuild test for CI-stable filesystem integration runs",
+    )
+    macos.add_argument(
         "--only-testing",
         action="append",
         default=[],
@@ -333,6 +338,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 build_log=args.build_log,
                 result_bundle_path=args.result_bundle_path,
                 only_testing=args.only_testing,
+                disable_parallel_testing=args.disable_parallel_testing,
             )
         if args.command == "bindings" and args.bindings_command == "update":
             return run_bindings_update(root, args.udl, args.out_dir)
