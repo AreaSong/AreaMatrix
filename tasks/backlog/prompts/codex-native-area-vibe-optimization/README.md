@@ -5,6 +5,7 @@
 - status: closed
 - closed: 2026-06-22
 - closeout: tasks/backlog/codex-operating-layer-boundary-regression.md
+- execution: not-live；仅作历史追溯和人工参考，不代表当前待执行任务
 
 建议在新对话中按顺序执行：
 

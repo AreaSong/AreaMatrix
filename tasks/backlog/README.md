@@ -64,6 +64,9 @@
 以下条目位于 `tasks/backlog/prompts/*`，可由 `./dev backlog show <package>`
 按 package slug 浏览。当前 5 个包均为 `closed`：已完成工作层吸收 / closeout
 判断，继续保留为历史候选材料和可复制证据，不代表仍有待执行 backlog。
+closed 包内 copy-ready / verify-ready 原文中的 `open`、`blocked`、`not-ready` 或
+类似待处理措辞属于历史候选材料语境，不表示当前待执行任务；不得直接交给
+`./task-loop` 执行。
 
 - [Codex Native / AreaMatrix / Vibe-Skills 基础治理](prompts/codex-native-area-vibe-optimization/)
 - [Vibe-Skills 横向能力吸收](prompts/vibe-skills-absorption/)

@@ -5,6 +5,7 @@
 - status: closed
 - closed: 2026-06-22
 - closeout: tasks/backlog/codex-operating-layer-boundary-regression.md
+- execution: not-live；仅作历史追溯和人工参考，不代表当前待执行任务
 
 本批目标是让 `tasks/backlog/prompts/**` 的 copy-ready / verify-ready 材料可以通过 `./dev backlog` 只读浏览，减少手工找文件和复制路径的摩擦；它不是第二套 runner，也不负责执行、验收、promotion、checkpoint 或 progress 写入。
 

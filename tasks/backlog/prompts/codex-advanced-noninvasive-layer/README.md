@@ -5,6 +5,7 @@
 - status: closed
 - closed: 2026-06-22
 - closeout: tasks/backlog/codex-operating-layer-boundary-regression.md
+- execution: not-live；仅作历史追溯和人工参考，不代表当前待执行任务
 
 本批用于把此前暂缓项补成“有判断、有门禁、有触发条件”的状态，而不是默认启用或接管主线：
 

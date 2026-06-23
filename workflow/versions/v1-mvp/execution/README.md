@@ -1,6 +1,7 @@
 # AreaMatrix Prompt 任务库
 
 > 状态：`v1-mvp` 历史执行队列已完成 `637/637`。本目录现在主要用于审计、追溯、恢复和读取 v1 任务证据；新版本或大型新增需求先创建真实版本目录，再从 `workflow/versions/<version>/discussion/` 进入规划链路。
+> 历史 copy-ready / verify-ready 静态文件中出现的 `TODO`、`未完成`、`blocked`、`open` 等词属于当时 prompt 或验收语境，不表示当前 live queue 未完成；不要为了清理外观重写历史 prompt、`progress.json` 或 task-loop evidence。
 
 `workflow/versions/v1-mvp/execution/**` 曾是 v1 MVP 的 live queue。Stage 1 MVP 收口后，不应为了开启 v2 而重写这些历史 task、`progress.json` 或 task-loop evidence。未来版本只有在 discussion、middle-layer、changes、plans、drafts、queue、promotion preview 和显式 approval 都通过后，才允许把新任务 promote 到 live queue。
 

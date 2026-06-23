@@ -4,7 +4,7 @@
 
 - 本目录是 AreaMatrix 的 SwiftUI macOS 原生应用。
 - macOS 层负责 UI、平台适配、CoreBridge、watcher 和系统能力封装。
-- Phase 0 只允许维护可编译空壳，不实现真实产品闭环。
+- macOS app 已进入实现态；继续遵守 SwiftUI / CoreBridge / 平台能力分层，不用 mock 或静态数据伪装真实闭环。
 
 ## 边界
 

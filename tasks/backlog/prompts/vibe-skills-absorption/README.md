@@ -5,6 +5,7 @@
 - status: closed
 - closed: 2026-06-22
 - closeout: tasks/backlog/codex-operating-layer-boundary-regression.md
+- execution: not-live；仅作历史追溯和人工参考，不代表当前待执行任务
 
 本批只吸收方法价值，不安装、不启用、不复制 `../Vibe-Skills` 全量仓库，也不让 `vibe` / VCO runtime 接管 AreaMatrix。
 

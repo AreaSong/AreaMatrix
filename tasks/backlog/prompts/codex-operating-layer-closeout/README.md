@@ -5,6 +5,7 @@
 - status: closed
 - closed: 2026-06-22
 - closeout: tasks/backlog/codex-operating-layer-boundary-regression.md
+- execution: not-live；仅作历史追溯和人工参考，不代表当前待执行任务
 
 本批不继续新增能力，而是把前三批优化和已实现的 `./dev backlog` 工具做一次基线验收：确认 source of truth、execution、state、skill owner 和外部能力边界没有被污染，并给出下一阶段是否回到产品主线的判断。
 
