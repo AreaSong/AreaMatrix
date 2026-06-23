@@ -6,6 +6,7 @@
 - `workflow/versions/<version>/execution/` 是标准化后的版本内执行层，用于承载通过 promotion 的 copy-ready / verify-ready / manifest / progress / checkpoint / reports。
 - `workflow/versions/v1-mvp/execution/**` 是 Stage 1 历史执行队列；不得为了视觉整理重写、清空或重置。
 - `workflow/residuals/**` 与 `workflow/versions/<version>/residuals/**` 是遗留项索引层；只记录来源、状态、影响和关闭条件，不替代 `docs/`、evidence、closeout、tasks 或 execution。
+- 查询“还有什么没解决 / 未完成”时，必须覆盖 `workflow/residuals/README.md` 的全量 residual ID，并继续读取全局 YAML 中所有 `version_residuals[].source`；不能只看 `tasks/active/**`、release blockers 或 execution 进度。
 - `./task-loop` 只执行 live queue，不负责需求讨论、版本决策或 promotion 审批。
 
 ## 标准顺序
@@ -38,6 +39,7 @@ docs
 - `decisions.yaml` 是机器可校验账本；只有 `allow_changes: true` 且无 unresolved blockers/open questions 时，才允许进入 changes。
 - `middle-layer/*.yaml` 是正式中间层账本，按 feature 记录插入点、联动关系、Exact Docs 行号、代码影响、依赖、slice 计划和风险边界。
 - `changes/*.yaml` 保持 docs-change ledger；进入 plans/drafts/queue 前必须与 `middle-layer/*.yaml` 通过双源互校验。
+- discussion 阶段的普通 open question 继续留在 `decisions.yaml`；只有明确成为可长期追踪的 blocker、deferred item、accepted exception、reference-only 或 template-only 状态时，才创建 `workflow/versions/<version>/residuals/**` 并登记到全局 residual ledger。
 
 ## 边界
 

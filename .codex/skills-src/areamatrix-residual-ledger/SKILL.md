@@ -23,10 +23,11 @@ Use this skill to answer “what remains unresolved?” without confusing produc
 3. Start from the residual ledger, then open the linked source file for authoritative details.
 4. Report the residual `id`, `status`, `type`, source file, current impact, and close condition.
 5. For broad questions such as "what remains unresolved?", report the full residual ID inventory from `workflow/residuals/README.md`, not only the current release blockers. Include `reference-only`, `template-only`, `accepted-exception`, closed backlog references, and product-doc markers as a separate "indexed but not current tasks" group.
-6. Phrase the conclusion as two scopes: current blockers / executable task state, and full residual ledger state. Do not say or imply that release blockers are the only residual items.
-7. If a user wants implementation work, check `executable_task` before suggesting `tasks/active/**` or workflow promotion.
-8. Keep discussion-period open questions in `workflow/versions/<version>/discussion/decisions.yaml`; create version residuals only for durable blocked, deferred, accepted-exception, reference-only, or template-only states.
-9. If updating residuals, update the authoritative source first, then the version residual index, then the global residual ledger; update `tasks/indexes/residuals.md` only when the task-facing answer changes.
+6. Treat the machine-readable full inventory as global `items` plus every `version_residuals[].source` `items`; do not read only top-level YAML items.
+7. Phrase the conclusion as two scopes: current blockers / executable task state, and full residual ledger state. Do not say or imply that release blockers are the only residual items.
+8. If a user wants implementation work, check `executable_task` before suggesting `tasks/active/**` or workflow promotion.
+9. Keep discussion-period open questions in `workflow/versions/<version>/discussion/decisions.yaml`; create version residuals only for durable blocked, deferred, accepted-exception, reference-only, or template-only states.
+10. If updating residuals, update the authoritative source first, then the version residual index, then the global residual ledger; update `tasks/indexes/residuals.md` only when the task-facing answer changes.
 
 ## Guardrails
 

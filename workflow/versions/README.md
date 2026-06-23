@@ -9,6 +9,7 @@ This directory tracks versioned workflow instances, Stage 1 MVP archives, and fu
 - `source-docs-guide.md` explains how to read the archived Stage 1 MVP source docs, including page specs, Core capability specs, and control maps.
 - `v-template/` is the managed template reference instance. It validates the reusable artifact chain and must never promote into `workflow/versions/v-template/execution/**`.
 - Future versions should be created from `v-template` / `workflow/templates/` and start at `discussion/`. V1 release residuals do not block future version discussion, but promotion into execution still requires explicit approval and live mapping.
+- Future version residuals are created only after discussion decisions leave durable blockers, deferred items, accepted exceptions, reference-only items, or template-only items. Ordinary discussion open questions stay in `workflow/versions/<version>/discussion/decisions.yaml`; durable version residuals use `workflow/versions/<version>/residuals/` and must be registered in `workflow/residuals/residuals.yaml`.
 - New versions use version-local numbering (`phase-0 / 0-1 / task-01`) and leave live mapping pending until explicitly configured.
 
 Current v1 execution state:

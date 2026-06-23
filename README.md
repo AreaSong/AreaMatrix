@@ -96,7 +96,7 @@ task state.
 | Workflow planning | [workflow/README.md](workflow/README.md) |
 | Workflow versions | [workflow/versions/README.md](workflow/versions/README.md) |
 | Lightweight tasks | [tasks/README.md](tasks/README.md) |
-| Residual ledger | [workflow/residuals/README.md](workflow/residuals/README.md) |
+| Current unresolved / residual ledger | [workflow/residuals/README.md](workflow/residuals/README.md) |
 | Codex skills | [.codex/skills-src/README.md](.codex/skills-src/README.md) |
 | Setup & build | [docs/development/setup.md](docs/development/setup.md) |
 | Decision records | [docs/adr/](docs/adr/) |

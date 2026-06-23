@@ -33,6 +33,7 @@ AGENTS.md / .ai-governance
 - `tasks/active/**` 和 `tasks/done/**` 记录轻量独立任务进度，供未来 `./dev tasks` 只读索引；它们不得创建第二套 runner、phase、promotion、queue、checkpoint 或 `progress.json`。
 - `tasks/backlog/**` 只记录候选池、规划、评估和治理排期，不进入 `./task-loop`，不写 `progress.json`，不替代 live queue 或当前轻量任务进度。
 - `workflow/residuals/**` 和 `workflow/versions/<version>/residuals/**` 只做遗留项索引，不能创建第二套 runner、progress、queue、checkpoint 或 promotion，也不能替代 `docs/`、evidence、closeout、tasks 或 execution。
+- 对“还有什么问题没解决 / 还有哪些未完成”的宽泛回答必须走 residual ledger：先读 `workflow/residuals/README.md` 的全量 ID 清单，再读 `workflow/residuals/residuals.yaml` 的 `version_residuals[].source`，并把 current blockers 与 indexed-but-not-current-tasks 分开说明。
 - Codex Automations、Cloud、Worktrees、Vibe-Skills、SDK、app-server、remote-control 只能作为候选能力或未来评估项；不得接管主线。
 - 不创建第二套 runner、progress、queue 或 promotion 机制；任何外部能力接入必须先通过 [外部能力接入门禁](workflows/external-capability-admission.md)，证明不会改变上述主线和源事实层级。
 

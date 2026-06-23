@@ -14,7 +14,7 @@ Residual ledger 的字段约定，用于人读 Markdown 与机器可读 `residua
 | `blocked-external` | 被外部环境、账号、设备、证书、服务或人工条件阻断。 |
 | `blocked-decision` | 等待明确产品、发布、治理或架构决策。 |
 | `mixed-blocked` | 聚合索引用状态，表示下级版本 residual 同时包含多种阻断 / deferred / accepted 状态；必须用 `status_breakdown` 展开。 |
-| `deferred` | 明确延期，不阻断当前主线。 |
+| `deferred` | 明确延期，不阻断 live execution；是否仍影响 release、planning 或协作判断以 `current_impact` 为准。 |
 | `reference-only` | 历史参考或愿景材料，不是当前任务。 |
 | `template-only` | 模板或示例语义，不是真版本状态。 |
 | `accepted-exception` | 已正式接受为例外，不应补造历史证据。 |
@@ -70,6 +70,7 @@ close_condition: Real iCloud placeholder smoke evidence is recorded.
 
 - `workflow/versions/<version>/residuals/residuals.yaml` 是版本 residual 的机器可读索引。
 - 全局 `workflow/residuals/residuals.yaml` 的 `version_residuals` 只登记版本索引入口和聚合状态，不复制每个版本条目的全部字段。
+- 全量机器清单 = 全局 `items` + 每个 `version_residuals[].source` 文件内的 `items`；只读取全局 `items` 会漏掉版本 residual。
 - 如果一个版本同时包含 `blocked-external`、`blocked-decision`、`deferred` 等多种仍影响发布或规划判断的状态，聚合 `status` 使用 `mixed-blocked`，并在 `status_breakdown` 列出真实状态。
 - 普通 discussion open question 不进入 residual ledger；它们先留在 `workflow/versions/<version>/discussion/decisions.yaml`，直到被明确决策为 durable residual。
 

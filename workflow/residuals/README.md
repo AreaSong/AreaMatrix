@@ -44,7 +44,7 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 | `global-ref-closed-backlog-packages` | `reference-only` | `backlog-reference` | none | 5 个 backlog prompt package 均 closed。 |
 | `global-marker-product-doc-status-words` | `reference-only` | `product-doc-marker` | none | 产品文档中的 `未完成` / `Pending` / `Blocked` 是产品行为或 API 状态，不是仓库任务状态。 |
 
-机器可读索引见 [residuals.yaml](residuals.yaml)。字段含义见 [schema.md](schema.md)。
+机器可读索引见 [residuals.yaml](residuals.yaml)。注意：全量机器清单由顶层 `items` 加上每个 `version_residuals[].source` 内的 `items` 组成；顶层 YAML 不复制版本 residual 的全部字段。字段含义见 [schema.md](schema.md)。
 
 ## 使用规则
 
@@ -56,6 +56,20 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 6. 只有 `executable_task: true` 且有明确 owner / validation / close condition 的条目，才允许人工转入 `tasks/active/**`。
 7. 新版本 discussion 期间的普通 open question 先留在 `workflow/versions/<version>/discussion/decisions.yaml`；只有形成可长期追踪的 blocker、deferred item、accepted exception、reference-only 或 template-only 状态时，才创建 `workflow/versions/<version>/residuals/**`。
 8. 新增、关闭或改名任何 version residual 时，同步检查三处：版本 residual README / YAML、全局 `workflow/residuals/residuals.yaml` 的 `version_residuals`、以及需要面向 task 查询时的 `tasks/indexes/residuals.md`。
+
+## 新版本 residual 生命周期
+
+以未来 `workflow/versions/v2/` 为例：
+
+| 场景 | 记录位置 | 说明 |
+|---|---|---|
+| discussion 阶段的普通 open question / blocker | `workflow/versions/v2/discussion/decisions.yaml` | 不创建 residual；先通过 discussion gate 决策。 |
+| gate 后仍需长期可见的 release / planning / governance 阻断 | `workflow/versions/v2/residuals/README.md` 和 `residuals.yaml` | 同步把 `workflow/versions/v2/residuals/residuals.yaml` 登记到全局 `version_residuals`。 |
+| 历史愿景、模板、closed backlog、产品文档状态词 | `workflow/residuals/**` global item | 只索引，不转 live task。 |
+| 小型、明确、可立即执行的独立修复 | `tasks/active/**` | 只在 owner、scope、validation、close condition 明确，且不需要 workflow discussion / promotion 时创建。 |
+| 大功能、版本级、跨层或需要 prompt queue 的工作 | `workflow/versions/<version>/discussion -> ... -> promotion` | 先走 workflow planning；promotion 通过前不得写 execution。 |
+
+Version residual 的登记顺序是：先更新权威源文件，再写版本 residual README / YAML，再同步全局 `workflow/residuals/residuals.yaml` 的 `version_residuals`，最后按需更新 `tasks/indexes/residuals.md` 的 task-facing 视角。
 
 ## Related
 

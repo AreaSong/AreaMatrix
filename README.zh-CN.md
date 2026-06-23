@@ -100,7 +100,7 @@ release evidence 或任务状态。
 | 规划 v* workflow / v2 discussion | [workflow/README.md](workflow/README.md) |
 | 查看 workflow versions | [workflow/versions/README.md](workflow/versions/README.md) |
 | 查看轻量任务 | [tasks/README.md](tasks/README.md) |
-| 查询遗留问题 | [workflow/residuals/README.md](workflow/residuals/README.md) |
+| 查询当前未解决问题 / residual ledger | [workflow/residuals/README.md](workflow/residuals/README.md) |
 | 查看 Codex skills | [.codex/skills-src/README.md](.codex/skills-src/README.md) |
 | 新加入想搭环境 | [docs/development/setup.md](docs/development/setup.md) |
 | 想了解决策来龙去脉 | [docs/adr/](docs/adr/) |

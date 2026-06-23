@@ -43,8 +43,9 @@ Completeness check before answering:
 
 1. Read `workflow/residuals/README.md`.
 2. Read every `version_residuals[].source` from `workflow/residuals/residuals.yaml`.
-3. Compare the response against the full residual ID inventory.
-4. If any ID is omitted, fix the response before sending it.
+3. Build the full machine inventory from top-level `items` plus every version residual source's `items`.
+4. Compare the response against the full residual ID inventory.
+5. If any ID is omitted, fix the response before sending it.
 
 ## Docs Boundary
 
