@@ -274,7 +274,7 @@ git tag -a v0.1.0 -m "Release 0.1.0
 git push origin main v0.1.0
 ```
 
-CI 在 tag push 时触发 release workflow（详见 `.github/workflows/release.yml`，未来添加）。
+当前仓库尚未包含 `.github/workflows/release.yml`；tag push 只发布 Git tag，不会自动构建、签名、公证或上传 GitHub Release 产物。正式 `v0.1.0` 仍按下方手工 release 流程执行，release workflow 是未来自动化项。
 
 ---
 
@@ -447,9 +447,9 @@ git checkout main && git pull
 
 ---
 
-## CI 自动化（Stage 2 起）
+## CI 自动化（未来 Stage 2+）
 
-`.github/workflows/release.yml`（待加）会在 tag push 时：
+`.github/workflows/release.yml` 当前尚未启用。未来加入后，它可以在 tag push 时：
 
 1. 构建 Rust + Swift
 2. 自动签名（需配置 secrets：CERT_BASE64 / KEYCHAIN_PASS）

@@ -220,7 +220,7 @@ CI 在 macos-14 runner 上执行：
 3. `cargo test --workspace`
 4. `cargo llvm-cov --fail-under-lines 70`
 5. `./dev build core`
-6. `xcodebuild test`
+6. `./dev test macos`
 7. `cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData --cache ignore`
 8. `cd apps/macos && swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache`
 

@@ -4,7 +4,7 @@
 - Status: `ready`
 - Kind: queue-candidate
 - Promotion: explicit only
-- Live queue blocked: true while `v1-mvp` is `live-running`
+- Live queue blocked: true until explicit promotion approval and live mapping are configured
 - Source change: `workflow/versions/v-template/changes/template-contracts.yaml`
 
 ## Candidate Tasks
@@ -15,4 +15,4 @@
 
 - Do not write `workflow/versions/v-template/execution/**` in this phase.
 - Promotion must be a later explicit command after gates pass.
-- Queue candidates can be reviewed while v1 is still running.
+- Queue candidates can be reviewed as template-only preview artifacts; promotion still requires explicit approval and live mapping.

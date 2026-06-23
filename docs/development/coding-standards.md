@@ -342,7 +342,7 @@ PR 必须通过：
 - [ ] `cargo llvm-cov --fail-under-lines 70`（核心模块）
 - [ ] `cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData --cache ignore`
 - [ ] `cd apps/macos && swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache`
-- [ ] `xcodebuild test`
+- [ ] `./dev test macos`
 - [ ] `./dev check quality`
 - [ ] commit message 符合 Conventional Commits
 

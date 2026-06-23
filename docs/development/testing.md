@@ -424,7 +424,7 @@ fn sigkill_during_import_safe() {
 3. cargo test --workspace
 4. cargo llvm-cov --fail-under-lines 70
 5. ./dev build core
-6. xcodebuild test（本地沙箱可用 `./dev test macos` 补执行证据）
+6. ./dev test macos
 7. cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData --cache ignore
 8. cd apps/macos && swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache
 

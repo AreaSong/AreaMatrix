@@ -630,7 +630,7 @@ def queue_md_content(root: Path, version: str, record: Any) -> str:
             "",
             f"- Do not write `workflow/versions/{version}/execution/**` in this phase.",
             "- Promotion must be a later explicit command after gates pass.",
-            "- Queue candidates can be reviewed while v1 is still running.",
+            "- Queue candidates can be reviewed as template-only preview artifacts; promotion still requires explicit approval and live mapping.",
         ]
     )
     return "\n".join(lines).rstrip() + "\n"

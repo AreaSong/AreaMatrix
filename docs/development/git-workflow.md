@@ -242,7 +242,7 @@ git tag -a v0.1.0 -m "Release 0.1.0"
 git push origin main v0.1.0
 ```
 
-CI 在 tag push 时触发发布工作流（详见 [release.md](release.md)）。
+当前仓库尚未包含 release workflow；tag push 只发布 Git tag，不会自动构建、签名、公证或上传发布产物。正式发布仍按 [release.md](release.md) 的手工流程执行，直到 `.github/workflows/release.yml` 明确加入并通过治理审查。
 
 ---
 

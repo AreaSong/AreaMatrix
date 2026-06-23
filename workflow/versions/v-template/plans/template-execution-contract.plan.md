@@ -76,5 +76,5 @@ Prove that plans, drafts, queue candidates, promotion preview, projection, and c
 
 - Status: `ready`.
 - Kind: queue-candidate review only.
-- Live queue: blocked while `v1-mvp` is `live-running`.
+- Live queue: blocked until explicit promotion approval and live mapping are configured.
 - Promotion: explicit only; this plan does not write `workflow/versions/v-template/execution/**`.
