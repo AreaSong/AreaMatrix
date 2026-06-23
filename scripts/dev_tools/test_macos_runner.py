@@ -13,6 +13,7 @@ from scripts.dev_tools.macos import (
     _handle_stage1_app_launch_probe_result,
     _run_sandbox_fallback,
     _run_macos_tests_inner,
+    _test_base_args,
     _xcodebuild_tests_passed_before_sandbox_teardown,
     _xcode_system_content_failure,
     _xcode_test_env,
@@ -195,6 +196,34 @@ class MacOSTestRunnerTest(unittest.TestCase):
             _xcode_test_env(["AreaMatrixTests/AreaMatrixPerfTests/testMemoryBaselinesUnderStage1Thresholds"]),
             {"AREAMATRIX_RUN_PERF_TESTS": "1"},
         )
+
+    def test_disable_parallel_testing_adds_xcodebuild_flag(self) -> None:
+        args = _test_base_args(
+            self.tmp_path / "AreaMatrix.xcodeproj",
+            "AreaMatrix",
+            "platform=macOS,arch=arm64",
+            self.tmp_path / "DerivedData",
+            "TestResults.xcresult",
+            ["AreaMatrixTests/S212BatchCategoryVerifyTests"],
+            disable_parallel_testing=True,
+        )
+
+        self.assertIn("-parallel-testing-enabled", args)
+        flag_index = args.index("-parallel-testing-enabled")
+        self.assertEqual(args[flag_index + 1], "NO")
+        self.assertLess(flag_index, args.index("-only-testing:AreaMatrixTests/S212BatchCategoryVerifyTests"))
+
+    def test_parallel_testing_flag_is_omitted_by_default(self) -> None:
+        args = _test_base_args(
+            self.tmp_path / "AreaMatrix.xcodeproj",
+            "AreaMatrix",
+            "platform=macOS,arch=arm64",
+            self.tmp_path / "DerivedData",
+            None,
+            [],
+        )
+
+        self.assertNotIn("-parallel-testing-enabled", args)
 
     def test_sandbox_fallback_passes_when_only_release_launch_is_locally_blocked(self) -> None:
         bundle = self.tmp_path / "AreaMatrixTests.xctest"

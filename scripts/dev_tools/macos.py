@@ -211,6 +211,7 @@ def _test_base_args(
     derived_data_dir: Path,
     result_bundle: str | Path | None,
     only_testing: Sequence[str],
+    disable_parallel_testing: bool = False,
 ) -> list[str]:
     base = [
         "-project",
@@ -224,6 +225,8 @@ def _test_base_args(
     ]
     if result_bundle:
         base.extend(["-resultBundlePath", str(result_bundle)])
+    if disable_parallel_testing:
+        base.extend(["-parallel-testing-enabled", "NO"])
     for test_id in only_testing:
         base.append(f"-only-testing:{test_id}")
     base.append("CODE_SIGNING_ALLOWED=NO")
@@ -347,6 +350,7 @@ def run_macos_tests(
     build_log: str | Path | None = None,
     result_bundle_path: str | Path | None = None,
     only_testing: Sequence[str] | None = None,
+    disable_parallel_testing: bool = False,
 ) -> int:
     root = (root or project_root()).resolve()
     project_path = root / "apps/macos/AreaMatrix.xcodeproj"
@@ -375,6 +379,7 @@ def run_macos_tests(
             build_log_path,
             result_bundle,
             list(only_testing or []),
+            disable_parallel_testing,
         )
     finally:
         if created and not keep:
@@ -392,6 +397,7 @@ def _run_macos_tests_inner(
     build_log_path: Path,
     result_bundle: str | Path | None,
     only_testing: Sequence[str],
+    disable_parallel_testing: bool = False,
 ) -> int:
     base = _test_base_args(
         project_path,
@@ -400,6 +406,7 @@ def _run_macos_tests_inner(
         derived_data_dir,
         result_bundle,
         only_testing,
+        disable_parallel_testing,
     )
     build_base = _build_for_testing_base_args(project_path, scheme, destination, derived_data_dir)
     print("==> xcodebuild test")
