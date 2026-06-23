@@ -25,7 +25,8 @@ Use this skill to answer “what remains unresolved?” without confusing produc
 5. For broad questions such as "what remains unresolved?", report the full residual ID inventory from `workflow/residuals/README.md`, not only the current release blockers. Include `reference-only`, `template-only`, `accepted-exception`, closed backlog references, and product-doc markers as a separate "indexed but not current tasks" group.
 6. Phrase the conclusion as two scopes: current blockers / executable task state, and full residual ledger state. Do not say or imply that release blockers are the only residual items.
 7. If a user wants implementation work, check `executable_task` before suggesting `tasks/active/**` or workflow promotion.
-8. If updating residuals, update the authoritative source first, then the residual ledger.
+8. Keep discussion-period open questions in `workflow/versions/<version>/discussion/decisions.yaml`; create version residuals only for durable blocked, deferred, accepted-exception, reference-only, or template-only states.
+9. If updating residuals, update the authoritative source first, then the version residual index, then the global residual ledger; update `tasks/indexes/residuals.md` only when the task-facing answer changes.
 
 ## Guardrails
 

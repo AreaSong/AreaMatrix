@@ -41,7 +41,7 @@ Color defaults to `always`. Use `./dev --color never` or `NO_COLOR=1 ./dev` for 
 Before starting or resuming, the console blocks duplicate live runners and asks for foreground/background execution, Git mode, task count, and optional stop targets.
 For script work, use `./dev preview` to inspect the command without execution, or `./dev dry-run` to run against temporary progress/log/summary directories.
 
-Child `codex exec` runs default to `CODEX_EXEC_SANDBOX=danger-full-access` for both copy and verify. This keeps the macOS XCTest gate on the normal `xcodebuild test` path instead of triggering local `testmanagerd` sandbox fallback. Override only for diagnostics:
+Child `codex exec` runs default to `CODEX_EXEC_SANDBOX=danger-full-access` for both copy and verify. This keeps the macOS XCTest gate on the normal `xcodebuild test` path instead of triggering local `testmanagerd` sandbox fallback. `verify-ready` is still semantically read-only: the prompt, runner retry loop, and completion gate forbid file edits during verify even when the process sandbox is broad. Override only for diagnostics:
 
 ```bash
 CODEX_EXEC_SANDBOX=workspace-write ./task-loop run --max-tasks 1
@@ -66,38 +66,39 @@ Dry-run proves only runner flow. It does not prove implementation, verification,
 
 ## Versioned Workflow Planning
 
-Future v* requirements are tracked outside the live v1 queue:
+Future v* requirements are tracked outside the archived v1 queue:
 
 ```text
-workflow/versions/<version>/changes/*.yaml
+workflow/versions/<version>/discussion/
 ```
 
-Use these commands before creating review artifacts:
+Start with discussion before creating review artifacts:
 
 ```bash
 ./dev workflow doctor
 ./dev workflow status
 ./dev workflow init --version v2
-./dev workflow plan --version v2
-./dev workflow queue --version v2
-./dev changes doctor
-./dev changes preview
-./dev changes generate
+./dev workflow init --version v2 --write
+# Edit workflow/versions/v2/discussion/{docs-discussion.md,middle-layer-discussion.md,decisions.yaml}.
+./dev workflow discuss --version v2 doctor
+./dev workflow discuss --version v2 preview
 ```
 
-`workflow plan` creates the docs-change ledger. `workflow queue` creates queue candidates. `changes generate` creates the draft manifest / copy / verify package. All default to stdout preview and write nothing. Explicit writes require `--write`, and `--out-dir` should be used for temp validation:
+Only after `decisions.yaml` has `allow_changes: true` and `./dev workflow discuss --version v2 doctor` passes may the version enter `middle-layer`, `changes`, `plans`, `drafts`, `queue`, or promotion preview. Then use:
 
 ```bash
-./dev workflow init --version v2 --write
+./dev changes doctor --version v2
+./dev changes preview --version v2
+./dev workflow plan --version v2
+./dev workflow queue --version v2
 ./dev workflow plan --version v2 --write --out-dir /tmp/areamatrix-v2-plans
 ./dev workflow queue --version v2 --write --out-dir /tmp/areamatrix-v2-queue
-./dev changes generate --feature v2-search-query
-./dev changes generate --write
-./dev changes generate --write --out-dir /tmp/areamatrix-v2-drafts
-./dev changes generate --write --force
+./dev changes generate --version v2 --feature <feature-id>
+./dev changes generate --version v2 --write --out-dir /tmp/areamatrix-v2-drafts
+./dev changes generate --version v2 --write --force
 ```
 
-Plans, queue candidates, and drafts are review artifacts only: they are not version execution, do not change `progress.json`, and must not be treated as live task-loop work. New versions may reach queue candidates but must not promote into `workflow/versions/<version>/execution/**` without explicit approval and mapping.
+`workflow plan` creates the docs-change ledger. `workflow queue` creates queue candidates. `changes generate` creates the draft manifest / copy / verify package. All default to stdout preview and write nothing. Explicit writes require `--write`, and `--out-dir` should be used for temp validation. Plans, queue candidates, and drafts are review artifacts only: they are not version execution, do not change `progress.json`, and must not be treated as live task-loop work. New versions may reach queue candidates but must not promote into `workflow/versions/<version>/execution/**` without explicit approval and mapping.
 
 ## Graceful Drain
 

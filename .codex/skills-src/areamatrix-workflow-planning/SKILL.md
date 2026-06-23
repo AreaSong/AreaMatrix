@@ -38,10 +38,11 @@ Trigger it for new `v*` versions, discussion gate decisions, workflow templates,
 4. Review `docs-discussion.md` for Exact Docs, user paths, non-goals, contention points, and acceptance boundary.
 5. Review `middle-layer-discussion.md` for how changes, plans, drafts, queue, and promotion preview will carry the feature.
 6. Review `decisions.yaml`; do not enter `changes/` until `allow_changes: true` and blockers/open questions are resolved or explicitly deferred.
-7. Check the residual ledger for relevant open, blocked-external, blocked-decision, accepted-exception, reference-only, or template-only items.
-8. For every plan, draft, queue candidate, or backlog prompt package, require goal, non-goals, source of truth, owner / landing, exact file paths, ordered steps, validation commands, and blocked / rollback wording.
-9. Keep copy-ready implementation prompts and verify-ready read-only acceptance prompts as separate artifacts.
-10. Run `./dev workflow discuss --version <version> doctor`, then `./dev workflow doctor`.
+7. Keep discussion-period open questions in `decisions.yaml`; create version residuals only for durable blocked / deferred / accepted / reference states that must outlive the discussion gate.
+8. Check the residual ledger for relevant open, blocked-external, blocked-decision, accepted-exception, reference-only, or template-only items.
+9. For every plan, draft, queue candidate, or backlog prompt package, require goal, non-goals, source of truth, owner / landing, exact file paths, ordered steps, validation commands, and blocked / rollback wording.
+10. Keep copy-ready implementation prompts and verify-ready read-only acceptance prompts as separate artifacts.
+11. Run `./dev workflow discuss --version <version> doctor`, then `./dev workflow doctor`.
 
 ## Guardrails
 

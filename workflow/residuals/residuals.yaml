@@ -11,6 +11,7 @@ statuses:
   - open
   - blocked-external
   - blocked-decision
+  - mixed-blocked
   - deferred
   - reference-only
   - template-only
@@ -55,6 +56,10 @@ items:
     type: product-doc-marker
     title: Product docs use unfinished/pending/blocked as product behavior states
     source: docs/product/user-stories.md
+    supporting_sources:
+      - docs/product/prd.md
+      - docs/api/core-api.md
+      - workflow/versions/v1-mvp/residuals/source-doc-markers.md
     owner: doc-sync
     current_impact: none
     executable_task: false
@@ -64,5 +69,10 @@ items:
 version_residuals:
   - version: v1-mvp
     source: workflow/versions/v1-mvp/residuals/residuals.yaml
-    status: blocked-external
-    summary: Formal Stage 1 alpha remains blocked by release evidence; technical queue is complete.
+    status: mixed-blocked
+    status_breakdown:
+      - blocked-external
+      - blocked-decision
+      - deferred
+      - accepted-exception
+    summary: Formal Stage 1 alpha remains blocked by release evidence and release decisions; technical queue is complete.

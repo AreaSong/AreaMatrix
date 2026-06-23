@@ -93,6 +93,11 @@ task state.
 | Architecture | [docs/architecture/overview.md](docs/architecture/overview.md) |
 | Module designs | [docs/modules/](docs/modules/) |
 | API reference | [docs/api/core-api.md](docs/api/core-api.md) |
+| Workflow planning | [workflow/README.md](workflow/README.md) |
+| Workflow versions | [workflow/versions/README.md](workflow/versions/README.md) |
+| Lightweight tasks | [tasks/README.md](tasks/README.md) |
+| Residual ledger | [workflow/residuals/README.md](workflow/residuals/README.md) |
+| Codex skills | [.codex/skills-src/README.md](.codex/skills-src/README.md) |
 | Setup & build | [docs/development/setup.md](docs/development/setup.md) |
 | Decision records | [docs/adr/](docs/adr/) |
 | Visual prototypes | [assets/prototypes/](assets/prototypes/) |

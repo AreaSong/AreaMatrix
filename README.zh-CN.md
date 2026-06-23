@@ -97,6 +97,11 @@ release evidence 或任务状态。
 | 架构师想了解怎么搭 | [docs/architecture/overview.md](docs/architecture/overview.md) |
 | 实现者想了解每块怎么写 | [docs/modules/](docs/modules/) |
 | 集成方想了解 API | [docs/api/core-api.md](docs/api/core-api.md) |
+| 规划 v* workflow / v2 discussion | [workflow/README.md](workflow/README.md) |
+| 查看 workflow versions | [workflow/versions/README.md](workflow/versions/README.md) |
+| 查看轻量任务 | [tasks/README.md](tasks/README.md) |
+| 查询遗留问题 | [workflow/residuals/README.md](workflow/residuals/README.md) |
+| 查看 Codex skills | [.codex/skills-src/README.md](.codex/skills-src/README.md) |
 | 新加入想搭环境 | [docs/development/setup.md](docs/development/setup.md) |
 | 想了解决策来龙去脉 | [docs/adr/](docs/adr/) |
 | 想查看视觉原型 | [assets/prototypes/](assets/prototypes/) |

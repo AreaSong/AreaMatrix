@@ -25,8 +25,10 @@
 
 任务量较大时，可以用 `./task-loop run` 串联 copy-ready 与 verify-ready：
 
-- 执行阶段使用 `codex exec` + `workspace-write`。
-- 验收阶段使用 `codex exec` + `read-only`。
+- copy-ready 是实施阶段，允许按 task / manifest 边界修改文件。
+- verify-ready 是验收阶段，语义上必须只读：不得修改文件、不得修复失败项，只输出 PASS / FAIL / BLOCKED 证据。
+- 当前 runner 默认对 copy / verify 子进程都使用 `CODEX_EXEC_SANDBOX=danger-full-access`，以避免 macOS XCTest 在低权限 sandbox 下触发本机 `testmanagerd` fallback；只读性由 verify prompt、runner 重试规则和验收门禁共同约束。
+- 只有排障时才临时覆盖 `CODEX_EXEC_SANDBOX=workspace-write` 或 `CODEX_EXEC_SANDBOX=read-only`，不能把 read-only dry-run 成功当成 task 完成证据。
 - 验收失败时，脚本把失败摘要注入下一轮执行，继续修复同一个 task。
 - 失败摘要必须保留功能、验证和工程质量阻塞点；下一轮按“全部全面修复”处理。
 - 只有验收输出 `VERIFY_RESULT: PASS` 后才进入下一个 task。

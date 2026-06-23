@@ -18,6 +18,7 @@ Use this guide to keep AreaMatrix residual tracking separate from product docs, 
 - Use `open` only when a real unresolved item exists and has no clearer blocker class.
 - Use `blocked-external` when closure needs external environment, accounts, devices, certificates, or third-party state.
 - Use `blocked-decision` when closure needs maintainer or release decision.
+- Use `mixed-blocked` only on aggregate version index rows that also include `status_breakdown`; do not use it for individual residual items.
 - Use `deferred` when an item is intentionally postponed to another evidence path.
 - Use `reference-only` for historical or non-current material.
 - Use `template-only` for template artifacts that are intentionally not executable.
@@ -57,3 +58,18 @@ Before creating `tasks/active/**`, require all of the following:
 2. The authoritative source has owner, scope, validation, and close condition.
 3. The work does not require workflow discussion or promotion first.
 4. The task will not write live execution `progress.json`, task-loop logs, run summaries, runner locks, checkpoint state, branches, commits, or tags.
+
+## Version Bootstrap Boundary
+
+For a new version such as `v2`, ordinary discussion open questions are not residuals. Keep them in `workflow/versions/<version>/discussion/decisions.yaml` until maintainers explicitly decide that an item should survive discussion handoff as one of:
+
+- `open`
+- `blocked-external`
+- `blocked-decision`
+- `mixed-blocked` only for aggregate version index rows with `status_breakdown`
+- `deferred`
+- `accepted-exception`
+- `reference-only`
+- `template-only`
+
+When that happens, create or update `workflow/versions/<version>/residuals/README.md` and `residuals.yaml`, then add or update the matching `version_residuals` entry in `workflow/residuals/residuals.yaml`. Do not add discussion-only questions to `tasks/active/**`.

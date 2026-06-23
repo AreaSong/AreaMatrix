@@ -5,8 +5,11 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 1. 根规则：[../../AGENTS.md](../../AGENTS.md)
 2. AI 治理：[../../.ai-governance/README.md](../../.ai-governance/README.md)
 3. 文档导航：[../../docs/README.md](../../docs/README.md)
-4. v1 历史执行队列：[../../workflow/versions/v1-mvp/execution/README.md](../../workflow/versions/v1-mvp/execution/README.md)
-5. Repo-local skills：[../skills-src/README.md](../skills-src/README.md)
+4. Workflow 边界：[../../workflow/AGENTS.md](../../workflow/AGENTS.md) 与 [../../workflow/README.md](../../workflow/README.md)
+5. Lightweight tasks：[../../tasks/README.md](../../tasks/README.md)
+6. Residual ledger：[../../workflow/residuals/README.md](../../workflow/residuals/README.md)
+7. v1 历史执行队列：[../../workflow/versions/v1-mvp/execution/README.md](../../workflow/versions/v1-mvp/execution/README.md)
+8. Repo-local skills：[../skills-src/README.md](../skills-src/README.md)
 
 ## 日常入口
 
@@ -33,6 +36,8 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 - 外部能力接入门禁：`.ai-governance/workflows/external-capability-admission.md`
 - Residual ledger：`workflow/residuals/README.md`
 - v1-mvp residuals：`workflow/versions/v1-mvp/residuals/README.md`
+- v2 planning bootstrap：`workflow/README.md`、`workflow/versions/README.md`、`.codex/skills-src/areamatrix-workflow-planning/references/version-lifecycle.md`
+- Lightweight task boundaries：`tasks/README.md`、`tasks/indexes/residuals.md`
 
 ## 项目源事实快捷入口
 

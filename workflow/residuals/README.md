@@ -21,7 +21,7 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 
 | 范围 | 状态 | 入口 | 说明 |
 |---|---|---|---|
-| v1-mvp release evidence | `blocked-external` | [../versions/v1-mvp/residuals/](../versions/v1-mvp/residuals/) | 正式 Stage 1 alpha 仍因 release evidence 不放行。 |
+| v1-mvp release evidence | `blocked-external` / `blocked-decision` / `deferred` | [../versions/v1-mvp/residuals/](../versions/v1-mvp/residuals/) | 正式 Stage 1 alpha 仍因 release evidence 和 release decision 不放行；其中 `v1-ref-003-1-task-05` 走 release evidence review。 |
 | v1-mvp checkpoint gaps | `accepted-exception` | [../versions/v1-mvp/residuals/accepted-exceptions.md](../versions/v1-mvp/residuals/accepted-exceptions.md) | 35 个历史 checkpoint gaps 已接受为 closeout exceptions，不回填历史。 |
 | AreaFlow | `reference-only` | [non-current-references.md](non-current-references.md) | 历史愿景材料，不是当前产品范围或 active backlog。 |
 | v-template | `template-only` | [non-current-references.md](non-current-references.md) | 模板参考实例，blocked-by-design，不是真版本未完成。 |
@@ -54,6 +54,8 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 4. 宽泛查询必须输出“当前阻塞项”和“已索引但非当前待办项”两组，且覆盖全量 residual ID 清单。
 5. 不把 `reference-only`、`template-only` 或 `accepted-exception` 自动转成任务。
 6. 只有 `executable_task: true` 且有明确 owner / validation / close condition 的条目，才允许人工转入 `tasks/active/**`。
+7. 新版本 discussion 期间的普通 open question 先留在 `workflow/versions/<version>/discussion/decisions.yaml`；只有形成可长期追踪的 blocker、deferred item、accepted exception、reference-only 或 template-only 状态时，才创建 `workflow/versions/<version>/residuals/**`。
+8. 新增、关闭或改名任何 version residual 时，同步检查三处：版本 residual README / YAML、全局 `workflow/residuals/residuals.yaml` 的 `version_residuals`、以及需要面向 task 查询时的 `tasks/indexes/residuals.md`。
 
 ## Related
 
