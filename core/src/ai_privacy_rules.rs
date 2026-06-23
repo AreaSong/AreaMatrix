@@ -1,4 +1,4 @@
-//! C3-09 AI privacy rules contract types and entry points.
+//! AI privacy rules AI privacy rules contract types and entry points.
 
 mod evaluation;
 mod persistence;
@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::{AiFeatureKind, CoreResult};
 use validation::{validate_evaluation_request, validate_repo_path, validate_update_request};
 
-/// Privacy rule matcher kind supported by C3-09.
+/// Privacy rule matcher kind supported by AI privacy rules.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub enum AiPrivacyRuleKind {
     /// Repository-relative folder prefix.
@@ -39,7 +39,7 @@ pub enum AiPrivacyRuleAppliesTo {
     LocalAndRemoteAi,
 }
 
-/// Local or remote route being evaluated by C3-09.
+/// Local or remote route being evaluated by AI privacy rules.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub enum AiPrivacyEvaluationRoute {
     /// Local model route.
@@ -114,7 +114,7 @@ pub enum AiPrivacyProviderGateReason {
     ProviderDisabled,
 }
 
-/// Editable privacy rule payload accepted by S3-09.
+/// Editable privacy rule payload accepted by AI privacy rules surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiPrivacyRuleInput {
     /// Stable rule id. New rules may omit it until persistence assigns one.
@@ -151,13 +151,13 @@ pub struct AiPrivacyRuleRecord {
     pub enabled: bool,
     /// Optional user-visible description.
     pub description: Option<String>,
-    /// Estimated matching file count for S3-09 list rows.
+    /// Estimated matching file count for AI privacy rules surface list rows.
     pub match_count: i64,
     /// Last matched timestamp, when known.
     pub last_matched_at: Option<i64>,
 }
 
-/// Remote field setting submitted by S3-09.
+/// Remote field setting submitted by AI privacy rules surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiPrivacyFieldRule {
     /// Field controlled by this setting.
@@ -166,7 +166,7 @@ pub struct AiPrivacyFieldRule {
     pub allow_remote: bool,
 }
 
-/// Remote field state returned by S3-09 list snapshots.
+/// Remote field state returned by AI privacy rules surface list snapshots.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiPrivacyFieldState {
     /// Field controlled by this setting.
@@ -177,7 +177,7 @@ pub struct AiPrivacyFieldState {
     pub last_matched_count: i64,
 }
 
-/// Read-only C3-03 provider scope consumed by C3-09.
+/// Read-only remote provider configuration provider scope consumed by AI privacy rules.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiPrivacyProviderScopeSnapshot {
     /// Whether provider metadata is configured.
@@ -190,7 +190,7 @@ pub struct AiPrivacyProviderScopeSnapshot {
     pub feature_scope: Vec<AiFeatureKind>,
 }
 
-/// Privacy rules snapshot consumed by S3-09.
+/// Privacy rules snapshot consumed by AI privacy rules surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiPrivacyRulesSnapshot {
     /// Global remote privacy gate.
@@ -199,7 +199,7 @@ pub struct AiPrivacyRulesSnapshot {
     pub rules: Vec<AiPrivacyRuleRecord>,
     /// Remote input-field controls.
     pub remote_allowed_fields: Vec<AiPrivacyFieldState>,
-    /// Read-only provider gate snapshot from C3-03.
+    /// Read-only provider gate snapshot from remote provider configuration.
     pub provider_scope: AiPrivacyProviderScopeSnapshot,
     /// Last update timestamp, when persistence provides one.
     pub updated_at: Option<i64>,
@@ -207,7 +207,7 @@ pub struct AiPrivacyRulesSnapshot {
     pub remote_blocked_by_default: bool,
 }
 
-/// Replace-style update request for the C3-09 rules contract.
+/// Replace-style update request for the AI privacy rules rules contract.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiPrivacyRulesUpdateRequest {
     /// Desired global remote privacy gate state.
@@ -277,7 +277,7 @@ pub struct AiPrivacyRuleMatch {
     pub matched_field: Option<AiPrivacyInputField>,
 }
 
-/// Evaluation report consumed by AI pages, S3-09 tests, and S3-10 fallback.
+/// Evaluation report consumed by AI pages, AI privacy rules surface tests, and AI fallback surface fallback.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiPrivacyEvaluationReport {
     /// Final privacy decision.
@@ -300,9 +300,9 @@ pub struct AiPrivacyEvaluationReport {
     pub message: String,
 }
 
-/// Lists C3-09 AI privacy rules and remote field-filter state.
+/// Lists AI privacy rules AI privacy rules and remote field-filter state.
 ///
-/// This read-only contract gives S3-09 enough state to render rules, remote
+/// This read-only contract gives AI privacy rules surface enough state to render rules, remote
 /// field settings, default remote-blocked policy, and read-only provider gate
 /// state without enabling providers, touching user files, or executing AI.
 ///
@@ -316,11 +316,11 @@ pub fn list_ai_privacy_rules(repo_path: String) -> CoreResult<AiPrivacyRulesSnap
     persistence::load_snapshot(&repo_path)
 }
 
-/// Updates C3-09 privacy rules, remote field filters, and the remote privacy gate.
+/// Updates AI privacy rules privacy rules, remote field filters, and the remote privacy gate.
 ///
 /// The request is replace-style and requires explicit confirmation. Enabling
 /// `privacy_gate_enabled` requires provider scope state that is configured,
-/// verified, enabled, and non-empty, so the privacy page cannot replace S3-03
+/// verified, enabled, and non-empty, so the privacy page cannot replace remote provider settings surface
 /// provider enablement. The contract must not delete Keychain credentials,
 /// disable remote providers, clear logs, edit AI results, or touch user files.
 ///
@@ -344,9 +344,9 @@ pub fn update_ai_privacy_rules(
     )
 }
 
-/// Evaluates C3-09 privacy gates for one AI attempt.
+/// Evaluates AI privacy rules privacy gates for one AI attempt.
 ///
-/// The evaluation report shape lets AI feature pages and S3-10 render
+/// The evaluation report shape lets AI feature pages and AI fallback surface render
 /// allow/deny/skipped state, provider-gate reasons, matched rule ids, matched
 /// field types, and sent-field categories. Privacy skips must keep
 /// `sent_fields` empty so call-log records can show that no AI call was made.

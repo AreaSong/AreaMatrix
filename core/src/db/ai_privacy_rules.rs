@@ -1,4 +1,4 @@
-//! Repository config-table storage for C3-09 AI privacy metadata.
+//! Repository config-table storage for AI privacy rules AI privacy metadata.
 
 use std::path::Path;
 

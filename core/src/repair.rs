@@ -1,4 +1,4 @@
-//! C1-26 metadata repair and diagnostics helpers.
+//! metadata repair and diagnostics helpers.
 
 use std::{
     fs::{self, OpenOptions},

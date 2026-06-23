@@ -1,4 +1,4 @@
-//! C3-01 AI settings contract types.
+//! AI settings contract types.
 
 use std::{
     collections::HashSet,
@@ -23,7 +23,7 @@ pub enum AiProviderPreference {
     RemoteFirst,
 }
 
-/// AI feature switch tracked by the C3-01 settings contract.
+/// AI feature switch tracked by the AI settings contract.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub enum AiFeatureKind {
     /// AI classification suggestions.
@@ -47,7 +47,7 @@ pub struct AiFeatureConfig {
     pub allow_remote: bool,
 }
 
-/// Repository AI settings payload accepted by C3-01.
+/// Repository AI settings payload accepted by AI settings.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiConfig {
     /// Repository root path the payload belongs to.
@@ -58,9 +58,9 @@ pub struct AiConfig {
     pub provider_preference: AiProviderPreference,
     /// Whether local AI routes are allowed by repository settings.
     pub local_ai_enabled: bool,
-    /// Whether remote routes are allowed after C3-03 and C3-09 gates pass.
+    /// Whether remote routes are allowed after remote provider configuration and AI privacy rules gates pass.
     pub remote_ai_allowed: bool,
-    /// Global remote privacy gate setting consumed by S3-09.
+    /// Global remote privacy gate setting consumed by AI privacy rules surface.
     pub privacy_gate_enabled: bool,
     /// Optional stable privacy policy reference. It is not a rules payload.
     pub privacy_policy_ref: Option<String>,
@@ -83,12 +83,12 @@ pub struct AiCapabilityState {
     pub disabled_reason: Option<String>,
 }
 
-/// Full AI settings snapshot returned by C3-01.
+/// Full AI settings snapshot returned by AI settings.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiConfigSnapshot {
     /// Current AI settings payload.
     pub config: AiConfig,
-    /// Derived capability rows for S3-01 and S3-09 consumers.
+    /// Derived capability rows for AI settings surface and AI privacy rules surface consumers.
     pub capabilities: Vec<AiCapabilityState>,
     /// Last persisted update timestamp, when implementation storage provides one.
     pub updated_at: Option<i64>,
@@ -266,7 +266,7 @@ fn validate_feature_toggles(toggles: &[AiFeatureConfig]) -> CoreResult<()> {
     }
     if seen.len() != all_features().len() {
         return Err(CoreError::config(
-            "AI feature toggles must include every C3-01 feature",
+            "AI feature toggles must include every supported feature",
         ));
     }
     Ok(())

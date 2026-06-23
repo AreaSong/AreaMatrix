@@ -1,4 +1,4 @@
-//! C2-18 redo action log contract types and entry points.
+//! redo action log redo action log contract types and entry points.
 
 use std::path::{Component, PathBuf};
 
@@ -23,7 +23,7 @@ pub enum RedoActionStatus {
     Executed,
 }
 
-/// One row returned to S2-22 redo consumers.
+/// One row returned to redo surface redo consumers.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RedoActionRecord {
     /// Stable redo action identifier, derived from the source undo action.
@@ -50,7 +50,7 @@ pub struct RedoActionRecord {
     pub updated_at: i64,
 }
 
-/// Result returned after executing one C2-18 redo action.
+/// Result returned after executing one redo action log redo action.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RedoActionResult {
     /// Stable redo action identifier that was requested.
@@ -69,11 +69,11 @@ pub struct RedoActionResult {
     pub completed_at: i64,
 }
 
-/// Lists C2-18 redo actions for S2-22 feedback regions.
+/// Lists redo action log redo actions for redo surface feedback regions.
 ///
 /// The contract returns redo availability, disabled reasons, source undo
-/// linkage, and refresh-facing metadata for the redo slot in S2-10 and the
-/// redo row in S2-11. Listing is metadata-only and must not execute redo, write
+/// linkage, and refresh-facing metadata for the redo slot in undo toast surface and the
+/// redo row in undo history surface. Listing is metadata-only and must not execute redo, write
 /// undo state, write change-log rows, move files, restore Trash items, retag,
 /// reclassify, reindex, trigger iCloud downloads, or touch app-layer code.
 ///
@@ -88,7 +88,7 @@ pub fn list_redo_actions(repo_path: String) -> CoreResult<Vec<RedoActionRecord>>
     db::list_redo_action_rows(&repo).map_err(normalize_redo_metadata_error)
 }
 
-/// Executes one C2-18 redo action.
+/// Executes one redo action log redo action.
 ///
 /// `action_id` maps to an available row returned by [`list_redo_actions`].
 /// Redo only replays an AreaMatrix action that was previously undone

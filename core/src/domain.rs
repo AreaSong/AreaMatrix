@@ -130,7 +130,7 @@ pub enum ScanSessionStatus {
     Interrupted,
 }
 
-/// C4-19 manual rescan preview item category.
+/// manual rescan preview item category.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ManualRescanPreviewItemKind {
     /// File would be inserted into AreaMatrix metadata.
@@ -151,7 +151,7 @@ pub enum ManualRescanPreviewItemKind {
     Skipped,
 }
 
-/// One display-safe item in a C4-19 dry-run preview.
+/// One display-safe item in a manual rescan dry-run preview.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ManualRescanPreviewItem {
     /// Preview category for the row.
@@ -164,7 +164,7 @@ pub struct ManualRescanPreviewItem {
     pub suggested_action: String,
 }
 
-/// Dry-run summary for C4-19 manual rescan confirmation.
+/// Dry-run summary for manual rescan confirmation.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ManualRescanPreviewReport {
     /// Number of files that would be inserted.
@@ -413,7 +413,7 @@ pub struct FileEntry {
     pub updated_at: i64,
 }
 
-/// Read-only preview for a C1-24 category move.
+/// Read-only preview for a category move.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MoveToCategoryPreview {
     /// Stable database identifier for the active file.
@@ -432,7 +432,7 @@ pub struct MoveToCategoryPreview {
     pub storage_mode: StorageMode,
     /// Whether confirmation only changes metadata and never moves an external file.
     pub index_only: bool,
-    /// Whether C1-10 conflict-free numbering changed the final file name.
+    /// Whether name-conflict numbering changed the final file name.
     pub name_conflict_resolved: bool,
     /// Whether confirmation will physically move a repo-owned file.
     pub will_move_file: bool,
@@ -466,7 +466,7 @@ pub struct ICloudConflictPair {
     pub uncertainty_reason: Option<String>,
 }
 
-/// Version role inside a C2-16 iCloud conflict preview.
+/// Version role inside an iCloud conflict preview.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ICloudConflictVersionRole {
     /// The inferred original version.
@@ -486,7 +486,7 @@ pub enum ICloudConflictPreviewStatus {
     Unavailable,
 }
 
-/// User resolution choices supported by C2-16.
+/// User resolution choices supported by iCloud conflict resolution.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ICloudConflictResolution {
     /// Keep all versions and mark the conflict resolved or acknowledged.
@@ -502,7 +502,7 @@ pub enum ICloudConflictResolution {
 pub struct ICloudConflictVersionMetadata {
     /// Stable id for the version inside the conflict preview.
     pub version_id: String,
-    /// Version role used by S2-20 to label left/right choices.
+    /// Version role used by iCloud conflict review surface to label left/right choices.
     pub role: ICloudConflictVersionRole,
     /// Repository-relative path for the version.
     pub path: String,
@@ -518,7 +518,7 @@ pub struct ICloudConflictVersionMetadata {
     pub preview_status: ICloudConflictPreviewStatus,
 }
 
-/// One resolution option exposed to S2-20.
+/// One resolution option exposed to iCloud conflict review surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ICloudConflictResolutionOption {
     /// Resolution represented by this option.
@@ -533,7 +533,7 @@ pub struct ICloudConflictResolutionOption {
     pub disabled_reason: Option<String>,
 }
 
-/// C2-16 preview report for comparing and resolving iCloud conflict versions.
+/// iCloud conflict resolution preview report for comparing and resolving iCloud conflict versions.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ICloudConflictPreviewReport {
     /// Conflict id from `list_icloud_conflicts`.
@@ -556,7 +556,7 @@ pub struct ICloudConflictPreviewReport {
     pub blocked_reason: Option<String>,
 }
 
-/// C2-16 resolution result returned after explicit user confirmation.
+/// iCloud conflict resolution result returned after explicit user confirmation.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ICloudConflictResolveReport {
     /// Conflict id that was resolved.
@@ -620,7 +620,7 @@ pub struct RecoveryReport {
 
 /// Filesystem reindex summary.
 ///
-/// C4-19 manual rescan consumers use this as the post-confirmation summary for
+/// manual rescan consumers use this as the post-confirmation summary for
 /// an entire-repository scan after [`ManualRescanPreviewReport`] has shown the
 /// dry-run impact. Missing, conflict, unreadable, and unknown counts are
 /// review signals; Core does not silently delete or merge those items.
@@ -646,7 +646,7 @@ pub struct ReindexReport {
     pub errors: Vec<String>,
 }
 
-/// Options for C1-26 metadata repair.
+/// Options for metadata repair.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct RepairOptions {
     /// Whether repair should run a full filesystem rescan after diagnostics.
@@ -685,7 +685,7 @@ pub struct RepairReport {
 
 /// Persisted scan session state.
 ///
-/// C4-19 manual rescan consumers use `kind`, `status`, counters, timestamps,
+/// manual rescan consumers use `kind`, `status`, counters, timestamps,
 /// `last_path`, and `errors` to render progress, completion, retry, and failure
 /// state without parsing logs or inspecting user files.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

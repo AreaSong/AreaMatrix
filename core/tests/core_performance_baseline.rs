@@ -18,17 +18,10 @@ const LIST_FILES_200_THRESHOLD_US: u128 = 5_000;
 const LIST_TREE_1K_THRESHOLD_MS: u128 = 30;
 
 #[test]
-#[ignore = "Stage 1 hot path benchmark; run explicitly with --release --bench stage1_hot_paths"]
-fn stage1_hot_path_benchmarks_emit_threshold_results() {
-    stage1_import_one_mebibyte_copy_bench();
-    stage1_import_one_hundred_files_bench();
-    stage1_reindex_ten_thousand_files_bench();
-    stage1_tree_and_list_response_bench();
-}
-
-fn stage1_import_one_mebibyte_copy_bench() {
+#[ignore = "Core release performance baseline; run explicitly with --release --ignored --test-threads=1"]
+fn core_import_one_mebibyte_copy_under_threshold() {
     let repo = initialized_repo(true);
-    let source_root = tempfile::tempdir().expect("create source root for 1 MiB import bench");
+    let source_root = tempfile::tempdir().expect("create source root");
     let source = write_source_file(source_root.path(), "invoice.pdf", ONE_MIB);
 
     let elapsed = measure(|| {
@@ -37,7 +30,7 @@ fn stage1_import_one_mebibyte_copy_bench() {
             path_string(&source),
             copied_options(Some("finance")),
         )
-        .expect("import one MiB file during Stage 1 bench");
+        .expect("import one MiB file");
     });
 
     report_ms(
@@ -45,11 +38,17 @@ fn stage1_import_one_mebibyte_copy_bench() {
         elapsed,
         IMPORT_ONE_MIB_THRESHOLD_MS,
     );
+    assert!(
+        elapsed.as_millis() < IMPORT_ONE_MIB_THRESHOLD_MS,
+        "1 MiB copied import exceeded core performance threshold"
+    );
 }
 
-fn stage1_import_one_hundred_files_bench() {
+#[test]
+#[ignore = "Core release performance baseline; run explicitly with --release --ignored --test-threads=1"]
+fn core_import_one_hundred_files_under_threshold() {
     let repo = initialized_repo(true);
-    let source_root = tempfile::tempdir().expect("create source root for batch bench");
+    let source_root = tempfile::tempdir().expect("create source root");
     let sources = write_source_files(source_root.path(), 100, 4 * 1024);
 
     let elapsed = measure(|| {
@@ -59,11 +58,17 @@ fn stage1_import_one_hundred_files_bench() {
                 path_string(source),
                 copied_options(Some("docs")),
             )
-            .expect("import batch file during Stage 1 bench");
+            .expect("import batch file");
         }
-        let files = list_files(path_string(repo.path()), category_filter("docs", 100))
-            .expect("list imported batch during Stage 1 bench");
-        assert_eq!(files.len(), 100);
+        let mut filter = default_filter();
+        filter.category = Some("docs".to_owned());
+        filter.limit = 100;
+        assert_eq!(
+            list_files(path_string(repo.path()), filter)
+                .expect("list imported batch")
+                .len(),
+            100
+        );
     });
 
     report_ms(
@@ -71,17 +76,23 @@ fn stage1_import_one_hundred_files_bench() {
         elapsed,
         IMPORT_100_FILES_THRESHOLD_MS,
     );
+    assert!(
+        elapsed.as_millis() < IMPORT_100_FILES_THRESHOLD_MS,
+        "100 file copied batch import exceeded core performance threshold"
+    );
 }
 
-fn stage1_reindex_ten_thousand_files_bench() {
+#[test]
+#[ignore = "Core release performance baseline; run explicitly with --release --ignored --test-threads=1"]
+fn core_reindex_ten_thousand_files_under_threshold() {
     let repo = initialized_repo(false);
     write_repository_dataset(repo.path(), 10_000, 128);
 
     let elapsed = measure(|| {
         let report =
-            reindex_from_filesystem(path_string(repo.path())).expect("reindex Stage 1 dataset");
+            reindex_from_filesystem(path_string(repo.path())).expect("reindex ten thousand files");
         assert_eq!(report.inserted, 10_000);
-        assert!(report.errors.is_empty());
+        assert_eq!(report.errors, Vec::<String>::new());
     });
 
     report_ms(
@@ -89,21 +100,32 @@ fn stage1_reindex_ten_thousand_files_bench() {
         elapsed,
         REINDEX_10K_FILES_THRESHOLD_MS,
     );
+    assert!(
+        elapsed.as_millis() < REINDEX_10K_FILES_THRESHOLD_MS,
+        "10k file reindex exceeded core performance threshold"
+    );
 }
 
-fn stage1_tree_and_list_response_bench() {
+#[test]
+#[ignore = "Core release performance baseline; run explicitly with --release --ignored --test-threads=1"]
+fn core_tree_and_list_responses_under_thresholds() {
     let repo = initialized_repo(false);
     write_repository_dataset(repo.path(), 1_000, 128);
-    reindex_from_filesystem(path_string(repo.path())).expect("seed Stage 1 tree/list metadata");
+    let report =
+        reindex_from_filesystem(path_string(repo.path())).expect("seed metadata for list_files");
+    assert_eq!(report.inserted, 1_000);
 
     let tree_elapsed = measure(|| {
         let tree_json =
             list_tree_json(path_string(repo.path()), "en".to_owned()).expect("list tree JSON");
         assert!(tree_json.contains("\"file_count\":1000"));
     });
+
+    let mut filter = default_filter();
+    filter.category = Some("docs".to_owned());
+    filter.limit = 200;
     let list_elapsed = measure(|| {
-        let files = list_files(path_string(repo.path()), category_filter("docs", 200))
-            .expect("list Stage 1 files");
+        let files = list_files(path_string(repo.path()), filter.clone()).expect("list 200 files");
         assert_eq!(files.len(), 200);
     });
 
@@ -117,6 +139,14 @@ fn stage1_tree_and_list_response_bench() {
         list_elapsed,
         LIST_FILES_200_THRESHOLD_US,
     );
+    assert!(
+        tree_elapsed.as_millis() < LIST_TREE_1K_THRESHOLD_MS,
+        "1k file tree response exceeded core performance threshold"
+    );
+    assert!(
+        list_elapsed.as_micros() < LIST_FILES_200_THRESHOLD_US,
+        "200 row list response exceeded core performance threshold"
+    );
 }
 
 fn initialized_repo(create_default_categories: bool) -> tempfile::TempDir {
@@ -129,7 +159,7 @@ fn initialized_repo(create_default_categories: bool) -> tempfile::TempDir {
             overview_output: OverviewOutput::GeneratedOnly,
         },
     )
-    .expect("initialize temporary repository");
+    .expect("initialize repository");
     repo
 }
 
@@ -144,13 +174,13 @@ fn copied_options(category: Option<&str>) -> ImportOptions {
     }
 }
 
-fn category_filter(category: &str, limit: i64) -> FileFilter {
+fn default_filter() -> FileFilter {
     FileFilter {
-        category: Some(category.to_owned()),
+        category: None,
         include_deleted: None,
         imported_after: None,
         imported_before: None,
-        limit,
+        limit: 200,
         offset: 0,
     }
 }
@@ -197,7 +227,7 @@ fn measure(action: impl FnOnce()) -> Duration {
 
 fn report_ms(name: &str, elapsed: Duration, threshold_ms: u128) {
     eprintln!(
-        "STAGE1_BENCH name=\"{}\" value_ms={} threshold_ms={} result={}",
+        "CORE_PERF_BASELINE name=\"{}\" value_ms={} threshold_ms={} result={}",
         name,
         elapsed.as_millis(),
         threshold_ms,
@@ -207,7 +237,7 @@ fn report_ms(name: &str, elapsed: Duration, threshold_ms: u128) {
 
 fn report_us(name: &str, elapsed: Duration, threshold_us: u128) {
     eprintln!(
-        "STAGE1_BENCH name=\"{}\" value_us={} threshold_us={} result={}",
+        "CORE_PERF_BASELINE name=\"{}\" value_us={} threshold_us={} result={}",
         name,
         elapsed.as_micros(),
         threshold_us,

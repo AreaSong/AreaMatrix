@@ -1,10 +1,10 @@
-//! C2-19 tag suggestion contract types.
+//! deterministic tag suggestions tag suggestion contract types.
 
 use serde::{Deserialize, Serialize};
 
 use super::TagSet;
 
-/// Source that produced one deterministic C2-19 tag suggestion.
+/// Source that produced one deterministic deterministic tag suggestions tag suggestion.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TagSuggestionSource {
     /// The suggestion came from the current file name.
@@ -17,7 +17,7 @@ pub enum TagSuggestionSource {
     ExistingTagPattern,
 }
 
-/// Deterministic match strength for one C2-19 tag suggestion.
+/// Deterministic match strength for one deterministic tag suggestions tag suggestion.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TagSuggestionMatch {
     /// Exact normalized token match and safe to preselect.
@@ -26,7 +26,7 @@ pub enum TagSuggestionMatch {
     Weak,
 }
 
-/// Current write/readiness state for one C2-19 suggestion row.
+/// Current write/readiness state for one deterministic tag suggestions suggestion row.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TagSuggestionStatus {
     /// The suggested tag can be applied.
@@ -39,7 +39,7 @@ pub enum TagSuggestionStatus {
     Blocked,
 }
 
-/// Optional context used when generating deterministic C2-19 suggestions.
+/// Optional context used when generating deterministic deterministic tag suggestions suggestions.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TagSuggestionContext {
     /// Optional source directory captured by import flows.
@@ -48,7 +48,7 @@ pub struct TagSuggestionContext {
     pub source_keywords: Vec<String>,
 }
 
-/// Request for deterministic C2-19 tag suggestions for one active file.
+/// Request for deterministic deterministic tag suggestions tag suggestions for one active file.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TagSuggestionRequest {
     /// Active file whose metadata should be inspected.
@@ -59,7 +59,7 @@ pub struct TagSuggestionRequest {
     pub limit: i64,
 }
 
-/// One C2-19 tag suggestion row consumed by S2-23.
+/// One deterministic tag suggestions tag suggestion row consumed by tag suggestions surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TagSuggestion {
     /// Stable client key for checkbox/edit state.
@@ -80,30 +80,30 @@ pub struct TagSuggestion {
     pub needs_create: bool,
     /// Row state for disabled/error UI.
     pub status: TagSuggestionStatus,
-    /// Whether S2-23 may preselect this suggestion by default.
+    /// Whether tag suggestions surface may preselect this suggestion by default.
     pub selected_by_default: bool,
     /// Optional user-facing blocked or validation reason.
     pub disabled_reason: Option<String>,
 }
 
-/// Result returned when S2-23 asks Core for C2-19 suggestions.
+/// Result returned when tag suggestions surface asks Core for deterministic tag suggestions suggestions.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TagSuggestionReport {
     /// File whose metadata was inspected.
     pub file_id: i64,
     /// Deterministic suggestions in display order.
     pub suggestions: Vec<TagSuggestion>,
-    /// Current tag state, so S2-23 can show already-added rows and avoid duplicate writes.
+    /// Current tag state, so tag suggestions surface can show already-added rows and avoid duplicate writes.
     pub tag_set: TagSet,
-    /// Privacy boundary shown by S2-23: no file content read.
+    /// Privacy boundary shown by tag suggestions surface: no file content read.
     pub contents_read: bool,
-    /// Privacy boundary shown by S2-23: no AI or remote provider called.
+    /// Privacy boundary shown by tag suggestions surface: no AI or remote provider called.
     pub ai_used: bool,
-    /// Privacy boundary shown by S2-23: no network access.
+    /// Privacy boundary shown by tag suggestions surface: no network access.
     pub network_used: bool,
 }
 
-/// One selected or edited suggestion submitted for C2-19 apply.
+/// One selected or edited suggestion submitted for deterministic tag suggestions apply.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ApplyTagSuggestionItem {
     /// Suggestion identifier returned by `suggest_tags_for_file`.
@@ -114,7 +114,7 @@ pub struct ApplyTagSuggestionItem {
     pub display_name: String,
 }
 
-/// Request for applying selected C2-19 tag suggestions to one file.
+/// Request for applying selected deterministic tag suggestions tag suggestions to one file.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ApplyTagSuggestionsRequest {
     /// Active file that receives the selected tags.
@@ -123,7 +123,7 @@ pub struct ApplyTagSuggestionsRequest {
     pub suggestions: Vec<ApplyTagSuggestionItem>,
 }
 
-/// Status for one C2-19 apply result row.
+/// Status for one deterministic tag suggestions apply result row.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TagSuggestionApplyStatus {
     /// The tag relation was newly applied.
@@ -134,7 +134,7 @@ pub enum TagSuggestionApplyStatus {
     Failed,
 }
 
-/// One C2-19 apply result row.
+/// One deterministic tag suggestions apply result row.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TagSuggestionApplyItemResult {
     /// Suggestion identifier from the apply request.
@@ -143,11 +143,11 @@ pub struct TagSuggestionApplyItemResult {
     pub slug: String,
     /// Per-row result status.
     pub status: TagSuggestionApplyStatus,
-    /// Optional failure or skip detail for S2-23 recovery UI.
+    /// Optional failure or skip detail for tag suggestions surface recovery UI.
     pub error: Option<String>,
 }
 
-/// Report returned after applying C2-19 selected tag suggestions.
+/// Report returned after applying deterministic tag suggestions selected tag suggestions.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TagSuggestionApplyReport {
     /// File whose tags were mutated.
@@ -164,8 +164,8 @@ pub struct TagSuggestionApplyReport {
     pub item_results: Vec<TagSuggestionApplyItemResult>,
     /// Refreshed tag state after the apply attempt.
     pub tag_set: TagSet,
-    /// Undo token for C2-07 toast/history when at least one relation was newly added.
+    /// Undo token for undo action log toast/history when at least one relation was newly added.
     pub undo_token: Option<String>,
-    /// Stable refresh hints for S2-23 and host detail/import-result surfaces.
+    /// Stable refresh hints for tag suggestions surface and host detail/import-result surfaces.
     pub refresh_targets: Vec<String>,
 }

@@ -1,4 +1,4 @@
-//! C2-17 import conflict batch contract types and entry points.
+//! import conflict batch import conflict batch contract types and entry points.
 
 use std::path::PathBuf;
 
@@ -14,7 +14,7 @@ mod token;
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const TRASH_PENDING_DIR: &str = "trash-pending";
 
-/// Import conflict type surfaced by S2-21.
+/// Import conflict type surfaced by import conflict review surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ImportConflictBatchConflictType {
     /// Incoming file has the same hash as an active repository file.
@@ -32,11 +32,11 @@ pub enum ImportConflictBatchStrategy {
     KeepBoth,
     /// Replace an existing file only after explicit second confirmation.
     Replace,
-    /// Route each item into the Stage 1 per-item conflict flow.
+    /// Route each item into the per-item import conflict flow.
     AskPerItem,
 }
 
-/// Per-row preview status returned before applying C2-17.
+/// Per-row preview status returned before applying import conflict batch.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ImportConflictBatchPreviewStatus {
     /// Row can be processed by the selected strategy.
@@ -51,7 +51,7 @@ pub enum ImportConflictBatchPreviewStatus {
     Failed,
 }
 
-/// Per-row execution status returned after applying C2-17.
+/// Per-row execution status returned after applying import conflict batch.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ImportConflictBatchResultStatus {
     /// Duplicate row was skipped and the incoming staged file remains non-final.
@@ -60,7 +60,7 @@ pub enum ImportConflictBatchResultStatus {
     KeptBoth,
     /// Existing file was moved to Trash or recovery storage and replaced.
     Replaced,
-    /// Row was routed to the per-item Stage 1 conflict queue.
+    /// Row was routed to the per-item per-item conflict queue.
     QueuedForPerItem,
     /// Row remains outside the current scope.
     Pending,
@@ -68,12 +68,12 @@ pub enum ImportConflictBatchResultStatus {
     Failed,
 }
 
-/// C2-17 preview request for the current import session and scope.
+/// import conflict batch preview request for the current import session and scope.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ImportConflictBatchPreviewRequest {
     /// Import session that owns the staged conflict rows.
     pub import_session_id: String,
-    /// Conflict ids selected by S2-21; empty is invalid.
+    /// Conflict ids selected by import conflict review surface; empty is invalid.
     pub conflict_ids: Vec<String>,
     /// Strategy for hash duplicate rows.
     pub duplicate_strategy: ImportConflictBatchStrategy,
@@ -83,7 +83,7 @@ pub struct ImportConflictBatchPreviewRequest {
     pub apply_to_all_similar_conflicts: bool,
 }
 
-/// One row in a C2-17 preview report.
+/// One row in a import conflict batch preview report.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ImportConflictBatchPreviewItem {
     /// Stable conflict id from the import session.
@@ -100,7 +100,7 @@ pub struct ImportConflictBatchPreviewItem {
     pub target_path: Option<String>,
     /// Strategy selected for this row.
     pub selected_strategy: ImportConflictBatchStrategy,
-    /// Stable row status for S2-21 summaries and accessibility.
+    /// Stable row status for import conflict review surface summaries and accessibility.
     pub status: ImportConflictBatchPreviewStatus,
     /// Whether Apply would replace an existing file.
     pub will_replace: bool,
@@ -118,7 +118,7 @@ pub struct ImportConflictBatchPreviewItem {
     pub reason: Option<String>,
 }
 
-/// Read-only C2-17 preview report consumed before Apply is enabled.
+/// Read-only import conflict batch preview report consumed before Apply is enabled.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ImportConflictBatchPreviewReport {
     /// Import session that owns the preview.
@@ -149,7 +149,7 @@ pub struct ImportConflictBatchPreviewReport {
     pub ask_per_item_count: i64,
     /// Whether Trash or recovery storage is available for replacement.
     pub trash_available: bool,
-    /// Whether successful writes can create a C2-07 undo action.
+    /// Whether successful writes can create a undo action log undo action.
     pub undo_available: bool,
     /// Whether Apply may be called with this preview token.
     pub can_apply: bool,
@@ -159,16 +159,16 @@ pub struct ImportConflictBatchPreviewReport {
     pub replace_confirmation_required: bool,
     /// Summary text for the Replace second-confirmation sheet.
     pub replace_confirmation_summary: Option<String>,
-    /// Detailed preview rows for S2-21.
+    /// Detailed preview rows for import conflict review surface.
     pub items: Vec<ImportConflictBatchPreviewItem>,
 }
 
-/// C2-17 apply request bound to a previous preview.
+/// import conflict batch apply request bound to a previous preview.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ImportConflictBatchApplyRequest {
     /// Import session that owns the staged conflict rows.
     pub import_session_id: String,
-    /// Conflict ids selected by S2-21; empty is invalid.
+    /// Conflict ids selected by import conflict review surface; empty is invalid.
     pub conflict_ids: Vec<String>,
     /// Strategy for hash duplicate rows.
     pub duplicate_strategy: ImportConflictBatchStrategy,
@@ -176,11 +176,11 @@ pub struct ImportConflictBatchApplyRequest {
     pub same_name_strategy: ImportConflictBatchStrategy,
     /// Whether strategies apply to all current conflicts of the same type.
     pub apply_to_all_similar_conflicts: bool,
-    /// Whether S2-21 completed the Replace second-confirmation sheet.
+    /// Whether import conflict review surface completed the Replace second-confirmation sheet.
     pub replace_confirmed: bool,
 }
 
-/// One row in a C2-17 apply report.
+/// One row in a import conflict batch apply report.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ImportConflictBatchItemResult {
     /// Stable conflict id from the import session.
@@ -189,7 +189,7 @@ pub struct ImportConflictBatchItemResult {
     pub conflict_type: ImportConflictBatchConflictType,
     /// Strategy actually applied to this row.
     pub applied_strategy: ImportConflictBatchStrategy,
-    /// Stable execution status for S2-21 result summaries.
+    /// Stable execution status for import conflict review surface result summaries.
     pub status: ImportConflictBatchResultStatus,
     /// File id written or refreshed when Apply succeeded.
     pub file_id: Option<i64>,
@@ -199,7 +199,7 @@ pub struct ImportConflictBatchItemResult {
     pub error: Option<String>,
 }
 
-/// Execution report returned to S2-21 and C2-07 undo consumers.
+/// Execution report returned to import conflict review surface and undo action log undo consumers.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ImportConflictBatchApplyReport {
     /// Import session processed by this apply call.
@@ -224,11 +224,11 @@ pub struct ImportConflictBatchApplyReport {
     pub item_results: Vec<ImportConflictBatchItemResult>,
     /// File ids that list/detail/tree consumers should refresh.
     pub affected_file_ids: Vec<i64>,
-    /// Undo token for C2-07 toast/history when successful writes create one.
+    /// Undo token for undo action log toast/history when successful writes create one.
     pub undo_token: Option<String>,
     /// Change-log actions written by successful rows.
     pub change_log_actions: Vec<String>,
-    /// Summary of failed rows for S2-21 recovery state.
+    /// Summary of failed rows for import conflict review surface recovery state.
     pub failure_summary: Option<String>,
 }
 
@@ -246,9 +246,9 @@ struct PlannedImportConflict {
     reason: Option<String>,
 }
 
-/// Previews C2-17 import conflict batch decisions without mutating staging or files.
+/// Previews import conflict batch import conflict batch decisions without mutating staging or files.
 ///
-/// S2-21 uses this API to show conflict type groups, selected strategies, row
+/// import conflict review surface uses this API to show conflict type groups, selected strategies, row
 /// status, Replace risk, Trash/undo availability, pending rows, and whether
 /// Apply can be enabled. This contract is side-effect free: it must not write
 /// import session decisions, promote staged files, move files to Trash, replace
@@ -276,11 +276,11 @@ pub fn preview_import_conflict_batch(
     Ok(plan::preview_report(&repo, &request, &normalized, &plan))
 }
 
-/// Applies C2-17 import conflict batch decisions after explicit user confirmation.
+/// Applies import conflict batch import conflict batch decisions after explicit user confirmation.
 ///
 /// `preview_token` must come from [`preview_import_conflict_batch`] for the
 /// same import session, conflict scope, strategies, Trash availability, and
-/// inspected staging state. Replace strategies require S2-21 to complete the
+/// inspected staging state. Replace strategies require import conflict review surface to complete the
 /// second-confirmation sheet before this API may mutate anything. Failed rows
 /// must keep staged files and unresolved conflict state so the user can retry
 /// or route them to per-item handling.

@@ -7,7 +7,7 @@ namespace area_matrix {
     [Throws=CoreError]
     BindingContractReport inspect_binding_contract(BindingContractRequest request);
 
-    // C4-17 exposes platform capability rows. C4-20 repository settings reuses
+    // platform capabilities exposes platform capability rows. repository settings reuses
     // the same matrix to disable unsupported settings before config updates.
     [Throws=CoreError]
     PlatformCapabilities get_platform_capabilities(
@@ -23,12 +23,12 @@ namespace area_matrix {
     [Throws=CoreError]
     void init_repo(string repo_path, RepoInitOptions options);
 
-    // C4-20 repository settings reads this repository config snapshot together
+    // repository settings reads this repository config snapshot together
     // with PlatformCapabilities; loading is read-only and has no platform probe.
     [Throws=CoreError]
     RepoConfig load_config(string repo_path);
 
-    // C4-20 repository settings persists only repo_config. Platform-unsupported
+    // repository settings persists only repo_config. Platform-unsupported
     // settings must be disabled by the caller; this API does not move user files.
     [Throws=CoreError]
     void update_config(string repo_path, RepoConfig new_config);
@@ -141,14 +141,14 @@ namespace area_matrix {
     [Throws=CoreError]
     RecoveryReport recover_on_startup(string repo_path);
 
-    // C4-19 manual-rescan previews repository impact before S4-X-07 enables
+    // manual rescan previews repository impact before rescan confirmation enables
     // the high-risk confirmation. Preview is read-only: it must not write
     // files, scan sessions, change log, or database file rows.
     [Throws=CoreError]
     ManualRescanPreviewReport preview_manual_rescan(string repo_path);
 
-    // C4-19 manual-rescan reuses the full repository reindex entry point after
-    // S4-X-07 has shown preview and the high-risk confirmation. The scope is
+    // manual rescan reuses the full repository reindex entry point after
+    // rescan confirmation has shown preview and the high-risk confirmation. The scope is
     // the entire repository; partial subtree rescan is not exposed by this
     // contract. Core must only update AreaMatrix metadata and must not move,
     // delete, rename, overwrite, trash, or download user files.
@@ -161,18 +161,18 @@ namespace area_matrix {
     [Throws=CoreError]
     RepairReport repair_metadata(string repo_path, RepairOptions options);
 
-    // C4-19 consumers read the latest scan session to render manual rescan
+    // manual rescan consumers read the latest scan session to render manual rescan
     // progress, completion, failure, interruption, and retry state without
     // starting or resuming a scan.
     [Throws=CoreError]
     ScanSession? get_latest_scan_session(string repo_path);
 
-    // C4-19 resumes an interrupted or failed whole-repository manual rescan
-    // only after the UI has routed the user through S4-X-07 recovery copy.
+    // manual rescan resumes an interrupted or failed whole-repository manual rescan
+    // only after the UI has routed the user through rescan confirmation recovery flow.
     [Throws=CoreError]
     ReindexReport resume_scan_session(string repo_path, i64 scan_session_id);
 
-    // C4-13 desktop-import-flow reuses predict_category for read-only
+    // desktop import flow reuses predict_category for read-only
     // Windows/Linux import preview state after the platform picker, drop
     // adapter, or optional shell entry has produced safe display names. Core
     // does not expand folders, run platform permission preflight, detect
@@ -180,13 +180,13 @@ namespace area_matrix {
     [Throws=CoreError]
     ClassifyResult predict_category(string repo_path, string filename);
 
-    // C4-13 desktop-import-flow uses import_file_with_result for the final
+    // desktop import flow uses import_file_with_result for the final
     // committed single-item desktop import result. import_file remains the
-    // backwards-compatible FileEntry entry point for existing Stage 1 callers.
+    // backwards-compatible FileEntry entry point for existing callers.
     // The desktop result includes source removal status so Move can report
     // Imported, original retained without parsing errors or rolling back a
     // safely committed repository file. Replace confirmation belongs to
-    // C4-21/S4-X-09; this entry point does not add a desktop-only replace or
+    // replace confirmation; this entry point does not add a desktop-only replace or
     // platform Trash API.
     [Throws=CoreError]
     FileEntry import_file(
@@ -198,7 +198,7 @@ namespace area_matrix {
         string repo_path, string source_path, ImportOptions options
     );
 
-    // C4-21/S4-X-09 may compose this existing deletion contract only for
+    // replace confirmation may compose this existing deletion contract only for
     // recoverable repo-owned discarded versions. There is no hard-delete flag;
     // platforms must disable Replace when Trash or a documented safety backup
     // is unavailable.
@@ -308,8 +308,8 @@ namespace area_matrix {
     [Throws=CoreError]
     FileEntry restore_file(string repo_path, i64 file_id);
 
-    // C4-11 desktop-main-query reuses list_files, get_file, list_tree_json,
-    // and search_files for S4-WIN-02/S4-LNX-02 main-window state. Desktop
+    // desktop main query reuses list_files, get_file, list_tree_json,
+    // and search_files for Windows and Linux main-window state. Desktop
     // shells page through FileFilter.limit/offset and must not scan the repo
     // directly or hide watcher/import/recovery behavior behind this query set.
     [Throws=CoreError]
@@ -401,13 +401,13 @@ namespace area_matrix {
         string repo_path, MissingFileRemoveRecordRequest request
     );
 
-    // C4-07 mobile-detail composes get_file + list_changes + read_note.
-    // FileEntry.availability_status lets S4-IOS-05 route Missing to S4-X-06
+    // mobile file detail composes get_file + list_changes + read_note.
+    // FileEntry.availability_status lets mobile file detail surface route Missing to missing-file recovery surface
     // without platform-side metadata inference.
     [Throws=CoreError]
     sequence<ChangeLogEntry> list_changes(string repo_path, ChangeFilter filter);
 
-    // C4-11 also uses this read-only tree JSON for desktop sidebar state.
+    // desktop main query also uses this read-only tree JSON for desktop sidebar state.
     [Throws=CoreError]
     string list_tree_json(string repo_path, string locale);
 
@@ -1105,8 +1105,8 @@ dictionary ImportOptions {
     string? target_directory;
     string? override_category;
     string? override_filename;
-    // C4-13 desktop and C4-06 iOS import dialogs keep Replace hidden or
-    // disabled until the separate C4-21/S4-X-09 confirmation proves
+    // desktop import flow desktop and files import dialogs keep Replace hidden or
+    // disabled until the separate replace confirmation confirmation proves
     // recoverability. Overwrite is the committed strategy token after that
     // confirmation, not the preview or platform Trash capability contract.
     DuplicateStrategy duplicate_strategy;
@@ -2470,7 +2470,7 @@ enum ErrorRecoverability {
 };
 
 [Error]
-// C1-21 error-mapping contract: Swift maps these structured cases instead of
+// error mapping error-mapping contract: Swift maps these structured cases instead of
 // branching on localized strings or string-contains checks.
 interface CoreError {
     Io(string message);

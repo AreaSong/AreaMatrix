@@ -7,7 +7,7 @@ use crate::{CoreError, CoreResult};
 
 use super::open_repo_connection;
 
-/// Minimal active-file metadata needed by C2-11 file candidates.
+/// Minimal active-file metadata needed by command index file candidates.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct CommandFileCandidateRow {
     pub(crate) id: i64,
@@ -17,7 +17,7 @@ pub(crate) struct CommandFileCandidateRow {
     pub(crate) updated_at: i64,
 }
 
-/// Read-only recent-command metadata used by C2-11.
+/// Read-only recent-command metadata used by command index.
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize)]
 pub(crate) struct RecentCommandRow {
     pub(crate) target_id: String,

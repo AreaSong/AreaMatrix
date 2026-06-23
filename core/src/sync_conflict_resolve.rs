@@ -1,4 +1,4 @@
-//! C4-16 sync conflict resolution contract types and entry points.
+//! sync conflict resolution sync conflict resolution contract types and entry points.
 
 mod apply;
 mod plan;
@@ -16,7 +16,7 @@ const CHANGE_LOG_DB_ACTION: &str = "external_modified";
 const RESOLUTION_KIND_PREFIX: &str = "conflict_resolved";
 const SYNC_CONFLICT_RESOLVED_KIND: &str = "sync_conflict_resolved";
 
-/// User-selected C4-16 sync conflict resolution strategy.
+/// User-selected sync conflict resolution sync conflict resolution strategy.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum SyncConflictResolutionStrategy {
     /// Keep every version visible as normal repository files.
@@ -27,7 +27,7 @@ pub enum SyncConflictResolutionStrategy {
     UseIncoming,
 }
 
-/// Per-version impact shown in S4-X-01 before applying a resolution.
+/// Per-version impact shown in sync conflict review surface before applying a resolution.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SyncConflictVersionImpact {
     /// Repository-relative path for the affected version.
@@ -50,7 +50,7 @@ pub struct SyncConflictVersionImpact {
     pub reason: Option<String>,
 }
 
-/// Replace plan required before S4-X-09 can confirm a destructive resolution.
+/// Replace plan required before replace confirmation surface can confirm a destructive resolution.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SyncConflictReplacePlan {
     /// Existing canonical path that would stop being canonical.
@@ -100,7 +100,7 @@ pub struct SyncConflictResolutionPreviewReport {
     pub change_log_action: String,
     /// Whether the selected strategy is destructive.
     pub destructive: bool,
-    /// Whether S4-X-09 replace confirmation is required before apply.
+    /// Whether replace confirmation surface replace confirmation is required before apply.
     pub requires_replace_confirmation: bool,
     /// Whether Trash or Recycle Bin support is required.
     pub trash_required: bool,
@@ -112,7 +112,7 @@ pub struct SyncConflictResolutionPreviewReport {
     pub blocked_reason: Option<String>,
     /// Token binding the later apply request to this preview.
     pub preview_token: Option<String>,
-    /// Replace plan for S4-X-09 when the strategy can replace a canonical version.
+    /// Replace plan for replace confirmation surface when the strategy can replace a canonical version.
     pub replace_plan: Option<SyncConflictReplacePlan>,
 }
 
@@ -123,7 +123,7 @@ pub struct SyncConflictResolutionRequest {
     pub strategy: SyncConflictResolutionStrategy,
     /// Preview token returned by `preview_sync_conflict_resolution`.
     pub preview_token: String,
-    /// Whether S4-X-09 replace confirmation has completed.
+    /// Whether replace confirmation surface replace confirmation has completed.
     pub replace_confirmed: bool,
     /// Optional confirmation record from the platform dialog.
     pub replace_confirmation_id: Option<String>,
@@ -235,7 +235,7 @@ impl ResolutionPlan {
     }
 }
 
-/// Previews a C4-16 resolution plan without mutating files or metadata.
+/// Previews a sync conflict resolution resolution plan without mutating files or metadata.
 ///
 /// # Errors
 ///
@@ -259,7 +259,7 @@ pub(crate) fn preview_sync_conflict_resolution(
     Ok(plan::build_resolution_plan(conflict, resolution, trash_available)?.preview_report())
 }
 
-/// Resolves one C4-16 sync conflict after preview and required confirmation.
+/// Resolves one sync conflict resolution sync conflict after preview and required confirmation.
 ///
 /// # Errors
 ///

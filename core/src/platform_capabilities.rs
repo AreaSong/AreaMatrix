@@ -1,4 +1,4 @@
-//! C4-17 platform capability matrix contract types and entry point.
+//! Platform capability matrix contract types and entry point.
 
 use serde::{Deserialize, Serialize};
 
@@ -47,7 +47,7 @@ pub struct PlatformCapabilitySupport {
     pub reason: Option<String>,
 }
 
-/// Platform capability matrix consumed by Stage 4 platform pages.
+/// Platform capability matrix consumed by platform shells.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct PlatformCapabilities {
     /// Platform shell that requested the matrix.
@@ -66,7 +66,7 @@ pub struct PlatformCapabilities {
     pub security_bookmark: PlatformCapabilitySupport,
 }
 
-/// Returns the C4-17 platform capability matrix.
+/// Returns the platform capability matrix.
 ///
 /// The matrix is side-effect free and table driven. It does not inspect repositories,
 /// start watchers, test Trash or Recycle Bin integration, query cloud SDKs,

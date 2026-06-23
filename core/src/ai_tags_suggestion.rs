@@ -1,4 +1,4 @@
-//! C3-07 AI tag suggestion contract types and entry points.
+//! AI tag suggestions AI tag suggestion contract types and entry points.
 
 use std::path::{Component, PathBuf};
 
@@ -25,7 +25,7 @@ pub enum AiTagSuggestionRoute {
     Remote,
 }
 
-/// Context fields that may be used for C3-07 tag suggestion generation.
+/// Context fields that may be used for AI tag suggestions tag suggestion generation.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum AiTagSuggestionInputField {
     /// File name only.
@@ -57,7 +57,7 @@ pub enum AiTagSuggestionReportStatus {
     Unavailable,
 }
 
-/// Stable skipped or unavailable reason for S3-07 consumers.
+/// Stable skipped or unavailable reason for AI tag suggestion surface consumers.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum AiTagSuggestionSkipReason {
     /// Master AI setting is off.
@@ -111,7 +111,7 @@ pub struct AiTagSuggestionRequest {
     pub privacy_policy_ref: Option<String>,
 }
 
-/// One AI tag suggestion row consumed by S3-07.
+/// One AI tag suggestion row consumed by AI tag suggestion surface.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AiTagSuggestion {
     /// Stable client key for chip, edit, reject, and apply state.
@@ -124,13 +124,13 @@ pub struct AiTagSuggestion {
     pub confidence: f32,
     /// User-displayable reason without raw provider output.
     pub reason: String,
-    /// Row state used by S3-07 to disable invalid, low-confidence, or applied rows.
+    /// Row state used by AI tag suggestion surface to disable invalid, low-confidence, or applied rows.
     pub status: AiTagSuggestionCandidateStatus,
     /// Whether applying this row creates, reuses, or merges a tag.
     pub merge_action: AiTagSuggestionMergeAction,
     /// Existing tag slug targeted by reuse or merge, when available.
     pub matched_existing_slug: Option<String>,
-    /// Whether S3-07 may preselect the row by default.
+    /// Whether AI tag suggestion surface may preselect the row by default.
     pub selected_by_default: bool,
     /// Optional user-facing blocked or validation reason.
     pub disabled_reason: Option<String>,
@@ -163,11 +163,11 @@ pub struct AiTagSuggestionReport {
     pub requires_user_confirmation: bool,
     /// Current threshold used by `Accept high confidence`.
     pub confidence_threshold: f32,
-    /// Privacy boundary shown by S3-07: whether file contents were read.
+    /// Privacy boundary shown by AI tag suggestion surface: whether file contents were read.
     pub contents_read: bool,
-    /// Privacy boundary shown by S3-07: whether AI was used.
+    /// Privacy boundary shown by AI tag suggestion surface: whether AI was used.
     pub ai_used: bool,
-    /// Privacy boundary shown by S3-07: whether network access was used.
+    /// Privacy boundary shown by AI tag suggestion surface: whether network access was used.
     pub network_used: bool,
 }
 
@@ -188,7 +188,7 @@ pub struct ApplyAiTagSuggestionItem {
     pub merge_target_slug: Option<String>,
 }
 
-/// Request for applying reviewed C3-07 AI tag suggestions to one file.
+/// Request for applying reviewed AI tag suggestions AI tag suggestions to one file.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ApplyAiTagSuggestionsRequest {
     /// Active file that receives the reviewed tags.
@@ -203,7 +203,7 @@ pub struct ApplyAiTagSuggestionsRequest {
     pub confirmed: bool,
 }
 
-/// Status for one C3-07 apply result row.
+/// Status for one AI tag suggestions apply result row.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum AiTagSuggestionApplyStatus {
     /// The tag relation was newly applied.
@@ -214,7 +214,7 @@ pub enum AiTagSuggestionApplyStatus {
     Failed,
 }
 
-/// One C3-07 apply result row.
+/// One AI tag suggestions apply result row.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiTagSuggestionApplyItemResult {
     /// Suggestion identifier from the apply request.
@@ -223,11 +223,11 @@ pub struct AiTagSuggestionApplyItemResult {
     pub slug: String,
     /// Per-row result status.
     pub status: AiTagSuggestionApplyStatus,
-    /// Optional failure or skip detail for S3-07 recovery UI.
+    /// Optional failure or skip detail for AI tag suggestion surface recovery UI.
     pub error: Option<String>,
 }
 
-/// Report returned after applying reviewed C3-07 AI tag suggestions.
+/// Report returned after applying reviewed AI tag suggestions AI tag suggestions.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiTagSuggestionApplyReport {
     /// File whose tags were mutated.
@@ -244,11 +244,11 @@ pub struct AiTagSuggestionApplyReport {
     pub item_results: Vec<AiTagSuggestionApplyItemResult>,
     /// Refreshed tag state after the apply attempt.
     pub tag_set: TagSet,
-    /// Undo token for C2-07 toast/history when at least one relation is newly added.
+    /// Undo token for undo action log toast/history when at least one relation is newly added.
     pub undo_token: Option<String>,
     /// AI call log row id carried from generation or apply provenance.
     pub call_log_id: Option<i64>,
-    /// Stable refresh hints for S3-07 and host detail/import-result surfaces.
+    /// Stable refresh hints for AI tag suggestion surface and host detail/import-result surfaces.
     pub refresh_targets: Vec<String>,
 }
 

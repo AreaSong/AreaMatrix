@@ -14,7 +14,7 @@ use super::{
     insert_tag_relation, load_tag_set, open_repo_connection,
 };
 
-/// Normalized C3-07 apply row after API-level validation.
+/// Normalized AI tag suggestions apply row after API-level validation.
 pub(crate) struct AiTagSuggestionApplyRow {
     pub(crate) suggestion_id: String,
     pub(crate) slug: String,
@@ -24,7 +24,7 @@ pub(crate) struct AiTagSuggestionApplyRow {
     pub(crate) merge_target_slug: Option<String>,
 }
 
-/// AI generation provenance carried into a confirmed C3-07 tag apply.
+/// AI generation provenance carried into a confirmed AI tag suggestions tag apply.
 pub(crate) struct AiTagSuggestionApplyProvenance {
     pub(crate) source_call_log_id: Option<i64>,
     pub(crate) privacy_rule_id: Option<String>,

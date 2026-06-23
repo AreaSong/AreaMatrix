@@ -310,12 +310,12 @@ fn command_index_validation_locks_confirmation_boundaries_for_selection_commands
     let add_tags = find_target(&index.current_selection_targets, "selection.add-tags");
     assert_eq!(add_tags.action, CommandTargetAction::OpenSheet);
     assert!(!add_tags.requires_confirmation);
-    assert_eq!(add_tags.route.as_deref(), Some("S2-09"));
+    assert_eq!(add_tags.route.as_deref(), Some("add-tags"));
 
     for (id, route) in [
-        ("selection.change-category", "S2-12"),
-        ("selection.delete", "S2-13"),
-        ("selection.rename", "S2-14"),
+        ("selection.change-category", "change-category"),
+        ("selection.delete", "delete"),
+        ("selection.rename", "rename"),
     ] {
         let target = find_target(&index.current_selection_targets, id);
         assert_eq!(target.action, CommandTargetAction::OpenConfirmation);

@@ -1,4 +1,4 @@
-//! C2-08 batch category change types and entry points.
+//! batch category change batch category change types and entry points.
 
 use std::path::{Component, PathBuf};
 
@@ -14,7 +14,7 @@ mod token;
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 
-/// Preview row status for a C2-08 batch category change.
+/// Preview row status for a batch category change batch category change.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum BatchCategoryPreviewStatus {
     /// Repo-owned file would be moved into the target category folder.
@@ -29,7 +29,7 @@ pub enum BatchCategoryPreviewStatus {
     Blocked,
 }
 
-/// Execution row status for a C2-08 batch category change.
+/// Execution row status for a batch category change batch category change.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum BatchCategoryResultStatus {
     /// Repo-owned file was moved and metadata was updated.
@@ -53,7 +53,7 @@ pub struct CategoryDistributionItem {
     pub count: i64,
 }
 
-/// Per-file preview row returned before applying a C2-08 batch category change.
+/// Per-file preview row returned before applying a batch category change batch category change.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchCategoryPreviewItem {
     /// Requested file id.
@@ -80,7 +80,7 @@ pub struct BatchCategoryPreviewItem {
     pub reason: Option<String>,
 }
 
-/// Read-only preview report consumed by S2-12 before Apply is enabled.
+/// Read-only preview report consumed by batch change-category surface before Apply is enabled.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchCategoryPreviewReport {
     /// Number of unique file ids accepted by the contract.
@@ -111,7 +111,7 @@ pub struct BatchCategoryPreviewReport {
     pub apply_blocked_reason: Option<String>,
 }
 
-/// Per-file execution result returned after a C2-08 batch category change.
+/// Per-file execution result returned after a batch category change batch category change.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchCategoryChangeItemResult {
     /// Requested file id.
@@ -122,13 +122,13 @@ pub struct BatchCategoryChangeItemResult {
     pub to_category: String,
     /// Final entry path, when the row succeeded.
     pub final_path: Option<String>,
-    /// Stable execution status for S2-12 summaries.
+    /// Stable execution status for batch change-category surface summaries.
     pub status: BatchCategoryResultStatus,
     /// Optional failure or skip reason.
     pub error: Option<String>,
 }
 
-/// Execution report returned to S2-12 and C2-07 undo consumers.
+/// Execution report returned to batch change-category surface and undo action log undo consumers.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchCategoryChangeReport {
     /// Number of unique file ids accepted by the contract.
@@ -149,13 +149,13 @@ pub struct BatchCategoryChangeReport {
     pub item_results: Vec<BatchCategoryChangeItemResult>,
     /// Updated file entries for successful rows.
     pub updated_files: Vec<FileEntry>,
-    /// Undo token for C2-07 toast/history when successful writes create one.
+    /// Undo token for undo action log toast/history when successful writes create one.
     pub undo_token: Option<String>,
 }
 
-/// Previews a C2-08 batch category change without mutating files or metadata.
+/// Previews a batch category change batch category change without mutating files or metadata.
 ///
-/// S2-12 uses this API to show current category distribution, target paths,
+/// batch change-category surface uses this API to show current category distribution, target paths,
 /// metadata-only rows, skipped rows, blocked rows, and the `preview_token`
 /// required by [`batch_move_to_category`]. This entry point must remain
 /// side-effect free: it does not create category folders, move files, update
@@ -185,12 +185,12 @@ pub fn preview_batch_move_to_category(
     Ok(plan.into_preview_report())
 }
 
-/// Applies a C2-08 batch category change that was previously previewed.
+/// Applies a batch category change batch category change that was previously previewed.
 ///
 /// `preview_token` must come from [`preview_batch_move_to_category`] for the
 /// same selection, target category, move option, and inspected state. Successful
 /// rows update repository metadata, optionally move repo-owned files, write
-/// `change_log`, and create one C2-07 undo action for all changed rows.
+/// `change_log`, and create one undo action log undo action for all changed rows.
 ///
 /// # Errors
 ///

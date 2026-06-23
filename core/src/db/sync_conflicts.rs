@@ -1,4 +1,4 @@
-//! Repository config-table storage for C4-15/C4-16 sync conflict metadata.
+//! Repository config-table storage for sync conflict detection/sync conflict resolution sync conflict metadata.
 
 use std::path::Path;
 

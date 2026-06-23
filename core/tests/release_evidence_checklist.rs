@@ -256,7 +256,7 @@ fn release_checklist_records_unnotarized_preview_without_alpha_claim() {
 }
 
 #[test]
-fn release_checklist_keeps_release_build_and_stage_one_docs_aligned() {
+fn release_checklist_keeps_release_build_and_archive_docs_aligned() {
     assert_contains(
         RELEASE,
         "workflow/versions/v1-mvp/evidence/release-checklist.md",
@@ -269,7 +269,7 @@ fn release_checklist_keeps_release_build_and_stage_one_docs_aligned() {
     );
     assert!(
         !BUILD.contains("发布构建（Stage 2 起激活）"),
-        "build.md must not contradict Stage 1 alpha release gates"
+        "build.md must not contradict archived alpha release gates"
     );
 }
 
@@ -328,7 +328,7 @@ fn release_checklist_records_changelog_and_version_state_without_claiming_releas
 fn release_checklist_rollback_scope_stays_inside_task_expected_paths() {
     for path in [
         "`workflow/versions/v1-mvp/evidence/release-checklist.md`",
-        "`core/tests/stage1_release_checklist.rs`",
+        "`core/tests/release_evidence_checklist.rs`",
         "`docs/development/release.md`",
         "`docs/development/build.md`",
     ] {

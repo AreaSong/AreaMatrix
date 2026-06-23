@@ -1,4 +1,4 @@
-//! Search contract types for Stage 2 search capabilities.
+//! Search contract types for search capabilities.
 
 use serde::{Deserialize, Serialize};
 
@@ -19,7 +19,7 @@ pub use saved_search::{
     UpdateSavedSearchRequest,
 };
 
-/// Search scope for C2-01 search queries.
+/// Search scope for search queries.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum SearchScope {
     /// Search every active file in the repository.
@@ -28,7 +28,7 @@ pub enum SearchScope {
     CurrentNode,
 }
 
-/// Stable sort modes supported by the Stage 2 search results page.
+/// Stable sort modes supported by the search results page.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum SearchSort {
     /// Rank exact matches before fuzzy and pinyin matches, then keep a stable secondary order.
@@ -104,7 +104,7 @@ pub enum SearchIndexStatus {
     Unavailable,
 }
 
-/// Filters and scope applied to a C2-01 search query.
+/// Filters and scope applied to a search query search query.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SearchFilter {
     /// Whether the query runs against the full repository or current tree node.
@@ -133,7 +133,7 @@ pub struct SearchFilter {
     pub include_deleted: Option<bool>,
 }
 
-/// Tag matching mode used by C2-02 tag filter UI.
+/// Tag matching mode used by search facets tag filter UI.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum SearchTagMatchMode {
     /// Match files containing any selected tag.
@@ -142,7 +142,7 @@ pub enum SearchTagMatchMode {
     All,
 }
 
-/// Full filter state used when loading C2-02 facet counts.
+/// Full filter state used when loading search facet counts.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SearchFacetQuery {
     /// Raw search text associated with the current search state.
@@ -155,7 +155,7 @@ pub struct SearchFacetQuery {
     pub category: Option<String>,
     /// Optional file kind or extension filter, such as `pdf`.
     pub file_kind: Option<String>,
-    /// Optional tag slugs selected by S2-02 or S2-08.
+    /// Optional tag slugs selected by search filters surface or tag filter surface.
     pub tags: Vec<String>,
     /// Whether selected tags are matched with Any or All semantics.
     pub tag_match_mode: SearchTagMatchMode,
@@ -203,7 +203,7 @@ pub struct SearchStorageModeFacetCount {
     pub disabled: bool,
 }
 
-/// Date bounds available to the C2-02 date filter UI.
+/// Date bounds available to the search facets date filter UI.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SearchDateFacetBounds {
     /// Earliest import timestamp available for the current query state.
@@ -216,7 +216,7 @@ pub struct SearchDateFacetBounds {
     pub newest_modified_at: Option<i64>,
 }
 
-/// Facet counts and UI state needed by C2-02 search filters.
+/// Facet counts and UI state needed by search filters.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SearchFacets {
     /// Echo of the query text used to calculate this facet snapshot.
@@ -227,7 +227,7 @@ pub struct SearchFacets {
     pub categories: Vec<SearchFacetCount>,
     /// File kind or extension facet counts.
     pub file_kinds: Vec<SearchFacetCount>,
-    /// Tag facet counts used by S2-08 without creating or deleting tags.
+    /// Tag facet counts used by tag filter surface without creating or deleting tags.
     pub tags: Vec<SearchFacetCount>,
     /// Storage-mode facet counts.
     pub storage_modes: Vec<SearchStorageModeFacetCount>,
@@ -237,7 +237,7 @@ pub struct SearchFacets {
     pub active_filter_count: i64,
 }
 
-/// Pagination controls for C2-01 search results.
+/// Pagination controls for search query search results.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SearchPagination {
     /// Maximum number of search results to return.
@@ -261,7 +261,7 @@ pub struct SearchMatch {
     pub end: Option<i64>,
 }
 
-/// One file row returned by C2-01 search.
+/// One file row returned by search query search.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SearchFileResult {
     /// File metadata row displayed by the existing file list table.
@@ -293,7 +293,7 @@ pub struct SearchQueryDiagnostic {
     pub suggestion: Option<String>,
 }
 
-/// One page of C2-01 search results.
+/// One page of search query search results.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SearchResultPage {
     /// Echo of the query used for this result page.
@@ -302,7 +302,7 @@ pub struct SearchResultPage {
     pub total_count: i64,
     /// Paginated result rows.
     pub results: Vec<SearchFileResult>,
-    /// Query parser diagnostics for S2-05 and inline search errors.
+    /// Query parser diagnostics for search empty state and inline search errors.
     pub diagnostics: Vec<SearchQueryDiagnostic>,
     /// Current search index readiness.
     pub index_status: SearchIndexStatus,
@@ -310,10 +310,10 @@ pub struct SearchResultPage {
 
 /// Searches files, paths, notes, categories, and change-log metadata.
 ///
-/// C2-01 owns this read-only contract for S2-01 search results, S2-04 empty
-/// results, and S2-05 query diagnostics. The caller supplies the raw query,
+/// search query owns this read-only contract for search results surface search results, search sidebar surface empty
+/// results, and search empty state query diagnostics. The caller supplies the raw query,
 /// current scope/filter state, sort mode, and pagination. Search results accept
-/// the C2-02 portion of that state, including tags with Any/All semantics and
+/// the search facets portion of that state, including tags with Any/All semantics and
 /// optional storage mode, so filter changes can refresh the real result list
 /// and facet counts from the same state. The output echoes the query, returns a
 /// total count, paginated file rows with highlightable match metadata, parser
@@ -321,13 +321,13 @@ pub struct SearchResultPage {
 /// empty state, parse errors, API failures, and indexing recovery without
 /// parsing strings.
 ///
-/// This contract does not include C2-02 facet counts, C2-03 saved search CRUD,
-/// C2-04 Smart List execution, OCR, semantic search, remote AI, or file content
+/// This contract does not include search facet counts, saved search CRUD,
+/// Smart List execution Smart List execution, OCR, semantic search, remote AI, or file content
 /// full-text search. It must not modify tags, categories, notes, change log,
 /// repository metadata, generated overviews, or user files.
 ///
-/// C4-11 desktop main-window consumers may use this same read-only page shape
-/// for the Windows and Linux search entry when Stage 2 search is available.
+/// desktop main query desktop main-window consumers may use this same read-only page shape
+/// for the Windows and Linux search entry when search is available.
 /// Platform shells still render native lists and empty states themselves; Core
 /// only supplies paginated results, diagnostics, and index readiness.
 ///
@@ -347,10 +347,10 @@ pub fn search_files(
     engine::search_files(repo_path, query, filter, sort, pagination)
 }
 
-/// Loads C2-02 search filter facet counts without mutating repository state.
+/// Loads search filter facet counts without mutating repository state.
 ///
-/// C2-02 owns this read-only contract for S2-02 search filters and the C2-02
-/// side of S2-08 tag filtering. The caller supplies the current search text and
+/// search facets owns this read-only contract for search filters surface search filters and the search facets
+/// side of tag filter surface tag filtering. The caller supplies the current search text and
 /// filter state, including category, file kind, tags with Any/All semantics,
 /// date ranges, optional storage mode, scope, and deleted-row inclusion. The
 /// output returns selectable facet counts, storage-mode counts, date bounds,
@@ -358,8 +358,8 @@ pub fn search_files(
 /// retry, disabled, and chip states without inventing local-only contract data.
 ///
 /// This contract does not create, update, delete, or rename tags; that belongs
-/// to C2-05. It does not save searches or Smart Lists; those belong to C2-03
-/// and C2-04. It must not modify files, notes, categories, change log,
+/// to tag CRUD. It does not save searches or Smart Lists; those belong to saved searches
+/// and Smart List execution. It must not modify files, notes, categories, change log,
 /// generated overviews, repository metadata, or user-authored files.
 ///
 /// # Errors

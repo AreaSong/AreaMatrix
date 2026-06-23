@@ -163,15 +163,15 @@ fn cross_platform_ffi_contract_documents_consumer_state_and_scope_boundaries() {
     }
 
     for fragment in [
-        "C4-01 cross-platform FFI contract types",
+        "Cross-platform FFI contract types",
         "Target binding family requested by a platform shell.",
         "Stable API entry exposed by the cross-platform binding contract.",
         "Stable type mapping exposed by the cross-platform binding contract.",
-        "Missing or limited capability surfaced to S4-X-02.",
+        "Missing or limited capability surfaced to platform-differences consumers.",
         "It does not inspect a repository",
         "generate bindings",
         "or execute adjacent",
-        "Stage 4 capabilities",
+        "platform capabilities",
         "binding contract report is incomplete",
     ] {
         assert_contains(CONTRACT_RS, fragment);

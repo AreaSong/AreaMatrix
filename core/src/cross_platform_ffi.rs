@@ -1,4 +1,4 @@
-//! C4-01 cross-platform FFI contract types.
+//! Cross-platform FFI contract types.
 
 use serde::{Deserialize, Serialize};
 
@@ -57,10 +57,10 @@ pub struct BindingTypeMapping {
     pub reason: Option<String>,
 }
 
-/// Missing or limited capability surfaced to S4-X-02.
+/// Missing or limited capability surfaced to platform-differences consumers.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BindingMissingCapability {
-    /// Capability identifier such as `C4-01`.
+    /// Stable capability identifier such as `cross-platform-ffi`.
     pub capability: String,
     /// User-visible short label.
     pub label: String,
@@ -70,7 +70,7 @@ pub struct BindingMissingCapability {
     pub reason: String,
 }
 
-/// Input for the C4-01 binding contract inspection.
+/// Input for binding contract inspection.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BindingContractRequest {
     /// Target binding family to inspect.
@@ -79,7 +79,7 @@ pub struct BindingContractRequest {
     pub binding_version: i64,
 }
 
-/// C4-01 contract report consumed by platform-differences UI and later checks.
+/// Contract report consumed by platform-differences UI and later checks.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BindingContractReport {
     /// Target binding family that was inspected.
@@ -112,13 +112,13 @@ impl BindingContractReport {
     }
 }
 
-/// Returns the C4-01 cross-platform FFI contract report.
+/// Returns the cross-platform FFI contract report.
 ///
 /// The report is read-only and platform neutral. It describes the current UDL
 /// API surface, target-language type mappings, and binding capability gaps for
-/// `S4-X-02 platform-differences`. It does not inspect a repository, touch the
+/// platform-differences consumers. It does not inspect a repository, touch the
 /// filesystem, query platform UI APIs, generate bindings, or execute adjacent
-/// Stage 4 capabilities.
+/// platform capabilities.
 ///
 /// # Errors
 ///
@@ -206,10 +206,10 @@ fn incomplete_report(field: &str) -> CoreError {
 
 fn supported_apis() -> Vec<BindingApiContract> {
     [
-        ("get_version", "C4-01"),
-        ("init_logging", "C4-01"),
-        ("inspect_binding_contract", "C4-01"),
-        ("get_platform_capabilities", "C4-17"),
+        ("get_version", "cross-platform-ffi"),
+        ("init_logging", "cross-platform-ffi"),
+        ("inspect_binding_contract", "cross-platform-ffi"),
+        ("get_platform_capabilities", "platform-capabilities"),
     ]
     .into_iter()
     .map(|(name, capability)| BindingApiContract {
@@ -282,10 +282,10 @@ fn missing_capabilities(target_platform: &BindingTargetPlatform) -> Vec<BindingM
     let mut capabilities = Vec::new();
     if matches!(target_platform, BindingTargetPlatform::Kotlin) {
         capabilities.push(BindingMissingCapability {
-            capability: "C4-01".to_owned(),
+            capability: "cross-platform-ffi".to_owned(),
             label: "Generated Kotlin binding packaging".to_owned(),
             status: BindingSupportStatus::Limited,
-            reason: "Stage 4 contract defines the UDL surface; packaging is verified by later platform tasks".to_owned(),
+            reason: "UDL surface is available; generated Kotlin packaging is verified separately".to_owned(),
         });
     }
     capabilities
@@ -302,7 +302,7 @@ mod tests {
             core_version: "0.1.0".to_owned(),
             supported_apis: vec![BindingApiContract {
                 name: "inspect_binding_contract".to_owned(),
-                capability: "C4-01".to_owned(),
+                capability: "cross-platform-ffi".to_owned(),
                 status: BindingSupportStatus::Supported,
                 reason: None,
             }],
@@ -359,7 +359,7 @@ mod tests {
 
         let mut report = base_report();
         report.missing_capabilities.push(BindingMissingCapability {
-            capability: "C4-01".to_owned(),
+            capability: "cross-platform-ffi".to_owned(),
             label: "Kotlin packaging".to_owned(),
             status: BindingSupportStatus::Supported,
             reason: "fake success".to_owned(),

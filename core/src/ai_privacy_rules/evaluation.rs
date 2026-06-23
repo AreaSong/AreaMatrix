@@ -1,4 +1,4 @@
-//! Pure C3-09 privacy decision logic.
+//! Pure AI privacy rules privacy decision logic.
 
 use std::collections::HashMap;
 

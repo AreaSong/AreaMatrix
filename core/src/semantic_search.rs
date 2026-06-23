@@ -1,4 +1,4 @@
-//! C3-08 semantic search contract types and entry points.
+//! semantic search semantic search contract types and entry points.
 
 use std::path::{Component, PathBuf};
 
@@ -51,7 +51,7 @@ pub enum SemanticSearchInputField {
     ExtractedTextExcerpt,
 }
 
-/// Semantic index lifecycle state surfaced to S3-08 and S3-10.
+/// Semantic index lifecycle state surfaced to semantic search surface and AI fallback surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum SemanticIndexStatus {
     /// Semantic index is ready for semantic queries.
@@ -70,7 +70,7 @@ pub enum SemanticIndexStatus {
     Partial,
 }
 
-/// Stable fallback reason consumed by S3-08 and S3-10.
+/// Stable fallback reason consumed by semantic search surface and AI fallback surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum SemanticSearchFallbackReason {
     /// Master AI setting is off.
@@ -95,7 +95,7 @@ pub enum SemanticSearchFallbackReason {
     Timeout,
 }
 
-/// One semantic search match row for S3-08.
+/// One semantic search match row for semantic search surface.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SemanticSearchMatch {
     /// File row and ordinary search match details reused by the result table.
@@ -119,13 +119,13 @@ pub struct SemanticSearchMatch {
 /// Normal-search fallback row grouped with semantic results.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SemanticNormalSearchMatch {
-    /// Normal C2-01 search result for the same query and compatible filters.
+    /// Normal search query search result for the same query and compatible filters.
     pub result: SearchFileResult,
-    /// Whether S3-08 should hide this duplicate until the user expands it.
+    /// Whether semantic search surface should hide this duplicate until the user expands it.
     pub deduped_by_semantic: bool,
 }
 
-/// One page of C3-08 semantic and normal search groups.
+/// One page of semantic search semantic and normal search groups.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SemanticSearchResultPage {
     /// Echo of the natural-language query used for this semantic search.
@@ -134,9 +134,9 @@ pub struct SemanticSearchResultPage {
     pub semantic_total_count: i64,
     /// Normal-search group total before pagination and dedupe rendering.
     pub normal_total_count: i64,
-    /// Semantic matches shown in the first S3-08 group.
+    /// Semantic matches shown in the first semantic search surface group.
     pub semantic_matches: Vec<SemanticSearchMatch>,
-    /// Normal search matches shown in the second S3-08 group.
+    /// Normal search matches shown in the second semantic search surface group.
     pub normal_matches: Vec<SemanticNormalSearchMatch>,
     /// Number of normal rows hidden because the same file appears in semantic matches.
     pub deduped_normal_count: i64,
@@ -144,7 +144,7 @@ pub struct SemanticSearchResultPage {
     pub index_status: SemanticIndexStatus,
     /// Local or remote route used or attempted.
     pub route: Option<SemanticSearchRoute>,
-    /// Stable fallback reason for S3-08 and S3-10, when semantic results are unavailable.
+    /// Stable fallback reason for semantic search surface and AI fallback surface, when semantic results are unavailable.
     pub fallback_reason: Option<SemanticSearchFallbackReason>,
     /// User-facing fallback detail without provider raw output or file contents.
     pub fallback_message: Option<String>,
@@ -165,7 +165,7 @@ pub struct SemanticIndexScope {
     pub route: Option<SemanticSearchRoute>,
     /// Optional privacy policy reference used to evaluate embedding input gates.
     pub privacy_policy_ref: Option<String>,
-    /// Explicit confirmation from the S3-08 build-index confirmation sheet.
+    /// Explicit confirmation from the semantic search surface build-index confirmation sheet.
     pub confirmed: bool,
 }
 
@@ -196,9 +196,9 @@ pub struct SemanticIndexBuildReport {
     pub message: Option<String>,
 }
 
-/// Searches semantic index matches and normal fallback results for S3-08.
+/// Searches semantic index matches and normal fallback results for semantic search surface.
 ///
-/// The C3-08 contract accepts the natural-language query, shared Stage 2
+/// The semantic search contract accepts the natural-language query, shared search
 /// filters, and pagination state. It returns separate semantic and normal
 /// groups so the UI can explain source, relevance, dedupe, and fallback state
 /// without creating a mixed opaque score.
@@ -224,12 +224,12 @@ pub fn semantic_search(
     implementation::semantic_search(repo_path, query, filter, pagination)
 }
 
-/// Starts a C3-08 semantic embedding index build after explicit confirmation.
+/// Starts a semantic search semantic embedding index build after explicit confirmation.
 ///
 /// The contract defines the build request and report shape only. A successful
 /// implementation may later write AreaMatrix-owned embedding metadata and AI
 /// call-log rows, but it must keep user files read-only and must not send
-/// remote content unless C3-01, C3-03, C3-09, and call-log gates pass.
+/// remote content unless AI settings, remote provider configuration, AI privacy rules, and call-log gates pass.
 ///
 /// # Errors
 ///

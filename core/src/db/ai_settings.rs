@@ -1,4 +1,4 @@
-//! Repository config-table storage for C3-01 AI settings.
+//! Repository config-table storage for AI settings.
 
 use std::{fs::Metadata, path::Path};
 

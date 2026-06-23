@@ -1,4 +1,4 @@
-//! C3-10 AI fallback status types and implementation.
+//! AI fallback status types and implementation.
 
 use std::path::Path;
 
@@ -18,15 +18,15 @@ mod validation;
 /// AI operation whose failure or skipped state needs standard fallback UI.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum AiFallbackOperation {
-    /// C3-04 AI category suggestion.
+    /// AI category suggestion AI category suggestion.
     ClassificationSuggestion,
-    /// C3-08 semantic search request.
+    /// semantic search semantic search request.
     SemanticSearch,
-    /// C3-08 semantic embedding index build.
+    /// semantic search semantic embedding index build.
     EmbeddingIndexBuild,
 }
 
-/// Sanitized provider or runtime error category accepted by C3-10.
+/// Sanitized provider or runtime error category accepted by AI fallback.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum AiFallbackProviderErrorKind {
     /// Local model is not installed, unreadable, loading, or unhealthy.
@@ -47,7 +47,7 @@ pub enum AiFallbackProviderErrorKind {
     InternalFailure,
 }
 
-/// Stable fallback reason consumed by S3-10.
+/// Stable fallback reason consumed by AI fallback surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum AiFallbackKind {
     /// Master AI setting is disabled.
@@ -93,7 +93,7 @@ pub enum AiFallbackCategory {
     Error,
 }
 
-/// S3-10 action suggested by the fallback contract.
+/// AI fallback surface action suggested by the fallback contract.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum AiFallbackAction {
     /// Retry the same operation after gates are checked again.
@@ -129,25 +129,25 @@ pub struct AiFallbackStatusRequest {
     pub provider_error: Option<AiFallbackProviderErrorKind>,
     /// Optional stable provider error code. It must not contain raw output or secrets.
     pub provider_error_code: Option<String>,
-    /// C3-09 privacy decision available to the caller, when privacy was evaluated.
+    /// AI privacy rules privacy decision available to the caller, when privacy was evaluated.
     pub privacy_decision: Option<AiPrivacyDecision>,
-    /// C3-09 skipped reason available to the caller, when privacy was evaluated.
+    /// AI privacy rules skipped reason available to the caller, when privacy was evaluated.
     pub privacy_skipped_reason: Option<AiPrivacySkippedReason>,
-    /// C3-04 skipped reason, when the fallback came from category suggestion.
+    /// AI category suggestion skipped reason, when the fallback came from category suggestion.
     pub category_skipped_reason: Option<AiCategorySuggestionSkipReason>,
-    /// C3-08 fallback reason, when the fallback came from semantic search.
+    /// semantic search fallback reason, when the fallback came from semantic search.
     pub semantic_fallback_reason: Option<SemanticSearchFallbackReason>,
-    /// Related C3-05 log status, when the caller has a log row.
+    /// Related AI call log log status, when the caller has a log row.
     pub call_log_status: Option<AiCallLogStatus>,
-    /// Related C3-05 log row id for `View call log`.
+    /// Related AI call log log row id for `View call log`.
     pub call_log_id: Option<i64>,
-    /// Matched C3-09 rule id for `View privacy rule`.
+    /// Matched AI privacy rules rule id for `View privacy rule`.
     pub privacy_rule_id: Option<String>,
     /// Suggested unix timestamp before retrying rate-limited operations.
     pub retry_after: Option<i64>,
 }
 
-/// Standard AI fallback status returned to S3-10 consumers.
+/// Standard AI fallback status returned to AI fallback surface consumers.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiFallbackStatus {
     /// Operation that produced the fallback state.

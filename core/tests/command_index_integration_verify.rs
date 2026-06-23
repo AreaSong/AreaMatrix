@@ -170,8 +170,8 @@ fn command_index_integration_verify_reads_recent_metadata_without_writes() {
             .map(|target| (target.id.as_str(), target.route.as_deref()))
             .collect::<Vec<_>>(),
         vec![
-            ("recent:command.open-classifier-rules", Some("S2-19")),
-            ("recent:command.redo-latest-action", Some("S2-22")),
+            ("recent:command.open-classifier-rules", Some("classifier-rules")),
+            ("recent:command.redo-latest-action", Some("redo")),
         ]
     );
     assert!(index
@@ -183,52 +183,52 @@ fn command_index_integration_verify_reads_recent_metadata_without_writes() {
 }
 
 #[test]
-fn command_index_integration_verify_covers_s2_15_command_entries() {
+fn command_index_integration_verify_covers_command_palette_entries() {
     let repo = initialized_repo();
     let before = snapshot(repo.path());
 
     let index = list_command_targets(path_string(repo.path()), default_context())
-        .expect("list command index for S2-15 entries");
+        .expect("list command index for command palette entries");
 
     assert_route(
         &index.commands,
         "command.redo-latest-action",
-        "S2-22",
+        "redo",
         CommandTargetAction::Navigate,
         false,
     );
     assert_route(
         &index.commands,
         "command.review-import-conflicts",
-        "S2-21",
+        "import-conflicts",
         CommandTargetAction::OpenConfirmation,
         true,
     );
     assert_route(
         &index.commands,
         "command.review-tag-suggestions",
-        "S2-23",
+        "tag-suggestions",
         CommandTargetAction::Navigate,
         false,
     );
     assert_route(
         &index.commands,
         "command.open-classifier-rules",
-        "S2-19",
+        "classifier-rules",
         CommandTargetAction::Navigate,
         false,
     );
     assert_route(
         &index.commands,
         "command.preview-classifier-rule-impact",
-        "S2-18",
+        "classifier-impact",
         CommandTargetAction::OpenConfirmation,
         true,
     );
     assert_route(
         &index.commands,
         "command.apply-classifier-rule",
-        "S2-18",
+        "classifier-impact",
         CommandTargetAction::OpenConfirmation,
         true,
     );

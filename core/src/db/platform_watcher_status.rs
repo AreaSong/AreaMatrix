@@ -1,4 +1,4 @@
-//! Repository config-table storage for C4-12 watcher health metadata.
+//! Repository config-table storage for platform watcher status watcher health metadata.
 
 use std::path::Path;
 

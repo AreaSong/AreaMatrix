@@ -1,4 +1,4 @@
-//! C4-15 sync conflict detection contract types and entry point.
+//! sync conflict detection sync conflict detection contract types and entry point.
 
 mod implementation;
 mod paths;
@@ -16,7 +16,7 @@ pub enum SyncConflictStatus {
     Resolved,
 }
 
-/// Sync conflict category shown to Stage 4 conflict entry and review pages.
+/// Sync conflict category shown to conflict entry and review pages.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum SyncConflictType {
     /// The same repository-relative path has multiple versions with different content.
@@ -76,7 +76,7 @@ pub struct SyncConflictAffectedFile {
     pub source_platform: Option<String>,
 }
 
-/// Sync conflict row returned by C4-15 detection.
+/// Sync conflict row returned by sync conflict detection detection.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SyncConflict {
     /// Stable conflict id used by later review and resolution tasks.
@@ -101,7 +101,7 @@ pub struct SyncConflict {
     pub summary: Option<String>,
 }
 
-/// Detects C4-15 sync conflicts without resolving any version.
+/// Detects sync conflict detection sync conflicts without resolving any version.
 ///
 /// The detector reads initialized repository metadata, safely inspects file
 /// metadata and hashes, and refreshes AreaMatrix-owned conflict-state metadata.

@@ -1,4 +1,4 @@
-//! Provider probe policy for C3-03 remote provider tests.
+//! Provider probe policy for remote provider configuration remote provider tests.
 
 use std::{
     env,
@@ -76,7 +76,7 @@ struct RuntimeProbeHeader<'a> {
     value: &'a str,
 }
 
-/// Performs the C3-03 minimal probe without accepting raw API key material.
+/// Performs the remote provider configuration minimal probe without accepting raw API key material.
 pub(super) fn probe_remote_provider(
     request: &RemoteProviderTestRequest,
 ) -> CoreResult<RemoteProviderProbeResult> {

@@ -1,4 +1,4 @@
-//! C2-09 batch delete to Trash contract types and entry points.
+//! batch delete batch delete to Trash contract types and entry points.
 
 use std::{
     ffi::OsStr,
@@ -16,7 +16,7 @@ mod token;
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 
-/// Delete mode selected by S2-13 before previewing or applying C2-09.
+/// Delete mode selected by batch delete confirmation before previewing or applying batch delete.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum BatchDeleteMode {
     /// Move repository-owned files to the system Trash.
@@ -25,7 +25,7 @@ pub enum BatchDeleteMode {
     RemoveFromIndex,
 }
 
-/// Per-file preview status for C2-09 batch deletion.
+/// Per-file preview status for batch delete batch deletion.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum BatchDeletePreviewStatus {
     /// Repository-owned file can be moved to Trash.
@@ -40,7 +40,7 @@ pub enum BatchDeletePreviewStatus {
     Blocked,
 }
 
-/// Per-file result status for C2-09 batch deletion.
+/// Per-file result status for batch delete batch deletion.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum BatchDeleteResultStatus {
     /// Repository-owned file was moved to Trash and metadata was soft-deleted.
@@ -53,7 +53,7 @@ pub enum BatchDeleteResultStatus {
     Failed,
 }
 
-/// Per-file preview row returned before applying C2-09 batch deletion.
+/// Per-file preview row returned before applying batch delete batch deletion.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchDeletePreviewItem {
     /// Requested file id.
@@ -70,13 +70,13 @@ pub struct BatchDeletePreviewItem {
     pub will_move_to_trash: bool,
     /// Whether Apply would only remove AreaMatrix metadata.
     pub will_remove_index: bool,
-    /// Stable preview status for S2-13 summaries and VoiceOver.
+    /// Stable preview status for batch delete confirmation summaries and VoiceOver.
     pub status: BatchDeletePreviewStatus,
     /// Optional per-row reason for skipped or blocked states.
     pub reason: Option<String>,
 }
 
-/// Read-only preview report consumed by S2-13 before destructive actions are enabled.
+/// Read-only preview report consumed by batch delete confirmation before destructive actions are enabled.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchDeletePreviewReport {
     /// Number of unique file ids accepted by the contract.
@@ -87,7 +87,7 @@ pub struct BatchDeletePreviewReport {
     pub preview_token: String,
     /// Whether the system Trash is available for repository-owned rows.
     pub trash_available: bool,
-    /// Whether successful rows can create a C2-07 undo action.
+    /// Whether successful rows can create a undo action log undo action.
     pub undo_available: bool,
     /// Number of rows that would move repository-owned files to Trash.
     pub will_trash_count: i64,
@@ -107,20 +107,20 @@ pub struct BatchDeletePreviewReport {
     pub apply_blocked_reason: Option<String>,
 }
 
-/// Per-file execution result returned after C2-09 batch deletion.
+/// Per-file execution result returned after batch delete batch deletion.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchDeleteItemResult {
     /// Requested file id.
     pub file_id: i64,
     /// Last known path for success, skipped, or failed summaries.
     pub final_path: Option<String>,
-    /// Stable execution status for S2-13 result summaries.
+    /// Stable execution status for batch delete confirmation result summaries.
     pub status: BatchDeleteResultStatus,
     /// Optional failure or skip reason.
     pub error: Option<String>,
 }
 
-/// Execution report returned to S2-13 and C2-07 undo consumers.
+/// Execution report returned to batch delete confirmation and undo action log undo consumers.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchDeleteReport {
     /// Number of unique file ids accepted by the contract.
@@ -139,13 +139,13 @@ pub struct BatchDeleteReport {
     pub item_results: Vec<BatchDeleteItemResult>,
     /// File ids that should be removed or refreshed by list/detail/tree consumers.
     pub affected_file_ids: Vec<i64>,
-    /// Undo token for C2-07 toast/history when successful writes create one.
+    /// Undo token for undo action log toast/history when successful writes create one.
     pub undo_token: Option<String>,
 }
 
-/// Previews C2-09 batch deletion without mutating files or metadata.
+/// Previews batch delete batch deletion without mutating files or metadata.
 ///
-/// S2-13 uses this API to show which selected rows will move to Trash, which
+/// batch delete confirmation uses this API to show which selected rows will move to Trash, which
 /// rows are index-only or missing metadata removals, which rows are blocked,
 /// and whether Undo can be offered. The preview must remain side-effect free:
 /// it must not move files to Trash, remove index rows, write `files`, write
@@ -169,7 +169,7 @@ pub fn preview_batch_delete(
     Ok(plan.into_preview_report())
 }
 
-/// Applies C2-09 batch deletion for rows approved by S2-13.
+/// Applies batch delete batch deletion for rows approved by batch delete confirmation.
 ///
 /// `preview_token` must come from [`preview_batch_delete`] for the same
 /// selection, delete mode, Trash availability, and inspected file state.
@@ -178,7 +178,7 @@ pub fn preview_batch_delete(
 /// to index-only or missing rows and must never delete, move, rename, overwrite,
 /// trash, or otherwise mutate external source files. In short, this mode must
 /// not touch external source files. Successful writes must report per-item
-/// status, write change-log rows, and create a C2-07 undo token when Undo is
+/// status, write change-log rows, and create a undo action log undo token when Undo is
 /// available.
 ///
 /// # Errors

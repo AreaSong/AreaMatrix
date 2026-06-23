@@ -1,4 +1,4 @@
-//! C3-06 AI summary contract types and entry points.
+//! AI summary AI summary contract types and entry points.
 
 use std::path::{Component, PathBuf};
 
@@ -76,7 +76,7 @@ pub enum AiSummaryDraftStatus {
     Unavailable,
 }
 
-/// Stable skipped or unavailable reason for S3-06 and fallback consumers.
+/// Stable skipped or unavailable reason for AI summary editor surface and fallback consumers.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum AiSummarySkipReason {
     /// Master AI setting is off.
@@ -115,7 +115,7 @@ pub struct AiSummaryDraft {
     pub file_id: i64,
     /// Opaque draft id for later save, when generation produced one.
     pub draft_id: Option<String>,
-    /// Draft lifecycle status for S3-06 and fallback consumers.
+    /// Draft lifecycle status for AI summary editor surface and fallback consumers.
     pub status: AiSummaryDraftStatus,
     /// Generated summary text. Empty unless `status` is `Draft`.
     pub summary_text: Option<String>,

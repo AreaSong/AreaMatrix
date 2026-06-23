@@ -1,4 +1,4 @@
-//! C2-14 classifier rule impact-preview contract types and boundary.
+//! classifier impact preview classifier rule impact-preview contract types and boundary.
 
 use std::{io, path::PathBuf};
 
@@ -31,7 +31,7 @@ const BROAD_IMPACT_WARNING_THRESHOLD: i64 = 20;
 
 /// Previews classifier rule or delete impact without saving or applying it.
 ///
-/// C2-14 owns the read-only contract for S2-18. The function accepts the same
+/// classifier impact preview owns the read-only contract for classifier impact preview surface. The function accepts the same
 /// rule-shaped payload used by rule save plus an explicit preview mode, then
 /// returns a [`RuleImpactReport`] from repository classifier matcher and active
 /// file metadata. It must not save classifier rules, apply category changes,

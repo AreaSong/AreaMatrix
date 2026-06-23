@@ -1,4 +1,4 @@
-//! Read-only local model manifest, folder, and runtime inspection for C3-02.
+//! Read-only local model manifest, folder, and runtime inspection for local model status.
 
 use std::path::Path;
 

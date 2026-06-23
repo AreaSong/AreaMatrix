@@ -14,7 +14,7 @@ pub(super) fn selected_active_count(
 
 pub(super) fn command_targets() -> Vec<CommandTarget> {
     let mut targets = base_command_targets();
-    targets.extend(stage2_command_targets());
+    targets.extend(workflow_command_targets());
     targets
 }
 
@@ -62,7 +62,7 @@ fn base_command_targets() -> Vec<CommandTarget> {
     ]
 }
 
-fn stage2_command_targets() -> Vec<CommandTarget> {
+fn workflow_command_targets() -> Vec<CommandTarget> {
     vec![
         target(
             "command.redo-latest-action",
@@ -71,7 +71,7 @@ fn stage2_command_targets() -> Vec<CommandTarget> {
             CommandTargetGroup::Commands,
             CommandTargetKind::Command,
             CommandTargetAction::Navigate,
-            Some("S2-22"),
+            Some("redo"),
         )
         .disabled("Redo stack is unavailable."),
         target(
@@ -81,7 +81,7 @@ fn stage2_command_targets() -> Vec<CommandTarget> {
             CommandTargetGroup::Commands,
             CommandTargetKind::Command,
             CommandTargetAction::OpenConfirmation,
-            Some("S2-21"),
+            Some("import-conflicts"),
         )
         .with_confirmation(),
         target(
@@ -91,7 +91,7 @@ fn stage2_command_targets() -> Vec<CommandTarget> {
             CommandTargetGroup::Commands,
             CommandTargetKind::Command,
             CommandTargetAction::Navigate,
-            Some("S2-23"),
+            Some("tag-suggestions"),
         ),
         target(
             "command.open-classifier-rules",
@@ -100,7 +100,7 @@ fn stage2_command_targets() -> Vec<CommandTarget> {
             CommandTargetGroup::Commands,
             CommandTargetKind::Command,
             CommandTargetAction::Navigate,
-            Some("S2-19"),
+            Some("classifier-rules"),
         ),
         target(
             "command.preview-classifier-rule-impact",
@@ -109,7 +109,7 @@ fn stage2_command_targets() -> Vec<CommandTarget> {
             CommandTargetGroup::Commands,
             CommandTargetKind::Command,
             CommandTargetAction::OpenConfirmation,
-            Some("S2-18"),
+            Some("classifier-impact"),
         )
         .with_confirmation()
         .disabled("Open classifier rules first."),
@@ -120,7 +120,7 @@ fn stage2_command_targets() -> Vec<CommandTarget> {
             CommandTargetGroup::Commands,
             CommandTargetKind::Command,
             CommandTargetAction::OpenConfirmation,
-            Some("S2-18"),
+            Some("classifier-impact"),
         )
         .with_confirmation()
         .disabled("Open classifier rules first."),
@@ -171,7 +171,7 @@ pub(super) fn current_selection_targets(
             add_tags_title(requested_count),
             "Open tag editor",
             CommandTargetAction::OpenSheet,
-            "S2-09",
+            "add-tags",
             false,
             &state,
         ),
@@ -180,7 +180,7 @@ pub(super) fn current_selection_targets(
             change_category_title(requested_count),
             "Preview category change",
             CommandTargetAction::OpenConfirmation,
-            "S2-12",
+            "change-category",
             true,
             &state,
         ),
@@ -189,7 +189,7 @@ pub(super) fn current_selection_targets(
             rename_title(requested_count),
             "Preview rename",
             CommandTargetAction::OpenConfirmation,
-            "S2-14",
+            "rename",
             true,
             &state,
         ),
@@ -198,7 +198,7 @@ pub(super) fn current_selection_targets(
             delete_title(requested_count),
             "Open delete confirmation",
             CommandTargetAction::OpenConfirmation,
-            "S2-13",
+            "delete",
             true,
             &state,
         ),

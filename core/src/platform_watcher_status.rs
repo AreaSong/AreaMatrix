@@ -1,4 +1,4 @@
-//! C4-12 platform watcher status contract types and entry point.
+//! platform watcher status platform watcher status contract types and entry point.
 
 use std::path::PathBuf;
 
@@ -139,7 +139,7 @@ pub struct PlatformWatcherSnapshot {
 
 /// Records a platform watcher health signal and returns the normalized snapshot.
 ///
-/// This C4-12 contract is platform neutral. The platform layer owns
+/// This platform watcher status contract is platform neutral. The platform layer owns
 /// ReadDirectoryChangesW/inotify startup, restart, debounce, and event capture.
 /// Core accepts only a sanitized health signal and must not start watchers,
 /// trigger manual rescan, inspect user file contents, or mutate user files.

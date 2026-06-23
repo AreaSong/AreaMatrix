@@ -1,4 +1,4 @@
-//! C3-03 remote provider configuration contract types and entry points.
+//! remote provider configuration remote provider configuration contract types and entry points.
 
 mod probe;
 mod state;
@@ -27,7 +27,7 @@ const MAX_KEY_REFERENCE_LEN: usize = 256;
 const MAX_VERIFICATION_TOKEN_LEN: usize = 256;
 const VERIFIED_MESSAGE: &str = "Remote provider metadata verified";
 
-/// Supported remote AI provider families for Stage 3.
+/// Supported remote AI provider families.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum RemoteAiProviderKind {
     /// OpenAI-compatible managed provider.
@@ -90,7 +90,7 @@ pub struct RemoteProviderDisableRequest {
     pub remove_stored_credential: bool,
 }
 
-/// Persisted remote provider gate state consumed by S3-03 and S3-09.
+/// Persisted remote provider gate state consumed by remote provider settings surface and AI privacy rules surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RemoteProviderConfigSnapshot {
     /// Whether provider, model, endpoint, and credential metadata are configured.
@@ -115,7 +115,7 @@ pub struct RemoteProviderConfigSnapshot {
     pub disabled_reason: Option<String>,
 }
 
-/// Connection-test result for S3-03.
+/// Connection-test result for remote provider settings surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RemoteProviderTestResult {
     /// Provider family that was tested.

@@ -12,7 +12,7 @@ const MAX_SAVED_SEARCH_NAME_LEN: usize = 64;
 const MAX_SAVED_SEARCH_ICON_LEN: usize = 64;
 const MAX_SAVED_SEARCH_COLOR_LEN: usize = 64;
 
-/// Stable sort and filter payload saved by C2-03 Smart List CRUD.
+/// Stable sort and filter payload saved by saved searches Smart List CRUD.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SavedSearchQuery {
     /// Raw search text to restore when opening a saved search.
@@ -23,7 +23,7 @@ pub struct SavedSearchQuery {
     pub sort: SearchSort,
 }
 
-/// Input used to create a C2-03 saved search record.
+/// Input used to create a saved search record.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CreateSavedSearchRequest {
     /// User-visible Smart List name.
@@ -38,7 +38,7 @@ pub struct CreateSavedSearchRequest {
     pub pinned: bool,
 }
 
-/// Input used to update an existing C2-03 saved search record.
+/// Input used to update an existing saved search record.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct UpdateSavedSearchRequest {
     /// Stable saved search identifier.
@@ -55,7 +55,7 @@ pub struct UpdateSavedSearchRequest {
     pub pinned: bool,
 }
 
-/// Saved search record returned to S2-03 and S2-06 consumers.
+/// Saved search record returned to saved search surface and Smart Lists surface consumers.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SavedSearch {
     /// Stable saved search identifier.
@@ -76,17 +76,17 @@ pub struct SavedSearch {
     pub updated_at: i64,
 }
 
-/// Creates a C2-03 saved search record without touching user files.
+/// Creates a saved search record without touching user files.
 ///
-/// S2-03 uses this contract to persist the current query/filter/sort/scope
+/// saved search surface uses this contract to persist the current query/filter/sort/scope
 /// state as a sidebar Smart List. The returned [`SavedSearch`] carries enough
-/// state for S2-06 to insert and select the new row without inventing local
+/// state for Smart Lists surface to insert and select the new row without inventing local
 /// fields. Implementations must enforce unique names, persist only saved-search
 /// metadata, and never move, duplicate, rename, delete, retag, reclassify, or
 /// reindex repository files.
 ///
 /// This API does not execute Smart Lists or return search results; that belongs
-/// to C2-04 Smart List execution.
+/// to Smart List execution Smart List execution.
 ///
 /// # Errors
 ///
@@ -104,9 +104,9 @@ pub fn create_saved_search(
     db::create_saved_search_row(&repo, &request)
 }
 
-/// Updates a C2-03 saved search record without executing it.
+/// Updates a saved search record without executing it.
 ///
-/// S2-06 uses this contract for rename, pin, icon/color, and edit-query
+/// Smart Lists surface uses this contract for rename, pin, icon/color, and edit-query
 /// management flows. A successful implementation updates only the matching
 /// saved-search row and leaves SearchState execution to the consumer after the
 /// update has committed.
@@ -129,9 +129,9 @@ pub fn update_saved_search(
     db::update_saved_search_row(&repo, &request)
 }
 
-/// Deletes one C2-03 saved search record.
+/// Deletes one saved search record.
 ///
-/// S2-06 uses this destructive-looking action only to remove the saved query
+/// Smart Lists surface uses this destructive-looking action only to remove the saved query
 /// metadata. It must not delete, move, rename, trash, retag, reclassify, or
 /// reindex any file, even when the Smart List currently has matching results.
 ///
@@ -146,15 +146,15 @@ pub fn delete_saved_search(repo_path: String, saved_search_id: i64) -> CoreResul
     db::delete_saved_search_row(&repo, saved_search_id)
 }
 
-/// Lists C2-03 saved search metadata for sidebar Smart Lists.
+/// Lists saved search metadata for sidebar Smart Lists.
 ///
-/// S2-06 uses this read-only contract to render the Smart Lists section,
+/// Smart Lists surface uses this read-only contract to render the Smart Lists section,
 /// management menus, pin state, query recovery warnings, and empty/list-error
 /// states. Implementations should return pinned records first and remaining
-/// records by name using the Stage 2 ordering rule.
+/// records by name using the stable ordering rule.
 ///
 /// This API only reads saved-search metadata. Smart List execution and result
-/// pages belong to C2-04 and must call search execution explicitly.
+/// pages belong to Smart List execution and must call search execution explicitly.
 ///
 /// # Errors
 ///
@@ -166,10 +166,10 @@ pub fn list_saved_searches(repo_path: String) -> CoreResult<Vec<SavedSearch>> {
     db::list_saved_search_rows(&repo)
 }
 
-/// Runs one C2-04 Smart List and returns its search result page.
+/// Runs one Smart List execution Smart List and returns its search result page.
 ///
-/// C2-04 owns this read-only contract for S2-06 Smart List selection and
-/// S2-15 command-palette Smart List navigation. The caller supplies a saved
+/// Smart List execution owns this read-only contract for Smart Lists surface Smart List selection and
+/// command palette command-palette Smart List navigation. The caller supplies a saved
 /// search id and pagination; Core loads the saved `query`, `filter`, and `sort`
 /// state, then returns the same [`SearchResultPage`] shape as `search_files` so
 /// consumers can render results, empty state, query diagnostics, index status,

@@ -1,4 +1,4 @@
-//! Repository config-table storage for C3-03 remote provider metadata.
+//! Repository config-table storage for remote provider configuration remote provider metadata.
 
 use std::path::Path;
 

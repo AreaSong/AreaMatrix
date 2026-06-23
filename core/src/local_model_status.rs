@@ -1,4 +1,4 @@
-//! C3-02 local model status contract types and entry points.
+//! local model status local model status contract types and entry points.
 
 use std::{
     env,
@@ -18,7 +18,7 @@ mod snapshot;
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const MAX_MODEL_ID_LEN: usize = 128;
 
-/// Local model lifecycle state displayed by S3-02.
+/// Local model lifecycle state displayed by local model status surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum LocalModelAvailability {
     /// No current status has been checked or cached yet.
@@ -68,7 +68,7 @@ pub enum LocalModelRecommendedAction {
     UseNonAiFallback,
 }
 
-/// Per-feature local model support row consumed by S3-02.
+/// Per-feature local model support row consumed by local model status surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct LocalModelFeatureStatus {
     /// AI feature represented by this row.
@@ -103,7 +103,7 @@ pub struct LocalModelCachedStatus {
     pub diagnostics_summary: String,
 }
 
-/// Request for a C3-02 local model status refresh.
+/// Request for a local model status local model status refresh.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct LocalModelStatusRequest {
     /// Stable local model identifier.
@@ -114,7 +114,7 @@ pub struct LocalModelStatusRequest {
     pub cached_status: Option<LocalModelCachedStatus>,
 }
 
-/// Status snapshot returned to S3-02.
+/// Status snapshot returned to local model status surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct LocalModelStatusSnapshot {
     /// Stable local model identifier.
@@ -135,7 +135,7 @@ pub struct LocalModelStatusSnapshot {
     pub last_checked_at: Option<i64>,
     /// Sanitized diagnostics summary for the local diagnostics panel.
     pub diagnostics_summary: String,
-    /// Local model support for the AI features shown by S3-02.
+    /// Local model support for the AI features shown by local model status surface.
     pub feature_statuses: Vec<LocalModelFeatureStatus>,
 }
 
@@ -148,7 +148,7 @@ pub struct LocalModelFolderRequest {
     pub storage_location: String,
 }
 
-/// Read-only folder location result for S3-02.
+/// Read-only folder location result for local model status surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct LocalModelFolderLocation {
     /// Stable local model identifier.

@@ -246,7 +246,7 @@ impl ErrorKind {
 
 /// Error variants exposed through the UniFFI boundary.
 ///
-/// C1-21 treats each variant and payload as the structured input for Swift-side
+/// error mapping treats each variant and payload as the structured input for Swift-side
 /// error presentation. App code should branch on variants and payloads, not on
 /// localized strings or `Display` output. Mapping an error to UI severity, user
 /// copy, suggested action, and recoverability is side-effect free: it must not
@@ -484,7 +484,7 @@ impl ErrorMappingInput {
 
 /// Maps a structured error input to user-facing metadata.
 ///
-/// This contract exists for C1-21 consumers that need the same mapping metadata
+/// This contract exists for error mapping consumers that need the same mapping metadata
 /// without first calling an API that throws `CoreError`. It is deterministic and
 /// side-effect free.
 pub fn map_core_error(input: ErrorMappingInput) -> ErrorMapping {

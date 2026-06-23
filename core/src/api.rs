@@ -44,9 +44,9 @@ fn not_implemented<T>() -> CoreResult<T> {
     Err(CoreError::internal("internal error"))
 }
 
-/// Inspects the cross-platform UniFFI contract surface for Stage 4 shells.
+/// Inspects the cross-platform UniFFI contract surface for platform shells.
 ///
-/// The report is read-only and lets S4-X-02 render supported APIs, type
+/// The report is read-only and lets platform differences surface render supported APIs, type
 /// mappings, and missing capability gaps without guessing from UI state.
 ///
 /// # Errors
@@ -60,22 +60,22 @@ pub fn inspect_binding_contract(
     cross_platform_ffi::inspect_binding_contract(request)
 }
 
-/// Returns the C4-17 platform capability matrix for a platform shell.
+/// Returns the platform capability matrix for a platform shell.
 ///
-/// `S4-X-02 platform-differences`, `S4-LNX-03 local-folder-notice`, and
-/// `S4-X-08 repository-settings` consume this matrix to render watcher, Trash
+/// `platform differences`, `Linux local-folder notice`, and
+/// `repository settings surface repository-settings` consume this matrix to render watcher, Trash
 /// or Recycle Bin, share extension, cloud placeholder, and security bookmark
 /// support without guessing from platform UI state. Limited, unavailable, or
 /// unknown capability rows carry stable reasons so unsupported dangerous
 /// actions are not exposed as available.
-/// C4-20 repository settings composes this matrix with [`load_config`] and
+/// repository settings composes this matrix with [`load_config`] and
 /// [`update_config`] so platform shells can disable unsupported settings before
 /// they submit repository configuration changes.
 ///
 /// The contract is read-only and platform-neutral. It does not inspect the
 /// repository, start watchers, test Trash/Recycle Bin integration, query cloud
 /// SDKs, refresh security-scoped bookmarks, read user files, write diagnostics,
-/// or execute adjacent Stage 4 abilities.
+/// or execute adjacent platform abilities.
 ///
 /// # Errors
 ///
@@ -106,18 +106,18 @@ pub fn init_logging(level: String) -> CoreResult<()> {
 
 /// Validates a candidate repository path without mutating the filesystem.
 ///
-/// The C1-01 contract accepts a user-selected repository directory path and
+/// The repository path validation contract accepts a user-selected repository directory path and
 /// returns structured status flags, a recommended initialization mode, and
 /// display-ready issues for the Swift UI. This API is read-only: it must not
 /// create `.areamatrix/`, initialize a database, move user files, or trigger
 /// iCloud placeholder downloads.
 ///
-/// The C4-02 mobile repository connection contract reuses the same surface
+/// The mobile repository connection mobile repository connection contract reuses the same surface
 /// after the platform layer has granted access to an iOS security-scoped URL or
 /// provider path. Core receives only the authorized filesystem path; picker,
 /// bookmark, and cloud-permission lifecycles stay outside the Rust boundary.
 ///
-/// The C4-10 Linux repository connection contract also reuses this read-only
+/// The Linux repository connection Linux repository connection contract also reuses this read-only
 /// surface. Linux shells can route from `platform_path_kind`, read/write flags,
 /// `recommended_mode`, and `issues` to local-folder, init, or adopt confirmation
 /// pages without parsing error text. Core does not run or recommend sudo/chmod;
@@ -151,14 +151,14 @@ pub fn validate_initialized_repo_path(repo_path: String) -> CoreResult<RepoPathV
 
 /// Initializes AreaMatrix metadata for a repository root.
 ///
-/// The C1-02 contract uses `RepoInitOptions { mode: CreateEmpty, .. }` for an
+/// The empty repository initialization contract uses `RepoInitOptions { mode: CreateEmpty, .. }` for an
 /// empty user-selected directory. A successful call creates only AreaMatrix
 /// metadata: `.areamatrix/index.db`, `.areamatrix/staging/`,
 /// `.areamatrix/archives/`, `.areamatrix/generated/`, default classifier and
 /// ignore config files, and the generated root overview under
 /// `.areamatrix/generated/root.md`.
 ///
-/// The C1-03 contract uses `RepoInitOptions { mode: AdoptExisting, .. }` for a
+/// The adopt-existing repository scan contract uses `RepoInitOptions { mode: AdoptExisting, .. }` for a
 /// non-empty user-selected directory. That mode has the same metadata-write
 /// boundary plus an adoption scan session: existing user files remain in place,
 /// are indexed with `FileOrigin::Adopted`, and can be resumed through
@@ -173,18 +173,18 @@ pub fn validate_initialized_repo_path(repo_path: String) -> CoreResult<RepoPathV
 /// directory, retrying initialization may remove only that internal temporary
 /// state before creating the final `.areamatrix/` directory.
 ///
-/// C1-20 uses `RepoInitOptions::overview_output` as the initial generated
+/// generated overview uses `RepoInitOptions::overview_output` as the initial generated
 /// overview policy. `OverviewOutput::GeneratedOnly` writes the generated root
 /// overview only under `.areamatrix/generated/`; `RootAreaMatrixFile` also
 /// creates a root-level `AREAMATRIX.md` for an empty repository. `README.md`
 /// remains user content and is never created or overwritten by this API.
 ///
-/// For C4-02, mobile shells call this only after the shared init/adopt
+/// For mobile repository connection, mobile shells call this only after the shared init/adopt
 /// confirmation pages have converted a [`RepoPathValidation`] recommendation
 /// into explicit user consent. The API does not bypass those pages and does not
 /// perform iOS security-scoped bookmark or cloud-provider permission work.
 ///
-/// For C4-10, Linux shells call this only after local-folder, init, or adopt
+/// For Linux repository connection, Linux shells call this only after local-folder, init, or adopt
 /// confirmation pages have converted the [`RepoPathValidation`] result into
 /// explicit user consent. The API does not bypass those pages, does not
 /// adjust POSIX permissions, and does not configure third-party sync or mount options.
@@ -201,14 +201,14 @@ pub fn init_repo(repo_path: String, options: RepoInitOptions) -> CoreResult<()> 
 
 /// Loads repository configuration written during initialization.
 ///
-/// C1-02 requires this API to read the `repo_config` state created by
+/// empty repository initialization requires this API to read the `repo_config` state created by
 /// [`init_repo`] for an empty repository.
 ///
-/// C4-02 uses the same configuration snapshot after a mobile shell has
+/// mobile repository connection uses the same configuration snapshot after a mobile shell has
 /// validated or initialized the selected repository. Loading config is read-only
 /// and does not refresh platform permissions or create metadata.
 ///
-/// C4-20 repository settings also reuses this config snapshot for the
+/// repository settings also reuses this config snapshot for the
 /// cross-platform repository settings page. Page consumers combine it with
 /// [`get_platform_capabilities`] to render unsupported settings as disabled
 /// with structured reasons instead of inferring platform support in the UI.
@@ -224,7 +224,7 @@ pub fn load_config(repo_path: String) -> CoreResult<RepoConfig> {
 
 /// Updates repository configuration through the `repo_config` table.
 ///
-/// C1-04 uses this API for settings panes that mutate repository defaults:
+/// repository configuration update uses this API for settings panes that mutate repository defaults:
 /// storage mode, overview output policy, AI feature flag, locale, and iCloud
 /// warning preference. The call is transactional: either all config keys are
 /// updated with a fresh `updated_at` value, or the previously persisted config
@@ -233,11 +233,11 @@ pub fn load_config(repo_path: String) -> CoreResult<RepoConfig> {
 /// The API only persists the settings contract. It does not create
 /// `AREAMATRIX.md`, rewrite `classifier.yaml`, touch `README.md`, or perform
 /// any adjacent import, overview, or classifier behavior.
-/// For C1-20, this is the contract boundary for changing the persisted
+/// For generated overview, this is the contract boundary for changing the persisted
 /// `OverviewOutput` policy: later overview-regeneration triggers read the
 /// policy from `repo_config`, while the settings call itself stays free of
 /// file side effects.
-/// C4-20 repository settings uses the same transactional update surface for
+/// repository settings uses the same transactional update surface for
 /// cross-platform shells. Callers must first consult [`get_platform_capabilities`]
 /// and keep unsupported rows disabled; this function persists only the supplied
 /// repository configuration and does not test, enable, or emulate platform
@@ -253,9 +253,9 @@ pub fn update_config(repo_path: String, new_config: RepoConfig) -> CoreResult<()
     db::update_config(repo_path, new_config)
 }
 
-/// Loads the C3-01 AI settings snapshot without starting any AI provider.
+/// Loads the AI settings snapshot without starting any AI provider.
 ///
-/// The contract is for S3-01 AI settings and the S3-09 privacy gate summary.
+/// The contract is for AI settings surface AI settings and the AI privacy rules surface privacy gate summary.
 /// It exposes the master AI switch, provider preference, local/remote route
 /// toggles, privacy gate reference, and per-feature switches. Loading settings
 /// must never call local models, contact remote providers, read user file
@@ -268,7 +268,7 @@ pub fn load_ai_config(repo_path: String) -> CoreResult<AiConfigSnapshot> {
     ai_settings::load_ai_config(repo_path)
 }
 
-/// Validates a C3-01 AI settings update payload.
+/// Validates a AI settings update payload.
 ///
 /// This contract accepts only settings metadata. API keys, provider connection
 /// tests, remote enablement, privacy rule CRUD/evaluation, AI call logs,
@@ -278,7 +278,7 @@ pub fn load_ai_config(repo_path: String) -> CoreResult<AiConfigSnapshot> {
 /// # Errors
 ///
 /// Returns `CoreError::Config { reason }` for invalid repository paths,
-/// mismatched payloads, incomplete feature toggles, or unavailable C3-01
+/// mismatched payloads, incomplete feature toggles, or unavailable AI settings
 /// persistence. Returns `CoreError::PermissionDenied { path }` when repository
 /// metadata cannot be inspected and `CoreError::Io { message }` for metadata
 /// inspection failures.
@@ -286,9 +286,9 @@ pub fn update_ai_config(repo_path: String, new_config: AiConfig) -> CoreResult<A
     ai_settings::update_ai_config(repo_path, new_config)
 }
 
-/// Reads the C3-02 local model status without enabling remote fallback.
+/// Reads the local model status local model status without enabling remote fallback.
 ///
-/// The contract is for S3-02 local-model-status. It accepts a model id, a
+/// The contract is for local model status surface local-model-status. It accepts a model id, a
 /// configured storage location, and an optional cached status snapshot so the
 /// page can render first-load, failure-entry, and manual refresh states from a
 /// stable shape. A status check may inspect only local model manifest,
@@ -311,9 +311,9 @@ pub fn get_local_model_status(
     local_model_status::get_local_model_status(repo_path, request)
 }
 
-/// Locates the configured C3-02 local model folder without mutating it.
+/// Locates the configured local model status local model folder without mutating it.
 ///
-/// S3-02 uses this read-only contract for `Open model location`. The result
+/// local model status surface uses this read-only contract for `Open model location`. The result
 /// tells the platform layer which folder can be revealed and why revealing is
 /// unavailable. Core must not create missing folders, download models, repair
 /// metadata, delete caches, or touch user-authored files.
@@ -330,15 +330,15 @@ pub fn locate_local_model_folder(
     local_model_status::locate_local_model_folder(repo_path, request)
 }
 
-/// Tests a C3-03 remote AI provider without sending user file content.
+/// Tests a remote provider configuration remote AI provider without sending user file content.
 ///
-/// S3-03 uses this contract before enabling remote AI. The request includes
+/// remote provider settings surface uses this contract before enabling remote AI. The request includes
 /// provider, model, optional custom endpoint, and a platform secure-storage key
 /// reference. Core must never accept or return raw API keys, user file paths,
 /// file content, prompts, notes, summaries, tags, or provider raw responses.
 ///
 /// The later implementation may perform a minimal provider connectivity probe
-/// and write a sanitized provider-test log entry owned by C3-05. The test must
+/// and write a sanitized provider-test log entry owned by AI call log. The test must
 /// not persist enablement, feature scope, privacy rules, or any user content.
 ///
 /// # Errors
@@ -355,10 +355,10 @@ pub fn test_remote_ai_provider(
     remote_provider_config::test_remote_ai_provider(repo_path, request)
 }
 
-/// Loads the persisted C3-03 remote provider gate snapshot.
+/// Loads the persisted remote provider gate snapshot.
 ///
-/// S3-03 calls this when opening the remote model configuration sheet, and
-/// S3-09 reads it as provider-consent state. The snapshot reports configured,
+/// remote provider settings surface calls this when opening the remote model configuration sheet, and
+/// AI privacy rules surface reads it as provider-consent state. The snapshot reports configured,
 /// verified, enabled, credential-present, scope, and disabled-reason state
 /// without returning API key material or contacting a provider.
 ///
@@ -376,17 +376,17 @@ pub fn load_remote_ai_provider_config(
     remote_provider_config::load_remote_ai_provider_config(repo_path)
 }
 
-/// Enables a C3-03 remote AI provider after successful test and consent.
+/// Enables a remote provider configuration remote AI provider after successful test and consent.
 ///
-/// S3-03 uses this contract after the user selects usage scope and confirms
+/// remote provider settings surface uses this contract after the user selects usage scope and confirms
 /// that allowed content may leave the device. The returned snapshot exposes the
-/// five provider gate fields consumed by S3-03 and S3-09:
+/// five provider gate fields consumed by remote provider settings surface and AI privacy rules surface:
 /// `provider_configured`, `provider_verified`, `remote_provider_enabled`,
 /// `feature_scope`, and credential presence without API key material.
 ///
 /// This contract does not execute AI calls, evaluate privacy rules, edit
 /// privacy field filters, generate suggestions, write user files, or disable
-/// remote calls through S3-09's privacy gate. C3-09 remains responsible for
+/// remote calls through AI privacy rules surface's privacy gate. AI privacy rules remains responsible for
 /// `privacy_gate_enabled` and field/rule evaluation.
 ///
 /// # Errors
@@ -403,9 +403,9 @@ pub fn enable_remote_ai_provider(
     remote_provider_config::enable_remote_ai_provider(repo_path, request)
 }
 
-/// Disables the C3-03 remote provider gate without touching S3-09 rules.
+/// Disables the remote provider gate without touching AI privacy rules surface rules.
 ///
-/// S3-03 uses this for `Disable remote AI`. The call sets
+/// remote provider settings surface uses this for `Disable remote AI`. The call sets
 /// `remote_provider_enabled` to false and may forget the stored credential
 /// reference when the user explicitly chooses `Also remove stored API key`.
 /// It preserves provider metadata and feature scope unless the credential
@@ -413,7 +413,7 @@ pub fn enable_remote_ai_provider(
 /// tested provider/key combination no longer exists in Core metadata.
 ///
 /// This contract does not delete user files, execute AI calls, change local AI
-/// settings, modify privacy rules, clear call logs, or implement S3-09's
+/// settings, modify privacy rules, clear call logs, or implement AI privacy rules surface's
 /// `privacy_gate_enabled` persistence.
 ///
 /// # Errors
@@ -428,9 +428,9 @@ pub fn disable_remote_ai_provider(
     remote_provider_config::disable_remote_ai_provider(repo_path, request)
 }
 
-/// Requests a C3-04 AI category suggestion without applying it.
+/// Requests a AI category suggestion AI category suggestion without applying it.
 ///
-/// S3-04 uses this contract for `Ask AI for suggestion...`, and S3-10 uses
+/// AI category suggestion surface uses this contract for `Ask AI for suggestion...`, and AI fallback surface uses
 /// its structured status and skipped reason for fallback rendering. The
 /// request identifies one active file and the maximum context extraction policy
 /// the caller allows. Returned suggestions are drafts only: consumers must keep
@@ -442,10 +442,10 @@ pub fn disable_remote_ai_provider(
 /// This contract may inspect only file metadata and privacy/settings/provider
 /// gate state. It must not overwrite classifier rules, change
 /// `files.category`, move files, write user-authored content, leak API keys, or
-/// send data to a remote provider unless C3-01, C3-03, and C3-09 gates later
+/// send data to a remote provider unless AI settings, remote provider configuration, and AI privacy rules gates later
 /// allow it. The contract shape includes call-log and privacy-rule ids for
 /// traceability, but log persistence and privacy-rule CRUD remain owned by
-/// C3-05 and C3-09.
+/// AI call log and AI privacy rules.
 ///
 /// # Errors
 ///
@@ -461,7 +461,7 @@ pub fn suggest_category_with_ai(
     ai_classification_suggestion::suggest_category_with_ai(repo_path, request)
 }
 
-/// Lists redacted C3-05 AI call log rows for S3-05.
+/// Lists redacted AI call log AI call log rows for AI call log surface.
 ///
 /// The contract exposes only audit metadata: feature, local/remote route,
 /// provider/model display names, status, duration, sent field categories,
@@ -486,7 +486,7 @@ pub fn list_ai_calls(
     ai_call_log::list_ai_calls(repo_path, filter, pagination)
 }
 
-/// Clears local C3-05 AI call log rows without deleting user data.
+/// Clears local AI call log AI call log rows without deleting user data.
 ///
 /// This contract deletes only `ai_call_log` audit rows in the requested scope.
 /// It must not delete, move, rename, trash, overwrite, or reclassify user
@@ -507,9 +507,9 @@ pub fn clear_ai_call_log(
     ai_call_log::clear_ai_call_log(repo_path, request)
 }
 
-/// Generates a C3-06 AI summary draft without saving it.
+/// Generates a AI summary AI summary draft without saving it.
 ///
-/// S3-06 uses this contract for `Generate summary` and confirmed
+/// AI summary editor surface uses this contract for `Generate summary` and confirmed
 /// `Regenerate...` flows. The returned [`AiSummaryDraft`] is explicitly a draft
 /// until the caller invokes [`save_ai_summary`]. It carries source route,
 /// model/provider display state, used field categories, privacy rule id, call
@@ -518,9 +518,9 @@ pub fn clear_ai_call_log(
 /// parsing errors.
 ///
 /// This contract must not persist a summary, overwrite notes, write user
-/// files, modify tags/categories/searches, enable remote AI, or bypass C3-09
-/// privacy rules. Remote generation remains gated by C3-01 settings, C3-03
-/// provider scope, C3-09 privacy evaluation, and C3-05 call-log availability.
+/// files, modify tags/categories/searches, enable remote AI, or bypass AI privacy rules
+/// privacy rules. Remote generation remains gated by AI settings, remote provider configuration
+/// provider scope, AI privacy rules privacy evaluation, and AI call log call-log availability.
 ///
 /// # Errors
 ///
@@ -537,9 +537,9 @@ pub fn generate_ai_summary(
     ai_summary::generate_ai_summary(repo_path, request)
 }
 
-/// Saves a C3-06 AI summary draft as AreaMatrix-owned metadata.
+/// Saves a AI summary AI summary draft as AreaMatrix-owned metadata.
 ///
-/// S3-06 uses this after the user explicitly clicks `Save`. The request may
+/// AI summary editor surface uses this after the user explicitly clicks `Save`. The request may
 /// contain AI-generated or user-edited text, but it remains derived summary
 /// metadata: it must not overwrite the original file, user note, extracted
 /// text, tags, categories, generated overview, AI call log, or provider state.
@@ -561,9 +561,9 @@ pub fn save_ai_summary(
     ai_summary::save_ai_summary(repo_path, request)
 }
 
-/// Clears C3-06 AI summary metadata for one file after confirmation.
+/// Clears AI summary AI summary metadata for one file after confirmation.
 ///
-/// This contract backs S3-06 `Clear summary...`. It may clear only the
+/// This contract backs AI summary editor surface `Clear summary...`. It may clear only the
 /// AreaMatrix-owned AI summary value. It must not delete, move, rename, trash,
 /// or overwrite the original file, and must not delete user notes, extracted
 /// text, tags, AI call logs, provider metadata, privacy rules, change log,
@@ -583,9 +583,9 @@ pub fn clear_ai_summary(
     ai_summary::clear_ai_summary(repo_path, request)
 }
 
-/// Generates C3-07 AI tag suggestions without applying them.
+/// Generates AI tag suggestions AI tag suggestions without applying them.
 ///
-/// S3-07 uses this contract to populate review chips before any tag write.
+/// AI tag suggestion surface uses this contract to populate review chips before any tag write.
 /// The request identifies one active file, caller-provided candidate tags, and
 /// a privacy policy reference. Returned suggestions include confidence,
 /// display-safe reasons, merge hints, local/remote route, used context, privacy
@@ -596,8 +596,8 @@ pub fn clear_ai_summary(
 /// This contract must not create or attach tags, write change log or undo
 /// rows, save AI settings, enable remote providers, edit privacy rules, or
 /// move, rename, delete, read, upload, or overwrite user files. Remote AI
-/// remains gated by C3-01 settings, C3-03 provider scope, C3-09 privacy
-/// evaluation, and C3-05 call-log availability.
+/// remains gated by AI settings, remote provider configuration provider scope, AI privacy rules privacy
+/// evaluation, and AI call log call-log availability.
 ///
 /// # Errors
 ///
@@ -615,9 +615,9 @@ pub fn suggest_tags_with_ai(
     ai_tags_suggestion::suggest_tags_with_ai(repo_path, request)
 }
 
-/// Applies reviewed C3-07 AI tag suggestions after explicit confirmation.
+/// Applies reviewed AI tag suggestions AI tag suggestions after explicit confirmation.
 ///
-/// S3-07 calls this only for selected or edited suggestions. Rejected or
+/// AI tag suggestion surface calls this only for selected or edited suggestions. Rejected or
 /// cancelled rows stay in UI state and are not submitted. The implementation
 /// may later create or reuse normalized tags, write file/tag relations, record
 /// change-log rows, carry AI call provenance, and return an undo token for the
@@ -626,7 +626,7 @@ pub fn suggest_tags_with_ai(
 ///
 /// This contract does not generate AI suggestions, retry providers, change
 /// privacy rules, enable remote AI, or mutate files. It only defines the
-/// reviewed tag-apply boundary for C3-07.
+/// reviewed tag-apply boundary for AI tag suggestions.
 ///
 /// # Errors
 ///
@@ -644,11 +644,11 @@ pub fn apply_ai_tag_suggestions(
     ai_tags_suggestion::apply_ai_tag_suggestions(repo_path, request)
 }
 
-/// Lists C3-09 AI privacy rules, remote field filters, and provider gate state.
+/// Lists AI privacy rules AI privacy rules, remote field filters, and provider gate state.
 ///
-/// S3-09 uses this contract to render the privacy rules table, global
+/// AI privacy rules surface uses this contract to render the privacy rules table, global
 /// `privacy_gate_enabled` state, remote allowed field controls, and read-only
-/// C3-03 provider scope. S3-10 can use matched rule ids from other AI
+/// remote provider configuration provider scope. AI fallback surface can use matched rule ids from other AI
 /// contracts to route `View privacy rule` back to this snapshot.
 ///
 /// This API is read-only. It must not create recommended templates
@@ -665,16 +665,16 @@ pub fn list_ai_privacy_rules(repo_path: String) -> CoreResult<AiPrivacyRulesSnap
     ai_privacy_rules::list_ai_privacy_rules(repo_path)
 }
 
-/// Updates C3-09 AI privacy rules and remote privacy gate metadata.
+/// Updates AI privacy rules AI privacy rules and remote privacy gate metadata.
 ///
-/// The request replaces the S3-09-owned privacy rule set, remote field filter
+/// The request replaces the AI privacy rules surface-owned privacy rule set, remote field filter
 /// settings, and global `privacy_gate_enabled` value after explicit user
 /// confirmation. Enabling the privacy gate requires the read-only provider
 /// snapshot to show configured, verified, enabled provider state and non-empty
 /// feature scope; this prevents the privacy page from replacing the provider
 /// configuration flow.
 ///
-/// The contract must not enable or disable C3-03 remote provider metadata,
+/// The contract must not enable or disable remote provider configuration remote provider metadata,
 /// remove Keychain keys, execute AI calls, write suggestions, clear logs,
 /// regenerate summaries/tags, or modify user files. Disabling
 /// `privacy_gate_enabled` blocks future remote calls only.
@@ -692,13 +692,13 @@ pub fn update_ai_privacy_rules(
     ai_privacy_rules::update_ai_privacy_rules(repo_path, request)
 }
 
-/// Evaluates C3-09 privacy rules before an AI feature uses candidate fields.
+/// Evaluates AI privacy rules privacy rules before an AI feature uses candidate fields.
 ///
 /// AI classification, summary, tag, and semantic search implementations use
 /// this contract before local or remote input is prepared. The returned report
 /// gives pages a stable allow/deny/skipped decision, provider-gate reason,
 /// matched rule, matched field type, sent field categories, and display-safe
-/// message. Privacy skips must keep `sent_fields` empty so S3-05 can log
+/// message. Privacy skips must keep `sent_fields` empty so AI call log surface can log
 /// `No AI call was made`.
 ///
 /// This contract evaluates gate state only. It must not execute providers,
@@ -718,9 +718,9 @@ pub fn evaluate_ai_privacy(
     ai_privacy_rules::evaluate_ai_privacy(repo_path, request)
 }
 
-/// Normalizes C3-10 AI fallback metadata into a display-ready status.
+/// Normalizes AI fallback metadata into a display-ready status.
 ///
-/// S3-10 uses this contract after AI classification or semantic search returns
+/// AI fallback surface uses this contract after AI classification or semantic search returns
 /// skipped, unavailable, or failed metadata. The request carries only stable
 /// operation, provider-error, privacy-decision, and traceability fields. It
 /// must not include raw provider output, prompts, file contents, API keys, or
@@ -729,8 +729,8 @@ pub fn evaluate_ai_privacy(
 /// manually` or `Use normal search`.
 ///
 /// This contract does not execute AI calls, switch providers, enable remote AI,
-/// evaluate privacy rules, write user files, or mutate AI results. The C3-10
-/// implementation records one sanitized C3-05 call-log row when the caller did
+/// evaluate privacy rules, write user files, or mutate AI results. The AI fallback
+/// implementation records one sanitized AI call log call-log row when the caller did
 /// not already provide a `call_log_id`, keeping sent fields empty and result
 /// summary display-safe.
 ///
@@ -751,11 +751,11 @@ pub fn get_ai_fallback_status(
 
 /// Recovers AreaMatrix-owned startup residue before the UI opens.
 ///
-/// C1-16 exposes this API for first-launch initialization, main-window
+/// startup recovery exposes this API for first-launch initialization, main-window
 /// reopening, advanced settings, and error-recovery surfaces. The input is an
 /// initialized repository root. The output reports how many safe staging files
 /// were removed, how many unfinished `files.status = staging` rows were
-/// reverted, and any warnings that S1-32 can display without parsing logs.
+/// reverted, and any warnings that error recovery surface can display without parsing logs.
 ///
 /// The only allowed filesystem side effect is cleanup inside the
 /// AreaMatrix-owned `.areamatrix/staging/` directory. The API must not delete,
@@ -774,9 +774,9 @@ pub fn recover_on_startup(repo_path: String) -> CoreResult<RecoveryReport> {
     recovery::recover_on_startup(repo_path)
 }
 
-/// Previews C4-19 manual rescan impact without writing metadata or user files.
+/// Previews manual rescan impact without writing metadata or user files.
 ///
-/// S4-X-07 calls this before enabling the high-risk confirmation. The preview
+/// rescan confirmation surface calls this before enabling the high-risk confirmation. The preview
 /// scans the initialized repository and compares it with existing metadata, but
 /// it must not create `scan_sessions`, write `files`, write `change_log`, move,
 /// delete, rename, overwrite, Trash, or download user files. The returned
@@ -797,14 +797,14 @@ pub fn preview_manual_rescan(repo_path: String) -> CoreResult<ManualRescanPrevie
 
 /// Reindexes repository metadata from the current filesystem state.
 ///
-/// C1-26 exposes this full-rescan API for repair and advanced settings flows.
+/// metadata repair exposes this full-rescan API for repair and advanced settings flows.
 /// The input is an initialized repository root. Core may create or reuse a
 /// `scan_sessions(kind = Reindex)` row, update `.areamatrix/index.db` metadata,
 /// and return inserted/updated/skipped counters in [`ReindexReport`].
 ///
-/// C4-19 also uses this entry point for Windows/Linux manual rescan after
-/// S4-X-07 has shown [`preview_manual_rescan`] and the high-risk confirmation.
-/// The C4-19 scope is the entire repository; partial subtree rescan is not
+/// manual rescan also uses this entry point for Windows/Linux manual rescan after
+/// rescan confirmation has shown [`preview_manual_rescan`] and the high-risk confirmation.
+/// The manual rescan scope is the entire repository; partial subtree rescan is not
 /// exposed by this contract. Consumers combine the returned [`ReindexReport`]
 /// with [`get_latest_scan_session`] to render the rescan summary, persisted
 /// session status, counters, timestamps, and errors.
@@ -822,12 +822,12 @@ pub fn preview_manual_rescan(repo_path: String) -> CoreResult<ManualRescanPrevie
 /// content or metadata cannot be inspected, `CoreError::Io { message }` for
 /// filesystem traversal failures, `CoreError::Conflict { path }` when another
 /// manual rescan is already running, and `CoreError::Internal { message }` for
-/// invariant failures that should be surfaced through C1-21 error mapping.
+/// invariant failures that should be surfaced through error mapping error mapping.
 pub fn reindex_from_filesystem(repo_path: String) -> CoreResult<ReindexReport> {
     repair::reindex_from_filesystem(repo_path)
 }
 
-/// Creates a diagnostics snapshot for C1-26 metadata repair.
+/// Creates a diagnostics snapshot for metadata repair.
 ///
 /// The snapshot is AreaMatrix-owned diagnostic metadata that preserves the
 /// damaged database or repair context before any mutation. Its returned path
@@ -849,7 +849,7 @@ pub fn create_diagnostics_snapshot(repo_path: String) -> CoreResult<DiagnosticsS
 
 /// Repairs AreaMatrix metadata without mutating user files.
 ///
-/// C1-26 uses [`RepairOptions::preserve_diagnostics_snapshot`] to decide
+/// metadata repair uses [`RepairOptions::preserve_diagnostics_snapshot`] to decide
 /// whether the damaged metadata state is preserved before repair. When
 /// [`RepairOptions::full_rescan`] is true, repair may run the same metadata
 /// rescan boundary as [`reindex_from_filesystem`] and report the scan session.
@@ -871,14 +871,14 @@ pub fn repair_metadata(repo_path: String, options: RepairOptions) -> CoreResult<
 
 /// Returns the latest adopt or reindex scan session if one exists.
 ///
-/// C1-03 consumers use this read-only API to recover the state of an unfinished
+/// adopt-existing repository scan consumers use this read-only API to recover the state of an unfinished
 /// or recently completed adoption scan. It reports the persisted session kind,
 /// lifecycle status, last processed path, counters, timestamps, and recorded
 /// errors without touching user files or starting a new scan.
 ///
-/// C4-19 consumers use the same read-only session contract to display manual
+/// manual rescan consumers use the same read-only session contract to display manual
 /// rescan progress, completion, failure, interruption, and retry state after
-/// the S4-X-07 confirmation route. This function does not start a scan, resume
+/// the rescan confirmation surface confirmation route. This function does not start a scan, resume
 /// a scan, or inspect user file contents.
 ///
 /// # Errors
@@ -893,13 +893,13 @@ pub fn get_latest_scan_session(repo_path: String) -> CoreResult<Option<ScanSessi
 
 /// Resumes a paused, interrupted, or failed adopt/reindex scan session.
 ///
-/// For C1-03, this is the continuation path for `AdoptExisting` sessions. The
+/// For adopt-existing repository scan, this is the continuation path for `AdoptExisting` sessions. The
 /// contract is idempotent: already-indexed files are updated in place, new files
 /// are inserted with the original layout preserved, and a completed session
 /// returns an empty report instead of mutating user files.
 ///
-/// For C4-19, this resumes an interrupted or failed entire-repository manual
-/// rescan only after the UI has routed the user through S4-X-07 recovery copy.
+/// For manual rescan, this resumes an interrupted or failed entire-repository manual
+/// rescan only after the UI has routed the user through rescan confirmation recovery flow.
 /// It must not bypass confirmation, start a concurrent rescan, or expose
 /// Windows/Linux watcher controls.
 ///
@@ -915,37 +915,37 @@ pub fn resume_scan_session(repo_path: String, scan_session_id: i64) -> CoreResul
 
 /// Predicts a category for a filename without importing or mutating files.
 ///
-/// C1-05 uses this API for import previews and classifier settings. It reads
+/// category prediction uses this API for import previews and classifier settings. It reads
 /// classifier rules from `.areamatrix/classifier.yaml`, falls back to the
 /// bundled default rules when the file is absent, and returns a suggested
 /// category/name pair. It must not create repository metadata, touch the
 /// database, import files, or move user content.
 ///
-/// C4-04 camera-import reuses this read-only preview surface after the
+/// camera import camera-import reuses this read-only preview surface after the
 /// platform layer has captured a photo and generated a candidate filename.
 /// Camera permission prompts, capture cancellation, retake flow, thumbnail
 /// generation, and temporary-file lifetime management remain outside Core.
 ///
-/// C4-05 share-extension-import reuses this read-only preview surface after
+/// share extension import share-extension-import reuses this read-only preview surface after
 /// the Share Extension has parsed an `NSExtensionItem` and derived a safe
 /// candidate filename. Share-sheet parsing, app-group queue persistence,
 /// security-scoped bookmark refresh, URL materialization, and Extension
 /// timeout handling stay in the platform layer.
 ///
-/// C4-06 files-import reuses this read-only preview surface after the iOS
+/// files import files-import reuses this read-only preview surface after the iOS
 /// Files provider or document picker has granted access and exposed a display
 /// filename. Provider browsing, security-scoped access lifetime, iCloud
 /// placeholder download orchestration, and multi-file progress stay in the
 /// platform layer; Core only predicts a category/name from the authorized
 /// filename and repository classifier rules.
 ///
-/// C4-13 desktop-import-flow reuses this read-only preview surface for
+/// desktop import flow reuses this read-only preview surface for
 /// Windows and Linux import dialogs after the platform picker, drag-and-drop
 /// adapter, or optional shell entry has produced display names. Directory
 /// expansion, platform permission preflight, Trash/Recycle Bin capability
 /// checks, and multi-item progress stay in the desktop shell. Core only reads
 /// the repository classifier rules and returns a [`ClassifyResult`] that
-/// `S4-WIN-05` and `S4-LNX-05` can show as suggested category state before the
+/// `Windows import surface` and `Linux import surface` can show as suggested category state before the
 /// final [`import_file`] call.
 ///
 /// # Errors
@@ -959,14 +959,14 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 
 /// Imports one source file into repository storage.
 ///
-/// C1-06 defines the copied-file contract for `ImportOptions` values whose
+/// copied-file import defines the copied-file contract for `ImportOptions` values whose
 /// `mode` is `StorageMode::Copied`. The source path is read as immutable input,
 /// file bytes are copied through `.areamatrix/staging/`, the content hash is
 /// used for duplicate detection, and a successful call returns the active
 /// `FileEntry` persisted in `files` with a matching `change_log` import event.
 /// The original source file must remain unchanged.
 ///
-/// C1-07 defines the moved-file contract for `ImportOptions` values whose
+/// moved-file import defines the moved-file contract for `ImportOptions` values whose
 /// `mode` is `StorageMode::Moved`. The source path is validated, staged under
 /// AreaMatrix-owned metadata, atomically renamed into the final repository
 /// destination, and recorded with `files.storage_mode = Moved`,
@@ -977,7 +977,7 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// internal staging state; it must not cross unconfirmed user directory
 /// boundaries.
 ///
-/// C1-08 owns index-only semantics. C1-08 defines the indexed-file contract
+/// indexed-file import owns index-only semantics. indexed-file import defines the indexed-file contract
 /// for `ImportOptions` values whose `mode` is `StorageMode::Indexed`. The
 /// source path is validated and may be read for metadata and hashing, but Core
 /// must not copy, move, rename, or delete the source file, and must not create
@@ -988,7 +988,7 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// indexed contracts explicit instead of hiding adjacent behavior behind a
 /// generic import success path.
 ///
-/// C1-09 owns duplicate detection for this entry point. Core hashes the source
+/// duplicate detection owns duplicate detection for this entry point. Core hashes the source
 /// bytes before committing a final destination. `Skip` and `Ask` return
 /// `CoreError::DuplicateFile { existing_path }` with the first active path that
 /// already owns the hash, and must leave the attempted source, final
@@ -1000,7 +1000,7 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// and writes deleted/imported change-log entries in the same metadata
 /// transition.
 ///
-/// C1-10 owns same-name conflict handling for this entry point. The target
+/// name-conflict resolution owns same-name conflict handling for this entry point. The target
 /// name comes from the source filename or `ImportOptions::override_filename`;
 /// the output `FileEntry.path` and `FileEntry.current_name` must report the
 /// final conflict-free name that was actually written. Same-name imports with
@@ -1008,17 +1008,17 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// Core resolves a safe numbered name such as `name_1.ext`, while
 /// `CoreError::Conflict { path }` is reserved for exhausted or raced resolution.
 /// Dangerous replacement remains explicit through `DuplicateStrategy::Overwrite`
-/// after S1-24 or C4-21/S4-X-09 has confirmed the user decision and recoverable
+/// after replace confirmation or replace confirmation has confirmed the user decision and recoverable
 /// old-version handling.
 ///
-/// C1-20 uses a successful import as a generated-overview trigger. The trigger
+/// generated overview uses a successful import as a generated-overview trigger. The trigger
 /// has no extra FFI input: Core derives the changed node/category from the
 /// committed [`FileEntry`] and the current [`RepoConfig::overview_output`].
 /// Its allowed filesystem side effects are limited to generated markdown under
 /// `.areamatrix/generated/` and, only when explicitly configured,
 /// `AREAMATRIX.md`; `README.md` remains user-authored content.
 ///
-/// C4-04 camera-import reuses `StorageMode::Copied` import semantics for a
+/// camera import camera-import reuses `StorageMode::Copied` import semantics for a
 /// platform-saved temporary photo path. Core receives only the authorized
 /// filesystem path plus [`ImportOptions`]; it does not request camera
 /// permissions, drive the capture UI, delete photos outside AreaMatrix-owned
@@ -1027,30 +1027,30 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// show the copied storage mode, and route duplicate or name-conflict states
 /// without adding a camera-specific Core API.
 ///
-/// C4-05 share-extension-import reuses `StorageMode::Copied` import semantics
+/// share extension import share-extension-import reuses `StorageMode::Copied` import semantics
 /// after the platform has materialized a share payload into a Core-readable app
 /// group staged file. Core receives only that staged file path plus
 /// [`ImportOptions`]; it does not parse `NSExtensionItem`, store the deferred
 /// import ticket, open the main app, resolve security-scoped permissions, or
 /// log external app payload bytes. A successful call returns the committed
-/// [`FileEntry`] so `S4-IOS-04` can render completed imports. When the
+/// [`FileEntry`] so `mobile share import surface` can render completed imports. When the
 /// Extension must defer, the platform-owned ticket records queued,
 /// needs-review, or permission-expired takeover state and the main app later
 /// calls this same Core import contract.
 ///
-/// C4-06 files-import reuses `StorageMode::Copied` import semantics for iOS
+/// files import files-import reuses `StorageMode::Copied` import semantics for iOS
 /// Files provider selections after the platform layer has granted access to a
 /// readable file URL. Core receives only the authorized path plus
 /// [`ImportOptions`]; it does not open the document picker, retain
 /// security-scoped bookmarks, trigger provider downloads, move source files, or
-/// perform C4-21 replace confirmation. `S4-IOS-07` can derive its preview and
+/// perform replace confirmation replace confirmation. `iOS files import surface` can derive its preview and
 /// result states from [`predict_category`], [`ImportOptions`], the returned
 /// [`FileEntry`], and structured `ICloudPlaceholder`, `PermissionDenied`,
 /// `DuplicateFile`, and `Conflict` errors. Cancelled selections stay in the
 /// platform sheet and must not call this API.
 ///
-/// C4-13 desktop-import-flow keeps this same import contract available for
-/// existing callers, but `S4-WIN-05` and `S4-LNX-05` should use
+/// desktop import flow keeps this same import contract available for
+/// existing callers, but `Windows import surface` and `Linux import surface` should use
 /// [`import_file_with_result`] when they need Move source-removal state.
 /// Desktop shells pass the picker or drop source path plus [`ImportOptions`]
 /// for a single committed item; folder recursion, batching, drag-and-drop,
@@ -1061,8 +1061,8 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// progress are platform/UI responsibilities. `DuplicateStrategy::KeepBoth`,
 /// `Skip`, and `Ask` expose duplicate or same-name state through the returned
 /// [`FileEntry`] or structured `DuplicateFile` / `Conflict` errors.
-/// `DuplicateStrategy::Overwrite` is only valid after the separate C4-21 /
-/// `S4-X-09` replace confirmation has proven a recoverable old-file path; this
+/// `DuplicateStrategy::Overwrite` is only valid after the separate replace confirmation /
+/// `replace confirmation surface` replace confirmation has proven a recoverable old-file path; this
 /// API does not perform that confirmation, detect platform Trash support, or
 /// add a desktop-only replace capability. A failed pre-commit desktop import
 /// must surface an error instead of a success state and must not leave active
@@ -1090,7 +1090,7 @@ pub fn import_file(
 
 /// Imports one source file and returns desktop-ready result state.
 ///
-/// C4-13 uses this wrapper for `S4-WIN-05` and `S4-LNX-05` after the desktop
+/// desktop import flow uses this wrapper for `Windows import surface` and `Linux import surface` after the desktop
 /// shell has completed picker/drop parsing, Move confirmation, and platform
 /// preflight. It reuses the same transactional repository import path as
 /// [`import_file`] and adds only the source-removal outcome required by desktop
@@ -1105,7 +1105,7 @@ pub fn import_file(
 /// retained` without rolling back the already-safe repository file or marking
 /// the item as fully moved. Replace confirmation, Trash/Recycle Bin detection,
 /// folder batching, drag-and-drop, and multi-item progress remain outside this
-/// entry point and continue to belong to their own Stage 4 tasks.
+/// entry point and continue to belong to separate platform capabilities.
 ///
 /// # Errors
 ///
@@ -1124,7 +1124,7 @@ pub fn import_file_with_result(
 
 /// Moves a repo-owned file entry to the system Trash and soft-deletes metadata.
 ///
-/// C1-23 owns the user-visible delete/remove-index contract for S1-34.
+/// delete/remove-index owns the user-visible delete/remove-index contract for delete/remove-index surface.
 /// `delete_file` is only for AreaMatrix-managed `Copied` / `Moved` active rows.
 /// A successful implementation must send the target file to the system Trash,
 /// mark the matching row as `files.status = deleted`, refresh `deleted_at` and
@@ -1133,7 +1133,7 @@ pub fn import_file_with_result(
 /// This entry point intentionally has no `hard` or permanent-delete flag. Indexed,
 /// adopted, external, or missing references must use [`remove_index_entry`] so
 /// external source files are never deleted as an index cleanup side effect.
-/// C4-21 replace-confirm-cross-platform composes the same Trash-only safety
+/// replace confirmation replace-confirm-cross-platform composes the same Trash-only safety
 /// boundary for discarded versions: callers may route destructive confirmation
 /// through this contract only when a repo-owned file is being recoverably moved
 /// to Trash, never when a platform would require permanent deletion.
@@ -1151,7 +1151,7 @@ pub fn delete_file(repo_path: String, file_id: i64) -> CoreResult<()> {
 
 /// Removes an indexed file entry from AreaMatrix without touching the source file.
 ///
-/// C1-23 uses this explicit index-only entry point for Indexed / Adopted /
+/// delete/remove-index uses this explicit index-only entry point for Indexed / Adopted /
 /// External / Missing references. A successful implementation must make the
 /// entry disappear from default list/detail queries and write
 /// `change_log.action = removed_from_index`, while leaving `files.source_path`
@@ -1170,30 +1170,30 @@ pub fn remove_index_entry(repo_path: String, file_id: i64) -> CoreResult<()> {
 
 /// Renames a file entry to a conflict-free filename in its current category.
 ///
-/// C1-22 owns the user-visible rename contract for S1-33. The input name is a
+/// file rename owns the user-visible rename contract for rename surface. The input name is a
 /// filename, not a path, and must use the same validation boundary as
 /// `ImportOptions::override_filename`. For repository-owned `Copied` and
 /// `Moved` rows, Core performs a safe in-directory rename, persists matching
 /// `files.path` and `files.current_name`, and records `change_log.action =
 /// renamed` without changing `file_id`, category, tags, notes, hash, storage
 /// mode, origin, or source path. It never overwrites an existing same-directory
-/// user file; C1-10 conflict-free numbering is reused to choose a safe final
+/// user file; name-conflict numbering is reused to choose a safe final
 /// name.
 ///
 /// Indexed rows are display-name only: Core updates `files.current_name` and
 /// writes a `renamed` change-log entry, but leaves `files.path`,
 /// `files.source_path`, and the external source file untouched. This preserves
-/// C1-08 index-only semantics while allowing S1-33 to show the requested name.
+/// indexed-file import index-only semantics while allowing rename surface to show the requested name.
 ///
-/// Repository-owned rename also triggers C1-20 generated-overview
+/// Repository-owned rename also triggers generated overview generated-overview
 /// regeneration for the affected category. Those generated-overview writes
 /// are limited to `.areamatrix/generated/` and, only when explicitly
 /// configured, root-level `AREAMATRIX.md`; `README.md` remains user-authored
 /// content. Indexed display-name rename leaves external source files untouched
 /// and only commits metadata plus change-log state.
 ///
-/// C1-10 exposes this entry point for manual name-conflict resolution from
-/// S1-23. Replace flows remain guarded by S1-24 rather than becoming a default
+/// name-conflict resolution exposes this entry point for manual name-conflict resolution from
+/// name-conflict review. Replace flows remain guarded by replace confirmation rather than becoming a default
 /// rename branch.
 ///
 /// # Errors
@@ -1209,10 +1209,10 @@ pub fn rename_file(repo_path: String, file_id: i64, new_name: String) -> CoreRes
     storage::rename_file(repo_path, file_id, new_name)
 }
 
-/// Previews the final destination for a C1-24 category move.
+/// Previews the final destination for a category move.
 ///
-/// This read-only entry point exists for S1-35 so the UI can show the exact
-/// target path, C1-10 numbering result, and index-only behavior before the
+/// This read-only entry point exists for category move confirmation so the UI can show the exact
+/// target path, name-conflict resolution numbering result, and index-only behavior before the
 /// user confirms. It must not create category directories, move files, rename
 /// files, write `files`, or write `change_log`; confirmation remains owned by
 /// [`move_to_category`].
@@ -1235,7 +1235,7 @@ pub fn preview_move_to_category(
 
 /// Moves one active file entry to a target category.
 ///
-/// C1-24 owns the user-visible change-category contract for S1-35. The input
+/// category move owns the user-visible change-category contract for category move confirmation. The input
 /// category is a classifier category slug, not an arbitrary directory. Core
 /// must validate it against the repository classifier rules and must not
 /// create undeclared categories as a side effect.
@@ -1243,7 +1243,7 @@ pub fn preview_move_to_category(
 /// For repository-owned `Copied` and `Moved` rows, Core moves the file into
 /// the target category directory, persists matching `files.category`,
 /// `files.path`, and `updated_at`, and records `change_log.action = moved`.
-/// Same-name targets reuse C1-10 conflict-free numbering and never overwrite
+/// Same-name targets reuse name-conflict numbering and never overwrite
 /// existing files.
 ///
 /// Indexed rows are metadata-only: Core updates `files.category` and writes a
@@ -1269,7 +1269,7 @@ pub fn move_to_category(
     storage::move_to_category(repo_path, file_id, new_category)
 }
 
-/// Previews a C2-08 batch category change for S2-12 without side effects.
+/// Previews a batch category change batch category change for batch change-category surface without side effects.
 ///
 /// The report gives Swift enough state to show selected-file category
 /// distribution, per-file target paths, metadata-only rows, skipped rows,
@@ -1302,16 +1302,16 @@ pub fn preview_batch_move_to_category(
     )
 }
 
-/// Applies a previously previewed C2-08 batch category change.
+/// Applies a previously previewed batch category change batch category change.
 ///
 /// `preview_token` binds Apply to the latest preview for the same selection,
 /// target category, move option, and inspected state. Successful rows update
 /// `files.category`, optionally update `files.path` for repository-owned
-/// files, write `change_log`, and create a C2-07 undo action token. Partial
+/// files, write `change_log`, and create a undo action log undo action token. Partial
 /// failures must be represented per item rather than silently treated as
 /// success.
 ///
-/// The operation is limited to C2-08. It must not create new categories,
+/// The operation is limited to batch category change. It must not create new categories,
 /// implement classifier rule editing, delete or trash files, rename unrelated
 /// files, save searches, retag files, call AI/network providers, or touch
 /// `apps/**`.
@@ -1340,9 +1340,9 @@ pub fn batch_move_to_category(
     )
 }
 
-/// Previews a C2-09 batch delete operation without side effects.
+/// Previews a batch delete batch delete operation without side effects.
 ///
-/// S2-13 uses this contract to display selected-file impact before enabling a
+/// batch delete confirmation uses this contract to display selected-file impact before enabling a
 /// destructive button: repository-owned rows that can move to Trash,
 /// index-only or missing rows that can be removed from metadata, blocked rows,
 /// Trash availability, and Undo availability. The preview must not move files,
@@ -1362,14 +1362,14 @@ pub fn preview_batch_delete(
     batch_delete::preview_batch_delete(repo_path, file_ids, delete_mode)
 }
 
-/// Applies C2-09 batch deletion for the mode confirmed by S2-13.
+/// Applies batch delete batch deletion for the mode confirmed by batch delete confirmation.
 ///
-/// `preview_token` must come from the last confirmed C2-09 preview for the
+/// `preview_token` must come from the last confirmed batch delete preview for the
 /// same selection, delete mode, Trash availability, and inspected file state.
 /// `MoveToTrash` handles only repository-owned files and must never perform
 /// permanent deletion. `RemoveFromIndex` handles index-only or missing rows
 /// without touching external source files. Successful writes report per-item
-/// status, update metadata/change log, and return an Undo token when C2-07 can
+/// status, update metadata/change log, and return an Undo token when undo action log can
 /// reverse the operation.
 ///
 /// # Errors
@@ -1389,9 +1389,9 @@ pub fn batch_delete_to_trash(
     batch_delete::batch_delete_to_trash(repo_path, file_ids, delete_mode, preview_token)
 }
 
-/// Previews a C2-10 batch rename operation without side effects.
+/// Previews a batch rename batch rename operation without side effects.
 ///
-/// S2-14 uses this contract to display each selected row's original name,
+/// batch rename surface uses this contract to display each selected row's original name,
 /// generated new name, blocking status, index-only display-name behavior,
 /// conflicts, and whether Apply can be enabled. `file_ids` order represents
 /// the current list order and is part of the preview state for sequence naming.
@@ -1414,15 +1414,15 @@ pub fn preview_batch_rename(
     batch_rename_mod::preview_batch_rename(repo_path, file_ids, rule)
 }
 
-/// Applies a previously previewed C2-10 batch rename operation.
+/// Applies a previously previewed batch rename batch rename operation.
 ///
-/// `preview_token` must come from the last C2-10 preview for the same
+/// `preview_token` must come from the last batch rename preview for the same
 /// selection order, rename rule, and inspected file state. Successful rows
 /// rename repository-owned files or update index-only display names, update
-/// metadata, write change-log rows, and return a C2-07 undo token when Undo can
+/// metadata, write change-log rows, and return a undo action log undo token when Undo can
 /// reverse the operation.
 ///
-/// This operation is limited to C2-10. It must not implement AI naming, change
+/// This operation is limited to batch rename. It must not implement AI naming, change
 /// file extensions, overwrite existing files, delete or Trash files,
 /// recategorize files, retag files, save searches, reindex, call AI/network
 /// providers, or touch `apps/**`.
@@ -1444,13 +1444,13 @@ pub fn batch_rename(
     batch_rename_mod::batch_rename(repo_path, file_ids, rule, preview_token)
 }
 
-/// Applies one C2-12 classifier correction for S2-16.
+/// Applies one classifier correction classifier correction for classifier correction surface.
 ///
 /// The correction changes one active file's category and optionally moves a
 /// repo-managed file when `move_file` is true. `remember` only asks Core to
-/// return a rule draft handoff for S2-17/S2-18; this entry point must not save
+/// return a rule draft handoff for classifier save-rule surface/classifier impact preview surface; this entry point must not save
 /// classifier rules, preview broad rule impact, create categories, call AI or
-/// network providers, or implement adjacent C2-13/C2-14/C2-15 behavior.
+/// network providers, or implement adjacent classifier rule save/classifier impact preview/classifier rule editor behavior.
 ///
 /// # Errors
 ///
@@ -1468,9 +1468,9 @@ pub fn correct_file_category(
     classifier_correction::correct_file_category(repo_path, file_id, category, move_file, remember)
 }
 
-/// Saves one C2-13 classifier rule for future classification.
+/// Saves one classifier rule save classifier rule for future classification.
 ///
-/// S2-17 uses this contract after the user chooses keyword and extension
+/// classifier save-rule surface uses this contract after the user chooses keyword and extension
 /// basis values from a classifier-correction draft. The input rule maps only to
 /// supported classifier configuration fields: target category, independent
 /// keyword matches, independent extension matches, priority, and whether the
@@ -1495,13 +1495,13 @@ pub fn save_classifier_rule(repo_path: String, rule: ClassifierRule) -> CoreResu
     classifier_rules::save_classifier_rule(repo_path, rule)
 }
 
-/// Previews C2-14 classifier rule impact for S2-18.
+/// Previews classifier impact preview classifier rule impact for classifier impact preview surface.
 ///
 /// The contract accepts one explicit preview request and returns counts, sample
 /// rows, conflicts, needs-review state, broad-impact warning state, and direct
 /// apply availability. It is read-only: it may inspect classifier config and
 /// file metadata, but it must not save the rule, apply it to existing files,
-/// move files, write undo/change-log state, or implement C2-15 rule editing.
+/// move files, write undo/change-log state, or implement classifier rule editor rule editing.
 ///
 /// # Errors
 ///
@@ -1516,9 +1516,9 @@ pub fn preview_classifier_rule_impact(
     classifier_impact::preview_classifier_rule_impact(repo_path, request)
 }
 
-/// Lists C2-15 classifier rule editor state for S2-19.
+/// Lists classifier rule editor classifier rule editor state for classifier rule editor surface.
 ///
-/// S2-19 uses this contract to load current classifier categories, matcher
+/// classifier rule editor surface uses this contract to load current classifier categories, matcher
 /// values, priority, naming template, and default-category state. The returned
 /// snapshot is sufficient for loading, empty, dirty, validation, save/revert,
 /// and delete-disabled UI states without reading YAML in the app layer.
@@ -1537,7 +1537,7 @@ pub fn list_classifier_rules(repo_path: String) -> CoreResult<ClassifierRuleEdit
     classifier_rule_editor::list_classifier_rules(repo_path)
 }
 
-/// Creates one C2-15 classifier editor row for future classification.
+/// Creates one classifier rule editor classifier editor row for future classification.
 ///
 /// The create request carries a new slug, display metadata, extensions,
 /// keywords, priority, and naming template. A successful implementation may
@@ -1560,7 +1560,7 @@ pub fn create_classifier_rule(
     classifier_rule_editor::create_classifier_rule(repo_path, request)
 }
 
-/// Updates one C2-15 classifier editor row for future classification.
+/// Updates one classifier rule editor classifier editor row for future classification.
 ///
 /// The update request carries one stable `rule_id` plus replacement slug,
 /// display metadata, extensions, keywords, priority, and naming template. A
@@ -1583,7 +1583,7 @@ pub fn update_classifier_rule(
     classifier_rule_editor::update_classifier_rule(repo_path, request)
 }
 
-/// Deletes one C2-15 classifier editor row after explicit impact confirmation.
+/// Deletes one classifier rule editor classifier editor row after explicit impact confirmation.
 ///
 /// Delete removes only classifier configuration state. It must reject deletion
 /// of the default category, the final category, and unpreviewed category/value
@@ -1611,8 +1611,8 @@ pub fn restore_file(_repo_path: String, _file_id: i64) -> CoreResult<FileEntry> 
 
 /// Lists file entries from repository metadata.
 ///
-/// C1-11 defines this as the read-only file-list query used by the Stage 1
-/// main window and multi-selection summary. The public contract accepts a
+/// The The file-list API is the read-only metadata query used by the main window
+/// and multi-selection summary. The public contract accepts a
 /// [`FileFilter`] for exact category filtering, optional deleted-row inclusion,
 /// import-time bounds, `limit` clamping, and offset pagination. Returned rows
 /// are ordered by `imported_at DESC`.
@@ -1621,14 +1621,14 @@ pub fn restore_file(_repo_path: String, _file_id: i64) -> CoreResult<FileEntry> 
 /// tag filtering, smart lists, and single-file detail aggregation belong to
 /// later capabilities and must not be hidden behind this entry point.
 ///
-/// C4-03 reuses this query for `S4-IOS-02` mobile-library rows. Mobile callers
+/// mobile library query reuses this query for `mobile library surface` mobile-library rows. Mobile callers
 /// must use the documented `limit` and `offset` fields instead of loading the
 /// entire repository. The returned [`FileEntry::availability_status`] gives UI
 /// consumers a structured availability status for `Missing` badges, while
-/// missing-file recovery stays with C4-18 rather than this list contract.
+/// missing-file recovery stays with missing-file recovery rather than this list contract.
 ///
-/// C4-11 reuses the same paginated metadata query for `S4-WIN-02` and
-/// `S4-LNX-02` desktop main-window rows. Desktop shells must not scan the
+/// desktop main query reuses the same paginated metadata query for `Windows main-window surface` and
+/// `Linux main-window surface` desktop main-window rows. Desktop shells must not scan the
 /// repository directly to assemble the main list; `FileFilter::limit` and
 /// `FileFilter::offset` carry the page request, and adjacent watcher, import,
 /// conflict, and recovery actions remain outside this contract.
@@ -1643,8 +1643,8 @@ pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileE
 
 /// Gets a single active file entry from repository metadata.
 ///
-/// C1-12 defines this as the read-only detail query used by Stage 1 detail
-/// panes. The caller supplies a repository path and stable `file_id`; the
+/// The file-detail API is the read-only detail query used by detail panes.
+/// The caller supplies a repository path and stable `file_id`; the
 /// contract returns exactly one active [`FileEntry`] and must not infer
 /// metadata from the filesystem path in the UI layer.
 ///
@@ -1654,16 +1654,16 @@ pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileE
 /// change-log aggregation, and note aggregation belong to adjacent capabilities
 /// and must not be hidden behind this entry point.
 ///
-/// C4-03 allows a mobile list row to open a Core-backed detail record from
-/// `S4-IOS-02`; C4-07 composes this API with [`list_changes`] and
-/// [`read_note`] for `S4-IOS-05` mobile-file-detail. This contract stays
+/// mobile library query allows a mobile list row to open a Core-backed detail record from
+/// `mobile library surface`; mobile file detail composes this API with [`list_changes`] and
+/// [`read_note`] for `mobile file detail surface` mobile-file-detail. This contract stays
 /// limited to base [`FileEntry`] metadata and intentionally does not introduce
 /// a separate detail DTO. The returned [`FileEntry::availability_status`]
 /// mirrors the list payload so detail consumers can keep a missing row visible
 /// without platform-side filesystem inference and route the missing state to
-/// `S4-X-06` rather than inferring it from the filesystem.
+/// `missing-file recovery surface` rather than inferring it from the filesystem.
 ///
-/// C4-11 desktop main-window consumers use this detail query after selecting a
+/// desktop main query desktop main-window consumers use this detail query after selecting a
 /// row from [`list_files`] or [`search_files`]. It returns the same base
 /// metadata shape and does not add platform-side preview, watcher, rescan, or
 /// recovery behavior.
@@ -1680,7 +1680,7 @@ pub fn get_file(repo_path: String, file_id: i64) -> CoreResult<FileEntry> {
     Ok(db::with_availability_status(&repo, entry))
 }
 
-/// Returns the C4-18 missing-file recovery state for S4-X-06.
+/// Returns the missing-file recovery state for missing-file recovery surface.
 ///
 /// The state gives page consumers the last known path, missing reason, relink
 /// hash expectation, remove-record confirmation requirement, and rescan route
@@ -1720,7 +1720,7 @@ pub fn relink_missing_file(
 
 /// Removes only the AreaMatrix metadata record for a missing file.
 ///
-/// S4-X-06 must gather explicit confirmation before calling this API. A
+/// missing-file recovery surface must gather explicit confirmation before calling this API. A
 /// successful later implementation removes only the AreaMatrix record, writes a
 /// change-log entry, and reports `file_deleted = false`; it must not remove,
 /// trash, move, rename, overwrite, or download any user file.
@@ -1740,8 +1740,8 @@ pub fn remove_missing_file_record(
 
 /// Lists change-log entries from repository metadata.
 ///
-/// C1-13 defines this as the read-only change-log query used by Stage 1 detail
-/// log, import result, and error recovery surfaces. The public contract accepts
+/// The change-log API is the read-only log query used by detail, import
+/// result, and error recovery surfaces. The public contract accepts
 /// a [`ChangeFilter`] for optional `file_id`, `category`, `action`,
 /// `occurred_at` bounds, `limit`, and `offset`. Returned rows are ordered by
 /// `occurred_at DESC`, and each [`ChangeLogEntry::detail_json`] value must
@@ -1749,11 +1749,11 @@ pub fn remove_missing_file_record(
 ///
 /// This API has no write side effects: it must not mutate repository metadata,
 /// create files, rename files, or probe user file contents. Undo history,
-/// rollback, and batch revert behavior belong to Stage 2 and must not be
+/// rollback, and batch revert behavior belong to undo/redo capabilities and must not be
 /// hidden behind this query entry point.
 ///
-/// C4-03/C4-07 mobile consumers can lazily request a small `limit`/`offset`
-/// page for visible detail timelines. In C4-07, `S4-IOS-05` uses `file_id` to
+/// mobile library query/mobile file detail mobile consumers can lazily request a small `limit`/`offset`
+/// page for visible detail timelines. In mobile file detail, `mobile file detail surface` uses `file_id` to
 /// load the Log segment without blocking the Meta segment. The API remains a
 /// read-only metadata query and does not trigger filesystem rescan, sync
 /// repair, conflict resolution, or missing-file recovery.
@@ -1769,7 +1769,7 @@ pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<C
 
 /// Returns repository tree data as JSON.
 ///
-/// C1-15 defines this as the read-only tree query for the Stage 1 main window.
+/// The tree JSON API is the read-only tree query for main-window navigation.
 /// The caller supplies an initialized repository path and a display locale such
 /// as `zh-Hans` or `en`. The output is a single JSON string so Swift can decode
 /// one `TreeNode` snapshot without repeated FFI crossings. Tree nodes must use
@@ -1778,15 +1778,15 @@ pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<C
 /// to build display names, but it must not create generated overviews, mutate
 /// repository metadata, or modify user files.
 ///
-/// Virtual smart lists, search result trees, and Stage 2 tree projections remain
+/// Virtual smart lists, search result trees, and Smart List tree projections remain
 /// outside this API boundary.
 ///
-/// C4-03 mobile-library uses this tree snapshot for compact category browsing.
+/// mobile library query mobile-library uses this tree snapshot for compact category browsing.
 /// Mobile shells must keep large-repository list data paginated through
 /// [`list_files`]; this tree contract does not add search, sync, or recovery
 /// actions.
 ///
-/// C4-11 desktop main-window consumers may use the same tree snapshot for the
+/// desktop main query desktop main-window consumers may use the same tree snapshot for the
 /// Windows and Linux sidebar. The platform UI remains responsible for native
 /// rendering and virtualization; Core only returns the read-only tree JSON.
 ///
@@ -1800,12 +1800,12 @@ pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String> {
     tree::list_tree_json(repo_path, locale)
 }
 
-/// Detects C4-15 sync conflicts without resolving any version.
+/// Detects sync conflict detection sync conflicts without resolving any version.
 ///
-/// `S4-X-03 sync-conflict-entry` consumes this non-resolving list for conflict
+/// `sync conflict entry surface sync-conflict-entry` consumes this non-resolving list for conflict
 /// count, latest detection state, row badges, and Review routing.
-/// `S4-X-01 sync-conflict` consumes the same rows as its conflict summary and
-/// affected-version metadata before C4-16 resolution builds impact plans. Core
+/// `sync conflict review surface sync-conflict` consumes the same rows as its conflict summary and
+/// affected-version metadata before sync conflict resolution resolution builds impact plans. Core
 /// may inspect persisted external events and safe file metadata, and it may
 /// write or refresh conflict-state metadata for detected conflicts. This entry
 /// point must not choose a winning version, mark conflicts resolved, advance
@@ -1823,12 +1823,12 @@ pub fn detect_sync_conflicts(repo_path: String) -> CoreResult<Vec<SyncConflict>>
     sync_conflict_detect::detect_sync_conflicts(repo_path)
 }
 
-/// Previews a C4-16 sync conflict resolution plan without mutating files.
+/// Previews a sync conflict resolution sync conflict resolution plan without mutating files.
 ///
-/// `S4-X-01 sync-conflict` consumes this contract after the user chooses
+/// `sync conflict review surface sync-conflict` consumes this contract after the user chooses
 /// `Keep both`, `Use existing version`, or `Use incoming version`. The preview
 /// exposes per-version file impact, affected DB record ids, canonical and
-/// retained paths, planned change-log action, and whether `S4-X-09
+/// retained paths, planned change-log action, and whether `replace confirmation surface
 /// replace-confirm` is required. `Keep both` remains the default safe strategy.
 /// This entry point must not mark a conflict resolved, write change log rows,
 /// move files, rename files, overwrite files, Trash versions, or bypass
@@ -1850,10 +1850,10 @@ pub fn preview_sync_conflict_resolution(
     sync_conflict_resolve::preview_sync_conflict_resolution(repo_path, conflict_id, resolution)
 }
 
-/// Resolves one C4-16 sync conflict after preview and required confirmation.
+/// Resolves one sync conflict resolution sync conflict after preview and required confirmation.
 ///
-/// `S4-X-01 sync-conflict` calls this only after a fresh preview. Requests that
-/// use `Use incoming version` must first complete `S4-X-09 replace-confirm`;
+/// `sync conflict review surface sync-conflict` calls this only after a fresh preview. Requests that
+/// use `Use incoming version` must first complete `replace confirmation surface replace-confirm`;
 /// Core receives that result as `replace_confirmed` and the preview token.
 /// Successful resolution must leave all non-discarded versions visible or move
 /// discarded versions only to Trash/Recycle Bin or a documented Core safety
@@ -1878,7 +1878,7 @@ pub fn resolve_sync_conflict(
 
 /// Lists iCloud conflicted copy pairs without resolving them.
 ///
-/// C1-25 owns the read-only contract for S1-36. The caller supplies an
+/// iCloud conflict listing owns the read-only contract for iCloud conflict list. The caller supplies an
 /// initialized repository root and receives one row per detected conflicted
 /// copy pair. The output preserves the original path when Core can identify
 /// it, the conflicted copy path, both modification timestamps when available,
@@ -1899,9 +1899,9 @@ pub fn list_icloud_conflicts(repo_path: String) -> CoreResult<Vec<ICloudConflict
     icloud_conflicts::list_icloud_conflicts(repo_path)
 }
 
-/// Previews C2-16 iCloud conflict versions without resolving the conflict.
+/// Previews iCloud conflict versions without resolving the conflict.
 ///
-/// S2-20 uses this contract after selecting one conflict id from
+/// iCloud conflict review surface uses this contract after selecting one conflict id from
 /// [`list_icloud_conflicts`]. The preview returns version metadata, optional
 /// Core-computed preview summaries, the safe default resolution, and per-choice
 /// enablement for Keep both, Keep original, and Keep conflicted copy.
@@ -1929,9 +1929,9 @@ pub fn preview_conflict_versions(
     icloud_conflicts::preview_conflict_versions(repo_path, conflict_id)
 }
 
-/// Resolves one C2-16 iCloud conflict after explicit user confirmation.
+/// Resolves one iCloud conflict after explicit user confirmation.
 ///
-/// `resolution` is limited to the previewed C2-16 choices. `KeepBoth` must keep
+/// `resolution` is limited to the previewed iCloud conflict resolution choices. `KeepBoth` must keep
 /// every version and only mark the conflict resolved or acknowledged. `KeepOriginal`
 /// and `KeepConflictedCopy` may move only the unkept paired version to system
 /// Trash after the UI completed destructive confirmation. A successful write
@@ -1940,7 +1940,7 @@ pub fn preview_conflict_versions(
 ///
 /// This contract does not replace import-conflict handling, batch delete,
 /// generic sync conflicts, QuickLook rendering, platform download coordination,
-/// or any page ability outside S2-20 / S1-36 consumption.
+/// or any page ability outside iCloud conflict review surface / iCloud conflict list consumption.
 ///
 /// # Errors
 ///
@@ -1960,15 +1960,15 @@ pub fn resolve_icloud_conflict(
     icloud_conflicts::resolve_icloud_conflict(repo_path, conflict_id, resolution)
 }
 
-/// Detects C4-08 cloud storage provider state and C4-14 OneDrive risk state.
+/// Detects cloud storage state cloud storage provider state and OneDrive risk notice OneDrive risk state.
 ///
-/// `S4-IOS-06 icloud-permission`, `S4-WIN-03 onedrive-notice`, and the cloud
-/// branch of `S4-IOS-01 connect-repo` use this read-only contract to render
+/// `iCloud permission surface`, `OneDrive notice surface`, and the cloud
+/// branch of `iOS repository connection` use this read-only contract to render
 /// provider-specific recovery or notice state from structured fields. Core
 /// inspects only the authorized repository path and basic filesystem metadata;
 /// security-scoped bookmarks, iCloud availability, OneDrive client state,
 /// settings links, SDK calls, provider downloads, acknowledgement UI, and
-/// reconnect UI remain in the platform layer. `S4-WIN-03` can use
+/// reconnect UI remain in the platform layer. `OneDrive notice surface` can use
 /// `recommended_action`, `requires_notice_acknowledgement`, and
 /// `notice_acknowledged` to render the OneDrive confirmation state without
 /// parsing display text.
@@ -1985,9 +1985,9 @@ pub fn detect_cloud_storage_state(repo_path: String) -> CoreResult<CloudStorageS
     cloud_permission_state::detect_cloud_storage_state(repo_path)
 }
 
-/// Persists the C4-14 OneDrive risk notice acknowledgement.
+/// Persists the OneDrive risk notice OneDrive risk notice acknowledgement.
 ///
-/// `S4-WIN-03 onedrive-notice` calls this only after the user has explicitly
+/// `OneDrive notice surface` calls this only after the user has explicitly
 /// confirmed the OneDrive warning. The API writes only Core-visible repository
 /// metadata (`repo_config`) for an already initialized repository, then returns
 /// the refreshed [`CloudStorageState`]. It does not create a repository, move,
@@ -2006,9 +2006,9 @@ pub fn acknowledge_onedrive_risk_notice(repo_path: String) -> CoreResult<CloudSt
     cloud_permission_state::acknowledge_onedrive_risk_notice(repo_path)
 }
 
-/// Previews C2-17 import conflict batch decisions without mutating staging or files.
+/// Previews import conflict batch import conflict batch decisions without mutating staging or files.
 ///
-/// S2-21 uses this contract after a batch import session has accumulated hash
+/// import conflict review surface uses this contract after a batch import session has accumulated hash
 /// duplicate or same-name different-content conflicts. The preview returns row
 /// status, selected strategy, Replace risk, Trash/undo availability, pending
 /// rows, and the `preview_token` required by [`apply_import_conflict_batch`].
@@ -2035,17 +2035,17 @@ pub fn preview_import_conflict_batch(
     import_conflict_batch::preview_import_conflict_batch(repo_path, request)
 }
 
-/// Applies C2-17 import conflict batch decisions after explicit confirmation.
+/// Applies import conflict batch import conflict batch decisions after explicit confirmation.
 ///
 /// `preview_token` must come from [`preview_import_conflict_batch`] for the same
 /// import session, conflict scope, strategies, Trash availability, and inspected
-/// staging state. Replace rows require S2-21's second-confirmation sheet before
+/// staging state. Replace rows require import conflict review surface's second-confirmation sheet before
 /// any write is allowed. Failed rows must keep staged files and unresolved
 /// conflict state so the user can retry or route them to per-item handling.
 ///
 /// This contract does not implement iCloud conflict resolution, generic sync
 /// conflicts, classifier rule changes, batch delete/rename/category actions,
-/// or any page ability outside S2-21 / C2-07 consumption.
+/// or any page ability outside import conflict review surface / undo action log consumption.
 ///
 /// # Errors
 ///
@@ -2065,10 +2065,10 @@ pub fn apply_import_conflict_batch(
     import_conflict_batch::apply_import_conflict_batch(repo_path, request, preview_token)
 }
 
-/// Lists C2-18 redo action state for S2-22.
+/// Lists redo action log redo action state for redo surface.
 ///
-/// S2-22 uses this contract in the redo slot of S2-10 and the redo row of
-/// S2-11. The returned rows expose availability, source undo action, disabled
+/// redo surface uses this contract in the redo slot of undo toast surface and the redo row of
+/// undo history surface. The returned rows expose availability, source undo action, disabled
 /// reasons, affected counts, and updated timestamps so the app can render
 /// `Redo`, `Redo latest`, `Shift+Cmd+Z`, and VoiceOver state from one stable
 /// contract.
@@ -2087,12 +2087,12 @@ pub fn list_redo_actions(repo_path: String) -> CoreResult<Vec<RedoActionRecord>>
     redo::list_redo_actions(repo_path)
 }
 
-/// Executes one C2-18 redo action after preflight validation.
+/// Executes one redo action log redo action after preflight validation.
 ///
 /// `action_id` must reference an available redo row returned by
 /// [`list_redo_actions`]. Redo only replays an AreaMatrix action that was
 /// previously undone successfully, and successful redo restores the original
-/// operation to the C2-07 Undo stack. New writes clear redo availability; this
+/// operation to the undo action log Undo stack. New writes clear redo availability; this
 /// API must return a cleared, expired, or blocked result/error rather than
 /// replaying across unsafe state.
 ///
@@ -2114,11 +2114,11 @@ pub fn redo_action(repo_path: String, action_id: String) -> CoreResult<RedoActio
     redo::redo_action(repo_path, action_id)
 }
 
-/// Suggests deterministic C2-19 tags for S2-23 without reading file contents.
+/// Suggests deterministic deterministic tag suggestions tags for tag suggestions surface without reading file contents.
 ///
 /// The contract inspects only repository metadata, file name, relative path,
 /// optional import source context, and existing tag registry state. The output
-/// tells S2-23 which suggestions are strong/weak, already added, invalid, or
+/// tells tag suggestions surface which suggestions are strong/weak, already added, invalid, or
 /// blocked, plus privacy flags proving no AI, network, or content read was
 /// used.
 ///
@@ -2136,11 +2136,11 @@ pub fn suggest_tags_for_file(
     crate::tags::suggest_tags_for_file(repo_path, request)
 }
 
-/// Applies selected or edited C2-19 tag suggestions for one active file.
+/// Applies selected or edited deterministic tag suggestions tag suggestions for one active file.
 ///
 /// A successful implementation creates or reuses normalized tags, writes only
 /// the selected file/tag relations, records change-log rows, and returns a
-/// C2-07 undo token when new relations were added. It must not apply ignored
+/// undo action log undo token when new relations were added. It must not apply ignored
 /// suggestions, alter filters, move/rename/delete files, read file contents, or
 /// call AI/network providers.
 ///
@@ -2160,16 +2160,16 @@ pub fn apply_tag_suggestions(
 
 /// Reads the markdown note associated with one active file entry.
 ///
-/// C1-14 exposes this read-only query for the S1-14 detail-note surface. The
+/// file note contract exposes this read-only query for the detail note surface detail-note surface. The
 /// caller supplies a repository path and stable `file_id`; the result is
 /// `Some(markdown)` when a note exists and `None` when the file has no note.
 /// This API must not create note rows, write sidecar files, insert change-log
 /// entries, or mutate user files.
 ///
-/// C4-07 reuses this as the lazy Note segment query for `S4-IOS-05`. Mobile
+/// mobile file detail reuses this as the lazy Note segment query for `mobile file detail surface`. Mobile
 /// callers can show the empty-note state from `None` and isolate note read
 /// failures to the Note segment; note editing remains with the existing
-/// `write_note` contract and is not added to the C4-07 contract-api task.
+/// `write_note` contract and is not added to the mobile file detail contract-api task.
 ///
 /// # Errors
 ///
@@ -2183,7 +2183,7 @@ pub fn read_note(repo_path: String, file_id: i64) -> CoreResult<Option<String>> 
 
 /// Writes markdown note content for one active file entry.
 ///
-/// C1-14 writes exactly one note for the target file. A successful call upserts
+/// file note contract writes exactly one note for the target file. A successful call upserts
 /// the `notes` row, writes the same-directory sidecar markdown file, and records
 /// `change_log.action = edited_note` only after DB state and sidecar content are
 /// consistent. The app layer owns `InFlightTracker` marking so watcher events
@@ -2206,7 +2206,7 @@ pub fn write_note(repo_path: String, file_id: i64, content_md: String) -> CoreRe
 
 /// Synchronizes external filesystem changes after app-layer filtering.
 ///
-/// C1-17 owns the `ExternalEventKind::Created` contract.
+/// external created sync owns the `ExternalEventKind::Created` contract.
 /// The platform layer is responsible for FSEvents startup, debounce,
 /// in-flight filtering, and iCloud placeholder download coordination.
 /// Created sync reads only metadata/hash, inserts an active `FileEntry` with
@@ -2217,7 +2217,7 @@ pub fn write_note(repo_path: String, file_id: i64, content_md: String) -> CoreRe
 /// It must not move, delete, rename, overwrite, copy, or download the
 /// external user file.
 ///
-/// C1-18 owns the `ExternalEventKind::Renamed` contract. A rename event's
+/// external renamed sync owns the `ExternalEventKind::Renamed` contract. A rename event's
 /// `path` is the repository-relative or absolute new path after app-layer
 /// FSEvents pairing/debounce. The contract result is a `files.path` and
 /// `files.current_name` update, `updated_at` refresh, `change_log.action =
@@ -2227,7 +2227,7 @@ pub fn write_note(repo_path: String, file_id: i64, content_md: String) -> CoreRe
 /// cannot be paired, callers may replay it as removed + created; the rename
 /// branch must then avoid claiming a detected rename.
 ///
-/// C1-19 owns the `ExternalEventKind::Removed` contract. A removed event's
+/// external removed sync owns the `ExternalEventKind::Removed` contract. A removed event's
 /// `path` is the repository-relative or absolute path after app-layer debounce and rename pairing.
 /// The sync branch only confirms the path is absent,
 /// marks the matching active row as `status = deleted`, refreshes `deleted_at`
@@ -2272,9 +2272,9 @@ pub fn set_fs_event_cursor(repo_path: String, last_event_id: i64) -> CoreResult<
 
 /// Records platform watcher health for Windows and Linux watcher-status pages.
 ///
-/// C4-12 accepts a sanitized watcher health signal from the platform layer and
-/// returns a normalized [`PlatformWatcherSnapshot`] for `S4-WIN-04` and
-/// `S4-LNX-04`. The snapshot carries watcher lifecycle status, backend,
+/// platform watcher status accepts a sanitized watcher health signal from the platform layer and
+/// returns a normalized [`PlatformWatcherSnapshot`] for `Windows watcher-status surface` and
+/// `Linux watcher-status surface`. The snapshot carries watcher lifecycle status, backend,
 /// watched path, latest event/sync timestamps, pending count, optional watch
 /// count, structured health reasons, and a display-safe error summary.
 ///
@@ -2282,8 +2282,8 @@ pub fn set_fs_event_cursor(repo_path: String, last_event_id: i64) -> CoreResult<
 /// debouncing, path reveal, diagnostics export, and event capture. Core must
 /// not start platform watchers, open Explorer/file managers, trigger manual
 /// rescan, inspect user file contents, or move/delete/rename/overwrite user
-/// files from this contract. Manual rescan remains C4-19 and must route through
-/// the `S4-X-07` confirmation flow before any indexing write.
+/// files from this contract. Manual rescan remains manual rescan and must route through
+/// the `rescan confirmation surface` confirmation flow before any indexing write.
 ///
 /// # Errors
 ///

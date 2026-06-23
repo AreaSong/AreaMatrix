@@ -14,14 +14,14 @@ use super::{
     insert_tag_relation, load_tag_set, open_repo_connection,
 };
 
-/// Active-file metadata used by deterministic C2-19 suggestion generation.
+/// Active-file metadata used by deterministic deterministic tag suggestions suggestion generation.
 pub(crate) struct TagSuggestionFileMetadata {
     pub(crate) path: String,
     pub(crate) current_name: String,
     pub(crate) source_path: Option<String>,
 }
 
-/// DB snapshot consumed by the platform-neutral C2-19 suggestion engine.
+/// DB snapshot consumed by the platform-neutral deterministic tag suggestions suggestion engine.
 pub(crate) struct TagSuggestionSnapshot {
     pub(crate) file: TagSuggestionFileMetadata,
     pub(crate) tag_set: TagSet,

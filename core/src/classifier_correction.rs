@@ -1,4 +1,4 @@
-//! C2-12 classifier correction contract types and entry point.
+//! classifier correction classifier correction contract types and entry point.
 
 use std::{
     ffi::OsStr,
@@ -15,10 +15,10 @@ const MAX_CATEGORY_SLUG_LEN: usize = 32;
 const MAX_RULE_CANDIDATES: usize = 5;
 const SUGGESTED_RULE_PRIORITY: i64 = 100;
 
-/// Rule draft handed off from S2-16 to classifier rule confirmation pages.
+/// Rule draft handed off from classifier correction surface to classifier rule confirmation pages.
 ///
-/// This draft is only a proposed rule basis. C2-12 must not persist it; saving
-/// and impact preview stay with C2-13 and C2-14.
+/// This draft is only a proposed rule basis. classifier correction must not persist it; saving
+/// and impact preview stay with classifier rule save and classifier impact preview.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ClassifierRuleDraft {
     /// File that produced the correction suggestion.
@@ -33,12 +33,12 @@ pub struct ClassifierRuleDraft {
     pub priority: i64,
 }
 
-/// Result returned after applying one C2-12 classifier correction.
+/// Result returned after applying one classifier correction classifier correction.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ClassifierCorrectionResult {
     /// Updated file row after the correction is committed.
     pub updated_file: FileEntry,
-    /// Optional rule draft for S2-17/S2-18 handoff; it is not saved by C2-12.
+    /// Optional rule draft for classifier save-rule surface/classifier impact preview surface handoff; it is not saved by classifier correction.
     pub rule_draft: Option<ClassifierRuleDraft>,
     /// Whether the caller requested a physical move when the entry is repo-managed.
     pub move_file_requested: bool,
@@ -50,7 +50,7 @@ pub struct ClassifierCorrectionResult {
 
 /// Applies one classifier correction contract request.
 ///
-/// C2-12 is the quick-correction boundary for S2-16. The contract accepts the
+/// classifier correction is the quick-correction boundary for classifier correction surface. The contract accepts the
 /// target category, an explicit move preference, and a remember flag for rule
 /// draft handoff. It must not save classifier rules, preview broad rule impact,
 /// create categories, call AI or network providers, or touch app-layer code.

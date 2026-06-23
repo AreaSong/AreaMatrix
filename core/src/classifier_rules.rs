@@ -1,4 +1,4 @@
-//! C2-13 classifier rule save types and persistence.
+//! classifier rule save classifier rule save types and persistence.
 
 use std::{
     collections::{BTreeMap, HashSet},
@@ -52,13 +52,13 @@ struct CategoryConfig {
     naming_template: Option<String>,
 }
 
-/// Classifier rule payload shared by S2-17, S2-18, and C2-13.
+/// Classifier rule payload shared by classifier save-rule surface, classifier impact preview surface, and classifier rule save.
 ///
 /// The shape maps directly to the supported `classifier.yaml` fields for one
 /// target category: `keywords`, `extensions`, `priority`, and preview
 /// confirmation state. It intentionally does not model path, source-folder,
 /// enabled flags, compound AND rules, or history-application state because
-/// those are outside the Stage 2 save-rule contract.
+/// those are outside the classifier save-rule contract.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ClassifierRule {
     /// Existing classifier category slug that receives the selected rule basis.
@@ -69,11 +69,11 @@ pub struct ClassifierRule {
     pub extensions: Vec<String>,
     /// Classifier priority for the target category.
     pub priority: i64,
-    /// True after S2-17/S2-18 has confirmed the required impact preview.
+    /// True after classifier save-rule surface/classifier impact preview surface has confirmed the required impact preview.
     pub preview_confirmed: bool,
 }
 
-/// Saves one C2-13 classifier rule request.
+/// Saves one classifier rule save classifier rule request.
 ///
 /// The save appends independent keyword and extension basis values to an
 /// existing classifier category in `.areamatrix/classifier.yaml`, updates that

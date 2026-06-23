@@ -1,4 +1,4 @@
-//! C2-15 classifier rule editor contract types and entry points.
+//! classifier rule editor classifier rule editor contract types and entry points.
 
 use std::path::{Component, PathBuf};
 
@@ -30,7 +30,7 @@ struct RuleContent<'a> {
     naming_template: Option<&'a str>,
 }
 
-/// One classifier editor row for S2-19.
+/// One classifier editor row for classifier rule editor surface.
 ///
 /// `rule_id` is the stable id of the currently persisted classifier category.
 /// `slug` is editable content and may differ during a rename request.
@@ -65,7 +65,7 @@ pub struct ClassifierRuleEditorSnapshot {
     pub default_rule_id: String,
     /// Rule id changed by the last update/delete call, when applicable.
     pub updated_rule_id: Option<String>,
-    /// Save/delete warning shown by S2-19 when impact preview is still required.
+    /// Save/delete warning shown by classifier rule editor surface when impact preview is still required.
     pub warning: Option<String>,
 }
 
@@ -122,7 +122,7 @@ pub struct ClassifierRuleDeleteRequest {
     pub preview_confirmed: bool,
 }
 
-/// Lists C2-15 classifier rule editor state for S2-19.
+/// Lists classifier rule editor classifier rule editor state for classifier rule editor surface.
 ///
 /// This contract returns the persisted classifier categories and their editable
 /// matcher fields. It must not preview impact, apply changes to existing files,
@@ -140,7 +140,7 @@ pub fn list_classifier_rules(repo_path: String) -> CoreResult<ClassifierRuleEdit
     Ok(config::snapshot_from_config(&classifier_config, None, None))
 }
 
-/// Creates one C2-15 classifier rule editor row.
+/// Creates one classifier rule editor classifier rule editor row.
 ///
 /// The create request appends one classifier category for future
 /// classification. It must atomically write classifier configuration only; it
@@ -171,7 +171,7 @@ pub fn create_classifier_rule(
     ))
 }
 
-/// Updates one C2-15 classifier rule editor row.
+/// Updates one classifier rule editor classifier rule editor row.
 ///
 /// The update replaces category slug, display metadata, matcher values,
 /// priority, and naming template for one existing row. It must atomically write
@@ -202,7 +202,7 @@ pub fn update_classifier_rule(
     ))
 }
 
-/// Deletes one C2-15 classifier rule editor row.
+/// Deletes one classifier rule editor classifier rule editor row.
 ///
 /// Delete only removes the classifier configuration row after the UI has
 /// completed the required impact preview. It must not move, delete, rename,

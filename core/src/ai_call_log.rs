@@ -1,4 +1,4 @@
-//! C3-05 AI call log contract types and entry points.
+//! AI call log AI call log contract types and entry points.
 
 use std::path::{Component, PathBuf};
 
@@ -39,7 +39,7 @@ pub enum AiCallLogRoute {
     Remote,
 }
 
-/// Redacted AI call status shown by S3-05.
+/// Redacted AI call status shown by AI call log surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum AiCallLogStatus {
     /// The call completed successfully.

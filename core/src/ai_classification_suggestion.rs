@@ -1,4 +1,4 @@
-//! C3-04 AI classification suggestion contract types and entry point.
+//! AI category suggestion AI classification suggestion contract types and entry point.
 
 mod call_log;
 mod context;
@@ -64,7 +64,7 @@ pub enum AiCategorySuggestionStatus {
     Unavailable,
 }
 
-/// Stable skipped or unavailable reason for S3-04 and S3-10 consumers.
+/// Stable skipped or unavailable reason for AI category suggestion surface and AI fallback surface consumers.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum AiCategorySuggestionSkipReason {
     /// Master AI setting is off.
@@ -97,7 +97,7 @@ pub struct AiCategorySuggestionRequest {
 pub struct AiCategorySuggestion {
     /// Active file id this suggestion belongs to.
     pub file_id: i64,
-    /// Suggestion status for S3-04 and fallback consumers.
+    /// Suggestion status for AI category suggestion surface and fallback consumers.
     pub status: AiCategorySuggestionStatus,
     /// Current category before user confirmation, when known.
     pub current_category: Option<String>,

@@ -38,7 +38,7 @@ fn command_index_contract_exposes_signature_inputs_outputs_and_errors() {
         group: CommandTargetGroup::CurrentSelection,
         kind: CommandTargetKind::Command,
         action: CommandTargetAction::OpenConfirmation,
-        route: Some("S2-14".to_owned()),
+        route: Some("rename".to_owned()),
         shortcut: None,
         disabled: false,
         disabled_reason: None,

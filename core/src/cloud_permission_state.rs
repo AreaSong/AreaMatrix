@@ -1,4 +1,4 @@
-//! C4-08 cloud storage permission and placeholder state contract.
+//! cloud storage state cloud storage permission and placeholder state contract.
 
 use std::{
     fs, io,
@@ -81,7 +81,7 @@ pub enum CloudStorageRecommendedAction {
     ChooseLocalFolder,
 }
 
-/// Structured C4-08 cloud state returned to iOS and Windows recovery surfaces.
+/// Structured cloud storage state cloud state returned to iOS and Windows recovery surfaces.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct CloudStorageState {
     /// Repository path that was inspected by Core.
@@ -110,7 +110,7 @@ pub struct CloudStorageState {
     pub requires_reconnect: bool,
 }
 
-/// Detects C4-08 cloud provider state and C4-14 OneDrive risk state.
+/// Detects cloud storage state cloud provider state and OneDrive risk notice OneDrive risk state.
 ///
 /// The check is platform-neutral and read-only. It inspects only the supplied
 /// path shape and basic filesystem metadata. iCloud, OneDrive, document
@@ -140,7 +140,7 @@ pub(crate) fn detect_cloud_storage_state(repo_path: String) -> CoreResult<CloudS
     ))
 }
 
-/// Persists the C4-14 OneDrive notice acknowledgement and returns refreshed state.
+/// Persists the OneDrive risk notice OneDrive notice acknowledgement and returns refreshed state.
 ///
 /// The acknowledgement is stored only in initialized repository metadata. This
 /// keeps the notice flow from implicitly creating `.areamatrix/` during

@@ -1,4 +1,4 @@
-//! C2-07 undo action log contract types and entry points.
+//! undo action log undo action log contract types and entry points.
 
 use std::path::{Component, PathBuf};
 
@@ -21,7 +21,7 @@ pub enum UndoActionStatus {
     Blocked,
 }
 
-/// One row returned to C2-07 undo toast and undo history consumers.
+/// One row returned to undo action log undo toast and undo history consumers.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct UndoActionRecord {
     /// Stable action identifier, backed by `undo_actions.token`.
@@ -46,7 +46,7 @@ pub struct UndoActionRecord {
     pub updated_at: i64,
 }
 
-/// Result returned after executing one C2-07 undo action.
+/// Result returned after executing one undo action log undo action.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct UndoActionResult {
     /// Stable action identifier that was requested.
@@ -63,9 +63,9 @@ pub struct UndoActionResult {
     pub completed_at: i64,
 }
 
-/// Lists C2-07 undo actions for the toast and history surfaces.
+/// Lists undo action log undo actions for the toast and history surfaces.
 ///
-/// The contract returns enough state for S2-10 and S2-11 to render available,
+/// The contract returns enough state for undo toast surface and undo history surface to render available,
 /// blocked, expired, and already executed actions without parsing raw
 /// `summary_json` or `inverse_json`. Listing is metadata-only and must not
 /// execute undo, redo, file moves, Trash restore, tag mutation, or filesystem
@@ -82,12 +82,12 @@ pub fn list_undo_actions(repo_path: String) -> CoreResult<Vec<UndoActionRecord>>
     db::list_undo_action_rows(&repo).map_err(normalize_undo_metadata_error)
 }
 
-/// Executes one C2-07 undo action.
+/// Executes one undo action log undo action.
 ///
 /// `action_id` maps to the `undo_actions.token` value returned by
-/// [`list_undo_actions`] or by an operation result such as C2-06
+/// [`list_undo_actions`] or by an operation result such as batch tag mutation
 /// `BatchMutationReport::undo_token`. This entry point owns Undo only; redo
-/// stack execution stays with C2-18 and is not hidden behind this API.
+/// stack execution stays with redo action log and is not hidden behind this API.
 ///
 /// # Errors
 ///

@@ -21,7 +21,7 @@ fn base_report() -> BindingContractReport {
         core_version: "0.1.0".to_owned(),
         supported_apis: vec![BindingApiContract {
             name: "inspect_binding_contract".to_owned(),
-            capability: "C4-01".to_owned(),
+            capability: "cross-platform-ffi".to_owned(),
             status: BindingSupportStatus::Supported,
             reason: None,
         }],
@@ -103,7 +103,7 @@ fn cross_platform_ffi_failure_edge_rejects_fake_supported_missing_capabilities()
     let before = fs::read(&user_readme).expect("read user file before validation");
     let mut report = base_report();
     report.missing_capabilities.push(BindingMissingCapability {
-        capability: "C4-01".to_owned(),
+        capability: "cross-platform-ffi".to_owned(),
         label: "Generated Kotlin binding packaging".to_owned(),
         status: BindingSupportStatus::Supported,
         reason: "fake success".to_owned(),

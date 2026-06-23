@@ -1,4 +1,4 @@
-//! Empty repository initialization for C1-02.
+//! Empty repository initialization for empty repository initialization.
 
 use std::{
     ffi::OsStr,

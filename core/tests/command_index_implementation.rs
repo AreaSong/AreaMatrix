@@ -316,12 +316,12 @@ fn command_index_implementation_lists_contextual_targets_without_side_effects() 
 
     let rename = find_target(&unfiltered.current_selection_targets, "selection.rename");
     assert_eq!(rename.action, CommandTargetAction::OpenConfirmation);
-    assert_eq!(rename.route.as_deref(), Some("S2-14"));
+    assert_eq!(rename.route.as_deref(), Some("rename"));
     assert!(rename.requires_confirmation);
     assert!(!rename.disabled);
 
     let delete = find_target(&unfiltered.current_selection_targets, "selection.delete");
-    assert_eq!(delete.route.as_deref(), Some("S2-13"));
+    assert_eq!(delete.route.as_deref(), Some("delete"));
     assert!(delete.requires_confirmation);
     assert_eq!(delete.action, CommandTargetAction::OpenConfirmation);
 

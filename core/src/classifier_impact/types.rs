@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::ClassifierRule;
 
-/// Impact preview mode requested by S2-18.
+/// Impact preview mode requested by classifier impact preview surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ClassifierImpactPreviewMode {
     /// Preview adding or editing one classifier rule draft.
@@ -15,14 +15,14 @@ pub enum ClassifierImpactPreviewMode {
     RemoveCategory,
 }
 
-/// Input for the C2-14 classifier impact preview.
+/// Input for the classifier impact preview classifier impact preview.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ClassifierImpactPreviewRequest {
     /// Preview scenario to evaluate.
     pub mode: ClassifierImpactPreviewMode,
     /// Rule-shaped target and basis payload for the preview.
     pub rule: ClassifierRule,
-    /// Whether S2-18 should dry-run repo-owned file moves for changed rows.
+    /// Whether classifier impact preview surface should dry-run repo-owned file moves for changed rows.
     pub move_files: bool,
     /// Replacement category used only when previewing category deletion.
     pub replacement_category: Option<String>,
@@ -69,7 +69,7 @@ pub enum RuleImpactConflictKind {
     RuleConflict,
 }
 
-/// One file row shown in the S2-18 impact preview table.
+/// One file row shown in the classifier impact preview surface impact preview table.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RuleImpactSample {
     /// Stable file id for table selection and follow-up apply planning.
@@ -82,7 +82,7 @@ pub struct RuleImpactSample {
     pub new_category: String,
     /// Matched rule basis values collapsed to stable reason classes.
     pub match_reasons: Vec<RuleImpactMatchReason>,
-    /// Table status consumed by S2-18.
+    /// Table status consumed by classifier impact preview surface.
     pub status: RuleImpactStatus,
     /// Optional human-readable blocked or review reason.
     pub reason: Option<String>,
@@ -103,7 +103,7 @@ pub struct RuleImpactConflict {
     pub reason: String,
 }
 
-/// Read-only classifier rule impact preview returned to S2-18.
+/// Read-only classifier rule impact preview returned to classifier impact preview surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RuleImpactReport {
     /// Full request used for the preview.

@@ -1,4 +1,4 @@
-//! C2-11 command index contract types and boundary.
+//! command index contract types and boundary.
 
 use std::path::{Component, PathBuf};
 
@@ -40,14 +40,14 @@ pub enum CommandTargetGroup {
     FileCandidates,
 }
 
-/// Stable command target kind consumed by S2-15.
+/// Stable command target kind consumed by command palette.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum CommandTargetKind {
     /// Built-in application command.
     Command,
     /// Navigation destination.
     Navigation,
-    /// Saved Smart List target owned by C2-04.
+    /// Saved Smart List target owned by Smart List execution.
     SmartList,
     /// File candidate opened by focusing existing metadata.
     FileCandidate,
@@ -64,7 +64,7 @@ pub enum CommandTargetAction {
     OpenSheet,
     /// Open a confirmation or preview surface before any risky action.
     OpenConfirmation,
-    /// Run an existing C2-04 Smart List by id.
+    /// Run an existing Smart List execution Smart List by id.
     RunSmartList,
     /// Focus an existing file candidate.
     FocusFile,
@@ -105,7 +105,7 @@ pub struct CommandTarget {
     pub saved_search_id: Option<i64>,
 }
 
-/// Command-palette index returned to S2-15 consumers.
+/// Command-palette index returned to command palette consumers.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct CommandIndex {
     /// General command rows after context and permission filtering.
@@ -124,9 +124,9 @@ pub struct CommandIndex {
     pub generated_at: i64,
 }
 
-/// Lists C2-11 command-palette targets without executing commands.
+/// Lists command-palette targets without executing commands.
 ///
-/// S2-15 uses this read-only contract to obtain grouped command rows, Smart
+/// command palette uses this read-only contract to obtain grouped command rows, Smart
 /// List navigation targets, recent commands, file candidates, disabled reasons,
 /// and confirmation boundaries. The caller passes the current selection context
 /// so Core can mark selection-only commands as available, disabled, or hidden
@@ -140,7 +140,7 @@ pub struct CommandIndex {
 ///
 /// Returns `CoreError::Db { message }` when command metadata, saved-search
 /// metadata, recent-command metadata, or file candidate metadata cannot be
-/// read. C2-11 exposes only `Db` so consumers use one command-registry failure
+/// read. command index exposes only `Db` so consumers use one command-registry failure
 /// state instead of parsing lower-level storage details.
 pub fn list_command_targets(
     repo_path: String,

@@ -4,9 +4,9 @@ use std::{fs, io};
 
 /// Returns whether a root-level entry is user content for init/path checks.
 ///
-/// C1-02 can ignore a small allowlist of OS-created metadata files, but hidden
+/// empty repository initialization can ignore a small allowlist of OS-created metadata files, but hidden
 /// user content such as `.env` or `.git` must keep the directory non-empty so it
-/// flows through the later C1-03 adopt-existing path.
+/// flows through the later adopt-existing repository scan adopt-existing path.
 pub(crate) fn is_user_content_entry(entry: &fs::DirEntry) -> io::Result<bool> {
     let name = entry.file_name();
     let name = name.to_string_lossy();

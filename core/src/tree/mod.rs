@@ -1,4 +1,4 @@
-//! Read-only repository tree JSON for the Stage 1 main window.
+//! Read-only repository tree JSON for the main window.
 
 use std::{
     collections::BTreeMap,

@@ -1,4 +1,4 @@
-//! AI call log storage used by Stage 3 AI producers and audit readers.
+//! AI call log storage used by AI producers and audit readers.
 
 #[path = "ai_call_log/helpers.rs"]
 mod helpers;

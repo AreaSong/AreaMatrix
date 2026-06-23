@@ -1,4 +1,4 @@
-//! C4-18 missing-file recovery contract types and entry points.
+//! Missing-file recovery contract types and entry points.
 
 mod filesystem;
 
@@ -48,7 +48,7 @@ pub enum MissingFileRecoveryStatus {
     Blocked,
 }
 
-/// Page-ready C4-18 missing-file state for S4-X-06.
+/// Page-ready state for missing-file recovery.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MissingFileState {
     /// Stable AreaMatrix file id.
@@ -67,17 +67,17 @@ pub struct MissingFileState {
     pub can_locate: bool,
     /// Whether `Try Again` can run a read-only path check.
     pub can_try_again: bool,
-    /// Whether S4-X-06 may expose `Remove Record...`.
+    /// Whether the UI may expose `Remove Record...`.
     pub can_remove_record: bool,
     /// Whether remove record must show explicit confirmation first.
     pub remove_record_requires_confirmation: bool,
-    /// Whether the page may route to S4-X-07 rescan confirmation.
+    /// Whether the page may route to manual rescan confirmation.
     pub can_run_rescan: bool,
     /// Stable disabled reason for the rescan route.
     pub rescan_disabled_reason: Option<String>,
 }
 
-/// User-selected relink request for C4-18.
+/// User-selected relink request for missing-file recovery.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct MissingFileRelinkRequest {
     /// Stable AreaMatrix file id.
@@ -88,7 +88,7 @@ pub struct MissingFileRelinkRequest {
     pub confirmed: bool,
 }
 
-/// Confirmed remove-record request for C4-18.
+/// Confirmed remove-record request for missing-file recovery.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct MissingFileRemoveRecordRequest {
     /// Stable AreaMatrix file id.
@@ -112,7 +112,7 @@ pub struct MissingFileRecoveryReport {
     pub hash_matched: bool,
     /// Whether the AreaMatrix metadata record was removed.
     pub record_removed: bool,
-    /// Whether any user file was deleted by this action. C4-18 must keep this false.
+    /// Whether any user file was deleted by this action. missing-file recovery must keep this false.
     pub file_deleted: bool,
     /// Change-log action written by the later implementation, when successful.
     pub change_log_action: Option<String>,
@@ -120,7 +120,7 @@ pub struct MissingFileRecoveryReport {
     pub message: Option<String>,
 }
 
-/// Returns page-ready missing-file state for S4-X-06.
+/// Returns page-ready missing-file state.
 ///
 /// The contract is read-only. It exposes the last known path, reason, hash
 /// expectation, confirmation requirements, and rescan route state without
@@ -154,16 +154,15 @@ pub(crate) fn get_missing_file_state(
         can_remove_record: true,
         remove_record_requires_confirmation: true,
         can_run_rescan: false,
-        rescan_disabled_reason: Some("manual rescan requires S4-X-07 confirmation".to_owned()),
+        rescan_disabled_reason: Some("manual rescan requires explicit confirmation".to_owned()),
     })
 }
 
 /// Removes only the AreaMatrix metadata record for a missing file.
 ///
-/// This C4-18 entry point requires explicit confirmation and must never delete,
-/// move, rename, overwrite, trash, or download a user file. The later
-/// implementation writes metadata and change-log state only after the
-/// confirmation is present.
+/// This entry point requires explicit confirmation and must never delete, move,
+/// rename, overwrite, trash, or download a user file. The implementation writes
+/// metadata and change-log state only after the confirmation is present.
 ///
 /// # Errors
 ///

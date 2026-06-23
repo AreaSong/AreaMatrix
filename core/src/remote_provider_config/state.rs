@@ -1,4 +1,4 @@
-//! Persisted C3-03 provider state read and disable flows.
+//! Persisted remote provider configuration provider state read and disable flows.
 
 use std::path::PathBuf;
 

@@ -1,4 +1,4 @@
-//! C2-05, C2-06, and C2-19 tag contract behavior and types.
+//! tag CRUD, batch tag mutation, and deterministic tag suggestions tag contract behavior and types.
 
 use std::path::{Component, PathBuf};
 
@@ -19,7 +19,7 @@ pub use suggestion_types::{
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const MAX_TAG_LEN: usize = 64;
 
-/// One tag visible to Stage 2 tag editing and filtering surfaces.
+/// One tag visible to tag editing and filtering surfaces.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TagRecord {
     /// Normalized stable tag value used in search filters and DB rows.
@@ -36,22 +36,22 @@ pub struct TagRecord {
     pub updated_at: i64,
 }
 
-/// Tag state returned by C2-05 tag CRUD operations.
+/// Tag state returned by tag CRUD operations.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TagSet {
     /// File whose tag relation is being edited or inspected.
     pub file_id: i64,
     /// Tags currently attached to the file after the requested operation.
     pub file_tags: Vec<TagRecord>,
-    /// Repository tag registry candidates for S2-07 and S2-08.
+    /// Repository tag registry candidates for tag editor surface and tag filter surface.
     pub available_tags: Vec<TagRecord>,
-    /// Recently used tags for the S2-07 empty-input state.
+    /// Recently used tags for the tag editor surface empty-input state.
     pub recent_tags: Vec<TagRecord>,
     /// Unix timestamp for the latest tag relation change visible in this snapshot.
     pub updated_at: i64,
 }
 
-/// Per file/tag status returned by C2-06 batch tag mutation.
+/// Per file/tag status returned by batch tag mutation batch tag mutation.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum BatchMutationStatus {
     /// The tag relation was newly added for this file.
@@ -62,20 +62,20 @@ pub enum BatchMutationStatus {
     Failed,
 }
 
-/// Per file/tag result row returned by C2-06 batch tag mutation.
+/// Per file/tag result row returned by batch tag mutation batch tag mutation.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BatchMutationItemResult {
     /// File id from the request.
     pub file_id: i64,
     /// Normalized tag value attempted for this file.
     pub tag: String,
-    /// Stable status used by S2-09 to separate added, skipped, and failed rows.
+    /// Stable status used by batch add-tags surface to separate added, skipped, and failed rows.
     pub status: BatchMutationStatus,
     /// Optional failure detail for result summaries and retry UI.
     pub error: Option<String>,
 }
 
-/// Batch mutation report returned to S2-09 and Undo toast consumers.
+/// Batch mutation report returned to batch add-tags surface and Undo toast consumers.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BatchMutationReport {
     /// Number of unique file ids accepted by the contract.
@@ -90,13 +90,13 @@ pub struct BatchMutationReport {
     pub failed_count: i64,
     /// Detailed per item results for partial failure summaries.
     pub item_results: Vec<BatchMutationItemResult>,
-    /// Undo token for C2-07 toast/history when the implementation creates one.
+    /// Undo token for undo action log toast/history when the implementation creates one.
     pub undo_token: Option<String>,
 }
 
 /// Adds one normalized tag relation to an active file and returns the refreshed tag set.
 ///
-/// C2-05 owns this single-file tag mutation contract for S2-07. The operation
+/// tag CRUD owns this single-file tag mutation contract for tag editor surface. The operation
 /// is idempotent for duplicate tags, must write only tag metadata and a
 /// change-log entry with `kind = tag_added` when the relation changes, and
 /// must never rename, move, delete, trash, reclassify, reindex, or edit notes
@@ -118,7 +118,7 @@ pub fn add_tag(repo_path: String, file_id: i64, tag: String) -> CoreResult<TagSe
 
 /// Removes one tag relation from an active file and returns the refreshed tag set.
 ///
-/// S2-07 chip deletion uses this contract to remove only the relation between
+/// tag editor surface chip deletion uses this contract to remove only the relation between
 /// the current file and the tag. It does not delete the tag definition from the
 /// repository registry and must not affect other files that carry the same tag.
 /// The change-log detail uses `kind = tag_removed` when the relation changes.
@@ -139,9 +139,9 @@ pub fn remove_tag(repo_path: String, file_id: i64, tag: String) -> CoreResult<Ta
 
 /// Lists the tag registry and the selected file tag state without mutating metadata.
 ///
-/// S2-07 uses this contract for current chips, existing candidates, recent
-/// tags, loading, empty, and retry states. S2-08 may use the same registry
-/// snapshot as a complement to C2-02 facet counts. The query is read-only: it
+/// tag editor surface uses this contract for current chips, existing candidates, recent
+/// tags, loading, empty, and retry states. tag filter surface may use the same registry
+/// snapshot as a complement to search facet counts. The query is read-only: it
 /// must not create, update, remove, rename, or suggest tags.
 ///
 /// # Errors
@@ -159,15 +159,15 @@ pub fn list_tags(repo_path: String, file_id: i64) -> CoreResult<TagSet> {
 
 /// Adds normalized tags to multiple active files and returns a mutation report.
 ///
-/// C2-06 batch tag mutation contract.
+/// batch tag mutation batch tag mutation contract.
 ///
-/// S2-09 uses this API to add one or more normalized tags to a multi-selection
-/// and S2-10 consumes the returned undo token after successful writes. The
+/// batch add-tags surface uses this API to add one or more normalized tags to a multi-selection
+/// and undo toast surface consumes the returned undo token after successful writes. The
 /// report shape carries added, already-present, and failed item counts so UI
 /// can render partial failure summaries without treating skipped or failed
 /// files as successful writes.
 ///
-/// The implementation performs real writes to `tags`, `change_log`, and the C2-07 undo action
+/// The implementation performs real writes to `tags`, `change_log`, and the undo action log undo action
 /// store. It must never move, rename, delete, trash, reclassify, reindex, edit notes, update
 /// generated overviews, call AI/network providers, or touch user file contents.
 ///
@@ -193,7 +193,7 @@ pub fn batch_add_tags(
 
 /// Suggests deterministic non-AI tags for one active file.
 ///
-/// C2-19 owns the Stage 2 tag-suggestion contract for S2-23. Suggestions may
+/// deterministic tag suggestions owns the tag-suggestion contract for tag suggestions surface. Suggestions may
 /// inspect file metadata, repository-relative path, optional import source
 /// context, and existing tag registry state. They must not read file contents,
 /// call AI or remote providers, access the network, write metadata, mutate
@@ -213,10 +213,10 @@ pub fn suggest_tags_for_file(
     suggestions::suggest_tags_for_file(repo_path, request)
 }
 
-/// Applies selected C2-19 tag suggestions to one active file.
+/// Applies selected deterministic tag suggestions tag suggestions to one active file.
 ///
 /// The apply contract creates or reuses normalized tags, writes file/tag
-/// relations, emits change-log rows, and returns an undo token for C2-07 when
+/// relations, emits change-log rows, and returns an undo token for undo action log when
 /// at least one new relation is written. It must never apply unselected
 /// suggestions, update search filters, move/rename/delete files, read file
 /// contents, call AI/network providers, or modify app-layer code.

@@ -1,4 +1,4 @@
-//! C2-10 batch rename contract types and entry points.
+//! batch rename batch rename contract types and entry points.
 
 use std::path::{Component, PathBuf};
 
@@ -15,7 +15,7 @@ mod token;
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 
-/// Batch rename strategy selected by S2-14 before previewing C2-10.
+/// Batch rename strategy selected by batch rename surface before previewing batch rename.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum BatchRenameMode {
     /// Prefix the existing stem while preserving the extension.
@@ -39,7 +39,7 @@ pub enum BatchRenameDateSource {
     Today,
 }
 
-/// Rename rule supplied by S2-14 for preview and Apply.
+/// Rename rule supplied by batch rename surface for preview and Apply.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchRenameRule {
     /// Selected rename strategy.
@@ -64,7 +64,7 @@ pub struct BatchRenameRule {
     pub case_sensitive: bool,
 }
 
-/// Per-file preview status for C2-10 batch rename.
+/// Per-file preview status for batch rename batch rename.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum BatchRenamePreviewStatus {
     /// Row can be renamed or display-name updated.
@@ -85,7 +85,7 @@ pub enum BatchRenamePreviewStatus {
     ExternalChange,
 }
 
-/// Per-file execution status for C2-10 batch rename.
+/// Per-file execution status for batch rename batch rename.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum BatchRenameResultStatus {
     /// Repository-owned file was renamed and metadata updated.
@@ -113,7 +113,7 @@ pub struct BatchRenameConflict {
     pub reason: String,
 }
 
-/// Per-file preview row returned before applying C2-10 batch rename.
+/// Per-file preview row returned before applying batch rename batch rename.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchRenamePreviewItem {
     /// Requested file id.
@@ -132,13 +132,13 @@ pub struct BatchRenamePreviewItem {
     pub index_only: bool,
     /// Whether Apply would physically rename a repository-owned file.
     pub will_rename_file: bool,
-    /// Stable preview status for S2-14 summaries and VoiceOver.
+    /// Stable preview status for batch rename surface summaries and VoiceOver.
     pub status: BatchRenamePreviewStatus,
     /// Optional per-row reason for blocked, skipped, or unchanged states.
     pub reason: Option<String>,
 }
 
-/// Read-only preview report consumed by S2-14 before Apply is enabled.
+/// Read-only preview report consumed by batch rename surface before Apply is enabled.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchRenamePreviewReport {
     /// Number of unique file ids accepted by the contract.
@@ -159,7 +159,7 @@ pub struct BatchRenamePreviewReport {
     pub conflict_count: i64,
     /// Detailed preview rows for the impact table.
     pub items: Vec<BatchRenamePreviewItem>,
-    /// Conflict details for S2-14 error rows and accessibility text.
+    /// Conflict details for batch rename surface error rows and accessibility text.
     pub conflicts: Vec<BatchRenameConflict>,
     /// Whether Apply may be called for this preview state.
     pub can_apply: bool,
@@ -167,7 +167,7 @@ pub struct BatchRenamePreviewReport {
     pub apply_blocked_reason: Option<String>,
 }
 
-/// Per-file execution result returned after C2-10 batch rename.
+/// Per-file execution result returned after batch rename batch rename.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchRenameItemResult {
     /// Requested file id.
@@ -178,13 +178,13 @@ pub struct BatchRenameItemResult {
     pub final_name: Option<String>,
     /// Final path for repo-owned files, when available.
     pub final_path: Option<String>,
-    /// Stable execution status for S2-14 result summaries.
+    /// Stable execution status for batch rename surface result summaries.
     pub status: BatchRenameResultStatus,
     /// Optional failure or skip reason.
     pub error: Option<String>,
 }
 
-/// Execution report returned to S2-14 and C2-07 undo consumers.
+/// Execution report returned to batch rename surface and undo action log undo consumers.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchRenameReport {
     /// Number of unique file ids accepted by the contract.
@@ -203,13 +203,13 @@ pub struct BatchRenameReport {
     pub item_results: Vec<BatchRenameItemResult>,
     /// Updated file entries for successful rows.
     pub updated_files: Vec<FileEntry>,
-    /// Undo token for C2-07 toast/history when successful writes create one.
+    /// Undo token for undo action log toast/history when successful writes create one.
     pub undo_token: Option<String>,
 }
 
-/// Previews C2-10 batch rename without mutating files or metadata.
+/// Previews batch rename batch rename without mutating files or metadata.
 ///
-/// S2-14 uses this API to show each selected file's original name, generated
+/// batch rename surface uses this API to show each selected file's original name, generated
 /// new name, conflict or blocked status, index-only display-name rows, and the
 /// `preview_token` required by [`batch_rename`]. The order of `file_ids`
 /// represents the current list order and is part of the preview state.
@@ -233,12 +233,12 @@ pub fn preview_batch_rename(
     Ok(plan.into_preview_report())
 }
 
-/// Applies a C2-10 batch rename that was previously previewed.
+/// Applies a batch rename batch rename that was previously previewed.
 ///
 /// `preview_token` must come from [`preview_batch_rename`] for the same
 /// selection order, rename rule, and inspected file state. Successful rows
 /// update repository metadata, rename repository-owned files or update
-/// index-only display names, write change-log rows, and create one C2-07 undo
+/// index-only display names, write change-log rows, and create one undo action log undo
 /// action for all changed rows. This API must not change extensions, overwrite
 /// existing files, delete or Trash files, retag files, recategorize files, save
 /// searches, reindex, or call AI/network providers.
