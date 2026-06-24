@@ -12,7 +12,10 @@ use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 use serde_json::Value;
 
-const API_RS: &str = include_str!("../src/api.rs");
+#[path = "support/api_contract_source.rs"]
+mod api_contract_source;
+
+use api_contract_source::API_RS;
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const DB_RENAME_RS: &str = include_str!("../src/db/rename.rs");
 const STORAGE_RENAME_RS: &str = include_str!("../src/storage/rename.rs");

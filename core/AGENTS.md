@@ -11,6 +11,7 @@
 ## 工作边界
 
 - `src/lib.rs` 保持轻量：只放 crate 文档、module declaration 和必要 re-export，不堆业务逻辑。
+- `src/api/` 是 UniFFI 对外门面目录：按 surface 拆分公开函数，保留函数名与 UDL 合同一致，不在这里堆业务流程、SQL 或复杂文件操作。
 - 业务能力放在对应模块中，优先沿用现有模块边界和测试命名模式。
 - `area_matrix.udl` 是 Swift / 其他平台桥接的接口合同；新增、删除或重命名公开函数时必须与 `../docs/api/core-api.md` 保持一致。
 - `build.rs` 负责 UniFFI scaffolding，当前从 `./area_matrix.udl` 生成；不要改成已不存在的 `src/area_matrix.udl` 路径。

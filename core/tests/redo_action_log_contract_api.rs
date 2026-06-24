@@ -9,7 +9,10 @@ const TASK: &str =
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const REDO_RS: &str = include_str!("../src/redo.rs");
-const API_RS: &str = include_str!("../src/api.rs");
+#[path = "support/api_contract_source.rs"]
+mod api_contract_source;
+
+use api_contract_source::API_RS;
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn assert_contains(haystack: &str, needle: &str) {

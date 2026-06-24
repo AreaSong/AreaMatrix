@@ -22,7 +22,10 @@ use tag_suggestions_failure::{
 
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
-const API_RS: &str = include_str!("../src/api.rs");
+#[path = "support/api_contract_source.rs"]
+mod api_contract_source;
+
+use api_contract_source::API_RS;
 const TAGS_RS: &str = include_str!("../src/tags.rs");
 const TAG_SUGGESTIONS_RS: &str = include_str!("../src/tags/suggestions.rs");
 const DB_TAG_SUGGESTIONS_RS: &str = include_str!("../src/db/tags/suggestions.rs");

@@ -16,7 +16,10 @@ mod support;
 use support::system_trash_home::with_test_system_trash;
 
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
-const API_RS: &str = include_str!("../src/api.rs");
+#[path = "support/api_contract_source.rs"]
+mod api_contract_source;
+
+use api_contract_source::API_RS;
 const DESTINATION_RS: &str = include_str!("../src/storage/destination.rs");
 const IMPORT_RS: &str = include_str!("../src/storage/import.rs");
 const REPLACEMENT_TRASH_RS: &str = include_str!("../src/storage/replacement_trash.rs");

@@ -314,24 +314,18 @@ pub use domain::*;
 pub use error::CoreError;
 ```
 
-### api.rs 模式
+### api/ 门面模式
 
 ```rust
-// core/src/api.rs
-use crate::{domain::*, error::*, storage, classify, sync, db};
-
-pub fn get_version() -> String {
-    env!("CARGO_PKG_VERSION").to_string()
-}
+// core/src/api/file_actions.rs
+use crate::{storage, CoreResult, FileEntry, ImportOptions};
 
 pub fn import_file(
     repo_path: String,
     source_path: String,
     options: ImportOptions,
 ) -> CoreResult<FileEntry> {
-    let repo_path = std::path::PathBuf::from(repo_path);
-    let source_path = std::path::PathBuf::from(source_path);
-    storage::import_file(&repo_path, &source_path, options)
+    storage::import_file(repo_path, source_path, options)
 }
 ```
 

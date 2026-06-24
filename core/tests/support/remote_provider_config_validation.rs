@@ -14,7 +14,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 const TESTING_DOC: &str = include_str!("../../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../../docs/api/core-api.md");
 const UDL: &str = include_str!("../../area_matrix.udl");
-const API_RS: &str = include_str!("../../src/api.rs");
+use crate::api_contract_source::API_RS;
 const REMOTE_PROVIDER_RS: &str = include_str!("../../src/remote_provider_config.rs");
 const DB_REMOTE_PROVIDER_RS: &str = include_str!("../../src/db/remote_provider_config.rs");
 const PROBE_RS: &str = include_str!("../../src/remote_provider_config/probe.rs");

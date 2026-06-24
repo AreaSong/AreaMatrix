@@ -15,7 +15,10 @@ const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const UDL: &str = include_str!("../area_matrix.udl");
-const API_RS: &str = include_str!("../src/api.rs");
+#[path = "support/api_contract_source.rs"]
+mod api_contract_source;
+
+use api_contract_source::API_RS;
 const DB_RS: &str = include_str!("../src/db/mod.rs");
 const CONTRACT_TEST: &str = include_str!("repository_settings_cross_platform_contract_api.rs");
 const IMPLEMENTATION_TEST: &str =

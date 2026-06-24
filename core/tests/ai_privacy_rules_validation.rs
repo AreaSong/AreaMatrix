@@ -1,3 +1,5 @@
+#[path = "support/api_contract_source.rs"]
+mod api_contract_source;
 #[path = "support/remote_provider_config_common.rs"]
 mod remote_provider_common;
 #[path = "support/ai_privacy_rules_validation.rs"]

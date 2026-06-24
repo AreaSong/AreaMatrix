@@ -13,7 +13,10 @@ use rusqlite::{params, Connection};
 use serde_json::Value;
 
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
-const API_RS: &str = include_str!("../src/api.rs");
+#[path = "support/api_contract_source.rs"]
+mod api_contract_source;
+
+use api_contract_source::API_RS;
 const DB_NOTE_RS: &str = include_str!("../src/db/note.rs");
 const NOTE_RS: &str = include_str!("../src/note.rs");
 const UDL: &str = include_str!("../area_matrix.udl");

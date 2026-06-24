@@ -18,7 +18,10 @@ const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const UDL: &str = include_str!("../area_matrix.udl");
-const API_RS: &str = include_str!("../src/api.rs");
+#[path = "support/api_contract_source.rs"]
+mod api_contract_source;
+
+use api_contract_source::API_RS;
 const REPO_PATH_RS: &str = include_str!("../src/repo_path.rs");
 const REPO_INIT_RS: &str = include_str!("../src/repo_init.rs");
 const CONTRACT_TEST: &str = include_str!("linux_repo_connect_contract_api.rs");

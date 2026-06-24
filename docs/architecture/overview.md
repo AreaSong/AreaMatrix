@@ -41,7 +41,7 @@ flowchart TB
     end
 
     subgraph CoreLib ["Rust 核心库"]
-        API[api.rs FFI 边界]
+        API[api/* FFI 边界]
         Domain[domain 类型]
         Storage[storage 文件操作]
         Classify[classify 分类引擎]
@@ -85,7 +85,7 @@ flowchart TB
 | 平台 | ICloudCoordinator | NSFileCoordinator 占位符下载协调 |
 | 平台 | DragDrop Adapter | NSItemProvider → URL 列表 |
 | FFI | UniFFI | 自动生成 Swift bindings |
-| Core | api.rs | 暴露给 Swift 的所有函数（FFI 边界） |
+| Core | api/* | 暴露给 Swift 的所有函数（FFI 边界） |
 | Core | domain | 跨边界类型（FileEntry / Category / ...） |
 | Core | storage | 事务式文件操作（move / copy / index / hash / dedup） |
 | Core | classify | 规则引擎（扩展名 + 关键词），未来加 AI |
@@ -95,7 +95,7 @@ flowchart TB
 | Core | db | SQLite CRUD + migrations |
 | Core | config | 配置加载与持久化 |
 
-详见 [layered-design.md](layered-design.md)。
+详见 [layered-design.md](layered-design.md) 与 [core-internal-architecture.md](core-internal-architecture.md)。
 
 ## 关键数据流：用户拖入文件
 

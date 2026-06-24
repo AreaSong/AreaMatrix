@@ -18,7 +18,10 @@ const TASK: &str = include_str!(
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
-const API_RS: &str = include_str!("../src/api.rs");
+#[path = "support/api_contract_source.rs"]
+mod api_contract_source;
+
+use api_contract_source::API_RS;
 const CONTRACT_TEST: &str = include_str!("files_import_contract_api.rs");
 const IMPLEMENTATION_TEST: &str = include_str!("files_import_implementation.rs");
 const FAILURE_TEST: &str = include_str!("files_import_failure_recovery.rs");

@@ -1,3 +1,5 @@
+#[path = "support/api_contract_source.rs"]
+mod api_contract_source;
 #[path = "support/remote_provider_config_validation.rs"]
 mod validation_support;
 

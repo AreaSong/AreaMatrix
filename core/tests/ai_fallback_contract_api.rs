@@ -12,7 +12,10 @@ const TASK: &str = include_str!(
 );
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
-const API_RS: &str = include_str!("../src/api.rs");
+#[path = "support/api_contract_source.rs"]
+mod api_contract_source;
+
+use api_contract_source::API_RS;
 const AI_FALLBACK_RS: &str = include_str!("../src/ai_fallback.rs");
 const AI_FALLBACK_VALIDATION_RS: &str = include_str!("../src/ai_fallback/validation.rs");
 const UDL: &str = include_str!("../area_matrix.udl");

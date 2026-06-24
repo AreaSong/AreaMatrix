@@ -19,7 +19,10 @@ const TASK: &str = include_str!(
 );
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
-const API_RS: &str = include_str!("../src/api.rs");
+#[path = "support/api_contract_source.rs"]
+mod api_contract_source;
+
+use api_contract_source::API_RS;
 const LIB_RS: &str = include_str!("../src/lib.rs");
 const DOMAIN_RS: &str = include_str!("../src/domain.rs");
 const IMPORT_RS: &str = include_str!("../src/storage/import.rs");

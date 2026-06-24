@@ -7,7 +7,10 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
-const API_RS: &str = include_str!("../src/api.rs");
+#[path = "support/api_contract_source.rs"]
+mod api_contract_source;
+
+use api_contract_source::API_RS;
 const DOMAIN_RS: &str = include_str!("../src/domain.rs");
 const STORAGE_IMPORT_RS: &str = include_str!("../src/storage/import.rs");
 const OVERVIEW_RS: &str = include_str!("../src/overview/mod.rs");

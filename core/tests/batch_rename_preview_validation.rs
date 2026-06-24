@@ -23,7 +23,10 @@ use batch_rename_preview_support::{
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
-const API_RS: &str = include_str!("../src/api.rs");
+#[path = "support/api_contract_source.rs"]
+mod api_contract_source;
+
+use api_contract_source::API_RS;
 const BATCH_RENAME_RS: &str = include_str!("../src/batch_rename.rs");
 const BATCH_RENAME_APPLY_RS: &str = include_str!("../src/batch_rename/apply.rs");
 const BATCH_RENAME_PLAN_RS: &str = include_str!("../src/batch_rename/plan.rs");

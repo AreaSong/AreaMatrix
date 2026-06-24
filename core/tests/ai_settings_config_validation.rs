@@ -11,7 +11,10 @@ use rusqlite::Connection;
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 const AI_SETTINGS_RS: &str = include_str!("../src/ai_settings.rs");
-const API_RS: &str = include_str!("../src/api.rs");
+#[path = "support/api_contract_source.rs"]
+mod api_contract_source;
+
+use api_contract_source::API_RS;
 
 #[derive(Debug, Eq, PartialEq)]
 struct AiSettingsValidationSnapshot {

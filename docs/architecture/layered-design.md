@@ -27,7 +27,7 @@ flowchart TB
         RustScaffolding[Rust scaffolding]
     end
     subgraph L1 [Core 层 - Rust]
-        APIRust[api.rs]
+        APIRust[api/*]
         Domain[domain]
         Storage[storage]
         Classify[classify]
@@ -57,7 +57,7 @@ flowchart TB
 
 | 模块 | 职责 |
 |---|---|
-| `api` | FFI 边界。所有暴露给 Swift 的函数集中在这里 |
+| `api` | FFI 边界。所有暴露给 Swift 的函数按 surface 拆分在这里 |
 | `domain` | 跨边界类型（FileEntry / Category / StorageMode / FileOrigin / ChangeAction） |
 | `error` | 统一错误类型 `CoreError` 和 `CoreResult<T>` |
 | `config` | 加载 / 持久化 `~/Library/Application Support/AreaMatrix/config.json` |
@@ -124,7 +124,7 @@ flowchart TB
 ./dev build core
 ```
 
-详见 [ffi-design.md](ffi-design.md)。
+详见 [ffi-design.md](ffi-design.md) 与 [core-internal-architecture.md](core-internal-architecture.md)。
 
 ---
 

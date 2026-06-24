@@ -25,7 +25,10 @@ use support::{
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
-const API_RS: &str = include_str!("../src/api.rs");
+#[path = "support/api_contract_source.rs"]
+mod api_contract_source;
+
+use api_contract_source::API_RS;
 const BATCH_DELETE_RS: &str = include_str!("../src/batch_delete.rs");
 const BATCH_DELETE_APPLY_RS: &str = include_str!("../src/batch_delete/apply.rs");
 const BATCH_DELETE_INSPECT_RS: &str = include_str!("../src/batch_delete/inspect.rs");
