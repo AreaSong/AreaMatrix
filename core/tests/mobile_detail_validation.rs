@@ -99,7 +99,7 @@ fn insert_change(repo: &Path, file_id: i64, action: &str, occurred_at: i64) {
             params![
                 file_id,
                 action,
-                r#"{"source":"c4-07-validation"}"#,
+                r#"{"source":"mobile-detail-validation"}"#,
                 occurred_at
             ],
         )

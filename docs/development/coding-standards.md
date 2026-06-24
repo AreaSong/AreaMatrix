@@ -256,7 +256,7 @@ final class RepoStore {
 | 列表标记 | `-` 不用 `*` |
 | 代码块 | 加语言标签（rust/swift/sql/yaml/bash） |
 | 链接 | 优先相对路径 `./xxx.md` |
-| 图片 | `![alt](path "title")`，必填 alt |
+| 图片 | 使用代码示例中的图片语法，必填 alt |
 | 表格 | 列对齐符号风格不强求 |
 
 ### 文档头部
@@ -273,6 +273,12 @@ final class RepoStore {
 ## 1. 背景
 
 ...
+```
+
+图片语法示例：
+
+```markdown
+![alt](path "title")
 ```
 
 ### 文档尾部（强制）

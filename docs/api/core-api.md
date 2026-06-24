@@ -2982,7 +2982,7 @@ print("locale: \(cfg.locale)")
   禁用平台不支持的设置和诊断入口。
 - 本合同不提供 repo name、last opened、watcher runtime health、diagnostics export、
   reconnect picker、recent repo、安全书签续期或 ACL/POSIX permission 生命周期；
-  这些由 platform capabilities、manual rescan、平台层或后续页面任务覆盖。
+  这些由 platform capabilities、manual rescan、平台层或对应页面能力覆盖。
 - 本调用只读，不检测 watcher、Trash、云盘 SDK 或 security bookmark，也不读取、
   移动、删除、重命名、覆盖或下载用户文件。
 
@@ -5696,7 +5696,7 @@ classifier 规则或默认分类中；本 API 不创建新分类。
 - classifier correction surface 可以从合同得到更新后的文件、是否执行了 move preference、是否请求 Remember、是否仍需
   规则确认，以及可传给 classifier save-rule surface/classifier impact preview surface 的规则草稿。
 - classifier correction surface 不能从本合同直接保存规则、创建分类、预览历史影响或应用批量重分类；这些能力分别属于
-  classifier rule save、classifier rule editor、classifier impact preview 和后续任务。本合同不新增 control map 之外的页面能力。
+  classifier rule save、classifier rule editor、classifier impact preview 和批量重分类能力。本合同不新增 control map 之外的页面能力。
 
 ### `save_classifier_rule(repoPath, rule) throws -> ClassifierRule`
 
@@ -5802,7 +5802,7 @@ metadata 变化，不因目标路径同名文件阻断。`replacement_category` 
 - `conflicts`：结构化冲突列表，供禁用原因和 VoiceOver 文案使用。
 - `needs_review`：是否存在 review-only 行。
 - `warning_required` / `warning`：影响量超过阈值时显示过宽规则 warning。
-- `can_apply` / `apply_blocked_reason`：后续 apply 任务是否可直接执行，以及禁用原因。
+- `can_apply` / `apply_blocked_reason`：对应 apply 能力是否可直接执行，以及禁用原因。
   删除 category 且没有 `replacement_category` 时必须返回 `can_apply = false`，并给出
   replacement 缺失的禁用原因。
 
@@ -6895,7 +6895,7 @@ Replace 二次确认后调用。输入 `ImportConflictBatchApplyRequest` 与 pre
 - import conflict review surface 可以从执行报告得到成功/失败/跳过/替换/保留两份/pending/逐项队列摘要、刷新用
   `affected_file_ids`、`undo_token`、change log action 和失败恢复摘要。
 - undo toast surface / undo action log 只消费 `undo_token` 和后续 `list_undo_actions` / `undo_action` 状态。
-- Ask-per-item 后续进入 duplicate import review / name-conflict review / replace confirmation 的路由由对应页面任务处理；本合同不新增
+- Ask-per-item 进入 duplicate import review / name-conflict review / replace confirmation 的路由由对应页面能力处理；本合同不新增
   control map 之外的页面能力。
 
 ---

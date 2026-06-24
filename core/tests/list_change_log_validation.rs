@@ -199,7 +199,7 @@ fn list_change_log_validation_filters_orders_paginates_and_keeps_details_parseab
             repo.path(),
             finance_id,
             action,
-            r#"{"by":"validation","source":"c1-13"}"#,
+            r#"{"by":"validation","source":"change-log-validation"}"#,
             occurred_at,
         );
     }
