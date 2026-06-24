@@ -71,7 +71,7 @@ fn list_files_contract_api_docs_api_udl_and_consumers_stay_aligned() {
     }
 
     for fragment in [
-        "C1-11 defines this as the read-only file-list query",
+        "The file-list API is the read-only metadata query",
         "exact category filtering",
         "import-time bounds",
         "are ordered by `imported_at DESC`.",

@@ -1,4 +1,4 @@
-//! AI summary AI summary contract types and entry points.
+//! AI summary contract types and entry points.
 
 use std::path::{Component, PathBuf};
 

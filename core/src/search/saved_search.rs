@@ -86,7 +86,7 @@ pub struct SavedSearch {
 /// reindex repository files.
 ///
 /// This API does not execute Smart Lists or return search results; that belongs
-/// to Smart List execution Smart List execution.
+/// to Smart List execution.
 ///
 /// # Errors
 ///
@@ -166,10 +166,10 @@ pub fn list_saved_searches(repo_path: String) -> CoreResult<Vec<SavedSearch>> {
     db::list_saved_search_rows(&repo)
 }
 
-/// Runs one Smart List execution Smart List and returns its search result page.
+/// Runs one Smart List and returns its search result page.
 ///
-/// Smart List execution owns this read-only contract for Smart Lists surface Smart List selection and
-/// command palette command-palette Smart List navigation. The caller supplies a saved
+/// Smart List execution owns this read-only contract for Smart Lists surface selection and
+/// command palette Smart List navigation. The caller supplies a saved
 /// search id and pagination; Core loads the saved `query`, `filter`, and `sort`
 /// state, then returns the same [`SearchResultPage`] shape as `search_files` so
 /// consumers can render results, empty state, query diagnostics, index status,

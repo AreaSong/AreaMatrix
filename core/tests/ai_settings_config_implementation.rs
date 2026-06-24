@@ -201,6 +201,10 @@ fn ai_settings_config_implementation_preserves_user_files_and_remote_secret_boun
         repo.path().join(".areamatrix/ai_call_log"),
         repo.path().join(".areamatrix/generated/ai_config.json"),
     ] {
-        assert!(!path.exists(), "C3-01 must not create {}", path.display());
+        assert!(
+            !path.exists(),
+            "AI settings must not create {}",
+            path.display()
+        );
     }
 }

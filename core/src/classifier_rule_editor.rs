@@ -1,4 +1,4 @@
-//! classifier rule editor classifier rule editor contract types and entry points.
+//! classifier rule editor contract types and entry points.
 
 use std::path::{Component, PathBuf};
 
@@ -122,7 +122,7 @@ pub struct ClassifierRuleDeleteRequest {
     pub preview_confirmed: bool,
 }
 
-/// Lists classifier rule editor classifier rule editor state for classifier rule editor surface.
+/// Lists classifier rule editor state for classifier rule editor surface.
 ///
 /// This contract returns the persisted classifier categories and their editable
 /// matcher fields. It must not preview impact, apply changes to existing files,
@@ -140,7 +140,7 @@ pub fn list_classifier_rules(repo_path: String) -> CoreResult<ClassifierRuleEdit
     Ok(config::snapshot_from_config(&classifier_config, None, None))
 }
 
-/// Creates one classifier rule editor classifier rule editor row.
+/// Creates one classifier rule editor row.
 ///
 /// The create request appends one classifier category for future
 /// classification. It must atomically write classifier configuration only; it
@@ -171,7 +171,7 @@ pub fn create_classifier_rule(
     ))
 }
 
-/// Updates one classifier rule editor classifier rule editor row.
+/// Updates one classifier rule editor row.
 ///
 /// The update replaces category slug, display metadata, matcher values,
 /// priority, and naming template for one existing row. It must atomically write
@@ -202,7 +202,7 @@ pub fn update_classifier_rule(
     ))
 }
 
-/// Deletes one classifier rule editor classifier rule editor row.
+/// Deletes one classifier rule editor row.
 ///
 /// Delete only removes the classifier configuration row after the UI has
 /// completed the required impact preview. It must not move, delete, rename,

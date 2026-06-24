@@ -108,7 +108,7 @@ fn collect_snapshot(
 fn build_tree_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
     assert_c1_15_capability_spec();
     assert_core_api_and_udl_contract();
-    assert_stage_one_consumers();
+    assert_core_consumers();
     assert_rust_entry_points_are_real_tree_wiring();
 }
 
@@ -133,7 +133,7 @@ fn assert_core_api_and_udl_contract() {
         "`Db`：树构建需要读取 SQLite metadata 时失败。",
         "`Io`：资料库目录、文件路径、文件 metadata 或分类配置无法读取。",
         "不写 DB，不创建 generated",
-        "Stage 2 tree projection 不属于本接口。",
+        "搜索结果树投影不属于本接口。",
     ] {
         assert_contains(CORE_API, fragment);
     }
@@ -143,17 +143,17 @@ fn assert_core_api_and_udl_contract() {
     );
 }
 
-fn assert_stage_one_consumers() {}
+fn assert_core_consumers() {}
 
 fn assert_rust_entry_points_are_real_tree_wiring() {
     for fragment in [
-        "C1-15 defines this as the read-only tree query",
+        "The tree JSON API is the read-only tree query",
         "stable path keys",
         "stable sibling ordering",
         "Swift-compatible `children`",
         "must not create generated overviews",
         "Virtual smart lists, search result trees",
-        "Stage 2 tree projections remain",
+        "Smart List tree projections remain",
     ] {
         assert_contains(API_RS, fragment);
     }

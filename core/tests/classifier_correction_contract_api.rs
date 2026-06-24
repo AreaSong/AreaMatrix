@@ -132,14 +132,14 @@ fn classifier_correction_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "| `correct_file_category(repo, file_id, category, move_file, remember)` | classify | √ | Classify / Conflict / Io / Db |",
         "### `correct_file_category(repoPath, fileId, category, moveFile, remember) throws -> ClassifierCorrectionResult`",
-        "C2-12 的分类纠错入口",
-        "`S2-16 classifier-correct`",
+        "classifier correction 的分类纠错入口",
+        "`classifier correction surface classifier-correct`",
         "`moveFile`",
         "`remember`",
         "`rule_draft`",
-        "C2-12 不保存该草稿。",
+        "classifier correction 不保存该草稿。",
         "不得写入 `.areamatrix/classifier.yaml`",
-        "不实现 C2-13 rule save、C2-14 impact preview、C2-15 rule editor",
+        "不实现 classifier rule save、classifier impact preview、classifier rule editor",
         "本合同不新增 control map 之外的页面能力。",
     ] {
         assert_contains(CORE_API, fragment);
@@ -149,12 +149,12 @@ fn classifier_correction_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn classifier_correction_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "C2-12 classifier correction contract types and entry point",
+        "classifier correction contract types and entry point",
         "ClassifierRuleDraft",
         "ClassifierCorrectionResult",
         "correct_file_category",
-        "C2-12 must not persist it",
-        "C2-13 and C2-14",
+        "classifier correction must not persist it",
+        "classifier rule save and classifier impact preview",
         "must not save classifier rules",
         "preview broad rule impact",
         "call AI or network providers",
@@ -167,9 +167,9 @@ fn classifier_correction_contract_documents_consumer_state_and_scope_boundaries(
     for fragment in [
         "pub fn correct_file_category(",
         "ClassifierCorrectionResult",
-        "S2-16",
+        "classifier correction surface",
         "must not save",
-        "C2-13/C2-14/C2-15",
+        "classifier rule save/classifier impact preview/classifier rule editor",
         "CoreError::Classify",
         "CoreError::Conflict",
         "CoreError::Io",

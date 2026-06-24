@@ -140,7 +140,7 @@ fn import_move_file_contract_documents_error_codes_and_side_effects() {
     }
 
     for fragment in [
-        "C1-07 defines the moved-file contract",
+        "moved-file import defines the moved-file contract",
         "files.storage_mode = Moved",
         "files.source_path",
         "change_log.action =",
@@ -156,5 +156,5 @@ fn import_move_file_contract_keeps_adjacent_modes_separate() {
     assert_ne!(StorageMode::Moved, StorageMode::Copied);
     assert_ne!(StorageMode::Moved, StorageMode::Indexed);
 
-    assert_contains(API_RS, "C1-08 owns index-only semantics");
+    assert_contains(API_RS, "indexed-file import owns index-only semantics");
 }

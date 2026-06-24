@@ -98,7 +98,7 @@ fn fs_cursor(repo: &Path) -> Option<i64> {
 fn sync_external_created_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
     assert_c1_17_capability_spec();
     assert_core_api_and_udl_contract();
-    assert_stage_one_consumers();
+    assert_core_consumers();
     assert_rust_entry_points_are_real_created_wiring();
 }
 
@@ -136,11 +136,11 @@ fn assert_core_api_and_udl_contract() {
     }
 }
 
-fn assert_stage_one_consumers() {}
+fn assert_core_consumers() {}
 
 fn assert_rust_entry_points_are_real_created_wiring() {
     for fragment in [
-        "C1-17 owns the `ExternalEventKind::Created` contract",
+        "external created sync owns the `ExternalEventKind::Created` contract",
         "`storage_mode = StorageMode::Indexed`",
         "`origin = FileOrigin::External`",
         "`change_log.action =",

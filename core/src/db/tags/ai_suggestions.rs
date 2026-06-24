@@ -24,7 +24,7 @@ pub(crate) struct AiTagSuggestionApplyRow {
     pub(crate) merge_target_slug: Option<String>,
 }
 
-/// AI generation provenance carried into a confirmed AI tag suggestions tag apply.
+/// AI generation provenance carried into a confirmed AI tag apply.
 pub(crate) struct AiTagSuggestionApplyProvenance {
     pub(crate) source_call_log_id: Option<i64>,
     pub(crate) privacy_rule_id: Option<String>,

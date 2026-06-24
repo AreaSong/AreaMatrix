@@ -126,9 +126,9 @@ fn camera_import_docs_core_api_and_udl_stay_aligned() {
 #[test]
 fn camera_import_documents_consumer_state_and_platform_boundaries() {
     for fragment in [
-        "C4-04 camera-import reuses this read-only preview surface",
+        "camera import reuses this read-only preview surface",
         "temporary-file lifetime management remain outside Core",
-        "C4-04 camera-import reuses `StorageMode::Copied` import semantics",
+        "camera import reuses `StorageMode::Copied` import semantics",
         "platform-saved temporary photo path",
         "does not request camera",
         "or clean up the final repository file",

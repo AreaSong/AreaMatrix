@@ -1,4 +1,4 @@
-//! Persistence and provider-scope helpers for AI privacy rules privacy metadata.
+//! Persistence and provider-scope helpers for AI privacy rules metadata.
 
 use std::path::{Path, PathBuf};
 

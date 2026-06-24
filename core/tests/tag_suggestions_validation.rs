@@ -172,7 +172,7 @@ fn assert_rust_surface_alignment() {
     assert_all_contains(
         TAGS_RS,
         &[
-            "C2-19 owns the Stage 2 tag-suggestion contract for S2-23",
+            "deterministic tag suggestions owns the tag-suggestion contract for tag suggestions surface",
             "must not read file contents",
             "call AI or remote providers",
             "access the network",
@@ -251,7 +251,7 @@ fn apply_success_suggestions(
             ],
         },
     )
-    .expect("apply selected C2-19 suggestions")
+    .expect("apply selected deterministic tag suggestions suggestions")
 }
 
 fn assert_success_apply_report(report: &TagSuggestionApplyReport) -> &str {
@@ -338,8 +338,8 @@ fn tag_suggestions_validation_success_path_is_ready_for_ui_consumers() {
     insert_tag(repo.path(), file_id, "client-a", 120);
     let before_paths = user_visible_paths(repo.path());
 
-    let suggestion_report =
-        suggest(repo.path(), request_with_context(file_id)).expect("generate C2-19 suggestions");
+    let suggestion_report = suggest(repo.path(), request_with_context(file_id))
+        .expect("generate deterministic tag suggestions suggestions");
 
     assert_suggestion_report_is_local_and_read_only(
         repo.path(),

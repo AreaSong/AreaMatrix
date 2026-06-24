@@ -124,7 +124,7 @@ fn error_mapping_contract_api_documents_severity_actions_and_side_effects() {
     }
 
     for fragment in [
-        "C1-21 treats each variant and payload as the structured input",
+        "error mapping treats each variant and payload as the structured input",
         "branch on variants and payloads",
         "localized strings or `Display` output",
         "suggested action, and recoverability",

@@ -1,4 +1,4 @@
-//! Pure AI privacy rules privacy decision logic.
+//! Pure AI privacy rules decision logic.
 
 use std::collections::HashMap;
 

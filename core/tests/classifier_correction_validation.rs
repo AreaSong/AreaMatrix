@@ -130,9 +130,9 @@ fn classifier_correction_validation_locks_api_udl_and_rust_contract() {
     }
 
     for fragment in [
-        "Applies one C2-12 classifier correction for S2-16.",
+        "Applies one classifier correction for classifier correction surface.",
         "must not save",
-        "C2-13/C2-14/C2-15",
+        "classifier rule save/classifier impact preview/classifier rule editor",
         "CoreError::Classify",
         "CoreError::Conflict",
         "CoreError::Io",
@@ -142,7 +142,7 @@ fn classifier_correction_validation_locks_api_udl_and_rust_contract() {
     }
 
     for fragment in [
-        "C2-12 classifier correction contract types and entry point",
+        "classifier correction contract types and entry point",
         "ClassifierRuleDraft",
         "ClassifierCorrectionResult",
         "must not save classifier rules",

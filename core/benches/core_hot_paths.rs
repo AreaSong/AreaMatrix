@@ -78,8 +78,8 @@ fn core_reindex_ten_thousand_files_bench() {
     write_repository_dataset(repo.path(), 10_000, 128);
 
     let elapsed = measure(|| {
-        let report =
-            reindex_from_filesystem(path_string(repo.path())).expect("reindex core benchmark dataset");
+        let report = reindex_from_filesystem(path_string(repo.path()))
+            .expect("reindex core benchmark dataset");
         assert_eq!(report.inserted, 10_000);
         assert!(report.errors.is_empty());
     });

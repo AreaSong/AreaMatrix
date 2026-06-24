@@ -104,7 +104,7 @@ pub enum SearchIndexStatus {
     Unavailable,
 }
 
-/// Filters and scope applied to a search query search query.
+/// Filters and scope applied to a search query.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SearchFilter {
     /// Whether the query runs against the full repository or current tree node.
@@ -237,7 +237,7 @@ pub struct SearchFacets {
     pub active_filter_count: i64,
 }
 
-/// Pagination controls for search query search results.
+/// Pagination controls for search results.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SearchPagination {
     /// Maximum number of search results to return.
@@ -261,7 +261,7 @@ pub struct SearchMatch {
     pub end: Option<i64>,
 }
 
-/// One file row returned by search query search.
+/// One file row returned by search.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SearchFileResult {
     /// File metadata row displayed by the existing file list table.
@@ -293,7 +293,7 @@ pub struct SearchQueryDiagnostic {
     pub suggestion: Option<String>,
 }
 
-/// One page of search query search results.
+/// One page of search results.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SearchResultPage {
     /// Echo of the query used for this result page.
@@ -310,7 +310,7 @@ pub struct SearchResultPage {
 
 /// Searches files, paths, notes, categories, and change-log metadata.
 ///
-/// search query owns this read-only contract for search results surface search results, search sidebar surface empty
+/// search query owns this read-only contract for search results and search sidebar empty
 /// results, and search empty state query diagnostics. The caller supplies the raw query,
 /// current scope/filter state, sort mode, and pagination. Search results accept
 /// the search facets portion of that state, including tags with Any/All semantics and
@@ -322,11 +322,11 @@ pub struct SearchResultPage {
 /// parsing strings.
 ///
 /// This contract does not include search facet counts, saved search CRUD,
-/// Smart List execution Smart List execution, OCR, semantic search, remote AI, or file content
+/// Smart List execution, OCR, semantic search, remote AI, or file content
 /// full-text search. It must not modify tags, categories, notes, change log,
 /// repository metadata, generated overviews, or user files.
 ///
-/// desktop main query desktop main-window consumers may use this same read-only page shape
+/// desktop main-window consumers may use this same read-only page shape
 /// for the Windows and Linux search entry when search is available.
 /// Platform shells still render native lists and empty states themselves; Core
 /// only supplies paginated results, diagnostics, and index readiness.
@@ -349,8 +349,8 @@ pub fn search_files(
 
 /// Loads search filter facet counts without mutating repository state.
 ///
-/// search facets owns this read-only contract for search filters surface search filters and the search facets
-/// side of tag filter surface tag filtering. The caller supplies the current search text and
+/// search facets owns this read-only contract for search filters and the search facets side
+/// of tag filter. The caller supplies the current search text and
 /// filter state, including category, file kind, tags with Any/All semantics,
 /// date ranges, optional storage mode, scope, and deleted-row inclusion. The
 /// output returns selectable facet counts, storage-mode counts, date bounds,

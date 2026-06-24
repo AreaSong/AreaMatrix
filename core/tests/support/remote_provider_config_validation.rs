@@ -207,8 +207,8 @@ pub fn assert_core_api_and_udl_alignment() {
         "只读取 metadata，不测试 provider",
         "不修改 `privacy_gate_enabled`",
         "只保存远程 provider metadata、Keychain reference 和 scope",
-        "只关闭 C3-03 provider gate",
-        "`privacy_gate_enabled` 由 C3-09 管理",
+        "只关闭 remote provider gate",
+        "`privacy_gate_enabled` 由 AI privacy rules 管理",
         "任一失败必须保留上一次成功的 remote provider state",
     ] {
         assert_contains(CORE_API, fragment);
@@ -233,7 +233,7 @@ pub fn assert_rust_contract_alignment() {
         "RemoteProviderDisableRequest",
         "RemoteProviderConfigSnapshot",
         "Core must never accept or return raw API keys",
-        "C3-09 remains responsible for",
+        "AI privacy rules remains responsible for",
     ] {
         assert_contains(API_RS, fragment);
     }

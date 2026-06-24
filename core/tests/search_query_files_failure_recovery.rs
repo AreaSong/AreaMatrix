@@ -467,7 +467,7 @@ fn search_query_files_failure_recovery_udl_keeps_declared_error_boundary() {
     }
 
     for fragment in [
-        "This contract does not include C2-02 facet counts",
+        "This contract does not include search facet counts",
         "including tags with Any/All semantics",
         "optional storage mode",
         "remote AI",
@@ -487,7 +487,7 @@ fn search_query_files_failure_recovery_udl_keeps_declared_error_boundary() {
         "`Config`",
         "`Db`",
         "该 API 只读，不写 DB，不写 `change_log`",
-        "OCR、文件内容全文、语义搜索和远程 AI 属于 Stage 3",
+        "OCR、文件内容全文、语义搜索和远程 AI 不属于当前普通搜索合同",
     ] {
         assert!(
             core_api.contains(fragment),

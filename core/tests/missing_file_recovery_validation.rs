@@ -247,7 +247,7 @@ fn assert_core_api_and_udl_type_alignment() {
 fn assert_core_api_behavior_alignment() {
     for fragment in [
         "### `get_missing_file_state(repoPath, fileId) throws -> MissingFileState`",
-        "`get_missing_file_state` 是 C4-18 的缺失文件恢复状态入口",
+        "`get_missing_file_state` 是 missing-file recovery 的缺失文件恢复状态入口",
         "不做全库 rescan",
         "不删除记录",
         "不写 change log",

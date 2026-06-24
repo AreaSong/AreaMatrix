@@ -121,8 +121,8 @@ fn assert_api_udl_and_rust_surface_alignment() {
             "redo::list_redo_actions",
             "pub fn redo_action(",
             "redo::redo_action",
-            "S2-22",
-            "C2-18",
+            "redo surface",
+            "operation to the undo action log Undo stack",
             "standalone Redo page",
         ],
     );
@@ -153,7 +153,7 @@ fn create_batch_tag_redo(repo: &Path) -> (String, i64, i64) {
 }
 
 fn assert_available_batch_tag_redo(repo: &Path, token: &str) {
-    let actions = list_redo_actions(path_string(repo)).expect("list C2-18 redo actions");
+    let actions = list_redo_actions(path_string(repo)).expect("list redo action log redo actions");
     assert_eq!(actions.len(), 1);
     assert_eq!(actions[0].action_id, token);
     assert_eq!(actions[0].source_undo_action_id, token);

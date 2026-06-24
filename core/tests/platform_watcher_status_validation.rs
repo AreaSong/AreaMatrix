@@ -254,11 +254,11 @@ fn assert_core_api_and_udl_alignment() {
 
     for fragment in [
         "### `record_watcher_health(repoPath, signal) throws -> PlatformWatcherSnapshot`",
-        "C4-12 的平台 watcher 状态入口",
+        "platform watcher status 的平台 watcher 状态入口",
         "不触发 `sync_external_changes`，不推进 fs event cursor",
         "不读取用户文件正文，不触发 iCloud/OneDrive 下载",
         "Run rescan now",
-        "S4-X-07，不由 C4-12 直接触发",
+        "rescan confirmation surface，不由 platform watcher status 直接触发",
         "| `record_watcher_health(repo, signal)` | sync/watcher | √ | Db / Io |",
     ] {
         assert_contains(CORE_API, fragment);

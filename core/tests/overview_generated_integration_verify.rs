@@ -77,9 +77,9 @@ fn overview_generated_integration_verify_api_udl_and_rust_wiring_are_real() {
     }
 
     for fragment in [
-        "C1-20 uses `RepoInitOptions::overview_output`",
+        "generated overview uses `RepoInitOptions::overview_output`",
         "later overview-regeneration triggers read the",
-        "C1-20 uses a successful import as a generated-overview trigger",
+        "generated overview uses a successful import as a generated-overview trigger",
         "`.areamatrix/generated/`",
         "`README.md` remains user-authored content",
     ] {

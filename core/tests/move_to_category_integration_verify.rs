@@ -195,13 +195,13 @@ fn assert_api_and_udl_alignment() {
 
 fn assert_core_api_behavior_docs() {
     for fragment in [
-        "`preview_move_to_category` 是 C1-24 的确认前目标路径解析入口",
+        "`preview_move_to_category` 是 category move 的确认前目标路径解析入口",
         "不得创建分类目录、移动文件、重命名文件、删除文件、更新",
-        "`move_to_category` 是 C1-24 的单文件改分类入口",
+        "`move_to_category` 是 category move 的单文件改分类入口",
         "`newCategory` 必须存在于",
         "Core\n不得隐式创建新分类",
         "目标分类目录不存在时可创建该分类目录",
-        "同名目标按 C1-10 安全编号策略解析",
+        "同名目标按 name-conflict resolution 安全编号策略解析",
         "不移动、重命名或覆盖外部源文件",
         "`Classify`：目标分类不存在或 classifier 规则不可用。",
     ] {
@@ -213,13 +213,13 @@ fn assert_rust_api_alignment() {
     for fragment in [
         "pub fn preview_move_to_category(",
         "storage::preview_move_to_category(repo_path, file_id, new_category)",
-        "Previews the final destination for a C1-24 category move",
+        "Previews the final destination for a category move",
         "must not create category directories",
         "pub fn move_to_category(",
         "storage::move_to_category(repo_path, file_id, new_category)",
-        "C1-24 owns the user-visible change-category contract",
+        "category move owns the user-visible change-category contract",
         "not an arbitrary directory",
-        "C1-10 conflict-free numbering",
+        "name-conflict resolution owns same-name conflict handling",
         "Indexed rows are metadata-only",
     ] {
         assert_contains(API_RS, fragment);

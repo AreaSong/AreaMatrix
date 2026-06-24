@@ -136,7 +136,7 @@ fn get_file_detail_integration_verify_docs_api_udl_and_consumers_stay_aligned() 
     }
 
     for fragment in [
-        "C1-12 defines this as the read-only detail query",
+        "The file-detail API is the read-only detail query",
         "returns exactly one active [`FileEntry`]",
         "This API has no write side effects.",
         "File preview, Quick Look, OCR metadata",

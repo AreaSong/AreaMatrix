@@ -219,8 +219,8 @@ fn remote_provider_config_contract_docs_api_udl_and_control_map_stay_aligned() {
         "不得发送文件名、repo-relative path、提取文本",
         "只读取 metadata，不测试 provider",
         "只保存远程 provider metadata、Keychain reference 和 scope",
-        "只关闭 C3-03 provider gate",
-        "privacy_gate_enabled` 由 C3-09 管理",
+        "只关闭 remote provider gate",
+        "privacy_gate_enabled` 由 AI privacy rules 管理",
     ] {
         assert_contains(CORE_API, fragment);
     }
@@ -237,7 +237,7 @@ fn remote_provider_config_contract_docs_api_udl_and_control_map_stay_aligned() {
 fn remote_provider_config_contract_documents_consumer_state_and_scope_boundaries() {
     assert_contains(
         REMOTE_PROVIDER_RS,
-        "C3-03 remote provider configuration contract types",
+        "remote provider configuration contract types",
     );
     for fragment in [
         "API keys are never returned",
@@ -250,12 +250,12 @@ fn remote_provider_config_contract_documents_consumer_state_and_scope_boundaries
     }
 
     for fragment in [
-        "Tests a C3-03 remote AI provider without sending user file content.",
-        "Loads the persisted C3-03 remote provider gate snapshot.",
+        "Tests a remote AI provider without sending user file content.",
+        "Loads the persisted remote provider gate snapshot.",
         "Core must never accept or return raw API keys",
-        "Enables a C3-03 remote AI provider after successful test and consent.",
-        "Disables the C3-03 remote provider gate without touching S3-09 rules.",
-        "C3-09 remains responsible for",
+        "Enables a remote AI provider after successful test and consent.",
+        "Disables the remote provider gate without touching AI privacy rules.",
+        "AI privacy rules remains responsible for",
     ] {
         assert_contains(API_RS, fragment);
     }

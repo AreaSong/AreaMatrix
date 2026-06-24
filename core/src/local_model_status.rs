@@ -1,4 +1,4 @@
-//! local model status local model status contract types and entry points.
+//! local model status contract types and entry points.
 
 use std::{
     env,
@@ -103,7 +103,7 @@ pub struct LocalModelCachedStatus {
     pub diagnostics_summary: String,
 }
 
-/// Request for a local model status local model status refresh.
+/// Request for a local model status refresh.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct LocalModelStatusRequest {
     /// Stable local model identifier.

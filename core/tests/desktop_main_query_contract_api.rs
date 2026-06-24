@@ -161,24 +161,24 @@ fn desktop_main_query_docs_core_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn desktop_main_query_documents_consumer_state_without_adjacent_capabilities() {
     for fragment in [
-        "C4-11 reuses the same paginated metadata query",
-        "`S4-WIN-02` and",
-        "`S4-LNX-02` desktop main-window rows",
+        "desktop main query reuses the same paginated metadata query",
+        "`Windows main-window surface` and",
+        "`Linux main-window surface` desktop main-window rows",
         "must not scan the",
         "repository directly",
         "`FileFilter::limit` and",
         "`FileFilter::offset` carry the page request",
-        "C4-11 desktop main-window consumers use this detail query",
+        "desktop main-window consumers use this detail query",
         "does not add platform-side preview, watcher, rescan, or",
         "recovery behavior",
-        "C4-11 desktop main-window consumers may use the same tree snapshot",
+        "desktop main-window consumers may use the same tree snapshot",
         "Core only returns the read-only tree JSON",
     ] {
         assert_contains(API_RS, fragment);
     }
 
     for fragment in [
-        "C4-11 desktop main-window consumers may use this same read-only page shape",
+        "desktop main-window consumers may use this same read-only page shape",
         "Windows and Linux search entry",
         "only supplies paginated results, diagnostics, and index readiness",
     ] {
@@ -186,11 +186,11 @@ fn desktop_main_query_documents_consumer_state_without_adjacent_capabilities() {
     }
 
     for fragment in [
-        "C4-11 desktop-main-query reuses list_files, get_file, list_tree_json,",
-        "and search_files for S4-WIN-02/S4-LNX-02 main-window state.",
+        "desktop main query reuses list_files, get_file, list_tree_json,",
+        "and search_files for Windows and Linux main-window state.",
         "Desktop",
         "shells page through FileFilter.limit/offset",
-        "C4-11 also uses this read-only tree JSON for desktop sidebar state.",
+        "desktop main query also uses this read-only tree JSON for desktop sidebar state.",
     ] {
         assert_contains(UDL, fragment);
     }

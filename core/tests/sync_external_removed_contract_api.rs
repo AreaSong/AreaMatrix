@@ -83,7 +83,7 @@ fn sync_external_removed_contract_api_documents_errors_side_effects_and_scope() 
     }
 
     for fragment in [
-        "C1-19 owns the `ExternalEventKind::Removed` contract",
+        "external removed sync owns the `ExternalEventKind::Removed` contract",
         "A removed event's",
         "`path` is the repository-relative or absolute path",
         "app-layer debounce and rename pairing",

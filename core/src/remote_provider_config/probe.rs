@@ -1,4 +1,4 @@
-//! Provider probe policy for remote provider configuration remote provider tests.
+//! Provider probe policy for remote provider tests.
 
 use std::{
     env,

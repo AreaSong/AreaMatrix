@@ -64,7 +64,7 @@ pub enum CommandTargetAction {
     OpenSheet,
     /// Open a confirmation or preview surface before any risky action.
     OpenConfirmation,
-    /// Run an existing Smart List execution Smart List by id.
+    /// Run an existing Smart List by id.
     RunSmartList,
     /// Focus an existing file candidate.
     FocusFile,

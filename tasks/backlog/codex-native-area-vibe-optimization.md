@@ -94,7 +94,7 @@ P1.4 owner 范围：
 ### Baseline 判断
 
 - 当前 Codex / AreaMatrix 工作层可以视为有条件稳定基线：inventory 已明确 source of truth、execution、state、skill owner 分层；backlog 和 playbook 只做 planning / 操作投影；边界回归记录见 [Codex Operating Layer Boundary Regression](codex-operating-layer-boundary-regression.md)。
-- 默认路线应回到 AreaMatrix 产品主线收口和产品验证，而不是继续扩展工作层。当前 v1 historical execution queue 已完成，但 v1 closeout 仍有 release blocker、checkpoint evidence gap 和 dirty worktree blocker；正式恢复新 live 产品任务前，应先处理这些 blocker。
+- 默认路线应回到 AreaMatrix 产品主线收口和产品验证，而不是继续扩展工作层。当前 v1 historical execution queue 已完成并归档；正式 Stage 1 alpha 仍受 release evidence / release decision blockers 限制。checkpoint gaps 已作为 closeout accepted exceptions 记录，dirty derived-data state 已 resolved for future checkpoints。
 - 若后续发现 source-of-truth、execution、state 或 skill owner 污染，路线第一项立即改为污染修复；在 blocker 清零前，不再宣称稳定基线。
 - 后续任何外部能力都必须先通过 [外部能力接入门禁](../../.ai-governance/workflows/external-capability-admission.md)，并形成缺口、去重、source of truth、触发条件、live 主线影响、用户文件 / 隐私影响、验证、owner / landing 和结论记录。
 
@@ -102,8 +102,8 @@ P1.4 owner 范围：
 
 | 分类 | 项 | 路线判断 | 触发条件 | 门禁 |
 |---|---|---|---|---|
-| Recommended now | AreaMatrix v1 收口 | 先关闭 release / checkpoint / dirty-worktree blocker，再决定归档或下一版本 | live queue 已 637/637 completed，但 v1 closeout 仍 blocked | 使用 `workflow/versions/v1-mvp/closeout/closeout.yaml`、release checklist、progress/checkpoint evidence 和 Git 状态作为收口源 |
-| Recommended next | AreaMatrix 产品主线 | blocker 关闭或明确 defer 后，回到已批准的产品实现、验收和 task-loop 主线 | v1 closeout 无 blocker；live queue / progress / checkpoint 未被外部层污染 | 继续按 `docs/** -> workflow/ planning gate -> workflow/versions/<version>/execution/** -> ./dev / ./task-loop -> repo-local skills` 执行 |
+| Recommended now | AreaMatrix v1 收口 | 保持 v1 technical closeout / archive 口径；继续把 formal release evidence 作为独立发布轨处理 | historical queue 已 637/637 completed；formal alpha 仍 blocked by release evidence / release decision | 使用 `workflow/versions/v1-mvp/closeout/closeout.yaml`、release checklist、progress/checkpoint evidence 和 Git 状态作为收口源 |
+| Recommended next | AreaMatrix 产品主线 | 新版本工作需先完成 workflow discussion、explicit approval 和 live mapping | v1 technical queue 已归档；后续版本不得绕过 planning / promotion gate | 继续按 `docs/** -> workflow/ planning gate -> workflow/versions/<version>/execution/** -> ./dev / ./task-loop -> repo-local skills` 执行 |
 | Recommended now | 当前 Codex / AreaMatrix 工作层 | 作为稳定基线保留 | 日常开发、验收、失败归因、规划 handoff | `.ai-governance/**` 仍是治理源事实；`.codex/**` 只做操作投影；backlog 不执行 |
 | Recommended now | Browser / Chrome | 只作为场景化验证工具，不作为主线能力改造；模板见 [UI evidence tool templates](../../.codex/references/ui-evidence-tool-templates.md) | Browser：localhost / file URL / 本地 web 预览；Chrome：需要用户 profile、cookies、扩展或远程登录态 | 不替代命令门禁；不处理账号、安全、支付、隐私或不可逆设置；必要时单项 admission |
 | Trigger-based only | Computer Use | 仅用于 macOS SwiftUI UI smoke 补证；通用模板见 [UI evidence tool templates](../../.codex/references/ui-evidence-tool-templates.md) | 任务需要真实窗口、点击、输入、菜单、sheet、alert、截图或 GUI-only bug 复现 | 先跑命令门禁；使用 fixture / QA repo；不点击系统权限、密码、隐私授权或真实用户文件破坏性确认 |

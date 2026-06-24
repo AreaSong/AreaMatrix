@@ -90,7 +90,7 @@ fn get_file_detail_contract_api_documents_errors_side_effects_and_scope() {
     }
 
     for fragment in [
-        "C1-12 defines this as the read-only detail query",
+        "The file-detail API is the read-only detail query",
         "The caller supplies a repository path and stable `file_id`",
         "returns exactly one active [`FileEntry`]",
         "must not infer",
@@ -109,7 +109,7 @@ fn get_file_detail_contract_api_documents_errors_side_effects_and_scope() {
 
     for fragment in [
         "详情聚合 DTO",
-        "Stage 1 先用 `get_file` + `list_changes` + `read_note` 组合",
+        "当前先用 `get_file` + `list_changes` + `read_note` 组合",
     ] {
         assert_contains(CORE_API, fragment);
     }

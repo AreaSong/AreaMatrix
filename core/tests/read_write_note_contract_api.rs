@@ -54,7 +54,7 @@ fn read_write_note_contract_api_docs_control_map_and_udl_stay_aligned() {
         "DB `notes` 表",
         "物理文件 `<filename>.md`",
         "`InFlightTracker` 标记避免 watcher",
-        "Stage 1 先用 `get_file` + `list_changes` + `read_note` 组合",
+        "当前先用 `get_file` + `list_changes` + `read_note` 组合",
     ] {
         assert_contains(CORE_API, fragment);
     }
@@ -72,8 +72,8 @@ fn read_write_note_contract_api_documents_errors_side_effects_and_scope() {
     }
 
     for fragment in [
-        "C1-14 exposes this read-only query",
-        "S1-14 detail-note",
+        "file note contract exposes this read-only query",
+        "detail note surface",
         "stable `file_id`",
         "`Some(markdown)`",
         "`None` when the file has no note",
@@ -85,7 +85,7 @@ fn read_write_note_contract_api_documents_errors_side_effects_and_scope() {
         "`CoreError::PermissionDenied { path }`",
         "`CoreError::Io { message }`",
         "`CoreError::Db { message }`",
-        "C1-14 writes exactly one note",
+        "file note contract writes exactly one note",
         "upserts",
         "`notes` row",
         "same-directory sidecar markdown file",

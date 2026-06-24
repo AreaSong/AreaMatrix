@@ -393,13 +393,13 @@ fn assert_rust_surface_and_implementation() {
     for fragment in [
         "pub fn import_file(",
         "DuplicateStrategy::Overwrite",
-        "C4-21 replace-confirm-cross-platform",
+        "replace confirmation replace-confirm-cross-platform",
         "pub fn delete_file(",
         "no `hard` or permanent-delete flag",
         "pub fn resolve_sync_conflict(",
         "replace_confirmed",
         "Failure must leave",
-        "S4-X-09 replace-confirm",
+        "replace confirmation surface replace-confirm",
     ] {
         assert_contains(API_RS, fragment);
     }

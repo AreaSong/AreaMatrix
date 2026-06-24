@@ -362,9 +362,9 @@ fn ai_privacy_rules_contract_docs_api_udl_and_control_map_stay_aligned() {
         "### `list_ai_privacy_rules(repoPath: String) throws -> AiPrivacyRulesSnapshot`",
         "### `update_ai_privacy_rules(repoPath: String, request: AiPrivacyRulesUpdateRequest) throws -> AiPrivacyRulesSnapshot`",
         "### `evaluate_ai_privacy(repoPath: String, request: AiPrivacyEvaluationRequest) throws -> AiPrivacyEvaluationReport`",
-        "C3-09 的 AI 隐私规则读取入口",
-        "C3-09 的隐私规则保存入口",
-        "C3-09 的隐私 gate 评估入口",
+        "AI privacy rules 的 AI 隐私规则读取入口",
+        "AI privacy rules 的隐私规则保存入口",
+        "AI privacy rules 的隐私 gate 评估入口",
         "默认保守策略",
         "本合同不新增 control map 之外的页面能力",
     ] {
@@ -381,7 +381,7 @@ fn ai_privacy_rules_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn ai_privacy_rules_contract_documents_consumers_and_forbidden_adjacent_behavior() {
     for fragment in [
-        "C3-09 AI privacy rules contract types and entry points",
+        "AI privacy rules contract types and entry points",
         "pub enum AiPrivacyRuleKind",
         "pub enum AiPrivacyRuleAppliesTo",
         "pub enum AiPrivacyInputField",

@@ -186,7 +186,7 @@ fn assert_rust_export_and_boundary_alignment() {
             "pub fn list_undo_actions(",
             "pub fn undo_action(",
             "Listing is metadata-only",
-            "stack execution stays with C2-18",
+            "stack execution stays with redo action log",
             "Failed undo must not corrupt",
             "partially mark an action as executed",
         ],
@@ -305,7 +305,7 @@ fn assert_delete_action_points_to_test_trash(repo: &Path, token: &str, trash_dir
     assert_eq!(actions[0].summary, "Moved 1 file to Trash.");
     assert!(
         !actions[0].summary.contains("Deleted"),
-        "S2-10 requires Trash delete summaries to avoid Deleted wording"
+        "undo action log requires Trash delete summaries to avoid Deleted wording"
     );
     trash_path
 }

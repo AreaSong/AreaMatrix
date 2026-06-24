@@ -205,7 +205,7 @@ namespace area_matrix {
 
     // desktop import flow uses import_file_with_result for the final
     // committed single-item desktop import result. import_file remains the
-    // backwards-compatible FileEntry entry point for existing Stage 1 callers.
+    // backwards-compatible FileEntry entry point for existing callers.
     // The desktop result includes source removal status so Move can report
     // Imported, original retained without parsing errors or rolling back a
     // safely committed repository file. Replace confirmation belongs to
@@ -1128,8 +1128,8 @@ dictionary ImportOptions {
     string? target_directory;
     string? override_category;
     string? override_filename;
-    // desktop import flow desktop and files import dialogs keep Replace hidden or
-    // disabled until the separate replace confirmation confirmation proves
+    // desktop import flow and files import dialogs keep Replace hidden or
+    // disabled until the separate replace confirmation proves
     // recoverability. Overwrite is the committed strategy token after that
     // confirmation, not the preview or platform Trash capability contract.
     DuplicateStrategy duplicate_strategy;
@@ -2493,7 +2493,7 @@ enum ErrorRecoverability {
 };
 
 [Error]
-// error mapping error-mapping contract: Swift maps these structured cases instead of
+// error mapping contract: Swift maps these structured cases instead of
 // branching on localized strings or string-contains checks.
 interface CoreError {
     Io(string message);
@@ -2691,7 +2691,7 @@ interface CoreError {
   CRUD（`create_saved_search`、`update_saved_search`、`delete_saved_search`、
   `list_saved_searches`），Smart List execution `run_smart_list`，以及 tag CRUD
   （`add_tag`、`remove_tag`、`list_tags`）和 batch tag mutation `batch_add_tags`
-  以及 undo action log undo action log（`list_undo_actions`、`undo_action`）、batch category change
+  以及 undo action log（`list_undo_actions`、`undo_action`）、batch category change
   批量改分类（`preview_batch_move_to_category`、`batch_move_to_category`）
   batch delete 批量删除（`preview_batch_delete`、`batch_delete_to_trash`）、batch rename
   批量重命名（`preview_batch_rename`、`batch_rename`）和 command index
@@ -2706,9 +2706,9 @@ interface CoreError {
 - AI capabilities：AI settings 配置（`load_ai_config`、`update_ai_config`）已提升为本文与
   `core/area_matrix.udl` 的稳定合同；local model status 本地模型状态
   （`get_local_model_status`、`locate_local_model_folder`）和 remote provider configuration 远程 provider 配置
-  （`test_remote_ai_provider`、`enable_remote_ai_provider`）以及 AI category suggestion AI 分类建议
-  （`suggest_category_with_ai`）、AI call log AI 调用日志（`list_ai_calls`、
-  `clear_ai_call_log`）以及 AI summary AI 摘要（`generate_ai_summary`、
+  （`test_remote_ai_provider`、`enable_remote_ai_provider`）以及 AI category suggestion 分类建议
+  （`suggest_category_with_ai`）、AI call log 调用日志（`list_ai_calls`、
+  `clear_ai_call_log`）以及 AI summary 摘要（`generate_ai_summary`、
   `save_ai_summary`、`clear_ai_summary`）、semantic search 语义搜索（`semantic_search`、
   `build_embedding_index`）以及 AI privacy rules AI 隐私规则（`list_ai_privacy_rules`、
   `update_ai_privacy_rules`、`evaluate_ai_privacy`）和 AI fallback
@@ -2776,7 +2776,7 @@ cross-platform FFI contract 的平台中立 UniFFI 合同检查入口，服务 `
 副作用边界：
 
 - 只读检查，不读取 repo、不触碰文件系统、不生成绑定代码。
-- 不执行平台 UI API，不推断平台能力，不补相邻 Stage 4 能力。
+- 不执行平台 UI API，不推断平台能力，不补相邻多端能力。
 - 页面需要的状态必须来自结构化 report，而不是 UI 自己猜测。
 
 错误：
@@ -2801,7 +2801,7 @@ if !matrix.trash.uiEnabled {
 ```
 
 platform capabilities 的平台能力矩阵入口，服务 `platform differences`、
-`Linux local-folder notice` 和 `repository settings surface repository-settings`。
+`Linux local-folder notice` 和 `repository settings surface`。
 调用方传入平台 id 和 app version，Core 返回结构化 `PlatformCapabilities`：
 
 - `platform` / `app_version`：本次查询对应的平台和应用版本。
@@ -2967,7 +2967,7 @@ print("locale: \(cfg.locale)")
 
 `load_config` 是 repository settings `repository-settings-cross-platform` 的 repo config
 读取入口，和 `get_platform_capabilities(platform, appVersion)` 组合服务
-`repository settings surface repository-settings`。页面消费方可从合同中得到：
+`repository settings surface`。页面消费方可从合同中得到：
 
 - 当前 repository path、storage mode、overview output、locale、iCloud warning、
   classifier rule toggles、fallback 和 import replace 默认设置。
@@ -3129,7 +3129,7 @@ AI settings 的 AI settings 更新入口，只保存 AI 设置元数据：总开
 - 不删除 Keychain key，不保存 API key 明文，不把 key、key 片段、用户文件内容或完整路径写入
   日志、诊断、错误文案或返回值。
 - 不实现 local model status 本地模型状态、remote provider configuration 远程 provider 配置、AI call log 调用日志、AI privacy rules 隐私规则
-  CRUD/evaluate、AI fallback fallback 或任何 AI 结果生成。
+  CRUD/evaluate、AI fallback 或任何 AI 结果生成。
 
 页面消费状态：
 
@@ -3152,7 +3152,7 @@ let status = try AreaMatrix.getLocalModelStatus(
 )
 ```
 
-local model status 的本地模型状态读取入口，服务 `local model status surface local-model-status`。输入
+local model status 的本地模型状态读取入口，服务 `local model status surface`。输入
 `LocalModelStatusRequest`：
 
 - `model_id`：稳定本地模型标识，例如 `areamatrix-local-classifier`。
@@ -3403,7 +3403,7 @@ remote provider configuration 的远程 provider 禁用入口，服务 remote pr
 
 副作用边界：
 
-- 该 API 只关闭 remote provider configuration provider gate，并在用户显式选择时忘记 Core 中的 credential reference；
+- 该 API 只关闭 remote provider gate，并在用户显式选择时忘记 Core 中的 credential reference；
   真正 Keychain 删除由平台安全存储层执行并回传新的 reference 状态。
 - 禁用远程不会删除本地 AI 设置、privacy rules、字段过滤、AI call log、已有摘要/标签/建议或任何用户文件。
 - 该 API 不修改 `privacy_gate_enabled`；remote provider settings surface 成功禁用后关闭 privacy gate 的持久化仍由 AI privacy rules 入口负责。
@@ -3648,7 +3648,7 @@ AI summary 的 AI 摘要草稿生成入口，服务 `AI summary editor surface a
   不得修改 tags、categories、saved searches、generated overview、change log 或 undo/redo。
 - `Regenerate...` 只能在 UI 已确认后调用；若 gate 失败，必须保留现有草稿或已保存摘要。
 - 远程路线必须同时通过 AI settings、remote provider gate、AI privacy gate、
-  feature scope 和 AI call log call-log gate；本 API 不启用远程 provider，不保存 API key，不绕过隐私规则。
+  feature scope 和 AI call log gate；本 API 不启用远程 provider，不保存 API key，不绕过隐私规则。
 - 隐私规则命中时必须返回 `Skipped` / `PrivacyRule`，`used_context` 为空或只包含允许展示字段；
   sent fields 由后续 AI call log 日志记录为 none。
 - 失败、跳过或取消不得改变文件、摘要、notes、tags、分类、AI settings、provider metadata、
@@ -3813,7 +3813,7 @@ AI tag suggestions 的 AI 标签建议入口，服务 `AI tag suggestion surface
 - 本 API 只生成建议草稿；不得创建、修改、删除或采纳标签，不得写 `change_log`、undo/redo、
   AI settings、provider metadata、privacy rules、generated overview、notes 或任何用户文件。
 - 远程路线必须同时通过 AI settings、remote provider gate、AI privacy gate、
-  feature scope 和 AI call log call-log gate；本 API 不启用远程 provider，不保存 API key，不绕过隐私规则。
+  feature scope 和 AI call log gate；本 API 不启用远程 provider，不保存 API key，不绕过隐私规则。
 - 隐私规则命中时必须返回 `Skipped` / `PrivacyRule`，`suggestions` 为空，
   `used_context` 为空或只包含允许展示字段，且不得调用 provider。
 - 低置信度建议只能作为可审阅行返回；`Accept high confidence` 由页面按 `confidence_threshold`
@@ -3861,7 +3861,7 @@ batch apply。输入：
 - `requested_count`、`applied_count`、`skipped_count`、`failed_count`：供 single/batch 结果和部分失败 UI 使用。
 - `item_results`：逐建议行结果，`status` 为 `Applied`、`AlreadyAdded` 或 `Failed`。
 - `tag_set`：采纳后的当前标签状态，供详情 Tags 区和导入结果刷新。
-- `undo_token`：新增关系进入 undo action log undo stack 后的 token；没有新增关系时为 `nil`。
+- `undo_token`：新增关系进入 undo action log stack 后的 token；没有新增关系时为 `nil`。
 - `call_log_id`：保留 AI 生成来源追溯。
 - `refresh_targets`：稳定刷新建议，至少覆盖 `tags`、`change_log`、`undo_actions` 和 `ai_call_log`。
 
@@ -3883,7 +3883,7 @@ batch apply。输入：
 
 - AI tag suggestion surface 可以从合同得到成功/失败/重复数量、逐行失败原因、刷新后的 tag set、undo token 和
   AI call log 追溯状态。
-- 本合同不实现 AI privacy rules 隐私规则编辑、AI call log surface 日志列表、undo action log undo 执行或 batch 页面状态管理。
+- 本合同不实现 AI privacy rules 隐私规则编辑、AI call log surface 日志列表、undo action 执行或 batch 页面状态管理。
 
 ### `list_ai_privacy_rules(repoPath: String) throws -> AiPrivacyRulesSnapshot`
 
@@ -3940,7 +3940,7 @@ let updated = try AreaMatrix.updateAiPrivacyRules(
 
 AI privacy rules 的隐私规则保存入口。输入是 replace-style 请求：
 
-- `privacy_gate_enabled`：AI privacy rules surface 的全局远程隐私 gate。关闭只阻止后续远程 AI，不修改 remote provider configuration provider。
+- `privacy_gate_enabled`：AI privacy rules surface 的全局远程隐私 gate。关闭只阻止后续远程 AI，不修改 remote provider configuration。
 - `rules`：完整规则集合。规则类型固定为 Folder、Category、Keyword、Extension、Tag；
   `applies_to` 固定为 `RemoteAi` 或 `LocalAndRemoteAi`。
 - `remote_allowed_fields`：完整远程字段过滤设置。缺失或重复字段必须拒绝。
@@ -3955,7 +3955,7 @@ scope 摘要。
 副作用边界：
 
 - 只允许写 AreaMatrix-owned privacy rules、remote field filters 和 `privacy_gate_enabled` metadata。
-- 不启用或禁用 remote provider configuration remote provider，不删除 provider 配置或 Keychain key，不清理 AI call log，
+- 不启用或禁用 remote provider，不删除 provider 配置或 Keychain key，不清理 AI call log，
   不删除既有 AI 结果，不重跑 AI，不移动、删除、重命名、Trash、覆盖或读取用户文件内容。
 - 保存失败必须保留上一份可读规则和 gate 状态，不得写入半规则集。
 
@@ -4027,7 +4027,7 @@ AI privacy rules 的隐私 gate 评估入口。AI 分类、摘要、标签和语
 - AI privacy rules surface 的 `Test rules` 可以从报告得到 allow/deny/skipped、provider gate reason、命中规则和字段。
 - AI fallback surface 可以从 skipped reason、provider gate reason、matched rule id、matched field type、
   sent fields none 和 display-safe message 渲染隐私跳过与非 AI 回退。
-- 本合同不新增 control map 之外的页面能力；它只覆盖 AI privacy rules privacy rules 的规则、字段和 gate 决策。
+- 本合同不新增 control map 之外的页面能力；它只覆盖 AI privacy rules 的规则、字段和 gate 决策。
 
 ### `get_ai_fallback_status(repoPath: String, request: AiFallbackStatusRequest) throws -> AiFallbackStatus`
 
@@ -4089,7 +4089,7 @@ semantic search 已返回的 fallback metadata。输入是已初始化 `repoPath
   写分类/标签/摘要、保存 provider key、读取用户文件正文、写用户文件或触碰 `apps/**`。
 - 隐私跳过不得提供 Retry；remote failed / timeout 只能 retry 同一 provider、model、scope 和输入快照，
   且 retry 前仍必须重新检查 AI privacy rules。
-- 自动 provider failover 不在 Stage 3；本地失败不得自动启用远程 AI。
+- 自动 provider failover 不在当前 AI fallback 合同内；本地失败不得自动启用远程 AI。
 - 后续实现可以按 AI call log 合同记录 AI call failure，但记录内容必须保持 sent fields、error code 和
   result summary 脱敏。
 
@@ -4123,7 +4123,7 @@ let page = try AreaMatrix.semanticSearch(
 
 semantic search 的语义搜索入口，服务 `semantic search results` 的语义结果组，
 并为 `AI fallback` 提供语义不可用、隐私跳过、provider 不可用和普通搜索
-回退状态。输入复用 Stage 2 `SearchFilter` 和 `SearchPagination`，使 filters、
+回退状态。输入复用普通搜索 `SearchFilter` 和 `SearchPagination`，使 filters、
 scope 和分页与普通搜索保持同一合同。
 
 返回 `SemanticSearchResultPage`：
@@ -4151,7 +4151,7 @@ scope 和分页与普通搜索保持同一合同。
   fallback 数据；不得写 tags、分类、摘要、notes、saved searches、change log、undo/redo、
   generated overview 或用户文件。
 - 远程语义路线必须同时通过 AI settings、remote provider gate、AI privacy gate、
-  feature scope 和 AI call log call-log gate；不得自动启用远程 provider，不保存 API key 明文，
+  feature scope 和 AI call log gate；不得自动启用远程 provider，不保存 API key 明文，
   不把 key、provider 原始响应、完整 prompt、完整输出、完整文件内容或绝对路径用户名放入返回值、
   日志、诊断或错误文案。
 - Core 必须以 `Semantic matches` / `Normal search matches` 两组表达结果，不生成不可解释的单一
@@ -4339,7 +4339,7 @@ metadata repair 的只创建诊断入口。调用方在用户确认修复后、�
 - `Internal`：诊断快照路径不在 `.areamatrix/` 内等不变量失败。
 - 不修改 `files`、`scan_sessions` 或用户文件。
 - 不写 `AREAMATRIX.md`、`README.md` 或 `.areamatrix/generated/`。
-- 云端备份恢复和自动上传诊断不属于 Stage 1。
+- 云端备份恢复和自动上传诊断不属于当前诊断合同。
 
 ### `repair_metadata(repoPath: String, options: RepairOptions) throws -> RepairReport`
 
@@ -4629,7 +4629,7 @@ appState.replaceFile(updated)
   或 source path。
 - 同目录同名时复用 name-conflict resolution 的安全编号策略，不覆盖已有文件；只有编号耗尽或竞态无法
   解析时抛 `Conflict`。
-- Copy / Move rename 成功后触发 generated overview generated overview 再生成；默认只写
+- Copy / Move rename 成功后触发 generated overview 再生成；默认只写
   `.areamatrix/generated/**`，仅当配置显式允许时维护根目录 `AREAMATRIX.md`，
   不触碰用户 `README.md`。Indexed display-name rename 不触发文件系统 rename，也不
   触碰外部源文件。
@@ -4801,7 +4801,7 @@ search query 的只读搜索入口，服务 `search results surface search-resul
 
 - 文件名、相对路径、伴生笔记、分类和 change log。
 - 普通关键词支持大小写不敏感、fuzzy 和 pinyin initials 命中；高级查询字段不走模糊纠错。
-- `SearchFilter` 必须携带当前 Stage 2 UI 的 search facets 过滤状态，包括 tags 的
+- `SearchFilter` 必须携带当前搜索 UI 的 search facets 过滤状态，包括 tags 的
   Any/All 匹配模式和 storage mode。`search_files` 用同一份 filter 刷新真实结果，
   facet counts 仍由 search facets `list_filter_facets` 返回；保存搜索属于 saved searches，
   Smart List 执行属于 Smart List execution。
@@ -4813,7 +4813,7 @@ search query 的只读搜索入口，服务 `search results surface search-resul
 - `Db`：搜索索引、文件元数据、笔记或 change log 无法读取。
 - 该 API 只读，不写 DB，不写 `change_log`，不创建或更新 FTS/索引表，不修改标签、分类、
   笔记、generated overview 或任何用户文件。
-- OCR、文件内容全文、语义搜索和远程 AI 属于 Stage 3，不属于本合同。
+- OCR、文件内容全文、语义搜索和远程 AI 不属于当前普通搜索合同。
 
 ### `list_filter_facets(repoPath, query) throws -> SearchFacets`
 
@@ -4859,7 +4859,7 @@ imported/modified date range、storage mode 和 include deleted。输出 `Search
 - `Db`：读取文件元数据、tag/facet 统计或必要搜索索引失败。
 - 该 API 只读，不写 DB，不写 `change_log`，不创建、更新、删除或重命名标签。
 - 该 API 不保存搜索、不创建或执行 Smart List，不实现 saved search CRUD 或
-  Smart List execution Smart List execution。
+  Smart List execution。
 - 该 API 不修改 files、notes、categories、generated overview、repository metadata
   或任何用户文件；不会移动、删除、重命名文件，也不会触发 AI/语义过滤。
 
@@ -4905,7 +4905,7 @@ saved searches 的保存搜索入口，服务 `saved search sheet`。输入 `Cre
 - `id`：稳定 saved search 标识，供后续 update/delete 和 sidebar selection 使用。
 - `name`：用户可见 Smart List 名称。
 - `query`：可复现搜索的 query/filter/sort/scope 状态。
-- `icon` / `color`：用户选择的显示元数据；不得表达 Stage 3/4 智能能力依赖。
+- `icon` / `color`：用户选择的显示元数据；不得表达语义、AI 或多端能力依赖。
 - `pinned`：sidebar 固定状态。
 - `created_at` / `updated_at`：排序、恢复和编辑 UI 使用的时间戳。
 
@@ -4970,7 +4970,7 @@ Pin、Icon/Color 和 Edit query 保存流程。输入 `UpdateSavedSearchRequest`
 - pinned first。
 - pinned 内按 pin 时间或 updated_at 倒序。
 - 非 pinned 按名称 A-Z。
-- Stage 2 不支持拖拽排序，也不暴露手动排序字段。
+- 当前 saved searches 合同不支持拖拽排序，也不暴露手动排序字段。
 
 错误与副作用边界：
 
@@ -4990,7 +4990,7 @@ let page = try AreaMatrix.runSmartList(
 ```
 
 Smart List execution 的 Smart List 执行入口，服务 `Smart Lists` 点击进入搜索模式，以及
-`command palette command-palette` 打开已保存 Smart List 的导航命令。输入只包含
+`command palette` 打开已保存 Smart List 的导航命令。输入只包含
 `savedSearchId` 和分页；Core 从 saved search 记录读取已保存的 query、完整
 `SearchFilter` 和 `SearchSort`，再返回与 `search_files` 相同的 `SearchResultPage`：
 
@@ -5012,7 +5012,7 @@ Smart List execution 的 Smart List 执行入口，服务 `Smart Lists` 点击�
   duplicate 或修改任何文件，不更新 generated overview 或用户文件。
 - Command palette 只能用该 API 打开已存在 Smart List 的结果页；命令索引、最近命令、
   危险命令确认和 command index 不属于本合同。
-- Stage 2 不注册超出普通搜索字段的 Smart List；智能推荐、语义搜索、OCR 和远程 AI
+- 当前 Smart List 合同不注册超出普通搜索字段的 Smart List；智能推荐、语义搜索、OCR 和远程 AI
   属于后续阶段。
 
 ### `list_command_targets(repoPath, context) throws -> CommandIndex`
@@ -5029,7 +5029,7 @@ let index = try AreaMatrix.listCommandTargets(
 )
 ```
 
-command index 的命令索引入口，服务 `command palette command-palette`。输入包含 `repoPath` 和当前
+command index 的命令索引入口，服务 `command palette`。输入包含 `repoPath` 和当前
 selection context，其中 context 承载命令搜索文本、当前选中文件 ID、当前路径和是否返回
 文件候选。输出 `CommandIndex` 提供可执行命令、导航目标、当前选择命令、最近命令、
 Smart List 和文件候选：
@@ -5055,7 +5055,7 @@ Smart List 和文件候选：
   面板中直接执行。
 - 该 API 不移动、删除、重命名、retag、reclassify、redo、解决导入冲突、应用分类规则、
   写 recent-command 历史、调用 AI/网络 provider、修改 generated overview 或任何用户文件。
-- 该 API 不实现插件命令市场，不注册 Stage 3 智能化、OCR、语义搜索或 Stage 4 多端命令。
+- 该 API 不实现插件命令市场，不注册智能化、OCR、语义搜索或多端专属命令。
 
 ### `add_tag(repoPath, fileId, tag) throws -> TagSet`
 
@@ -5094,7 +5094,7 @@ tag 做 trim、大小写归一和非法字符校验；成功后返回 `TagSet`�
   不删除、不 Trash、不改分类、不写 note、不 reindex、不更新 generated overview、
   不触发 AI/网络，也不触碰任何用户文件。
 - 批量加标签属于 batch tag mutation；Undo token/history 属于 undo action log；非 AI 标签建议属于
-  deterministic tag suggestions；AI 自动标签属于 Stage 3，均不在本合同内。
+  deterministic tag suggestions；AI 自动标签不在本合同内。
 
 ### `remove_tag(repoPath, fileId, tag) throws -> TagSet`
 
@@ -5172,7 +5172,7 @@ batch tag mutation 的批量加标签入口，服务 `batch add-tags`，并向 `
 - `failed_count`：失败的 file/tag relation 数量。
 - `item_results`：逐 file/tag 结果，`status` 为 `Added`、`AlreadyHadTag` 或
   `Failed`，`error` 承载失败摘要，供 `View details`、Retry 和可访问性文本使用。
-- `undo_token`：成功写入可撤销关系后返回给 undo action log undo toast/history；没有新增关系
+- `undo_token`：成功写入可撤销关系后返回给 undo toast/history；没有新增关系
   或实现无法创建 undo action 时为 `nil`。
 
 错误与副作用边界：
@@ -5184,12 +5184,12 @@ batch tag mutation 的批量加标签入口，服务 `batch add-tags`，并向 `
   把失败项显示为成功。
 - 重复 file id 和重复 tag 在写入前按稳定顺序去重；重复 tag relation 必须作为
   `AlreadyHadTag` 计入 `skipped_count`，不得写入重复行。
-- 成功新增的关系写入 `change_log` 并进入 undo action log undo action；原本已有的标签关系
+- 成功新增的关系写入 `change_log` 并进入 undo action log；原本已有的标签关系
   不进入 Undo 反向操作。Undo 执行本身属于 undo action log。
 - 该 API 只写标签 metadata、change log 和 undo action；不移动、不重命名、不删除、
   不 Trash、不改分类、不写 note、不保存搜索、不 reindex、不更新 generated overview、
   不触发 AI/网络，也不触碰任何用户文件内容或路径。
-- 批量 AI 标签建议属于 Stage 3；批量改分类、批量删除、批量重命名、Undo/Redo 执行、
+- 批量 AI 标签建议、批量改分类、批量删除、批量重命名、Undo/Redo 执行、
   非 AI 标签建议和 tag suggestion 采纳分别属于其他能力，不在本合同内。
 
 ### `suggest_tags_for_file(repoPath, request) throws -> TagSuggestionReport`
@@ -5220,7 +5220,7 @@ deterministic tag suggestions 的非 AI 标签建议入口，服务 `tag suggest
   New tag、Already added、Invalid 和 Blocked 状态。
 - `tag_set`：当前文件标签与仓库 tag registry 快照，供页面避免重复添加并在空态回到
   tag editor surface 手动标签入口。
-- `contents_read` / `ai_used` / `network_used`：隐私边界标记，Stage 2 必须全部为
+- `contents_read` / `ai_used` / `network_used`：隐私边界标记，该非 AI 建议合同必须全部为
   `false`，页面据此显示“非 AI、非内容读取”的说明。
 
 错误与副作用边界：
@@ -5232,7 +5232,7 @@ deterministic tag suggestions 的非 AI 标签建议入口，服务 `tag suggest
 - `Db`：读取 active file、tag registry 或 tag relation 失败。
 - 该 API 只读，不创建、更新、移除、重命名或采纳标签，不写 `change_log` 或
   `undo_actions`，不改变搜索筛选，不移动、删除、重命名、读取或上传任何用户文件。
-- AI 标签建议、语义理解、OCR/正文读取和远程 provider 属于 Stage 3 的 AI tag suggestions，
+- AI 标签建议、语义理解、OCR/正文读取和远程 provider 属于 AI tag suggestions，
   不属于本合同。
 
 ### `apply_tag_suggestions(repoPath, request) throws -> TagSuggestionApplyReport`
@@ -5252,7 +5252,7 @@ toast.showUndo(report.undoToken)
 deterministic tag suggestions 的建议采纳入口，服务 `tag suggestions` 的 `Apply selected` 与
 `Apply edited`。输入是同一个 active `file_id` 和用户明确选中或编辑后的建议行。
 Core 创建或复用规范化后的 tag，写入当前文件 tag relation，记录 change log，并在
-至少新增一个关系时返回 undo action log undo token。未选、Ignore、Cancel edit 或 Already added
+至少新增一个关系时返回 undo action log token。未选、Ignore、Cancel edit 或 Already added
 候选不得被写入。
 
 输出 `TagSuggestionApplyReport`：
@@ -5265,7 +5265,7 @@ Core 创建或复用规范化后的 tag，写入当前文件 tag relation，记�
 - `item_results`：逐建议行结果，`status` 为 `Applied`、`AlreadyAdded` 或 `Failed`，
   `error` 承载行级失败摘要。
 - `tag_set`：采纳后的当前标签状态，供 Detail Meta 或导入结果刷新。
-- `undo_token`：新增关系进入 undo action log undo stack 后的 token；没有新增关系时为 `nil`。
+- `undo_token`：新增关系进入 undo action log stack 后的 token；没有新增关系时为 `nil`。
 - `refresh_targets`：稳定刷新建议，至少覆盖 `tags`、`change_log`、`undo_actions`。
 
 错误与副作用边界：
@@ -5370,7 +5370,7 @@ batch category change 的批量改分类执行入口，服务 `batch change-cate
 
 - Copy / Move 等 repo-owned 文件在 `moveRepoOwnedFiles = true` 时移动到目标分类目录，
   更新 `files.category/path/updated_at`，写 `change_log.action = moved`，并进入
-  undo action log undo action。
+  undo action log。
 - `moveRepoOwnedFiles = false` 或 Indexed 文件只更新 `files.category/updated_at` 与
   change log，不移动、重命名或覆盖源文件。
 - 成功改分类不改变 `file_id`、`original_name`、hash、storage mode、origin、source path、
@@ -5409,8 +5409,8 @@ let preview = try AreaMatrix.previewBatchDelete(
 moveButton.isEnabled = preview.canApply
 ```
 
-batch delete 的只读批量删除预览入口，服务 `batch delete confirmation batch-delete-confirm`。输入是已初始化
-`repoPath`、多选得到的 `fileIds` 和 `deleteMode`。Stage 2 只允许两种模式：
+batch delete 的只读批量删除预览入口，服务 `batch delete confirmation`。输入是已初始化
+`repoPath`、多选得到的 `fileIds` 和 `deleteMode`。当前批量删除合同只允许两种模式：
 
 - `MoveToTrash`：计划把 AreaMatrix repo-owned 的 `Copied` / `Moved` 文件移到系统 Trash。
 - `RemoveFromIndex`：计划只移除 Indexed / Adopted / External 或 Missing metadata 记录。
@@ -5423,7 +5423,7 @@ batch delete 的只读批量删除预览入口，服务 `batch delete confirmati
   API 必须带回该值。
 - `trash_available`：系统 Trash 是否可用于 repo-owned 删除；为 `false` 时 UI 必须禁用
   `Move to Trash`，不得提供永久删除替代。
-- `undo_available`：本次可处理项是否能创建 undo action log undo action；为 `false` 时 batch delete confirmation
+- `undo_available`：本次可处理项是否能创建 undo action log；为 `false` 时 batch delete confirmation
   必须显示 Undo 不可用确认区。
 - `will_trash_count`：确认后会移动到 Trash 的 repo-owned 文件数。
 - `index_only_count`：可以只移除 AreaMatrix 索引记录的数量。
@@ -5465,7 +5465,7 @@ let report = try AreaMatrix.batchDeleteToTrash(
 undoToast.present(token: report.undoToken)
 ```
 
-batch delete 的批量删除执行入口，服务 `batch delete confirmation batch-delete-confirm` 的
+batch delete 的批量删除执行入口，服务 `batch delete confirmation` 的
 `Move to Trash` / `Remove from index`，并向 `undo toast` / undo action log 提供可撤销操作状态。
 输入必须带回用户刚确认的 `preview_token`，并与 preview 状态一致；如果选择集、模式、
 Trash 可用性或 inspected state 变化，Core 必须拒绝不安全写入并让 UI 重新 Preview。
@@ -5487,7 +5487,7 @@ Trash 可用性或 inspected state 变化，Core 必须拒绝不安全写入并�
 
 - `MoveToTrash` 只能处理 AreaMatrix 管理的 `Copied` / `Moved` active 条目。成功时 Core
   把目标文件移入系统 Trash，软删除 `files` row，写 `change_log.action = deleted`，
-  并进入 undo action log undo action。
+  并进入 undo action log。
 - `MoveToTrash` 如果已经移动文件和软删除 metadata，但批量 undo action 写入失败，Core
   必须把已处理项从 Trash 恢复到原 repo 路径并回滚对应 `files` / `change_log` 变更，
   然后返回 `Db` 或回滚失败对应的 `Io` / `Db` 错误；不得留下无 undo token 的已删除状态。
@@ -5530,12 +5530,12 @@ let preview = try AreaMatrix.previewBatchRename(
 applyButton.isEnabled = preview.canApply
 ```
 
-batch rename 的只读批量重命名预览入口，服务 `batch rename surface batch-rename`。输入是已初始化
+batch rename 的只读批量重命名预览入口，服务 `batch rename surface`。输入是已初始化
 `repoPath`、按当前 List 排序的 `fileIds` 和 `BatchRenameRule`。`fileIds` 顺序是合同的一部分：
 `KeepBaseSequence` 必须按该顺序稳定生成序号，用户改变排序、选择集或规则后旧
 `preview_token` 失效。
 
-`BatchRenameRule` 支持四种 Stage 2 策略：
+`BatchRenameRule` 支持四种批量重命名策略：
 
 - `Prefix`：使用 `prefix` 生成 `{prefix}{stem}{ext}`。
 - `DatePrefix`：使用 `date_source`、`date_format` 和 `separator` 生成
@@ -5595,7 +5595,7 @@ let report = try AreaMatrix.batchRename(
 undoToast.present(token: report.undoToken)
 ```
 
-batch rename 的批量重命名执行入口，服务 `batch rename surface batch-rename` 的 Apply，并向
+batch rename 的批量重命名执行入口，服务 `batch rename surface` 的 Apply，并向
 `undo toast` / undo action log 提供可撤销操作状态。输入必须带回最近一次有效
 `preview_batch_rename` 返回的 `preview_token`；如果选择集、排序、规则或 inspected state
 变化，Core 必须返回 `Conflict`，要求 UI 重新 Preview。
@@ -5616,7 +5616,7 @@ batch rename 的批量重命名执行入口，服务 `batch rename surface batch
 副作用边界：
 
 - Copy / Move 等 repo-owned 文件只在当前目录内安全 rename，更新
-  `files.path/current_name/updated_at`，写 `change_log.action = renamed`，并进入 undo action log undo action。
+  `files.path/current_name/updated_at`，写 `change_log.action = renamed`，并进入 undo action log。
 - Indexed 文件只更新 `files.current_name/updated_at` 与 change log，不移动、重命名、覆盖或 Trash
   外部源文件。
 - 成功批量 rename 不改变 `file_id`、category、tags、notes、hash、storage mode、origin、
@@ -5875,7 +5875,7 @@ YAML reload 后刷新、保存成功后刷新和 Revert。输入只包含已初�
 - classifier rule editor surface 可以从合同得到分类列表、dirty/revert 的 last-valid 基线、字段初值、
   default category 删除禁用状态、空态、加载失败和 reload 后刷新状态。
 - classifier rule editor surface 不能从本合同得到历史影响量、批量应用结果、Open YAML 的平台动作或 AI 规则建议；
-  这些分别属于 classifier impact preview、后续 apply 行为、平台层和 Stage 3。本合同不新增 control map
+  这些分别属于 classifier impact preview、后续 apply 行为、平台层和 AI 规则能力。本合同不新增 control map
   之外的页面能力。
 
 ### `create_classifier_rule(repoPath, request) throws -> ClassifierRuleEditorSnapshot`
@@ -5966,7 +5966,7 @@ classifier 的分类 slug；扩展名必须是不带点的小写值；`priority`
 - 不写 `files`、`change_log`、`undo_actions`、notes、tags、saved searches、
   generated overview，不执行 classifier rule save `save_classifier_rule` 的单规则草稿保存、不执行 classifier impact preview
   impact preview、不调用 AI/network providers。
-- 不实现 classifier rule save、classifier impact preview、复杂脚本规则、插件规则或 Stage 3 AI 规则。
+- 不实现 classifier rule save、classifier impact preview、复杂脚本规则、插件规则或 AI 规则生成。
 - 不实现复杂脚本规则、插件规则、`path`、`source_folder` 或独立 rule `enabled` 字段。
 
 错误：
@@ -6133,7 +6133,7 @@ redo action log 的 Redo action log 列表入口，服务 `redo surface redo`，
 - `can_redo`：当前是否允许通过 `redo_action` 执行。
 - `disabled_reason`：redo stack 被新写操作清空、外部变化阻塞、跨重启过期、
   Trash restore 不可用或权限不足时的用户可读原因。
-- `source_undo_action_id`：生成该 redo 行的 undo action log undo action，供 redo surface 说明来源。
+- `source_undo_action_id`：生成该 redo 行的 undo action log，供 redo surface 说明来源。
 - `created_at` / `updated_at`：排序、相对时间和状态刷新使用的 Unix 秒级时间戳。
 
 错误与副作用边界：
@@ -6159,7 +6159,7 @@ store.refresh(result.refreshTargets)
 redo action log 的 Redo 执行入口。输入是已初始化 `repoPath` 和 redo `action_id`；输出
 `RedoActionResult` 告诉 UI 本次重做的最终状态、影响数量、完成摘要、恢复后的
 Undo token 以及需要刷新的页面状态。Redo 只重放 AreaMatrix 成功 Undo 后生成的
-可用 redo action；新的写操作会清空 redo stack，多设备协同 redo 不属于 Stage 2。
+可用 redo action；新的写操作会清空 redo stack，多设备协同 redo 不属于当前 redo 合同。
 
 输出 `RedoActionResult`：
 
@@ -6178,7 +6178,7 @@ Undo token 以及需要刷新的页面状态。Redo 只重放 AreaMatrix 成功 
 - `ExpiredAction`：redo action 已被新写操作清空、跨重启过期或不再属于可用 stack。
 - `Conflict`：外部变化、路径冲突、stale state 或 Trash preflight 让重做不安全。
 - `PermissionDenied`：metadata、目标文件、Trash restore 或目录写入被权限阻断。
-- `Db`：读取/标记 redo action、写入 redo `change_log` 或恢复 undo action log undo stack 失败。
+- `Db`：读取/标记 redo action、写入 redo `change_log` 或恢复 undo action log stack 失败。
 - `Io`：重做文件操作或 rollback 失败。
 - Redo 必须按单个 action 的事务边界执行。失败不得破坏当前文件系统和 DB 状态，
   不得把未完成 redo 标记为 `Executed`，不得覆盖外部 FSEvents 造成的变化。
@@ -6355,7 +6355,7 @@ snake_case 以配合 Swift `JSONDecoder.KeyDecodingStrategy.convertFromSnakeCase
 
 副作用边界：该 API 只读取资料库文件路径和分类配置，不写 DB，不创建 generated
 overview，不移动、重命名、删除或修改用户文件。虚拟智能列表、搜索结果树和
-Stage 2 tree projection 不属于本接口。详见 [../modules/tree-scan.md](../modules/tree-scan.md)。
+搜索结果树投影不属于本接口。详见 [../modules/tree-scan.md](../modules/tree-scan.md)。
 
 ### `detect_sync_conflicts(repoPath) throws -> [SyncConflict]`
 
@@ -6614,7 +6614,7 @@ let defaultChoice = preview.defaultResolution // .keepBoth
 - 不标记 resolved，不写 `files`、`change_log` 或 `undo_actions`。
 - 不删除、不移动、不重命名、不覆盖、不合并任何版本，不写 Trash。
 - 不触发 iCloud placeholder 下载；下载协调属于平台层。
-- 不实现 QuickLook UI 渲染、import conflict 批量决策或 Stage 4 云盘 SDK 集成。
+- 不实现 QuickLook UI 渲染、import conflict 批量决策或云盘 SDK 集成。
 
 错误：
 
@@ -6668,7 +6668,7 @@ let report = try await Task.detached(priority: .userInitiated) {
 - 任一阶段失败必须保持 conflict unresolved；不得清除 Needs Review，也不得把
   失败项当作成功。
 - 不实现导入冲突批量策略、通用 batch delete、平台 QuickLook、iCloud 下载触发
-  或 Stage 4 云盘 SDK 集成。
+  或云盘 SDK 集成。
 
 错误：
 
@@ -6728,7 +6728,7 @@ cloud storage state 的云盘权限状态入口，也是 OneDrive risk notice �
 - 合同检测本身不写 DB、不写 last cloud state、不移动、不删除、不重命名、不覆盖用户文件。
 - 不触发 iCloud placeholder 下载，不调用 iCloud / OneDrive SDK，不打开系统设置，不修改云盘同步策略。
 - iOS security-scoped bookmark、iCloud 是否登录、OneDrive 客户端同步状态、下载触发和设置跳转都属于平台层。
-- 同步冲突、Replace、manual rescan、watcher health、missing-file recovery 仍由各自 Stage 4 能力覆盖。
+- 同步冲突、Replace、manual rescan、watcher health、missing-file recovery 仍由各自多端能力覆盖。
 
 错误：
 
@@ -6874,7 +6874,7 @@ Replace 二次确认后调用。输入 `ImportConflictBatchApplyRequest` 与 pre
 - `AskPerItem` 不执行批量策略，只把当前作用域行保留为逐项处理队列状态。
 - 未勾选或不在当前作用域的行保持 staging unresolved，不写 change log，不进入 Undo stack。
 - 任一失败必须保留 staged 文件和冲突状态；不得清除 pending/unresolved，不得把失败项当成功。
-- 不实现 iCloud conflict、Stage 4 sync conflict、通用 batch delete/rename/category、classifier rule、
+- 不实现 iCloud conflict、sync conflict resolution、通用 batch delete/rename/category、classifier rule、
   tag、search、AI 或 macOS UI 能力。
 
 错误：
@@ -7226,7 +7226,7 @@ UniFFI 0.x 不支持 Rust 端 cooperative cancellation。Swift 端 `Task.cancel(
 
 | 版本 | 变化 |
 |---|---|
-| 0.1.x | MVP 接口，可能多次微调 |
+| 0.1.x | 初始接口，可能多次微调 |
 | 0.2.x | 加 `search`、批量操作预览/执行、`undo` |
 | 0.3.x | 加 `ai_predict`、`auto_naming` |
 | 1.0.0 | 接口稳定承诺生效 |

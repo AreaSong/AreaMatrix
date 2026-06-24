@@ -294,7 +294,7 @@ fn assert_core_api_contract_alignment() {
         "| `load_config(repo)` | repo | √ | Config / PermissionDenied / Io / Db |",
         "| `update_config(repo, cfg)` | repo | √ | Config / PermissionDenied / Io / Db |",
         "| `get_platform_capabilities(platform, app_version)` | platform | √ | Config |",
-        "#### C4-20 repository settings contract",
+        "#### repository settings contract",
         "禁用平台不支持的设置",
         "不移动、删除、重命名、覆盖用户文件",
         "账号级云同步",
@@ -308,7 +308,7 @@ fn assert_rust_implementation_alignment() {
         "pub fn load_config(repo_path: String) -> CoreResult<RepoConfig>",
         "pub fn update_config(repo_path: String, new_config: RepoConfig) -> CoreResult<()>",
         "pub fn get_platform_capabilities(",
-        "C4-20 repository settings uses the same transactional update surface",
+        "repository settings uses the same transactional update surface",
         "does not test, enable, or emulate platform",
     ] {
         assert_contains(API_RS, fragment);

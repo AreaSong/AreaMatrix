@@ -195,7 +195,7 @@ fn tag_suggestions_contract_validates_inputs_without_fake_success() {
                 suggest_tags_for_file(invalid_repo.to_owned(), request()),
                 Err(CoreError::Db { .. })
             ),
-            "C2-19 suggest must not expose InvalidPath for repo metadata boundaries"
+            "deterministic tag suggestions suggest must not expose InvalidPath for repo metadata boundaries"
         );
     }
 
@@ -254,7 +254,7 @@ fn tag_suggestions_contract_validates_inputs_without_fake_success() {
                 apply_tag_suggestions(invalid_repo.to_owned(), apply_request()),
                 Err(CoreError::Db { .. })
             ),
-            "C2-19 apply must not expose InvalidPath for repo metadata boundaries"
+            "deterministic tag suggestions apply must not expose InvalidPath for repo metadata boundaries"
         );
     }
 }
@@ -307,7 +307,7 @@ fn tag_suggestions_contract_docs_api_udl_and_control_map_stay_aligned() {
         "### `suggest_tags_for_file(repoPath, request) throws -> TagSuggestionReport`",
         "### `apply_tag_suggestions(repoPath, request) throws -> TagSuggestionApplyReport`",
         "`contents_read` / `ai_used` / `network_used`",
-        "C3-07",
+        "AI tag suggestions",
         "本合同不新增",
         "control map 之外的页面能力",
     ] {
@@ -318,7 +318,7 @@ fn tag_suggestions_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn tag_suggestions_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "C2-19 owns the Stage 2 tag-suggestion contract for S2-23",
+        "deterministic tag suggestions owns the tag-suggestion contract for tag suggestions surface",
         "must not read file contents",
         "call AI or remote providers",
         "access the network",

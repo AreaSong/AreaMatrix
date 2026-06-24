@@ -91,7 +91,7 @@ fn batch_rename_validation_success_is_visible_to_ui_consumers() {
         vec![repo_owned.id, indexed_id, repo_owned.id],
         prefix_rule("ProjectA_"),
     )
-    .expect("preview C2-10 batch rename");
+    .expect("preview batch rename");
 
     assert_eq!(snapshot(repo.path()), before_preview);
     assert!(preview.can_apply);
@@ -115,7 +115,7 @@ fn batch_rename_validation_success_is_visible_to_ui_consumers() {
         prefix_rule("ProjectA_"),
         preview.preview_token,
     )
-    .expect("apply C2-10 batch rename");
+    .expect("apply batch rename");
 
     assert_eq!(report.requested_file_count, 2);
     assert_eq!(report.renamed_count, 1);
@@ -167,14 +167,14 @@ fn batch_rename_validation_success_is_visible_to_ui_consumers() {
     );
 
     let changes = list_changes(path_string(repo.path()), renamed_filter())
-        .expect("list C2-10 rename changes through Core API");
+        .expect("list batch rename rename changes through Core API");
     assert_eq!(changes.len(), 2);
     let undo_actions =
-        list_undo_actions(path_string(repo.path())).expect("list C2-07 undo action state");
+        list_undo_actions(path_string(repo.path())).expect("list undo action log state");
     let undo_action = undo_actions
         .iter()
         .find(|action| action.action_id == undo_token)
-        .expect("find C2-10 undo token");
+        .expect("find batch rename undo token");
     assert_eq!(undo_action.kind, "rename_files");
     assert_eq!(undo_action.affected_count, 2);
     assert_eq!(undo_action.status, UndoActionStatus::Pending);
@@ -325,7 +325,7 @@ fn batch_rename_validation_locks_core_api_udl_and_rust_alignment() {
     for fragment in [
         "### `preview_batch_rename(repoPath, fileIds, rule) throws -> BatchRenamePreviewReport`",
         "### `batch_rename(repoPath, fileIds, rule, previewToken) throws -> BatchRenameReport`",
-        "C2-10 的只读批量重命名预览入口",
+        "batch rename 的只读批量重命名预览入口",
         "`preview_batch_rename` 返回的 `preview_token`",
         "不实现 AI 自动命名",
         "本合同不新增 control map 之外的页面能力。",
@@ -338,8 +338,8 @@ fn batch_rename_validation_locks_core_api_udl_and_rust_alignment() {
         "batch_rename_mod::preview_batch_rename",
         "pub fn batch_rename(",
         "batch_rename_mod::batch_rename",
-        "S2-14",
-        "C2-10",
+        "batch rename surface",
+        "batch rename",
     ] {
         assert_contains(API_RS, fragment);
     }
@@ -354,8 +354,8 @@ fn batch_rename_validation_locks_core_api_udl_and_rust_alignment() {
     }
 
     for fragment in [
-        "Previews C2-10 batch rename without mutating files or metadata.",
-        "Applies a C2-10 batch rename that was previously previewed.",
+        "Previews batch rename without mutating files or metadata.",
+        "Applies a batch rename that was previously previewed.",
         "validate_batch_rename_rule",
         "normalize_batch_rename_file_ids",
     ] {

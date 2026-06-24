@@ -381,7 +381,7 @@ fn ai_classification_suggestion_validation_locks_api_udl_rust_and_docs_alignment
 
     for fragment in [
         "pub fn suggest_category_with_ai",
-        "Requests a C3-04 AI category suggestion without applying it.",
+        "Requests an AI category suggestion without applying it.",
         "Returned suggestions are drafts only",
         "requires_user_confirmation",
         "must not overwrite classifier rules",

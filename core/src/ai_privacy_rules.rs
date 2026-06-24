@@ -1,4 +1,4 @@
-//! AI privacy rules AI privacy rules contract types and entry points.
+//! AI privacy rules contract types and entry points.
 
 mod evaluation;
 mod persistence;
@@ -177,7 +177,7 @@ pub struct AiPrivacyFieldState {
     pub last_matched_count: i64,
 }
 
-/// Read-only remote provider configuration provider scope consumed by AI privacy rules.
+/// Read-only remote provider scope consumed by AI privacy rules.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiPrivacyProviderScopeSnapshot {
     /// Whether provider metadata is configured.
@@ -207,7 +207,7 @@ pub struct AiPrivacyRulesSnapshot {
     pub remote_blocked_by_default: bool,
 }
 
-/// Replace-style update request for the AI privacy rules rules contract.
+/// Replace-style update request for the AI privacy rules contract.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiPrivacyRulesUpdateRequest {
     /// Desired global remote privacy gate state.
@@ -300,7 +300,7 @@ pub struct AiPrivacyEvaluationReport {
     pub message: String,
 }
 
-/// Lists AI privacy rules AI privacy rules and remote field-filter state.
+/// Lists AI privacy rules and remote field-filter state.
 ///
 /// This read-only contract gives AI privacy rules surface enough state to render rules, remote
 /// field settings, default remote-blocked policy, and read-only provider gate
@@ -316,7 +316,7 @@ pub fn list_ai_privacy_rules(repo_path: String) -> CoreResult<AiPrivacyRulesSnap
     persistence::load_snapshot(&repo_path)
 }
 
-/// Updates AI privacy rules privacy rules, remote field filters, and the remote privacy gate.
+/// Updates AI privacy rules, remote field filters, and the remote privacy gate.
 ///
 /// The request is replace-style and requires explicit confirmation. Enabling
 /// `privacy_gate_enabled` requires provider scope state that is configured,
@@ -344,7 +344,7 @@ pub fn update_ai_privacy_rules(
     )
 }
 
-/// Evaluates AI privacy rules privacy gates for one AI attempt.
+/// Evaluates AI privacy rules gates for one AI attempt.
 ///
 /// The evaluation report shape lets AI feature pages and AI fallback surface render
 /// allow/deny/skipped state, provider-gate reasons, matched rule ids, matched

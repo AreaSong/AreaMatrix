@@ -233,7 +233,7 @@ fn classifier_impact_preview_validation_locks_api_udl_and_rust_contract() {
     }
 
     for fragment in [
-        "Previews C2-14 classifier rule impact for S2-18.",
+        "Previews classifier rule impact for classifier impact preview surface.",
         "explicit preview request",
         "must not save the rule",
         "move files",

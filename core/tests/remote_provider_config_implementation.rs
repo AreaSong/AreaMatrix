@@ -376,7 +376,11 @@ fn remote_provider_config_implementation_preserves_user_files_and_ai_boundaries(
         repo.path()
             .join(".areamatrix/generated/remote_provider.json"),
     ] {
-        assert!(!path.exists(), "C3-03 must not create {}", path.display());
+        assert!(
+            !path.exists(),
+            "remote provider configuration must not create {}",
+            path.display()
+        );
     }
 }
 

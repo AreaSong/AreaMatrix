@@ -1,4 +1,4 @@
-//! batch rename batch rename contract types and entry points.
+//! batch rename contract types and entry points.
 
 use std::path::{Component, PathBuf};
 
@@ -64,7 +64,7 @@ pub struct BatchRenameRule {
     pub case_sensitive: bool,
 }
 
-/// Per-file preview status for batch rename batch rename.
+/// Per-file preview status for batch rename.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum BatchRenamePreviewStatus {
     /// Row can be renamed or display-name updated.
@@ -85,7 +85,7 @@ pub enum BatchRenamePreviewStatus {
     ExternalChange,
 }
 
-/// Per-file execution status for batch rename batch rename.
+/// Per-file execution status for batch rename.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum BatchRenameResultStatus {
     /// Repository-owned file was renamed and metadata updated.
@@ -113,7 +113,7 @@ pub struct BatchRenameConflict {
     pub reason: String,
 }
 
-/// Per-file preview row returned before applying batch rename batch rename.
+/// Per-file preview row returned before applying batch rename.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchRenamePreviewItem {
     /// Requested file id.
@@ -167,7 +167,7 @@ pub struct BatchRenamePreviewReport {
     pub apply_blocked_reason: Option<String>,
 }
 
-/// Per-file execution result returned after batch rename batch rename.
+/// Per-file execution result returned after batch rename.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchRenameItemResult {
     /// Requested file id.
@@ -184,7 +184,7 @@ pub struct BatchRenameItemResult {
     pub error: Option<String>,
 }
 
-/// Execution report returned to batch rename surface and undo action log undo consumers.
+/// Execution report returned to batch rename surface and undo action log consumers.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchRenameReport {
     /// Number of unique file ids accepted by the contract.
@@ -207,7 +207,7 @@ pub struct BatchRenameReport {
     pub undo_token: Option<String>,
 }
 
-/// Previews batch rename batch rename without mutating files or metadata.
+/// Previews batch rename without mutating files or metadata.
 ///
 /// batch rename surface uses this API to show each selected file's original name, generated
 /// new name, conflict or blocked status, index-only display-name rows, and the
@@ -233,12 +233,12 @@ pub fn preview_batch_rename(
     Ok(plan.into_preview_report())
 }
 
-/// Applies a batch rename batch rename that was previously previewed.
+/// Applies a batch rename that was previously previewed.
 ///
 /// `preview_token` must come from [`preview_batch_rename`] for the same
 /// selection order, rename rule, and inspected file state. Successful rows
 /// update repository metadata, rename repository-owned files or update
-/// index-only display names, write change-log rows, and create one undo action log undo
+/// index-only display names, write change-log rows, and create one undo action log
 /// action for all changed rows. This API must not change extensions, overwrite
 /// existing files, delete or Trash files, retag files, recategorize files, save
 /// searches, reindex, or call AI/network providers.

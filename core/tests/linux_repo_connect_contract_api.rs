@@ -148,7 +148,7 @@ fn linux_repo_connect_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "C4-10 Linux repository connection contract",
+        "Linux repository connection contract",
         "Core does not run or recommend sudo/chmod",
         "adjust POSIX permissions",
         "does not configure third-party sync or mount options",

@@ -28,7 +28,7 @@ fn assert_contains(haystack: &str, needle: &str) {
 }
 
 #[test]
-fn error_recovery_matrix_error_mapping_covers_all_stage_one_domains() {
+fn error_recovery_matrix_error_mapping_covers_all_core_domains() {
     for domain in [
         "repo path",
         "permission",

@@ -1,4 +1,4 @@
-//! redo action log redo action log contract types and entry points.
+//! redo action log contract types and entry points.
 
 use std::path::{Component, PathBuf};
 
@@ -23,7 +23,7 @@ pub enum RedoActionStatus {
     Executed,
 }
 
-/// One row returned to redo surface redo consumers.
+/// One row returned to redo surface consumers.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RedoActionRecord {
     /// Stable redo action identifier, derived from the source undo action.
@@ -50,7 +50,7 @@ pub struct RedoActionRecord {
     pub updated_at: i64,
 }
 
-/// Result returned after executing one redo action log redo action.
+/// Result returned after executing one redo action.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RedoActionResult {
     /// Stable redo action identifier that was requested.
@@ -69,7 +69,7 @@ pub struct RedoActionResult {
     pub completed_at: i64,
 }
 
-/// Lists redo action log redo actions for redo surface feedback regions.
+/// Lists redo actions for redo surface feedback regions.
 ///
 /// The contract returns redo availability, disabled reasons, source undo
 /// linkage, and refresh-facing metadata for the redo slot in undo toast surface and the
@@ -88,7 +88,7 @@ pub fn list_redo_actions(repo_path: String) -> CoreResult<Vec<RedoActionRecord>>
     db::list_redo_action_rows(&repo).map_err(normalize_redo_metadata_error)
 }
 
-/// Executes one redo action log redo action.
+/// Executes one redo action.
 ///
 /// `action_id` maps to an available row returned by [`list_redo_actions`].
 /// Redo only replays an AreaMatrix action that was previously undone

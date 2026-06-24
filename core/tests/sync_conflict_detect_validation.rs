@@ -265,7 +265,7 @@ fn assert_core_api_and_udl_type_alignment() {
 fn assert_core_api_behavior_alignment() {
     for fragment in [
         "### `detect_sync_conflicts(repoPath) throws -> [SyncConflict]`",
-        "`detect_sync_conflicts` 是 C4-15 的多端同步冲突检测入口",
+        "`detect_sync_conflicts` 是 sync conflict detection 的多端同步冲突检测入口",
         "由 Core 从已持久化 watcher/import/cloud/conflict state 中读取",
         "写入或刷新 conflict state metadata",
         "不选择任一版本，不标记 resolved，不写 change log",
@@ -341,15 +341,15 @@ fn assert_detector_implementation_alignment() {
 
 fn assert_consumer_scope_alignment() {
     for fragment in [
-        "S4-X-03 可以从列表长度",
+        "sync conflict entry surface 可以从列表长度",
         "status = NeedsReview",
         "detected_at",
         "conflict_type",
         "primary_path",
-        "S4-X-01 可以从 `conflict_id`",
+        "sync conflict review surface 可以从 `conflict_id`",
         "affected_files",
         "version_count",
-        "这些属于 C4-16 / C4-21。",
+        "这些属于 sync conflict resolution / replace confirmation。",
         "本合同不新增 control map 之外的页面能力。",
     ] {
         assert_contains(CORE_API, fragment);

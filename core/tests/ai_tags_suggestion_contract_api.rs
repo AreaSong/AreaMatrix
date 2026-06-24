@@ -290,8 +290,8 @@ fn ai_tags_suggestion_contract_docs_api_udl_and_control_map_stay_aligned() {
         "| `apply_ai_tag_suggestions(repo, request)` | ai | √ | Config / FileNotFound / Db |",
         "### `suggest_tags_with_ai(repoPath: String, request: AiTagSuggestionRequest) throws -> AiTagSuggestionReport`",
         "### `apply_ai_tag_suggestions(repoPath: String, request: ApplyAiTagSuggestionsRequest) throws -> AiTagSuggestionApplyReport`",
-        "C3-07 的 AI 标签建议入口",
-        "`S3-07 ai-tags-suggestion`",
+        "AI tag suggestions 的 AI 标签建议入口",
+        "`AI tag suggestion surface ai-tags-suggestion`",
         "本 API 只生成建议草稿",
         "不得调用 provider",
         "requires_user_confirmation",
@@ -311,7 +311,7 @@ fn ai_tags_suggestion_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn ai_tags_suggestion_contract_documents_consumers_and_scope_boundaries() {
     for fragment in [
-        "C3-07 AI tag suggestion contract types and entry points",
+        "AI tag suggestion contract types and entry points",
         "pub enum AiTagSuggestionRoute",
         "pub enum AiTagSuggestionInputField",
         "pub enum AiTagSuggestionReportStatus",
@@ -333,8 +333,8 @@ fn ai_tags_suggestion_contract_documents_consumers_and_scope_boundaries() {
     }
 
     for fragment in [
-        "Generates C3-07 AI tag suggestions without applying them.",
-        "Applies reviewed C3-07 AI tag suggestions after explicit confirmation.",
+        "Generates AI tag suggestions without applying them.",
+        "Applies reviewed AI tag suggestions after explicit confirmation.",
         "must not create or attach tags",
         "must never apply unselected suggestions",
         "ai_tags_suggestion::suggest_tags_with_ai",
@@ -354,7 +354,7 @@ fn ai_tags_suggestion_contract_documents_consumers_and_scope_boundaries() {
     ] {
         assert!(
             !AI_TAGS_RS.contains(forbidden),
-            "C3-07 contract must not implement adjacent capability `{forbidden}`"
+            "AI tag suggestions contract must not implement adjacent capability `{forbidden}`"
         );
     }
 }

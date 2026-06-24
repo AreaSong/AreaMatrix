@@ -146,15 +146,15 @@ fn onedrive_risk_state_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "也是 C4-14 的 OneDrive 风险状态合同",
+        "也是 OneDrive risk notice 的 OneDrive 风险状态合同",
         "### `acknowledge_onedrive_risk_notice(repoPath) throws -> CloudStorageState`",
-        "C4-14 的 OneDrive 风险提示确认写入入口。",
+        "OneDrive risk notice 的 OneDrive 风险提示确认写入入口。",
         "`recommended_action`",
         "`requires_notice_acknowledgement`",
         "`notice_acknowledged`",
         "OneDrive 路径默认返回 `AcknowledgeNotice`",
-        "C4-14 通过 `acknowledge_onedrive_risk_notice` 在已初始化 repo 的 `repo_config` 中持久化该状态。",
-        "S4-WIN-01 可以从 OneDrive path validation 路由到 S4-WIN-03",
+        "OneDrive risk notice 通过 `acknowledge_onedrive_risk_notice` 在已初始化 repo 的 `repo_config` 中持久化该状态。",
+        "Windows choose-repo surface 可以从 OneDrive path validation 路由到 OneDrive notice surface",
         "本合同不新增 control map 之外的页面能力。",
     ] {
         assert_contains(CORE_API, fragment);
@@ -168,12 +168,12 @@ fn onedrive_risk_state_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn onedrive_risk_state_documents_consumers_and_scope_boundaries() {
     for fragment in [
-        "Detects C4-08 cloud storage provider state and C4-14 OneDrive risk state.",
+        "Detects cloud storage provider state and OneDrive risk state.",
         "recommended_action",
         "requires_notice_acknowledgement",
         "notice_acknowledged",
         "acknowledgement UI",
-        "Persists the C4-14 OneDrive risk notice acknowledgement.",
+        "Persists the OneDrive risk notice acknowledgement.",
     ] {
         assert_contains(API_RS, fragment);
     }
@@ -182,9 +182,9 @@ fn onedrive_risk_state_documents_consumers_and_scope_boundaries() {
         "Primary cloud-storage action recommended to the platform shell.",
         "AcknowledgeNotice",
         "Whether the OneDrive notice must be acknowledged before continuing.",
-        "Detects C4-08 cloud provider state and C4-14 OneDrive risk state.",
+        "Detects cloud provider state and OneDrive risk state.",
         "acknowledgement UI",
-        "Persists the C4-14 OneDrive notice acknowledgement and returns refreshed state.",
+        "Persists the OneDrive risk notice acknowledgement and returns refreshed state.",
     ] {
         assert_contains(CLOUD_PERMISSION_RS, fragment);
     }

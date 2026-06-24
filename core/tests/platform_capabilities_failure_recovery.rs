@@ -182,7 +182,7 @@ fn platform_capabilities_failure_source_has_no_fs_db_network_or_secret_logging_p
     ] {
         assert!(
             !IMPLEMENTATION.contains(forbidden),
-            "C4-17 capability matrix must stay side-effect free; found {forbidden}"
+            "platform capabilities capability matrix must stay side-effect free; found {forbidden}"
         );
     }
 }

@@ -1,4 +1,4 @@
-//! AI tag suggestions AI tag suggestion contract types and entry points.
+//! AI tag suggestion contract types and entry points.
 
 use std::path::{Component, PathBuf};
 
@@ -25,7 +25,7 @@ pub enum AiTagSuggestionRoute {
     Remote,
 }
 
-/// Context fields that may be used for AI tag suggestions tag suggestion generation.
+/// Context fields that may be used for AI tag suggestion generation.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum AiTagSuggestionInputField {
     /// File name only.
@@ -188,7 +188,7 @@ pub struct ApplyAiTagSuggestionItem {
     pub merge_target_slug: Option<String>,
 }
 
-/// Request for applying reviewed AI tag suggestions AI tag suggestions to one file.
+/// Request for applying reviewed AI tag suggestions to one file.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ApplyAiTagSuggestionsRequest {
     /// Active file that receives the reviewed tags.
@@ -227,7 +227,7 @@ pub struct AiTagSuggestionApplyItemResult {
     pub error: Option<String>,
 }
 
-/// Report returned after applying reviewed AI tag suggestions AI tag suggestions.
+/// Report returned after applying reviewed AI tag suggestions.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiTagSuggestionApplyReport {
     /// File whose tags were mutated.

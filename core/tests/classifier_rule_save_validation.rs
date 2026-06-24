@@ -381,13 +381,13 @@ fn assert_core_api_and_udl_alignment() {
     }
 
     for fragment in [
-        "C2-13 的分类规则保存入口",
-        "`S2-17 classifier-save-rule`",
+        "classifier rule save 的分类规则保存入口",
+        "`classifier save-rule surface classifier-save-rule`",
         "不是 keyword AND extension 复合规则",
         "只允许原子更新 classifier 配置",
         "保存规则只影响未来分类",
         "`Save rule only` 回流",
-        "不实现 C2-14 impact preview、C2-15 rule CRUD",
+        "不实现 classifier impact preview、classifier rule editor CRUD",
         "Config",
         "PermissionDenied",
         "Io",
@@ -406,10 +406,10 @@ fn assert_rust_contract_alignment() {
     }
 
     for fragment in [
-        "Classifier rule payload shared by S2-17, S2-18, and C2-13",
+        "Classifier rule payload shared by classifier save-rule surface, classifier impact preview surface, and classifier rule save",
         "does not model path, source-folder",
         "enabled flags, compound AND rules",
-        "Saves one C2-13 classifier rule request",
+        "Saves one classifier rule request",
         "existing classifier category in `.areamatrix/classifier.yaml`",
         "pub preview_confirmed: bool",
         "impact preview is required",

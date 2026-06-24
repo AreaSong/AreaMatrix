@@ -402,9 +402,9 @@ fn ai_summary_validation_locks_core_api_udl_rust_and_docs_alignment() {
         "pub fn generate_ai_summary",
         "pub fn save_ai_summary",
         "pub fn clear_ai_summary",
-        "Generates a C3-06 AI summary draft without saving it.",
-        "Saves a C3-06 AI summary draft as AreaMatrix-owned metadata.",
-        "Clears C3-06 AI summary metadata for one file after confirmation.",
+        "Generates an AI summary draft without saving it.",
+        "Saves an AI summary draft as AreaMatrix-owned metadata.",
+        "Clears AI summary metadata for one file after confirmation.",
         "must not persist a summary",
         "must not delete user notes",
     ] {

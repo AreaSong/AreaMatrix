@@ -137,11 +137,11 @@ fn cloud_permission_state_docs_core_api_and_udl_stay_aligned() {
     for fragment in [
         "| `detect_cloud_storage_state(repo)` | cloud | √ | ICloudPlaceholder / PermissionDenied / Io |",
         "### `detect_cloud_storage_state(repoPath) throws -> CloudStorageState`",
-        "C4-08 的云盘权限状态入口",
+        "cloud storage state 的云盘权限状态入口",
         "不写 DB、不写 last cloud state",
         "不触发 iCloud placeholder 下载，不调用 iCloud / OneDrive SDK",
-        "S4-IOS-06 可以从 `provider_kind`",
-        "S4-WIN-03 可以从 `provider_kind = OneDrive`",
+        "iCloud permission surface 可以从 `provider_kind`",
+        "OneDrive notice surface 可以从 `provider_kind = OneDrive`",
         "本合同不新增 control map 之外的页面能力。",
     ] {
         assert_contains(CORE_API, fragment);
@@ -159,7 +159,7 @@ fn cloud_permission_state_docs_core_api_and_udl_stay_aligned() {
 #[test]
 fn cloud_permission_state_documents_consumers_and_scope_boundaries() {
     for fragment in [
-        "Detects C4-08 cloud storage provider",
+        "Detects cloud storage provider",
         "provider-specific recovery or notice state from structured fields",
         "inspects only the authorized repository path",
         "security-scoped bookmarks, iCloud availability, OneDrive client state",
@@ -171,12 +171,12 @@ fn cloud_permission_state_documents_consumers_and_scope_boundaries() {
     }
 
     for fragment in [
-        "C4-08 cloud storage permission and placeholder state contract.",
+        "cloud storage permission and placeholder state contract.",
         "Cloud storage provider inferred from an authorized repository path.",
         "Coarse cloud-storage risk level consumed by recovery and notice pages.",
         "Placeholder availability state for cloud-backed paths.",
         "Permission state for the repository path.",
-        "Structured C4-08 cloud state returned to iOS and Windows recovery surfaces.",
+        "Structured cloud storage state returned to iOS and Windows recovery surfaces.",
         "platform-neutral and read-only",
         "iCloud, OneDrive, document",
         "picker, SDK, settings, acknowledgement UI, and security-scoped bookmark",

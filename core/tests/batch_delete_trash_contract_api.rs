@@ -239,8 +239,8 @@ fn batch_delete_contract_docs_api_udl_and_control_map_stay_aligned() {
         "### `preview_batch_delete(repoPath, fileIds, deleteMode) throws -> BatchDeletePreviewReport`",
         "### `batch_delete_to_trash(repoPath, fileIds, deleteMode, previewToken) throws -> BatchDeleteReport`",
         "`preview_token`",
-        "`S2-13 batch-delete-confirm`",
-        "`S2-10 undo-toast`",
+        "`batch delete confirmation`",
+        "`undo toast`",
         "`MoveToTrash`",
         "`RemoveFromIndex`",
         "`trash_available`",
@@ -259,7 +259,7 @@ fn batch_delete_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn batch_delete_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "C2-09 batch delete to Trash contract",
+        "batch delete to Trash contract",
         "BatchDeletePreviewReport",
         "BatchDeleteReport",
         "preview_batch_delete",
@@ -276,8 +276,8 @@ fn batch_delete_contract_documents_consumer_state_and_scope_boundaries() {
         "batch_delete::preview_batch_delete",
         "pub fn batch_delete_to_trash(",
         "batch_delete::batch_delete_to_trash",
-        "S2-13",
-        "C2-09",
+        "batch delete confirmation",
+        "batch delete",
         "permanent deletion",
     ] {
         assert_contains(API_RS, fragment);

@@ -179,7 +179,7 @@ fn icloud_conflict_visual_contract_docs_api_udl_and_control_map_stay_aligned() {
         "`KeepOriginal`：保留原始版本，将 conflicted copy 移到系统 Trash。",
         "`KeepConflictedCopy`：保留 conflicted copy，将原始版本移到系统 Trash。",
         "任一阶段失败必须保持 conflict unresolved",
-        "S1-36 仍只消费 `list_icloud_conflicts`，S2-20",
+        "iCloud conflict list 仍只消费 `list_icloud_conflicts`，iCloud conflict review surface",
     ] {
         assert_contains(CORE_API, fragment);
     }
@@ -200,10 +200,10 @@ fn icloud_conflict_visual_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn icloud_conflict_visual_contract_matches_consuming_page_state_without_adjacent_scope() {
     for fragment in [
-        "Version role inside a C2-16 iCloud conflict preview.",
-        "User resolution choices supported by C2-16.",
-        "C2-16 preview report for comparing and resolving iCloud conflict versions.",
-        "C2-16 resolution result returned after explicit user confirmation.",
+        "Version role inside an iCloud conflict preview.",
+        "User resolution choices supported by iCloud conflict resolution.",
+        "iCloud conflict preview report for comparing and resolving iCloud conflict versions.",
+        "iCloud conflict resolution result returned after explicit user confirmation.",
         "Versions moved to Trash; empty for KeepBoth.",
     ] {
         assert_contains(DOMAIN_RS, fragment);
@@ -211,8 +211,8 @@ fn icloud_conflict_visual_contract_matches_consuming_page_state_without_adjacent
 
     let c2_16_api_contract = text_between(
         API_RS,
-        "/// Previews C2-16 iCloud conflict versions without resolving the conflict.",
-        "/// Previews C2-17 import conflict batch decisions without mutating staging or files.",
+        "/// Previews iCloud conflict versions without resolving the conflict.",
+        "/// Previews import conflict batch decisions without mutating staging or files.",
     );
 
     for forbidden in [
@@ -223,7 +223,7 @@ fn icloud_conflict_visual_contract_matches_consuming_page_state_without_adjacent
     ] {
         assert!(
             !c2_16_api_contract.contains(forbidden),
-            "C2-16 API contract should not implement adjacent scope: {forbidden}"
+            "iCloud conflict preview API contract should not implement adjacent scope: {forbidden}"
         );
     }
 }

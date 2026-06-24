@@ -163,11 +163,11 @@ fn rename_file_contract_exports_core_api_and_udl_signature() {
 #[test]
 fn rename_file_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "C1-22 owns the user-visible rename contract",
+        "file rename owns the user-visible rename contract",
         "Indexed rows are display-name only",
         "leaves `files.path`",
-        "Repository-owned rename also triggers C1-20 generated-overview",
-        "C1-10 conflict-free numbering is reused",
+        "Repository-owned rename also triggers generated overview",
+        "name-conflict resolution owns same-name conflict handling",
     ] {
         assert_contains(API_RS, fragment);
     }
@@ -178,7 +178,7 @@ fn rename_file_contract_docs_api_udl_and_control_map_stay_aligned() {
         "`files.path`、`files.current_name`、`updated_at`",
         "Indexed 文件只更新 `files.current_name`",
         "不移动、重命名或覆盖外部源文件",
-        "Copy / Move rename 成功后触发 C1-20 generated overview 再生成",
+        "Copy / Move rename 成功后触发 generated overview 再生成",
         "默认只写\n  `.areamatrix/generated/**`",
         "`FileNotFound`：`fileId` 对应的 active row 不存在",
         "`Db`：SQLite 查询、更新或 change log 写入失败。",

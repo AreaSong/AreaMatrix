@@ -266,7 +266,7 @@ fn command_index_validation_covers_ui_ready_success_without_side_effects() {
             include_file_candidates: true,
         },
     )
-    .expect("list C2-11 command targets");
+    .expect("list command index targets");
 
     assert!(index.generated_at > 0);
     assert!(index.recent_targets.is_empty());

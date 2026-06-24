@@ -1,4 +1,4 @@
-//! classifier rule save classifier rule save types and persistence.
+//! classifier rule save types and persistence.
 
 use std::{
     collections::{BTreeMap, HashSet},
@@ -73,7 +73,7 @@ pub struct ClassifierRule {
     pub preview_confirmed: bool,
 }
 
-/// Saves one classifier rule save classifier rule request.
+/// Saves one classifier rule request.
 ///
 /// The save appends independent keyword and extension basis values to an
 /// existing classifier category in `.areamatrix/classifier.yaml`, updates that

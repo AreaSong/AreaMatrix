@@ -324,8 +324,8 @@ fn batch_rename_contract_docs_api_udl_and_control_map_stay_aligned() {
         "| `batch_rename(repo, file_ids, rule, preview_token)` | storage | √ | InvalidPath / Conflict / FileNotFound / PermissionDenied / Io / Db |",
         "### `preview_batch_rename(repoPath, fileIds, rule) throws -> BatchRenamePreviewReport`",
         "### `batch_rename(repoPath, fileIds, rule, previewToken) throws -> BatchRenameReport`",
-        "`S2-14 batch-rename`",
-        "`S2-10 undo-toast`",
+        "`batch rename surface`",
+        "`undo toast`",
         "`preview_token`",
         "`BatchRenameRule`",
         "`will_rename_count`",
@@ -343,7 +343,7 @@ fn batch_rename_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn batch_rename_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "C2-10 batch rename contract",
+        "batch rename contract",
         "BatchRenamePreviewReport",
         "BatchRenameReport",
         "preview_batch_rename",
@@ -361,8 +361,8 @@ fn batch_rename_contract_documents_consumer_state_and_scope_boundaries() {
         "batch_rename_mod::preview_batch_rename",
         "pub fn batch_rename(",
         "batch_rename_mod::batch_rename",
-        "S2-14",
-        "C2-10",
+        "batch rename surface",
+        "batch rename",
         "must not implement AI naming",
     ] {
         assert_contains(API_RS, fragment);
@@ -383,7 +383,7 @@ fn batch_rename_contract_documents_consumer_state_and_scope_boundaries() {
 }
 
 #[test]
-fn batch_rename_rule_variants_cover_stage_2_strategies() {
+fn batch_rename_rule_variants_cover_batch_rename_strategies() {
     let variants = [
         BatchRenameMode::Prefix,
         BatchRenameMode::DatePrefix,

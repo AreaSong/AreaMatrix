@@ -226,7 +226,7 @@ fn sync_conflict_resolve_docs_api_udl_and_control_map_stay_aligned() {
         "`default_resolution` 必须为 `KeepBoth`",
         "`KeepBoth`：默认安全策略，所有版本继续留在用户可见位置。",
         "`UseExisting`：canonical path 继续指向 existing",
-        "`UseIncoming`：incoming 将成为 canonical path；必须先进入 S4-X-09 二次确认。",
+        "`UseIncoming`：incoming 将成为 canonical path；必须先进入 replace confirmation surface 二次确认。",
         "不移动、不删除、不重命名、不覆盖、不 Trash、不隐藏任何用户文件或冲突副本。",
         "任一阶段失败必须保持 conflict unresolved",
         "本合同没有引入 control map 之外的页面能力。",
@@ -247,12 +247,12 @@ fn sync_conflict_resolve_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn sync_conflict_resolve_documents_consumers_and_scope_boundaries() {
     for fragment in [
-        "Previews a C4-16 sync conflict resolution plan without mutating files.",
-        "`S4-X-01 sync-conflict` consumes this contract",
-        "`S4-X-09",
+        "Previews a sync conflict resolution plan without mutating files.",
+        "sync conflict review surface sync-conflict` consumes this contract",
+        "`replace confirmation surface",
         "must not mark a conflict resolved",
         "move files, rename files, overwrite files, Trash versions",
-        "Resolves one C4-16 sync conflict after preview and required confirmation.",
+        "Resolves one sync conflict after preview and required confirmation.",
         "replace_confirmed",
         "Failure must leave",
         "CoreError::Conflict",
@@ -264,10 +264,10 @@ fn sync_conflict_resolve_documents_consumers_and_scope_boundaries() {
     }
 
     for fragment in [
-        "C4-16 sync conflict resolution contract types and entry points.",
-        "User-selected C4-16 sync conflict resolution strategy.",
-        "Per-version impact shown in S4-X-01 before applying a resolution.",
-        "Replace plan required before S4-X-09 can confirm a destructive resolution.",
+        "sync conflict resolution contract types and entry points.",
+        "User-selected sync conflict resolution strategy.",
+        "Per-version impact shown in sync conflict review surface before applying a resolution.",
+        "Replace plan required before replace confirmation surface can confirm a destructive resolution.",
         "Read-only preview report for one planned sync conflict resolution.",
         "Apply request for resolving one sync conflict after preview.",
         "Result report returned after resolving one sync conflict.",

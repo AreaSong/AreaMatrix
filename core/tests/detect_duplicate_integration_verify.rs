@@ -202,7 +202,7 @@ fn detect_duplicate_integration_verify_docs_control_map_udl_and_api_are_aligned(
     }
 
     for fragment in [
-        "C1-09 owns duplicate detection",
+        "duplicate detection owns duplicate detection",
         "`Skip` and `Ask` return",
         "`KeepBoth` allows a",
         "`Overwrite` is accepted only after the UI",

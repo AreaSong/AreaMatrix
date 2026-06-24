@@ -171,18 +171,18 @@ fn ai_classification_suggestion_contract_docs_api_udl_and_control_map_stay_align
     for fragment in [
         "| `suggest_category_with_ai(repo, request)` | ai | √ | Config / PermissionDenied / Internal |",
         "### `suggest_category_with_ai(repoPath: String, request: AiCategorySuggestionRequest) throws -> AiCategorySuggestion`",
-        "C3-04 的 AI 分类建议入口",
-        "`S3-04 ai-classification-suggestion`",
-        "`S3-10 ai-fallback`",
+        "AI category suggestion 的 AI 分类建议入口",
+        "`AI category suggestion surface ai-classification-suggestion`",
+        "`AI fallback`",
         "返回 `AiCategorySuggestion`",
         "本 API 只生成建议草稿",
         "不得写 `files.category`",
         "不得移动、删除、重命名、覆盖用户文件",
         "高置信规则结果必须返回",
-        "远程路线必须同时通过 C3-01 AI settings、C3-03 remote provider gate、C3-09 privacy gate",
+        "远程路线必须同时通过 AI settings、remote provider gate、AI privacy gate",
         "隐私规则命中时必须返回 `Skipped` / `PrivacyRule`",
-        "S3-04 可以从合同得到当前分类、建议分类、confidence、reason、local/remote route",
-        "S3-10 可以从 `status`、`skipped_reason`、`route` 和 `call_log_id`",
+        "AI category suggestion surface 可以从合同得到当前分类、建议分类、confidence、reason、local/remote route",
+        "AI fallback surface 可以从 `status`、`skipped_reason`、`route` 和 `call_log_id`",
         "本合同不新增 control map 之外的页面能力",
     ] {
         assert_contains(CORE_API, fragment);
@@ -200,7 +200,7 @@ fn ai_classification_suggestion_contract_docs_api_udl_and_control_map_stay_align
 fn ai_classification_suggestion_contract_documents_consumers_and_boundaries() {
     assert_contains(
         AI_CLASSIFICATION_RS,
-        "C3-04 AI classification suggestion contract types and entry point",
+        "AI category suggestion AI classification suggestion contract types and entry point",
     );
     for fragment in [
         "suggest_category_with_ai",
@@ -233,7 +233,7 @@ fn ai_classification_suggestion_contract_documents_consumers_and_boundaries() {
     }
 
     for fragment in [
-        "Requests a C3-04 AI category suggestion without applying it.",
+        "Requests an AI category suggestion without applying it.",
         "Returned suggestions are drafts only",
         "must not overwrite classifier rules",
         "requires_user_confirmation",

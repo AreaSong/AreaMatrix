@@ -167,18 +167,18 @@ fn files_import_docs_core_api_and_udl_stay_aligned() {
 #[test]
 fn files_import_documents_consumer_state_and_platform_boundaries() {
     for fragment in [
-        "C4-06 files-import reuses this read-only preview surface",
+        "files import reuses this read-only preview surface",
         "iOS Files provider or document picker has granted access",
         "Provider browsing",
         "iCloud placeholder download orchestration",
-        "C4-06 files-import reuses `StorageMode::Copied` import semantics",
+        "files import reuses `StorageMode::Copied` import semantics",
         "authorized path plus",
         "does not open the document picker",
         "retain security-scoped bookmarks",
         "trigger provider downloads",
         "move source files",
-        "perform C4-21 replace confirmation",
-        "`S4-IOS-07` can derive its preview and result states",
+        "perform replace confirmation",
+        "`iOS files import surface` can derive its preview and result states",
         "structured `ICloudPlaceholder`, `PermissionDenied`,",
         "`DuplicateFile`, and `Conflict` errors",
         "Cancelled selections stay in the platform sheet",

@@ -90,7 +90,11 @@ fn assert_no_remote_ai_side_effects(repo: &Path) {
         repo.join(".areamatrix/ai_call_log"),
         repo.join(".areamatrix/generated/ai_config.json"),
     ] {
-        assert!(!path.exists(), "C3-01 must not create {}", path.display());
+        assert!(
+            !path.exists(),
+            "AI settings must not create {}",
+            path.display()
+        );
     }
 }
 

@@ -17,7 +17,7 @@ batch_slug: v-next
 start_task: 1
 root_dependency: 4-3/task-165
 blocked: true
-gate_message: promotion blocked: prerequisite version is live-running
+gate_message: promotion blocked: explicit approval and live mapping are required
 tasks:
   - semantic_id: v*-feature-id/docs-contract
     live_label: 5-1/task-01

@@ -148,7 +148,7 @@ fn mobile_detail_validation_proves_ui_ready_segments_without_writes() {
         repo.path(),
         file_id,
         "docs/report.pdf",
-        "Reviewed from C4-07 validation.",
+        "Reviewed from mobile file detail validation.",
     );
     let before_counts = metadata_counts(repo.path());
     let before_file = fs::read(repo.path().join("docs/report.pdf")).expect("read file before");
@@ -165,7 +165,10 @@ fn mobile_detail_validation_proves_ui_ready_segments_without_writes() {
     assert_eq!(entry.availability_status, FileAvailabilityStatus::Available);
     assert_eq!(changes.len(), 2);
     assert_eq!(changes[0].action, "edited_note");
-    assert_eq!(note.as_deref(), Some("Reviewed from C4-07 validation."));
+    assert_eq!(
+        note.as_deref(),
+        Some("Reviewed from mobile file detail validation.")
+    );
     assert_eq!(metadata_counts(repo.path()), before_counts);
     assert_eq!(
         fs::read(repo.path().join("docs/report.pdf")).expect("read file after"),
@@ -280,14 +283,14 @@ fn assert_core_api_udl_and_rust_alignment() {
         "pub fn get_file(repo_path: String, file_id: i64) -> CoreResult<FileEntry>",
         "pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<ChangeLogEntry>>",
         "pub fn read_note(repo_path: String, file_id: i64) -> CoreResult<Option<String>>",
-        "C4-07 composes this API with [`list_changes`] and",
-        "[`read_note`] for `S4-IOS-05` mobile-file-detail",
+        "mobile file detail composes this API with [`list_changes`] and",
+        "[`read_note`] for `mobile file detail surface`",
         "without platform-side filesystem inference and route the missing state to",
-        "`S4-X-06` rather than inferring it from the filesystem",
+        "`missing-file recovery surface` rather than inferring it from the filesystem",
         "load the Log segment without blocking the Meta segment",
         "does not trigger filesystem rescan, sync",
         "repair, conflict resolution, or missing-file recovery",
-        "C4-07 reuses this as the lazy Note segment query",
+        "mobile file detail reuses this as the lazy Note segment query",
         "note editing remains with the existing",
         "`write_note` contract",
     ] {

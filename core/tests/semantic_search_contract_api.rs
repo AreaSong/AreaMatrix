@@ -321,9 +321,9 @@ fn semantic_search_contract_docs_api_udl_and_control_map_stay_aligned() {
         "| `build_embedding_index(repo, scope)` | ai/search | √ | Config / PermissionDenied / Db / Internal |",
         "### `semantic_search(repoPath: String, query: String, filter: SearchFilter, pagination: SearchPagination) throws -> SemanticSearchResultPage`",
         "### `build_embedding_index(repoPath: String, scope: SemanticIndexScope) throws -> SemanticIndexBuildReport`",
-        "C3-08 的语义搜索入口",
-        "`S3-08 semantic-search-results`",
-        "`S3-10 ai-fallback`",
+        "semantic search 的语义搜索入口",
+        "`semantic search results`",
+        "`AI fallback`",
         "`Semantic matches` / `Normal search matches`",
         "`RateLimited` 或 `Timeout`",
         "本 API 不创建或刷新 embedding index",
@@ -342,7 +342,7 @@ fn semantic_search_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn semantic_search_contract_documents_consumers_and_scope_boundaries() {
     for fragment in [
-        "C3-08 semantic search contract types and entry points",
+        "semantic search contract types and entry points",
         "pub enum SemanticSearchRoute",
         "pub enum SemanticSearchInputField",
         "pub enum SemanticIndexStatus",
@@ -383,7 +383,7 @@ fn semantic_search_contract_documents_consumers_and_scope_boundaries() {
     ] {
         assert!(
             !SEMANTIC_RS.contains(forbidden),
-            "C3-08 contract must not implement adjacent capability `{forbidden}`"
+            "semantic search contract must not implement adjacent capability `{forbidden}`"
         );
     }
 

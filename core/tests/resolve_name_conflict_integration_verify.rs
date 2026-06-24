@@ -166,10 +166,10 @@ fn resolve_name_conflict_integration_verify_docs_control_map_udl_and_consumers_s
     }
 
     for fragment in [
-        "C1-10 owns same-name conflict handling",
+        "name-conflict resolution owns same-name conflict handling",
         "must not overwrite an existing user file by default",
         "Dangerous replacement remains explicit through `DuplicateStrategy::Overwrite`",
-        "C1-10 exposes this entry point for manual name-conflict resolution",
+        "name-conflict resolution exposes this entry point for manual name-conflict resolution",
     ] {
         assert_contains(API_RS, fragment);
     }

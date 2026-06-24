@@ -403,7 +403,7 @@ pub(crate) fn assert_rust_contract_alignment() {
         "including tags with Any/All semantics",
         "optional storage mode",
         "pub fn list_filter_facets(repo_path: String, query: SearchFacetQuery)",
-        "Loads C2-02 search filter facet counts without mutating repository state.",
+        "Loads search filter facet counts without mutating repository state.",
         "tags with Any/All semantics",
         "optional storage mode",
         "does not create, update, delete, or rename tags",

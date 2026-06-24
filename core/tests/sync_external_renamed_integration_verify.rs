@@ -162,7 +162,7 @@ fn assert_renamed_consumers(repo: &Path, file_id: i64, user_bytes_before_sync: &
 fn sync_external_renamed_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
     assert_c1_18_capability_spec();
     assert_core_api_and_udl_contract();
-    assert_stage_one_consumers();
+    assert_core_consumers();
     assert_rust_entry_points_are_real_renamed_wiring();
 }
 
@@ -193,11 +193,11 @@ fn assert_core_api_and_udl_contract() {
     }
 }
 
-fn assert_stage_one_consumers() {}
+fn assert_core_consumers() {}
 
 fn assert_rust_entry_points_are_real_renamed_wiring() {
     for fragment in [
-        "C1-18 owns the `ExternalEventKind::Renamed` contract",
+        "external renamed sync owns the `ExternalEventKind::Renamed` contract",
         "`files.path` and",
         "`files.current_name` update",
         "`updated_at` refresh",

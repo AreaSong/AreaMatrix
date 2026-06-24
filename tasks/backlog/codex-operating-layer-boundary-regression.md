@@ -9,9 +9,10 @@ Git checkpoint 状态。
 当前 Codex / AreaMatrix 工作层边界回归：**PASS with product-closeout caveat**。
 
 工作层本身未发现 source-of-truth、execution、state 或 skill owner 污染；`tasks/backlog/**`
-和 `.codex/references/**` 仍只是 planning / 操作投影层。但 AreaMatrix v1 产品收口仍为
-blocked：`workflow/versions/v1-mvp/closeout/closeout.yaml` 记录了 release blocker
-和 checkpoint evidence gap；Xcode derived-data dirty state 已单独处置。
+和 `.codex/references/**` 仍只是 planning / 操作投影层。AreaMatrix v1 technical queue
+已完成并归档；正式 Stage 1 alpha 仍为 blocked：`workflow/versions/v1-mvp/closeout/closeout.yaml`
+记录了 release evidence / release decision blockers。checkpoint gaps 已作为 closeout
+accepted exceptions 记录；Xcode derived-data dirty state 已单独处置。
 
 当前 backlog prompt package 收口状态：5 个 package 均为 `closed`，`./dev tasks status`
 应显示 `backlog open: 0` / `backlog closed: 5`。这些包继续保留为只读浏览和历史候选证据，
@@ -40,7 +41,7 @@ apps/macos/.derived-data-log-0CA5RPJ1
 ## 后续判断
 
 1. 工作层治理不需要继续扩张；默认回到 v1 产品收口。
-2. 新 live 产品任务前，先处理 release blocker、checkpoint evidence gap 和 dirty worktree。
+2. 新版本工作仍需 workflow discussion、explicit approval 和 live mapping；不得宣称 formal alpha released。formal release evidence 继续作为独立发布轨处理。
 3. hooks、Automations、Cloud、Worktrees、Vibe-Skills、subagents、Computer Use、Browser / Chrome 仍按 trigger / admission gate 使用，不进入默认主线。
 
 ## 验证

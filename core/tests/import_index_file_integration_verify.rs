@@ -117,7 +117,7 @@ fn import_index_file_integration_verify_docs_api_udl_and_consumers_stay_aligned(
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
     }
-    assert_contains(API_RS, "C1-08 owns index-only semantics");
+    assert_contains(API_RS, "indexed-file import owns index-only semantics");
 }
 
 #[test]

@@ -533,7 +533,7 @@ pub struct ICloudConflictResolutionOption {
     pub disabled_reason: Option<String>,
 }
 
-/// iCloud conflict resolution preview report for comparing and resolving iCloud conflict versions.
+/// iCloud conflict preview report for comparing and resolving iCloud conflict versions.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ICloudConflictPreviewReport {
     /// Conflict id from `list_icloud_conflicts`.

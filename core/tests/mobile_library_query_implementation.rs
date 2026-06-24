@@ -133,7 +133,7 @@ fn file_bytes(repo: &Path, relative_path: &str) -> Vec<u8> {
 }
 
 fn parse_tree(tree_json: &str) -> Value {
-    serde_json::from_str(tree_json).expect("parse C4-03 tree JSON")
+    serde_json::from_str(tree_json).expect("parse mobile library query tree JSON")
 }
 
 fn child_slugs(node: &Value) -> Vec<&str> {

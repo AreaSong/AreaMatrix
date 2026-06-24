@@ -114,7 +114,7 @@ v1 closeout decision 已记录在
 本任务只新增发布证据文档和文档锁定测试。若本清单需要回滚，只撤销：
 
 - `workflow/versions/v1-mvp/evidence/release-checklist.md`
-- `core/tests/stage1_release_checklist.rs`
+- `core/tests/release_evidence_checklist.rs`
 - `docs/development/release.md` 中指向本清单的发布前说明
 - `docs/development/build.md` 中 Stage 1 alpha 发布构建说明
 

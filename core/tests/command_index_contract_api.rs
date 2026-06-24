@@ -201,8 +201,8 @@ fn command_index_contract_docs_api_udl_and_control_map_stay_aligned() {
         "CommandIndex list_command_targets(string repo_path, CommandIndexContext context);",
         "| `list_command_targets(repo, context)` | command | √ | Db |",
         "### `list_command_targets(repoPath, context) throws -> CommandIndex`",
-        "C2-11 的命令索引入口",
-        "`S2-15 command-palette`",
+        "command index 的命令索引入口",
+        "command palette",
         "selection context",
         "可执行命令、导航目标、当前选择命令、最近命令",
         "Smart List 和文件候选",
@@ -210,7 +210,7 @@ fn command_index_contract_docs_api_udl_and_control_map_stay_aligned() {
         "危险命令只返回跳转确认或预览页的目标",
         "不得在命令",
         "面板中直接执行。",
-        "不执行 Smart List；打开 Smart List 结果仍调用 C2-04",
+        "不执行 Smart List；打开 Smart List 结果仍调用 Smart List execution",
         "`run_smart_list`。",
         "不实现插件命令市场",
     ] {
@@ -221,7 +221,7 @@ fn command_index_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn command_index_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "C2-11 command index contract",
+        "command index contract",
         "grouped command rows",
         "Smart",
         "List navigation targets",

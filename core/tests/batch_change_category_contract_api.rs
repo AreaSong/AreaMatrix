@@ -247,8 +247,8 @@ fn batch_change_category_contract_docs_api_udl_and_control_map_stay_aligned() {
         "| `batch_move_to_category(repo, file_ids, category, move, preview_token)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |",
         "### `preview_batch_move_to_category(repoPath, fileIds, targetCategory, moveRepoOwnedFiles) throws -> BatchCategoryPreviewReport`",
         "### `batch_move_to_category(repoPath, fileIds, targetCategory, moveRepoOwnedFiles, previewToken) throws -> BatchCategoryChangeReport`",
-        "`S2-12 batch-change-category`",
-        "`S2-10 undo-toast`",
+        "`batch change-category surface batch-change-category`",
+        "`undo toast`",
         "`preview_token`",
         "`category_distribution`",
         "`can_apply`",
@@ -264,7 +264,7 @@ fn batch_change_category_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn batch_change_category_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "C2-08 batch category change types and entry points",
+        "batch category change types and entry points",
         "BatchCategoryPreviewReport",
         "BatchCategoryChangeReport",
         "preview_batch_move_to_category",
@@ -282,8 +282,8 @@ fn batch_change_category_contract_documents_consumer_state_and_scope_boundaries(
         "batch_category::preview_batch_move_to_category",
         "pub fn batch_move_to_category(",
         "batch_category::batch_move_to_category",
-        "S2-12",
-        "C2-08",
+        "batch change-category surface",
+        "batch category change",
         "not create new categories",
     ] {
         assert_contains(API_RS, fragment);

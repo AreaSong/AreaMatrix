@@ -1,4 +1,4 @@
-//! Repository config-table storage for local model status local model status snapshots.
+//! Repository config-table storage for local model status snapshots.
 
 use std::path::Path;
 

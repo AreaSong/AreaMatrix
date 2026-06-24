@@ -134,9 +134,9 @@ fn batch_add_tags_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "| `batch_add_tags(repo, file_ids, tags)` | tags | √ | FileNotFound / Db |",
         "### `batch_add_tags(repoPath, fileIds, tags) throws -> BatchMutationReport`",
-        "C2-06 的批量加标签入口",
-        "`S2-09 batch-add-tags`",
-        "`S2-10 undo-toast`",
+        "batch tag mutation 的批量加标签入口",
+        "`batch add-tags`",
+        "`undo toast`",
         "`requested_file_count`",
         "`requested_tag_count`",
         "`added_count`",
@@ -146,7 +146,7 @@ fn batch_add_tags_contract_docs_api_udl_and_control_map_stay_aligned() {
         "`undo_token`",
         "`AlreadyHadTag`",
         "成功新增、重复跳过和失败项都必须在 `BatchMutationReport` 中可追踪",
-        "批量 AI 标签建议属于 Stage 3",
+        "批量 AI 标签建议",
     ] {
         assert_contains(CORE_API, fragment);
     }
@@ -170,12 +170,12 @@ fn batch_add_tags_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn batch_add_tags_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "C2-06 batch tag mutation contract",
-        "S2-09 uses this API",
-        "S2-10 consumes the returned undo token",
+        "batch tag mutation contract",
+        "batch add-tags surface uses this API",
+        "undo toast surface consumes the returned undo token",
         "already-present",
         "failed item counts",
-        "real writes to `tags`, `change_log`, and the C2-07 undo action",
+        "real writes to `tags`, `change_log`, and the undo action log",
         "must never move, rename, delete, trash",
     ] {
         assert_contains(TAGS_RS, fragment);

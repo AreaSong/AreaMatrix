@@ -352,11 +352,11 @@ fn assert_ffi_surface_alignment() {
 
 fn assert_core_api_behavior_docs() {
     for fragment in [
-        "C4-05 share-extension-import reuses this read-only preview surface",
+        "share extension import reuses this read-only preview surface",
         "Share Extension has parsed an `NSExtensionItem`",
         "app-group queue persistence",
         "timeout handling stay in the platform layer",
-        "C4-05 share-extension-import reuses `StorageMode::Copied` import semantics",
+        "share extension import reuses `StorageMode::Copied` import semantics",
         "Core-readable app",
         "group staged file",
         "store the deferred",

@@ -18,11 +18,11 @@ mod validation;
 /// AI operation whose failure or skipped state needs standard fallback UI.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum AiFallbackOperation {
-    /// AI category suggestion AI category suggestion.
+    /// AI category suggestion.
     ClassificationSuggestion,
-    /// semantic search semantic search request.
+    /// semantic search request.
     SemanticSearch,
-    /// semantic search semantic embedding index build.
+    /// semantic embedding index build.
     EmbeddingIndexBuild,
 }
 
@@ -129,7 +129,7 @@ pub struct AiFallbackStatusRequest {
     pub provider_error: Option<AiFallbackProviderErrorKind>,
     /// Optional stable provider error code. It must not contain raw output or secrets.
     pub provider_error_code: Option<String>,
-    /// AI privacy rules privacy decision available to the caller, when privacy was evaluated.
+    /// AI privacy rules decision available to the caller, when privacy was evaluated.
     pub privacy_decision: Option<AiPrivacyDecision>,
     /// AI privacy rules skipped reason available to the caller, when privacy was evaluated.
     pub privacy_skipped_reason: Option<AiPrivacySkippedReason>,
@@ -137,9 +137,9 @@ pub struct AiFallbackStatusRequest {
     pub category_skipped_reason: Option<AiCategorySuggestionSkipReason>,
     /// semantic search fallback reason, when the fallback came from semantic search.
     pub semantic_fallback_reason: Option<SemanticSearchFallbackReason>,
-    /// Related AI call log log status, when the caller has a log row.
+    /// Related AI call log status, when the caller has a log row.
     pub call_log_status: Option<AiCallLogStatus>,
-    /// Related AI call log log row id for `View call log`.
+    /// Related AI call log row id for `View call log`.
     pub call_log_id: Option<i64>,
     /// Matched AI privacy rules rule id for `View privacy rule`.
     pub privacy_rule_id: Option<String>,

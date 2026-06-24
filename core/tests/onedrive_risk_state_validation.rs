@@ -234,12 +234,12 @@ fn assert_core_api_udl_and_rust_alignment() {
 
     for fragment in [
         "### `detect_cloud_storage_state(repoPath) throws -> CloudStorageState`",
-        "C4-08 的云盘权限状态入口，也是 C4-14 的 OneDrive 风险状态合同。",
+        "cloud storage state 的云盘权限状态入口，也是 OneDrive risk notice 的 OneDrive 风险状态合同。",
         "OneDrive 路径默认返回 `AcknowledgeNotice`",
         "不调用 iCloud / OneDrive SDK",
         "不写 DB、不写 last cloud state",
         "### `acknowledge_onedrive_risk_notice(repoPath) throws -> CloudStorageState`",
-        "C4-14 的 OneDrive 风险提示确认写入入口。",
+        "OneDrive risk notice 的 OneDrive 风险提示确认写入入口。",
         "只写 `.areamatrix/index.db` 中的 `repo_config` 元数据",
         "| `acknowledge_onedrive_risk_notice(repo)` | cloud | √ |",
     ] {
@@ -253,8 +253,8 @@ fn assert_core_api_udl_and_rust_alignment() {
     for fragment in [
         "pub fn detect_cloud_storage_state(repo_path: String) -> CoreResult<CloudStorageState>",
         "pub fn acknowledge_onedrive_risk_notice(repo_path: String)",
-        "Detects C4-08 cloud storage provider state and C4-14 OneDrive risk state.",
-        "Persists the C4-14 OneDrive risk notice acknowledgement.",
+        "Detects cloud storage provider state and OneDrive risk state.",
+        "Persists the OneDrive risk notice acknowledgement.",
         "It does not create a repository, move,",
         "rename, delete, overwrite, reindex",
         "call the OneDrive",
@@ -263,7 +263,7 @@ fn assert_core_api_udl_and_rust_alignment() {
     }
 
     for fragment in [
-        "C4-08 cloud storage permission and placeholder state contract.",
+        "cloud storage permission and placeholder state contract.",
         "pub(crate) fn detect_cloud_storage_state(repo_path: String)",
         "pub(crate) fn acknowledge_onedrive_risk_notice(repo_path: String)",
         "platform-neutral and read-only",

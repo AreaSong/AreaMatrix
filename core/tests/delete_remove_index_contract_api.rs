@@ -65,7 +65,7 @@ fn delete_remove_index_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "C1-23 owns the user-visible delete/remove-index contract",
+        "delete/remove-index owns the user-visible delete/remove-index contract",
         "no `hard` or permanent-delete flag",
         "Indexed,",
         "adopted, external, or missing references must use",

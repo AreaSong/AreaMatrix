@@ -1,4 +1,4 @@
-//! import conflict batch import conflict batch contract types and entry points.
+//! import conflict batch contract types and entry points.
 
 use std::path::PathBuf;
 
@@ -60,7 +60,7 @@ pub enum ImportConflictBatchResultStatus {
     KeptBoth,
     /// Existing file was moved to Trash or recovery storage and replaced.
     Replaced,
-    /// Row was routed to the per-item per-item conflict queue.
+    /// Row was routed to the per-item conflict queue.
     QueuedForPerItem,
     /// Row remains outside the current scope.
     Pending,
@@ -149,7 +149,7 @@ pub struct ImportConflictBatchPreviewReport {
     pub ask_per_item_count: i64,
     /// Whether Trash or recovery storage is available for replacement.
     pub trash_available: bool,
-    /// Whether successful writes can create a undo action log undo action.
+    /// Whether successful writes can create an undo action log entry.
     pub undo_available: bool,
     /// Whether Apply may be called with this preview token.
     pub can_apply: bool,
@@ -199,7 +199,7 @@ pub struct ImportConflictBatchItemResult {
     pub error: Option<String>,
 }
 
-/// Execution report returned to import conflict review surface and undo action log undo consumers.
+/// Execution report returned to import conflict review surface and undo action log consumers.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ImportConflictBatchApplyReport {
     /// Import session processed by this apply call.
@@ -246,7 +246,7 @@ struct PlannedImportConflict {
     reason: Option<String>,
 }
 
-/// Previews import conflict batch import conflict batch decisions without mutating staging or files.
+/// Previews import conflict batch decisions without mutating staging or files.
 ///
 /// import conflict review surface uses this API to show conflict type groups, selected strategies, row
 /// status, Replace risk, Trash/undo availability, pending rows, and whether
@@ -276,7 +276,7 @@ pub fn preview_import_conflict_batch(
     Ok(plan::preview_report(&repo, &request, &normalized, &plan))
 }
 
-/// Applies import conflict batch import conflict batch decisions after explicit user confirmation.
+/// Applies import conflict batch decisions after explicit user confirmation.
 ///
 /// `preview_token` must come from [`preview_import_conflict_batch`] for the
 /// same import session, conflict scope, strategies, Trash availability, and

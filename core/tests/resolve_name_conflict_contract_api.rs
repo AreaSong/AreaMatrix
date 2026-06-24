@@ -357,12 +357,12 @@ fn resolve_name_conflict_contract_documents_error_codes_and_side_effects() {
     }
 
     for fragment in [
-        "C1-10 owns same-name conflict handling",
+        "name-conflict resolution owns same-name conflict handling",
         "final conflict-free name",
         "must not overwrite an existing user file by default",
         "CoreError::Conflict { path }",
         "Renames a file entry to a conflict-free filename",
-        "remain guarded by S1-24",
+        "remain guarded by replace confirmation rather than",
     ] {
         assert_contains(API_RS, fragment);
     }
@@ -373,6 +373,9 @@ fn resolve_name_conflict_contract_keeps_adjacent_scope_out() {
     assert_ne!(DuplicateStrategy::Skip, DuplicateStrategy::Overwrite);
     assert_ne!(DuplicateStrategy::Skip, DuplicateStrategy::KeepBoth);
 
-    assert_contains(API_RS, "C1-09 owns duplicate detection");
-    assert_contains(API_RS, "C1-10 owns same-name conflict handling");
+    assert_contains(API_RS, "duplicate detection owns duplicate detection");
+    assert_contains(
+        API_RS,
+        "name-conflict resolution owns same-name conflict handling",
+    );
 }

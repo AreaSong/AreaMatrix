@@ -125,11 +125,11 @@ fn share_extension_import_docs_core_api_and_udl_stay_aligned() {
 #[test]
 fn share_extension_import_documents_consumer_state_and_platform_boundaries() {
     for fragment in [
-        "C4-05 share-extension-import reuses this read-only preview surface",
+        "share extension import reuses this read-only preview surface",
         "Share Extension has parsed an `NSExtensionItem`",
         "app-group queue persistence",
         "timeout handling stay in the platform layer",
-        "C4-05 share-extension-import reuses `StorageMode::Copied` import semantics",
+        "share extension import reuses `StorageMode::Copied` import semantics",
         "Core-readable app",
         "group staged file",
         "store the deferred",

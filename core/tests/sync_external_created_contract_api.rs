@@ -91,7 +91,7 @@ fn sync_external_created_contract_api_documents_errors_side_effects_and_scope() 
 
     for fragment in [
         "Synchronizes external filesystem changes after app-layer filtering.",
-        "C1-17 owns the `ExternalEventKind::Created` contract",
+        "external created sync owns the `ExternalEventKind::Created` contract",
         "platform layer is responsible for FSEvents startup, debounce",
         "in-flight filtering, and iCloud placeholder download coordination",
         "inserts an active",

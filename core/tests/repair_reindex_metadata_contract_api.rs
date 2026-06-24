@@ -94,8 +94,8 @@ fn repair_reindex_metadata_contract_documents_errors_and_side_effect_boundaries(
 
     for fragment in [
         "Reindexes repository metadata from the current filesystem state.",
-        "C1-26 exposes this full-rescan API",
-        "Creates a diagnostics snapshot for C1-26 metadata repair.",
+        "metadata repair exposes this full-rescan API",
+        "Creates a diagnostics snapshot for metadata repair.",
         "Repairs AreaMatrix metadata without mutating user files.",
         "The only allowed side effects are writes under `.areamatrix/` metadata",
         "must never move, rename, delete, overwrite, trash, or download user",
@@ -105,7 +105,7 @@ fn repair_reindex_metadata_contract_documents_errors_and_side_effect_boundaries(
     }
 
     for fragment in [
-        "Options for C1-26 metadata repair.",
+        "Options for metadata repair.",
         "Reference to an AreaMatrix-owned diagnostics snapshot.",
         "Metadata repair summary returned to Swift.",
         "Whether repair should run a full filesystem rescan after diagnostics.",
@@ -121,7 +121,7 @@ fn repair_reindex_metadata_contract_documents_errors_and_side_effect_boundaries(
         "不覆盖 `README.md`",
         "`preserve_diagnostics_snapshot = true`",
         "修复失败不得删除用户文件，也不得清空已生成的诊断信息。",
-        "云端备份恢复和自动上传诊断不属于 Stage 1。",
+        "云端备份恢复和自动上传诊断不属于当前诊断合同。",
     ] {
         assert_contains(CORE_API, fragment);
     }

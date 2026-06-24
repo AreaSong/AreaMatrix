@@ -5,7 +5,7 @@ target_kind: apply-preview
 writes_live_queue: false
 template_reference: false
 apply_allowed: false
-gate_message: promotion blocked: prerequisite version is live-running
+gate_message: promotion blocked: explicit approval and live mapping are required
 files_to_write:
   - workflow/versions/<version>/execution/_shared/prompt_pipeline.py
   - workflow/versions/<version>/execution/_shared/prompt_pipeline_lib/

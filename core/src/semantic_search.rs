@@ -1,4 +1,4 @@
-//! semantic search semantic search contract types and entry points.
+//! semantic search contract types and entry points.
 
 use std::path::{Component, PathBuf};
 
@@ -119,13 +119,13 @@ pub struct SemanticSearchMatch {
 /// Normal-search fallback row grouped with semantic results.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SemanticNormalSearchMatch {
-    /// Normal search query search result for the same query and compatible filters.
+    /// Normal search result for the same query and compatible filters.
     pub result: SearchFileResult,
     /// Whether semantic search surface should hide this duplicate until the user expands it.
     pub deduped_by_semantic: bool,
 }
 
-/// One page of semantic search semantic and normal search groups.
+/// One page of semantic and normal search groups.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SemanticSearchResultPage {
     /// Echo of the natural-language query used for this semantic search.
@@ -224,7 +224,7 @@ pub fn semantic_search(
     implementation::semantic_search(repo_path, query, filter, pagination)
 }
 
-/// Starts a semantic search semantic embedding index build after explicit confirmation.
+/// Starts a semantic embedding index build after explicit confirmation.
 ///
 /// The contract defines the build request and report shape only. A successful
 /// implementation may later write AreaMatrix-owned embedding metadata and AI

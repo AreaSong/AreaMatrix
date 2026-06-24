@@ -237,8 +237,8 @@ fn ai_fallback_contract_docs_api_udl_and_control_map_stay_aligned() {
 
     for fragment in [
         "### `get_ai_fallback_status(repoPath: String, request: AiFallbackStatusRequest) throws -> AiFallbackStatus`",
-        "C3-10 的 AI fallback 状态标准化入口",
-        "S3-10 可以从 `kind`、`category`、`title`、`message`、`retryable`",
+        "AI fallback 的 AI fallback 状态标准化入口",
+        "AI fallback surface 可以从 `kind`、`category`、`title`、`message`、`retryable`",
         "本合同不新增 control map 之外的页面能力",
     ] {
         assert_contains(CORE_API, fragment);
@@ -248,7 +248,7 @@ fn ai_fallback_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn ai_fallback_contract_documents_consumer_state_and_safety_boundaries() {
     for fragment in [
-        "Normalizes C3-10 AI fallback metadata",
+        "Normalizes AI fallback metadata",
         "must not include raw provider output",
         "does not execute AI calls, switch providers, enable remote AI",
         "Returns `CoreError::Config { reason }`",
@@ -259,9 +259,9 @@ fn ai_fallback_contract_documents_consumer_state_and_safety_boundaries() {
     }
 
     for fragment in [
-        "C3-10 AI fallback status",
+        "AI fallback status",
         "AI operation whose failure or skipped state needs standard fallback UI",
-        "Standard AI fallback status returned to S3-10 consumers",
+        "Standard AI fallback status returned to AI fallback surface consumers",
         "Remote AI could not be reached. Your files were not changed.",
     ] {
         assert_contains(AI_FALLBACK_RS, fragment);

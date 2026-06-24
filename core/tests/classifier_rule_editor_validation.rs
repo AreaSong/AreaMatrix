@@ -89,13 +89,13 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
     }
 
     for fragment in [
-        "C2-15 的分类规则编辑器入口",
-        "`S2-19 classifier-rule-editor`",
+        "classifier rule editor 的分类规则编辑器入口",
+        "`classifier rule editor surface classifier-rule-editor`",
         "### `create_classifier_rule(repoPath, request) throws -> ClassifierRuleEditorSnapshot`",
         "| `create_classifier_rule(repo, request)` | classify | √ | Config / PermissionDenied / Io |",
         "只允许原子更新 classifier 配置",
         "删除规则不自动移动、删除、重命名或重分类历史文件",
-        "不实现 C2-13 rule save、C2-14 impact preview、复杂脚本规则、插件规则或 Stage 3 AI 规则",
+        "不实现 classifier rule save、classifier impact preview、复杂脚本规则、插件规则或 AI 规则",
         "Config",
         "PermissionDenied",
         "Io",
@@ -122,10 +122,10 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
     }
 
     for fragment in [
-        "Lists C2-15 classifier rule editor state for S2-19.",
-        "Creates one C2-15 classifier editor row for future classification.",
-        "Updates one C2-15 classifier editor row for future classification.",
-        "Deletes one C2-15 classifier editor row after explicit impact confirmation.",
+        "Lists classifier rule editor state for classifier rule editor surface.",
+        "Creates one classifier rule editor row for future classification.",
+        "Updates one classifier rule editor row for future classification.",
+        "Deletes one classifier rule editor row after explicit impact confirmation.",
         "classifier_rule_editor::list_classifier_rules(repo_path)",
         "classifier_rule_editor::create_classifier_rule(repo_path, request)",
         "classifier_rule_editor::update_classifier_rule(repo_path, request)",
@@ -135,7 +135,7 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
     }
 
     for fragment in [
-        "C2-15 classifier rule editor contract types and entry points",
+        "classifier rule editor contract types and entry points",
         "pub struct ClassifierRuleRecord",
         "pub struct ClassifierRuleEditorSnapshot",
         "pub struct ClassifierRuleCreateRequest",

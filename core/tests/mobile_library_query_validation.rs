@@ -316,13 +316,13 @@ fn assert_core_api_udl_and_rust_alignment() {
         "pub fn get_file(repo_path: String, file_id: i64) -> CoreResult<FileEntry>",
         "pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<ChangeLogEntry>>",
         "pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String>",
-        "C4-03 reuses this query for `S4-IOS-02` mobile-library rows.",
+        "mobile library query reuses this query for `mobile library surface` mobile-library rows.",
         "availability status",
         "must use the documented `limit` and `offset` fields",
-        "missing-file recovery stays with C4-18",
-        "C4-07 composes this API with [`list_changes`] and",
+        "missing-file recovery stays with missing-file recovery",
+        "mobile file detail composes this API with [`list_changes`] and",
         "does not trigger filesystem rescan, sync",
-        "C4-03 mobile-library uses this tree snapshot",
+        "mobile library uses this tree snapshot",
     ] {
         assert_contains(API_RS, fragment);
     }

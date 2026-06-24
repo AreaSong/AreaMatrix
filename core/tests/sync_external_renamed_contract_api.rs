@@ -82,7 +82,7 @@ fn sync_external_renamed_contract_api_documents_errors_side_effects_and_scope() 
     }
 
     for fragment in [
-        "C1-18 owns the `ExternalEventKind::Renamed` contract",
+        "external renamed sync owns the `ExternalEventKind::Renamed` contract",
         "A rename event's",
         "`path` is the repository-relative or absolute new path",
         "app-layer",

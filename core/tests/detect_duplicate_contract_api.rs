@@ -127,7 +127,7 @@ fn detect_duplicate_contract_api_docs_udl_and_rust_error_carry_existing_path() {
     }
 
     for fragment in [
-        "C1-09 owns duplicate detection",
+        "duplicate detection owns duplicate detection",
         "`CoreError::DuplicateFile { existing_path }`",
         "`KeepBoth` allows a",
     ] {

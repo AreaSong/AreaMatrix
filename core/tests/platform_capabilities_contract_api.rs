@@ -127,10 +127,10 @@ fn platform_capabilities_docs_core_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "| `get_platform_capabilities(platform, app_version)` | platform | √ | Config |",
         "### `get_platform_capabilities(platform: PlatformId, appVersion: String) throws -> PlatformCapabilities`",
-        "C4-17 的平台能力矩阵入口",
-        "`S4-X-02 platform-differences`",
-        "`S4-LNX-03 local-folder-notice`",
-        "`S4-X-08 repository-settings`",
+        "platform capabilities 的平台能力矩阵入口",
+        "`platform differences surface`",
+        "`Linux local-folder notice surface`",
+        "`repository settings surface`",
         "不启动 watcher",
         "不检测 Trash / Recycle Bin",
         "不触发 iCloud placeholder 下载",
@@ -148,7 +148,7 @@ fn platform_capabilities_docs_core_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn platform_capabilities_documents_consumers_and_scope_boundaries() {
     for fragment in [
-        "Returns the C4-17 platform capability matrix for a platform shell.",
+        "Returns the platform capability matrix for a platform shell.",
         "Limited, unavailable, or",
         "unknown capability rows carry stable reasons",
         "does not inspect the",
@@ -159,7 +159,7 @@ fn platform_capabilities_documents_consumers_and_scope_boundaries() {
     }
 
     for fragment in [
-        "C4-17 platform capability matrix contract types and entry point.",
+        "Platform capability matrix contract types and entry point.",
         "does not inspect repositories",
         "Limited and unavailable rows",
         "disable unsupported operations without guessing",

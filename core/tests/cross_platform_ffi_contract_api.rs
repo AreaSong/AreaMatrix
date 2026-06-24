@@ -41,7 +41,7 @@ fn cross_platform_ffi_contract_exposes_signature_inputs_outputs_and_errors() {
         .supported_apis
         .iter()
         .any(|api| api.name == "inspect_binding_contract"
-            && api.capability == "C4-01"
+            && api.capability == "cross-platform-ffi"
             && api.status == BindingSupportStatus::Supported));
     assert!(swift_report.type_mappings.iter().any(|mapping| {
         mapping.rust_type == "Result<T, CoreError>"
@@ -60,7 +60,7 @@ fn cross_platform_ffi_contract_exposes_signature_inputs_outputs_and_errors() {
     assert!(kotlin_report
         .missing_capabilities
         .iter()
-        .any(|capability| capability.capability == "C4-01"
+        .any(|capability| capability.capability == "cross-platform-ffi"
             && capability.status == BindingSupportStatus::Limited));
 
     let python_report =
@@ -139,7 +139,7 @@ fn cross_platform_ffi_contract_docs_udl_and_control_map_stay_aligned() {
         "type_mappings",
         "missing_capabilities",
         "不生成绑定代码",
-        "不补相邻 Stage 4 能力",
+        "不补相邻多端能力",
     ] {
         assert_contains(CORE_API, fragment);
     }

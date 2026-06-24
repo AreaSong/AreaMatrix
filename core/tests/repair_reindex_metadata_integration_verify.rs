@@ -52,7 +52,7 @@ fn empty_filter() -> FileFilter {
 
 fn sorted_list_paths(repo: &Path) -> Vec<String> {
     let mut paths = list_files(path_string(repo), empty_filter())
-        .expect("list files after C1-26 metadata repair")
+        .expect("list files after metadata repair metadata repair")
         .into_iter()
         .map(|file| {
             assert_eq!(file.origin, FileOrigin::External);
@@ -77,8 +77,8 @@ fn user_file_snapshot(paths: &[&Path]) -> Vec<(String, Vec<u8>)> {
 }
 
 fn parse_tree(repo: &Path) -> Value {
-    let tree_json =
-        list_tree_json(path_string(repo), "en".to_owned()).expect("reload tree after C1-26 repair");
+    let tree_json = list_tree_json(path_string(repo), "en".to_owned())
+        .expect("reload tree after metadata repair repair");
     serde_json::from_str(&tree_json).expect("parse tree JSON")
 }
 

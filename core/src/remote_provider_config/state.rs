@@ -1,4 +1,4 @@
-//! Persisted remote provider configuration provider state read and disable flows.
+//! Persisted remote provider state read and disable flows.
 
 use std::path::PathBuf;
 

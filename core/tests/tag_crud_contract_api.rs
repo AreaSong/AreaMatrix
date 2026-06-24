@@ -123,11 +123,11 @@ fn tag_crud_contract_docs_api_udl_and_control_map_stay_aligned() {
         "重复添加同一标签必须幂等返回刷新后的 `TagSet`",
         "移除一个当前文件没有的 tag 必须幂等返回刷新后的 `TagSet`",
         "标签计数和当前 search scope 下的",
-        "仍由 C2-02 `list_filter_facets` 返回",
-        "批量加标签属于 C2-06",
+        "仍由 search facets `list_filter_facets` 返回",
+        "批量加标签属于 batch tag mutation",
         "非 AI 标签建议属于",
-        "C2-19",
-        "AI 自动标签属于 Stage 3",
+        "deterministic tag suggestions",
+        "AI 自动标签不在本合同内",
     ] {
         assert_contains(CORE_API, fragment);
     }
@@ -136,7 +136,7 @@ fn tag_crud_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn tag_crud_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "C2-05 owns this single-file tag mutation contract",
+        "tag CRUD owns this single-file tag mutation contract",
         "must write only tag metadata",
         "must never rename, move, delete",
         "does not delete the tag definition",

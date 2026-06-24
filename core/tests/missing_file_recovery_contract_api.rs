@@ -185,7 +185,7 @@ fn missing_file_recovery_docs_api_udl_and_control_map_stay_aligned() {
         "| `relink_missing_file(repo, request)` | recovery | √ | FileNotFound / PermissionDenied / Db |",
         "| `remove_missing_file_record(repo, request)` | recovery | √ | FileNotFound / PermissionDenied / Db |",
         "### `get_missing_file_state(repoPath, fileId) throws -> MissingFileState`",
-        "S4-X-06 missing-file-recovery",
+        "missing-file recovery surface",
         "不做全库 rescan",
         "不删除记录",
         "不写 change log",
@@ -214,7 +214,7 @@ fn missing_file_recovery_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn missing_file_recovery_documents_consumers_and_file_safety_boundaries() {
     for fragment in [
-        "Returns the C4-18 missing-file recovery state for S4-X-06.",
+        "Returns the missing-file recovery state for missing-file recovery surface.",
         "does not scan the whole repository",
         "delete metadata, or mutate user files",
         "Relinks one missing-file record to a user-selected matching path.",
@@ -229,12 +229,12 @@ fn missing_file_recovery_documents_consumers_and_file_safety_boundaries() {
     }
 
     for fragment in [
-        "C4-18 missing-file recovery contract types and entry points.",
-        "Page-ready C4-18 missing-file state for S4-X-06.",
-        "User-selected relink request for C4-18.",
-        "Confirmed remove-record request for C4-18.",
-        "Whether any user file was deleted by this action. C4-18 must keep this false.",
-        "Returns page-ready missing-file state for S4-X-06.",
+        "Missing-file recovery contract types and entry points.",
+        "Page-ready state for missing-file recovery.",
+        "User-selected relink request for missing-file recovery.",
+        "Confirmed remove-record request for missing-file recovery.",
+        "Whether any user file was deleted by this action. missing-file recovery must keep this false.",
+        "Returns page-ready missing-file state.",
         "Removes only the AreaMatrix metadata record for a missing file.",
         "Relinks a missing record to a user-selected matching file.",
     ] {

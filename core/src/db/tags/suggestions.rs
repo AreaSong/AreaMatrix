@@ -14,7 +14,7 @@ use super::{
     insert_tag_relation, load_tag_set, open_repo_connection,
 };
 
-/// Active-file metadata used by deterministic deterministic tag suggestions suggestion generation.
+/// Active-file metadata used by deterministic tag suggestion generation.
 pub(crate) struct TagSuggestionFileMetadata {
     pub(crate) path: String,
     pub(crate) current_name: String,

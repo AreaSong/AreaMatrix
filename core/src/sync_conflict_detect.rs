@@ -1,4 +1,4 @@
-//! sync conflict detection sync conflict detection contract types and entry point.
+//! sync conflict detection contract types and entry point.
 
 mod implementation;
 mod paths;
@@ -76,7 +76,7 @@ pub struct SyncConflictAffectedFile {
     pub source_platform: Option<String>,
 }
 
-/// Sync conflict row returned by sync conflict detection detection.
+/// Sync conflict row returned by sync conflict detection.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SyncConflict {
     /// Stable conflict id used by later review and resolution tasks.
@@ -101,7 +101,7 @@ pub struct SyncConflict {
     pub summary: Option<String>,
 }
 
-/// Detects sync conflict detection sync conflicts without resolving any version.
+/// Detects sync conflicts without resolving any version.
 ///
 /// The detector reads initialized repository metadata, safely inspects file
 /// metadata and hashes, and refreshes AreaMatrix-owned conflict-state metadata.

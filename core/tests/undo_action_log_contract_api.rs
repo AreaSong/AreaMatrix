@@ -120,13 +120,13 @@ fn undo_action_log_contract_docs_api_udl_and_control_map_stay_aligned() {
         "| `undo_action(repo, action_id)` | undo | √ | Conflict / FileNotFound / PermissionDenied / Db / Io |",
         "### `list_undo_actions(repoPath) throws -> [UndoActionRecord]`",
         "### `undo_action(repoPath, actionId) throws -> UndoActionResult`",
-        "`S2-10 undo-toast`",
-        "`S2-11 undo-history`",
+        "`undo toast`",
+        "`undo history surface`",
         "`Pending`、`Executed`、`Expired`、`Blocked`",
         "`refresh_targets`",
         "外部 FSEvents 造成的变化不得伪装成可撤销操作",
         "Redo stack 和 `Shift+Cmd+Z` 属于",
-        "C2-18",
+        "redo action log",
     ] {
         assert_contains(CORE_API, fragment);
     }
@@ -135,13 +135,13 @@ fn undo_action_log_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn undo_action_log_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "C2-07 undo action log contract",
+        "undo action log contract",
         "UndoActionRecord",
         "UndoActionResult",
         "list_undo_actions",
         "undo_action",
         "Listing is metadata-only",
-        "stack execution stays with C2-18",
+        "stack execution stays with redo action log",
         "Failed undo must not corrupt",
         "partially mark an action as executed",
     ] {

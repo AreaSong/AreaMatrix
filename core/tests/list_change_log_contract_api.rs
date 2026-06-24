@@ -89,7 +89,7 @@ fn list_change_log_contract_api_docs_control_map_and_udl_stay_aligned() {
 
     for fragment in [
         "### `list_changes(repoPath, filter) throws -> [ChangeLogEntry]`",
-        "Stage 1 先用 `get_file` + `list_changes` + `read_note` 组合",
+        "当前先用 `get_file` + `list_changes` + `read_note` 组合",
     ] {
         assert_contains(CORE_API, fragment);
     }
@@ -102,8 +102,8 @@ fn list_change_log_contract_api_documents_errors_side_effects_and_scope() {
     }
 
     for fragment in [
-        "C1-13 defines this as the read-only change-log query",
-        "log, import result, and error recovery surfaces",
+        "The change-log API is the read-only log query",
+        "detail, import",
         "optional `file_id`, `category`, `action`",
         "`occurred_at` bounds, `limit`, and `offset`",
         "ordered by",
@@ -113,7 +113,7 @@ fn list_change_log_contract_api_documents_errors_side_effects_and_scope() {
         "must not mutate repository metadata",
         "create files, rename files, or probe user file contents",
         "Undo history",
-        "belong to Stage 2",
+        "belong to undo/redo capabilities",
         "Returns `CoreError::RepoNotInitialized { path }`",
         "`CoreError::Db { message }`",
     ] {

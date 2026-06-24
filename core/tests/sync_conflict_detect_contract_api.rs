@@ -105,7 +105,7 @@ fn sync_conflict_detect_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "| `detect_sync_conflicts(repo)` | sync/conflict | √ | Db / Io / Conflict |",
         "### `detect_sync_conflicts(repoPath) throws -> [SyncConflict]`",
-        "`detect_sync_conflicts` 是 C4-15 的多端同步冲突检测入口",
+        "`detect_sync_conflicts` 是 sync conflict detection 的多端同步冲突检测入口",
         "external events 和 metadata snapshots",
         "由 Core 从已持久化 watcher/import/cloud/conflict state 中读取",
         "写入或刷新 conflict state metadata",
@@ -114,9 +114,9 @@ fn sync_conflict_detect_docs_api_udl_and_control_map_stay_aligned() {
         "不选择任一版本，不标记 resolved，不写 change log",
         "不触发 `sync_external_changes`、manual rescan",
         "不删除、不移动、不重命名、不覆盖、不 Trash",
-        "S4-X-03 可以从列表长度",
-        "S4-X-01 可以从 `conflict_id`",
-        "这些属于 C4-16 / C4-21。",
+        "sync conflict entry surface 可以从列表长度",
+        "sync conflict review surface 可以从 `conflict_id`",
+        "这些属于 sync conflict resolution / replace confirmation。",
         "本合同不新增 control map 之外的页面能力。",
     ] {
         assert_contains(CORE_API, fragment);
@@ -134,9 +134,9 @@ fn sync_conflict_detect_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn sync_conflict_detect_documents_consumers_and_scope_boundaries() {
     for fragment in [
-        "Detects C4-15 sync conflicts without resolving any version.",
-        "S4-X-03 sync-conflict-entry",
-        "S4-X-01 sync-conflict",
+        "Detects sync conflicts without resolving any version.",
+        "sync conflict entry surface",
+        "sync conflict review surface",
         "write or refresh conflict-state metadata for detected conflicts",
         "must not choose a winning version",
         "CoreError::Db",
@@ -147,12 +147,12 @@ fn sync_conflict_detect_documents_consumers_and_scope_boundaries() {
     }
 
     for fragment in [
-        "C4-15 sync conflict detection contract types and entry point.",
-        "Sync conflict category shown to Stage 4 conflict entry and review pages.",
+        "sync conflict detection contract types and entry point.",
+        "Sync conflict category shown to conflict entry and review pages.",
         "User-facing severity for prioritizing conflict review.",
         "One affected file/version entry inside a sync conflict.",
-        "Sync conflict row returned by C4-15 detection.",
-        "Detects C4-15 sync conflicts without resolving any version.",
+        "Sync conflict row returned by sync conflict detection.",
+        "Detects sync conflicts without resolving any version.",
         "safely inspects file",
         "conflict-state metadata writes",
     ] {

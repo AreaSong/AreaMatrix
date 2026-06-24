@@ -285,7 +285,8 @@ fn missing_capabilities(target_platform: &BindingTargetPlatform) -> Vec<BindingM
             capability: "cross-platform-ffi".to_owned(),
             label: "Generated Kotlin binding packaging".to_owned(),
             status: BindingSupportStatus::Limited,
-            reason: "UDL surface is available; generated Kotlin packaging is verified separately".to_owned(),
+            reason: "UDL surface is available; generated Kotlin packaging is verified separately"
+                .to_owned(),
         });
     }
     capabilities

@@ -186,8 +186,8 @@ fn ai_settings_config_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "| `load_ai_config(repo)` | ai | √ | Config / PermissionDenied / Io |",
         "| `update_ai_config(repo, cfg)` | ai | √ | Config / PermissionDenied / Io |",
-        "C3-01 的 AI settings 读取入口",
-        "C3-01 的 AI settings 更新入口",
+        "AI settings 的 AI settings 读取入口",
+        "AI settings 的 AI settings 更新入口",
         "不得传入或返回 API key",
         "不测试远程 provider、不启用远程 provider",
     ] {
@@ -203,7 +203,7 @@ fn ai_settings_config_contract_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn ai_settings_config_contract_documents_consumer_state_and_scope_boundaries() {
-    assert_contains(AI_SETTINGS_RS, "C3-01 AI settings contract types");
+    assert_contains(AI_SETTINGS_RS, "AI settings contract types");
     for fragment in [
         "This contract accepts only settings metadata.",
         "API keys",

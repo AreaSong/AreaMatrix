@@ -95,7 +95,7 @@ fn ai_fallback_validation_proves_ui_ready_reason_matrix_and_non_ai_continuity() 
     assert_eq!(local_model.route, Some(AiCallLogRoute::Local));
 
     let provider_after = load_remote_ai_provider_config(repo_path.clone())
-        .expect("load provider config after C3-10");
+        .expect("load provider config after AI fallback");
     assert_eq!(provider_after, provider_before);
     assert!(!provider_after.remote_provider_enabled);
     assert_non_ai_paths_still_work(repo.path(), repo_path);
@@ -217,10 +217,10 @@ fn assert_core_api_and_udl_alignment() {
     }
 
     for fragment in [
-        "C3-10 的 AI fallback 状态标准化入口",
+        "AI fallback 的 AI fallback 状态标准化入口",
         "本 API 只标准化 fallback 状态；不得执行 AI、切换 provider、自动启用远程 AI",
-        "自动 provider failover 不在 Stage 3",
-        "S3-10 可以从 `kind`、`category`、`title`、`message`、`retryable`",
+        "自动 provider failover 不在当前 AI fallback 合同内",
+        "AI fallback surface 可以从 `kind`、`category`、`title`、`message`、`retryable`",
         "`Config`",
         "`PermissionDenied`",
         "`Internal`",

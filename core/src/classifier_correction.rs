@@ -1,4 +1,4 @@
-//! classifier correction classifier correction contract types and entry point.
+//! classifier correction contract types and entry point.
 
 use std::{
     ffi::OsStr,
@@ -33,7 +33,7 @@ pub struct ClassifierRuleDraft {
     pub priority: i64,
 }
 
-/// Result returned after applying one classifier correction classifier correction.
+/// Result returned after applying one classifier correction.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ClassifierCorrectionResult {
     /// Updated file row after the correction is committed.

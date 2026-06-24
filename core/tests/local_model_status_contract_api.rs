@@ -213,8 +213,8 @@ fn local_model_status_contract_docs_api_udl_and_control_map_stay_aligned() {
         "### `locate_local_model_folder(repoPath: String, request: LocalModelFolderRequest) throws -> LocalModelFolderLocation`",
         "不下载、安装、删除、训练模型",
         "不自动启用远程 fallback",
-        "S3-03 仍负责远程 provider/key/连接测试",
-        "C3-10 仍负责",
+        "remote provider settings surface 仍负责远程 provider/key/连接测试",
+        "AI fallback 仍负责",
     ] {
         assert_contains(CORE_API, fragment);
     }
@@ -229,10 +229,7 @@ fn local_model_status_contract_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn local_model_status_contract_documents_consumer_state_and_scope_boundaries() {
-    assert_contains(
-        LOCAL_MODEL_STATUS_RS,
-        "C3-02 local model status contract types",
-    );
+    assert_contains(LOCAL_MODEL_STATUS_RS, "local model status contract types");
     for fragment in [
         "inspect_local_model",
         "update_local_model_status_record",

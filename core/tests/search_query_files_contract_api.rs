@@ -176,14 +176,14 @@ fn search_query_files_contract_docs_api_udl_and_control_map_stay_aligned() {
 fn search_query_files_contract_documents_consumer_states_and_scope_boundaries() {
     for fragment in [
         "Searches files, paths, notes, categories, and change-log metadata.",
-        "C2-01 owns this read-only contract for S2-01 search results",
-        "S2-04 empty",
-        "S2-05 query diagnostics",
+        "search query owns this read-only contract for search results and search sidebar empty",
+        "search sidebar empty",
+        "search empty state query diagnostics",
         "including tags with Any/All semantics",
         "optional storage mode",
-        "does not include C2-02 facet counts",
-        "C2-03 saved search CRUD",
-        "C2-04 Smart List execution",
+        "does not include search facet counts",
+        "saved search CRUD",
+        "Smart List execution",
         "OCR, semantic search, remote AI",
         "must not modify tags, categories, notes, change log",
         "Returns `CoreError::InvalidPath { path }`",
@@ -194,13 +194,13 @@ fn search_query_files_contract_documents_consumer_states_and_scope_boundaries() 
     }
 
     for fragment in [
-        "Search scope for C2-01 search queries.",
+        "Search scope for search queries.",
         "Structured query parser diagnostic kind.",
         "Search index readiness surfaced to search result and empty states.",
-        "Filters and scope applied to a C2-01 search query.",
+        "Filters and scope applied to a search query.",
         "Whether selected tags are matched with Any or All semantics.",
         "Optional storage-mode filter for copied, moved, or indexed entries.",
-        "One page of C2-01 search results.",
+        "One page of search results.",
     ] {
         assert_contains(SEARCH_RS, fragment);
     }

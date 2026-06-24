@@ -120,7 +120,7 @@ fn mobile_detail_docs_core_api_and_udl_stay_aligned() {
         "返回的 `FileEntry.availability_status` 与 `list_files` 一致",
         "### `list_changes(repoPath, filter) throws -> [ChangeLogEntry]`",
         "### `read_note(repoPath, fileId) throws -> String?`",
-        "Stage 1 先用 `get_file` + `list_changes` + `read_note` 组合",
+        "当前先用 `get_file` + `list_changes` + `read_note` 组合",
     ] {
         assert_contains(CORE_API, fragment);
     }
@@ -133,17 +133,17 @@ fn mobile_detail_docs_core_api_and_udl_stay_aligned() {
 #[test]
 fn mobile_detail_contract_documents_consumer_state_without_adjacent_capabilities() {
     for fragment in [
-        "C4-07 composes this API with [`list_changes`] and",
-        "[`read_note`] for `S4-IOS-05` mobile-file-detail",
+        "mobile file detail composes this API with [`list_changes`] and",
+        "[`read_note`] for `mobile file detail surface`",
         "does not introduce",
         "a separate detail DTO",
         "route the missing state to",
-        "`S4-X-06` rather than inferring it from the filesystem",
-        "In C4-07, `S4-IOS-05` uses `file_id`",
+        "`missing-file recovery surface` rather than inferring it from the filesystem",
+        "In mobile file detail, `mobile file detail surface` uses `file_id`",
         "load the Log segment without blocking the Meta segment",
         "does not trigger filesystem rescan, sync",
         "repair, conflict resolution, or missing-file recovery",
-        "C4-07 reuses this as the lazy Note segment query",
+        "mobile file detail reuses this as the lazy Note segment query",
         "callers can show the empty-note state from `None`",
         "note editing remains with the existing",
         "`write_note` contract",
@@ -152,8 +152,8 @@ fn mobile_detail_contract_documents_consumer_state_without_adjacent_capabilities
     }
 
     for fragment in [
-        "C4-07 mobile-detail composes get_file + list_changes + read_note.",
-        "FileEntry.availability_status lets S4-IOS-05 route Missing to S4-X-06",
+        "mobile file detail composes get_file + list_changes + read_note.",
+        "FileEntry.availability_status lets mobile file detail surface route Missing to missing-file recovery surface",
         "without platform-side metadata inference.",
     ] {
         assert_contains(UDL, fragment);

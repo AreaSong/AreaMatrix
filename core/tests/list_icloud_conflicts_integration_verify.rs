@@ -116,7 +116,7 @@ fn conflict_by_path<'a>(
 fn list_icloud_conflicts_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
     assert_c1_25_capability_spec();
     assert_core_api_and_udl_contract();
-    assert_stage_one_consumers();
+    assert_core_consumers();
     assert_rust_entry_points_are_real_read_only_wiring();
 }
 
@@ -154,12 +154,12 @@ fn assert_core_api_and_udl_contract() {
     }
 }
 
-fn assert_stage_one_consumers() {}
+fn assert_core_consumers() {}
 
 fn assert_rust_entry_points_are_real_read_only_wiring() {
     for fragment in [
         "pub fn list_icloud_conflicts(repo_path: String)",
-        "C1-25 owns the read-only contract for S1-36",
+        "iCloud conflict listing owns the read-only contract for iCloud conflict list",
         "must not delete, move, rename, overwrite, merge, or download",
         "Single-item resolution remains a later explicit action",
         "CoreError::ICloudPlaceholder",
@@ -205,7 +205,7 @@ fn assert_rust_entry_points_are_real_read_only_wiring() {
 }
 
 #[test]
-fn list_icloud_conflicts_integration_verify_real_core_supports_s1_36_consumption() {
+fn list_icloud_conflicts_integration_verify_real_core_supports_icloud_conflict_consumption() {
     let repo = initialized_repo();
     write_repo_file(repo.path(), "docs/report.pdf", b"original report");
     write_repo_file(

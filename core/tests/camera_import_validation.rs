@@ -367,9 +367,9 @@ fn assert_rust_api_docs() {
     for fragment in [
         "pub fn predict_category(repo_path: String, filename: String) -> CoreResult<ClassifyResult>",
         "pub fn import_file(",
-        "C4-04 camera-import reuses this read-only preview surface",
+        "camera import reuses this read-only preview surface",
         "temporary-file lifetime management remain outside Core",
-        "C4-04 camera-import reuses `StorageMode::Copied` import semantics",
+        "camera import reuses `StorageMode::Copied` import semantics",
         "platform-saved temporary photo path",
         "does not request camera",
         "or clean up the final repository file",

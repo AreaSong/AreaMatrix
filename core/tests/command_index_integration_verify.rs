@@ -170,7 +170,10 @@ fn command_index_integration_verify_reads_recent_metadata_without_writes() {
             .map(|target| (target.id.as_str(), target.route.as_deref()))
             .collect::<Vec<_>>(),
         vec![
-            ("recent:command.open-classifier-rules", Some("classifier-rules")),
+            (
+                "recent:command.open-classifier-rules",
+                Some("classifier-rules")
+            ),
             ("recent:command.redo-latest-action", Some("redo")),
         ]
     );

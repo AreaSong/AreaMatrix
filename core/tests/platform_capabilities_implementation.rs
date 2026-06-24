@@ -223,7 +223,7 @@ fn platform_capabilities_implementation_stays_side_effect_free() {
     ] {
         assert!(
             !IMPLEMENTATION.contains(forbidden),
-            "C4-17 must not probe filesystem or DB via {forbidden}"
+            "platform capabilities must not probe filesystem or DB via {forbidden}"
         );
     }
 }

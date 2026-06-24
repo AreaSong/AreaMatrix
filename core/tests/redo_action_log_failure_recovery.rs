@@ -57,7 +57,7 @@ fn redo_action_log_failure_recovery_invalid_inputs_map_to_documented_errors() {
             .to_string_lossy()
             .into_owned(),
     )
-    .expect_err("metadata-internal repo path is invalid for C2-18");
+    .expect_err("metadata-internal repo path is invalid for redo action log");
     assert_error_mapping(
         &metadata,
         ErrorKind::Db,

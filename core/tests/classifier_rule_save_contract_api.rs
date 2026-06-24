@@ -112,8 +112,8 @@ fn classifier_rule_save_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "| `save_classifier_rule(repo, rule)` | classify | √ | Config / PermissionDenied / Io |",
         "### `save_classifier_rule(repoPath, rule) throws -> ClassifierRule`",
-        "C2-13 的分类规则保存入口",
-        "`S2-17 classifier-save-rule`",
+        "classifier rule save 的分类规则保存入口",
+        "`classifier save-rule surface classifier-save-rule`",
         "`target_category`",
         "`keywords`",
         "`extensions`",
@@ -123,7 +123,7 @@ fn classifier_rule_save_contract_docs_api_udl_and_control_map_stay_aligned() {
         "只允许原子更新 classifier 配置",
         "保存规则只影响未来分类",
         "`Save rule only` 回流",
-        "不实现 C2-14 impact preview、C2-15 rule CRUD",
+        "不实现 classifier impact preview、classifier rule editor CRUD",
         "本合同不新增 control map 之外的页面能力。",
     ] {
         assert_contains(CORE_API, fragment);
@@ -144,14 +144,14 @@ fn classifier_rule_save_contract_documents_consumer_state_and_scope_boundaries()
     }
 
     for fragment in [
-        "C2-13 classifier rule save types and persistence",
+        "classifier rule save types and persistence",
         "ClassifierRule",
         "save_classifier_rule",
         "does not model path, source-folder",
         "enabled flags, compound AND rules",
         "pub preview_confirmed: bool",
         "impact preview is required",
-        "Saves one C2-13 classifier rule request",
+        "Saves one classifier rule request",
         "appends independent keyword and extension basis values",
         "does not",
         "reclassify, move, rename, delete, preview impact",
@@ -163,7 +163,7 @@ fn classifier_rule_save_contract_documents_consumer_state_and_scope_boundaries()
     }
 
     for fragment in [
-        "S2-17 uses this contract",
+        "classifier save-rule surface uses this contract",
         "Extensions must be",
         "lowercase values without a leading dot",
         "preview has already been confirmed",

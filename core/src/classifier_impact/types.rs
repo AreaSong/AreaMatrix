@@ -15,7 +15,7 @@ pub enum ClassifierImpactPreviewMode {
     RemoveCategory,
 }
 
-/// Input for the classifier impact preview classifier impact preview.
+/// Input for the classifier impact preview.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ClassifierImpactPreviewRequest {
     /// Preview scenario to evaluate.

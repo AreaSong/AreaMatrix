@@ -2,7 +2,7 @@ version: v*
 status: blocked
 kind: promotion-approval
 approved: false
-gate_message: promotion blocked: prerequisite version is live-running
+gate_message: promotion blocked: explicit approval and live mapping are required
 mode: approval-only
 target_kind: approval-only
 writes_live_queue: false

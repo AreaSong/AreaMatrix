@@ -292,15 +292,15 @@ fn assert_core_api_and_udl_type_alignment() {
 fn assert_core_api_behavior_alignment() {
     for fragment in [
         "### `preview_sync_conflict_resolution(repoPath, conflictId, resolution) throws -> SyncConflictResolutionPreviewReport`",
-        "`preview_sync_conflict_resolution` 是 C4-16 的多端同步冲突解决预览入口",
+        "`preview_sync_conflict_resolution` 是 sync conflict resolution 的多端同步冲突解决预览入口",
         "`default_resolution` 必须为 `KeepBoth`",
         "`KeepBoth`：默认安全策略，所有版本继续留在用户可见位置。",
         "`KeepBoth` 不删除、不覆盖任何版本；只能保留/新增普通可见 file record",
         "`UseExisting` 不删除 incoming；existing 保持 canonical",
-        "`UseIncoming`：incoming 将成为 canonical path；必须先进入 S4-X-09 二次确认。",
+        "`UseIncoming`：incoming 将成为 canonical path；必须先进入 replace confirmation surface 二次确认。",
         "不移动、不删除、不重命名、不覆盖、不 Trash、不隐藏任何用户文件或冲突副本。",
         "### `resolve_sync_conflict(repoPath, conflictId, resolution) throws -> SyncConflictResolveReport`",
-        "`resolve_sync_conflict` 是 C4-16 的执行入口",
+        "`resolve_sync_conflict` 是 sync conflict resolution 的执行入口",
         "`affected_file_ids`：被更新或保留为普通可见文件的 record ids。",
         "任一阶段失败必须保持 conflict unresolved",
         "解决失败时 UI 必须继续展示该冲突",

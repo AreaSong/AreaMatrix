@@ -184,8 +184,8 @@ fn rename_file_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
         "Copy / Move 等 repo-owned 文件只在当前目录内执行安全 rename",
         "Indexed 文件只更新 `files.current_name`",
         "不移动、重命名或覆盖外部源文件",
-        "同目录同名时复用 C1-10 的安全编号策略",
-        "Copy / Move rename 成功后触发 C1-20 generated overview 再生成",
+        "同目录同名时复用 name-conflict resolution 的安全编号策略",
+        "Copy / Move rename 成功后触发 generated overview 再生成",
         "`InvalidPath`：`repoPath` 或 `newName` 为空",
         "`Config`：generated overview 输出配置无效。",
     ] {
@@ -195,9 +195,9 @@ fn rename_file_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
     for fragment in [
         "pub fn rename_file(repo_path: String, file_id: i64, new_name: String)",
         "storage::rename_file(repo_path, file_id, new_name)",
-        "C1-22 owns the user-visible rename contract",
+        "file rename owns the user-visible rename contract",
         "Indexed rows are display-name only",
-        "Repository-owned rename also triggers C1-20 generated-overview",
+        "Repository-owned rename also triggers generated overview",
     ] {
         assert_contains(API_RS, fragment);
     }

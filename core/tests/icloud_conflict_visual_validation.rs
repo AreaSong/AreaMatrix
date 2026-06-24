@@ -171,7 +171,7 @@ fn assert_rust_contract_alignment() {
     for fragment in [
         "pub fn preview_conflict_versions(",
         "pub fn resolve_icloud_conflict(",
-        "C2-16 iCloud conflict versions",
+        "iCloud conflict versions",
         "On any failure the conflict must remain unresolved",
     ] {
         assert_contains(API_RS, fragment);

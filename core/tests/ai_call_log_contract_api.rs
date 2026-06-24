@@ -243,8 +243,8 @@ fn ai_call_log_contract_docs_api_udl_and_control_map_stay_aligned() {
         "| `list_ai_calls(repo, filter, pagination)` | ai | √ | Db / PermissionDenied |",
         "| `clear_ai_call_log(repo, request)` | ai | √ | Db / PermissionDenied |",
         "### `list_ai_calls(repoPath: String, filter: AiCallLogFilter, pagination: AiCallLogPagination) throws -> AiCallLogPage`",
-        "C3-05 的 AI 调用日志读取入口",
-        "`S3-05 ai-call-log`",
+        "AI call log 的 AI 调用日志读取入口",
+        "`AI call log surface ai-call-log`",
         "不返回 API key、key 片段、Keychain 引用值",
         "完整文件正文、完整 prompt、完整模型输出",
         "隐私规则命中记录必须能表达 `Skipped`、sent fields none",
@@ -307,7 +307,7 @@ fn ai_call_log_contract_documents_consumers_and_privacy_boundaries() {
     ] {
         assert!(
             !AI_CALL_LOG_RS.contains(forbidden),
-            "C3-05 contract must not implement adjacent capability `{forbidden}`"
+            "AI call log contract must not implement adjacent capability `{forbidden}`"
         );
     }
 }

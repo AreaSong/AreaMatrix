@@ -1,10 +1,10 @@
-//! deterministic tag suggestions tag suggestion contract types.
+//! deterministic tag suggestion contract types.
 
 use serde::{Deserialize, Serialize};
 
 use super::TagSet;
 
-/// Source that produced one deterministic deterministic tag suggestions tag suggestion.
+/// Source that produced one deterministic tag suggestion.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TagSuggestionSource {
     /// The suggestion came from the current file name.
@@ -17,7 +17,7 @@ pub enum TagSuggestionSource {
     ExistingTagPattern,
 }
 
-/// Deterministic match strength for one deterministic tag suggestions tag suggestion.
+/// Deterministic match strength for one deterministic tag suggestion.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TagSuggestionMatch {
     /// Exact normalized token match and safe to preselect.
@@ -39,7 +39,7 @@ pub enum TagSuggestionStatus {
     Blocked,
 }
 
-/// Optional context used when generating deterministic deterministic tag suggestions suggestions.
+/// Optional context used when generating deterministic tag suggestions.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TagSuggestionContext {
     /// Optional source directory captured by import flows.
@@ -48,7 +48,7 @@ pub struct TagSuggestionContext {
     pub source_keywords: Vec<String>,
 }
 
-/// Request for deterministic deterministic tag suggestions tag suggestions for one active file.
+/// Request for deterministic tag suggestions for one active file.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TagSuggestionRequest {
     /// Active file whose metadata should be inspected.
@@ -59,7 +59,7 @@ pub struct TagSuggestionRequest {
     pub limit: i64,
 }
 
-/// One deterministic tag suggestions tag suggestion row consumed by tag suggestions surface.
+/// One deterministic tag suggestion row consumed by tag suggestions surface.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TagSuggestion {
     /// Stable client key for checkbox/edit state.
@@ -86,7 +86,7 @@ pub struct TagSuggestion {
     pub disabled_reason: Option<String>,
 }
 
-/// Result returned when tag suggestions surface asks Core for deterministic tag suggestions suggestions.
+/// Result returned when tag suggestions surface asks Core for deterministic tag suggestions.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TagSuggestionReport {
     /// File whose metadata was inspected.
@@ -114,7 +114,7 @@ pub struct ApplyTagSuggestionItem {
     pub display_name: String,
 }
 
-/// Request for applying selected deterministic tag suggestions tag suggestions to one file.
+/// Request for applying selected deterministic tag suggestions to one file.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ApplyTagSuggestionsRequest {
     /// Active file that receives the selected tags.

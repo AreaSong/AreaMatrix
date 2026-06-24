@@ -63,7 +63,7 @@ pub fn inspect_binding_contract(
 /// Returns the platform capability matrix for a platform shell.
 ///
 /// `platform differences`, `Linux local-folder notice`, and
-/// `repository settings surface repository-settings` consume this matrix to render watcher, Trash
+/// `repository settings surface` consume this matrix to render watcher, Trash
 /// or Recycle Bin, share extension, cloud placeholder, and security bookmark
 /// support without guessing from platform UI state. Limited, unavailable, or
 /// unknown capability rows carry stable reasons so unsupported dangerous
@@ -106,18 +106,18 @@ pub fn init_logging(level: String) -> CoreResult<()> {
 
 /// Validates a candidate repository path without mutating the filesystem.
 ///
-/// The repository path validation contract accepts a user-selected repository directory path and
+/// The repository path validation accepts a user-selected repository directory path and
 /// returns structured status flags, a recommended initialization mode, and
 /// display-ready issues for the Swift UI. This API is read-only: it must not
 /// create `.areamatrix/`, initialize a database, move user files, or trigger
 /// iCloud placeholder downloads.
 ///
-/// The mobile repository connection mobile repository connection contract reuses the same surface
+/// The mobile repository connection contract reuses the same surface
 /// after the platform layer has granted access to an iOS security-scoped URL or
 /// provider path. Core receives only the authorized filesystem path; picker,
 /// bookmark, and cloud-permission lifecycles stay outside the Rust boundary.
 ///
-/// The Linux repository connection Linux repository connection contract also reuses this read-only
+/// The Linux repository connection contract also reuses this read-only
 /// surface. Linux shells can route from `platform_path_kind`, read/write flags,
 /// `recommended_mode`, and `issues` to local-folder, init, or adopt confirmation
 /// pages without parsing error text. Core does not run or recommend sudo/chmod;
@@ -151,14 +151,14 @@ pub fn validate_initialized_repo_path(repo_path: String) -> CoreResult<RepoPathV
 
 /// Initializes AreaMatrix metadata for a repository root.
 ///
-/// The empty repository initialization contract uses `RepoInitOptions { mode: CreateEmpty, .. }` for an
+/// The empty repository initialization uses `RepoInitOptions { mode: CreateEmpty, .. }` for an
 /// empty user-selected directory. A successful call creates only AreaMatrix
 /// metadata: `.areamatrix/index.db`, `.areamatrix/staging/`,
 /// `.areamatrix/archives/`, `.areamatrix/generated/`, default classifier and
 /// ignore config files, and the generated root overview under
 /// `.areamatrix/generated/root.md`.
 ///
-/// The adopt-existing repository scan contract uses `RepoInitOptions { mode: AdoptExisting, .. }` for a
+/// The adopt-existing repository scan uses `RepoInitOptions { mode: AdoptExisting, .. }` for a
 /// non-empty user-selected directory. That mode has the same metadata-write
 /// boundary plus an adoption scan session: existing user files remain in place,
 /// are indexed with `FileOrigin::Adopted`, and can be resumed through
@@ -255,7 +255,7 @@ pub fn update_config(repo_path: String, new_config: RepoConfig) -> CoreResult<()
 
 /// Loads the AI settings snapshot without starting any AI provider.
 ///
-/// The contract is for AI settings surface AI settings and the AI privacy rules surface privacy gate summary.
+/// The contract is for AI settings surface and the AI privacy rules privacy gate summary.
 /// It exposes the master AI switch, provider preference, local/remote route
 /// toggles, privacy gate reference, and per-feature switches. Loading settings
 /// must never call local models, contact remote providers, read user file
@@ -268,7 +268,7 @@ pub fn load_ai_config(repo_path: String) -> CoreResult<AiConfigSnapshot> {
     ai_settings::load_ai_config(repo_path)
 }
 
-/// Validates a AI settings update payload.
+/// Validates an AI settings update payload.
 ///
 /// This contract accepts only settings metadata. API keys, provider connection
 /// tests, remote enablement, privacy rule CRUD/evaluation, AI call logs,
@@ -286,9 +286,9 @@ pub fn update_ai_config(repo_path: String, new_config: AiConfig) -> CoreResult<A
     ai_settings::update_ai_config(repo_path, new_config)
 }
 
-/// Reads the local model status local model status without enabling remote fallback.
+/// Reads the local model status without enabling remote fallback.
 ///
-/// The contract is for local model status surface local-model-status. It accepts a model id, a
+/// The contract is for local model status surface. It accepts a model id, a
 /// configured storage location, and an optional cached status snapshot so the
 /// page can render first-load, failure-entry, and manual refresh states from a
 /// stable shape. A status check may inspect only local model manifest,
@@ -311,7 +311,7 @@ pub fn get_local_model_status(
     local_model_status::get_local_model_status(repo_path, request)
 }
 
-/// Locates the configured local model status local model folder without mutating it.
+/// Locates the configured local model folder without mutating it.
 ///
 /// local model status surface uses this read-only contract for `Open model location`. The result
 /// tells the platform layer which folder can be revealed and why revealing is
@@ -330,7 +330,7 @@ pub fn locate_local_model_folder(
     local_model_status::locate_local_model_folder(repo_path, request)
 }
 
-/// Tests a remote provider configuration remote AI provider without sending user file content.
+/// Tests a remote AI provider without sending user file content.
 ///
 /// remote provider settings surface uses this contract before enabling remote AI. The request includes
 /// provider, model, optional custom endpoint, and a platform secure-storage key
@@ -376,7 +376,7 @@ pub fn load_remote_ai_provider_config(
     remote_provider_config::load_remote_ai_provider_config(repo_path)
 }
 
-/// Enables a remote provider configuration remote AI provider after successful test and consent.
+/// Enables a remote AI provider after successful test and consent.
 ///
 /// remote provider settings surface uses this contract after the user selects usage scope and confirms
 /// that allowed content may leave the device. The returned snapshot exposes the
@@ -403,7 +403,7 @@ pub fn enable_remote_ai_provider(
     remote_provider_config::enable_remote_ai_provider(repo_path, request)
 }
 
-/// Disables the remote provider gate without touching AI privacy rules surface rules.
+/// Disables the remote provider gate without touching AI privacy rules.
 ///
 /// remote provider settings surface uses this for `Disable remote AI`. The call sets
 /// `remote_provider_enabled` to false and may forget the stored credential
@@ -428,7 +428,7 @@ pub fn disable_remote_ai_provider(
     remote_provider_config::disable_remote_ai_provider(repo_path, request)
 }
 
-/// Requests a AI category suggestion AI category suggestion without applying it.
+/// Requests an AI category suggestion without applying it.
 ///
 /// AI category suggestion surface uses this contract for `Ask AI for suggestion...`, and AI fallback surface uses
 /// its structured status and skipped reason for fallback rendering. The
@@ -461,7 +461,7 @@ pub fn suggest_category_with_ai(
     ai_classification_suggestion::suggest_category_with_ai(repo_path, request)
 }
 
-/// Lists redacted AI call log AI call log rows for AI call log surface.
+/// Lists redacted AI call log rows for AI call log surface.
 ///
 /// The contract exposes only audit metadata: feature, local/remote route,
 /// provider/model display names, status, duration, sent field categories,
@@ -486,7 +486,7 @@ pub fn list_ai_calls(
     ai_call_log::list_ai_calls(repo_path, filter, pagination)
 }
 
-/// Clears local AI call log AI call log rows without deleting user data.
+/// Clears local AI call log rows without deleting user data.
 ///
 /// This contract deletes only `ai_call_log` audit rows in the requested scope.
 /// It must not delete, move, rename, trash, overwrite, or reclassify user
@@ -507,7 +507,7 @@ pub fn clear_ai_call_log(
     ai_call_log::clear_ai_call_log(repo_path, request)
 }
 
-/// Generates a AI summary AI summary draft without saving it.
+/// Generates an AI summary draft without saving it.
 ///
 /// AI summary editor surface uses this contract for `Generate summary` and confirmed
 /// `Regenerate...` flows. The returned [`AiSummaryDraft`] is explicitly a draft
@@ -520,7 +520,7 @@ pub fn clear_ai_call_log(
 /// This contract must not persist a summary, overwrite notes, write user
 /// files, modify tags/categories/searches, enable remote AI, or bypass AI privacy rules
 /// privacy rules. Remote generation remains gated by AI settings, remote provider configuration
-/// provider scope, AI privacy rules privacy evaluation, and AI call log call-log availability.
+/// provider scope, AI privacy evaluation, and AI call log availability.
 ///
 /// # Errors
 ///
@@ -537,7 +537,7 @@ pub fn generate_ai_summary(
     ai_summary::generate_ai_summary(repo_path, request)
 }
 
-/// Saves a AI summary AI summary draft as AreaMatrix-owned metadata.
+/// Saves an AI summary draft as AreaMatrix-owned metadata.
 ///
 /// AI summary editor surface uses this after the user explicitly clicks `Save`. The request may
 /// contain AI-generated or user-edited text, but it remains derived summary
@@ -561,7 +561,7 @@ pub fn save_ai_summary(
     ai_summary::save_ai_summary(repo_path, request)
 }
 
-/// Clears AI summary AI summary metadata for one file after confirmation.
+/// Clears AI summary metadata for one file after confirmation.
 ///
 /// This contract backs AI summary editor surface `Clear summary...`. It may clear only the
 /// AreaMatrix-owned AI summary value. It must not delete, move, rename, trash,
@@ -583,7 +583,7 @@ pub fn clear_ai_summary(
     ai_summary::clear_ai_summary(repo_path, request)
 }
 
-/// Generates AI tag suggestions AI tag suggestions without applying them.
+/// Generates AI tag suggestions without applying them.
 ///
 /// AI tag suggestion surface uses this contract to populate review chips before any tag write.
 /// The request identifies one active file, caller-provided candidate tags, and
@@ -596,8 +596,8 @@ pub fn clear_ai_summary(
 /// This contract must not create or attach tags, write change log or undo
 /// rows, save AI settings, enable remote providers, edit privacy rules, or
 /// move, rename, delete, read, upload, or overwrite user files. Remote AI
-/// remains gated by AI settings, remote provider configuration provider scope, AI privacy rules privacy
-/// evaluation, and AI call log call-log availability.
+/// remains gated by AI settings, remote provider scope, AI privacy
+/// evaluation, and AI call log availability.
 ///
 /// # Errors
 ///
@@ -615,7 +615,7 @@ pub fn suggest_tags_with_ai(
     ai_tags_suggestion::suggest_tags_with_ai(repo_path, request)
 }
 
-/// Applies reviewed AI tag suggestions AI tag suggestions after explicit confirmation.
+/// Applies reviewed AI tag suggestions after explicit confirmation.
 ///
 /// AI tag suggestion surface calls this only for selected or edited suggestions. Rejected or
 /// cancelled rows stay in UI state and are not submitted. The implementation
@@ -644,11 +644,11 @@ pub fn apply_ai_tag_suggestions(
     ai_tags_suggestion::apply_ai_tag_suggestions(repo_path, request)
 }
 
-/// Lists AI privacy rules AI privacy rules, remote field filters, and provider gate state.
+/// Lists AI privacy rules, remote field filters, and provider gate state.
 ///
 /// AI privacy rules surface uses this contract to render the privacy rules table, global
 /// `privacy_gate_enabled` state, remote allowed field controls, and read-only
-/// remote provider configuration provider scope. AI fallback surface can use matched rule ids from other AI
+/// remote provider scope. AI fallback surface can use matched rule ids from other AI
 /// contracts to route `View privacy rule` back to this snapshot.
 ///
 /// This API is read-only. It must not create recommended templates
@@ -665,7 +665,7 @@ pub fn list_ai_privacy_rules(repo_path: String) -> CoreResult<AiPrivacyRulesSnap
     ai_privacy_rules::list_ai_privacy_rules(repo_path)
 }
 
-/// Updates AI privacy rules AI privacy rules and remote privacy gate metadata.
+/// Updates AI privacy rules and remote privacy gate metadata.
 ///
 /// The request replaces the AI privacy rules surface-owned privacy rule set, remote field filter
 /// settings, and global `privacy_gate_enabled` value after explicit user
@@ -674,7 +674,7 @@ pub fn list_ai_privacy_rules(repo_path: String) -> CoreResult<AiPrivacyRulesSnap
 /// feature scope; this prevents the privacy page from replacing the provider
 /// configuration flow.
 ///
-/// The contract must not enable or disable remote provider configuration remote provider metadata,
+/// The contract must not enable or disable remote provider metadata,
 /// remove Keychain keys, execute AI calls, write suggestions, clear logs,
 /// regenerate summaries/tags, or modify user files. Disabling
 /// `privacy_gate_enabled` blocks future remote calls only.
@@ -692,7 +692,7 @@ pub fn update_ai_privacy_rules(
     ai_privacy_rules::update_ai_privacy_rules(repo_path, request)
 }
 
-/// Evaluates AI privacy rules privacy rules before an AI feature uses candidate fields.
+/// Evaluates AI privacy rules before an AI feature uses candidate fields.
 ///
 /// AI classification, summary, tag, and semantic search implementations use
 /// this contract before local or remote input is prepared. The returned report
@@ -730,7 +730,7 @@ pub fn evaluate_ai_privacy(
 ///
 /// This contract does not execute AI calls, switch providers, enable remote AI,
 /// evaluate privacy rules, write user files, or mutate AI results. The AI fallback
-/// implementation records one sanitized AI call log call-log row when the caller did
+/// implementation records one sanitized AI call log row when the caller did
 /// not already provide a `call_log_id`, keeping sent fields empty and result
 /// summary display-safe.
 ///
@@ -822,7 +822,7 @@ pub fn preview_manual_rescan(repo_path: String) -> CoreResult<ManualRescanPrevie
 /// content or metadata cannot be inspected, `CoreError::Io { message }` for
 /// filesystem traversal failures, `CoreError::Conflict { path }` when another
 /// manual rescan is already running, and `CoreError::Internal { message }` for
-/// invariant failures that should be surfaced through error mapping error mapping.
+/// invariant failures that should be surfaced through error mapping.
 pub fn reindex_from_filesystem(repo_path: String) -> CoreResult<ReindexReport> {
     repair::reindex_from_filesystem(repo_path)
 }
@@ -921,18 +921,18 @@ pub fn resume_scan_session(repo_path: String, scan_session_id: i64) -> CoreResul
 /// category/name pair. It must not create repository metadata, touch the
 /// database, import files, or move user content.
 ///
-/// camera import camera-import reuses this read-only preview surface after the
+/// camera import reuses this read-only preview surface after the
 /// platform layer has captured a photo and generated a candidate filename.
 /// Camera permission prompts, capture cancellation, retake flow, thumbnail
 /// generation, and temporary-file lifetime management remain outside Core.
 ///
-/// share extension import share-extension-import reuses this read-only preview surface after
+/// share extension import reuses this read-only preview surface after
 /// the Share Extension has parsed an `NSExtensionItem` and derived a safe
 /// candidate filename. Share-sheet parsing, app-group queue persistence,
 /// security-scoped bookmark refresh, URL materialization, and Extension
 /// timeout handling stay in the platform layer.
 ///
-/// files import files-import reuses this read-only preview surface after the iOS
+/// files import reuses this read-only preview surface after the iOS
 /// Files provider or document picker has granted access and exposed a display
 /// filename. Provider browsing, security-scoped access lifetime, iCloud
 /// placeholder download orchestration, and multi-file progress stay in the
@@ -1008,7 +1008,7 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// Core resolves a safe numbered name such as `name_1.ext`, while
 /// `CoreError::Conflict { path }` is reserved for exhausted or raced resolution.
 /// Dangerous replacement remains explicit through `DuplicateStrategy::Overwrite`
-/// after replace confirmation or replace confirmation has confirmed the user decision and recoverable
+/// after replace confirmation has confirmed the user decision and recoverable
 /// old-version handling.
 ///
 /// generated overview uses a successful import as a generated-overview trigger. The trigger
@@ -1018,7 +1018,7 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// `.areamatrix/generated/` and, only when explicitly configured,
 /// `AREAMATRIX.md`; `README.md` remains user-authored content.
 ///
-/// camera import camera-import reuses `StorageMode::Copied` import semantics for a
+/// camera import reuses `StorageMode::Copied` import semantics for a
 /// platform-saved temporary photo path. Core receives only the authorized
 /// filesystem path plus [`ImportOptions`]; it does not request camera
 /// permissions, drive the capture UI, delete photos outside AreaMatrix-owned
@@ -1027,7 +1027,7 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// show the copied storage mode, and route duplicate or name-conflict states
 /// without adding a camera-specific Core API.
 ///
-/// share extension import share-extension-import reuses `StorageMode::Copied` import semantics
+/// share extension import reuses `StorageMode::Copied` import semantics
 /// after the platform has materialized a share payload into a Core-readable app
 /// group staged file. Core receives only that staged file path plus
 /// [`ImportOptions`]; it does not parse `NSExtensionItem`, store the deferred
@@ -1038,12 +1038,12 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// needs-review, or permission-expired takeover state and the main app later
 /// calls this same Core import contract.
 ///
-/// files import files-import reuses `StorageMode::Copied` import semantics for iOS
+/// files import reuses `StorageMode::Copied` import semantics for iOS
 /// Files provider selections after the platform layer has granted access to a
 /// readable file URL. Core receives only the authorized path plus
 /// [`ImportOptions`]; it does not open the document picker, retain
 /// security-scoped bookmarks, trigger provider downloads, move source files, or
-/// perform replace confirmation replace confirmation. `iOS files import surface` can derive its preview and
+/// perform replace confirmation. `iOS files import surface` can derive its preview and
 /// result states from [`predict_category`], [`ImportOptions`], the returned
 /// [`FileEntry`], and structured `ICloudPlaceholder`, `PermissionDenied`,
 /// `DuplicateFile`, and `Conflict` errors. Cancelled selections stay in the
@@ -1062,7 +1062,7 @@ pub fn predict_category(repo_path: String, filename: String) -> CoreResult<Class
 /// `Skip`, and `Ask` expose duplicate or same-name state through the returned
 /// [`FileEntry`] or structured `DuplicateFile` / `Conflict` errors.
 /// `DuplicateStrategy::Overwrite` is only valid after the separate replace confirmation /
-/// `replace confirmation surface` replace confirmation has proven a recoverable old-file path; this
+/// `replace confirmation surface` has proven a recoverable old-file path; this
 /// API does not perform that confirmation, detect platform Trash support, or
 /// add a desktop-only replace capability. A failed pre-commit desktop import
 /// must surface an error instead of a success state and must not leave active
@@ -1185,7 +1185,7 @@ pub fn remove_index_entry(repo_path: String, file_id: i64) -> CoreResult<()> {
 /// `files.source_path`, and the external source file untouched. This preserves
 /// indexed-file import index-only semantics while allowing rename surface to show the requested name.
 ///
-/// Repository-owned rename also triggers generated overview generated-overview
+/// Repository-owned rename also triggers generated overview
 /// regeneration for the affected category. Those generated-overview writes
 /// are limited to `.areamatrix/generated/` and, only when explicitly
 /// configured, root-level `AREAMATRIX.md`; `README.md` remains user-authored
@@ -1269,7 +1269,7 @@ pub fn move_to_category(
     storage::move_to_category(repo_path, file_id, new_category)
 }
 
-/// Previews a batch category change batch category change for batch change-category surface without side effects.
+/// Previews a batch category change for batch change-category surface without side effects.
 ///
 /// The report gives Swift enough state to show selected-file category
 /// distribution, per-file target paths, metadata-only rows, skipped rows,
@@ -1302,12 +1302,12 @@ pub fn preview_batch_move_to_category(
     )
 }
 
-/// Applies a previously previewed batch category change batch category change.
+/// Applies a previously previewed batch category change.
 ///
 /// `preview_token` binds Apply to the latest preview for the same selection,
 /// target category, move option, and inspected state. Successful rows update
 /// `files.category`, optionally update `files.path` for repository-owned
-/// files, write `change_log`, and create a undo action log undo action token. Partial
+/// files, write `change_log`, and create an undo action log token. Partial
 /// failures must be represented per item rather than silently treated as
 /// success.
 ///
@@ -1340,7 +1340,7 @@ pub fn batch_move_to_category(
     )
 }
 
-/// Previews a batch delete batch delete operation without side effects.
+/// Previews a batch delete operation without side effects.
 ///
 /// batch delete confirmation uses this contract to display selected-file impact before enabling a
 /// destructive button: repository-owned rows that can move to Trash,
@@ -1362,7 +1362,7 @@ pub fn preview_batch_delete(
     batch_delete::preview_batch_delete(repo_path, file_ids, delete_mode)
 }
 
-/// Applies batch delete batch deletion for the mode confirmed by batch delete confirmation.
+/// Applies batch deletion for the mode confirmed by batch delete confirmation.
 ///
 /// `preview_token` must come from the last confirmed batch delete preview for the
 /// same selection, delete mode, Trash availability, and inspected file state.
@@ -1389,7 +1389,7 @@ pub fn batch_delete_to_trash(
     batch_delete::batch_delete_to_trash(repo_path, file_ids, delete_mode, preview_token)
 }
 
-/// Previews a batch rename batch rename operation without side effects.
+/// Previews a batch rename operation without side effects.
 ///
 /// batch rename surface uses this contract to display each selected row's original name,
 /// generated new name, blocking status, index-only display-name behavior,
@@ -1414,12 +1414,12 @@ pub fn preview_batch_rename(
     batch_rename_mod::preview_batch_rename(repo_path, file_ids, rule)
 }
 
-/// Applies a previously previewed batch rename batch rename operation.
+/// Applies a previously previewed batch rename operation.
 ///
 /// `preview_token` must come from the last batch rename preview for the same
 /// selection order, rename rule, and inspected file state. Successful rows
 /// rename repository-owned files or update index-only display names, update
-/// metadata, write change-log rows, and return a undo action log undo token when Undo can
+/// metadata, write change-log rows, and return an undo action log token when Undo can
 /// reverse the operation.
 ///
 /// This operation is limited to batch rename. It must not implement AI naming, change
@@ -1444,7 +1444,7 @@ pub fn batch_rename(
     batch_rename_mod::batch_rename(repo_path, file_ids, rule, preview_token)
 }
 
-/// Applies one classifier correction classifier correction for classifier correction surface.
+/// Applies one classifier correction for classifier correction surface.
 ///
 /// The correction changes one active file's category and optionally moves a
 /// repo-managed file when `move_file` is true. `remember` only asks Core to
@@ -1468,7 +1468,7 @@ pub fn correct_file_category(
     classifier_correction::correct_file_category(repo_path, file_id, category, move_file, remember)
 }
 
-/// Saves one classifier rule save classifier rule for future classification.
+/// Saves one classifier rule for future classification.
 ///
 /// classifier save-rule surface uses this contract after the user chooses keyword and extension
 /// basis values from a classifier-correction draft. The input rule maps only to
@@ -1495,7 +1495,7 @@ pub fn save_classifier_rule(repo_path: String, rule: ClassifierRule) -> CoreResu
     classifier_rules::save_classifier_rule(repo_path, rule)
 }
 
-/// Previews classifier impact preview classifier rule impact for classifier impact preview surface.
+/// Previews classifier rule impact for classifier impact preview surface.
 ///
 /// The contract accepts one explicit preview request and returns counts, sample
 /// rows, conflicts, needs-review state, broad-impact warning state, and direct
@@ -1516,7 +1516,7 @@ pub fn preview_classifier_rule_impact(
     classifier_impact::preview_classifier_rule_impact(repo_path, request)
 }
 
-/// Lists classifier rule editor classifier rule editor state for classifier rule editor surface.
+/// Lists classifier rule editor state for classifier rule editor surface.
 ///
 /// classifier rule editor surface uses this contract to load current classifier categories, matcher
 /// values, priority, naming template, and default-category state. The returned
@@ -1537,7 +1537,7 @@ pub fn list_classifier_rules(repo_path: String) -> CoreResult<ClassifierRuleEdit
     classifier_rule_editor::list_classifier_rules(repo_path)
 }
 
-/// Creates one classifier rule editor classifier editor row for future classification.
+/// Creates one classifier rule editor row for future classification.
 ///
 /// The create request carries a new slug, display metadata, extensions,
 /// keywords, priority, and naming template. A successful implementation may
@@ -1560,7 +1560,7 @@ pub fn create_classifier_rule(
     classifier_rule_editor::create_classifier_rule(repo_path, request)
 }
 
-/// Updates one classifier rule editor classifier editor row for future classification.
+/// Updates one classifier rule editor row for future classification.
 ///
 /// The update request carries one stable `rule_id` plus replacement slug,
 /// display metadata, extensions, keywords, priority, and naming template. A
@@ -1583,7 +1583,7 @@ pub fn update_classifier_rule(
     classifier_rule_editor::update_classifier_rule(repo_path, request)
 }
 
-/// Deletes one classifier rule editor classifier editor row after explicit impact confirmation.
+/// Deletes one classifier rule editor row after explicit impact confirmation.
 ///
 /// Delete removes only classifier configuration state. It must reject deletion
 /// of the default category, the final category, and unpreviewed category/value
@@ -1611,7 +1611,7 @@ pub fn restore_file(_repo_path: String, _file_id: i64) -> CoreResult<FileEntry> 
 
 /// Lists file entries from repository metadata.
 ///
-/// The The file-list API is the read-only metadata query used by the main window
+/// The file-list API is the read-only metadata query used by the main window
 /// and multi-selection summary. The public contract accepts a
 /// [`FileFilter`] for exact category filtering, optional deleted-row inclusion,
 /// import-time bounds, `limit` clamping, and offset pagination. Returned rows
@@ -1663,7 +1663,7 @@ pub fn list_files(repo_path: String, filter: FileFilter) -> CoreResult<Vec<FileE
 /// without platform-side filesystem inference and route the missing state to
 /// `missing-file recovery surface` rather than inferring it from the filesystem.
 ///
-/// desktop main query desktop main-window consumers use this detail query after selecting a
+/// desktop main-window consumers use this detail query after selecting a
 /// row from [`list_files`] or [`search_files`]. It returns the same base
 /// metadata shape and does not add platform-side preview, watcher, rescan, or
 /// recovery behavior.
@@ -1752,7 +1752,7 @@ pub fn remove_missing_file_record(
 /// rollback, and batch revert behavior belong to undo/redo capabilities and must not be
 /// hidden behind this query entry point.
 ///
-/// mobile library query/mobile file detail mobile consumers can lazily request a small `limit`/`offset`
+/// mobile library and mobile file detail consumers can lazily request a small `limit`/`offset`
 /// page for visible detail timelines. In mobile file detail, `mobile file detail surface` uses `file_id` to
 /// load the Log segment without blocking the Meta segment. The API remains a
 /// read-only metadata query and does not trigger filesystem rescan, sync
@@ -1781,12 +1781,12 @@ pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<C
 /// Virtual smart lists, search result trees, and Smart List tree projections remain
 /// outside this API boundary.
 ///
-/// mobile library query mobile-library uses this tree snapshot for compact category browsing.
+/// mobile library uses this tree snapshot for compact category browsing.
 /// Mobile shells must keep large-repository list data paginated through
 /// [`list_files`]; this tree contract does not add search, sync, or recovery
 /// actions.
 ///
-/// desktop main query desktop main-window consumers may use the same tree snapshot for the
+/// desktop main-window consumers may use the same tree snapshot for the
 /// Windows and Linux sidebar. The platform UI remains responsible for native
 /// rendering and virtualization; Core only returns the read-only tree JSON.
 ///
@@ -1800,12 +1800,12 @@ pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String> {
     tree::list_tree_json(repo_path, locale)
 }
 
-/// Detects sync conflict detection sync conflicts without resolving any version.
+/// Detects sync conflicts without resolving any version.
 ///
 /// `sync conflict entry surface sync-conflict-entry` consumes this non-resolving list for conflict
 /// count, latest detection state, row badges, and Review routing.
 /// `sync conflict review surface sync-conflict` consumes the same rows as its conflict summary and
-/// affected-version metadata before sync conflict resolution resolution builds impact plans. Core
+/// affected-version metadata before sync conflict resolution builds impact plans. Core
 /// may inspect persisted external events and safe file metadata, and it may
 /// write or refresh conflict-state metadata for detected conflicts. This entry
 /// point must not choose a winning version, mark conflicts resolved, advance
@@ -1823,7 +1823,7 @@ pub fn detect_sync_conflicts(repo_path: String) -> CoreResult<Vec<SyncConflict>>
     sync_conflict_detect::detect_sync_conflicts(repo_path)
 }
 
-/// Previews a sync conflict resolution sync conflict resolution plan without mutating files.
+/// Previews a sync conflict resolution plan without mutating files.
 ///
 /// `sync conflict review surface sync-conflict` consumes this contract after the user chooses
 /// `Keep both`, `Use existing version`, or `Use incoming version`. The preview
@@ -1850,7 +1850,7 @@ pub fn preview_sync_conflict_resolution(
     sync_conflict_resolve::preview_sync_conflict_resolution(repo_path, conflict_id, resolution)
 }
 
-/// Resolves one sync conflict resolution sync conflict after preview and required confirmation.
+/// Resolves one sync conflict after preview and required confirmation.
 ///
 /// `sync conflict review surface sync-conflict` calls this only after a fresh preview. Requests that
 /// use `Use incoming version` must first complete `replace confirmation surface replace-confirm`;
@@ -1960,7 +1960,7 @@ pub fn resolve_icloud_conflict(
     icloud_conflicts::resolve_icloud_conflict(repo_path, conflict_id, resolution)
 }
 
-/// Detects cloud storage state cloud storage provider state and OneDrive risk notice OneDrive risk state.
+/// Detects cloud storage provider state and OneDrive risk state.
 ///
 /// `iCloud permission surface`, `OneDrive notice surface`, and the cloud
 /// branch of `iOS repository connection` use this read-only contract to render
@@ -1985,7 +1985,7 @@ pub fn detect_cloud_storage_state(repo_path: String) -> CoreResult<CloudStorageS
     cloud_permission_state::detect_cloud_storage_state(repo_path)
 }
 
-/// Persists the OneDrive risk notice OneDrive risk notice acknowledgement.
+/// Persists the OneDrive risk notice acknowledgement.
 ///
 /// `OneDrive notice surface` calls this only after the user has explicitly
 /// confirmed the OneDrive warning. The API writes only Core-visible repository
@@ -2006,7 +2006,7 @@ pub fn acknowledge_onedrive_risk_notice(repo_path: String) -> CoreResult<CloudSt
     cloud_permission_state::acknowledge_onedrive_risk_notice(repo_path)
 }
 
-/// Previews import conflict batch import conflict batch decisions without mutating staging or files.
+/// Previews import conflict batch decisions without mutating staging or files.
 ///
 /// import conflict review surface uses this contract after a batch import session has accumulated hash
 /// duplicate or same-name different-content conflicts. The preview returns row
@@ -2035,7 +2035,7 @@ pub fn preview_import_conflict_batch(
     import_conflict_batch::preview_import_conflict_batch(repo_path, request)
 }
 
-/// Applies import conflict batch import conflict batch decisions after explicit confirmation.
+/// Applies import conflict batch decisions after explicit confirmation.
 ///
 /// `preview_token` must come from [`preview_import_conflict_batch`] for the same
 /// import session, conflict scope, strategies, Trash availability, and inspected
@@ -2065,7 +2065,7 @@ pub fn apply_import_conflict_batch(
     import_conflict_batch::apply_import_conflict_batch(repo_path, request, preview_token)
 }
 
-/// Lists redo action log redo action state for redo surface.
+/// Lists redo action state for redo surface.
 ///
 /// redo surface uses this contract in the redo slot of undo toast surface and the redo row of
 /// undo history surface. The returned rows expose availability, source undo action, disabled
@@ -2087,7 +2087,7 @@ pub fn list_redo_actions(repo_path: String) -> CoreResult<Vec<RedoActionRecord>>
     redo::list_redo_actions(repo_path)
 }
 
-/// Executes one redo action log redo action after preflight validation.
+/// Executes one redo action after preflight validation.
 ///
 /// `action_id` must reference an available redo row returned by
 /// [`list_redo_actions`]. Redo only replays an AreaMatrix action that was
@@ -2114,7 +2114,7 @@ pub fn redo_action(repo_path: String, action_id: String) -> CoreResult<RedoActio
     redo::redo_action(repo_path, action_id)
 }
 
-/// Suggests deterministic deterministic tag suggestions tags for tag suggestions surface without reading file contents.
+/// Suggests deterministic tags for tag suggestions surface without reading file contents.
 ///
 /// The contract inspects only repository metadata, file name, relative path,
 /// optional import source context, and existing tag registry state. The output
@@ -2136,11 +2136,11 @@ pub fn suggest_tags_for_file(
     crate::tags::suggest_tags_for_file(repo_path, request)
 }
 
-/// Applies selected or edited deterministic tag suggestions tag suggestions for one active file.
+/// Applies selected or edited deterministic tag suggestions for one active file.
 ///
 /// A successful implementation creates or reuses normalized tags, writes only
 /// the selected file/tag relations, records change-log rows, and returns a
-/// undo action log undo token when new relations were added. It must not apply ignored
+/// undo action log token when new relations were added. It must not apply ignored
 /// suggestions, alter filters, move/rename/delete files, read file contents, or
 /// call AI/network providers.
 ///
@@ -2160,7 +2160,7 @@ pub fn apply_tag_suggestions(
 
 /// Reads the markdown note associated with one active file entry.
 ///
-/// file note contract exposes this read-only query for the detail note surface detail-note surface. The
+/// file note contract exposes this read-only query for detail note surface. The
 /// caller supplies a repository path and stable `file_id`; the result is
 /// `Some(markdown)` when a note exists and `None` when the file has no note.
 /// This API must not create note rows, write sidecar files, insert change-log

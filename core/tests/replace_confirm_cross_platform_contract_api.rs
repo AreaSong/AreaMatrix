@@ -142,10 +142,10 @@ fn replace_confirm_docs_core_api_udl_and_control_map_stay_aligned() {
         "| `import_file(repo, src, options)` | storage | √ | Io / Db / DuplicateFile / Conflict / InvalidPath / ICloudPlaceholder / PermissionDenied |",
         "| `delete_file(repo, file_id)` | storage | √ | Io / Db / FileNotFound / PermissionDenied / Internal |",
         "| `resolve_sync_conflict(repo, conflict_id, resolution)` | sync/conflict | √ | Conflict / PermissionDenied / Io / Db |",
-        "Replace 仍属于 C4-21 / `S4-X-09`",
-        "Replace 仍属于 C4-21 / `S4-X-09`",
-        "`UseIncoming`：incoming 将成为 canonical path；必须先进入 S4-X-09 二次确认。",
-        "S4-X-09 可以从 `replace_plan` 得到二次确认所需的 old/new file、hash、record id、",
+        "Replace 仍属于 replace confirmation / `replace confirmation surface`",
+        "Replace 仍属于 replace confirmation / `replace confirmation surface`",
+        "`UseIncoming`：incoming 将成为 canonical path；必须先进入 replace confirmation surface 二次确认。",
+        "replace confirmation surface 可以从 `replace_plan` 得到二次确认所需的 old/new file、hash、record id、",
         "existing 只能进入 Trash/Recycle Bin",
     ] {
         assert_contains(CORE_API, fragment);
@@ -165,8 +165,8 @@ fn replace_confirm_docs_core_api_udl_and_control_map_stay_aligned() {
 fn replace_confirm_consumers_have_required_state_without_adjacent_capabilities() {
     for fragment in [
         "DuplicateStrategy::Overwrite",
-        "C4-21 /",
-        "replace confirmation has proven",
+        "replace confirmation /",
+        "has proven a recoverable old-file path",
         "delete_file",
         "Moves a repo-owned file entry to the system Trash",
         "replace-confirm",

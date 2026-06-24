@@ -82,8 +82,8 @@ task-loop 默认会在一次 repair retry 后停下，避免小任务长时间�
 
 `./dev` 是 AreaMatrix Dev Console 总控入口，默认展示局势诊断首页。首页只回答三件事：现在安全吗、推荐下一步是什么、去哪里看更多。
 控制台按版本组织 `docs -> workflow discussion -> changes -> plans -> drafts -> queue -> promotion preview -> execution -> task-loop -> archive`。当前 v1 历史执行队列来自 `workflow/versions/v1-mvp/execution/**`；`workflow/` 是后续版本和大型变更的规划生命周期，不会直接修改 execution queue。
-控制台默认显示四段：`当前局势` 说明安全结论和原因，`推荐行动链` 给出只读恢复步骤，`进度概览` 用两行版本卡展示 `v1-mvp live queue` 与 `template reference`，`去哪里看更多` 放主入口。最近 run、verify 日志、完整 pid 和长路径改到 `./dev status --verbose`、`./dev processes`、`./dev logs`。
-下方只显示主要入口：`1 recommended guide`、`2 lifecycle map`、`3 live queue details`、`4 tools`、`? shortcuts`、`h help`、`q quit`。直接按 Enter 只看完整状态，不启动任务；`1` 只打开推荐向导，不自动执行命令。
+控制台默认显示四段：`当前局势` 说明安全结论和原因，`推荐行动链` 给出只读恢复步骤，`进度概览` 用两行版本卡展示 `v1-mvp historical queue` 与 `template reference`，`去哪里看更多` 放主入口。最近 run、verify 日志、完整 pid 和长路径改到 `./dev status --verbose`、`./dev processes`、`./dev logs`。
+下方只显示主要入口：`1 recommended guide`、`2 lifecycle map`、`3 historical queue details`、`4 tools`、`? shortcuts`、`h help`、`q quit`。直接按 Enter 只看完整状态，不启动任务；`1` 只打开推荐向导，不自动执行命令。
 启动或继续任务时，控制台会先阻止重复 live runner，再选择前台/后台、Git checkpoint 模式和任务数量上限；默认 Git 为本地 `commit`，任务数量为无限。
 优化或排查控制台时，优先用 `./dev preview` 预览命令，或用 `./dev dry-run` 跑临时目录演练；这两者都不会写真实 progress。
 

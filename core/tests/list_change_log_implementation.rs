@@ -142,7 +142,7 @@ fn list_change_log_implementation_filters_by_file_category_action_and_time_windo
 }
 
 #[test]
-fn list_change_log_implementation_queries_all_stage_one_action_kinds() {
+fn list_change_log_implementation_queries_all_core_action_kinds() {
     let repo = initialized_repo();
     let file_id = insert_file(repo.path(), "finance/report.pdf", "finance", 10);
     for (action, occurred_at) in [

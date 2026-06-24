@@ -187,13 +187,13 @@ fn manual_rescan_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn manual_rescan_documents_consumers_scope_and_side_effect_boundaries() {
     for fragment in [
-        "C4-19 also uses this entry point for Windows/Linux manual rescan after",
-        "S4-X-07 has shown [`preview_manual_rescan`] and the high-risk confirmation",
-        "The C4-19 scope is the entire repository",
+        "manual rescan also uses this entry point for Windows/Linux manual rescan after",
+        "rescan confirmation has shown [`preview_manual_rescan`] and the high-risk confirmation",
+        "The manual rescan scope is the entire repository",
         "partial subtree rescan is not exposed",
         "Consumers combine the returned [`ReindexReport`] with",
         "[`get_latest_scan_session`] to render the rescan summary",
-        "C4-19 consumers use the same read-only session contract",
+        "manual rescan consumers use the same read-only session contract",
         "display manual rescan progress, completion, failure, interruption, and retry state",
         "resumes an interrupted or failed entire-repository manual rescan",
         "must not bypass confirmation, start a concurrent rescan, or expose",
@@ -202,23 +202,23 @@ fn manual_rescan_documents_consumers_scope_and_side_effect_boundaries() {
     }
 
     for fragment in [
-        "C4-19 manual rescan consumers use this as the post-confirmation summary",
+        "manual rescan consumers use this as the post-confirmation summary",
         "ManualRescanPreviewReport",
         "Core does not silently delete or merge those items",
-        "C4-19 manual rescan consumers use `kind`, `status`, counters, timestamps",
+        "manual rescan consumers use `kind`, `status`, counters, timestamps",
         "without parsing logs or inspecting user files",
     ] {
         assert_contains_normalized(DOMAIN_RS, fragment);
     }
 
     for fragment in [
-        "C4-19 manual-rescan reuses the full repository reindex entry point",
-        "S4-X-07 has shown preview and the high-risk confirmation",
+        "manual rescan reuses the full repository reindex entry point",
+        "rescan confirmation has shown preview and the high-risk confirmation",
         "partial subtree rescan is not exposed",
         "must not",
         "move, delete, rename, overwrite, trash, or download user files",
-        "C4-19 consumers read the latest scan session",
-        "C4-19 resumes an interrupted or failed whole-repository manual rescan",
+        "manual rescan consumers read the latest scan session",
+        "manual rescan resumes an interrupted or failed whole-repository manual rescan",
     ] {
         assert_contains_normalized(UDL, fragment);
     }

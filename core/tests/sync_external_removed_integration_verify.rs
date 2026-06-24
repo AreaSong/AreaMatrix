@@ -161,7 +161,7 @@ fn assert_only_keeper_is_visible(repo: &Path, keeper_id: i64) {
 fn sync_external_removed_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
     assert_c1_19_capability_spec();
     assert_core_api_and_udl_contract();
-    assert_stage_one_consumers();
+    assert_core_consumers();
     assert_rust_entry_points_are_real_removed_wiring();
 }
 
@@ -194,11 +194,11 @@ fn assert_core_api_and_udl_contract() {
     }
 }
 
-fn assert_stage_one_consumers() {}
+fn assert_core_consumers() {}
 
 fn assert_rust_entry_points_are_real_removed_wiring() {
     for fragment in [
-        "C1-19 owns the `ExternalEventKind::Removed` contract",
+        "external removed sync owns the `ExternalEventKind::Removed` contract",
         "only confirms the path is absent",
         "marks the matching active row as `status = deleted`",
         "`deleted_at`",

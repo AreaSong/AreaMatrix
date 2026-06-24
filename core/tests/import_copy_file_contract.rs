@@ -145,10 +145,10 @@ fn import_copy_file_contract_documents_error_codes_and_side_effects() {
     }
 
     for fragment in [
-        "C1-06 defines the copied-file contract",
+        "copied-file import defines the copied-file contract",
         "The original source file must remain unchanged.",
-        "C1-07 defines the moved-file contract",
-        "C1-08 owns index-only semantics",
+        "moved-file import defines the moved-file contract",
+        "indexed-file import owns index-only semantics",
         "Failed imports must not leave active file rows",
     ] {
         assert_contains(API_RS, fragment);
@@ -160,6 +160,6 @@ fn import_copy_file_contract_keeps_adjacent_modes_separate() {
     assert_ne!(StorageMode::Copied, StorageMode::Moved);
     assert_ne!(StorageMode::Copied, StorageMode::Indexed);
 
-    assert_contains(API_RS, "C1-07 defines the moved-file contract");
-    assert_contains(API_RS, "C1-08 owns index-only semantics");
+    assert_contains(API_RS, "moved-file import defines the moved-file contract");
+    assert_contains(API_RS, "indexed-file import owns index-only semantics");
 }

@@ -95,15 +95,15 @@ fn overview_generated_contract_api_documents_side_effects_errors_and_scope() {
     }
 
     for fragment in [
-        "C1-20 uses `RepoInitOptions::overview_output`",
+        "generated overview uses `RepoInitOptions::overview_output`",
         "`OverviewOutput::GeneratedOnly` writes the generated root",
         "`RootAreaMatrixFile` also",
         "root-level `AREAMATRIX.md`",
         "`README.md`",
-        "For C1-20, this is the contract boundary",
+        "For generated overview, this is the contract boundary",
         "later overview-regeneration triggers",
         "file side effects",
-        "C1-20 uses a successful import as a generated-overview trigger",
+        "generated overview uses a successful import as a generated-overview trigger",
         "no extra FFI input",
         "current [`RepoConfig::overview_output`]",
         "`.areamatrix/generated/`",

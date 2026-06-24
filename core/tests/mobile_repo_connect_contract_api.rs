@@ -146,7 +146,7 @@ fn mobile_repo_connect_consumers_can_route_from_structured_status() {
 #[test]
 fn mobile_repo_connect_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "C4-02 mobile repository connection contract reuses the same surface",
+        "mobile repository connection contract reuses the same surface",
         "iOS security-scoped URL or",
         "Core receives only the authorized filesystem path",
         "mobile shells call this only after the shared init/adopt",

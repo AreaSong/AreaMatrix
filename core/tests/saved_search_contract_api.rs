@@ -177,12 +177,12 @@ fn saved_search_contract_docs_api_udl_and_control_map_stay_aligned() {
         "| `update_saved_search(repo, request)` | search | √ | Db / Config |",
         "| `delete_saved_search(repo, saved_search_id)` | search | √ | Db / Config |",
         "| `list_saved_searches(repo)` | search | √ | Db / Config |",
-        "C2-03 saved search",
+        "saved search",
         "0 结果的有效搜索可以保存",
         "query 无效时必须返回结构化 `Config`",
-        "该 API 不执行 Smart List、不返回 `SearchResultPage`、不实现 C2-04 `run_smart_list`",
-        "Stage 2 不支持拖拽排序",
-        "Smart List 打开执行属于 C2-04",
+        "该 API 不执行 Smart List、不返回 `SearchResultPage`、不实现 Smart List execution `run_smart_list`",
+        "当前 saved searches 合同不支持拖拽排序",
+        "Smart List 打开执行属于 Smart List execution",
     ] {
         assert_contains(CORE_API, fragment);
     }
@@ -199,7 +199,7 @@ fn saved_search_contract_documents_consumer_state_and_scope_boundaries() {
     }
 
     for fragment in [
-        "C2-03 saved search record",
+        "saved search record",
         "This API does not execute Smart Lists",
         "must not delete, move, rename, trash",
         "list_saved_searches",

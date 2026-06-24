@@ -88,7 +88,7 @@ fn assert_core_api_fragments() {
         "`Io`：资料库目录、文件路径、文件 metadata 或分类配置无法读取。",
         "只读取资料库文件路径和分类配置",
         "不写 DB，不创建 generated",
-        "Stage 2 tree projection 不属于本接口",
+        "搜索结果树投影不属于本接口",
         "try AreaMatrix.listTreeJson(repoPath: repoPath, locale: \"zh-Hans\")",
         "decoder.decode(TreeNode.self",
         "- `list_tree_json`（大库）",
@@ -218,7 +218,7 @@ fn build_tree_contract_api_documents_and_enforces_error_side_effect_scope_bounda
     }
 
     for fragment in [
-        "C1-15 defines this as the read-only tree query",
+        "The tree JSON API is the read-only tree query",
         "initialized repository path",
         "display locale",
         "single JSON string",
@@ -231,7 +231,7 @@ fn build_tree_contract_api_documents_and_enforces_error_side_effect_scope_bounda
         "mutate repository metadata",
         "modify user files",
         "Virtual smart lists, search result trees",
-        "Stage 2 tree projections remain",
+        "Smart List tree projections remain",
         "outside this API boundary",
         "Returns `CoreError::RepoNotInitialized { path }`",
         "`CoreError::Db { message }`",

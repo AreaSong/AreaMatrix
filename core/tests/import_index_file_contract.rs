@@ -109,7 +109,7 @@ fn import_index_file_contract_docs_api_udl_and_control_map_stay_aligned() {
         "| `import_file(repo, src, options)` | storage |",
         "`ImportOptions.destination` 语义",
         "导入进度 / 队列语义",
-        "C1-06, C1-07, C1-08",
+        "copied-file import, moved-file import, indexed-file import",
     ] {
         assert_contains(CORE_API, fragment);
     }
@@ -140,7 +140,7 @@ fn import_index_file_contract_documents_error_codes_and_side_effects() {
     }
 
     for fragment in [
-        "C1-08 defines the indexed-file contract",
+        "indexed-file import defines the indexed-file contract",
         "`mode` is `StorageMode::Indexed`",
         "must not copy, move, rename, or",
         "must not create",
@@ -158,7 +158,13 @@ fn import_index_file_contract_keeps_adjacent_modes_separate() {
     assert_ne!(StorageMode::Indexed, StorageMode::Copied);
     assert_ne!(StorageMode::Indexed, StorageMode::Moved);
 
-    assert_contains(API_RS, "C1-06 defines the copied-file contract");
-    assert_contains(API_RS, "C1-07 defines the moved-file contract");
-    assert_contains(API_RS, "C1-08 defines the indexed-file contract");
+    assert_contains(
+        API_RS,
+        "copied-file import defines the copied-file contract",
+    );
+    assert_contains(API_RS, "moved-file import defines the moved-file contract");
+    assert_contains(
+        API_RS,
+        "indexed-file import defines the indexed-file contract",
+    );
 }

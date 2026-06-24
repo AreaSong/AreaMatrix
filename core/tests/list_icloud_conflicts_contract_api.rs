@@ -82,7 +82,7 @@ fn list_icloud_conflicts_contract_documents_errors_and_side_effect_boundaries() 
 
     for fragment in [
         "Lists iCloud conflicted copy pairs without resolving them.",
-        "C1-25 owns the read-only contract for S1-36",
+        "iCloud conflict listing owns the read-only contract for iCloud conflict list",
         "Ambiguous pairings must be returned as",
         "`ICloudConflictStatus::NeedsReview`",
         "must not delete, move, rename, overwrite, merge, or download",

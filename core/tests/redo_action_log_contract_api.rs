@@ -138,7 +138,7 @@ fn redo_action_log_contract_docs_api_udl_and_control_map_stay_aligned() {
         "`source_undo_action_id`",
         "`undo_token`",
         "`redo_actions`",
-        "多设备协同 redo 不属于 Stage 2",
+        "多设备协同 redo 不属于当前 redo 合同",
         "本合同不新增 control map 之外",
     ] {
         assert_contains(CORE_API, fragment);
@@ -148,8 +148,8 @@ fn redo_action_log_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn redo_action_log_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "S2-22 可以从列表合同得到 redo 可用性",
-        "S2-22 可以从执行结果得到成功/失败摘要",
+        "redo surface 可以从列表合同得到 redo 可用性",
+        "redo surface 可以从执行结果得到成功/失败摘要",
         "`Shift+Cmd+Z`",
         "独立 Redo 页面、独立 panel 或其他页面能力",
     ] {
@@ -157,7 +157,7 @@ fn redo_action_log_contract_documents_consumer_state_and_scope_boundaries() {
     }
 
     for fragment in [
-        "C2-18 redo action log contract types and entry points.",
+        "redo action log contract types and entry points.",
         "RedoActionRecord",
         "RedoActionResult",
         "list_redo_actions",
@@ -175,8 +175,8 @@ fn redo_action_log_contract_documents_consumer_state_and_scope_boundaries() {
         "redo::list_redo_actions",
         "pub fn redo_action(",
         "redo::redo_action",
-        "S2-22",
-        "C2-18",
+        "redo surface",
+        "operation to the undo action log Undo stack",
         "standalone Redo page",
     ] {
         assert_contains(API_RS, fragment);

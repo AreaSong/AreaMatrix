@@ -268,7 +268,7 @@ fn undo_action_log_failure_recovery_invalid_inputs_map_to_documented_errors() {
             .to_string_lossy()
             .into_owned(),
     )
-    .expect_err("metadata-internal repo path is invalid for C2-07");
+    .expect_err("metadata-internal repo path is invalid for undo action log");
     assert_error_mapping(
         &metadata,
         ErrorKind::Db,

@@ -286,7 +286,7 @@ fn import_conflict_batch_contract_matches_consuming_page_state_without_adjacent_
     }
 
     for fragment in [
-        "C2-17 import conflict batch contract types and entry points.",
+        "import conflict batch contract types and entry points.",
         "preview_import_conflict_batch",
         "apply_import_conflict_batch",
         "side-effect free",
@@ -301,8 +301,8 @@ fn import_conflict_batch_contract_matches_consuming_page_state_without_adjacent_
         "import_conflict_batch::preview_import_conflict_batch",
         "pub fn apply_import_conflict_batch(",
         "import_conflict_batch::apply_import_conflict_batch",
-        "S2-21",
-        "C2-17",
+        "import conflict review surface",
+        "import conflict batch",
         "This contract does not implement iCloud conflict resolution",
     ] {
         assert_contains(API_RS, fragment);

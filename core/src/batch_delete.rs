@@ -1,4 +1,4 @@
-//! batch delete batch delete to Trash contract types and entry points.
+//! batch delete to Trash contract types and entry points.
 
 use std::{
     ffi::OsStr,
@@ -25,7 +25,7 @@ pub enum BatchDeleteMode {
     RemoveFromIndex,
 }
 
-/// Per-file preview status for batch delete batch deletion.
+/// Per-file preview status for batch delete.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum BatchDeletePreviewStatus {
     /// Repository-owned file can be moved to Trash.
@@ -40,7 +40,7 @@ pub enum BatchDeletePreviewStatus {
     Blocked,
 }
 
-/// Per-file result status for batch delete batch deletion.
+/// Per-file result status for batch delete.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum BatchDeleteResultStatus {
     /// Repository-owned file was moved to Trash and metadata was soft-deleted.
@@ -53,7 +53,7 @@ pub enum BatchDeleteResultStatus {
     Failed,
 }
 
-/// Per-file preview row returned before applying batch delete batch deletion.
+/// Per-file preview row returned before applying batch delete.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchDeletePreviewItem {
     /// Requested file id.
@@ -87,7 +87,7 @@ pub struct BatchDeletePreviewReport {
     pub preview_token: String,
     /// Whether the system Trash is available for repository-owned rows.
     pub trash_available: bool,
-    /// Whether successful rows can create a undo action log undo action.
+    /// Whether successful rows can create an undo action log entry.
     pub undo_available: bool,
     /// Number of rows that would move repository-owned files to Trash.
     pub will_trash_count: i64,
@@ -107,7 +107,7 @@ pub struct BatchDeletePreviewReport {
     pub apply_blocked_reason: Option<String>,
 }
 
-/// Per-file execution result returned after batch delete batch deletion.
+/// Per-file execution result returned after batch delete.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchDeleteItemResult {
     /// Requested file id.
@@ -120,7 +120,7 @@ pub struct BatchDeleteItemResult {
     pub error: Option<String>,
 }
 
-/// Execution report returned to batch delete confirmation and undo action log undo consumers.
+/// Execution report returned to batch delete confirmation and undo action log consumers.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BatchDeleteReport {
     /// Number of unique file ids accepted by the contract.
@@ -143,7 +143,7 @@ pub struct BatchDeleteReport {
     pub undo_token: Option<String>,
 }
 
-/// Previews batch delete batch deletion without mutating files or metadata.
+/// Previews batch delete without mutating files or metadata.
 ///
 /// batch delete confirmation uses this API to show which selected rows will move to Trash, which
 /// rows are index-only or missing metadata removals, which rows are blocked,
@@ -169,7 +169,7 @@ pub fn preview_batch_delete(
     Ok(plan.into_preview_report())
 }
 
-/// Applies batch delete batch deletion for rows approved by batch delete confirmation.
+/// Applies batch delete for rows approved by batch delete confirmation.
 ///
 /// `preview_token` must come from [`preview_batch_delete`] for the same
 /// selection, delete mode, Trash availability, and inspected file state.
@@ -178,7 +178,7 @@ pub fn preview_batch_delete(
 /// to index-only or missing rows and must never delete, move, rename, overwrite,
 /// trash, or otherwise mutate external source files. In short, this mode must
 /// not touch external source files. Successful writes must report per-item
-/// status, write change-log rows, and create a undo action log undo token when Undo is
+/// status, write change-log rows, and create an undo action log token when Undo is
 /// available.
 ///
 /// # Errors

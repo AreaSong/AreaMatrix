@@ -33,7 +33,7 @@ fn assert_all_contains(haystack: &str, needles: &[&str]) {
 }
 
 #[test]
-fn recovery_scenarios_cover_stage_one_matrix_and_manual_gates() {
+fn recovery_scenarios_cover_release_matrix_and_manual_gates() {
     assert_all_contains(
         SCENARIOS,
         &[

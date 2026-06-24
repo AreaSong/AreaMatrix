@@ -72,9 +72,9 @@ fn smart_list_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "| `run_smart_list(repo, saved_search_id, pagination)` | search | √ | Db / Config / FileNotFound |",
         "### `run_smart_list(repoPath, savedSearchId, pagination) throws -> SearchResultPage`",
-        "C2-04 的 Smart List 执行入口",
-        "`S2-06 smart-lists`",
-        "`S2-15 command-palette`",
+        "Smart List execution 的 Smart List 执行入口",
+        "`Smart Lists`",
+        "`command palette`",
         "Core 从 saved search 记录读取已保存的 query、完整",
         "返回与 `search_files` 相同的 `SearchResultPage`",
         "该 API 只读，不创建、更新、重命名、复制、pin 或删除 saved search 记录",
@@ -87,18 +87,14 @@ fn smart_list_contract_docs_api_udl_and_control_map_stay_aligned() {
 
 #[test]
 fn smart_list_contract_documents_consumer_state_and_scope_boundaries() {
-    for fragment in [
-        "run_smart_list",
-        "C2-04 Smart List execution",
-        "SearchResultPage",
-    ] {
+    for fragment in ["run_smart_list", "Smart List execution", "SearchResultPage"] {
         assert_contains(SEARCH_RS, fragment);
     }
 
     for fragment in [
-        "Runs one C2-04 Smart List",
-        "S2-06 Smart List selection",
-        "S2-15 command-palette Smart List navigation",
+        "Runs one Smart List",
+        "Smart Lists surface selection",
+        "command palette Smart List navigation",
         "must not rename, move, delete, trash",
         "Returns `CoreError::Config { reason }`",
         "Returns `CoreError::Db { message }`",

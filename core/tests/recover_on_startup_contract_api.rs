@@ -71,7 +71,7 @@ fn recover_on_startup_contract_api_documents_side_effects_errors_and_scope() {
         "initialized repository root",
         "reports how many safe staging files",
         "`files.status = staging` rows",
-        "S1-32 can display",
+        "error recovery surface can display",
         "The only allowed filesystem side effect",
         "`.areamatrix/staging/` directory",
         "must not delete",

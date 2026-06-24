@@ -1105,8 +1105,8 @@ dictionary ImportOptions {
     string? target_directory;
     string? override_category;
     string? override_filename;
-    // desktop import flow desktop and files import dialogs keep Replace hidden or
-    // disabled until the separate replace confirmation confirmation proves
+    // desktop import flow and files import dialogs keep Replace hidden or
+    // disabled until the separate replace confirmation proves
     // recoverability. Overwrite is the committed strategy token after that
     // confirmation, not the preview or platform Trash capability contract.
     DuplicateStrategy duplicate_strategy;
@@ -2470,7 +2470,7 @@ enum ErrorRecoverability {
 };
 
 [Error]
-// error mapping error-mapping contract: Swift maps these structured cases instead of
+// error mapping contract: Swift maps these structured cases instead of
 // branching on localized strings or string-contains checks.
 interface CoreError {
     Io(string message);

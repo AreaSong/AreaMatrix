@@ -1,4 +1,4 @@
-//! tag CRUD, batch tag mutation, and deterministic tag suggestions tag contract behavior and types.
+//! tag CRUD, batch tag mutation, and deterministic tag suggestion contract behavior and types.
 
 use std::path::{Component, PathBuf};
 
@@ -51,7 +51,7 @@ pub struct TagSet {
     pub updated_at: i64,
 }
 
-/// Per file/tag status returned by batch tag mutation batch tag mutation.
+/// Per file/tag status returned by batch tag mutation.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum BatchMutationStatus {
     /// The tag relation was newly added for this file.
@@ -62,7 +62,7 @@ pub enum BatchMutationStatus {
     Failed,
 }
 
-/// Per file/tag result row returned by batch tag mutation batch tag mutation.
+/// Per file/tag result row returned by batch tag mutation.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BatchMutationItemResult {
     /// File id from the request.
@@ -159,7 +159,7 @@ pub fn list_tags(repo_path: String, file_id: i64) -> CoreResult<TagSet> {
 
 /// Adds normalized tags to multiple active files and returns a mutation report.
 ///
-/// batch tag mutation batch tag mutation contract.
+/// batch tag mutation contract.
 ///
 /// batch add-tags surface uses this API to add one or more normalized tags to a multi-selection
 /// and undo toast surface consumes the returned undo token after successful writes. The
@@ -167,7 +167,7 @@ pub fn list_tags(repo_path: String, file_id: i64) -> CoreResult<TagSet> {
 /// can render partial failure summaries without treating skipped or failed
 /// files as successful writes.
 ///
-/// The implementation performs real writes to `tags`, `change_log`, and the undo action log undo action
+/// The implementation performs real writes to `tags`, `change_log`, and the undo action log
 /// store. It must never move, rename, delete, trash, reclassify, reindex, edit notes, update
 /// generated overviews, call AI/network providers, or touch user file contents.
 ///
@@ -213,7 +213,7 @@ pub fn suggest_tags_for_file(
     suggestions::suggest_tags_for_file(repo_path, request)
 }
 
-/// Applies selected deterministic tag suggestions tag suggestions to one active file.
+/// Applies selected deterministic tag suggestions to one active file.
 ///
 /// The apply contract creates or reuses normalized tags, writes file/tag
 /// relations, emits change-log rows, and returns an undo token for undo action log when

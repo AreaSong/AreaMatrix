@@ -1,4 +1,4 @@
-//! classifier impact preview classifier rule impact-preview contract types and boundary.
+//! classifier impact preview contract types and boundary.
 
 use std::{io, path::PathBuf};
 

@@ -46,9 +46,9 @@ fn move_to_category_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "| `preview_move_to_category(repo, file_id, cat)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |",
         "| `move_to_category(repo, file_id, cat)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |",
-        "`preview_move_to_category` 是 C1-24 的确认前目标路径解析入口",
+        "`preview_move_to_category` 是 category move 的确认前目标路径解析入口",
         "不得创建分类目录、移动文件、重命名文件、删除文件、更新",
-        "`move_to_category` 是 C1-24 的单文件改分类入口",
+        "`move_to_category` 是 category move 的单文件改分类入口",
         "`newCategory` 必须存在于",
         "Core\n不得隐式创建新分类",
         "Copy / Move 等 repo-owned 文件移动到目标分类目录",
@@ -60,12 +60,12 @@ fn move_to_category_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "Previews the final destination for a C1-24 category move",
+        "Previews the final destination for a category move",
         "must not create category directories",
-        "C1-24 owns the user-visible change-category contract",
+        "category move owns the user-visible change-category contract",
         "not an arbitrary directory",
         "records `change_log.action = moved`",
-        "C1-10 conflict-free numbering",
+        "name-conflict resolution owns same-name conflict handling",
         "Indexed rows are metadata-only",
         "external source file untouched",
     ] {

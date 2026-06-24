@@ -159,10 +159,10 @@ fn repository_settings_docs_api_udl_and_control_map_stay_aligned() {
         "| `load_config(repo)` | repo | √ | Config / PermissionDenied / Io / Db |",
         "| `update_config(repo, cfg)` | repo | √ | Config / PermissionDenied / Io / Db |",
         "| `get_platform_capabilities(platform, app_version)` | platform | √ | Config |",
-        "#### C4-20 repository settings contract",
-        "`load_config` 是 C4-20 `repository-settings-cross-platform` 的 repo config",
-        "`update_config` 是 C4-20 `repository-settings-cross-platform` 的 repo config",
-        "`S4-X-08 repository-settings`",
+        "#### repository settings contract",
+        "`load_config` 是 repository settings `repository-settings-cross-platform` 的 repo config",
+        "`update_config` 是 repository settings `repository-settings-cross-platform` 的 repo config",
+        "`repository settings surface`",
         "禁用平台不支持的设置",
         "不接受 control map 之外的页面能力",
         "不移动、删除、重命名、覆盖用户文件",
@@ -181,11 +181,11 @@ fn repository_settings_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn repository_settings_contract_documents_consumer_scope() {
     for fragment in [
-        "C4-20 repository settings also reuses this config snapshot",
+        "repository settings also reuses this config snapshot",
         "combine it with",
         "get_platform_capabilities",
         "disable unsupported settings",
-        "C4-20 repository settings uses the same transactional update surface",
+        "repository settings uses the same transactional update surface",
         "persists only the supplied",
         "does not test, enable, or emulate platform",
     ] {
@@ -193,8 +193,8 @@ fn repository_settings_contract_documents_consumer_scope() {
     }
 
     for fragment in [
-        "C4-20 repository settings reads this repository config snapshot",
-        "C4-20 repository settings persists only repo_config",
+        "repository settings reads this repository config snapshot",
+        "repository settings persists only repo_config",
         "Platform-unsupported",
     ] {
         assert_contains(UDL, fragment);

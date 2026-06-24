@@ -204,16 +204,16 @@ fn desktop_import_flow_docs_core_api_and_udl_stay_aligned() {
 #[test]
 fn desktop_import_flow_documents_consumer_state_without_adjacent_capabilities() {
     for fragment in [
-        "C4-13 desktop-import-flow reuses this read-only preview surface",
+        "desktop import flow reuses this read-only preview surface",
         "Windows and Linux import dialogs",
         "Directory expansion, platform permission preflight",
         "Trash/Recycle Bin capability",
         "multi-item progress stay in the desktop shell",
-        "`S4-WIN-05` and `S4-LNX-05` can show as suggested category state",
-        "C4-13 desktop-import-flow keeps this same import contract available",
+        "`Windows import surface` and `Linux import surface` can show as suggested category state",
+        "desktop import flow keeps this same import contract available",
         "should use [`import_file_with_result`]",
         "Imports one source file and returns desktop-ready result state.",
-        "C4-13 uses this wrapper for `S4-WIN-05` and `S4-LNX-05`",
+        "desktop import flow uses this wrapper for `Windows import surface` and `Linux import surface`",
         "ImportSourceRemovalStatus::Retained",
         "Imported, original retained",
         "Desktop shells pass the picker or drop source path plus",
@@ -221,7 +221,7 @@ fn desktop_import_flow_documents_consumer_state_without_adjacent_capabilities() 
         "Trash/Recycle Bin availability checks remain outside Core",
         "`StorageMode::Copied` is the safe default",
         "`StorageMode::Moved` first commits",
-        "`DuplicateStrategy::Overwrite` is only valid after the separate C4-21",
+        "`DuplicateStrategy::Overwrite` is only valid after the separate replace confirmation",
         "this API does not perform that confirmation",
         "or add a desktop-only replace capability",
         "must surface an error instead of a success state",
@@ -230,14 +230,14 @@ fn desktop_import_flow_documents_consumer_state_without_adjacent_capabilities() 
     }
 
     for fragment in [
-        "C4-13 desktop-import-flow reuses predict_category for read-only",
+        "desktop import flow reuses predict_category for read-only",
         "does not expand folders",
         "detect Trash/Recycle Bin support",
-        "C4-13 desktop-import-flow uses import_file_with_result for the final",
+        "desktop import flow uses import_file_with_result for the final",
         "backwards-compatible FileEntry entry point",
         "source removal status",
         "Imported, original retained",
-        "Replace confirmation belongs to C4-21/S4-X-09",
+        "Replace confirmation belongs to replace confirmation",
         "does not add a desktop-only replace or platform Trash API",
         "Overwrite is the committed strategy token after that confirmation",
     ] {

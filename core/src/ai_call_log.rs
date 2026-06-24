@@ -1,4 +1,4 @@
-//! AI call log AI call log contract types and entry points.
+//! AI call log contract types and entry points.
 
 use std::path::{Component, PathBuf};
 

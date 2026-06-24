@@ -43,7 +43,7 @@ fn search_filters_validation_proves_same_c2_02_state_drives_results_and_facets()
         SearchSort::NewestImported,
         first_page(),
     )
-    .expect("search files with full C2-02 filter state");
+    .expect("search files with full search facets filter state");
 
     assert_eq!(facets.total_count, 1);
     assert_eq!(page.total_count, facets.total_count);

@@ -215,8 +215,8 @@ fn classifier_impact_preview_contract_docs_api_udl_and_control_map_stay_aligned(
     for fragment in [
         "| `preview_classifier_rule_impact(repo, request)` | classify | √ | Config / Db |",
         "### `preview_classifier_rule_impact(repoPath, request) throws -> RuleImpactReport`",
-        "C2-14 的分类规则影响预览入口",
-        "`S2-18 classifier-impact-preview`",
+        "classifier impact preview 的分类规则影响预览入口",
+        "`classifier impact preview surface classifier-impact-preview`",
         "`affected_file_count`",
         "`will_update_count`",
         "`already_correct_count`",
@@ -229,7 +229,7 @@ fn classifier_impact_preview_contract_docs_api_udl_and_control_map_stay_aligned(
         "没有 `replacement_category` 时必须返回 `can_apply = false`",
         "只读读取 classifier 配置和文件 metadata",
         "不得保存规则、重分类、移动、重命名、删除、Trash、导入、reindex",
-        "不实现 C2-13 rule save、C2-15 rule CRUD、后续 apply 行为",
+        "不实现 classifier rule save、classifier rule editor CRUD、后续 apply 行为",
         "本合同不新增 control map 之外的页面能力。",
     ] {
         assert_contains(CORE_API, fragment);
@@ -239,7 +239,7 @@ fn classifier_impact_preview_contract_docs_api_udl_and_control_map_stay_aligned(
 #[test]
 fn classifier_impact_preview_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "C2-14 classifier rule impact-preview contract types and boundary",
+        "classifier impact preview contract types and boundary",
         "RuleImpactReport",
         "RuleImpactSample",
         "RuleImpactConflict",
@@ -259,11 +259,11 @@ fn classifier_impact_preview_contract_documents_consumer_state_and_scope_boundar
         "pub fn preview_classifier_rule_impact(",
         "RuleImpactReport",
         "ClassifierImpactPreviewRequest",
-        "S2-18",
+        "classifier impact preview surface",
         "must not save the rule",
         "apply it to existing files",
         "write undo/change-log state",
-        "C2-15",
+        "classifier rule editor",
         "CoreError::Config",
         "CoreError::Db",
     ] {

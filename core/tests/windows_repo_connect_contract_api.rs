@@ -218,7 +218,7 @@ fn windows_repo_connect_documents_consumer_state_without_adjacent_capabilities()
     ] {
         assert!(
             !REPO_PATH_RS.contains(forbidden),
-            "C4-09 repo path contract must not implement adjacent capability `{forbidden}`"
+            "Windows repository connection repo path contract must not implement adjacent capability `{forbidden}`"
         );
     }
 

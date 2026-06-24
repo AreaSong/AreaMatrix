@@ -1,4 +1,4 @@
-//! remote provider configuration remote provider configuration contract types and entry points.
+//! remote provider configuration contract types and entry points.
 
 mod probe;
 mod state;

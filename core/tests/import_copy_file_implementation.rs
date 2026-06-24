@@ -231,7 +231,7 @@ fn import_copy_file_implementation_indexed_mode_does_not_create_copy() {
     options.mode = StorageMode::Indexed;
 
     let entry = import_file(path_string(repo.path()), path_string(&source), options)
-        .expect("indexed mode is implemented by C1-08");
+        .expect("indexed mode is implemented by indexed-file import");
 
     assert_eq!(fs::read(&source).expect("read source"), b"content");
     assert_eq!(entry.path, path_string(&source));

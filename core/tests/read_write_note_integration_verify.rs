@@ -103,7 +103,7 @@ fn edited_note_count(repo: &Path, file_id: i64) -> i64 {
 }
 
 #[test]
-fn read_write_note_integration_verify_docs_api_udl_and_s1_14_consumer_stay_aligned() {
+fn read_write_note_integration_verify_docs_api_udl_and_file_note_consumer_stay_aligned() {
     for fragment in [
         "string? read_note(string repo_path, i64 file_id);",
         "void write_note(string repo_path, i64 file_id, string content_md);",
@@ -122,15 +122,15 @@ fn read_write_note_integration_verify_docs_api_udl_and_s1_14_consumer_stay_align
         "DB `notes` 表",
         "物理文件 `<filename>.md`",
         "`InFlightTracker` 标记避免 watcher",
-        "Stage 1 先用 `get_file` + `list_changes` + `read_note` 组合",
+        "当前先用 `get_file` + `list_changes` + `read_note` 组合",
     ] {
         assert_contains(CORE_API, fragment);
     }
 
     for fragment in [
-        "C1-14 exposes this read-only query",
+        "file note contract exposes this read-only query",
         "This API must not create note rows",
-        "C1-14 writes exactly one note",
+        "file note contract writes exactly one note",
         "The app layer owns `InFlightTracker`",
         "Failed writes must preserve the previous note",
     ] {

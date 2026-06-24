@@ -269,9 +269,9 @@ fn ai_summary_contract_docs_api_udl_and_control_map_stay_aligned() {
         "用户点击 Save 前不得持久化",
         "不得覆盖用户 Note",
         "不得写入或修改用户原文件",
-        "远程路线必须同时通过 C3-01 AI settings、C3-03 remote provider gate、C3-09 privacy gate",
-        "S3-06 可以从合同得到 Draft、Generated locally/remotely",
-        "S3-10 可以从 `status`、`skipped_reason`、`route` 和 `call_log_id`",
+        "远程路线必须同时通过 AI settings、remote provider gate、AI privacy gate",
+        "AI summary editor surface 可以从合同得到 Draft、Generated locally/remotely",
+        "AI fallback surface 可以从 `status`、`skipped_reason`、`route` 和 `call_log_id`",
         "本合同不新增 control map 之外的页面能力",
     ] {
         assert_contains(CORE_API, fragment);
@@ -288,7 +288,7 @@ fn ai_summary_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn ai_summary_contract_documents_consumers_and_boundaries() {
     for fragment in [
-        "C3-06 AI summary contract types and entry points",
+        "AI summary contract types and entry points",
         "pub enum AiSummaryProviderScope",
         "pub enum AiSummaryContextPolicy",
         "pub enum AiSummaryInputField",
@@ -311,10 +311,10 @@ fn ai_summary_contract_documents_consumers_and_boundaries() {
     }
 
     for fragment in [
-        "Generates a C3-06 AI summary draft without saving it.",
-        "S3-06 uses this contract for `Generate summary`",
-        "Saves a C3-06 AI summary draft as AreaMatrix-owned metadata.",
-        "Clears C3-06 AI summary metadata for one file after confirmation.",
+        "Generates an AI summary draft without saving it.",
+        "AI summary editor surface uses this contract for `Generate summary`",
+        "Saves an AI summary draft as AreaMatrix-owned metadata.",
+        "Clears AI summary metadata for one file after confirmation.",
         "must not persist a summary",
         "must not overwrite the original file",
     ] {
@@ -332,7 +332,7 @@ fn ai_summary_contract_documents_consumers_and_boundaries() {
     ] {
         assert!(
             !AI_SUMMARY_RS.contains(forbidden),
-            "C3-06 contract must not implement adjacent capability `{forbidden}`"
+            "AI summary contract must not implement adjacent capability `{forbidden}`"
         );
     }
 }

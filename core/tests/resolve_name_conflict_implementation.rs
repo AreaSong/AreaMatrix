@@ -156,7 +156,7 @@ fn resolve_name_conflict_replace_same_name_different_content_replaces_confirmed_
             path_string(&source_b),
             copied_options_with_strategy("same.pdf", DuplicateStrategy::Overwrite),
         )
-        .expect("replace same-name different-content target after S1-24 confirmation");
+        .expect("replace same-name different-content target after replace confirmation surface confirmation");
 
         assert_eq!(replacement.path, "finance/same.pdf");
         assert_eq!(replacement.current_name, "same.pdf");

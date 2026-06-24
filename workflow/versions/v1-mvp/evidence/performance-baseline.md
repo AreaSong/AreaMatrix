@@ -12,7 +12,7 @@
 Release `.app` 启动到首屏 release gate 均有本地可复现证据**。
 
 本次在 2026-05-10 18:12:15 CST 更新 Stage 1 baseline。Core release perf 覆盖了
-单文件导入、100 文件批量导入、reindex、Tree/list 响应；`core/benches/stage1_hot_paths.rs`
+单文件导入、100 文件批量导入、reindex、Tree/list 响应；`core/benches/core_hot_paths.rs`
 提供同一组 Core hot path 的独立 bench target，`cargo bench --manifest-path core/Cargo.toml
 --workspace --no-run` 会编译该 target；该 target 使用 Cargo 默认 bench harness 中的 ignored
 benchmark test，不新增依赖或生产路径配置。Swift XCTest performance 由独立的
@@ -50,9 +50,9 @@ release checklist 仍需继续阻断未完成的手工恢复冒烟、Developer I
 | 范围 | 命令或入口 |
 |---|---|
 | Prompt doctor | `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor` |
-| Manifest Rust bench 编译 | `cargo bench --manifest-path core/Cargo.toml --workspace --no-run`；必须出现 `Executable benches/stage1_hot_paths.rs` |
-| Rust Stage 1 hot path bench | `cargo test --manifest-path core/Cargo.toml --release --bench stage1_hot_paths -- --ignored --nocapture` |
-| Rust Stage 1 release perf | `cargo test --manifest-path core/Cargo.toml --release --test stage1_performance_baseline -- --ignored --test-threads=1 --nocapture` |
+| Manifest Rust bench 编译 | `cargo bench --manifest-path core/Cargo.toml --workspace --no-run`；必须出现 `Executable benches/core_hot_paths.rs` |
+| Rust Stage 1 hot path bench | `cargo test --manifest-path core/Cargo.toml --release --bench core_hot_paths -- --ignored --nocapture` |
+| Rust Stage 1 release perf | `cargo test --manifest-path core/Cargo.toml --release --test core_performance_baseline -- --ignored --test-threads=1 --nocapture` |
 | Swift perf validation gate | `./dev test macos --only-testing AreaMatrixTests/AreaMatrixPerfTests`；先跑标准 `xcodebuild test`，仅在失败日志明确指向 `testmanagerd` sandbox restriction 时 fallback 到同一 XCTest bundle |
 | Swift 标准 perf 入口 | `AREAMATRIX_RUN_PERF_TESTS=1 xcodebuild test -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' -only-testing:AreaMatrixTests/AreaMatrixPerfTests CODE_SIGNING_ALLOWED=NO`；本地 sandbox 可能在 `testmanagerd` 通信层阻断，CI 或非 sandbox 桌面会话应补跑 |
 | 真实 `.app` 启动 release gate | Release build + `codesign --verify --deep --strict` + `otool -L` + `xcrun swift scripts/dev_tools/macos_launch_probe.swift --app <Release/AreaMatrix.app>` |
@@ -98,10 +98,10 @@ release checklist 仍需继续阻断未完成的手工恢复冒烟、Developer I
 
 - 本轮 task/manifest 要求运行
   `cargo bench --manifest-path core/Cargo.toml --workspace --no-run`。
-- 当前验证结果：该命令通过，并编译 `benches/stage1_hot_paths.rs`，不是仅编译 lib bench
+- 当前验证结果：该命令通过，并编译 `benches/core_hot_paths.rs`，不是仅编译 lib bench
   harness。
 - 可执行 hot path 入口：
-  `cargo test --manifest-path core/Cargo.toml --release --bench stage1_hot_paths -- --ignored --nocapture`。
+  `cargo test --manifest-path core/Cargo.toml --release --bench core_hot_paths -- --ignored --nocapture`。
   该入口输出 `STAGE1_BENCH` 指标行，覆盖单文件导入、100 文件批量导入、reindex 和 Tree/list。
 
 ### 已修复：本地 macOS perf validation 不能吞掉真实测试失败

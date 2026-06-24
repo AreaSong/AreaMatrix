@@ -369,7 +369,7 @@ fn assert_ui_consumers_see_delete_and_undo(repo: &Path, undo_token: Option<&str>
     let action = actions
         .iter()
         .find(|action| action.action_id == undo_token)
-        .expect("undo action is visible to C2-07 consumers");
+        .expect("undo action is visible to undo action log consumers");
     assert_eq!(action.kind, "trash_delete");
     assert_eq!(action.summary, "Moved 2 files to Trash.");
     assert_eq!(action.status, UndoActionStatus::Pending);
@@ -428,8 +428,8 @@ fn assert_rust_surface_fragments() {
         "batch_delete::preview_batch_delete",
         "pub fn batch_delete_to_trash(",
         "batch_delete::batch_delete_to_trash",
-        "S2-13",
-        "C2-09",
+        "batch delete confirmation",
+        "batch delete",
         "permanent deletion",
     ] {
         assert_contains(API_RS, fragment);

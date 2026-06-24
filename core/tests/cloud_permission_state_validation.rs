@@ -227,7 +227,7 @@ fn assert_core_api_udl_and_rust_alignment() {
 
     for fragment in [
         "### `detect_cloud_storage_state(repoPath) throws -> CloudStorageState`",
-        "C4-08 的云盘权限状态入口",
+        "cloud storage state 的云盘权限状态入口",
         "不写 DB、不写 last cloud state",
         "不触发 iCloud placeholder 下载，不调用 iCloud / OneDrive SDK",
         "`recommended_action`",
@@ -253,11 +253,11 @@ fn assert_core_api_udl_and_rust_alignment() {
     }
 
     for fragment in [
-        "C4-08 cloud storage permission and placeholder state contract.",
+        "cloud storage permission and placeholder state contract.",
         "pub(crate) fn detect_cloud_storage_state(repo_path: String)",
         "platform-neutral and read-only",
         "Cloud storage provider inferred from an authorized repository path.",
-        "Structured C4-08 cloud state returned to iOS and Windows recovery surfaces.",
+        "Structured cloud storage state returned to iOS and Windows recovery surfaces.",
     ] {
         assert_contains(CLOUD_PERMISSION_RS, fragment);
     }

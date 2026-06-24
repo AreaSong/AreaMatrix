@@ -356,14 +356,14 @@ fn assert_core_api_behavior_alignment() {
 
 fn assert_rust_implementation_alignment() {
     for fragment in [
-        "C4-06 files-import reuses this read-only preview surface",
+        "files import reuses this read-only preview surface",
         "Files provider or document picker has granted access",
         "Core only predicts a category/name from the authorized",
-        "C4-06 files-import reuses `StorageMode::Copied` import semantics",
+        "files import reuses `StorageMode::Copied` import semantics",
         "Core receives only the authorized path plus",
         "does not open the document picker, retain",
         "security-scoped bookmarks, trigger provider downloads, move source files, or",
-        "perform C4-21 replace confirmation",
+        "perform replace confirmation",
         "Cancelled selections stay in the",
         "storage::import_file(repo_path, source_path, options)",
     ] {

@@ -156,14 +156,14 @@ fn platform_watcher_status_docs_core_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "| `record_watcher_health(repo, signal)` | sync/watcher | √ | Db / Io |",
         "### `record_watcher_health(repoPath, signal) throws -> PlatformWatcherSnapshot`",
-        "C4-12 的平台 watcher 状态入口",
-        "S4-WIN-04 watcher-status",
-        "S4-LNX-04 watcher-status",
+        "platform watcher status 的平台 watcher 状态入口",
+        "Windows watcher-status surface",
+        "Linux watcher-status surface",
         "不触发 `sync_external_changes`",
         "不推进 fs event cursor",
         "Run rescan now",
         "必须进入",
-        "S4-X-07 rescan-confirm",
+        "rescan confirmation surface",
         "本合同不新增 control map 之外的页面能力。",
     ] {
         assert_contains(CORE_API, fragment);
@@ -178,7 +178,7 @@ fn platform_watcher_status_docs_core_api_udl_and_control_map_stay_aligned() {
 fn platform_watcher_status_documents_consumers_and_scope_boundaries() {
     for fragment in [
         "Records platform watcher health for Windows and Linux watcher-status pages.",
-        "Manual rescan remains C4-19",
+        "Manual rescan remains manual rescan",
         "confirmation flow before any indexing write",
         "Returns `CoreError::Db { message }`",
     ] {
@@ -186,7 +186,7 @@ fn platform_watcher_status_documents_consumers_and_scope_boundaries() {
     }
 
     for fragment in [
-        "C4-12 platform watcher status contract types and entry point.",
+        "platform watcher status contract types and entry point.",
         "Platform watcher backend that produced a health signal.",
         "Current lifecycle state for a platform watcher.",
         "Structured reason that explains watcher degradation without parsing text.",

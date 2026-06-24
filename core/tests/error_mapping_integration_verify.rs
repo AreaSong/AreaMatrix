@@ -49,7 +49,7 @@ fn path_string(path: &Path) -> String {
 fn error_mapping_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
     assert_c1_21_capability_spec();
     assert_core_api_and_udl_contract();
-    assert_stage_one_consumers();
+    assert_core_consumers();
     assert_rust_entry_points_are_real_error_mapping_wiring();
 }
 
@@ -112,7 +112,7 @@ fn assert_core_api_and_udl_contract() {
     }
 }
 
-fn assert_stage_one_consumers() {}
+fn assert_core_consumers() {}
 
 fn assert_rust_entry_points_are_real_error_mapping_wiring() {
     for fragment in [

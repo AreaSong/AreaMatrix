@@ -223,10 +223,10 @@ fn classifier_rule_editor_contract_docs_api_udl_and_control_map_stay_aligned() {
         "### `create_classifier_rule(repoPath, request) throws -> ClassifierRuleEditorSnapshot`",
         "### `update_classifier_rule(repoPath, request) throws -> ClassifierRuleEditorSnapshot`",
         "### `delete_classifier_rule(repoPath, request) throws -> ClassifierRuleEditorSnapshot`",
-        "C2-15 的分类规则编辑器入口",
-        "`S2-19 classifier-rule-editor`",
+        "classifier rule editor 的分类规则编辑器入口",
+        "`classifier rule editor surface classifier-rule-editor`",
         "删除规则不自动移动、删除、重命名或重分类历史文件",
-        "不实现 C2-13 rule save、C2-14 impact preview、复杂脚本规则、插件规则或 Stage 3 AI 规则",
+        "不实现 classifier rule save、classifier impact preview、复杂脚本规则、插件规则或 AI 规则",
         "本合同不新增 control map 之外的页面能力。",
     ] {
         assert_contains(CORE_API, fragment);
@@ -236,7 +236,7 @@ fn classifier_rule_editor_contract_docs_api_udl_and_control_map_stay_aligned() {
 #[test]
 fn classifier_rule_editor_contract_documents_consumer_state_and_scope_boundaries() {
     for fragment in [
-        "C2-15 classifier rule editor contract types and entry points",
+        "classifier rule editor contract types and entry points",
         "ClassifierRuleRecord",
         "ClassifierRuleEditorSnapshot",
         "ClassifierRuleCreateRequest",
@@ -255,10 +255,10 @@ fn classifier_rule_editor_contract_documents_consumer_state_and_scope_boundaries
     }
 
     for fragment in [
-        "Lists C2-15 classifier rule editor state for S2-19",
-        "Creates one C2-15 classifier editor row",
-        "Updates one C2-15 classifier editor row",
-        "Deletes one C2-15 classifier editor row",
+        "Lists classifier rule editor state for classifier rule editor surface",
+        "Creates one classifier rule editor row",
+        "Updates one classifier rule editor row",
+        "Deletes one classifier rule editor row",
         "must not move, delete, rename",
         "call AI/network providers",
     ] {

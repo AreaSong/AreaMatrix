@@ -116,7 +116,7 @@ fn import_move_file_integration_verify_docs_api_udl_and_consumers_stay_aligned()
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
     }
-    assert_contains(API_RS, "C1-07 defines the moved-file contract");
+    assert_contains(API_RS, "moved-file import defines the moved-file contract");
 }
 
 #[test]
@@ -197,7 +197,7 @@ fn import_move_file_integration_verify_indexed_mode_does_not_move_source() {
     assert!(!repo.path().join("finance/2026Q1_invoice.pdf").exists());
     assert_eq!(count_rows(repo.path(), "files", Some("active")), 1);
     assert_eq!(staging_entries(repo.path()), Vec::<PathBuf>::new());
-    assert_contains(API_RS, "C1-08 owns index-only semantics");
+    assert_contains(API_RS, "indexed-file import owns index-only semantics");
 }
 
 fn assert_file_row_matches_move(repo: &Path, file_id: i64, entry_path: &str, source: &Path) {

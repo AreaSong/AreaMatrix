@@ -228,7 +228,7 @@ fn assert_core_api_udl_and_rust_alignment() {
         "platform: PlatformId",
         "app_version: String",
         "CoreResult<PlatformCapabilities>",
-        "Returns the C4-17 platform capability matrix for a platform shell.",
+        "Returns the platform capability matrix for a platform shell.",
         "does not inspect the",
         "Returns `CoreError::Config { reason }`",
     ] {

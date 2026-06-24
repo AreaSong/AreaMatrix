@@ -1,4 +1,4 @@
-//! platform watcher status platform watcher status contract types and entry point.
+//! platform watcher status contract types and entry point.
 
 use std::path::PathBuf;
 

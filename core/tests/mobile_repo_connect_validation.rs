@@ -225,7 +225,7 @@ fn assert_core_api_udl_and_rust_alignment() {
     }
 
     for fragment in [
-        "C4-02 mobile repository connection contract reuses the same surface",
+        "mobile repository connection contract reuses the same surface",
         "Core receives only the authorized filesystem path",
         "mobile shells call this only after the shared init/adopt",
         "does not refresh platform permissions or create metadata",
