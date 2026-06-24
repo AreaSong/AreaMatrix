@@ -22,11 +22,13 @@ const UDL: &str = include_str!("../area_matrix.udl");
 mod api_contract_source;
 #[path = "support/db_contract_source.rs"]
 mod db_contract_source;
+#[path = "support/db_scan_contract_source.rs"]
+mod db_scan_contract_source;
 
 use api_contract_source::API_RS;
 use db_contract_source::DB_RS;
+use db_scan_contract_source::DB_SCAN_RS;
 const REPO_SCAN_RS: &str = include_str!("../src/repo_scan.rs");
-const DB_SCAN_RS: &str = include_str!("../src/db/scan.rs");
 const CONTRACT_TEST: &str = include_str!("manual_rescan_contract_api.rs");
 const IMPLEMENTATION_TEST: &str = include_str!("manual_rescan_implementation.rs");
 const FAILURE_TEST: &str = include_str!("manual_rescan_failure_recovery.rs");

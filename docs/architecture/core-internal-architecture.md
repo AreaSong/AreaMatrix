@@ -51,6 +51,11 @@ core/src/
 具体功能表和查询继续按能力放在 `db/import.rs`、`db/scan.rs`、`db/saved_search.rs`
 等文件中；新增 DB 能力不要直接塞回 `db/mod.rs`。
 
+当某个 DB 能力文件继续增长时，先在该能力名下拆子目录并保留同名 facade。例如
+`db/scan.rs` 只声明 `db/scan/` 子模块并 re-export scan 查询能力；`db/scan/session.rs`
+放 scan session 生命周期，`db/scan/files.rs` 放 scan/reindex 文件行读写，
+`db/scan/codec.rs` 放 scan enum 与 DB 字符串转换，`db/scan/types.rs` 放该子域共享类型。
+
 ## 依赖方向
 
 ```mermaid
