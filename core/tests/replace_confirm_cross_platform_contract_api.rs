@@ -69,12 +69,12 @@ fn replace_confirm_contract_exports_existing_core_entry_points() {
         strategy: SyncConflictResolutionStrategy::UseIncoming,
         preview_token: "sync-conflict-preview:token".to_owned(),
         replace_confirmed: true,
-        replace_confirmation_id: Some("replace-confirm:s4-x-09:21".to_owned()),
+        replace_confirmation_id: Some("replace-confirm:sync-conflict-use-incoming:21".to_owned()),
     };
     assert!(request.replace_confirmed);
     assert_eq!(
         request.replace_confirmation_id.as_deref(),
-        Some("replace-confirm:s4-x-09:21")
+        Some("replace-confirm:sync-conflict-use-incoming:21")
     );
 
     let report = SyncConflictResolveReport {

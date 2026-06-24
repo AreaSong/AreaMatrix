@@ -9,7 +9,7 @@ pub(super) fn preview_token(
     items: &[BatchCategoryPlanItem],
 ) -> String {
     let mut hasher = Sha256::new();
-    hasher.update(b"area-matrix:c2-08:preview:v1");
+    hasher.update(b"area-matrix:batch-category-preview:v1");
     hasher.update(target_category.as_bytes());
     hasher.update(if move_repo_owned_files {
         b"\x01"

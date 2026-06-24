@@ -320,7 +320,9 @@ fn replace_confirm_cross_platform_implementation_sync_use_incoming_requires_conf
                 strategy: SyncConflictResolutionStrategy::UseIncoming,
                 preview_token: token,
                 replace_confirmed: true,
-                replace_confirmation_id: Some("replace-confirm:s4-x-09".to_owned()),
+                replace_confirmation_id: Some(
+                    "replace-confirm:sync-conflict-use-incoming".to_owned(),
+                ),
             },
         )
         .expect("resolve confirmed use incoming");

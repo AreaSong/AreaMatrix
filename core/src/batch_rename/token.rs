@@ -10,7 +10,7 @@ pub(super) fn preview_token(
     items: &[BatchRenamePlanItem],
 ) -> String {
     let mut hasher = Sha256::new();
-    hasher.update(b"area-matrix:c2-10:preview:v1");
+    hasher.update(b"area-matrix:batch-rename-preview:v1");
     feed_rule(&mut hasher, rule);
     for file_id in file_ids {
         hasher.update(file_id.to_le_bytes());

@@ -11,7 +11,7 @@ pub(super) fn preview_token(
     items: &[BatchDeletePlanItem],
 ) -> String {
     let mut hasher = Sha256::new();
-    hasher.update(b"area-matrix:c2-09:preview:v1");
+    hasher.update(b"area-matrix:batch-delete-preview:v1");
     hasher.update(delete_mode_token(delete_mode));
     hasher.update(if trash_available { b"\x01" } else { b"\x00" });
     for file_id in file_ids {
