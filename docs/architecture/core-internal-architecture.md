@@ -24,7 +24,7 @@ core/src/
 ├── lib.rs                  # 轻量 module declaration 和必要 re-export
 ├── api/                    # UniFFI 对外门面；函数名与 UDL 合同保持一致
 ├── domain/                 # 领域类型、不变量、跨模块共享语义
-├── error.rs                # CoreError / CoreResult / error mapping
+├── error/                  # CoreError / CoreResult / error mapping
 ├── db/                     # SQLite schema、查询、事务、migration 边界
 ├── storage/                # 文件系统、staging、hash、安全移动、导入/删除/重命名
 ├── classify/               # 分类规则引擎
@@ -141,7 +141,7 @@ core/tests/support/
 
 1. 先补齐本文档和导航，确立新增功能落点。
 2. 拆分 `api.rs` 为 `api/mod.rs` 与按 surface 分组的子模块，不改变 UDL 和公开函数名。
-3. 拆分 `domain.rs`、`error.rs`、`db/mod.rs` 等聚合文件，优先保持 re-export 和类型路径兼容。
+3. 拆分 `domain.rs`、`error.rs`、`db/mod.rs` 等聚合文件，优先保持 re-export 和类型路径兼容；已拆出的聚合边界继续以 `domain/`、`error/` 目录维护。
 4. 把重复 fixture 收敛到测试支撑层。
 5. 后续每个新功能必须按本文结构落位；旧代码只在相关功能修改时顺手做小步无行为变化整理。
 

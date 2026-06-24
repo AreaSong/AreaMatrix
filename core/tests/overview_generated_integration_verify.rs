@@ -11,7 +11,10 @@ const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 mod api_contract_source;
 
 use api_contract_source::API_RS;
-const DOMAIN_RS: &str = include_str!("../src/domain.rs");
+#[path = "support/domain_contract_source.rs"]
+mod domain_contract_source;
+
+use domain_contract_source::DOMAIN_RS;
 const STORAGE_IMPORT_RS: &str = include_str!("../src/storage/import.rs");
 const OVERVIEW_RS: &str = include_str!("../src/overview/mod.rs");
 const ATOMIC_WRITE_RS: &str = include_str!("../src/overview/atomic_write.rs");

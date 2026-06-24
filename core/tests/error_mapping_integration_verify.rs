@@ -7,7 +7,10 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
-const ERROR_RS: &str = include_str!("../src/error.rs");
+#[path = "support/error_contract_source.rs"]
+mod error_contract_source;
+
+use error_contract_source::ERROR_RS;
 const LIB_RS: &str = include_str!("../src/lib.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 

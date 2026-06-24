@@ -23,7 +23,10 @@ const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 mod api_contract_source;
 
 use api_contract_source::API_RS;
-const DOMAIN_RS: &str = include_str!("../src/domain.rs");
+#[path = "support/domain_contract_source.rs"]
+mod domain_contract_source;
+
+use domain_contract_source::DOMAIN_RS;
 const ICLOUD_CONFLICTS_RS: &str = include_str!("../src/icloud_conflicts.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 const CONFLICT_ID: &str = "docs/report (Alice's conflicted copy).pdf";

@@ -15,7 +15,10 @@ const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 mod api_contract_source;
 
 use api_contract_source::API_RS;
-const DOMAIN_RS: &str = include_str!("../src/domain.rs");
+#[path = "support/domain_contract_source.rs"]
+mod domain_contract_source;
+
+use domain_contract_source::DOMAIN_RS;
 const REPO_PATH_RS: &str = include_str!("../src/repo_path.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 

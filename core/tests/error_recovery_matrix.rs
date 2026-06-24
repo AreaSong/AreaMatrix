@@ -5,7 +5,10 @@ const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const ERROR_MESSAGES: &str = include_str!("../../docs/ux/error-messages.md");
 const TRANSACTIONAL_IMPORT: &str = include_str!("../../docs/architecture/transactional-import.md");
 const TROUBLESHOOTING: &str = include_str!("../../docs/development/troubleshooting.md");
-const ERROR_RS: &str = include_str!("../src/error.rs");
+#[path = "support/error_contract_source.rs"]
+mod error_contract_source;
+
+use error_contract_source::ERROR_RS;
 const IMPORT_RS: &str = include_str!("../src/storage/import.rs");
 const SAFE_MOVE_RS: &str = include_str!("../src/storage/safe_move.rs");
 const RECOVERY_RS: &str = include_str!("../src/recovery.rs");
