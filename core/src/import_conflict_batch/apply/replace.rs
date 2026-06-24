@@ -3,8 +3,10 @@ use std::path::{Path, PathBuf};
 use crate::{db, storage, CoreError, CoreResult, FileEntry, ImportConflictBatchResultStatus};
 
 use super::{
-    deleted_detail, ensure_parent_dir, import_detail, required_final_name, required_final_path,
-    required_staging, successful_write_result, AppliedImportConflictItem, ImportConflictRollback,
+    detail::{deleted_detail, ensure_parent_dir, import_detail},
+    item::{required_final_name, required_final_path, required_staging},
+    result::{successful_write_result, AppliedImportConflictItem},
+    rollback::ImportConflictRollback,
 };
 use crate::import_conflict_batch::{
     path, strategy_detail, PlannedImportConflict, AREA_MATRIX_DIR, TRASH_PENDING_DIR,

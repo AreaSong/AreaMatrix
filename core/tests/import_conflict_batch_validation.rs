@@ -22,9 +22,11 @@ use import_conflict_batch_support::{
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 #[path = "support/api_contract_source.rs"]
 mod api_contract_source;
+#[path = "support/import_conflict_batch_contract_source.rs"]
+mod import_conflict_batch_contract_source;
 
 use api_contract_source::API_RS;
-const CONTRACT_RS: &str = include_str!("../src/import_conflict_batch.rs");
+use import_conflict_batch_contract_source::IMPORT_CONFLICT_BATCH_RS as CONTRACT_RS;
 const UDL: &str = include_str!("../area_matrix.udl");
 
 #[test]

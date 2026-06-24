@@ -55,6 +55,29 @@ core/src/
 `db/scan.rs` 只声明 `db/scan/` 子模块并 re-export scan 查询能力；`db/scan/session.rs`
 放 scan session 生命周期，`db/scan/files.rs` 放 scan/reindex 文件行读写，
 `db/scan/codec.rs` 放 scan enum 与 DB 字符串转换，`db/scan/types.rs` 放该子域共享类型。
+同样，`db/import_conflicts.rs` 保留 import conflict DB facade，schema 初始化、查询、
+状态刷新、resolve、rollback、undo 和 JSON 编码分别放入
+`db/import_conflicts/` 子模块，避免 import/staging 冲突处理的事务细节继续集中在
+单个 DB 文件中。
+
+非 DB 的大型用例模块同样遵循“同名 facade + 子目录”规则。例如 `repo_scan.rs`
+只保留模块声明和对外 re-export，`repo_scan/session.rs` 放 adopt/reindex/resume
+入口与扫描会话锁，`repo_scan/runner.rs` 放一次扫描执行流程，`repo_scan/files.rs`
+放文件枚举、hash 和路径派生，`repo_scan/ignore.rs` 放 ignore 规则与 iCloud
+占位符过滤，`repo_scan/preview.rs` 放 manual rescan 预览、缺失元数据和重复 hash
+复核判断，`repo_scan/report.rs` 放报告转换，`repo_scan/types.rs` 放该用例共享的内部类型。
+同一规则也适用于二级能力文件：例如 `import_conflict_batch/apply.rs` 只作为 apply
+子域门面，具体拆到 `apply/execution.rs`、`apply/item.rs`、`apply/result.rs`、
+`apply/rollback.rs`、`apply/detail.rs` 和特定策略模块，避免文件安全流程、DB 决策和
+报告组装继续堆在同一个文件里。
+AI 用例模块也遵循该规则：例如 `ai_summary/implementation.rs` 只 re-export
+generate/save/clear 入口，生成流程、保存/清除元数据、provider route、privacy gate、
+draft 组装和编码 helper 分别放到 `ai_summary/implementation/` 子模块，避免 AI 设置、
+隐私、call log 和持久化流程在单个实现文件中继续耦合。
+文件系统安全能力也按同样方式增长：例如 `storage/move_to_category.rs` 只保留
+preview/move/correction 入口，repo-owned 实际移动、同分类校验、target 解析、sidecar
+与 rollback guard、路径校验和 change detail 分别放入 `storage/move_to_category/`
+子模块，避免分类移动的文件系统与 DB 一致性流程失去局部边界。
 
 ## 依赖方向
 

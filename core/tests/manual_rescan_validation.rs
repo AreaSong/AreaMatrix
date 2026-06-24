@@ -24,11 +24,13 @@ mod api_contract_source;
 mod db_contract_source;
 #[path = "support/db_scan_contract_source.rs"]
 mod db_scan_contract_source;
+#[path = "support/repo_scan_contract_source.rs"]
+mod repo_scan_contract_source;
 
 use api_contract_source::API_RS;
 use db_contract_source::DB_RS;
 use db_scan_contract_source::DB_SCAN_RS;
-const REPO_SCAN_RS: &str = include_str!("../src/repo_scan.rs");
+use repo_scan_contract_source::REPO_SCAN_RS;
 const CONTRACT_TEST: &str = include_str!("manual_rescan_contract_api.rs");
 const IMPLEMENTATION_TEST: &str = include_str!("manual_rescan_implementation.rs");
 const FAILURE_TEST: &str = include_str!("manual_rescan_failure_recovery.rs");

@@ -1,188 +1,19 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::fs;
 
 use area_matrix_core::{
-    init_repo, search_files, write_note, CoreError, ErrorKind, OverviewOutput, RepoInitMode,
-    RepoInitOptions, SearchDiagnosticKind, SearchFilter, SearchIndexStatus, SearchPagination,
-    SearchScope, SearchSort, SearchTagMatchMode,
+    search_files, write_note, CoreError, ErrorKind, SearchDiagnosticKind, SearchIndexStatus,
+    SearchPagination, SearchSort,
 };
 use pretty_assertions::assert_eq;
-use rusqlite::{params, Connection};
 
-fn path_string(path: &Path) -> String {
-    path.to_string_lossy().into_owned()
-}
+#[path = "support/search_query_files.rs"]
+mod search_query_files_support;
 
-fn initialized_repo() -> tempfile::TempDir {
-    let repo = tempfile::tempdir().expect("create temporary repository directory");
-    init_repo(
-        path_string(repo.path()),
-        RepoInitOptions {
-            mode: RepoInitMode::CreateEmpty,
-            create_default_categories: false,
-            overview_output: OverviewOutput::GeneratedOnly,
-        },
-    )
-    .expect("initialize repository");
-    repo
-}
-
-fn open_db(repo: &Path) -> Connection {
-    Connection::open(repo.join(".areamatrix/index.db")).expect("open repository database")
-}
-
-fn default_filter() -> SearchFilter {
-    SearchFilter {
-        scope: SearchScope::AllRepo,
-        current_path: None,
-        category: None,
-        file_kind: None,
-        tags: Vec::new(),
-        tag_match_mode: SearchTagMatchMode::Any,
-        imported_after: None,
-        imported_before: None,
-        modified_after: None,
-        modified_before: None,
-        storage_mode: None,
-        include_deleted: Some(false),
-    }
-}
-
-fn first_page() -> SearchPagination {
-    SearchPagination {
-        limit: 50,
-        offset: 0,
-    }
-}
-
-fn insert_file(
-    repo: &Path,
-    relative_path: &str,
-    category: &str,
-    imported_at: i64,
-    updated_at: i64,
-) -> i64 {
-    let file_path = repo.join(relative_path);
-    fs::create_dir_all(file_path.parent().expect("fixture path has parent"))
-        .expect("create fixture parent");
-    fs::write(&file_path, b"search fixture bytes").expect("write file fixture");
-
-    let current_name = relative_path.rsplit('/').next().expect("path has filename");
-    let connection = open_db(repo);
-    connection
-        .execute(
-            "INSERT INTO files (
-                path, original_name, current_name, category, size_bytes,
-                hash_sha256, storage_mode, origin, source_path,
-                imported_at, updated_at, status
-             ) VALUES (
-                ?1, ?2, ?2, ?3, 20,
-                ?4, 'copied', 'imported', NULL,
-                ?5, ?6, 'active'
-             )",
-            params![
-                relative_path,
-                current_name,
-                category,
-                format!("{:064x}", relative_path.len()),
-                imported_at,
-                updated_at,
-            ],
-        )
-        .expect("insert active file row");
-    connection.last_insert_rowid()
-}
-
-fn insert_change(repo: &Path, file_id: i64, action: &str, detail: &str) {
-    open_db(repo)
-        .execute(
-            "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
-             VALUES (?1, ?2, ?3, 200)",
-            params![file_id, action, detail],
-        )
-        .expect("insert change-log row");
-}
-
-fn file_rows(repo: &Path) -> Vec<(i64, String, String, String)> {
-    let connection = open_db(repo);
-    let mut statement = connection
-        .prepare("SELECT id, path, category, status FROM files ORDER BY id")
-        .expect("prepare file rows query");
-    statement
-        .query_map([], |row| {
-            Ok((
-                row.get::<_, i64>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-            ))
-        })
-        .expect("query file rows")
-        .map(|row| row.expect("read file row"))
-        .collect()
-}
-
-fn change_log_count(repo: &Path) -> i64 {
-    open_db(repo)
-        .query_row("SELECT COUNT(*) FROM change_log", [], |row| row.get(0))
-        .expect("count change-log rows")
-}
-
-fn user_visible_paths(repo: &Path) -> Vec<String> {
-    let mut paths = Vec::new();
-    collect_user_visible_paths(repo, repo, &mut paths);
-    paths.sort();
-    paths
-}
-
-fn collect_user_visible_paths(repo: &Path, current: &Path, paths: &mut Vec<String>) {
-    for entry in fs::read_dir(current).expect("read repository directory") {
-        let entry = entry.expect("read repository entry");
-        let path = entry.path();
-        let relative = path
-            .strip_prefix(repo)
-            .expect("path is inside repo")
-            .to_string_lossy()
-            .into_owned();
-        if relative == ".areamatrix" || relative.starts_with(".areamatrix/") {
-            continue;
-        }
-        paths.push(relative);
-        if path.is_dir() {
-            collect_user_visible_paths(repo, &path, paths);
-        }
-    }
-}
-
-fn staging_entries(repo: &Path) -> Vec<PathBuf> {
-    let mut entries: Vec<PathBuf> = fs::read_dir(repo.join(".areamatrix/staging"))
-        .expect("read staging directory")
-        .map(|entry| entry.expect("read staging entry").path())
-        .collect();
-    entries.sort();
-    entries
-}
-
-fn generated_entries(repo: &Path) -> Vec<PathBuf> {
-    fs::read_dir(repo.join(".areamatrix/generated"))
-        .expect("read generated directory")
-        .map(|entry| entry.expect("read generated entry").path())
-        .collect()
-}
-
-fn assert_search_left_repo_unchanged(
-    repo: &Path,
-    before_files: &[(i64, String, String, String)],
-    before_changes: i64,
-    before_visible_paths: &[String],
-) {
-    assert_eq!(file_rows(repo), before_files);
-    assert_eq!(change_log_count(repo), before_changes);
-    assert_eq!(user_visible_paths(repo), before_visible_paths);
-    assert_eq!(staging_entries(repo), Vec::<PathBuf>::new());
-}
+use search_query_files_support::{
+    assert_search_left_repo_unchanged, change_log_count, default_filter, file_rows, first_page,
+    generated_entries, initialized_repo, insert_change, insert_copied_file, open_db, path_string,
+    staging_entries, user_visible_paths,
+};
 
 #[test]
 fn search_query_files_failure_recovery_empty_repo_returns_empty_page() {
@@ -207,7 +38,7 @@ fn search_query_files_failure_recovery_empty_repo_returns_empty_page() {
         Vec::<(i64, String, String, String)>::new()
     );
     assert_eq!(change_log_count(repo.path()), 0);
-    assert_eq!(staging_entries(repo.path()), Vec::<PathBuf>::new());
+    assert!(staging_entries(repo.path()).is_empty());
 }
 
 #[test]
@@ -268,7 +99,7 @@ fn search_query_files_failure_recovery_invalid_inputs_are_structured_config_erro
 #[test]
 fn search_query_files_failure_recovery_parse_errors_do_not_execute_or_mutate() {
     let repo = initialized_repo();
-    let file_id = insert_file(repo.path(), "docs/report.pdf", "docs", 100, 100);
+    let file_id = insert_copied_file(repo.path(), "docs/report.pdf", "docs", 100, 100);
     insert_change(
         repo.path(),
         file_id,
@@ -313,7 +144,7 @@ fn search_query_files_failure_recovery_parse_errors_do_not_execute_or_mutate() {
 #[test]
 fn search_query_files_failure_recovery_escaped_and_quoted_colons_are_plain_keywords() {
     let repo = initialized_repo();
-    let file_id = insert_file(repo.path(), "docs/foo-bar.txt", "docs", 100, 100);
+    let file_id = insert_copied_file(repo.path(), "docs/foo-bar.txt", "docs", 100, 100);
     write_note(
         path_string(repo.path()),
         file_id,
@@ -367,7 +198,7 @@ fn search_query_files_failure_recovery_metadata_errors_map_to_declared_db_error(
 #[test]
 fn search_query_files_failure_recovery_only_reads_metadata_and_user_files() {
     let repo = initialized_repo();
-    let file_id = insert_file(repo.path(), "docs/report.pdf", "docs", 100, 100);
+    let file_id = insert_copied_file(repo.path(), "docs/report.pdf", "docs", 100, 100);
     write_note(
         path_string(repo.path()),
         file_id,
@@ -422,7 +253,7 @@ fn search_query_files_failure_recovery_error_mapping_is_structured_for_ui_retry(
 #[test]
 fn search_query_files_failure_recovery_has_no_remote_ai_or_secret_side_effects() {
     let repo = initialized_repo();
-    insert_file(repo.path(), "docs/local-only.txt", "docs", 100, 100);
+    insert_copied_file(repo.path(), "docs/local-only.txt", "docs", 100, 100);
     let before_files = file_rows(repo.path());
     let before_changes = change_log_count(repo.path());
     let before_visible_paths = user_visible_paths(repo.path());
@@ -502,7 +333,7 @@ fn search_query_files_failure_recovery_db_permission_denied_maps_to_declared_db_
     use std::os::unix::fs::PermissionsExt;
 
     let repo = initialized_repo();
-    insert_file(repo.path(), "docs/locked-db.pdf", "docs", 100, 100);
+    insert_copied_file(repo.path(), "docs/locked-db.pdf", "docs", 100, 100);
     let before_files = file_rows(repo.path());
     let before_changes = change_log_count(repo.path());
     let before_visible_paths = user_visible_paths(repo.path());
@@ -533,7 +364,7 @@ fn search_query_files_failure_recovery_db_permission_denied_maps_to_declared_db_
     assert_eq!(file_rows(repo.path()), before_files);
     assert_eq!(change_log_count(repo.path()), before_changes);
     assert_eq!(user_visible_paths(repo.path()), before_visible_paths);
-    assert_eq!(staging_entries(repo.path()), Vec::<PathBuf>::new());
+    assert!(staging_entries(repo.path()).is_empty());
 }
 
 #[cfg(unix)]
@@ -542,7 +373,7 @@ fn search_query_files_failure_recovery_permission_denied_keeps_state() {
     use std::{io, os::unix::fs::PermissionsExt};
 
     let repo = initialized_repo();
-    let file_id = insert_file(repo.path(), "blocked/secret.pdf", "docs", 100, 100);
+    let file_id = insert_copied_file(repo.path(), "blocked/secret.pdf", "docs", 100, 100);
     let blocked_dir = repo.path().join("blocked");
     let blocked_path = blocked_dir.join("secret.pdf");
     let before_files = file_rows(repo.path());

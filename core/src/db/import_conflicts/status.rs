@@ -2,7 +2,7 @@ use rusqlite::{params, Transaction};
 
 use crate::{CoreError, CoreResult};
 
-use super::{ImportConflictKind, ImportConflictRow, ImportConflictStatus};
+use super::types::{ImportConflictKind, ImportConflictRow, ImportConflictStatus};
 
 pub(super) fn import_conflict_from_row(
     row: &rusqlite::Row<'_>,

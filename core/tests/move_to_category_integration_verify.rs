@@ -15,11 +15,13 @@ use serde_json::Value;
 
 #[path = "support/api_contract_source.rs"]
 mod api_contract_source;
+#[path = "support/storage_move_to_category_contract_source.rs"]
+mod storage_move_to_category_contract_source;
 
 use api_contract_source::API_RS;
+use storage_move_to_category_contract_source::STORAGE_MOVE_TO_CATEGORY_RS;
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const DB_MOVE_TO_CATEGORY_RS: &str = include_str!("../src/db/move_to_category.rs");
-const STORAGE_MOVE_TO_CATEGORY_RS: &str = include_str!("../src/storage/move_to_category.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn assert_contains(haystack: &str, needle: &str) {

@@ -1,187 +1,19 @@
-use std::{fs, path::Path};
-
 use area_matrix_core::{
-    init_repo, search_files, write_note, CoreError, OverviewOutput, RepoInitMode, RepoInitOptions,
-    SearchDiagnosticKind, SearchFilter, SearchIndexStatus, SearchMatchField, SearchMatchKind,
-    SearchPagination, SearchScope, SearchSort, SearchTagMatchMode, StorageMode,
+    search_files, write_note, CoreError, SearchDiagnosticKind, SearchIndexStatus, SearchMatchField,
+    SearchMatchKind, SearchPagination, SearchScope, SearchSort, SearchTagMatchMode, StorageMode,
 };
 use pretty_assertions::assert_eq;
-use rusqlite::{params, Connection};
 
 const BEYOND_PREVIOUS_ROW_LIMIT: i64 = 10_005;
 
-fn path_string(path: &Path) -> String {
-    path.to_string_lossy().into_owned()
-}
+#[path = "support/search_query_files.rs"]
+mod search_query_files_support;
 
-fn create_empty_options() -> RepoInitOptions {
-    RepoInitOptions {
-        mode: RepoInitMode::CreateEmpty,
-        create_default_categories: false,
-        overview_output: OverviewOutput::GeneratedOnly,
-    }
-}
-
-fn initialized_repo() -> tempfile::TempDir {
-    let repo = tempfile::tempdir().expect("create temporary repository directory");
-    init_repo(path_string(repo.path()), create_empty_options()).expect("initialize repository");
-    repo
-}
-
-fn open_db(repo: &Path) -> Connection {
-    Connection::open(repo.join(".areamatrix/index.db")).expect("open repository database")
-}
-
-fn default_filter() -> SearchFilter {
-    SearchFilter {
-        scope: SearchScope::AllRepo,
-        current_path: None,
-        category: None,
-        file_kind: None,
-        tags: Vec::new(),
-        tag_match_mode: SearchTagMatchMode::Any,
-        imported_after: None,
-        imported_before: None,
-        modified_after: None,
-        modified_before: None,
-        storage_mode: None,
-        include_deleted: Some(false),
-    }
-}
-
-fn first_page() -> SearchPagination {
-    SearchPagination {
-        limit: 50,
-        offset: 0,
-    }
-}
-
-fn insert_copied_file(
-    repo: &Path,
-    relative_path: &str,
-    category: &str,
-    imported_at: i64,
-    updated_at: i64,
-) -> i64 {
-    insert_file(
-        repo,
-        relative_path,
-        category,
-        "copied",
-        imported_at,
-        updated_at,
-    )
-}
-
-fn insert_file(
-    repo: &Path,
-    relative_path: &str,
-    category: &str,
-    storage_mode: &str,
-    imported_at: i64,
-    updated_at: i64,
-) -> i64 {
-    let file_path = repo.join(relative_path);
-    fs::create_dir_all(file_path.parent().expect("fixture has parent directory"))
-        .expect("create parent directory");
-    fs::write(&file_path, b"fixture bytes").expect("write file fixture");
-    let current_name = relative_path
-        .rsplit('/')
-        .next()
-        .expect("fixture has filename");
-    let connection = open_db(repo);
-    connection
-        .execute(
-            "INSERT INTO files (
-                path, original_name, current_name, category, size_bytes,
-                hash_sha256, storage_mode, origin, source_path,
-                imported_at, updated_at, status
-             ) VALUES (
-                ?1, ?2, ?2, ?3, 13,
-                ?4, ?5, 'imported', NULL,
-                ?6, ?7, 'active'
-             )",
-            params![
-                relative_path,
-                current_name,
-                category,
-                format!("{:064x}", relative_path.len()),
-                storage_mode,
-                imported_at,
-                updated_at,
-            ],
-        )
-        .expect("insert active file row");
-    connection.last_insert_rowid()
-}
-
-fn insert_change(repo: &Path, file_id: i64, action: &str, detail: &str) {
-    open_db(repo)
-        .execute(
-            "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
-             VALUES (?1, ?2, ?3, 200)",
-            params![file_id, action, detail],
-        )
-        .expect("insert change log row");
-}
-
-fn insert_tag(repo: &Path, file_id: i64, tag: &str) {
-    open_db(repo)
-        .execute(
-            "INSERT INTO tags (file_id, tag, added_at) VALUES (?1, ?2, 100)",
-            params![file_id, tag],
-        )
-        .expect("insert tag row");
-}
-
-fn active_file_count(repo: &Path) -> i64 {
-    open_db(repo)
-        .query_row(
-            "SELECT COUNT(*) FROM files WHERE status = 'active'",
-            [],
-            |row| row.get(0),
-        )
-        .expect("count active files")
-}
-
-fn change_log_count(repo: &Path) -> i64 {
-    open_db(repo)
-        .query_row("SELECT COUNT(*) FROM change_log", [], |row| row.get(0))
-        .expect("count change log rows")
-}
-
-fn insert_many_searchable_files(repo: &Path, count: i64) {
-    let mut connection = open_db(repo);
-    let transaction = connection
-        .transaction()
-        .expect("start bulk searchable file transaction");
-    {
-        let mut statement = transaction
-            .prepare(
-                "INSERT INTO files (
-                    path, original_name, current_name, category, size_bytes,
-                    hash_sha256, storage_mode, origin, source_path,
-                    imported_at, updated_at, status
-                 ) VALUES (
-                    ?1, ?2, ?2, 'bulk', 13,
-                    ?3, 'copied', 'imported', NULL,
-                    ?4, ?4, 'active'
-                 )",
-            )
-            .expect("prepare bulk searchable file insert");
-        for index in 0..count {
-            let relative_path = format!("bulk/contract-{index:05}.txt");
-            let current_name = format!("contract-{index:05}.txt");
-            let hash = format!("{:064x}", index + 1);
-            statement
-                .execute(params![relative_path, current_name, hash, index + 1])
-                .expect("insert bulk searchable file row");
-        }
-    }
-    transaction
-        .commit()
-        .expect("commit bulk searchable file transaction");
-}
+use search_query_files_support::{
+    active_file_count, change_log_count, default_filter, first_page, initialized_repo,
+    insert_change, insert_copied_file, insert_file, insert_many_searchable_files, insert_tag,
+    open_db, path_string,
+};
 
 #[test]
 fn search_query_files_implementation_finds_name_path_note_category_and_change_log() {
