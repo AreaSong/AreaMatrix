@@ -39,6 +39,18 @@ core/src/
 
 当前代码可以保留既有模块名逐步迁移。新增能力应优先按本结构落位；旧模块只有在无行为变化重构时才移动。
 
+`db/` 目录继续按 SQLite 边界拆分，`db/mod.rs` 只作为 facade（门面）保留模块声明和
+内部 re-export。共享 DB 基础设施按以下文件落位：
+
+- `db/schema.rs`：初始 schema、schema version 和 migration helper。
+- `db/connection.rs`：DB 路径、初始化检查、连接打开和 SQLite pragma。
+- `db/repo_config.rs`：`repo_config` 读写、配置更新事务和配置写权限检查。
+- `db/read_models.rs`：跨功能 read model，例如文件列表和 availability status。
+- `db/codec.rs`：领域枚举与 DB 标量值之间的转换。
+
+具体功能表和查询继续按能力放在 `db/import.rs`、`db/scan.rs`、`db/saved_search.rs`
+等文件中；新增 DB 能力不要直接塞回 `db/mod.rs`。
+
 ## 依赖方向
 
 ```mermaid

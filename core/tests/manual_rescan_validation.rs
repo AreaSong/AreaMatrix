@@ -20,10 +20,12 @@ const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 #[path = "support/api_contract_source.rs"]
 mod api_contract_source;
+#[path = "support/db_contract_source.rs"]
+mod db_contract_source;
 
 use api_contract_source::API_RS;
+use db_contract_source::DB_RS;
 const REPO_SCAN_RS: &str = include_str!("../src/repo_scan.rs");
-const DB_MOD_RS: &str = include_str!("../src/db/mod.rs");
 const DB_SCAN_RS: &str = include_str!("../src/db/scan.rs");
 const CONTRACT_TEST: &str = include_str!("manual_rescan_contract_api.rs");
 const IMPLEMENTATION_TEST: &str = include_str!("manual_rescan_implementation.rs");
@@ -407,13 +409,13 @@ fn assert_core_api_udl_and_rust_alignment() {
         assert_contains(REPO_SCAN_RS, fragment);
     }
 
-    assert_contains(DB_MOD_RS, "CREATE TABLE IF NOT EXISTS scan_sessions");
-    assert_contains(DB_MOD_RS, "const LATEST_SCHEMA_VERSION: i64 = 2;");
-    assert_contains(DB_MOD_RS, "fn run_schema_migrations");
-    assert_contains(DB_MOD_RS, "ALTER TABLE scan_sessions ADD COLUMN");
-    assert_contains(DB_MOD_RS, "{INDEX_DB_FILE}.pre-v{target_version}.bak");
+    assert_contains(DB_RS, "CREATE TABLE IF NOT EXISTS scan_sessions");
+    assert_contains(DB_RS, "const LATEST_SCHEMA_VERSION: i64 = 2;");
+    assert_contains(DB_RS, "fn run_schema_migrations");
+    assert_contains(DB_RS, "ALTER TABLE scan_sessions ADD COLUMN");
+    assert_contains(DB_RS, "{INDEX_DB_FILE}.pre-v{target_version}.bak");
     assert_contains(
-        DB_MOD_RS,
+        DB_RS,
         "kind TEXT NOT NULL CHECK (kind IN ('adopt', 'reindex'))",
     );
     assert_contains(DB_SCAN_RS, "pub(crate) fn upsert_reindexed_file");

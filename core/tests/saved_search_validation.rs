@@ -10,12 +10,16 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
 
+#[path = "support/db_contract_source.rs"]
+mod db_contract_source;
+
+use db_contract_source::DB_RS;
+
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 const SEARCH_RS: &str = include_str!("../src/search.rs");
 const SAVED_SEARCH_RS: &str = include_str!("../src/search/saved_search.rs");
 const DB_SAVED_SEARCH_RS: &str = include_str!("../src/db/saved_search.rs");
-const DB_MOD_RS: &str = include_str!("../src/db/mod.rs");
 
 #[derive(Debug, Eq, PartialEq)]
 struct SavedSearchValidationSnapshot {
@@ -425,7 +429,7 @@ fn saved_search_validation_locks_core_api_udl_rust_and_docs_alignment() {
         "pinned INTEGER NOT NULL DEFAULT 0 CHECK (pinned IN (0, 1))",
         "idx_saved_searches_sidebar",
     ] {
-        assert_contains(DB_MOD_RS, fragment);
+        assert_contains(DB_RS, fragment);
     }
 
     for fragment in [

@@ -17,9 +17,11 @@ const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 #[path = "support/api_contract_source.rs"]
 mod api_contract_source;
+#[path = "support/db_contract_source.rs"]
+mod db_contract_source;
 
 use api_contract_source::API_RS;
-const DB_RS: &str = include_str!("../src/db/mod.rs");
+use db_contract_source::DB_RS;
 const CONTRACT_TEST: &str = include_str!("repository_settings_cross_platform_contract_api.rs");
 const IMPLEMENTATION_TEST: &str =
     include_str!("repository_settings_cross_platform_implementation.rs");
