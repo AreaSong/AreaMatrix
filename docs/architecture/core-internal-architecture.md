@@ -2,7 +2,7 @@
 
 > AreaMatrix Core 在四层架构中的 L1 层采用单 crate 优先、按能力拆模块、按稳定边界再拆 crate 的 Rust 后端结构。本文规定 Core 内部目录、依赖方向和后续功能插入方式。
 >
-> 阅读时长：约 7 分钟。
+> 阅读时长：约 10 分钟。
 
 ---
 
@@ -103,6 +103,26 @@ flowchart LR
 - 引擎模块应保持可测试和可复用，避免反向依赖 FFI 门面。
 - 新的共享工具只有在两个以上模块真实复用时才进入 `support/`。
 
+## 后端分层规则
+
+AreaMatrix Core 不使用统一的 `controllers/`、`services/`、`repositories/` 目录作为主结构。
+后续功能按能力落位，但每个能力内部必须满足清楚的分层职责：
+
+| 层级 | 目录 / 文件 | 责任 | 不应承担 |
+|---|---|---|---|
+| API adapter | `src/api/**` | UniFFI 对外函数、rustdoc、轻量参数传递和错误返回 | SQL、文件移动、复杂业务决策 |
+| Use case | `src/<feature>.rs`、`src/<feature>/**`、`src/batch_*`、`src/repo_*`、`src/ai_*` | 编排一条业务能力，决定调用顺序、确认 token、DB 与文件系统一致性 | 跨功能垃圾桶模块、隐藏高风险副作用 |
+| Domain | `src/domain.rs`、`src/domain/**`、能力内 `types.rs` | 领域类型、不变量、跨模块共享语义 | SQLite row 细节、UI/FFI 适配 |
+| Persistence | `src/db/**` | schema、query、transaction、row mapping、DB codec | 移动、删除、覆盖用户文件 |
+| Filesystem | `src/storage/**`、能力内明确的 filesystem 子模块 | hash、staging、Trash、安全移动、路径校验、repo-owned 文件操作 | Core API 合同、UI 决策、平台专属 API |
+| Engine | `src/classify/**`、`src/search/**`、`src/overview/**`、`src/sync/**`、AI provider route | 可复用算法、解析、排序、生成、同步规则 | 反向依赖 `api/` 或调用 Swift/macOS 能力 |
+| Test support | `core/tests/support/**` | fixture、临时 repo、DB 断言、源码聚合、重复 helper | 被测业务实现、生产代码依赖 |
+
+类比传统三层架构时，`api/` 近似 controller，能力模块近似 application service，
+`db/` 近似 repository/DAO，`storage/` 是文件系统基础设施层。但这是职责类比，
+不是目录命名要求。除非出现真实复用、替换或审计边界，不新增通用 `services/`
+或 `repositories/` 聚合目录。
+
 ## API 门面规则
 
 `api/` 是 UniFFI 对外门面（adapter，适配层），不是业务层。它负责：
@@ -133,6 +153,59 @@ flowchart LR
 
 功能模块不应把所有能力抽象成一套统一接口。当前只有一个实现时，不引入工厂、策略或 trait；只有出现真实替换需求、测试隔离需求或跨平台实现差异时再抽象。
 
+## 新增功能落位模板
+
+新增 Core 能力前，先按以下顺序判定落点。这个模板用于普通 feature、批量能力、
+AI 能力、同步能力和修复能力；高风险功能仍按根 `AGENTS.md` 先说明影响、风险、
+验证和回滚。
+
+1. **判断是否对外暴露**
+   - 新增、删除、重命名公开函数：先更新 `docs/api/core-api.md`，再更新
+     `core/area_matrix.udl`，最后实现 `src/api/**`、Rust 模块和 Swift bridge。
+   - 只改内部能力：不碰 `docs/api/core-api.md` 和 `core/area_matrix.udl`，在现有
+     feature 模块内落位。
+
+2. **选择 use case 入口**
+   - 已有能力扩展：优先进入现有 `src/<feature>.rs` 或 `src/<feature>/**`。
+   - 新的一条业务能力：新增 `src/<feature>.rs` 作为 facade；如果预计超过约 300 行
+     或包含 DB、文件系统、AI、undo/redo、failure recovery 中任意两个以上边界，
+     直接采用 `src/<feature>/` 子目录。
+   - 批量能力：优先沿用 `batch_*` 现有命名；只有后续批量域稳定后再考虑整体收敛。
+   - repo 生命周期能力：优先放入 `repo_*` 或 `repo_<verb>/`。
+   - AI 能力：按 `ai_<capability>/` 或既有 AI 模块落位，并显式拆出 privacy、route、
+     metadata、generation/call-log 边界。
+
+3. **决定 DB 与 storage 边界**
+   - 需要新表、schema、migration 或复杂查询：放入 `src/db/<feature>.rs`；增长后拆为
+     `src/db/<feature>/{schema,queries,types,codec,...}.rs`。
+   - 需要移动、删除、重命名、Trash、staging、hash 或 rollback guard：放入
+     `src/storage/<capability>.rs` 或 use case 内明确的 filesystem 子模块。
+   - 需要 DB 与文件系统一致性：由 use case 编排顺序，不让 DB 层偷偷改文件，也不让
+     storage 层偷偷改业务状态。
+
+4. **决定共享与抽象**
+   - 只有一个调用点时，先放在当前模块私有函数。
+   - 两个以上生产模块真实复用时，再进入 `src/support/`、`src/domain/` 或更稳定的
+     engine 模块。
+   - 不为“未来可能需要”新增 trait、factory、strategy、service registry。
+   - 测试 helper 只能进入 `core/tests/support/**`，生产代码不能依赖它。
+
+5. **决定测试文件**
+   - 对外 API 合同：`core/tests/<feature>_contract_api.rs`。
+   - 真实行为实现：`core/tests/<feature>_implementation.rs`。
+   - 失败、回滚、权限、DB 错误、文件安全：`core/tests/<feature>_failure_recovery.rs`。
+   - 文档 / API / UDL / control map / 覆盖证据：`core/tests/<feature>_validation.rs`。
+   - 跨 API 或 UI 消费链路：`core/tests/<feature>_integration_verify.rs`。
+   - 重复 fixture 和断言：`core/tests/support/<feature>.rs`，但不得搬入被测业务逻辑。
+
+6. **选择验证**
+   - Rust Core 行为或测试改动：运行 `cargo fmt --all -- --check`、
+     `cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`。
+   - Core 文档或低风险元数据：至少运行 `cd core && cargo metadata --no-deps`，
+     并运行 `git diff --check`。
+   - API/UDL 改动：额外检查 `docs/api/core-api.md`、`core/area_matrix.udl`、Rust
+     API 门面和 Swift bridge 是否一致。
+
 ## DB 与 Storage 边界
 
 `db/` 是元数据真相的持久化边界：
@@ -156,6 +229,25 @@ core/tests/support/
 ```
 
 测试支撑层只放 fixture、临时资料库构造、断言工具和重复数据准备，不承载业务实现。生产代码不得依赖 `tests/support`。
+
+测试拆分门槛与生产代码一致：单个测试文件接近 500 行时，优先把重复 fixture、
+DB 查询、源码聚合或断言 helper 移入 `core/tests/support/**`。但测试主体仍应保留
+场景叙事和关键断言，不能把测试意图藏进 helper。
+
+## 拆分门槛
+
+新增或修改模块时按以下门槛处理：
+
+- 文件超过约 300 行且仍在增长：先识别子职责，准备同名 facade + 子目录。
+- 文件接近 500 行：必须拆分或说明为什么无法安全拆分。
+- 单个函数超过约 50 行：优先抽出命名清楚的小函数，或把输入组合成内部类型。
+- 嵌套超过 3 层：优先使用 early return、局部 helper 或状态对象降低分支复杂度。
+- 同一段 fixture、DB 查询、路径构造或 JSON 断言在两个测试文件出现：放入
+  `core/tests/support/**`。
+- 只有一个实现、一个调用点、一个测试场景时，不为了“架构完整”提前抽象。
+
+拆分必须保持行为不变，并优先保留原 public 路径、crate 内 re-export 或测试源码聚合
+所需的可读入口。拆分后至少运行与影响面匹配的验证。
 
 ## 何时拆多 crate
 
