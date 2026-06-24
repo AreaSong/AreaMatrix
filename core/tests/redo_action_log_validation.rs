@@ -27,10 +27,10 @@ mod api_contract_source;
 use api_contract_source::API_RS;
 const REDO_RS: &str = include_str!("../src/redo.rs");
 const DB_REDO_RS: &str = include_str!("../src/db/redo.rs");
-const REDO_RECORDS_RS: &str = include_str!("../src/db/redo/records.rs");
-const REDO_TAGS_RS: &str = include_str!("../src/db/redo/tags.rs");
-const REDO_FILE_ACTIONS_RS: &str = include_str!("../src/db/redo/file_actions.rs");
-const REDO_BATCH_FILE_ACTIONS_RS: &str = include_str!("../src/db/redo/batch_file_actions.rs");
+const REDO_RECORDS_RS: &str = include_str!("../src/redo/records.rs");
+const REDO_TAGS_RS: &str = include_str!("../src/redo/tags.rs");
+const REDO_FILE_ACTIONS_RS: &str = include_str!("../src/redo/file_actions.rs");
+const REDO_BATCH_FILE_ACTIONS_RS: &str = include_str!("../src/redo/batch_file_actions.rs");
 const LIB_RS: &str = include_str!("../src/lib.rs");
 
 fn assert_contains(haystack: &str, needle: &str) {
@@ -368,14 +368,17 @@ fn redo_action_log_validation_rollback_and_trash_paths_are_safe() {
 #[test]
 fn redo_action_log_validation_locks_persistence_and_testing_evidence() {
     assert_all_contains(
-        DB_REDO_RS,
+        REDO_RS,
         &[
             "list_redo_action_rows",
             "execute_redo_action_row",
-            "clear_redo_stack_in_tx",
             "restore_pending_undo_action",
             "RedoActionStatus::Executed",
         ],
+    );
+    assert_all_contains(
+        DB_REDO_RS,
+        &["clear_redo_stack_in_tx", "redo_cleared_summary_json"],
     );
     assert_all_contains(
         REDO_RECORDS_RS,

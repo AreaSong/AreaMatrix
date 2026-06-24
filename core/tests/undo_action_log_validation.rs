@@ -20,7 +20,8 @@ const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
 const UNDO_RS: &str = include_str!("../src/undo.rs");
 const DB_UNDO_RS: &str = include_str!("../src/db/undo.rs");
-const FILE_ACTIONS_RS: &str = include_str!("../src/db/undo/file_actions.rs");
+const UNDO_RECORDS_RS: &str = include_str!("../src/undo/records.rs");
+const FILE_ACTIONS_RS: &str = include_str!("../src/undo/file_actions.rs");
 const LIB_RS: &str = include_str!("../src/lib.rs");
 
 fn path_string(path: &Path) -> String {
@@ -395,14 +396,30 @@ fn undo_action_log_validation_covers_external_change_blocking_without_mutation()
 #[test]
 fn undo_action_log_validation_locks_persistence_and_testing_evidence() {
     assert_all_contains(
-        DB_UNDO_RS,
+        UNDO_RS,
         &[
             "ensure_undo_metadata_ready",
             "load_undo_actions",
             "execute_undo_action_row",
             "execute_batch_tag_action",
             "mark_action_status",
+        ],
+    );
+    assert_all_contains(
+        UNDO_RECORDS_RS,
+        &[
+            "undo_record_from_row",
+            "pending_batch_tag_block_reason",
             "UndoActionStatus::Blocked",
+        ],
+    );
+    assert_all_contains(
+        DB_UNDO_RS,
+        &[
+            "insert_rename_undo_action",
+            "insert_move_undo_action",
+            "insert_delete_undo_action",
+            "update_delete_undo_trash_path",
         ],
     );
 

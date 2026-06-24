@@ -4,16 +4,25 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-use crate::{storage, CoreError, CoreResult};
+use crate::{CoreError, CoreResult};
+
+use super::{hash, replacement_trash};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
-const REDO_ROLLBACK_RECOVERY_DIR: &str = "redo-rollback-recovery";
+const STAGING_DIR: &str = "staging";
+const ACTION_ROLLBACK_RECOVERY_DIR: &str = "redo-rollback-recovery";
 
-pub(super) struct FileMoveRollbackGuard {
+pub(crate) struct FileMoveRollbackGuard {
     current_path: PathBuf,
     original_path: PathBuf,
     recovery_dir: PathBuf,
     armed: bool,
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum NonFileErrorKind {
+    Conflict,
+    Io,
 }
 
 impl FileMoveRollbackGuard {
@@ -26,11 +35,11 @@ impl FileMoveRollbackGuard {
         }
     }
 
-    pub(super) fn disarm(&mut self) {
+    pub(crate) fn disarm(&mut self) {
         self.armed = false;
     }
 
-    pub(super) fn rollback(&mut self) -> CoreResult<()> {
+    pub(crate) fn rollback(&mut self) -> CoreResult<()> {
         if !self.armed {
             return Ok(());
         }
@@ -51,13 +60,13 @@ impl FileMoveRollbackGuard {
             }
             (true, true) => {
                 let error = CoreError::io(format!(
-                    "redo rollback destination occupied: {}",
+                    "rollback destination occupied: {}",
                     self.original_path.display()
                 ));
                 Err(self.quarantine_current_path(error))
             }
             (false, false) => Err(CoreError::io(format!(
-                "redo rollback source missing: {}",
+                "rollback source missing: {}",
                 self.current_path.display()
             ))),
         }
@@ -72,7 +81,7 @@ impl FileMoveRollbackGuard {
                 self.current_path = recovery_path.clone();
                 self.armed = false;
                 CoreError::io(format!(
-                    "{error}; recovered redo file at {}",
+                    "{error}; recovered history file at {}",
                     recovery_path.display()
                 ))
             }
@@ -87,14 +96,20 @@ impl FileMoveRollbackGuard {
             .file_name()
             .and_then(|value| value.to_str())
             .filter(|value| !value.is_empty())
-            .unwrap_or("redo-file");
+            .unwrap_or("history-file");
         Ok(self
             .recovery_dir
             .join(format!("{}-{filename}", uuid::Uuid::new_v4())))
     }
 }
 
-pub(super) fn rollback_guards_or_error(
+impl Drop for FileMoveRollbackGuard {
+    fn drop(&mut self) {
+        let _rollback_result = self.rollback();
+    }
+}
+
+pub(crate) fn rollback_guards_or_error(
     guards: &mut [FileMoveRollbackGuard],
     original_error: CoreError,
 ) -> CoreError {
@@ -104,7 +119,7 @@ pub(super) fn rollback_guards_or_error(
     }
 }
 
-pub(super) fn rollback_guards(guards: &mut [FileMoveRollbackGuard]) -> CoreResult<()> {
+pub(crate) fn rollback_guards(guards: &mut [FileMoveRollbackGuard]) -> CoreResult<()> {
     let mut first_error = None;
     for guard in guards {
         if let Err(error) = guard.rollback() {
@@ -114,40 +129,42 @@ pub(super) fn rollback_guards(guards: &mut [FileMoveRollbackGuard]) -> CoreResul
         }
     }
     if let Some(error) = first_error {
-        return Err(redo_rollback_error(error));
+        return Err(CoreError::io(format!("history rollback failed: {error}")));
     }
     Ok(())
 }
 
-fn redo_rollback_error(error: CoreError) -> CoreError {
-    CoreError::io(format!("redo rollback failed: {error}"))
-}
-
-impl Drop for FileMoveRollbackGuard {
-    fn drop(&mut self) {
-        // Drop cannot report recovery failures; explicit redo error paths call
-        // `rollback` and propagate the result before this best-effort retry.
-        let _rollback_result = self.rollback();
-    }
-}
-
-pub(super) fn repo_relative_path(repo: &Path, relative_path: &str) -> CoreResult<PathBuf> {
+pub(crate) fn repo_relative_path(repo: &Path, relative_path: &str) -> CoreResult<PathBuf> {
     let relative = Path::new(relative_path);
     validate_repo_relative_path(relative)?;
     Ok(repo.join(relative))
 }
 
-pub(super) fn move_checked_path(
+pub(crate) fn move_checked_path(
     repo: &Path,
     current_path: &Path,
     destination: &Path,
+) -> CoreResult<FileMoveRollbackGuard> {
+    move_checked_path_with_non_file_error(
+        repo,
+        current_path,
+        destination,
+        NonFileErrorKind::Conflict,
+    )
+}
+
+pub(crate) fn move_checked_path_with_non_file_error(
+    repo: &Path,
+    current_path: &Path,
+    destination: &Path,
+    non_file_error: NonFileErrorKind,
 ) -> CoreResult<FileMoveRollbackGuard> {
     if !current_path.try_exists().map_err(map_io_error)? {
         return Err(CoreError::file_not_found(
             current_path.display().to_string(),
         ));
     }
-    ensure_regular_file(current_path)?;
+    ensure_regular_file(current_path, non_file_error)?;
     if destination.try_exists().map_err(map_io_error)? {
         return Err(CoreError::conflict(destination.display().to_string()));
     }
@@ -155,33 +172,34 @@ pub(super) fn move_checked_path(
     Ok(FileMoveRollbackGuard::new(
         destination.to_path_buf(),
         current_path.to_path_buf(),
-        redo_rollback_recovery_dir(repo),
+        action_rollback_recovery_dir(repo),
     ))
 }
 
-pub(super) fn move_path_to_user_trash(
+pub(crate) fn move_path_to_user_trash(
     repo: &Path,
     path: &Path,
 ) -> CoreResult<FileMoveRollbackGuard> {
-    ensure_regular_file(path)?;
-    let trash_path = storage::move_to_user_trash(path)?
+    ensure_regular_file(path, NonFileErrorKind::Conflict)?;
+    let trash_path = replacement_trash::move_to_user_trash(path)?
         .ok_or_else(|| CoreError::io("trash path unavailable"))?;
     Ok(FileMoveRollbackGuard::new(
         trash_path,
         path.to_path_buf(),
-        redo_rollback_recovery_dir(repo),
+        action_rollback_recovery_dir(repo),
     ))
 }
 
-pub(super) fn path_exists(path: &Path) -> CoreResult<bool> {
+pub(crate) fn path_exists(path: &Path) -> CoreResult<bool> {
     path.try_exists().map_err(map_io_error)
 }
 
-pub(super) fn map_io_error(error: std::io::Error) -> CoreError {
+pub(crate) fn map_io_error(error: std::io::Error) -> CoreError {
     match error.kind() {
         std::io::ErrorKind::NotFound => CoreError::file_not_found(error.to_string()),
         std::io::ErrorKind::PermissionDenied => CoreError::permission_denied(error.to_string()),
         std::io::ErrorKind::AlreadyExists => CoreError::conflict(error.to_string()),
+        std::io::ErrorKind::InvalidInput => CoreError::invalid_path(error.to_string()),
         _ => CoreError::io(error.to_string()),
     }
 }
@@ -201,18 +219,21 @@ fn validate_repo_relative_path(path: &Path) -> CoreResult<()> {
     Ok(())
 }
 
-fn redo_rollback_recovery_dir(repo: &Path) -> PathBuf {
+fn action_rollback_recovery_dir(repo: &Path) -> PathBuf {
     repo.join(AREA_MATRIX_DIR)
-        .join("staging")
-        .join(REDO_ROLLBACK_RECOVERY_DIR)
+        .join(STAGING_DIR)
+        .join(ACTION_ROLLBACK_RECOVERY_DIR)
 }
 
-fn ensure_regular_file(path: &Path) -> CoreResult<()> {
+fn ensure_regular_file(path: &Path, non_file_error: NonFileErrorKind) -> CoreResult<()> {
     let metadata = path.metadata().map_err(map_io_error)?;
     if metadata.is_file() {
         Ok(())
     } else {
-        Err(CoreError::conflict("File changed after undo"))
+        match non_file_error {
+            NonFileErrorKind::Conflict => Err(CoreError::conflict("File changed after undo")),
+            NonFileErrorKind::Io => Err(CoreError::io("File changed after action")),
+        }
     }
 }
 
@@ -232,7 +253,7 @@ fn move_file_no_replace(current_path: &Path, destination: &Path) -> CoreResult<(
 
 fn copy_to_new_destination(current_path: &Path, destination: &Path) -> CoreResult<()> {
     let expected_size = current_path.metadata().map_err(map_io_error)?.len();
-    let copied_size = fs::copy(current_path, destination).map_err(map_io_error)?;
+    let copied_size = hash::copy_to_new_file(current_path, destination)?;
     if copied_size != expected_size {
         let _cleanup_result = fs::remove_file(destination);
         return Err(CoreError::io("io error"));

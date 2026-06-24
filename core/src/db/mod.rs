@@ -97,7 +97,7 @@ pub(crate) use overview::{
 };
 pub(crate) use platform_watcher_status::upsert_platform_watcher_health;
 pub(crate) use read_models::{list_files, with_availability_status};
-pub(crate) use redo::{clear_redo_stack_in_tx, execute_redo_action_row, list_redo_action_rows};
+pub(crate) use redo::clear_redo_stack_in_tx;
 pub(crate) use remote_provider_config::{
     load_remote_provider_config_record, load_remote_provider_test_record,
     save_remote_provider_test_record, update_remote_provider_config_record,
@@ -133,6 +133,4 @@ pub(crate) use tags::{
     list_tag_set, load_tag_suggestion_snapshot, remove_tag_row, AiTagSuggestionApplyProvenance,
     AiTagSuggestionApplyRow, TagSuggestionApplyRow, TagSuggestionSnapshot,
 };
-pub(crate) use undo::{
-    execute_undo_action_row, list_undo_action_rows, update_delete_undo_trash_path,
-};
+pub(crate) use undo::update_delete_undo_trash_path;

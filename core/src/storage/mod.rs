@@ -4,6 +4,7 @@ pub(crate) mod dedup;
 mod delete;
 mod destination;
 mod hash;
+pub(crate) mod history;
 mod import;
 mod import_source_removal;
 mod import_target;

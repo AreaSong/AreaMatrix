@@ -220,6 +220,11 @@ AI 能力、同步能力和修复能力；高风险功能仍按根 `AGENTS.md` �
 - 必须遵守“不移动、不重命名、不删除、不覆盖未确认用户原文件”的不变量。
 - 需要 DB 一致性时，由功能模块或明确的事务函数编排，不把隐藏副作用散落到调用方看不见的位置。
 
+Undo / redo history 也遵循同一边界：`db/undo*` 和 `db/redo*` 只负责 action row、
+summary / inverse JSON、状态更新和 redo stack 清理；`undo/**`、`redo/**` 负责执行
+编排和失败恢复流程；实际文件移动、Trash 调用、rollback guard 和 recovery staging
+只能放在 `storage/**` 或由其导出的安全 helper 中。
+
 ## 测试落点
 
 测试继续按合同、实现、失败恢复、验证、集成回归的粒度组织。后续可以增加：

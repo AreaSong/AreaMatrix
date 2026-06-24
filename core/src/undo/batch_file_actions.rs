@@ -7,7 +7,7 @@ use serde_json::Value;
 use crate::{CoreError, CoreResult};
 
 use super::file_actions::{insert_file_undo_change, FileDbState, FileUndoExecution};
-use super::fs_ops::{move_checked_path, repo_relative_path, FileMoveRollbackGuard};
+use super::fs_ops::{self, repo_relative_path, FileMoveRollbackGuard, NonFileErrorKind};
 
 #[derive(Debug, Deserialize)]
 pub(super) struct RestoreBatchFileStateInverse {
@@ -68,10 +68,7 @@ pub(super) fn execute_restore_batch_file_state(
     ensure_batch_db_state_matches(tx, inverse)?;
     let mut guards = move_batch_active_paths(repo, inverse)?;
     if let Err(error) = update_batch_active_file_state(tx, inverse, completed_at) {
-        for guard in &mut guards {
-            guard.rollback();
-        }
-        return Err(error);
+        return Err(fs_ops::rollback_guards_or_error(&mut guards, error));
     }
     for item in &inverse.items {
         insert_file_undo_change(
@@ -103,10 +100,7 @@ pub(super) fn execute_restore_batch_deleted_files(
     ensure_batch_deleted_db_state_matches(tx, inverse)?;
     let mut guards = restore_batch_deleted_paths(repo, inverse)?;
     if let Err(error) = update_batch_deleted_file_state(tx, inverse, completed_at) {
-        for guard in &mut guards {
-            guard.rollback();
-        }
-        return Err(error);
+        return Err(fs_ops::rollback_guards_or_error(&mut guards, error));
     }
     for item in &inverse.items {
         insert_file_undo_change(
@@ -202,7 +196,12 @@ fn move_batch_active_paths(
         if expected_path == restore_path {
             continue;
         }
-        guards.push(move_checked_path(&expected_path, &restore_path)?);
+        guards.push(fs_ops::move_checked_path_with_non_file_error(
+            repo,
+            &expected_path,
+            &restore_path,
+            NonFileErrorKind::Io,
+        )?);
     }
     Ok(guards)
 }
@@ -215,7 +214,12 @@ fn restore_batch_deleted_paths(
     for item in &inverse.items {
         let trash_path = Path::new(&item.trash_path);
         let restore_path = repo_relative_path(repo, &item.restore_path)?;
-        guards.push(move_checked_path(trash_path, &restore_path)?);
+        guards.push(fs_ops::move_checked_path_with_non_file_error(
+            repo,
+            trash_path,
+            &restore_path,
+            NonFileErrorKind::Io,
+        )?);
     }
     Ok(guards)
 }

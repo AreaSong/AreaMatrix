@@ -11,7 +11,9 @@ use super::batch_file_actions::{
     execute_restore_batch_deleted_files, execute_restore_batch_file_state,
     parse_restore_batch_deleted_files, parse_restore_batch_file_state,
 };
-use super::fs_ops::{map_io_error, move_checked_path, repo_relative_path, FileMoveRollbackGuard};
+use super::fs_ops::{
+    self, map_io_error, repo_relative_path, FileMoveRollbackGuard, NonFileErrorKind,
+};
 
 pub(super) const RENAME_FILES_KIND: &str = "rename_files";
 pub(super) const MOVE_FILES_KIND: &str = "move_files";
@@ -148,10 +150,7 @@ fn execute_restore_file_state(
         move_active_paths(repo, inverse)?
     };
     if let Err(error) = update_active_file_state(tx, inverse, completed_at) {
-        for guard in &mut guards {
-            guard.rollback();
-        }
-        return Err(error);
+        return Err(fs_ops::rollback_guards_or_error(&mut guards, error));
     }
     insert_file_undo_change(
         tx,
@@ -180,10 +179,7 @@ fn execute_restore_deleted_file(
     ensure_deleted_db_state_matches(tx, inverse)?;
     let mut guards = restore_deleted_path(repo, inverse)?;
     if let Err(error) = update_deleted_file_state(tx, inverse, completed_at) {
-        for guard in &mut guards {
-            guard.rollback();
-        }
-        return Err(error);
+        return Err(fs_ops::rollback_guards_or_error(&mut guards, error));
     }
     insert_file_undo_change(
         tx,
@@ -286,7 +282,13 @@ fn move_active_paths(
     if expected_path == restore_path {
         return Ok(Vec::new());
     }
-    move_checked_path(&expected_path, &restore_path).map(|guard| vec![guard])
+    fs_ops::move_checked_path_with_non_file_error(
+        repo,
+        &expected_path,
+        &restore_path,
+        NonFileErrorKind::Io,
+    )
+    .map(|guard| vec![guard])
 }
 
 fn restore_deleted_path(
@@ -299,7 +301,13 @@ fn restore_deleted_path(
         .ok_or_else(|| CoreError::conflict("Trash restore location unavailable"))?;
     let restore_path = repo_relative_path(repo, &inverse.restore_path)?;
     let trash_path = PathBuf::from(trash_path);
-    move_checked_path(&trash_path, &restore_path).map(|guard| vec![guard])
+    fs_ops::move_checked_path_with_non_file_error(
+        repo,
+        &trash_path,
+        &restore_path,
+        NonFileErrorKind::Io,
+    )
+    .map(|guard| vec![guard])
 }
 
 fn update_active_file_state(

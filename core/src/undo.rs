@@ -2,11 +2,25 @@
 
 use std::path::{Component, PathBuf};
 
+use rusqlite::params;
 use serde::{Deserialize, Serialize};
 
+use crate::storage::history as fs_ops;
 use crate::{db, CoreError, CoreResult};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
+const UNDO_ACTION_LIMIT: i64 = 100;
+const BATCH_ADD_TAGS_KIND: &str = "batch_add_tags";
+
+pub(crate) mod batch_file_actions;
+pub(crate) mod file_actions;
+mod records;
+mod tags;
+
+use file_actions::{
+    BATCH_CHANGE_CATEGORY_KIND, CHANGE_CATEGORY_KIND, MOVE_FILES_KIND, RENAME_FILES_KIND,
+    TRASH_DELETE_KIND,
+};
 
 /// Lifecycle state for an undo action.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -79,7 +93,7 @@ pub struct UndoActionResult {
 pub fn list_undo_actions(repo_path: String) -> CoreResult<Vec<UndoActionRecord>> {
     let repo = validate_undo_repo_path(&repo_path)?;
     db::ensure_initialized(&repo).map_err(normalize_undo_metadata_error)?;
-    db::list_undo_action_rows(&repo).map_err(normalize_undo_metadata_error)
+    list_undo_action_rows(&repo).map_err(normalize_undo_metadata_error)
 }
 
 /// Executes one undo action.
@@ -105,7 +119,85 @@ pub fn undo_action(repo_path: String, action_id: String) -> CoreResult<UndoActio
         return Err(CoreError::file_not_found("undo action is required"));
     }
     db::ensure_initialized(&repo).map_err(normalize_undo_metadata_error)?;
-    db::execute_undo_action_row(&repo, normalized_action_id).map_err(normalize_undo_metadata_error)
+    execute_undo_action_row(&repo, normalized_action_id).map_err(normalize_undo_metadata_error)
+}
+
+fn list_undo_action_rows(repo_path: &std::path::Path) -> CoreResult<Vec<UndoActionRecord>> {
+    let connection = db::open_repo_connection(repo_path)?;
+    records::ensure_undo_metadata_ready(&connection)?;
+    records::load_undo_actions(repo_path, &connection)
+}
+
+fn execute_undo_action_row(
+    repo_path: &std::path::Path,
+    action_id: &str,
+) -> CoreResult<UndoActionResult> {
+    let mut connection = db::open_repo_connection(repo_path)?;
+    records::ensure_undo_metadata_ready(&connection)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    let row = records::load_pending_action(&tx, action_id)?;
+    let completed_at = chrono::Utc::now().timestamp();
+
+    if row.kind == BATCH_ADD_TAGS_KIND {
+        let result = tags::execute_batch_tag_action(&tx, &row, completed_at)?;
+        tx.commit()
+            .map_err(|error| CoreError::db(error.to_string()))?;
+        return Ok(result);
+    }
+
+    if file_actions::is_file_action_kind(&row.kind) {
+        let mut execution = file_actions::execute_file_action(
+            &tx,
+            repo_path,
+            &row.kind,
+            &row.inverse_json,
+            &row.token,
+            completed_at,
+        )?;
+        mark_action_status(&tx, row.token.as_str(), "executed", completed_at)?;
+        tx.commit()
+            .map_err(|error| CoreError::db(error.to_string()))?;
+        execution.disarm();
+        return Ok(UndoActionResult {
+            action_id: row.token,
+            status: UndoActionStatus::Executed,
+            summary: execution.summary,
+            affected_count: execution.affected_count,
+            refresh_targets: execution.refresh_targets,
+            completed_at,
+        });
+    }
+
+    if row.kind == "icloud_conflict_resolution" {
+        return Err(CoreError::conflict(
+            "iCloud conflict resolution undo requires manual review",
+        ));
+    }
+
+    Err(CoreError::conflict("Unsupported undo action kind"))
+}
+
+fn mark_action_status(
+    connection: &rusqlite::Connection,
+    action_id: &str,
+    status: &str,
+    updated_at: i64,
+) -> CoreResult<()> {
+    let changed = connection
+        .execute(
+            "UPDATE undo_actions
+                SET status = ?1, updated_at = ?2
+              WHERE token = ?3 AND status = 'pending'",
+            params![status, updated_at, action_id],
+        )
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    if changed == 1 {
+        Ok(())
+    } else {
+        Err(CoreError::file_not_found(action_id.to_owned()))
+    }
 }
 
 fn validate_undo_repo_path(repo_path: &str) -> CoreResult<PathBuf> {

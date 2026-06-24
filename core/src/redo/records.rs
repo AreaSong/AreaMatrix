@@ -118,19 +118,6 @@ pub(super) fn parse_inverse_value(inverse_json: &str) -> CoreResult<Value> {
     serde_json::from_str(inverse_json).map_err(|error| CoreError::db(error.to_string()))
 }
 
-pub(super) fn redo_cleared_summary_json(summary_json: &str) -> CoreResult<String> {
-    let mut value: Value =
-        serde_json::from_str(summary_json).map_err(|error| CoreError::db(error.to_string()))?;
-    let Value::Object(ref mut object) = value else {
-        return Err(CoreError::db("invalid redo summary"));
-    };
-    object.insert(
-        "disabled_reason".to_owned(),
-        Value::String(REDO_CLEARED_REASON.to_owned()),
-    );
-    serde_json::to_string(&value).map_err(|error| CoreError::internal(error.to_string()))
-}
-
 fn stored_action_from_row(row: &Row<'_>) -> rusqlite::Result<StoredRedoAction> {
     Ok(StoredRedoAction {
         token: row.get(0)?,

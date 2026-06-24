@@ -6,10 +6,12 @@ use uuid::Uuid;
 
 use crate::{CoreError, CoreResult};
 
-use super::file_actions::{
-    CHANGE_CATEGORY_KIND, MOVE_FILES_KIND, RENAME_FILES_KIND, TRASH_DELETE_KIND,
-};
-use super::open_repo_connection;
+use super::super::open_repo_connection;
+
+const RENAME_FILES_KIND: &str = "rename_files";
+const MOVE_FILES_KIND: &str = "move_files";
+const CHANGE_CATEGORY_KIND: &str = "change_category";
+const TRASH_DELETE_KIND: &str = "trash_delete";
 
 pub(super) struct FileUndoAction<'a> {
     pub(super) token_prefix: &'a str,
