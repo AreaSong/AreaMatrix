@@ -5,9 +5,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-86-c4-18-contract-api.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 #[path = "support/api_contract_source.rs"]
@@ -140,14 +137,6 @@ fn missing_file_recovery_contract_rejects_invalid_or_unconfirmed_requests() {
 
 #[test]
 fn missing_file_recovery_docs_api_udl_and_control_map_stay_aligned() {
-    for fragment in [
-        "# 4-3/task-86: C4-18 contract-api",
-        "为 C4-18 missing-file-recovery 对齐 Core API / UDL 合同，不实现业务逻辑。",
-        "只补合同、类型、桥接声明或文档缺口，不实现相邻能力。",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
     for fragment in [
         "MissingFileState get_missing_file_state(string repo_path, i64 file_id);",
         "MissingFileRecoveryReport relink_missing_file(",

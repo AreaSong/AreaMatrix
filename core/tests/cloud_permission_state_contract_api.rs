@@ -7,9 +7,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-36-c4-08-contract-api.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 #[path = "support/api_contract_source.rs"]
@@ -106,14 +103,6 @@ fn cloud_permission_state_contract_rejects_placeholder_marker_without_side_effec
 
 #[test]
 fn cloud_permission_state_docs_core_api_and_udl_stay_aligned() {
-    for fragment in [
-        "# 4-3/task-36: C4-08 contract-api",
-        "为 C4-08 cloud-permission-state 对齐 Core API / UDL 合同，不实现业务逻辑。",
-        "只补合同、类型、桥接声明或文档缺口，不实现相邻能力。",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
     for fragment in [
         "CloudStorageState detect_cloud_storage_state(string repo_path);",
         "dictionary CloudStorageState",

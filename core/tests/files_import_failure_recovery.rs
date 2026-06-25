@@ -11,9 +11,6 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::{Connection, OptionalExtension};
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-28-c4-06-failure-edge.md"
-);
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const TRANSACTIONAL_IMPORT: &str = include_str!("../../docs/architecture/transactional-import.md");
 
@@ -128,14 +125,6 @@ fn install_import_metadata_failure(repo: &Path) {
 
 #[test]
 fn files_import_failure_edge_docs_require_explicit_failure_semantics() {
-    for fragment in [
-        "覆盖空态、非法输入、权限、IO/DB 错误和错误码映射。",
-        "必须证明失败不留下半成品。",
-        "不得用吞错或静默降级掩盖失败。",
-    ] {
-        assert!(TASK.contains(fragment), "missing task fragment: {fragment}");
-    }
-
     for fragment in [
         "`ICloudPlaceholder { path }`",
         "`PermissionDenied { path }`",

@@ -4,9 +4,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-16-c4-04-contract-api.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 #[path = "support/api_contract_source.rs"]
@@ -86,14 +83,6 @@ fn camera_import_contract_exposes_mobile_copy_inputs_outputs_and_errors() {
 
 #[test]
 fn camera_import_docs_core_api_and_udl_stay_aligned() {
-    for fragment in [
-        "# 4-3/task-16: C4-04 contract-api",
-        "为 C4-04 camera-import 对齐 Core API / UDL 合同，不实现业务逻辑。",
-        "只补合同、类型、桥接声明或文档缺口，不实现相邻能力。",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
     for fragment in [
         "ClassifyResult predict_category(string repo_path, string filename);",
         "FileEntry import_file(",

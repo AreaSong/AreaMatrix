@@ -4,8 +4,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const TASK: &str =
-    include_str!("../../workflow/versions/v1-mvp/execution/phase-4/4-1-stage2-experience/task-86-c2-18-contract-api.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const REDO_RS: &str = include_str!("../src/redo.rs");
@@ -107,14 +105,6 @@ fn redo_action_log_contract_validates_inputs_without_fake_success() {
 
 #[test]
 fn redo_action_log_contract_docs_api_udl_and_control_map_stay_aligned() {
-    for fragment in [
-        "# 4-1/task-86: C2-18 contract-api",
-        "为 C2-18 redo-action-log 对齐 Core API / UDL 合同，不实现业务逻辑。",
-        "只补合同、类型、桥接声明或文档缺口，不实现相邻能力。",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
     for fragment in [
         "sequence<RedoActionRecord> list_redo_actions(string repo_path);",
         "RedoActionResult redo_action(string repo_path, string action_id);",

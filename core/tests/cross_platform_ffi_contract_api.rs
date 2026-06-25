@@ -4,9 +4,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-01-c4-01-contract-api.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 #[path = "support/api_contract_source.rs"]
@@ -100,14 +97,6 @@ fn cross_platform_ffi_contract_rejects_invalid_binding_version_without_fake_succ
 
 #[test]
 fn cross_platform_ffi_contract_docs_udl_and_control_map_stay_aligned() {
-    for fragment in [
-        "# 4-3/task-01: C4-01 contract-api",
-        "为 C4-01 cross-platform-ffi-contract 对齐 Core API / UDL 合同，不实现业务逻辑。",
-        "只补合同、类型、桥接声明或文档缺口，不实现相邻能力。",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
     for fragment in [
         "BindingContractReport inspect_binding_contract(BindingContractRequest request);",
         "dictionary BindingContractRequest",

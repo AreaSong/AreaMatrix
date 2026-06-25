@@ -14,9 +14,6 @@ use validation_support::{
     initialized_repo, insert_file_fixture, page, path_string, seed_ai_call_logs, snapshot,
 };
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-2-stage3-ai/task-24-c3-05-validation.md"
-);
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -239,14 +236,6 @@ fn ai_call_log_validation_locks_core_api_udl_rust_and_docs_alignment() {
     fn assert_clear(_: fn(String, AiCallLogClearRequest) -> CoreResult<AiCallLogClearReport>) {}
     assert_list(list_ai_calls);
     assert_clear(clear_ai_call_log);
-
-    for fragment in [
-        "补齐单元测试、集成测试或契约测试，覆盖成功和失败路径。",
-        "验证 Core API / UDL / Rust 实现三者一致。",
-        "不新增业务功能，只补验证与必要测试 fixture。",
-    ] {
-        assert_contains(TASK, fragment);
-    }
 
     for fragment in [
         "`core/tests/`，每个文件独立编译",

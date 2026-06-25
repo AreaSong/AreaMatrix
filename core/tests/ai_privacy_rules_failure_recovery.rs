@@ -416,7 +416,7 @@ fn ai_privacy_rules_failure_error_mapping_matches_documented_codes() {
 }
 
 #[test]
-fn ai_privacy_rules_failure_provider_keys_never_surface_through_c3_09() {
+fn ai_privacy_rules_failure_provider_keys_never_surface_through_remote_privacy_gate() {
     let repo = initialized_repo();
     let endpoint = "https://provider.example.test/privacy";
     let runtime = ProbeRuntime::new("200");

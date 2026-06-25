@@ -16,9 +16,6 @@ use common::{
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-2-stage3-ai/task-29-c3-06-validation.md"
-);
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -362,15 +359,6 @@ fn ai_summary_validation_locks_core_api_udl_rust_and_docs_alignment() {
     assert_generate(generate_ai_summary);
     assert_save(save_ai_summary);
     assert_clear(clear_ai_summary);
-
-    for fragment in [
-        "# 4-2/task-29: C3-06 validation",
-        "补齐单元测试、集成测试或契约测试，覆盖成功和失败路径。",
-        "验证 Core API / UDL / Rust 实现三者一致。",
-        "不新增业务功能，只补验证与必要测试 fixture。",
-    ] {
-        assert_contains(TASK, fragment);
-    }
 
     for fragment in [
         "`core/tests/`，每个文件独立编译",

@@ -5,9 +5,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-56-c4-12-contract-api.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 #[path = "support/api_contract_source.rs"]
@@ -122,14 +119,6 @@ fn platform_watcher_status_contract_rejects_invalid_input_without_fake_success()
 
 #[test]
 fn platform_watcher_status_docs_core_api_udl_and_control_map_stay_aligned() {
-    for fragment in [
-        "# 4-3/task-56: C4-12 contract-api",
-        "为 C4-12 platform-watcher-status 对齐 Core API / UDL 合同，不实现业务逻辑。",
-        "只补合同、类型、桥接声明或文档缺口，不实现相邻能力。",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
     for fragment in [
         "PlatformWatcherSnapshot record_watcher_health(",
         "string repo_path, PlatformWatcherHealthSignal signal",

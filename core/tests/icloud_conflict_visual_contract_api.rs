@@ -6,8 +6,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const TASK: &str =
-    include_str!("../../workflow/versions/v1-mvp/execution/phase-4/4-1-stage2-experience/task-76-c2-16-contract-api.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 #[path = "support/api_contract_source.rs"]
@@ -142,14 +140,6 @@ fn icloud_conflict_visual_contract_has_no_fake_success_before_implementation() {
 #[test]
 fn icloud_conflict_visual_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "# 4-1/task-76: C2-16 contract-api",
-        "为 C2-16 icloud-conflict-visual 对齐 Core API / UDL 合同，不实现业务逻辑。",
-        "只补合同、类型、桥接声明或文档缺口，不实现相邻能力。",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
-    for fragment in [
         "ICloudConflictPreviewReport preview_conflict_versions(",
         "string repo_path, string conflict_id",
         "ICloudConflictResolveReport resolve_icloud_conflict(",
@@ -184,7 +174,7 @@ fn icloud_conflict_visual_contract_docs_api_udl_and_control_map_stay_aligned() {
         "`KeepBoth`：保留所有版本，只把冲突状态写为 resolved / acknowledged。",
         "`KeepOriginal`：保留原始版本，将 conflicted copy 移到系统 Trash。",
         "`KeepConflictedCopy`：保留 conflicted copy，将原始版本移到系统 Trash。",
-        "任一阶段失败必须保持 conflict unresolved",
+        "任一步骤失败必须保持 conflict unresolved",
         "iCloud conflict list 仍只消费 `list_icloud_conflicts`，iCloud conflict review surface",
     ] {
         assert_contains(CORE_API, fragment);

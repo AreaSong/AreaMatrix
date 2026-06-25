@@ -20,7 +20,7 @@ const CONFLICT_FAILURE: &str = include_str!("resolve_name_conflict_failure_recov
 const STARTUP_RECOVERY_VERIFY: &str = include_str!("recover_on_startup_integration_verify.rs");
 const MAIN_REPO_SWIFT_TESTS: &str =
     include_str!("../../apps/macos/AreaMatrixTests/MainRepoErrorMappingTests.swift");
-const S132_SWIFT_TESTS: &str =
+const ERROR_RECOVERY_PAGE_SWIFT_TESTS: &str =
     include_str!("../../apps/macos/AreaMatrixTests/ErrorRecoveryPageIntegrationVerifyTests.swift");
 
 fn assert_contains(haystack: &str, needle: &str) {
@@ -133,7 +133,7 @@ fn error_recovery_matrix_error_mapping_records_db_subsemantic_closure() {
         "testRetryableDbErrorUsesInlineRetryCopyInsteadOfRepairCopy",
     );
     assert_contains(
-        S132_SWIFT_TESTS,
+        ERROR_RECOVERY_PAGE_SWIFT_TESTS,
         "testS132PageIntegrationRoutesFatalDbMappingToRepairWithoutRunningRepair",
     );
 }

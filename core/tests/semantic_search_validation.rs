@@ -15,9 +15,6 @@ use semantic_search_common::{
     path_string, repo_config_value, semantic_scope,
 };
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-2-stage3-ai/task-39-c3-08-validation.md"
-);
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -142,16 +139,6 @@ fn semantic_search_validation_locks_api_udl_and_rust_surface() {
 }
 
 fn assert_task_and_docs_alignment() {
-    for fragment in [
-        "# 4-2/task-39: C3-08 validation",
-        "为 C3-08 semantic-search 补齐测试和验证证据。",
-        "补齐单元测试、集成测试或契约测试，覆盖成功和失败路径。",
-        "验证 Core API / UDL / Rust 实现三者一致。",
-        "./dev check task 4-2/task-39",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
     for fragment in ["Rust 单元测试", "集成测试目录", "tempfile::TempDir"] {
         assert_contains(TESTING_DOC, fragment);
     }

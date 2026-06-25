@@ -4,9 +4,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-31-c4-07-contract-api.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 #[path = "support/api_contract_source.rs"]
@@ -93,14 +90,6 @@ fn mobile_detail_contract_exposes_required_inputs_outputs_and_states() {
 
 #[test]
 fn mobile_detail_docs_core_api_and_udl_stay_aligned() {
-    for fragment in [
-        "# 4-3/task-31: C4-07 contract-api",
-        "为 C4-07 mobile-detail 对齐 Core API / UDL 合同，不实现业务逻辑。",
-        "只补合同、类型、桥接声明或文档缺口，不实现相邻能力。",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
     for fragment in [
         "FileEntry get_file(string repo_path, i64 file_id);",
         "sequence<ChangeLogEntry> list_changes(string repo_path, ChangeFilter filter);",

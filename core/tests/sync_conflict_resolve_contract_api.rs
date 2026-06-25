@@ -6,9 +6,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-76-c4-16-contract-api.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 #[path = "support/api_contract_source.rs"]
@@ -186,14 +183,6 @@ fn sync_conflict_resolve_contract_rejects_uninitialized_and_unconfirmed_requests
 #[test]
 fn sync_conflict_resolve_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "# 4-3/task-76: C4-16 contract-api",
-        "为 C4-16 sync-conflict-resolve 对齐 Core API / UDL 合同，不实现业务逻辑。",
-        "只补合同、类型、桥接声明或文档缺口，不实现相邻能力。",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
-    for fragment in [
         "SyncConflictResolutionPreviewReport preview_sync_conflict_resolution(",
         "SyncConflictResolutionStrategy resolution",
         "SyncConflictResolveReport resolve_sync_conflict(",
@@ -231,7 +220,7 @@ fn sync_conflict_resolve_docs_api_udl_and_control_map_stay_aligned() {
         "`UseExisting`：canonical path 继续指向 existing",
         "`UseIncoming`：incoming 将成为 canonical path；必须先进入 replace confirmation surface 二次确认。",
         "不移动、不删除、不重命名、不覆盖、不 Trash、不隐藏任何用户文件或冲突副本。",
-        "任一阶段失败必须保持 conflict unresolved",
+        "任一步骤失败必须保持 conflict unresolved",
         "本合同没有引入 control map 之外的页面能力。",
     ] {
         assert_contains(CORE_API, fragment);

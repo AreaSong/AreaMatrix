@@ -4,9 +4,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-81-c4-17-contract-api.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 #[path = "support/api_contract_source.rs"]
@@ -98,14 +95,6 @@ fn platform_capabilities_contract_rejects_invalid_inputs_as_config() {
 
 #[test]
 fn platform_capabilities_docs_core_api_udl_and_control_map_stay_aligned() {
-    for fragment in [
-        "# 4-3/task-81: C4-17 contract-api",
-        "为 C4-17 platform-capabilities 对齐 Core API / UDL 合同，不实现业务逻辑。",
-        "只补合同、类型、桥接声明或文档缺口，不实现相邻能力。",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
     for fragment in [
         "PlatformCapabilities get_platform_capabilities(",
         "PlatformId platform, string app_version",

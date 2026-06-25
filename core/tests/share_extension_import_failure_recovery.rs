@@ -11,9 +11,6 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::{Connection, OptionalExtension};
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-23-c4-05-failure-edge.md"
-);
 const TRANSACTIONAL_IMPORT: &str = include_str!("../../docs/architecture/transactional-import.md");
 
 fn path_string(path: &Path) -> String {
@@ -131,15 +128,6 @@ fn install_share_metadata_failure(repo: &Path) {
 
 #[test]
 fn share_extension_import_failure_edge_docs_require_explicit_failure_semantics() {
-    for fragment in [
-        "覆盖空态、非法输入、权限、IO/DB 错误和错误码映射。",
-        "必须证明失败不留下半成品。",
-        "必须证明默认关闭、密钥不入日志。",
-        "不得用吞错或静默降级掩盖失败。",
-    ] {
-        assert!(TASK.contains(fragment), "missing task fragment: {fragment}");
-    }
-
     for fragment in [
         "失败的 import 不留下 DB 记录或最终目录中的半文件",
         "ROLLBACK",

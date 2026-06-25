@@ -5,9 +5,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-51-c4-11-contract-api.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 #[path = "support/api_contract_source.rs"]
@@ -113,14 +110,6 @@ fn desktop_main_query_contract_exports_existing_query_signatures() {
 
 #[test]
 fn desktop_main_query_docs_core_api_udl_and_control_map_stay_aligned() {
-    for fragment in [
-        "# 4-3/task-51: C4-11 contract-api",
-        "为 C4-11 desktop-main-query 对齐 Core API / UDL 合同，不实现业务逻辑。",
-        "只补合同、类型、桥接声明或文档缺口，不实现相邻能力。",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
     for fragment in [
         "sequence<FileEntry> list_files(string repo_path, FileFilter filter);",
         "FileEntry get_file(string repo_path, i64 file_id);",

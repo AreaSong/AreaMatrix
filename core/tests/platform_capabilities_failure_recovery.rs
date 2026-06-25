@@ -6,9 +6,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-83-c4-17-failure-edge.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 const TRANSACTIONAL_IMPORT: &str = include_str!("../../docs/architecture/transactional-import.md");
@@ -189,14 +186,6 @@ fn platform_capabilities_failure_source_has_no_fs_db_network_or_secret_logging_p
 
 #[test]
 fn platform_capabilities_failure_docs_record_recovery_and_scope_boundaries() {
-    for fragment in [
-        "覆盖空态、非法输入、权限、IO/DB 错误和错误码映射。",
-        "必须证明失败不留下半成品。",
-        "不得用吞错或静默降级掩盖失败。",
-    ] {
-        assert!(TASK.contains(fragment));
-    }
-
     for fragment in [
         "只返回平台能力合同，不读取 repo、不写 DB、不触碰用户文件。",
         "不启动 watcher",

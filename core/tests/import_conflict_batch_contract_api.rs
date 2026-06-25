@@ -7,8 +7,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const TASK: &str =
-    include_str!("../../workflow/versions/v1-mvp/execution/phase-4/4-1-stage2-experience/task-81-c2-17-contract-api.md");
 const DEDUP_CONFLICT: &str = include_str!("../../docs/ux/dedup-conflict.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
@@ -220,14 +218,6 @@ fn import_conflict_batch_contract_validates_inputs_without_fake_success() {
 
 #[test]
 fn import_conflict_batch_contract_docs_api_udl_and_control_map_stay_aligned() {
-    for fragment in [
-        "# 4-1/task-81: C2-17 contract-api",
-        "为 C2-17 import-conflict-batch 对齐 Core API / UDL 合同，不实现业务逻辑。",
-        "只补合同、类型、桥接声明或文档缺口，不实现相邻能力。",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
     for fragment in [
         "ImportConflictBatchPreviewReport preview_import_conflict_batch(",
         "ImportConflictBatchPreviewRequest request",

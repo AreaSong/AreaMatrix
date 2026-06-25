@@ -6,9 +6,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-46-c4-10-contract-api.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 #[path = "support/api_contract_source.rs"]
@@ -105,14 +102,6 @@ fn linux_repo_connect_contract_validates_local_paths_without_mutation() {
 
 #[test]
 fn linux_repo_connect_docs_api_udl_and_control_map_stay_aligned() {
-    for fragment in [
-        "# 4-3/task-46: C4-10 contract-api",
-        "为 C4-10 linux-repo-connect 对齐 Core API / UDL 合同，不实现业务逻辑。",
-        "只补合同、类型、桥接声明或文档缺口，不实现相邻能力。",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
     for fragment in [
         "RepoPathValidation validate_repo_path(string repo_path);",
         "void init_repo(string repo_path, RepoInitOptions options);",

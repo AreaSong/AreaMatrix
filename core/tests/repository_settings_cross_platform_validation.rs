@@ -8,9 +8,6 @@ use area_matrix_core::{
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-99-c4-20-validation.md"
-);
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
@@ -250,17 +247,6 @@ fn repository_settings_validation_locks_api_udl_rust_and_test_evidence() {
 }
 
 fn assert_task_docs_and_testing_alignment() {
-    for fragment in [
-        "# 4-3/task-99: C4-20 validation",
-        "为 C4-20 repository-settings-cross-platform 补齐测试和验证证据。",
-        "补齐单元测试、集成测试或契约测试，覆盖成功和失败路径。",
-        "验证 Core API / UDL / Rust 实现三者一致。",
-        "不新增业务功能，只补验证与必要测试 fixture。",
-        "./dev check task 4-3/task-99",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
     for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`"] {
         assert_contains(TESTING_DOC, fragment);
     }

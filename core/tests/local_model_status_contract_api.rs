@@ -7,9 +7,6 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-2-stage3-ai/task-06-c3-02-contract-api.md"
-);
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
 #[path = "support/api_contract_source.rs"]
@@ -175,14 +172,6 @@ fn local_model_status_contract_returns_structured_missing_status_after_implement
 
 #[test]
 fn local_model_status_contract_docs_api_udl_and_control_map_stay_aligned() {
-    for fragment in [
-        "# 4-2/task-06: C3-02 contract-api",
-        "为 C3-02 local-model-status 对齐 Core API / UDL 合同，不实现业务逻辑。",
-        "只补合同、类型、桥接声明或文档缺口，不实现相邻能力。",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
     for fragment in [
         "LocalModelStatusSnapshot get_local_model_status(",
         "string repo_path, LocalModelStatusRequest request",

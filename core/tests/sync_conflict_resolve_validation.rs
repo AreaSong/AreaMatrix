@@ -16,9 +16,6 @@ use sync_conflict_resolve_validation_support::{
     validation_snapshot,
 };
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-79-c4-16-validation.md"
-);
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
@@ -234,17 +231,6 @@ fn sync_conflict_resolve_validation_core_api_udl_rust_and_tests_stay_aligned() {
 
 fn assert_task_docs_and_testing_alignment() {
     for fragment in [
-        "# 4-3/task-79: C4-16 validation",
-        "为 C4-16 sync-conflict-resolve 补齐测试和验证证据。",
-        "补齐单元测试、集成测试或契约测试，覆盖成功和失败路径。",
-        "验证 Core API / UDL / Rust 实现三者一致。",
-        "不新增业务功能，只补验证与必要测试 fixture。",
-        "./dev check task 4-3/task-79",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
-    for fragment in [
         "Rust 单元测试",
         "集成测试目录",
         "Sync 模块",
@@ -305,7 +291,7 @@ fn assert_core_api_behavior_alignment() {
         "### `resolve_sync_conflict(repoPath, conflictId, resolution) throws -> SyncConflictResolveReport`",
         "`resolve_sync_conflict` 是 sync conflict resolution 的执行入口",
         "`affected_file_ids`：被更新或保留为普通可见文件的 record ids。",
-        "任一阶段失败必须保持 conflict unresolved",
+        "任一步骤失败必须保持 conflict unresolved",
         "解决失败时 UI 必须继续展示该冲突",
         "| `preview_sync_conflict_resolution(repo, conflict_id, resolution)` | sync/conflict | √ | Conflict / PermissionDenied / Io / Db |",
         "| `resolve_sync_conflict(repo, conflict_id, resolution)` | sync/conflict | √ | Conflict / PermissionDenied / Io / Db |",

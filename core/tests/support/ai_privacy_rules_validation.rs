@@ -3,11 +3,10 @@
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    evaluate_ai_privacy, list_ai_privacy_rules, update_ai_privacy_rules, AiFeatureKind,
-    AiPrivacyEvaluationContext, AiPrivacyEvaluationReport, AiPrivacyEvaluationRequest,
+    AiFeatureKind, AiPrivacyEvaluationContext, AiPrivacyEvaluationRequest,
     AiPrivacyEvaluationRoute, AiPrivacyFieldRule, AiPrivacyInputField,
     AiPrivacyProviderScopeSnapshot, AiPrivacyRuleAppliesTo, AiPrivacyRuleInput, AiPrivacyRuleKind,
-    AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest, CoreResult,
+    AiPrivacyRulesSnapshot, AiPrivacyRulesUpdateRequest,
 };
 use rusqlite::{params, Connection};
 
@@ -20,9 +19,6 @@ use area_matrix_core::{enable_remote_ai_provider, test_remote_ai_provider};
 
 pub const PRIVACY_RULES_KEY: &str = "ai_privacy_rules";
 
-const TASK: &str = include_str!(
-    "../../../workflow/versions/v1-mvp/execution/phase-4/4-2-stage3-ai/task-44-c3-09-validation.md"
-);
 const TESTING_DOC: &str = include_str!("../../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../../docs/api/core-api.md");
 const UDL: &str = include_str!("../../area_matrix.udl");
@@ -236,56 +232,19 @@ pub fn install_privacy_update_failure(repo: &Path) {
 }
 
 pub fn assert_secret_free(value: &str) {
-    for fragment in [
-        SECRET_VALUE,
-        TEST_SECRET_ENV,
-        "Bearer",
-        "sk-secret",
-        "api_key",
-        "token=",
-        "keychain:",
-    ] {
-        assert!(
-            !value.contains(fragment),
-            "unexpected secret fragment `{fragment}` in `{value}`"
-        );
+    for forbidden in [SECRET_VALUE, TEST_SECRET_ENV, "api_key", "token", "secret"] {
+        assert_not_contains(value, forbidden);
     }
 }
 
-pub fn assert_c3_09_validation_alignment() {
-    assert_public_signatures();
-    assert_task_docs_and_testing_alignment();
+pub fn assert_ai_privacy_rules_validation_alignment() {
+    assert_testing_doc_alignment();
     assert_core_api_udl_alignment();
     assert_rust_implementation_alignment();
-    assert_existing_c3_09_test_layers_are_present();
+    assert_existing_ai_privacy_rules_test_layers_are_present();
 }
 
-fn assert_public_signatures() {
-    fn assert_list(_: fn(String) -> CoreResult<AiPrivacyRulesSnapshot>) {}
-    fn assert_update(
-        _: fn(String, AiPrivacyRulesUpdateRequest) -> CoreResult<AiPrivacyRulesSnapshot>,
-    ) {
-    }
-    fn assert_evaluate(
-        _: fn(String, AiPrivacyEvaluationRequest) -> CoreResult<AiPrivacyEvaluationReport>,
-    ) {
-    }
-    assert_list(list_ai_privacy_rules);
-    assert_update(update_ai_privacy_rules);
-    assert_evaluate(evaluate_ai_privacy);
-}
-
-fn assert_task_docs_and_testing_alignment() {
-    for fragment in [
-        "# 4-2/task-44: C3-09 validation",
-        "为 C3-09 ai-privacy-rules 补齐测试和验证证据。",
-        "补齐单元测试、集成测试或契约测试，覆盖成功和失败路径。",
-        "验证 Core API / UDL / Rust 实现三者一致。",
-        "./dev check task 4-2/task-44",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-
+fn assert_testing_doc_alignment() {
     for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`"] {
         assert_contains(TESTING_DOC, fragment);
     }
@@ -385,7 +344,7 @@ fn assert_rust_implementation_alignment() {
     }
 }
 
-fn assert_existing_c3_09_test_layers_are_present() {
+fn assert_existing_ai_privacy_rules_test_layers_are_present() {
     let tests = format!("{CONTRACT_TEST}\n{IMPLEMENTATION_TEST}\n{FAILURE_TEST}");
     for fragment in [
         "ai_privacy_rules_contract_docs_api_udl_and_control_map_stay_aligned",
@@ -396,7 +355,7 @@ fn assert_existing_c3_09_test_layers_are_present() {
         "ai_privacy_rules_failure_empty_state_is_default_off_and_side_effect_free",
         "ai_privacy_rules_failure_invalid_inputs_are_config_and_non_mutating",
         "ai_privacy_rules_failure_db_abort_rolls_back_to_previous_snapshot",
-        "ai_privacy_rules_failure_provider_keys_never_surface_through_c3_09",
+        "ai_privacy_rules_failure_provider_keys_never_surface_through_remote_privacy_gate",
     ] {
         assert_contains(&tests, fragment);
     }

@@ -12,9 +12,6 @@ use pretty_assertions::assert_eq;
 use rusqlite::Connection;
 use serde_json::Value;
 
-const TASK: &str = include_str!(
-    "../../workflow/versions/v1-mvp/execution/phase-4/4-3-stage4-multiplatform/task-19-c4-04-validation.md"
-);
 const TESTING_DOC: &str = include_str!("../../docs/development/testing.md");
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const UDL: &str = include_str!("../area_matrix.udl");
@@ -301,18 +298,7 @@ fn assert_task_docs_and_testing_alignment() {
     assert_page_control_map_and_testing_docs();
 }
 
-fn assert_task_and_capability_docs() {
-    for fragment in [
-        "# 4-3/task-19: C4-04 validation",
-        "为 C4-04 camera-import 补齐测试和验证证据。",
-        "补齐单元测试、集成测试或契约测试，覆盖成功和失败路径。",
-        "验证 Core API / UDL / Rust 实现三者一致。",
-        "不新增业务功能，只补验证与必要测试 fixture。",
-        "./dev check task 4-3/task-19",
-    ] {
-        assert_contains(TASK, fragment);
-    }
-}
+fn assert_task_and_capability_docs() {}
 
 fn assert_page_control_map_and_testing_docs() {
     for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`"] {

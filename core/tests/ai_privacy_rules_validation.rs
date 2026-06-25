@@ -13,7 +13,7 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 use validation_support::{
-    assert_c3_09_validation_alignment, assert_secret_free, configure_remote_provider,
+    assert_ai_privacy_rules_validation_alignment, assert_secret_free, configure_remote_provider,
     disabled_provider_scope, evaluation_request, folder_rule, keyword_rule, path_string,
     private_context, public_context, repo_config_value, snapshot, snapshot_rules_as_input,
     update_request, PRIVACY_RULES_KEY,
@@ -201,5 +201,5 @@ fn ai_privacy_rules_validation_covers_failure_paths_and_rollback() {
 
 #[test]
 fn ai_privacy_rules_validation_locks_api_udl_rust_and_test_evidence() {
-    assert_c3_09_validation_alignment();
+    assert_ai_privacy_rules_validation_alignment();
 }

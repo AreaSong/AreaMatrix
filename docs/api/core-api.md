@@ -2678,14 +2678,15 @@ interface CoreError {
 | `preview_import(repo_path, source_path, options) -> ImportPreview` | import preview surface, import classification surface, import queue surface, import progress surface, duplicate import review, name-conflict review | category prediction, duplicate detection, name-conflict resolution | 在导入前返回分类建议、目标路径、重复 hash、同名冲突和 iCloud 状态 | `predict_category` 只能给分类，`import_file` 会直接产生副作用 |
 | 导入进度 / 队列语义 | import queue surface, import progress surface, import cancellation surface, import result surface | copied-file import, moved-file import, indexed-file import | 支撑多文件/文件夹导入的逐项状态、取消和结果摘要 | 当前可由 Swift 队列包装多次 `import_file`，Core 暂不提供流式回调 |
 | 详情聚合 DTO | detail metadata surface, detail log surface, detail note surface | file-detail query, change-log query, file note contract | 一次拿到文件元数据、日志和笔记，降低 UI 调用编排 | 当前先用 `get_file` + `list_changes` + `read_note` 组合 |
-| 已初始化 repo 元数据摘要 | initialized repository metadata surface, main-window repository summary | repository path validation, error mapping | 已存在完整 repo 分支需要展示 `schema_version` 和 last opened，用于区分可打开、需修复和不可兼容状态 | initialized repository metadata surface 先用 macOS app 的只读 metadata inspector 读取 `.areamatrix/index.db` 中的 `schema_version`，last opened 无记录时显示未记录；不得伪造静态值。main-window repository summary 仍需要后续 Core summary API 提升 |
+| 已初始化 repo 元数据摘要 | initialized repository metadata surface, main-window repository summary | repository path validation, error mapping | 已存在完整 repo 分支需要展示 `schema_version` 和 last opened，用于区分可打开、需修复和不可兼容状态 | initialized repository metadata surface 先用 macOS app 的只读 metadata inspector 读取 `.areamatrix/index.db` 中的 `schema_version`，last opened 无记录时显示未记录；不得伪造静态值。main-window repository summary 仍需要独立 Core summary API 提升 |
 | 错误映射元数据 | initialized repository metadata surface, import error surface, main-window repository summary, error recovery surface, error recovery surface | error mapping | 每个错误返回 severity、suggested_action、recoverability，避免 UI 解析字符串 | `map_core_error` 返回 Core 侧稳定映射元数据，Swift `AppError` 包装层只负责本地化与展示编排 |
 
-这些缺口不得被 UI 静态 mock 掩盖。若某个 UI 任务进入真实闭环验收，而所需缺口尚未实现或没有明确替代路径，验收应判定不通过。
+这些缺口不得被 UI 静态占位或本地假数据掩盖。若某个 UI 能力进入真实闭环验收，而所需
+Core 合同尚未实现或没有明确替代路径，验收应判定不通过。
 
-### 已提升接口与历史归档参考
+### 已提升接口与合同外参考
 
-未提升的后续接口先以能力规格作为合同来源，不直接落 UDL：
+尚未纳入稳定 Core 合同的接口，先以对应候选能力文档作为候选合同来源，不直接落 UDL：
 
 - Search / organization：search query `search_files`、search facets `list_filter_facets` 和 saved searches
   CRUD（`create_saved_search`、`update_saved_search`、`delete_saved_search`、
@@ -2700,9 +2701,8 @@ interface CoreError {
   （`preview_classifier_rule_impact`）以及 classifier rule editor 分类规则编辑器
   （`list_classifier_rules`、`create_classifier_rule`、`update_classifier_rule`、`delete_classifier_rule`）、
   deterministic tag suggestions 非 AI 标签建议（`suggest_tags_for_file`、`apply_tag_suggestions`）
-  已提升为本文与 `core/area_matrix.udl` 的稳定合同；
-  Redo 和导入冲突批量决策仍见
-  [archived search and organization capability specs](../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience.md)。
+  已提升为本文与 `core/area_matrix.udl` 的稳定合同；本文当前也已覆盖 Redo
+  和导入冲突批量决策合同。
 - AI capabilities：AI settings 配置（`load_ai_config`、`update_ai_config`）已提升为本文与
   `core/area_matrix.udl` 的稳定合同；local model status 本地模型状态
   （`get_local_model_status`、`locate_local_model_folder`）和 remote provider configuration 远程 provider 配置
@@ -2715,10 +2715,10 @@ interface CoreError {
   （`get_ai_fallback_status`）已提升为本文与 `core/area_matrix.udl` 的稳定合同。
 - Platform capabilities：platform capabilities 平台能力矩阵（`get_platform_capabilities`）已提升为本文与
   `core/area_matrix.udl` 的稳定合同；iOS/Windows/Linux repo 连接、watcher、
-  跨平台导入、同步冲突、缺失恢复、手动重扫等其余接口见
-  [archived platform capability specs](../../workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-4-multiplatform.md)。
+  跨平台导入、同步冲突、缺失恢复、手动重扫等其余接口已在本文相关章节稳定描述。
 
-进入对应阶段前，应从能力规格中提升确定 API 到本文和 `core/area_matrix.udl`；未提升前不得让 UI 依赖临时 mock 通过最终验收。
+新能力纳入稳定 Core 合同前，必须先把确定 API 提升到本文和 `core/area_matrix.udl`；
+未提升前不得让 UI 依赖静态占位、假数据或未实现替代路径通过真实闭环验收。
 
 ---
 
@@ -3475,7 +3475,7 @@ unavailable 状态。输入是已初始化 `repoPath` 和一个 `AiCategorySugge
 错误：
 
 - `Config`：`repoPath`、`file_id`、`context_policy`、`privacy_policy_ref` 或 AI gate 配置无效；
-  AI 关闭或功能关闭也可返回结构化 `Skipped`，由实现阶段按 UX 需要选择。
+  AI 关闭或功能关闭也可返回结构化 `Skipped`，由实现按 UX 需要选择。
 - `PermissionDenied`：repository metadata、允许的上下文字段、本地模型状态或 provider credential
   reference 无法 inspection。
 - `Internal`：AI runtime、provider adapter、脱敏后的模型执行或结果解析发生未归类失败。
@@ -3657,7 +3657,7 @@ AI summary 的 AI 摘要草稿生成入口，服务 `AI summary editor surface a
 错误：
 
 - `Config`：`repoPath`、`file_id`、`provider_scope`、`context_policy`、`privacy_policy_ref` 或
-  AI gate 配置无效；AI 关闭或功能关闭也可返回结构化 `Skipped`，由实现阶段按 UX 需要选择。
+  AI gate 配置无效；AI 关闭或功能关闭也可返回结构化 `Skipped`，由实现按 UX 需要选择。
 - `FileNotFound`：目标 file id 不存在、已删除或后续实现无法找到对应 active file metadata。
 - `PermissionDenied`：repository metadata、允许的上下文字段、本地模型状态或 provider credential
   reference 无法 inspection。
@@ -3670,7 +3670,7 @@ AI summary 的 AI 摘要草稿生成入口，服务 `AI summary editor surface a
 - AI fallback surface 可以从 `status`、`skipped_reason`、`route` 和 `call_log_id` 渲染摘要生成的 AI off、
   provider unavailable、privacy skipped、local/remote failure 和非 AI 回退入口。
 - 本合同不新增 control map 之外的页面能力；隐私规则由 AI privacy rules 覆盖，AI 调用日志由 AI call log
-  覆盖，fallback reason matrix 由 AI fallback 覆盖，多文档摘要和知识库摘要属于后续阶段。
+  覆盖，fallback reason matrix 由 AI fallback 覆盖，多文档摘要和知识库摘要不属于本合同范围。
 
 ### `save_ai_summary(repoPath: String, request: AiSummarySaveRequest) throws -> AiSummarySaveReport`
 
@@ -4918,7 +4918,7 @@ saved searches 的保存搜索入口，服务 `saved search sheet`。输入 `Cre
   retag、reclassify、reindex 或修改任何文件。
 - 0 结果的有效搜索可以保存；query 无效时必须返回结构化 `Config`，不能写入半成品。
 - 该 API 不执行 Smart List、不返回 `SearchResultPage`、不实现 Smart List execution `run_smart_list`。
-- 共享 Smart List、跨端同步、语义/AI Smart List 依赖属于后续阶段，不属于 saved searches。
+- 共享 Smart List、跨端同步、语义/AI Smart List 依赖不属于 saved searches 合同范围。
 
 ### `update_saved_search(repoPath, request) throws -> SavedSearch`
 
@@ -5013,7 +5013,7 @@ Smart List execution 的 Smart List 执行入口，服务 `Smart Lists` 点击�
 - Command palette 只能用该 API 打开已存在 Smart List 的结果页；命令索引、最近命令、
   危险命令确认和 command index 不属于本合同。
 - 当前 Smart List 合同不注册超出普通搜索字段的 Smart List；智能推荐、语义搜索、OCR 和远程 AI
-  属于后续阶段。
+  不属于本合同范围。
 
 ### `list_command_targets(repoPath, context) throws -> CommandIndex`
 
@@ -5177,7 +5177,7 @@ batch tag mutation 的批量加标签入口，服务 `batch add-tags`，并向 `
 
 错误与副作用边界：
 
-- `FileNotFound`：`fileIds` 为空、包含 `<= 0`，或实现阶段发现目标 active file 不存在。
+- `FileNotFound`：`fileIds` 为空、包含 `<= 0`，或运行时发现目标 active file 不存在。
 - `Db`：`repoPath` 的 tag metadata 不可用、tag 输入无法归一化、读取/写入 `tags`、
   写入 `change_log` 或写入 undo action 失败。
 - 成功新增、重复跳过和失败项都必须在 `BatchMutationReport` 中可追踪；部分失败不得
@@ -5329,7 +5329,7 @@ classifier 规则或默认分类中；本 API 不创建新分类，`Create new c
 错误：
 
 - `Classify`：目标分类不存在、为空或 classifier 规则不可用。
-- `FileNotFound`：`fileIds` 为空、包含非法 id，或实现阶段发现必须阻断的 active row 缺失。
+- `FileNotFound`：`fileIds` 为空、包含非法 id，或运行时发现必须阻断的 active row 缺失。
 - `Conflict`：目标分类路径不是目录、note sidecar 冲突、或安全目标名无法解析。
 - `PermissionDenied`：目标目录、metadata 或文件系统 inspection 被权限阻断。
 - `Io`：路径存在性检查、repo-owned 文件 metadata 或 note sidecar 读取失败。
@@ -5447,7 +5447,7 @@ batch delete 的只读批量删除预览入口，服务 `batch delete confirmati
 
 错误：
 
-- `FileNotFound`：`fileIds` 为空、包含非法 id，或实现阶段发现必须阻断的 active row 缺失。
+- `FileNotFound`：`fileIds` 为空、包含非法 id，或运行时发现必须阻断的 active row 缺失。
 - `Conflict`：preview token 缺失/过期、选择集/模式/Trash 可用性或 inspected state 已变化。
 - `PermissionDenied`：Trash、metadata、目标文件或权限 inspection 被阻断。
 - `Io`：Trash 可用性、文件系统 metadata 或路径检查失败。
@@ -5577,7 +5577,7 @@ Swift 端本地校验。
 错误：
 
 - `InvalidPath`：`repoPath`、规则字段或生成名称为空、不安全、命中非法字符或 metadata 内部路径。
-- `FileNotFound`：`fileIds` 为空、包含非法 id，或实现阶段发现必须阻断的 active row 缺失。
+- `FileNotFound`：`fileIds` 为空、包含非法 id，或运行时发现必须阻断的 active row 缺失。
 - `Conflict`：目标名冲突无法作为逐行状态表达，或预览状态无法安全绑定。
 - `PermissionDenied`：metadata、目标目录、目标文件或权限 inspection 被阻断。
 - `Io`：路径存在性检查、repo-owned 文件 metadata 或权限读取失败。
@@ -5909,7 +5909,7 @@ Save 成功后的 last-valid 基线、dirty 状态和 warning。
 
 - 只允许原子更新 classifier 配置：`.areamatrix/classifier.yaml` 或等价 classifier metadata。
 - 新建分类只影响未来分类；不会自动移动、删除、重命名或重分类历史文件。
-- 写入失败时旧 classifier 配置必须保持为活动版本；实现阶段需要能恢复临时写入或备份。
+- 写入失败时旧 classifier 配置必须保持为活动版本；实现需要能恢复未完成写入或备份。
 - 不写 `files`、`change_log`、`undo_actions`、notes、tags、saved searches、
   generated overview，不执行 classifier rule save `save_classifier_rule`、classifier impact preview、
   Trash、reindex、AI/network provider 或 Open YAML 平台动作。
@@ -5962,7 +5962,7 @@ classifier 的分类 slug；扩展名必须是不带点的小写值；`priority`
 
 - 只允许原子更新 classifier 配置：`.areamatrix/classifier.yaml` 或等价 classifier metadata。
 - 保存只影响未来分类；删除匹配值或修改分类配置不会自动移动、删除、重命名或重分类历史文件。
-- 写入失败时旧 classifier 配置必须保持为活动版本；实现阶段需要能恢复临时写入或备份。
+- 写入失败时旧 classifier 配置必须保持为活动版本；实现需要能恢复未完成写入或备份。
 - 不写 `files`、`change_log`、`undo_actions`、notes、tags、saved searches、
   generated overview，不执行 classifier rule save `save_classifier_rule` 的单规则草稿保存、不执行 classifier impact preview
   impact preview、不调用 AI/network providers。
@@ -6060,7 +6060,7 @@ Undo stack snapshot，让 toast、历史面板、Cmd+Z 状态和 VoiceOver 可�
 错误与副作用边界：
 
 - `Db`：读取 `undo_actions` metadata、summary 或状态失败。
-- `Io`：实现阶段读取与 summary 相关的 AreaMatrix-owned metadata 失败。
+- `Io`：实现读取与 summary 相关的 AreaMatrix-owned metadata 失败。
 - 该 API 只读，不执行 undo，不写 `undo_actions`，不写 `change_log`，不移动、
   重命名、删除、Trash restore、retag、reclassify、reindex、更新 generated
   overview 或触碰用户文件。
@@ -6139,7 +6139,7 @@ redo action log 的 Redo action log 列表入口，服务 `redo surface redo`，
 错误与副作用边界：
 
 - `Db`：读取 redo stack metadata、summary、source undo linkage 或状态失败。
-- `Io`：实现阶段读取与 summary 相关的 AreaMatrix-owned metadata 失败。
+- `Io`：实现读取与 summary 相关的 AreaMatrix-owned metadata 失败。
 - 该 API 只读，不执行 redo，不写 `undo_actions`，不写 `change_log`，不移动、
   重命名、删除、Trash restore、retag、reclassify、reindex、更新 generated
   overview、触发 iCloud 下载、调用 AI/network provider 或触碰 `apps/**`。
@@ -6368,7 +6368,7 @@ let needsReview = conflicts.filter { $0.status == .needsReview }
 
 `detect_sync_conflicts` 是 sync conflict detection 的多端同步冲突检测入口，服务
 `sync conflict entry surface sync-conflict-entry` 和 `sync conflict review surface sync-conflict`。输入只暴露已授权
-且已初始化的 `repoPath`；能力规格中的 external events 和 metadata snapshots
+且已初始化的 `repoPath`；候选能力文档中的 external events 和 metadata snapshots
 由 Core 从已持久化 watcher/import/cloud/conflict state 中读取，不作为 UDL 参数传入。
 
 输出为 `SyncConflict` 列表：
@@ -6523,7 +6523,7 @@ let report = try await Task.detached(priority: .userInitiated) {
 - `UseIncoming` 必须先有 replace confirmation surface 二次确认；existing 只能进入 Trash/Recycle Bin
   或文档明确的 Core safety backup，不允许永久删除或隐藏归档。
 - 成功后写 conflict state 和 change log；必要时写 undo action。
-- 任一阶段失败必须保持 conflict unresolved；不得清除 `NeedsReview`，不得把失败项
+- 任一步骤失败必须保持 conflict unresolved；不得清除 `NeedsReview`，不得把失败项
   当作成功，也不得留下无法解释的最终目录半成品。
 - 不实现内容级 merge、导入冲突批量策略、通用 batch delete/rename、平台
   QuickLook、云盘 SDK 集成或相邻 replace confirmation 平台能力检测。
@@ -6665,7 +6665,7 @@ let report = try await Task.detached(priority: .userInitiated) {
 - `KeepOriginal` / `KeepConflictedCopy` 只能把未保留版本移到系统 Trash，
   不提供永久删除，不清空 Trash，不删除外部无关文件。
 - 成功后写 conflict state、change log，并在 Trash 操作可撤销时写 undo action。
-- 任一阶段失败必须保持 conflict unresolved；不得清除 Needs Review，也不得把
+- 任一步骤失败必须保持 conflict unresolved；不得清除 Needs Review，也不得把
   失败项当作成功。
 - 不实现导入冲突批量策略、通用 batch delete、平台 QuickLook、iCloud 下载触发
   或云盘 SDK 集成。
