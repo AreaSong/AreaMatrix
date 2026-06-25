@@ -129,6 +129,7 @@ docs/adr/README.md  (索引)
 | [architecture/overview.md](architecture/overview.md) | 架构总览 |
 | [architecture/tech-stack.md](architecture/tech-stack.md) | 技术栈与选型理由 |
 | [architecture/layered-design.md](architecture/layered-design.md) | 分层设计（Core / FFI / Platform / UI） |
+| [architecture/macos-frontend-architecture.md](architecture/macos-frontend-architecture.md) | macOS 前端架构稳定化与 feature 落点 |
 | [architecture/core-internal-architecture.md](architecture/core-internal-architecture.md) | Core 内部 Rust 后端架构 |
 | [architecture/adopt-existing-folders.md](architecture/adopt-existing-folders.md) | 接管已有目录规则 |
 | [architecture/data-model.md](architecture/data-model.md) | SQLite schema 详解 |

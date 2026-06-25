@@ -174,6 +174,10 @@ flowchart TB
 
 **视图与状态**。响应用户交互，展示数据。
 
+macOS 前端目录落位、feature 收拢、PlatformServices 边界和渐进迁移策略，详见
+[macos-frontend-architecture.md](macos-frontend-architecture.md)。本文继续定义跨层原则；
+具体 macOS SwiftUI 文件落点以后者为准。
+
 ### 子模块
 
 | 模块 | 职责 |
