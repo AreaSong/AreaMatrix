@@ -118,7 +118,7 @@ extension AdvancedSettingsPane {
                 } label: {
                     Label("Retry status", systemImage: "arrow.clockwise")
                 }
-                .accessibilityIdentifier("S1-30-retry-status")
+                .accessibilityIdentifier("advanced-settings-retry-status")
             }
         }
         .padding(.horizontal, 34)
@@ -161,13 +161,13 @@ extension AdvancedSettingsPane {
                     await model.load()
                 }
             }
-            .accessibilityIdentifier("S1-30-load-error-retry-status")
+            .accessibilityIdentifier("advanced-settings-load-error-retry-status")
             Button {
                 onOpenRecoveryTools()
             } label: {
                 Label("Open recovery tools...", systemImage: "arrow.clockwise.circle")
             }
-            .accessibilityIdentifier("S1-30-C1-16-open-recovery-tools")
+            .accessibilityIdentifier("advanced-settings-startup-recovery-core-open-recovery-tools")
         }
     }
 
@@ -264,7 +264,7 @@ extension AdvancedSettingsPane {
                 Label(diagnosticsButtonTitle, systemImage: "doc.badge.gearshape")
             }
             .disabled(model.diagnosticsState.isCollecting)
-            .accessibilityIdentifier("S1-30-export-diagnostics")
+            .accessibilityIdentifier("advanced-settings-export-diagnostics")
 
             Text(
                 "Diagnostics do not include your original file contents, are not uploaded automatically, " +
@@ -285,14 +285,14 @@ extension AdvancedSettingsPane {
                     Label("Open logs folder", systemImage: "folder")
                 }
                 .disabled(model.diagnosticsState.isCollecting)
-                .accessibilityIdentifier("S1-30-open-logs-folder")
+                .accessibilityIdentifier("advanced-settings-open-logs-folder")
 
                 Button {
                     model.copyDiagnosticSummary()
                 } label: {
                     Label("Copy diagnostic summary", systemImage: "doc.on.doc")
                 }
-                .accessibilityIdentifier("S1-30-copy-diagnostic-summary")
+                .accessibilityIdentifier("advanced-settings-copy-diagnostic-summary")
             }
 
             Text("Diagnostics do not include your original file contents.")
@@ -346,7 +346,7 @@ extension AdvancedSettingsPane {
             }
             .padding(.top, 10)
         }
-        .accessibilityIdentifier("S1-30-danger-zone")
+        .accessibilityIdentifier("advanced-settings-danger-zone")
     }
 
     private var overviewOutputSection: some View {
@@ -377,7 +377,7 @@ extension AdvancedSettingsPane {
         AdvancedSettingsSection(title: "Dangerous import option") {
             Toggle("Allow replace during import", isOn: allowReplaceSelection)
                 .disabled(model.writesDisabled)
-                .accessibilityIdentifier("S1-30-C1-04-allow-replace")
+                .accessibilityIdentifier("advanced-settings-repository-config-allow-replace")
 
             Text(
                 "When enabled, ImportSheet may show Replace for duplicate or name conflicts. " +

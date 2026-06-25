@@ -75,7 +75,7 @@ final class MainRepoErrorMappingTests: XCTestCase {
     }
 
     @MainActor
-    func testConfiguredRepoOpenFailureRoutesMappedC121ErrorToMainRepoError() async {
+    func testConfiguredRepoOpenFailureRoutesMappedErrorMappingCoreErrorToMainRepoError() async {
         let error = CoreError.PermissionDenied(path: "/tmp/repo")
         let mapping = CoreErrorMappingSnapshot.mainRepoFixture(kind: .permissionDenied, rawContext: "/tmp/repo")
         let errorMapper = MainRepoRecordingErrorMapper(mapping: mapping)

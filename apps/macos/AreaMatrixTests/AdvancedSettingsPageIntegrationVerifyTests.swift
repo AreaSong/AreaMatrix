@@ -3,8 +3,8 @@ import XCTest
 
 final class AdvancedSettingsIntegrationTests: XCTestCase {
     @MainActor
-    func testS130PageIntegrationConnectsDeclaredCapabilitiesDiagnosticsLogsAndRecoveryExit() async throws {
-        let context = try await makeS130IntegrationContext()
+    func testAdvancedSettingsPageIntegrationConnectsDeclaredCapabilitiesDiagnosticsLogsAndRecoveryExit() async throws {
+        let context = try await makeAdvancedSettingsIntegrationContext()
         defer {
             try? FileManager.default.removeItem(at: context.repoURL)
             try? FileManager.default.removeItem(at: context.sourceRootURL)
@@ -22,19 +22,19 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
         XCTAssertTrue(context.model.isReplaceConfirmationPending)
         await context.model.confirmAllowReplaceDuringImport()
 
-        try await assertS130SavedConfig(context)
+        try await assertAdvancedSettingsSavedConfig(context)
 
         _ = try await context.bridge.importIndexedFile(
             repoPath: context.repoURL.path,
             sourceURL: context.sourceURL,
             overrideCategory: "docs",
-            overrideFilename: "s130-source.txt"
+            overrideFilename: "advancedSettings-source.txt"
         )
 
-        try await assertS130DiagnosticsAndOverview(context)
+        try await assertAdvancedSettingsDiagnosticsAndOverview(context)
 
         let opening = RepositoryOpeningResult.shellFixture(repoPath: context.repoURL.path, fileCount: 1)
-        let recoverer = S130RecordingStartupRecoverer()
+        let recoverer = AdvancedSettingsRecordingStartupRecoverer()
         let shell = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             startupRecoverer: recoverer,
@@ -45,22 +45,22 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
         shell.openMainRepositoryRepair(repoPath: context.repoURL.path)
         let recoveryRequests = await recoverer.requestedRepoPaths()
 
-        assertS130RepairExit(shell: shell, opening: opening, context: context, recoveryRequests: recoveryRequests)
+        assertAdvancedSettingsRepairExit(shell: shell, opening: opening, context: context, recoveryRequests: recoveryRequests)
     }
 
     @MainActor
-    func testS130LoadFailureShowsRecoverableErrorStateWithoutMockingSuccess() async {
+    func testAdvancedSettingsLoadFailureShowsRecoverableErrorStateWithoutMockingSuccess() async {
         let model = AdvancedSettingsModel(
-            repoPath: "/tmp/s130-broken-repo",
-            loader: S130FailingConfigLoader(error: CoreError.Config(reason: "invalid repo_config")),
-            updater: S130NoopConfigUpdater(),
+            repoPath: "/tmp/advancedSettings-broken-repo",
+            loader: AdvancedSettingsFailingConfigLoader(error: CoreError.Config(reason: "invalid repo_config")),
+            updater: AdvancedSettingsNoopConfigUpdater(),
             errorMapper: CoreBridge()
         )
 
         await model.load()
 
         guard case let .failed(error) = model.loadState else {
-            return XCTFail("Expected S1-30 advanced settings load to fail through the error state")
+            return XCTFail("Expected advanced-settings advanced settings load to fail through the error state")
         }
         XCTAssertEqual(error.message, "Unable to load advanced settings")
         XCTAssertFalse(error.recovery.isEmpty)
@@ -70,9 +70,9 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS130LogFolderFailureKeepsPageLoadedWithRecoverableError() async {
-        let model = await loadedS130Model(
-            logsOpener: S130RecordingLogsOpener(result: .failure(AdvancedSettingsLogFolderError.missing(
+    func testAdvancedSettingsLogFolderFailureKeepsPageLoadedWithRecoverableError() async {
+        let model = await loadedAdvancedSettingsModel(
+            logsOpener: AdvancedSettingsRecordingLogsOpener(result: .failure(AdvancedSettingsLogFolderError.missing(
                 "/tmp/repo/.areamatrix/logs"
             )))
         )
@@ -87,8 +87,8 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS130DiagnosticsFailureMapsCoreErrorAndDoesNotMockSuccess() async {
-        let model = await loadedS130Model(
+    func testAdvancedSettingsDiagnosticsFailureMapsCoreErrorAndDoesNotMockSuccess() async {
+        let model = await loadedAdvancedSettingsModel(
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .failure(CoreError.PermissionDenied(
                 path: "/tmp/repo/.areamatrix"
             )))
@@ -107,7 +107,7 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
 }
 
 @MainActor
-private func assertS130SavedConfig(_ context: S130IntegrationContext) async throws {
+private func assertAdvancedSettingsSavedConfig(_ context: AdvancedSettingsIntegrationContext) async throws {
     let savedConfig = try await context.bridge.loadConfig(repoPath: context.repoURL.path)
     XCTAssertEqual(savedConfig.overviewOutput, "RootAreaMatrixFile")
     XCTAssertTrue(savedConfig.allowReplaceDuringImport)
@@ -115,7 +115,7 @@ private func assertS130SavedConfig(_ context: S130IntegrationContext) async thro
 }
 
 @MainActor
-private func assertS130DiagnosticsAndOverview(_ context: S130IntegrationContext) async throws {
+private func assertAdvancedSettingsDiagnosticsAndOverview(_ context: AdvancedSettingsIntegrationContext) async throws {
     let diagnosticsRepoPaths = await context.diagnosticsCollector.requestedRepoPaths()
     let rootOverview = try String(contentsOf: context.rootOverviewURL)
     let generatedOverview = try String(contentsOf: context.generatedOverviewURL)
@@ -132,10 +132,10 @@ private func assertS130DiagnosticsAndOverview(_ context: S130IntegrationContext)
     XCTAssertEqual(context.model.diagnosticsState, .collected(context.diagnosticsSnapshot))
     XCTAssertEqual(diagnosticsRepoPaths, [context.repoURL.path])
     XCTAssertEqual(context.logsOpener.openedRepoPaths, [context.repoURL.path])
-    assertS130CopiedSummary(context.summaryCopier.copiedSummaries)
+    assertAdvancedSettingsCopiedSummary(context.summaryCopier.copiedSummaries)
 }
 
-private func assertS130CopiedSummary(_ copiedSummaries: [String]) {
+private func assertAdvancedSettingsCopiedSummary(_ copiedSummaries: [String]) {
     XCTAssertEqual(copiedSummaries.count, 1)
     XCTAssertTrue(copiedSummaries[0].contains("App version: 9.8.7 (654)"))
     XCTAssertTrue(copiedSummaries[0].contains("Core version: 0.1.0-test"))
@@ -144,10 +144,10 @@ private func assertS130CopiedSummary(_ copiedSummaries: [String]) {
 }
 
 @MainActor
-private func assertS130RepairExit(
+private func assertAdvancedSettingsRepairExit(
     shell: OnboardingModel,
     opening: RepositoryOpeningResult,
-    context: S130IntegrationContext,
+    context: AdvancedSettingsIntegrationContext,
     recoveryRequests: [String]
 ) {
     XCTAssertEqual(
@@ -163,7 +163,7 @@ private func assertS130RepairExit(
     XCTAssertEqual(recoveryRequests, [])
 }
 
-private struct S130IntegrationContext {
+private struct AdvancedSettingsIntegrationContext {
     let repoURL: URL
     let sourceRootURL: URL
     let sourceURL: URL
@@ -172,15 +172,15 @@ private struct S130IntegrationContext {
     let generatedOverviewURL: URL
     let diagnosticsSnapshot: DiagnosticsSnapshotSnapshot
     let diagnosticsCollector: ShellRecordingDiagnosticsCollector
-    let logsOpener: S130RecordingLogsOpener
-    let summaryCopier: S130RecordingDiagnosticSummaryCopier
+    let logsOpener: AdvancedSettingsRecordingLogsOpener
+    let summaryCopier: AdvancedSettingsRecordingDiagnosticSummaryCopier
     let bridge: CoreBridge
     let model: AdvancedSettingsModel
 }
 
 @MainActor
-private func makeS130IntegrationContext() async throws -> S130IntegrationContext {
-    let repoURL = try s130TemporaryDirectory()
+private func makeAdvancedSettingsIntegrationContext() async throws -> AdvancedSettingsIntegrationContext {
+    let repoURL = try advancedSettingsTemporaryDirectory()
     var cleanupURLs = [repoURL]
     var didSucceed = false
     defer {
@@ -189,26 +189,26 @@ private func makeS130IntegrationContext() async throws -> S130IntegrationContext
         }
     }
 
-    let (sourceRootURL, sourceURL) = try makeS130SourceFixture()
+    let (sourceRootURL, sourceURL) = try makeAdvancedSettingsSourceFixture()
     cleanupURLs.append(sourceRootURL)
 
     let bridge = CoreBridge()
     try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-    let readmeURL = try makeS130RepositoryFiles(repoURL: repoURL)
+    let readmeURL = try makeAdvancedSettingsRepositoryFiles(repoURL: repoURL)
 
     let diagnosticsSnapshot = DiagnosticsSnapshotSnapshot(
-        snapshotPath: s130DiagnosticsPath(repoURL: repoURL),
+        snapshotPath: advancedSettingsDiagnosticsPath(repoURL: repoURL),
         createdAt: 1_778_000_000,
         warnings: ["paths redacted"]
     )
     let diagnosticsCollector = ShellRecordingDiagnosticsCollector(result: .success(diagnosticsSnapshot))
-    let logsOpener = S130RecordingLogsOpener(result: .success(s130LogsPath(repoURL: repoURL)))
-    let summaryCopier = S130RecordingDiagnosticSummaryCopier()
-    let model = s130IntegrationModel(repoURL: repoURL, bridge: bridge, diagnosticsCollector: diagnosticsCollector,
+    let logsOpener = AdvancedSettingsRecordingLogsOpener(result: .success(advancedSettingsLogsPath(repoURL: repoURL)))
+    let summaryCopier = AdvancedSettingsRecordingDiagnosticSummaryCopier()
+    let model = advancedSettingsIntegrationModel(repoURL: repoURL, bridge: bridge, diagnosticsCollector: diagnosticsCollector,
                                      logsOpener: logsOpener, summaryCopier: summaryCopier)
 
     didSucceed = true
-    return S130IntegrationContext(
+    return AdvancedSettingsIntegrationContext(
         repoURL: repoURL,
         sourceRootURL: sourceRootURL,
         sourceURL: sourceURL,
@@ -227,15 +227,15 @@ private func makeS130IntegrationContext() async throws -> S130IntegrationContext
     )
 }
 
-private func makeS130SourceFixture() throws -> (rootURL: URL, sourceURL: URL) {
-    let sourceRootURL = try s130TemporaryDirectory()
-    let sourceURL = sourceRootURL.appendingPathComponent("s130-source.txt")
-    try Data("s130 overview source".utf8).write(to: sourceURL)
+private func makeAdvancedSettingsSourceFixture() throws -> (rootURL: URL, sourceURL: URL) {
+    let sourceRootURL = try advancedSettingsTemporaryDirectory()
+    let sourceURL = sourceRootURL.appendingPathComponent("advancedSettings-source.txt")
+    try Data("advancedSettings overview source".utf8).write(to: sourceURL)
     return (sourceRootURL, sourceURL)
 }
 
-private func makeS130RepositoryFiles(repoURL: URL) throws -> URL {
-    try FileManager.default.createDirectory(at: URL(fileURLWithPath: s130LogsPath(repoURL: repoURL)),
+private func makeAdvancedSettingsRepositoryFiles(repoURL: URL) throws -> URL {
+    try FileManager.default.createDirectory(at: URL(fileURLWithPath: advancedSettingsLogsPath(repoURL: repoURL)),
                                             withIntermediateDirectories: true)
     let readmeURL = repoURL.appendingPathComponent("README.md")
     try "user readme\n".write(to: readmeURL, atomically: true, encoding: .utf8)
@@ -243,12 +243,12 @@ private func makeS130RepositoryFiles(repoURL: URL) throws -> URL {
 }
 
 @MainActor
-private func s130IntegrationModel(
+private func advancedSettingsIntegrationModel(
     repoURL: URL,
     bridge: CoreBridge,
     diagnosticsCollector: ShellRecordingDiagnosticsCollector,
-    logsOpener: S130RecordingLogsOpener,
-    summaryCopier: S130RecordingDiagnosticSummaryCopier
+    logsOpener: AdvancedSettingsRecordingLogsOpener,
+    summaryCopier: AdvancedSettingsRecordingDiagnosticSummaryCopier
 ) -> AdvancedSettingsModel {
     AdvancedSettingsModel(
         repoPath: repoURL.path,
@@ -256,8 +256,8 @@ private func s130IntegrationModel(
         updater: bridge,
         rootOverviewInspector: LocalRootOverviewFileInspector(),
         diagnosticsCollector: diagnosticsCollector,
-        appVersionReader: S130StaticAppVersionReader(version: "9.8.7 (654)"),
-        coreVersionReader: S130StaticCoreVersionReader(version: "0.1.0-test"),
+        appVersionReader: AdvancedSettingsStaticAppVersionReader(version: "9.8.7 (654)"),
+        coreVersionReader: AdvancedSettingsStaticCoreVersionReader(version: "0.1.0-test"),
         metadataReader: SQLiteExistingRepositoryMetadataReader(),
         logsOpener: logsOpener,
         summaryCopier: summaryCopier,
@@ -265,51 +265,51 @@ private func s130IntegrationModel(
     )
 }
 
-private func s130LogsPath(repoURL: URL) -> String {
+private func advancedSettingsLogsPath(repoURL: URL) -> String {
     repoURL
         .appendingPathComponent(".areamatrix", isDirectory: true)
         .appendingPathComponent("logs", isDirectory: true)
         .path
 }
 
-private func s130DiagnosticsPath(repoURL: URL) -> String {
+private func advancedSettingsDiagnosticsPath(repoURL: URL) -> String {
     repoURL
         .appendingPathComponent(".areamatrix", isDirectory: true)
         .appendingPathComponent("diagnostics", isDirectory: true)
-        .appendingPathComponent("s1-30.zip")
+        .appendingPathComponent("advanced-settings-diagnostics.zip")
         .path
 }
 
 @MainActor
-private func loadedS130Model(
+private func loadedAdvancedSettingsModel(
     diagnosticsCollector: any CoreDiagnosticsCollecting = ShellRecordingDiagnosticsCollector(result: .success(
-        DiagnosticsSnapshotSnapshot(snapshotPath: "/tmp/repo/.areamatrix/diagnostics/s1-30.zip",
+        DiagnosticsSnapshotSnapshot(snapshotPath: "/tmp/repo/.areamatrix/diagnostics/advanced-settings-diagnostics.zip",
                                     createdAt: 1_778_000_000,
                                     warnings: [])
     )),
     logsOpener: (any AdvancedSettingsLogFolderOpening)? = nil
 ) async -> AdvancedSettingsModel {
-    let resolvedLogsOpener = logsOpener ?? S130RecordingLogsOpener(result: .success(
+    let resolvedLogsOpener = logsOpener ?? AdvancedSettingsRecordingLogsOpener(result: .success(
         "/tmp/repo/.areamatrix/logs"
     ))
     let model = AdvancedSettingsModel(
         repoPath: "/tmp/repo",
-        loader: S130StaticConfigLoader(config: .s130Fixture(repoPath: "/tmp/repo")),
-        updater: S130NoopConfigUpdater(),
-        rootOverviewInspector: S130StaticRootOverviewInspector(status: .missing),
+        loader: AdvancedSettingsStaticConfigLoader(config: .advancedSettingsFixture(repoPath: "/tmp/repo")),
+        updater: AdvancedSettingsNoopConfigUpdater(),
+        rootOverviewInspector: AdvancedSettingsStaticRootOverviewInspector(status: .missing),
         diagnosticsCollector: diagnosticsCollector,
-        appVersionReader: S130StaticAppVersionReader(version: "1.0.0"),
-        coreVersionReader: S130StaticCoreVersionReader(version: "0.1.0"),
-        metadataReader: S130StaticMetadataReader(schemaVersion: 1),
+        appVersionReader: AdvancedSettingsStaticAppVersionReader(version: "1.0.0"),
+        coreVersionReader: AdvancedSettingsStaticCoreVersionReader(version: "0.1.0"),
+        metadataReader: AdvancedSettingsStaticMetadataReader(schemaVersion: 1),
         logsOpener: resolvedLogsOpener,
-        summaryCopier: S130RecordingDiagnosticSummaryCopier(),
+        summaryCopier: AdvancedSettingsRecordingDiagnosticSummaryCopier(),
         errorMapper: CoreBridge()
     )
     await model.load()
     return model
 }
 
-private actor S130StaticConfigLoader: CoreConfigurationLoading {
+private actor AdvancedSettingsStaticConfigLoader: CoreConfigurationLoading {
     private let config: RepoConfigSnapshot
 
     init(config: RepoConfigSnapshot) {
@@ -321,7 +321,7 @@ private actor S130StaticConfigLoader: CoreConfigurationLoading {
     }
 }
 
-private actor S130FailingConfigLoader: CoreConfigurationLoading {
+private actor AdvancedSettingsFailingConfigLoader: CoreConfigurationLoading {
     private let error: Error
 
     init(error: Error) {
@@ -333,11 +333,11 @@ private actor S130FailingConfigLoader: CoreConfigurationLoading {
     }
 }
 
-private actor S130NoopConfigUpdater: CoreConfigurationUpdating {
+private actor AdvancedSettingsNoopConfigUpdater: CoreConfigurationUpdating {
     func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
 }
 
-private struct S130StaticRootOverviewInspector: RootOverviewFileInspecting {
+private struct AdvancedSettingsStaticRootOverviewInspector: RootOverviewFileInspecting {
     let status: RootOverviewFileStatus
 
     func status(repoPath _: String) -> RootOverviewFileStatus {
@@ -345,7 +345,7 @@ private struct S130StaticRootOverviewInspector: RootOverviewFileInspecting {
     }
 }
 
-private struct S130StaticAppVersionReader: AppVersionReading {
+private struct AdvancedSettingsStaticAppVersionReader: AppVersionReading {
     let version: String
 
     func appVersion() -> String {
@@ -353,7 +353,7 @@ private struct S130StaticAppVersionReader: AppVersionReading {
     }
 }
 
-private actor S130StaticCoreVersionReader: CoreVersionReading {
+private actor AdvancedSettingsStaticCoreVersionReader: CoreVersionReading {
     let version: String
 
     init(version: String) {
@@ -365,7 +365,7 @@ private actor S130StaticCoreVersionReader: CoreVersionReading {
     }
 }
 
-private actor S130StaticMetadataReader: ExistingRepositoryMetadataReading {
+private actor AdvancedSettingsStaticMetadataReader: ExistingRepositoryMetadataReading {
     let schemaVersion: Int64
 
     init(schemaVersion: Int64) {
@@ -378,7 +378,7 @@ private actor S130StaticMetadataReader: ExistingRepositoryMetadataReading {
 }
 
 @MainActor
-private final class S130RecordingLogsOpener: AdvancedSettingsLogFolderOpening {
+private final class AdvancedSettingsRecordingLogsOpener: AdvancedSettingsLogFolderOpening {
     private let result: Result<String, Error>
     private(set) var openedRepoPaths: [String] = []
 
@@ -393,7 +393,7 @@ private final class S130RecordingLogsOpener: AdvancedSettingsLogFolderOpening {
 }
 
 @MainActor
-private final class S130RecordingDiagnosticSummaryCopier: AdvancedSettingsDiagnosticSummaryCopying {
+private final class AdvancedSettingsRecordingDiagnosticSummaryCopier: AdvancedSettingsDiagnosticSummaryCopying {
     private(set) var copiedSummaries: [String] = []
 
     func copyDiagnosticSummary(_ summary: String) throws {
@@ -401,7 +401,7 @@ private final class S130RecordingDiagnosticSummaryCopier: AdvancedSettingsDiagno
     }
 }
 
-private actor S130RecordingStartupRecoverer: CoreStartupRecovering {
+private actor AdvancedSettingsRecordingStartupRecoverer: CoreStartupRecovering {
     private var repoPaths: [String] = []
 
     func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
@@ -414,15 +414,15 @@ private actor S130RecordingStartupRecoverer: CoreStartupRecovering {
     }
 }
 
-private func s130TemporaryDirectory() throws -> URL {
+private func advancedSettingsTemporaryDirectory() throws -> URL {
     let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixS130-\(UUID().uuidString)", isDirectory: true)
+        .appendingPathComponent("AreaMatrixAdvancedSettings-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
 }
 
 private extension RepoConfigSnapshot {
-    static func s130Fixture(repoPath: String) -> RepoConfigSnapshot {
+    static func advancedSettingsFixture(repoPath: String) -> RepoConfigSnapshot {
         RepoConfigSnapshot(
             repoPath: repoPath,
             defaultMode: "Copied",

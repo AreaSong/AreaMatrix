@@ -1,4 +1,4 @@
-page_id: S4-X-08
+page_id: repository-settings
 title: Repository Settings
 platform: Linux
 sections:
@@ -26,8 +26,8 @@ states:
   empty: No repository connected.
   failed: Could not load repository status.
 safety:
-  - The page calls load_config and update_config through LinuxRepositoryCoreBridge for C4-20.
-  - The page calls get_platform_capabilities through LinuxRepositoryCoreBridge for C4-17.
+  - The page calls load_config and update_config through LinuxRepositoryCoreBridge for repository-settings-core.
+  - The page calls get_platform_capabilities through LinuxRepositoryCoreBridge for platform-capabilities.
   - Export diagnostics writes redacted settings metadata under .areamatrix/generated/diagnostics.
   - Export diagnostics is disabled when repository access capability is not UI-enabled.
   - The page does not expose delete, Trash, rescan, import, or cloud SDK configuration.

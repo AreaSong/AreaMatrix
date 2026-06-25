@@ -4,14 +4,14 @@ import XCTest
 // swiftlint:disable:next type_body_length
 final class DetailTagPageFeatureTests: XCTestCase {
     @MainActor
-    func testS207AddTagFailurePreservesPreviousStateAndDoesNotOfferUndo() async {
+    func testTagAddAddTagFailurePreservesPreviousStateAndDoesNotOfferUndo() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 207, currentName: "tag-fail.pdf")
-        let initialTags = TagSetSnapshot.s207Fixture(fileID: detail.id, values: ["urgent"])
+        let initialTags = TagSetSnapshot.tagAddFixture(fileID: detail.id, values: ["urgent"])
         let tagStore = DetailTagRecordingStore(
             listResults: [.success(initialTags)],
             addResults: [.failure(CoreError.InvalidPath(path: "bad/tag"))]
         )
-        let mapping = CoreErrorMappingSnapshot.s207TagDb()
+        let mapping = CoreErrorMappingSnapshot.tagAddTagDb()
         let mapper = DetailMetaErrorMapper(mapping: mapping)
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
@@ -46,14 +46,14 @@ final class DetailTagPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS207RemoveTagFailureKeepsChipAndDoesNotOfferUndo() async {
+    func testTagAddRemoveTagFailureKeepsChipAndDoesNotOfferUndo() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 208, currentName: "remove-fail.pdf")
-        let initialTags = TagSetSnapshot.s207Fixture(fileID: detail.id, values: ["clienta"])
+        let initialTags = TagSetSnapshot.tagAddFixture(fileID: detail.id, values: ["clienta"])
         let tagStore = DetailTagRecordingStore(
             listResults: [.success(initialTags)],
             removeResults: [.failure(CoreError.Db(message: "tag relation locked"))]
         )
-        let mapping = CoreErrorMappingSnapshot.s207TagDb()
+        let mapping = CoreErrorMappingSnapshot.tagAddTagDb()
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
             fileLister: DetailMetaNoopLister(),
@@ -81,11 +81,11 @@ final class DetailTagPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS207SwitchingFilesClearsUndoToastAndBlocksStaleUndo() async {
+    func testTagAddSwitchingFilesClearsUndoToastAndBlocksStaleUndo() async {
         let first = FileEntrySnapshot.detailMetaFixture(id: 210, currentName: "first.pdf")
         let second = FileEntrySnapshot.detailMetaFixture(id: 211, currentName: "second.pdf")
-        let initialTags = TagSetSnapshot.s207Fixture(fileID: first.id, values: [])
-        let addedTags = TagSetSnapshot.s207Fixture(fileID: first.id, values: ["clienta"])
+        let initialTags = TagSetSnapshot.tagAddFixture(fileID: first.id, values: [])
+        let addedTags = TagSetSnapshot.tagAddFixture(fileID: first.id, values: ["clienta"])
         let tagStore = DetailTagRecordingStore(
             listResults: [.success(initialTags)],
             addResults: [.success(addedTags)]
@@ -95,7 +95,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailTagFileDetailer(files: [first, second]),
             tagStore: tagStore,
-            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([first.id])
@@ -112,17 +112,17 @@ final class DetailTagPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS207InputCommitPolicyClearsOnlyAfterSuccessfulAdd() {
+    func testTagAddInputCommitPolicyClearsOnlyAfterSuccessfulAdd() {
         let fileID: Int64 = 209
         let failedState = DetailTagEditorState.failed(
             fileID: fileID,
             operation: .add("ClientA"),
-            .s207TagDb(),
-            previous: TagSetSnapshot.s207Fixture(fileID: fileID, values: [])
+            .tagAddTagDb(),
+            previous: TagSetSnapshot.tagAddFixture(fileID: fileID, values: [])
         )
         let loadedState = DetailTagEditorState.loaded(
             fileID: fileID,
-            TagSetSnapshot.s207Fixture(fileID: fileID, values: ["clienta"])
+            TagSetSnapshot.tagAddFixture(fileID: fileID, values: ["clienta"])
         )
 
         XCTAssertFalse(DetailTagInputCommitPolicy.shouldClearSubmittedQuery(
@@ -136,7 +136,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS208TagsFilterUsesC202FacetsAndSearchFiltersOnly() async {
+    func testTagFilterTagsFilterUsesSearchFiltersCoreFacetsAndSearchFiltersOnly() async {
         let filters = SearchFilterEditing.settingTagMatchMode(
             .all,
             in: SearchFilterEditing.togglingTag(
@@ -144,28 +144,28 @@ final class DetailTagPageFeatureTests: XCTestCase {
                 in: SearchFilterEditing.togglingTag("finance", in: .empty)
             )
         )
-        let tagStore = S208ForbiddenTagStore()
+        let tagStore = TagFilterForbiddenTagStore()
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .failure(CoreError.FileNotFound(path: "unused"))),
-            searchQuerying: MainListRecordingSearchQuerying(results: [.success(.s208SearchPage(filters: filters))]),
-            searchFiltering: MainListRecordingSearchFiltering(results: [.success(.s208Facets())]),
+            searchQuerying: MainListRecordingSearchQuerying(results: [.success(.tagFilterSearchPage(filters: filters))]),
+            searchFiltering: MainListRecordingSearchFiltering(results: [.success(.tagFilterFacets())]),
             tagStore: tagStore,
-            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.runSearch(
             query: "",
             scope: .all,
             sort: .newestImported,
-            sidebarRow: .s208Root,
+            sidebarRow: .tagFilterRoot,
             filters: filters
         )
         await model.loadSearchFacets(
             query: "",
             scope: .all,
-            sidebarRow: .s208Root,
+            sidebarRow: .tagFilterRoot,
             filters: filters
         )
 
@@ -176,22 +176,22 @@ final class DetailTagPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS208TagsFilterLoadsC205RegistryWithoutMutatingTags() async {
+    func testTagFilterTagsFilterLoadsTagCrudCoreRegistryWithoutMutatingTags() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 208, currentName: "registry.pdf")
-        let registry = TagSetSnapshot.s208RegistryFixture(fileID: detail.id)
+        let registry = TagSetSnapshot.tagFilterRegistryFixture(fileID: detail.id)
         let tagStore = DetailTagRecordingStore(listResults: [.success(registry)])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
-            searchQuerying: MainListRecordingSearchQuerying(results: [.success(.s208SearchPage(filters: .empty))]),
-            searchFiltering: MainListRecordingSearchFiltering(results: [.success(.s208Facets())]),
+            searchQuerying: MainListRecordingSearchQuerying(results: [.success(.tagFilterSearchPage(filters: .empty))]),
+            searchFiltering: MainListRecordingSearchFiltering(results: [.success(.tagFilterFacets())]),
             tagStore: tagStore,
-            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([detail.id])
-        await model.loadSearchFacets(query: "tag", scope: .all, sidebarRow: .s208Root, filters: .empty)
+        await model.loadSearchFacets(query: "tag", scope: .all, sidebarRow: .tagFilterRoot, filters: .empty)
         await model.loadTagFilterRegistry(activeFileID: detail.id)
         let options = TagFilterRegistryPresentation.options(
             registryState: model.tagFilterRegistryState,
@@ -210,10 +210,10 @@ final class DetailTagPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS208TagRegistryFailureMapsErrorAndPreservesPreviousOptions() async {
+    func testTagFilterTagRegistryFailureMapsErrorAndPreservesPreviousOptions() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 209, currentName: "registry-fail.pdf")
-        let registry = TagSetSnapshot.s208RegistryFixture(fileID: detail.id)
-        let mapping = CoreErrorMappingSnapshot.s207TagDb()
+        let registry = TagSetSnapshot.tagFilterRegistryFixture(fileID: detail.id)
+        let mapping = CoreErrorMappingSnapshot.tagAddTagDb()
         let tagStore = DetailTagRecordingStore(
             listResults: [.success(registry), .failure(CoreError.Db(message: "tag registry locked"))]
         )
@@ -236,16 +236,16 @@ final class DetailTagPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS208ClearingDetailClearsTagRegistryAnchorState() async {
+    func testTagFilterClearingDetailClearsTagRegistryAnchorState() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 210, currentName: "clear-registry.pdf")
-        let registry = TagSetSnapshot.s208RegistryFixture(fileID: detail.id)
+        let registry = TagSetSnapshot.tagFilterRegistryFixture(fileID: detail.id)
         let tagStore = DetailTagRecordingStore(listResults: [.success(registry)])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             tagStore: tagStore,
-            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.loadTagFilterRegistry(activeFileID: detail.id)
@@ -254,7 +254,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.tagFilterRegistryState, .idle)
     }
 
-    func testS208TagsFilterEditingIsCaseInsensitiveAndDoesNotCreateTags() {
+    func testTagFilterTagsFilterEditingIsCaseInsensitiveAndDoesNotCreateTags() {
         var filters = SearchFilterEditing.togglingTag("Finance", in: .empty)
         filters = SearchFilterEditing.togglingTag("finance", in: filters)
         XCTAssertEqual(filters.tags, [])
@@ -264,22 +264,22 @@ final class DetailTagPageFeatureTests: XCTestCase {
         )
         XCTAssertEqual(filters.tags, [])
         XCTAssertEqual(
-            TagFacetFiltering.visibleTags(query: "TAX", facets: SearchFacetsSnapshot.s208Facets().tags).map(\.value),
+            TagFacetFiltering.visibleTags(query: "TAX", facets: SearchFacetsSnapshot.tagFilterFacets().tags).map(\.value),
             ["tax"]
         )
     }
 
     @MainActor
-    func testS223C219LoadsDeterministicSuggestionsThroughTagStore() async {
+    func testTagSuggestionsTagSuggestionsCoreLoadsDeterministicSuggestionsThroughTagStore() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 223, currentName: "invoice_2026.pdf")
-        let report = TagSuggestionReportSnapshot.s223Fixture(fileID: detail.id)
+        let report = TagSuggestionReportSnapshot.tagSuggestionsFixture(fileID: detail.id)
         let tagStore = DetailTagRecordingStore(suggestionResults: [.success(report)])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             tagStore: tagStore,
-            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([detail.id])
@@ -287,10 +287,10 @@ final class DetailTagPageFeatureTests: XCTestCase {
         let requests = await tagStore.suggestionRequests()
 
         XCTAssertEqual(requests, [
-            TagSuggestionRequestRecord(repoPath: "/tmp/repo", request: .s223(fileID: detail.id))
+            TagSuggestionRequestRecord(repoPath: "/tmp/repo", request: .tagSuggestions(fileID: detail.id))
         ])
         XCTAssertEqual(model.detailTagSuggestionState.report?.suggestions.map(\.slug), ["finance", "tax"])
-        XCTAssertEqual(model.detailTagSuggestionState.selectedIDs, ["s223-finance"])
+        XCTAssertEqual(model.detailTagSuggestionState.selectedIDs, ["tagSuggestions-finance"])
         XCTAssertFalse(model.detailTagSuggestionState.report?.contentsRead ?? true)
         XCTAssertFalse(model.detailTagSuggestionState.report?.aiUsed ?? true)
         XCTAssertFalse(model.detailTagSuggestionState.report?.networkUsed ?? true)
@@ -298,9 +298,9 @@ final class DetailTagPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS223C219CommandPalettePresentationTargetsSelectedFile() async {
+    func testTagSuggestionsTagSuggestionsCoreCommandPalettePresentationTargetsSelectedFile() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 228, currentName: "command.pdf")
-        let model = MainFileListModel.s223Fixture(detail: detail)
+        let model = MainFileListModel.tagSuggestionsFixture(detail: detail)
 
         await model.selectFiles([detail.id])
         model.presentSelectedFileTagSuggestions(source: .commandPalette)
@@ -316,19 +316,19 @@ final class DetailTagPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS223C205ManualFallbackUsesTagCrudWithoutApplyingSuggestions() async {
+    func testTagSuggestionsTagCrudCoreManualFallbackUsesTagCrudWithoutApplyingSuggestions() async {
         // swiftlint:disable:next large_tuple
         let scenarios: [(Int64, String, String, DetailTagRecordingStore.SuggestionResult)] = [
-            (229, "manual-tag.pdf", "manual", .success(.s223EmptyFixture(fileID: 229))),
+            (229, "manual-tag.pdf", "manual", .success(.tagSuggestionsEmptyFixture(fileID: 229))),
             (230, "suggestion-fail.pdf", "fallback", .failure(CoreError.Db(message: "suggestion locked")))
         ]
         for scenario in scenarios {
             let detail = FileEntrySnapshot.detailMetaFixture(id: scenario.0, currentName: scenario.1)
             let tagStore = DetailTagRecordingStore(
-                listResults: [.success(.s207Fixture(fileID: detail.id, values: [scenario.2]))],
+                listResults: [.success(.tagAddFixture(fileID: detail.id, values: [scenario.2]))],
                 suggestionResults: [scenario.3]
             )
-            let model = MainFileListModel.s223Fixture(detail: detail, tagStore: tagStore)
+            let model = MainFileListModel.tagSuggestionsFixture(detail: detail, tagStore: tagStore)
 
             await model.selectFiles([detail.id])
             await model.loadSelectedFileTagSuggestions()
@@ -345,23 +345,23 @@ final class DetailTagPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS223C219ApplySelectedUsesCoreApplyAndRefreshesUndoAction() async {
+    func testTagSuggestionsTagSuggestionsCoreApplySelectedUsesCoreApplyAndRefreshesUndoAction() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 224, currentName: "invoice_2026.pdf")
-        let report = TagSuggestionReportSnapshot.s223Fixture(fileID: detail.id)
-        let applyReport = TagSuggestionApplyReportSnapshot.s223Applied(fileID: detail.id)
+        let report = TagSuggestionReportSnapshot.tagSuggestionsFixture(fileID: detail.id)
+        let applyReport = TagSuggestionApplyReportSnapshot.tagSuggestionsApplied(fileID: detail.id)
         let tagStore = DetailTagRecordingStore(
             suggestionResults: [.success(report)],
             applySuggestionResults: [.success(applyReport)]
         )
-        let undoStore = S223UndoActionStore(actions: [.s223ApplySuggestion(token: "undo-s223")])
+        let undoStore = TagSuggestionsUndoActionStore(actions: [.tagSuggestionsApplySuggestion(token: "undo-tagSuggestions")])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             tagStore: tagStore,
             undoActionStore: undoStore,
-            changeLogLister: DetailLogRecordingChangeLister(entries: [.s223Applied()]),
-            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+            changeLogLister: DetailLogRecordingChangeLister(entries: [.tagSuggestionsApplied()]),
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([detail.id])
@@ -377,7 +377,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
                     fileID: detail.id,
                     suggestions: [
                         ApplyTagSuggestionItemSnapshot(
-                            suggestionID: "s223-finance",
+                            suggestionID: "tagSuggestions-finance",
                             slug: "finance",
                             displayName: "Finance"
                         )
@@ -386,46 +386,46 @@ final class DetailTagPageFeatureTests: XCTestCase {
             )
         ])
         XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["finance"])
-        XCTAssertEqual(model.detailTagSuggestionState.appliedReport?.undoToken, "undo-s223")
+        XCTAssertEqual(model.detailTagSuggestionState.appliedReport?.undoToken, "undo-tagSuggestions")
         XCTAssertEqual(undoRequests, ["/tmp/repo"])
-        XCTAssertEqual(undoState?.action?.actionID, "undo-s223")
+        XCTAssertEqual(undoState?.action?.actionID, "undo-tagSuggestions")
         XCTAssertNotNil(model.detailLogState.entries)
     }
 
     @MainActor
-    func testS223C219SelectAllPreservesExplicitWeakMatchesOnly() {
-        let report = TagSuggestionReportSnapshot.s223Fixture(fileID: 225)
+    func testTagSuggestionsTagSuggestionsCoreSelectAllPreservesExplicitWeakMatchesOnly() {
+        let report = TagSuggestionReportSnapshot.tagSuggestionsFixture(fileID: 225)
         let loaded = DetailTagSuggestionState.loaded(fileID: 225, report, [])
         let strongOnly = DetailTagSuggestionAction.selectingAll(in: loaded)
 
-        XCTAssertEqual(strongOnly.selectedIDs, ["s223-finance"])
+        XCTAssertEqual(strongOnly.selectedIDs, ["tagSuggestions-finance"])
 
         let withExplicitWeak = DetailTagSuggestionAction.togglingSelection(
-            suggestionID: "s223-tax",
+            suggestionID: "tagSuggestions-tax",
             in: strongOnly
         )
         let selectedAll = DetailTagSuggestionAction.selectingAll(in: withExplicitWeak)
 
-        XCTAssertEqual(selectedAll.selectedIDs, ["s223-finance", "s223-tax"])
+        XCTAssertEqual(selectedAll.selectedIDs, ["tagSuggestions-finance", "tagSuggestions-tax"])
     }
 
     @MainActor
-    func testS223C219EditModeValidatesInvalidDuplicateAlreadyAddedAndReadOnly() {
-        let report = TagSuggestionReportSnapshot.s223Fixture(fileID: 226, existingValues: ["finance"])
+    func testTagSuggestionsTagSuggestionsCoreEditModeValidatesInvalidDuplicateAlreadyAddedAndReadOnly() {
+        let report = TagSuggestionReportSnapshot.tagSuggestionsFixture(fileID: 226, existingValues: ["finance"])
         let loaded = DetailTagSuggestionState.loaded(
             fileID: 226,
             report,
-            ["s223-finance", "s223-tax"]
+            ["tagSuggestions-finance", "tagSuggestions-tax"]
         )
         let editing = DetailTagSuggestionAction.startingEdit(in: loaded, disabledReason: nil)
         let invalid = DetailTagSuggestionAction.updatingSlug(
-            suggestionID: "s223-tax",
+            suggestionID: "tagSuggestions-tax",
             slug: "bad/tag",
             in: editing,
             disabledReason: nil
         )
         let duplicate = DetailTagSuggestionAction.updatingSlug(
-            suggestionID: "s223-tax",
+            suggestionID: "tagSuggestions-tax",
             slug: "finance",
             in: editing,
             disabledReason: nil
@@ -440,16 +440,16 @@ final class DetailTagPageFeatureTests: XCTestCase {
         XCTAssertEqual(duplicate.editSession?.drafts.last?.status.label, "Duplicate")
         XCTAssertEqual(readOnly.editSession?.drafts.map(\.status.label), ["Blocked", "Blocked"])
         XCTAssertEqual(DetailTagSuggestionAction.editedItems(in: invalid), [])
-        XCTAssertEqual(DetailTagSuggestionAction.cancelingEdit(in: invalid).selectedIDs, ["s223-finance", "s223-tax"])
+        XCTAssertEqual(DetailTagSuggestionAction.cancelingEdit(in: invalid).selectedIDs, ["tagSuggestions-finance", "tagSuggestions-tax"])
     }
 
     @MainActor
-    func testS223C219ApplyEditedUsesEditedValuesAndRestoresEditModeOnFailure() async {
+    func testTagSuggestionsTagSuggestionsCoreApplyEditedUsesEditedValuesAndRestoresEditModeOnFailure() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 227, currentName: "invoice_2026.pdf")
-        let report = TagSuggestionReportSnapshot.s223Fixture(fileID: detail.id)
-        let applyReport = TagSuggestionApplyReportSnapshot.s223Applied(
+        let report = TagSuggestionReportSnapshot.tagSuggestionsFixture(fileID: detail.id)
+        let applyReport = TagSuggestionApplyReportSnapshot.tagSuggestionsApplied(
             fileID: detail.id,
-            suggestionID: "s223-tax",
+            suggestionID: "tagSuggestions-tax",
             slug: "tax-review",
             displayName: "Tax Review"
         )
@@ -457,15 +457,15 @@ final class DetailTagPageFeatureTests: XCTestCase {
             suggestionResults: [.success(report)],
             applySuggestionResults: [.success(applyReport), .failure(CoreError.Db(message: "tag write failed"))]
         )
-        let model = MainFileListModel.s223Fixture(detail: detail, tagStore: tagStore)
+        let model = MainFileListModel.tagSuggestionsFixture(detail: detail, tagStore: tagStore)
 
         await model.selectFiles([detail.id])
         await model.loadSelectedFileTagSuggestions()
         model.clearSelectedFileTagSuggestions()
-        model.toggleSelectedFileTagSuggestion("s223-tax")
+        model.toggleSelectedFileTagSuggestion("tagSuggestions-tax")
         model.startEditingSelectedFileTagSuggestions()
-        model.updateSelectedFileTagSuggestionDisplayName(suggestionID: "s223-tax", displayName: "  ")
-        model.updateSelectedFileTagSuggestionSlug(suggestionID: "s223-tax", slug: "tax-review")
+        model.updateSelectedFileTagSuggestionDisplayName(suggestionID: "tagSuggestions-tax", displayName: "  ")
+        model.updateSelectedFileTagSuggestionSlug(suggestionID: "tagSuggestions-tax", slug: "tax-review")
 
         _ = await model.applyEditedSelectedFileTagSuggestions()
         let firstApply = await tagStore.applySuggestionRequests()
@@ -474,7 +474,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(firstApply.last?.request.suggestions, [
             ApplyTagSuggestionItemSnapshot(
-                suggestionID: "s223-tax",
+                suggestionID: "tagSuggestions-tax",
                 slug: "tax-review",
                 displayName: "tax-review"
             )

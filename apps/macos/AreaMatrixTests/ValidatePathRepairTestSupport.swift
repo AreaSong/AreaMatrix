@@ -223,7 +223,7 @@ extension RepoPathValidationSnapshot {
 }
 
 extension TagSetSnapshot {
-    static func s207Fixture(fileID: Int64, values: [String]) -> TagSetSnapshot {
+    static func tagAddFixture(fileID: Int64, values: [String]) -> TagSetSnapshot {
         let tags = values.map { value in
             TagRecordSnapshot(
                 value: value,
@@ -243,7 +243,7 @@ extension TagSetSnapshot {
         )
     }
 
-    static func s208RegistryFixture(fileID: Int64) -> TagSetSnapshot {
+    static func tagFilterRegistryFixture(fileID: Int64) -> TagSetSnapshot {
         TagSetSnapshot(
             fileID: fileID,
             fileTags: [],
@@ -272,12 +272,12 @@ extension TagSetSnapshot {
 }
 
 extension TagSuggestionReportSnapshot {
-    static func s223Fixture(fileID: Int64, existingValues: [String] = []) -> TagSuggestionReportSnapshot {
+    static func tagSuggestionsFixture(fileID: Int64, existingValues: [String] = []) -> TagSuggestionReportSnapshot {
         TagSuggestionReportSnapshot(
             fileID: fileID,
             suggestions: [
                 TagSuggestionSnapshot(
-                    suggestionID: "s223-finance",
+                    suggestionID: "tagSuggestions-finance",
                     slug: "finance",
                     displayName: "Finance",
                     reason: "Matched file name: invoice_2026.pdf",
@@ -290,7 +290,7 @@ extension TagSuggestionReportSnapshot {
                     disabledReason: nil
                 ),
                 TagSuggestionSnapshot(
-                    suggestionID: "s223-tax",
+                    suggestionID: "tagSuggestions-tax",
                     slug: "tax",
                     displayName: "Tax",
                     reason: "Matched path: finance/tax",
@@ -303,18 +303,18 @@ extension TagSuggestionReportSnapshot {
                     disabledReason: nil
                 )
             ],
-            tagSet: .s207Fixture(fileID: fileID, values: existingValues),
+            tagSet: .tagAddFixture(fileID: fileID, values: existingValues),
             contentsRead: false,
             aiUsed: false,
             networkUsed: false
         )
     }
 
-    static func s223EmptyFixture(fileID: Int64, existingValues: [String] = []) -> TagSuggestionReportSnapshot {
+    static func tagSuggestionsEmptyFixture(fileID: Int64, existingValues: [String] = []) -> TagSuggestionReportSnapshot {
         TagSuggestionReportSnapshot(
             fileID: fileID,
             suggestions: [],
-            tagSet: .s207Fixture(fileID: fileID, values: existingValues),
+            tagSet: .tagAddFixture(fileID: fileID, values: existingValues),
             contentsRead: false,
             aiUsed: false,
             networkUsed: false
@@ -323,9 +323,9 @@ extension TagSuggestionReportSnapshot {
 }
 
 extension TagSuggestionApplyReportSnapshot {
-    static func s223Applied(
+    static func tagSuggestionsApplied(
         fileID: Int64,
-        suggestionID: String = "s223-finance",
+        suggestionID: String = "tagSuggestions-finance",
         slug: String = "finance",
         displayName _: String = "Finance"
     ) -> TagSuggestionApplyReportSnapshot {
@@ -343,13 +343,13 @@ extension TagSuggestionApplyReportSnapshot {
                     error: nil
                 )
             ],
-            tagSet: .s207Fixture(fileID: fileID, values: [slug]),
-            undoToken: "undo-s223",
+            tagSet: .tagAddFixture(fileID: fileID, values: [slug]),
+            undoToken: "undo-tagSuggestions",
             refreshTargets: ["tags", "change_log", "undo_actions"]
         )
     }
 
-    static func s223PartialFailure(fileID: Int64) -> TagSuggestionApplyReportSnapshot {
+    static func tagSuggestionsPartialFailure(fileID: Int64) -> TagSuggestionApplyReportSnapshot {
         TagSuggestionApplyReportSnapshot(
             fileID: fileID,
             requestedCount: 2,
@@ -358,27 +358,27 @@ extension TagSuggestionApplyReportSnapshot {
             failedCount: 1,
             itemResults: [
                 TagSuggestionApplyItemResultSnapshot(
-                    suggestionID: "s223-finance",
+                    suggestionID: "tagSuggestions-finance",
                     slug: "finance",
                     status: .applied,
                     error: nil
                 ),
                 TagSuggestionApplyItemResultSnapshot(
-                    suggestionID: "s223-tax",
+                    suggestionID: "tagSuggestions-tax",
                     slug: "tax-review",
                     status: .failed,
                     error: "Tag relation write failed."
                 )
             ],
-            tagSet: .s207Fixture(fileID: fileID, values: ["finance"]),
-            undoToken: "undo-s223-partial",
+            tagSet: .tagAddFixture(fileID: fileID, values: ["finance"]),
+            undoToken: "undo-tagSuggestions-partial",
             refreshTargets: ["tags", "change_log", "undo_actions"]
         )
     }
 }
 
 extension ChangeLogEntrySnapshot {
-    static func s223Applied() -> ChangeLogEntrySnapshot {
+    static func tagSuggestionsApplied() -> ChangeLogEntrySnapshot {
         ChangeLogEntrySnapshot(
             id: 223,
             fileID: 224,
@@ -392,7 +392,7 @@ extension ChangeLogEntrySnapshot {
 }
 
 extension SearchResultPageSnapshot {
-    static func s208SearchPage(filters: SearchFilterStateSnapshot) -> SearchResultPageSnapshot {
+    static func tagFilterSearchPage(filters: SearchFilterStateSnapshot) -> SearchResultPageSnapshot {
         SearchResultPageSnapshot(
             query: "",
             totalCount: filters.tags.isEmpty ? 0 : 1,
@@ -404,7 +404,7 @@ extension SearchResultPageSnapshot {
 }
 
 extension SearchFacetsSnapshot {
-    static func s208Facets() -> SearchFacetsSnapshot {
+    static func tagFilterFacets() -> SearchFacetsSnapshot {
         SearchFacetsSnapshot(
             query: "",
             totalCount: 42,
@@ -433,7 +433,7 @@ extension SearchFacetsSnapshot {
     }
 }
 
-actor S223UndoActionStore: CoreUndoActionLogging {
+actor TagSuggestionsUndoActionStore: CoreUndoActionLogging {
     private let actions: [UndoActionRecordSnapshot]
     private var requests: [String] = []
 
@@ -447,7 +447,7 @@ actor S223UndoActionStore: CoreUndoActionLogging {
     }
 
     func undoAction(repoPath _: String, actionID _: String) async throws -> UndoActionResultSnapshot {
-        throw CoreError.Internal(message: "S2-23 does not execute undo in C2-19 apply")
+        throw CoreError.Internal(message: "tag-suggestions does not execute undo in tag-suggestions-core apply")
     }
 
     func listRequests() -> [String] {

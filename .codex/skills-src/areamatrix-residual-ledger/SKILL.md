@@ -35,7 +35,7 @@ Use this skill to answer “what remains unresolved?” without confusing produc
 - Do not move product docs, release evidence, closeout records, or historical prompt files just to centralize them.
 - Do not turn `reference-only`, `template-only`, or `accepted-exception` items into live tasks.
 - Do not write `workflow/versions/<version>/execution/**`, `progress.json`, task-loop logs, run summaries, runner locks, checkpoint state, branches, commits, or tags from this skill.
-- Do not close release blockers based on local QA, ad-hoc signing, same-machine smoke, dry-run, or self-report; use the linked release evidence source.
+- Do not close release blockers based on same-machine QA, ad-hoc signing, same-machine smoke, dry-run, or self-report; use the linked release evidence source.
 - Do not rewrite historical `progress.json`, Git history, copy logs, verify logs, or run summaries to fix accepted exceptions.
 
 ## Validation

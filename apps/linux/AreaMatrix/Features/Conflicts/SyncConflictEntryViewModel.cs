@@ -467,7 +467,7 @@ public sealed class SyncConflictEntryViewModel : INotifyPropertyChanged
             .Where(character => char.IsLetterOrDigit(character) || character == '-' || character == '_')
             .Take(24)
             .ToArray());
-        return $"S4-X-09-C4-21-{conflictId}-{safeToken}";
+        return $"replace-resolution-replace-confirmation-{conflictId}-{safeToken}";
     }
 
     private bool SetProperty<T>(

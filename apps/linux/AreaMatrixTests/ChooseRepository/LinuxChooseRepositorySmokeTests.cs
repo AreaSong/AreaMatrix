@@ -7,7 +7,7 @@ public static class LinuxChooseRepositorySmokeTests
     public static void RunAll()
     {
         LinuxChooseRepositoryPageExposesRequiredUserActions();
-        LinuxChooseRepositoryUsesOnlyC410CoreBridge();
+        LinuxChooseRepositoryUsesOnlyLinuxRepoConnectCoreCoreBridge();
         RecentRepositoryStatusReasonsMatchPageSpec();
     }
 
@@ -22,14 +22,14 @@ public static class LinuxChooseRepositorySmokeTests
 
         foreach (string fragment in new[]
         {
-            "page_id: S4-LNX-01",
+            "page_id: linux-choose-repository",
             "Choose AreaMatrix Repository",
             "Repository folder",
             "Browse...",
             "Use default: ~/AreaMatrix",
             "Checking folder...",
             "Network or removable path detected",
-            "S4-LNX-03",
+            "linux-local-folder-notice",
             "The page calls validate_repo_path through LinuxRepositoryCoreBridge.",
             "The page does not suggest sudo or chmod."
         })
@@ -47,7 +47,7 @@ public static class LinuxChooseRepositorySmokeTests
         TestAssert.Contains("ContinueAsync", view, "continue action");
     }
 
-    private static void LinuxChooseRepositoryUsesOnlyC410CoreBridge()
+    private static void LinuxChooseRepositoryUsesOnlyLinuxRepoConnectCoreCoreBridge()
     {
         string nativeClient = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.cs"));

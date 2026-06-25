@@ -132,7 +132,7 @@ struct LocalModelStatusView: View {
         AdvancedSettingsSection(title: "Status") {
             Label(model.statusText, systemImage: statusIcon)
                 .font(.headline)
-                .accessibilityIdentifier("S3-02-C3-02-status")
+                .accessibilityIdentifier("local-model-status-local-model-status-core-status")
             Text(model.statusDetail)
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -173,16 +173,16 @@ struct LocalModelStatusView: View {
                     Task { await model.checkStatus() }
                 }
                 .disabled(model.isChecking)
-                .accessibilityIdentifier("S3-02-C3-02-check-status")
+                .accessibilityIdentifier("local-model-status-local-model-status-core-check-status")
 
                 Button("Open install help", action: model.openInstallHelp)
                     .disabled(model.isChecking)
-                    .accessibilityIdentifier("S3-02-C3-02-open-install-help")
+                    .accessibilityIdentifier("local-model-status-local-model-status-core-open-install-help")
                 Button("Open model location") {
                     Task { await model.openModelLocation() }
                 }
                 .disabled(!model.canOpenModelLocation)
-                .accessibilityIdentifier("S3-02-C3-02-open-model-location")
+                .accessibilityIdentifier("local-model-status-local-model-status-core-open-model-location")
             }
             HStack(spacing: 10) {
                 Button("Run health check") {
@@ -192,9 +192,9 @@ struct LocalModelStatusView: View {
                 Button("Repair", action: {})
                     .disabled(true)
                 Button("Open diagnostics", action: model.showDiagnostics)
-                    .accessibilityIdentifier("S3-02-C3-02-open-diagnostics")
+                    .accessibilityIdentifier("local-model-status-local-model-status-core-open-diagnostics")
             }
-            Text("Status checks and diagnostics use only C3-02 local model metadata and do not enable remote AI.")
+            Text("Status checks and diagnostics use only local-model-status-core local model metadata and do not enable remote AI.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }

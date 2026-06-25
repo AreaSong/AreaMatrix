@@ -9,12 +9,12 @@ public static class WatcherStatusSmokeTests
 
     public static void RunAll()
     {
-        WatcherStatusPageExposesC419RescanHandoffControls();
-        MainWindowRoutesWatcherRescanHandoffToS4X07();
-        NativeClientBindsC419ManualRescanCoreContracts();
+        WatcherStatusPageExposesManualRescanCoreRescanHandoffControls();
+        MainWindowRoutesWatcherRescanHandoffToRescanConfirm();
+        NativeClientBindsManualRescanCoreManualRescanCoreContracts();
     }
 
-    private static void WatcherStatusPageExposesC419RescanHandoffControls()
+    private static void WatcherStatusPageExposesManualRescanCoreRescanHandoffControls()
     {
         XElement page = LoadXml(RepositoryPath(
             "apps/windows/AreaMatrix/Features/Library/WatcherStatusView.xaml"));
@@ -48,10 +48,10 @@ public static class WatcherStatusSmokeTests
         TestAssert.Contains("OpenRescanConfirmRequested", codeBehind, "rescan confirmation handoff");
         TestAssert.Contains("RescanConfirmRequest", codeBehind, "rescan request with preview");
         TestAssert.DoesNotContain("ReindexFromFilesystem", codeBehind, "watcher status must not run rescan");
-        TestAssert.DoesNotContain("SyncExternalChanges", codeBehind, "C4-12 must not sync events");
+        TestAssert.DoesNotContain("SyncExternalChanges", codeBehind, "platform-watcher-status must not sync events");
     }
 
-    private static void MainWindowRoutesWatcherRescanHandoffToS4X07()
+    private static void MainWindowRoutesWatcherRescanHandoffToRescanConfirm()
     {
         XElement window = LoadXml(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml"));
         AssertNamedElement(window, "WatcherStatusView", "WatcherStatusPage");
@@ -72,9 +72,9 @@ public static class WatcherStatusSmokeTests
         TestAssert.Contains(
             "RescanConfirmPage.ViewModel = new RescanConfirmViewModel(new WatcherStatusCoreBridge(coreClient))",
             codeBehind,
-            "S4-X-07 real CoreBridge injection");
-        TestAssert.Contains("RescanConfirmPage.OpenRequest(request)", codeBehind, "S4-X-07 page handoff");
-        TestAssert.Contains("RescanConfirmPage_CloseRequested", codeBehind, "S4-X-07 cancel returns to watcher status");
+            "rescan-confirm real CoreBridge injection");
+        TestAssert.Contains("RescanConfirmPage.OpenRequest(request)", codeBehind, "rescan-confirm page handoff");
+        TestAssert.Contains("RescanConfirmPage_CloseRequested", codeBehind, "rescan-confirm cancel returns to watcher status");
         TestAssert.DoesNotContain("ReindexFromFilesystemAsync", codeBehind, "watcher handoff must not run rescan");
         TestAssert.DoesNotContain("ResumeScanSessionAsync", codeBehind, "watcher handoff must not resume rescan");
 
@@ -82,20 +82,20 @@ public static class WatcherStatusSmokeTests
             "apps/windows/AreaMatrix/Features/Library/RescanConfirmDialog.xaml.cs"));
         string viewModel = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Features/Library/RescanConfirmViewModel.cs"));
-        TestAssert.Contains("RunRescanAsync", dialogCodeBehind, "S4-X-07 run action");
-        TestAssert.Contains("ReindexFromFilesystemAsync", viewModel, "S4-X-07 executes C4-19 reindex");
-        TestAssert.Contains("UserConfirmed", viewModel, "S4-X-07 requires explicit confirmation");
+        TestAssert.Contains("RunRescanAsync", dialogCodeBehind, "rescan-confirm run action");
+        TestAssert.Contains("ReindexFromFilesystemAsync", viewModel, "rescan-confirm executes manual-rescan reindex");
+        TestAssert.Contains("UserConfirmed", viewModel, "rescan-confirm requires explicit confirmation");
         TestAssert.Contains("Preview?.CanRunRescan", viewModel, "stale preview disables run");
-        TestAssert.Contains("ErrorMessageFor", viewModel, "S4-X-07 error mapping");
+        TestAssert.Contains("ErrorMessageFor", viewModel, "rescan-confirm error mapping");
         TestAssert.DoesNotContain(
             "LazyAreaMatrixWindowsCoreClient",
             dialogCodeBehind,
-            "S4-X-07 must use injected real CoreBridge, not lazy self-allocation");
-        TestAssert.DoesNotContain("ResumeScanSessionAsync", viewModel, "S4-X-07 does not resume adjacent flow");
-        TestAssert.DoesNotContain("SyncExternalChanges", viewModel, "S4-X-07 must not sync C4-12");
+            "rescan-confirm must use injected real CoreBridge, not lazy self-allocation");
+        TestAssert.DoesNotContain("ResumeScanSessionAsync", viewModel, "rescan-confirm does not resume adjacent flow");
+        TestAssert.DoesNotContain("SyncExternalChanges", viewModel, "rescan-confirm must not sync platform-watcher-status");
     }
 
-    private static void NativeClientBindsC419ManualRescanCoreContracts()
+    private static void NativeClientBindsManualRescanCoreManualRescanCoreContracts()
     {
         string nativeLibrary = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Core/NativeCoreLibrary.cs"));
@@ -134,8 +134,8 @@ public static class WatcherStatusSmokeTests
         TestAssert.Contains("ReadWatcherStatusSnapshot", watcherClient, "watcher snapshot reading");
         TestAssert.Contains("ReadManualRescanPreviewReport", watcherClient, "rescan preview reading");
         TestAssert.Contains("ReadScanSession", watcherClient, "scan session reading");
-        TestAssert.DoesNotContain("sync_external_changes", watcherClient, "C4-12 must not consume sync API");
-        TestAssert.DoesNotContain("set_fs_event_cursor", watcherClient, "C4-12 must not advance cursor");
+        TestAssert.DoesNotContain("sync_external_changes", watcherClient, "platform-watcher-status must not consume sync API");
+        TestAssert.DoesNotContain("set_fs_event_cursor", watcherClient, "platform-watcher-status must not advance cursor");
     }
 
     private static void AssertButton(XElement root, string content, string clickHandler)

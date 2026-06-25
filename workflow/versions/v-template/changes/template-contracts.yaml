@@ -85,7 +85,7 @@ features:
         line_end: 394
         heading: queue candidates
         excerpt: dry-run 预览候选队列进入版本内 `execution/` 的结果。
-        summary: Queue and promotion stages must stay preview-first until explicit promote.
+        summary: Queue and promotion nodes must stay preview-first until explicit promote.
         depends_on:
           - workflow/pipeline.md
         tasks:

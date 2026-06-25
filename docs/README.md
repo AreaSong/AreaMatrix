@@ -8,9 +8,9 @@
 
 ## 文档层级
 
-`docs/` 只保存长期源事实：产品、架构、API、UX、开发规范、测试与发布规则。视觉展示原型、landing 页面草案和 workspace mockup 放在 `assets/prototypes/`，不作为产品或架构源事实。阶段性拆解、阶段 page specs、阶段 Core capability specs、阶段 control map、执行证据、release checklist、local QA / prerelease 产物、closeout 决策和历史归档放在 `workflow/versions/`。顶层 README 只做导航与摘要；release 放行状态以 [development/release.md](development/release.md) 和 [v1-mvp release checklist](../workflow/versions/v1-mvp/evidence/release-checklist.md) 为准。
+`docs/` 只保存长期源事实：产品、架构、API、UX、开发规范、测试与发布规则。视觉展示原型、landing 页面草案和 workspace mockup 放在 `assets/prototypes/`，不作为产品或架构源事实。版本拆解、版本内 page specs、Core capability specs、control map、执行证据、release checklist、closeout 决策和 v1 归档材料放在 `workflow/versions/`。顶层 README 只做导航与摘要；release 放行状态以 [development/release.md](development/release.md) 和 [v1-mvp release checklist](../workflow/versions/v1-mvp/evidence/release-checklist.md) 为准。
 
-Stage 1 MVP 已收口为 `v1-mvp` 归档记录；历史任务拆解、内部 Stage 1/2/3/4 page specs、Core capability specs、control map、性能基线、恢复场景和 release checklist 统一从 [workflow/versions/v1-mvp/](../workflow/versions/v1-mvp/) 查阅。这里的 Stage 2/3/4 是 Stage 1 MVP 历史内部材料，不代表未来 `v2`、`v3` 或 `v4` 已经开始。当前遗留项索引见 [workflow/residuals/](../workflow/residuals/) 与 [workflow/versions/v1-mvp/residuals/](../workflow/versions/v1-mvp/residuals/)；这些索引不替代 `docs/`、`evidence/` 或 `closeout/` 源事实。`workflow/references/`、`tasks/backlog/` 与 `.codex/` 材料不替代 `docs/` 的产品源事实。阶段 source docs 的读法和写法约定见 [workflow/versions/source-docs-guide.md](../workflow/versions/source-docs-guide.md)。确认需要长期保留的事实后，再同步回本目录对应的产品、架构、API 或 UX 功能域文档。
+v1 已收口为 `v1-mvp` 归档记录；v1 任务切片、内部 page specs、Core capability specs、control map、性能基线、恢复场景和 release checklist 统一从 [workflow/versions/v1-mvp/](../workflow/versions/v1-mvp/) 查阅。v1 归档里的旧 2/3/4 编号是 v1 内部材料编号，不代表未来 `v2`、`v3` 或 `v4` 已经开始。当前遗留项索引见 [workflow/residuals/](../workflow/residuals/) 与 [workflow/versions/v1-mvp/residuals/](../workflow/versions/v1-mvp/residuals/)；这些索引不替代 `docs/`、`evidence/` 或 `closeout/` 源事实。`workflow/references/`、`tasks/backlog/` 与 `.codex/` 材料不替代 `docs/` 的产品源事实。归档 source docs 的读法和写法约定见 [workflow/versions/source-docs-guide.md](../workflow/versions/source-docs-guide.md)。确认需要长期保留的事实后，再同步回本目录对应的产品、架构、API 或 UX 功能域文档。
 
 ## 按角色推荐的阅读路径
 
@@ -19,7 +19,7 @@ Stage 1 MVP 已收口为 `v1-mvp` 归档记录；历史任务拆解、内部 Sta
 ```
 docs/product/prd.md
    → docs/product/user-stories.md
-   → docs/roadmap/milestones.md
+   → docs/roadmap/version-roadmap.md
 ```
 
 ### 你是架构师 / 关心怎么搭
@@ -195,8 +195,8 @@ docs/adr/README.md  (索引)
 
 | 文档 | 说明 |
 |---|---|
-| [roadmap/milestones.md](roadmap/milestones.md) | 四阶段里程碑 |
-| [v1-mvp archive](../workflow/versions/v1-mvp/) | Stage 1 MVP 历史拆解、证据和 closeout 归档 |
+| [roadmap/version-roadmap.md](roadmap/version-roadmap.md) | 版本路线图 |
+| [v1-mvp archive](../workflow/versions/v1-mvp/) | v1 任务切片、证据和 closeout 归档 |
 
 ---
 

@@ -216,7 +216,7 @@ def log_event(level: str, message: str) -> None:
 def log_live_snapshot(
     *,
     title: str,
-    stage: str,
+    mode: str,
     task: "TaskFile",
     attempt: int,
     pid: int | str,
@@ -231,7 +231,7 @@ def log_live_snapshot(
 ) -> None:
     log_event("RUN", title)
     print(
-        f"  current task | stage={stage} | task={task.label} | attempt={attempt} | pid={pid} | elapsed={elapsed}",
+        f"  current task | mode={mode} | task={task.label} | attempt={attempt} | pid={pid} | elapsed={elapsed}",
         flush=True,
     )
     print("  live log:", flush=True)
@@ -1125,14 +1125,14 @@ class TaskLoopRunner:
         log_event(status_name, f"copy_log={copy_log}")
         log_event(status_name, f"verify_log={verify_log}")
 
-    def dry_run_stub(self, prompt_file: Path, output_file: Path, stage: str, extra_prompt: str, preview_lines: int, task: TaskFile, attempt: int) -> None:
+    def dry_run_stub(self, prompt_file: Path, output_file: Path, mode: str, extra_prompt: str, preview_lines: int, task: TaskFile, attempt: int) -> None:
         output_file.parent.mkdir(parents=True, exist_ok=True)
         prompt_lines = prompt_file.read_text(encoding="utf-8", errors="replace").splitlines()[:preview_lines]
         lines = [
             "DRY RUN OUTPUT (command not executed)",
             f"label: {task.label}",
             f"phase: {task.phase}",
-            f"stage: {stage}",
+            f"mode: {mode}",
             f"sandbox: {self.cfg.codex_exec_sandbox}",
             f"model: {self.cfg.model}",
             f"reasoning_effort: {self.cfg.model_reasoning_effort}",
@@ -1144,16 +1144,16 @@ class TaskLoopRunner:
             lines.extend(["--- injected_retry_prompt ---", extra_prompt, ""])
         lines.append(f"--- prompt_head ({preview_lines} lines) ---")
         lines.extend(prompt_lines)
-        if stage == "verify":
+        if mode == "verify":
             lines.extend(["", f"VERIFY_RESULT: {self.cfg.dry_run_result}"])
         output_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-    def run_codex(self, prompt_file: Path, output_file: Path, stage: str, extra_prompt: str, task: TaskFile, attempt: int) -> None:
+    def run_codex(self, prompt_file: Path, output_file: Path, mode: str, extra_prompt: str, task: TaskFile, attempt: int) -> None:
         output_file.parent.mkdir(parents=True, exist_ok=True)
-        preview_lines = self.cfg.dry_run_verify_preview_lines if stage == "verify" else self.cfg.dry_run_copy_preview_lines
+        preview_lines = self.cfg.dry_run_verify_preview_lines if mode == "verify" else self.cfg.dry_run_copy_preview_lines
         if self.cfg.dry_run:
             log_event("DRY", f"simulating codex exec for {prompt_file} -> {output_file}")
-            self.dry_run_stub(prompt_file, output_file, stage, extra_prompt, preview_lines, task, attempt)
+            self.dry_run_stub(prompt_file, output_file, mode, extra_prompt, preview_lines, task, attempt)
             return
         exec_log_file = output_file.with_suffix(".exec.log")
         prompt_text = prompt_file.read_text(encoding="utf-8")
@@ -1186,7 +1186,7 @@ class TaskLoopRunner:
                     prompt_file,
                     output_file,
                     exec_log_file,
-                    stage,
+                    mode,
                     task,
                     attempt,
                     restart_index=restarts,
@@ -1202,7 +1202,7 @@ class TaskLoopRunner:
                 delay = self.cfg.no_output_restart_delay_seconds
                 log_event(
                     "WARN",
-                    f"codex exec no-output timeout; restart {stage} task={task.label} "
+                    f"codex exec no-output timeout; restart {mode} task={task.label} "
                     f"attempt={attempt} child_restart={restarts}/{self.cfg.no_output_restart_limit} "
                     f"after {state.human_duration(delay)}",
                 )
@@ -1225,7 +1225,7 @@ class TaskLoopRunner:
         prompt_file: Path,
         output_file: Path,
         exec_log_file: Path,
-        stage: str,
+        mode: str,
         task: TaskFile,
         attempt: int,
         *,
@@ -1235,7 +1235,7 @@ class TaskLoopRunner:
             self.cfg.lock_dir,
             {
                 "status": "starting",
-                "stage": stage,
+                "mode": mode,
                 "task_label": task.label,
                 "task_name": task.task_name,
                 "attempt": attempt,
@@ -1251,7 +1251,7 @@ class TaskLoopRunner:
         )
         log_live_snapshot(
             title="live activity started",
-            stage=stage,
+            mode=mode,
             task=task,
             attempt=attempt,
             pid=f"starting restart={restart_index}",
@@ -1265,7 +1265,7 @@ class TaskLoopRunner:
         )
         exec_log_file.parent.mkdir(parents=True, exist_ok=True)
         exec_log = exec_log_file.open("a", encoding="utf-8", errors="replace")
-        exec_log.write(f"[{utc_now()}] start {stage} task={task.label} attempt={attempt} restart={restart_index}\n")
+        exec_log.write(f"[{utc_now()}] start {mode} task={task.label} attempt={attempt} restart={restart_index}\n")
         exec_log.flush()
         proc = subprocess.Popen(
             command,
@@ -1283,7 +1283,7 @@ class TaskLoopRunner:
         state.write_lock_activity(self.cfg.lock_dir, {"status": "running", "pid": proc.pid, "child_restart": restart_index})
         log_live_snapshot(
             title="live activity running",
-            stage=stage,
+            mode=mode,
             task=task,
             attempt=attempt,
             pid=proc.pid,
@@ -1373,7 +1373,7 @@ class TaskLoopRunner:
                     and not validation_scan_reason
                 ):
                     timeout_error = (
-                        f"codex exec idle timeout for {stage} {task.label} attempt={attempt}: "
+                        f"codex exec idle timeout for {mode} {task.label} attempt={attempt}: "
                         f"no final output, validation subprocess, or command start/finish event for "
                         f"{state.human_duration(no_output_elapsed_seconds)} "
                         f"(idle_timeout={state.human_duration(self.cfg.codex_idle_timeout_seconds)}; "
@@ -1401,7 +1401,7 @@ class TaskLoopRunner:
                     )
                     log_live_snapshot(
                         title="live activity codex-idle timeout",
-                        stage=stage,
+                        mode=mode,
                         task=task,
                         attempt=attempt,
                         pid=proc.pid,
@@ -1422,7 +1422,7 @@ class TaskLoopRunner:
                     and not validation_child_running
                 ):
                     timeout_error = (
-                        f"codex exec no-output timeout for {stage} {task.label} attempt={attempt}: "
+                        f"codex exec no-output timeout for {mode} {task.label} attempt={attempt}: "
                         f"no final output, validation subprocess, or command start/finish event for "
                         f"{state.human_duration(no_output_elapsed_seconds)} "
                         f"(timeout={state.human_duration(self.cfg.no_output_timeout_seconds)}; "
@@ -1449,7 +1449,7 @@ class TaskLoopRunner:
                     )
                     log_live_snapshot(
                         title="live activity no-output timeout",
-                        stage=stage,
+                        mode=mode,
                         task=task,
                         attempt=attempt,
                         pid=proc.pid,
@@ -1466,7 +1466,7 @@ class TaskLoopRunner:
                     break
                 log_live_snapshot(
                     title="live activity heartbeat",
-                    stage=stage,
+                    mode=mode,
                     task=task,
                     attempt=attempt,
                     pid=proc.pid,
@@ -1556,8 +1556,8 @@ class TaskLoopRunner:
 - 你仍需检查当前工作区是否有与本 task 无关、危险或无法解释的脏改动；真实功能、验证命令、
   Forbidden Touches、代码质量、安全/隐私/依赖/CI/review blocker 仍必须按规则严格阻断。
 - 若本轮验收输出 `VERIFY_RESULT: PASS`，runner 随后会按 `GIT_CHECKPOINT={self.cfg.git_checkpoint}` 执行
-  progress / summary / Git checkpoint 收口；若该收口失败，应归因给 runner checkpoint 阶段，而不是本
-  verify 阶段。
+  progress / summary / Git checkpoint 收口；若该收口失败，应归因给 runner checkpoint 收口，而不是本
+  verify 环节。
 - 最后一行必须单独输出 VERIFY_RESULT: PASS 或 VERIFY_RESULT: FAIL。
 - 不要在最后一行之后输出任何内容。"""
 

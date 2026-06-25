@@ -60,13 +60,13 @@ final class InitFailedErrorMappingTests: XCTestCase {
     }
 
     @MainActor
-    func testS309BlocksRemoteAIWithC301PrivacyGateOnly() async {
-        let updater = S309RecordingAISettingsUpdater(result: .success)
+    func testAIPrivacyRulesBlocksRemoteAIWithAISettingsConfigCorePrivacyGateOnly() async {
+        let updater = AIPrivacyRulesRecordingAISettingsUpdater(result: .success)
         let model = AISettingsModel(
-            repoPath: "/tmp/s309",
-            loader: S309StaticAISettingsLoader(snapshot: .s309RemoteReady(repoPath: "/tmp/s309")),
+            repoPath: "/tmp/aiPrivacyRules",
+            loader: AIPrivacyRulesStaticAISettingsLoader(snapshot: .aiPrivacyRulesRemoteReady(repoPath: "/tmp/aiPrivacyRules")),
             updater: updater,
-            errorMapper: S309StaticAIErrorMapper()
+            errorMapper: AIPrivacyRulesStaticAIErrorMapper()
         )
 
         await model.load()
@@ -82,16 +82,16 @@ final class InitFailedErrorMappingTests: XCTestCase {
     }
 
     @MainActor
-    func testS309AllowRemoteGateRequiresS303ProviderConsentBeforeSaving() async {
-        let updater = S309RecordingAISettingsUpdater(result: .success)
+    func testAIPrivacyRulesAllowRemoteGateRequiresRemoteProviderConfigProviderConsentBeforeSaving() async {
+        let updater = AIPrivacyRulesRecordingAISettingsUpdater(result: .success)
         let model = AISettingsModel(
-            repoPath: "/tmp/s309",
-            loader: S309StaticAISettingsLoader(snapshot: .s309Default(
-                repoPath: "/tmp/s309",
+            repoPath: "/tmp/aiPrivacyRules",
+            loader: AIPrivacyRulesStaticAISettingsLoader(snapshot: .aiPrivacyRulesDefault(
+                repoPath: "/tmp/aiPrivacyRules",
                 privacyGateEnabled: false
             )),
             updater: updater,
-            errorMapper: S309StaticAIErrorMapper()
+            errorMapper: AIPrivacyRulesStaticAIErrorMapper()
         )
 
         await model.load()
@@ -104,20 +104,20 @@ final class InitFailedErrorMappingTests: XCTestCase {
         XCTAssertEqual(model.actionFeedback, .failed(AISettingsError(
             message: "Remote AI requires provider consent.",
             recovery: "Configure remote AI before allowing the privacy gate.",
-            detail: "S3-03 owns provider setup, API key storage, connection verification, and remote scope."
+            detail: "remote-provider-config owns provider setup, API key storage, connection verification, and remote scope."
         )))
     }
 
     @MainActor
-    func testS309PrivacyGateSaveFailureKeepsLastSuccessfulStateAndRetriesSameConfig() async {
-        let updater = S309RecordingAISettingsUpdater(result: .failureThenSuccess(CoreError.Io(
+    func testAIPrivacyRulesPrivacyGateSaveFailureKeepsLastSuccessfulStateAndRetriesSameConfig() async {
+        let updater = AIPrivacyRulesRecordingAISettingsUpdater(result: .failureThenSuccess(CoreError.Io(
             message: "metadata locked"
         )))
         let model = AISettingsModel(
-            repoPath: "/tmp/s309",
-            loader: S309StaticAISettingsLoader(snapshot: .s309RemoteReady(repoPath: "/tmp/s309")),
+            repoPath: "/tmp/aiPrivacyRules",
+            loader: AIPrivacyRulesStaticAISettingsLoader(snapshot: .aiPrivacyRulesRemoteReady(repoPath: "/tmp/aiPrivacyRules")),
             updater: updater,
-            errorMapper: S309StaticAIErrorMapper()
+            errorMapper: AIPrivacyRulesStaticAIErrorMapper()
         )
 
         await model.load()
@@ -298,7 +298,7 @@ private struct InitFailedNoopWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {}
 }
 
-private actor S309StaticAISettingsLoader: CoreAISettingsLoading {
+private actor AIPrivacyRulesStaticAISettingsLoader: CoreAISettingsLoading {
     let snapshot: AISettingsSnapshot
 
     init(snapshot: AISettingsSnapshot) {
@@ -310,21 +310,21 @@ private actor S309StaticAISettingsLoader: CoreAISettingsLoading {
     }
 }
 
-private enum S309UpdateResult {
+private enum AIPrivacyRulesUpdateResult {
     case success
     case failureThenSuccess(Error)
 }
 
-private actor S309RecordingAISettingsUpdater: CoreAISettingsUpdating {
+private actor AIPrivacyRulesRecordingAISettingsUpdater: CoreAISettingsUpdating {
     struct Request: Equatable {
         var repoPath: String
         var config: AISettingsConfigSnapshot
     }
 
-    private let result: S309UpdateResult
+    private let result: AIPrivacyRulesUpdateResult
     private var recordedRequests: [Request] = []
 
-    init(result: S309UpdateResult) {
+    init(result: AIPrivacyRulesUpdateResult) {
         self.result = result
     }
 
@@ -333,11 +333,11 @@ private actor S309RecordingAISettingsUpdater: CoreAISettingsUpdating {
         recordedRequests.append(Request(repoPath: repoPath, config: normalized))
         switch result {
         case .success:
-            return AISettingsSnapshot.s309Snapshot(config: normalized)
+            return AISettingsSnapshot.aiPrivacyRulesSnapshot(config: normalized)
         case let .failureThenSuccess(error) where recordedRequests.count == 1:
             throw error
         case .failureThenSuccess:
-            return AISettingsSnapshot.s309Snapshot(config: normalized)
+            return AISettingsSnapshot.aiPrivacyRulesSnapshot(config: normalized)
         }
     }
 
@@ -346,7 +346,7 @@ private actor S309RecordingAISettingsUpdater: CoreAISettingsUpdating {
     }
 }
 
-private actor S309StaticAIErrorMapper: CoreErrorMapping {
+private actor AIPrivacyRulesStaticAIErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .io,
@@ -354,7 +354,7 @@ private actor S309StaticAIErrorMapper: CoreErrorMapping {
             severity: .medium,
             suggestedAction: "Retry save",
             recoverability: .retryable,
-            rawContext: "S3-09 C3-01"
+            rawContext: "ai-privacy-rules ai-settings-config"
         )
     }
 }
@@ -381,8 +381,8 @@ private extension RepoPathValidationSnapshot {
 }
 
 private extension AISettingsSnapshot {
-    static func s309Default(repoPath: String, privacyGateEnabled: Bool = true) -> AISettingsSnapshot {
-        s309Snapshot(config: AISettingsConfigSnapshot(
+    static func aiPrivacyRulesDefault(repoPath: String, privacyGateEnabled: Bool = true) -> AISettingsSnapshot {
+        aiPrivacyRulesSnapshot(config: AISettingsConfigSnapshot(
             repoPath: repoPath,
             aiEnabled: false,
             providerPreference: .localFirst,
@@ -396,8 +396,8 @@ private extension AISettingsSnapshot {
         ))
     }
 
-    static func s309RemoteReady(repoPath: String) -> AISettingsSnapshot {
-        s309Snapshot(config: AISettingsConfigSnapshot(
+    static func aiPrivacyRulesRemoteReady(repoPath: String) -> AISettingsSnapshot {
+        aiPrivacyRulesSnapshot(config: AISettingsConfigSnapshot(
             repoPath: repoPath,
             aiEnabled: true,
             providerPreference: .remoteFirst,
@@ -415,7 +415,7 @@ private extension AISettingsSnapshot {
         ))
     }
 
-    static func s309Snapshot(config: AISettingsConfigSnapshot) -> AISettingsSnapshot {
+    static func aiPrivacyRulesSnapshot(config: AISettingsConfigSnapshot) -> AISettingsSnapshot {
         let normalized = config.normalized()
         return AISettingsSnapshot(
             config: normalized,

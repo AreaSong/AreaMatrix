@@ -1,10 +1,10 @@
 @testable import AreaMatrix
 import XCTest
 
-final class S306AISummaryPrivacyRuleTests: XCTestCase {
+final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
     @MainActor
-    func testS306GenerateCreatesDraftWithoutSavingUntilExplicitSave() async {
-        let (model, summary, _) = s306Model(fileID: 606, report: s306Report(nil), scope: .localPreferred)
+    func testAISummaryGenerateCreatesDraftWithoutSavingUntilExplicitSave() async {
+        let (model, summary, _) = aiSummaryModel(fileID: 606, report: aiSummaryReport(nil), scope: .localPreferred)
 
         await model.generate(regenerate: false)
 
@@ -27,11 +27,11 @@ final class S306AISummaryPrivacyRuleTests: XCTestCase {
     }
 
     @MainActor
-    func testS306FailurePreservesDraftAndMapsCoreError() async {
-        let mapper = S306SummaryErrorMapper()
-        let summary = S306PrivacySummaryBridge(saveResult: .failure(CoreError.Db(message: "summary metadata locked")))
-        let model = s306Model(
-            fileID: 607, report: s306Report(nil), scope: .localPreferred, summary: summary, mapper: mapper
+    func testAISummaryFailurePreservesDraftAndMapsCoreError() async {
+        let mapper = AISummarySummaryErrorMapper()
+        let summary = AISummaryPrivacySummaryBridge(saveResult: .failure(CoreError.Db(message: "summary metadata locked")))
+        let model = aiSummaryModel(
+            fileID: 607, report: aiSummaryReport(nil), scope: .localPreferred, summary: summary, mapper: mapper
         ).0
 
         await model.generate(regenerate: false)
@@ -49,8 +49,8 @@ final class S306AISummaryPrivacyRuleTests: XCTestCase {
     }
 
     @MainActor
-    func testS306ClearOnlyCallsConfirmedSummaryClear() async {
-        let (model, summary, _) = s306Model(fileID: 608, report: s306Report(nil), scope: .localPreferred)
+    func testAISummaryClearOnlyCallsConfirmedSummaryClear() async {
+        let (model, summary, _) = aiSummaryModel(fileID: 608, report: aiSummaryReport(nil), scope: .localPreferred)
 
         await model.generate(regenerate: false)
         await model.clear()
@@ -66,7 +66,7 @@ final class S306AISummaryPrivacyRuleTests: XCTestCase {
     }
 
     @MainActor
-    func testS306PrivacyEvaluationUsesProviderScopeAndRealFileContext() async {
+    func testAISummaryPrivacyEvaluationUsesProviderScopeAndRealFileContext() async {
         let context = AISummaryPrivacyContext(
             repoRelativePath: "finance/confidential-invoice.PDF",
             fileName: "confidential-invoice.PDF",
@@ -74,9 +74,9 @@ final class S306AISummaryPrivacyRuleTests: XCTestCase {
             fileExtension: "PDF",
             tags: ["client-a", " confidential ", ""]
         )
-        let (model, summary, privacy) = s306Model(
+        let (model, summary, privacy) = aiSummaryModel(
             fileID: 622,
-            report: s306Report(nil, fields: true),
+            report: aiSummaryReport(nil, fields: true),
             scope: .remoteAllowed,
             privacyContext: context
         )
@@ -99,7 +99,7 @@ final class S306AISummaryPrivacyRuleTests: XCTestCase {
     }
 
     @MainActor
-    func testS306PrivacyRulesCreateSkippedSummaryCallLogTrace() async {
+    func testAISummaryPrivacyRulesCreateSkippedSummaryCallLogTrace() async {
         // swiftlint:disable:next large_tuple
         let cases: [(Int64, AiPrivacySkippedReason, String, AISummaryEditorStatus)] = [
             (621, .privacyRule, "block:rule-confidential", .skipped(.privacyRule)),
@@ -107,7 +107,7 @@ final class S306AISummaryPrivacyRuleTests: XCTestCase {
         ]
 
         for item in cases {
-            let (model, summary, _) = s306Model(fileID: item.0, report: s306Report(item.1), scope: .remoteAllowed)
+            let (model, summary, _) = aiSummaryModel(fileID: item.0, report: aiSummaryReport(item.1), scope: .remoteAllowed)
 
             await model.generate(regenerate: false)
 
@@ -122,16 +122,16 @@ final class S306AISummaryPrivacyRuleTests: XCTestCase {
     }
 
     @MainActor
-    func testS306PrivacyBlocksWithoutSummaryLogWhenNoCallShouldBeRecorded() async {
-        let gate = s306Report(.providerNotVerified, providerGateReason: .providerNotVerified)
+    func testAISummaryPrivacyBlocksWithoutSummaryLogWhenNoCallShouldBeRecorded() async {
+        let gate = aiSummaryReport(.providerNotVerified, providerGateReason: .providerNotVerified)
         // swiftlint:disable:next large_tuple
         let cases: [(Int64, AiPrivacyEvaluationReport, AISummaryEditorStatus, AiPrivacySkippedReason)] = [
             (630, gate, .unavailable(.providerUnavailable), .providerNotVerified),
-            (641, s306Report(.noEligibleInput), .skipped(.noEligibleInput), .noEligibleInput)
+            (641, aiSummaryReport(.noEligibleInput), .skipped(.noEligibleInput), .noEligibleInput)
         ]
 
         for item in cases {
-            let (model, summary, _) = s306Model(fileID: item.0, report: item.1, scope: .remoteAllowed)
+            let (model, summary, _) = aiSummaryModel(fileID: item.0, report: item.1, scope: .remoteAllowed)
 
             await model.generate(regenerate: false)
 
@@ -143,7 +143,7 @@ final class S306AISummaryPrivacyRuleTests: XCTestCase {
         }
     }
 
-    func testS307PrivacyRuleReferenceNormalizesCorePolicyPrefix() {
+    func testAITagSuggestionPrivacyRuleReferenceNormalizesCorePolicyPrefix() {
         XCTAssertEqual(normalizedAITagPrivacyRuleID(from: "rule:block:rule-confidential"), "rule-confidential")
         XCTAssertEqual(normalizedAITagPrivacyRuleID(from: "block:rule-confidential"), "rule-confidential")
         XCTAssertNil(normalizedAITagPrivacyRuleID(from: "block:privacy-rule"))
@@ -151,16 +151,16 @@ final class S306AISummaryPrivacyRuleTests: XCTestCase {
 }
 
 @MainActor
-private func s306Model(
+private func aiSummaryModel(
     fileID: Int64,
     report: AiPrivacyEvaluationReport,
     scope: AiSummaryProviderScope,
     privacyContext: AISummaryPrivacyContext = AISummaryPrivacyContext(),
-    summary: S306PrivacySummaryBridge = S306PrivacySummaryBridge(),
+    summary: AISummaryPrivacySummaryBridge = AISummaryPrivacySummaryBridge(),
     mapper: (any CoreErrorMapping)? = nil
     // swiftlint:disable:next large_tuple
-) -> (AISummaryEditorModel, S306PrivacySummaryBridge, S306PrivacyRulesBridge) {
-    let privacy = S306PrivacyRulesBridge(report: report)
+) -> (AISummaryEditorModel, AISummaryPrivacySummaryBridge, AISummaryPrivacyRulesBridge) {
+    let privacy = AISummaryPrivacyRulesBridge(report: report)
     let model = AISummaryEditorModel(
         repoPath: "/tmp/repo",
         fileID: fileID,
@@ -173,16 +173,16 @@ private func s306Model(
     return (model, summary, privacy)
 }
 
-private enum S306PrivacySummaryEvent: Equatable {
+private enum AISummaryPrivacySummaryEvent: Equatable {
     case generate(fileID: Int64, regenerate: Bool)
     case generateSkipped(fileID: Int64, regenerate: Bool, privacyPolicyRef: String?)
     case save(fileID: Int64, text: String, edited: Bool)
     case clear(fileID: Int64, confirmed: Bool)
 }
 
-private actor S306PrivacySummaryBridge: CoreAISummaryManaging {
+private actor AISummaryPrivacySummaryBridge: CoreAISummaryManaging {
     private let saveResult: Result<AiSummarySaveReport, Error>?
-    private var recordedEvents: [S306PrivacySummaryEvent] = []
+    private var recordedEvents: [AISummaryPrivacySummaryEvent] = []
 
     init(saveResult: Result<AiSummarySaveReport, Error>? = nil) {
         self.saveResult = saveResult
@@ -199,10 +199,10 @@ private actor S306PrivacySummaryBridge: CoreAISummaryManaging {
                 regenerate: request.regenerateExisting,
                 privacyPolicyRef: policyRef
             ))
-            return .s306PrivacySkippedDraft(request: request, privacyPolicyRef: policyRef)
+            return .aiSummaryPrivacySkippedDraft(request: request, privacyPolicyRef: policyRef)
         }
         recordedEvents.append(.generate(fileID: request.fileId, regenerate: request.regenerateExisting))
-        return .s306PrivacyDraft(request: request)
+        return .aiSummaryPrivacyDraft(request: request)
     }
 
     func saveAISummary(repoPath _: String, request: AiSummarySaveRequest) async throws -> AiSummarySaveReport {
@@ -230,12 +230,12 @@ private actor S306PrivacySummaryBridge: CoreAISummaryManaging {
         return AiSummaryClearReport(fileId: request.fileId, cleared: request.confirmed, clearedAt: 1_700_000_200)
     }
 
-    func events() -> [S306PrivacySummaryEvent] {
+    func events() -> [AISummaryPrivacySummaryEvent] {
         recordedEvents
     }
 }
 
-private actor S306PrivacyRulesBridge: CoreAIPrivacyEvaluating {
+private actor AISummaryPrivacyRulesBridge: CoreAIPrivacyEvaluating {
     private let report: AiPrivacyEvaluationReport
     private var recorded: [AiPrivacyEvaluationRequest] = []
 
@@ -244,7 +244,7 @@ private actor S306PrivacyRulesBridge: CoreAIPrivacyEvaluating {
     }
 
     func loadAIPrivacyRules(repoPath _: String) async throws -> AiPrivacyRulesSnapshot {
-        .s306PrivacyRules()
+        .aiSummaryPrivacyRules()
     }
 
     func evaluateAIPrivacy(
@@ -261,10 +261,10 @@ private actor S306PrivacyRulesBridge: CoreAIPrivacyEvaluating {
 }
 
 private extension AiSummaryDraft {
-    static func s306PrivacyDraft(request: AiSummaryGenerationRequest) -> AiSummaryDraft {
+    static func aiSummaryPrivacyDraft(request: AiSummaryGenerationRequest) -> AiSummaryDraft {
         AiSummaryDraft(
             fileId: request.fileId,
-            draftId: "draft-s306",
+            draftId: "draft-aiSummary",
             status: .draft,
             summaryText: "Quarterly invoice with payment status and vendor context.",
             route: .local,
@@ -279,7 +279,7 @@ private extension AiSummaryDraft {
         )
     }
 
-    static func s306PrivacySkippedDraft(
+    static func aiSummaryPrivacySkippedDraft(
         request: AiSummaryGenerationRequest,
         privacyPolicyRef: String
     ) -> AiSummaryDraft {
@@ -302,13 +302,13 @@ private extension AiSummaryDraft {
 }
 
 private extension AiPrivacyEvaluationReport {
-    static func s306(
+    static func aiSummary(
         _ reason: AiPrivacySkippedReason?,
         providerGateReason: AiPrivacyProviderGateReason? = nil,
         fields: Bool = false
     ) -> AiPrivacyEvaluationReport {
         let allowed = reason == nil
-        let matchedRules = reason == .privacyRule ? [s306RuleMatch()] : []
+        let matchedRules = reason == .privacyRule ? [aiSummaryRuleMatch()] : []
         let blockedFields: [AiPrivacyInputField] = allowed ? [.extractedTextExcerpt] : [
             .fileName, .repoRelativePath, .extractedTextExcerpt
         ]
@@ -325,7 +325,7 @@ private extension AiPrivacyEvaluationReport {
         )
     }
 
-    private static func s306RuleMatch() -> AiPrivacyRuleMatch {
+    private static func aiSummaryRuleMatch() -> AiPrivacyRuleMatch {
         AiPrivacyRuleMatch(
             ruleId: "rule-confidential",
             name: "Block confidential",
@@ -337,16 +337,16 @@ private extension AiPrivacyEvaluationReport {
     }
 }
 
-private func s306Report(
+private func aiSummaryReport(
     _ reason: AiPrivacySkippedReason?,
     providerGateReason: AiPrivacyProviderGateReason? = nil,
     fields: Bool = false
 ) -> AiPrivacyEvaluationReport {
-    .s306(reason, providerGateReason: providerGateReason, fields: fields)
+    .aiSummary(reason, providerGateReason: providerGateReason, fields: fields)
 }
 
 private extension AiPrivacyRulesSnapshot {
-    static func s306PrivacyRules() -> AiPrivacyRulesSnapshot {
+    static func aiSummaryPrivacyRules() -> AiPrivacyRulesSnapshot {
         AiPrivacyRulesSnapshot(
             privacyGateEnabled: true,
             rules: [],
@@ -363,7 +363,7 @@ private extension AiPrivacyRulesSnapshot {
     }
 }
 
-private actor S306SummaryErrorMapper: CoreErrorMapping {
+private actor AISummarySummaryErrorMapper: CoreErrorMapping {
     private var recordedErrors: [CoreError] = []
 
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
@@ -374,7 +374,7 @@ private actor S306SummaryErrorMapper: CoreErrorMapping {
             severity: .medium,
             suggestedAction: "Retry save.",
             recoverability: .retryable,
-            rawContext: "S3-06 C3-06"
+            rawContext: "ai-summary ai-summary-core"
         )
     }
 

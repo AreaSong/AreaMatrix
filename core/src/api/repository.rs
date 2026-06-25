@@ -167,7 +167,7 @@ pub fn update_config(repo_path: String, new_config: RepoConfig) -> CoreResult<()
 /// move, rename, overwrite, or reclassify any active repository file or other
 /// user-authored final content. Startup recovery does not repair corrupted
 /// databases, reindex the repository, process FSEvents, or generate overviews;
-/// those adjacent capabilities stay with their own C1 tasks.
+/// those adjacent capabilities stay with their dedicated API contracts.
 ///
 /// # Errors
 ///

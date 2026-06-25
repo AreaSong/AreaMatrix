@@ -119,14 +119,14 @@ struct RemoteModelConfigSheet: View {
                 }
             }
             .pickerStyle(.segmented)
-            .accessibilityIdentifier("S3-03-C3-03-provider-picker")
+            .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-provider-picker")
             TextField("Model", text: $model.modelID)
                 .textFieldStyle(.roundedBorder)
-                .accessibilityIdentifier("S3-03-C3-03-model")
+                .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-model")
             if model.provider == .other {
                 TextField("Endpoint URL", text: $model.endpointURL)
                     .textFieldStyle(.roundedBorder)
-                    .accessibilityIdentifier("S3-03-C3-03-endpoint-url")
+                    .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-endpoint-url")
             }
         }
     }
@@ -135,14 +135,14 @@ struct RemoteModelConfigSheet: View {
         AdvancedSettingsSection(title: "Credential") {
             SecureField("API key", text: $model.apiKey)
                 .textFieldStyle(.roundedBorder)
-                .accessibilityIdentifier("S3-03-C3-03-api-key")
+                .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-api-key")
             Text("Stored in Keychain. Never written to logs or diagnostics.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
             HStack(spacing: 10) {
                 Button(testButtonTitle) { Task { await model.testConnection() } }
                     .disabled(!model.canTestConnection)
-                    .accessibilityIdentifier("S3-03-C3-03-test-connection")
+                    .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-test-connection")
                 if let result = model.testResult {
                     Text(result.sanitizedMessage)
                         .font(.callout)
@@ -156,7 +156,7 @@ struct RemoteModelConfigSheet: View {
         AdvancedSettingsSection(title: "Usage scope") {
             ForEach(AISettingsFeatureKind.allCases) { feature in
                 Toggle(feature.title, isOn: scopeBinding(feature))
-                    .accessibilityIdentifier("S3-03-C3-03-scope-\(feature.rawValue)")
+                    .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-scope-\(feature.rawValue)")
                 Text(sentFieldsText(for: feature))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -178,7 +178,7 @@ struct RemoteModelConfigSheet: View {
                 "I understand remote AI sends allowed content to a third-party provider.",
                 isOn: $model.dataFlowConfirmed
             )
-            .accessibilityIdentifier("S3-03-C3-03-data-flow-confirmed")
+            .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-data-flow-confirmed")
         }
     }
 
@@ -189,7 +189,7 @@ struct RemoteModelConfigSheet: View {
                     removeCredentialOnDisable = false
                     isDisableConfirmationPresented = true
                 }
-                .accessibilityIdentifier("S3-03-C3-03-disable-remote-ai")
+                .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-disable-remote-ai")
             }
             Spacer()
             Button("Cancel", action: closeWithoutSaving)
@@ -203,7 +203,7 @@ struct RemoteModelConfigSheet: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(!model.canEnable || privacyModel.isSaving)
-            .accessibilityIdentifier("S3-03-C3-03-enable-remote-ai")
+            .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-enable-remote-ai")
             .accessibilityHint(model.enableDisabledReason)
         }
     }
@@ -218,7 +218,7 @@ struct RemoteModelConfigSheet: View {
             }
         }
         .font(.callout)
-        .accessibilityIdentifier("S3-03-C3-09-privacy-gate-status")
+        .accessibilityIdentifier("remote-provider-config-ai-privacy-rules-core-privacy-gate-status")
     }
 
     @ViewBuilder
@@ -227,16 +227,16 @@ struct RemoteModelConfigSheet: View {
             AISettingsInlineBanner(error: failure, tint: .red) {
                 if privacyModel.pendingAction != nil {
                     Button(retryPrivacyGateTitle, action: retryPrivacyGate)
-                        .accessibilityIdentifier("S3-03-C3-09-retry-privacy-gate")
+                        .accessibilityIdentifier("remote-provider-config-ai-privacy-rules-core-retry-privacy-gate")
                 }
                 Button("Open privacy rules", action: onOpenPrivacyRules)
-                    .accessibilityIdentifier("S3-03-C3-09-open-privacy-rules")
+                    .accessibilityIdentifier("remote-provider-config-ai-privacy-rules-core-open-privacy-rules")
                 if privacyModel.pendingAction == .enable {
                     Button("Disable remote AI", role: .destructive) {
                         removeCredentialOnDisable = false
                         isDisableConfirmationPresented = true
                     }
-                    .accessibilityIdentifier("S3-03-C3-09-disable-after-gate-failure")
+                    .accessibilityIdentifier("remote-provider-config-ai-privacy-rules-core-disable-after-gate-failure")
                 }
             }
         }
@@ -315,12 +315,12 @@ private struct DisableRemoteAIConfirmationSheet: View {
             )
             .fixedSize(horizontal: false, vertical: true)
             Toggle("Also remove stored API key", isOn: $removeStoredCredential)
-                .accessibilityIdentifier("S3-03-C3-03-disable-remove-stored-key")
+                .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-disable-remove-stored-key")
             HStack {
                 Spacer()
                 Button("Cancel", action: onCancel)
                 Button("Disable remote AI", role: .destructive, action: onDisable)
-                    .accessibilityIdentifier("S3-03-C3-03-confirm-disable-remote-ai")
+                    .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-confirm-disable-remote-ai")
             }
         }
         .padding(24)

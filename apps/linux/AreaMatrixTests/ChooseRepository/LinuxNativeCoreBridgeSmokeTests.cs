@@ -18,7 +18,7 @@ public static class LinuxNativeCoreBridgeSmokeTests
     private static async Task NativeClientLoadsCoreAndValidatesRepositoryPath()
     {
         string libraryPath = ResolveNativeLibraryPath();
-        string tempRoot = Path.Combine(Path.GetTempPath(), $"areamatrix-lnx-c410-{Guid.NewGuid():N}");
+        string tempRoot = Path.Combine(Path.GetTempPath(), $"areamatrix-lnx-linuxRepoConnectCore-{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempRoot);
         try
         {
@@ -60,7 +60,7 @@ public static class LinuxNativeCoreBridgeSmokeTests
     private static async Task NativeClientOpensInitializedRepositoryThroughDesktopMainQueryBridge()
     {
         string libraryPath = ResolveNativeLibraryPath();
-        string tempRoot = Path.Combine(Path.GetTempPath(), $"areamatrix-lnx-c411-{Guid.NewGuid():N}");
+        string tempRoot = Path.Combine(Path.GetTempPath(), $"areamatrix-lnx-desktopMainQueryCore-{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempRoot);
         try
         {
@@ -95,7 +95,7 @@ public static class LinuxNativeCoreBridgeSmokeTests
     private static async Task NativeClientCommitsDesktopImportThroughImportFileWithResult()
     {
         string libraryPath = ResolveNativeLibraryPath();
-        string tempRoot = Path.Combine(Path.GetTempPath(), $"areamatrix-lnx-c413-{Guid.NewGuid():N}");
+        string tempRoot = Path.Combine(Path.GetTempPath(), $"areamatrix-lnx-desktopImportFlowCore-{Guid.NewGuid():N}");
         string repo = Path.Combine(tempRoot, "repo");
         string sourceDirectory = Path.Combine(tempRoot, "source");
         string source = Path.Combine(sourceDirectory, "Linux Report.pdf");

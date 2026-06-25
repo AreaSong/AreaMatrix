@@ -3,18 +3,18 @@ import XCTest
 
 final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
     @MainActor
-    func testS209C207LoadsActionLogExecutesUndoAndBlocksUnsafeAction() async {
-        let action = UndoActionRecordSnapshot.s209PendingBatchAddTags()
+    func testBatchAddTagsUndoActionLogCoreLoadsActionLogExecutesUndoAndBlocksUnsafeAction() async {
+        let action = UndoActionRecordSnapshot.batchAddTagsPendingBatchAddTags()
         var blockedAction = action
         blockedAction.status = .blocked
         blockedAction.canUndo = false
         blockedAction.disabledReason = "External change prevents undo."
-        let undoStore = S209RecordingUndoStore(results: [
+        let undoStore = BatchAddTagsRecordingUndoStore(results: [
             .list(.success([action])),
-            .undo(.success(.s209ExecutedBatchAddTags())),
+            .undo(.success(.batchAddTagsExecutedBatchAddTags())),
             .list(.success([blockedAction]))
         ])
-        let mapper = S115ErrorMapper(mapping: .s209UndoFailure())
+        let mapper = DetailMultiSelectErrorMapper(mapping: .batchAddTagsUndoFailure())
         let load = await BatchTagUndoAction.loadAction(
             repoPath: "/tmp/repo",
             undoToken: action.actionID,
@@ -35,7 +35,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
         )
 
         XCTAssertEqual(load.action, action)
-        XCTAssertEqual(applied.result, .s209ExecutedBatchAddTags())
+        XCTAssertEqual(applied.result, .batchAddTagsExecutedBatchAddTags())
         XCTAssertEqual(blockedLoad.unavailableReason, "External change prevents undo.")
         let listRequests = await undoStore.listRequests()
         let undoRequests = await undoStore.undoRequests()
@@ -44,33 +44,33 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS209C207MapsUndoFailureWithoutMockingSuccess() async {
-        let action = UndoActionRecordSnapshot.s209PendingBatchAddTags()
+    func testBatchAddTagsUndoActionLogCoreMapsUndoFailureWithoutMockingSuccess() async {
+        let action = UndoActionRecordSnapshot.batchAddTagsPendingBatchAddTags()
         let undoStore =
-            S209RecordingUndoStore(results: [.undo(.failure(CoreError.Conflict(path: "docs/contract.pdf")))])
+            BatchAddTagsRecordingUndoStore(results: [.undo(.failure(CoreError.Conflict(path: "docs/contract.pdf")))])
         let applied = await BatchTagUndoAction.undo(
             repoPath: "/tmp/repo",
             action: action,
             undoStore: undoStore,
-            errorMapper: S115ErrorMapper(mapping: .s209UndoFailure())
+            errorMapper: DetailMultiSelectErrorMapper(mapping: .batchAddTagsUndoFailure())
         )
 
         XCTAssertNil(applied.result)
-        XCTAssertEqual(applied.failure, .s209UndoFailure())
+        XCTAssertEqual(applied.failure, .batchAddTagsUndoFailure())
         let undoRequests = await undoStore.undoRequests()
         XCTAssertEqual(undoRequests, ["/tmp/repo|\(action.actionID)"])
     }
 
     @MainActor
-    func testS209C207ApplyCompletionHandsUndoActionToMainWindowToast() async {
-        let action = UndoActionRecordSnapshot.s209PendingBatchAddTags()
-        let undoStore = S209RecordingUndoStore(results: [.list(.success([action]))])
+    func testBatchAddTagsUndoActionLogCoreApplyCompletionHandsUndoActionToMainWindowToast() async {
+        let action = UndoActionRecordSnapshot.batchAddTagsPendingBatchAddTags()
+        let undoStore = BatchAddTagsRecordingUndoStore(results: [.list(.success([action]))])
         let completion = await BatchTagUndoAction.completionAfterBatchApply(
             repoPath: "/tmp/repo",
-            report: .s209BatchAddTagsReport(),
+            report: .batchAddTagsBatchAddTagsReport(),
             failure: nil,
             undoStore: undoStore,
-            errorMapper: S115ErrorMapper(mapping: .s209UndoFailure())
+            errorMapper: DetailMultiSelectErrorMapper(mapping: .batchAddTagsUndoFailure())
         )
 
         XCTAssertEqual(completion.undoState, .ready(action))
@@ -80,17 +80,17 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS209C207UndoRefreshTargetsDriveVisibleRefreshes() async {
-        let action = UndoActionRecordSnapshot.s209PendingBatchAddTags()
-        let undoStore = S209RecordingUndoStore(results: [
-            .undo(.success(.s209ExecutedBatchAddTags())),
-            .list(.success([.s209ExecutedActionLogRow()]))
+    func testBatchAddTagsUndoActionLogCoreUndoRefreshTargetsDriveVisibleRefreshes() async {
+        let action = UndoActionRecordSnapshot.batchAddTagsPendingBatchAddTags()
+        let undoStore = BatchAddTagsRecordingUndoStore(results: [
+            .undo(.success(.batchAddTagsExecutedBatchAddTags())),
+            .list(.success([.batchAddTagsExecutedActionLogRow()]))
         ])
         let applied = await BatchTagUndoAction.undo(
             repoPath: "/tmp/repo",
             action: action,
             undoStore: undoStore,
-            errorMapper: S115ErrorMapper(mapping: .s209UndoFailure())
+            errorMapper: DetailMultiSelectErrorMapper(mapping: .batchAddTagsUndoFailure())
         )
         guard let result = applied.result else {
             return XCTFail("expected undo_action to return refresh_targets")
@@ -100,13 +100,13 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
             repoPath: "/tmp/repo",
             actionID: result.actionID,
             undoStore: undoStore,
-            errorMapper: S115ErrorMapper(mapping: .s209UndoFailure())
+            errorMapper: DetailMultiSelectErrorMapper(mapping: .batchAddTagsUndoFailure())
         )
 
         XCTAssertTrue(plan.refreshesSelectionDetails)
         XCTAssertTrue(plan.refreshesChangeLog)
         XCTAssertTrue(plan.refreshesUndoActions)
-        XCTAssertEqual(refreshed.action, .s209ExecutedActionLogRow())
+        XCTAssertEqual(refreshed.action, .batchAddTagsExecutedActionLogRow())
         let undoRequests = await undoStore.undoRequests()
         let listRequests = await undoStore.listRequests()
         XCTAssertEqual(undoRequests, ["/tmp/repo|\(action.actionID)"])
@@ -114,8 +114,8 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS115PageIntegrationUsesRealC111AndC112CoreBridgeForMultiSelection() async throws {
-        let repoURL = try makeS115TemporaryRepositoryURL()
+    func testDetailMultiSelectPageIntegrationUsesRealListFilesCoreAndGetFileDetailCoreCoreBridgeForMultiSelection() async throws {
+        let repoURL = try makeDetailMultiSelectTemporaryRepositoryURL()
         defer { try? FileManager.default.removeItem(at: repoURL) }
         let docsURL = repoURL.appendingPathComponent("docs", isDirectory: true)
         try FileManager.default.createDirectory(at: docsURL, withIntermediateDirectories: true)
@@ -152,19 +152,19 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS115PageIntegrationExitsToSingleAndEmptyWithoutBatchWriteActions() async {
-        let first = FileEntrySnapshot.s115Fixture(id: 1, currentName: "a.pdf")
-        let second = FileEntrySnapshot.s115Fixture(id: 2, currentName: "b.pdf")
-        let detailer = S115SequenceDetailer(results: [
+    func testDetailMultiSelectPageIntegrationExitsToSingleAndEmptyWithoutBatchWriteActions() async {
+        let first = FileEntrySnapshot.detailMultiSelectFixture(id: 1, currentName: "a.pdf")
+        let second = FileEntrySnapshot.detailMultiSelectFixture(id: 2, currentName: "b.pdf")
+        let detailer = DetailMultiSelectSequenceDetailer(results: [
             .success(first),
             .success(second),
             .success(second)
         ])
         let model = MainFileListModel(
-            opening: .s115Fixture(repoPath: "/tmp/repo", files: [first, second]),
-            fileLister: S115NoopLister(),
+            opening: .detailMultiSelectFixture(repoPath: "/tmp/repo", files: [first, second]),
+            fileLister: DetailMultiSelectNoopLister(),
             fileDetailer: detailer,
-            errorMapper: S115ErrorMapper(mapping: .s115DbMapping())
+            errorMapper: DetailMultiSelectErrorMapper(mapping: .detailMultiSelectDbMapping())
         )
 
         await model.selectFiles([first.id, second.id])
@@ -190,30 +190,30 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS115PageIntegrationKeepsCopyPathsAvailableOnPartialC112Failure() async {
-        let available = FileEntrySnapshot.s115Fixture(id: 10, currentName: "available.pdf")
-        let stale = FileEntrySnapshot.s115Fixture(id: 11, currentName: "stale.pdf")
-        let mapping = CoreErrorMappingSnapshot.s115FileNotFoundMapping()
+    func testDetailMultiSelectPageIntegrationKeepsCopyPathsAvailableOnPartialGetFileDetailCoreFailure() async {
+        let available = FileEntrySnapshot.detailMultiSelectFixture(id: 10, currentName: "available.pdf")
+        let stale = FileEntrySnapshot.detailMultiSelectFixture(id: 11, currentName: "stale.pdf")
+        let mapping = CoreErrorMappingSnapshot.detailMultiSelectFileNotFoundMapping()
         let model = MainFileListModel(
-            opening: .s115Fixture(repoPath: "/tmp/repo", files: [available, stale]),
-            fileLister: S115NoopLister(),
-            fileDetailer: S115SequenceDetailer(results: [
+            opening: .detailMultiSelectFixture(repoPath: "/tmp/repo", files: [available, stale]),
+            fileLister: DetailMultiSelectNoopLister(),
+            fileDetailer: DetailMultiSelectSequenceDetailer(results: [
                 .success(available),
                 .failure(CoreError.FileNotFound(path: stale.path))
             ]),
-            errorMapper: S115ErrorMapper(mapping: mapping)
+            errorMapper: DetailMultiSelectErrorMapper(mapping: mapping)
         )
 
         await model.selectFiles([available.id, stale.id])
         let summary = MultiSelectionDetailSummary(selection: model.selection, files: model.files)
         let copier = ShellRecordingPathCopier()
-        let announcer = S117RecordingAccessibilityAnnouncer()
+        let announcer = ImportSingleFileRecordingAccessibilityAnnouncer()
         let shell = OnboardingModel(
             pathCopier: copier,
             accessibilityAnnouncer: announcer
         )
         shell.copyMainListPaths(
-            opening: .s115Fixture(repoPath: "/tmp/repo", files: model.files),
+            opening: .detailMultiSelectFixture(repoPath: "/tmp/repo", files: model.files),
             relativePaths: summary.paths
         )
 
@@ -226,13 +226,13 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
     }
 }
 
-private actor S115NoopLister: CoreFileListing {
+private actor DetailMultiSelectNoopLister: CoreFileListing {
     func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         []
     }
 }
 
-private actor S115SequenceDetailer: CoreFileDetailing {
+private actor DetailMultiSelectSequenceDetailer: CoreFileDetailing {
     enum Result {
         case success(FileEntrySnapshot)
         case failure(Error)
@@ -258,7 +258,7 @@ private actor S115SequenceDetailer: CoreFileDetailing {
     }
 }
 
-private actor S115ErrorMapper: CoreErrorMapping {
+private actor DetailMultiSelectErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
 
     init(mapping: CoreErrorMappingSnapshot) {
@@ -271,17 +271,17 @@ private actor S115ErrorMapper: CoreErrorMapping {
 }
 
 private extension RepositoryOpeningResult {
-    static func s115Fixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
+    static func detailMultiSelectFixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
-            config: .s115Fixture(repoPath: repoPath),
-            tree: .s115TreeFixture(fileCount: Int64(files.count)),
+            config: .detailMultiSelectFixture(repoPath: repoPath),
+            tree: .detailMultiSelectTreeFixture(fileCount: Int64(files.count)),
             currentCategoryFiles: files
         )
     }
 }
 
 private extension RepoConfigSnapshot {
-    static func s115Fixture(repoPath: String) -> RepoConfigSnapshot {
+    static func detailMultiSelectFixture(repoPath: String) -> RepoConfigSnapshot {
         RepoConfigSnapshot(
             repoPath: repoPath,
             defaultMode: "Copied",
@@ -298,7 +298,7 @@ private extension RepoConfigSnapshot {
 }
 
 private extension RepositoryTreeNodeSnapshot {
-    static func s115TreeFixture(fileCount: Int64) -> RepositoryTreeNodeSnapshot {
+    static func detailMultiSelectTreeFixture(fileCount: Int64) -> RepositoryTreeNodeSnapshot {
         RepositoryTreeNodeSnapshot(
             slug: "__root__",
             displayName: "Repository",
@@ -311,7 +311,7 @@ private extension RepositoryTreeNodeSnapshot {
 }
 
 private extension FileEntrySnapshot {
-    static func s115Fixture(id: Int64, currentName: String) -> FileEntrySnapshot {
+    static func detailMultiSelectFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
         FileEntrySnapshot(
             id: id,
             path: "docs/\(currentName)",
@@ -319,7 +319,7 @@ private extension FileEntrySnapshot {
             currentName: currentName,
             category: "docs",
             sizeBytes: 128,
-            hashSha256: "s115-\(id)",
+            hashSha256: "detailMultiSelect-\(id)",
             storageMode: "Copied",
             origin: "Imported",
             sourcePath: nil,
@@ -330,44 +330,44 @@ private extension FileEntrySnapshot {
 }
 
 private extension CoreErrorMappingSnapshot {
-    static func s209UndoFailure() -> CoreErrorMappingSnapshot {
+    static func batchAddTagsUndoFailure() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .conflict,
             userMessage: "无法撤销批量标签操作",
             severity: .medium,
             suggestedAction: "打开 Undo 历史查看阻塞原因。",
             recoverability: .refreshRequired,
-            rawContext: "S2-09 C2-07 undo_action"
+            rawContext: "batch-add-tags undo-action-log undo_action"
         )
     }
 
-    static func s115DbMapping() -> CoreErrorMappingSnapshot {
+    static func detailMultiSelectDbMapping() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .db,
             userMessage: "当前列表不可用",
             severity: .high,
             suggestedAction: "请重试当前列表。",
             recoverability: .retryable,
-            rawContext: "S1-15 C1-11 list_files"
+            rawContext: "file-list list-files list_files"
         )
     }
 
-    static func s115FileNotFoundMapping() -> CoreErrorMappingSnapshot {
+    static func detailMultiSelectFileNotFoundMapping() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .fileNotFound,
             userMessage: "部分选中项无法读取元数据",
             severity: .medium,
             suggestedAction: "刷新当前选择，确认文件是否仍在资料库中。",
             recoverability: .refreshRequired,
-            rawContext: "S1-15 C1-12 get_file"
+            rawContext: "file-list file-detail-core get_file"
         )
     }
 }
 
 private extension UndoActionRecordSnapshot {
-    static func s209PendingBatchAddTags() -> UndoActionRecordSnapshot {
+    static func batchAddTagsPendingBatchAddTags() -> UndoActionRecordSnapshot {
         UndoActionRecordSnapshot(
-            actionID: "undo-c2-07",
+            actionID: "undo-action-log",
             kind: "batch_add_tags",
             summary: "Added urgent to 2 files.",
             affectedCount: 3,
@@ -380,8 +380,8 @@ private extension UndoActionRecordSnapshot {
         )
     }
 
-    static func s209ExecutedActionLogRow() -> UndoActionRecordSnapshot {
-        var action = s209PendingBatchAddTags()
+    static func batchAddTagsExecutedActionLogRow() -> UndoActionRecordSnapshot {
+        var action = batchAddTagsPendingBatchAddTags()
         action.status = .executed
         action.canUndo = false
         action.updatedAt = 1_700_000_420
@@ -390,9 +390,9 @@ private extension UndoActionRecordSnapshot {
 }
 
 private extension UndoActionResultSnapshot {
-    static func s209ExecutedBatchAddTags() -> UndoActionResultSnapshot {
+    static func batchAddTagsExecutedBatchAddTags() -> UndoActionResultSnapshot {
         UndoActionResultSnapshot(
-            actionID: "undo-c2-07",
+            actionID: "undo-action-log",
             status: .executed,
             summary: "Undone: added urgent to 2 files.",
             affectedCount: 3,
@@ -403,7 +403,7 @@ private extension UndoActionResultSnapshot {
 }
 
 private extension BatchMutationReportSnapshot {
-    static func s209BatchAddTagsReport() -> BatchMutationReportSnapshot {
+    static func batchAddTagsBatchAddTagsReport() -> BatchMutationReportSnapshot {
         BatchMutationReportSnapshot(
             requestedFileCount: 2,
             requestedTagCount: 1,
@@ -414,12 +414,12 @@ private extension BatchMutationReportSnapshot {
                 BatchMutationItemResultSnapshot(fileID: 1, tag: "urgent", status: .added, error: nil),
                 BatchMutationItemResultSnapshot(fileID: 2, tag: "urgent", status: .added, error: nil)
             ],
-            undoToken: "undo-c2-07"
+            undoToken: "undo-action-log"
         )
     }
 }
 
-private actor S209RecordingUndoStore: CoreUndoActionLogging {
+private actor BatchAddTagsRecordingUndoStore: CoreUndoActionLogging {
     enum Result { case list(Swift.Result<[UndoActionRecordSnapshot], Error>), undo(Swift.Result<
         UndoActionResultSnapshot,
         Error
@@ -463,9 +463,9 @@ private actor S209RecordingUndoStore: CoreUndoActionLogging {
     }
 }
 
-private func makeS115TemporaryRepositoryURL() throws -> URL {
+private func makeDetailMultiSelectTemporaryRepositoryURL() throws -> URL {
     let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixS115Integration-\(UUID().uuidString)", isDirectory: true)
+        .appendingPathComponent("AreaMatrixDetailMultiSelectIntegration-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
 }

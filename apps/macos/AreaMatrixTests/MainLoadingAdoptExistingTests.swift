@@ -3,7 +3,7 @@ import XCTest
 
 final class MainLoadingAdoptExistingTests: XCTestCase {
     @MainActor
-    func testMainLoadingRunsC116RecoveryBeforeConfiguredRepositoryOpen() async {
+    func testMainLoadingRunsStartupRecoveryCoreRecoveryBeforeConfiguredRepositoryOpen() async {
         let report = RecoveryReportSnapshot(
             cleanedStagingFiles: 2,
             revertedStagingDbRows: 1,
@@ -148,7 +148,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
     }
 
     @MainActor
-    func testMainLoadingUsesC115TreeWhileRepositoryOpenIsStillRunning() async {
+    func testMainLoadingUsesBuildTreeCoreTreeWhileRepositoryOpenIsStillRunning() async {
         let tree = RepositoryTreeNodeSnapshot.mainLoadingTreeFixture()
         let opener = MainLoadingPausingRepositoryOpener(
             opening: .mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 2)
@@ -185,7 +185,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
     }
 
     @MainActor
-    func testMainLoadingMapsC115TreeFailureAndRetryReloadsTree() async {
+    func testMainLoadingMapsBuildTreeCoreTreeFailureAndRetryReloadsTree() async {
         let mapping = CoreErrorMappingSnapshot.mainLoadingDbFixture(rawContext: "tree db locked")
         let opener = MainLoadingPausingRepositoryOpener(
             opening: .mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 2)

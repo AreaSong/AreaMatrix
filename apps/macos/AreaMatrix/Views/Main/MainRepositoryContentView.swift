@@ -383,7 +383,7 @@ extension MainRepositoryContentView {
                 .onSubmit {
                     fileListModel.enterSearch(context: .toolbar)
                 }
-                .accessibilityIdentifier("S2-01-search-field")
+                .accessibilityIdentifier("search-index-status-search-field")
             Picker("Mode", selection: $searchMode) {
                 ForEach(SearchModeSnapshot.allCases) { mode in
                     Text(mode.displayName).tag(mode)
@@ -391,7 +391,7 @@ extension MainRepositoryContentView {
             }
             .pickerStyle(.segmented)
             .frame(width: 170)
-            .accessibilityIdentifier("S3-08-C3-08-search-mode")
+            .accessibilityIdentifier("semantic-search-semantic-search-core-search-mode")
             Picker("Scope", selection: $searchScope) {
                 ForEach(SearchScopeSnapshot.allCases) { scope in
                     Text(scope.displayName).tag(scope)
@@ -412,7 +412,7 @@ extension MainRepositoryContentView {
             .buttonStyle(.borderless)
             .help("Undo History")
             .accessibilityLabel("Undo History")
-            .accessibilityIdentifier("S2-11-C2-07-toolbar-open-history")
+            .accessibilityIdentifier("undo-history-undo-action-log-toolbar-open-history")
             Button("Import...", action: onImport)
                 .disabled(opening.isReadOnly)
             Button(action: onOpenSettings) {

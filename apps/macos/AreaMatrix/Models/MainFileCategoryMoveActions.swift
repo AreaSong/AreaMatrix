@@ -205,7 +205,7 @@ extension MainFileListModel {
             file: movedFile,
             targetCategory: movedFile.category,
             moveFile: moveFile,
-            sourcePageID: "S3-04",
+            sourcePageID: "ai-category-suggestion",
             aiProvenance: ClassifierRuleAIProvenance(suggestion: suggestion, finalCategory: movedFile.category)
         ) {
             beginClassifierRuleRoute(.saveRule(handoff), handoff: handoff)

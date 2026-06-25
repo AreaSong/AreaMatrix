@@ -634,7 +634,7 @@ SCAN files USING INDEX idx_files_category_active
 USE TEMP B-TREE FOR GROUP BY
 ```
 
-性能：10 万行约 30 ms（必须扫整索引）。MVP 可接受；大库下加物化视图。
+性能：10 万行约 30 ms（必须扫整索引）。当前可接受；大库下加物化视图。
 
 ### Q5：单文件 change_log 历史
 
@@ -683,7 +683,7 @@ SELECT * FROM files WHERE current_name LIKE '%2026%';
 SCAN files
 ```
 
-10 万行约 100 ms。Stage 2 起加 FTS5 全文搜索表：
+10 万行约 100 ms。全文搜索能力需要加 FTS5 全文搜索表：
 
 ```sql
 CREATE VIRTUAL TABLE files_fts USING fts5(
@@ -769,7 +769,7 @@ VACUUM;        -- 删 deleted 行 > 30% 时手动跑（重整页）
 | INV-D8 status 在枚举内 | CHECK 约束 | INSERT/UPDATE |
 | INV-D9 scan session 状态可恢复 | `scan_sessions.status` CHECK | 扫描启动/恢复 |
 
-`fsck` 命令（Stage 2）跑：
+`fsck` 命令跑：
 
 ```sql
 SELECT id FROM files WHERE status = 'active' AND deleted_at IS NOT NULL;
@@ -855,7 +855,7 @@ cp <repo>/.areamatrix/index.db.bak.<timestamp> <repo>/.areamatrix/index.db
 
 ## 100 万文件以上的考量
 
-100 万文件以上是 Stage 4 才考虑，超出 MVP 范围。需要的改造：
+100 万文件以上需要后续大库优化。需要的改造：
 
 - files 表分片（按 category 或时间分区）
 - 全文搜索切换到独立服务（不在 SQLite）

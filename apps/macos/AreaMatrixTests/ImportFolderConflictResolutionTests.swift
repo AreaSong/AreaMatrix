@@ -3,18 +3,18 @@ import XCTest
 
 final class ImportFolderConflictResolutionTests: XCTestCase {
     @MainActor
-    func testS221C207LoadsUndoActionFromCoreActionLogAfterReplaceApply() async {
-        let action = UndoActionRecordSnapshot.s221PendingImportConflictBatch()
-        let undoStore = S221UndoStore(results: [.list(.success([action]))])
-        let model = s221UndoModel(
-            conflictBatcher: S221UndoConflictBatcher(preview: .s221UndoReplacePreview),
+    func testImportConflictBatchUndoActionLogCoreLoadsUndoActionFromCoreActionLogAfterReplaceApply() async {
+        let action = UndoActionRecordSnapshot.importConflictBatchPendingImportConflictBatch()
+        let undoStore = ImportConflictBatchUndoStore(results: [.list(.success([action]))])
+        let model = importConflictBatchUndoModel(
+            conflictBatcher: ImportConflictBatchUndoConflictBatcher(preview: .importConflictBatchUndoReplacePreview),
             undoStore: undoStore
         )
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
 
         model.applyPreviewRows(
-            [s118ReadyBatchRow(url: invoiceURL)],
-            request: s221UndoRequest(urls: [invoiceURL], conflictIDs: ["dup-1"]),
+            [importBatchReadyBatchRow(url: invoiceURL)],
+            request: importConflictBatchUndoRequest(urls: [invoiceURL], conflictIDs: ["dup-1"]),
             selectedDestination: .autoClassify
         )
         model.updateConflictBatchDuplicateStrategy(.replace)
@@ -29,16 +29,16 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
     }
 
     @MainActor
-    func testS221C207ReportsUnavailableWhenUndoTokenIsMissing() async {
-        let model = s221UndoModel(
-            conflictBatcher: S221UndoConflictBatcher(),
-            undoStore: S221UndoStore(results: [])
+    func testImportConflictBatchUndoActionLogCoreReportsUnavailableWhenUndoTokenIsMissing() async {
+        let model = importConflictBatchUndoModel(
+            conflictBatcher: ImportConflictBatchUndoConflictBatcher(),
+            undoStore: ImportConflictBatchUndoStore(results: [])
         )
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
 
         model.applyPreviewRows(
-            [s118ReadyBatchRow(url: invoiceURL)],
-            request: s221UndoRequest(urls: [invoiceURL], conflictIDs: ["dup-1"]),
+            [importBatchReadyBatchRow(url: invoiceURL)],
+            request: importConflictBatchUndoRequest(urls: [invoiceURL], conflictIDs: ["dup-1"]),
             selectedDestination: .autoClassify
         )
         await model.loadImportConflictBatchPreview()
@@ -51,22 +51,22 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
     }
 
     @MainActor
-    func testS221C207UndoButtonExecutesCoreUndoAction() async {
-        let action = UndoActionRecordSnapshot.s221PendingImportConflictBatch()
-        let result = UndoActionResultSnapshot.s221ExecutedImportConflictBatch()
-        let undoStore = S221UndoStore(results: [
+    func testImportConflictBatchUndoActionLogCoreUndoButtonExecutesCoreUndoAction() async {
+        let action = UndoActionRecordSnapshot.importConflictBatchPendingImportConflictBatch()
+        let result = UndoActionResultSnapshot.importConflictBatchExecutedImportConflictBatch()
+        let undoStore = ImportConflictBatchUndoStore(results: [
             .list(.success([action])),
             .undo(.success(result))
         ])
-        let model = s221UndoModel(
-            conflictBatcher: S221UndoConflictBatcher(preview: .s221UndoReplacePreview),
+        let model = importConflictBatchUndoModel(
+            conflictBatcher: ImportConflictBatchUndoConflictBatcher(preview: .importConflictBatchUndoReplacePreview),
             undoStore: undoStore
         )
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
 
         model.applyPreviewRows(
-            [s118ReadyBatchRow(url: invoiceURL)],
-            request: s221UndoRequest(urls: [invoiceURL], conflictIDs: ["dup-1"]),
+            [importBatchReadyBatchRow(url: invoiceURL)],
+            request: importConflictBatchUndoRequest(urls: [invoiceURL], conflictIDs: ["dup-1"]),
             selectedDestination: .autoClassify
         )
         model.updateConflictBatchDuplicateStrategy(.replace)
@@ -80,17 +80,17 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
     }
 
     @MainActor
-    func testS119FolderConflictPrecheckMapsDuplicateNameAndBlockedRows() async {
-        let fixture = S119FolderConflictFixture.make()
+    func testImportFolderFolderConflictPrecheckMapsDuplicateNameAndBlockedRows() async {
+        let fixture = ImportFolderFolderConflictFixture.make()
         let model = ImportFolderPreviewModel(
             predictor: fixture.predictor,
-            importer: S118RecordingBatchImporter(),
-            errorMapper: S117RecordingErrorMapper(),
+            importer: ImportBatchRecordingBatchImporter(),
+            errorMapper: ImportSingleFileRecordingErrorMapper(),
             conflictPrechecker: fixture.prechecker,
             scanner: fixture.scanner
         )
 
-        await model.load(request: s119FolderRequest(rootURL: fixture.rootURL))
+        await model.load(request: importFolderFolderRequest(rootURL: fixture.rootURL))
         let requests = await fixture.prechecker.recordedRequests()
 
         XCTAssertEqual(requests.map(\.destination), [.autoClassify])
@@ -104,24 +104,24 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
     }
 
     @MainActor
-    func testS119FolderConflictStrategiesControlImportQueueAndSummary() async {
-        let fixture = S119FolderConflictFixture.make(includeBlocked: false)
-        let importer = S118RecordingBatchImporter()
+    func testImportFolderFolderConflictStrategiesControlImportQueueAndSummary() async {
+        let fixture = ImportFolderFolderConflictFixture.make(includeBlocked: false)
+        let importer = ImportBatchRecordingBatchImporter()
         let model = ImportFolderPreviewModel(
             predictor: fixture.predictor,
             importer: importer,
-            errorMapper: S117RecordingErrorMapper(),
+            errorMapper: ImportSingleFileRecordingErrorMapper(),
             conflictPrechecker: fixture.prechecker,
             scanner: fixture.scanner
         )
 
-        await model.load(request: s119FolderRequest(rootURL: fixture.rootURL))
+        await model.load(request: importFolderFolderRequest(rootURL: fixture.rootURL))
         model.renameIncomingFile(for: fixture.nameURL.path, to: "renamed-name.pdf")
         let outcome = await model.importReadyFiles()
         let recordedRequests = await importer.recordedRequests()
 
         XCTAssertEqual(recordedRequests, [
-            S118BatchImportRequest(
+            ImportBatchBatchImportRequest(
                 destination: .autoClassify,
                 suggestedCategory: "docs",
                 overrideFilename: "renamed-name.pdf",
@@ -135,21 +135,21 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
     }
 
     @MainActor
-    func testS119FolderReplaceRequiresS124ConfirmationBeforeImport() async throws {
+    func testImportFolderFolderReplaceRequiresReplaceConfirmConfirmationBeforeImport() async throws {
         let duplicateURL = URL(fileURLWithPath: "/tmp/client-a/dup.pdf")
-        let scanner = s119StaticScanner(urls: [duplicateURL])
-        let prechecker = S119StaticConflictPrechecker(results: [
+        let scanner = importFolderStaticScanner(urls: [duplicateURL])
+        let prechecker = ImportFolderStaticConflictPrechecker(results: [
             duplicateURL.path: .duplicate(existingPath: "docs/existing-dup.pdf")
         ])
-        let importer = S118RecordingBatchImporter()
+        let importer = ImportBatchRecordingBatchImporter()
         let model = ImportFolderPreviewModel(
-            predictor: S119RecordingPredictor(results: [.success(.s119Prediction())]),
+            predictor: ImportFolderRecordingPredictor(results: [.success(.importFolderPrediction())]),
             importer: importer,
-            errorMapper: S117RecordingErrorMapper(),
+            errorMapper: ImportSingleFileRecordingErrorMapper(),
             conflictPrechecker: prechecker,
             scanner: scanner
         )
-        let request = s119FolderRequest(
+        let request = importFolderFolderRequest(
             rootURL: URL(fileURLWithPath: "/tmp/client-a"),
             allowReplaceDuringImport: true
         )
@@ -173,14 +173,14 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         let outcome = await model.importReadyFiles()
         let recordedRequests = await importer.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [s119FolderOverwriteRequest()])
+        XCTAssertEqual(recordedRequests, [importFolderFolderOverwriteRequest()])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(model.rows.first?.status.tag, "IMPORTED")
     }
 }
 
-private func s119FolderOverwriteRequest() -> S118BatchImportRequest {
-    S118BatchImportRequest(
+private func importFolderFolderOverwriteRequest() -> ImportBatchBatchImportRequest {
+    ImportBatchBatchImportRequest(
         destination: .autoClassify,
         suggestedCategory: "docs",
         overrideFilename: "ready.pdf",
@@ -188,14 +188,14 @@ private func s119FolderOverwriteRequest() -> S118BatchImportRequest {
     )
 }
 
-private struct S119FolderConflictFixture {
+private struct ImportFolderFolderConflictFixture {
     var rootURL: URL
     var nameURL: URL
-    var scanner: S119StaticFolderScanner
-    var predictor: S119MappedPredictor
-    var prechecker: S119StaticConflictPrechecker
+    var scanner: ImportFolderStaticFolderScanner
+    var predictor: ImportFolderMappedPredictor
+    var prechecker: ImportFolderStaticConflictPrechecker
 
-    static func make(includeBlocked: Bool = true) -> S119FolderConflictFixture {
+    static func make(includeBlocked: Bool = true) -> ImportFolderFolderConflictFixture {
         let rootURL = URL(fileURLWithPath: "/tmp/client-a")
         let duplicateURL = rootURL.appendingPathComponent("dup.pdf")
         let nameURL = rootURL.appendingPathComponent("name.pdf")
@@ -205,8 +205,8 @@ private struct S119FolderConflictFixture {
             ImportFolderPreviewRow.loading(fileURL: nameURL, rootURL: rootURL)
         ]
         var predictions: [String: Result<ClassifyResultSnapshot, Error>] = [
-            "dup.pdf": .success(.s119Prediction(category: "docs", suggestedName: "dup.pdf")),
-            "name.pdf": .success(.s119Prediction(category: "docs", suggestedName: "name.pdf"))
+            "dup.pdf": .success(.importFolderPrediction(category: "docs", suggestedName: "dup.pdf")),
+            "name.pdf": .success(.importFolderPrediction(category: "docs", suggestedName: "name.pdf"))
         ]
         var results: [String: ImportFolderConflictPrecheckResult] = [
             duplicateURL.path: .duplicate(existingPath: "docs/existing-dup.pdf"),
@@ -215,39 +215,39 @@ private struct S119FolderConflictFixture {
 
         if includeBlocked {
             rows.append(ImportFolderPreviewRow.loading(fileURL: blockedURL, rootURL: rootURL))
-            predictions["blocked.pdf"] = .success(.s119Prediction(category: "docs", suggestedName: "blocked.pdf"))
+            predictions["blocked.pdf"] = .success(.importFolderPrediction(category: "docs", suggestedName: "blocked.pdf"))
             results[blockedURL.path] = .blocked("Conflict precheck failed: permission denied")
         }
 
-        return S119FolderConflictFixture(
+        return ImportFolderFolderConflictFixture(
             rootURL: rootURL,
             nameURL: nameURL,
-            scanner: S119StaticFolderScanner(result: ImportFolderScanResult(
+            scanner: ImportFolderStaticFolderScanner(result: ImportFolderScanResult(
                 rows: rows,
                 folderCount: 0,
                 skippedRules: [],
                 errors: []
             )),
-            predictor: S119MappedPredictor(resultsByFilename: predictions),
-            prechecker: S119StaticConflictPrechecker(results: results)
+            predictor: ImportFolderMappedPredictor(resultsByFilename: predictions),
+            prechecker: ImportFolderStaticConflictPrechecker(results: results)
         )
     }
 }
 
 @MainActor
-private func s221UndoModel(
+private func importConflictBatchUndoModel(
     conflictBatcher: any CoreImportConflictBatching,
     undoStore: any CoreUndoActionLogging
 ) -> ImportBatchCopyImportModel {
     ImportBatchCopyImportModel(
-        importer: S118RecordingBatchImporter(),
-        errorMapper: S117RecordingErrorMapper(),
+        importer: ImportBatchRecordingBatchImporter(),
+        errorMapper: ImportSingleFileRecordingErrorMapper(),
         conflictBatcher: conflictBatcher,
         undoActionStore: undoStore
     )
 }
 
-private func s221UndoRequest(urls: [URL], conflictIDs: [String]) -> ImportEntryRequest {
+private func importConflictBatchUndoRequest(urls: [URL], conflictIDs: [String]) -> ImportEntryRequest {
     ImportEntryRequest(
         repoPath: "/tmp/repo",
         source: .dropZone,
@@ -262,10 +262,10 @@ private func s221UndoRequest(urls: [URL], conflictIDs: [String]) -> ImportEntryR
     )
 }
 
-private actor S221UndoConflictBatcher: CoreImportConflictBatching {
+private actor ImportConflictBatchUndoConflictBatcher: CoreImportConflictBatching {
     private let preview: ImportConflictBatchPreviewReportSnapshot
 
-    init(preview: ImportConflictBatchPreviewReportSnapshot = .s221DefaultUndoPreview) {
+    init(preview: ImportConflictBatchPreviewReportSnapshot = .importConflictBatchDefaultUndoPreview) {
         self.preview = preview
     }
 
@@ -281,11 +281,11 @@ private actor S221UndoConflictBatcher: CoreImportConflictBatching {
         request: ImportConflictBatchApplyRequestSnapshot,
         previewToken _: String
     ) async throws -> ImportConflictBatchApplyReportSnapshot {
-        .s221UndoReport(for: request)
+        .importConflictBatchUndoReport(for: request)
     }
 }
 
-private actor S221UndoStore: CoreUndoActionLogging {
+private actor ImportConflictBatchUndoStore: CoreUndoActionLogging {
     enum Result {
         case list(Swift.Result<[UndoActionRecordSnapshot], Error>)
         case undo(Swift.Result<UndoActionResultSnapshot, Error>)
@@ -330,7 +330,7 @@ private actor S221UndoStore: CoreUndoActionLogging {
 }
 
 private extension ImportConflictBatchPreviewReportSnapshot {
-    static var s221DefaultUndoPreview: ImportConflictBatchPreviewReportSnapshot {
+    static var importConflictBatchDefaultUndoPreview: ImportConflictBatchPreviewReportSnapshot {
         ImportConflictBatchPreviewReportSnapshot(
             importSessionID: "session-221",
             previewToken: "token-default",
@@ -351,18 +351,18 @@ private extension ImportConflictBatchPreviewReportSnapshot {
             applyBlockedReason: nil,
             replaceConfirmationRequired: false,
             replaceConfirmationSummary: nil,
-            items: [.s221UndoDuplicate(strategy: .skip)]
+            items: [.importConflictBatchUndoDuplicate(strategy: .skip)]
         )
     }
 
-    static var s221UndoReplacePreview: ImportConflictBatchPreviewReportSnapshot {
-        var preview = s221DefaultUndoPreview
+    static var importConflictBatchUndoReplacePreview: ImportConflictBatchPreviewReportSnapshot {
+        var preview = importConflictBatchDefaultUndoPreview
         preview.previewToken = "token-replace"
         preview.replaceCount = 1
         preview.skipCount = 0
         preview.replaceConfirmationRequired = true
         preview.replaceConfirmationSummary = "1 duplicate conflict"
-        preview.items = [.s221UndoDuplicate(strategy: .replace)]
+        preview.items = [.importConflictBatchUndoDuplicate(strategy: .replace)]
         return preview
     }
 
@@ -374,14 +374,14 @@ private extension ImportConflictBatchPreviewReportSnapshot {
         copy.requestedConflictCount = Int64(request.conflictIDs.count)
         copy.includedCount = Int64(request.conflictIDs.count)
         copy.items = request.conflictIDs.map { conflictID in
-            .s221UndoDuplicate(conflictID: conflictID, strategy: request.duplicateStrategy)
+            .importConflictBatchUndoDuplicate(conflictID: conflictID, strategy: request.duplicateStrategy)
         }
         return copy
     }
 }
 
 private extension ImportConflictBatchPreviewItemSnapshot {
-    static func s221UndoDuplicate(
+    static func importConflictBatchUndoDuplicate(
         conflictID: String = "dup-1",
         strategy: ImportConflictBatchStrategySnapshot
     ) -> ImportConflictBatchPreviewItemSnapshot {
@@ -406,7 +406,7 @@ private extension ImportConflictBatchPreviewItemSnapshot {
 }
 
 private extension ImportConflictBatchApplyReportSnapshot {
-    static func s221UndoReport(
+    static func importConflictBatchUndoReport(
         for request: ImportConflictBatchApplyRequestSnapshot
     ) -> ImportConflictBatchApplyReportSnapshot {
         let isReplace = request.duplicateStrategy == .replace || request.sameNameStrategy == .replace
@@ -430,7 +430,7 @@ private extension ImportConflictBatchApplyReportSnapshot {
 }
 
 private extension UndoActionRecordSnapshot {
-    static func s221PendingImportConflictBatch() -> UndoActionRecordSnapshot {
+    static func importConflictBatchPendingImportConflictBatch() -> UndoActionRecordSnapshot {
         UndoActionRecordSnapshot(
             actionID: "undo-import-conflict-batch",
             kind: "import_conflict_batch",
@@ -447,7 +447,7 @@ private extension UndoActionRecordSnapshot {
 }
 
 private extension UndoActionResultSnapshot {
-    static func s221ExecutedImportConflictBatch() -> UndoActionResultSnapshot {
+    static func importConflictBatchExecutedImportConflictBatch() -> UndoActionResultSnapshot {
         UndoActionResultSnapshot(
             actionID: "undo-import-conflict-batch",
             status: .executed,

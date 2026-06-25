@@ -56,7 +56,7 @@ intake
 - 是否触碰用户原文件、`.areamatrix/` 元数据、DB、migration、staging、reindex、FSEvents/iCloud、隐私、AI 远程调用或权限？
 - 是否涉及 Core API、UDL、Swift bridge 或跨平台行为？
 - 是否需要先说明影响、风险、验证和回滚，再等待确认？
-- 哪些路径在 discussion 阶段禁止写入？
+- 哪些路径在 discussion 期间禁止写入？
 
 ### 6. Handoff Shape
 
@@ -81,7 +81,7 @@ intake
 - 不从 intake 直接生成 copy-ready / verify-ready。
 - 不从 intake 直接写 `workflow/versions/<version>/execution/**`。
 - 不把 `workflow/references/areaflow-vision.md` 当作 AreaMatrix 当前产品源事实。
-- 不把 `workflow/versions/v1-mvp/source-docs/**` 的历史 Stage 2/3/4 名称当作未来 v2/v3/v4 范围。
+- 不把 `workflow/versions/v1-mvp/source-docs/**` 的 v1 旧材料编号当作未来 v2/v3/v4 范围。
 - 不让 backlog prompt 包写 progress、checkpoint、run summary、runner lock 或 execution `progress.json`。
 - 缺少 Exact Docs、owner / landing、验证命令或风险边界时，保持 `blocked` 或 `not-ready`。
 

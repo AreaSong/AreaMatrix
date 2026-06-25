@@ -79,7 +79,7 @@ struct IntegrationsSettingsSummary: Equatable {
 
 enum IntegrationConflictListPresentation {
     static let reviewConflictsTitle = "Review conflicts"
-    static let reviewConflictsAccessibilityID = "S1-36-C1-25-review-conflicts"
+    static let reviewConflictsAccessibilityID = "icloud-conflicts-icloud-conflicts-core-review-conflicts"
 }
 
 protocol ICloudStatusDetecting: Sendable {

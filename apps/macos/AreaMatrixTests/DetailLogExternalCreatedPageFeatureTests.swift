@@ -3,7 +3,7 @@ import XCTest
 
 final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
     @MainActor
-    func testS113C117ProductionRelayCreatesCurrentMainWindowEvent() throws {
+    func testDetailLogSyncExternalCreatedCoreProductionRelayCreatesCurrentMainWindowEvent() throws {
         let opening = RepositoryOpeningResult.detailMetaFixture(repoPath: "/tmp/repo", files: [])
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
@@ -29,7 +29,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS113C117ProductionRelayIgnoresInvalidOrOtherRepositoryEvents() {
+    func testDetailLogSyncExternalCreatedCoreProductionRelayIgnoresInvalidOrOtherRepositoryEvents() {
         let opening = RepositoryOpeningResult.detailMetaFixture(repoPath: "/tmp/repo", files: [])
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
@@ -49,7 +49,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         XCTAssertNil(model.externalCreatedEvent(for: opening))
     }
 
-    func testS113C117WatcherBuildsCreatedSignalForUserFileOnly() {
+    func testDetailLogSyncExternalCreatedCoreWatcherBuildsCreatedSignalForUserFileOnly() {
         let createdFlags = FSEventStreamEventFlags(kFSEventStreamEventFlagItemCreated)
 
         let signal = MainExternalCreatedFileWatcher.signal(
@@ -83,7 +83,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS113C117ConsumesRealExternalCreatedEventThenRefreshesListDetailAndLog() async throws {
+    func testDetailLogSyncExternalCreatedCoreConsumesRealExternalCreatedEventThenRefreshesListDetailAndLog() async throws {
         let existing = FileEntrySnapshot.detailMetaFixture(id: 22, currentName: "selected.pdf")
         let created = FileEntrySnapshot.detailMetaFixture(
             id: 23,
@@ -128,7 +128,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS113C117MapsCoreFailureWithoutRefreshingLog() async throws {
+    func testDetailLogSyncExternalCreatedCoreMapsCoreFailureWithoutRefreshingLog() async throws {
         let existing = FileEntrySnapshot.detailMetaFixture(id: 24, currentName: "selected.pdf")
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
             relativePath: "docs/icloud-created.pdf",
@@ -161,7 +161,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS113C117TreatsSyncResultErrorsAsFailure() async throws {
+    func testDetailLogSyncExternalCreatedCoreTreatsSyncResultErrorsAsFailure() async throws {
         let created = FileEntrySnapshot.detailMetaFixture(id: 25, currentName: "partial.pdf", origin: "External")
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(relativePath: created.path, fsEventID: 7003))
         let mapping = CoreErrorMappingSnapshot.detailLogExternalCreated(kind: .internal)
@@ -189,7 +189,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         XCTAssertTrue(message.contains("created event 7003 returned sync errors"))
     }
 
-    func testS113C117RejectsInvalidExternalCreatedEventsBeforeCoreBridge() {
+    func testDetailLogSyncExternalCreatedCoreRejectsInvalidExternalCreatedEventsBeforeCoreBridge() {
         XCTAssertNil(MainExternalCreatedFileEvent(relativePath: "", fsEventID: 1))
         XCTAssertNil(MainExternalCreatedFileEvent(relativePath: "/tmp/repo/docs/new.pdf", fsEventID: 1))
         XCTAssertNil(MainExternalCreatedFileEvent(relativePath: "../new.pdf", fsEventID: 1))
@@ -197,7 +197,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         XCTAssertNil(MainExternalCreatedFileEvent(relativePath: "docs/new.pdf", fsEventID: 0))
     }
 
-    func testS113C117DefaultCoreBridgeSyncsRealExternalCreatedFileIntoListTreeDetailAndLog() async throws {
+    func testDetailLogSyncExternalCreatedCoreDefaultCoreBridgeSyncsRealExternalCreatedFileIntoListTreeDetailAndLog() async throws {
         let repoURL = try makeDetailLogExternalCreatedTemporaryRepositoryURL()
         defer { try? FileManager.default.removeItem(at: repoURL) }
 
@@ -263,12 +263,12 @@ private actor DetailLogExternalCreatedSyncer: CoreExternalChangesSyncing {
 
     func syncExternalRemoved(repoPath _: String, relativePath _: String,
                              fsEventID _: Int64) async throws -> SyncResultSnapshot {
-        throw CoreError.Internal(message: "external removed is outside S1-13 C1-17")
+        throw CoreError.Internal(message: "external removed is outside detail-change-log sync-external-created")
     }
 
     func syncExternalRenamed(repoPath _: String, relativePath _: String,
                              fsEventID _: Int64) async throws -> SyncResultSnapshot {
-        throw CoreError.Internal(message: "external renamed is outside S1-13 C1-17")
+        throw CoreError.Internal(message: "external renamed is outside detail-change-log sync-external-created")
     }
 
     func getFSEventCursor(repoPath _: String) async throws -> Int64? {
@@ -330,7 +330,7 @@ private extension CoreErrorMappingSnapshot {
             severity: .medium,
             suggestedAction: "请确认文件已经可读取，然后等待下一次文件系统事件或刷新。",
             recoverability: .userActionRequired,
-            rawContext: "S1-13 C1-17 sync_external_changes Created"
+            rawContext: "detail-change-log sync-external-created sync_external_changes Created"
         )
     }
 }

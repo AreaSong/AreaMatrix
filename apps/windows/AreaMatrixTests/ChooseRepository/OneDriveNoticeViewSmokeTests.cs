@@ -8,11 +8,11 @@ public static class OneDriveNoticeViewSmokeTests
 
     public static void RunAll()
     {
-        OneDriveNoticePageExposesC408StatusControls();
+        OneDriveNoticePageExposesCloudPermissionStateCoreStatusControls();
         MainWindowHostsOneDriveNoticeRoute();
     }
 
-    private static void OneDriveNoticePageExposesC408StatusControls()
+    private static void OneDriveNoticePageExposesCloudPermissionStateCoreStatusControls()
     {
         XElement page = LoadXml(RepositoryPath(
             "apps/windows/AreaMatrix/Features/Onboarding/OneDriveNoticeDialog.xaml"));
@@ -42,11 +42,11 @@ public static class OneDriveNoticeViewSmokeTests
 
         string viewModel = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Features/Onboarding/OneDriveNoticeViewModel.cs"));
-        TestAssert.Contains("DetectCloudStorageStateAsync", viewModel, "C4-08 CoreBridge call");
+        TestAssert.Contains("DetectCloudStorageStateAsync", viewModel, "cloud-permission-state CoreBridge call");
         TestAssert.Contains(
             "AcknowledgeOneDriveRiskNoticeAsync",
             viewModel,
-            "C4-14 CoreBridge acknowledgement call");
+            "onedrive-risk-state CoreBridge acknowledgement call");
         TestAssert.Contains("WindowsCloudPermissionState.PermissionDenied", viewModel, "permission mapping");
     }
 
@@ -75,10 +75,10 @@ public static class OneDriveNoticeViewSmokeTests
             "apps/windows/AreaMatrix/Features/Library/WatcherStatusView.xaml.cs"));
         TestAssert.Contains("OpenRouteAsync", watcherCode, "watcher status route open");
         TestAssert.Contains("RecordWatcherHealthAsync", File.ReadAllText(RepositoryPath(
-            "apps/windows/AreaMatrix/Features/Library/WatcherStatusCoreBridge.cs")), "C4-12 CoreBridge call");
+            "apps/windows/AreaMatrix/Features/Library/WatcherStatusCoreBridge.cs")), "platform-watcher-status CoreBridge call");
         TestAssert.Contains("CloseRequested", watcherCode, "watcher status close event");
         TestAssert.DoesNotContain("ReindexFromFilesystem", watcherCode, "watcher placeholder must not start rescan");
-        TestAssert.Contains("PrepareRescanConfirmAsync", watcherCode, "watcher C4-19 preview handoff");
+        TestAssert.Contains("PrepareRescanConfirmAsync", watcherCode, "watcher manual-rescan preview handoff");
     }
 
     private static void AssertButton(XElement root, string content, string clickHandler)

@@ -22,6 +22,13 @@ fn assert_contains(haystack: &str, needle: &str) {
     );
 }
 
+fn assert_not_contains(haystack: &str, needle: &str) {
+    assert!(
+        !haystack.contains(needle),
+        "expected active release docs not to contain `{needle}`"
+    );
+}
+
 fn assert_all_contains(haystack: &str, needles: &[&str]) {
     for needle in needles {
         assert_contains(haystack, needle);
@@ -138,31 +145,8 @@ fn release_checklist_records_distribution_preflight_blocker_without_release_clai
     assert_contains(RELEASE, "xcrun notarytool submit");
     assert_contains(RELEASE, "xcrun stapler staple");
     assert_contains(RELEASE, "干净 Mac 上首次打开通过 Gatekeeper");
-    assert_contains(RELEASE, "不付费 local QA build");
-    assert_contains(RELEASE, "不能关闭");
-    assert_contains(RELEASE, "P1-RL-003");
-    assert_contains(RELEASE, "0.1.0-local-qa");
     assert_contains(RELEASE, "Signature=adhoc");
-    assert_contains(RELEASE, "TeamIdentifier=not set");
-    assert_contains(RELEASE, "不创建 `v0.1.0` tag");
-    assert_contains(RELEASE, "未公证 GitHub prerelease");
-    assert_contains(RELEASE, "v0.1.0-unnotarized-preview.2");
-    assert_contains(RELEASE, "v0.1.0-unnotarized-preview.1` 未发布");
-    assert_contains(RELEASE, "Cannot upload assets to an immutable release");
-    assert_contains(RELEASE, "not Developer ID signed");
-    assert_contains(RELEASE, "not notarized");
-    assert_contains(RELEASE, "可信测试者");
-    assert_contains(BUILD, "不付费 local QA 构建");
-    assert_contains(BUILD, "CODE_SIGN_IDENTITY=-");
-    assert_contains(
-        BUILD,
-        "workflow/versions/v1-mvp/evidence/artifacts/AreaMatrix-0.1.0-local-qa.dmg",
-    );
-    assert_contains(BUILD, "未公证预览 DMG");
-    assert_contains(
-        BUILD,
-        "workflow/versions/v1-mvp/evidence/artifacts/AreaMatrix-v0.1.0-unnotarized-preview.2.dmg",
-    );
+    assert_contains(RELEASE, "Developer ID team");
     assert_contains(
         RELEASE_NOTES_010,
         "`./dev release preflight` 已补为可复现预检",
@@ -183,6 +167,27 @@ fn release_checklist_records_distribution_preflight_blocker_without_release_clai
     assert_contains(RELEASE_NOTES_PREVIEW_010, "has not been notarized");
     assert_contains(RELEASE_NOTES_PREVIEW_010, "trusted tester preview");
     assert_contains(CHANGELOG, "未加入付费 Apple Developer Program");
+}
+
+#[test]
+fn active_release_docs_do_not_reintroduce_v1_distribution_tracks() {
+    for active_doc in [RELEASE, BUILD] {
+        for stale_term in [
+            "local-qa",
+            "local QA build",
+            "local QA DMG",
+            "unnotarized-preview",
+            "GitHub prerelease",
+            "--prerelease",
+            "Stage 1 alpha",
+            "Stage 2",
+        ] {
+            assert_not_contains(active_doc, stale_term);
+        }
+    }
+
+    assert_contains(RELEASE, "v1 归档证据，不作为 v2 发布命名模板");
+    assert_contains(BUILD, "不作为后续版本的发布命名模板");
 }
 
 #[test]
@@ -211,8 +216,6 @@ fn release_checklist_records_local_qa_artifact_without_alpha_claim() {
         "AppleScript 返回 `true, 60, 50, 1500, 980, AreaMatrix`",
     );
     assert_contains(CHECKLIST, "scroll_probe=posted events=7 point=900,610");
-    assert_contains(RELEASE, "不得写成干净 Mac 首启");
-    assert_contains(BUILD, "不能证明干净 Mac 首启");
     assert_contains(CHECKLIST, "pending，不创建");
     assert_contains(RELEASE_NOTES_010, "Internal QA date: 2026-05-11");
     assert_contains(RELEASE_NOTES_010, "internal local QA artifact");
@@ -239,9 +242,6 @@ fn release_checklist_records_unnotarized_preview_without_alpha_claim() {
     assert_contains(CHECKLIST, "Runtime Version=26.4.0");
     assert_contains(CHECKLIST, "TeamIdentifier=not set");
     assert_contains(CHECKLIST, "不能替代正式 alpha");
-    assert_contains(RELEASE, "--prerelease");
-    assert_contains(RELEASE, "workflow/versions/v1-mvp/evidence/release-notes/release-notes-v0.1.0-unnotarized-preview.2.md");
-    assert_contains(BUILD, "notarization、stapler 或干净 Mac 首启");
     assert_contains(
         RELEASE_NOTES_PREVIEW_010,
         "Do not disable Gatekeeper globally.",
@@ -261,15 +261,15 @@ fn release_checklist_keeps_release_build_and_archive_docs_aligned() {
         RELEASE,
         "workflow/versions/v1-mvp/evidence/release-checklist.md",
     );
-    assert_contains(RELEASE, "不得放行最终集成验收");
-    assert_contains(BUILD, "发布构建（Stage 1 alpha 起激活）");
+    assert_contains(RELEASE, "v1 归档证据，不作为 v2 发布命名模板");
+    assert_contains(BUILD, "## 发布构建");
     assert_contains(
         BUILD,
         "workflow/versions/v1-mvp/evidence/release-checklist.md",
     );
     assert!(
         !BUILD.contains("发布构建（Stage 2 起激活）"),
-        "build.md must not contradict archived alpha release gates"
+        "build.md must not contradict archived v1 alpha release gates"
     );
 }
 

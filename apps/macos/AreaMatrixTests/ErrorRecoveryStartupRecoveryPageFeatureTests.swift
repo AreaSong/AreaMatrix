@@ -3,7 +3,7 @@ import XCTest
 
 final class StartupRecoveryPageFeatureTests: XCTestCase {
     @MainActor
-    func testS132C116StartupRecoveryViewExposesReportRetryAndTechnicalDetails() {
+    func testStartupRecoveryStartupRecoveryCoreStartupRecoveryViewExposesReportRetryAndTechnicalDetails() {
         let report = RecoveryReportSnapshot(
             cleanedStagingFiles: 2,
             revertedStagingDbRows: 1,
@@ -14,49 +14,49 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
             onRetry: {}
         )
         let failedView = StartupRecoveryErrorRecoveryView(
-            state: .failed(.s132StartupRecoveryMapping(rawContext: "recovery db locked")),
+            state: .failed(.startupRecoveryStartupRecoveryMapping(rawContext: "recovery db locked")),
             onRetry: {}
         )
-        let completedBody = s132MirrorDescription(of: completedView.body)
-        let failedBody = s132MirrorDescription(of: failedView.body)
+        let completedBody = startupRecoveryMirrorDescription(of: completedView.body)
+        let failedBody = startupRecoveryMirrorDescription(of: failedView.body)
 
         XCTAssertTrue(completedBody.contains("Startup recovery complete"))
         XCTAssertTrue(completedBody.contains("启动恢复已完成"))
-        XCTAssertTrue(completedBody.contains("S1-32-C1-16-startup-recovery"))
-        XCTAssertTrue(completedBody.contains("S1-32-C1-16-recovery-report"))
+        XCTAssertTrue(completedBody.contains("startup-recovery-startup-recovery-core-startup-recovery"))
+        XCTAssertTrue(completedBody.contains("startup-recovery-startup-recovery-core-recovery-report"))
         XCTAssertTrue(failedBody.contains("Startup recovery failed"))
         XCTAssertTrue(failedBody.contains("Retry startup recovery"))
-        XCTAssertTrue(failedBody.contains("S1-32-C1-16-retry-startup-recovery"))
+        XCTAssertTrue(failedBody.contains("startup-recovery-startup-recovery-core-retry-startup-recovery"))
         XCTAssertTrue(failedBody.contains("ErrorRecoveryMappedErrorView"))
         XCTAssertFalse(failedBody.contains("Open repair"))
         XCTAssertFalse(failedBody.contains("Remove from index"))
     }
 
     @MainActor
-    func testS132C121MappedErrorViewShowsCoreMappingWithoutHighRiskActions() {
-        let mapping = CoreErrorMappingSnapshot.s132StartupRecoveryMapping(rawContext: "database is locked")
+    func testStartupRecoveryErrorMappingCoreMappedErrorViewShowsCoreMappingWithoutHighRiskActions() {
+        let mapping = CoreErrorMappingSnapshot.startupRecoveryStartupRecoveryMapping(rawContext: "database is locked")
         let view = ErrorRecoveryMappedErrorView(
             mapping: mapping,
             retryButtonTitle: "Retry startup recovery",
             isRetrying: false,
-            retryAccessibilityIdentifier: "S1-32-C1-21-retry",
+            retryAccessibilityIdentifier: "startup-recovery-error-mapping-retry",
             onRetry: {}
         )
-        let body = s132MirrorDescription(of: view.body)
+        let body = startupRecoveryMirrorDescription(of: view.body)
 
-        XCTAssertTrue(body.contains("S1-32-C1-21-error-mapping"))
+        XCTAssertTrue(body.contains("startup-recovery-error-mapping-error-mapping"))
         XCTAssertTrue(body.contains("Startup recovery could not finish"))
         XCTAssertTrue(body.contains("Severity: Medium"))
         XCTAssertTrue(body.contains("Recoverability: Retryable"))
         XCTAssertTrue(body.contains("database is locked"))
-        XCTAssertTrue(body.contains("S1-32-C1-21-retry"))
+        XCTAssertTrue(body.contains("startup-recovery-error-mapping-retry"))
         XCTAssertFalse(body.contains("Open repair"))
         XCTAssertFalse(body.contains("Remove from index"))
         XCTAssertFalse(body.contains("Download & retry"))
     }
 
     @MainActor
-    func testS132C121MappedErrorViewFallsBackWhenCoreMappingOmitsOptionalText() {
+    func testStartupRecoveryErrorMappingCoreMappedErrorViewFallsBackWhenCoreMappingOmitsOptionalText() {
         let mapping = CoreErrorMappingSnapshot(
             kind: .internal,
             userMessage: "AreaMatrix hit an internal error.",
@@ -69,10 +69,10 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
             mapping: mapping,
             retryButtonTitle: "Retry startup recovery",
             isRetrying: false,
-            retryAccessibilityIdentifier: "S1-32-C1-21-retry",
+            retryAccessibilityIdentifier: "startup-recovery-error-mapping-retry",
             onRetry: {}
         )
-        let body = s132MirrorDescription(of: view.body)
+        let body = startupRecoveryMirrorDescription(of: view.body)
 
         XCTAssertTrue(body.contains("Internal"))
         XCTAssertTrue(body.contains("Severity: Critical"))
@@ -82,13 +82,13 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS132C116StartupRecoveryRetryShowsInFlightButtonState() {
+    func testStartupRecoveryStartupRecoveryCoreStartupRecoveryRetryShowsInFlightButtonState() {
         let failedView = StartupRecoveryErrorRecoveryView(
-            state: .failed(.s132StartupRecoveryMapping(rawContext: "recovery db locked")),
+            state: .failed(.startupRecoveryStartupRecoveryMapping(rawContext: "recovery db locked")),
             isRetrying: true,
             onRetry: {}
         )
-        let failedBody = s132MirrorDescription(of: failedView.body)
+        let failedBody = startupRecoveryMirrorDescription(of: failedView.body)
 
         XCTAssertTrue(failedView.retryButtonTitle == "Retrying...")
         XCTAssertTrue(failedView.retryButtonIsDisabled)
@@ -96,8 +96,8 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS132C116RecoveryFailureBlocksRepositoryOpenAndRetryRerunsCoreRecovery() async {
-        let mapping = CoreErrorMappingSnapshot.s132StartupRecoveryMapping(rawContext: "database is locked")
+    func testStartupRecoveryStartupRecoveryCoreRecoveryFailureBlocksRepositoryOpenAndRetryRerunsCoreRecovery() async {
+        let mapping = CoreErrorMappingSnapshot.startupRecoveryStartupRecoveryMapping(rawContext: "database is locked")
         let recoverer = MainLoadingRecordingStartupRecoverer(results: [
             .failure(CoreError.Db(message: "database is locked")),
             .success(RecoveryReportSnapshot(cleanedStagingFiles: 1, revertedStagingDbRows: 2, warnings: []))
@@ -113,7 +113,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
             emptyRepositoryOpener: opener,
             startupRecoverer: recoverer,
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
-            errorMapper: S132StartupRecoveryErrorMapper(mapping: mapping),
+            errorMapper: StartupRecoveryStartupRecoveryErrorMapper(mapping: mapping),
             helpOpener: MainLoadingNoopWelcomeHelpOpener()
         )
 
@@ -125,7 +125,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
         XCTAssertEqual(openedBeforeRetry, [])
         XCTAssertEqual(requestsBeforeRetry, ["/tmp/repo"])
         guard case let .mainLoading(failedState) = model.route else {
-            return XCTFail("Expected S1-32 startup recovery to stay in main loading")
+            return XCTFail("Expected startup-recovery startup recovery to stay in main loading")
         }
         XCTAssertEqual(failedState.recoveryErrorMapping, mapping)
         XCTAssertEqual(failedState.recoveryStatusText, "启动恢复失败：Startup recovery could not finish")
@@ -146,8 +146,8 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS132C116DefaultCoreBridgeUsesGeneratedRecoverOnStartupBoundary() async throws {
-        let repoURL = try s132TemporaryDirectory()
+    func testStartupRecoveryStartupRecoveryCoreDefaultCoreBridgeUsesGeneratedRecoverOnStartupBoundary() async throws {
+        let repoURL = try startupRecoveryTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: repoURL) }
         let bridge = CoreBridge()
 
@@ -158,27 +158,27 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
     }
 }
 
-final class S307AITagBatchPageFeatureTests: XCTestCase {
+final class AITagSuggestionAITagBatchPageFeatureTests: XCTestCase {
     @MainActor
-    func testS307C307BatchReviewConfirmsBeforeApplyingTags() async {
+    func testAITagSuggestionAITagsSuggestionCoreBatchReviewConfirmsBeforeApplyingTags() async {
         let files = [
             FileEntrySnapshot.detailMetaFixture(id: 707, currentName: "invoice-a.pdf"),
             FileEntrySnapshot.detailMetaFixture(id: 708, currentName: "invoice-b.pdf")
         ]
-        let bridge = S307BatchAITagBridge(reports: Dictionary(uniqueKeysWithValues: files.map {
-            ($0.id, s307AITagReport(fileID: $0.id, suggestions: [
-                s307AITagSuggestion(id: "s3-07-finance-\($0.id)", slug: "finance", confidence: 0.91)
+        let bridge = AITagSuggestionBatchAITagBridge(reports: Dictionary(uniqueKeysWithValues: files.map {
+            ($0.id, aiTagSuggestionAITagReport(fileID: $0.id, suggestions: [
+                aiTagSuggestionAITagSuggestion(id: "ai-tag-finance-\($0.id)", slug: "finance", confidence: 0.91)
             ]))
         }))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: files),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailTagFileDetailer(files: files),
-            aiSettingsLoader: S307AISettingsLoader(),
+            aiSettingsLoader: AITagSuggestionAISettingsLoader(),
             aiTagSuggestionStore: bridge,
-            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(featureScope: [.autoTags])),
-            changeLogLister: DetailLogRecordingChangeLister(entries: [.s223Applied()]),
-            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])),
+            changeLogLister: DetailLogRecordingChangeLister(entries: [.tagSuggestionsApplied()]),
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles(Set(files.map(\.id)))
@@ -199,23 +199,23 @@ final class S307AITagBatchPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS307C307BatchPartialFailureKeepsFailedSuggestionsPending() async {
+    func testAITagSuggestionAITagsSuggestionCoreBatchPartialFailureKeepsFailedSuggestionsPending() async {
         let first = FileEntrySnapshot.detailMetaFixture(id: 717, currentName: "invoice-ok.pdf")
         let second = FileEntrySnapshot.detailMetaFixture(id: 718, currentName: "invoice-fail.pdf")
-        let bridge = S307BatchAITagBridge(
+        let bridge = AITagSuggestionBatchAITagBridge(
             reports: [
-                first.id: s307AITagReport(fileID: first.id, suggestions: [
-                    s307AITagSuggestion(id: "s3-07-ok", slug: "finance", confidence: 0.93)
+                first.id: aiTagSuggestionAITagReport(fileID: first.id, suggestions: [
+                    aiTagSuggestionAITagSuggestion(id: "ai-tag-ok", slug: "finance", confidence: 0.93)
                 ]),
-                second.id: s307AITagReport(fileID: second.id, suggestions: [
-                    s307AITagSuggestion(id: "s3-07-fail", slug: "tax", confidence: 0.89)
+                second.id: aiTagSuggestionAITagReport(fileID: second.id, suggestions: [
+                    aiTagSuggestionAITagSuggestion(id: "ai-tag-fail", slug: "tax", confidence: 0.89)
                 ])
             ],
             applyReports: [
-                first.id: s307BatchApplyReport(fileID: first.id, suggestionID: "s3-07-ok", slug: "finance"),
-                second.id: s307BatchApplyReport(
+                first.id: aiTagSuggestionBatchApplyReport(fileID: first.id, suggestionID: "ai-tag-ok", slug: "finance"),
+                second.id: aiTagSuggestionBatchApplyReport(
                     fileID: second.id,
-                    suggestionID: "s3-07-fail",
+                    suggestionID: "ai-tag-fail",
                     slug: "tax",
                     status: .failed,
                     error: "Tag relation write failed."
@@ -226,10 +226,10 @@ final class S307AITagBatchPageFeatureTests: XCTestCase {
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [first, second]),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailTagFileDetailer(files: [first, second]),
-            aiSettingsLoader: S307AISettingsLoader(),
+            aiSettingsLoader: AITagSuggestionAISettingsLoader(),
             aiTagSuggestionStore: bridge,
-            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(featureScope: [.autoTags])),
-            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])),
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([first.id, second.id])
@@ -241,16 +241,16 @@ final class S307AITagBatchPageFeatureTests: XCTestCase {
         XCTAssertEqual(review?.appliedFileCount, 1)
         XCTAssertEqual(review?.failedFileCount, 1)
         XCTAssertEqual(review?.selectedIDsByFileID[first.id], Set<String>())
-        XCTAssertEqual(review?.selectedIDsByFileID[second.id], Set(["s3-07-fail"]))
+        XCTAssertEqual(review?.selectedIDsByFileID[second.id], Set(["ai-tag-fail"]))
     }
 
     @MainActor
-    func testS307C307BatchRejectingInvalidSuggestionClearsApplyBlocker() {
+    func testAITagSuggestionAITagsSuggestionCoreBatchRejectingInvalidSuggestionClearsApplyBlocker() {
         let file = FileEntrySnapshot.detailMetaFixture(id: 719, currentName: "invoice-invalid.pdf")
-        let report = s307AITagReport(fileID: file.id, suggestions: [
-            s307AITagSuggestion(id: "s3-07-good", slug: "finance", confidence: 0.92),
-            s307AITagSuggestion(
-                id: "s3-07-invalid",
+        let report = aiTagSuggestionAITagReport(fileID: file.id, suggestions: [
+            aiTagSuggestionAITagSuggestion(id: "ai-tag-good", slug: "finance", confidence: 0.92),
+            aiTagSuggestionAITagSuggestion(
+                id: "ai-tag-invalid",
                 slug: "",
                 confidence: 0.88,
                 status: .invalid,
@@ -262,7 +262,7 @@ final class S307AITagBatchPageFeatureTests: XCTestCase {
             reports: [file.id: report],
             loadFailures: [:]
         )
-        review.selectedIDsByFileID[file.id] = ["s3-07-good", "s3-07-invalid"]
+        review.selectedIDsByFileID[file.id] = ["ai-tag-good", "ai-tag-invalid"]
         let blocked = AITagBatchSuggestionState.reviewing(review)
 
         XCTAssertFalse(review.canApply)
@@ -270,39 +270,39 @@ final class S307AITagBatchPageFeatureTests: XCTestCase {
 
         let unblocked = AITagBatchSuggestionAction.toggling(
             fileID: file.id,
-            suggestionID: "s3-07-invalid",
+            suggestionID: "ai-tag-invalid",
             in: blocked
         )
 
-        XCTAssertEqual(unblocked.review?.selectedIDsByFileID[file.id], ["s3-07-good"])
-        XCTAssertEqual(unblocked.review?.reports[file.id]?.suggestions.map(\.suggestionId), ["s3-07-good"])
-        XCTAssertEqual(unblocked.review?.rejectedFeedback.first?.rejectedIDs, ["s3-07-invalid"])
+        XCTAssertEqual(unblocked.review?.selectedIDsByFileID[file.id], ["ai-tag-good"])
+        XCTAssertEqual(unblocked.review?.reports[file.id]?.suggestions.map(\.suggestionId), ["ai-tag-good"])
+        XCTAssertEqual(unblocked.review?.rejectedFeedback.first?.rejectedIDs, ["ai-tag-invalid"])
         XCTAssertEqual(unblocked.review?.invalidCount, 0)
         XCTAssertEqual(unblocked.review?.canApply, true)
     }
 
     @MainActor
-    func testS307C307BatchRejectSelectedHidesSuggestionsAndDoesNotApply() async {
+    func testAITagSuggestionAITagsSuggestionCoreBatchRejectSelectedHidesSuggestionsAndDoesNotApply() async {
         let files = [
             FileEntrySnapshot.detailMetaFixture(id: 722, currentName: "invoice-reject-a.pdf"),
             FileEntrySnapshot.detailMetaFixture(id: 723, currentName: "invoice-reject-b.pdf")
         ]
-        let bridge = S307BatchAITagBridge(reports: [
-            files[0].id: s307AITagReport(fileID: files[0].id, suggestions: [
-                s307AITagSuggestion(id: "s3-07-finance-a", slug: "finance", confidence: 0.93)
+        let bridge = AITagSuggestionBatchAITagBridge(reports: [
+            files[0].id: aiTagSuggestionAITagReport(fileID: files[0].id, suggestions: [
+                aiTagSuggestionAITagSuggestion(id: "ai-tag-finance-a", slug: "finance", confidence: 0.93)
             ]),
-            files[1].id: s307AITagReport(fileID: files[1].id, suggestions: [
-                s307AITagSuggestion(id: "s3-07-tax-b", slug: "tax", confidence: 0.89)
+            files[1].id: aiTagSuggestionAITagReport(fileID: files[1].id, suggestions: [
+                aiTagSuggestionAITagSuggestion(id: "ai-tag-tax-b", slug: "tax", confidence: 0.89)
             ])
         ])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: files),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailTagFileDetailer(files: files),
-            aiSettingsLoader: S307AISettingsLoader(),
+            aiSettingsLoader: AITagSuggestionAISettingsLoader(),
             aiTagSuggestionStore: bridge,
-            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(featureScope: [.autoTags])),
-            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])),
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles(Set(files.map(\.id)))
@@ -319,7 +319,7 @@ final class S307AITagBatchPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS307C309ProviderScopeAndRemoteGateBlockBeforeAITagSuggestion() async {
+    func testAITagSuggestionAIPrivacyRulesCoreProviderScopeAndRemoteGateBlockBeforeAITagSuggestion() async {
         // swiftlint:disable:next large_tuple
         let cases: [(Int64, AiPrivacySkippedReason, AiPrivacyProviderGateReason)] = [
             (730, .providerNotVerified, .providerNotVerified),
@@ -329,14 +329,14 @@ final class S307AITagBatchPageFeatureTests: XCTestCase {
 
         for item in cases {
             let file = FileEntrySnapshot.detailMetaFixture(id: item.0, currentName: "invoice-gated.pdf")
-            let bridge = S307BatchAITagBridge(reports: [
-                file.id: s307AITagReport(fileID: file.id, suggestions: [
-                    s307AITagSuggestion(id: "s3-07-finance", slug: "finance", confidence: 0.91)
+            let bridge = AITagSuggestionBatchAITagBridge(reports: [
+                file.id: aiTagSuggestionAITagReport(fileID: file.id, suggestions: [
+                    aiTagSuggestionAITagSuggestion(id: "ai-tag-finance", slug: "finance", confidence: 0.91)
                 ])
             ])
             let privacy = RemotePrivacyRulesBridge(
-                snapshot: .s303PrivacyRules(featureScope: [.autoTags]),
-                evaluationReport: s307ProviderGateReport(
+                snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags]),
+                evaluationReport: aiTagSuggestionProviderGateReport(
                     skippedReason: item.1,
                     providerGateReason: item.2
                 )
@@ -345,10 +345,10 @@ final class S307AITagBatchPageFeatureTests: XCTestCase {
                 opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
                 fileLister: DetailMetaNoopLister(),
                 fileDetailer: DetailTagFileDetailer(files: [file]),
-                aiSettingsLoader: S307AISettingsLoader(),
+                aiSettingsLoader: AITagSuggestionAISettingsLoader(),
                 aiTagSuggestionStore: bridge,
                 aiPrivacyRules: privacy,
-                errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+                errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
             )
 
             await model.selectFiles([file.id])
@@ -365,13 +365,13 @@ final class S307AITagBatchPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS307C307BatchEditedMergeSuggestionAppliesEditedRequest() async {
+    func testAITagSuggestionAITagsSuggestionCoreBatchEditedMergeSuggestionAppliesEditedRequest() async {
         let file = FileEntrySnapshot.detailMetaFixture(id: 720, currentName: "invoice-merge.pdf")
         let unchangedFile = FileEntrySnapshot.detailMetaFixture(id: 721, currentName: "invoice-context.pdf")
-        let bridge = S307BatchAITagBridge(reports: [
-            file.id: s307AITagReport(fileID: file.id, suggestions: [
-                s307AITagSuggestion(
-                    id: "s3-07-merge",
+        let bridge = AITagSuggestionBatchAITagBridge(reports: [
+            file.id: aiTagSuggestionAITagReport(fileID: file.id, suggestions: [
+                aiTagSuggestionAITagSuggestion(
+                    id: "ai-tag-merge",
                     slug: "finances",
                     confidence: 0.91,
                     selectedByDefault: false,
@@ -380,29 +380,29 @@ final class S307AITagBatchPageFeatureTests: XCTestCase {
                     matchedExistingSlug: "finance"
                 )
             ]),
-            unchangedFile.id: s307AITagReport(fileID: unchangedFile.id, status: .noSuggestion)
+            unchangedFile.id: aiTagSuggestionAITagReport(fileID: unchangedFile.id, status: .noSuggestion)
         ])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file, unchangedFile]),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailTagFileDetailer(files: [file, unchangedFile]),
-            aiSettingsLoader: S307AISettingsLoader(),
+            aiSettingsLoader: AITagSuggestionAISettingsLoader(),
             aiTagSuggestionStore: bridge,
-            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(featureScope: [.autoTags])),
-            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])),
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([file.id, unchangedFile.id])
         await model.loadBatchAITagSuggestions(files: [file, unchangedFile])
-        model.startEditingBatchAITagSuggestion(fileID: file.id, suggestionID: "s3-07-merge")
+        model.startEditingBatchAITagSuggestion(fileID: file.id, suggestionID: "ai-tag-merge")
         model.updateBatchAITagSuggestionDisplayName(
             fileID: file.id,
-            suggestionID: "s3-07-merge",
+            suggestionID: "ai-tag-merge",
             displayName: "Finance Review"
         )
         model.updateBatchAITagSuggestionSlug(
             fileID: file.id,
-            suggestionID: "s3-07-merge",
+            suggestionID: "ai-tag-merge",
             slug: "finance-review"
         )
         model.confirmBatchAITagSuggestions()
@@ -413,7 +413,7 @@ final class S307AITagBatchPageFeatureTests: XCTestCase {
         XCTAssertEqual(requests.apply.count, 1)
         XCTAssertEqual(requests.apply.first?.fileId, file.id)
         XCTAssertEqual(requests.apply.first?.confirmed, true)
-        XCTAssertEqual(requests.apply.first?.suggestions.first?.suggestionId, "s3-07-merge")
+        XCTAssertEqual(requests.apply.first?.suggestions.first?.suggestionId, "ai-tag-merge")
         XCTAssertEqual(requests.apply.first?.suggestions.first?.displayName, "Finance Review")
         XCTAssertEqual(requests.apply.first?.suggestions.first?.slug, "finance-review")
         XCTAssertEqual(requests.apply.first?.suggestions.first?.editedByUser, true)
@@ -421,7 +421,7 @@ final class S307AITagBatchPageFeatureTests: XCTestCase {
     }
 }
 
-private actor S132StartupRecoveryErrorMapper: CoreErrorMapping {
+private actor StartupRecoveryStartupRecoveryErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
 
     init(mapping: CoreErrorMappingSnapshot) {
@@ -446,7 +446,7 @@ private actor MainLoadingStaticPathValidator: CoreRepositoryPathValidating {
 }
 
 private extension CoreErrorMappingSnapshot {
-    static func s132StartupRecoveryMapping(rawContext: String) -> CoreErrorMappingSnapshot {
+    static func startupRecoveryStartupRecoveryMapping(rawContext: String) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .db,
             userMessage: "Startup recovery could not finish",
@@ -458,26 +458,26 @@ private extension CoreErrorMappingSnapshot {
     }
 }
 
-private func s132TemporaryDirectory() throws -> URL {
+private func startupRecoveryTemporaryDirectory() throws -> URL {
     let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixS132StartupRecovery-\(UUID().uuidString)", isDirectory: true)
+        .appendingPathComponent("AreaMatrixStartupRecoveryStartupRecovery-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
 }
 
-private func s132MirrorDescription(of value: Any) -> String {
+private func startupRecoveryMirrorDescription(of value: Any) -> String {
     var lines: [String] = []
-    appendS132MirrorDescription(of: value, to: &lines)
+    appendStartupRecoveryMirrorDescription(of: value, to: &lines)
     return lines.joined(separator: "\n")
 }
 
-private func appendS132MirrorDescription(of value: Any, to lines: inout [String]) {
+private func appendStartupRecoveryMirrorDescription(of value: Any, to lines: inout [String]) {
     lines.append(String(describing: type(of: value)))
     lines.append(String(describing: value))
     for child in Mirror(reflecting: value).children {
         if let label = child.label {
             lines.append(label)
         }
-        appendS132MirrorDescription(of: child.value, to: &lines)
+        appendStartupRecoveryMirrorDescription(of: child.value, to: &lines)
     }
 }

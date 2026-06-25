@@ -4,7 +4,7 @@
 
 ## 目标
 
-为 backlog prompt package 增加清晰、可验证的命令设计，后续任务实现：
+为 backlog prompt package 增加清晰、可验证的命令设计，后续计划项实现：
 
 ```bash
 ./dev backlog list
@@ -71,7 +71,7 @@
 ## 执行要求
 
 1. 核对 `./dev` 的真实入口：根 `dev` 是否先进入 `scripts/task_loop/console.py`，以及底层开发工具是否由 `scripts/dev_tools/cli.py` 分发。
-2. 决定 `./dev backlog` 应如何接入：底层 `scripts/dev_tools/cli.py` 必须有子命令；若控制台需要可发现性，后续任务再在 `scripts/task_loop/actions.py` 或 help/menu 文案中暴露。
+2. 决定 `./dev backlog` 应如何接入：底层 `scripts/dev_tools/cli.py` 必须有子命令；若控制台需要可发现性，后续计划项再在 `scripts/task_loop/actions.py` 或 help/menu 文案中暴露。
 3. 明确命令语义：
    - `list`: 列出 `tasks/backlog/prompts/*/README.md` 对应 package。
    - `show <package>`: 打印 package README 或任务索引。
@@ -94,4 +94,4 @@ python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- tasks/backlog scripts/dev_tools scripts/task_loop
 ```
 
-汇报时说明命令边界、接入点、后续任务是否可以继续，以及本任务未触碰 `workflow/versions/<version>/execution/**`。
+汇报时说明命令边界、接入点、后续计划项是否可以继续，以及本任务未触碰 `workflow/versions/<version>/execution/**`。

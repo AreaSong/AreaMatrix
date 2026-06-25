@@ -5,7 +5,7 @@ import XCTest
 // swiftlint:disable:next type_body_length
 final class ChangeCategoryPageFeatureTests: XCTestCase {
     @MainActor
-    func testS135C124PreviewUsesCoreBridgeWithoutMovingFile() async {
+    func testChangeCategoryMoveToCategoryCorePreviewUsesCoreBridgeWithoutMovingFile() async {
         let original = FileEntrySnapshot.changeCategoryFixture(id: 240, name: "contract.pdf")
         let preview = MoveToCategoryPreviewSnapshot.changeCategoryFixture(
             fileID: original.id,
@@ -37,7 +37,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS135C124SubmitMoveRefreshesListDetailAndChangeLog() async {
+    func testChangeCategoryMoveToCategoryCoreSubmitMoveRefreshesListDetailAndChangeLog() async {
         let original = FileEntrySnapshot.changeCategoryFixture(id: 241, name: "contract.pdf")
         let moved = FileEntrySnapshot.changeCategoryFixture(
             id: 241,
@@ -85,7 +85,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS135C124SuccessfulMoveReloadsTargetCategoryAndKeepsFileHighlighted() async {
+    func testChangeCategoryMoveToCategoryCoreSuccessfulMoveReloadsTargetCategoryAndKeepsFileHighlighted() async {
         let original = FileEntrySnapshot.changeCategoryFixture(id: 243, name: "contract.pdf")
         let moved = FileEntrySnapshot.changeCategoryFixture(
             id: 243,
@@ -132,7 +132,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS135C124ContentRefreshUpdatesTreeAndSwitchesToMovedCategory() {
+    func testChangeCategoryMoveToCategoryCoreContentRefreshUpdatesTreeAndSwitchesToMovedCategory() {
         let moved = FileEntrySnapshot.changeCategoryFixture(
             id: 244,
             path: "finance/contract.pdf",
@@ -155,7 +155,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS135C124FailureKeepsSheetOpenAndMapsCoreError() async {
+    func testChangeCategoryMoveToCategoryCoreFailureKeepsSheetOpenAndMapsCoreError() async {
         let original = FileEntrySnapshot.changeCategoryFixture(id: 242, name: "blocked.pdf")
         let mapping = CoreErrorMappingSnapshot.changeCategoryClassify()
         let mapper = DetailMetaErrorMapper(mapping: mapping)
@@ -186,7 +186,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS135C110PreviewKeepsCoreAutoNumberedNameVisibleWithoutMovingFile() async {
+    func testChangeCategoryResolveNameConflictCorePreviewKeepsCoreAutoNumberedNameVisibleWithoutMovingFile() async {
         let original = FileEntrySnapshot.changeCategoryFixture(id: 245, name: "contract.pdf")
         let preview = MoveToCategoryPreviewSnapshot.changeCategoryFixture(
             fileID: original.id,
@@ -220,7 +220,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS216ClassifierCorrectionLoadsRealReasonAndCorePreviewBeforeApply() async {
+    func testClassifierCorrectionClassifierCorrectionLoadsRealReasonAndCorePreviewBeforeApply() async {
         let original = FileEntrySnapshot.changeCategoryFixture(id: 246, name: "contract.pdf")
         let reason = ClassifyResultSnapshot(
             category: "docs",
@@ -267,7 +267,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
 
     @MainActor
     // swiftlint:disable:next function_body_length
-    func testS216ApplyCorrectionUsesRealCoreBridgeAndReturnedRuleDraft() async {
+    func testClassifierCorrectionApplyCorrectionUsesRealCoreBridgeAndReturnedRuleDraft() async {
         let original = FileEntrySnapshot.changeCategoryFixture(id: 247, name: "contract.pdf")
         let corrected = FileEntrySnapshot.changeCategoryFixture(
             id: original.id,
@@ -339,9 +339,9 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     }
 
     // swiftlint:disable:next function_body_length
-    func testS135C124DefaultCoreBridgePreviewsThenMovesCopiedFileAndWritesChangeLog() async throws {
-        let repoURL = try makeChangeCategoryTemporaryDirectory(prefix: "repo")
-        let sourceRoot = try makeChangeCategoryTemporaryDirectory(prefix: "source")
+    func testChangeCategoryMoveToCategoryCoreDefaultCoreBridgePreviewsThenMovesCopiedFileAndWritesChangeLog() async throws {
+        let repoURL = try makeChangeCategoryFeatureTemporaryDirectory(prefix: "repo")
+        let sourceRoot = try makeChangeCategoryFeatureTemporaryDirectory(prefix: "source")
         defer {
             try? FileManager.default.removeItem(at: repoURL)
             try? FileManager.default.removeItem(at: sourceRoot)
@@ -401,9 +401,9 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         XCTAssertTrue(changes.contains { $0.action == "moved" })
     }
 
-    func testS135C110DefaultCoreBridgePreviewsAutoNumberedTargetNameWithoutMovingFile() async throws {
-        let repoURL = try makeChangeCategoryTemporaryDirectory(prefix: "repo")
-        let sourceRoot = try makeChangeCategoryTemporaryDirectory(prefix: "source")
+    func testChangeCategoryResolveNameConflictCoreDefaultCoreBridgePreviewsAutoNumberedTargetNameWithoutMovingFile() async throws {
+        let repoURL = try makeChangeCategoryFeatureTemporaryDirectory(prefix: "repo")
+        let sourceRoot = try makeChangeCategoryFeatureTemporaryDirectory(prefix: "source")
         defer {
             try? FileManager.default.removeItem(at: repoURL)
             try? FileManager.default.removeItem(at: sourceRoot)
@@ -643,12 +643,12 @@ private extension CoreErrorMappingSnapshot {
             severity: .medium,
             suggestedAction: "Choose another category, then retry.",
             recoverability: .userActionRequired,
-            rawContext: "S1-35 C1-24 preview_move_to_category"
+            rawContext: "change-category move-to-category preview_move_to_category"
         )
     }
 }
 
-private func makeChangeCategoryTemporaryDirectory(prefix: String) throws -> URL {
+private func makeChangeCategoryFeatureTemporaryDirectory(prefix: String) throws -> URL {
     let name = "AreaMatrixChangeCategory-\(prefix)-\(UUID().uuidString)"
     let url = FileManager.default.temporaryDirectory.appendingPathComponent(name, isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)

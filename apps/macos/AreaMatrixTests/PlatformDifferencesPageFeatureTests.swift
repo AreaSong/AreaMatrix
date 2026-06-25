@@ -3,7 +3,7 @@ import XCTest
 
 final class PlatformDifferencesPageFeatureTests: XCTestCase {
     @MainActor
-    func testS4X02C401LoadsBindingContractThroughCoreBridgeBoundary() async {
+    func testPlatformDifferencesCrossPlatformBindingContractCoreLoadsBindingContractThroughCoreBridgeBoundary() async {
         let inspector = PlatformDifferencesRecordingInspector(result: .success(.fixture()))
         let capabilityLoader = PlatformDiffCapabilityLoader(result: .success(.fixture()))
         let model = PlatformDifferencesModel(
@@ -34,7 +34,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testChangingTargetRechecksOnlyC401BindingContract() async {
+    func testChangingTargetRechecksOnlyCrossPlatformBindingContractCoreBindingContract() async {
         let inspector = PlatformDifferencesRecordingInspector(result: .success(.fixture(targetPlatform: .kotlin)))
         let capabilityLoader = PlatformDiffCapabilityLoader(result: .success(.fixture()))
         let model = PlatformDifferencesModel(
@@ -105,7 +105,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
         )))
     }
 
-    func testCapabilityRowsCoverS4X02PageSpecMatrix() {
+    func testCapabilityRowsCoverPlatformDifferencesPageSpecMatrix() {
         let rowNames = PlatformCapabilitiesSnapshot.fixture().pageSpecRows.map(\.name)
 
         XCTAssertEqual(rowNames, [
@@ -222,7 +222,7 @@ private extension BindingContractReportSnapshot {
             supportedApis: [
                 BindingApiContractSnapshot(
                     name: "inspect_binding_contract",
-                    capability: "C4-01",
+                    capability: "binding-contract",
                     status: .supported,
                     reason: nil
                 )

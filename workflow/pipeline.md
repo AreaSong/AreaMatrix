@@ -39,9 +39,9 @@ version init
 - **Promotion segment**：从 promotion preview 到 execution，目标是安全进入版本内执行层。
 - **Execution segment**：从 prompt pipeline checks 到 closeout/audit，目标是执行、验收、修复、checkpoint 和回写。
 
-## Stage Contracts
+## Step Contracts
 
-每个阶段都应有明确输入、输出、门禁和失败回退位置。
+每个步骤都应有明确输入、输出、门禁和失败回退位置。
 
 ### 1. version init
 
@@ -234,7 +234,7 @@ version init
 **Checks**：
 
 - 依赖完整。
-- phase 边界清楚。
+- 执行分组边界清楚。
 - 验收边界清楚。
 - docs/change trace 完整。
 - risk boundary 已覆盖。
@@ -577,12 +577,12 @@ flowchart TD
 
   E["middle-layer ledger<br/>中间层账本<br/>docs -> changes / plans / drafts / queue / promotion 映射"]
   F["changes ledger<br/>变更账本<br/>记录要变什么 / docs 引用 / trace id"]
-  G["workflow plans<br/>整体 workflow 计划<br/>阶段 / 依赖 / 风险 / 验收边界"]
+  G["workflow plans<br/>整体 workflow 计划<br/>分组 / 依赖 / 风险 / 验收边界"]
   H{"plan doctor<br/>计划检查"}
 
   I["task drafts<br/>小颗粒度任务草稿<br/>Expected Paths / Verify Commands / 禁止越界"]
   J{"draft doctor<br/>草稿检查"}
-  K["queue candidates<br/>候选队列<br/>version-local phase/task 编号"]
+  K["queue candidates<br/>候选队列<br/>version-local 分组/task 编号"]
   L{"queue doctor<br/>队列检查"}
 
   M["promotion preview<br/>推广预览<br/>dry-run 映射 / 撞名检查 / scope 检查"]

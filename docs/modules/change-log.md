@@ -12,7 +12,7 @@
 2. **结构化但灵活**：固定字段 + `detail_json` 任意 schema
 3. **不阻塞主操作**：写日志失败不能让 import / rename 失败（但要 tracing 警告）
 4. **DB 损坏不丢用户文件**：日志只是元信息，FS 才是真相
-5. **支持 GC**：Stage 2 起加保留策略与归档
+5. **支持 GC**：保留策略与归档可按配置启用
 
 ---
 
@@ -166,7 +166,7 @@ impl ChangeAction {
 }
 ```
 
-C1-23 的 Remove from Index 只移除 Indexed / Adopted / External / Missing
+Remove from Index 只移除 Indexed / Adopted / External / Missing
 metadata 在默认 list/detail 中的可见性，不移动、不删除、不重命名、不覆盖、
 不 Trash 外部源文件，也不清空 notes / tags 等关联 metadata。
 
@@ -214,7 +214,7 @@ metadata 在默认 list/detail 中的可见性，不移动、不删除、不重�
 core/src/change_log/
 ├── mod.rs       // ChangeAction + insert/list 入口
 ├── filter.rs    // ChangeFilter
-├── gc.rs        // 保留策略与归档（Stage 2）
+├── gc.rs        // 保留策略与归档
 └── tests.rs
 ```
 
@@ -466,13 +466,13 @@ flowchart LR
     Archive --> Delete
 ```
 
-| 阶段 | 策略 |
+| 模式 | 策略 |
 |---|---|
-| Stage 1 | 永久保留（不删） |
-| Stage 2 | 设置中加"保留近 N 天/M 条"开关；超出归档为只读 |
-| Stage 3 | 自动归档为 `.areamatrix/archives/changes-YYYYMM.jsonl` 后从 DB 删除 |
+| 当前默认 | 永久保留（不删） |
+| 可配置保留 | 设置中加"保留近 N 天/M 条"开关；超出归档为只读 |
+| 归档清理 | 自动归档为 `.areamatrix/archives/changes-YYYYMM.jsonl` 后从 DB 删除 |
 
-### gc 实现（Stage 2 起）
+### gc 实现
 
 ```rust
 // core/src/change_log/gc.rs
@@ -555,7 +555,7 @@ pub struct GcReport {
 
 平均 detail_json 长度 200 字节，加索引开销 ≈ 500 字节/行。
 
-普通用户 1-2 年内不会到 10 万次操作量级。MVP 不做 GC。
+普通用户 1-2 年内不会到 10 万次操作量级。当前默认不做 GC。
 
 ---
 

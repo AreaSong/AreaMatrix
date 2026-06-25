@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Mapping, Sequence
 
 from .common import fail, project_root, require_command
-from .macos_stage1_probe import STAGE1_APP_LAUNCH_BLOCKED, run_stage1_app_launch_probe
+from .macos_release_probe import RELEASE_APP_LAUNCH_BLOCKED, run_release_app_launch_probe
 
 
 def _run_and_tee(argv: Sequence[str], log_path: Path, *, env: Mapping[str, str] | None = None) -> int:
@@ -132,7 +132,7 @@ def _run_xctest_bundle(test_bundle: Path, scheme: str) -> int:
     return subprocess.run(["xcrun", "xctest", str(test_bundle)], env=env, check=False).returncode
 
 
-def _includes_stage1_perf_tests(only_testing: Sequence[str]) -> bool:
+def _includes_release_perf_tests(only_testing: Sequence[str]) -> bool:
     return any(
         test_id == "AreaMatrixTests/AreaMatrixPerfTests"
         or test_id.startswith("AreaMatrixTests/AreaMatrixPerfTests/")
@@ -141,39 +141,39 @@ def _includes_stage1_perf_tests(only_testing: Sequence[str]) -> bool:
 
 
 def _xcode_test_env(only_testing: Sequence[str]) -> dict[str, str] | None:
-    if _includes_stage1_perf_tests(only_testing):
+    if _includes_release_perf_tests(only_testing):
         return {"AREAMATRIX_RUN_PERF_TESTS": "1"}
     return None
 
 
-def _handle_stage1_app_launch_probe_result(probe_rc: int) -> int:
+def _handle_release_app_launch_probe_result(probe_rc: int) -> int:
     if probe_rc == 0:
         return 0
-    if probe_rc == STAGE1_APP_LAUNCH_BLOCKED:
-        print("macOS tests: Stage 1 real .app launch probe was blocked by local sandbox.")
+    if probe_rc == RELEASE_APP_LAUNCH_BLOCKED:
+        print("macOS tests: release real .app launch probe was blocked by local sandbox.")
         print("macOS tests: local XCTest validation passed; release checklist remains blocked.")
         return 0
     return probe_rc
 
 
-def _run_stage1_probe_when_requested(
+def _run_release_probe_when_requested(
     root: Path,
     derived_data_dir: Path,
     build_base: Sequence[str],
     build_log_path: Path,
     only_testing: Sequence[str],
 ) -> int:
-    if not _includes_stage1_perf_tests(only_testing):
+    if not _includes_release_perf_tests(only_testing):
         return 0
 
-    probe_rc = run_stage1_app_launch_probe(
+    probe_rc = run_release_app_launch_probe(
         root,
         derived_data_dir,
         build_base,
         build_log_path,
         _run_and_tee,
     )
-    return _handle_stage1_app_launch_probe_result(probe_rc)
+    return _handle_release_app_launch_probe_result(probe_rc)
 
 
 def _xctest_filter(only_testing: Sequence[str]) -> list[str]:
@@ -196,7 +196,7 @@ def _run_filtered_xctest_bundle(test_bundle: Path, scheme: str, only_testing: Se
         fail(f"test bundle not found at {test_bundle}.")
 
     env = _fallback_env(products_dir, scheme)
-    if _includes_stage1_perf_tests(only_testing):
+    if _includes_release_perf_tests(only_testing):
         env["AREAMATRIX_RUN_PERF_TESTS"] = "1"
     filters = _xctest_filter(only_testing)
     print()
@@ -304,15 +304,15 @@ def _run_sandbox_fallback(
         rc = _run_filtered_xctest_bundle(test_bundle, scheme, only_testing)
     else:
         rc = _run_xctest_bundle(test_bundle, scheme)
-    if rc == 0 and _includes_stage1_perf_tests(only_testing):
-        probe_rc = run_stage1_app_launch_probe(
+    if rc == 0 and _includes_release_perf_tests(only_testing):
+        probe_rc = run_release_app_launch_probe(
             root,
             derived_data_dir,
             build_base,
             build_log_path,
             _run_and_tee,
         )
-        rc = _handle_stage1_app_launch_probe_result(probe_rc)
+        rc = _handle_release_app_launch_probe_result(probe_rc)
     if rc == 0:
         print("macOS tests: xcrun xctest passed after xcodebuild test sandbox block.")
     return rc
@@ -412,7 +412,7 @@ def _run_macos_tests_inner(
     print("==> xcodebuild test")
     rc = _run_and_tee(["xcodebuild", "test", *base], test_log_path, env=_xcode_test_env(only_testing))
     if rc == 0:
-        handled_rc = _run_stage1_probe_when_requested(
+        handled_rc = _run_release_probe_when_requested(
             root,
             derived_data_dir,
             build_base,
@@ -424,7 +424,7 @@ def _run_macos_tests_inner(
         print("macOS tests: xcodebuild test passed.")
         return 0
     if _xcodebuild_tests_passed_before_sandbox_teardown(test_log_path, only_testing):
-        handled_rc = _run_stage1_probe_when_requested(
+        handled_rc = _run_release_probe_when_requested(
             root,
             derived_data_dir,
             build_base,

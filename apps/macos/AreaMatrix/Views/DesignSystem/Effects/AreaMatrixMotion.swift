@@ -9,15 +9,15 @@ extension Animation {
         .spring(response: 0.3, dampingFraction: 0.6)
     }
 
-    static var areaMatrixStageFlow: Animation {
+    static var areaMatrixSceneFlow: Animation {
         .spring(response: 0.6, dampingFraction: 0.82)
     }
 
-    static var areaMatrixStageEnterExit: Animation {
+    static var areaMatrixSceneEnterExit: Animation {
         .timingCurve(0.16, 1, 0.3, 1, duration: 0.6)
     }
 
-    static var areaMatrixStageParallax: Animation {
+    static var areaMatrixSceneParallax: Animation {
         .timingCurve(0.2, 0.8, 0.2, 1, duration: 0.16)
     }
 
@@ -43,21 +43,21 @@ extension Animation {
 }
 
 extension AnyTransition {
-    static var areaMatrixStage: AnyTransition {
+    static var areaMatrixScene: AnyTransition {
         .asymmetric(
             insertion: .modifier(
-                active: AreaMatrixStageTransitionModifier(opacity: 0, yOffset: 20, scale: 0.96),
-                identity: AreaMatrixStageTransitionModifier(opacity: 1, yOffset: 0, scale: 1)
+                active: AreaMatrixSceneTransitionModifier(opacity: 0, yOffset: 20, scale: 0.96),
+                identity: AreaMatrixSceneTransitionModifier(opacity: 1, yOffset: 0, scale: 1)
             ),
             removal: .modifier(
-                active: AreaMatrixStageTransitionModifier(opacity: 0, yOffset: -16, scale: 0.98),
-                identity: AreaMatrixStageTransitionModifier(opacity: 1, yOffset: 0, scale: 1)
+                active: AreaMatrixSceneTransitionModifier(opacity: 0, yOffset: -16, scale: 0.98),
+                identity: AreaMatrixSceneTransitionModifier(opacity: 1, yOffset: 0, scale: 1)
             )
         )
     }
 }
 
-private struct AreaMatrixStageTransitionModifier: ViewModifier {
+private struct AreaMatrixSceneTransitionModifier: ViewModifier {
     let opacity: Double
     let yOffset: CGFloat
     let scale: CGFloat
@@ -70,7 +70,7 @@ private struct AreaMatrixStageTransitionModifier: ViewModifier {
     }
 }
 
-enum AreaMatrixStagePhase: Equatable {
+enum AreaMatrixSceneVisibility: Equatable {
     case enter(isVisible: Bool)
     case exit(isVisible: Bool)
 
@@ -82,23 +82,23 @@ enum AreaMatrixStagePhase: Equatable {
     }
 }
 
-private struct AreaMatrixStagePhaseKey: EnvironmentKey {
-    static let defaultValue = AreaMatrixStagePhase.enter(isVisible: true)
+private struct AreaMatrixSceneVisibilityKey: EnvironmentKey {
+    static let defaultValue = AreaMatrixSceneVisibility.enter(isVisible: true)
 }
 
-private struct AreaMatrixStageParallaxKey: EnvironmentKey {
+private struct AreaMatrixSceneParallaxKey: EnvironmentKey {
     static let defaultValue = AreaMatrixParallax.zero
 }
 
 extension EnvironmentValues {
-    var areaMatrixStagePhase: AreaMatrixStagePhase {
-        get { self[AreaMatrixStagePhaseKey.self] }
-        set { self[AreaMatrixStagePhaseKey.self] = newValue }
+    var areaMatrixSceneVisibility: AreaMatrixSceneVisibility {
+        get { self[AreaMatrixSceneVisibilityKey.self] }
+        set { self[AreaMatrixSceneVisibilityKey.self] = newValue }
     }
 
-    var areaMatrixStageParallax: AreaMatrixParallax {
-        get { self[AreaMatrixStageParallaxKey.self] }
-        set { self[AreaMatrixStageParallaxKey.self] = newValue }
+    var areaMatrixSceneParallax: AreaMatrixParallax {
+        get { self[AreaMatrixSceneParallaxKey.self] }
+        set { self[AreaMatrixSceneParallaxKey.self] = newValue }
     }
 }
 
@@ -122,19 +122,19 @@ extension AreaMatrixParallax {
     }
 }
 
-struct AreaMatrixStageVisualMotionModifier: ViewModifier {
-    @Environment(\.areaMatrixStagePhase) private var stagePhase
-    @Environment(\.areaMatrixStageParallax) private var parallax
+struct AreaMatrixSceneVisualMotionModifier: ViewModifier {
+    @Environment(\.areaMatrixSceneVisibility) private var sceneVisibility
+    @Environment(\.areaMatrixSceneParallax) private var parallax
 
     func body(content: Content) -> some View {
         content
-            .opacity(stagePhase.isVisible ? 1 : 0)
-            .offset(y: stagePhase.isVisible ? 0 : verticalOffset)
-            .scaleEffect(stagePhase.isVisible ? 1 : scale)
-            .blur(radius: stagePhase.isVisible ? 0 : 16)
-            .rotationEffect(.degrees(stagePhase.isVisible ? 0 : rotationAngle))
+            .opacity(sceneVisibility.isVisible ? 1 : 0)
+            .offset(y: sceneVisibility.isVisible ? 0 : verticalOffset)
+            .scaleEffect(sceneVisibility.isVisible ? 1 : scale)
+            .blur(radius: sceneVisibility.isVisible ? 0 : 16)
+            .rotationEffect(.degrees(sceneVisibility.isVisible ? 0 : rotationAngle))
             .rotation3DEffect(
-                .degrees(stagePhase.isVisible ? 0 : stage3DRotation),
+                .degrees(sceneVisibility.isVisible ? 0 : scene3DRotation),
                 axis: (x: 1, y: 0, z: 0),
                 perspective: 0.85
             )
@@ -148,62 +148,62 @@ struct AreaMatrixStageVisualMotionModifier: ViewModifier {
                 axis: (x: 0, y: 1, z: 0),
                 perspective: 0.75
             )
-            .animation(.areaMatrixStageEnterExit, value: stagePhase)
-            .animation(.areaMatrixStageParallax, value: parallax)
+            .animation(.areaMatrixSceneEnterExit, value: sceneVisibility)
+            .animation(.areaMatrixSceneParallax, value: parallax)
     }
 
     private var verticalOffset: CGFloat {
-        switch stagePhase {
+        switch sceneVisibility {
         case .enter: 16
         case .exit: -12
         }
     }
 
     private var scale: CGFloat {
-        switch stagePhase {
+        switch sceneVisibility {
         case .enter: 0.85
         case .exit: 1.15
         }
     }
 
     private var rotationAngle: Double {
-        switch stagePhase {
+        switch sceneVisibility {
         case .enter: 1.5
         case .exit: -1.5
         }
     }
 
-    private var stage3DRotation: Double {
-        switch stagePhase {
+    private var scene3DRotation: Double {
+        switch sceneVisibility {
         case .enter: -10
         case .exit: 10
         }
     }
 }
 
-struct AreaMatrixStageTextMotionModifier: ViewModifier {
+struct AreaMatrixSceneTextMotionModifier: ViewModifier {
     let delay: Double
-    @Environment(\.areaMatrixStagePhase) private var stagePhase
+    @Environment(\.areaMatrixSceneVisibility) private var sceneVisibility
 
     func body(content: Content) -> some View {
         content
-            .opacity(stagePhase.isVisible ? 1 : 0)
-            .offset(y: stagePhase.isVisible ? 0 : offsetValue)
-            .blur(radius: stagePhase.isVisible ? 0 : 4)
-            .animation(animation, value: stagePhase)
+            .opacity(sceneVisibility.isVisible ? 1 : 0)
+            .offset(y: sceneVisibility.isVisible ? 0 : offsetValue)
+            .blur(radius: sceneVisibility.isVisible ? 0 : 4)
+            .animation(animation, value: sceneVisibility)
     }
 
     private var offsetValue: CGFloat {
-        switch stagePhase {
+        switch sceneVisibility {
         case .enter: 12
         case .exit: -12
         }
     }
 
     private var animation: Animation {
-        switch stagePhase {
+        switch sceneVisibility {
         case .enter:
-            .areaMatrixStageEnterExit.delay(delay)
+            .areaMatrixSceneEnterExit.delay(delay)
         case .exit:
             .timingCurve(0.16, 1, 0.3, 1, duration: 0.4)
         }
@@ -354,12 +354,12 @@ struct AreaMatrixDeepDiveModifier: ViewModifier {
 }
 
 extension View {
-    func areaMatrixStageVisualMotion() -> some View {
-        modifier(AreaMatrixStageVisualMotionModifier())
+    func areaMatrixSceneVisualMotion() -> some View {
+        modifier(AreaMatrixSceneVisualMotionModifier())
     }
 
-    func areaMatrixStageTextMotion(delay: Double) -> some View {
-        modifier(AreaMatrixStageTextMotionModifier(delay: delay))
+    func areaMatrixSceneTextMotion(delay: Double) -> some View {
+        modifier(AreaMatrixSceneTextMotionModifier(delay: delay))
     }
 
     func areaMatrixFeatureCardFocus(isHovered: Bool, anyCardHovered: Bool) -> some View {

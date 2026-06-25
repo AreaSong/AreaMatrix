@@ -35,7 +35,7 @@ struct RenameFileSheet: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: "Rename File", pageID: "S1-33") {
+        MainFileActionSheetContainer(title: "Rename File", pageID: "rename-file") {
             if let file {
                 VStack(alignment: .leading, spacing: 12) {
                     summaryRows(file)
@@ -57,7 +57,7 @@ struct RenameFileSheet: View {
             isDisabled: state.isRenaming
         )
         .frame(height: 22)
-        .accessibilityIdentifier("S1-33-new-name")
+        .accessibilityIdentifier("rename-file-new-name")
         .accessibilityHint(draft.validationMessage ?? "Enter a new file name")
     }
 
@@ -163,11 +163,11 @@ struct BatchRenameSheet: View {
     @State private var failure: CoreErrorMappingSnapshot?
 
     var body: some View {
-        MainFileActionSheetContainer(title: "批量重命名", pageID: "S2-14") {
+        MainFileActionSheetContainer(title: "批量重命名", pageID: "batch-rename") {
             selectedCount == 0 ? AnyView(emptyContent) : AnyView(content)
         }
         .task(id: previewTaskKey) { await refreshPreview() }
-        .accessibilityIdentifier("S2-14-C2-10-batch-rename-preview")
+        .accessibilityIdentifier("batch-rename-batch-rename-preview-batch-rename-preview")
     }
 
     private var emptyContent: some View {
@@ -201,7 +201,7 @@ struct BatchRenameSheet: View {
             Button(isApplying ? "Renaming..." : "Apply") { Task { await apply() } }
                 .keyboardShortcut(.defaultAction)
                 .disabled(!canApplyPreview)
-                .accessibilityIdentifier("S2-14-C2-10-batch-rename-apply")
+                .accessibilityIdentifier("batch-rename-batch-rename-preview-batch-rename-apply")
         }
     }
 
@@ -465,6 +465,6 @@ struct FilenameValidationMessage: View {
         Text(message)
             .font(.caption)
             .foregroundStyle(.secondary)
-            .accessibilityIdentifier("S1-33-validation-message")
+            .accessibilityIdentifier("rename-file-validation-message")
     }
 }

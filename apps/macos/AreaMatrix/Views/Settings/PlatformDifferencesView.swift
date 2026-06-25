@@ -73,7 +73,7 @@ struct PlatformDifferencesView: View {
             }
             .pickerStyle(.segmented)
             .frame(maxWidth: 300)
-            .accessibilityIdentifier("S4-X-02-C4-01-target-picker")
+            .accessibilityIdentifier("platform-differences-binding-contract-target-picker")
 
             Button {
                 Task {
@@ -83,7 +83,7 @@ struct PlatformDifferencesView: View {
                 Label(model.contractActionTitle, systemImage: "checkmark.seal")
             }
             .disabled(model.isInspectingContract)
-            .accessibilityIdentifier("S4-X-02-C4-01-check-contract")
+            .accessibilityIdentifier("platform-differences-binding-contract-check-contract")
         }
     }
 
@@ -196,13 +196,13 @@ struct PlatformDifferencesView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 Button("Open repository settings", action: onOpenRepositorySettings)
-                    .accessibilityIdentifier("S4-X-02-open-repository-settings")
+                    .accessibilityIdentifier("platform-differences-open-repository-settings")
                 Button("Export diagnostics") {}
                     .disabled(true)
                     .help("Diagnostics are not available on this platform yet.")
-                    .accessibilityIdentifier("S4-X-02-export-diagnostics")
+                    .accessibilityIdentifier("platform-differences-export-diagnostics")
                 Button("Close", action: onClose)
-                    .accessibilityIdentifier("S4-X-02-close")
+                    .accessibilityIdentifier("platform-differences-close")
             }
             Text("Diagnostics are not available on this platform yet.")
                 .font(.caption)

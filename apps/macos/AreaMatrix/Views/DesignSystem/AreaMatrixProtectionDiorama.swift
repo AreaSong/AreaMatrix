@@ -4,8 +4,8 @@ struct AreaMatrixProtectionDiorama: View {
     @State private var isAnimating = false
 
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.areaMatrixStageParallax) private var parallax
-    @Environment(\.areaMatrixStagePhase) private var stagePhase
+    @Environment(\.areaMatrixSceneParallax) private var parallax
+    @Environment(\.areaMatrixSceneVisibility) private var sceneVisibility
 
     var body: some View {
         ZStack {
@@ -19,7 +19,7 @@ struct AreaMatrixProtectionDiorama: View {
             shieldRipples
         }
         .frame(width: 480, height: 220)
-        .onChange(of: stagePhase, initial: true) { _, newPhase in
+        .onChange(of: sceneVisibility, initial: true) { _, newPhase in
             if newPhase.isVisible {
                 restartAnimation()
             } else {

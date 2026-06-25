@@ -8,12 +8,12 @@ public static class ChooseRepositoryViewSmokeTests
 
     public static void RunAll()
     {
-        WindowsAppProjectBuildsS4Win01Page();
+        WindowsAppProjectBuildsWindowsChooseRepositoryPage();
         ChooseRepositoryPageExposesRequiredUserActions();
         MainWindowConnectsPageToRealCoreBridge();
     }
 
-    private static void WindowsAppProjectBuildsS4Win01Page()
+    private static void WindowsAppProjectBuildsWindowsChooseRepositoryPage()
     {
         XElement project = LoadXml(RepositoryPath("apps/windows/AreaMatrix/AreaMatrix.Windows.csproj"));
 
@@ -109,20 +109,20 @@ public static class ChooseRepositoryViewSmokeTests
             "DetectCloudStorageStateAsync",
             File.ReadAllText(RepositoryPath(
                 "apps/windows/AreaMatrix/Features/Onboarding/WindowsRepositoryCoreBridge.cs")),
-            "C4-14 cloud storage bridge");
+            "onedrive-risk-state cloud storage bridge");
         TestAssert.Contains(
             "AcknowledgeOneDriveRiskNoticeAsync",
             File.ReadAllText(RepositoryPath(
                 "apps/windows/AreaMatrix/Features/Onboarding/WindowsRepositoryCoreBridge.cs")),
-            "C4-14 OneDrive acknowledgement bridge");
+            "onedrive-risk-state OneDrive acknowledgement bridge");
         TestAssert.Contains(
             "uniffi_area_matrix_core_fn_func_detect_cloud_storage_state",
             File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/Core/NativeCoreLibrary.cs")),
-            "C4-14 native core binding");
+            "onedrive-risk-state native core binding");
         TestAssert.Contains(
             "uniffi_area_matrix_core_fn_func_acknowledge_onedrive_risk_notice",
             File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/Core/NativeCoreLibrary.cs")),
-            "C4-14 native acknowledgement binding");
+            "onedrive-risk-state native acknowledgement binding");
     }
 
     private static void AssertButton(XElement root, string content, string clickHandler)

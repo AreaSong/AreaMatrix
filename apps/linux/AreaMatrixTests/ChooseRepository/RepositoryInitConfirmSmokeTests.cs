@@ -5,7 +5,7 @@ public static class RepositoryInitConfirmSmokeTests
     public static void RunAll()
     {
         RepositoryInitConfirmPageExposesRequiredActions();
-        RepositoryInitConfirmUsesOnlyC410CoreBridge();
+        RepositoryInitConfirmUsesOnlyLinuxRepoConnectCoreCoreBridge();
     }
 
     private static void RepositoryInitConfirmPageExposesRequiredActions()
@@ -19,8 +19,8 @@ public static class RepositoryInitConfirmSmokeTests
 
         foreach (string fragment in new[]
         {
-            "page_id: S4-X-04",
-            "platform_slice: Linux C4-10 linux-repo-connect",
+            "page_id: repository-init-confirm",
+            "platform_slice: Linux linux-repo-connect linux-repo-connect",
             "Create AreaMatrix Repository",
             "Folder: /home/you/AreaMatrix",
             "Type: Local folder",
@@ -50,7 +50,7 @@ public static class RepositoryInitConfirmSmokeTests
         TestAssert.Contains("new LinuxRepositoryInitConfirmFactory(repositoryBridge)", shell, "real bridge factory");
     }
 
-    private static void RepositoryInitConfirmUsesOnlyC410CoreBridge()
+    private static void RepositoryInitConfirmUsesOnlyLinuxRepoConnectCoreCoreBridge()
     {
         string viewModel = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Features/Onboarding/RepositoryInitConfirmViewModel.cs"));
@@ -62,7 +62,7 @@ public static class RepositoryInitConfirmSmokeTests
         TestAssert.Contains("InitializeEmptyRepositoryAsync", bridge, "CoreBridge init_repo");
         TestAssert.Contains("CoreRepoInitOptions.CreateEmptyGeneratedOnly", bridge, "CreateEmpty options");
         TestAssert.NotContains("AdoptExistingRepositoryAsync(RepositoryPath", viewModel, "no adopt on init confirm");
-        TestAssert.NotContains("GetPlatformCapabilitiesAsync", viewModel, "no C4-17 platform call");
+        TestAssert.NotContains("GetPlatformCapabilitiesAsync", viewModel, "no platform-capabilities platform call");
         TestAssert.NotContains("DetectCloudStorageStateAsync", viewModel, "no cloud state call");
         TestAssert.NotContains("sudo", viewModel, "no sudo suggestion");
         TestAssert.NotContains("chmod", viewModel, "no chmod suggestion");

@@ -170,7 +170,7 @@ actor RepositorySettingsStaticErrorMapper: CoreErrorMapping {
             severity: .medium,
             suggestedAction: "Retry status",
             recoverability: .retryable,
-            rawContext: "S4-X-08 C4-20"
+            rawContext: "repository-settings repository-settings-core"
         )
     }
 
@@ -350,7 +350,7 @@ actor DetailTagRecordingStore: CoreTagCRUD {
         request: TagSuggestionRequestSnapshot
     ) async throws -> TagSuggestionReportSnapshot {
         recordedSuggestionRequests.append(TagSuggestionRequestRecord(repoPath: repoPath, request: request))
-        guard !suggestionResults.isEmpty else { return .s223Fixture(fileID: request.fileID) }
+        guard !suggestionResults.isEmpty else { return .tagSuggestionsFixture(fileID: request.fileID) }
         switch suggestionResults.removeFirst() {
         case let .success(report): return report
         case let .failure(error): throw error
@@ -362,7 +362,7 @@ actor DetailTagRecordingStore: CoreTagCRUD {
         request: ApplyTagSuggestionsRequestSnapshot
     ) async throws -> TagSuggestionApplyReportSnapshot {
         recordedApplySuggestionRequests.append(ApplyTagSuggestionsRequestRecord(repoPath: repoPath, request: request))
-        guard !applySuggestionResults.isEmpty else { return .s223Applied(fileID: request.fileID) }
+        guard !applySuggestionResults.isEmpty else { return .tagSuggestionsApplied(fileID: request.fileID) }
         switch applySuggestionResults.removeFirst() {
         case let .success(report): return report
         case let .failure(error): throw error
@@ -390,7 +390,7 @@ actor DetailTagRecordingStore: CoreTagCRUD {
     }
 
     private func consume(_ results: inout [Result], fallbackFileID: Int64) throws -> TagSetSnapshot {
-        guard !results.isEmpty else { return TagSetSnapshot.s207Fixture(fileID: fallbackFileID, values: []) }
+        guard !results.isEmpty else { return TagSetSnapshot.tagAddFixture(fileID: fallbackFileID, values: []) }
         switch results.removeFirst() {
         case let .success(tagSet): return tagSet
         case let .failure(error): throw error
@@ -398,22 +398,22 @@ actor DetailTagRecordingStore: CoreTagCRUD {
     }
 }
 
-actor S208ForbiddenTagStore: CoreTagCRUD {
+actor TagFilterForbiddenTagStore: CoreTagCRUD {
     private var calls: [String] = []
 
     func listTags(repoPath _: String, fileID _: Int64) async throws -> TagSetSnapshot {
         calls.append("listTags")
-        throw CoreError.Internal(message: "S2-08 C2-02 must use list_filter_facets")
+        throw CoreError.Internal(message: "tag-filters search-filters must use list_filter_facets")
     }
 
     func addTag(repoPath _: String, fileID _: Int64, tag _: String) async throws -> TagSetSnapshot {
         calls.append("addTag")
-        throw CoreError.Internal(message: "S2-08 C2-02 must not add tags")
+        throw CoreError.Internal(message: "tag-filters search-filters must not add tags")
     }
 
     func removeTag(repoPath _: String, fileID _: Int64, tag _: String) async throws -> TagSetSnapshot {
         calls.append("removeTag")
-        throw CoreError.Internal(message: "S2-08 C2-02 must not remove tags")
+        throw CoreError.Internal(message: "tag-filters search-filters must not remove tags")
     }
 
     func recordedCalls() -> [String] {

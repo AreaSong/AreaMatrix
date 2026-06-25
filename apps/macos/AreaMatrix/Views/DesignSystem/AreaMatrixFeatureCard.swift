@@ -114,7 +114,7 @@ struct AreaMatrixFeatureCard: View {
         .areaMatrixFeatureCardFocus(isHovered: isHovered, anyCardHovered: anyCardHovered)
         .animation(.easeOut(duration: 0.15), value: hoverPoint)
         .allowsHitTesting(false)
-        .animation(.areaMatrixStageFlow.delay(entranceDelay), value: hasEntered)
+        .animation(.areaMatrixSceneFlow.delay(entranceDelay), value: hasEntered)
     }
 
     private var iconBox: some View {

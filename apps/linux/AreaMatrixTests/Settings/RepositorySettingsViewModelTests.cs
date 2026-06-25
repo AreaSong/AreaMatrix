@@ -14,7 +14,7 @@ public static class RepositorySettingsViewModelTests
         await SavesRepositoryConfigThroughUpdateConfig();
         await PageExportDiagnosticsUsesRepositorySettingsSnapshot();
         await EmptyRepositoryShowsNoConnectedState();
-        LinuxSettingsPageDeclaresC417AndC420Closure();
+        LinuxSettingsPageDeclaresPlatformCapabilitiesCoreAndRepositorySettingsCoreClosure();
     }
 
     private static async Task LoadsRepositoryConfigAndCapabilities()
@@ -156,7 +156,7 @@ public static class RepositorySettingsViewModelTests
         TestAssert.Empty(bridge.LoadedConfigPaths, nameof(bridge.LoadedConfigPaths));
     }
 
-    private static void LinuxSettingsPageDeclaresC417AndC420Closure()
+    private static void LinuxSettingsPageDeclaresPlatformCapabilitiesCoreAndRepositorySettingsCoreClosure()
     {
         string ui = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Features/Settings/RepositorySettingsView.ui"));
@@ -175,12 +175,12 @@ public static class RepositorySettingsViewModelTests
         string factories = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Features/Library/LinuxDesktopShellFactories.cs"));
 
-        TestAssert.Contains("save_fallback_to_inbox", ui, "C4-20 save action");
+        TestAssert.Contains("save_fallback_to_inbox", ui, "repository-settings-core save action");
         TestAssert.Contains("RepositorySettingsView.SaveFallbackToInboxAsync", ui, "visible save trigger");
         TestAssert.Contains("RepositorySettingsView.ExportDiagnosticsAsync", ui, "diagnostics export trigger");
         TestAssert.Contains("SaveFallbackToInboxAsync", view, "page save method");
         TestAssert.Contains("ViewModel.ExportDiagnosticsAsync", view, "page diagnostics method");
-        TestAssert.Contains("UpdateConfigAsync", viewModel, "C4-20 update_config call");
+        TestAssert.Contains("UpdateConfigAsync", viewModel, "repository-settings-core update_config call");
         TestAssert.Contains("LinuxRepositorySettingsDiagnosticsExporter", viewModel, "redacted diagnostics exporter");
         TestAssert.Contains("GetCoreVersionAsync", bridge, "Core version bridge");
         TestAssert.Contains("GetVersionAsync", nativeClient, "get_version native client");
@@ -188,8 +188,8 @@ public static class RepositorySettingsViewModelTests
             "uniffi_area_matrix_core_fn_func_get_version",
             nativeLibrary,
             "get_version native export");
-        TestAssert.Contains("ILinuxRepositorySettingsViewFactory", shell, "S4-X-08 shell factory contract");
-        TestAssert.Contains("OpenRepositorySettingsAsync", shell, "S4-X-08 shell route");
+        TestAssert.Contains("ILinuxRepositorySettingsViewFactory", shell, "repository-settings shell factory contract");
+        TestAssert.Contains("OpenRepositorySettingsAsync", shell, "repository-settings shell route");
         TestAssert.Contains("PlatformCapabilitiesRequested", shell, "settings to platform capabilities route");
         TestAssert.Contains("new LinuxRepositorySettingsViewFactory(repositoryBridge, repositoryBridge)", shell, "real settings factory");
         TestAssert.Contains("LinuxRepositorySettingsViewFactory", factories, "settings factory implementation");

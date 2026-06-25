@@ -1,4 +1,4 @@
-page_id: S4-LNX-03
+page_id: linux-local-folder-notice
 title: Repository folder on Linux
 description: Explain local folder risk before the Linux repository continues to open, init, or adopt confirmation.
 summary:
@@ -27,7 +27,7 @@ actions:
 safety:
   - The page calls validate_repo_path through LinuxRepositoryCoreBridge.
   - The page calls get_platform_capabilities through LinuxPlatformCapabilitiesCoreBridge.
-  - Watcher and cloud placeholder rows come from the C4-17 PlatformCapabilities matrix.
-  - The page routes to S4-X-04 or S4-X-05 for init/adopt confirmation before init_repo can run.
+  - Watcher and cloud placeholder rows come from the platform-capabilities PlatformCapabilities matrix.
+  - The page routes to repository-init-confirm or repository-adopt-confirm for init/adopt confirmation before init_repo can run.
   - The page does not create, delete, move, rename, overwrite, sudo, or chmod user files.
   - The page does not call cloud storage detection or configure sync providers.

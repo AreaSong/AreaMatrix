@@ -51,7 +51,7 @@ flowchart TB
     Locale --> Out[serialize JSON]
 ```
 
-MVP：仅 walkdir 路径；DB 路径 Stage 2 上线。
+当前默认小库走 walkdir 路径；大库和高频刷新场景可切到 DB 聚合路径。
 
 ---
 
@@ -61,7 +61,7 @@ MVP：仅 walkdir 路径；DB 路径 Stage 2 上线。
 core/src/tree/
 ├── mod.rs       // build_tree / list_tree_json
 ├── walker.rs    // walkdir 扫描
-├── aggregate.rs // 从 DB 聚合（Stage 2）
+├── aggregate.rs // 从 DB 聚合
 ├── cache.rs     // 增量更新缓存
 └── i18n.rs      // 复用 overview::i18n
 ```
@@ -256,7 +256,7 @@ fn is_managed_md(rel: &str) -> bool {
 
 ---
 
-## DB 聚合方案（Stage 2）
+## DB 聚合方案
 
 ```rust
 // core/src/tree/aggregate.rs
@@ -362,18 +362,18 @@ impl TreeCache {
 | 1,000 | < 30 ms | walkdir 顺序扫 |
 | 10,000 | < 300 ms | 单线程足够 |
 | 100,000 | 1-3 s | 必须并行 / 切 DB 聚合 |
-| 1,000,000 | 10-30 s | 不在 MVP 支持范围 |
+| 1,000,000 | 10-30 s | 需要后续大库优化 |
 
 ### 优化清单
 
-| 优化 | 阶段 | 收益 |
+| 优化 | 状态 | 收益 |
 |---|---|---|
-| `WalkDir::new().same_file_system(true)` | MVP | 防止跟随挂载点 |
-| `metadata` 用 `DirEntry::metadata` 而非 `std::fs::metadata` | MVP | 减少 1 次 stat |
-| 共用 `ignore.yaml` matcher | MVP | 跳过 `.git`、`.areamatrix`、构建产物等大目录，同时不误跳过用户 `README.md` |
-| 增量更新（dirty_paths） | Stage 2 | UI 拉树 < 10ms |
-| DB 聚合替代 walkdir | Stage 2 | 10 万文件 < 50ms |
-| Rayon 并行 walkdir | Stage 3 | CPU 核心利用 |
+| `WalkDir::new().same_file_system(true)` | 当前默认 | 防止跟随挂载点 |
+| `metadata` 用 `DirEntry::metadata` 而非 `std::fs::metadata` | 当前默认 | 减少 1 次 stat |
+| 共用 `ignore.yaml` matcher | 当前默认 | 跳过 `.git`、`.areamatrix`、构建产物等大目录，同时不误跳过用户 `README.md` |
+| 增量更新（dirty_paths） | 后续优化 | UI 拉树 < 10ms |
+| DB 聚合替代 walkdir | 后续优化 | 10 万文件 < 50ms |
+| Rayon 并行 walkdir | 后续优化 | CPU 核心利用 |
 
 ---
 

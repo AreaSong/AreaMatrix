@@ -1,11 +1,11 @@
 @testable import AreaMatrix
 import XCTest
 
-final class S306PageIntegrationVerifyTests: XCTestCase {
+final class AISummaryPageIntegrationVerifyTests: XCTestCase {
     @MainActor
-    func testS306EntryLoadAllowsEmptySummaryWithoutHardcodedReadBlocker() async {
-        let summary = S306IntegrationSummaryBridge(drafts: [])
-        let model = s306IntegrationModel(fileID: 705, summary: summary)
+    func testAISummaryEntryLoadAllowsEmptySummaryWithoutHardcodedReadBlocker() async {
+        let summary = AISummaryIntegrationSummaryBridge(drafts: [])
+        let model = aiSummaryIntegrationModel(fileID: 705, summary: summary)
 
         await model.loadEntryState()
 
@@ -18,12 +18,12 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS306EntryLoadShowsSavedSummaryWithMetadataAndNoUnsavedExitPrompt() async {
-        let summary = S306IntegrationSummaryBridge(
+    func testAISummaryEntryLoadShowsSavedSummaryWithMetadataAndNoUnsavedExitPrompt() async {
+        let summary = AISummaryIntegrationSummaryBridge(
             drafts: [],
-            savedSummary: .s306SavedSummary(fileID: 708, text: "Previously saved AI summary.")
+            savedSummary: .aiSummarySavedSummary(fileID: 708, text: "Previously saved AI summary.")
         )
-        let model = s306IntegrationModel(fileID: 708, summary: summary)
+        let model = aiSummaryIntegrationModel(fileID: 708, summary: summary)
 
         await model.loadEntryState()
 
@@ -41,13 +41,13 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS306SummaryPrivacyAndProvenanceStayOnDeclaredCoreBridgePath() async {
-        let privacy = S306IntegrationPrivacyBridge()
-        let summary = S306IntegrationSummaryBridge(drafts: [
-            .s306IntegrationDraft(fileID: 706, text: "Initial AI summary.", draftID: "draft-a", callLogID: 1706),
-            .s306IntegrationDraft(fileID: 706, text: "Regenerated AI summary.", draftID: "draft-b", callLogID: 2706)
+    func testAISummarySummaryPrivacyAndProvenanceStayOnDeclaredCoreBridgePath() async {
+        let privacy = AISummaryIntegrationPrivacyBridge()
+        let summary = AISummaryIntegrationSummaryBridge(drafts: [
+            .aiSummaryIntegrationDraft(fileID: 706, text: "Initial AI summary.", draftID: "draft-a", callLogID: 1706),
+            .aiSummaryIntegrationDraft(fileID: 706, text: "Regenerated AI summary.", draftID: "draft-b", callLogID: 2706)
         ])
-        let model = s306IntegrationModel(fileID: 706, summary: summary, privacy: privacy)
+        let model = aiSummaryIntegrationModel(fileID: 706, summary: summary, privacy: privacy)
 
         await model.generate(regenerate: false)
         await model.save()
@@ -76,23 +76,23 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS306PrivacyGateFailurePreservesDraftAndRecordsSkippedSummaryTrace() async {
-        let summary = S306IntegrationSummaryBridge(drafts: [
-            .s306IntegrationDraft(fileID: 712, text: "Initial AI summary.", draftID: "draft-a", callLogID: 1712),
-            .s306IntegrationPrivacySkippedDraft(
+    func testAISummaryPrivacyGateFailurePreservesDraftAndRecordsSkippedSummaryTrace() async {
+        let summary = AISummaryIntegrationSummaryBridge(drafts: [
+            .aiSummaryIntegrationDraft(fileID: 712, text: "Initial AI summary.", draftID: "draft-a", callLogID: 1712),
+            .aiSummaryIntegrationPrivacySkippedDraft(
                 fileID: 712,
                 privacyRuleID: "block:rule-confidential",
                 callLogID: 9712
             )
         ])
-        let model = s306IntegrationModel(fileID: 712, summary: summary)
+        let model = aiSummaryIntegrationModel(fileID: 712, summary: summary)
         await model.generate(regenerate: false)
         model.updateDraft("Keep this draft.")
 
-        let blocked = s306IntegrationModel(
+        let blocked = aiSummaryIntegrationModel(
             fileID: 712,
             summary: summary,
-            privacy: S306IntegrationPrivacyBridge(report: .s306DeniedPrivacyRule())
+            privacy: AISummaryIntegrationPrivacyBridge(report: .aiSummaryDeniedPrivacyRule())
         )
         blocked.updateDraft("Keep this draft.")
         await blocked.generate(regenerate: true)
@@ -100,7 +100,7 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
         guard case let .blocked(notice) = blocked.gateState else {
             return XCTFail("Expected privacy gate to block regenerate.")
         }
-        XCTAssertEqual(notice.capability, "C3-09")
+        XCTAssertEqual(notice.capability, "ai-privacy-rules-core")
         XCTAssertEqual(blocked.draftText, "Keep this draft.")
         XCTAssertEqual(blocked.status, .skipped(.privacyRule))
         XCTAssertEqual(blocked.privacySkip?.sentFields, [])
@@ -113,16 +113,16 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS306SummaryUnavailableFromCoreShowsC306GateWithoutExtraCoreBridgeDependencies() async {
-        let summary = S306IntegrationSummaryBridge(drafts: [
-            .s306IntegrationUnavailableDraft(fileID: 713, reason: .callLogUnavailable)
+    func testAISummarySummaryUnavailableFromCoreShowsAISummaryCoreGateWithoutExtraCoreBridgeDependencies() async {
+        let summary = AISummaryIntegrationSummaryBridge(drafts: [
+            .aiSummaryIntegrationUnavailableDraft(fileID: 713, reason: .callLogUnavailable)
         ])
-        let model = s306IntegrationModel(fileID: 713, summary: summary)
+        let model = aiSummaryIntegrationModel(fileID: 713, summary: summary)
 
         await model.generate(regenerate: false)
 
         guard case let .blocked(notice) = model.gateState else {
-            return XCTFail("Expected C3-06 unavailable draft to block the page action.")
+            return XCTFail("Expected ai-summary-core unavailable draft to block the page action.")
         }
         XCTAssertEqual(notice.title, "AI call log is unavailable")
         XCTAssertEqual(notice.reason, .callLogUnavailable)
@@ -132,11 +132,11 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS306ExitConfirmationSavesDiscardsOrKeepsDraftUntilUserChooses() async {
-        let summary = S306IntegrationSummaryBridge(drafts: [
-            .s306IntegrationDraft(fileID: 707, text: "Saved AI summary.", draftID: "draft-exit", callLogID: 1707)
+    func testAISummaryExitConfirmationSavesDiscardsOrKeepsDraftUntilUserChooses() async {
+        let summary = AISummaryIntegrationSummaryBridge(drafts: [
+            .aiSummaryIntegrationDraft(fileID: 707, text: "Saved AI summary.", draftID: "draft-exit", callLogID: 1707)
         ])
-        let model = s306IntegrationModel(fileID: 707, summary: summary)
+        let model = aiSummaryIntegrationModel(fileID: 707, summary: summary)
         let exitController = AISummaryEditorExitController()
 
         await model.generate(regenerate: false)
@@ -180,7 +180,7 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
         ])
     }
 
-    func testS306DirtySelectionChangeRestoresPreviousFileUntilUserChooses() {
+    func testAISummaryDirtySelectionChangeRestoresPreviousFileUntilUserChooses() {
         let request = AISummarySelectionExitRequest(previousIDs: [707], requestedIDs: [708])
         var cancelState = AISummarySelectionExitState()
 
@@ -210,17 +210,17 @@ final class S306PageIntegrationVerifyTests: XCTestCase {
 }
 
 @MainActor
-private func s306IntegrationModel(
+private func aiSummaryIntegrationModel(
     fileID: Int64,
-    summary: S306IntegrationSummaryBridge = S306IntegrationSummaryBridge(drafts: []),
-    privacy: S306IntegrationPrivacyBridge = S306IntegrationPrivacyBridge()
+    summary: AISummaryIntegrationSummaryBridge = AISummaryIntegrationSummaryBridge(drafts: []),
+    privacy: AISummaryIntegrationPrivacyBridge = AISummaryIntegrationPrivacyBridge()
 ) -> AISummaryEditorModel {
     AISummaryEditorModel(
         repoPath: "/tmp/repo",
         fileID: fileID,
         summaryStore: summary,
         privacyRules: privacy,
-        errorMapper: S306IntegrationErrorMapper(),
+        errorMapper: AISummaryIntegrationErrorMapper(),
         summaryProviderScope: .remoteAllowed,
         privacyContext: AISummaryPrivacyContext(
             repoRelativePath: "docs/summary.pdf",
@@ -232,17 +232,17 @@ private func s306IntegrationModel(
     )
 }
 
-private enum S306IntegrationSummaryEvent: Equatable {
+private enum AISummaryIntegrationSummaryEvent: Equatable {
     case load
     case generate(regenerate: Bool, privacyPolicyRef: String?)
     case save(text: String, edited: Bool, callLogID: Int64?)
     case clear(confirmed: Bool)
 }
 
-private actor S306IntegrationSummaryBridge: CoreAISummaryManaging {
+private actor AISummaryIntegrationSummaryBridge: CoreAISummaryManaging {
     private var drafts: [AiSummaryDraft]
     private let savedSummary: AISummarySavedSnapshot?
-    private var recorded: [S306IntegrationSummaryEvent] = []
+    private var recorded: [AISummaryIntegrationSummaryEvent] = []
 
     init(drafts: [AiSummaryDraft], savedSummary: AISummarySavedSnapshot? = nil) {
         self.drafts = drafts
@@ -259,7 +259,7 @@ private actor S306IntegrationSummaryBridge: CoreAISummaryManaging {
             regenerate: request.regenerateExisting,
             privacyPolicyRef: request.privacyPolicyRef
         ))
-        guard !drafts.isEmpty else { throw CoreError.Internal(message: "missing S3-06 draft") }
+        guard !drafts.isEmpty else { throw CoreError.Internal(message: "missing ai-summary draft") }
         return drafts.removeFirst()
     }
 
@@ -285,16 +285,16 @@ private actor S306IntegrationSummaryBridge: CoreAISummaryManaging {
         return AiSummaryClearReport(fileId: request.fileId, cleared: true, clearedAt: 1_700_000_200)
     }
 
-    func events() -> [S306IntegrationSummaryEvent] {
+    func events() -> [AISummaryIntegrationSummaryEvent] {
         recorded
     }
 }
 
-private actor S306IntegrationPrivacyBridge: CoreAIPrivacyEvaluating {
+private actor AISummaryIntegrationPrivacyBridge: CoreAIPrivacyEvaluating {
     private let report: AiPrivacyEvaluationReport
     private var recordedRoutes: [AiPrivacyEvaluationRoute] = []
 
-    init(report: AiPrivacyEvaluationReport = .s306Allowed()) {
+    init(report: AiPrivacyEvaluationReport = .aiSummaryAllowed()) {
         self.report = report
     }
 
@@ -327,7 +327,7 @@ private actor S306IntegrationPrivacyBridge: CoreAIPrivacyEvaluating {
     }
 }
 
-private struct S306IntegrationErrorMapper: CoreErrorMapping {
+private struct AISummaryIntegrationErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .db,
@@ -335,13 +335,13 @@ private struct S306IntegrationErrorMapper: CoreErrorMapping {
             severity: .medium,
             suggestedAction: "Retry summary action.",
             recoverability: .retryable,
-            rawContext: "S3-06 page integration"
+            rawContext: "ai-summary page integration"
         )
     }
 }
 
 private extension AISummarySavedSnapshot {
-    static func s306SavedSummary(fileID: Int64, text: String) -> AISummarySavedSnapshot {
+    static func aiSummarySavedSummary(fileID: Int64, text: String) -> AISummarySavedSnapshot {
         AISummarySavedSnapshot(
             fileID: fileID,
             summaryText: text,
@@ -360,7 +360,7 @@ private extension AISummarySavedSnapshot {
 }
 
 private extension AiPrivacyEvaluationReport {
-    static func s306Allowed() -> AiPrivacyEvaluationReport {
+    static func aiSummaryAllowed() -> AiPrivacyEvaluationReport {
         AiPrivacyEvaluationReport(
             decision: .allowed,
             skippedReason: nil,
@@ -374,7 +374,7 @@ private extension AiPrivacyEvaluationReport {
         )
     }
 
-    static func s306DeniedPrivacyRule() -> AiPrivacyEvaluationReport {
+    static func aiSummaryDeniedPrivacyRule() -> AiPrivacyEvaluationReport {
         AiPrivacyEvaluationReport(
             decision: .skipped,
             skippedReason: .privacyRule,
@@ -399,7 +399,7 @@ private extension AiPrivacyEvaluationReport {
 }
 
 private extension AiSummaryDraft {
-    static func s306IntegrationDraft(
+    static func aiSummaryIntegrationDraft(
         fileID: Int64,
         text: String,
         draftID: String,
@@ -422,7 +422,7 @@ private extension AiSummaryDraft {
         )
     }
 
-    static func s306IntegrationUnavailableDraft(
+    static func aiSummaryIntegrationUnavailableDraft(
         fileID: Int64,
         reason: AiSummarySkipReason
     ) -> AiSummaryDraft {
@@ -443,7 +443,7 @@ private extension AiSummaryDraft {
         )
     }
 
-    static func s306IntegrationPrivacySkippedDraft(
+    static func aiSummaryIntegrationPrivacySkippedDraft(
         fileID: Int64,
         privacyRuleID: String,
         callLogID: Int64

@@ -37,7 +37,7 @@ extension ICloudConflictMinimalSheet {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            .accessibilityIdentifier("S2-20-C2-16-loading")
+            .accessibilityIdentifier("icloud-conflict-review-icloud-conflict-visual-loading")
         case let .loaded(preview):
             VStack(alignment: .leading, spacing: 5) {
                 statusLabel("Conflict details loaded", systemImage: "checkmark.circle", color: .green)
@@ -59,7 +59,7 @@ extension ICloudConflictMinimalSheet {
                     )
                 }
             }
-            .accessibilityIdentifier("S2-20-C2-16-preview-loaded")
+            .accessibilityIdentifier("icloud-conflict-review-icloud-conflict-visual-preview-loaded")
         case .empty:
             VStack(alignment: .leading, spacing: 8) {
                 statusLabel("Conflict no longer exists", systemImage: "exclamationmark.triangle", color: .orange)
@@ -67,7 +67,7 @@ extension ICloudConflictMinimalSheet {
                     Task { await model.loadPreview() }
                 }
             }
-            .accessibilityIdentifier("S2-20-C2-16-empty")
+            .accessibilityIdentifier("icloud-conflict-review-icloud-conflict-visual-empty")
         case let .failed(mapping):
             mappedPreviewError(mapping)
         }
@@ -98,7 +98,7 @@ extension ICloudConflictMinimalSheet {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("S2-20-C2-16-preview-error")
+        .accessibilityIdentifier("icloud-conflict-review-icloud-conflict-visual-preview-error")
     }
 
     @ViewBuilder
@@ -163,10 +163,10 @@ extension ICloudConflictMinimalSheet {
             Button("Retry repository check") {
                 Task { await model.validateRepositoryPath() }
             }
-            .accessibilityIdentifier("S1-25-C1-21-retry-repository-check")
+            .accessibilityIdentifier("icloud-conflict-minimal-error-mapping-retry-repository-check")
         }
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("S1-25-C1-21-error-mapping")
+        .accessibilityIdentifier("icloud-conflict-minimal-error-mapping-error-mapping")
     }
 
     @ViewBuilder
@@ -184,7 +184,7 @@ extension ICloudConflictMinimalSheet {
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)
             }
-            .accessibilityIdentifier("S1-25-core-resolution-blocked")
+            .accessibilityIdentifier("icloud-conflict-minimal-core-resolution-blocked")
         }
     }
 

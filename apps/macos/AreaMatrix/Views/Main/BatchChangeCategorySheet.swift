@@ -20,7 +20,7 @@ struct BatchChangeCategoryTrigger: View {
     var body: some View {
         Button("Change category...") { isPresented = true }
             .help(BatchChangeCategoryEntryPolicy.openHelp(disabledReason: disabledReason))
-            .accessibilityIdentifier("S2-12-batch-change-category-open")
+            .accessibilityIdentifier("batch-change-category-batch-change-category-open")
             .sheet(isPresented: $isPresented) {
                 BatchChangeCategorySheet(
                     repoPath: repoPath,
@@ -115,7 +115,7 @@ struct BatchChangeCategorySheet: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: "Change category for \(selectedCount) files", pageID: "S2-12") {
+        MainFileActionSheetContainer(title: "Change category for \(selectedCount) files", pageID: "batch-change-category") {
             if selectedCount == 0 {
                 Text("No files selected")
                     .foregroundStyle(.secondary)
@@ -251,7 +251,7 @@ struct BatchChangeCategoryPicker: View {
             TextField("Search categories", text: $searchText)
                 .textFieldStyle(.roundedBorder)
                 .disabled(isDisabled)
-                .accessibilityIdentifier("S2-12-new-category-search")
+                .accessibilityIdentifier("batch-change-category-new-category-search")
             pickerBody
         }
     }
@@ -262,7 +262,7 @@ struct BatchChangeCategoryPicker: View {
             Text(emptyMessage)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .accessibilityIdentifier("S2-12-new-category-empty-search")
+                .accessibilityIdentifier("batch-change-category-new-category-empty-search")
         } else {
             Picker("New category", selection: $selection) {
                 ForEach(filteredCategories, id: \.self) { category in
@@ -271,7 +271,7 @@ struct BatchChangeCategoryPicker: View {
             }
             .pickerStyle(.menu)
             .disabled(isDisabled)
-            .accessibilityIdentifier("S2-12-new-category-picker")
+            .accessibilityIdentifier("batch-change-category-new-category-picker")
         }
     }
 

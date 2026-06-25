@@ -4,8 +4,8 @@ import XCTest
 
 final class DatabaseRepairIntegrationTests: XCTestCase {
     @MainActor
-    func testS137PageIntegrationConnectsDbRepairEntryConfirmedFullRescanAndMainListExit() async throws {
-        let context = try await S137IntegrationSuccessContext.make()
+    func testDatabaseRepairPageIntegrationConnectsDbRepairEntryConfirmedFullRescanAndMainListExit() async throws {
+        let context = try await DatabaseRepairIntegrationSuccessContext.make()
         defer { context.cleanup() }
 
         let repairRoute = try context.openRepairRoute()
@@ -16,14 +16,14 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS137PageIntegrationKeepsFailureAndCancelInsideRepairBoundary() async {
-        let mapping = CoreErrorMappingSnapshot.s137IntegrationMapping(
+    func testDatabaseRepairPageIntegrationKeepsFailureAndCancelInsideRepairBoundary() async {
+        let mapping = CoreErrorMappingSnapshot.databaseRepairIntegrationMapping(
             kind: .permissionDenied,
             severity: .critical,
             recoverability: .userActionRequired,
             rawContext: "/tmp/repo/.areamatrix/index.db"
         )
-        let repairer = S137IntegrationRecordingMetadataRepairer(
+        let repairer = DatabaseRepairIntegrationRecordingMetadataRepairer(
             result: .failure(CoreError.PermissionDenied(path: "/tmp/repo/.areamatrix/index.db"))
         )
         let finder = ShellRecordingFinderOpener()
@@ -35,7 +35,7 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
         shell.route = .mainRepoError("/tmp/repo", mapping)
         shell.openMainRepositoryRepair(repoPath: "/tmp/repo")
         guard case let .dbRepairConfirm(repairRoute) = shell.route else {
-            return XCTFail("Expected S1-37 repair route, got \(shell.route)")
+            return XCTFail("Expected database-repair repair route, got \(shell.route)")
         }
 
         let repairModel = DatabaseRepairConfirmModel(
@@ -45,8 +45,8 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
             lastOpenedAt: nil,
             metadataRepairer: repairer,
             startupRecoverer: MainLoadingStaticStartupRecoverer(),
-            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.s137IntegrationDiagnostics)),
-            errorMapper: S137IntegrationStaticErrorMapper(mapping: mapping)
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.databaseRepairIntegrationDiagnostics)),
+            errorMapper: DatabaseRepairIntegrationStaticErrorMapper(mapping: mapping)
         )
 
         repairModel.isMetadataSafetyConfirmed = true
@@ -54,7 +54,7 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
         let requests = await repairer.requests()
 
         XCTAssertEqual(requests, [
-            S137IntegrationRepairRequest(
+            DatabaseRepairIntegrationRepairRequest(
                 repoPath: "/tmp/repo",
                 options: RepairOptionsSnapshot(fullRescan: true, preserveDiagnosticsSnapshot: true)
             )
@@ -71,30 +71,30 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
     }
 }
 
-private struct S137IntegrationRepairRequest: Equatable {
+private struct DatabaseRepairIntegrationRepairRequest: Equatable {
     var repoPath: String
     var options: RepairOptionsSnapshot
 }
 
-private actor S137IntegrationRecordingMetadataRepairer: CoreMetadataRepairing {
+private actor DatabaseRepairIntegrationRecordingMetadataRepairer: CoreMetadataRepairing {
     private let result: Result<RepairReportSnapshot, Error>
-    private var recordedRequests: [S137IntegrationRepairRequest] = []
+    private var recordedRequests: [DatabaseRepairIntegrationRepairRequest] = []
 
     init(result: Result<RepairReportSnapshot, Error>) {
         self.result = result
     }
 
     func repairMetadata(repoPath: String, options: RepairOptionsSnapshot) async throws -> RepairReportSnapshot {
-        recordedRequests.append(S137IntegrationRepairRequest(repoPath: repoPath, options: options))
+        recordedRequests.append(DatabaseRepairIntegrationRepairRequest(repoPath: repoPath, options: options))
         return try result.get()
     }
 
-    func requests() -> [S137IntegrationRepairRequest] {
+    func requests() -> [DatabaseRepairIntegrationRepairRequest] {
         recordedRequests
     }
 }
 
-private actor S137IntegrationStaticErrorMapper: CoreErrorMapping {
+private actor DatabaseRepairIntegrationStaticErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
 
     init(mapping: CoreErrorMappingSnapshot) {
@@ -106,32 +106,32 @@ private actor S137IntegrationStaticErrorMapper: CoreErrorMapping {
     }
 }
 
-private struct S137IntegrationSuccessContext {
+private struct DatabaseRepairIntegrationSuccessContext {
     let repoURL: URL
     let readmeURL: URL
     let specURL: URL
-    let beforeRepair: [S137IntegrationUserFileSnapshot]
+    let beforeRepair: [DatabaseRepairIntegrationUserFileSnapshot]
     let mapping: CoreErrorMappingSnapshot
     let bridge: CoreBridge
     let writer: ShellRecordingSettingsWriter
-    let opener: S137PausingRepositoryOpener
+    let opener: DatabaseRepairPausingRepositoryOpener
     let shell: OnboardingModel
 
     @MainActor
-    static func make() async throws -> S137IntegrationSuccessContext {
-        let repoURL = try s137IntegrationTemporaryDirectory()
+    static func make() async throws -> DatabaseRepairIntegrationSuccessContext {
+        let repoURL = try databaseRepairIntegrationTemporaryDirectory()
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        let readmeURL = try s137IntegrationWriteRepoFile(repoURL, relativePath: "README.md", contents: "user readme\n")
-        let specURL = try s137IntegrationWriteRepoFile(repoURL, relativePath: "docs/spec.txt", contents: "spec\n")
-        let mapping = CoreErrorMappingSnapshot.s137IntegrationMapping(
+        let readmeURL = try databaseRepairIntegrationWriteRepoFile(repoURL, relativePath: "README.md", contents: "user readme\n")
+        let specURL = try databaseRepairIntegrationWriteRepoFile(repoURL, relativePath: "docs/spec.txt", contents: "spec\n")
+        let mapping = CoreErrorMappingSnapshot.databaseRepairIntegrationMapping(
             kind: .db,
             severity: .critical,
             recoverability: .fatal,
             rawContext: "database corrupted"
         )
         let writer = ShellRecordingSettingsWriter()
-        let opener = S137PausingRepositoryOpener(bridge: bridge)
+        let opener = DatabaseRepairPausingRepositoryOpener(bridge: bridge)
         let shell = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
@@ -140,11 +140,11 @@ private struct S137IntegrationSuccessContext {
         )
         shell.route = .mainRepoError(repoURL.path, mapping)
 
-        return try S137IntegrationSuccessContext(
+        return try DatabaseRepairIntegrationSuccessContext(
             repoURL: repoURL,
             readmeURL: readmeURL,
             specURL: specURL,
-            beforeRepair: s137IntegrationUserFileSnapshot([readmeURL, specURL]),
+            beforeRepair: databaseRepairIntegrationUserFileSnapshot([readmeURL, specURL]),
             mapping: mapping,
             bridge: bridge,
             writer: writer,
@@ -157,7 +157,7 @@ private struct S137IntegrationSuccessContext {
     func openRepairRoute() throws -> DatabaseRepairRouteState {
         shell.openMainRepositoryRepair(repoPath: repoURL.path)
         guard case let .dbRepairConfirm(repairRoute) = shell.route else {
-            throw S137IntegrationFailure.unexpectedRoute("Expected S1-37 repair route, got \(shell.route)")
+            throw DatabaseRepairIntegrationFailure.unexpectedRoute("Expected database-repair repair route, got \(shell.route)")
         }
 
         XCTAssertEqual(repairRoute.mapping, mapping)
@@ -203,7 +203,7 @@ private struct S137IntegrationSuccessContext {
 
         let openRequests = await opener.requestedConfiguredRepoPaths()
         guard case let .mainList(opening) = shell.route else {
-            throw S137IntegrationFailure.unexpectedRoute("Expected S1-09 main-list, got \(shell.route)")
+            throw DatabaseRepairIntegrationFailure.unexpectedRoute("Expected main-list main-list, got \(shell.route)")
         }
         XCTAssertEqual(openRequests, [repoURL.path])
         XCTAssertEqual(opening.config.repoPath, repoURL.path)
@@ -221,7 +221,7 @@ private struct S137IntegrationSuccessContext {
         repairModel.requestDiagnosticsExport()
         await repairModel.collectDiagnostics()
         guard case let .collected(diagnostics) = repairModel.diagnosticsState else {
-            throw S137IntegrationFailure.unexpectedRoute("Expected diagnostics before repair")
+            throw DatabaseRepairIntegrationFailure.unexpectedRoute("Expected diagnostics before repair")
         }
         XCTAssertTrue(diagnostics.snapshotPath.hasPrefix(".areamatrix/diagnostics/index-"))
         let snapshotURL = repoURL.appendingPathComponent(diagnostics.snapshotPath)
@@ -234,7 +234,7 @@ private struct S137IntegrationSuccessContext {
         XCTAssertTrue(repairModel.canRunFullRescan)
         await repairModel.runFullRescan()
         guard case let .succeeded(report) = repairModel.repairState else {
-            throw S137IntegrationFailure.unexpectedRoute("Expected repair success, got \(repairModel.repairState)")
+            throw DatabaseRepairIntegrationFailure.unexpectedRoute("Expected repair success, got \(repairModel.repairState)")
         }
 
         XCTAssertNotNil(report.scanSessionId)
@@ -242,12 +242,12 @@ private struct S137IntegrationSuccessContext {
         XCTAssertEqual(report.inserted, 2)
         XCTAssertEqual(report.updated, 0)
         XCTAssertEqual(report.errors, [])
-        XCTAssertEqual(try s137IntegrationUserFileSnapshot([readmeURL, specURL]), beforeRepair)
+        XCTAssertEqual(try databaseRepairIntegrationUserFileSnapshot([readmeURL, specURL]), beforeRepair)
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
     }
 
     private func verifyIndexedFilesAndDeclaredBoundaries() async throws {
-        let files = try await bridge.listFiles(repoPath: repoURL.path, filter: .s137IntegrationAllFiles)
+        let files = try await bridge.listFiles(repoPath: repoURL.path, filter: .databaseRepairIntegrationAllFiles)
         XCTAssertEqual(Set(files.map(\.path)), ["README.md", "docs/spec.txt"])
         XCTAssertEqual(Set(files.map(\.storageMode)), ["Indexed"])
         XCTAssertEqual(Set(files.map(\.origin)), ["External"])
@@ -259,7 +259,7 @@ private struct S137IntegrationSuccessContext {
     }
 }
 
-private actor S137PausingRepositoryOpener: CoreEmptyRepositoryOpening {
+private actor DatabaseRepairPausingRepositoryOpener: CoreEmptyRepositoryOpening {
     private let bridge: CoreBridge
     private var configuredPaths: [String] = []
     private var didStart = false
@@ -314,17 +314,17 @@ private actor S137PausingRepositoryOpener: CoreEmptyRepositoryOpening {
     }
 }
 
-private struct S137IntegrationUserFileSnapshot: Equatable {
+private struct DatabaseRepairIntegrationUserFileSnapshot: Equatable {
     var path: String
     var data: Data
 }
 
-private enum S137IntegrationFailure: Error {
+private enum DatabaseRepairIntegrationFailure: Error {
     case unexpectedRoute(String)
 }
 
 private extension FileFilterSnapshot {
-    static let s137IntegrationAllFiles = FileFilterSnapshot(
+    static let databaseRepairIntegrationAllFiles = FileFilterSnapshot(
         category: nil,
         includeDeleted: false,
         importedAfter: nil,
@@ -335,15 +335,15 @@ private extension FileFilterSnapshot {
 }
 
 private extension DiagnosticsSnapshotSnapshot {
-    static let s137IntegrationDiagnostics = DiagnosticsSnapshotSnapshot(
-        snapshotPath: ".areamatrix/diagnostics/s1-37.zip",
+    static let databaseRepairIntegrationDiagnostics = DiagnosticsSnapshotSnapshot(
+        snapshotPath: ".areamatrix/diagnostics/database-repair-diagnostics.zip",
         createdAt: 1_778_000_000,
         warnings: ["paths redacted"]
     )
 }
 
 private extension CoreErrorMappingSnapshot {
-    static func s137IntegrationMapping(
+    static func databaseRepairIntegrationMapping(
         kind: CoreErrorKindSnapshot,
         severity: CoreErrorSeveritySnapshot,
         recoverability: CoreErrorRecoverabilitySnapshot,
@@ -360,14 +360,14 @@ private extension CoreErrorMappingSnapshot {
     }
 }
 
-private func s137IntegrationTemporaryDirectory() throws -> URL {
+private func databaseRepairIntegrationTemporaryDirectory() throws -> URL {
     let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixS137Integration-\(UUID().uuidString)", isDirectory: true)
+        .appendingPathComponent("AreaMatrixDatabaseRepairIntegration-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
 }
 
-private func s137IntegrationWriteRepoFile(
+private func databaseRepairIntegrationWriteRepoFile(
     _ repoURL: URL,
     relativePath: String,
     contents: String
@@ -378,8 +378,8 @@ private func s137IntegrationWriteRepoFile(
     return url
 }
 
-private func s137IntegrationUserFileSnapshot(_ urls: [URL]) throws -> [S137IntegrationUserFileSnapshot] {
+private func databaseRepairIntegrationUserFileSnapshot(_ urls: [URL]) throws -> [DatabaseRepairIntegrationUserFileSnapshot] {
     try urls.map { url in
-        try S137IntegrationUserFileSnapshot(path: url.path, data: Data(contentsOf: url))
+        try DatabaseRepairIntegrationUserFileSnapshot(path: url.path, data: Data(contentsOf: url))
     }
 }

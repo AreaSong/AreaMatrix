@@ -2,7 +2,7 @@
 import Foundation
 
 // swiftlint:disable file_length
-actor S118StaticBatchFileLoader: ImportBatchCoreFileLoading {
+actor ImportBatchStaticBatchFileLoader: ImportBatchCoreFileLoading {
     private let pagesByCategory: [String: [[FileEntrySnapshot]]]
     private var requests: [FileFilterSnapshot] = []
 
@@ -26,7 +26,7 @@ actor S118StaticBatchFileLoader: ImportBatchCoreFileLoading {
     }
 }
 
-func s118BatchRequest(
+func importBatchBatchRequest(
     repoPath: String = "/tmp/repo",
     destination: ImportEntryDestination = .autoClassify,
     urls: [URL],
@@ -45,40 +45,40 @@ func s118BatchRequest(
     )
 }
 
-func s118ReadyBatchRows(
+func importBatchReadyBatchRows(
     invoiceURL: URL,
     contractURL: URL
 ) -> [ImportBatchPreviewRow] {
     [
-        s118ReadyBatchRow(url: invoiceURL),
+        importBatchReadyBatchRow(url: invoiceURL),
         ImportBatchPreviewRow.ready(
             url: contractURL,
-            prediction: .s118Prediction(category: "docs", suggestedName: "2026Q1_合同.pdf", confidence: 0.82)
+            prediction: .importBatchPrediction(category: "docs", suggestedName: "2026Q1_合同.pdf", confidence: 0.82)
         )
     ]
 }
 
-func s118ReadyBatchRow(
+func importBatchReadyBatchRow(
     url: URL,
     suggestedName: String = "Invoice_2026Q1.pdf"
 ) -> ImportBatchPreviewRow {
     ImportBatchPreviewRow.ready(
         url: url,
-        prediction: .s118Prediction(category: "finance", suggestedName: suggestedName)
+        prediction: .importBatchPrediction(category: "finance", suggestedName: suggestedName)
     )
 }
 
-func s118ExpectedAutoClassifyRequests(
+func importBatchExpectedAutoClassifyRequests(
     duplicateStrategy: DuplicateStrategy = .ask
-) -> [S118BatchImportRequest] {
+) -> [ImportBatchBatchImportRequest] {
     [
-        S118BatchImportRequest(
+        ImportBatchBatchImportRequest(
             destination: .autoClassify,
             suggestedCategory: "finance",
             overrideFilename: "Invoice_2026Q1.pdf",
             duplicateStrategy: duplicateStrategy
         ),
-        S118BatchImportRequest(
+        ImportBatchBatchImportRequest(
             destination: .autoClassify,
             suggestedCategory: "docs",
             overrideFilename: "2026Q1_合同.pdf",
@@ -87,15 +87,15 @@ func s118ExpectedAutoClassifyRequests(
     ]
 }
 
-func s118ExpectedCategoryRequests() -> [S118BatchImportRequest] {
+func importBatchExpectedCategoryRequests() -> [ImportBatchBatchImportRequest] {
     [
-        S118BatchImportRequest(
+        ImportBatchBatchImportRequest(
             destination: .category("finance"),
             suggestedCategory: "finance",
             overrideFilename: "Invoice_2026Q1.pdf",
             duplicateStrategy: .ask
         ),
-        S118BatchImportRequest(
+        ImportBatchBatchImportRequest(
             destination: .category("finance"),
             suggestedCategory: "docs",
             overrideFilename: "2026Q1_合同.pdf",
@@ -105,7 +105,7 @@ func s118ExpectedCategoryRequests() -> [S118BatchImportRequest] {
 }
 
 extension ClassifyResultSnapshot {
-    static func s118Prediction(
+    static func importBatchPrediction(
         category: String,
         suggestedName: String,
         confidence: Float = 0.9
@@ -119,21 +119,21 @@ extension ClassifyResultSnapshot {
     }
 }
 
-struct S221IntegrationPreviewRequest: Equatable {
+struct ImportConflictBatchIntegrationPreviewRequest: Equatable {
     var repoPath: String
     var request: ImportConflictBatchPreviewRequestSnapshot
 }
 
-struct S221IntegrationApplyRequest: Equatable {
+struct ImportConflictBatchIntegrationApplyRequest: Equatable {
     var repoPath: String
     var request: ImportConflictBatchApplyRequestSnapshot
     var previewToken: String
 }
 
-actor S221IntegrationConflictBatcher: CoreImportConflictBatching {
+actor ImportConflictBatchIntegrationConflictBatcher: CoreImportConflictBatching {
     private var previews: [ImportConflictBatchPreviewReportSnapshot]
-    private var recordedPreviewRequests: [S221IntegrationPreviewRequest] = []
-    private var recordedApplyRequests: [S221IntegrationApplyRequest] = []
+    private var recordedPreviewRequests: [ImportConflictBatchIntegrationPreviewRequest] = []
+    private var recordedApplyRequests: [ImportConflictBatchIntegrationApplyRequest] = []
 
     init(previews: [ImportConflictBatchPreviewReportSnapshot]) {
         self.previews = previews
@@ -143,9 +143,9 @@ actor S221IntegrationConflictBatcher: CoreImportConflictBatching {
         repoPath: String,
         request: ImportConflictBatchPreviewRequestSnapshot
     ) async throws -> ImportConflictBatchPreviewReportSnapshot {
-        recordedPreviewRequests.append(S221IntegrationPreviewRequest(repoPath: repoPath, request: request))
-        guard !previews.isEmpty else { throw CoreError.Conflict(path: "missing S2-21 preview") }
-        return previews.removeFirst().withS221Request(request)
+        recordedPreviewRequests.append(ImportConflictBatchIntegrationPreviewRequest(repoPath: repoPath, request: request))
+        guard !previews.isEmpty else { throw CoreError.Conflict(path: "missing import-conflict-batch preview") }
+        return previews.removeFirst().withImportConflictBatchRequest(request)
     }
 
     func applyImportConflictBatch(
@@ -153,24 +153,24 @@ actor S221IntegrationConflictBatcher: CoreImportConflictBatching {
         request: ImportConflictBatchApplyRequestSnapshot,
         previewToken: String
     ) async throws -> ImportConflictBatchApplyReportSnapshot {
-        recordedApplyRequests.append(S221IntegrationApplyRequest(
+        recordedApplyRequests.append(ImportConflictBatchIntegrationApplyRequest(
             repoPath: repoPath,
             request: request,
             previewToken: previewToken
         ))
-        return .s221IntegrationReport(for: request)
+        return .importConflictBatchIntegrationReport(for: request)
     }
 
-    func previewRequests() -> [S221IntegrationPreviewRequest] {
+    func previewRequests() -> [ImportConflictBatchIntegrationPreviewRequest] {
         recordedPreviewRequests
     }
 
-    func applyRequests() -> [S221IntegrationApplyRequest] {
+    func applyRequests() -> [ImportConflictBatchIntegrationApplyRequest] {
         recordedApplyRequests
     }
 }
 
-actor S221IntegrationUndoStore: CoreUndoActionLogging {
+actor ImportConflictBatchIntegrationUndoStore: CoreUndoActionLogging {
     private let actions: Swift.Result<[UndoActionRecordSnapshot], Error>
     private let undoResult: Swift.Result<UndoActionResultSnapshot, Error>
     private var recordedListRequests: [String] = []
@@ -178,7 +178,7 @@ actor S221IntegrationUndoStore: CoreUndoActionLogging {
 
     init(
         actions: Swift.Result<[UndoActionRecordSnapshot], Error> = .success([]),
-        undoResult: Swift.Result<UndoActionResultSnapshot, Error> = .success(.s221IntegrationResult())
+        undoResult: Swift.Result<UndoActionResultSnapshot, Error> = .success(.importConflictBatchIntegrationResult())
     ) {
         self.actions = actions
         self.undoResult = undoResult
@@ -204,7 +204,7 @@ actor S221IntegrationUndoStore: CoreUndoActionLogging {
 }
 
 extension ImportConflictBatchPreviewReportSnapshot {
-    static func s221Preview(canApply: Bool) -> ImportConflictBatchPreviewReportSnapshot {
+    static func importConflictBatchPreview(canApply: Bool) -> ImportConflictBatchPreviewReportSnapshot {
         let status: ImportConflictBatchPreviewStatusSnapshot = canApply ? .needsConfirmation : .blocked
         return ImportConflictBatchPreviewReportSnapshot(
             importSessionID: "session-221",
@@ -226,7 +226,7 @@ extension ImportConflictBatchPreviewReportSnapshot {
             applyBlockedReason: canApply ? nil : "Blocked: Trash unavailable",
             replaceConfirmationRequired: true,
             replaceConfirmationSummary: "Replace 1 existing file?",
-            items: [.s221Item(
+            items: [.importConflictBatchItem(
                 conflictID: canApply ? "dup-1" : "dup-blocked",
                 strategy: .replace,
                 status: status
@@ -234,7 +234,7 @@ extension ImportConflictBatchPreviewReportSnapshot {
         )
     }
 
-    func withS221Request(_ request: ImportConflictBatchPreviewRequestSnapshot)
+    func withImportConflictBatchRequest(_ request: ImportConflictBatchPreviewRequestSnapshot)
         -> ImportConflictBatchPreviewReportSnapshot {
         var copy = self
         copy.importSessionID = request.importSessionID
@@ -245,13 +245,13 @@ extension ImportConflictBatchPreviewReportSnapshot {
             let source = items.first { $0.conflictID == conflictID }
             let type = source?.conflictType ?? .duplicateHash
             let strategy = type == .duplicateHash ? request.duplicateStrategy : request.sameNameStrategy
-            let status = copy.previewStatusForS221Request(strategy: strategy)
-            return .s221Item(conflictID: conflictID, strategy: strategy, status: status).withConflictType(type)
+            let status = copy.previewStatusForImportConflictBatchRequest(strategy: strategy)
+            return .importConflictBatchItem(conflictID: conflictID, strategy: strategy, status: status).withConflictType(type)
         }
         return copy
     }
 
-    private func previewStatusForS221Request(
+    private func previewStatusForImportConflictBatchRequest(
         strategy: ImportConflictBatchStrategySnapshot
     ) -> ImportConflictBatchPreviewStatusSnapshot {
         guard canApply else { return .blocked }
@@ -260,7 +260,7 @@ extension ImportConflictBatchPreviewReportSnapshot {
 }
 
 extension ImportConflictBatchPreviewItemSnapshot {
-    static func s221Item(
+    static func importConflictBatchItem(
         conflictID: String,
         strategy: ImportConflictBatchStrategySnapshot,
         status: ImportConflictBatchPreviewStatusSnapshot
@@ -286,7 +286,7 @@ extension ImportConflictBatchPreviewItemSnapshot {
 }
 
 extension ImportConflictBatchApplyReportSnapshot {
-    static func s221IntegrationReport(
+    static func importConflictBatchIntegrationReport(
         for request: ImportConflictBatchApplyRequestSnapshot
     ) -> ImportConflictBatchApplyReportSnapshot {
         let isAskPerItem = request.duplicateStrategy == .askPerItem && request.sameNameStrategy == .askPerItem
@@ -321,7 +321,7 @@ extension ImportConflictBatchApplyReportSnapshot {
 }
 
 extension UndoActionRecordSnapshot {
-    static func s221IntegrationAction() -> UndoActionRecordSnapshot {
+    static func importConflictBatchIntegrationAction() -> UndoActionRecordSnapshot {
         UndoActionRecordSnapshot(
             actionID: "undo-import-conflict-batch",
             kind: "import_conflict_batch",
@@ -338,7 +338,7 @@ extension UndoActionRecordSnapshot {
 }
 
 extension UndoActionResultSnapshot {
-    static func s221IntegrationResult() -> UndoActionResultSnapshot {
+    static func importConflictBatchIntegrationResult() -> UndoActionResultSnapshot {
         UndoActionResultSnapshot(
             actionID: "undo-import-conflict-batch",
             status: .executed,
@@ -421,7 +421,7 @@ extension CoreErrorMappingSnapshot {
             severity: .medium,
             suggestedAction: "Refresh preview, then retry.",
             recoverability: .refreshRequired,
-            rawContext: "S2-14 C2-10 batch_rename"
+            rawContext: "batch-rename batch-rename-preview batch_rename"
         )
     }
 }

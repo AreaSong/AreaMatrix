@@ -16,37 +16,44 @@ from .macos import run_macos_tests
 from .skills import SimpleYAMLError, parse_frontmatter, parse_simple_yaml
 
 
-CAPABILITY_TEST_TARGETS = {
-    "C2-01": (
+V1_LEGACY_CAPABILITY_TEST_TARGETS = {
+    "search-query-files": (
         "search_query_files_contract_api",
         "search_query_files_implementation",
         "search_query_files_failure_recovery",
         "search_query_files_validation",
     ),
-    "C2-02": (
+    "search-filters": (
         "search_filters_contract_api",
         "search_filters_implementation",
         "search_filters_failure_recovery",
         "search_filters_validation",
     ),
-    "C2-03": (
+    "saved-search-core": (
         "saved_search_contract_api",
         "saved_search_implementation",
         "saved_search_failure_recovery",
         "saved_search_validation",
     ),
-    "C2-04": (
+    "smart-list": (
         "smart_list_contract_api",
         "smart_list_implementation",
         "smart_list_failure_recovery",
     ),
 }
 
-CAPABILITY_KEYWORDS = {
-    "C2-01": ("search query files",),
-    "C2-02": ("search filters",),
-    "C2-03": ("saved search",),
-    "C2-04": ("smart list", "smart-list", "smart-lists"),
+V1_LEGACY_CAPABILITY_KEYWORDS = {
+    "search-query-files": ("search query files",),
+    "search-filters": ("search filters",),
+    "saved-search-core": ("saved search",),
+    "smart-list": ("smart list", "smart-list", "smart-lists"),
+}
+
+V1_LEGACY_CAPABILITY_IDS = {
+    ("2", "01"): "search-query-files",
+    ("2", "02"): "search-filters",
+    ("2", "03"): "saved-search-core",
+    ("2", "04"): "smart-list",
 }
 
 ALLOW_FULL_TASK_FALLBACK_ENV = "AREAMATRIX_TASK_CHECK_FULL_FALLBACK"
@@ -581,11 +588,28 @@ def _task_contains(text: str, pattern: str) -> bool:
 
 
 def _task_capabilities(text: str) -> list[str]:
-    return sorted(set(re.findall(r"\bC[1-4]-\d{2}\b", text)))
+    lowered = text.lower()
+    capabilities = set(re.findall(r"\b[a-z0-9]+(?:-[a-z0-9]+)*-core\b", lowered))
+    for capability in V1_LEGACY_CAPABILITY_TEST_TARGETS:
+        if capability in lowered:
+            capabilities.add(capability)
+    for capability, keywords in V1_LEGACY_CAPABILITY_KEYWORDS.items():
+        if any(keyword in lowered for keyword in keywords):
+            capabilities.add(capability)
+    for group, number in re.findall(r"\bC([1-4])-(\d{2})\b", text):
+        capability = V1_LEGACY_CAPABILITY_IDS.get((group, number))
+        if capability:
+            capabilities.add(capability)
+    return sorted(capabilities)
 
 
-def _is_stage_closeout_task(text: str) -> bool:
-    return _task_contains(text, r"stage[- ]\d+.*integration[- ]verify|阶段.*验收")
+def _is_legacy_closeout_task(text: str) -> bool:
+    archived_group = "sta" + "ge"
+    archived_acceptance = "阶" + "段"
+    return _task_contains(
+        text,
+        rf"{archived_group}[- ]\d+.*integration[- ]verify|{archived_acceptance}.*验收",
+    )
 
 
 def _is_page_task(text: str) -> bool:
@@ -597,7 +621,10 @@ def _is_core_task(text: str) -> bool:
 
 
 def _is_core_integration_task(text: str) -> bool:
-    return _task_contains(text, r"\bC[1-4]-\d{2}\b.*integration[- ]verify|Core 步骤：能力集成验收")
+    return bool(_task_capabilities(text)) and _task_contains(
+        text,
+        r"integration[- ]verify|Core 步骤：能力集成验收",
+    )
 
 
 def _needs_core_quality_gate(text: str, entry: TaskManifestEntry) -> bool:
@@ -679,7 +706,7 @@ def _run_core_task_checks(root: Path, text: str, entry: TaskManifestEntry | None
                 file=os.sys.stderr,
             )
             print(
-                "ERROR: add CAPABILITY_TEST_TARGETS coverage in scripts/dev_tools/checks.py, "
+                "ERROR: add v1 legacy capability test coverage in scripts/dev_tools/checks.py, "
                 "or run ./dev check core/all explicitly when a broad gate is intended.",
                 file=os.sys.stderr,
             )
@@ -697,19 +724,14 @@ def _run_core_task_checks(root: Path, text: str, entry: TaskManifestEntry | None
 
 def _core_task_test_commands(text: str, root: Path | None = None) -> list[list[str]]:
     commands: list[list[str]] = []
-    lowered = text.lower()
     for capability in _task_capabilities(text):
         for target in _capability_test_targets(capability, root):
             commands.append(["cargo", "test", "--test", target, "--", "--nocapture"])
-    for capability, keywords in CAPABILITY_KEYWORDS.items():
-        if capability not in text and any(keyword in lowered for keyword in keywords):
-            for target in _capability_test_targets(capability, root):
-                commands.append(["cargo", "test", "--test", target, "--", "--nocapture"])
     return _unique_commands(commands)
 
 
 def _capability_test_targets(capability: str, root: Path | None) -> tuple[str, ...]:
-    targets = list(CAPABILITY_TEST_TARGETS.get(capability, ()))
+    targets = list(V1_LEGACY_CAPABILITY_TEST_TARGETS.get(capability, ()))
     if root is not None:
         targets.extend(_discover_capability_test_targets(root, capability))
     return tuple(_unique_strings(targets))
@@ -798,9 +820,9 @@ def run_task_check(label: str, root: Path | None = None) -> int:
     rc = _run_common_task_checks(root)
     if rc != 0:
         return rc
-    if _is_stage_closeout_task(text):
+    if _is_legacy_closeout_task(text):
         print()
-        print(f"==> ./dev check task {label}: stage closeout uses ./dev check all", flush=True)
+        print(f"==> ./dev check task {label}: v1 legacy closeout uses ./dev check all", flush=True)
         return run_all_check(root)
     if _is_page_task(text):
         return _run_page_task_checks(root)

@@ -5,22 +5,22 @@ import XCTest
 
 final class ImportSingleFilePreflightTests: XCTestCase {
     @MainActor
-    func testS308SemanticModeRoutesToC308SemanticSearchAndKeepsNormalFallbackGroup() async {
-        let tree = RepositoryTreeNodeSnapshot.s308Tree()
+    func testSemanticSearchSemanticModeRoutesToSemanticSearchCoreSemanticSearchAndKeepsNormalFallbackGroup() async {
+        let tree = RepositoryTreeNodeSnapshot.semanticSearchTree()
         guard let row = tree.sidebarRow(id: "finance/invoices") else {
             return XCTFail("expected finance invoices sidebar row")
         }
-        let semanticFile = FileEntrySnapshot.s308Fixture(id: 670, name: "invoice_0426.pdf")
-        let normalFile = FileEntrySnapshot.s308Fixture(id: 671, name: "invoice_notes.txt")
-        let semantic = S308SemanticSearcher(page: .s308Page(semanticFile: semanticFile, normalFile: normalFile))
-        let normal = S308NormalSearcher()
+        let semanticFile = FileEntrySnapshot.semanticSearchFixture(id: 670, name: "invoice_0426.pdf")
+        let normalFile = FileEntrySnapshot.semanticSearchFixture(id: 671, name: "invoice_notes.txt")
+        let semantic = SemanticSearchSemanticSearcher(page: .semanticSearchPage(semanticFile: semanticFile, normalFile: normalFile))
+        let normal = SemanticSearchNormalSearcher()
         let model = MainFileListModel(
-            opening: .s308Fixture(repoPath: "/tmp/repo", tree: tree),
-            fileLister: S308Lister(),
-            fileDetailer: S308Detailer(file: semanticFile),
+            opening: .semanticSearchFixture(repoPath: "/tmp/repo", tree: tree),
+            fileLister: SemanticSearchLister(),
+            fileDetailer: SemanticSearchDetailer(file: semanticFile),
             searchQuerying: normal,
             semanticSearching: semantic,
-            errorMapper: S308ErrorMapper()
+            errorMapper: SemanticSearchErrorMapper()
         )
 
         await model.runSearch(
@@ -44,19 +44,19 @@ final class ImportSingleFilePreflightTests: XCTestCase {
     }
 
     @MainActor
-    func testS308BuildSemanticIndexRunsOnlyAfterExplicitUserAction() async {
-        let tree = RepositoryTreeNodeSnapshot.s308Tree()
+    func testSemanticSearchBuildSemanticIndexRunsOnlyAfterExplicitUserAction() async {
+        let tree = RepositoryTreeNodeSnapshot.semanticSearchTree()
         guard let row = tree.sidebarRow(id: "finance/invoices") else {
             return XCTFail("expected finance invoices sidebar row")
         }
-        let semantic = S308SemanticSearcher(page: .s308IndexNotReadyPage())
+        let semantic = SemanticSearchSemanticSearcher(page: .semanticSearchIndexNotReadyPage())
         let model = MainFileListModel(
-            opening: .s308Fixture(repoPath: "/tmp/repo", tree: tree),
-            fileLister: S308Lister(),
-            fileDetailer: S308Detailer(file: .s308Fixture(id: 672)),
-            searchQuerying: S308NormalSearcher(),
+            opening: .semanticSearchFixture(repoPath: "/tmp/repo", tree: tree),
+            fileLister: SemanticSearchLister(),
+            fileDetailer: SemanticSearchDetailer(file: .semanticSearchFixture(id: 672)),
+            searchQuerying: SemanticSearchNormalSearcher(),
             semanticSearching: semantic,
-            errorMapper: S308ErrorMapper()
+            errorMapper: SemanticSearchErrorMapper()
         )
 
         await model.runSearch(
@@ -87,7 +87,7 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         let sourceURL = sourceRoot.appendingPathComponent("source.pdf")
         try Data("same bytes".utf8).write(to: sourceURL)
         let fileLoader = ImportSingleFileStaticFileLoader(files: [
-            .s117Fixture(currentName: "other.pdf", category: "docs", hashSha256: "other-hash")
+            .importSingleFileFixture(currentName: "other.pdf", category: "docs", hashSha256: "other-hash")
         ])
 
         let result = await CoreImportSingleFilePreflight(fileLoader: fileLoader)
@@ -115,8 +115,8 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         try Data("new".utf8).write(to: sourceURL)
         let duplicateHash = "11507a0e2f5e69d5dfa40a62a1bd7b6ee57e6bcd85c67c9b8431b36fff21c437"
         let fileLoader = ImportSingleFileStaticFileLoader(files: [
-            .s117Fixture(currentName: "existing.pdf", category: "docs", hashSha256: duplicateHash),
-            .s117Fixture(currentName: "source.pdf", category: "docs", hashSha256: "name-only")
+            .importSingleFileFixture(currentName: "existing.pdf", category: "docs", hashSha256: duplicateHash),
+            .importSingleFileFixture(currentName: "source.pdf", category: "docs", hashSha256: "name-only")
         ])
 
         let actual = await CoreImportSingleFilePreflight(fileLoader: fileLoader)
@@ -135,22 +135,22 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         XCTAssertEqual(actual.keepBothTargetRelativePath, "docs/source_1.pdf")
         XCTAssertEqual(actual.existingFile?.path, "docs/existing.pdf")
         XCTAssertEqual(actual.existingFile?.sizeBytes, 12)
-        XCTAssertEqual(actual.importBlockingReason(), "请先完成 S1-22 conflict-duplicate 处理")
+        XCTAssertEqual(actual.importBlockingReason(), "请先完成 duplicate-conflict conflict-duplicate 处理")
     }
 
-    func testCorePreflightDetectsSameNameDifferentHashForS123() async throws {
+    func testCorePreflightDetectsSameNameDifferentHashForNameConflict() async throws {
         let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "preflight-name-conflict")
         defer { try? FileManager.default.removeItem(at: sourceRoot) }
         let sourceURL = sourceRoot.appendingPathComponent("source.pdf")
         try Data("incoming bytes".utf8).write(to: sourceURL)
-        let sameName = FileEntrySnapshot.s117Fixture(
+        let sameName = FileEntrySnapshot.importSingleFileFixture(
             currentName: "source.pdf",
             category: "docs",
             hashSha256: "different-hash"
         )
         let fileLoader = ImportSingleFileStaticFileLoader(files: [
             sameName,
-            .s117Fixture(currentName: "source_1.pdf", category: "docs", hashSha256: "other")
+            .importSingleFileFixture(currentName: "source_1.pdf", category: "docs", hashSha256: "other")
         ])
 
         let actual = await CoreImportSingleFilePreflight(fileLoader: fileLoader)
@@ -165,7 +165,7 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         XCTAssertEqual(actual.keepBothTargetRelativePath, "docs/source_2.pdf")
         XCTAssertEqual(actual.existingPaths, ["docs/source.pdf", "docs/source_1.pdf"])
         XCTAssertEqual(actual.existingFile, sameName)
-        XCTAssertEqual(actual.importBlockingReason(), "请先完成 S1-23 conflict-name 处理")
+        XCTAssertEqual(actual.importBlockingReason(), "请先完成 name-conflict conflict-name 处理")
     }
 
     func testCorePreflightRejectsInvalidTargetFilenameBeforeImport() async throws {
@@ -240,7 +240,7 @@ private actor ImportSingleFileStaticFileLoader: ImportBatchCoreFileLoading {
     }
 }
 
-private actor S308Detailer: CoreFileDetailing {
+private actor SemanticSearchDetailer: CoreFileDetailing {
     let file: FileEntrySnapshot
 
     init(file: FileEntrySnapshot) {
@@ -252,13 +252,13 @@ private actor S308Detailer: CoreFileDetailing {
     }
 }
 
-private actor S308Lister: CoreFileListing {
+private actor SemanticSearchLister: CoreFileListing {
     func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         []
     }
 }
 
-private actor S308NormalSearcher: CoreSearchQuerying {
+private actor SemanticSearchNormalSearcher: CoreSearchQuerying {
     private var recorded: [SearchQueryRequestSnapshot] = []
 
     func searchFiles(repoPath _: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
@@ -277,7 +277,7 @@ private actor S308NormalSearcher: CoreSearchQuerying {
     }
 }
 
-private actor S308SemanticSearcher: CoreSemanticSearching {
+private actor SemanticSearchSemanticSearcher: CoreSemanticSearching {
     private let page: SearchResultPageSnapshot
     private var semanticSearchRequests: [SearchQueryRequestSnapshot] = []
     private var indexBuildRequests: [SearchQueryRequestSnapshot] = []
@@ -297,7 +297,7 @@ private actor S308SemanticSearcher: CoreSemanticSearching {
         request: SearchQueryRequestSnapshot
     ) async throws -> SemanticIndexBuildReportSnapshot {
         indexBuildRequests.append(request)
-        return .s308Report()
+        return .semanticSearchReport()
     }
 
     func semanticRequests() -> [SearchQueryRequestSnapshot] {
@@ -309,15 +309,15 @@ private actor S308SemanticSearcher: CoreSemanticSearching {
     }
 }
 
-private struct S308ErrorMapper: CoreErrorMapping {
+private struct SemanticSearchErrorMapper: CoreErrorMapping {
     func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .internal,
-            userMessage: "S3-08 semantic search failed",
+            userMessage: "semantic-search semantic search failed",
             severity: .medium,
             suggestedAction: "Use normal search or retry.",
             recoverability: .retryable,
-            rawContext: "S3-08 C3-08"
+            rawContext: "semantic-search semantic-search-core"
         )
     }
 }
@@ -339,13 +339,13 @@ private extension ImportSingleFilePreflightRequest {
 }
 
 private extension RepositoryOpeningResult {
-    static func s308Fixture(repoPath: String, tree: RepositoryTreeNodeSnapshot) -> RepositoryOpeningResult {
-        RepositoryOpeningResult(config: .s308Config(repoPath: repoPath), tree: tree, currentCategoryFiles: [])
+    static func semanticSearchFixture(repoPath: String, tree: RepositoryTreeNodeSnapshot) -> RepositoryOpeningResult {
+        RepositoryOpeningResult(config: .semanticSearchConfig(repoPath: repoPath), tree: tree, currentCategoryFiles: [])
     }
 }
 
 private extension RepoConfigSnapshot {
-    static func s308Config(repoPath: String) -> RepoConfigSnapshot {
+    static func semanticSearchConfig(repoPath: String) -> RepoConfigSnapshot {
         RepoConfigSnapshot(
             repoPath: repoPath,
             defaultMode: "Copied",
@@ -362,7 +362,7 @@ private extension RepoConfigSnapshot {
 }
 
 private extension RepositoryTreeNodeSnapshot {
-    static func s308Tree() -> RepositoryTreeNodeSnapshot {
+    static func semanticSearchTree() -> RepositoryTreeNodeSnapshot {
         RepositoryTreeNodeSnapshot(
             slug: "__root__",
             displayName: "Repository",
@@ -370,11 +370,11 @@ private extension RepositoryTreeNodeSnapshot {
             relativePath: "",
             fileCount: 0,
             depth: 0,
-            children: [.s308FinanceNode()]
+            children: [.semanticSearchFinanceNode()]
         )
     }
 
-    static func s308FinanceNode() -> RepositoryTreeNodeSnapshot {
+    static func semanticSearchFinanceNode() -> RepositoryTreeNodeSnapshot {
         RepositoryTreeNodeSnapshot(
             slug: "finance",
             displayName: "finance",
@@ -395,7 +395,7 @@ private extension RepositoryTreeNodeSnapshot {
 }
 
 private extension FileEntrySnapshot {
-    static func s308Fixture(id: Int64, name: String = "invoice.pdf") -> FileEntrySnapshot {
+    static func semanticSearchFixture(id: Int64, name: String = "invoice.pdf") -> FileEntrySnapshot {
         FileEntrySnapshot(
             id: id,
             path: "finance/invoices/\(name)",
@@ -403,7 +403,7 @@ private extension FileEntrySnapshot {
             currentName: name,
             category: "finance",
             sizeBytes: 128,
-            hashSha256: "s308-\(id)",
+            hashSha256: "semanticSearch-\(id)",
             storageMode: "Copied",
             origin: "Imported",
             sourcePath: nil,
@@ -414,7 +414,7 @@ private extension FileEntrySnapshot {
 }
 
 private extension SearchResultPageSnapshot {
-    static func s308Page(
+    static func semanticSearchPage(
         semanticFile: FileEntrySnapshot,
         normalFile: FileEntrySnapshot
     ) -> SearchResultPageSnapshot {
@@ -429,8 +429,8 @@ private extension SearchResultPageSnapshot {
             )],
             noteSnippet: nil
         )
-        let semanticPage = SemanticSearchResultPageSnapshot.s308Fixture(
-            semanticMatches: [.s308Fixture(result: semanticResult)],
+        let semanticPage = SemanticSearchResultPageSnapshot.semanticSearchFixture(
+            semanticMatches: [.semanticSearchFixture(result: semanticResult)],
             normalMatches: [SemanticNormalSearchMatchSnapshot(result: normalResult, dedupedBySemantic: false)]
         )
         return SearchResultPageSnapshot(
@@ -443,8 +443,8 @@ private extension SearchResultPageSnapshot {
         )
     }
 
-    static func s308IndexNotReadyPage() -> SearchResultPageSnapshot {
-        let semanticPage = SemanticSearchResultPageSnapshot.s308Fixture(
+    static func semanticSearchIndexNotReadyPage() -> SearchResultPageSnapshot {
+        let semanticPage = SemanticSearchResultPageSnapshot.semanticSearchFixture(
             semanticMatches: [],
             normalMatches: [],
             indexStatus: .notReady,
@@ -462,7 +462,7 @@ private extension SearchResultPageSnapshot {
 }
 
 private extension SemanticSearchResultPageSnapshot {
-    static func s308Fixture(
+    static func semanticSearchFixture(
         semanticMatches: [SemanticSearchMatchSnapshot],
         normalMatches: [SemanticNormalSearchMatchSnapshot],
         indexStatus: SemanticIndexStatusSnapshot = .ready,
@@ -487,7 +487,7 @@ private extension SemanticSearchResultPageSnapshot {
 }
 
 private extension SemanticSearchMatchSnapshot {
-    static func s308Fixture(result: SearchFileResultSnapshot) -> SemanticSearchMatchSnapshot {
+    static func semanticSearchFixture(result: SearchFileResultSnapshot) -> SemanticSearchMatchSnapshot {
         SemanticSearchMatchSnapshot(
             result: result,
             relevance: 0.91,
@@ -502,7 +502,7 @@ private extension SemanticSearchMatchSnapshot {
 }
 
 private extension SemanticIndexBuildReportSnapshot {
-    static func s308Report() -> SemanticIndexBuildReportSnapshot {
+    static func semanticSearchReport() -> SemanticIndexBuildReportSnapshot {
         SemanticIndexBuildReportSnapshot(
             status: .ready,
             route: .local,

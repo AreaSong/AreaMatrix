@@ -75,4 +75,4 @@ version_residuals:
       - blocked-decision
       - deferred
       - accepted-exception
-    summary: Formal Stage 1 alpha remains blocked by release evidence and release decisions; technical queue is complete.
+    summary: V1 distribution remains uncleared by distribution evidence and decisions; technical queue is complete.

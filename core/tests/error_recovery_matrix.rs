@@ -134,7 +134,7 @@ fn error_recovery_matrix_error_mapping_records_db_subsemantic_closure() {
     );
     assert_contains(
         ERROR_RECOVERY_PAGE_SWIFT_TESTS,
-        "testS132PageIntegrationRoutesFatalDbMappingToRepairWithoutRunningRepair",
+        "testStartupRecoveryPageIntegrationRoutesFatalDbMappingToRepairWithoutRunningRepair",
     );
 }
 

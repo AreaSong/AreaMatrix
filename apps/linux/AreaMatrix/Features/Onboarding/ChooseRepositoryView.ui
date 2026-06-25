@@ -1,4 +1,4 @@
-page_id: S4-LNX-01
+page_id: linux-choose-repository
 title: Choose AreaMatrix Repository
 description: Select a local folder for your AreaMatrix repository. Network drives and third-party sync folders may behave differently across Linux distributions.
 field: Repository folder
@@ -15,10 +15,10 @@ states:
   permission_denied: Permission denied
   network_or_removable: Network or removable path detected
 routes:
-  initialized: S4-LNX-02
-  empty: S4-X-04
-  non_empty: S4-X-05
-  high_risk: S4-LNX-03
+  initialized: linux-main-window
+  empty: repository-init-confirm
+  non_empty: repository-adopt-confirm
+  high_risk: linux-local-folder-notice
 safety:
   - The page calls validate_repo_path through LinuxRepositoryCoreBridge.
   - The page does not create folders.

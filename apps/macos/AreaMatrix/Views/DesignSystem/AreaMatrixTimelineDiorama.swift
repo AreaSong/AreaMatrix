@@ -9,7 +9,7 @@ struct AreaMatrixTimelineDiorama: View {
     @State private var typingTask: Task<Void, Never>?
 
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.areaMatrixStagePhase) private var stagePhase
+    @Environment(\.areaMatrixSceneVisibility) private var sceneVisibility
 
     private var markdownTypewriterLines: [(String, Color)] {
         [
@@ -28,7 +28,7 @@ struct AreaMatrixTimelineDiorama: View {
             markdownWindow
         }
         .frame(height: 220)
-        .onChange(of: stagePhase, initial: true) { _, newPhase in
+        .onChange(of: sceneVisibility, initial: true) { _, newPhase in
             if newPhase.isVisible {
                 restartAnimations()
             } else {

@@ -3,21 +3,21 @@ import XCTest
 
 final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
     @MainActor
-    func testS4X01C416LoadedViewShowsSummaryVersionsAndDefaultImpact() async throws {
-        let conflict = SyncConflictSnapshot.s4x01Fixture()
-        let resolver = S4X01RecordingSyncConflictResolver(previewResults: [
-            .keepBoth: .success(.s4x01PreviewFixture())
+    func testSyncConflictReviewSyncConflictResolveCoreLoadedViewShowsSummaryVersionsAndDefaultImpact() async throws {
+        let conflict = SyncConflictSnapshot.syncConflictReviewFixture()
+        let resolver = SyncConflictReviewRecordingSyncConflictResolver(previewResults: [
+            .keepBoth: .success(.syncConflictReviewPreviewFixture())
         ])
         let model = SyncConflictReviewModel(
-            repoPath: "/tmp/s4x01-repo",
-            conflictDetector: S4X01RecordingSyncConflictDetector(result: .success([conflict])),
+            repoPath: "/tmp/syncConflictReview-repo",
+            conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .success([conflict])),
             conflictResolver: resolver,
-            errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.load()
         let loadedConflict = try XCTUnwrap(model.conflict)
-        let body = s4x01MirrorDescription(of: SyncConflictReviewView(
+        let body = syncConflictReviewMirrorDescription(of: SyncConflictReviewView(
             model: model,
             onBackToNeedsReview: {},
             onClose: {}
@@ -28,8 +28,8 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
         XCTAssertEqual(loadedConflict.primaryPath, "docs/report.pdf")
         XCTAssertEqual(loadedConflict.affectedFiles.map(\.role.displayName), ["Existing file", "Incoming file"])
         XCTAssertEqual(previewRequests, [
-            S4X01SyncConflictPreviewRequest(
-                repoPath: "/tmp/s4x01-repo",
+            SyncConflictReviewSyncConflictPreviewRequest(
+                repoPath: "/tmp/syncConflictReview-repo",
                 conflictID: "conflict-report",
                 resolution: .keepBoth
             )
@@ -50,15 +50,15 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X01C416SwitchingStrategyRefreshesPreviewWithoutApplying() async {
-        let resolver = S4X01RecordingSyncConflictResolver(previewResults: [
-            .keepBoth: .success(.s4x01PreviewFixture()),
-            .useExisting: .success(.s4x01PreviewFixture(
+    func testSyncConflictReviewSyncConflictResolveCoreSwitchingStrategyRefreshesPreviewWithoutApplying() async {
+        let resolver = SyncConflictReviewRecordingSyncConflictResolver(previewResults: [
+            .keepBoth: .success(.syncConflictReviewPreviewFixture()),
+            .useExisting: .success(.syncConflictReviewPreviewFixture(
                 resolution: .useExisting,
                 previewToken: "preview-token-use-existing"
             ))
         ])
-        let model = makeS4X01Model(resolver: resolver)
+        let model = makeSyncConflictReviewModel(resolver: resolver)
 
         await model.load()
         await model.selectResolution(.useExisting)
@@ -73,10 +73,10 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X09C421UseIncomingRequiresReplaceConfirmationBeforeResolve() async throws {
-        let resolver = S4X01RecordingSyncConflictResolver(previewResults: [
-            .keepBoth: .success(.s4x01PreviewFixture()),
-            .useIncoming: .success(.s4x01PreviewFixture(
+    func testReplaceResolutionReplaceConfirmCrossPlatformCoreUseIncomingRequiresReplaceConfirmationBeforeResolve() async throws {
+        let resolver = SyncConflictReviewRecordingSyncConflictResolver(previewResults: [
+            .keepBoth: .success(.syncConflictReviewPreviewFixture()),
+            .useIncoming: .success(.syncConflictReviewPreviewFixture(
                 resolution: .useIncoming,
                 canApply: false,
                 requiresReplaceConfirmation: true,
@@ -84,7 +84,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
                 previewToken: "preview-token-use-incoming"
             ))
         ])
-        let model = makeS4X01Model(resolver: resolver)
+        let model = makeSyncConflictReviewModel(resolver: resolver)
 
         await model.load()
         await model.selectResolution(.useIncoming)
@@ -97,7 +97,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
         XCTAssertTrue(model.canConfirmReplacePlan)
         XCTAssertEqual(
             model.applyDisabledReason,
-            "Confirm the S4-X-09 replace plan before applying Use incoming version."
+            "Confirm the replace-resolution replace plan before applying Use incoming version."
         )
         XCTAssertEqual(resolveRequests, [])
         XCTAssertEqual(preview.blockedReasonDisplay, "Replace confirmation required")
@@ -107,11 +107,11 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X09C421ConfirmedReplaceUsesPreviewTokenAndCoreResolveFlag() async throws {
-        let resolver = S4X01RecordingSyncConflictResolver(
+    func testReplaceResolutionReplaceConfirmCrossPlatformCoreConfirmedReplaceUsesPreviewTokenAndCoreResolveFlag() async throws {
+        let resolver = SyncConflictReviewRecordingSyncConflictResolver(
             previewResults: [
-                .keepBoth: .success(.s4x01PreviewFixture()),
-                .useIncoming: .success(.s4x01PreviewFixture(
+                .keepBoth: .success(.syncConflictReviewPreviewFixture()),
+                .useIncoming: .success(.syncConflictReviewPreviewFixture(
                     resolution: .useIncoming,
                     canApply: false,
                     requiresReplaceConfirmation: true,
@@ -119,9 +119,9 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
                     previewToken: "preview-token-use-incoming"
                 ))
             ],
-            resolveResult: .success(.s4x01ResolveFixture(resolution: .useIncoming))
+            resolveResult: .success(.syncConflictReviewResolveFixture(resolution: .useIncoming))
         )
-        let model = makeS4X01Model(resolver: resolver)
+        let model = makeSyncConflictReviewModel(resolver: resolver)
 
         await model.load()
         await model.selectResolution(.useIncoming)
@@ -132,7 +132,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
         await model.applyResolution()
         let preview = try XCTUnwrap(model.previewState.preview)
         let confirmation = try XCTUnwrap(model.replaceConfirmation)
-        let panelBody = s4x01MirrorDescription(of: SyncConflictReplaceConfirmationPanel(
+        let panelBody = syncConflictReviewMirrorDescription(of: SyncConflictReplaceConfirmationPanel(
             preview: preview,
             confirmation: confirmation,
             disabledReason: model.replaceConfirmationDisabledReason,
@@ -142,26 +142,26 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
 
         XCTAssertEqual(confirmation.previewToken, "preview-token-use-incoming")
         XCTAssertEqual(resolveRequests, [
-            S4X01SyncConflictResolveRequest(
-                repoPath: "/tmp/s4x01-repo",
+            SyncConflictReviewSyncConflictResolveRequest(
+                repoPath: "/tmp/syncConflictReview-repo",
                 conflictID: "conflict-report",
                 request: SyncConflictResolutionRequestSnapshot(
                     strategy: .useIncoming,
                     previewToken: "preview-token-use-incoming",
                     replaceConfirmed: true,
-                    replaceConfirmationID: "S4-X-09-C4-21-conflict-report-preview-token-use-incoming"
+                    replaceConfirmationID: "replace-resolution-replace-confirmation-conflict-report-preview-token-use-incoming"
                 )
             )
         ])
-        XCTAssertEqual(model.applyState, .succeeded(.s4x01ResolveFixture(resolution: .useIncoming)))
-        assertS4X01ConfirmedReplacePanel(panelBody)
+        XCTAssertEqual(model.applyState, .succeeded(.syncConflictReviewResolveFixture(resolution: .useIncoming)))
+        assertSyncConflictReviewConfirmedReplacePanel(panelBody)
     }
 
     @MainActor
-    func testS4X09C421TrashUnavailableDisablesReplaceConfirmationAndResolve() async {
-        let resolver = S4X01RecordingSyncConflictResolver(previewResults: [
-            .keepBoth: .success(.s4x01PreviewFixture()),
-            .useIncoming: .success(.s4x01PreviewFixture(
+    func testReplaceResolutionReplaceConfirmCrossPlatformCoreTrashUnavailableDisablesReplaceConfirmationAndResolve() async {
+        let resolver = SyncConflictReviewRecordingSyncConflictResolver(previewResults: [
+            .keepBoth: .success(.syncConflictReviewPreviewFixture()),
+            .useIncoming: .success(.syncConflictReviewPreviewFixture(
                 resolution: .useIncoming,
                 canApply: false,
                 requiresReplaceConfirmation: true,
@@ -170,7 +170,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
                 previewToken: "preview-token-use-incoming"
             ))
         ])
-        let model = makeS4X01Model(resolver: resolver)
+        let model = makeSyncConflictReviewModel(resolver: resolver)
 
         await model.load()
         await model.selectResolution(.useIncoming)
@@ -186,15 +186,15 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X01C416ApplyUsesPreviewTokenAndShowsCoreReport() async {
-        let resolver = S4X01RecordingSyncConflictResolver(previewResults: [
-            .keepBoth: .success(.s4x01PreviewFixture(previewToken: "preview-token-142"))
+    func testSyncConflictReviewSyncConflictResolveCoreApplyUsesPreviewTokenAndShowsCoreReport() async {
+        let resolver = SyncConflictReviewRecordingSyncConflictResolver(previewResults: [
+            .keepBoth: .success(.syncConflictReviewPreviewFixture(previewToken: "preview-token-142"))
         ])
-        let model = makeS4X01Model(resolver: resolver)
+        let model = makeSyncConflictReviewModel(resolver: resolver)
 
         await model.load()
         await model.applyResolution()
-        let body = s4x01MirrorDescription(of: SyncConflictReviewView(
+        let body = syncConflictReviewMirrorDescription(of: SyncConflictReviewView(
             model: model,
             onBackToNeedsReview: {},
             onClose: {}
@@ -202,8 +202,8 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
         let resolveRequests = await resolver.recordedResolveRequests()
 
         XCTAssertEqual(resolveRequests, [
-            S4X01SyncConflictResolveRequest(
-                repoPath: "/tmp/s4x01-repo",
+            SyncConflictReviewSyncConflictResolveRequest(
+                repoPath: "/tmp/syncConflictReview-repo",
                 conflictID: "conflict-report",
                 request: SyncConflictResolutionRequestSnapshot(
                     strategy: .keepBoth,
@@ -213,7 +213,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
                 )
             )
         ])
-        XCTAssertEqual(model.applyState, .succeeded(.s4x01ResolveFixture()))
+        XCTAssertEqual(model.applyState, .succeeded(.syncConflictReviewResolveFixture()))
         XCTAssertEqual(model.applyDisabledReason, "Resolution has already been applied.")
         XCTAssertFalse(model.canApplyResolution)
         XCTAssertTrue(body.contains(SyncConflictReviewAccessibilityID.applySuccess))
@@ -222,11 +222,11 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X01C416ApplyCannotReuseResolvedPreviewToken() async {
-        let resolver = S4X01RecordingSyncConflictResolver(previewResults: [
-            .keepBoth: .success(.s4x01PreviewFixture(previewToken: "preview-token-142"))
+    func testSyncConflictReviewSyncConflictResolveCoreApplyCannotReuseResolvedPreviewToken() async {
+        let resolver = SyncConflictReviewRecordingSyncConflictResolver(previewResults: [
+            .keepBoth: .success(.syncConflictReviewPreviewFixture(previewToken: "preview-token-142"))
         ])
-        let model = makeS4X01Model(resolver: resolver)
+        let model = makeSyncConflictReviewModel(resolver: resolver)
 
         await model.load()
         await model.applyResolution()
@@ -238,19 +238,19 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X01C416PreviewAndApplyFailuresUseCoreErrorMapping() async {
-        let mapper = S4X01RecordingErrorMapper(mapping: .s4x01Mapping(rawContext: "sync conflict locked"))
-        let resolver = S4X01RecordingSyncConflictResolver(
+    func testSyncConflictReviewSyncConflictResolveCorePreviewAndApplyFailuresUseCoreErrorMapping() async {
+        let mapper = SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping(rawContext: "sync conflict locked"))
+        let resolver = SyncConflictReviewRecordingSyncConflictResolver(
             previewResults: [
                 .keepBoth: .failure(CoreError.Db(message: "preview locked")),
-                .useExisting: .success(.s4x01PreviewFixture(
+                .useExisting: .success(.syncConflictReviewPreviewFixture(
                     resolution: .useExisting,
                     previewToken: "preview-token-use-existing"
                 ))
             ],
             resolveResult: .failure(CoreError.Conflict(path: "stale sync conflict"))
         )
-        let model = makeS4X01Model(resolver: resolver, errorMapper: mapper)
+        let model = makeSyncConflictReviewModel(resolver: resolver, errorMapper: mapper)
 
         await model.load()
         XCTAssertFalse(model.canApplyResolution)
@@ -276,12 +276,12 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
 
 final class SyncConflictReviewIntegrationTests: XCTestCase {
     @MainActor
-    func testS4X01PageIntegrationConnectsC415C416C421AndResolvedExit() async {
-        let detector = S4X01RecordingSyncConflictDetector(result: .success([.s4x01Fixture()]))
-        let resolver = S4X01RecordingSyncConflictResolver(
+    func testSyncConflictReviewPageIntegrationConnectsSyncConflictDetectCoreSyncConflictResolveCoreReplaceConfirmCrossPlatformCoreAndResolvedExit() async {
+        let detector = SyncConflictReviewRecordingSyncConflictDetector(result: .success([.syncConflictReviewFixture()]))
+        let resolver = SyncConflictReviewRecordingSyncConflictResolver(
             previewResults: [
-                .keepBoth: .success(.s4x01PreviewFixture()),
-                .useIncoming: .success(.s4x01PreviewFixture(
+                .keepBoth: .success(.syncConflictReviewPreviewFixture()),
+                .useIncoming: .success(.syncConflictReviewPreviewFixture(
                     resolution: .useIncoming,
                     canApply: false,
                     requiresReplaceConfirmation: true,
@@ -289,14 +289,14 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
                     previewToken: "preview-token-use-incoming"
                 ))
             ],
-            resolveResult: .success(.s4x01ResolveFixture(resolution: .useIncoming))
+            resolveResult: .success(.syncConflictReviewResolveFixture(resolution: .useIncoming))
         )
         let model = SyncConflictReviewModel(
-            repoPath: "/tmp/s4x01-repo",
+            repoPath: "/tmp/syncConflictReview-repo",
             conflictID: "conflict-report",
             conflictDetector: detector,
             conflictResolver: resolver,
-            errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
         var resolvedReports: [SyncConflictResolveReportSnapshot] = []
         let view = SyncConflictReviewView(
@@ -314,21 +314,21 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
         let previewRequests = await resolver.recordedPreviewRequests()
         let resolveRequests = await resolver.recordedResolveRequests()
 
-        XCTAssertEqual(detectRequests, ["/tmp/s4x01-repo"])
+        XCTAssertEqual(detectRequests, ["/tmp/syncConflictReview-repo"])
         XCTAssertEqual(previewRequests.map(\.resolution), [.keepBoth, .useIncoming])
-        XCTAssertEqual(resolveRequests, [.s4x01UseIncomingConfirmedRequest])
-        XCTAssertEqual(resolvedReports, [.s4x01ResolveFixture(resolution: .useIncoming)])
+        XCTAssertEqual(resolveRequests, [.syncConflictReviewUseIncomingConfirmedRequest])
+        XCTAssertEqual(resolvedReports, [.syncConflictReviewResolveFixture(resolution: .useIncoming)])
         XCTAssertEqual(model.applyDisabledReason, "Resolution has already been applied.")
     }
 
     @MainActor
-    func testS4X01PageIntegrationResolveFailureKeepsSheetCallbackUnfired() async {
-        let mapper = S4X01RecordingErrorMapper(mapping: .s4x01Mapping(rawContext: "apply failed"))
-        let resolver = S4X01RecordingSyncConflictResolver(
-            previewResults: [.keepBoth: .success(.s4x01PreviewFixture(previewToken: "preview-token-144"))],
+    func testSyncConflictReviewPageIntegrationResolveFailureKeepsSheetCallbackUnfired() async {
+        let mapper = SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping(rawContext: "apply failed"))
+        let resolver = SyncConflictReviewRecordingSyncConflictResolver(
+            previewResults: [.keepBoth: .success(.syncConflictReviewPreviewFixture(previewToken: "preview-token-144"))],
             resolveResult: .failure(CoreError.Conflict(path: "stale sync conflict"))
         )
-        let model = makeS4X01Model(resolver: resolver, errorMapper: mapper)
+        let model = makeSyncConflictReviewModel(resolver: resolver, errorMapper: mapper)
         var resolvedReports: [SyncConflictResolveReportSnapshot] = []
         let view = SyncConflictReviewView(
             model: model,
@@ -343,30 +343,30 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
 
         XCTAssertTrue(resolvedReports.isEmpty)
         guard case .failed(.keepBoth, _) = model.applyState else {
-            return XCTFail("Expected apply failure to remain in S4-X-01")
+            return XCTFail("Expected apply failure to remain in sync-conflict-review")
         }
         XCTAssertEqual(mappedErrors, [CoreError.Conflict(path: "stale sync conflict")])
     }
 
     @MainActor
-    func testS4X01PageIntegrationOuterResolvedHandlerClosesRouteAndRefreshesNeedsReview() async {
-        let docsFile = FileEntrySnapshot.s4x01Fixture(id: 144, path: "docs/report.pdf", currentName: "report.pdf")
+    func testSyncConflictReviewPageIntegrationOuterResolvedHandlerClosesRouteAndRefreshesNeedsReview() async {
+        let docsFile = FileEntrySnapshot.syncConflictReviewFixture(id: 144, path: "docs/report.pdf", currentName: "report.pdf")
         let lister = MainListRecordingFileLister(results: [.success([docsFile]), .success([])])
         var content = MainRepositoryContentView(
-            opening: .s4x01Fixture(repoPath: "/tmp/s4x01-repo", files: [docsFile]),
+            opening: .syncConflictReviewFixture(repoPath: "/tmp/syncConflictReview-repo", files: [docsFile]),
             state: .list,
             onImport: {},
             onDropImport: { _, _ in },
             fileLister: lister,
             fileDetailer: MainListRecordingFileDetailer(results: [.success(docsFile)]),
-            errorMapper: MainListRecordingErrorMapper(mapping: .s4x01Mapping())
+            errorMapper: MainListRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await content.fileListModel.loadCurrentCategory("docs")
         content.beginSyncConflictReview(file: docsFile)
         let beforeResolveRequests = await lister.recordedRequests()
 
-        await content.handleSyncConflictResolved(.s4x01ResolveFixture())
+        await content.handleSyncConflictResolved(.syncConflictReviewResolveFixture())
         let listRequests = await lister.recordedRequests()
 
         XCTAssertNil(content.pendingSyncConflictReviewRoute)
@@ -375,7 +375,7 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
     }
 }
 
-private func assertS4X01ConfirmedReplacePanel(_ panelBody: String) {
+private func assertSyncConflictReviewConfirmedReplacePanel(_ panelBody: String) {
     XCTAssertTrue(panelBody.contains(SyncConflictReviewAccessibilityID.replaceConfirmation))
     XCTAssertTrue(panelBody.contains(SyncConflictReviewAccessibilityID.replaceConfirm))
     XCTAssertTrue(panelBody.contains("Confirm Replace"))
@@ -387,13 +387,13 @@ private func assertS4X01ConfirmedReplacePanel(_ panelBody: String) {
 }
 
 @MainActor
-private func makeS4X01Model(
-    resolver: S4X01RecordingSyncConflictResolver,
-    errorMapper: S4X01RecordingErrorMapper = S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+private func makeSyncConflictReviewModel(
+    resolver: SyncConflictReviewRecordingSyncConflictResolver,
+    errorMapper: SyncConflictReviewRecordingErrorMapper = SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
 ) -> SyncConflictReviewModel {
     SyncConflictReviewModel(
-        repoPath: "/tmp/s4x01-repo",
-        conflictDetector: S4X01RecordingSyncConflictDetector(result: .success([.s4x01Fixture()])),
+        repoPath: "/tmp/syncConflictReview-repo",
+        conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .success([.syncConflictReviewFixture()])),
         conflictResolver: resolver,
         errorMapper: errorMapper
     )

@@ -206,7 +206,7 @@ final class AICallLogModel: ObservableObject {
         if isLoading { return "AI call log is loading" }
         if case .failed = state { return "AI call log could not be loaded" }
         if !hasLoadedRecords { return "No AI call log entries to export" }
-        return "Redacted export belongs to the export save-panel capability, not C3-05"
+        return "Redacted export belongs to the export save-panel capability, not ai-call-log-core"
     }
 
     func load() async {

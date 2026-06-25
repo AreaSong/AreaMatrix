@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct AreaMatrixStageText: View {
+struct AreaMatrixSceneText: View {
     let title: String
     let description: String
     var gradient: LinearGradient?
@@ -11,7 +11,7 @@ struct AreaMatrixStageText: View {
             AreaMatrixDecodedText(text: title, gradient: gradient)
                 .font(.system(size: 22, weight: .semibold))
                 .tracking(0.5)
-                .areaMatrixStageTextMotion(delay: 0.05)
+                .areaMatrixSceneTextMotion(delay: 0.05)
             Text(description)
                 .font(.system(size: 15))
                 .foregroundStyle(.secondary)
@@ -19,7 +19,7 @@ struct AreaMatrixStageText: View {
                 .lineSpacing(6)
                 .lineLimit(nil)
                 .fixedSize(horizontal: false, vertical: true)
-                .areaMatrixStageTextMotion(delay: 0.1)
+                .areaMatrixSceneTextMotion(delay: 0.1)
         }
         .frame(maxWidth: maxWidth)
     }
@@ -46,7 +46,7 @@ struct AreaMatrixLaunchBrandVisual: View {
         .scaleEffect(logoEntered ? 1 : 0.85)
         .animation(.spring(response: 0.75, dampingFraction: 0.55).delay(0.2), value: logoEntered)
         .frame(height: frameHeight)
-        .areaMatrixStageVisualMotion()
+        .areaMatrixSceneVisualMotion()
         .onAppear { logoEntered = true }
     }
 }
@@ -66,7 +66,7 @@ struct AreaMatrixLaunchCopyText: View {
                 .font(.system(size: 20, weight: .semibold))
                 .tracking(0.5)
                 .areaMatrixTextShimmer(highlight: highlightToken.resolve(colorScheme))
-                .areaMatrixStageTextMotion(delay: 0.05)
+                .areaMatrixSceneTextMotion(delay: 0.05)
 
             Text(description)
                 .font(.system(size: 15))
@@ -77,7 +77,7 @@ struct AreaMatrixLaunchCopyText: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .opacity(subtitleBreathing ? 0.72 : 1.0)
                 .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: subtitleBreathing)
-                .areaMatrixStageTextMotion(delay: 0.15)
+                .areaMatrixSceneTextMotion(delay: 0.15)
         }
         .frame(maxWidth: maxWidth)
         .onAppear { subtitleBreathing = true }
@@ -136,7 +136,7 @@ struct AreaMatrixFolderLaunchVisual: View {
             folderShape
         }
         .frame(height: 220)
-        .areaMatrixStageVisualMotion()
+        .areaMatrixSceneVisualMotion()
         .onAppear { isAnimating = true }
     }
 

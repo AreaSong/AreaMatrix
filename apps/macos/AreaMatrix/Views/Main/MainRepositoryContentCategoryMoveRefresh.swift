@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 private enum MainSidebarTagFilterEntry {
-    static let id = "S2-08-sidebar-tags-filter"
+    static let id = "tag-filters-sidebar-tags-filter"
     static let title = "Tags"
     static let accessibilityLabel = "Tags filter"
     static let accessibilityHint = "Open tag filters for the current search scope."
@@ -325,7 +325,7 @@ extension MainRepositoryContentView {
         _ handoff: BatchChangeCategoryNewCategoryHandoff,
         route: BatchChangeCategoryRoute
     ) {
-        guard handoff.targetPageID == "S2-19" else { return }
+        guard handoff.targetPageID == "classifier-rule-editor" else { return }
         pendingBatchChangeCategoryRoute = nil
         let context = BatchChangeCategoryReturnContext(route: route, handoff: handoff)
         fileListModel.openClassifierRuleEditorForBatchCategory(context: context)
@@ -389,7 +389,7 @@ extension MainRepositoryContentView {
             }
             .font(.callout)
             .foregroundStyle(.red)
-            .accessibilityIdentifier("S2-06-smart-list-load-error")
+            .accessibilityIdentifier("smart-list-management-smart-list-load-error")
             .accessibilityHint(smartListLoadError.suggestedAction)
         }
     }

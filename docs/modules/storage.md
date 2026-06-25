@@ -60,13 +60,13 @@ pub fn reindex_from_filesystem(repo: &Path) -> CoreResult<ReindexReport>;
 
 `StorageMode::Copied` 和 `StorageMode::Moved` 走资料库内文件落位流程：
 源文件先进入 AreaMatrix-owned staging，再提交到最终分类目录。
-`StorageMode::Indexed` 是 C1-08 的 index-only 语义：只读取源文件 metadata
+`StorageMode::Indexed` 是 index-only 语义：只读取源文件 metadata
 和 hash，写入 DB 与 change_log，不复制、不移动源文件，也不创建最终资料库
 文件副本。
 
 ```mermaid
 flowchart LR
-    A[1 Copy/Move stage] --> B[2 hash]
+    A[1 Copy/Move to staging] --> B[2 hash]
     B --> C{3 dup?}
     C -->|yes| D[strategy]
     C -->|no| E[4 classify]

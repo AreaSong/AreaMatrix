@@ -3,7 +3,7 @@ import XCTest
 
 final class RepositorySettingsPageFeatureTests: XCTestCase {
     @MainActor
-    func testLoadUsesC104ConfigForVisibleRepositorySettings() async {
+    func testLoadUsesRepositoryConfigCoreConfigForVisibleRepositorySettings() async {
         var config = RepoConfigSnapshot.shellFixture(repoPath: "/tmp/AreaMatrixRepo")
         config.overviewOutput = "RootAreaMatrixFile"
         let loader = RepositorySettingsRecordingLoader(results: [.success(config)])
@@ -16,7 +16,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             ))
         ])
         let opener = RepoSettingsRepositoryOpener(
-            result: .success(RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/AreaMatrixRepo"))
+            result: .success(RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/AreaMatrixRepo"))
         )
         let model = RepositorySettingsModel(
             repoPath: "/tmp/AreaMatrixRepo",
@@ -65,7 +65,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             ))
         ])
         let opener = RepoSettingsRepositoryOpener(
-            result: .success(RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo"))
+            result: .success(RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo"))
         )
         let model = RepositorySettingsModel(
             repoPath: "/tmp/repo",
@@ -131,7 +131,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             ))
         ])
         let opener = RepoSettingsRepositoryOpener(
-            result: .success(RepositoryOpeningResult.s117Fixture(repoPath: repoURL.path))
+            result: .success(RepositoryOpeningResult.importSingleFileFixture(repoPath: repoURL.path))
         )
         let model = RepositorySettingsModel(
             repoPath: repoURL.path,
@@ -177,7 +177,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             ))
         ])
         let opener = RepoSettingsRepositoryOpener(
-            result: .success(RepositoryOpeningResult.s117Fixture(repoPath: repoURL.path))
+            result: .success(RepositoryOpeningResult.importSingleFileFixture(repoPath: repoURL.path))
         )
         let model = RepositorySettingsModel(
             repoPath: repoURL.path,
@@ -433,7 +433,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X08C417LoadsPlatformCapabilitiesAndDisablesDiagnosticsWhenAccessIsLimited() async {
+    func testRepositorySettingsCrossPlatformPlatformCapabilitiesCoreLoadsPlatformCapabilitiesAndDisablesDiagnosticsWhenAccessIsLimited() async {
         let limitedAccess = repositorySettingsCapabilitySupport(
             status: .limited,
             uiEnabled: false,

@@ -38,7 +38,7 @@ struct RenameRuleEditor: View {
             }
             .pickerStyle(.segmented)
             .disabled(isDisabled)
-            .accessibilityIdentifier("S2-14-rename-strategy")
+            .accessibilityIdentifier("batch-rename-rename-strategy")
             fields
         }
     }

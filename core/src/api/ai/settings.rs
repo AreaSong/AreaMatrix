@@ -27,7 +27,7 @@ pub fn load_ai_config(repo_path: String) -> CoreResult<AiConfigSnapshot> {
 /// This contract accepts only settings metadata. API keys, provider connection
 /// tests, remote enablement, privacy rule CRUD/evaluation, AI call logs,
 /// pending suggestion cleanup, and actual model execution remain owned by
-/// their separate C3 tasks.
+/// their dedicated AI capability contracts.
 ///
 /// # Errors
 ///

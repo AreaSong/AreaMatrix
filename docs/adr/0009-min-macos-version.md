@@ -17,7 +17,7 @@
 - **目标用户群覆盖率**：太新 = 损失用户、太旧 = 维护成本高
 - **macOS 升级特点**：相比 Windows / Android 用户更新激进，最近 3 版覆盖率通常 > 80%
 
-发布时间预计 Stage 2（2027 H1）公开，那时 macOS 16 已发布。
+公开分发预计不早于 2027 H1，那时 macOS 16 已发布。
 
 ## 决定
 
@@ -39,7 +39,7 @@
 // ./dev build core: MACOSX_DEPLOYMENT_TARGET=14.0
 ```
 
-不向 macOS 13 及以下提供构建。Stage 2 公开发布后，**每年 WWDC 后**（即 macOS 17 发布时）评估是否提升至 macOS 15 / 16。
+不向 macOS 13 及以下提供构建。公开发布后，**每年 WWDC 后**（即 macOS 17 发布时）评估是否提升至 macOS 15 / 16。
 
 ## 理由
 

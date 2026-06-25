@@ -99,7 +99,7 @@ public sealed partial class LinuxWatcherStatusViewModel
                 return "Wait for the database lock to clear before running a rescan.";
             }
 
-            return "Opens S4-X-07 rescan confirmation before scanning.";
+            return "Opens rescan-confirm rescan confirmation before scanning.";
         }
     }
 

@@ -82,7 +82,7 @@ struct RepositorySettingsConfigSection: View {
                 }
             }
             .disabled(!canSave)
-            .accessibilityIdentifier("S4-X-08-C4-20-save-repository-config")
+            .accessibilityIdentifier("repository-settings-repository-settings-core-save-repository-config")
 
             Button("Reset changes") {
                 draft = config.map(RepositorySettingsConfigDraft.init(config:)) ?? .empty

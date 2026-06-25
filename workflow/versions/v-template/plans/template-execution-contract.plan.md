@@ -16,7 +16,7 @@ Prove that plans, drafts, queue candidates, promotion preview, projection, and c
 
 | File | Lines | Heading | Operation | Summary | Tasks |
 |---|---:|---|---|---|---|
-| `workflow/pipeline.md` | 282-386 | queue candidates | reference | Queue and promotion stages must stay preview-first until explicit promote. | `queue-candidate`, `promotion-preview` |
+| `workflow/pipeline.md` | 282-386 | queue candidates | reference | Queue and promotion nodes must stay preview-first until explicit promote. | `queue-candidate`, `promotion-preview` |
 | `workflow/pipeline.md` | 448-496 | result projection | reference | Projection and closeout must require runtime, verify, checkpoint, and trace evidence. | `projection-closeout` |
 
 ## Middle-layer Ledger

@@ -94,7 +94,7 @@ fn resolve_import_destination(ctx: DropContext, predicted: ClassifyResult) -> Ta
 
 ## 概览生成粒度
 
-Stage 1 只生成两层概览：
+当前默认只生成两层概览：
 
 | 粒度 | 路径 | 说明 |
 |---|---|---|
@@ -113,7 +113,7 @@ AREAMATRIX.md
 - 不在任何目录生成 `README.md`。
 - 不把概览文件写到用户目录里。
 
-Stage 2 可考虑“当前选中目录按需导出概览”，但不进入 MVP 默认行为。
+后续可考虑“当前选中目录按需导出概览”，但不进入当前默认行为。
 
 ---
 

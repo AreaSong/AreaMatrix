@@ -3,18 +3,18 @@ import XCTest
 
 final class ImportSingleFileNameConflictCoreTests: XCTestCase {
     @MainActor
-    func testS221LoadsCoreConflictBatchPreviewWithDefaultSafeStrategies() async {
+    func testImportConflictBatchLoadsCoreConflictBatchPreviewWithDefaultSafeStrategies() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let conflictBatcher = S221RecordingConflictBatcher()
+        let conflictBatcher = ImportConflictBatchRecordingConflictBatcher()
         let model = ImportBatchCopyImportModel(
-            importer: S118RecordingBatchImporter(),
-            errorMapper: S117RecordingErrorMapper(),
+            importer: ImportBatchRecordingBatchImporter(),
+            errorMapper: ImportSingleFileRecordingErrorMapper(),
             conflictBatcher: conflictBatcher
         )
 
         model.applyPreviewRows(
-            [s118ReadyBatchRow(url: invoiceURL)],
-            request: s221BatchRequest(urls: [invoiceURL], conflictIDs: ["dup-1", "name-1"]),
+            [importBatchReadyBatchRow(url: invoiceURL)],
+            request: importConflictBatchBatchRequest(urls: [invoiceURL], conflictIDs: ["dup-1", "name-1"]),
             selectedDestination: .autoClassify
         )
         await model.loadImportConflictBatchPreview()
@@ -22,7 +22,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
 
         XCTAssertTrue(model.showsCoreConflictBatchReview)
         XCTAssertEqual(previewRequests, [
-            S221PreviewRequest(
+            ImportConflictBatchPreviewRequest(
                 repoPath: "/tmp/repo",
                 request: ImportConflictBatchPreviewRequestSnapshot(
                     importSessionID: "session-221",
@@ -38,18 +38,18 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
     }
 
     @MainActor
-    func testS221ApplyRequiresReplaceConfirmationBeforeCallingCore() async {
+    func testImportConflictBatchApplyRequiresReplaceConfirmationBeforeCallingCore() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let conflictBatcher = S221RecordingConflictBatcher(preview: .s221ReplacePreview)
+        let conflictBatcher = ImportConflictBatchRecordingConflictBatcher(preview: .importConflictBatchReplacePreview)
         let model = ImportBatchCopyImportModel(
-            importer: S118RecordingBatchImporter(),
-            errorMapper: S117RecordingErrorMapper(),
+            importer: ImportBatchRecordingBatchImporter(),
+            errorMapper: ImportSingleFileRecordingErrorMapper(),
             conflictBatcher: conflictBatcher
         )
 
         model.applyPreviewRows(
-            [s118ReadyBatchRow(url: invoiceURL)],
-            request: s221BatchRequest(urls: [invoiceURL], conflictIDs: ["dup-1"]),
+            [importBatchReadyBatchRow(url: invoiceURL)],
+            request: importConflictBatchBatchRequest(urls: [invoiceURL], conflictIDs: ["dup-1"]),
             selectedDestination: .autoClassify
         )
         model.updateConflictBatchDuplicateStrategy(.replace)
@@ -61,7 +61,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
 
         XCTAssertNil(blockedResult)
         XCTAssertEqual(applyRequests, [
-            S221ApplyRequest(
+            ImportConflictBatchApplyRequest(
                 repoPath: "/tmp/repo",
                 request: ImportConflictBatchApplyRequestSnapshot(
                     importSessionID: "session-221",
@@ -78,20 +78,20 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
     }
 
     @MainActor
-    func testS221PartialBlockedRowsDoNotDisableActionableScope() async {
+    func testImportConflictBatchPartialBlockedRowsDoNotDisableActionableScope() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let blockedPreview = ImportConflictBatchPreviewReportSnapshot.s221DefaultPreview
+        let blockedPreview = ImportConflictBatchPreviewReportSnapshot.importConflictBatchDefaultPreview
             .withBlockedSameNameRow()
-        let conflictBatcher = S221RecordingConflictBatcher(preview: blockedPreview)
+        let conflictBatcher = ImportConflictBatchRecordingConflictBatcher(preview: blockedPreview)
         let model = ImportBatchCopyImportModel(
-            importer: S118RecordingBatchImporter(),
-            errorMapper: S117RecordingErrorMapper(),
+            importer: ImportBatchRecordingBatchImporter(),
+            errorMapper: ImportSingleFileRecordingErrorMapper(),
             conflictBatcher: conflictBatcher
         )
 
         model.applyPreviewRows(
-            [s118ReadyBatchRow(url: invoiceURL)],
-            request: s221BatchRequest(urls: [invoiceURL], conflictIDs: ["dup-1", "name-blocked"]),
+            [importBatchReadyBatchRow(url: invoiceURL)],
+            request: importConflictBatchBatchRequest(urls: [invoiceURL], conflictIDs: ["dup-1", "name-blocked"]),
             selectedDestination: .autoClassify
         )
         await model.loadImportConflictBatchPreview()
@@ -109,9 +109,9 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
     }
 
     @MainActor
-    func testS123RealCoreSameNameDifferentContentDefaultsToNumberedKeepBothImport() async throws {
-        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "s123-repo")
-        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "s123-source")
+    func testNameConflictRealCoreSameNameDifferentContentDefaultsToNumberedKeepBothImport() async throws {
+        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "nameConflict-repo")
+        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "nameConflict-source")
         defer {
             try? FileManager.default.removeItem(at: repoURL)
             try? FileManager.default.removeItem(at: sourceRoot)
@@ -143,9 +143,9 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
     }
 
     @MainActor
-    func testS123RealCoreRenameIncomingUsesEditedSafeName() async throws {
-        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "s123-rename-repo")
-        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "s123-rename-source")
+    func testNameConflictRealCoreRenameIncomingUsesEditedSafeName() async throws {
+        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "nameConflict-rename-repo")
+        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "nameConflict-rename-source")
         defer {
             try? FileManager.default.removeItem(at: repoURL)
             try? FileManager.default.removeItem(at: sourceRoot)
@@ -185,10 +185,10 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         )
 
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: bridge,
             preflight: CoreImportSingleFilePreflight(),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
         await model.load(request: ImportEntryRequest(
             repoPath: repoURL.path,
@@ -201,7 +201,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
     }
 }
 
-private func s221BatchRequest(urls: [URL], conflictIDs: [String]) -> ImportEntryRequest {
+private func importConflictBatchBatchRequest(urls: [URL], conflictIDs: [String]) -> ImportEntryRequest {
     ImportEntryRequest(
         repoPath: "/tmp/repo",
         source: .dropZone,
@@ -216,23 +216,23 @@ private func s221BatchRequest(urls: [URL], conflictIDs: [String]) -> ImportEntry
     )
 }
 
-private struct S221PreviewRequest: Equatable {
+private struct ImportConflictBatchPreviewRequest: Equatable {
     var repoPath: String
     var request: ImportConflictBatchPreviewRequestSnapshot
 }
 
-private struct S221ApplyRequest: Equatable {
+private struct ImportConflictBatchApplyRequest: Equatable {
     var repoPath: String
     var request: ImportConflictBatchApplyRequestSnapshot
     var previewToken: String
 }
 
-private actor S221RecordingConflictBatcher: CoreImportConflictBatching {
+private actor ImportConflictBatchRecordingConflictBatcher: CoreImportConflictBatching {
     private let preview: ImportConflictBatchPreviewReportSnapshot
-    private var recordedPreviewRequests: [S221PreviewRequest] = []
-    private var recordedApplyRequests: [S221ApplyRequest] = []
+    private var recordedPreviewRequests: [ImportConflictBatchPreviewRequest] = []
+    private var recordedApplyRequests: [ImportConflictBatchApplyRequest] = []
 
-    init(preview: ImportConflictBatchPreviewReportSnapshot = .s221DefaultPreview) {
+    init(preview: ImportConflictBatchPreviewReportSnapshot = .importConflictBatchDefaultPreview) {
         self.preview = preview
     }
 
@@ -240,7 +240,7 @@ private actor S221RecordingConflictBatcher: CoreImportConflictBatching {
         repoPath: String,
         request: ImportConflictBatchPreviewRequestSnapshot
     ) async throws -> ImportConflictBatchPreviewReportSnapshot {
-        recordedPreviewRequests.append(S221PreviewRequest(repoPath: repoPath, request: request))
+        recordedPreviewRequests.append(ImportConflictBatchPreviewRequest(repoPath: repoPath, request: request))
         return preview.withRequest(request)
     }
 
@@ -249,25 +249,25 @@ private actor S221RecordingConflictBatcher: CoreImportConflictBatching {
         request: ImportConflictBatchApplyRequestSnapshot,
         previewToken: String
     ) async throws -> ImportConflictBatchApplyReportSnapshot {
-        recordedApplyRequests.append(S221ApplyRequest(
+        recordedApplyRequests.append(ImportConflictBatchApplyRequest(
             repoPath: repoPath,
             request: request,
             previewToken: previewToken
         ))
-        return .s221Report(for: request)
+        return .importConflictBatchReport(for: request)
     }
 
-    func previewRequests() -> [S221PreviewRequest] {
+    func previewRequests() -> [ImportConflictBatchPreviewRequest] {
         recordedPreviewRequests
     }
 
-    func applyRequests() -> [S221ApplyRequest] {
+    func applyRequests() -> [ImportConflictBatchApplyRequest] {
         recordedApplyRequests
     }
 }
 
 private extension ImportConflictBatchPreviewReportSnapshot {
-    static var s221DefaultPreview: ImportConflictBatchPreviewReportSnapshot {
+    static var importConflictBatchDefaultPreview: ImportConflictBatchPreviewReportSnapshot {
         ImportConflictBatchPreviewReportSnapshot(
             importSessionID: "session-221",
             previewToken: "token-default",
@@ -288,11 +288,11 @@ private extension ImportConflictBatchPreviewReportSnapshot {
             applyBlockedReason: nil,
             replaceConfirmationRequired: false,
             replaceConfirmationSummary: nil,
-            items: [.s221Duplicate(strategy: .skip), .s221SameName(strategy: .keepBoth)]
+            items: [.importConflictBatchDuplicate(strategy: .skip), .importConflictBatchSameName(strategy: .keepBoth)]
         )
     }
 
-    static var s221ReplacePreview: ImportConflictBatchPreviewReportSnapshot {
+    static var importConflictBatchReplacePreview: ImportConflictBatchPreviewReportSnapshot {
         ImportConflictBatchPreviewReportSnapshot(
             importSessionID: "session-221",
             previewToken: "token-replace",
@@ -313,7 +313,7 @@ private extension ImportConflictBatchPreviewReportSnapshot {
             applyBlockedReason: nil,
             replaceConfirmationRequired: true,
             replaceConfirmationSummary: "1 duplicate conflict",
-            items: [.s221Duplicate(strategy: .replace)]
+            items: [.importConflictBatchDuplicate(strategy: .replace)]
         )
     }
 
@@ -325,8 +325,8 @@ private extension ImportConflictBatchPreviewReportSnapshot {
         copy.skipCount = 1
         copy.keepBothCount = 0
         copy.items = [
-            .s221Duplicate(conflictID: "dup-1", strategy: .skip),
-            .s221BlockedSameName(conflictID: "name-blocked")
+            .importConflictBatchDuplicate(conflictID: "dup-1", strategy: .skip),
+            .importConflictBatchBlockedSameName(conflictID: "name-blocked")
         ]
         return copy
     }
@@ -340,7 +340,7 @@ private extension ImportConflictBatchPreviewReportSnapshot {
         copy.requestedConflictCount = Int64(request.conflictIDs.count)
         copy.includedCount = Int64(request.conflictIDs.count)
         copy.items = request.conflictIDs.map { conflictID in
-            let source = items.first { $0.conflictID == conflictID } ?? .s221Duplicate(conflictID: conflictID)
+            let source = items.first { $0.conflictID == conflictID } ?? .importConflictBatchDuplicate(conflictID: conflictID)
             return source.withStrategies(
                 duplicateStrategy: request.duplicateStrategy,
                 sameNameStrategy: request.sameNameStrategy
@@ -351,7 +351,7 @@ private extension ImportConflictBatchPreviewReportSnapshot {
 }
 
 private extension ImportConflictBatchPreviewItemSnapshot {
-    static func s221Duplicate(
+    static func importConflictBatchDuplicate(
         conflictID: String = "dup-1",
         strategy: ImportConflictBatchStrategySnapshot = .skip
     ) -> ImportConflictBatchPreviewItemSnapshot {
@@ -374,11 +374,11 @@ private extension ImportConflictBatchPreviewItemSnapshot {
         )
     }
 
-    static func s221SameName(
+    static func importConflictBatchSameName(
         conflictID: String = "name-1",
         strategy: ImportConflictBatchStrategySnapshot = .keepBoth
     ) -> ImportConflictBatchPreviewItemSnapshot {
-        var item = s221Duplicate(conflictID: conflictID, strategy: strategy)
+        var item = importConflictBatchDuplicate(conflictID: conflictID, strategy: strategy)
         item.conflictType = .sameNameDifferentContent
         item.existingPath = "docs/合同.pdf"
         item.incomingPath = "/tmp/合同.pdf"
@@ -386,8 +386,8 @@ private extension ImportConflictBatchPreviewItemSnapshot {
         return item
     }
 
-    static func s221BlockedSameName(conflictID: String) -> ImportConflictBatchPreviewItemSnapshot {
-        var item = s221SameName(conflictID: conflictID, strategy: .askPerItem)
+    static func importConflictBatchBlockedSameName(conflictID: String) -> ImportConflictBatchPreviewItemSnapshot {
+        var item = importConflictBatchSameName(conflictID: conflictID, strategy: .askPerItem)
         item.status = .blocked
         item.willAskPerItem = false
         item.reason = "Index-only target cannot be replaced."
@@ -400,15 +400,15 @@ private extension ImportConflictBatchPreviewItemSnapshot {
     ) -> ImportConflictBatchPreviewItemSnapshot {
         switch conflictType {
         case .duplicateHash:
-            .s221Duplicate(conflictID: conflictID, strategy: duplicateStrategy)
+            .importConflictBatchDuplicate(conflictID: conflictID, strategy: duplicateStrategy)
         case .sameNameDifferentContent:
-            .s221SameName(conflictID: conflictID, strategy: sameNameStrategy)
+            .importConflictBatchSameName(conflictID: conflictID, strategy: sameNameStrategy)
         }
     }
 }
 
 private extension ImportConflictBatchApplyReportSnapshot {
-    static func s221Report(
+    static func importConflictBatchReport(
         for request: ImportConflictBatchApplyRequestSnapshot
     ) -> ImportConflictBatchApplyReportSnapshot {
         let isAskPerItem = request.duplicateStrategy == .askPerItem && request.sameNameStrategy == .askPerItem
@@ -425,7 +425,7 @@ private extension ImportConflictBatchApplyReportSnapshot {
             pendingCount: 0,
             failedCount: 0,
             itemResults: request.conflictIDs.map { conflictID in
-                .s221Result(conflictID: conflictID, request: request)
+                .importConflictBatchResult(conflictID: conflictID, request: request)
             },
             affectedFileIDs: isAskPerItem ? [] : [42],
             undoToken: isReplace ? "undo-replace" : nil,
@@ -436,7 +436,7 @@ private extension ImportConflictBatchApplyReportSnapshot {
 }
 
 private extension ImportConflictBatchItemResultSnapshot {
-    static func s221Result(
+    static func importConflictBatchResult(
         conflictID: String,
         request: ImportConflictBatchApplyRequestSnapshot
     ) -> ImportConflictBatchItemResultSnapshot {

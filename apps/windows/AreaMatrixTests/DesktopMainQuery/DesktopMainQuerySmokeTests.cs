@@ -10,8 +10,8 @@ public static class DesktopMainQuerySmokeTests
     public static void RunAll()
     {
         MainWindowHostsWindowsMainWindowPage();
-        WindowsMainWindowExposesC411UserTriggers();
-        NativeClientBindsOnlyC411QueryFunctions();
+        WindowsMainWindowExposesDesktopMainQueryCoreUserTriggers();
+        NativeClientBindsOnlyDesktopMainQueryCoreQueryFunctions();
     }
 
     private static void MainWindowHostsWindowsMainWindowPage()
@@ -26,7 +26,7 @@ public static class DesktopMainQuerySmokeTests
         TestAssert.Contains("OpenRepositoryAsync(route)", codeBehind, "open repository handoff");
     }
 
-    private static void WindowsMainWindowExposesC411UserTriggers()
+    private static void WindowsMainWindowExposesDesktopMainQueryCoreUserTriggers()
     {
         XElement view = LoadXml(RepositoryPath(
             "apps/windows/AreaMatrix/Features/Library/WindowsMainWindow.xaml"));
@@ -52,7 +52,7 @@ public static class DesktopMainQuerySmokeTests
         TestAssert.Contains("SelectFileAsync", codeBehind, "detail trigger");
     }
 
-    private static void NativeClientBindsOnlyC411QueryFunctions()
+    private static void NativeClientBindsOnlyDesktopMainQueryCoreQueryFunctions()
     {
         string nativeLibrary = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Core/NativeCoreLibrary.cs"));

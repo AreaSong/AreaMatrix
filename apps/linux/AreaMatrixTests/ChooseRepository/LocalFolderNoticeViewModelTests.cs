@@ -7,7 +7,7 @@ public static class LocalFolderNoticeViewModelTests
     public static async Task RunAllAsync()
     {
         await LoadRouteChecksFolderThroughCoreBridge();
-        await LoadRouteReadsC417PlatformCapabilities();
+        await LoadRouteReadsPlatformCapabilitiesCorePlatformCapabilities();
         await PlatformCapabilityRowsDriveLinuxRiskCopy();
         await RiskConfirmationRoutesToAdoptConfirmWithoutInitializing();
         await LocalEmptyFolderRoutesToInitConfirmWithoutCheckbox();
@@ -40,7 +40,7 @@ public static class LocalFolderNoticeViewModelTests
         TestAssert.Contains("delay or reorder file events", model.RiskText, nameof(model.RiskText));
     }
 
-    private static async Task LoadRouteReadsC417PlatformCapabilities()
+    private static async Task LoadRouteReadsPlatformCapabilitiesCorePlatformCapabilities()
     {
         const string path = "/home/me/AreaMatrix";
         FakeLinuxRepositoryCoreBridge bridge = new(LinuxRepositoryValidationSamples.EmptyDirectory(path));

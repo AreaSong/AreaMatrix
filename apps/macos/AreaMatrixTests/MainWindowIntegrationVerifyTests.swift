@@ -42,7 +42,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         let openedRepoPaths = await opener.requestedConfiguredRepoPaths()
 
         guard case let .mainLoading(state) = model.route else {
-            return XCTFail("expected S1-10 main-loading, got \(model.route)")
+            return XCTFail("expected main-loading main-loading, got \(model.route)")
         }
 
         XCTAssertEqual(openedRepoPaths, ["/tmp/repo"])
@@ -100,7 +100,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS201PageIntegrationWiresSearchFiltersResultDetailAndClear() async {
+    func testSearchResultsPageIntegrationWiresSearchFiltersResultDetailAndClear() async {
         let tree = RepositoryTreeNodeSnapshot.task98FixtureTree()
         guard let row = tree.sidebarRow(id: "docs/contracts") else {
             return XCTFail("expected docs/contracts sidebar row")
@@ -146,7 +146,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
 
     @MainActor
     // swiftlint:disable:next function_body_length
-    func testS201PageIntegrationRoutesEmptyQueryErrorIndexingSaveAndCommandEntrances() async {
+    func testSearchResultsPageIntegrationRoutesEmptyQueryErrorIndexingSaveAndCommandEntrances() async {
         let tree = RepositoryTreeNodeSnapshot.task98FixtureTree()
         guard let row = tree.sidebarRow(id: "docs/contracts") else {
             return XCTFail("expected docs/contracts sidebar row")
@@ -177,16 +177,16 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
             sidebarRow: row,
             filters: .empty
         )
-        XCTAssertEqual(model.searchPageDestination?.pageID, "S2-04")
+        XCTAssertEqual(model.searchPageDestination?.pageID, "search-empty")
         XCTAssertEqual(model.files, [])
         let firstRecordedQuery = await searcher.recordedRequests().first?.request.query
         XCTAssertEqual(firstRecordedQuery, "missing")
         model.openSavedSearchSheet()
-        XCTAssertEqual(model.pendingSearchDestination?.pageID, "S2-03")
+        XCTAssertEqual(model.pendingSearchDestination?.pageID, "saved-search")
         model.clearPendingSearchDestination()
 
         await model.runSearch(query: "owner:me", scope: .current, sort: .relevance, sidebarRow: row, filters: .empty)
-        XCTAssertEqual(model.searchPageDestination?.pageID, "S2-05")
+        XCTAssertEqual(model.searchPageDestination?.pageID, "query-error")
         XCTAssertFalse(model.canSaveCurrentSearch)
         XCTAssertNil(model.searchState.errorMapping)
 
@@ -201,17 +201,17 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
 
         await model.runSearch(query: "合同", scope: .current, sort: .newestImported, sidebarRow: row, filters: .empty)
         model.openIndexingStatus()
-        XCTAssertEqual(model.pendingSearchDestination?.pageID, "S2-01-indexing-status")
+        XCTAssertEqual(model.pendingSearchDestination?.pageID, "search-index-status-indexing-status")
 
         model.enterSearch(context: .commandFind)
         XCTAssertEqual(model.lastSearchExitContext, .toolbar)
         model.openCommandPaletteForSearch()
-        XCTAssertEqual(model.pendingSearchDestination?.pageID, "S2-15")
+        XCTAssertEqual(model.pendingSearchDestination?.pageID, "command-palette")
         XCTAssertEqual(model.lastSearchExitContext, .toolbar)
     }
 
     @MainActor
-    func testS201PageIntegrationSmartListClearPreservesSavedQueryContext() async {
+    func testSearchResultsPageIntegrationSmartListClearPreservesSavedQueryContext() async {
         let tree = RepositoryTreeNodeSnapshot.task98FixtureTree()
         let resultFile = FileEntrySnapshot.task98Fixture(
             id: 299,

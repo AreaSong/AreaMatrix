@@ -2,11 +2,11 @@ import SwiftUI
 
 enum ICloudConflictListCopy {
     static let title = "iCloud Conflicts"
-    static let s220Title = "解决 iCloud 冲突"
+    static let iCloudConflictVisualTitle = "解决 iCloud 冲突"
     static let subtitle = """
     iCloud created conflict copies for these files. AreaMatrix will not delete any version automatically.
     """
-    static let s220Subtitle = """
+    static let iCloudConflictVisualSubtitle = """
     Select a conflict found by Core before comparing versions. Listing is read-only and will not move files.
     """
     static let loadingTitle = "Checking iCloud conflicts..."
@@ -21,16 +21,16 @@ enum ICloudConflictListCopy {
 }
 
 enum ICloudConflictListAccessibilityID {
-    static let page = "S1-36-C1-25-icloud-conflict-list"
-    static let s220Page = "S2-20-C1-25-icloud-conflict-list"
-    static let loading = "S1-36-C1-25-loading"
-    static let emptyRefresh = "S1-36-C1-25-empty-refresh"
-    static let error = "S1-36-C1-25-error"
-    static let retry = "S1-36-C1-25-retry"
-    static let collectDiagnostics = "S1-36-C1-25-collect-diagnostics"
-    static let refresh = "S1-36-C1-25-refresh"
-    static let revealRepository = "S1-36-C1-25-reveal-repository"
-    static let close = "S1-36-close"
+    static let page = "icloud-conflicts-icloud-conflicts-core-icloud-conflict-list"
+    static let iCloudConflictVisualPage = "icloud-conflict-review-icloud-conflicts-core-icloud-conflict-list"
+    static let loading = "icloud-conflicts-icloud-conflicts-core-loading"
+    static let emptyRefresh = "icloud-conflicts-icloud-conflicts-core-empty-refresh"
+    static let error = "icloud-conflicts-icloud-conflicts-core-error"
+    static let retry = "icloud-conflicts-icloud-conflicts-core-retry"
+    static let collectDiagnostics = "icloud-conflicts-icloud-conflicts-core-collect-diagnostics"
+    static let refresh = "icloud-conflicts-icloud-conflicts-core-refresh"
+    static let revealRepository = "icloud-conflicts-icloud-conflicts-core-reveal-repository"
+    static let close = "icloud-conflicts-close"
 
     static func resolve(conflictID: String) -> String {
         rowAction("resolve", conflictID: conflictID)
@@ -46,55 +46,55 @@ enum ICloudConflictListAccessibilityID {
                 ? String(character)
                 : "-"
         }.joined()
-        return "S1-36-C1-25-\(action)-\(safeID)"
+        return "icloud-conflicts-icloud-conflicts-core-\(action)-\(safeID)"
     }
 }
 
 enum ICloudConflictListPageContext: Equatable {
-    case s136List
-    case s220ConflictVisual
+    case iCloudConflictListList
+    case iCloudConflictVisualConflictVisual
 
     var accessibilityID: String {
         switch self {
-        case .s136List:
+        case .iCloudConflictListList:
             ICloudConflictListAccessibilityID.page
-        case .s220ConflictVisual:
-            ICloudConflictListAccessibilityID.s220Page
+        case .iCloudConflictVisualConflictVisual:
+            ICloudConflictListAccessibilityID.iCloudConflictVisualPage
         }
     }
 
     var title: String {
         switch self {
-        case .s136List:
+        case .iCloudConflictListList:
             ICloudConflictListCopy.title
-        case .s220ConflictVisual:
-            ICloudConflictListCopy.s220Title
+        case .iCloudConflictVisualConflictVisual:
+            ICloudConflictListCopy.iCloudConflictVisualTitle
         }
     }
 
     var subtitle: String {
         switch self {
-        case .s136List:
+        case .iCloudConflictListList:
             ICloudConflictListCopy.subtitle
-        case .s220ConflictVisual:
-            ICloudConflictListCopy.s220Subtitle
+        case .iCloudConflictVisualConflictVisual:
+            ICloudConflictListCopy.iCloudConflictVisualSubtitle
         }
     }
 
     var loadingTitle: String {
         switch self {
-        case .s136List:
+        case .iCloudConflictListList:
             ICloudConflictListCopy.loadingTitle
-        case .s220ConflictVisual:
+        case .iCloudConflictVisualConflictVisual:
             "Loading conflict details..."
         }
     }
 
     func countLabel(conflictCount: Int) -> String {
         switch self {
-        case .s136List:
+        case .iCloudConflictListList:
             "\(conflictCount) conflicts"
-        case .s220ConflictVisual:
+        case .iCloudConflictVisualConflictVisual:
             "\(conflictCount) conflict groups found"
         }
     }
@@ -109,7 +109,7 @@ struct ICloudConflictListView: View {
 
     init(
         model: ICloudConflictListModel,
-        pageContext: ICloudConflictListPageContext = .s136List,
+        pageContext: ICloudConflictListPageContext = .iCloudConflictListList,
         onClose: @escaping () -> Void,
         onResolve: @escaping (ICloudConflictPairSnapshot) -> Void,
         onCollectDiagnostics: @escaping () -> Void = {}

@@ -3,7 +3,7 @@ import XCTest
 
 final class MainListFilesTests: XCTestCase {
     @MainActor
-    func testMainListLoadsSelectedCategoryThroughC111ListFiles() async {
+    func testMainListLoadsSelectedCategoryThroughListFilesCoreListFiles() async {
         let docsFile = FileEntrySnapshot.mainListFixture(
             id: 10,
             path: "docs/contracts/report.pdf",
@@ -88,7 +88,7 @@ final class MainListFilesTests: XCTestCase {
     }
 
     @MainActor
-    func testMainListLoadsSelectedFileDetailThroughC112GetFile() async {
+    func testMainListLoadsSelectedFileDetailThroughGetFileDetailCoreGetFile() async {
         let detail = FileEntrySnapshot.mainListFixture(
             id: 42,
             path: "docs/contracts/customer.pdf",
@@ -167,7 +167,7 @@ final class MainListFilesTests: XCTestCase {
         XCTAssertFalse(model.isDetailLoading)
     }
 
-    func testMainListSidebarRowsExposeC115TreeSubdirectoriesForVisibleFiltering() {
+    func testMainListSidebarRowsExposeBuildTreeCoreTreeSubdirectoriesForVisibleFiltering() {
         let tree = RepositoryTreeNodeSnapshot.mainListNestedFixtureTree()
         let rows = tree.sidebarRows
 
@@ -182,7 +182,7 @@ final class MainListFilesTests: XCTestCase {
     func testMainListTreeSubdirectoryRowFiltersCurrentCategoryFilesWithoutNewCoreCapability() {
         let tree = RepositoryTreeNodeSnapshot.mainListNestedFixtureTree()
         guard let contractsRow = tree.sidebarRow(id: "docs/contracts") else {
-            return XCTFail("expected C1-15 contracts tree row")
+            return XCTFail("expected build-tree contracts tree row")
         }
 
         let contracts = FileEntrySnapshot.mainListFixture(

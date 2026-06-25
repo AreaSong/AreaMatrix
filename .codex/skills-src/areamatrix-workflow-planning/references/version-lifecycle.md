@@ -28,10 +28,11 @@ Layer responsibilities:
 - `promotion preview`: semantic-to-numeric task mapping, no live writes.
 - `workflow/versions/<version>/execution/**`: approved version-local execution queue only.
 
-`v1-mvp` is archived with its technical queue complete. Its formal alpha
-release residuals still block formal distribution, but they do not block future
-version discussion, middle-layer, changes, plans, drafts, or queue candidates.
-They do block claims that the v1 release / closeout residuals are closed.
+`v1-mvp` is archived with its technical queue complete. Its distribution
+evidence and decision residuals still block distribution claims, but they do not
+block future version discussion, middle-layer, changes, plans, drafts, or queue
+candidates. They do block claims that the v1 release / closeout residuals are
+closed.
 `v-template` is a managed template reference instance for doctor coverage and is
 not a real product workflow. Future real versions must pass discussion before
 changes.

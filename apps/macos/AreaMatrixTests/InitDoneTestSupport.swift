@@ -139,20 +139,20 @@ struct ApplyTagSuggestionsRequestRecord: Equatable {
 }
 
 extension CoreErrorMappingSnapshot {
-    static func s207TagDb() -> CoreErrorMappingSnapshot {
+    static func tagAddTagDb() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .db,
             userMessage: "无法更新标签",
             severity: .medium,
             suggestedAction: "请保留输入并重试标签操作。",
             recoverability: .retryable,
-            rawContext: "S2-07 C2-05 tag-crud"
+            rawContext: "tag-crud tag-crud-core tag-crud"
         )
     }
 }
 
 extension TagSuggestionRequestSnapshot {
-    static func s223(fileID: Int64) -> TagSuggestionRequestSnapshot {
+    static func tagSuggestions(fileID: Int64) -> TagSuggestionRequestSnapshot {
         TagSuggestionRequestSnapshot(
             fileID: fileID,
             context: nil,
@@ -162,7 +162,7 @@ extension TagSuggestionRequestSnapshot {
 }
 
 extension RepositorySidebarRowSnapshot {
-    static let s208Root = RepositorySidebarRowSnapshot(node: RepositoryTreeNodeSnapshot(
+    static let tagFilterRoot = RepositorySidebarRowSnapshot(node: RepositoryTreeNodeSnapshot(
         slug: "__root__",
         displayName: "Repository",
         kind: "RepositoryRoot",
@@ -175,7 +175,7 @@ extension RepositorySidebarRowSnapshot {
 
 extension MainFileListModel {
     @MainActor
-    static func s223Fixture(
+    static func tagSuggestionsFixture(
         detail: FileEntrySnapshot,
         tagStore: any CoreTagCRUD = DetailTagRecordingStore()
     ) -> MainFileListModel {
@@ -184,13 +184,13 @@ extension MainFileListModel {
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             tagStore: tagStore,
-            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
     }
 }
 
 extension UndoActionRecordSnapshot {
-    static func s223ApplySuggestion(token: String) -> UndoActionRecordSnapshot {
+    static func tagSuggestionsApplySuggestion(token: String) -> UndoActionRecordSnapshot {
         UndoActionRecordSnapshot(
             actionID: token,
             kind: "tag_suggestion_apply",
@@ -206,7 +206,7 @@ extension UndoActionRecordSnapshot {
     }
 }
 
-actor S307AITagBridge: CoreAITagSuggestionManaging {
+actor AITagSuggestionAITagBridge: CoreAITagSuggestionManaging {
     private let report: AiTagSuggestionReport
     private var suggestRequests: [AiTagSuggestionRequest] = []
     private var applyRequests: [ApplyAiTagSuggestionsRequest] = []
@@ -227,7 +227,7 @@ actor S307AITagBridge: CoreAITagSuggestionManaging {
     ) async throws -> AiTagSuggestionApplyReport {
         XCTAssertEqual(repoPath, "/tmp/repo")
         applyRequests.append(request)
-        return s307ApplyReport(fileID: request.fileId)
+        return aiTagSuggestionApplyReport(fileID: request.fileId)
     }
 
     func requests() -> (suggest: [AiTagSuggestionRequest], apply: [ApplyAiTagSuggestionsRequest]) {
@@ -235,7 +235,7 @@ actor S307AITagBridge: CoreAITagSuggestionManaging {
     }
 }
 
-actor S307BatchAITagBridge: CoreAITagSuggestionManaging {
+actor AITagSuggestionBatchAITagBridge: CoreAITagSuggestionManaging {
     private let reports: [Int64: AiTagSuggestionReport]
     private let applyReports: [Int64: AiTagSuggestionApplyReport]
     private var suggestRequests: [AiTagSuggestionRequest] = []
@@ -264,9 +264,9 @@ actor S307BatchAITagBridge: CoreAITagSuggestionManaging {
     ) async throws -> AiTagSuggestionApplyReport {
         XCTAssertEqual(repoPath, "/tmp/repo")
         applyRequests.append(request)
-        return applyReports[request.fileId] ?? s307BatchApplyReport(
+        return applyReports[request.fileId] ?? aiTagSuggestionBatchApplyReport(
             fileID: request.fileId,
-            suggestionID: request.suggestions.first?.suggestionId ?? "s3-07-finance",
+            suggestionID: request.suggestions.first?.suggestionId ?? "ai-tag-finance",
             slug: request.suggestions.first?.slug ?? "finance"
         )
     }
@@ -276,7 +276,7 @@ actor S307BatchAITagBridge: CoreAITagSuggestionManaging {
     }
 }
 
-actor S307AISettingsLoader: CoreAISettingsLoading {
+actor AITagSuggestionAISettingsLoader: CoreAISettingsLoading {
     private let snapshot: AISettingsSnapshot
     private var recordedRepoPaths: [String] = []
 
@@ -314,7 +314,7 @@ actor S307AISettingsLoader: CoreAISettingsLoading {
     }
 }
 
-func s307AITagReport(
+func aiTagSuggestionAITagReport(
     fileID: Int64,
     status: AiTagSuggestionReportStatus = .suggested,
     skippedReason: AiTagSuggestionSkipReason? = nil,
@@ -339,7 +339,7 @@ func s307AITagReport(
     )
 }
 
-func s307AITagSuggestion(
+func aiTagSuggestionAITagSuggestion(
     id: String,
     slug: String,
     confidence: Float,
@@ -355,7 +355,7 @@ func s307AITagSuggestion(
         slug: slug,
         displayName: displayName ?? slug.prefix(1).uppercased() + slug.dropFirst(),
         confidence: confidence,
-        reason: "S3-07 C3-07 local tag suggestion.",
+        reason: "ai-tag-suggestions ai-tags-suggestion local tag suggestion.",
         status: status,
         mergeAction: mergeAction,
         matchedExistingSlug: matchedExistingSlug,
@@ -364,8 +364,8 @@ func s307AITagSuggestion(
     )
 }
 
-func s307ApplyReport(fileID: Int64) -> AiTagSuggestionApplyReport {
-    let tag = s307Tag("finance")
+func aiTagSuggestionApplyReport(fileID: Int64) -> AiTagSuggestionApplyReport {
+    let tag = aiTagSuggestionTag("finance")
     return AiTagSuggestionApplyReport(
         fileId: fileID,
         requestedCount: 1,
@@ -374,7 +374,7 @@ func s307ApplyReport(fileID: Int64) -> AiTagSuggestionApplyReport {
         failedCount: 0,
         itemResults: [
             AiTagSuggestionApplyItemResult(
-                suggestionId: "s3-07-finance",
+                suggestionId: "ai-tag-finance",
                 slug: "finance",
                 status: .applied,
                 error: nil
@@ -393,14 +393,14 @@ func s307ApplyReport(fileID: Int64) -> AiTagSuggestionApplyReport {
     )
 }
 
-func s307BatchApplyReport(
+func aiTagSuggestionBatchApplyReport(
     fileID: Int64,
     suggestionID: String,
     slug: String,
     status: AiTagSuggestionApplyStatus = .applied,
     error: String? = nil
 ) -> AiTagSuggestionApplyReport {
-    let tag = s307Tag(slug)
+    let tag = aiTagSuggestionTag(slug)
     return AiTagSuggestionApplyReport(
         fileId: fileID,
         requestedCount: 1,
@@ -428,7 +428,7 @@ func s307BatchApplyReport(
     )
 }
 
-func s307Tag(_ value: String) -> TagRecord {
+func aiTagSuggestionTag(_ value: String) -> TagRecord {
     TagRecord(
         value: value,
         label: value.prefix(1).uppercased() + value.dropFirst(),
@@ -439,7 +439,7 @@ func s307Tag(_ value: String) -> TagRecord {
     )
 }
 
-func s307ProviderGateReport(
+func aiTagSuggestionProviderGateReport(
     skippedReason: AiPrivacySkippedReason,
     providerGateReason: AiPrivacyProviderGateReason
 ) -> AiPrivacyEvaluationReport {

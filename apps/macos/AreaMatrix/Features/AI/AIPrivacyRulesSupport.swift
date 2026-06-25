@@ -55,7 +55,7 @@ struct AIPrivacyRuleFeatureEvaluation: Equatable, Identifiable {
     var report: AiPrivacyEvaluationReport
 
     var id: String {
-        feature.s309Label
+        feature.aiPrivacyRulesLabel
     }
 }
 
@@ -165,8 +165,8 @@ struct AIPrivacyRuleEditorDraft: Equatable {
 
     private var generatedName: String {
         let pattern = trimmedPattern
-        guard !pattern.isEmpty else { return kind.s309Label }
-        return "\(kind.s309Label) \(pattern)"
+        guard !pattern.isEmpty else { return kind.aiPrivacyRulesLabel }
+        return "\(kind.aiPrivacyRulesLabel) \(pattern)"
     }
 }
 
@@ -224,7 +224,7 @@ enum AIPrivacyRuleTemplate: String, CaseIterable, Identifiable {
 }
 
 extension AiPrivacyRuleInput {
-    init(s309Record record: AiPrivacyRuleRecord) {
+    init(aiPrivacyRulesRecord record: AiPrivacyRuleRecord) {
         self.init(
             ruleId: record.ruleId,
             name: record.name,
@@ -238,40 +238,40 @@ extension AiPrivacyRuleInput {
 }
 
 extension AiPrivacyRuleRecord {
-    var s309LastMatchedText: String {
+    var aiPrivacyRulesLastMatchedText: String {
         lastMatchedAt.map { "last matched \($0)" } ?? "last matched unknown"
     }
 
-    var s309AccessibilityLabel: String {
+    var aiPrivacyRulesAccessibilityLabel: String {
         [
             enabled ? "Enabled" : "Disabled",
-            kind.s309Label,
+            kind.aiPrivacyRulesLabel,
             pattern,
-            appliesTo.s309Label,
+            appliesTo.aiPrivacyRulesLabel,
             "\(matchCount) matches",
-            s309LastMatchedText
+            aiPrivacyRulesLastMatchedText
         ].joined(separator: ", ")
     }
 }
 
 extension AiPrivacyRulesSnapshot {
     var ruleInputs: [AiPrivacyRuleInput] {
-        rules.map(AiPrivacyRuleInput.init(s309Record:))
+        rules.map(AiPrivacyRuleInput.init(aiPrivacyRulesRecord:))
     }
 
     var fieldRules: [AiPrivacyFieldRule] {
         remoteAllowedFields.map(AiPrivacyFieldRule.init(state:))
     }
 
-    func s309EvaluationRequests(
+    func aiPrivacyRulesEvaluationRequests(
         context: AIPrivacyRuleTestFileContext
     ) -> [AiPrivacyEvaluationRequest] {
-        AiFeatureKind.s309Cases.map { feature in
-            s309EvaluationRequest(feature: feature, context: context)
+        AiFeatureKind.aiPrivacyRulesCases.map { feature in
+            aiPrivacyRulesEvaluationRequest(feature: feature, context: context)
         }
     }
 
-    private func s309EvaluationRequest(
+    private func aiPrivacyRulesEvaluationRequest(
         feature: AiFeatureKind,
         context: AIPrivacyRuleTestFileContext
     ) -> AiPrivacyEvaluationRequest {
@@ -289,14 +289,14 @@ extension AiPrivacyRulesSnapshot {
 }
 
 extension AiFeatureKind {
-    static let s309Cases: [AiFeatureKind] = [
+    static let aiPrivacyRulesCases: [AiFeatureKind] = [
         .classificationSuggestions,
         .autoSummaries,
         .autoTags,
         .semanticSearch
     ]
 
-    var s309Label: String {
+    var aiPrivacyRulesLabel: String {
         switch self {
         case .classificationSuggestions: "Classification suggestions"
         case .autoSummaries: "Remote summary"
@@ -307,9 +307,9 @@ extension AiFeatureKind {
 }
 
 extension AiPrivacyRuleKind {
-    static let s309Cases: [AiPrivacyRuleKind] = [.folder, .category, .keyword, .extension, .tag]
+    static let aiPrivacyRulesCases: [AiPrivacyRuleKind] = [.folder, .category, .keyword, .extension, .tag]
 
-    var s309Label: String {
+    var aiPrivacyRulesLabel: String {
         switch self {
         case .folder: "Folder"
         case .category: "Category"
@@ -321,7 +321,7 @@ extension AiPrivacyRuleKind {
 }
 
 extension AiPrivacyRuleAppliesTo {
-    var s309Label: String {
+    var aiPrivacyRulesLabel: String {
         switch self {
         case .remoteAi: "Remote AI"
         case .localAndRemoteAi: "Local and remote AI"
@@ -330,7 +330,7 @@ extension AiPrivacyRuleAppliesTo {
 }
 
 extension AiPrivacyDecision {
-    var s309Label: String {
+    var aiPrivacyRulesLabel: String {
         switch self {
         case .allowed: "Allowed"
         case .denied: "Denied"
@@ -340,7 +340,7 @@ extension AiPrivacyDecision {
 }
 
 extension AiPrivacySkippedReason {
-    var s309Label: String {
+    var aiPrivacyRulesLabel: String {
         switch self {
         case .privacyGateDisabled: "privacy gate disabled"
         case .scopeNotAllowed: "scope not allowed"
@@ -355,7 +355,7 @@ extension AiPrivacySkippedReason {
 }
 
 extension AiPrivacyProviderGateReason {
-    var s309Label: String {
+    var aiPrivacyRulesLabel: String {
         switch self {
         case .privacyGateDisabled: "privacy_gate_disabled"
         case .scopeNotAllowed: "scope_not_allowed"

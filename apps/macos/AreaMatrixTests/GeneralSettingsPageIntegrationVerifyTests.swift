@@ -3,20 +3,20 @@ import XCTest
 
 final class GeneralSettingsIntegrationTests: XCTestCase {
     @MainActor
-    func testS126PageIntegrationConnectsAllDeclaredCapabilitiesAndExitsBackToMain() async {
-        let initialOpening = RepositoryOpeningResult.s126IntegrationFixture(
+    func testGeneralSettingsPageIntegrationConnectsAllDeclaredCapabilitiesAndExitsBackToMain() async {
+        let initialOpening = RepositoryOpeningResult.generalSettingsIntegrationFixture(
             repoPath: "/tmp/repo",
             defaultMode: "Copied"
         )
-        let refreshedOpening = RepositoryOpeningResult.s126IntegrationFixture(
+        let refreshedOpening = RepositoryOpeningResult.generalSettingsIntegrationFixture(
             repoPath: "/tmp/repo",
             defaultMode: "Moved"
         )
-        let opener = S126RecordingRepositoryOpener(opening: refreshedOpening)
+        let opener = GeneralSettingsRecordingRepositoryOpener(opening: refreshedOpening)
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
-            accessibilityAnnouncer: S126NoopAccessibilityAnnouncer(),
+            accessibilityAnnouncer: GeneralSettingsNoopAccessibilityAnnouncer(),
             helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
@@ -38,25 +38,25 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS126PageIntegrationCoversConfigMoveOverviewIgnoreRulesAndFailureRecovery() async throws {
-        let (repoURL, sourceURL) = try makeS126IntegrationRepositoryFixture()
+    func testGeneralSettingsPageIntegrationCoversConfigMoveOverviewIgnoreRulesAndFailureRecovery() async throws {
+        let (repoURL, sourceURL) = try makeGeneralSettingsIntegrationRepositoryFixture()
         defer { try? FileManager.default.removeItem(at: repoURL) }
 
-        let updater = S126IntegrationUpdater(results: [
+        let updater = GeneralSettingsIntegrationUpdater(results: [
             .success,
             .success,
             .failure(CoreError.Config(reason: "locked")),
             .success
         ])
-        let ignoreRulesManager = S126RecordingIgnoreRulesManager(openResult: .missingThenSuccess)
+        let ignoreRulesManager = GeneralSettingsRecordingIgnoreRulesManager(openResult: .missingThenSuccess)
         let model = GeneralSettingsModel(
             repoPath: repoURL.path,
-            loader: S126StaticConfigLoader(config: RepoConfigSnapshot.s126IntegrationFixture(repoPath: repoURL.path)),
+            loader: GeneralSettingsStaticConfigLoader(config: RepoConfigSnapshot.generalSettingsIntegrationFixture(repoPath: repoURL.path)),
             updater: updater,
             rootOverviewInspector: LocalRootOverviewFileInspector(),
-            rootOverviewRevealer: S126NoopFileRevealer(),
+            rootOverviewRevealer: GeneralSettingsNoopFileRevealer(),
             ignoreRulesManager: ignoreRulesManager,
-            errorMapper: S126IntegrationErrorMapper()
+            errorMapper: GeneralSettingsIntegrationErrorMapper()
         )
 
         await model.load()
@@ -78,7 +78,7 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
         XCTAssertEqual(model.draft?.defaultStorageMode, .move)
         XCTAssertEqual(model.draft?.overviewOutput, .rootAreaMatrixFile)
         XCTAssertNil(model.saveError)
-        try assertS126FileBoundaries(repoURL: repoURL, sourceURL: sourceURL)
+        try assertGeneralSettingsFileBoundaries(repoURL: repoURL, sourceURL: sourceURL)
         XCTAssertEqual(ignoreRulesManager.createdPaths, [repoURL.path])
         XCTAssertEqual(ignoreRulesManager.openedPaths, [repoURL.path, repoURL.path])
 
@@ -95,17 +95,17 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS126LoadingStateKeepsCloseSettingsExit() {
+    func testGeneralSettingsLoadingStateKeepsCloseSettingsExit() {
         var didClose = false
         let loadingContent = GeneralSettingsLoadingContent {
             didClose = true
         }
-        let bodyText = s126MirrorDescription(of: loadingContent.body)
+        let bodyText = generalSettingsMirrorDescription(of: loadingContent.body)
 
         XCTAssertTrue(bodyText.contains("Loading settings..."))
         XCTAssertTrue(bodyText.contains("Button"))
         XCTAssertTrue(bodyText.contains("Close"))
-        XCTAssertTrue(bodyText.contains("S1-26-loading-close-settings"))
+        XCTAssertTrue(bodyText.contains("general-settings-loading-close-settings"))
 
         loadingContent.onClose()
         XCTAssertTrue(didClose)
@@ -113,7 +113,7 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
 }
 
 extension AiFallbackStatus {
-    static func s304PrivacySkipped(callLogID: Int64) -> AiFallbackStatus {
+    static func aiCategorySuggestionPrivacySkipped(callLogID: Int64) -> AiFallbackStatus {
         AiFallbackStatus(
             operation: .classificationSuggestion,
             kind: .privacySkipped,
@@ -132,7 +132,7 @@ extension AiFallbackStatus {
         )
     }
 
-    static func s304ProviderUnavailable(callLogID: Int64) -> AiFallbackStatus {
+    static func aiCategorySuggestionProviderUnavailable(callLogID: Int64) -> AiFallbackStatus {
         AiFallbackStatus(
             operation: .classificationSuggestion,
             kind: .providerUnavailable,
@@ -151,7 +151,7 @@ extension AiFallbackStatus {
         )
     }
 
-    static func s304InternalFailure() -> AiFallbackStatus {
+    static func aiCategorySuggestionInternalFailure() -> AiFallbackStatus {
         AiFallbackStatus(
             operation: .classificationSuggestion,
             kind: .internalFailure,
@@ -172,35 +172,35 @@ extension AiFallbackStatus {
 }
 
 @MainActor
-func s304SuggestionModel(
+func aiCategorySuggestionSuggestionModel(
     request: AIClassificationSuggestionRequestState,
-    bridge: S304SuggestionBridge,
-    fallbackBridge: S304FallbackBridge = S304FallbackBridge()
+    bridge: AICategorySuggestionSuggestionBridge,
+    fallbackBridge: AICategorySuggestionFallbackBridge = AICategorySuggestionFallbackBridge()
 ) -> AIClassificationSuggestionPanelModel {
     AIClassificationSuggestionPanelModel(
         repoPath: "/tmp/repo",
         request: request,
         suggester: bridge,
         fallbackReader: fallbackBridge,
-        errorMapper: S304ErrorMapper()
+        errorMapper: AICategorySuggestionErrorMapper()
     )
 }
 
-struct S304ErrorMapper: CoreErrorMapping {
+struct AICategorySuggestionErrorMapper: CoreErrorMapping {
     func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .config,
-            userMessage: "Mapped C3-04 core error",
+            userMessage: "Mapped ai-classification-suggestion core error",
             severity: .medium,
             suggestedAction: "Open AI settings",
             recoverability: .userActionRequired,
-            rawContext: "S3-04 C3-04"
+            rawContext: "ai-category-suggestion ai-classification-suggestion"
         )
     }
 }
 
-private func makeS126IntegrationRepositoryFixture() throws -> (repoURL: URL, sourceURL: URL) {
-    let repoURL = try makeS126IntegrationTemporaryRepository()
+private func makeGeneralSettingsIntegrationRepositoryFixture() throws -> (repoURL: URL, sourceURL: URL) {
+    let repoURL = try makeGeneralSettingsIntegrationTemporaryRepository()
     try FileManager.default.createDirectory(
         at: repoURL.appendingPathComponent(".areamatrix", isDirectory: true),
         withIntermediateDirectories: true
@@ -215,23 +215,23 @@ private func makeS126IntegrationRepositoryFixture() throws -> (repoURL: URL, sou
     return (repoURL, sourceURL)
 }
 
-private func assertS126FileBoundaries(repoURL: URL, sourceURL: URL) throws {
+private func assertGeneralSettingsFileBoundaries(repoURL: URL, sourceURL: URL) throws {
     XCTAssertTrue(FileManager.default.fileExists(atPath: sourceURL.path))
     XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
     XCTAssertEqual(try String(contentsOf: repoURL.appendingPathComponent("README.md")), "readme")
 }
 
-private enum S126UpdateResult {
+private enum GeneralSettingsUpdateResult {
     case success
     case failure(Error)
 }
 
-private actor S126IntegrationUpdater: CoreConfigurationUpdating {
-    private let results: [S126UpdateResult]
+private actor GeneralSettingsIntegrationUpdater: CoreConfigurationUpdating {
+    private let results: [GeneralSettingsUpdateResult]
     private var index = 0
     private var configs: [RepoConfigSnapshot] = []
 
-    init(results: [S126UpdateResult]) {
+    init(results: [GeneralSettingsUpdateResult]) {
         self.results = results
     }
 
@@ -249,19 +249,19 @@ private actor S126IntegrationUpdater: CoreConfigurationUpdating {
     }
 }
 
-private enum S126IgnoreOpenResult {
+private enum GeneralSettingsIgnoreOpenResult {
     case success
     case missingThenSuccess
 }
 
 @MainActor
-private final class S126RecordingIgnoreRulesManager: RepositoryIgnoreRulesManaging {
-    private let openResult: S126IgnoreOpenResult
+private final class GeneralSettingsRecordingIgnoreRulesManager: RepositoryIgnoreRulesManaging {
+    private let openResult: GeneralSettingsIgnoreOpenResult
     private var openAttempts = 0
     private(set) var openedPaths: [String] = []
     private(set) var createdPaths: [String] = []
 
-    init(openResult: S126IgnoreOpenResult = .success) {
+    init(openResult: GeneralSettingsIgnoreOpenResult = .success) {
         self.openResult = openResult
     }
 
@@ -279,7 +279,7 @@ private final class S126RecordingIgnoreRulesManager: RepositoryIgnoreRulesManagi
     }
 }
 
-private actor S126StaticConfigLoader: CoreConfigurationLoading {
+private actor GeneralSettingsStaticConfigLoader: CoreConfigurationLoading {
     let config: RepoConfigSnapshot
 
     init(config: RepoConfigSnapshot) {
@@ -291,7 +291,7 @@ private actor S126StaticConfigLoader: CoreConfigurationLoading {
     }
 }
 
-private actor S126IntegrationErrorMapper: CoreErrorMapping {
+private actor GeneralSettingsIntegrationErrorMapper: CoreErrorMapping {
     func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .config,
@@ -299,12 +299,12 @@ private actor S126IntegrationErrorMapper: CoreErrorMapping {
             severity: .medium,
             suggestedAction: "Retry save",
             recoverability: .retryable,
-            rawContext: "S1-26"
+            rawContext: "general-settings"
         )
     }
 }
 
-private actor S126RecordingRepositoryOpener: CoreEmptyRepositoryOpening {
+private actor GeneralSettingsRecordingRepositoryOpener: CoreEmptyRepositoryOpening {
     let opening: RepositoryOpeningResult
     private var repoPaths: [String] = []
 
@@ -331,17 +331,17 @@ private actor S126RecordingRepositoryOpener: CoreEmptyRepositoryOpening {
 }
 
 @MainActor
-private final class S126NoopFileRevealer: RepositoryFileRevealing {
+private final class GeneralSettingsNoopFileRevealer: RepositoryFileRevealing {
     func revealFile(repoPath _: String, relativePath _: String) throws {}
 }
 
 @MainActor
-private final class S126NoopAccessibilityAnnouncer: AccessibilityAnnouncing {
+private final class GeneralSettingsNoopAccessibilityAnnouncer: AccessibilityAnnouncing {
     func announce(_: String) {}
 }
 
 private extension RepoConfigSnapshot {
-    static func s126IntegrationFixture(
+    static func generalSettingsIntegrationFixture(
         repoPath: String,
         defaultMode: String = "Copied",
         overviewOutput: String = "GeneratedOnly",
@@ -363,12 +363,12 @@ private extension RepoConfigSnapshot {
 }
 
 private extension RepositoryOpeningResult {
-    static func s126IntegrationFixture(
+    static func generalSettingsIntegrationFixture(
         repoPath: String,
         defaultMode: String
     ) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
-            config: .s126IntegrationFixture(repoPath: repoPath, defaultMode: defaultMode),
+            config: .generalSettingsIntegrationFixture(repoPath: repoPath, defaultMode: defaultMode),
             tree: RepositoryTreeNodeSnapshot(
                 slug: "__root__",
                 displayName: "资料库",
@@ -378,14 +378,14 @@ private extension RepositoryOpeningResult {
                 ]
             ),
             currentCategoryFiles: [
-                FileEntrySnapshot.s126IntegrationFixture(id: 1, currentName: "source.pdf")
+                FileEntrySnapshot.generalSettingsIntegrationFixture(id: 1, currentName: "source.pdf")
             ]
         )
     }
 }
 
 private extension FileEntrySnapshot {
-    static func s126IntegrationFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
+    static func generalSettingsIntegrationFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
         FileEntrySnapshot(
             id: id,
             path: "docs/\(currentName)",
@@ -403,26 +403,26 @@ private extension FileEntrySnapshot {
     }
 }
 
-private func makeS126IntegrationTemporaryRepository() throws -> URL {
+private func makeGeneralSettingsIntegrationTemporaryRepository() throws -> URL {
     let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixS126Integration-\(UUID().uuidString)", isDirectory: true)
+        .appendingPathComponent("AreaMatrixGeneralSettingsIntegration-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
 }
 
-private func s126MirrorDescription(of value: Any) -> String {
+private func generalSettingsMirrorDescription(of value: Any) -> String {
     var lines: [String] = []
-    s126AppendMirrorDescription(of: value, to: &lines)
+    generalSettingsAppendMirrorDescription(of: value, to: &lines)
     return lines.joined(separator: "\n")
 }
 
-private func s126AppendMirrorDescription(of value: Any, to lines: inout [String]) {
+private func generalSettingsAppendMirrorDescription(of value: Any, to lines: inout [String]) {
     lines.append(String(describing: type(of: value)))
     lines.append(String(describing: value))
     for child in Mirror(reflecting: value).children {
         if let label = child.label {
             lines.append(label)
         }
-        s126AppendMirrorDescription(of: child.value, to: &lines)
+        generalSettingsAppendMirrorDescription(of: child.value, to: &lines)
     }
 }

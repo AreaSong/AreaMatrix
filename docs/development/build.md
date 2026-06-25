@@ -228,18 +228,11 @@ PR 要全绿才能合并。
 
 ---
 
-## 发布构建（Stage 1 alpha 起激活）
+## 发布构建
 
-Stage 1 不做公开发布，但 alpha tester 内部分发仍必须走 Developer ID 签名、公证、DMG
-和干净 Mac 首启验证。Stage 1 历史发布放行状态以
-[v1 release checklist](../../workflow/versions/v1-mvp/evidence/release-checklist.md) 为准；该清单存在 P0/P1、
-手工冒烟 pending、性能基线缺口或签名/公证未知时，不得把构建产物标记为可分发。
-
-当前若未加入付费 Apple Developer Program，只能制作 local QA build。local QA build 可以用于本机
-或受控测试机验证启动、恢复和包结构，但它不是 Developer ID notarized app，不能替代 Stage 1
-alpha 分发门禁。若需要给可信测试者先下载试用，可以使用
-`v0.1.0-unnotarized-preview.2` 这种 GitHub prerelease 轨道；该轨道仍是未公证预览版，
-不是正式 alpha。
+面向用户分发的构建必须走 Developer ID 签名、公证、DMG 和干净 Mac 首启验证。v1 历史发布放行状态以
+[v1 release checklist](../../workflow/versions/v1-mvp/evidence/release-checklist.md) 为准；该清单是归档证据，
+不作为后续版本的发布命名模板。
 
 发布凭据预检：
 
@@ -251,130 +244,9 @@ alpha 分发门禁。若需要给可信测试者先下载试用，可以使用
 preflight: BLOCKED`，说明当前机器不能完成 Developer ID 签名或 notarytool 公证；可以把
 输出写入 release checklist 作为阻断证据，但不能把产物标记为可分发。
 
-### 不付费 local QA 构建
-
-```bash
-./dev build core --profile release
-xcodebuild -project apps/macos/AreaMatrix.xcodeproj \
-  -scheme AreaMatrix \
-  -configuration Release \
-  -derivedDataPath build/ \
-  CODE_SIGNING_ALLOWED=YES \
-  CODE_SIGN_STYLE=Manual \
-  CODE_SIGN_IDENTITY=- \
-  DEVELOPMENT_TEAM= \
-  LIBRARY_SEARCH_PATHS="$(pwd)/core/target/aarch64-apple-darwin/release" \
-  OTHER_LDFLAGS="$(pwd)/core/target/aarch64-apple-darwin/release/libarea_matrix_core.a"
-
-APP_PATH="build/Build/Products/Release/AreaMatrix.app"
-codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-codesign -dv --verbose=4 "$APP_PATH"
-otool -L "$APP_PATH/Contents/MacOS/AreaMatrix"
-```
-
-local QA DMG：
-
-```bash
-hdiutil create \
-  -volname "AreaMatrix 0.1.0 Local QA" \
-  -srcfolder "$APP_PATH" \
-  -ov \
-  -format UDZO \
-  AreaMatrix-0.1.0-local-qa.dmg
-shasum -a 256 AreaMatrix-0.1.0-local-qa.dmg
-hdiutil attach AreaMatrix-0.1.0-local-qa.dmg -nobrowse
-codesign --verify --deep --strict --verbose=2 \
-  "/Volumes/AreaMatrix 0.1.0 Local QA/AreaMatrix.app"
-hdiutil detach "/Volumes/AreaMatrix 0.1.0 Local QA"
-```
-
-`CODE_SIGN_IDENTITY=-` 只生成 ad-hoc signed app，用于本机包结构和启动行为验证；它不是
-Developer ID 签名。`AreaMatrix-0.1.0-local-qa.dmg` 只能标记为 internal QA artifact，
-不得写成 Developer ID 签名、公证或正式 alpha 分发证据。
-Stage 1 已生成的历史 local QA DMG 归档在
-`workflow/versions/v1-mvp/evidence/artifacts/AreaMatrix-0.1.0-local-qa.dmg`。
-
-### 未公证预览 DMG
-
-`unnotarized-preview` 使用同一条 local QA 构建底座，但可以上传为 GitHub prerelease，供可信
-测试者下载。它必须标记为未公证预览版，不能替代 Developer ID 签名、公证或正式 alpha 门禁。
-
-```bash
-./dev release local-qa \
-  --build-number 202606161707 \
-  --derived-data-path build/UnnotarizedPreview-0.1.0-preview.2-cli
-
-APP_PATH="build/UnnotarizedPreview-0.1.0-preview.2-cli/Build/Products/Release/AreaMatrix.app"
-hdiutil create \
-  -volname "AreaMatrix 0.1.0 Unnotarized Preview 2" \
-  -srcfolder "$APP_PATH" \
-  -ov \
-  -format UDZO \
-  AreaMatrix-v0.1.0-unnotarized-preview.2.dmg
-shasum -a 256 AreaMatrix-v0.1.0-unnotarized-preview.2.dmg
-```
-
-`v0.1.0-unnotarized-preview.2` 当前产物：
-
-- `workflow/versions/v1-mvp/evidence/artifacts/AreaMatrix-v0.1.0-unnotarized-preview.2.dmg`（Stage 1 archive copy；原始输出文件名为 `AreaMatrix-v0.1.0-unnotarized-preview.2.dmg`）
-- SHA-256: `d01d44c82e2287c0f1cd12aea4e78ece46301fe2f4709b2598c5710ba89864b2`
-- app version: `0.1.0`
-- build number: `202606161707`
-- executable SHA-256:
-  `1a4881522acb93282cb6e0252810ea3849c7ab1095e74b8583a40e8018f28aea`
-- signing: `Signature=adhoc`，`TeamIdentifier=not set`
-
-预览 DMG 验证：
-
-```bash
-hdiutil attach AreaMatrix-v0.1.0-unnotarized-preview.2.dmg -nobrowse
-VOL="/Volumes/AreaMatrix 0.1.0 Unnotarized Preview 2"
-codesign --verify --deep --strict --verbose=2 "$VOL/AreaMatrix.app"
-codesign -dv --verbose=4 "$VOL/AreaMatrix.app"
-otool -L "$VOL/AreaMatrix.app/Contents/MacOS/AreaMatrix"
-hdiutil detach "$VOL"
-```
-
-验证通过只能说明 DMG 完整、bundle 级 ad-hoc 签名通过、Rust core 已静态链接；它不能证明
-Gatekeeper、Developer ID、notarization、stapler 或干净 Mac 首启。
-
-同机 local QA 首启交互 smoke：
-
-```bash
-open -n "/Volumes/AreaMatrix 0.1.0 Local QA/AreaMatrix.app"
-
-osascript <<'APPLESCRIPT'
-tell application "System Events"
-  tell process "AreaMatrix"
-    set frontmost to true
-    set position of window 1 to {60, 50}
-    set size of window 1 to {1500, 980}
-    get {exists window 1, position of window 1, size of window 1, name of window 1}
-  end tell
-end tell
-APPLESCRIPT
-
-cat > /tmp/areamatrix_scroll_down.swift <<'SWIFT'
-import CoreGraphics
-import Foundation
-
-let source = CGEventSource(stateID: .hidSystemState)
-let point = CGPoint(x: 900, y: 610)
-CGEvent(mouseEventSource: source, mouseType: .mouseMoved, mouseCursorPosition: point, mouseButton: .left)?
-    .post(tap: .cghidEventTap)
-Thread.sleep(forTimeInterval: 0.1)
-for _ in 0..<7 {
-    CGEvent(scrollWheelEvent2Source: source, units: .line, wheelCount: 1, wheel1: -6, wheel2: 0, wheel3: 0)?
-        .post(tap: .cghidEventTap)
-    Thread.sleep(forTimeInterval: 0.08)
-}
-print("scroll_probe=posted events=7 point=900,610")
-SWIFT
-xcrun swift /tmp/areamatrix_scroll_down.swift
-```
-
-若该 smoke 通过，只能写成 local QA 首启交互证据。它不能证明干净 Mac 首启、Gatekeeper、
-Developer ID 签名、公证或正式 alpha 分发可用。
+本机工程验证可以使用 Xcode Release 构建、`codesign --verify` 和 `otool -L` 检查包结构与静态链接。
+若没有 Developer ID signing identity 或 notarytool profile，只能记录为工程验证，不能写成可分发证据。
+v1 的受控环境构建、未公证下载和交互 smoke 细节保留在 v1 evidence 归档中；当前构建指南不复用这些历史命名。
 
 ### 版本号
 
@@ -440,7 +312,7 @@ target 的 macOS universal build 视为通过。补齐 target 后还需确保 `s
 
 当前 Codex sandbox 的已知阻断形态：
 
-- 默认 `rustup target add x86_64-apple-darwin` 可能在 component 下载或缓存清理阶段失败。
+- 默认 `rustup target add x86_64-apple-darwin` 可能在 component 下载或缓存清理时失败。
 - 使用临时 `RUSTUP_HOME` 复核时，若无法解析 `static.rust-lang.org`，说明当前环境不能补齐
   Rust target。
 - `brew install swiftformat swiftlint` 需要 Homebrew prefix 与 cache 可写；若 `/opt/homebrew`

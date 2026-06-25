@@ -387,14 +387,14 @@ def status_fragment(progress_file: Path, lock_dir: Path, log_root: Path, drain_r
             lines.append(f"- lock_command: {lock['command']}")
         activity = lock.get("activity")
         if isinstance(activity, dict) and activity:
-            stage = activity.get("stage") or "unknown"
+            mode = activity.get("mode") or activity.get("stage") or "unknown"
             label = activity.get("task_label") or "unknown"
             attempt = activity.get("attempt") or "unknown"
             status = activity.get("status") or "unknown"
             started_at = activity.get("started_at") or "unknown"
             lines.extend(
                 [
-                    f"- live_activity: {stage} task={label} attempt={attempt} status={status}",
+                    f"- live_activity: {mode} task={label} attempt={attempt} status={status}",
                     f"- live_activity_started_at: {started_at}",
                     f"- live_activity_elapsed: {elapsed_since(started_at)}",
                 ]

@@ -28,7 +28,7 @@ extension MainFileListModel {
     func completeClassifierRuleSave(_ savedRule: ClassifierRuleSnapshot) {
         guard let destination = pendingActionDestination,
               destination.classifierRuleRoute != nil else { return }
-        if let handoff = destination.classifierRuleRoute?.handoff, handoff.sourcePageID == "S3-04" {
+        if let handoff = destination.classifierRuleRoute?.handoff, handoff.sourcePageID == "ai-category-suggestion" {
             pendingActionDestination = .aiClassificationSuggestion(
                 fileID: handoff.fileID,
                 returnContext: AIClassificationSuggestionReturnContext(
@@ -49,7 +49,7 @@ extension MainFileListModel {
             return
         }
         let handoff = route.handoff
-        if handoff.sourcePageID == "S3-04" {
+        if handoff.sourcePageID == "ai-category-suggestion" {
             pendingActionDestination = .aiClassificationSuggestion(
                 fileID: handoff.fileID,
                 returnContext: AIClassificationSuggestionReturnContext(
@@ -89,7 +89,7 @@ extension MainFileListModel {
             file: file,
             targetCategory: targetCategory,
             moveFile: moveFile,
-            sourcePageID: "S2-16",
+            sourcePageID: "classifier-correction",
             aiProvenance: nil
         )
     }

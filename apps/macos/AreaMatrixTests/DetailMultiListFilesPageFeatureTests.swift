@@ -2,14 +2,14 @@
 import XCTest
 
 final class DetailMultiListFilesPageFeatureTests: XCTestCase {
-    func testS209BatchAddTagsValidationNormalizesAndBlocksInvalidPendingTags() {
+    func testBatchAddTagsBatchAddTagsValidationNormalizesAndBlocksInvalidPendingTags() {
         let first = BatchTagValidation.pendingStateAfterAdding(
             input: " ClientA ",
             pendingTags: [],
-            catalog: .s209TagCatalogFixture(fileID: 31),
+            catalog: .batchAddTagsTagCatalogFixture(fileID: 31),
             disabledReason: nil
         )
-        let catalog = TagSetSnapshot.s209TagCatalogFixture(fileID: 31)
+        let catalog = TagSetSnapshot.batchAddTagsTagCatalogFixture(fileID: 31)
         let duplicate = BatchTagValidation.pendingStateAfterAdding(
             input: "clienta",
             pendingTags: first.pendingTags,
@@ -52,16 +52,16 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS209BatchAddTagsLoadsCandidatesAndAppliesThroughC206CoreTagCRUD() async {
-        let store = S209RecordingBatchTagStore(results: [
-            .tagSet(.success(.s209TagCatalogFixture(fileID: 31))),
-            .success(.s209Fixture())
+    func testBatchAddTagsBatchAddTagsLoadsCandidatesAndAppliesThroughBatchAddTagsCoreCoreTagCRUD() async {
+        let store = BatchAddTagsRecordingBatchTagStore(results: [
+            .tagSet(.success(.batchAddTagsTagCatalogFixture(fileID: 31))),
+            .success(.batchAddTagsFixture())
         ])
         let catalog = await BatchTagCatalogAction.load(
             repoPath: "/tmp/repo",
             fileIDs: [31, 32],
             tagStore: store,
-            errorMapper: DetailMetaErrorMapper(mapping: .s209TagDb())
+            errorMapper: DetailMetaErrorMapper(mapping: .batchAddTagsTagDb())
         )
         let candidates = BatchTagValidation.visibleCandidates(
             input: "",
@@ -73,7 +73,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
             fileIDs: [32, 31],
             tags: ["urgent", "clienta"],
             tagStore: store,
-            errorMapper: DetailMetaErrorMapper(mapping: .s209TagDb())
+            errorMapper: DetailMetaErrorMapper(mapping: .batchAddTagsTagDb())
         )
         let requests = await store.batchRequests()
         let listRequests = await store.listRequests()
@@ -84,10 +84,10 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         XCTAssertEqual(requests, ["/tmp/repo|32,31|urgent,clienta"])
         XCTAssertEqual(result.report?.addedCount, 3)
         XCTAssertEqual(result.report?.skippedCount, 1)
-        XCTAssertEqual(result.report?.undoToken, "undo-c2-06")
+        XCTAssertEqual(result.report?.undoToken, "undo-batch-tags")
         XCTAssertNil(result.failure)
         guard let report = result.report else {
-            return XCTFail("Expected C2-06 batch_add_tags report")
+            return XCTFail("Expected batch-add-tags-core batch_add_tags report")
         }
         let presentation = BatchMutationReportPresentation(report: report)
         XCTAssertEqual(presentation.addedSummaryText, "Added to 2 files (3 tag relations)")
@@ -95,11 +95,11 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         XCTAssertEqual(presentation.failedSummaryText, "0 failed")
     }
 
-    func testS209BatchAddTagsValidationBlocksReadOnlyAndDuplicatePendingTags() {
+    func testBatchAddTagsBatchAddTagsValidationBlocksReadOnlyAndDuplicatePendingTags() {
         let readOnly = BatchTagValidation.pendingStateAfterAdding(
             input: "urgent",
             pendingTags: [],
-            catalog: .s209TagCatalogFixture(fileID: 31),
+            catalog: .batchAddTagsTagCatalogFixture(fileID: 31),
             disabledReason: MainFileWriteActionDisabledReason.repoReadOnly.rawValue
         )
         let chips = BatchTagValidation.pendingChips(
@@ -118,10 +118,10 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS209BatchAddTagsMapsC206FailureWithoutMockingSuccess() async {
-        let mapping = CoreErrorMappingSnapshot.s209TagDb()
+    func testBatchAddTagsBatchAddTagsMapsBatchAddTagsCoreFailureWithoutMockingSuccess() async {
+        let mapping = CoreErrorMappingSnapshot.batchAddTagsTagDb()
         let mapper = DetailMetaErrorMapper(mapping: mapping)
-        let store = S209RecordingBatchTagStore(results: [
+        let store = BatchAddTagsRecordingBatchTagStore(results: [
             .failure(CoreError.Db(message: "tag metadata locked"))
         ])
         let result = await BatchAddTagsAction.apply(
@@ -140,7 +140,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         XCTAssertEqual(mappedErrors, [CoreError.Db(message: "tag metadata locked")])
     }
 
-    func testS115BuildsMultiSelectionSummaryFromC111AndC112Details() {
+    func testDetailMultiSelectBuildsMultiSelectionSummaryFromListFilesCoreAndGetFileDetailCoreDetails() {
         let pdf = FileEntrySnapshot.detailMultiFixture(
             id: 31,
             currentName: "contract.pdf",
@@ -177,7 +177,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         XCTAssertEqual(summary.warningMessages, ["某些条目的来源路径可能在资料库外"])
     }
 
-    func testS115KeepsPartialSummaryWhenC112MetadataIsUnavailable() {
+    func testDetailMultiSelectKeepsPartialSummaryWhenGetFileDetailCoreMetadataIsUnavailable() {
         let available = FileEntrySnapshot.detailMultiFixture(
             id: 41,
             currentName: "available.pdf",
@@ -205,7 +205,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS115MultiSelectionRefreshesEachSelectedFileThroughC112GetFile() async {
+    func testDetailMultiSelectMultiSelectionRefreshesEachSelectedFileThroughGetFileDetailCoreGetFile() async {
         let first = FileEntrySnapshot.detailMultiFixture(id: 33, currentName: "first.pdf", sizeBytes: 100)
         let second = FileEntrySnapshot.detailMultiFixture(id: 34, currentName: "second.pdf", sizeBytes: 100)
         let refreshedFirst = FileEntrySnapshot.detailMultiFixture(id: 33, currentName: "first.pdf", sizeBytes: 500)
@@ -240,7 +240,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS115MapsC112FailureWhileKeepingAvailableMultiSelectionSummary() async {
+    func testDetailMultiSelectMapsGetFileDetailCoreFailureWhileKeepingAvailableMultiSelectionSummary() async {
         let first = FileEntrySnapshot.detailMultiFixture(id: 43, currentName: "first.pdf")
         let second = FileEntrySnapshot.detailMultiFixture(id: 44, currentName: "missing.pdf")
         let mapping = CoreErrorMappingSnapshot.detailMultiFileNotFound()
@@ -274,7 +274,7 @@ private struct DetailMultiFileDetailRequest: Equatable {
     var fileID: Int64
 }
 
-private actor S209RecordingBatchTagStore: CoreTagCRUD {
+private actor BatchAddTagsRecordingBatchTagStore: CoreTagCRUD {
     enum Result {
         case tagSet(Swift.Result<TagSetSnapshot, Error>)
         case success(BatchMutationReportSnapshot)
@@ -302,11 +302,11 @@ private actor S209RecordingBatchTagStore: CoreTagCRUD {
     }
 
     func addTag(repoPath _: String, fileID _: Int64, tag _: String) async throws -> TagSetSnapshot {
-        throw CoreError.Internal(message: "S2-09 C2-06 must use batch_add_tags")
+        throw CoreError.Internal(message: "batch-add-tags batch-add-tags-core must use batch_add_tags")
     }
 
     func removeTag(repoPath _: String, fileID _: Int64, tag _: String) async throws -> TagSetSnapshot {
-        throw CoreError.Internal(message: "S2-09 C2-06 must not remove tags")
+        throw CoreError.Internal(message: "batch-add-tags batch-add-tags-core must not remove tags")
     }
 
     func batchAddTags(repoPath: String, fileIDs: [Int64], tags: [String]) async throws -> BatchMutationReportSnapshot {
@@ -434,30 +434,30 @@ private extension CoreErrorMappingSnapshot {
             severity: .medium,
             suggestedAction: "刷新当前选择，确认文件是否仍在资料库中。",
             recoverability: .refreshRequired,
-            rawContext: "S1-15 C1-12 get_file"
+            rawContext: "file-list file-detail-core get_file"
         )
     }
 
-    static func s209TagDb() -> CoreErrorMappingSnapshot {
+    static func batchAddTagsTagDb() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .db,
             userMessage: "无法批量添加标签",
             severity: .medium,
             suggestedAction: "请保留待添加标签并重试。",
             recoverability: .retryable,
-            rawContext: "S2-09 C2-06 batch_add_tags"
+            rawContext: "batch-add-tags batch-add-tags-core batch_add_tags"
         )
     }
 }
 
 extension TagSetSnapshot {
-    static func s209TagCatalogFixture(fileID: Int64) -> TagSetSnapshot {
-        let urgent = TagRecordSnapshot.s209Tag(value: "urgent", fileCount: 3)
-        let client = TagRecordSnapshot.s209Tag(value: "clienta", fileCount: 1)
+    static func batchAddTagsTagCatalogFixture(fileID: Int64) -> TagSetSnapshot {
+        let urgent = TagRecordSnapshot.batchAddTagsTag(value: "urgent", fileCount: 3)
+        let client = TagRecordSnapshot.batchAddTagsTag(value: "clienta", fileCount: 1)
         return TagSetSnapshot(
             fileID: fileID,
             fileTags: [],
-            availableTags: [urgent, client, .s209Tag(value: "blocked", fileCount: 0, disabled: true)],
+            availableTags: [urgent, client, .batchAddTagsTag(value: "blocked", fileCount: 0, disabled: true)],
             recentTags: [urgent, client],
             updatedAt: 1_700_000_000
         )
@@ -465,7 +465,7 @@ extension TagSetSnapshot {
 }
 
 private extension TagRecordSnapshot {
-    static func s209Tag(value: String, fileCount: Int64, disabled: Bool = false) -> TagRecordSnapshot {
+    static func batchAddTagsTag(value: String, fileCount: Int64, disabled: Bool = false) -> TagRecordSnapshot {
         TagRecordSnapshot(
             value: value,
             label: value,
@@ -478,7 +478,7 @@ private extension TagRecordSnapshot {
 }
 
 private extension BatchMutationReportSnapshot {
-    static func s209Fixture() -> BatchMutationReportSnapshot {
+    static func batchAddTagsFixture() -> BatchMutationReportSnapshot {
         BatchMutationReportSnapshot(
             requestedFileCount: 2,
             requestedTagCount: 2,
@@ -491,7 +491,7 @@ private extension BatchMutationReportSnapshot {
                 BatchMutationItemResultSnapshot(fileID: 32, tag: "urgent", status: .added, error: nil),
                 BatchMutationItemResultSnapshot(fileID: 32, tag: "clienta", status: .alreadyHadTag, error: nil)
             ],
-            undoToken: "undo-c2-06"
+            undoToken: "undo-batch-tags"
         )
     }
 }

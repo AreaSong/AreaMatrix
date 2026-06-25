@@ -80,8 +80,8 @@ struct AreaMatrixAmbientBackground: View {
                 .blur(radius: colorScheme == .dark ? 100 : 75)
                 .blendMode(colorScheme == .dark ? .screen : .multiply)
                 .opacity(colorScheme == .dark ? 0.9 : 0.6)
-                .animation(.areaMatrixStageEnterExit, value: scene)
-                .animation(.areaMatrixStageParallax, value: parallax)
+                .animation(.areaMatrixSceneEnterExit, value: scene)
+                .animation(.areaMatrixSceneParallax, value: parallax)
             }
 
             RadialGradient(
@@ -95,7 +95,7 @@ struct AreaMatrixAmbientBackground: View {
             )
             .allowsHitTesting(false)
         }
-        .animation(.areaMatrixStageEnterExit, value: colorScheme)
+        .animation(.areaMatrixSceneEnterExit, value: colorScheme)
     }
 
     private var blob1Transform: AreaMatrixBlobTransform {

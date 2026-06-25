@@ -7,9 +7,9 @@ public static class PlatformDifferencesTests
 {
     public static async Task RunAllAsync()
     {
-        await WindowsHelpPageChecksC401BindingContract();
-        await WindowsHelpPageLoadsC417PlatformCapabilities();
-        WindowsCapabilityRowsCoverS4X02PageSpecMatrix();
+        await WindowsHelpPageChecksCrossPlatformBindingContractCoreBindingContract();
+        await WindowsHelpPageLoadsPlatformCapabilitiesCorePlatformCapabilities();
+        WindowsCapabilityRowsCoverPlatformDifferencesPageSpecMatrix();
         await CapabilityFailureShowsUnknownRowsWithoutStaticAvailability();
         await ContractFailureShowsRecoveryWithoutStaticSuccess();
         WindowsRepositorySettingsActionIsAvailable();
@@ -17,7 +17,7 @@ public static class PlatformDifferencesTests
         NativeClientExportsPlatformDifferenceCoreCalls();
     }
 
-    private static async Task WindowsHelpPageChecksC401BindingContract()
+    private static async Task WindowsHelpPageChecksCrossPlatformBindingContractCoreBindingContract()
     {
         FakePlatformDifferencesCoreBridge bridge = new(ContractReport(PlatformDifferencesBindingTarget.Kotlin));
         PlatformDifferencesViewModel model = new(bridge);
@@ -34,7 +34,7 @@ public static class PlatformDifferencesTests
         TestAssert.SequenceEqual([1L], bridge.BindingVersions, "requested versions");
     }
 
-    private static async Task WindowsHelpPageLoadsC417PlatformCapabilities()
+    private static async Task WindowsHelpPageLoadsPlatformCapabilitiesCorePlatformCapabilities()
     {
         FakePlatformDifferencesCoreBridge bridge = new(ContractReport(PlatformDifferencesBindingTarget.Kotlin))
         {
@@ -53,7 +53,7 @@ public static class PlatformDifferencesTests
             "capability row");
     }
 
-    private static void WindowsCapabilityRowsCoverS4X02PageSpecMatrix()
+    private static void WindowsCapabilityRowsCoverPlatformDifferencesPageSpecMatrix()
     {
         IReadOnlyList<string> rows = CapabilityReport().DisplayRows();
 
@@ -100,7 +100,7 @@ public static class PlatformDifferencesTests
         FakePlatformDifferencesCoreBridge bridge = new(ContractReport(PlatformDifferencesBindingTarget.Kotlin));
         PlatformDifferencesViewModel model = new(bridge);
 
-        TestAssert.True(model.CanOpenRepositorySettings, "S4-X-08 repository settings action");
+        TestAssert.True(model.CanOpenRepositorySettings, "repository-settings repository settings action");
         TestAssert.Equal(string.Empty, model.RepositorySettingsUnavailableText, "repository settings unavailable text");
     }
 
@@ -115,7 +115,7 @@ public static class PlatformDifferencesTests
         string page = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Features/Help/PlatformDifferencesView.xaml"));
 
-        TestAssert.Contains("help:PlatformDifferencesView", mainWindow, "S4-X-02 page host");
+        TestAssert.Contains("help:PlatformDifferencesView", mainWindow, "platform-differences page host");
         TestAssert.Contains("OpenPlatformDifferencesRequested", mainCode, "main window route");
         TestAssert.Contains("new PlatformDifferencesCoreBridge(coreClient)", mainCode, "real Core bridge");
         TestAssert.Contains("Label=\"Platform capabilities\"", mainView, "visible help action");
@@ -142,14 +142,14 @@ public static class PlatformDifferencesTests
             "uniffi_area_matrix_core_fn_func_inspect_binding_contract",
             nativeLibrary,
             "inspect_binding_contract native binding");
-        TestAssert.Contains("InspectBindingContractAsync", nativeClient, "C4-01 native client method");
-        TestAssert.Contains("InspectBindingContractChecksum = 34434", contract, "C4-01 checksum");
+        TestAssert.Contains("InspectBindingContractAsync", nativeClient, "binding-contract native client method");
+        TestAssert.Contains("InspectBindingContractChecksum = 34434", contract, "binding-contract checksum");
         TestAssert.Contains(
             "uniffi_area_matrix_core_fn_func_get_platform_capabilities",
             nativeLibrary,
             "get_platform_capabilities native binding");
-        TestAssert.Contains("GetPlatformCapabilitiesAsync", capabilityClient, "C4-17 native client method");
-        TestAssert.Contains("GetPlatformCapabilitiesChecksum = 42907", contract, "C4-17 checksum");
+        TestAssert.Contains("GetPlatformCapabilitiesAsync", capabilityClient, "platform-capabilities native client method");
+        TestAssert.Contains("GetPlatformCapabilitiesChecksum = 42907", contract, "platform-capabilities checksum");
     }
 
     private static PlatformDifferencesBindingContractReport ContractReport(
@@ -162,7 +162,7 @@ public static class PlatformDifferencesTests
             [
                 new PlatformDifferencesBindingApiContract(
                     "inspect_binding_contract",
-                    "C4-01",
+                    "binding-contract",
                     PlatformDifferencesBindingSupportStatus.Supported,
                     null)
             ],

@@ -8,7 +8,7 @@ private struct ClassifierNoopAnnouncer: AccessibilityAnnouncing {
 
 final class ClassifierSettingsPageFeatureTests: XCTestCase {
     @MainActor
-    func testLoadUsesC104ConfigSnapshotForVisibleClassifierSettings() async {
+    func testLoadUsesRepositoryConfigCoreConfigSnapshotForVisibleClassifierSettings() async {
         let loader = ClassifierSettingsRecordingLoader(result: .success(.classifierSettingsFixture(
             repoPath: "/tmp/repo",
             enableExtensionRules: false,

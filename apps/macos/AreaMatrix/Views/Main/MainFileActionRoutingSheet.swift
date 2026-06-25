@@ -136,7 +136,7 @@ struct MainFileActionRoutingSheet: View {
             mode: route.handoffMode,
             repoPath: repoPath,
             handoff: route.handoff,
-            onCancel: route.handoff.sourcePageID == "S3-04" ? onCancelClassifierRuleRoute : onDismiss,
+            onCancel: route.handoff.sourcePageID == "ai-category-suggestion" ? onCancelClassifierRuleRoute : onDismiss,
             onBack: onEditClassifierRule,
             onPreviewImpact: onPreviewClassifierRuleImpact,
             onSaved: onClassifierRuleSaved
@@ -159,7 +159,7 @@ struct SavedSearchPreview: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("S2-03-saved-search-preview")
+        .accessibilityIdentifier("saved-search-saved-search-preview")
     }
 }
 
@@ -200,7 +200,7 @@ struct SavedSearchSheetRouteView: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: "Save Search", pageID: "S2-03") {
+        MainFileActionSheetContainer(title: "Save Search", pageID: "saved-search") {
             Text("Save the current query as a Smart List. Files are not moved or duplicated.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -208,7 +208,7 @@ struct SavedSearchSheetRouteView: View {
             TextField("Name", text: $model.name)
                 .textFieldStyle(.roundedBorder)
                 .disabled(model.isSaving)
-                .accessibilityIdentifier("S2-03-saved-search-name")
+                .accessibilityIdentifier("saved-search-saved-search-name")
             Picker("Icon", selection: $model.icon) {
                 ForEach(SavedSearchSheetModel.icons, id: \.self) { icon in
                     Label(icon, systemImage: icon).tag(icon)
@@ -247,7 +247,7 @@ struct SavedSearchSheetRouteView: View {
         .task {
             await loadExistingSavedSearches()
         }
-        .accessibilityIdentifier("S2-03-search-route")
+        .accessibilityIdentifier("saved-search-search-route")
     }
 
     @ViewBuilder
@@ -255,19 +255,19 @@ struct SavedSearchSheetRouteView: View {
         if let validationMessage = model.validationMessage {
             Label(validationMessage, systemImage: "exclamationmark.triangle")
                 .foregroundStyle(.orange)
-                .accessibilityIdentifier("S2-03-validation-error")
+                .accessibilityIdentifier("saved-search-validation-error")
         }
         if let failure = model.saveFailure {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Label(failure.userMessage, systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.red)
-                    .accessibilityIdentifier("S2-03-save-error")
+                    .accessibilityIdentifier("saved-search-save-error")
                 Spacer()
                 Button("Retry") {
                     Task { await save() }
                 }
                 .disabled(!model.showsRetry || model.validationMessage != nil)
-                .accessibilityIdentifier("S2-03-save-retry")
+                .accessibilityIdentifier("saved-search-save-retry")
             }
         }
     }
@@ -358,8 +358,8 @@ struct SmartListManagementSheet: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: route.mode.title, pageID: "S2-06", content: { content })
-            .accessibilityIdentifier("S2-06-smart-list-management")
+        MainFileActionSheetContainer(title: route.mode.title, pageID: "smart-list-management", content: { content })
+            .accessibilityIdentifier("smart-list-management-smart-list-management")
             .task(id: model.queryDiagnosticTaskKey) {
                 await refreshQueryDiagnostic()
             }

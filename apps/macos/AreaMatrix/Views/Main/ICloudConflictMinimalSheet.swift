@@ -63,7 +63,7 @@ struct ICloudConflictMinimalSheet: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: "解决 iCloud 冲突", pageID: "S2-20") {
+        MainFileActionSheetContainer(title: "解决 iCloud 冲突", pageID: "icloud-conflict-review") {
             VStack(alignment: .leading, spacing: 12) {
                 Text("This is an iCloud conflicted copy. AreaMatrix will not delete any version automatically.")
                     .font(.callout)
@@ -82,7 +82,7 @@ struct ICloudConflictMinimalSheet: View {
                 await model.loadPreviewIfNeeded()
             }
         }
-        .accessibilityIdentifier("S2-20-C2-16-icloud-conflict-visual")
+        .accessibilityIdentifier("icloud-conflict-review-icloud-conflict-visual-icloud-conflict-visual")
     }
 
     @ViewBuilder
@@ -165,7 +165,7 @@ struct ICloudConflictMinimalSheet: View {
                 Button("Collect Diagnostics...", action: onCollectDiagnostics)
             }
         }
-        .accessibilityIdentifier("S1-25-C1-21-apply-failure")
+        .accessibilityIdentifier("icloud-conflict-minimal-error-mapping-apply-failure")
     }
 
     var actionButtons: some View {

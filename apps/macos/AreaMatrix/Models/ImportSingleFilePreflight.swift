@@ -133,9 +133,9 @@ enum ImportSingleFileConflictPage: Equatable {
     var routeLabel: String {
         switch self {
         case .duplicate:
-            "S1-22 conflict-duplicate"
+            "duplicate-conflict conflict-duplicate"
         case .name:
-            "S1-23 conflict-name"
+            "name-conflict conflict-name"
         }
     }
 

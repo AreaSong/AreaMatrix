@@ -6,7 +6,7 @@ docs:
     line_end: 30
     heading: 'Architecture Layers'
     excerpt: '七层模型描述的是抽象依赖关系，不是执行步骤。'
-    sha256: '7244ebf95bc2ae8f054f213f3e19b21237fa3480ae99f1a19de6e045c31da027'
+    sha256: '27a811f560af0e2078e32f3532bcc90a93c0a6b1524b1bb3d0b7c3558a8455e8'
     source: 'changes:template-docs-contract'
   - file: 'workflow/pipeline.md'
     line_start: 72

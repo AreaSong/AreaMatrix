@@ -7,12 +7,12 @@ public static class LinuxImportSmokeTests
 {
     public static void RunAll()
     {
-        ImportDialogExposesS4Lnx05C413UserActions();
+        ImportDialogExposesLinuxImportFlowDesktopImportFlowCoreUserActions();
         LinuxDesktopShellWiresImportDialogToRealCoreBridge();
         NativeClientExportsDesktopImportContract();
     }
 
-    private static void ImportDialogExposesS4Lnx05C413UserActions()
+    private static void ImportDialogExposesLinuxImportFlowDesktopImportFlowCoreUserActions()
     {
         XElement dialogRoot = LoadXml(RepositoryPath(
             "apps/linux/AreaMatrix/Features/Import/LinuxImportDialog.ui"));
@@ -25,8 +25,8 @@ public static class LinuxImportSmokeTests
         string resultModel = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Features/Import/LinuxImportViewModel.Results.cs"));
 
-        AssertObject(dialogRoot, "GtkDialog", "S4Lnx05ImportDialog");
-        AssertProperty(dialogRoot, "S4Lnx05ImportDialog", "title", "Import to AreaMatrix");
+        AssertObject(dialogRoot, "GtkDialog", "LinuxImportFlowImportDialog");
+        AssertProperty(dialogRoot, "LinuxImportFlowImportDialog", "title", "Import to AreaMatrix");
         AssertObject(dialogRoot, "GtkDropTarget", "ImportDropTarget");
         AssertProperty(dialogRoot, "ImportDropTarget", "actions", "copy");
         AssertButton(dialogRoot, "AddFilesButton", "Add files...", "import.add-files");

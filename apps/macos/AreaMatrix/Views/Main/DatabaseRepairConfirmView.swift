@@ -85,7 +85,7 @@ struct DBRepairConfirmView: View {
             await model.runStartupRecoveryCheckIfNeeded()
         }
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("S1-37-db-repair-confirm")
+        .accessibilityIdentifier("database-repair-db-repair-confirm")
     }
 
     private var header: some View {
@@ -158,7 +158,7 @@ struct DBRepairConfirmView: View {
             )
             .toggleStyle(.checkbox)
             .disabled(model.repairState.isRunning)
-            .accessibilityIdentifier("S1-37-C1-26-confirm-metadata-only")
+            .accessibilityIdentifier("database-repair-metadata-repair-confirm-metadata-only")
         }
     }
 
@@ -184,7 +184,7 @@ struct DBRepairConfirmView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .accessibilityIdentifier("S1-37-C1-26-diagnostics-collected")
+            .accessibilityIdentifier("database-repair-metadata-repair-diagnostics-collected")
         case let .failed(mapping):
             VStack(alignment: .leading, spacing: 6) {
                 Label("Diagnostics could not be created", systemImage: "exclamationmark.triangle")
@@ -196,7 +196,7 @@ struct DBRepairConfirmView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
-            .accessibilityIdentifier("S1-37-C1-26-diagnostics-failed")
+            .accessibilityIdentifier("database-repair-metadata-repair-diagnostics-failed")
         }
     }
 
@@ -207,7 +207,7 @@ struct DBRepairConfirmView: View {
             EmptyView()
         case let .running(step):
             RepairProgressView(currentStep: step)
-                .accessibilityIdentifier("S1-37-C1-26-repair-progress")
+                .accessibilityIdentifier("database-repair-metadata-repair-repair-progress")
         case let .succeeded(report):
             VStack(alignment: .leading, spacing: 8) {
                 Label("Repair completed", systemImage: "checkmark.circle")
@@ -225,7 +225,7 @@ struct DBRepairConfirmView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .accessibilityIdentifier("S1-37-C1-26-repair-succeeded")
+            .accessibilityIdentifier("database-repair-metadata-repair-repair-succeeded")
         case let .failed(mapping):
             VStack(alignment: .leading, spacing: 8) {
                 Label("Repair failed", systemImage: "exclamationmark.triangle")
@@ -242,7 +242,7 @@ struct DBRepairConfirmView: View {
                 }
                 .font(.callout)
             }
-            .accessibilityIdentifier("S1-37-C1-26-repair-failed")
+            .accessibilityIdentifier("database-repair-metadata-repair-repair-failed")
         }
     }
 
@@ -252,7 +252,7 @@ struct DBRepairConfirmView: View {
                 .disabled(model.repairState.isRunning)
             Button("Export diagnostics...", action: model.requestDiagnosticsExport)
                 .disabled(!model.canExportDiagnostics)
-                .accessibilityIdentifier("S1-37-C1-26-export-diagnostics")
+                .accessibilityIdentifier("database-repair-metadata-repair-export-diagnostics")
             if model.repairState.failure != nil {
                 Button("Open repository in Finder", action: onOpenRepositoryInFinder)
                     .disabled(model.repairState.isRunning)
@@ -269,7 +269,7 @@ struct DBRepairConfirmView: View {
             .keyboardShortcut(.defaultAction)
             .buttonStyle(.borderedProminent)
             .disabled(!model.canRunFullRescan)
-            .accessibilityIdentifier("S1-37-C1-26-run-full-rescan")
+            .accessibilityIdentifier("database-repair-metadata-repair-run-full-rescan")
         }
         .frame(maxWidth: 720)
         .padding(.top, 18)
@@ -307,13 +307,13 @@ struct StartupRecoveryCheckStatusView: View {
             Label("Checking startup recovery state...", systemImage: "arrow.clockwise.circle")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-                .accessibilityIdentifier("S1-37-C1-16-startup-recovery-checking")
+                .accessibilityIdentifier("database-repair-startup-recovery-core-startup-recovery-checking")
         case let .completed(report):
             completedContent(report)
-                .accessibilityIdentifier("S1-37-C1-16-startup-recovery-completed")
+                .accessibilityIdentifier("database-repair-startup-recovery-core-startup-recovery-completed")
         case let .failed(mapping):
             failedContent(mapping)
-                .accessibilityIdentifier("S1-37-C1-16-startup-recovery-failed")
+                .accessibilityIdentifier("database-repair-startup-recovery-core-startup-recovery-failed")
         }
     }
 
@@ -355,7 +355,7 @@ struct StartupRecoveryCheckStatusView: View {
             }
             .font(.callout)
             Button("Retry startup recovery", action: onRetry)
-                .accessibilityIdentifier("S1-37-C1-16-retry-startup-recovery")
+                .accessibilityIdentifier("database-repair-startup-recovery-core-retry-startup-recovery")
         }
     }
 }

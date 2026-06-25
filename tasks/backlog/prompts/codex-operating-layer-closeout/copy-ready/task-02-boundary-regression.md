@@ -70,7 +70,7 @@
 2. grep 核对 `tasks/backlog/**`、`.codex/**`、`.ai-governance/**` 是否存在把外部能力写成主线的表述。
 3. grep 核对 backlog/dev tooling 是否写 `workflow/versions/<version>/execution/**`、`progress.json`、logs、run summaries、lock 或 checkpoint。
 4. 运行只读/自检命令，不启动真实 runner。
-5. 若发现污染风险，写成 findings 表格：污染类型、证据路径、影响、建议后续任务；不要在本任务直接大改。
+5. 若发现污染风险，写成 findings 表格：污染类型、证据路径、影响、建议后续计划项；不要在本任务直接大改。
 
 ## Rollback / Blocked
 

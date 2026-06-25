@@ -3,8 +3,8 @@ import XCTest
 
 final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
     // swiftlint:disable:next function_body_length
-    func testS219DefaultCoreBridgePersistsClassifierRuleCrudToClassifierYaml() async throws {
-        let repoURL = try temporaryS219Repo()
+    func testClassifierRuleEditorDefaultCoreBridgePersistsClassifierRuleCrudToClassifierYaml() async throws {
+        let repoURL = try temporaryClassifierRuleEditorRepo()
         defer { try? FileManager.default.removeItem(at: repoURL) }
 
         let bridge = CoreBridge()
@@ -62,13 +62,13 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
     }
 
     @MainActor
-    func testS301AISettingsModelPersistsC301ConfigThroughInjectedCoreBridge() async {
-        let updater = S301RecordingAISettingsUpdater(result: .success)
+    func testAISettingsAISettingsModelPersistsAISettingsConfigCoreConfigThroughInjectedCoreBridge() async {
+        let updater = AISettingsRecordingAISettingsUpdater(result: .success)
         let model = AISettingsModel(
-            repoPath: "/tmp/s301",
-            loader: S301StaticAISettingsLoader(snapshot: .s301Default(repoPath: "/tmp/s301")),
+            repoPath: "/tmp/aiSettings",
+            loader: AISettingsStaticAISettingsLoader(snapshot: .aiSettingsDefault(repoPath: "/tmp/aiSettings")),
             updater: updater,
-            errorMapper: S301StaticAIErrorMapper()
+            errorMapper: AISettingsStaticAIErrorMapper()
         )
 
         await model.load()
@@ -84,13 +84,13 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
     }
 
     @MainActor
-    func testS301RemoteFirstRequiresS303RemoteSetupBeforeSaving() async {
-        let updater = S301RecordingAISettingsUpdater(result: .success)
+    func testAISettingsRemoteFirstRequiresRemoteProviderConfigRemoteSetupBeforeSaving() async {
+        let updater = AISettingsRecordingAISettingsUpdater(result: .success)
         let model = AISettingsModel(
-            repoPath: "/tmp/s301",
-            loader: S301StaticAISettingsLoader(snapshot: .s301Default(repoPath: "/tmp/s301")),
+            repoPath: "/tmp/aiSettings",
+            loader: AISettingsStaticAISettingsLoader(snapshot: .aiSettingsDefault(repoPath: "/tmp/aiSettings")),
             updater: updater,
-            errorMapper: S301StaticAIErrorMapper()
+            errorMapper: AISettingsStaticAIErrorMapper()
         )
 
         await model.load()
@@ -102,21 +102,21 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
         XCTAssertEqual(model.actionFeedback, .failed(AISettingsError(
             message: "Remote AI requires explicit setup.",
             recovery: "Use Configure remote AI before selecting Remote first.",
-            detail: "S3-03 owns provider setup, API key storage, and connection verification."
+            detail: "remote-provider-config owns provider setup, API key storage, and connection verification."
         )))
     }
 
     @MainActor
-    func testS301PauseFailureRestoresSavedSnapshotAndKeepsRetry() async {
-        let updater = S301RecordingAISettingsUpdater(result: .failureThenSuccess(CoreError.Io(
+    func testAISettingsPauseFailureRestoresSavedSnapshotAndKeepsRetry() async {
+        let updater = AISettingsRecordingAISettingsUpdater(result: .failureThenSuccess(CoreError.Io(
             message: "metadata locked"
         )))
-        let enabled = AISettingsSnapshot.s301Default(repoPath: "/tmp/s301", aiEnabled: true)
+        let enabled = AISettingsSnapshot.aiSettingsDefault(repoPath: "/tmp/aiSettings", aiEnabled: true)
         let model = AISettingsModel(
-            repoPath: "/tmp/s301",
-            loader: S301StaticAISettingsLoader(snapshot: enabled),
+            repoPath: "/tmp/aiSettings",
+            loader: AISettingsStaticAISettingsLoader(snapshot: enabled),
             updater: updater,
-            errorMapper: S301StaticAIErrorMapper()
+            errorMapper: AISettingsStaticAIErrorMapper()
         )
 
         await model.load()
@@ -135,8 +135,8 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
     }
 
     @MainActor
-    func testS301DefaultCoreBridgePersistsAIConfigWithoutCreatingRootFiles() async throws {
-        let repoURL = try temporaryS219Repo()
+    func testAISettingsDefaultCoreBridgePersistsAIConfigWithoutCreatingRootFiles() async throws {
+        let repoURL = try temporaryClassifierRuleEditorRepo()
         defer { try? FileManager.default.removeItem(at: repoURL) }
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
@@ -159,24 +159,24 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
     }
 
     @MainActor
-    func testS302LocalModelStatusModelRefreshesThroughInjectedCoreBridgeReader() async {
-        let reader = S302RecordingLocalModelStatusReader(
-            status: .s302Snapshot(
-                storageLocation: "/tmp/s302-models",
+    func testLocalModelStatusLocalModelStatusModelRefreshesThroughInjectedCoreBridgeReader() async {
+        let reader = LocalModelStatusRecordingLocalModelStatusReader(
+            status: .localModelStatusSnapshot(
+                storageLocation: "/tmp/localModelStatus-models",
                 availability: .notInstalled,
                 recommendedAction: .openInstallHelp
             ),
-            location: .s302Location(folderPath: "/tmp/s302-models", openable: false)
+            location: .localModelStatusLocation(folderPath: "/tmp/localModelStatus-models", openable: false)
         )
-        let copier = S302RecordingDiagnosticsCopier()
+        let copier = LocalModelStatusRecordingDiagnosticsCopier()
         let model = LocalModelStatusModel(
-            repoPath: "/tmp/s302",
-            storageLocation: "/tmp/s302-models",
+            repoPath: "/tmp/localModelStatus",
+            storageLocation: "/tmp/localModelStatus-models",
             statusReader: reader,
-            installHelpOpener: S302RecordingInstallHelpOpener(),
-            folderOpener: S302RecordingFolderOpener(),
+            installHelpOpener: LocalModelStatusRecordingInstallHelpOpener(),
+            folderOpener: LocalModelStatusRecordingFolderOpener(),
             diagnosticsCopier: copier,
-            errorMapper: S302StaticErrorMapper()
+            errorMapper: LocalModelStatusStaticErrorMapper()
         )
 
         await model.checkStatus()
@@ -184,48 +184,48 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
         model.copyDiagnosticsSummary()
         let requests = await reader.statusRequests()
 
-        XCTAssertEqual(requests.map(\.repoPath), ["/tmp/s302"])
+        XCTAssertEqual(requests.map(\.repoPath), ["/tmp/localModelStatus"])
         XCTAssertEqual(requests.first?.request.modelID, LocalModelStatusModel.defaultModelID)
-        XCTAssertEqual(requests.first?.request.storageLocation, "/tmp/s302-models")
+        XCTAssertEqual(requests.first?.request.storageLocation, "/tmp/localModelStatus-models")
         XCTAssertEqual(model.snapshot?.availability, .notInstalled)
         XCTAssertEqual(model.statusText, "Status: Not installed")
         XCTAssertEqual(copier.summaries, ["manifest: missing; runtime: unavailable"])
     }
 
     @MainActor
-    func testS302OpenModelLocationUsesC302LocationResultWithoutCreatingFallbackPath() async {
-        let reader = S302RecordingLocalModelStatusReader(
-            status: .s302Snapshot(
-                storageLocation: "/tmp/s302-models",
+    func testLocalModelStatusOpenModelLocationUsesLocalModelStatusCoreLocationResultWithoutCreatingFallbackPath() async {
+        let reader = LocalModelStatusRecordingLocalModelStatusReader(
+            status: .localModelStatusSnapshot(
+                storageLocation: "/tmp/localModelStatus-models",
                 availability: .ready,
                 recommendedAction: .openModelLocation
             ),
-            location: .s302Location(folderPath: "/tmp/s302-models", openable: true)
+            location: .localModelStatusLocation(folderPath: "/tmp/localModelStatus-models", openable: true)
         )
-        let folderOpener = S302RecordingFolderOpener()
+        let folderOpener = LocalModelStatusRecordingFolderOpener()
         let model = LocalModelStatusModel(
-            repoPath: "/tmp/s302",
-            storageLocation: "/tmp/s302-models",
+            repoPath: "/tmp/localModelStatus",
+            storageLocation: "/tmp/localModelStatus-models",
             statusReader: reader,
-            installHelpOpener: S302RecordingInstallHelpOpener(),
+            installHelpOpener: LocalModelStatusRecordingInstallHelpOpener(),
             folderOpener: folderOpener,
-            diagnosticsCopier: S302RecordingDiagnosticsCopier(),
-            errorMapper: S302StaticErrorMapper()
+            diagnosticsCopier: LocalModelStatusRecordingDiagnosticsCopier(),
+            errorMapper: LocalModelStatusStaticErrorMapper()
         )
 
         await model.checkStatus()
         await model.openModelLocation()
         let folderRequests = await reader.folderRequests()
 
-        XCTAssertEqual(folderRequests.map(\.repoPath), ["/tmp/s302"])
-        XCTAssertEqual(folderRequests.first?.request.storageLocation, "/tmp/s302-models")
-        XCTAssertEqual(folderOpener.locations.map(\.folderPath), ["/tmp/s302-models"])
+        XCTAssertEqual(folderRequests.map(\.repoPath), ["/tmp/localModelStatus"])
+        XCTAssertEqual(folderRequests.first?.request.storageLocation, "/tmp/localModelStatus-models")
+        XCTAssertEqual(folderOpener.locations.map(\.folderPath), ["/tmp/localModelStatus-models"])
         XCTAssertEqual(model.feedback, .success("Model location opened."))
     }
 
     @MainActor
-    func testS302DefaultCoreBridgeReadsLocalModelStatusWithoutCreatingModelFolder() async throws {
-        let repoURL = try temporaryS219Repo()
+    func testLocalModelStatusDefaultCoreBridgeReadsLocalModelStatusWithoutCreatingModelFolder() async throws {
+        let repoURL = try temporaryClassifierRuleEditorRepo()
         defer { try? FileManager.default.removeItem(at: repoURL) }
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
@@ -255,7 +255,7 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
     }
 }
 
-private actor S301StaticAISettingsLoader: CoreAISettingsLoading {
+private actor AISettingsStaticAISettingsLoader: CoreAISettingsLoading {
     let snapshot: AISettingsSnapshot
 
     init(snapshot: AISettingsSnapshot) {
@@ -267,21 +267,21 @@ private actor S301StaticAISettingsLoader: CoreAISettingsLoading {
     }
 }
 
-private enum S301UpdateResult {
+private enum AISettingsUpdateResult {
     case success
     case failureThenSuccess(Error)
 }
 
-private actor S301RecordingAISettingsUpdater: CoreAISettingsUpdating {
+private actor AISettingsRecordingAISettingsUpdater: CoreAISettingsUpdating {
     struct Request: Equatable {
         var repoPath: String
         var config: AISettingsConfigSnapshot
     }
 
-    private let result: S301UpdateResult
+    private let result: AISettingsUpdateResult
     private var recordedRequests: [Request] = []
 
-    init(result: S301UpdateResult) {
+    init(result: AISettingsUpdateResult) {
         self.result = result
     }
 
@@ -290,11 +290,11 @@ private actor S301RecordingAISettingsUpdater: CoreAISettingsUpdating {
         recordedRequests.append(Request(repoPath: repoPath, config: normalized))
         switch result {
         case .success:
-            return AISettingsSnapshot.s301Snapshot(config: normalized)
+            return AISettingsSnapshot.aiSettingsSnapshot(config: normalized)
         case let .failureThenSuccess(error) where recordedRequests.count == 1:
             throw error
         case .failureThenSuccess:
-            return AISettingsSnapshot.s301Snapshot(config: normalized)
+            return AISettingsSnapshot.aiSettingsSnapshot(config: normalized)
         }
     }
 
@@ -303,7 +303,7 @@ private actor S301RecordingAISettingsUpdater: CoreAISettingsUpdating {
     }
 }
 
-private actor S301StaticAIErrorMapper: CoreErrorMapping {
+private actor AISettingsStaticAIErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .io,
@@ -311,12 +311,12 @@ private actor S301StaticAIErrorMapper: CoreErrorMapping {
             severity: .medium,
             suggestedAction: "Retry save",
             recoverability: .retryable,
-            rawContext: "S3-01"
+            rawContext: "ai-settings"
         )
     }
 }
 
-private actor S302RecordingLocalModelStatusReader: CoreLocalModelStatusReading {
+private actor LocalModelStatusRecordingLocalModelStatusReader: CoreLocalModelStatusReading {
     struct StatusRequest: Equatable {
         var repoPath: String
         var request: LocalModelStatusRequestState
@@ -362,7 +362,7 @@ private actor S302RecordingLocalModelStatusReader: CoreLocalModelStatusReading {
     }
 }
 
-private struct S302StaticErrorMapper: CoreErrorMapping {
+private struct LocalModelStatusStaticErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .io,
@@ -370,13 +370,13 @@ private struct S302StaticErrorMapper: CoreErrorMapping {
             severity: .medium,
             suggestedAction: "Retry status check",
             recoverability: .retryable,
-            rawContext: "S3-02"
+            rawContext: "local-model-status"
         )
     }
 }
 
 @MainActor
-private final class S302RecordingInstallHelpOpener: LocalModelInstallHelpOpening {
+private final class LocalModelStatusRecordingInstallHelpOpener: LocalModelInstallHelpOpening {
     private(set) var openCount = 0
 
     func openLocalModelInstallHelp() throws {
@@ -385,7 +385,7 @@ private final class S302RecordingInstallHelpOpener: LocalModelInstallHelpOpening
 }
 
 @MainActor
-private final class S302RecordingFolderOpener: LocalModelFolderOpening {
+private final class LocalModelStatusRecordingFolderOpener: LocalModelFolderOpening {
     private(set) var locations: [LocalModelFolderLocationState] = []
 
     func openLocalModelFolder(_ location: LocalModelFolderLocationState) throws {
@@ -394,7 +394,7 @@ private final class S302RecordingFolderOpener: LocalModelFolderOpening {
 }
 
 @MainActor
-private final class S302RecordingDiagnosticsCopier: LocalModelDiagnosticsCopying {
+private final class LocalModelStatusRecordingDiagnosticsCopier: LocalModelDiagnosticsCopying {
     private(set) var summaries: [String] = []
 
     func copyLocalModelDiagnostics(_ summary: String) throws {
@@ -403,8 +403,8 @@ private final class S302RecordingDiagnosticsCopier: LocalModelDiagnosticsCopying
 }
 
 private extension AISettingsSnapshot {
-    static func s301Default(repoPath: String, aiEnabled: Bool = false) -> AISettingsSnapshot {
-        s301Snapshot(config: AISettingsConfigSnapshot(
+    static func aiSettingsDefault(repoPath: String, aiEnabled: Bool = false) -> AISettingsSnapshot {
+        aiSettingsSnapshot(config: AISettingsConfigSnapshot(
             repoPath: repoPath,
             aiEnabled: aiEnabled,
             providerPreference: .localFirst,
@@ -418,7 +418,7 @@ private extension AISettingsSnapshot {
         ))
     }
 
-    static func s301Snapshot(config: AISettingsConfigSnapshot) -> AISettingsSnapshot {
+    static func aiSettingsSnapshot(config: AISettingsConfigSnapshot) -> AISettingsSnapshot {
         let normalized = config.normalized()
         return AISettingsSnapshot(
             config: normalized,
@@ -429,7 +429,7 @@ private extension AISettingsSnapshot {
 }
 
 private extension LocalModelStatusState {
-    static func s302Snapshot(
+    static func localModelStatusSnapshot(
         storageLocation: String,
         availability: LocalModelAvailabilityState,
         recommendedAction: LocalModelRecommendedActionState
@@ -456,7 +456,7 @@ private extension LocalModelStatusState {
 }
 
 private extension LocalModelFolderLocationState {
-    static func s302Location(folderPath: String, openable: Bool) -> LocalModelFolderLocationState {
+    static func localModelStatusLocation(folderPath: String, openable: Bool) -> LocalModelFolderLocationState {
         LocalModelFolderLocationState(
             modelID: LocalModelStatusModel.defaultModelID,
             folderPath: folderPath,
@@ -468,9 +468,9 @@ private extension LocalModelFolderLocationState {
     }
 }
 
-private func temporaryS219Repo() throws -> URL {
+private func temporaryClassifierRuleEditorRepo() throws -> URL {
     let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixS219-\(UUID().uuidString)", isDirectory: true)
+        .appendingPathComponent("AreaMatrixClassifierRuleEditor-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
 }

@@ -3,7 +3,7 @@ import XCTest
 
 final class FileActionsIntegrationVerifyTests: XCTestCase {
     @MainActor
-    func testS133S134S135FileActionsUseRealCoreAndPreserveUserFileBoundaries() async throws {
+    func testRenameFileDeleteFileChangeCategoryFileActionsUseRealCoreAndPreserveUserFileBoundaries() async throws {
         let context = try await makeFileActionsRealCoreContext()
         defer {
             context.cleanUp()

@@ -1,6 +1,6 @@
 # AreaMatrix Workflow Architecture
 
-本文描述 AreaMatrix workflow 的概念架构。它不是产品文档，不定义产品行为；产品源事实仍然是 `docs/`。标准化后，版本内执行材料归属 `workflow/versions/<version>/execution/`；Stage 1 历史执行队列已硬迁移到 `workflow/versions/v1-mvp/execution/**`。
+本文描述 AreaMatrix workflow 的概念架构。它不是产品文档，不定义产品行为；产品源事实仍然是 `docs/`。标准化后，版本内执行材料归属 `workflow/versions/<version>/execution/`；v1 历史执行队列已硬迁移到 `workflow/versions/v1-mvp/execution/**`。
 
 workflow 的职责是把已经讨论清楚的产品意图，稳定地转成可追踪、可检查、可推广、可验收的小任务。
 
@@ -22,7 +22,7 @@ AreaMatrix workflow 分成三种视角：
 | --- | --- | --- | --- |
 | L7 | Intent Layer | 为什么做这个版本或能力？ | 用户目标、版本目标、业务动机、成功定义 |
 | L6 | Semantics Layer | docs 里的语义到底意味着什么？ | 产品语义、non-goals、风险边界、验收含义 |
-| L5 | Orchestration Layer | 如何组织成版本、阶段和依赖？ | changes/plans/drafts 的组织策略、phase 边界、依赖顺序 |
+| L5 | Orchestration Layer | 如何组织成版本、执行分组和依赖？ | changes/plans/drafts 的组织策略、执行分组边界、依赖顺序 |
 | L4 | Gate Layer | 什么时候允许进入下一层？ | discussion gate、plan doctor、draft doctor、promotion approval |
 | L3 | Trace Layer | 每个产物从哪里来，到哪里去？ | docs -> change -> plan -> draft -> queue -> task -> result 的追踪关系 |
 | L2 | Schema Layer | 每类产物长什么样？ | discussion、change、plan、draft、queue、promotion、runtime 的字段契约 |
@@ -47,7 +47,7 @@ AreaMatrix workflow 分成三种视角：
 
 ### L5 Orchestration Layer
 
-编排层决定如何把已确认语义组织成版本工作流。它关注阶段、依赖、风险顺序、并行边界和验证策略。
+编排层决定如何把已确认语义组织成版本工作流。它关注执行分组、依赖、风险顺序、并行边界和验证策略。
 
 ### L4 Gate Layer
 
@@ -105,7 +105,7 @@ version init
 - `explicit promote` 是进入版本内 execution 的唯一动作。
 - `task-loop` 只执行已批准的 live queue，不负责需求讨论或 promotion 审批。
 
-详细的阶段契约、失败回退、状态语义和执行流转图见 [`pipeline.md`](pipeline.md)。
+详细的步骤契约、失败回退、状态语义和执行流转图见 [`pipeline.md`](pipeline.md)。
 
 ## Cross-Cutting Capabilities
 
@@ -147,7 +147,7 @@ version init
 flowchart TD
   A["L7 Intent<br/>为什么做"]
   B["L6 Semantics<br/>做什么意味着什么"]
-  C["L5 Orchestration<br/>如何组织版本/阶段/依赖"]
+  C["L5 Orchestration<br/>如何组织版本/执行分组/依赖"]
   D["L4 Gate<br/>什么时候允许继续"]
   E["L3 Trace<br/>从哪里来到哪里去"]
   F["L2 Schema<br/>每类产物长什么样"]

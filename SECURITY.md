@@ -32,7 +32,7 @@
 
 ### 响应时间承诺
 
-| 阶段 | 时限 |
+| 响应步骤 | 时限 |
 |---|---|
 | 初步确认 | 3 个工作日内 |
 | 严重程度评估 | 7 个工作日内 |
@@ -115,7 +115,7 @@ Use the private reporting channel:
 
 ### Response Timeline
 
-| Stage | SLA |
+| Response step | SLA |
 |---|---|
 | Initial acknowledgement | Within 3 business days |
 | Severity assessment | Within 7 business days |

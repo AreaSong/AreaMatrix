@@ -14,11 +14,11 @@ enum SyncConflictEntryCopy {
 }
 
 enum SyncConflictEntryAccessibilityID {
-    static let mobileHome = "S4-X-03-C4-15-ios-mobile-home"
-    static let detailBanner = "S4-X-03-C4-15-ios-detail-banner"
-    static let retry = "S4-X-03-C4-15-ios-retry"
-    static let later = "S4-X-03-C4-15-ios-later"
-    static let review = "S4-X-03-C4-15-ios-review"
+    static let mobileHome = "sync-conflict-entry-sync-conflict-detect-ios-mobile-home"
+    static let detailBanner = "sync-conflict-entry-sync-conflict-detect-ios-detail-banner"
+    static let retry = "sync-conflict-entry-sync-conflict-detect-ios-retry"
+    static let later = "sync-conflict-entry-sync-conflict-detect-ios-later"
+    static let review = "sync-conflict-entry-sync-conflict-detect-ios-review"
 }
 
 enum SyncConflictEntryState: Equatable {

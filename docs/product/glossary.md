@@ -92,7 +92,7 @@
 |---|---|---|
 | 分类引擎 | Classifier | 根据规则决定文件分类的组件 |
 | 规则匹配 | Rule matching | 基于扩展名 + 关键词的两层匹配 |
-| AI 兜底 | AI fallback | 规则未命中时调用 AI 模型分类（Stage 3） |
+| AI 兜底 | AI fallback | 规则未命中时按配置调用 AI 模型分类 |
 | 重命名建议 | Naming suggestion | Classifier 给出的目标文件名 |
 | 冲突重命名 | Conflict rename | 目标文件已存在时自动追加序号 |
 | 整库扫描 | Full rescan | 应用启动或用户主动触发的资料库全量重扫 |
@@ -119,7 +119,7 @@
 | API | Application Programming Interface | 应用编程接口 |
 | CI | Continuous Integration | 持续集成 |
 | FFI | Foreign Function Interface | 跨语言调用接口 |
-| MVP | Minimum Viable Product | 最小可行产品 |
+| 基础闭环 | Base loop | 拖入、分类、落位、浏览和恢复的最小完整产品闭环 |
 | ORM | Object-Relational Mapping | 对象关系映射 |
 | PR | Pull Request | 合并请求 |
 | SoT | Source of Truth | 真相源 |

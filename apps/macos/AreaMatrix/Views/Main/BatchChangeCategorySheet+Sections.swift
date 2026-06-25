@@ -40,7 +40,7 @@ extension BatchChangeCategorySheet {
                 ))
             }
             .disabled(isApplying || disabledReason != nil)
-            .accessibilityIdentifier("S2-12-create-new-category")
+            .accessibilityIdentifier("batch-change-category-create-new-category")
             Toggle("Move files into the category folder", isOn: $moveRepoOwnedFiles)
                 .disabled(isApplying || disabledReason != nil)
             Text("When off, only AreaMatrix metadata changes. Files stay in their current locations.")
@@ -143,7 +143,7 @@ extension BatchChangeCategorySheet {
             }
             .keyboardShortcut(.defaultAction)
             .disabled(!canApply)
-            .accessibilityIdentifier("S2-12-batch-change-category-apply")
+            .accessibilityIdentifier("batch-change-category-batch-change-category-apply")
         }
     }
 }

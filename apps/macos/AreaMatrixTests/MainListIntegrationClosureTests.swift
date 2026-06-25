@@ -37,12 +37,12 @@ final class MainListIntegrationClosureTests: XCTestCase {
         await model.selectFiles([docsFile.id])
         model.beginRename()
         XCTAssertEqual(model.pendingActionDestination, .rename(fileID: docsFile.id))
-        XCTAssertEqual(model.pendingActionDestination?.pageID, "S1-33")
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "rename-file")
         XCTAssertEqual(model.pendingActionDestination?.pageTitle, "Rename File")
 
         model.beginChangeCategory()
         XCTAssertEqual(model.pendingActionDestination, .changeCategory(fileID: docsFile.id))
-        XCTAssertEqual(model.pendingActionDestination?.pageID, "S1-35")
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "change-category")
         XCTAssertEqual(model.pendingActionDestination?.pageTitle, "Change Category")
 
         model.beginClassifierCorrection()
@@ -50,12 +50,12 @@ final class MainListIntegrationClosureTests: XCTestCase {
             model.pendingActionDestination,
             .changeCategory(fileID: docsFile.id, mode: .classifierCorrection)
         )
-        XCTAssertEqual(model.pendingActionDestination?.pageID, "S2-16")
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "classifier-correction")
         XCTAssertEqual(model.pendingActionDestination?.pageTitle, "Correct Classification")
 
         model.beginAIClassificationSuggestion()
         XCTAssertEqual(model.pendingActionDestination, .aiClassificationSuggestion(fileID: docsFile.id))
-        XCTAssertEqual(model.pendingActionDestination?.pageID, "S3-04")
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "ai-category-suggestion")
         XCTAssertEqual(model.pendingActionDestination?.pageTitle, "AI Category Suggestion")
 
         model.beginAIClassificationChange(fileID: docsFile.id, targetCategory: "finance/invoices")
@@ -70,7 +70,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
 
         model.beginDelete()
         XCTAssertEqual(model.pendingActionDestination, .delete(fileID: docsFile.id))
-        XCTAssertEqual(model.pendingActionDestination?.pageID, "S1-34")
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "delete-file")
         XCTAssertEqual(model.pendingActionDestination?.pageTitle, "Move File to Trash?")
     }
 
@@ -273,7 +273,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
     }
 
     @MainActor
-    func testListLoadingExposesCurrentCategoryStageText() async {
+    func testListLoadingExposesCurrentCategoryStatusText() async {
         let file = FileEntrySnapshot.integrationClosureFixture(id: 12, currentName: "loading.pdf")
         let lister = MainListIntegrationSuspendedLister()
         let model = MainFileListModel(

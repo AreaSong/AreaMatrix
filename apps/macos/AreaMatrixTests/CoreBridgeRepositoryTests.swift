@@ -103,7 +103,7 @@ private struct CoreBridgeTestHelpOpener: WelcomeHelpOpening {
 
 final class MainSearchFiltersPageFeatureTests: XCTestCase {
     @MainActor
-    func testS202SearchFiltersDriveSearchFilesAndFacetCountsThroughC202() async {
+    func testSearchFiltersSearchFiltersDriveSearchFilesAndFacetCountsThroughSearchFiltersCore() async {
         let tree = RepositoryTreeNodeSnapshot.searchFiltersFixtureTree()
         guard let row = tree.sidebarRow(id: "docs/contracts") else {
             return XCTFail("expected docs/contracts sidebar row")
@@ -159,7 +159,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
 
     @MainActor
     // swiftlint:disable:next function_body_length
-    func testS202SearchFiltersUserControlsProduceNonEmptyC202Request() async {
+    func testSearchFiltersSearchFiltersUserControlsProduceNonEmptySearchFiltersCoreRequest() async {
         let tree = RepositoryTreeNodeSnapshot.searchFiltersFixtureTree()
         guard let row = tree.sidebarRow(id: "docs/contracts") else {
             return XCTFail("expected docs/contracts sidebar row")
@@ -220,7 +220,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS202SearchFiltersFailureMapsC202ErrorAndCanRetryWithoutClearingSearch() async {
+    func testSearchFiltersSearchFiltersFailureMapsSearchFiltersCoreErrorAndCanRetryWithoutClearingSearch() async {
         let mapping = CoreErrorMappingSnapshot.searchFiltersDbFixture()
         let mapper = MainListRecordingErrorMapper(mapping: mapping)
         let facetLoader = MainListRecordingSearchFiltering(results: [
@@ -251,7 +251,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS202ClearSearchAlsoClearsC202FacetState() async {
+    func testSearchFiltersClearSearchAlsoClearsSearchFiltersCoreFacetState() async {
         let model = MainFileListModel(
             opening: .searchFiltersFixture(repoPath: "/tmp/repo", tree: .searchFiltersFixtureTree()),
             fileLister: MainListRecordingFileLister(results: []),
@@ -414,21 +414,21 @@ private extension CoreErrorMappingSnapshot {
     }
 }
 
-struct S206SmartListRunRequest: Equatable {
+struct SmartListSmartListRunRequest: Equatable {
     var repoPath: String
     var savedSearchID: Int64
     var limit: Int64
     var offset: Int64
 }
 
-actor S206RecordingSmartListRunner: CoreSearchQuerying {
+actor SmartListRecordingSmartListRunner: CoreSearchQuerying {
     enum Result {
         case success(SearchResultPageSnapshot)
         case failure(Error)
     }
 
     private var results: [Result]
-    private var runRequests: [S206SmartListRunRequest] = []
+    private var runRequests: [SmartListSmartListRunRequest] = []
     private var searchRequests: [SearchQueryRequestSnapshot] = []
 
     init(results: [Result]) {
@@ -437,7 +437,7 @@ actor S206RecordingSmartListRunner: CoreSearchQuerying {
 
     func searchFiles(repoPath _: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
         searchRequests.append(request)
-        throw CoreError.Internal(message: "search_files must not run S2-06 C2-04 Smart List execution")
+        throw CoreError.Internal(message: "search_files must not run smart-list-management smart-list Smart List execution")
     }
 
     func runSmartList(
@@ -446,7 +446,7 @@ actor S206RecordingSmartListRunner: CoreSearchQuerying {
         limit: Int64,
         offset: Int64
     ) async throws -> SearchResultPageSnapshot {
-        runRequests.append(S206SmartListRunRequest(
+        runRequests.append(SmartListSmartListRunRequest(
             repoPath: repoPath,
             savedSearchID: savedSearchID,
             limit: limit,
@@ -469,7 +469,7 @@ actor S206RecordingSmartListRunner: CoreSearchQuerying {
         }
     }
 
-    func recordedRunRequests() -> [S206SmartListRunRequest] {
+    func recordedRunRequests() -> [SmartListSmartListRunRequest] {
         runRequests
     }
 

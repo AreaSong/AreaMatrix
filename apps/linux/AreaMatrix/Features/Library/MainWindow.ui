@@ -1,6 +1,6 @@
-page_id: S4-LNX-02
+page_id: linux-main-window
 title: AreaMatrix Library
-description: Browse the connected Linux repository through C4-11 desktop-main-query.
+description: Browse the connected Linux repository through desktop-main-query desktop-main-query.
 toolbar:
   - Import
   - Search
@@ -12,13 +12,13 @@ navigation:
   - Needs Review
   - Categories from list_tree_json
 sync_conflict_entry:
-  page_id: S4-X-03
+  page_id: sync-conflict-entry
   banner: Sync conflict needs review
   list: Needs Review
   detail_banner: This file has a sync conflict
   source: SyncConflictEntryViewModel
 replace_confirm:
-  page_id: S4-X-09
+  page_id: replace-resolution
   source: SyncConflictEntryViewModel.OpenReviewRouteAsync
   core_preview: preview_sync_conflict_resolution
   core_apply: resolve_sync_conflict
@@ -62,8 +62,8 @@ safety:
   - The page calls get_file through DesktopMainQueryCoreBridge.
   - The page calls list_tree_json through DesktopMainQueryCoreBridge.
   - The page calls search_files through DesktopMainQueryCoreBridge.
-  - The page calls detect_sync_conflicts through SyncConflictEntryCoreBridge for S4-X-03.
-  - The S4-X-09 route calls preview_sync_conflict_resolution before enabling Replace.
+  - The page calls detect_sync_conflicts through SyncConflictEntryCoreBridge for sync-conflict-entry.
+  - The replace-resolution route calls preview_sync_conflict_resolution before enabling Replace.
   - Replace requires a Core preview token, Replace plan, Trash/Core backup evidence, and second confirmation.
   - Confirmed Replace calls resolve_sync_conflict; the Linux UI never directly overwrites files.
   - Load more advances FileFilter/SearchPagination offset through DesktopMainQueryCoreBridge.

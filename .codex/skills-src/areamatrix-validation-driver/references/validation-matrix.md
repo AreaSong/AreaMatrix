@@ -40,13 +40,13 @@ DRY_RUN=1 RISK_GATE=high RISK_POLICY=pause ./task-loop run --phase phase-1 --max
 
 ## Prompt Task Gates
 
-Phase 4 prompt tasks should not default every atomic task to `./dev check all`.
+Atomic prompt tasks should not default every task to `./dev check all`.
 Use layered gates:
 
 - Atomic Core task: `./dev check task <label>`.
 - Core capability integration verify: `./dev check task <label>`.
 - Page feature or page integration task: `./dev check task <label>`.
-- Stage/foundation closeout or release task: `./dev check all`.
+- Foundation closeout or release-boundary task: `./dev check all`.
 
 `./dev check task <label>` always runs prompt doctor and diff checks, then chooses
 the smallest repo-local implementation gate for that task:
@@ -59,7 +59,7 @@ the smallest repo-local implementation gate for that task:
 - Mission-Critical file-safety, DB, staging, recovery, sync, import, migration,
   reindex, or user-file boundary: widen to the Core quality gate.
 - Page feature or page integration task: macOS build gate.
-- Stage/foundation closeout or release task: `./dev check all`.
+- Foundation closeout or release-boundary task: `./dev check all`.
 
 Agents may run additional targeted tests when the task or observed changes need
 more evidence, but the manifest should reserve `./dev check all` for integration

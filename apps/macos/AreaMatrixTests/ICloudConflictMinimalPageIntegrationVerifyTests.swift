@@ -2,20 +2,20 @@
 import XCTest
 
 final class ICloudConflictMinimalIntegrationTests: XCTestCase {
-    private static let declaredCapabilities: Set<String> = ["C1-01", "C1-21"]
+    private static let declaredCapabilities: Set<String> = ["validate-repo-path", "error-mapping"]
 
-    func testS125PageIntegrationUsesOnlyDeclaredControlMapCapabilities() {
-        XCTAssertEqual(Self.declaredCapabilities, ["C1-01", "C1-21"])
+    func testICloudConflictMinimalPageIntegrationUsesOnlyDeclaredControlMapCapabilities() {
+        XCTAssertEqual(Self.declaredCapabilities, ["validate-repo-path", "error-mapping"])
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.validateRepoPath))
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.mapCoreError))
-        XCTAssertFalse(Self.declaredCapabilities.contains("C1-23"))
-        XCTAssertFalse(Self.declaredCapabilities.contains("C1-25"))
+        XCTAssertFalse(Self.declaredCapabilities.contains("delete-remove-index"))
+        XCTAssertFalse(Self.declaredCapabilities.contains("icloud-conflicts-core"))
     }
 
     @MainActor
-    func testS125EntryCancelAndApplyBlockedByMissingCoreResolutionEndpoint() async {
-        let conflictFile = FileEntrySnapshot.s125ConflictFixture(id: 125)
-        let core = S125RecordingMainCore(files: [conflictFile])
+    func testICloudConflictMinimalEntryCancelAndApplyBlockedByMissingCoreResolutionEndpoint() async {
+        let conflictFile = FileEntrySnapshot.iCloudConflictMinimalConflictFixture(id: 125)
+        let core = ICloudConflictMinimalRecordingMainCore(files: [conflictFile])
         let blockedCapability = ICloudConflictResolutionCapability.blocked(.missingCoreResolutionEndpoint)
         let model = makeMainFileListModel(conflictFile: conflictFile, core: core)
 
@@ -24,7 +24,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
 
         model.beginICloudConflictResolution(fileID: conflictFile.id)
         XCTAssertEqual(model.pendingActionDestination, .iCloudConflict(fileID: conflictFile.id))
-        XCTAssertEqual(model.pendingActionDestination?.pageID, "S1-25")
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "icloud-conflict-minimal")
 
         model.clearPendingActionDestination()
         XCTAssertNil(model.pendingActionDestination)
@@ -39,29 +39,29 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         )
         let outOfScopeActions = await core.recordedOutOfScopeActions()
 
-        XCTAssertTrue(body.contains("S1-25-core-resolution-blocked"))
+        XCTAssertTrue(body.contains("icloud-conflict-minimal-core-resolution-blocked"))
         XCTAssertTrue(body.contains("Core resolution unavailable"))
         XCTAssertTrue(body.contains("Missing Core API: resolve_icloud_conflict or mark_icloud_conflict_resolved"))
         XCTAssertEqual(outOfScopeActions, [])
         XCTAssertEqual(model.pendingActionDestination, .iCloudConflict(fileID: conflictFile.id))
         XCTAssertNil(model.statusBanner)
-        XCTAssertNil(model.detailLogState.s125LoadedFileID)
+        XCTAssertNil(model.detailLogState.iCloudConflictMinimalLoadedFileID)
     }
 
     @MainActor
-    func testS125ApplyMapsCapabilityBlockerWithoutCallingOutOfScopeCoreActions() async {
-        let conflictFile = FileEntrySnapshot.s125ConflictFixture(id: 126)
-        let core = S125RecordingMainCore(files: [conflictFile])
-        let mapper = S125RecordingErrorMapper(mapping: .s125Mapping(
+    func testICloudConflictMinimalApplyMapsCapabilityBlockerWithoutCallingOutOfScopeCoreActions() async {
+        let conflictFile = FileEntrySnapshot.iCloudConflictMinimalConflictFixture(id: 126)
+        let core = ICloudConflictMinimalRecordingMainCore(files: [conflictFile])
+        let mapper = ICloudConflictMinimalRecordingErrorMapper(mapping: .iCloudConflictMinimalMapping(
             kind: .internal,
             rawContext: ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.rawContext
         ))
-        let blockedResolver = S125RecordingICloudConflictResolver(
+        let blockedResolver = ICloudConflictMinimalRecordingICloudConflictResolver(
             capability: .blocked(.missingCoreResolutionEndpoint),
             result: .failure(ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.coreError)
         )
         let model = MainFileListModel(
-            opening: .s125Fixture(repoPath: "/tmp/s125-repo", files: [conflictFile]),
+            opening: .iCloudConflictMinimalFixture(repoPath: "/tmp/iCloudConflictMinimal-repo", files: [conflictFile]),
             fileLister: core,
             fileDetailer: core,
             iCloudConflictResolver: blockedResolver,
@@ -83,7 +83,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         XCTAssertEqual(model.pendingActionDestination, .iCloudConflict(fileID: conflictFile.id))
         let recordedErrors = await mapper.recordedErrors()
         XCTAssertEqual(recordedErrors, [ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.coreError])
-        XCTAssertTrue(failedBody.contains("S1-25-C1-21-apply-failure"))
+        XCTAssertTrue(failedBody.contains("icloud-conflict-minimal-error-mapping-apply-failure"))
         XCTAssertTrue(failedBody.contains("Apply failed: Internal"))
         XCTAssertTrue(failedBody.contains("Retry"))
         XCTAssertTrue(failedBody.contains("Cancel"))
@@ -93,12 +93,12 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         XCTAssertNil(model.statusBanner)
     }
 
-    func testS220CoreBridgeResolutionCapabilityIsSupported() {
+    func testICloudConflictVisualCoreBridgeResolutionCapabilityIsSupported() {
         XCTAssertEqual(CoreBridge().iCloudConflictResolutionCapability, .supported)
     }
 
     @MainActor
-    func testS125SheetDefinesThreeStrategiesAndTrashBoundary() async {
+    func testICloudConflictMinimalSheetDefinesThreeStrategiesAndTrashBoundary() async {
         let model = await makeReadyICloudConflictModel()
         let body = makeICloudConflictSheetBody(
             model: model,
@@ -124,17 +124,17 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         XCTAssertTrue(ICloudConflictResolutionStrategy.keepOriginalOnly.requiresSecondConfirmation)
         XCTAssertTrue(body.contains("Single-version resolution requires system Trash"))
         XCTAssertTrue(body.contains("requires Core support to clear conflict state and write change_log"))
-        XCTAssertTrue(body.contains("S1-25-core-resolution-blocked"))
+        XCTAssertTrue(body.contains("icloud-conflict-minimal-core-resolution-blocked"))
     }
 
     @MainActor
-    func testS125ValidationErrorStateMapsCoreError() async {
-        let failedValidator = S125RecordingPathValidator(
-            result: .failure(CoreError.PermissionDenied(path: "/tmp/s125-repo"))
+    func testICloudConflictMinimalValidationErrorStateMapsCoreError() async {
+        let failedValidator = ICloudConflictMinimalRecordingPathValidator(
+            result: .failure(CoreError.PermissionDenied(path: "/tmp/iCloudConflictMinimal-repo"))
         )
-        let mapper = S125RecordingErrorMapper(mapping: .s125Mapping(
+        let mapper = ICloudConflictMinimalRecordingErrorMapper(mapping: .iCloudConflictMinimalMapping(
             kind: .permissionDenied,
-            rawContext: "/tmp/s125-repo"
+            rawContext: "/tmp/iCloudConflictMinimal-repo"
         ))
         let failedModel = makeICloudConflictModel(pathValidator: failedValidator, errorMapper: mapper)
 
@@ -147,18 +147,18 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         )
 
         let recordedErrors = await mapper.recordedErrors()
-        XCTAssertEqual(recordedErrors, [CoreError.PermissionDenied(path: "/tmp/s125-repo")])
+        XCTAssertEqual(recordedErrors, [CoreError.PermissionDenied(path: "/tmp/iCloudConflictMinimal-repo")])
         XCTAssertFalse(failedModel.canApplyKeepBoth)
-        XCTAssertTrue(failedBody.contains("S1-25-C1-21-error-mapping"))
+        XCTAssertTrue(failedBody.contains("icloud-conflict-minimal-error-mapping-error-mapping"))
         XCTAssertTrue(failedBody.contains("Repository check failed: PermissionDenied"))
         XCTAssertTrue(failedBody.contains("Retry repository check"))
     }
 
     @MainActor
-    func testS125SupportedResolverCompletesRefreshAndChangeLogEvidence() async {
-        let conflictFile = FileEntrySnapshot.s125ConflictFixture(id: 127)
-        let core = S125RecordingMainCore(files: [conflictFile])
-        let resolver = S125RecordingICloudConflictResolver(
+    func testICloudConflictMinimalSupportedResolverCompletesRefreshAndChangeLogEvidence() async {
+        let conflictFile = FileEntrySnapshot.iCloudConflictMinimalConflictFixture(id: 127)
+        let core = ICloudConflictMinimalRecordingMainCore(files: [conflictFile])
+        let resolver = ICloudConflictMinimalRecordingICloudConflictResolver(
             result: .success(ICloudConflictResolutionResult(
                 focusFileID: conflictFile.id,
                 didClearConflictState: true,
@@ -166,13 +166,13 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             ))
         )
         let model = MainFileListModel(
-            opening: .s125Fixture(repoPath: "/tmp/s125-repo", files: [conflictFile]),
+            opening: .iCloudConflictMinimalFixture(repoPath: "/tmp/iCloudConflictMinimal-repo", files: [conflictFile]),
             fileLister: core,
             fileDetailer: core,
             iCloudConflictResolver: resolver,
             changeLogLister: core,
             externalChangesSyncer: core,
-            errorMapper: S125RecordingErrorMapper(mapping: .s125Mapping()),
+            errorMapper: ICloudConflictMinimalRecordingErrorMapper(mapping: .iCloudConflictMinimalMapping()),
             diagnosticsCollector: core
         )
 
@@ -182,22 +182,22 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
 
         let requests = await resolver.recordedRequests()
         XCTAssertEqual(requests.map(\.strategy), [.keepBoth])
-        XCTAssertEqual(requests.first?.repoPath, "/tmp/s125-repo")
+        XCTAssertEqual(requests.first?.repoPath, "/tmp/iCloudConflictMinimal-repo")
         XCTAssertEqual(requests.first?.fileID, conflictFile.id)
         XCTAssertNil(model.pendingActionDestination)
         XCTAssertEqual(model.iCloudConflictResolutionState, .idle)
         XCTAssertEqual(model.statusBanner, .resolvedICloudConflict(fileID: conflictFile.id, strategy: .keepBoth))
-        XCTAssertEqual(model.detailLogState.s125LoadedFileID, conflictFile.id)
+        XCTAssertEqual(model.detailLogState.iCloudConflictMinimalLoadedFileID, conflictFile.id)
     }
 
     @MainActor
     private func makeMainFileListModel(
         conflictFile: FileEntrySnapshot,
-        core: S125RecordingMainCore,
-        errorMapper: S125RecordingErrorMapper = S125RecordingErrorMapper(mapping: .s125Mapping())
+        core: ICloudConflictMinimalRecordingMainCore,
+        errorMapper: ICloudConflictMinimalRecordingErrorMapper = ICloudConflictMinimalRecordingErrorMapper(mapping: .iCloudConflictMinimalMapping())
     ) -> MainFileListModel {
         MainFileListModel(
-            opening: .s125Fixture(repoPath: "/tmp/s125-repo", files: [conflictFile]),
+            opening: .iCloudConflictMinimalFixture(repoPath: "/tmp/iCloudConflictMinimal-repo", files: [conflictFile]),
             fileLister: core,
             fileDetailer: core,
             fileRenamer: core,
@@ -231,7 +231,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             detailTabRequest: model.detailTabRequest,
             selectedImportProgressRow: nil,
             semanticDetail: nil,
-            repoPath: "/tmp/s125-repo",
+            repoPath: "/tmp/iCloudConflictMinimal-repo",
             batchTagStore: model.tagStore,
             batchTagUndoStore: model.undoActionStore,
             batchTagErrorMapper: model.errorMapper,
@@ -263,18 +263,18 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             writeActionDisabledReason: model.writeActionDisabledReason,
             summaryExitController: AISummaryEditorExitController(),
             noteModel: DetailNoteModel(
-                repoPath: "/tmp/s125-repo",
-                noteStore: S125NoopNoteStore(),
-                errorMapper: S125RecordingErrorMapper(mapping: .s125Mapping())
+                repoPath: "/tmp/iCloudConflictMinimal-repo",
+                noteStore: ICloudConflictMinimalNoopNoteStore(),
+                errorMapper: ICloudConflictMinimalRecordingErrorMapper(mapping: .iCloudConflictMinimalMapping())
             )
         )
 
-        return s125IntegrationMirrorDescription(of: detailPane.body)
+        return iCloudConflictMinimalIntegrationMirrorDescription(of: detailPane.body)
     }
 
     @MainActor
     private func makeReadyICloudConflictModel() async -> ICloudConflictMinimalModel {
-        let validator = S125RecordingPathValidator(result: .success(.s125ICloudConflictFixture()))
+        let validator = ICloudConflictMinimalRecordingPathValidator(result: .success(.iCloudConflictMinimalICloudConflictFixture()))
         let model = makeICloudConflictModel(pathValidator: validator)
         await model.validateRepositoryPath()
         return model
@@ -283,12 +283,12 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
     @MainActor
     private func makeICloudConflictModel(
         pathValidator: CoreRepositoryPathValidating,
-        errorMapper: CoreErrorMapping = S125RecordingErrorMapper(mapping: .s125Mapping())
+        errorMapper: CoreErrorMapping = ICloudConflictMinimalRecordingErrorMapper(mapping: .iCloudConflictMinimalMapping())
     ) -> ICloudConflictMinimalModel {
         ICloudConflictMinimalModel(
-            repoPath: "/tmp/s125-repo",
-            originalVersion: .s125Original(repoPath: "/tmp/s125-repo"),
-            conflictedCopyVersion: .s125ConflictedCopy(repoPath: "/tmp/s125-repo"),
+            repoPath: "/tmp/iCloudConflictMinimal-repo",
+            originalVersion: .iCloudConflictMinimalOriginal(repoPath: "/tmp/iCloudConflictMinimal-repo"),
+            conflictedCopyVersion: .iCloudConflictMinimalConflictedCopy(repoPath: "/tmp/iCloudConflictMinimal-repo"),
             pathValidator: pathValidator,
             conflictReviewer: nil,
             errorMapper: errorMapper
@@ -302,7 +302,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         resolutionCapability: ICloudConflictResolutionCapability,
         isTrashAvailable: Bool
     ) -> String {
-        s125IntegrationMirrorDescription(of: ICloudConflictMinimalSheet(
+        iCloudConflictMinimalIntegrationMirrorDescription(of: ICloudConflictMinimalSheet(
             model: model,
             resolutionState: resolutionState,
             resolutionCapability: resolutionCapability,

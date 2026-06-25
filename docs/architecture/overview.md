@@ -284,18 +284,18 @@ AreaMatrix/                            # Git 仓库
 
 - **结构化日志**：tracing crate（Rust）+ os_log（Swift），写入 `~/Library/Logs/AreaMatrix/`
 - **Change Log**：所有改动写入 SQLite `change_log` 表（用户可见）
-- **Metrics**（Stage 2 起）：本地 Prometheus 风格的统计（导入耗时、失败率），不上传
+- **Metrics**：本地 Prometheus 风格的统计（导入耗时、失败率），不上传；按后续观测需求启用
 
 ## 演进路径
 
-| Stage | 关注点 |
+| 版本 | 关注点 |
 |---|---|
-| 1 (MVP) | 端到端闭环、稳定性、macOS |
-| 2 | 全文搜索、批量、撤销、规则 UI |
-| 3 | AI 分类、智能命名、OCR |
-| 4 | Windows / Linux / iOS / 多设备同步 |
+| v1 | 端到端闭环、稳定性、macOS |
+| v2 | 全文搜索、批量、撤销、规则 UI |
+| 后续智能化 | AI 分类、智能命名、OCR |
+| 后续多端 | Windows / Linux / iOS / 多设备同步 |
 
-详见 [../roadmap/milestones.md](../roadmap/milestones.md)。
+详见 [../roadmap/version-roadmap.md](../roadmap/version-roadmap.md)。
 
 ## Related
 

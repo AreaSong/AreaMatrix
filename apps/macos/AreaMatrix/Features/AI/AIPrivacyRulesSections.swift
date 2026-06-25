@@ -50,9 +50,9 @@ extension AIPrivacyRulesView {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Text(rule.enabled ? "Enabled" : "Disabled").frame(width: 70, alignment: .leading)
             VStack(alignment: .leading, spacing: 3) {
-                Text("\(rule.kind.s309Label): \(rule.pattern)")
+                Text("\(rule.kind.aiPrivacyRulesLabel): \(rule.pattern)")
                     .font(.callout.weight(.medium))
-                Text("\(rule.appliesTo.s309Label), \(rule.matchCount) files, \(rule.s309LastMatchedText)")
+                Text("\(rule.appliesTo.aiPrivacyRulesLabel), \(rule.matchCount) files, \(rule.aiPrivacyRulesLastMatchedText)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if let description = rule.description, !description.isEmpty {
@@ -68,7 +68,7 @@ extension AIPrivacyRulesView {
         .id(AIPrivacyRulesRouteFocus.rule(ruleID: rule.ruleId).targetID)
         .aiPrivacyRulesFocusHighlight(isFocused(ruleID: rule.ruleId))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(rule.s309AccessibilityLabel)
+        .accessibilityLabel(rule.aiPrivacyRulesAccessibilityLabel)
     }
 
     @ViewBuilder
@@ -95,7 +95,7 @@ extension AIPrivacyRulesView {
                 .textFieldStyle(.roundedBorder)
             Button("Test rules", action: testRules)
                 .disabled(privacyModel.isEvaluating || testFileContext.isEmpty)
-                .accessibilityIdentifier("S3-09-C3-09-test-rules")
+                .accessibilityIdentifier("ai-privacy-rules-ai-privacy-rules-core-test-rules")
             if !privacyModel.featureEvaluations.isEmpty {
                 AIPrivacyRuleTestResultView(evaluations: privacyModel.featureEvaluations)
             }

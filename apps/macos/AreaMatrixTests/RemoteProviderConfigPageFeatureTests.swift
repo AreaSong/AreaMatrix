@@ -1,14 +1,14 @@
 @testable import AreaMatrix
 import XCTest
 
-final class S309RemoteProviderConfigPageFeatureTests: XCTestCase {
+final class AIPrivacyRulesRemoteProviderConfigPageFeatureTests: XCTestCase {
     @MainActor
-    func testS309LoadsC303ProviderStatusForPrivacyRulesGate() async {
-        let bridge = RemoteProviderConfigBridge(initial: .s309RemoteProviderConfigured())
+    func testAIPrivacyRulesLoadsRemoteProviderConfigCoreProviderStatusForPrivacyRulesGate() async {
+        let bridge = RemoteProviderConfigBridge(initial: .aiPrivacyRulesRemoteProviderConfigured())
         let model = AIPrivacyRemoteProviderStateModel(
-            repoPath: "/tmp/s309",
+            repoPath: "/tmp/aiPrivacyRules",
             providerReader: bridge,
-            errorMapper: S309RemoteProviderErrorMapper()
+            errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
         )
 
         await model.load()
@@ -16,7 +16,7 @@ final class S309RemoteProviderConfigPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(requests.loadCount, 1)
         XCTAssertEqual(model.loadState, .loaded)
-        XCTAssertEqual(model.providerStatusText, "Configured by S3-03")
+        XCTAssertEqual(model.providerStatusText, "Configured by remote-provider-config")
         XCTAssertEqual(model.verifiedStatusText, "Connection tested")
         XCTAssertEqual(model.enabledStatusText, "Remote provider enabled")
         XCTAssertEqual(model.featureScopeText, "Auto summaries, Semantic search")
@@ -24,8 +24,8 @@ final class S309RemoteProviderConfigPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS309ProviderStatusExplainsMissingVerificationAndDisabledProvider() async {
-        var unverified = RemoteProviderConfigState.s309RemoteProviderConfigured()
+    func testAIPrivacyRulesProviderStatusExplainsMissingVerificationAndDisabledProvider() async {
+        var unverified = RemoteProviderConfigState.aiPrivacyRulesRemoteProviderConfigured()
         unverified.providerVerified = false
         await assertProviderStatus(
             unverified,
@@ -36,7 +36,7 @@ final class S309RemoteProviderConfigPageFeatureTests: XCTestCase {
             allowsGate: false
         )
 
-        var disabled = RemoteProviderConfigState.s309RemoteProviderConfigured()
+        var disabled = RemoteProviderConfigState.aiPrivacyRulesRemoteProviderConfigured()
         disabled.remoteProviderEnabled = false
         await assertProviderStatus(
             disabled,
@@ -49,12 +49,12 @@ final class S309RemoteProviderConfigPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS309ProviderLoadFailureMapsCoreErrorWithoutMockingReadyState() async {
-        let bridge = S309FailingRemoteProviderReader(error: CoreError.PermissionDenied(path: "remote provider"))
+    func testAIPrivacyRulesProviderLoadFailureMapsCoreErrorWithoutMockingReadyState() async {
+        let bridge = AIPrivacyRulesFailingRemoteProviderReader(error: CoreError.PermissionDenied(path: "remote provider"))
         let model = AIPrivacyRemoteProviderStateModel(
-            repoPath: "/tmp/s309",
+            repoPath: "/tmp/aiPrivacyRules",
             providerReader: bridge,
-            errorMapper: S309RemoteProviderErrorMapper()
+            errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
         )
 
         await model.load()
@@ -73,19 +73,19 @@ final class S309RemoteProviderConfigPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS309BlocksPrivacyGateWithoutTouchingC303ProviderConfig() async {
-        let updater = S309RemoteProviderAISettingsUpdater()
+    func testAIPrivacyRulesBlocksPrivacyGateWithoutTouchingRemoteProviderConfigCoreProviderConfig() async {
+        let updater = AIPrivacyRulesRemoteProviderAISettingsUpdater()
         let model = AISettingsModel(
-            repoPath: "/tmp/s309",
-            loader: S309RemoteProviderAISettingsLoader(snapshot: .s309RemoteReady(repoPath: "/tmp/s309")),
+            repoPath: "/tmp/aiPrivacyRules",
+            loader: AIPrivacyRulesRemoteProviderAISettingsLoader(snapshot: .aiPrivacyRulesRemoteReady(repoPath: "/tmp/aiPrivacyRules")),
             updater: updater,
-            errorMapper: S309RemoteProviderErrorMapper()
+            errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
         )
-        let providerBridge = RemoteProviderConfigBridge(initial: .s309RemoteProviderConfigured())
+        let providerBridge = RemoteProviderConfigBridge(initial: .aiPrivacyRulesRemoteProviderConfigured())
         let providerModel = AIPrivacyRemoteProviderStateModel(
-            repoPath: "/tmp/s309",
+            repoPath: "/tmp/aiPrivacyRules",
             providerReader: providerBridge,
-            errorMapper: S309RemoteProviderErrorMapper()
+            errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
         )
 
         await model.load()
@@ -104,13 +104,13 @@ final class S309RemoteProviderConfigPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS309C309LoadsPrivacyRulesSnapshotFromCoreBridge() async {
-        let bridge = RemotePrivacyRulesBridge(snapshot: .s309PrivacyRules(privacyGateEnabled: true))
+    func testAIPrivacyRulesAIPrivacyRulesCoreLoadsPrivacyRulesSnapshotFromCoreBridge() async {
+        let bridge = RemotePrivacyRulesBridge(snapshot: .aiPrivacyRulesPrivacyRules(privacyGateEnabled: true))
         let model = AIPrivacyRulesModel(
-            repoPath: "/tmp/s309",
+            repoPath: "/tmp/aiPrivacyRules",
             rulesManager: bridge,
             evaluator: bridge,
-            errorMapper: S309RemoteProviderErrorMapper()
+            errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
         )
 
         await model.load()
@@ -123,13 +123,13 @@ final class S309RemoteProviderConfigPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS309C309UpdatesPrivacyGateAndFieldFiltersWithoutProviderDisable() async {
-        let bridge = RemotePrivacyRulesBridge(snapshot: .s309PrivacyRules(privacyGateEnabled: true))
+    func testAIPrivacyRulesAIPrivacyRulesCoreUpdatesPrivacyGateAndFieldFiltersWithoutProviderDisable() async {
+        let bridge = RemotePrivacyRulesBridge(snapshot: .aiPrivacyRulesPrivacyRules(privacyGateEnabled: true))
         let model = AIPrivacyRulesModel(
-            repoPath: "/tmp/s309",
+            repoPath: "/tmp/aiPrivacyRules",
             rulesManager: bridge,
             evaluator: bridge,
-            errorMapper: S309RemoteProviderErrorMapper()
+            errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
         )
 
         await model.load()
@@ -145,16 +145,16 @@ final class S309RemoteProviderConfigPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS309C309EvaluatesTestRulesWithCurrentSnapshot() async {
+    func testAIPrivacyRulesAIPrivacyRulesCoreEvaluatesTestRulesWithCurrentSnapshot() async {
         let bridge = RemotePrivacyRulesBridge(
-            snapshot: .s309PrivacyRules(privacyGateEnabled: true),
-            evaluationReport: .s309FinanceFolderBlocked()
+            snapshot: .aiPrivacyRulesPrivacyRules(privacyGateEnabled: true),
+            evaluationReport: .aiPrivacyRulesFinanceFolderBlocked()
         )
         let model = AIPrivacyRulesModel(
-            repoPath: "/tmp/s309",
+            repoPath: "/tmp/aiPrivacyRules",
             rulesManager: bridge,
             evaluator: bridge,
-            errorMapper: S309RemoteProviderErrorMapper()
+            errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
         )
 
         await model.load()
@@ -162,7 +162,7 @@ final class S309RemoteProviderConfigPageFeatureTests: XCTestCase {
         let requests = await bridge.requests()
 
         XCTAssertEqual(requests.evaluations.count, 4)
-        XCTAssertEqual(requests.evaluations.map(\.feature), AiFeatureKind.s309Cases)
+        XCTAssertEqual(requests.evaluations.map(\.feature), AiFeatureKind.aiPrivacyRulesCases)
         XCTAssertEqual(requests.evaluations[0].route, .remote)
         XCTAssertEqual(requests.evaluations[0].context.repoRelativePath, "finance/private/q1.pdf")
         XCTAssertEqual(requests.evaluations[0].requestedFields, [.fileName, .repoRelativePath, .extension])
@@ -183,9 +183,9 @@ final class S309RemoteProviderConfigPageFeatureTests: XCTestCase {
         line: UInt = #line
     ) async {
         let model = AIPrivacyRemoteProviderStateModel(
-            repoPath: "/tmp/s309",
+            repoPath: "/tmp/aiPrivacyRules",
             providerReader: RemoteProviderConfigBridge(initial: snapshot),
-            errorMapper: S309RemoteProviderErrorMapper()
+            errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
         )
 
         await model.load()
@@ -198,7 +198,7 @@ final class S309RemoteProviderConfigPageFeatureTests: XCTestCase {
     }
 }
 
-private actor S309FailingRemoteProviderReader: CoreRemoteProviderConfiguring {
+private actor AIPrivacyRulesFailingRemoteProviderReader: CoreRemoteProviderConfiguring {
     let error: CoreError
 
     init(error: CoreError) {
@@ -231,7 +231,7 @@ private actor S309FailingRemoteProviderReader: CoreRemoteProviderConfiguring {
     }
 }
 
-private actor S309RemoteProviderAISettingsLoader: CoreAISettingsLoading {
+private actor AIPrivacyRulesRemoteProviderAISettingsLoader: CoreAISettingsLoading {
     let snapshot: AISettingsSnapshot
 
     init(snapshot: AISettingsSnapshot) {
@@ -243,7 +243,7 @@ private actor S309RemoteProviderAISettingsLoader: CoreAISettingsLoading {
     }
 }
 
-private actor S309RemoteProviderAISettingsUpdater: CoreAISettingsUpdating {
+private actor AIPrivacyRulesRemoteProviderAISettingsUpdater: CoreAISettingsUpdating {
     private var recorded: [AISettingsConfigSnapshot] = []
 
     func updateAISettings(
@@ -252,7 +252,7 @@ private actor S309RemoteProviderAISettingsUpdater: CoreAISettingsUpdating {
     ) async throws -> AISettingsSnapshot {
         let normalized = newConfig.normalized()
         recorded.append(normalized)
-        return AISettingsSnapshot.s309Snapshot(config: normalized)
+        return AISettingsSnapshot.aiPrivacyRulesSnapshot(config: normalized)
     }
 
     func requests() -> [AISettingsConfigSnapshot] {
@@ -260,7 +260,7 @@ private actor S309RemoteProviderAISettingsUpdater: CoreAISettingsUpdating {
     }
 }
 
-private actor S309RemoteProviderErrorMapper: CoreErrorMapping {
+private actor AIPrivacyRulesRemoteProviderErrorMapper: CoreErrorMapping {
     func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .permissionDenied,
@@ -268,13 +268,13 @@ private actor S309RemoteProviderErrorMapper: CoreErrorMapping {
             severity: .medium,
             suggestedAction: "Configure remote AI",
             recoverability: .userActionRequired,
-            rawContext: "S3-09 C3-03"
+            rawContext: "ai-privacy-rules remote-provider-config-core"
         )
     }
 }
 
 private extension RemoteProviderConfigState {
-    static func s309RemoteProviderConfigured() -> RemoteProviderConfigState {
+    static func aiPrivacyRulesRemoteProviderConfigured() -> RemoteProviderConfigState {
         RemoteProviderConfigState(
             providerConfigured: true,
             providerVerified: true,
@@ -291,8 +291,8 @@ private extension RemoteProviderConfigState {
 }
 
 private extension AISettingsSnapshot {
-    static func s309RemoteReady(repoPath: String) -> AISettingsSnapshot {
-        s309Snapshot(config: AISettingsConfigSnapshot(
+    static func aiPrivacyRulesRemoteReady(repoPath: String) -> AISettingsSnapshot {
+        aiPrivacyRulesSnapshot(config: AISettingsConfigSnapshot(
             repoPath: repoPath,
             aiEnabled: true,
             providerPreference: .remoteFirst,
@@ -307,7 +307,7 @@ private extension AISettingsSnapshot {
         ))
     }
 
-    static func s309Snapshot(config: AISettingsConfigSnapshot) -> AISettingsSnapshot {
+    static func aiPrivacyRulesSnapshot(config: AISettingsConfigSnapshot) -> AISettingsSnapshot {
         let normalized = config.normalized()
         return AISettingsSnapshot(
             config: normalized,
@@ -318,7 +318,7 @@ private extension AISettingsSnapshot {
 }
 
 private extension AiPrivacyRulesSnapshot {
-    static func s309PrivacyRules(privacyGateEnabled: Bool) -> AiPrivacyRulesSnapshot {
+    static func aiPrivacyRulesPrivacyRules(privacyGateEnabled: Bool) -> AiPrivacyRulesSnapshot {
         AiPrivacyRulesSnapshot(
             privacyGateEnabled: privacyGateEnabled,
             rules: [
@@ -352,7 +352,7 @@ private extension AiPrivacyRulesSnapshot {
 }
 
 private extension AiPrivacyEvaluationReport {
-    static func s309FinanceFolderBlocked() -> AiPrivacyEvaluationReport {
+    static func aiPrivacyRulesFinanceFolderBlocked() -> AiPrivacyEvaluationReport {
         AiPrivacyEvaluationReport(
             decision: .skipped,
             skippedReason: .privacyRule,

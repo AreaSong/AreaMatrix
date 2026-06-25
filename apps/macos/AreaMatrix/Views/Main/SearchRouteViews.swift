@@ -7,7 +7,7 @@ struct SearchIndexingStatusRouteView: View {
     let onClose: () -> Void
 
     var body: some View {
-        MainFileActionSheetContainer(title: "Search Index Status", pageID: "S2-01-indexing-status") {
+        MainFileActionSheetContainer(title: "Search Index Status", pageID: "search-index-status-indexing-status") {
             Label(statusText, systemImage: "exclamationmark.triangle")
                 .font(.callout)
             metadataRow("Query", request.query)
@@ -19,7 +19,7 @@ struct SearchIndexingStatusRouteView: View {
                 Button("Retry", action: onRetry)
             }
         }
-        .accessibilityIdentifier("S2-01-indexing-status-search-route")
+        .accessibilityIdentifier("search-index-status-indexing-status-search-route")
     }
 
     private var statusText: String {
@@ -122,7 +122,7 @@ struct AISummaryEditor: View {
         .onChange(of: model.status) { _, _ in syncExitController() }
         .onChange(of: model.operation) { _, _ in syncExitController() }
         .onChange(of: model.draftText) { _, _ in syncExitController() }
-        .accessibilityIdentifier("S3-06-C3-06-ai-summary-editor")
+        .accessibilityIdentifier("ai-summary-ai-summary-core-ai-summary-editor")
     }
 
     private var header: some View {
@@ -143,7 +143,7 @@ struct AISummaryEditor: View {
             Label("Checking AI summary gate...", systemImage: "arrow.triangle.2.circlepath")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-                .accessibilityIdentifier("S3-06-C3-06-generate-gate-checking")
+                .accessibilityIdentifier("ai-summary-ai-summary-core-generate-gate-checking")
         case .allowed:
             EmptyView()
         case let .blocked(notice):
@@ -155,7 +155,7 @@ struct AISummaryEditor: View {
                 Text(error.recovery).font(.caption)
             }
             .foregroundStyle(.orange)
-            .accessibilityIdentifier("S3-06-C3-06-generate-gate-error")
+            .accessibilityIdentifier("ai-summary-ai-summary-core-generate-gate-error")
         }
     }
 
@@ -178,18 +178,18 @@ struct AISummaryEditor: View {
     private func noticeAction(_ notice: AISummaryEditorNotice) -> some View {
         if notice.opensAISettings {
             Button("Open AI settings", action: onOpenAISettings)
-                .accessibilityIdentifier("S3-06-\(notice.capability)-open-ai-settings")
-        } else if let route = notice.s309PrivacyRulesRoute(repoPath: repoPath),
-                  let suffix = notice.s309PrivacyRulesRouteAccessibilitySuffix {
+                .accessibilityIdentifier("ai-summary-\(notice.capability)-open-ai-settings")
+        } else if let route = notice.aiPrivacyRulesPrivacyRulesRoute(repoPath: repoPath),
+                  let suffix = notice.aiPrivacyRulesPrivacyRulesRouteAccessibilitySuffix {
             Button("View privacy rule") {
                 privacyRuleRoute = route
             }
-            .accessibilityIdentifier("S3-06-\(notice.capability)-view-\(suffix)")
+            .accessibilityIdentifier("ai-summary-\(notice.capability)-view-\(suffix)")
         }
     }
 
     private func gateAccessibilityID(for notice: AISummaryEditorNotice) -> String {
-        notice.capability == "C3-09" ? "S3-06-C3-09-privacy-gate" : "S3-06-C3-06-generate-gate"
+        notice.capability == "ai-privacy-rules-core" ? "ai-summary-ai-privacy-rules-core-privacy-gate" : "ai-summary-ai-summary-core-generate-gate"
     }
 
     @ViewBuilder
@@ -210,12 +210,12 @@ struct AISummaryEditor: View {
                         Button("View privacy rule") {
                             privacyRuleRoute = AIPrivacyRulesRoute(repoPath: repoPath, focus: .rule(ruleID: ruleID))
                         }
-                        .accessibilityIdentifier("S3-06-C3-09-view-privacy-rule-\(ruleID)")
+                        .accessibilityIdentifier("ai-summary-ai-privacy-rules-core-view-privacy-rule-\(ruleID)")
                     } else if let field = privacySkip.matchedField {
                         Button("View privacy rule") {
                             privacyRuleRoute = AIPrivacyRulesRoute(repoPath: repoPath, focus: .field(field))
                         }
-                        .accessibilityIdentifier("S3-06-C3-09-view-privacy-field-\(field)")
+                        .accessibilityIdentifier("ai-summary-ai-privacy-rules-core-view-privacy-field-\(field)")
                     }
                 }
                 if let callLogID = provenance.callLogID {
@@ -223,12 +223,12 @@ struct AISummaryEditor: View {
                         callLogRoute = AISummaryCallLogRoute(callLogID: callLogID)
                     }
                     .buttonStyle(.link)
-                    .accessibilityIdentifier("S3-06-\(callLogCapability)-view-ai-call-\(callLogID)")
+                    .accessibilityIdentifier("ai-summary-\(callLogCapability)-view-ai-call-\(callLogID)")
                 }
             }
             .font(.caption)
             .foregroundStyle(.secondary)
-            .accessibilityIdentifier(model.privacySkip == nil ? "S3-06-C3-06-provenance" : "S3-06-C3-09-privacy-skip")
+            .accessibilityIdentifier(model.privacySkip == nil ? "ai-summary-ai-summary-core-provenance" : "ai-summary-ai-privacy-rules-core-privacy-skip")
         }
     }
 
@@ -240,7 +240,7 @@ struct AISummaryEditor: View {
     }
 
     private var callLogCapability: String {
-        model.privacySkip == nil ? "C3-06" : "C3-09"
+        model.privacySkip == nil ? "ai-summary-core" : "ai-privacy-rules-core"
     }
 
     private var editor: some View {
@@ -263,7 +263,7 @@ struct AISummaryEditor: View {
             Label(progressText, systemImage: "arrow.triangle.2.circlepath")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-                .accessibilityIdentifier("S3-06-C3-06-operation-progress")
+                .accessibilityIdentifier("ai-summary-ai-summary-core-operation-progress")
         }
     }
 
@@ -276,7 +276,7 @@ struct AISummaryEditor: View {
                 Text(error.recovery).font(.caption).foregroundStyle(.secondary)
                 failedActionControls
             }
-            .accessibilityIdentifier("S3-06-C3-06-error")
+            .accessibilityIdentifier("ai-summary-ai-summary-core-error")
         }
     }
 

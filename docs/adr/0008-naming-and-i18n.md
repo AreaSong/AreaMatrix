@@ -87,7 +87,7 @@ apps/macos/AreaMatrix/Localizations/
 - 缺点：
   - 配置复杂
   - 用户再也无法跨语言切换 UI
-- **为什么没选**：分类是 Stage 1 内置的（10 个），用户自定义在 Stage 2 加（仍用英文 slug + 显示名分离）
+- **为什么没选**：当前分类内置（10 个），用户自定义后续加入（仍用英文 slug + 显示名分离）
 
 ### E. 自动音译 / 拼音化中文文件名
 
@@ -113,7 +113,7 @@ apps/macos/AreaMatrix/Localizations/
 ### 负面 / 代价
 
 - **首次启动需要本地化决策**：UI 文案要为每个 locale 准备完整翻译
-  - MVP 仅支持 `zh-Hans` 和 `en`，`zh-Hant` Stage 2 加
+  - 当前仅支持 `zh-Hans` 和 `en`，`zh-Hant` 后续加入
 - **classifier.yaml 双名维护**：内部 `slug` + UI `display_name` × N 个 locale
   - 缓解：display_name 字段是 map，缺失 locale 自动 fallback 到 slug
 - **错误消息本地化**：core 层 [error-codes.md](../api/error-codes.md) 中的 `code` 用英文，UI 层翻译展示
@@ -132,7 +132,7 @@ apps/macos/AreaMatrix/Localizations/
 - 加日 / 韩 / 法 等 locale 时，整套 strings 流程要扩展
 - 用户大量要求"目录改成中文" → 重审是否在 UI 层提供"目录别名"
 - 跨平台同步（macOS ↔ Windows）出现 case 冲突频繁 → 决定统一 case 策略
-- 加用户自定义分类（Stage 2）时，slug 由用户输入或自动生成的策略
+- 加用户自定义分类时，slug 由用户输入或自动生成的策略
 
 ## Related
 

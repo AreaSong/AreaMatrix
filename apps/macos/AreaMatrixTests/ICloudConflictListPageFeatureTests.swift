@@ -2,62 +2,62 @@
 import XCTest
 
 final class ICloudConflictListPageFeatureTests: XCTestCase {
-    private static let declaredCapabilities: Set<String> = ["C1-25"]
-    private static let s220DeclaredCapabilities: Set<String> = ["C1-25"]
+    private static let declaredCapabilities: Set<String> = ["icloud-conflicts-core"]
+    private static let iCloudConflictVisualDeclaredCapabilities: Set<String> = ["icloud-conflicts-core"]
 
-    func testS136DeclaresOnlyC125AndCoreBridgeBoundary() {
-        XCTAssertEqual(Self.declaredCapabilities, ["C1-25"])
+    func testICloudConflictListDeclaresOnlyICloudConflictCoreAndCoreBridgeBoundary() {
+        XCTAssertEqual(Self.declaredCapabilities, ["icloud-conflicts-core"])
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.listICloudConflicts))
-        XCTAssertFalse(Self.declaredCapabilities.contains("C1-23"))
-        XCTAssertFalse(Self.declaredCapabilities.contains("C1-26"))
+        XCTAssertFalse(Self.declaredCapabilities.contains("delete-remove-index"))
+        XCTAssertFalse(Self.declaredCapabilities.contains("metadata-repair"))
     }
 
-    func testS220DeclaresOnlyC125ListBoundary() {
-        XCTAssertEqual(Self.s220DeclaredCapabilities, ["C1-25"])
+    func testICloudConflictVisualDeclaresOnlyICloudConflictCoreListBoundary() {
+        XCTAssertEqual(Self.iCloudConflictVisualDeclaredCapabilities, ["icloud-conflicts-core"])
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.listICloudConflicts))
-        XCTAssertFalse(Self.s220DeclaredCapabilities.contains("C2-16"))
-        XCTAssertFalse(Self.s220DeclaredCapabilities.contains("C2-07"))
+        XCTAssertFalse(Self.iCloudConflictVisualDeclaredCapabilities.contains("icloud-conflict-visual"))
+        XCTAssertFalse(Self.iCloudConflictVisualDeclaredCapabilities.contains("undo-action-log"))
         XCTAssertEqual(
-            ICloudConflictListPageContext.s220ConflictVisual.accessibilityID,
-            "S2-20-C1-25-icloud-conflict-list"
+            ICloudConflictListPageContext.iCloudConflictVisualConflictVisual.accessibilityID,
+            "icloud-conflict-review-icloud-conflicts-core-icloud-conflict-list"
         )
     }
 
     @MainActor
-    func testS136C125LoadUsesCoreBridgeListerWithoutOutOfScopeActions() async {
-        let conflict = ICloudConflictPairSnapshot.s136Fixture()
-        let lister = S136RecordingConflictLister(result: .success([conflict]))
+    func testICloudConflictListICloudConflictCoreLoadUsesCoreBridgeListerWithoutOutOfScopeActions() async {
+        let conflict = ICloudConflictPairSnapshot.iCloudConflictListFixture()
+        let lister = ICloudConflictListRecordingConflictLister(result: .success([conflict]))
         let model = ICloudConflictListModel(
-            repoPath: "/tmp/s136-repo",
+            repoPath: "/tmp/iCloudConflictList-repo",
             conflictLister: lister,
-            errorMapper: S136RecordingErrorMapper(mapping: .s136Mapping())
+            errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping())
         )
 
         await model.load()
         let requests = await lister.recordedRequests()
 
-        XCTAssertEqual(requests, ["/tmp/s136-repo"])
+        XCTAssertEqual(requests, ["/tmp/iCloudConflictList-repo"])
         XCTAssertEqual(model.state, .loaded([conflict]))
         XCTAssertEqual(model.conflicts, [conflict])
         XCTAssertFalse(model.isLoading)
     }
 
     @MainActor
-    func testS136C125ErrorStateMapsCoreErrorAndKeepsRetryDiagnosticsVisible() async {
-        let mapper = S136RecordingErrorMapper(mapping: .s136Mapping(
+    func testICloudConflictListICloudConflictCoreErrorStateMapsCoreErrorAndKeepsRetryDiagnosticsVisible() async {
+        let mapper = ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping(
             kind: .iCloudPlaceholder,
-            rawContext: "/tmp/s136-repo/docs/report.pdf.icloud"
+            rawContext: "/tmp/iCloudConflictList-repo/docs/report.pdf.icloud"
         ))
         let model = ICloudConflictListModel(
-            repoPath: "/tmp/s136-repo",
-            conflictLister: S136RecordingConflictLister(result: .failure(CoreError.ICloudPlaceholder(
-                path: "/tmp/s136-repo/docs/report.pdf.icloud"
+            repoPath: "/tmp/iCloudConflictList-repo",
+            conflictLister: ICloudConflictListRecordingConflictLister(result: .failure(CoreError.ICloudPlaceholder(
+                path: "/tmp/iCloudConflictList-repo/docs/report.pdf.icloud"
             ))),
             errorMapper: mapper
         )
 
         await model.load()
-        let body = s136MirrorDescription(of: ICloudConflictListView(
+        let body = iCloudConflictListMirrorDescription(of: ICloudConflictListView(
             model: model,
             onClose: {},
             onResolve: { _ in },
@@ -65,35 +65,35 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         ).body)
         let mappedErrors = await mapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [CoreError.ICloudPlaceholder(path: "/tmp/s136-repo/docs/report.pdf.icloud")])
-        XCTAssertTrue(body.contains("S1-36-C1-25-error"))
+        XCTAssertEqual(mappedErrors, [CoreError.ICloudPlaceholder(path: "/tmp/iCloudConflictList-repo/docs/report.pdf.icloud")])
+        XCTAssertTrue(body.contains("icloud-conflicts-icloud-conflicts-core-error"))
         XCTAssertTrue(body.contains("Unable to list iCloud conflicts"))
         XCTAssertTrue(body.contains("Retry"))
         XCTAssertTrue(body.contains("Collect Diagnostics..."))
     }
 
     @MainActor
-    func testS136C125EmptyAndLoadedViewsExposeRequiredActions() async {
+    func testICloudConflictListICloudConflictCoreEmptyAndLoadedViewsExposeRequiredActions() async {
         let emptyModel = ICloudConflictListModel(
-            repoPath: "/tmp/s136-repo",
-            conflictLister: S136RecordingConflictLister(result: .success([])),
-            errorMapper: S136RecordingErrorMapper(mapping: .s136Mapping())
+            repoPath: "/tmp/iCloudConflictList-repo",
+            conflictLister: ICloudConflictListRecordingConflictLister(result: .success([])),
+            errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping())
         )
         await emptyModel.load()
-        let emptyBody = s136MirrorDescription(of: ICloudConflictListView(
+        let emptyBody = iCloudConflictListMirrorDescription(of: ICloudConflictListView(
             model: emptyModel,
             onClose: {},
             onResolve: { _ in }
         ).body)
 
-        let conflict = ICloudConflictPairSnapshot.s136Fixture()
+        let conflict = ICloudConflictPairSnapshot.iCloudConflictListFixture()
         let loadedModel = ICloudConflictListModel(
-            repoPath: "/tmp/s136-repo",
-            conflictLister: S136RecordingConflictLister(result: .success([conflict])),
-            errorMapper: S136RecordingErrorMapper(mapping: .s136Mapping())
+            repoPath: "/tmp/iCloudConflictList-repo",
+            conflictLister: ICloudConflictListRecordingConflictLister(result: .success([conflict])),
+            errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping())
         )
         await loadedModel.load()
-        let loadedBody = s136MirrorDescription(of: ICloudConflictListView(
+        let loadedBody = iCloudConflictListMirrorDescription(of: ICloudConflictListView(
             model: loadedModel,
             onClose: {},
             onResolve: { _ in XCTFail("Body inspection must not invoke row actions") }
@@ -110,19 +110,19 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         XCTAssertEqual(ICloudConflictListCopy.closeAction, "Close")
         XCTAssertEqual(
             ICloudConflictListAccessibilityID.resolve(conflictID: conflict.conflictID),
-            "S1-36-C1-25-resolve-docs-report--Alice-s-conflicted-copy--pdf"
+            "icloud-conflicts-icloud-conflicts-core-resolve-docs-report--Alice-s-conflicted-copy--pdf"
         )
     }
 
     @MainActor
-    func testS136C125RevealUsesPlatformServicesWithoutCoreWrites() {
-        let conflict = ICloudConflictPairSnapshot.s136Fixture()
-        let finder = S136RecordingFinderOpener()
-        let revealer = S136RecordingFileRevealer()
+    func testICloudConflictListICloudConflictCoreRevealUsesPlatformServicesWithoutCoreWrites() {
+        let conflict = ICloudConflictPairSnapshot.iCloudConflictListFixture()
+        let finder = ICloudConflictListRecordingFinderOpener()
+        let revealer = ICloudConflictListRecordingFileRevealer()
         let model = ICloudConflictListModel(
-            repoPath: "/tmp/s136-repo",
-            conflictLister: S136RecordingConflictLister(result: .success([conflict])),
-            errorMapper: S136RecordingErrorMapper(mapping: .s136Mapping()),
+            repoPath: "/tmp/iCloudConflictList-repo",
+            conflictLister: ICloudConflictListRecordingConflictLister(result: .success([conflict])),
+            errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping()),
             repositoryFinderOpener: finder,
             fileRevealer: revealer
         )
@@ -130,27 +130,27 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         model.revealRepositoryInFinder()
         model.revealConflict(conflict)
 
-        XCTAssertEqual(finder.requests, ["/tmp/s136-repo"])
-        XCTAssertEqual(revealer.requests, [S136RecordingFileRevealer.Request(
-            repoPath: "/tmp/s136-repo",
+        XCTAssertEqual(finder.requests, ["/tmp/iCloudConflictList-repo"])
+        XCTAssertEqual(revealer.requests, [ICloudConflictListRecordingFileRevealer.Request(
+            repoPath: "/tmp/iCloudConflictList-repo",
             relativePath: "docs/report (Alice's conflicted copy).pdf"
         )])
         XCTAssertEqual(model.revealState, .revealed("Conflict copy revealed in Finder."))
     }
 
     @MainActor
-    func testS136C125SettingsEntryOpensReviewConflictsTarget() async {
-        let opener = S136RecordingFinderOpener()
+    func testICloudConflictListICloudConflictCoreSettingsEntryOpensReviewConflictsTarget() async {
+        let opener = ICloudConflictListRecordingFinderOpener()
         let model = IntegrationsSettingsModel(
-            repoPath: "/tmp/s136-repo",
-            loader: S136IntegrationsLoader(config: .s136IntegrationsFixture(repoPath: "/tmp/stale")),
-            updater: S136NoopIntegrationsUpdater(),
-            errorMapper: S136RecordingErrorMapper(mapping: .s136Mapping()),
-            statusDetector: S136StaticStatusDetector(
+            repoPath: "/tmp/iCloudConflictList-repo",
+            loader: ICloudConflictListIntegrationsLoader(config: .iCloudConflictListIntegrationsFixture(repoPath: "/tmp/stale")),
+            updater: ICloudConflictListNoopIntegrationsUpdater(),
+            errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping()),
+            statusDetector: ICloudConflictListStaticStatusDetector(
                 snapshot: IntegrationsICloudSnapshot(repositoryLocation: .iCloudDrive, iCloudStatus: .available)
             ),
             finderOpener: opener,
-            helpOpener: S136NoopHelpOpener()
+            helpOpener: ICloudConflictListNoopHelpOpener()
         )
 
         await model.load()
@@ -162,49 +162,49 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         )
         XCTAssertEqual(
             IntegrationConflictListPresentation.reviewConflictsAccessibilityID,
-            "S1-36-C1-25-review-conflicts"
+            "icloud-conflicts-icloud-conflicts-core-review-conflicts"
         )
     }
 
     @MainActor
     // swiftlint:disable:next function_body_length
-    func testS220C216ResolveRouteUsesConflictIDAndSupportedPreviewResolution() async {
-        let conflict = ICloudConflictPairSnapshot.s136Fixture()
+    func testICloudConflictVisualICloudConflictVisualCoreResolveRouteUsesConflictIDAndSupportedPreviewResolution() async {
+        let conflict = ICloudConflictPairSnapshot.iCloudConflictListFixture()
         let listModel = ICloudConflictListModel(
-            repoPath: "/tmp/s136-repo",
-            conflictLister: S136RecordingConflictLister(result: .success([conflict])),
-            errorMapper: S136RecordingErrorMapper(mapping: .s136Mapping())
+            repoPath: "/tmp/iCloudConflictList-repo",
+            conflictLister: ICloudConflictListRecordingConflictLister(result: .success([conflict])),
+            errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping())
         )
 
         await listModel.load()
         listModel.beginResolvingConflict(conflict)
 
         guard let route = listModel.resolvingRoute else {
-            return XCTFail("Expected Resolve to open S2-20 route context")
+            return XCTFail("Expected Resolve to open icloud-conflict-review route context")
         }
         XCTAssertEqual(route.conflict, conflict)
         XCTAssertEqual(route.conflict.conflictID, "docs/report (Alice's conflicted copy).pdf")
-        XCTAssertEqual(route.originalVersion.path, "/tmp/s136-repo/docs/report.pdf")
-        XCTAssertEqual(route.conflictedCopyVersion.path, "/tmp/s136-repo/docs/report (Alice's conflicted copy).pdf")
+        XCTAssertEqual(route.originalVersion.path, "/tmp/iCloudConflictList-repo/docs/report.pdf")
+        XCTAssertEqual(route.conflictedCopyVersion.path, "/tmp/iCloudConflictList-repo/docs/report (Alice's conflicted copy).pdf")
         XCTAssertEqual(route.resolutionCapability, .supported)
         XCTAssertTrue(listModel.isResolving(conflict))
 
-        let validator = S136RecordingPathValidator(result: .success(.s136ValidationFixture(repoPath: route.repoPath)))
+        let validator = ICloudConflictListRecordingPathValidator(result: .success(.iCloudConflictListValidationFixture(repoPath: route.repoPath)))
         let sheetModel = ICloudConflictMinimalModel(
             repoPath: route.repoPath,
             conflictID: route.conflict.conflictID,
             originalVersion: route.originalVersion,
             conflictedCopyVersion: route.conflictedCopyVersion,
             pathValidator: validator,
-            conflictReviewer: S220RecordingConflictReviewer(
-                previewResult: .success(.s220Preview(conflictID: route.conflict.conflictID)),
-                resolveResult: .success(.s220ResolvedReport(conflictID: route.conflict.conflictID))
+            conflictReviewer: ICloudConflictVisualRecordingConflictReviewer(
+                previewResult: .success(.iCloudConflictVisualPreview(conflictID: route.conflict.conflictID)),
+                resolveResult: .success(.iCloudConflictVisualResolvedReport(conflictID: route.conflict.conflictID))
             ),
-            errorMapper: S136RecordingErrorMapper(mapping: .s136Mapping(kind: .internal))
+            errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping(kind: .internal))
         )
         await sheetModel.validateRepositoryPath()
         await sheetModel.loadPreview()
-        let sheetBody = s136MirrorDescription(of: ICloudConflictMinimalSheet(
+        let sheetBody = iCloudConflictListMirrorDescription(of: ICloudConflictMinimalSheet(
             model: sheetModel,
             resolutionCapability: route.resolutionCapability,
             isTrashAvailable: true,
@@ -214,49 +214,49 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         ).body)
         let validatorRequests = await validator.recordedRequests()
 
-        XCTAssertEqual(validatorRequests, ["/tmp/s136-repo"])
+        XCTAssertEqual(validatorRequests, ["/tmp/iCloudConflictList-repo"])
         XCTAssertEqual(sheetModel.previewState.preview?.conflictID, route.conflict.conflictID)
         XCTAssertEqual(sheetModel.previewVersions.map(\.previewStatus), [.available, .available])
         XCTAssertTrue(sheetModel.canApply(strategy: .keepBoth, isTrashAvailable: true, didConfirmSingleVersion: false))
-        XCTAssertTrue(sheetBody.contains("S2-20-C2-16-icloud-conflict-visual"))
+        XCTAssertTrue(sheetBody.contains("icloud-conflict-review-icloud-conflict-visual-icloud-conflict-visual"))
         XCTAssertTrue(sheetBody.contains("Conflict details loaded"))
         XCTAssertTrue(sheetBody.contains("Original preview"))
         XCTAssertTrue(sheetBody.contains("Conflicted preview"))
-        XCTAssertFalse(sheetBody.contains("S1-25-core-resolution-blocked"))
+        XCTAssertFalse(sheetBody.contains("icloud-conflict-minimal-core-resolution-blocked"))
 
         listModel.closeResolvingConflict()
         XCTAssertNil(listModel.resolvingRoute)
     }
 
     @MainActor
-    func testS220C125ListContextUsesReadOnlyCoreListerWithoutPreviewOrResolve() async {
-        let conflict = ICloudConflictPairSnapshot.s136Fixture()
-        let lister = S136RecordingConflictLister(result: .success([conflict]))
+    func testICloudConflictVisualICloudConflictCoreListContextUsesReadOnlyCoreListerWithoutPreviewOrResolve() async {
+        let conflict = ICloudConflictPairSnapshot.iCloudConflictListFixture()
+        let lister = ICloudConflictListRecordingConflictLister(result: .success([conflict]))
         let model = ICloudConflictListModel(
-            repoPath: "/tmp/s220-repo",
+            repoPath: "/tmp/iCloudConflictVisual-repo",
             conflictLister: lister,
-            errorMapper: S136RecordingErrorMapper(mapping: .s136Mapping())
+            errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping())
         )
 
         await model.load()
-        let body = s136MirrorDescription(of: ICloudConflictListView(
+        let body = iCloudConflictListMirrorDescription(of: ICloudConflictListView(
             model: model,
-            pageContext: .s220ConflictVisual,
+            pageContext: .iCloudConflictVisualConflictVisual,
             onClose: {},
-            onResolve: { _ in XCTFail("Body inspection must not invoke C2-16 resolution") }
+            onResolve: { _ in XCTFail("Body inspection must not invoke icloud-conflict-visual resolution") }
         ).body)
         let requests = await lister.recordedRequests()
 
-        XCTAssertEqual(requests, ["/tmp/s220-repo"])
+        XCTAssertEqual(requests, ["/tmp/iCloudConflictVisual-repo"])
         XCTAssertEqual(model.state, .loaded([conflict]))
-        XCTAssertTrue(body.contains(ICloudConflictListAccessibilityID.s220Page))
-        XCTAssertTrue(body.contains(ICloudConflictListCopy.s220Title))
+        XCTAssertTrue(body.contains(ICloudConflictListAccessibilityID.iCloudConflictVisualPage))
+        XCTAssertTrue(body.contains(ICloudConflictListCopy.iCloudConflictVisualTitle))
         XCTAssertTrue(body.contains("1 conflict groups found"))
-        XCTAssertFalse(body.contains("S2-20-C2-16-icloud-conflict-visual"))
+        XCTAssertFalse(body.contains("icloud-conflict-review-icloud-conflict-visual-icloud-conflict-visual"))
     }
 
-    func testS136C125DefaultCoreBridgeListsRealConflictedCopiesReadOnly() async throws {
-        let repoURL = try temporaryS136Repository()
+    func testICloudConflictListICloudConflictCoreDefaultCoreBridgeListsRealConflictedCopiesReadOnly() async throws {
+        let repoURL = try temporaryICloudConflictListRepository()
         defer { try? FileManager.default.removeItem(at: repoURL) }
         let docsURL = repoURL.appendingPathComponent("docs", isDirectory: true)
         try FileManager.default.createDirectory(at: docsURL, withIntermediateDirectories: true)
@@ -277,7 +277,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
     }
 }
 
-private actor S136RecordingConflictLister: CoreICloudConflictListing {
+private actor ICloudConflictListRecordingConflictLister: CoreICloudConflictListing {
     private let result: Result<[ICloudConflictPairSnapshot], Error>
     private var requests: [String] = []
 
@@ -296,7 +296,7 @@ private actor S136RecordingConflictLister: CoreICloudConflictListing {
 }
 
 @MainActor
-private final class S136RecordingFinderOpener: RepositoryFinderOpening {
+private final class ICloudConflictListRecordingFinderOpener: RepositoryFinderOpening {
     private(set) var requests: [String] = []
 
     func openRepositoryInFinder(repoPath: String) throws {
@@ -305,7 +305,7 @@ private final class S136RecordingFinderOpener: RepositoryFinderOpening {
 }
 
 @MainActor
-private final class S136RecordingFileRevealer: RepositoryFileRevealing {
+private final class ICloudConflictListRecordingFileRevealer: RepositoryFileRevealing {
     struct Request: Equatable {
         var repoPath: String
         var relativePath: String
@@ -318,7 +318,7 @@ private final class S136RecordingFileRevealer: RepositoryFileRevealing {
     }
 }
 
-private actor S136RecordingErrorMapper: CoreErrorMapping {
+private actor ICloudConflictListRecordingErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
     private var errors: [CoreError] = []
 
@@ -336,7 +336,7 @@ private actor S136RecordingErrorMapper: CoreErrorMapping {
     }
 }
 
-private actor S136RecordingPathValidator: CoreRepositoryPathValidating {
+private actor ICloudConflictListRecordingPathValidator: CoreRepositoryPathValidating {
     private let result: Result<RepoPathValidationSnapshot, Error>
     private var requests: [String] = []
 
@@ -354,7 +354,7 @@ private actor S136RecordingPathValidator: CoreRepositoryPathValidating {
     }
 }
 
-private actor S136IntegrationsLoader: CoreConfigurationLoading {
+private actor ICloudConflictListIntegrationsLoader: CoreConfigurationLoading {
     private let config: RepoConfigSnapshot
 
     init(config: RepoConfigSnapshot) {
@@ -366,11 +366,11 @@ private actor S136IntegrationsLoader: CoreConfigurationLoading {
     }
 }
 
-private actor S136NoopIntegrationsUpdater: CoreConfigurationUpdating {
+private actor ICloudConflictListNoopIntegrationsUpdater: CoreConfigurationUpdating {
     func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
 }
 
-private struct S136StaticStatusDetector: ICloudStatusDetecting {
+private struct ICloudConflictListStaticStatusDetector: ICloudStatusDetecting {
     let snapshot: IntegrationsICloudSnapshot
 
     func snapshot(repoPath _: String, config _: RepoConfigSnapshot) async -> IntegrationsICloudSnapshot {
@@ -378,12 +378,12 @@ private struct S136StaticStatusDetector: ICloudStatusDetecting {
     }
 }
 
-private struct S136NoopHelpOpener: ICloudHelpOpening {
+private struct ICloudConflictListNoopHelpOpener: ICloudHelpOpening {
     func openICloudHelp() throws {}
 }
 
 private extension ICloudConflictPairSnapshot {
-    static func s136Fixture(
+    static func iCloudConflictListFixture(
         conflictID: String = "docs/report (Alice's conflicted copy).pdf",
         uncertaintyReason: String? = nil
     ) -> ICloudConflictPairSnapshot {
@@ -400,7 +400,7 @@ private extension ICloudConflictPairSnapshot {
 }
 
 private extension RepoConfigSnapshot {
-    static func s136IntegrationsFixture(repoPath: String) -> RepoConfigSnapshot {
+    static func iCloudConflictListIntegrationsFixture(repoPath: String) -> RepoConfigSnapshot {
         RepoConfigSnapshot(
             repoPath: repoPath,
             defaultMode: "Copied",
@@ -417,7 +417,7 @@ private extension RepoConfigSnapshot {
 }
 
 private extension RepoPathValidationSnapshot {
-    static func s136ValidationFixture(repoPath: String) -> RepoPathValidationSnapshot {
+    static func iCloudConflictListValidationFixture(repoPath: String) -> RepoPathValidationSnapshot {
         RepoPathValidationSnapshot(
             repoPath: repoPath,
             exists: true,
@@ -438,9 +438,9 @@ private extension RepoPathValidationSnapshot {
 }
 
 private extension CoreErrorMappingSnapshot {
-    static func s136Mapping(
+    static func iCloudConflictListMapping(
         kind: CoreErrorKindSnapshot = .iCloudPlaceholder,
-        rawContext: String = "/tmp/s136-repo/docs/report.pdf.icloud"
+        rawContext: String = "/tmp/iCloudConflictList-repo/docs/report.pdf.icloud"
     ) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: kind,
@@ -453,26 +453,26 @@ private extension CoreErrorMappingSnapshot {
     }
 }
 
-private func temporaryS136Repository() throws -> URL {
+private func temporaryICloudConflictListRepository() throws -> URL {
     let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixS136-\(UUID().uuidString)", isDirectory: true)
+        .appendingPathComponent("AreaMatrixICloudConflictList-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
 }
 
-private func s136MirrorDescription(of value: Any) -> String {
+private func iCloudConflictListMirrorDescription(of value: Any) -> String {
     var lines: [String] = []
-    appendS136MirrorDescription(of: value, to: &lines)
+    appendICloudConflictListMirrorDescription(of: value, to: &lines)
     return lines.joined(separator: "\n")
 }
 
-private func appendS136MirrorDescription(of value: Any, to lines: inout [String]) {
+private func appendICloudConflictListMirrorDescription(of value: Any, to lines: inout [String]) {
     lines.append(String(describing: type(of: value)))
     lines.append(String(describing: value))
     for child in Mirror(reflecting: value).children {
         if let label = child.label {
             lines.append(label)
         }
-        appendS136MirrorDescription(of: child.value, to: &lines)
+        appendICloudConflictListMirrorDescription(of: child.value, to: &lines)
     }
 }

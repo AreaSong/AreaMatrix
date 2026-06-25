@@ -18,7 +18,7 @@ Choose any folder as a repository, even one that already contains years of files
 
 - **Drag-to-archive** — drop files onto any window region; smart categorization happens locally.
 - **Adopt existing folders** — any non-empty folder can become the repository root; first open scans and indexes it.
-- **Hybrid classification** — extension + keyword rules first, optional AI fallback (Stage 3).
+- **Hybrid classification** — extension + keyword rules first, optional AI fallback when enabled.
 - **Three storage modes** — *Move*, *Copy*, or *Index-only* (decide per drop).
 - **Dedicated repository overviews** — generated under `.areamatrix/generated/` by default, with optional `AREAMATRIX.md`; existing `README.md` files are never overwritten.
 - **Tree-view navigation** — full repository structure in a sidebar, virtualized for large libraries.
@@ -47,18 +47,15 @@ The Rust core library is platform-agnostic. macOS is the first target; Windows /
 
 ## Status
 
-Implementation-stage pre-alpha. The `v1-mvp` technical prompt queue is complete
-(`637/637`), and the repository now contains the Rust core, the SwiftUI macOS
-app, tests, and early iOS / Windows / Linux surfaces.
+Implementation active, not distribution-ready. The v1 technical queue is
+complete, and the repository now contains the Rust core, the SwiftUI macOS app,
+tests, and early iOS / Windows / Linux surfaces.
 
-`v0.1.0-unnotarized-preview.2` is prepared as a GitHub prerelease track for
-trusted testers. It is ad-hoc signed, not Developer ID signed, and not notarized.
-`0.1.0-local-qa` remains an internal QA artifact only. Formal alpha distribution
-is still blocked on release evidence such as iCloud placeholder smoke testing,
-Developer ID signing, notarization, clean-Mac first launch validation, and the
-final `v0.1.0` tag.
+The v1 technical archive is an implementation record, not a distribution
+readiness signal. Distribution decisions and evidence remain tracked by the
+release guide and residual ledger instead of the historical prompt archive.
 
-See [docs/roadmap/milestones.md](docs/roadmap/milestones.md) for the four-stage release plan.
+See [docs/roadmap/version-roadmap.md](docs/roadmap/version-roadmap.md) for the version roadmap.
 
 ## Repository layout
 
@@ -72,7 +69,7 @@ AreaMatrix keeps source, planning, and local runtime material separate:
 | Codex runtime | `.codex/`, `.agents/skills/`, `dev`, `task-loop`, `scripts/` | Repo-local Codex skills, discovery entrypoints, and task-loop tooling. These are stable tool entrypoints and should not be moved just to reduce visual clutter. |
 | Local generated output | `.build/`, `build/`, `core/target/`, `apps/*/.build`, `apps/**/bin`, `apps/**/obj`, `apps/macos/DerivedData/` | Ignored local build products. They are not part of the source layout. |
 
-Fixed paths such as `.codex/skills-src/`, `.agents/skills/`, `workflow/`, `dev`, and `task-loop` are intentionally kept in place because local Codex skills and task-loop scripts rely on them. The historical v1 prompt queue now lives under `workflow/versions/v1-mvp/execution/`. Lightweight independent tasks live under `tasks/active/` and `tasks/done/`; `tasks/backlog/` remains a candidate pool, not current task progress.
+Fixed paths such as `.codex/skills-src/`, `.agents/skills/`, `workflow/`, `dev`, and `task-loop` are intentionally kept in place because local Codex skills and task-loop scripts rely on them. The historical v1 prompt queue lives under `workflow/versions/v1-mvp/execution/` as an archive. Lightweight independent tasks live under `tasks/active/` and `tasks/done/`; `tasks/backlog/` remains a candidate pool, not current task progress.
 
 Status boundaries: product facts come from `docs/`, `core/`, `apps/`, and
 `assets/brand/final/`; planning, archive, and reference material lives under

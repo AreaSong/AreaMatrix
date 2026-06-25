@@ -181,7 +181,7 @@ struct ImportConflictBatchPerItemRoute: Equatable, Identifiable {
     }
 
     var replaceConfirmationRouteLabel: String {
-        "S1-24 replace-confirm"
+        "replace-confirm replace-confirm"
     }
 }
 

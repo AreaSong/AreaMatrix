@@ -3,15 +3,15 @@ import XCTest
 
 final class SingleFileImportIntegrationTests: XCTestCase {
     @MainActor
-    func testS117EntryCancelAndImportRoutesThroughS120Progress() async {
+    func testImportSingleFileEntryCancelAndImportRoutesThroughImportProgressProgress() async {
         let sourceURL = URL(fileURLWithPath: "/tmp/source.pdf")
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
-        let announcer = S117RecordingAccessibilityAnnouncer()
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
+        let announcer = ImportSingleFileRecordingAccessibilityAnnouncer()
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
-            emptyRepositoryOpener: S117StaticRepositoryOpener(opening: opening),
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            emptyRepositoryOpener: ImportSingleFileStaticRepositoryOpener(opening: opening),
             accessibilityAnnouncer: announcer,
-            helpOpener: S117NoopWelcomeHelpOpener()
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .mainEmpty(opening)
@@ -36,7 +36,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         )))
         XCTAssertNil(model.toastMessage)
 
-        let imported = FileEntrySnapshot.s117Fixture(currentName: "source.pdf", category: "docs")
+        let imported = FileEntrySnapshot.importSingleFileFixture(currentName: "source.pdf", category: "docs")
         await model.finishImportEntry(repoPath: opening.config.repoPath, entry: imported)
 
         XCTAssertNil(model.pendingImportEntry)
@@ -46,33 +46,33 @@ final class SingleFileImportIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS117FailedImportRoutesThroughS121ResultSummary() {
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+    func testImportSingleFileFailedImportRoutesThroughImportResultResultSummary() {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
         model.beginImportEntryProgress(currentPath: "docs/source.pdf")
-        model.failImportEntry(currentPath: "docs/source.pdf", mapping: .s117Error(kind: .duplicateFile))
+        model.failImportEntry(currentPath: "docs/source.pdf", mapping: .importSingleFileError(kind: .duplicateFile))
 
         guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected S1-21 import result route")
+            return XCTFail("Expected import-result import result route")
         }
         XCTAssertEqual(result.resultSummaryText, "Imported 0, failed 1, stopped 0, pending 0.")
         XCTAssertEqual(result.items.map(\.status), [.failed])
     }
 
     @MainActor
-    func testS117DockOpenFileQueuesSingleFileImportWhenRepositoryIsOpen() {
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+    func testImportSingleFileDockOpenFileQueuesSingleFileImportWhenRepositoryIsOpen() {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let sourceURL = URL(fileURLWithPath: "/tmp/source.pdf")
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -84,13 +84,13 @@ final class SingleFileImportIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS117SwitchLocalRepoClosesSheetAndEntersChoosePathFlow() {
+    func testImportSingleFileSwitchLocalRepoClosesSheetAndEntersChoosePathFlow() {
         let sourceURL = URL(fileURLWithPath: "/tmp/source.pdf")
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.startImportEntry(opening: opening, source: .filePicker, urls: [sourceURL])
@@ -101,12 +101,12 @@ final class SingleFileImportIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS117ImportEntryCarriesRealRepositoryCategoriesForEditableSelection() {
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+    func testImportSingleFileImportEntryCarriesRealRepositoryCategoriesForEditableSelection() {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -120,29 +120,29 @@ final class SingleFileImportIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS117PredictionThenCopyMoveAndIndexOnlyUseTheExpectedCoreCapabilities() async {
-        let request = s117CoreCapabilityRequest()
-        let predictor = S117RecordingPredictor(result: s117CoreCapabilityPrediction())
-        let importer = S117RecordingImporter()
+    func testImportSingleFilePredictionThenCopyMoveAndIndexOnlyUseTheExpectedCoreCapabilities() async {
+        let request = importSingleFileCoreCapabilityRequest()
+        let predictor = ImportSingleFileRecordingPredictor(result: importSingleFileCoreCapabilityPrediction())
+        let importer = ImportSingleFileRecordingImporter()
         let model = ImportSingleFilePreviewModel(
             predictor: predictor,
             importer: importer,
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         await model.load(request: request)
         let predictRequests = await predictor.recordedRequests()
         XCTAssertEqual(predictRequests, [
-            S117PredictRequest(repoPath: "/tmp/repo", filename: "合同.pdf")
+            ImportSingleFilePredictRequest(repoPath: "/tmp/repo", filename: "合同.pdf")
         ])
         XCTAssertEqual(model.selectedCategory, "docs")
         XCTAssertEqual(model.suggestedName, "2026Q1_合同.pdf")
         XCTAssertEqual(model.selectedStorageMode, .copy)
 
-        await importS117Mode(model: model, request: request, mode: .copy, name: "copy.pdf", storageMode: "Copied")
-        await importS117Mode(model: model, request: request, mode: .move, name: "move.pdf", storageMode: "Moved")
-        await importS117Mode(
+        await importImportSingleFileMode(model: model, request: request, mode: .copy, name: "copy.pdf", storageMode: "Copied")
+        await importImportSingleFileMode(model: model, request: request, mode: .move, name: "move.pdf", storageMode: "Moved")
+        await importImportSingleFileMode(
             model: model,
             request: request,
             mode: .indexOnly,
@@ -151,11 +151,11 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         )
 
         let importRequests = await importer.recordedRequests()
-        XCTAssertEqual(importRequests, s117CoreCapabilityImportRequests())
+        XCTAssertEqual(importRequests, importSingleFileCoreCapabilityImportRequests())
     }
 
     @MainActor
-    func testS117ImportStaysDisabledWhileImportingAndAfterSuccess() async {
+    func testImportSingleFileImportStaysDisabledWhileImportingAndAfterSuccess() async {
         let request = ImportEntryRequest(
             repoPath: "/tmp/repo",
             source: .filePicker,
@@ -163,13 +163,13 @@ final class SingleFileImportIntegrationTests: XCTestCase {
             urls: [URL(fileURLWithPath: "/tmp/source.pdf")],
             kind: .singleFile
         )
-        let gate = S117ImportGate()
-        let importer = S117SuspendingImporter(gate: gate)
+        let gate = ImportSingleFileImportGate()
+        let importer = ImportSingleFileSuspendingImporter(gate: gate)
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         await model.load(request: request)
@@ -188,7 +188,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS122ImportFileDuplicateErrorOpensDuplicateConflictPage() async {
+    func testDuplicateConflictImportFileDuplicateErrorOpensDuplicateConflictPage() async {
         let request = ImportEntryRequest(
             repoPath: "/tmp/repo",
             source: .filePicker,
@@ -196,10 +196,10 @@ final class SingleFileImportIntegrationTests: XCTestCase {
             urls: [URL(fileURLWithPath: "/tmp/source.pdf")],
             kind: .singleFile
         )
-        let errorMapper = S117RecordingErrorMapper()
+        let errorMapper = ImportSingleFileRecordingErrorMapper()
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
-            importer: S117FailingImporter(error: CoreError.DuplicateFile(existingPath: "docs/source.pdf")),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+            importer: ImportSingleFileFailingImporter(error: CoreError.DuplicateFile(existingPath: "docs/source.pdf")),
             preflight: ImportSingleFileStaticPreflight.ready(),
             errorMapper: errorMapper
         )
@@ -219,23 +219,23 @@ final class SingleFileImportIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS122DuplicateDefaultsToSkipWithoutEnteringAdjacentPages() async {
+    func testDuplicateConflictDuplicateDefaultsToSkipWithoutEnteringAdjacentPages() async {
         let hidden = ImportSingleFilePreflightResult(
             sourceSizeBytes: 12,
             hashSha256: "hash",
             targetRelativePath: "docs/source.pdf",
             conflict: .duplicate(existingPath: "docs/source.pdf")
         )
-        let importer = S117RecordingImporter()
+        let importer = ImportSingleFileRecordingImporter()
 
         let hiddenModel = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: hidden),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
-        await hiddenModel.load(request: .s117ImportRequest())
+        await hiddenModel.load(request: .importSingleFileImportRequest())
         let skipped = await hiddenModel.importSelectedFile()
         let requests = await importer.recordedRequests()
 
@@ -250,23 +250,23 @@ final class SingleFileImportIntegrationTests: XCTestCase {
 
 final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
     @MainActor
-    func testS117ICloudPlaceholderKeepsSheetBlockedWithDownloadActions() async {
+    func testImportSingleFileICloudPlaceholderKeepsSheetBlockedWithDownloadActions() async {
         let result = ImportSingleFilePreflightResult(
             sourceSizeBytes: nil,
             hashSha256: nil,
             targetRelativePath: "docs/source.pdf",
             conflict: .iCloudPlaceholder(path: "/tmp/source.pdf")
         )
-        let importer = S117RecordingImporter()
+        let importer = ImportSingleFileRecordingImporter()
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: result),
             placeholderDownloader: ImportSingleFileStaticICloudDownloader(),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
-        await model.load(request: .s117ImportRequest())
+        await model.load(request: .importSingleFileImportRequest())
         let imported = await model.importSelectedFile()
         let requests = await importer.recordedRequests()
 
@@ -278,7 +278,7 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS117ICloudDownloadFailureKeepsDownloadAndSwitchActionsVisible() async {
+    func testImportSingleFileICloudDownloadFailureKeepsDownloadAndSwitchActionsVisible() async {
         let result = ImportSingleFilePreflightResult(
             sourceSizeBytes: nil,
             hashSha256: nil,
@@ -286,16 +286,16 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
             conflict: .iCloudPlaceholder(path: "/tmp/source.pdf")
         )
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
-            importer: S117RecordingImporter(),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+            importer: ImportSingleFileRecordingImporter(),
             preflight: ImportSingleFileStaticPreflight(result: result),
             placeholderDownloader: ImportSingleFileStaticICloudDownloader(
                 error: ImportSingleFileStaticLocalizedError(message: "download timed out")
             ),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
-        await model.load(request: .s117ImportRequest())
+        await model.load(request: .importSingleFileImportRequest())
         await model.downloadICloudPlaceholderAndRetry()
 
         XCTAssertTrue(model.showsICloudActions)
@@ -303,16 +303,16 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
         XCTAssertNil(model.activeConflictPage)
         XCTAssertEqual(model.importDisabledReason, "iCloud 下载失败后请重试下载或切换本地资料库")
         guard case let .iCloudDownloadFailed(path, reason) = model.currentPreflightResult?.conflict else {
-            return XCTFail("Expected iCloud download failure to stay on S1-17 recovery state")
+            return XCTFail("Expected iCloud download failure to stay on import-single recovery state")
         }
         XCTAssertEqual(path, "/tmp/source.pdf")
         XCTAssertEqual(reason, "download timed out")
     }
 
     @MainActor
-    func testS122RealCorePreImportDuplicateRendersPageAndSkipDoesNotWrite() async throws {
-        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "s122-repo")
-        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "s122-source")
+    func testDuplicateConflictRealCorePreImportDuplicateRendersPageAndSkipDoesNotWrite() async throws {
+        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "duplicateConflict-repo")
+        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "duplicateConflict-source")
         defer {
             try? FileManager.default.removeItem(at: repoURL)
             try? FileManager.default.removeItem(at: sourceRoot)
@@ -330,10 +330,10 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
             overrideFilename: "existing.pdf"
         )
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: bridge,
             preflight: CoreImportSingleFilePreflight(),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         await model.load(request: ImportEntryRequest(
@@ -363,9 +363,9 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS122RealCoreKeepBothPreviewMatchesFinalNumberedImport() async throws {
-        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "s122-keepboth-repo")
-        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "s122-keepboth-source")
+    func testDuplicateConflictRealCoreKeepBothPreviewMatchesFinalNumberedImport() async throws {
+        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "duplicateConflict-keepboth-repo")
+        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "duplicateConflict-keepboth-source")
         defer {
             try? FileManager.default.removeItem(at: repoURL)
             try? FileManager.default.removeItem(at: sourceRoot)
@@ -385,10 +385,10 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
         )
 
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: bridge,
             preflight: CoreImportSingleFilePreflight(),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
         await model.load(request: ImportEntryRequest(
             repoPath: repoURL.path,
@@ -410,16 +410,16 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS117FileMetadataAndFilenameValidationMatchPageSpec() async throws {
-        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "s117-metadata")
+    func testImportSingleFileFileMetadataAndFilenameValidationMatchPageSpec() async throws {
+        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "importSingleFile-metadata")
         defer { try? FileManager.default.removeItem(at: sourceRoot) }
         let sourceURL = sourceRoot.appendingPathComponent("合同.pdf")
         try Data("abc".utf8).write(to: sourceURL)
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
-            importer: S117RecordingImporter(),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+            importer: ImportSingleFileRecordingImporter(),
             preflight: ImportSingleFileStaticPreflight.ready(targetRelativePath: "docs/合同.pdf"),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         await model.load(request: ImportEntryRequest(

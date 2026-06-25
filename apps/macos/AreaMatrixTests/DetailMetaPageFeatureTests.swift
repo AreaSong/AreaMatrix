@@ -3,7 +3,7 @@ import XCTest
 
 final class DetailMetaPageFeatureTests: XCTestCase {
     @MainActor
-    func testS112ShowsCachedMetadataImmediatelyBeforeC112RefreshCompletes() async {
+    func testDetailViewShowsCachedMetadataImmediatelyBeforeGetFileDetailCoreRefreshCompletes() async {
         let cached = FileEntrySnapshot.detailMetaFixture(id: 12, currentName: "cached.pdf")
         let refreshed = FileEntrySnapshot.detailMetaFixture(id: 12, currentName: "refreshed.pdf")
         let detailer = DetailMetaSuspendedDetailer(result: .success(refreshed))
@@ -31,7 +31,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS112KeepsCachedSummaryWhenC112GetFileFails() async {
+    func testDetailViewKeepsCachedSummaryWhenGetFileDetailCoreGetFileFails() async {
         let cached = FileEntrySnapshot.detailMetaFixture(id: 13, currentName: "missing.pdf")
         let mapping = CoreErrorMappingSnapshot.detailMetaFileNotFound()
         let mapper = DetailMetaErrorMapper(mapping: mapping)
@@ -53,7 +53,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
         XCTAssertFalse(model.isDetailLoading)
     }
 
-    func testS112MetadataRowsIncludeC112SourceAndStatus() {
+    func testDetailViewMetadataRowsIncludeGetFileDetailCoreSourceAndStatus() {
         let indexed = FileEntrySnapshot.detailMetaFixture(
             id: 14,
             currentName: "indexed.pdf",
@@ -67,14 +67,14 @@ final class DetailMetaPageFeatureTests: XCTestCase {
         XCTAssertEqual(rows.value(for: "Status"), "Index-only")
     }
 
-    func testS112MetadataRowsUseFallbackForMissingC112Source() {
+    func testDetailViewMetadataRowsUseFallbackForMissingGetFileDetailCoreSource() {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 15, currentName: "no-source.pdf", sourcePath: nil)
 
         XCTAssertEqual(detailMetaMetadataRows(for: detail).value(for: "Source"), "Not available")
     }
 
     @MainActor
-    func testS113LoadsSelectedFileChangeLogThroughC113ListChanges() async {
+    func testDetailLogLoadsSelectedFileChangeLogThroughListChangeLogCoreListChanges() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 16, currentName: "logged.pdf")
         let entry = ChangeLogEntrySnapshot.detailLogFixture(fileID: detail.id, action: "imported")
         let lister = DetailLogRecordingLister(results: [.success([entry])])
@@ -97,7 +97,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS113MapsListChangesFailureInline() async {
+    func testDetailLogMapsListChangesFailureInline() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 17, currentName: "locked.pdf")
         let mapping = CoreErrorMappingSnapshot.detailLogDb()
         let mapper = DetailMetaErrorMapper(mapping: mapping)
@@ -118,7 +118,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS113StaleChangeLogRequestDoesNotOverwriteNewSelection() async {
+    func testDetailLogStaleChangeLogRequestDoesNotOverwriteNewSelection() async {
         let oldFile = FileEntrySnapshot.detailMetaFixture(id: 18, currentName: "old.pdf")
         let newFile = FileEntrySnapshot.detailMetaFixture(id: 19, currentName: "new.pdf")
         let lister = DetailLogSuspendedLister(entries: [
@@ -144,7 +144,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS113DetailLogDiagnosticsRequiresPrivacyConfirmationAndCollectsCoreSnapshot() async {
+    func testDetailLogDetailLogDiagnosticsRequiresPrivacyConfirmationAndCollectsCoreSnapshot() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 20, currentName: "diagnostics.pdf")
         let mapping = CoreErrorMappingSnapshot.detailLogDb()
         let snapshot = DiagnosticsSnapshotSnapshot(
@@ -179,7 +179,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS113DetailLogDiagnosticsFailureMapsCoreErrorInline() async {
+    func testDetailLogDetailLogDiagnosticsFailureMapsCoreErrorInline() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 21, currentName: "diagnostics-fail.pdf")
         let mapping = CoreErrorMappingSnapshot.detailLogDb()
         let mapper = DetailMetaErrorMapper(mapping: mapping)
@@ -462,7 +462,7 @@ extension CoreErrorMappingSnapshot {
             severity: .medium,
             suggestedAction: "刷新当前列表，确认文件是否已被移动或删除。",
             recoverability: .refreshRequired,
-            rawContext: "S1-12 C1-12 get_file"
+            rawContext: "file-detail file-detail-core get_file"
         )
     }
 
@@ -473,7 +473,7 @@ extension CoreErrorMappingSnapshot {
             severity: .medium,
             suggestedAction: "请重试改动时间线。",
             recoverability: .retryable,
-            rawContext: "S1-13 C1-13 list_changes"
+            rawContext: "detail-change-log change-log-core list_changes"
         )
     }
 }

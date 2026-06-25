@@ -30,7 +30,7 @@ AGENTS.md / .ai-governance
 
 - `workflow/` 负责讨论、规划、预览、promotion gate 和版本内 execution；通过明确 apply 前不得直接写入 live `workflow/versions/<version>/execution/**`。
 - `workflow/versions/v1-mvp/execution/**` 是已完成的 v1 历史执行队列；不得为了整理或接入外部能力重写历史 progress、checkpoint 或 task-loop evidence。
-- `tasks/active/**` 和 `tasks/done/**` 记录轻量独立任务进度，供未来 `./dev tasks` 只读索引；它们不得创建第二套 runner、phase、promotion、queue、checkpoint 或 `progress.json`。
+- `tasks/active/**` 和 `tasks/done/**` 记录轻量独立任务进度，供未来 `./dev tasks` 只读索引；它们不得创建第二套 runner、执行分组、promotion、queue、checkpoint 或 `progress.json`。
 - `tasks/backlog/**` 只记录候选池、规划、评估和治理排期，不进入 `./task-loop`，不写 `progress.json`，不替代 live queue 或当前轻量任务进度。
 - `workflow/residuals/**` 和 `workflow/versions/<version>/residuals/**` 只做遗留项索引，不能创建第二套 runner、progress、queue、checkpoint 或 promotion，也不能替代 `docs/`、evidence、closeout、tasks 或 execution。
 - 对“还有什么问题没解决 / 还有哪些未完成”的宽泛回答必须走 residual ledger：先读 `workflow/residuals/README.md` 的全量 ID 清单，再读 `workflow/residuals/residuals.yaml` 的 `version_residuals[].source`，并把 current blockers 与 indexed-but-not-current-tasks 分开说明。

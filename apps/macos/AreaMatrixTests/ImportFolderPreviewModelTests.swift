@@ -3,7 +3,7 @@ import XCTest
 
 final class ImportFolderPreviewModelTests: XCTestCase {
     @MainActor
-    func testS119FolderPreviewScansFolderAndCallsC105PredictorForEachReadyFile() async throws {
+    func testImportFolderFolderPreviewScansFolderAndCallsClassifyPreviewCorePredictorForEachReadyFile() async throws {
         let rootURL = try makeImportFolderTemporaryDirectory()
         let nestedURL = rootURL.appendingPathComponent("客户A", isDirectory: true)
         try FileManager.default.createDirectory(at: nestedURL, withIntermediateDirectories: true)
@@ -11,7 +11,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         let contractURL = nestedURL.appendingPathComponent("合同.pdf")
         try Data("invoice".utf8).write(to: invoiceURL)
         try Data("contract".utf8).write(to: contractURL)
-        let predictor = S119MappedPredictor(resultsByFilename: [
+        let predictor = ImportFolderMappedPredictor(resultsByFilename: [
             "Invoice_2026Q1.pdf": .success(ClassifyResultSnapshot(
                 category: "finance",
                 suggestedName: "Invoice_2026Q1.pdf",
@@ -27,12 +27,12 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         ])
         let model = ImportFolderPreviewModel(
             predictor: predictor,
-            importer: S118RecordingBatchImporter(),
-            errorMapper: S117RecordingErrorMapper(),
-            conflictPrechecker: S119NoopConflictPrechecker()
+            importer: ImportBatchRecordingBatchImporter(),
+            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            conflictPrechecker: ImportFolderNoopConflictPrechecker()
         )
 
-        await model.load(request: s119FolderRequest(rootURL: rootURL))
+        await model.load(request: importFolderFolderRequest(rootURL: rootURL))
         let requests = await predictor.recordedRequests()
 
         XCTAssertEqual(requests.map(\.repoPath), ["/tmp/repo", "/tmp/repo"])
@@ -52,7 +52,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
     }
 
     @MainActor
-    func testS119FolderPreviewUsesDefaultIgnoreRulesAndNeverPredictsSkippedFiles() async throws {
+    func testImportFolderFolderPreviewUsesDefaultIgnoreRulesAndNeverPredictsSkippedFiles() async throws {
         let rootURL = try makeImportFolderTemporaryDirectory()
         let gitURL = rootURL.appendingPathComponent(".git", isDirectory: true)
         let nodeModulesURL = rootURL.appendingPathComponent("node_modules", isDirectory: true)
@@ -61,7 +61,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         try Data("ignored".utf8).write(to: gitURL.appendingPathComponent("config"))
         try Data("ignored".utf8).write(to: rootURL.appendingPathComponent(".DS_Store"))
         try Data("ready".utf8).write(to: rootURL.appendingPathComponent("Report.pdf"))
-        let predictor = S119RecordingPredictor(results: [
+        let predictor = ImportFolderRecordingPredictor(results: [
             .success(ClassifyResultSnapshot(
                 category: "docs",
                 suggestedName: "Report.pdf",
@@ -71,15 +71,15 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         ])
         let model = ImportFolderPreviewModel(
             predictor: predictor,
-            importer: S118RecordingBatchImporter(),
-            errorMapper: S117RecordingErrorMapper(),
-            conflictPrechecker: S119NoopConflictPrechecker()
+            importer: ImportBatchRecordingBatchImporter(),
+            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            conflictPrechecker: ImportFolderNoopConflictPrechecker()
         )
 
-        await model.load(request: s119FolderRequest(rootURL: rootURL))
+        await model.load(request: importFolderFolderRequest(rootURL: rootURL))
         let requests = await predictor.recordedRequests()
 
-        XCTAssertEqual(requests, [S119PredictRequest(repoPath: "/tmp/repo", filename: "Report.pdf")])
+        XCTAssertEqual(requests, [ImportFolderPredictRequest(repoPath: "/tmp/repo", filename: "Report.pdf")])
         XCTAssertEqual(model.rows.map(\.originalName), ["Report.pdf"])
         XCTAssertTrue(model.skippedRules.contains(ImportFolderSkippedRule(label: ".git/", count: 1)))
         XCTAssertTrue(model.skippedRules.contains(ImportFolderSkippedRule(label: ".DS_Store", count: 1)))
@@ -87,20 +87,20 @@ final class ImportFolderPreviewModelTests: XCTestCase {
     }
 
     @MainActor
-    func testS119FolderPreviewMapsC105ClassifyFailurePerRowWithoutStaticSuccess() async throws {
+    func testImportFolderFolderPreviewMapsClassifyPreviewCoreClassifyFailurePerRowWithoutStaticSuccess() async throws {
         let rootURL = try makeImportFolderTemporaryDirectory()
         try Data("bad".utf8).write(to: rootURL.appendingPathComponent("Bad.pdf"))
-        let predictor = S119RecordingPredictor(results: [
+        let predictor = ImportFolderRecordingPredictor(results: [
             .failure(CoreError.Config(reason: "classifier.yaml line 7"))
         ])
         let model = ImportFolderPreviewModel(
             predictor: predictor,
-            importer: S118RecordingBatchImporter(),
-            errorMapper: S117RecordingErrorMapper(),
-            conflictPrechecker: S119NoopConflictPrechecker()
+            importer: ImportBatchRecordingBatchImporter(),
+            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            conflictPrechecker: ImportFolderNoopConflictPrechecker()
         )
 
-        await model.load(request: s119FolderRequest(rootURL: rootURL))
+        await model.load(request: importFolderFolderRequest(rootURL: rootURL))
 
         XCTAssertEqual(model.rows.count, 1)
         XCTAssertEqual(model.rows.first?.status.tag, "ERROR")
@@ -109,9 +109,9 @@ final class ImportFolderPreviewModelTests: XCTestCase {
     }
 
     @MainActor
-    func testS119FolderPreviewDoesNotCallPredictorForICloudPlaceholderRows() async {
+    func testImportFolderFolderPreviewDoesNotCallPredictorForICloudPlaceholderRows() async {
         let cloudURL = URL(fileURLWithPath: "/tmp/iCloudOnly.pdf.icloud")
-        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
+        let scanner = ImportFolderStaticFolderScanner(result: ImportFolderScanResult(
             rows: [ImportFolderPreviewRow.loading(
                 fileURL: cloudURL,
                 rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)
@@ -120,16 +120,16 @@ final class ImportFolderPreviewModelTests: XCTestCase {
             skippedRules: [],
             errors: []
         ))
-        let predictor = S119RecordingPredictor(results: [])
+        let predictor = ImportFolderRecordingPredictor(results: [])
         let model = ImportFolderPreviewModel(
             predictor: predictor,
-            importer: S118RecordingBatchImporter(),
-            errorMapper: S117RecordingErrorMapper(),
-            conflictPrechecker: S119NoopConflictPrechecker(),
+            importer: ImportBatchRecordingBatchImporter(),
+            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
 
-        await model.load(request: s119FolderRequest(rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)))
+        await model.load(request: importFolderFolderRequest(rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)))
         let requests = await predictor.recordedRequests()
 
         XCTAssertEqual(requests, [])
@@ -153,37 +153,37 @@ final class ImportFolderPreviewModelTests: XCTestCase {
 
 final class ImportFolderPreviewImportTests: XCTestCase {
     @MainActor
-    func testS119FolderCopyImportUsesRealImporterForReadyRowsOnly() async {
+    func testImportFolderFolderCopyImportUsesRealImporterForReadyRowsOnly() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let cloudURL = URL(fileURLWithPath: "/tmp/iCloudOnly.pdf.icloud")
         let errorURL = URL(fileURLWithPath: "/tmp/unreadable.mov")
-        let scanner = S119StaticFolderScanner(result: s119FolderScanResult(rows: [
-            s119LoadingRow(invoiceURL),
-            s119LoadingRow(cloudURL).withStatus(.iCloudPlaceholder(path: cloudURL.path)),
-            s119LoadingRow(errorURL).withStatus(.error("无法读取文件属性"))
+        let scanner = ImportFolderStaticFolderScanner(result: importFolderFolderScanResult(rows: [
+            importFolderLoadingRow(invoiceURL),
+            importFolderLoadingRow(cloudURL).withStatus(.iCloudPlaceholder(path: cloudURL.path)),
+            importFolderLoadingRow(errorURL).withStatus(.error("无法读取文件属性"))
         ]))
-        let predictor = S119RecordingPredictor(results: [.success(.s119Prediction(
+        let predictor = ImportFolderRecordingPredictor(results: [.success(.importFolderPrediction(
             category: "finance",
             suggestedName: "Invoice_2026Q1.pdf"
         ))])
-        let importer = S118RecordingBatchImporter()
+        let importer = ImportBatchRecordingBatchImporter()
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: S117RecordingErrorMapper(),
-            conflictPrechecker: S119NoopConflictPrechecker(),
+            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
         var progressSnapshots: [ImportBatchProgressSnapshot] = []
 
-        await model.load(request: s119FolderRequest(rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)))
+        await model.load(request: importFolderFolderRequest(rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)))
         let outcome = await model.importReadyFiles { progress in
             progressSnapshots.append(progress)
         }
         let recordedRequests = await importer.recordedRequests()
 
         XCTAssertEqual(recordedRequests, [
-            S118BatchImportRequest(
+            ImportBatchBatchImportRequest(
                 destination: .autoClassify,
                 suggestedCategory: "finance",
                 overrideFilename: "Invoice_2026Q1.pdf",
@@ -205,29 +205,29 @@ final class ImportFolderPreviewImportTests: XCTestCase {
     }
 
     @MainActor
-    func testS119FolderResultSummaryKeepsPerRowStatusesForFailureAndPendingRows() async {
+    func testImportFolderFolderResultSummaryKeepsPerRowStatusesForFailureAndPendingRows() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let cloudURL = URL(fileURLWithPath: "/tmp/iCloudOnly.pdf.icloud")
-        let scanner = S119StaticFolderScanner(result: s119FolderScanResult(rows: [
-            s119LoadingRow(invoiceURL),
-            s119LoadingRow(cloudURL).withStatus(.iCloudPlaceholder(path: cloudURL.path))
+        let scanner = ImportFolderStaticFolderScanner(result: importFolderFolderScanResult(rows: [
+            importFolderLoadingRow(invoiceURL),
+            importFolderLoadingRow(cloudURL).withStatus(.iCloudPlaceholder(path: cloudURL.path))
         ]))
-        let predictor = S119RecordingPredictor(results: [.success(.s119Prediction(
+        let predictor = ImportFolderRecordingPredictor(results: [.success(.importFolderPrediction(
             category: "finance",
             suggestedName: "Invoice_2026Q1.pdf"
         ))])
-        let importer = S118SequenceBatchImporter(results: [
+        let importer = ImportBatchSequenceBatchImporter(results: [
             .failure(CoreError.PermissionDenied(path: invoiceURL.path))
         ])
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: S117RecordingErrorMapper(),
-            conflictPrechecker: S119NoopConflictPrechecker(),
+            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
 
-        await model.load(request: s119FolderRequest(rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)))
+        await model.load(request: importFolderFolderRequest(rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)))
         let outcome = await model.importReadyFiles()
         let summary = outcome?.progressSnapshot(currentPath: "finance/Invoice_2026Q1.pdf")
             .withItems(model.progressItems())
@@ -258,9 +258,9 @@ final class ImportFolderPreviewImportTests: XCTestCase {
     }
 
     @MainActor
-    func testS119FolderCopyImportMapsCoreFailureWithoutStaticSuccess() async {
+    func testImportFolderFolderCopyImportMapsCoreFailureWithoutStaticSuccess() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
+        let scanner = ImportFolderStaticFolderScanner(result: ImportFolderScanResult(
             rows: [ImportFolderPreviewRow.loading(
                 fileURL: invoiceURL,
                 rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)
@@ -269,7 +269,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
             skippedRules: [],
             errors: []
         ))
-        let predictor = S119RecordingPredictor(results: [
+        let predictor = ImportFolderRecordingPredictor(results: [
             .success(ClassifyResultSnapshot(
                 category: "finance",
                 suggestedName: "Invoice_2026Q1.pdf",
@@ -277,19 +277,19 @@ final class ImportFolderPreviewImportTests: XCTestCase {
                 confidence: 0.9
             ))
         ])
-        let importer = S118SequenceBatchImporter(results: [
+        let importer = ImportBatchSequenceBatchImporter(results: [
             .failure(CoreError.PermissionDenied(path: invoiceURL.path))
         ])
-        let errorMapper = S117RecordingErrorMapper()
+        let errorMapper = ImportSingleFileRecordingErrorMapper()
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
             errorMapper: errorMapper,
-            conflictPrechecker: S119NoopConflictPrechecker(),
+            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
 
-        await model.load(request: s119FolderRequest(rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)))
+        await model.load(request: importFolderFolderRequest(rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)))
         let outcome = await model.importReadyFiles()
         let mappedErrors = await errorMapper.recordedErrors()
 
@@ -302,9 +302,9 @@ final class ImportFolderPreviewImportTests: XCTestCase {
     }
 
     @MainActor
-    func testS119FolderCopyImportHonorsDropDestinationCategory() async {
+    func testImportFolderFolderCopyImportHonorsDropDestinationCategory() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
+        let scanner = ImportFolderStaticFolderScanner(result: ImportFolderScanResult(
             rows: [ImportFolderPreviewRow.loading(
                 fileURL: invoiceURL,
                 rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)
@@ -313,7 +313,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
             skippedRules: [],
             errors: []
         ))
-        let predictor = S119RecordingPredictor(results: [
+        let predictor = ImportFolderRecordingPredictor(results: [
             .success(ClassifyResultSnapshot(
                 category: "finance",
                 suggestedName: "Invoice_2026Q1.pdf",
@@ -321,15 +321,15 @@ final class ImportFolderPreviewImportTests: XCTestCase {
                 confidence: 0.9
             ))
         ])
-        let importer = S118RecordingBatchImporter()
+        let importer = ImportBatchRecordingBatchImporter()
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: S117RecordingErrorMapper(),
-            conflictPrechecker: S119NoopConflictPrechecker(),
+            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
-        let request = s119FolderRequest(
+        let request = importFolderFolderRequest(
             rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true),
             destination: .category("docs")
         )
@@ -339,7 +339,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         let recordedRequests = await importer.recordedRequests()
 
         XCTAssertEqual(recordedRequests, [
-            S118BatchImportRequest(
+            ImportBatchBatchImportRequest(
                 destination: .category("docs"),
                 suggestedCategory: "docs",
                 overrideFilename: "Invoice_2026Q1.pdf",
@@ -349,9 +349,9 @@ final class ImportFolderPreviewImportTests: XCTestCase {
     }
 
     @MainActor
-    func testS119FolderIndexOnlyImportCallsC108ImporterForReadyRows() async {
+    func testImportFolderFolderIndexOnlyImportCallsImportIndexFileCoreImporterForReadyRows() async {
         let sourceURL = URL(fileURLWithPath: "/tmp/reference.pdf")
-        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
+        let scanner = ImportFolderStaticFolderScanner(result: ImportFolderScanResult(
             rows: [ImportFolderPreviewRow.loading(
                 fileURL: sourceURL,
                 rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)
@@ -360,7 +360,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
             skippedRules: [],
             errors: []
         ))
-        let predictor = S119RecordingPredictor(results: [
+        let predictor = ImportFolderRecordingPredictor(results: [
             .success(ClassifyResultSnapshot(
                 category: "finance",
                 suggestedName: "indexed-reference.pdf",
@@ -368,22 +368,22 @@ final class ImportFolderPreviewImportTests: XCTestCase {
                 confidence: 0.9
             ))
         ])
-        let importer = S118RecordingBatchImporter()
+        let importer = ImportBatchRecordingBatchImporter()
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: S117RecordingErrorMapper(),
-            conflictPrechecker: S119NoopConflictPrechecker(),
+            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
 
-        await model.load(request: s119FolderRequest(rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)))
+        await model.load(request: importFolderFolderRequest(rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)))
         model.selectedStorageMode = .indexOnly
         let outcome = await model.importReadyFiles()
         let recordedRequests = await importer.recordedRequests()
 
         XCTAssertEqual(recordedRequests, [
-            S118BatchImportRequest(
+            ImportBatchBatchImportRequest(
                 storageMode: .indexOnly,
                 destination: .autoClassify,
                 suggestedCategory: "finance",
@@ -396,9 +396,9 @@ final class ImportFolderPreviewImportTests: XCTestCase {
     }
 
     @MainActor
-    func testS119FolderMoveUsesRealCoreImportMode() async {
+    func testImportFolderFolderMoveUsesRealCoreImportMode() async {
         let sourceURL = URL(fileURLWithPath: "/tmp/move-later.pdf")
-        let scanner = S119StaticFolderScanner(result: ImportFolderScanResult(
+        let scanner = ImportFolderStaticFolderScanner(result: ImportFolderScanResult(
             rows: [ImportFolderPreviewRow.loading(
                 fileURL: sourceURL,
                 rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)
@@ -407,7 +407,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
             skippedRules: [],
             errors: []
         ))
-        let predictor = S119RecordingPredictor(results: [
+        let predictor = ImportFolderRecordingPredictor(results: [
             .success(ClassifyResultSnapshot(
                 category: "docs",
                 suggestedName: "move-later.pdf",
@@ -415,16 +415,16 @@ final class ImportFolderPreviewImportTests: XCTestCase {
                 confidence: 0.7
             ))
         ])
-        let importer = S118RecordingBatchImporter()
+        let importer = ImportBatchRecordingBatchImporter()
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: S117RecordingErrorMapper(),
-            conflictPrechecker: S119NoopConflictPrechecker(),
+            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
 
-        await model.load(request: s119FolderRequest(rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)))
+        await model.load(request: importFolderFolderRequest(rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)))
         model.selectedStorageMode = .move
         XCTAssertNil(model.importDisabledReason)
         let outcome = await model.importReadyFiles()
@@ -432,7 +432,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
 
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(recordedRequests, [
-            S118BatchImportRequest(
+            ImportBatchBatchImportRequest(
                 storageMode: .move,
                 destination: .autoClassify,
                 suggestedCategory: "docs",

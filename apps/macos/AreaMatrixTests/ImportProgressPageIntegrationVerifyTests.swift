@@ -3,7 +3,7 @@ import XCTest
 
 final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
     @MainActor
-    func testS120MainListTemporaryImportRowsCanDriveDetailPane() {
+    func testImportProgressMainListTemporaryImportRowsCanDriveDetailPane() {
         let rows = Self.runningProgress.items.map(ImportProgressListRow.init)
 
         XCTAssertEqual(rows.map(\.displayName), ["invoice.pdf", "contract.pdf", "later.pdf"])
@@ -13,26 +13,26 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS120FatalImportExitMustRouteThroughS121ResultSummary() {
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+    func testImportProgressFatalImportExitMustRouteThroughImportResultResultSummary() {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
         model.updateImportEntryProgress(Self.fatalProgress)
         model.failImportEntry(
             progress: Self.fatalProgress,
-            mapping: CoreErrorMappingSnapshot.s120FatalProgressError,
+            mapping: CoreErrorMappingSnapshot.importProgressFatalProgressError,
             retryContext: nil,
             recoveryCheck: .retryBlocked("Recovery state could not be confirmed.", nil)
         )
         model.stopImportProgressAndViewResults()
 
         guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected S1-21 import result route")
+            return XCTFail("Expected import-result import result route")
         }
         XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 1, stopped 2, pending 1.")
         XCTAssertEqual(result.items.map(\.status), [.imported, .failed, .skipped, .skipped, .pending])
@@ -40,29 +40,29 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS210ViewHistoryRequestBuildsSharedUndoHistoryPanelRoute() {
-        let action = UndoActionRecordSnapshot.s210HistoryFixture()
+    func testUndoToastViewHistoryRequestBuildsSharedUndoHistoryPanelRoute() {
+        let action = UndoActionRecordSnapshot.undoToastHistoryFixture()
         let request = UndoToastHistoryRequest(source: .viewHistory, state: .ready(action), actionLogRefreshFailure: nil)
         let content = MainRepositoryContentView(
-            opening: .s117Fixture(repoPath: "/tmp/repo"),
+            opening: .importSingleFileFixture(repoPath: "/tmp/repo"),
             state: .list,
             onImport: {},
             onDropImport: { _, _ in },
-            errorMapper: S210HistoryErrorMapper()
+            errorMapper: UndoToastHistoryErrorMapper()
         )
 
         let sheetDescription = importProgressMirrorDescription(of: content.undoHistorySheet(request))
 
         XCTAssertTrue(sheetDescription.contains("UndoHistoryPanel"))
-        XCTAssertEqual(UndoHistoryPanel.accessibilityID, "S2-11-C2-07-undo-history-panel")
+        XCTAssertEqual(UndoHistoryPanel.accessibilityID, "undo-history-undo-action-log-undo-history-panel")
         XCTAssertFalse(sheetDescription.contains("UndoToastHistoryRouteSheet"))
         XCTAssertEqual(request.focusedActionID, action.actionID)
     }
 
     @MainActor
-    func testS210ViewDetailsRequestCarriesFailedActionContext() {
-        let action = UndoActionRecordSnapshot.s210HistoryFixture()
-        let failure = CoreErrorMappingSnapshot.s210HistoryFailure
+    func testUndoToastViewDetailsRequestCarriesFailedActionContext() {
+        let action = UndoActionRecordSnapshot.undoToastHistoryFixture()
+        let failure = CoreErrorMappingSnapshot.undoToastHistoryFailure
         let request = UndoToastHistoryRequest(
             source: .viewDetails,
             state: .failed(failure, previous: action),
@@ -74,16 +74,16 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS211C207LoadsUndoHistorySnapshotAndSelectsFocusedAction() async {
-        let latest = UndoActionRecordSnapshot.s211MovedFilesToTrash()
-        let older = UndoActionRecordSnapshot.s211RenamedFiles()
-        let undoStore = S211RecordingUndoStore(results: [.list(.success([latest, older]))])
-        let redoStore = S222RecordingRedoStore(results: [.list(.success([]))])
+    func testUndoHistoryUndoActionLogCoreLoadsUndoHistorySnapshotAndSelectsFocusedAction() async {
+        let latest = UndoActionRecordSnapshot.undoHistoryMovedFilesToTrash()
+        let older = UndoActionRecordSnapshot.undoHistoryRenamedFiles()
+        let undoStore = UndoHistoryRecordingUndoStore(results: [.list(.success([latest, older]))])
+        let redoStore = RedoActionLogRecordingRedoStore(results: [.list(.success([]))])
         let state = await UndoHistoryActionLog.load(
             repoPath: "/tmp/repo",
             undoStore: undoStore,
             redoStore: redoStore,
-            errorMapper: S211HistoryErrorMapper()
+            errorMapper: UndoHistoryHistoryErrorMapper()
         )
 
         XCTAssertEqual(state.actions, [latest, older])
@@ -96,24 +96,24 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS211C207UndoLatestExecutesOnlyTopActionAndRefreshesSnapshot() async {
-        let latest = UndoActionRecordSnapshot.s211MovedFilesToTrash()
-        let older = UndoActionRecordSnapshot.s211RenamedFiles()
-        let redo = RedoActionRecordSnapshot.s222AvailableMoveRedo()
-        let undoStore = S211RecordingUndoStore(results: [
-            .undo(.success(.s211UndoneTrashMove())),
-            .list(.success([.s211ExecutedTrashMove(), older]))
+    func testUndoHistoryUndoActionLogCoreUndoLatestExecutesOnlyTopActionAndRefreshesSnapshot() async {
+        let latest = UndoActionRecordSnapshot.undoHistoryMovedFilesToTrash()
+        let older = UndoActionRecordSnapshot.undoHistoryRenamedFiles()
+        let redo = RedoActionRecordSnapshot.redoActionLogAvailableMoveRedo()
+        let undoStore = UndoHistoryRecordingUndoStore(results: [
+            .undo(.success(.undoHistoryUndoneTrashMove())),
+            .list(.success([.undoHistoryExecutedTrashMove(), older]))
         ])
-        let redoStore = S222RecordingRedoStore(results: [.list(.success([redo]))])
+        let redoStore = RedoActionLogRecordingRedoStore(results: [.list(.success([redo]))])
         let state = await UndoHistoryActionLog.undoLatest(
             repoPath: "/tmp/repo",
             snapshot: UndoHistorySnapshot(undoActions: [latest, older], redoActions: []),
             undoStore: undoStore,
             redoStore: redoStore,
-            errorMapper: S211HistoryErrorMapper()
+            errorMapper: UndoHistoryHistoryErrorMapper()
         )
 
-        XCTAssertEqual(state.actions, [.s211ExecutedTrashMove(), older])
+        XCTAssertEqual(state.actions, [.undoHistoryExecutedTrashMove(), older])
         XCTAssertEqual(state.snapshot.redoActions, [redo])
         let undoRequests = await undoStore.undoRequests()
         let listRequests = await undoStore.listRequests()
@@ -122,19 +122,19 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS211C207UndoLatestReportsRefreshFailureWithoutSwallowingIt() async {
-        let latest = UndoActionRecordSnapshot.s211MovedFilesToTrash()
-        let undoStore = S211RecordingUndoStore(results: [
-            .undo(.success(.s211UndoneTrashMove())),
+    func testUndoHistoryUndoActionLogCoreUndoLatestReportsRefreshFailureWithoutSwallowingIt() async {
+        let latest = UndoActionRecordSnapshot.undoHistoryMovedFilesToTrash()
+        let undoStore = UndoHistoryRecordingUndoStore(results: [
+            .undo(.success(.undoHistoryUndoneTrashMove())),
             .list(.failure(CoreError.Db(message: "refresh failed")))
         ])
-        let redoStore = S222RecordingRedoStore(results: [])
+        let redoStore = RedoActionLogRecordingRedoStore(results: [])
         let state = await UndoHistoryActionLog.undoLatest(
             repoPath: "/tmp/repo",
             snapshot: UndoHistorySnapshot(undoActions: [latest], redoActions: []),
             undoStore: undoStore,
             redoStore: redoStore,
-            errorMapper: S211HistoryErrorMapper()
+            errorMapper: UndoHistoryHistoryErrorMapper()
         )
 
         guard case let .refreshFailed(mapping, previous) = state else {
@@ -147,16 +147,16 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS211C207BlockedLatestDoesNotCallUndoAction() async {
-        let blocked = UndoActionRecordSnapshot.s211BlockedRename()
-        let undoStore = S211RecordingUndoStore(results: [])
-        let redoStore = S222RecordingRedoStore(results: [])
+    func testUndoHistoryUndoActionLogCoreBlockedLatestDoesNotCallUndoAction() async {
+        let blocked = UndoActionRecordSnapshot.undoHistoryBlockedRename()
+        let undoStore = UndoHistoryRecordingUndoStore(results: [])
+        let redoStore = RedoActionLogRecordingRedoStore(results: [])
         let state = await UndoHistoryActionLog.undoLatest(
             repoPath: "/tmp/repo",
             snapshot: UndoHistorySnapshot(undoActions: [blocked], redoActions: []),
             undoStore: undoStore,
             redoStore: redoStore,
-            errorMapper: S211HistoryErrorMapper()
+            errorMapper: UndoHistoryHistoryErrorMapper()
         )
 
         XCTAssertEqual(state.actions, [blocked])
@@ -166,16 +166,16 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS211C207PanelShowsActionStatesAndDisabledRedoWithoutC218Call() {
-        let ready = UndoActionRecordSnapshot.s211MovedFilesToTrash()
-        let blocked = UndoActionRecordSnapshot.s211BlockedRename()
+    func testUndoHistoryUndoActionLogCorePanelShowsActionStatesAndDisabledRedoWithoutRedoActionLogCoreCall() {
+        let ready = UndoActionRecordSnapshot.undoHistoryMovedFilesToTrash()
+        let blocked = UndoActionRecordSnapshot.undoHistoryBlockedRename()
         let panel = UndoHistoryPanel(
             repoPath: "/tmp/repo",
             focusedActionID: ready.actionID,
             initialFailure: nil,
-            undoStore: S211RecordingUndoStore(results: [.list(.success([ready, blocked]))]),
-            redoStore: S222RecordingRedoStore(results: [.list(.success([.s222AvailableMoveRedo()]))]),
-            errorMapper: S211HistoryErrorMapper(),
+            undoStore: UndoHistoryRecordingUndoStore(results: [.list(.success([ready, blocked]))]),
+            redoStore: RedoActionLogRecordingRedoStore(results: [.list(.success([.redoActionLogAvailableMoveRedo()]))]),
+            errorMapper: UndoHistoryHistoryErrorMapper(),
             onClose: {},
             onUndoCompleted: { _ in },
             onRedoCompleted: { _ in }
@@ -185,13 +185,13 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
         XCTAssertTrue(description.contains("Undo History"))
         XCTAssertTrue(description.contains("Undo latest"))
         XCTAssertTrue(description.contains("Redo latest"))
-        XCTAssertEqual(UndoHistoryPanel.accessibilityID, "S2-11-C2-07-undo-history-panel")
+        XCTAssertEqual(UndoHistoryPanel.accessibilityID, "undo-history-undo-action-log-undo-history-panel")
     }
 
     @MainActor
-    func testS211C207MenuAndShortcutRequestsShareUndoHistoryPanelRoute() {
-        let action = UndoActionRecordSnapshot.s211MovedFilesToTrash()
-        let failure = CoreErrorMappingSnapshot.s210HistoryFailure
+    func testUndoHistoryUndoActionLogCoreMenuAndShortcutRequestsShareUndoHistoryPanelRoute() {
+        let action = UndoActionRecordSnapshot.undoHistoryMovedFilesToTrash()
+        let failure = CoreErrorMappingSnapshot.undoToastHistoryFailure
         let menuRequest = UndoHistoryActionLog.menuRequest(state: .ready(action), failure: nil)
         let shortcutRequest = UndoHistoryActionLog.shortcutRequest(state: .ready(action), failure: nil)
         let redoShortcutRequest = UndoHistoryActionLog.redoShortcutRequest(state: .ready(action), failure: failure)
@@ -202,12 +202,12 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(menuRequest.focusedActionID, action.actionID)
         XCTAssertEqual(shortcutRequest.focusedActionID, action.actionID)
         XCTAssertEqual(redoShortcutRequest.failureMapping, failure)
-        XCTAssertEqual(UndoHistoryPanel.accessibilityID, "S2-11-C2-07-undo-history-panel")
+        XCTAssertEqual(UndoHistoryPanel.accessibilityID, "undo-history-undo-action-log-undo-history-panel")
     }
 
-    func testS222C207RedoSourceUsesLoadedUndoActionLogSummary() {
-        let undo = UndoActionRecordSnapshot.s211ExecutedTrashMove()
-        let redo = RedoActionRecordSnapshot.s222AvailableMoveRedo()
+    func testRedoActionLogUndoActionLogCoreRedoSourceUsesLoadedUndoActionLogSummary() {
+        let undo = UndoActionRecordSnapshot.undoHistoryExecutedTrashMove()
+        let redo = RedoActionRecordSnapshot.redoActionLogAvailableMoveRedo()
         let presentation = RedoUndoSourcePresentation(redoAction: redo, undoActions: [undo])
 
         XCTAssertEqual(presentation.sourceText, "Source undo: Moved 3 files to Trash.")
@@ -289,31 +289,31 @@ private extension ImportProgressPageIntegrationVerifyTests {
 }
 
 private extension CoreErrorMappingSnapshot {
-    static var s120FatalProgressError: CoreErrorMappingSnapshot {
+    static var importProgressFatalProgressError: CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .io,
             userMessage: "文件读写失败",
             severity: .critical,
             suggestedAction: "AreaMatrix 会先确认 staging 状态，再允许重试当前项。",
             recoverability: .fatal,
-            rawContext: "S1-20 fatal import progress"
+            rawContext: "import-progress fatal import progress"
         )
     }
 
-    static var s210HistoryFailure: CoreErrorMappingSnapshot {
+    static var undoToastHistoryFailure: CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .db,
             userMessage: "Undo history could not be loaded",
             severity: .medium,
             suggestedAction: "Retry from Undo history.",
             recoverability: .refreshRequired,
-            rawContext: "S2-10 C2-07 undo-action-log"
+            rawContext: "undo-toast undo-action-log undo-action-log"
         )
     }
 }
 
 private extension UndoActionRecordSnapshot {
-    static func s210HistoryFixture() -> UndoActionRecordSnapshot {
+    static func undoToastHistoryFixture() -> UndoActionRecordSnapshot {
         UndoActionRecordSnapshot(
             actionID: "undo-history-1",
             kind: "batch_add_tags",
@@ -346,14 +346,14 @@ private func appendImportProgressMirrorDescription(of value: Any, to lines: inou
     }
 }
 
-private actor S210HistoryErrorMapper: CoreErrorMapping {
+private actor UndoToastHistoryErrorMapper: CoreErrorMapping {
     func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        .s210HistoryFailure
+        .undoToastHistoryFailure
     }
 }
 
 private extension UndoActionRecordSnapshot {
-    static func s211MovedFilesToTrash() -> UndoActionRecordSnapshot {
+    static func undoHistoryMovedFilesToTrash() -> UndoActionRecordSnapshot {
         UndoActionRecordSnapshot(
             actionID: "undo-trash-3",
             kind: "trash_delete",
@@ -368,8 +368,8 @@ private extension UndoActionRecordSnapshot {
         )
     }
 
-    static func s211BlockedRename() -> UndoActionRecordSnapshot {
-        var action = s211RenamedFiles()
+    static func undoHistoryBlockedRename() -> UndoActionRecordSnapshot {
+        var action = undoHistoryRenamedFiles()
         action.actionID = "undo-rename-blocked"
         action.status = .blocked
         action.canUndo = false
@@ -377,7 +377,7 @@ private extension UndoActionRecordSnapshot {
         return action
     }
 
-    static func s211RenamedFiles() -> UndoActionRecordSnapshot {
+    static func undoHistoryRenamedFiles() -> UndoActionRecordSnapshot {
         UndoActionRecordSnapshot(
             actionID: "undo-rename-12",
             kind: "rename_files",
@@ -392,8 +392,8 @@ private extension UndoActionRecordSnapshot {
         )
     }
 
-    static func s211ExecutedTrashMove() -> UndoActionRecordSnapshot {
-        var action = s211MovedFilesToTrash()
+    static func undoHistoryExecutedTrashMove() -> UndoActionRecordSnapshot {
+        var action = undoHistoryMovedFilesToTrash()
         action.status = .executed
         action.canUndo = false
         action.updatedAt = 1_700_000_030
@@ -402,7 +402,7 @@ private extension UndoActionRecordSnapshot {
 }
 
 private extension UndoActionResultSnapshot {
-    static func s211UndoneTrashMove() -> UndoActionResultSnapshot {
+    static func undoHistoryUndoneTrashMove() -> UndoActionResultSnapshot {
         UndoActionResultSnapshot(
             actionID: "undo-trash-3",
             status: .executed,
@@ -414,7 +414,7 @@ private extension UndoActionResultSnapshot {
     }
 }
 
-private actor S211RecordingUndoStore: CoreUndoActionLogging {
+private actor UndoHistoryRecordingUndoStore: CoreUndoActionLogging {
     enum Result {
         case list(Swift.Result<[UndoActionRecordSnapshot], Error>)
         case undo(Swift.Result<UndoActionResultSnapshot, Error>)
@@ -457,7 +457,7 @@ private actor S211RecordingUndoStore: CoreUndoActionLogging {
     }
 }
 
-private actor S211HistoryErrorMapper: CoreErrorMapping {
+private actor UndoHistoryHistoryErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: kind(for: error),
@@ -465,7 +465,7 @@ private actor S211HistoryErrorMapper: CoreErrorMapping {
             severity: .medium,
             suggestedAction: "View details in Undo history.",
             recoverability: .refreshRequired,
-            rawContext: "S2-11 C2-07 undo-action-log"
+            rawContext: "undo-history undo-action-log undo-action-log"
         )
     }
 

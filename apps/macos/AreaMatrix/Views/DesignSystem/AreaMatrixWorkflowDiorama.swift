@@ -10,8 +10,8 @@ struct AreaMatrixWorkflowDiorama: View {
     @State private var eventTask: Task<Void, Never>?
 
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.areaMatrixStageParallax) private var parallax
-    @Environment(\.areaMatrixStagePhase) private var stagePhase
+    @Environment(\.areaMatrixSceneParallax) private var parallax
+    @Environment(\.areaMatrixSceneVisibility) private var sceneVisibility
 
     private let eventActions = [
         "CREATE /docs/draft.md",
@@ -30,7 +30,7 @@ struct AreaMatrixWorkflowDiorama: View {
         }
         .frame(width: 600, height: 220)
         .offset(x: parallax.horizontal * -20, y: parallax.vertical * -20)
-        .onChange(of: stagePhase, initial: true) { _, newPhase in
+        .onChange(of: sceneVisibility, initial: true) { _, newPhase in
             if newPhase.isVisible {
                 restartAnimations()
             } else {

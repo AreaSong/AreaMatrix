@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <!-- page_id: S4-X-07 -->
-  <!-- capability: C4-19 manual-rescan -->
+  <!-- page_id: rescan-confirm -->
+  <!-- capability: manual-rescan manual-rescan -->
   <requires lib="gtk" version="4.0" />
-  <object class="GtkDialog" id="S4X07RescanConfirmDialog">
+  <object class="GtkDialog" id="RescanConfirmRescanConfirmDialog">
     <property name="title">Run repository rescan?</property>
     <property name="default-width">720</property>
     <property name="modal">true</property>

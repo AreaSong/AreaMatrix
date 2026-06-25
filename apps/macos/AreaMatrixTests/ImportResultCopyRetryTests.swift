@@ -3,14 +3,14 @@ import XCTest
 
 final class ImportResultCopyRetryTests: XCTestCase {
     @MainActor
-    func testS121C106RetryFailedCopyItemUsesCoreBridgeImporterAndUpdatesResult() async {
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
-        let importer = S117RecordingImporter()
+    func testImportResultImportCopyFileCoreRetryFailedCopyItemUsesCoreBridgeImporterAndUpdatesResult() async {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
+        let importer = ImportSingleFileRecordingImporter()
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             importProgressImporter: importer,
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -19,7 +19,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         let requests = await importer.recordedRequests()
 
         XCTAssertEqual(requests, [
-            S117ImportRequest(
+            ImportSingleFileImportRequest(
                 mode: .copy,
                 overrideCategory: "docs",
                 overrideFilename: "failed.pdf",
@@ -27,7 +27,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
             )
         ])
         guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected S1-21 import result route")
+            return XCTFail("Expected import-result import result route")
         }
         XCTAssertEqual(result.resultSummaryText, "Imported 2, failed 0, stopped 0, pending 0.")
         XCTAssertEqual(result.items.map(\.status), [.imported, .imported])
@@ -36,14 +36,14 @@ final class ImportResultCopyRetryTests: XCTestCase {
     }
 
     @MainActor
-    func testS121RetryFailedRoutesThroughS120ProgressBeforeReturningResults() async {
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
-        let gate = S117ImportGate()
+    func testImportResultRetryFailedRoutesThroughImportProgressProgressBeforeReturningResults() async {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
+        let gate = ImportSingleFileImportGate()
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
-            importProgressImporter: S117SuspendingImporter(gate: gate),
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            importProgressImporter: ImportSingleFileSuspendingImporter(gate: gate),
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -54,7 +54,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         guard case let .importProgress(progress) = model.route else {
             await gate.finish()
             await retryTask.value
-            return XCTFail("Expected S1-20 import progress while retrying failed S1-21 items")
+            return XCTFail("Expected import-progress import progress while retrying failed import-result items")
         }
         XCTAssertEqual(progress.resultSummaryText, "Imported 0, failed 0, stopped 0, pending 1.")
         XCTAssertEqual(progress.items.map(\.sourcePath), ["/tmp/failed.pdf"])
@@ -63,23 +63,23 @@ final class ImportResultCopyRetryTests: XCTestCase {
         await gate.finish()
         await retryTask.value
         guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected S1-21 import result after retry completes")
+            return XCTFail("Expected import-result import result after retry completes")
         }
         XCTAssertEqual(result.resultSummaryText, "Imported 2, failed 0, stopped 0, pending 0.")
         XCTAssertEqual(result.items.map(\.status), [.imported, .imported])
     }
 
     @MainActor
-    func testS121C106RetryFailedCopyItemMapsErrorAndKeepsRetryableRow() async {
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
-        let importer = S117FailingImporter(error: CoreError.PermissionDenied(path: "/tmp/failed.pdf"))
-        let errorMapper = S117RecordingErrorMapper()
+    func testImportResultImportCopyFileCoreRetryFailedCopyItemMapsErrorAndKeepsRetryableRow() async {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
+        let importer = ImportSingleFileFailingImporter(error: CoreError.PermissionDenied(path: "/tmp/failed.pdf"))
+        let errorMapper = ImportSingleFileRecordingErrorMapper()
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             importProgressImporter: importer,
             errorMapper: errorMapper,
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -89,7 +89,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
 
         XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: "/tmp/failed.pdf")])
         guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected S1-21 import result route")
+            return XCTFail("Expected import-result import result route")
         }
         XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 1, stopped 0, pending 0.")
         XCTAssertEqual(result.items.last?.status, .failed)
@@ -99,16 +99,16 @@ final class ImportResultCopyRetryTests: XCTestCase {
     }
 
     @MainActor
-    func testS121C113LoadsImportChangeLogThroughCoreBridge() async {
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
-        let lister = S121RecordingChangeLogLister(results: [.success([
+    func testImportResultListChangeLogCoreLoadsImportChangeLogThroughCoreBridge() async {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
+        let lister = ImportResultRecordingChangeLogLister(results: [.success([
             ChangeLogEntrySnapshot.importResultFixture(id: 1, filename: "imported.pdf")
         ])])
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             importResultChangeLister: lister,
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -116,9 +116,9 @@ final class ImportResultCopyRetryTests: XCTestCase {
         await model.loadImportResultChangeLog()
         let requests = await lister.recordedRequests()
 
-        XCTAssertEqual(requests, [S121ChangeLogRequest(repoPath: "/tmp/repo", filter: .importResultRecent)])
+        XCTAssertEqual(requests, [ImportResultChangeLogRequest(repoPath: "/tmp/repo", filter: .importResultRecent)])
         guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected S1-21 import result route")
+            return XCTFail("Expected import-result import result route")
         }
         XCTAssertEqual(result.changeLog, .loaded([
             ChangeLogEntrySnapshot.importResultFixture(id: 1, filename: "imported.pdf")
@@ -126,16 +126,16 @@ final class ImportResultCopyRetryTests: XCTestCase {
     }
 
     @MainActor
-    func testS121C113MapsListChangesFailureInline() async {
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
-        let lister = S121RecordingChangeLogLister(results: [.failure(CoreError.Db(message: "change log locked"))])
-        let errorMapper = S117RecordingErrorMapper()
+    func testImportResultListChangeLogCoreMapsListChangesFailureInline() async {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
+        let lister = ImportResultRecordingChangeLogLister(results: [.failure(CoreError.Db(message: "change log locked"))])
+        let errorMapper = ImportSingleFileRecordingErrorMapper()
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             importResultChangeLister: lister,
             errorMapper: errorMapper,
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -145,12 +145,12 @@ final class ImportResultCopyRetryTests: XCTestCase {
 
         XCTAssertEqual(mappedErrors, [CoreError.Db(message: "change log locked")])
         guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected S1-21 import result route")
+            return XCTFail("Expected import-result import result route")
         }
-        XCTAssertEqual(result.changeLog, .failed(.s117Error(kind: .db)))
+        XCTAssertEqual(result.changeLog, .failed(.importSingleFileError(kind: .db)))
     }
 
-    func testS121ChangeLogDetailSummaryRedactsImportedSourcePath() {
+    func testImportResultChangeLogDetailSummaryRedactsImportedSourcePath() {
         let entry = ChangeLogEntrySnapshot.importResultFixture(
             detailJSON: #"{"source":"/Users/example/private/imported.pdf","mode":"copied","category":"docs"}"#
         )
@@ -160,14 +160,14 @@ final class ImportResultCopyRetryTests: XCTestCase {
     }
 
     @MainActor
-    func testS121SkippedDuplicateCanShowExistingFileFromResultSummary() {
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
-        let revealer = S121RecordingFileRevealer()
+    func testImportResultSkippedDuplicateCanShowExistingFileFromResultSummary() {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
+        let revealer = ImportResultRecordingFileRevealer()
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             fileRevealer: revealer,
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -186,12 +186,12 @@ final class ImportResultCopyRetryTests: XCTestCase {
     }
 
     @MainActor
-    func testS223C219ImportResultQueuesTagSuggestionReviewForImportedFile() {
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+    func testTagSuggestionsTagSuggestionsCoreImportResultQueuesTagSuggestionReviewForImportedFile() {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -199,7 +199,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         guard case let .importResult(result) = model.route,
               let importedItem = result.items.first(where: { $0.canReviewTagSuggestions })
         else {
-            return XCTFail("Expected imported result item with S2-23 review action")
+            return XCTFail("Expected imported result item with tag-suggestions review action")
         }
 
         model.reviewImportResultTagSuggestions(itemID: importedItem.id)
@@ -207,19 +207,19 @@ final class ImportResultCopyRetryTests: XCTestCase {
         XCTAssertEqual(model.pendingTagSuggestionFocus?.fileID, 117)
         XCTAssertEqual(model.pendingTagSuggestionFocus?.source, .importResult)
         guard case let .mainList(mainOpening) = model.route else {
-            return XCTFail("Expected main list route for S2-23 tag suggestions")
+            return XCTFail("Expected main list route for tag-suggestions tag suggestions")
         }
         XCTAssertTrue(mainOpening.currentCategoryFiles.contains { $0.id == 117 && $0.path == "docs/imported.pdf" })
     }
 
     @MainActor
-    func testS223C219PartialApplyFailureCanRetryFailedSuggestionOnly() async {
+    func testTagSuggestionsTagSuggestionsCorePartialApplyFailureCanRetryFailedSuggestionOnly() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 231, currentName: "invoice_2026.pdf")
-        let report = TagSuggestionReportSnapshot.s223Fixture(fileID: detail.id)
-        let partialFailure = TagSuggestionApplyReportSnapshot.s223PartialFailure(fileID: detail.id)
-        let retrySuccess = TagSuggestionApplyReportSnapshot.s223Applied(
+        let report = TagSuggestionReportSnapshot.tagSuggestionsFixture(fileID: detail.id)
+        let partialFailure = TagSuggestionApplyReportSnapshot.tagSuggestionsPartialFailure(fileID: detail.id)
+        let retrySuccess = TagSuggestionApplyReportSnapshot.tagSuggestionsApplied(
             fileID: detail.id,
-            suggestionID: "s223-tax",
+            suggestionID: "tagSuggestions-tax",
             slug: "tax-review",
             displayName: "Tax Review"
         )
@@ -227,20 +227,20 @@ final class ImportResultCopyRetryTests: XCTestCase {
             suggestionResults: [.success(report)],
             applySuggestionResults: [.success(partialFailure), .success(retrySuccess)]
         )
-        let model = MainFileListModel.s223Fixture(detail: detail, tagStore: tagStore)
+        let model = MainFileListModel.tagSuggestionsFixture(detail: detail, tagStore: tagStore)
 
         await model.selectFiles([detail.id])
         await model.loadSelectedFileTagSuggestions()
-        model.toggleSelectedFileTagSuggestion("s223-tax")
+        model.toggleSelectedFileTagSuggestion("tagSuggestions-tax")
         model.startEditingSelectedFileTagSuggestions()
-        model.updateSelectedFileTagSuggestionSlug(suggestionID: "s223-tax", slug: "tax-review")
+        model.updateSelectedFileTagSuggestionSlug(suggestionID: "tagSuggestions-tax", slug: "tax-review")
         _ = await model.applyEditedSelectedFileTagSuggestions()
 
         XCTAssertEqual(model.detailTagSuggestionState.appliedReport?.failedCount, 1)
         XCTAssertEqual(model.detailTagSuggestionState.editSession?.drafts.map(\.status.label), ["Applied", "Failed"])
         XCTAssertEqual(DetailTagSuggestionAction.retryFailedItems(in: model.detailTagSuggestionState), [
             ApplyTagSuggestionItemSnapshot(
-                suggestionID: "s223-tax",
+                suggestionID: "tagSuggestions-tax",
                 slug: "tax-review",
                 displayName: "Tax"
             )
@@ -251,7 +251,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
 
         XCTAssertEqual(applyRequests.last?.request.suggestions, [
             ApplyTagSuggestionItemSnapshot(
-                suggestionID: "s223-tax",
+                suggestionID: "tagSuggestions-tax",
                 slug: "tax-review",
                 displayName: "Tax"
             )
@@ -261,21 +261,21 @@ final class ImportResultCopyRetryTests: XCTestCase {
     }
 
     @MainActor
-    func testS121ExportDetailsUsesRedactedPathsAndPrivacyState() {
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
-        let exporter = S121RecordingImportResultExporter()
+    func testImportResultExportDetailsUsesRedactedPathsAndPrivacyState() {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
+        let exporter = ImportResultRecordingImportResultExporter()
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             importResultExporter: exporter,
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
         model.showImportEntryResults(Self.failedCopyProgress)
         model.requestImportResultExportPrivacyConfirmation()
         guard case let .importResult(confirming) = model.route else {
-            return XCTFail("Expected S1-21 import result route")
+            return XCTFail("Expected import-result import result route")
         }
         XCTAssertEqual(confirming.exportState, .confirmingPrivacy)
 
@@ -285,7 +285,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         XCTAssertTrue(exporter.requests.first?.details.contains(".../failed.pdf") == true)
         XCTAssertFalse(exporter.requests.first?.details.contains("/tmp/failed.pdf") == true)
         guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected S1-21 import result route")
+            return XCTFail("Expected import-result import result route")
         }
         XCTAssertEqual(result.exportState, .exported("/tmp/AreaMatrix-Import-Result.txt"))
         XCTAssertEqual(model.toastMessage, "Import result details exported.")
@@ -357,26 +357,26 @@ private extension ImportResultCopyRetryTests {
     )
 }
 
-private struct S121ChangeLogRequest: Equatable {
+private struct ImportResultChangeLogRequest: Equatable {
     var repoPath: String
     var filter: ChangeFilterSnapshot
 }
 
-private actor S121RecordingChangeLogLister: CoreChangeLogListing {
+private actor ImportResultRecordingChangeLogLister: CoreChangeLogListing {
     enum Result {
         case success([ChangeLogEntrySnapshot])
         case failure(Error)
     }
 
     private var results: [Result]
-    private var requests: [S121ChangeLogRequest] = []
+    private var requests: [ImportResultChangeLogRequest] = []
 
     init(results: [Result]) {
         self.results = results
     }
 
     func listChanges(repoPath: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
-        requests.append(S121ChangeLogRequest(repoPath: repoPath, filter: filter))
+        requests.append(ImportResultChangeLogRequest(repoPath: repoPath, filter: filter))
         guard !results.isEmpty else { return [] }
 
         switch results.removeFirst() {
@@ -387,13 +387,13 @@ private actor S121RecordingChangeLogLister: CoreChangeLogListing {
         }
     }
 
-    func recordedRequests() -> [S121ChangeLogRequest] {
+    func recordedRequests() -> [ImportResultChangeLogRequest] {
         requests
     }
 }
 
 @MainActor
-private final class S121RecordingFileRevealer: RepositoryFileRevealing {
+private final class ImportResultRecordingFileRevealer: RepositoryFileRevealing {
     private(set) var requests: [(repoPath: String, relativePath: String)] = []
 
     func revealFile(repoPath: String, relativePath: String) throws {
@@ -402,7 +402,7 @@ private final class S121RecordingFileRevealer: RepositoryFileRevealing {
 }
 
 @MainActor
-private final class S121RecordingImportResultExporter: ImportResultDetailsExporting {
+private final class ImportResultRecordingImportResultExporter: ImportResultDetailsExporting {
     private(set) var requests: [(details: String, suggestedFilename: String)] = []
 
     func exportDetails(_ details: String, suggestedFilename: String) throws -> String {

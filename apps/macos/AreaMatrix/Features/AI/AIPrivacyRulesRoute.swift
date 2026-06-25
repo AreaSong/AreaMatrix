@@ -19,9 +19,9 @@ enum AIPrivacyRulesRouteFocus: Equatable {
     var targetID: String {
         switch self {
         case let .rule(ruleID):
-            "s309-rule-\(normalizedRuleID(ruleID))"
+            "aiPrivacyRules-rule-\(normalizedRuleID(ruleID))"
         case let .field(field):
-            "s309-field-\(field)"
+            "aiPrivacyRules-field-\(field)"
         }
     }
 
@@ -49,19 +49,19 @@ enum AIPrivacyRulesRouteFocus: Equatable {
 }
 
 extension AISummaryEditorNotice {
-    func s309PrivacyRulesRoute(repoPath: String) -> AIPrivacyRulesRoute? {
-        if let ruleID = s309NormalizedPrivacyRuleID {
+    func aiPrivacyRulesPrivacyRulesRoute(repoPath: String) -> AIPrivacyRulesRoute? {
+        if let ruleID = aiPrivacyRulesNormalizedPrivacyRuleID {
             return AIPrivacyRulesRoute(repoPath: repoPath, focus: .rule(ruleID: ruleID))
         }
         return privacyField.map { AIPrivacyRulesRoute(repoPath: repoPath, focus: .field($0)) }
     }
 
-    var s309PrivacyRulesRouteAccessibilitySuffix: String? {
-        if let ruleID = s309NormalizedPrivacyRuleID { return "privacy-rule-\(ruleID)" }
+    var aiPrivacyRulesPrivacyRulesRouteAccessibilitySuffix: String? {
+        if let ruleID = aiPrivacyRulesNormalizedPrivacyRuleID { return "privacy-rule-\(ruleID)" }
         return privacyField.map { "privacy-field-\($0)" }
     }
 
-    private var s309NormalizedPrivacyRuleID: String? {
+    private var aiPrivacyRulesNormalizedPrivacyRuleID: String? {
         let ruleID = privacyRuleID?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return ruleID.isEmpty ? nil : ruleID
     }

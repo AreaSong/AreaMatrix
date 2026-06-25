@@ -26,7 +26,7 @@ struct StartupRecoveryErrorRecoveryView: View {
         .frame(maxWidth: 640, alignment: .leading)
         .background(tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("S1-32-C1-16-startup-recovery")
+        .accessibilityIdentifier("startup-recovery-startup-recovery-core-startup-recovery")
     }
 
     @ViewBuilder
@@ -49,7 +49,7 @@ struct StartupRecoveryErrorRecoveryView: View {
                 mapping: mapping,
                 retryButtonTitle: retryButtonTitle,
                 isRetrying: isRetrying,
-                retryAccessibilityIdentifier: "S1-32-C1-16-retry-startup-recovery",
+                retryAccessibilityIdentifier: "startup-recovery-startup-recovery-core-retry-startup-recovery",
                 onRetry: onRetry
             )
         }
@@ -59,7 +59,7 @@ struct StartupRecoveryErrorRecoveryView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("启动恢复已完成：\(report.startupRecoverySummaryText)")
                 .font(.callout)
-                .accessibilityIdentifier("S1-32-C1-16-recovery-report")
+                .accessibilityIdentifier("startup-recovery-startup-recovery-core-recovery-report")
             if !report.warnings.isEmpty {
                 Text("Warnings: \(report.warnings.count)")
                     .font(.callout)
@@ -133,7 +133,7 @@ struct ErrorRecoveryMappedErrorView: View {
                 .accessibilityIdentifier(retryAccessibilityIdentifier)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("S1-32-C1-21-error-mapping")
+        .accessibilityIdentifier("startup-recovery-error-mapping-error-mapping")
     }
 
     private var mappingHeader: some View {

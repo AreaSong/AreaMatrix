@@ -3,14 +3,14 @@ import XCTest
 
 final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
     @MainActor
-    func testS137C116StartupRecoveryRunsRealCoreBridgeBoundaryBeforeRepair() async {
+    func testDatabaseRepairStartupRecoveryCoreStartupRecoveryRunsRealCoreBridgeBoundaryBeforeRepair() async {
         let report = RecoveryReportSnapshot(
             cleanedStagingFiles: 2,
             revertedStagingDbRows: 1,
             warnings: ["Kept recoverable staging file"]
         )
-        let recoverer = S137RecordingStartupRecoverer(result: .success(report))
-        let repairer = S137RecordingMetadataRepairer(result: .success(.s137RepairReportFixture()))
+        let recoverer = DatabaseRepairRecordingStartupRecoverer(result: .success(report))
+        let repairer = DatabaseRepairRecordingMetadataRepairer(result: .success(.databaseRepairRepairReportFixture()))
         let model = DatabaseRepairConfirmModel(
             repoPath: "/tmp/repo",
             scanSession: nil,
@@ -18,8 +18,8 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             lastOpenedAt: nil,
             metadataRepairer: repairer,
             startupRecoverer: recoverer,
-            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.s137DiagnosticsFixture())),
-            errorMapper: S137RepairErrorMapper(mapping: .s137RepairMapping(kind: .db))
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.databaseRepairDiagnosticsFixture())),
+            errorMapper: DatabaseRepairRepairErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db))
         )
 
         await model.runStartupRecoveryCheckIfNeeded()
@@ -32,9 +32,9 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS137C116StartupRecoveryFailureMapsErrorAndCanRetry() async {
-        let mapping = CoreErrorMappingSnapshot.s137StartupRecoveryMapping(rawContext: "database locked")
-        let recoverer = S137RecordingStartupRecoverer(results: [
+    func testDatabaseRepairStartupRecoveryCoreStartupRecoveryFailureMapsErrorAndCanRetry() async {
+        let mapping = CoreErrorMappingSnapshot.databaseRepairStartupRecoveryMapping(rawContext: "database locked")
+        let recoverer = DatabaseRepairRecordingStartupRecoverer(results: [
             .failure(CoreError.Db(message: "database locked")),
             .success(RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: []))
         ])
@@ -43,10 +43,10 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             scanSession: nil,
             mapping: nil,
             lastOpenedAt: nil,
-            metadataRepairer: S137RecordingMetadataRepairer(result: .success(.s137RepairReportFixture())),
+            metadataRepairer: DatabaseRepairRecordingMetadataRepairer(result: .success(.databaseRepairRepairReportFixture())),
             startupRecoverer: recoverer,
-            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.s137DiagnosticsFixture())),
-            errorMapper: S137RepairErrorMapper(mapping: mapping)
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.databaseRepairDiagnosticsFixture())),
+            errorMapper: DatabaseRepairRepairErrorMapper(mapping: mapping)
         )
 
         await model.runStartupRecoveryCheckIfNeeded()
@@ -63,7 +63,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS137C126RepairRequiresConfirmationAndUsesCoreMetadataRepair() async {
+    func testDatabaseRepairRepairReindexMetadataCoreRepairRequiresConfirmationAndUsesCoreMetadataRepair() async {
         let report = RepairReportSnapshot(
             scanSessionId: 9,
             diagnosticsSnapshotPath: ".areamatrix/diagnostics/repair.zip",
@@ -72,15 +72,15 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             skipped: 1,
             errors: []
         )
-        let repairer = S137RecordingMetadataRepairer(result: .success(report))
+        let repairer = DatabaseRepairRecordingMetadataRepairer(result: .success(report))
         let model = DatabaseRepairConfirmModel(
             repoPath: "/tmp/repo",
             scanSession: nil,
             mapping: nil,
             lastOpenedAt: nil,
             metadataRepairer: repairer,
-            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.s137DiagnosticsFixture())),
-            errorMapper: S137RepairErrorMapper(mapping: .s137RepairMapping(kind: .db))
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.databaseRepairDiagnosticsFixture())),
+            errorMapper: DatabaseRepairRepairErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db))
         )
 
         await model.runFullRescan()
@@ -93,7 +93,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
 
         let requestsAfterConfirmation = await repairer.requests()
         XCTAssertEqual(requestsAfterConfirmation, [
-            S137RepairRequest(
+            DatabaseRepairRepairRequest(
                 repoPath: "/tmp/repo",
                 options: RepairOptionsSnapshot(fullRescan: true, preserveDiagnosticsSnapshot: true)
             )
@@ -102,12 +102,12 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS137C126RepairFailureMapsCoreErrorAndStaysRetryable() async {
-        let mapping = CoreErrorMappingSnapshot.s137RepairMapping(
+    func testDatabaseRepairRepairReindexMetadataCoreRepairFailureMapsCoreErrorAndStaysRetryable() async {
+        let mapping = CoreErrorMappingSnapshot.databaseRepairRepairMapping(
             kind: .permissionDenied,
             rawContext: "/tmp/repo/.areamatrix/index.db"
         )
-        let repairer = S137RecordingMetadataRepairer(result: .failure(CoreError.PermissionDenied(
+        let repairer = DatabaseRepairRecordingMetadataRepairer(result: .failure(CoreError.PermissionDenied(
             path: "/tmp/repo/.areamatrix/index.db"
         )))
         let model = DatabaseRepairConfirmModel(
@@ -116,8 +116,8 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             mapping: nil,
             lastOpenedAt: nil,
             metadataRepairer: repairer,
-            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.s137DiagnosticsFixture())),
-            errorMapper: S137RepairErrorMapper(mapping: mapping)
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.databaseRepairDiagnosticsFixture())),
+            errorMapper: DatabaseRepairRepairErrorMapper(mapping: mapping)
         )
 
         model.isMetadataSafetyConfirmed = true
@@ -129,7 +129,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS137C126DiagnosticsRequirePrivacyConfirmationAndCanDisableRepair() async {
+    func testDatabaseRepairRepairReindexMetadataCoreDiagnosticsRequirePrivacyConfirmationAndCanDisableRepair() async {
         let diagnosticsCollector = ShellRecordingDiagnosticsCollector(
             result: .failure(CoreError.PermissionDenied(path: "/tmp/repo/.areamatrix/diagnostics"))
         )
@@ -138,9 +138,9 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             scanSession: nil,
             mapping: nil,
             lastOpenedAt: nil,
-            metadataRepairer: S137RecordingMetadataRepairer(result: .success(.s137RepairReportFixture())),
+            metadataRepairer: DatabaseRepairRecordingMetadataRepairer(result: .success(.databaseRepairRepairReportFixture())),
             diagnosticsCollector: diagnosticsCollector,
-            errorMapper: S137RepairErrorMapper(mapping: .s137RepairMapping(kind: .permissionDenied))
+            errorMapper: DatabaseRepairRepairErrorMapper(mapping: .databaseRepairRepairMapping(kind: .permissionDenied))
         )
 
         model.isMetadataSafetyConfirmed = true
@@ -162,33 +162,33 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS137C126ViewExposesRepairCopyAndNoAdjacentCoreActionsWhenNoScanSession() {
+    func testDatabaseRepairRepairReindexMetadataCoreViewExposesRepairCopyAndNoAdjacentCoreActionsWhenNoScanSession() {
         let view = DBRepairConfirmView(
             repoPath: "/tmp/repo",
             scanSession: nil,
-            mapping: .s137RepairMapping(kind: .db, rawContext: "database corrupted"),
-            metadataRepairer: S137RecordingMetadataRepairer(result: .success(.s137RepairReportFixture())),
-            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.s137DiagnosticsFixture())),
-            errorMapper: S137RepairErrorMapper(mapping: .s137RepairMapping(kind: .db)),
+            mapping: .databaseRepairRepairMapping(kind: .db, rawContext: "database corrupted"),
+            metadataRepairer: DatabaseRepairRecordingMetadataRepairer(result: .success(.databaseRepairRepairReportFixture())),
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.databaseRepairDiagnosticsFixture())),
+            errorMapper: DatabaseRepairRepairErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db)),
             onCancel: {},
             onRepairSucceeded: {},
             onOpenRepositoryInFinder: {}
         )
-        let body = s137MirrorDescription(of: view.body)
+        let body = databaseRepairMirrorDescription(of: view.body)
 
         XCTAssertTrue(body.contains("Repair Repository Metadata?"))
         XCTAssertTrue(body.contains("AreaMatrix cannot read the repository metadata database"))
         XCTAssertTrue(body.contains("Run Full Rescan"))
         XCTAssertTrue(body.contains("Export diagnostics..."))
-        XCTAssertTrue(body.contains("S1-37-C1-26-run-full-rescan"))
-        XCTAssertTrue(body.contains("S1-37-C1-26-confirm-metadata-only"))
+        XCTAssertTrue(body.contains("database-repair-metadata-repair-run-full-rescan"))
+        XCTAssertTrue(body.contains("database-repair-metadata-repair-confirm-metadata-only"))
         XCTAssertFalse(body.contains("Resume"))
         XCTAssertFalse(body.contains("Clean up and retry"))
         XCTAssertFalse(body.contains("Remove from index"))
     }
 
     @MainActor
-    func testS137C116StartupRecoveryViewShowsReportAndRetryWithoutAdjacentActions() {
+    func testDatabaseRepairStartupRecoveryCoreStartupRecoveryViewShowsReportAndRetryWithoutAdjacentActions() {
         let checkingView = StartupRecoveryCheckStatusView(
             state: .checking,
             onRetry: {}
@@ -202,40 +202,40 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             onRetry: {}
         )
         let failedView = StartupRecoveryCheckStatusView(
-            state: .failed(.s137StartupRecoveryMapping(rawContext: "locked")),
+            state: .failed(.databaseRepairStartupRecoveryMapping(rawContext: "locked")),
             onRetry: {}
         )
 
-        let checkingBody = s137MirrorDescription(of: checkingView.body)
-        let completedBody = s137MirrorDescription(of: completedView.body)
-        let failedBody = s137MirrorDescription(of: failedView.body)
+        let checkingBody = databaseRepairMirrorDescription(of: checkingView.body)
+        let completedBody = databaseRepairMirrorDescription(of: completedView.body)
+        let failedBody = databaseRepairMirrorDescription(of: failedView.body)
 
         XCTAssertTrue(checkingBody.contains("Checking startup recovery state..."))
-        XCTAssertTrue(checkingBody.contains("S1-37-C1-16-startup-recovery-checking"))
+        XCTAssertTrue(checkingBody.contains("database-repair-startup-recovery-core-startup-recovery-checking"))
         XCTAssertTrue(completedBody.contains("Startup recovery checked"))
         XCTAssertTrue(completedBody.contains("Kept active staging file"))
-        XCTAssertTrue(completedBody.contains("S1-37-C1-16-startup-recovery-completed"))
+        XCTAssertTrue(completedBody.contains("database-repair-startup-recovery-core-startup-recovery-completed"))
         XCTAssertTrue(failedBody.contains("Startup recovery failed"))
         XCTAssertTrue(failedBody.contains("Retry startup recovery"))
-        XCTAssertTrue(failedBody.contains("S1-37-C1-16-retry-startup-recovery"))
+        XCTAssertTrue(failedBody.contains("database-repair-startup-recovery-core-retry-startup-recovery"))
         XCTAssertFalse(completedBody.contains("Remove from index"))
         XCTAssertFalse(failedBody.contains("Download & retry"))
     }
 
     @MainActor
-    func testS137C126ViewDoesNotExposeAdjacentCoreActionsWhenScanSessionExists() {
+    func testDatabaseRepairRepairReindexMetadataCoreViewDoesNotExposeAdjacentCoreActionsWhenScanSessionExists() {
         let view = DBRepairConfirmView(
             repoPath: "/tmp/repo",
             scanSession: ScanSessionSnapshot.mainLoadingReindexFixture(status: .interrupted),
-            mapping: .s137RepairMapping(kind: .db, rawContext: "database corrupted"),
-            metadataRepairer: S137RecordingMetadataRepairer(result: .success(.s137RepairReportFixture())),
-            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.s137DiagnosticsFixture())),
-            errorMapper: S137RepairErrorMapper(mapping: .s137RepairMapping(kind: .db)),
+            mapping: .databaseRepairRepairMapping(kind: .db, rawContext: "database corrupted"),
+            metadataRepairer: DatabaseRepairRecordingMetadataRepairer(result: .success(.databaseRepairRepairReportFixture())),
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.databaseRepairDiagnosticsFixture())),
+            errorMapper: DatabaseRepairRepairErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db)),
             onCancel: {},
             onRepairSucceeded: {},
             onOpenRepositoryInFinder: {}
         )
-        let body = s137MirrorDescription(of: view.body)
+        let body = databaseRepairMirrorDescription(of: view.body)
 
         XCTAssertTrue(body.contains("Run Full Rescan"))
         XCTAssertTrue(body.contains("Export diagnostics..."))
@@ -244,14 +244,14 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
         XCTAssertFalse(body.contains("Interrupted scan"))
     }
 
-    func testS137C126CoreBridgeDeclaresRepairMetadataBoundary() async {
+    func testDatabaseRepairRepairReindexMetadataCoreCoreBridgeDeclaresRepairMetadataBoundary() async {
         let declaredBoundaries = await CoreBridge().declaredBoundaries()
 
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.repairMetadata))
         XCTAssertTrue(declaredBoundaries.contains(.repairMetadata))
     }
 
-    func testS137C116CoreBridgeDeclaresStartupRecoveryBoundary() async {
+    func testDatabaseRepairStartupRecoveryCoreCoreBridgeDeclaresStartupRecoveryBoundary() async {
         let declaredBoundaries = await CoreBridge().declaredBoundaries()
 
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.recoverOnStartup))
@@ -259,43 +259,43 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
     }
 }
 
-struct S137RepairRequest: Equatable {
+struct DatabaseRepairRepairRequest: Equatable {
     var repoPath: String
     var options: RepairOptionsSnapshot
 }
 
-actor S137RecordingMetadataRepairer: CoreMetadataRepairing {
+actor DatabaseRepairRecordingMetadataRepairer: CoreMetadataRepairing {
     private let result: Result<RepairReportSnapshot, Error>
-    private var recordedRequests: [S137RepairRequest] = []
+    private var recordedRequests: [DatabaseRepairRepairRequest] = []
 
     init(result: Result<RepairReportSnapshot, Error>) {
         self.result = result
     }
 
     func repairMetadata(repoPath: String, options: RepairOptionsSnapshot) async throws -> RepairReportSnapshot {
-        recordedRequests.append(S137RepairRequest(repoPath: repoPath, options: options))
+        recordedRequests.append(DatabaseRepairRepairRequest(repoPath: repoPath, options: options))
         return try result.get()
     }
 
-    func requests() -> [S137RepairRequest] {
+    func requests() -> [DatabaseRepairRepairRequest] {
         recordedRequests
     }
 }
 
-private enum S137StartupRecoveryResult {
+private enum DatabaseRepairStartupRecoveryResult {
     case success(RecoveryReportSnapshot)
     case failure(Error)
 }
 
-private actor S137RecordingStartupRecoverer: CoreStartupRecovering {
-    private var results: [S137StartupRecoveryResult]
+private actor DatabaseRepairRecordingStartupRecoverer: CoreStartupRecovering {
+    private var results: [DatabaseRepairStartupRecoveryResult]
     private var repoPaths: [String] = []
 
-    init(result: S137StartupRecoveryResult) {
+    init(result: DatabaseRepairStartupRecoveryResult) {
         results = [result]
     }
 
-    init(results: [S137StartupRecoveryResult]) {
+    init(results: [DatabaseRepairStartupRecoveryResult]) {
         self.results = results
     }
 
@@ -319,7 +319,7 @@ private actor S137RecordingStartupRecoverer: CoreStartupRecovering {
     }
 }
 
-private actor S137RepairErrorMapper: CoreErrorMapping {
+private actor DatabaseRepairRepairErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
 
     init(mapping: CoreErrorMappingSnapshot) {
@@ -332,7 +332,7 @@ private actor S137RepairErrorMapper: CoreErrorMapping {
 }
 
 private extension RepairReportSnapshot {
-    static func s137RepairReportFixture() -> RepairReportSnapshot {
+    static func databaseRepairRepairReportFixture() -> RepairReportSnapshot {
         RepairReportSnapshot(
             scanSessionId: 7,
             diagnosticsSnapshotPath: ".areamatrix/diagnostics/repair.zip",
@@ -345,9 +345,9 @@ private extension RepairReportSnapshot {
 }
 
 private extension DiagnosticsSnapshotSnapshot {
-    static func s137DiagnosticsFixture() -> DiagnosticsSnapshotSnapshot {
+    static func databaseRepairDiagnosticsFixture() -> DiagnosticsSnapshotSnapshot {
         DiagnosticsSnapshotSnapshot(
-            snapshotPath: ".areamatrix/diagnostics/s1-37.zip",
+            snapshotPath: ".areamatrix/diagnostics/database-repair-diagnostics.zip",
             createdAt: 1_778_000_000,
             warnings: ["paths redacted"]
         )
@@ -355,7 +355,7 @@ private extension DiagnosticsSnapshotSnapshot {
 }
 
 private extension CoreErrorMappingSnapshot {
-    static func s137RepairMapping(
+    static func databaseRepairRepairMapping(
         kind: CoreErrorKindSnapshot,
         rawContext: String = "db corrupt"
     ) -> CoreErrorMappingSnapshot {
@@ -369,7 +369,7 @@ private extension CoreErrorMappingSnapshot {
         )
     }
 
-    static func s137StartupRecoveryMapping(rawContext: String) -> CoreErrorMappingSnapshot {
+    static func databaseRepairStartupRecoveryMapping(rawContext: String) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .db,
             userMessage: "Startup recovery could not finish",
@@ -381,19 +381,19 @@ private extension CoreErrorMappingSnapshot {
     }
 }
 
-private func s137MirrorDescription(of value: Any) -> String {
+private func databaseRepairMirrorDescription(of value: Any) -> String {
     var lines: [String] = []
-    appendS137MirrorDescription(of: value, to: &lines)
+    appendDatabaseRepairMirrorDescription(of: value, to: &lines)
     return lines.joined(separator: "\n")
 }
 
-private func appendS137MirrorDescription(of value: Any, to lines: inout [String]) {
+private func appendDatabaseRepairMirrorDescription(of value: Any, to lines: inout [String]) {
     lines.append(String(describing: type(of: value)))
     lines.append(String(describing: value))
     for child in Mirror(reflecting: value).children {
         if let label = child.label {
             lines.append(label)
         }
-        appendS137MirrorDescription(of: child.value, to: &lines)
+        appendDatabaseRepairMirrorDescription(of: child.value, to: &lines)
     }
 }

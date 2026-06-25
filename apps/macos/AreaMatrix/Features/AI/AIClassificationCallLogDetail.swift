@@ -49,7 +49,7 @@ struct AICallLogView: View {
             Button("Cancel", role: .cancel) { confirmation = nil }
             Button(confirmationButtonTitle, role: .destructive) { Task { await confirmDestructiveAction() } }
         } message: { Text(confirmationMessage) }
-        .accessibilityIdentifier("S3-05-C3-05-ai-call-log")
+        .accessibilityIdentifier("ai-call-log-ai-call-log-core-ai-call-log")
     }
 
     private var header: some View {
@@ -408,7 +408,7 @@ struct AIClassificationCallLogDetailSheet: View {
         .padding(24)
         .frame(width: 580, alignment: .topLeading)
         .task { await model.load() }
-        .accessibilityIdentifier("S3-04-C3-10-ai-call-log-detail")
+        .accessibilityIdentifier("ai-category-suggestion-ai-fallback-core-ai-call-log-detail")
     }
 
     private var header: some View {
@@ -450,7 +450,7 @@ struct AIClassificationCallLogDetailSheet: View {
                 callRow("Error", errorCode)
             }
         }
-        .accessibilityIdentifier("S3-04-C3-10-ai-call-log-loaded")
+        .accessibilityIdentifier("ai-category-suggestion-ai-fallback-core-ai-call-log-loaded")
     }
 
     private func notFoundContent(_ callLogID: Int64) -> some View {
@@ -462,7 +462,7 @@ struct AIClassificationCallLogDetailSheet: View {
                 .foregroundStyle(.secondary)
             Button("Retry") { Task { await model.load() } }
         }
-        .accessibilityIdentifier("S3-04-C3-10-ai-call-log-not-found")
+        .accessibilityIdentifier("ai-category-suggestion-ai-fallback-core-ai-call-log-not-found")
     }
 
     private func failureContent(_ error: AISettingsError) -> some View {
@@ -477,7 +477,7 @@ struct AIClassificationCallLogDetailSheet: View {
                 .foregroundStyle(.secondary)
             Button("Retry") { Task { await model.load() } }
         }
-        .accessibilityIdentifier("S3-04-C3-10-ai-call-log-error")
+        .accessibilityIdentifier("ai-category-suggestion-ai-fallback-core-ai-call-log-error")
     }
 
     private func callRow(_ label: String, _ value: String) -> some View {

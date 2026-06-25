@@ -129,7 +129,7 @@ final class SyncConflictReviewRouteViewModel: ObservableObject {
         let safeToken = previewToken
             .filter { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" }
             .prefix(24)
-        return "S4-X-09-C4-21-\(conflictID)-\(safeToken)"
+        return "replace-resolution-replace-confirmation-\(conflictID)-\(safeToken)"
     }
 }
 
@@ -157,7 +157,7 @@ struct SyncConflictReviewRouteView: View {
         }
         .mobileLibraryListStyle()
         .navigationTitle("Confirm Replace")
-        .accessibilityIdentifier("S4-X-01-C4-15-ios-review-route")
+        .accessibilityIdentifier("sync-conflict-review-sync-conflict-detect-ios-review-route")
         .task {
             await model.loadPreviewIfNeeded()
         }
@@ -202,7 +202,7 @@ private extension SyncConflictReviewRouteView {
                     .foregroundStyle(.green)
             }
         }
-        .accessibilityIdentifier("S4-X-09-C4-16-ios-preview")
+        .accessibilityIdentifier("replace-resolution-sync-conflict-resolve-ios-preview")
     }
 
     func replacePlanSection(_ preview: SyncConflictResolutionPreviewReport) -> some View {
@@ -222,7 +222,7 @@ private extension SyncConflictReviewRouteView {
                     .foregroundStyle(.secondary)
             }
         }
-        .accessibilityIdentifier("S4-X-09-C4-21-ios-replace-plan")
+        .accessibilityIdentifier("replace-resolution-replace-confirmation-ios-replace-plan")
     }
 
     func confirmationSection(_ preview: SyncConflictResolutionPreviewReport) -> some View {
@@ -234,7 +234,7 @@ private extension SyncConflictReviewRouteView {
                 Text("I understand this will replace the existing file.")
             }
             .disabled(!model.canConfirmReplacePlan)
-            .accessibilityIdentifier("S4-X-09-C4-21-ios-confirmation")
+            .accessibilityIdentifier("replace-resolution-replace-confirmation-ios-confirmation")
 
             if let reason = model.replaceDisabledReason {
                 Text(reason)
@@ -242,7 +242,7 @@ private extension SyncConflictReviewRouteView {
                     .foregroundStyle(.secondary)
             }
             if preview.trashRequired && !preview.trashAvailable {
-                Text("Trash is unavailable. Stage 4 does not allow irreversible Replace.")
+                Text("Trash is unavailable. AreaMatrix does not allow irreversible Replace.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -256,9 +256,9 @@ private extension SyncConflictReviewRouteView {
                 }
             }
             .disabled(!model.canApplyReplace)
-            .accessibilityIdentifier("S4-X-09-C4-21-ios-apply-replace")
+            .accessibilityIdentifier("replace-resolution-replace-confirmation-ios-apply-replace")
         }
-        .accessibilityIdentifier("S4-X-09-C4-21-ios-replace-confirm")
+        .accessibilityIdentifier("replace-resolution-replace-confirmation-ios-replace-confirm")
     }
 
     func resultSection(_ result: SyncConflictResolveReport) -> some View {
@@ -271,7 +271,7 @@ private extension SyncConflictReviewRouteView {
                 planRow("Undo token", value: undoToken)
             }
         }
-        .accessibilityIdentifier("S4-X-09-C4-16-ios-resolve-result")
+        .accessibilityIdentifier("replace-resolution-sync-conflict-resolve-ios-resolve-result")
     }
 
     func planRow(_ title: String, value: String) -> some View {

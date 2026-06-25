@@ -3,7 +3,7 @@ import XCTest
 
 final class GeneralSettingsPageFeatureTests: XCTestCase {
     @MainActor
-    func testLoadUsesC104ConfigSnapshotForVisibleGeneralSettings() async {
+    func testLoadUsesRepositoryConfigCoreConfigSnapshotForVisibleGeneralSettings() async {
         let loader = GeneralSettingsRecordingLoader(result: .success(.generalSettingsFixture(
             repoPath: "/tmp/repo",
             defaultMode: "Indexed",
@@ -87,7 +87,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testC107MoveDefaultPersistsOnlyAfterRiskConfirmation() async {
+    func testImportMoveFileCoreMoveDefaultPersistsOnlyAfterRiskConfirmation() async {
         let updater = GeneralSettingsRecordingUpdater(result: .success)
         let model = await loadedModel(updater: updater)
 
@@ -211,7 +211,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testDefaultCoreBridgePersistsC107MoveDefaultWithoutMovingExternalFiles() async throws {
+    func testDefaultCoreBridgePersistsImportMoveFileCoreMoveDefaultWithoutMovingExternalFiles() async throws {
         let repoURL = try temporaryGeneralSettingsRepo()
         let sourceRoot = try temporaryGeneralSettingsRepo()
         defer {
@@ -237,7 +237,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testOnboardingRoutesSettingsEntryToS126GeneralSettingsWithoutRepositoryPathFlow() {
+    func testOnboardingRoutesSettingsEntryToGeneralSettingsGeneralSettingsWithoutRepositoryPathFlow() {
         let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 1)
         let model = OnboardingModel(settingsReader: ShellStaticSettingsReader(repoPath: nil))
 
@@ -268,7 +268,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
 }
 
 extension AIClassificationSuggestionState {
-    static func s304Suggested(fileID: Int64) -> AIClassificationSuggestionState {
+    static func aiCategorySuggestionSuggested(fileID: Int64) -> AIClassificationSuggestionState {
         AIClassificationSuggestionState(
             fileID: fileID,
             status: .suggested,
@@ -285,7 +285,7 @@ extension AIClassificationSuggestionState {
         )
     }
 
-    static func s304AiDisabled(fileID: Int64) -> AIClassificationSuggestionState {
+    static func aiCategorySuggestionAiDisabled(fileID: Int64) -> AIClassificationSuggestionState {
         AIClassificationSuggestionState(
             fileID: fileID,
             status: .skipped,
@@ -302,7 +302,7 @@ extension AIClassificationSuggestionState {
         )
     }
 
-    static func s304ProviderUnavailable(fileID: Int64) -> AIClassificationSuggestionState {
+    static func aiCategorySuggestionProviderUnavailable(fileID: Int64) -> AIClassificationSuggestionState {
         AIClassificationSuggestionState(
             fileID: fileID,
             status: .unavailable,

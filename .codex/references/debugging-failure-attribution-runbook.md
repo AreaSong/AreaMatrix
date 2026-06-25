@@ -39,8 +39,8 @@ If three fix attempts fail or each fix reveals a different shared-state problem,
 
 | Layer | Primary signal | First evidence to inspect | Owner skill |
 |---|---|---|---|
-| copy stage | copy log exits non-zero, no useful implementation diff, task remains `in_progress` or `failed` before verify can prove anything | `copy_log`, copy prompt, task file, manifest section, newest diff | `areamatrix-task-loop`; add `areamatrix-validation-driver` after a fix |
-| verify stage | verify log lacks `VERIFY_RESULT: PASS`, or reports `VERIFY_RESULT: FAIL` with functional / validation / engineering blockers | `verify_log`, failure summary before final result line, next repair context | `areamatrix-task-loop` |
+| copy step | copy log exits non-zero, no useful implementation diff, task remains `in_progress` or `failed` before verify can prove anything | `copy_log`, copy prompt, task file, manifest section, newest diff | `areamatrix-task-loop`; add `areamatrix-validation-driver` after a fix |
+| verify step | verify log lacks `VERIFY_RESULT: PASS`, or reports `VERIFY_RESULT: FAIL` with functional / validation / engineering blockers | `verify_log`, failure summary before final result line, next repair context | `areamatrix-task-loop` |
 | validation command | a lint, build, test, doctor, check, xcodebuild, or cargo command fails | exact command output, manifest `Validation`, changed paths, environment | `areamatrix-validation-driver` |
 | task-loop runner | status, lock, progress, stale state, dry-run, retry, or summary behavior is wrong | `./task-loop status`, `./dev status --verbose`, `progress.json`, run summary, runner logs | `areamatrix-task-loop` |
 | Git checkpoint / dirty worktree | verify passed but runner stops before next task; checkpoint fields show Git failure; worktree is dirty unexpectedly | `git status --short`, `git diff --check`, progress Git fields, summary, checkpoint log lines | `areamatrix-git-checkpoint` |
@@ -76,7 +76,7 @@ Do not edit `progress.json`, summaries, or logs during attribution unless the us
 
 ## Layer-Specific Notes
 
-### Copy Stage
+### Copy Step
 
 Copy failure means the implementation step itself did not produce a usable task attempt. Check whether:
 
@@ -87,7 +87,7 @@ Copy failure means the implementation step itself did not produce a usable task 
 
 Only after this should you edit implementation files.
 
-### Verify Stage
+### Verify Step
 
 Verify failure means the read-only acceptance step did not prove the task complete. Check whether:
 

@@ -22,8 +22,8 @@ enum ClassifierCorrectionRuleRoute: Equatable {
 
     var pageID: String {
         switch self {
-        case .saveRule: "S2-17"
-        case .impactPreview: "S2-18"
+        case .saveRule: "classifier-rule-save"
+        case .impactPreview: "classifier-impact-preview"
         }
     }
 

@@ -10,7 +10,7 @@
         Padding="20"
         Spacing="12"
         Width="520"
-        AutomationProperties.Name="S4-X-06 C4-18 missing file recovery">
+        AutomationProperties.Name="missing-file-recovery missing-file-recovery-core missing file recovery">
         <TextBlock
             Text="File is missing"
             Style="{ThemeResource TitleTextBlockStyle}" />

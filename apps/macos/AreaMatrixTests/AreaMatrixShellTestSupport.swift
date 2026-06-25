@@ -1,7 +1,7 @@
 @testable import AreaMatrix
 import XCTest
 
-func s221IntegrationRequest(urls: [URL], conflictIDs: [String]) -> ImportEntryRequest {
+func importConflictBatchIntegrationRequest(urls: [URL], conflictIDs: [String]) -> ImportEntryRequest {
     ImportEntryRequest(
         repoPath: "/tmp/repo",
         source: .importConflictBatch(.importConflictBatch),
@@ -17,13 +17,13 @@ func s221IntegrationRequest(urls: [URL], conflictIDs: [String]) -> ImportEntryRe
 }
 
 @MainActor
-func s221IntegrationModel(
+func importConflictBatchIntegrationModel(
     conflictBatcher: any CoreImportConflictBatching,
     undoStore: any CoreUndoActionLogging
 ) -> ImportBatchCopyImportModel {
     ImportBatchCopyImportModel(
-        importer: S118RecordingBatchImporter(),
-        errorMapper: S117RecordingErrorMapper(),
+        importer: ImportBatchRecordingBatchImporter(),
+        errorMapper: ImportSingleFileRecordingErrorMapper(),
         conflictBatcher: conflictBatcher,
         undoActionStore: undoStore
     )

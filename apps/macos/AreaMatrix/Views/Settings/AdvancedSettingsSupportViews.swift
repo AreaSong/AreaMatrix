@@ -13,7 +13,7 @@ struct AdvancedSettingsRecoveryToolsSection: View {
             } label: {
                 Label("Open recovery tools...", systemImage: "arrow.clockwise.circle")
             }
-            .accessibilityIdentifier("S1-30-C1-16-open-recovery-tools")
+            .accessibilityIdentifier("advanced-settings-startup-recovery-core-open-recovery-tools")
             Text(
                 "Startup cleanup and staging recovery stay in the dedicated recovery flow " +
                     "with confirmation before metadata actions."
@@ -146,7 +146,7 @@ private struct AISettingsLoadingView: View {
     var body: some View {
         AdvancedSettingsSection(title: "AI features") {
             ProgressView("Loading AI settings...")
-            Text("AI controls are disabled until C3-01 configuration is loaded.")
+            Text("AI controls are disabled until ai-settings-config configuration is loaded.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -354,9 +354,9 @@ struct AISettingsPane: View {
             .frame(maxWidth: 360)
             HStack {
                 Button("Local model status", action: openLocalModelStatus)
-                    .accessibilityIdentifier("S3-02-C3-02-open-local-model-status")
+                    .accessibilityIdentifier("local-model-status-local-model-status-core-open-local-model-status")
                 Button("Configure remote AI", action: openRemoteConfig)
-                    .accessibilityIdentifier("S3-03-C3-03-configure-remote-ai")
+                    .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-configure-remote-ai")
             }
         }
     }
@@ -375,14 +375,14 @@ struct AISettingsPane: View {
             AdvancedSettingsKeyValueRow(label: "Privacy rules", value: privacyRulesLabel)
             AdvancedSettingsKeyValueRow(label: "Remote AI", value: remoteScopeLabel)
             Button("Manage privacy rules", action: openPrivacyRules)
-                .accessibilityIdentifier("S3-09-C3-01-manage-privacy-rules")
+                .accessibilityIdentifier("ai-privacy-rules-ai-settings-config-manage-privacy-rules")
         }
     }
 
     private var logSection: some View {
         AdvancedSettingsSection(title: "Log") {
             Button("View AI call log") { model.openCallLogEntry(); isCallLogPresented = true }
-                .accessibilityIdentifier("S3-05-C3-05-open-ai-call-log")
+                .accessibilityIdentifier("ai-call-log-ai-call-log-core-open-ai-call-log")
             Text("See when AI was used and whether it was local or remote.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -395,7 +395,7 @@ struct AISettingsPane: View {
                 .disabled(writesDisabled || !(model.snapshot?.config.aiEnabled ?? false))
             Button("Clear AI generated suggestions...", action: model.openCallLogEntry)
                 .disabled(true)
-            Text("Clearing generated suggestions belongs to a later AI cleanup capability, not C3-01.")
+            Text("Clearing generated suggestions belongs to a later AI cleanup capability, not ai-settings-config.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -420,12 +420,12 @@ struct AISettingsPane: View {
 
     private var localModelLabel: String {
         guard let config = model.snapshot?.config else { return "Loading" }
-        return config.localAIEnabled ? "Ready for C3-01 route" : "Not installed"
+        return config.localAIEnabled ? "Ready for ai-settings-config route" : "Not installed"
     }
 
     private var remoteModelLabel: String {
         guard let config = model.snapshot?.config else { return "Loading" }
-        return config.remoteAIAllowed ? "Configured by S3-03" : "Off"
+        return config.remoteAIAllowed ? "Configured by remote-provider-config" : "Off"
     }
 
     private var privacyRulesLabel: String {

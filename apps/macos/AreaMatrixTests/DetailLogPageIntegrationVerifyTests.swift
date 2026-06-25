@@ -3,14 +3,14 @@ import XCTest
 
 final class DetailLogPageIntegrationVerifyTests: XCTestCase {
     @MainActor
-    func testS113PageIntegrationRequestsLogTabAfterEveryDeclaredExternalSyncKind() async throws {
+    func testDetailLogPageIntegrationRequestsLogTabAfterEveryDeclaredExternalSyncKind() async throws {
         try await verifyExternalSync(kind: .created, action: "external_modified", result: .created)
         try await verifyExternalSync(kind: .renamed, action: "renamed", result: .renamed)
         try await verifyExternalSync(kind: .removed, action: "deleted", result: .removed)
     }
 
     @MainActor
-    func testS113PageIntegrationClearsLogStateOnNoSelectionAndMultiSelectionExit() async {
+    func testDetailLogPageIntegrationClearsLogStateOnNoSelectionAndMultiSelectionExit() async {
         let first = FileEntrySnapshot.detailMetaFixture(id: 70, currentName: "first.pdf")
         let second = FileEntrySnapshot.detailMetaFixture(id: 71, currentName: "second.pdf")
         let lister = DetailLogRecordingLister(results: [
@@ -45,7 +45,7 @@ final class DetailLogPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS113PageIntegrationKeepsFailureInlineWithoutOpeningLogTab() async throws {
+    func testDetailLogPageIntegrationKeepsFailureInlineWithoutOpeningLogTab() async throws {
         let selected = FileEntrySnapshot.detailMetaFixture(id: 80, currentName: "selected.pdf")
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
             kind: .renamed,

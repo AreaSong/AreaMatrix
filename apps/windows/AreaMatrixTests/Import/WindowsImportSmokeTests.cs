@@ -9,12 +9,12 @@ public static class WindowsImportSmokeTests
 
     public static void RunAll()
     {
-        ImportDialogExposesS4Win05C413UserActions();
+        ImportDialogExposesWindowsImportFlowDesktopImportFlowCoreUserActions();
         MainWindowWiresImportDialogToRealCoreBridge();
         NativeCoreClientExportsDesktopImportContract();
     }
 
-    private static void ImportDialogExposesS4Win05C413UserActions()
+    private static void ImportDialogExposesWindowsImportFlowDesktopImportFlowCoreUserActions()
     {
         XElement page = LoadXml(RepositoryPath(
             "apps/windows/AreaMatrix/Features/Import/WindowsImportDialog.xaml"));
@@ -45,7 +45,7 @@ public static class WindowsImportSmokeTests
         TestAssert.Contains("Move originals after import?", xaml, "Move confirmation title");
         TestAssert.Contains("MovePreflightInfoBar", xaml, "Move preflight status");
         TestAssert.Contains("Preserve folder structure", xaml, "folder import option");
-        TestAssert.Contains("Replace existing file", xaml, "C4-21 Replace confirmation title");
+        TestAssert.Contains("Replace existing file", xaml, "replace-confirmation Replace confirmation title");
         TestAssert.Contains("ReplaceInfoBar", xaml, "replace status info bar");
         TestAssert.Contains("Preview Replace", xaml, "replace preview trigger");
         TestAssert.Contains("Apply Replace", xaml, "replace apply trigger");
@@ -55,7 +55,7 @@ public static class WindowsImportSmokeTests
             "apps/windows/AreaMatrix/Features/Import/WindowsImportDialog.xaml.cs")), "deferred close while importing");
         TestAssert.Contains("I understand the existing file will be moved to Recycle Bin", xaml, "replace second confirmation");
         TestAssert.DoesNotContain("Overwrite", xaml, "destructive overwrite wording must stay hidden");
-        TestAssert.DoesNotContain("Index in place", xaml, "index mode is outside Windows MVP import task");
+        TestAssert.DoesNotContain("Index in place", xaml, "index mode is outside Windows import scope");
     }
 
     private static void MainWindowWiresImportDialogToRealCoreBridge()

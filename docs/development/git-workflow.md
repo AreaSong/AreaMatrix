@@ -32,15 +32,15 @@ gitGraph
 | 分支 | 用途 | 写权限 |
 |---|---|---|
 | `main` | 生产分支，始终可发布 | 维护者 / merge 自 develop |
-| `develop` | 集成分支（Stage 2 起启用，MVP 可省） | 维护者 / merge 自 feat |
+| `develop` | 集成分支（后续按协作规模启用，当前可省） | 维护者 / merge 自 feat |
 | `feat/<topic>` | 功能开发 | 任何人 |
 | `fix/<topic>` | bug 修复 | 任何人 |
 | `docs/<topic>` | 仅文档改动 | 任何人 |
 | `refactor/<topic>` | 重构 | 任何人 |
 | `chore/<topic>` | 工程化 / 构建 | 任何人 |
-| `release/<version>` | 发布准备（Stage 2 起） | 维护者 |
+| `release/<version>` | 发布准备 | 维护者 |
 
-### MVP 阶段简化版
+### 当前简化版
 
 只用 `main` + 功能分支，跳过 `develop`：
 
@@ -204,8 +204,8 @@ EOF
 
 ### 4. 合并
 
-- **MVP 阶段**：用 squash merge（保持 main 历史线性）
-- **Stage 2+**：根据情况：feature → squash；refactor 大改 → rebase preserve
+- 默认用 squash merge（保持 main 历史线性）
+- 根据情况：feature → squash；refactor 大改 → rebase preserve
 
 合并后维护者：
 
@@ -262,7 +262,7 @@ git push --force-with-lease  # 已推过的分支用 force-with-lease
 
 ### main 进 PR
 
-只允许 squash merge（MVP 阶段）。
+当前只允许 squash merge。
 
 ---
 

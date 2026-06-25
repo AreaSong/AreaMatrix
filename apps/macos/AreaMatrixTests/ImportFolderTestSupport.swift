@@ -1,21 +1,21 @@
 @testable import AreaMatrix
 import Foundation
 
-struct S119PredictRequest: Equatable {
+struct ImportFolderPredictRequest: Equatable {
     var repoPath: String
     var filename: String
 }
 
-actor S119RecordingPredictor: CoreCategoryPredicting {
+actor ImportFolderRecordingPredictor: CoreCategoryPredicting {
     private var results: [Result<ClassifyResultSnapshot, Error>]
-    private var requests: [S119PredictRequest] = []
+    private var requests: [ImportFolderPredictRequest] = []
 
     init(results: [Result<ClassifyResultSnapshot, Error>]) {
         self.results = results
     }
 
     func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
-        requests.append(S119PredictRequest(repoPath: repoPath, filename: filename))
+        requests.append(ImportFolderPredictRequest(repoPath: repoPath, filename: filename))
         guard !results.isEmpty else {
             throw CoreError.Classify(reason: "missing test result")
         }
@@ -27,21 +27,21 @@ actor S119RecordingPredictor: CoreCategoryPredicting {
         }
     }
 
-    func recordedRequests() -> [S119PredictRequest] {
+    func recordedRequests() -> [ImportFolderPredictRequest] {
         requests
     }
 }
 
-actor S119MappedPredictor: CoreCategoryPredicting {
+actor ImportFolderMappedPredictor: CoreCategoryPredicting {
     private let resultsByFilename: [String: Result<ClassifyResultSnapshot, Error>]
-    private var requests: [S119PredictRequest] = []
+    private var requests: [ImportFolderPredictRequest] = []
 
     init(resultsByFilename: [String: Result<ClassifyResultSnapshot, Error>]) {
         self.resultsByFilename = resultsByFilename
     }
 
     func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
-        requests.append(S119PredictRequest(repoPath: repoPath, filename: filename))
+        requests.append(ImportFolderPredictRequest(repoPath: repoPath, filename: filename))
         guard let result = resultsByFilename[filename] else {
             throw CoreError.Classify(reason: "missing test result")
         }
@@ -53,12 +53,12 @@ actor S119MappedPredictor: CoreCategoryPredicting {
         }
     }
 
-    func recordedRequests() -> [S119PredictRequest] {
+    func recordedRequests() -> [ImportFolderPredictRequest] {
         requests
     }
 }
 
-struct S119StaticFolderScanner: ImportFolderScanning {
+struct ImportFolderStaticFolderScanner: ImportFolderScanning {
     var result: ImportFolderScanResult
 
     func scanFolder(rootURL _: URL, includeHiddenFiles _: Bool,
@@ -67,29 +67,29 @@ struct S119StaticFolderScanner: ImportFolderScanning {
     }
 }
 
-func s119StaticScanner(urls: [URL]) -> S119StaticFolderScanner {
-    S119StaticFolderScanner(result: s119FolderScanResult(rows: urls.map { url in
+func importFolderStaticScanner(urls: [URL]) -> ImportFolderStaticFolderScanner {
+    ImportFolderStaticFolderScanner(result: importFolderFolderScanResult(rows: urls.map { url in
         ImportFolderPreviewRow.loading(fileURL: url, rootURL: URL(fileURLWithPath: "/tmp/client-a"))
     }))
 }
 
-func s119ScanErrorScanner(readyURL: URL, cloudURL: URL) -> S119StaticFolderScanner {
-    S119StaticFolderScanner(result: ImportFolderScanResult(
-        rows: s119PlaceholderRows(readyURL: readyURL, cloudURL: cloudURL),
+func importFolderScanErrorScanner(readyURL: URL, cloudURL: URL) -> ImportFolderStaticFolderScanner {
+    ImportFolderStaticFolderScanner(result: ImportFolderScanResult(
+        rows: importFolderPlaceholderRows(readyURL: readyURL, cloudURL: cloudURL),
         folderCount: 0,
         skippedRules: [],
         errors: [ImportFolderScanError(path: "/tmp/client-a/private", message: "Permission denied")]
     ))
 }
 
-func s119CleanPlaceholderScanner(readyURL: URL, cloudURL: URL) -> S119StaticFolderScanner {
-    S119StaticFolderScanner(result: s119FolderScanResult(rows: s119PlaceholderRows(
+func importFolderCleanPlaceholderScanner(readyURL: URL, cloudURL: URL) -> ImportFolderStaticFolderScanner {
+    ImportFolderStaticFolderScanner(result: importFolderFolderScanResult(rows: importFolderPlaceholderRows(
         readyURL: readyURL,
         cloudURL: cloudURL
     )))
 }
 
-private func s119PlaceholderRows(readyURL: URL, cloudURL: URL) -> [ImportFolderPreviewRow] {
+private func importFolderPlaceholderRows(readyURL: URL, cloudURL: URL) -> [ImportFolderPreviewRow] {
     [
         ImportFolderPreviewRow.loading(fileURL: readyURL, rootURL: URL(fileURLWithPath: "/tmp/client-a")),
         ImportFolderPreviewRow.loading(fileURL: cloudURL, rootURL: URL(fileURLWithPath: "/tmp/client-a"))
@@ -97,7 +97,7 @@ private func s119PlaceholderRows(readyURL: URL, cloudURL: URL) -> [ImportFolderP
     ]
 }
 
-actor S119SequenceFolderScanner: ImportFolderScanning {
+actor ImportFolderSequenceFolderScanner: ImportFolderScanning {
     private var results: [ImportFolderScanResult]
 
     init(results: [ImportFolderScanResult]) {
@@ -113,7 +113,7 @@ actor S119SequenceFolderScanner: ImportFolderScanning {
     }
 }
 
-actor S119RecordingICloudDownloader: ICloudPlaceholderDownloading {
+actor ImportFolderRecordingICloudDownloader: ICloudPlaceholderDownloading {
     private var urls: [URL] = []
     private let error: Error?
 
@@ -133,7 +133,7 @@ actor S119RecordingICloudDownloader: ICloudPlaceholderDownloading {
     }
 }
 
-func s119FolderRequest(
+func importFolderFolderRequest(
     rootURL: URL,
     destination: ImportEntryDestination = .autoClassify,
     allowReplaceDuringImport: Bool = false,
@@ -151,15 +151,15 @@ func s119FolderRequest(
     )
 }
 
-struct S119ConflictPrecheckRequest: Equatable {
+struct ImportFolderConflictPrecheckRequest: Equatable {
     var repoPath: String
     var rowIDs: [String]
     var destination: ImportBatchDestinationOption
 }
 
-actor S119StaticConflictPrechecker: ImportFolderConflictPrechecking {
+actor ImportFolderStaticConflictPrechecker: ImportFolderConflictPrechecking {
     private let results: [String: ImportFolderConflictPrecheckResult]
-    private var requests: [S119ConflictPrecheckRequest] = []
+    private var requests: [ImportFolderConflictPrecheckRequest] = []
 
     init(results: [String: ImportFolderConflictPrecheckResult]) {
         self.results = results
@@ -170,7 +170,7 @@ actor S119StaticConflictPrechecker: ImportFolderConflictPrechecking {
         rows: [ImportFolderPreviewRow],
         destination: ImportBatchDestinationOption
     ) async -> [String: ImportFolderConflictPrecheckResult] {
-        requests.append(S119ConflictPrecheckRequest(
+        requests.append(ImportFolderConflictPrecheckRequest(
             repoPath: repoPath,
             rowIDs: rows.map(\.id),
             destination: destination
@@ -178,12 +178,12 @@ actor S119StaticConflictPrechecker: ImportFolderConflictPrechecking {
         return results
     }
 
-    func recordedRequests() -> [S119ConflictPrecheckRequest] {
+    func recordedRequests() -> [ImportFolderConflictPrecheckRequest] {
         requests
     }
 }
 
-actor S119NoopConflictPrechecker: ImportFolderConflictPrechecking {
+actor ImportFolderNoopConflictPrechecker: ImportFolderConflictPrechecking {
     func precheckFolderConflicts(
         repoPath _: String,
         rows _: [ImportFolderPreviewRow],
@@ -200,19 +200,19 @@ func makeImportFolderTemporaryDirectory() throws -> URL {
     return url
 }
 
-func s119LoadingRow(_ fileURL: URL) -> ImportFolderPreviewRow {
+func importFolderLoadingRow(_ fileURL: URL) -> ImportFolderPreviewRow {
     ImportFolderPreviewRow.loading(
         fileURL: fileURL,
         rootURL: URL(fileURLWithPath: "/tmp", isDirectory: true)
     )
 }
 
-func s119FolderScanResult(rows: [ImportFolderPreviewRow]) -> ImportFolderScanResult {
+func importFolderFolderScanResult(rows: [ImportFolderPreviewRow]) -> ImportFolderScanResult {
     ImportFolderScanResult(rows: rows, folderCount: 0, skippedRules: [], errors: [])
 }
 
 extension ClassifyResultSnapshot {
-    static func s119Prediction(
+    static func importFolderPrediction(
         category: String = "docs",
         suggestedName: String = "ready.pdf"
     ) -> ClassifyResultSnapshot {

@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum WelcomeStage: Int, CaseIterable {
+enum WelcomeScene: Int, CaseIterable {
     case `default` = 0
     case feat1
     case feat2
@@ -24,9 +24,9 @@ enum WelcomeStage: Int, CaseIterable {
     }
 }
 
-// MARK: - Stage Default
+// MARK: - Default Intro
 
-struct StageDefaultView: View {
+struct WelcomeDefaultSceneView: View {
     var body: some View {
         VStack(spacing: 32) {
             AreaMatrixLaunchBrandVisual()
@@ -39,14 +39,14 @@ struct StageDefaultView: View {
     }
 }
 
-// MARK: - Stage 5 Start
+// MARK: - Start CTA
 
-struct StageStartView: View {
+struct WelcomeStartSceneView: View {
     var body: some View {
         VStack(spacing: 32) {
             AreaMatrixFolderLaunchVisual()
 
-            AreaMatrixStageText(
+            AreaMatrixSceneText(
                 title: "立刻开启你的本地知识库",
                 description: "放心，我们仅仅是为你指认的文件夹建立一层索引。你可以随时停止使用，没有任何锁定风险。点击即可瞬间接管！"
             )

@@ -1,11 +1,11 @@
 @testable import AreaMatrix
 import XCTest
 
-final class S212BatchCategoryVerifyTests: XCTestCase {
+final class BatchChangeCategoryBatchCategoryVerifyTests: XCTestCase {
     @MainActor
     // swiftlint:disable:next function_body_length
-    func testS212PageIntegrationUsesRealCorePreviewApplyUndoAndExitRefresh() async throws {
-        let context = try await makeS212IntegrationContext()
+    func testBatchChangeCategoryPageIntegrationUsesRealCorePreviewApplyUndoAndExitRefresh() async throws {
+        let context = try await makeBatchChangeCategoryIntegrationContext()
         defer { context.cleanUp() }
 
         await context.model.loadCurrentCategory("docs")
@@ -36,7 +36,7 @@ final class S212BatchCategoryVerifyTests: XCTestCase {
             targetCategory: "finance",
             moveRepoOwnedFiles: true
         )
-        try assertS212Preview(preview, context: context)
+        try assertBatchChangeCategoryPreview(preview, context: context)
         XCTAssertTrue(FileManager.default.fileExists(atPath: context.repoOwnedDocsURL.path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: context.repoOwnedFinanceURL.path))
 
@@ -47,7 +47,7 @@ final class S212BatchCategoryVerifyTests: XCTestCase {
             moveRepoOwnedFiles: preview.moveRepoOwnedFiles,
             previewToken: preview.previewToken
         )
-        try await assertS212Applied(report, context: context)
+        try await assertBatchChangeCategoryApplied(report, context: context)
 
         for updatedFile in report.updatedFiles {
             context.model.files = context.model.files.map { current in
@@ -69,7 +69,7 @@ final class S212BatchCategoryVerifyTests: XCTestCase {
             errorMapper: context.bridge
         )
         guard case let .ready(action) = undoState else {
-            return XCTFail("Expected C2-07 undo toast to load the real batch category undo action")
+            return XCTFail("Expected undo-action-log undo toast to load the real batch category undo action")
         }
         XCTAssertEqual(action.actionID, report.undoToken)
         XCTAssertEqual(action.kind, "batch_change_category")
@@ -82,8 +82,8 @@ final class S212BatchCategoryVerifyTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: context.repoOwnedDocsURL.path))
     }
 
-    func testS212CreateNewCategorySaveNotificationReturnsToSheetWithCreatedCategoryPreviewContext() {
-        let context = BatchChangeCategoryReturnContext.s212Fixture()
+    func testBatchChangeCategoryCreateNewCategorySaveNotificationReturnsToSheetWithCreatedCategoryPreviewContext() {
+        let context = BatchChangeCategoryReturnContext.batchChangeCategoryFixture()
         let notification = ClassifierRuleEditorSaveEvents.notification(savedCategory: " tax ")
 
         let acceptedRoute = BatchChangeCategoryClassifierReturn.acceptedRoute(
@@ -97,8 +97,8 @@ final class S212BatchCategoryVerifyTests: XCTestCase {
         XCTAssertEqual(acceptedRoute, context.routeSelectingCreatedCategory("tax"))
     }
 
-    func testS212CreateNewCategoryCancelReturnsToSheetWithOriginalCategory() {
-        let context = BatchChangeCategoryReturnContext.s212Fixture(initialTargetCategory: "docs")
+    func testBatchChangeCategoryCreateNewCategoryCancelReturnsToSheetWithOriginalCategory() {
+        let context = BatchChangeCategoryReturnContext.batchChangeCategoryFixture(initialTargetCategory: "docs")
 
         let cancelledRoute = BatchChangeCategoryClassifierReturn.cancelledRoute(context: context)
 
@@ -108,8 +108,8 @@ final class S212BatchCategoryVerifyTests: XCTestCase {
         XCTAssertEqual(cancelledRoute, context.routeRestoringOriginalTarget())
     }
 
-    func testS212CreateNewCategoryBlankSaveNotificationDoesNotSelectCreatedCategory() {
-        let context = BatchChangeCategoryReturnContext.s212Fixture()
+    func testBatchChangeCategoryCreateNewCategoryBlankSaveNotificationDoesNotSelectCreatedCategory() {
+        let context = BatchChangeCategoryReturnContext.batchChangeCategoryFixture()
         let notification = ClassifierRuleEditorSaveEvents.notification(savedCategory: "   ")
 
         let acceptedRoute = BatchChangeCategoryClassifierReturn.acceptedRoute(
@@ -120,33 +120,33 @@ final class S212BatchCategoryVerifyTests: XCTestCase {
         XCTAssertNil(acceptedRoute)
     }
 
-    func testS212ClassifierRuleEditorRouteKeepsSettingsEntryAndBatchReturnContextSeparate() {
-        let context = BatchChangeCategoryReturnContext.s212Fixture(initialTargetCategory: "finance")
+    func testBatchChangeCategoryClassifierRuleEditorRouteKeepsSettingsEntryAndBatchReturnContextSeparate() {
+        let context = BatchChangeCategoryReturnContext.batchChangeCategoryFixture(initialTargetCategory: "finance")
         let settingsRoute = MainSearchDestination.classifierRuleEditor(context: nil)
         let returningRoute = MainSearchDestination.classifierRuleEditor(context: context)
 
-        XCTAssertEqual(settingsRoute.pageID, "S2-19")
-        XCTAssertEqual(returningRoute.pageID, "S2-19")
-        XCTAssertEqual(settingsRoute.id, "S2-19-classifier-rule-editor-settings")
+        XCTAssertEqual(settingsRoute.pageID, "classifier-rule-editor")
+        XCTAssertEqual(returningRoute.pageID, "classifier-rule-editor")
+        XCTAssertEqual(settingsRoute.id, "classifier-rule-editor-classifier-rule-editor-settings")
         XCTAssertTrue(returningRoute.id.contains(context.handoff.id))
         XCTAssertNotEqual(settingsRoute.id, returningRoute.id)
     }
 
     @MainActor
-    func testS212ClassifierSettingsValidatePublishesSavedCategoryForRealReturnEvent() async throws {
-        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "s212-classifier")
+    func testBatchChangeCategoryClassifierSettingsValidatePublishesSavedCategoryForRealReturnEvent() async throws {
+        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "batchChangeCategory-classifier")
         defer { try? FileManager.default.removeItem(at: repoURL) }
-        let manager = S212ClassifierRulesManager()
+        let manager = BatchChangeCategoryClassifierRulesManager()
         var savedCategories: [String] = []
         try manager.writeClassifier(repoURL: repoURL, slugs: ["docs", "inbox"])
         let model = ClassifierSettingsModel(
             repoPath: repoURL.path,
-            loader: S212ClassifierSettingsLoader(repoPath: repoURL.path),
-            updater: S212ClassifierSettingsUpdater(),
-            predictor: S212ClassifierSettingsPredictor(),
-            errorMapper: S212ClassifierSettingsErrorMapper(),
+            loader: BatchChangeCategoryClassifierSettingsLoader(repoPath: repoURL.path),
+            updater: BatchChangeCategoryClassifierSettingsUpdater(),
+            predictor: BatchChangeCategoryClassifierSettingsPredictor(),
+            errorMapper: BatchChangeCategoryClassifierSettingsErrorMapper(),
             classifierRulesManager: manager,
-            accessibilityAnnouncer: S212ClassifierSettingsAnnouncer(),
+            accessibilityAnnouncer: BatchChangeCategoryClassifierSettingsAnnouncer(),
             onSavedCategory: { savedCategories.append($0) }
         )
         await model.load()
@@ -154,7 +154,7 @@ final class S212BatchCategoryVerifyTests: XCTestCase {
 
         let didValidate = await model.validateClassifierRules()
 
-        let context = BatchChangeCategoryReturnContext.s212Fixture()
+        let context = BatchChangeCategoryReturnContext.batchChangeCategoryFixture()
         let savedCategory = try XCTUnwrap(savedCategories.first)
         let route = BatchChangeCategoryClassifierReturn.acceptedRoute(
             category: savedCategory,
@@ -167,7 +167,7 @@ final class S212BatchCategoryVerifyTests: XCTestCase {
     }
 }
 
-private struct S212IntegrationContext {
+private struct BatchChangeCategoryIntegrationContext {
     let repoURL: URL
     let sourceRootURL: URL
     let externalSourceURL: URL
@@ -186,9 +186,9 @@ private struct S212IntegrationContext {
 }
 
 @MainActor
-private func makeS212IntegrationContext() async throws -> S212IntegrationContext {
-    let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "s212-repo")
-    let sourceRootURL = try makeImportSingleFileTemporaryDirectory(prefix: "s212-source")
+private func makeBatchChangeCategoryIntegrationContext() async throws -> BatchChangeCategoryIntegrationContext {
+    let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "batchChangeCategory-repo")
+    let sourceRootURL = try makeImportSingleFileTemporaryDirectory(prefix: "batchChangeCategory-source")
     let repoOwnedSourceURL = sourceRootURL.appendingPathComponent("batch-owned.pdf")
     let indexedSourceURL = sourceRootURL.appendingPathComponent("batch-indexed.pdf")
     try Data("repo owned bytes".utf8).write(to: repoOwnedSourceURL)
@@ -210,7 +210,7 @@ private func makeS212IntegrationContext() async throws -> S212IntegrationContext
         overrideFilename: "batch-indexed.pdf",
         duplicateStrategy: .skip
     )
-    let opening = try await makeS212Opening(repoURL: repoURL, bridge: bridge)
+    let opening = try await makeBatchChangeCategoryOpening(repoURL: repoURL, bridge: bridge)
     let model = MainFileListModel(
         opening: opening,
         fileLister: bridge,
@@ -220,7 +220,7 @@ private func makeS212IntegrationContext() async throws -> S212IntegrationContext
         changeLogLister: bridge,
         errorMapper: bridge
     )
-    return S212IntegrationContext(
+    return BatchChangeCategoryIntegrationContext(
         repoURL: repoURL,
         sourceRootURL: sourceRootURL,
         externalSourceURL: indexedSourceURL,
@@ -234,13 +234,13 @@ private func makeS212IntegrationContext() async throws -> S212IntegrationContext
     )
 }
 
-private func makeS212Opening(repoURL: URL, bridge: CoreBridge) async throws -> RepositoryOpeningResult {
+private func makeBatchChangeCategoryOpening(repoURL: URL, bridge: CoreBridge) async throws -> RepositoryOpeningResult {
     let config = try await bridge.loadConfig(repoPath: repoURL.path)
     let tree = try await bridge.listTree(repoPath: repoURL.path, locale: "zh-Hans")
     return RepositoryOpeningResult(config: config, tree: tree, currentCategoryFiles: [])
 }
 
-private actor S212ClassifierSettingsLoader: CoreConfigurationLoading {
+private actor BatchChangeCategoryClassifierSettingsLoader: CoreConfigurationLoading {
     private let repoPath: String
 
     init(repoPath: String) {
@@ -248,21 +248,21 @@ private actor S212ClassifierSettingsLoader: CoreConfigurationLoading {
     }
 
     func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
-        RepoConfigSnapshot.s212ClassifierFixture(repoPath: repoPath)
+        RepoConfigSnapshot.batchChangeCategoryClassifierFixture(repoPath: repoPath)
     }
 }
 
-private actor S212ClassifierSettingsUpdater: CoreConfigurationUpdating {
+private actor BatchChangeCategoryClassifierSettingsUpdater: CoreConfigurationUpdating {
     func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
 }
 
-private actor S212ClassifierSettingsPredictor: CoreCategoryPredicting {
+private actor BatchChangeCategoryClassifierSettingsPredictor: CoreCategoryPredicting {
     func predictCategory(repoPath _: String, filename: String) async throws -> ClassifyResultSnapshot {
         ClassifyResultSnapshot(category: "inbox", suggestedName: filename, reason: .default, confidence: 0)
     }
 }
 
-private actor S212ClassifierSettingsErrorMapper: CoreErrorMapping {
+private actor BatchChangeCategoryClassifierSettingsErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .config,
@@ -275,12 +275,12 @@ private actor S212ClassifierSettingsErrorMapper: CoreErrorMapping {
     }
 }
 
-private struct S212ClassifierSettingsAnnouncer: AccessibilityAnnouncing {
+private struct BatchChangeCategoryClassifierSettingsAnnouncer: AccessibilityAnnouncing {
     @MainActor
     func announce(_: String) {}
 }
 
-private final class S212ClassifierRulesManager: ClassifierRulesManaging {
+private final class BatchChangeCategoryClassifierRulesManager: ClassifierRulesManaging {
     private let fileManager = FileManager.default
 
     func classifierFileExists(repoPath: String) -> Bool {
@@ -334,7 +334,7 @@ private final class S212ClassifierRulesManager: ClassifierRulesManaging {
 }
 
 private extension RepoConfigSnapshot {
-    static func s212ClassifierFixture(repoPath: String) -> RepoConfigSnapshot {
+    static func batchChangeCategoryClassifierFixture(repoPath: String) -> RepoConfigSnapshot {
         RepoConfigSnapshot(
             repoPath: repoPath,
             defaultMode: "Copied",
@@ -351,10 +351,10 @@ private extension RepoConfigSnapshot {
 }
 
 private extension BatchChangeCategoryReturnContext {
-    static func s212Fixture(
+    static func batchChangeCategoryFixture(
         initialTargetCategory: String? = nil
     ) -> BatchChangeCategoryReturnContext {
-        let route = BatchChangeCategoryRoute.s212Route(initialTargetCategory: initialTargetCategory)
+        let route = BatchChangeCategoryRoute.batchChangeCategoryRoute(initialTargetCategory: initialTargetCategory)
         return BatchChangeCategoryReturnContext(
             route: route,
             handoff: BatchChangeCategoryNewCategoryHandoff(
@@ -366,13 +366,13 @@ private extension BatchChangeCategoryReturnContext {
 }
 
 private extension BatchChangeCategoryRoute {
-    static func s212Route(initialTargetCategory: String? = nil) -> BatchChangeCategoryRoute {
+    static func batchChangeCategoryRoute(initialTargetCategory: String? = nil) -> BatchChangeCategoryRoute {
         BatchChangeCategoryRoute(
             source: .commandPalette,
             fileIDs: [1, 2],
             selectedFiles: [
-                .s212RouteFixture(id: 1, currentName: "a.pdf"),
-                .s212RouteFixture(id: 2, currentName: "b.pdf")
+                .batchChangeCategoryRouteFixture(id: 1, currentName: "a.pdf"),
+                .batchChangeCategoryRouteFixture(id: 2, currentName: "b.pdf")
             ],
             selectedCount: 2,
             disabledReason: nil,
@@ -382,7 +382,7 @@ private extension BatchChangeCategoryRoute {
 }
 
 private extension FileEntrySnapshot {
-    static func s212RouteFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
+    static func batchChangeCategoryRouteFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
         FileEntrySnapshot(
             id: id,
             path: "docs/\(currentName)",
@@ -390,7 +390,7 @@ private extension FileEntrySnapshot {
             currentName: currentName,
             category: "docs",
             sizeBytes: 128,
-            hashSha256: "s212-route-\(id)",
+            hashSha256: "batchChangeCategory-route-\(id)",
             storageMode: "Copied",
             origin: "Imported",
             sourcePath: nil,
@@ -400,9 +400,9 @@ private extension FileEntrySnapshot {
     }
 }
 
-private func assertS212Preview(
+private func assertBatchChangeCategoryPreview(
     _ preview: BatchCategoryPreviewReportSnapshot,
-    context: S212IntegrationContext
+    context: BatchChangeCategoryIntegrationContext
 ) throws {
     XCTAssertTrue(preview.canApply)
     XCTAssertEqual(preview.requestedFileCount, 2)
@@ -421,9 +421,9 @@ private func assertS212Preview(
     XCTAssertFalse(indexOnly.willMoveFile)
 }
 
-private func assertS212Applied(
+private func assertBatchChangeCategoryApplied(
     _ report: BatchCategoryChangeReportSnapshot,
-    context: S212IntegrationContext
+    context: BatchChangeCategoryIntegrationContext
 ) async throws {
     XCTAssertEqual(report.movedCount, 1)
     XCTAssertEqual(report.metadataOnlyCount, 1)
@@ -442,7 +442,7 @@ private func assertS212Applied(
 }
 
 @MainActor
-private func waitForS212CategoryRefresh(
+private func waitForBatchChangeCategoryCategoryRefresh(
     _ model: MainFileListModel,
     expectedCategory: String,
     file: StaticString = #filePath,
@@ -454,5 +454,5 @@ private func waitForS212CategoryRefresh(
         }
         await Task.yield()
     }
-    XCTFail("Timed out waiting for S2-12 category refresh", file: file, line: line)
+    XCTFail("Timed out waiting for batch-change-category category refresh", file: file, line: line)
 }

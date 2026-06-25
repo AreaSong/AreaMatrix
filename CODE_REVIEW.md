@@ -81,4 +81,6 @@ Code review 不是只看代码风格。评审必须确认：
 - [docs/development/testing.md](docs/development/testing.md)
 - [docs/development/dependency-policy.md](docs/development/dependency-policy.md)
 - [docs/development/ci-governance.md](docs/development/ci-governance.md)
-- [workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md](workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md)
+- [workflow/README.md](workflow/README.md)
+- v1 历史执行质量规则：
+  [workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md](workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md)

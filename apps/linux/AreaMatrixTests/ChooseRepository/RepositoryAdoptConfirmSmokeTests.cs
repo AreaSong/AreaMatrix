@@ -5,7 +5,7 @@ public static class RepositoryAdoptConfirmSmokeTests
     public static void RunAll()
     {
         RepositoryAdoptConfirmPageExposesRequiredActions();
-        RepositoryAdoptConfirmUsesOnlyC410CoreBridge();
+        RepositoryAdoptConfirmUsesOnlyLinuxRepoConnectCoreCoreBridge();
     }
 
     private static void RepositoryAdoptConfirmPageExposesRequiredActions()
@@ -19,8 +19,8 @@ public static class RepositoryAdoptConfirmSmokeTests
 
         foreach (string fragment in new[]
         {
-            "page_id: S4-X-05",
-            "platform_slice: Linux C4-10 linux-repo-connect",
+            "page_id: repository-adopt-confirm",
+            "platform_slice: Linux linux-repo-connect linux-repo-connect",
             "Use Existing Folder",
             "Folder: /home/you/Existing",
             "Estimated items: Existing files detected by Core validation.",
@@ -56,7 +56,7 @@ public static class RepositoryAdoptConfirmSmokeTests
         TestAssert.Contains("new LinuxRepositoryAdoptConfirmFactory(repositoryBridge)", shell, "real bridge factory");
     }
 
-    private static void RepositoryAdoptConfirmUsesOnlyC410CoreBridge()
+    private static void RepositoryAdoptConfirmUsesOnlyLinuxRepoConnectCoreCoreBridge()
     {
         string viewModel = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Features/Onboarding/RepositoryAdoptConfirmViewModel.cs"));
@@ -68,7 +68,7 @@ public static class RepositoryAdoptConfirmSmokeTests
         TestAssert.Contains("AdoptExistingRepositoryAsync", bridge, "CoreBridge adopt init_repo");
         TestAssert.Contains("CoreRepoInitOptions.AdoptExistingGeneratedOnly", bridge, "AdoptExisting options");
         TestAssert.NotContains("InitializeEmptyRepositoryAsync(RepositoryPath", viewModel, "no create on adopt confirm");
-        TestAssert.NotContains("GetPlatformCapabilitiesAsync", viewModel, "no C4-17 platform call");
+        TestAssert.NotContains("GetPlatformCapabilitiesAsync", viewModel, "no platform-capabilities platform call");
         TestAssert.NotContains("DetectCloudStorageStateAsync", viewModel, "no cloud state call");
         TestAssert.NotContains("ReindexFromFilesystemAsync", viewModel, "no manual rescan call");
         TestAssert.NotContains("ImportFile", viewModel, "no import call");

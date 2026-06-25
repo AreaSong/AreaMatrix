@@ -18,7 +18,7 @@ from typing import Any, Sequence
 from . import dev_config, state
 from .actions import ACTIONS, COMMAND_ALIASES, MENUS, SHORTCUT_ALIASES
 from .i18n import normalize_lang_mode, t, t_lines
-from .lifecycle import LIFECYCLE_STAGES, LifecycleSnapshot, VersionLifecycle, load_lifecycle_snapshot
+from .lifecycle import LIFECYCLE_NODES, LifecycleSnapshot, VersionLifecycle, load_lifecycle_snapshot
 from .runner import RuntimeConfig, print_loop_status
 from scripts.dev_tools import cli as dev_tools_cli
 from scripts.dev_tools.execution_paths import prompt_pipeline_path
@@ -1333,10 +1333,10 @@ def version_lifecycle_lines(cfg: ConsoleConfig, version: VersionLifecycle, color
         tr(cfg, "lifecycle.version_status", status=version.status, title=version.title),
         tr(cfg, "lifecycle.version_queue", local=version.local_queue, live=version.live_queue or "none", mapping=version.live_mapping),
         "",
-        tr(cfg, "lifecycle.stages"),
+        tr(cfg, "lifecycle.nodes"),
     ]
-    for stage in LIFECYCLE_STAGES:
-        lines.append(f"  - {stage}: {version.stage_statuses.get(stage, 'unknown')}")
+    for node in LIFECYCLE_NODES:
+        lines.append(f"  - {node}: {version.node_statuses.get(node, 'unknown')}")
     lines.extend(
         [
             "",

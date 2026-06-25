@@ -11,28 +11,28 @@ struct RedoFeedbackRegion: View {
             EmptyView()
         case .checking:
             Label("Checking redo...", systemImage: "arrow.uturn.forward.circle")
-                .accessibilityIdentifier("S2-22-C2-18-redo-checking")
+                .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-checking")
         case let .available(action):
             redoSummary(action, status: "Available")
             Button("Redo") { onRedo(action) }
-                .accessibilityIdentifier("S2-22-C2-18-redo-action")
+                .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-action")
         case let .disabled(action, reason):
             redoSummary(action, status: reason)
             Button("Redo") {}
                 .disabled(true)
-                .accessibilityIdentifier("S2-22-C2-18-redo-action-disabled")
+                .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-action-disabled")
         case let .unavailable(reason):
             Label(reason, systemImage: "arrow.uturn.forward.circle")
                 .foregroundStyle(.secondary)
-                .accessibilityIdentifier("S2-22-C2-18-redo-unavailable")
+                .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-unavailable")
         case let .redoing(action):
             redoSummary(action, status: "Redoing...")
             Button("Redoing...") {}
                 .disabled(true)
-                .accessibilityIdentifier("S2-22-C2-18-redo-action-busy")
+                .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-action-busy")
         case let .redone(result):
             Label(result.summary, systemImage: "checkmark.circle")
-                .accessibilityIdentifier("S2-22-C2-18-redo-completed")
+                .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-completed")
         case let .failed(mapping, action):
             VStack(alignment: .leading, spacing: 3) {
                 Label("Could not redo action", systemImage: "exclamationmark.triangle")
@@ -43,7 +43,7 @@ struct RedoFeedbackRegion: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .accessibilityIdentifier("S2-22-C2-18-redo-failed")
+            .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-failed")
         }
     }
 
@@ -234,7 +234,7 @@ enum RedoLatestEntryPoint: Equatable {
         severity: .medium,
         suggestedAction: "Undo an AreaMatrix action before using Redo latest.",
         recoverability: .refreshRequired,
-        rawContext: "S2-22 C2-18 redo-action-log"
+        rawContext: "redo-action-log redo-action-log-core redo-action-log"
     )
 }
 

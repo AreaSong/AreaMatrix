@@ -3,15 +3,15 @@ import XCTest
 
 final class ClassifierCorrectionHandoffTests: XCTestCase {
     @MainActor
-    func testS216RememberRuleRoutesToSaveAndPreviewHandoffsWithoutCallingMutationCore() async {
-        let file = s216File(id: 260, name: "contract.pdf")
-        let mover = S216NoopCategoryMover()
+    func testClassifierCorrectionRememberRuleRoutesToSaveAndPreviewHandoffsWithoutCallingMutationCore() async {
+        let file = classifierCorrectionFile(id: 260, name: "contract.pdf")
+        let mover = ClassifierCorrectionNoopCategoryMover()
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             fileCategoryMover: mover,
-            errorMapper: DetailMetaErrorMapper(mapping: s216ClassifierCorrectionClassifyMapping())
+            errorMapper: DetailMetaErrorMapper(mapping: classifierCorrectionClassifierCorrectionClassifyMapping())
         )
 
         await model.selectFiles([file.id])
@@ -22,11 +22,11 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
             moveFile: true,
             destination: .saveRule
         )
-        XCTAssertEqual(model.pendingActionDestination?.pageID, "S2-17")
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "classifier-rule-save")
         guard case let .saveRule(saveHandoff) = model.pendingActionDestination?.classifierRuleRoute else {
-            return XCTFail("Expected S2-17 save-rule handoff")
+            return XCTFail("Expected classifier-rule-save save-rule handoff")
         }
-        assertS216Handoff(saveHandoff, file: file, targetCategory: "finance")
+        assertClassifierCorrectionHandoff(saveHandoff, file: file, targetCategory: "finance")
         XCTAssertEqual(model.selectedFileDetail, file)
         XCTAssertEqual(model.files, [file])
         XCTAssertNil(model.classifierCorrectionResult)
@@ -37,11 +37,11 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
             moveFile: true,
             destination: .impactPreview
         )
-        XCTAssertEqual(model.pendingActionDestination?.pageID, "S2-18")
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "classifier-impact-preview")
         guard case let .impactPreview(previewHandoff) = model.pendingActionDestination?.classifierRuleRoute else {
-            return XCTFail("Expected S2-18 impact-preview handoff")
+            return XCTFail("Expected classifier-impact-preview impact-preview handoff")
         }
-        assertS216Handoff(previewHandoff, file: file, targetCategory: "finance")
+        assertClassifierCorrectionHandoff(previewHandoff, file: file, targetCategory: "finance")
         XCTAssertEqual(model.selectedFileDetail, file)
         XCTAssertEqual(model.files, [file])
         XCTAssertNil(model.classifierCorrectionResult)
@@ -50,7 +50,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
     }
 
     @MainActor
-    func testS216HandoffSummaryDisplaysCoreRuleDraftWithoutSyntheticCandidates() {
+    func testClassifierCorrectionHandoffSummaryDisplaysCoreRuleDraftWithoutSyntheticCandidates() {
         let draft = ClassifierRuleDraftSnapshot(
             sourceFileID: 260,
             targetCategory: "finance",
@@ -59,7 +59,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
             priority: 42
         )
         let handoff = ClassifierRuleHandoff(
-            sourcePageID: "S2-16",
+            sourcePageID: "classifier-correction",
             fileID: 260,
             fileName: "contract.pdf",
             currentCategory: "docs",
@@ -75,9 +75,9 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
     }
 
     @MainActor
-    func testS217RuleSaveModelNormalizesExtensionAndRequiresPreviewForExtensionOnlyRule() {
-        let file = s216File(id: 261, name: "Contract.PDF")
-        var model = ClassifierRuleSaveSheetModel(handoff: s216Handoff(
+    func testClassifierRuleSaveRuleSaveModelNormalizesExtensionAndRequiresPreviewForExtensionOnlyRule() {
+        let file = classifierCorrectionFile(id: 261, name: "Contract.PDF")
+        var model = ClassifierRuleSaveSheetModel(handoff: classifierCorrectionHandoff(
             file: file,
             targetCategory: "finance",
             selectedKeywords: [],
@@ -102,13 +102,13 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
     }
 
     @MainActor
-    func testS217CompletesSaveRuleRouteWithSavedStatusBanner() async {
-        let file = s216File(id: 262, name: "contract.pdf")
+    func testClassifierRuleSaveCompletesSaveRuleRouteWithSavedStatusBanner() async {
+        let file = classifierCorrectionFile(id: 262, name: "contract.pdf")
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
-            errorMapper: DetailMetaErrorMapper(mapping: s216ClassifierCorrectionClassifyMapping())
+            errorMapper: DetailMetaErrorMapper(mapping: classifierCorrectionClassifierCorrectionClassifyMapping())
         )
 
         await model.selectFiles([file.id])
@@ -135,14 +135,14 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
         )
     }
 
-    func testS217DefaultCoreBridgeSavesClassifierRuleWithoutTouchingImportedFile() async throws {
-        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "s217-repo")
-        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "s217-source")
+    func testClassifierRuleSaveDefaultCoreBridgeSavesClassifierRuleWithoutTouchingImportedFile() async throws {
+        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "classifierRuleSave-repo")
+        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "classifierRuleSave-source")
         defer {
             try? FileManager.default.removeItem(at: repoURL)
             try? FileManager.default.removeItem(at: sourceRoot)
         }
-        let sourceURL = sourceRoot.appendingPathComponent("contract-s217.txt")
+        let sourceURL = sourceRoot.appendingPathComponent("contract-classifierRuleSave.txt")
         try Data("rule-save bytes".utf8).write(to: sourceURL)
         let bridge = CoreBridge()
 
@@ -151,7 +151,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
             repoPath: repoURL.path,
             sourceURL: sourceURL,
             overrideCategory: "docs",
-            overrideFilename: "contract-s217.txt",
+            overrideFilename: "contract-classifierRuleSave.txt",
             duplicateStrategy: .skip
         )
         let classifierURL = repoURL.appendingPathComponent(".areamatrix/classifier.yaml")
@@ -159,7 +159,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
             repoPath: repoURL.path,
             rule: ClassifierRuleSnapshot(
                 targetCategory: "finance",
-                keywords: ["contract-s217"],
+                keywords: ["contract-classifierRuleSave"],
                 extensions: [],
                 priority: 0,
                 previewConfirmed: false
@@ -169,20 +169,20 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
         let detail = try await bridge.getFile(repoPath: repoURL.path, fileID: imported.id)
 
         XCTAssertEqual(saved.targetCategory, "finance")
-        XCTAssertEqual(saved.keywords, ["contract-s217"])
-        XCTAssertTrue(classifierText.contains("contract-s217"))
+        XCTAssertEqual(saved.keywords, ["contract-classifierRuleSave"])
+        XCTAssertTrue(classifierText.contains("contract-classifierRuleSave"))
         XCTAssertEqual(detail.id, imported.id)
         XCTAssertEqual(detail.category, "docs")
-        XCTAssertEqual(detail.path, "docs/contract-s217.txt")
+        XCTAssertEqual(detail.path, "docs/contract-classifierRuleSave.txt")
         XCTAssertTrue(FileManager.default.fileExists(
-            atPath: repoURL.appendingPathComponent("docs/contract-s217.txt").path
+            atPath: repoURL.appendingPathComponent("docs/contract-classifierRuleSave.txt").path
         ))
     }
 
     @MainActor
-    func testS218PreviewModelBuildsRuleDraftRequestAndFiltersReportRows() {
-        let file = s216File(id: 263, name: "contract.pdf")
-        var model = ClassifierImpactPreviewSheetModel(handoff: s216Handoff(file: file, targetCategory: "finance"))
+    func testClassifierImpactPreviewPreviewModelBuildsRuleDraftRequestAndFiltersReportRows() {
+        let file = classifierCorrectionFile(id: 263, name: "contract.pdf")
+        var model = ClassifierImpactPreviewSheetModel(handoff: classifierCorrectionHandoff(file: file, targetCategory: "finance"))
         let request = model.request
 
         XCTAssertEqual(request.mode, .ruleDraft)
@@ -192,7 +192,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
         XCTAssertTrue(request.moveFiles)
         XCTAssertNil(request.replacementCategory)
 
-        model.markLoaded(s218Report(request: request))
+        model.markLoaded(classifierImpactPreviewReport(request: request))
         XCTAssertEqual(model.emptyStateText, nil)
         XCTAssertEqual(model.filteredSamples.map(\.status), [.willUpdate, .alreadyCorrect, .indexOnly])
 
@@ -203,14 +203,14 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
         XCTAssertEqual(model.filteredSamples.map(\.status), [.alreadyCorrect, .indexOnly])
     }
 
-    func testS218DefaultCoreBridgePreviewsImpactWithoutSavingRuleOrChangingExistingFile() async throws {
-        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "s218-repo")
-        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "s218-source")
+    func testClassifierImpactPreviewDefaultCoreBridgePreviewsImpactWithoutSavingRuleOrChangingExistingFile() async throws {
+        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "classifierImpactPreview-repo")
+        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "classifierImpactPreview-source")
         defer {
             try? FileManager.default.removeItem(at: repoURL)
             try? FileManager.default.removeItem(at: sourceRoot)
         }
-        let sourceURL = sourceRoot.appendingPathComponent("contract-s218.txt")
+        let sourceURL = sourceRoot.appendingPathComponent("contract-classifierImpactPreview.txt")
         try Data("impact preview bytes".utf8).write(to: sourceURL)
         let bridge = CoreBridge()
 
@@ -219,7 +219,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
             repoPath: repoURL.path,
             sourceURL: sourceURL,
             overrideCategory: "docs",
-            overrideFilename: "contract-s218.txt",
+            overrideFilename: "contract-classifierImpactPreview.txt",
             duplicateStrategy: .skip
         )
         let classifierURL = repoURL.appendingPathComponent(".areamatrix/classifier.yaml")
@@ -249,14 +249,14 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
         XCTAssertEqual(report.samples.first?.status, .willUpdate)
         XCTAssertEqual(classifierAfter, classifierBefore)
         XCTAssertEqual(detail.category, "docs")
-        XCTAssertEqual(detail.path, "docs/contract-s218.txt")
+        XCTAssertEqual(detail.path, "docs/contract-classifierImpactPreview.txt")
         XCTAssertTrue(FileManager.default.fileExists(
-            atPath: repoURL.appendingPathComponent("docs/contract-s218.txt").path
+            atPath: repoURL.appendingPathComponent("docs/contract-classifierImpactPreview.txt").path
         ))
     }
 }
 
-private actor S216NoopCategoryMover: CoreFileCategoryMoving {
+private actor ClassifierCorrectionNoopCategoryMover: CoreFileCategoryMoving {
     private var requests: [String] = []
 
     func previewMoveToCategory(
@@ -289,12 +289,12 @@ private actor S216NoopCategoryMover: CoreFileCategoryMoving {
     }
 }
 
-private func assertS216Handoff(
+private func assertClassifierCorrectionHandoff(
     _ handoff: ClassifierRuleHandoff,
     file: FileEntrySnapshot,
     targetCategory: String
 ) {
-    XCTAssertEqual(handoff.sourcePageID, "S2-16")
+    XCTAssertEqual(handoff.sourcePageID, "classifier-correction")
     XCTAssertEqual(handoff.fileID, file.id)
     XCTAssertEqual(handoff.fileName, file.currentName)
     XCTAssertEqual(handoff.currentCategory, file.category)
@@ -306,7 +306,7 @@ private func assertS216Handoff(
     XCTAssertTrue(handoff.draft.extensionCandidates.contains("pdf"))
 }
 
-private func s216File(id: Int64, name: String) -> FileEntrySnapshot {
+private func classifierCorrectionFile(id: Int64, name: String) -> FileEntrySnapshot {
     FileEntrySnapshot(
         id: id,
         path: "docs/contracts/\(name)",
@@ -314,7 +314,7 @@ private func s216File(id: Int64, name: String) -> FileEntrySnapshot {
         currentName: name,
         category: "docs",
         sizeBytes: 512,
-        hashSha256: "s216-\(id)",
+        hashSha256: "classifierCorrection-\(id)",
         storageMode: "Copied",
         origin: "Imported",
         sourcePath: nil,
@@ -323,8 +323,8 @@ private func s216File(id: Int64, name: String) -> FileEntrySnapshot {
     )
 }
 
-private func s216Handoff(file: FileEntrySnapshot, targetCategory: String) -> ClassifierRuleHandoff {
-    s216Handoff(
+private func classifierCorrectionHandoff(file: FileEntrySnapshot, targetCategory: String) -> ClassifierRuleHandoff {
+    classifierCorrectionHandoff(
         file: file,
         targetCategory: targetCategory,
         selectedKeywords: ["client-a"],
@@ -333,7 +333,7 @@ private func s216Handoff(file: FileEntrySnapshot, targetCategory: String) -> Cla
     )
 }
 
-private func s216Handoff(
+private func classifierCorrectionHandoff(
     file: FileEntrySnapshot,
     targetCategory: String,
     selectedKeywords: [String],
@@ -341,7 +341,7 @@ private func s216Handoff(
     previewConfirmed: Bool
 ) -> ClassifierRuleHandoff {
     ClassifierRuleHandoff(
-        sourcePageID: "S2-16",
+        sourcePageID: "classifier-correction",
         fileID: file.id,
         fileName: file.currentName,
         sourcePath: file.sourcePath ?? file.path,
@@ -361,18 +361,18 @@ private func s216Handoff(
     )
 }
 
-private func s216ClassifierCorrectionClassifyMapping() -> CoreErrorMappingSnapshot {
+private func classifierCorrectionClassifierCorrectionClassifyMapping() -> CoreErrorMappingSnapshot {
     CoreErrorMappingSnapshot(
         kind: .classify,
         userMessage: "Target category is unavailable.",
         severity: .medium,
         suggestedAction: "Choose another category, then retry.",
         recoverability: .userActionRequired,
-        rawContext: "S2-16 C2-12 correct_file_category"
+        rawContext: "classifier-correction classifier-correction-core correct_file_category"
     )
 }
 
-private func s218Report(request: ClassifierImpactPreviewRequestSnapshot) -> RuleImpactReportSnapshot {
+private func classifierImpactPreviewReport(request: ClassifierImpactPreviewRequestSnapshot) -> RuleImpactReportSnapshot {
     RuleImpactReportSnapshot(
         request: request,
         affectedFileCount: 3,
@@ -382,9 +382,9 @@ private func s218Report(request: ClassifierImpactPreviewRequestSnapshot) -> Rule
         conflictCount: 0,
         sampleLimit: 50,
         samples: [
-            s218Sample(fileID: 263, status: .willUpdate),
-            s218Sample(fileID: 264, status: .alreadyCorrect),
-            s218Sample(fileID: 265, status: .indexOnly)
+            classifierImpactPreviewSample(fileID: 263, status: .willUpdate),
+            classifierImpactPreviewSample(fileID: 264, status: .alreadyCorrect),
+            classifierImpactPreviewSample(fileID: 265, status: .indexOnly)
         ],
         conflicts: [],
         needsReview: true,
@@ -395,7 +395,7 @@ private func s218Report(request: ClassifierImpactPreviewRequestSnapshot) -> Rule
     )
 }
 
-private func s218Sample(fileID: Int64, status: RuleImpactStatusSnapshot) -> RuleImpactSampleSnapshot {
+private func classifierImpactPreviewSample(fileID: Int64, status: RuleImpactStatusSnapshot) -> RuleImpactSampleSnapshot {
     RuleImpactSampleSnapshot(
         fileID: fileID,
         path: "docs/contract-\(fileID).pdf",

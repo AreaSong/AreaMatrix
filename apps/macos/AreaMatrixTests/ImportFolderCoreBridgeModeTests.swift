@@ -67,10 +67,10 @@ final class ImportFolderCoreBridgeModeTests: XCTestCase {
 }
 
 final class QueryErrorPageFeatureTests: XCTestCase {
-    func testS205QueryErrorRouteRendersParseProblemHelpAndActions() {
-        let diagnostic = SearchQueryDiagnosticSnapshot.s205UnknownField()
-        let body = s205RouteMirrorDescription(of: QueryErrorRouteView(
-            request: .s205QueryFixture(query: "kindd:pdf tag:finance"),
+    func testQueryErrorQueryErrorRouteRendersParseProblemHelpAndActions() {
+        let diagnostic = SearchQueryDiagnosticSnapshot.queryErrorUnknownField()
+        let body = queryErrorRouteMirrorDescription(of: QueryErrorRouteView(
+            request: .queryErrorQueryFixture(query: "kindd:pdf tag:finance"),
             diagnostic: diagnostic,
             onApplySuggestion: { _ in },
             onClear: {}
@@ -83,54 +83,54 @@ final class QueryErrorPageFeatureTests: XCTestCase {
         XCTAssertTrue(body.contains("Apply suggestion"))
         XCTAssertTrue(body.contains("Clear query"))
         XCTAssertTrue(body.contains("Open query help"))
-        XCTAssertTrue(body.contains("S2-05-query-error"))
+        XCTAssertTrue(body.contains("query-error-query-error"))
     }
 
-    func testS205ApplySuggestionReplacesOnlyTheFailedToken() {
+    func testQueryErrorApplySuggestionReplacesOnlyTheFailedToken() {
         let fixed = QuerySuggestionApplier.applying(
             "kind",
-            diagnostic: .s205UnknownField(),
+            diagnostic: .queryErrorUnknownField(),
             query: "kindd:pdf tag:finance"
         )
 
         XCTAssertEqual(fixed, "kind:pdf tag:finance")
     }
 
-    func testS205ApplySuggestionUsesDiagnosticRangeBeforeMatchingTokenText() {
+    func testQueryErrorApplySuggestionUsesDiagnosticRangeBeforeMatchingTokenText() {
         let fixed = QuerySuggestionApplier.applying(
             "kind",
-            diagnostic: .s205UnknownField(),
+            diagnostic: .queryErrorUnknownField(),
             query: "kindd:pdf note:kindd"
         )
 
         XCTAssertEqual(fixed, "kind:pdf note:kindd")
     }
 
-    func testS205QueryHighlighterUsesDiagnosticRangeBeforeMatchingTokenText() {
+    func testQueryErrorQueryHighlighterUsesDiagnosticRangeBeforeMatchingTokenText() {
         let highlighted = QueryTokenHighlighter.highlighted(
             query: "kindd:pdf note:kindd",
-            diagnostic: .s205UnknownField()
+            diagnostic: .queryErrorUnknownField()
         )
 
         XCTAssertEqual(highlighted, "[kindd]:pdf note:kindd")
     }
 
     @MainActor
-    func testS205CoreDiagnosticRoutesToQueryErrorAndBlocksSmartListSave() async {
-        let tree = RepositoryTreeNodeSnapshot.s205FixtureTree()
+    func testQueryErrorCoreDiagnosticRoutesToQueryErrorAndBlocksSmartListSave() async {
+        let tree = RepositoryTreeNodeSnapshot.queryErrorFixtureTree()
         guard let row = tree.sidebarRow(id: "docs/contracts") else {
             return XCTFail("expected docs/contracts sidebar row")
         }
-        let diagnostic = SearchQueryDiagnosticSnapshot.s205UnknownField()
+        let diagnostic = SearchQueryDiagnosticSnapshot.queryErrorUnknownField()
         let searcher = MainListRecordingSearchQuerying(results: [
-            .success(.s205QueryErrorPage(query: "kindd:pdf tag:finance", diagnostic: diagnostic))
+            .success(.queryErrorQueryErrorPage(query: "kindd:pdf tag:finance", diagnostic: diagnostic))
         ])
         let model = MainFileListModel(
-            opening: .s205Opening(repoPath: "/tmp/repo", tree: tree),
+            opening: .queryErrorOpening(repoPath: "/tmp/repo", tree: tree),
             fileLister: MainListRecordingFileLister(results: [.success([])]),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: searcher,
-            errorMapper: MainListRecordingErrorMapper(mapping: .s205ConfigMapping())
+            errorMapper: MainListRecordingErrorMapper(mapping: .queryErrorConfigMapping())
         )
 
         await model.runSearch(
@@ -141,7 +141,7 @@ final class QueryErrorPageFeatureTests: XCTestCase {
             filters: .empty
         )
 
-        XCTAssertEqual(model.searchPageDestination?.pageID, "S2-05")
+        XCTAssertEqual(model.searchPageDestination?.pageID, "query-error")
         XCTAssertFalse(model.canSaveCurrentSearch)
         XCTAssertEqual(model.searchState.page?.diagnostics.first, diagnostic)
         XCTAssertEqual(model.files, [])
@@ -151,11 +151,11 @@ final class QueryErrorPageFeatureTests: XCTestCase {
 }
 
 final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
-    func testS206EditQueryDiagnosticBlocksSaveAndRendersS205Summary() {
-        let diagnostic = SearchQueryDiagnosticSnapshot.s205UnknownField()
+    func testSmartListEditQueryDiagnosticBlocksSaveAndRendersQueryErrorSummary() {
+        let diagnostic = SearchQueryDiagnosticSnapshot.queryErrorUnknownField()
         var model = SmartListEditorModel(
             mode: .editQuery,
-            savedSearch: .s206Fixture(query: "Finance"),
+            savedSearch: .smartListFixture(query: "Finance"),
             existingNames: ["finance"],
             resultCountState: .loaded(12)
         )
@@ -163,79 +163,79 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
         model.query = "kindd:pdf tag:finance"
         XCTAssertFalse(model.canSubmit)
 
-        model.applyQueryDiagnosticPage(.s205QueryErrorPage(query: model.query, diagnostic: diagnostic))
+        model.applyQueryDiagnosticPage(.queryErrorQueryErrorPage(query: model.query, diagnostic: diagnostic))
         XCTAssertEqual(model.validationMessage, "Fix query syntax before saving changes.")
         XCTAssertFalse(model.canSubmit)
 
-        let body = s205RouteMirrorDescription(of: QueryDiagnosticSummary(
+        let body = queryErrorRouteMirrorDescription(of: QueryDiagnosticSummary(
             diagnostic: diagnostic,
             query: model.query
         ).body)
         XCTAssertTrue(body.contains("Query could not be parsed"))
         XCTAssertTrue(body.contains("[kindd]:pdf tag:finance"))
         XCTAssertTrue(body.contains("Unknown field: kindd"))
-        XCTAssertTrue(body.contains("S2-05-query-error"))
+        XCTAssertTrue(body.contains("query-error-query-error"))
     }
 
-    func testS206EditQueryRequiresFreshDiagnosticBeforeSaveChanges() {
+    func testSmartListEditQueryRequiresFreshDiagnosticBeforeSaveChanges() {
         var model = SmartListEditorModel(
             mode: .editQuery,
-            savedSearch: .s206Fixture(query: "Finance"),
+            savedSearch: .smartListFixture(query: "Finance"),
             existingNames: ["finance"],
             resultCountState: .loaded(12)
         )
 
-        model.applyQueryDiagnosticPage(.s206ValidQueryPage(query: "Finance", totalCount: 4))
+        model.applyQueryDiagnosticPage(.smartListValidQueryPage(query: "Finance", totalCount: 4))
         XCTAssertTrue(model.canSubmit)
         XCTAssertEqual(model.resultCountSummary, "4 files")
 
         model.query = "kind:pdf"
         XCTAssertFalse(model.canSubmit)
 
-        model.applyQueryDiagnosticPage(.s206ValidQueryPage(query: "kind:pdf", totalCount: 1))
+        model.applyQueryDiagnosticPage(.smartListValidQueryPage(query: "kind:pdf", totalCount: 1))
         XCTAssertNil(model.validationMessage)
         XCTAssertTrue(model.canSubmit)
         XCTAssertEqual(model.resultCountSummary, "1 file")
     }
 
-    func testS206EditQuerySaveFailureKeepsDraftAndShowsRetry() {
+    func testSmartListEditQuerySaveFailureKeepsDraftAndShowsRetry() {
         var model = SmartListEditorModel(
             mode: .editQuery,
-            savedSearch: .s206Fixture(query: "Finance"),
+            savedSearch: .smartListFixture(query: "Finance"),
             existingNames: ["finance"],
             resultCountState: .loaded(12)
         )
         model.query = "kind:pdf"
-        model.applyQueryDiagnosticPage(.s206ValidQueryPage(query: "kind:pdf", totalCount: 4))
-        model.failure = .s205ConfigMapping()
+        model.applyQueryDiagnosticPage(.smartListValidQueryPage(query: "kind:pdf", totalCount: 4))
+        model.failure = .queryErrorConfigMapping()
 
         XCTAssertTrue(model.showsRetry)
         XCTAssertEqual(model.query, "kind:pdf")
         XCTAssertEqual(model.primaryActionTitle, "Save changes")
     }
 
-    func testS206SidebarStatusUsesResultCountAndWarnings() {
-        let saved = SavedSearchSnapshot.s206Fixture(query: "Finance")
+    func testSmartListSidebarStatusUsesResultCountAndWarnings() {
+        let saved = SavedSearchSnapshot.smartListFixture(query: "Finance")
         let loaded = SmartListSidebarRowStatus.make(
             savedSearch: saved,
             isCurrent: true,
             searchState: .loaded(
-                request: .s205QueryFixture(query: "Finance"),
-                page: .s206ValidQueryPage(query: "Finance", totalCount: 4)
+                request: .queryErrorQueryFixture(query: "Finance"),
+                page: .smartListValidQueryPage(query: "Finance", totalCount: 4)
             )
         )
         let invalid = SmartListSidebarRowStatus.make(
             savedSearch: saved,
             isCurrent: true,
             searchState: .loaded(
-                request: .s205QueryFixture(query: "kindd:pdf"),
-                page: .s205QueryErrorPage(query: "kindd:pdf", diagnostic: .s205UnknownField())
+                request: .queryErrorQueryFixture(query: "kindd:pdf"),
+                page: .queryErrorQueryErrorPage(query: "kindd:pdf", diagnostic: .queryErrorUnknownField())
             )
         )
         let failed = SmartListSidebarRowStatus.make(
             savedSearch: saved,
             isCurrent: true,
-            searchState: .failed(request: .s205QueryFixture(query: "Finance"), .s205ConfigMapping())
+            searchState: .failed(request: .queryErrorQueryFixture(query: "Finance"), .queryErrorConfigMapping())
         )
 
         XCTAssertEqual(loaded.badgeText, "4")
@@ -247,15 +247,15 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS206SearchBannerUsesSavedSmartListContextText() {
-        let saved = SavedSearchSnapshot.s206Fixture(query: "Finance")
+    func testSmartListSearchBannerUsesSavedSmartListContextText() {
+        let saved = SavedSearchSnapshot.smartListFixture(query: "Finance")
         let request = SearchQueryRequestSnapshot(savedSearchQuery: saved.query)
         let model = MainFileListModel(
-            opening: .s205Opening(repoPath: "/tmp/repo", tree: .s205FixtureTree().insertingSavedSearch(saved)),
+            opening: .queryErrorOpening(repoPath: "/tmp/repo", tree: .queryErrorFixtureTree().insertingSavedSearch(saved)),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: MainListRecordingSearchQuerying(results: []),
-            errorMapper: MainListRecordingErrorMapper(mapping: .s205ConfigMapping())
+            errorMapper: MainListRecordingErrorMapper(mapping: .queryErrorConfigMapping())
         )
         model.activeSmartListSearch = saved
 
@@ -263,8 +263,8 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS206EditFiltersDraftReopensEditorAndFeedsUpdateRequest() {
-        let saved = SavedSearchSnapshot.s206Fixture(query: "Finance")
+    func testSmartListEditFiltersDraftReopensEditorAndFeedsUpdateRequest() {
+        let saved = SavedSearchSnapshot.smartListFixture(query: "Finance")
         let draftFilters = SearchFilterStateSnapshot(
             category: "docs",
             fileKind: "spreadsheet",
@@ -285,7 +285,7 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
             resultCountState: .loaded(4),
             draftFilters: route.draftFilters
         )
-        model.applyQueryDiagnosticPage(.s206ValidQueryPage(query: model.query, totalCount: 4))
+        model.applyQueryDiagnosticPage(.smartListValidQueryPage(query: model.query, totalCount: 4))
 
         XCTAssertEqual(route, SmartListManagementRoute(
             mode: .editQuery,
@@ -297,16 +297,16 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS206SmartListOpenAndRetryUseC204RunSmartList() async {
-        let saved = SavedSearchSnapshot.s206Fixture(query: "Finance")
-        let mapping = CoreErrorMappingSnapshot.s205ConfigMapping()
+    func testSmartListSmartListOpenAndRetryUseSmartListsCoreRunSmartList() async {
+        let saved = SavedSearchSnapshot.smartListFixture(query: "Finance")
+        let mapping = CoreErrorMappingSnapshot.queryErrorConfigMapping()
         let mapper = MainListRecordingErrorMapper(mapping: mapping)
-        let runner = S206RecordingSmartListRunner(results: [
+        let runner = SmartListRecordingSmartListRunner(results: [
             .failure(CoreError.FileNotFound(path: "\(saved.id)")),
-            .success(.s206ValidQueryPage(query: "Finance", totalCount: 4))
+            .success(.smartListValidQueryPage(query: "Finance", totalCount: 4))
         ])
         let model = MainFileListModel(
-            opening: .s205Opening(repoPath: "/tmp/repo", tree: .s205FixtureTree()),
+            opening: .queryErrorOpening(repoPath: "/tmp/repo", tree: .queryErrorFixtureTree()),
             fileLister: MainListRecordingFileLister(results: [.success([])]),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: runner,
@@ -321,8 +321,8 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
         let searchRequests = await runner.recordedSearchRequests()
         let mappedErrors = await mapper.recordedErrors()
         XCTAssertEqual(runRequests, [
-            S206SmartListRunRequest(repoPath: "/tmp/repo", savedSearchID: saved.id, limit: 50, offset: 0),
-            S206SmartListRunRequest(repoPath: "/tmp/repo", savedSearchID: saved.id, limit: 50, offset: 0)
+            SmartListSmartListRunRequest(repoPath: "/tmp/repo", savedSearchID: saved.id, limit: 50, offset: 0),
+            SmartListSmartListRunRequest(repoPath: "/tmp/repo", savedSearchID: saved.id, limit: 50, offset: 0)
         ])
         XCTAssertEqual(searchRequests, [])
         XCTAssertEqual(mappedErrors, [CoreError.FileNotFound(path: "\(saved.id)")])
@@ -332,9 +332,9 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
 }
 
 private extension RepositoryOpeningResult {
-    static func s205Opening(repoPath: String, tree: RepositoryTreeNodeSnapshot) -> RepositoryOpeningResult {
+    static func queryErrorOpening(repoPath: String, tree: RepositoryTreeNodeSnapshot) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
-            config: .s205Config(repoPath: repoPath),
+            config: .queryErrorConfig(repoPath: repoPath),
             tree: tree,
             currentCategoryFiles: []
         )
@@ -342,7 +342,7 @@ private extension RepositoryOpeningResult {
 }
 
 private extension RepoConfigSnapshot {
-    static func s205Config(repoPath: String) -> RepoConfigSnapshot {
+    static func queryErrorConfig(repoPath: String) -> RepoConfigSnapshot {
         RepoConfigSnapshot(
             repoPath: repoPath,
             defaultMode: "Copied",
@@ -359,7 +359,7 @@ private extension RepoConfigSnapshot {
 }
 
 private extension RepositoryTreeNodeSnapshot {
-    static func s205FixtureTree() -> RepositoryTreeNodeSnapshot {
+    static func queryErrorFixtureTree() -> RepositoryTreeNodeSnapshot {
         RepositoryTreeNodeSnapshot(
             slug: "__root__",
             displayName: "Repository",
@@ -390,7 +390,7 @@ private extension RepositoryTreeNodeSnapshot {
 }
 
 private extension SearchQueryDiagnosticSnapshot {
-    static func s205UnknownField() -> SearchQueryDiagnosticSnapshot {
+    static func queryErrorUnknownField() -> SearchQueryDiagnosticSnapshot {
         SearchQueryDiagnosticSnapshot(
             kindDisplayName: "Unknown field",
             severityDisplayName: "Error",
@@ -404,11 +404,11 @@ private extension SearchQueryDiagnosticSnapshot {
 }
 
 private extension SavedSearchSnapshot {
-    static func s206Fixture(query: String) -> SavedSearchSnapshot {
+    static func smartListFixture(query: String) -> SavedSearchSnapshot {
         SavedSearchSnapshot(
             id: 77,
             name: "Finance",
-            query: SavedSearchQuerySnapshot(request: .s205QueryFixture(query: query)),
+            query: SavedSearchQuerySnapshot(request: .queryErrorQueryFixture(query: query)),
             icon: "magnifyingglass",
             color: nil,
             pinned: true,
@@ -419,7 +419,7 @@ private extension SavedSearchSnapshot {
 }
 
 private extension SearchQueryRequestSnapshot {
-    static func s205QueryFixture(query: String) -> SearchQueryRequestSnapshot {
+    static func queryErrorQueryFixture(query: String) -> SearchQueryRequestSnapshot {
         SearchQueryRequestSnapshot(
             query: query,
             scope: .current,
@@ -434,7 +434,7 @@ private extension SearchQueryRequestSnapshot {
 }
 
 private extension SearchResultPageSnapshot {
-    static func s205QueryErrorPage(
+    static func queryErrorQueryErrorPage(
         query: String,
         diagnostic: SearchQueryDiagnosticSnapshot
     ) -> SearchResultPageSnapshot {
@@ -447,7 +447,7 @@ private extension SearchResultPageSnapshot {
         )
     }
 
-    static func s206ValidQueryPage(query: String, totalCount: Int64) -> SearchResultPageSnapshot {
+    static func smartListValidQueryPage(query: String, totalCount: Int64) -> SearchResultPageSnapshot {
         SearchResultPageSnapshot(
             query: query,
             totalCount: totalCount,
@@ -459,31 +459,31 @@ private extension SearchResultPageSnapshot {
 }
 
 private extension CoreErrorMappingSnapshot {
-    static func s205ConfigMapping() -> CoreErrorMappingSnapshot {
+    static func queryErrorConfigMapping() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .config,
             userMessage: "Query syntax is invalid.",
             severity: .medium,
             suggestedAction: "Fix the highlighted query token.",
             recoverability: .userActionRequired,
-            rawContext: "S2-05"
+            rawContext: "query-error"
         )
     }
 }
 
-private func s205RouteMirrorDescription(of value: Any) -> String {
+private func queryErrorRouteMirrorDescription(of value: Any) -> String {
     var lines: [String] = []
-    s205RouteAppendMirrorDescription(of: value, to: &lines)
+    queryErrorRouteAppendMirrorDescription(of: value, to: &lines)
     return lines.joined(separator: "\n")
 }
 
-private func s205RouteAppendMirrorDescription(of value: Any, to lines: inout [String]) {
+private func queryErrorRouteAppendMirrorDescription(of value: Any, to lines: inout [String]) {
     lines.append(String(describing: type(of: value)))
     lines.append(String(describing: value))
     for child in Mirror(reflecting: value).children {
         if let label = child.label {
             lines.append(label)
         }
-        s205RouteAppendMirrorDescription(of: child.value, to: &lines)
+        queryErrorRouteAppendMirrorDescription(of: child.value, to: &lines)
     }
 }

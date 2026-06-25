@@ -335,7 +335,7 @@ private extension SemanticNormalSearchMatchSnapshot {
         if let noteSnippet = result.noteSnippet, !noteSnippet.isEmpty {
             return "Note: \(noteSnippet)"
         }
-        guard let match = result.matches.first else { return "Stage 2 normal search match" }
+        guard let match = result.matches.first else { return "Normal search match" }
         return "\(match.kindDisplayName): \(match.fieldDisplayName) - \(match.snippet)"
     }
 

@@ -214,7 +214,7 @@ resolver = "2"
 
 ## 签名与公证
 
-### S1. App 启动报"无法验证开发者"
+### 签名场景一：App 启动报"无法验证开发者"
 
 **症状**：用户双击 .app 弹"无法验证开发者，请勿打开"。
 
@@ -253,7 +253,7 @@ xcrun stapler staple /path/to/AreaMatrix.app
 
 ---
 
-### S2. notarytool: "The signature of the binary is invalid."
+### 签名场景二：notarytool: "The signature of the binary is invalid."
 
 **可能原因**：
 
@@ -279,7 +279,7 @@ codesign --force --sign "Developer ID..." --options runtime /path/to/AreaMatrix.
 
 ---
 
-### S3. notarytool: "The executable does not have the hardened runtime enabled."
+### 签名场景三：notarytool: "The executable does not have the hardened runtime enabled."
 
 **解决**：
 

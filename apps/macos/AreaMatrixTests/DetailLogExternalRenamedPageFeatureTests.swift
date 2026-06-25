@@ -3,7 +3,7 @@ import XCTest
 
 final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
     @MainActor
-    func testS113C118ProductionRelayCreatesCurrentMainWindowRenamedEvent() throws {
+    func testDetailLogSyncExternalRenamedCoreProductionRelayCreatesCurrentMainWindowRenamedEvent() throws {
         let opening = RepositoryOpeningResult.detailMetaFixture(repoPath: "/tmp/repo", files: [])
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
@@ -29,7 +29,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         XCTAssertNil(model.externalCreatedEvent(for: opening))
     }
 
-    func testS113C118WatcherBuildsRenamedSignalForUserFileOnly() {
+    func testDetailLogSyncExternalRenamedCoreWatcherBuildsRenamedSignalForUserFileOnly() {
         let renamedFlags = FSEventStreamEventFlags(kFSEventStreamEventFlagItemRenamed)
 
         let signal = MainExternalCreatedFileWatcher.signal(
@@ -58,7 +58,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS113C118ConsumesRealExternalRenamedEventThenRefreshesListDetailAndLog() async throws {
+    func testDetailLogSyncExternalRenamedCoreConsumesRealExternalRenamedEventThenRefreshesListDetailAndLog() async throws {
         let original = FileEntrySnapshot.detailMetaFixture(id: 30, currentName: "original.pdf")
         let renamed = FileEntrySnapshot.detailMetaFixture(id: 30, currentName: "renamed.pdf")
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
@@ -105,7 +105,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS113C118MapsCoreFailureWithoutRefreshingLog() async throws {
+    func testDetailLogSyncExternalRenamedCoreMapsCoreFailureWithoutRefreshingLog() async throws {
         let existing = FileEntrySnapshot.detailMetaFixture(id: 31, currentName: "selected.pdf")
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
             kind: .renamed,
@@ -139,7 +139,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS113C118TreatsSyncResultErrorsAsFailure() async throws {
+    func testDetailLogSyncExternalRenamedCoreTreatsSyncResultErrorsAsFailure() async throws {
         let renamed = FileEntrySnapshot.detailMetaFixture(id: 32, currentName: "partial.pdf")
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
             kind: .renamed,
@@ -171,7 +171,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         XCTAssertTrue(message.contains("renamed event 9003 returned sync errors"))
     }
 
-    func testS113C118RejectsInvalidExternalRenamedEventsBeforeCoreBridge() {
+    func testDetailLogSyncExternalRenamedCoreRejectsInvalidExternalRenamedEventsBeforeCoreBridge() {
         XCTAssertNil(MainExternalCreatedFileEvent(kind: .renamed, relativePath: "", fsEventID: 1))
         XCTAssertNil(MainExternalCreatedFileEvent(kind: .renamed, relativePath: "/tmp/repo/docs/new.pdf", fsEventID: 1))
         XCTAssertNil(MainExternalCreatedFileEvent(kind: .renamed, relativePath: "../new.pdf", fsEventID: 1))
@@ -179,7 +179,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         XCTAssertNil(MainExternalCreatedFileEvent(kind: .renamed, relativePath: "docs/new.pdf", fsEventID: 0))
     }
 
-    func testS113C118DefaultCoreBridgeSyncsRealExternalRenamedFileIntoListDetailAndLog() async throws {
+    func testDetailLogSyncExternalRenamedCoreDefaultCoreBridgeSyncsRealExternalRenamedFileIntoListDetailAndLog() async throws {
         let repoURL = try makeDetailLogExternalRenamedTemporaryRepositoryURL()
         defer { try? FileManager.default.removeItem(at: repoURL) }
 
@@ -243,7 +243,7 @@ private actor DetailLogExternalRenamedSyncer: CoreExternalChangesSyncing {
 
     func syncExternalCreated(repoPath _: String, relativePath _: String,
                              fsEventID _: Int64) async throws -> SyncResultSnapshot {
-        throw CoreError.Internal(message: "external created is outside S1-13 C1-18")
+        throw CoreError.Internal(message: "external created is outside detail-change-log sync-external-renamed")
     }
 
     func syncExternalRenamed(repoPath: String, relativePath: String,
@@ -258,7 +258,7 @@ private actor DetailLogExternalRenamedSyncer: CoreExternalChangesSyncing {
 
     func syncExternalRemoved(repoPath _: String, relativePath _: String,
                              fsEventID _: Int64) async throws -> SyncResultSnapshot {
-        throw CoreError.Internal(message: "external removed is outside S1-13 C1-18")
+        throw CoreError.Internal(message: "external removed is outside detail-change-log sync-external-renamed")
     }
 
     func getFSEventCursor(repoPath _: String) async throws -> Int64? {
@@ -320,7 +320,7 @@ private extension CoreErrorMappingSnapshot {
             severity: .medium,
             suggestedAction: "请确认重命名后的文件仍在资料库内，并重试改动时间线。",
             recoverability: .userActionRequired,
-            rawContext: "S1-13 C1-18 sync_external_changes Renamed"
+            rawContext: "detail-change-log sync-external-renamed sync_external_changes Renamed"
         )
     }
 }

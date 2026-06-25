@@ -35,7 +35,7 @@ struct SemanticSearchResultsView: View {
             }
             .padding(.vertical, 4)
         }
-        .accessibilityIdentifier("S3-08-semantic-search-results")
+        .accessibilityIdentifier("semantic-search-semantic-search-results")
     }
 
     private var normalSection: some View {
@@ -44,7 +44,7 @@ struct SemanticSearchResultsView: View {
                 Button(showFoldedDuplicates ? "Hide duplicate normal matches" : "Show duplicate normal matches") {
                     onToggleDuplicates()
                 }
-                .accessibilityIdentifier("S3-08-show-duplicate-normal-matches")
+                .accessibilityIdentifier("semantic-search-show-duplicate-normal-matches")
             }
             SemanticSearchGroupView(
                 title: "Normal search matches",
@@ -103,7 +103,7 @@ struct SemanticSearchFallbackStatusRegion: View {
             EmptyView()
         case .resolving:
             Text("Resolving AI status...")
-                .accessibilityIdentifier("S3-10-C3-08-resolving-fallback-status")
+                .accessibilityIdentifier("ai-fallback-semantic-search-core-resolving-fallback-status")
         case let .status(status):
             statusContent(status)
         case let .coreStatusError(error):
@@ -112,7 +112,7 @@ struct SemanticSearchFallbackStatusRegion: View {
                 let status = SemanticSearchFallbackStatus.fromSemanticPage(page)
                 fallbackActionButton(status.presentation(for: .useNormalSearch), status: status)
             }
-            .accessibilityIdentifier("S3-10-C3-08-fallback-status-error")
+            .accessibilityIdentifier("ai-fallback-semantic-search-core-fallback-status-error")
         }
     }
 
@@ -135,7 +135,7 @@ struct SemanticSearchFallbackStatusRegion: View {
                     .padding(.vertical, 4)
                     .background(status.badgeTint.opacity(0.14))
                     .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .accessibilityIdentifier("S3-10-C3-08-reason-badge")
+                    .accessibilityIdentifier("ai-fallback-semantic-search-core-reason-badge")
                 Text(status.title)
                     .fontWeight(.semibold)
             }
@@ -146,7 +146,7 @@ struct SemanticSearchFallbackStatusRegion: View {
         .background(.quaternary.opacity(0.35))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("S3-10-C3-08-fallback-status")
+        .accessibilityIdentifier("ai-fallback-semantic-search-core-fallback-status")
     }
 
     private func actionRow(_ status: SemanticSearchFallbackStatus) -> some View {
@@ -173,7 +173,7 @@ struct SemanticSearchFallbackStatusRegion: View {
                 performAction(presentation.action)
             }
             .disabled(isDisabled(presentation.action, status: status))
-            .accessibilityIdentifier("S3-10-C3-08-action-\(presentation.accessibilityID)")
+            .accessibilityIdentifier("ai-fallback-semantic-search-core-action-\(presentation.accessibilityID)")
         }
     }
 
@@ -348,7 +348,7 @@ private struct SemanticSearchGroupView: View {
             .foregroundStyle(.secondary)
         } else if hasMore {
             Button(loadMoreTitle, action: onLoadMore)
-                .accessibilityIdentifier("S3-08-\(loadMoreTitle.lowercased().replacingOccurrences(of: " ", with: "-"))")
+                .accessibilityIdentifier("semantic-search-\(loadMoreTitle.lowercased().replacingOccurrences(of: " ", with: "-"))")
         }
     }
 }

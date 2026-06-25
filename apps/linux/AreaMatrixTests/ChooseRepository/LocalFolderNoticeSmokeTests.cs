@@ -4,11 +4,11 @@ public static class LocalFolderNoticeSmokeTests
 {
     public static void RunAll()
     {
-        LocalFolderNoticePageExposesC410Actions();
+        LocalFolderNoticePageExposesLinuxRepoConnectCoreActions();
         LocalFolderNoticeUsesOnlyRepositoryCoreBridge();
     }
 
-    private static void LocalFolderNoticePageExposesC410Actions()
+    private static void LocalFolderNoticePageExposesLinuxRepoConnectCoreActions()
     {
         string ui = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Features/Onboarding/LocalFolderNoticeView.ui"));
@@ -19,7 +19,7 @@ public static class LocalFolderNoticeSmokeTests
 
         foreach (string fragment in new[]
         {
-            "page_id: S4-LNX-03",
+            "page_id: linux-local-folder-notice",
             "Repository folder on Linux",
             "Folder: /home/you/AreaMatrix",
             "Type: Local folder",
@@ -35,7 +35,7 @@ public static class LocalFolderNoticeSmokeTests
             "Open Folder",
             "The page calls validate_repo_path through LinuxRepositoryCoreBridge.",
             "The page calls get_platform_capabilities through LinuxPlatformCapabilitiesCoreBridge.",
-            "Watcher and cloud placeholder rows come from the C4-17 PlatformCapabilities matrix.",
+            "Watcher and cloud placeholder rows come from the platform-capabilities PlatformCapabilities matrix.",
             "The page does not call cloud storage detection or configure sync providers."
         })
         {
@@ -64,7 +64,7 @@ public static class LocalFolderNoticeSmokeTests
         TestAssert.Contains("GetPlatformCapabilitiesAsync", viewModel, "get_platform_capabilities bridge call");
         TestAssert.Contains("InitializeEmptyRepositoryAsync", bridge, "init_repo bridge available");
         TestAssert.Contains("AdoptExistingRepositoryAsync", bridge, "adopt init_repo bridge available");
-        TestAssert.NotContains("DetectCloudStorageStateAsync", viewModel, "out-of-scope C4-17/cloud call");
+        TestAssert.NotContains("DetectCloudStorageStateAsync", viewModel, "out-of-scope platform-capabilities/cloud call");
         TestAssert.NotContains("LoadConfigAsync", viewModel, "out-of-scope config call");
     }
 

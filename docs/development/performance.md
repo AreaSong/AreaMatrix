@@ -435,7 +435,7 @@ COMMIT;
 -- 慢：全表 LIKE
 SELECT * FROM files WHERE current_name LIKE '%2026%';
 
--- 快：FTS5（Stage 2）
+-- 快：FTS5（后续全文搜索）
 SELECT files.* FROM files
   JOIN files_fts ON files_fts.rowid = files.id
   WHERE files_fts MATCH '2026';
@@ -508,7 +508,7 @@ gantt
     AppDelegate           :b1, after a4, 100
     SwiftUI 主窗口          :b2, after b1, 200
     list_files 首屏        :b3, after b2, 50
-    用户可见首屏           :milestone, after b3, 0
+    用户可见首屏           :crit, after b3, 0
     section 后台
     启动 watcher           :c1, after b3, 100
     list_tree_json (后台)   :c2, after b3, 200

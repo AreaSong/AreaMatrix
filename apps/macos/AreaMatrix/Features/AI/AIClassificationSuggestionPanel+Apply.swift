@@ -58,7 +58,7 @@ extension AIClassificationSuggestionPanel {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("S3-04-C3-04-suggestion-card")
+        .accessibilityIdentifier("ai-category-suggestion-ai-classification-suggestion-suggestion-card")
         .task(id: previewTaskID(for: suggestion)) {
             requestPreviewIfNeeded(for: suggestion)
         }
@@ -90,7 +90,7 @@ extension AIClassificationSuggestionPanel {
     ) -> some View {
         Label(feedback.message, systemImage: "checkmark.circle")
             .foregroundStyle(.secondary)
-            .accessibilityIdentifier("S3-04-C3-04-reject-feedback")
+            .accessibilityIdentifier("ai-category-suggestion-ai-classification-suggestion-reject-feedback")
         if let callLogID = suggestion.callLogID {
             Button("View AI call") {
                 onViewCall(callLogID)
@@ -159,10 +159,10 @@ extension AIClassificationSuggestionPanel {
                 Text("Privacy rule: \(ruleID)")
                     .foregroundStyle(.secondary)
                 Button("View privacy rule") {
-                    privacyRuleRoute = s309PrivacyRuleRoute(ruleID: ruleID)
+                    privacyRuleRoute = aiPrivacyRulesPrivacyRuleRoute(ruleID: ruleID)
                 }
                 .buttonStyle(.link)
-                .accessibilityIdentifier("S3-04-C3-09-view-privacy-rule")
+                .accessibilityIdentifier("ai-category-suggestion-ai-privacy-rules-core-view-privacy-rule")
             }
             if let callLogID = suggestion.callLogID {
                 Button("View AI call") {
@@ -171,7 +171,7 @@ extension AIClassificationSuggestionPanel {
                 .buttonStyle(.link)
             }
         }
-        .accessibilityIdentifier("S3-04-C3-04-skipped-card")
+        .accessibilityIdentifier("ai-category-suggestion-ai-classification-suggestion-skipped-card")
     }
 }
 
@@ -194,7 +194,7 @@ extension AITagSuggestionsPanel {
                 Label(feedback.message, systemImage: "checkmark.circle")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .accessibilityIdentifier("S3-07-C3-07-reject-feedback")
+                    .accessibilityIdentifier("ai-tag-suggestions-ai-tags-suggestion-reject-feedback")
             }
             traceLinks(report)
         }
@@ -328,7 +328,7 @@ extension AIClassificationSuggestionPanel {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            .accessibilityIdentifier("S3-04-C3-04-target-path-preview")
+            .accessibilityIdentifier("ai-category-suggestion-ai-classification-suggestion-target-path-preview")
         }
     }
 
@@ -363,7 +363,7 @@ extension AIClassificationSuggestionPanel {
                     }
                 }
             }
-            .accessibilityIdentifier("S3-04-C3-04-apply-failure-actions")
+            .accessibilityIdentifier("ai-category-suggestion-ai-classification-suggestion-apply-failure-actions")
         }
     }
 
@@ -377,7 +377,7 @@ extension AIClassificationSuggestionPanel {
                 .font(.caption)
         }
         .foregroundStyle(.red)
-        .accessibilityIdentifier("S3-04-C3-04-apply-error")
+        .accessibilityIdentifier("ai-category-suggestion-ai-classification-suggestion-apply-error")
     }
 }
 

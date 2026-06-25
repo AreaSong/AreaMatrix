@@ -342,7 +342,7 @@ struct UndoToastHistoryRouteSheet: View {
     let onClose: () -> Void
 
     var body: some View {
-        MainFileActionSheetContainer(title: title, pageID: "S2-10") {
+        MainFileActionSheetContainer(title: title, pageID: "undo-toast") {
             VStack(alignment: .leading, spacing: 12) {
                 Label(message, systemImage: systemImage)
                     .font(.callout)
@@ -361,7 +361,7 @@ struct UndoToastHistoryRouteSheet: View {
             }
         }
         .frame(width: 420)
-        .accessibilityIdentifier("S2-10-C2-07-undo-history-route")
+        .accessibilityIdentifier("undo-toast-undo-action-log-undo-history-route")
     }
 
     private var title: String {
@@ -399,7 +399,7 @@ struct CommandPaletteSmartListTarget: Equatable, Identifiable {
     }
 
     var accessibilityIdentifier: String {
-        "S2-15-C2-04-smart-list-\(savedSearch.id)"
+        "command-palette-smart-list-smart-list-\(savedSearch.id)"
     }
 
     static func matching(_ savedSearches: [SavedSearchSnapshot], query: String) -> [CommandPaletteSmartListTarget] {
@@ -432,7 +432,7 @@ struct SearchCommandPaletteRouteView: View {
             onExecuteTarget: onExecuteTarget,
             onClose: onClose
         )
-        .accessibilityIdentifier("S2-15-search-route")
+        .accessibilityIdentifier("command-palette-search-route")
     }
 }
 

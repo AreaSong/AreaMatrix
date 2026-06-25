@@ -127,7 +127,7 @@ final class AIPrivacyRulesModel: ObservableObject {
     @discardableResult
     func setRuleEnabled(_ record: AiPrivacyRuleRecord, enabled: Bool) async -> Bool {
         guard let snapshot else { return false }
-        var input = AiPrivacyRuleInput(s309Record: record)
+        var input = AiPrivacyRuleInput(aiPrivacyRulesRecord: record)
         input.enabled = enabled
         return await saveRule(input, base: snapshot, success: "Privacy rule saved.")
     }
@@ -139,7 +139,7 @@ final class AIPrivacyRulesModel: ObservableObject {
         guard !trimmed.isEmpty else { return false }
         return await saveRule(AiPrivacyRuleInput(
             ruleId: nil,
-            name: "\(kind.s309Label) \(trimmed)",
+            name: "\(kind.aiPrivacyRulesLabel) \(trimmed)",
             kind: kind,
             pattern: trimmed,
             appliesTo: appliesTo,
@@ -169,7 +169,7 @@ final class AIPrivacyRulesModel: ObservableObject {
     @discardableResult
     func deleteRule(_ record: AiPrivacyRuleRecord) async -> Bool {
         guard let snapshot else { return false }
-        let rules = snapshot.rules.filter { $0.ruleId != record.ruleId }.map(AiPrivacyRuleInput.init(s309Record:))
+        let rules = snapshot.rules.filter { $0.ruleId != record.ruleId }.map(AiPrivacyRuleInput.init(aiPrivacyRulesRecord:))
         return await save(snapshot, gate: snapshot.privacyGateEnabled, rules: rules, success: "Privacy rule deleted.")
     }
 
@@ -198,7 +198,7 @@ final class AIPrivacyRulesModel: ObservableObject {
         defer { isEvaluating = false }
         do {
             var evaluations: [AIPrivacyRuleFeatureEvaluation] = []
-            for request in snapshot.s309EvaluationRequests(context: context) {
+            for request in snapshot.aiPrivacyRulesEvaluationRequests(context: context) {
                 let report = try await evaluator.evaluateAIPrivacy(repoPath: repoPath, request: request)
                 evaluations.append(AIPrivacyRuleFeatureEvaluation(feature: request.feature, report: report))
             }

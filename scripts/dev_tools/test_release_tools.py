@@ -69,13 +69,13 @@ class ReleaseToolsTest(unittest.TestCase):
         ):
             self.assertEqual(release.run_release_preflight(__import__("pathlib").Path("/tmp")), 1)
 
-    def test_default_local_qa_build_number_uses_timestamp_format(self) -> None:
-        build_number = release.default_local_qa_build_number(datetime(2026, 6, 12, 12, 34))
+    def test_default_readiness_build_number_uses_timestamp_format(self) -> None:
+        build_number = release.default_readiness_build_number(datetime(2026, 6, 12, 12, 34))
 
         self.assertEqual(build_number, "202606121234")
 
-    def test_local_qa_xcodebuild_command_overrides_build_number(self) -> None:
-        command = release._local_qa_xcodebuild_command(
+    def test_readiness_xcodebuild_command_overrides_build_number(self) -> None:
+        command = release._readiness_xcodebuild_command(
             Path("/repo"),
             build_number="202606121234",
             derived_data_path=Path("/repo/build/ReleaseReadiness"),
@@ -92,7 +92,7 @@ class ReleaseToolsTest(unittest.TestCase):
         self.assertIn("-configuration", command)
         self.assertIn("Release", command)
 
-    def test_local_qa_rejects_core_dylib_linkage(self) -> None:
+    def test_readiness_build_rejects_core_dylib_linkage(self) -> None:
         completed = type(
             "Completed",
             (),
@@ -106,19 +106,19 @@ class ReleaseToolsTest(unittest.TestCase):
             with self.assertRaises(ToolError):
                 release._verify_app_is_self_contained(Path("/repo/build/AreaMatrix.app"))
 
-    def test_local_qa_accepts_static_core_linkage(self) -> None:
+    def test_readiness_build_accepts_static_core_linkage(self) -> None:
         completed = type("Completed", (), {"returncode": 0, "stdout": "/usr/lib/libSystem.B.dylib\n"})()
 
         with patch("scripts.dev_tools.release._run_capture", return_value=completed):
             release._verify_app_is_self_contained(Path("/repo/build/AreaMatrix.app"))
 
-    def test_release_local_qa_rejects_invalid_build_number(self) -> None:
+    def test_release_readiness_build_rejects_invalid_build_number(self) -> None:
         with (
             patch("scripts.dev_tools.release.require_command"),
             patch("scripts.dev_tools.release.run_step") as run_step,
         ):
             with self.assertRaises(ToolError):
-                release.run_release_local_qa(Path("/repo"), build_number="not-a-build-number")
+                release.run_release_readiness_build(Path("/repo"), build_number="not-a-build-number")
             run_step.assert_not_called()
 
 

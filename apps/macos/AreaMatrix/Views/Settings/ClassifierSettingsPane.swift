@@ -74,7 +74,7 @@ extension ClassifierSettingsPane {
                         await model.load()
                     }
                 }
-                .accessibilityIdentifier("S1-28-classifier-retry-status")
+                .accessibilityIdentifier("classifier-settings-classifier-retry-status")
             }
         }
         .padding(.horizontal, 34)
@@ -153,19 +153,19 @@ extension ClassifierSettingsPane {
         ClassifierSettingsSection(title: "规则引擎") {
             VStack(alignment: .leading, spacing: 12) {
                 Toggle("Enable extension rules", isOn: extensionRulesSelection)
-                    .accessibilityIdentifier("S1-28-enable-extension-rules")
+                    .accessibilityIdentifier("classifier-settings-enable-extension-rules")
                 Text("Match file extensions before falling back to inbox.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
                 Toggle("Enable keyword rules", isOn: keywordRulesSelection)
-                    .accessibilityIdentifier("S1-28-enable-keyword-rules")
+                    .accessibilityIdentifier("classifier-settings-enable-keyword-rules")
                 Text("Use keyword matching for the current repository configuration.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
                 Toggle("Fallback to inbox", isOn: fallbackToInboxSelection)
-                    .accessibilityIdentifier("S1-28-fallback-to-inbox")
+                    .accessibilityIdentifier("classifier-settings-fallback-to-inbox")
                 Text("Keep unmatched files in inbox.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -188,7 +188,7 @@ extension ClassifierSettingsPane {
                         Label("Open classifier.yaml", systemImage: "doc.text")
                     }
                     .disabled(model.isSaving)
-                    .accessibilityIdentifier("S1-28-open-classifier-yaml")
+                    .accessibilityIdentifier("classifier-settings-open-classifier-yaml")
 
                     Button {
                         model.revealClassifierYamlInFinder()
@@ -196,7 +196,7 @@ extension ClassifierSettingsPane {
                         Label("Reveal in Finder", systemImage: "folder")
                     }
                     .disabled(model.isSaving)
-                    .accessibilityIdentifier("S1-28-reveal-classifier-yaml")
+                    .accessibilityIdentifier("classifier-settings-reveal-classifier-yaml")
 
                     Button {
                         Task {
@@ -215,7 +215,7 @@ extension ClassifierSettingsPane {
                     }
                     .disabled(model.isSaving || model.isValidating)
                     .accessibilityLabel("Validate classifier rules")
-                    .accessibilityIdentifier("S1-28-validate-classifier-rules")
+                    .accessibilityIdentifier("classifier-settings-validate-classifier-rules")
 
                     Button {
                         showingRevertConfirmation = true
@@ -223,13 +223,13 @@ extension ClassifierSettingsPane {
                         Label("Revert to last valid", systemImage: "arrow.counterclockwise")
                     }
                     .disabled(!model.canRevertToLastValid || model.isSaving || model.isValidating)
-                    .accessibilityIdentifier("S1-28-revert-classifier-rules")
+                    .accessibilityIdentifier("classifier-settings-revert-classifier-rules")
                 }
 
                 if model.isValidating {
                     ProgressView("Validating...")
                         .controlSize(.small)
-                        .accessibilityIdentifier("S1-28-classifier-validating")
+                        .accessibilityIdentifier("classifier-settings-classifier-validating")
                 }
 
                 if let error = model.fileActionError {
@@ -254,20 +254,20 @@ extension ClassifierSettingsPane {
                 Button("Reveal in Finder") {
                     model.revealClassifierYamlInFinder()
                 }
-                .accessibilityIdentifier("S1-28-file-error-reveal-classifier-yaml")
+                .accessibilityIdentifier("classifier-settings-file-error-reveal-classifier-yaml")
                 Button("Create default") {
                     Task {
                         await model.createDefaultClassifierYaml()
                     }
                 }
-                .accessibilityIdentifier("S1-28-file-error-create-default-classifier-yaml")
+                .accessibilityIdentifier("classifier-settings-file-error-create-default-classifier-yaml")
             }
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("S1-28-classifier-file-action-error")
+        .accessibilityIdentifier("classifier-settings-classifier-file-action-error")
     }
 
     private func validationErrorView(_ error: ClassifierSettingsValidationError) -> some View {
@@ -284,20 +284,20 @@ extension ClassifierSettingsPane {
                 Button("Reveal in Finder") {
                     model.revealClassifierYamlInFinder()
                 }
-                .accessibilityIdentifier("S1-28-validation-reveal-classifier-yaml")
+                .accessibilityIdentifier("classifier-settings-validation-reveal-classifier-yaml")
                 Button("Create default") {
                     Task {
                         await model.createDefaultClassifierYaml()
                     }
                 }
-                .accessibilityIdentifier("S1-28-validation-create-default-classifier-yaml")
+                .accessibilityIdentifier("classifier-settings-validation-create-default-classifier-yaml")
             }
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("S1-28-classifier-validation-error")
+        .accessibilityIdentifier("classifier-settings-classifier-validation-error")
     }
 
     private var previewSection: some View {
@@ -308,7 +308,7 @@ extension ClassifierSettingsPane {
                         .textFieldStyle(.roundedBorder)
                         .frame(maxWidth: .infinity)
                         .accessibilityLabel("Preview filename")
-                        .accessibilityIdentifier("S1-28-preview-filename")
+                        .accessibilityIdentifier("classifier-settings-preview-filename")
                     Button {
                         Task {
                             await model.previewClassification()
@@ -323,7 +323,7 @@ extension ClassifierSettingsPane {
                     }
                     .disabled(previewButtonDisabled)
                     .accessibilityLabel("Preview classification")
-                    .accessibilityIdentifier("S1-28-preview-classify")
+                    .accessibilityIdentifier("classifier-settings-preview-classify")
                 }
 
                 if let error = model.previewError {
@@ -335,7 +335,7 @@ extension ClassifierSettingsPane {
                         .controlSize(.small)
                 }
             }
-            .accessibilityIdentifier("S1-28-classify-preview")
+            .accessibilityIdentifier("classifier-settings-classify-preview")
         }
     }
 
@@ -386,7 +386,7 @@ extension ClassifierSettingsPane {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("S1-28-preview-error")
+        .accessibilityIdentifier("classifier-settings-preview-error")
     }
 
     private func previewResultView(_ result: ClassifyResultSnapshot) -> some View {
@@ -398,7 +398,7 @@ extension ClassifierSettingsPane {
             ClassifierSettingsKeyValueRow(label: "原因", value: result.reason.displayLabel)
             ClassifierSettingsKeyValueRow(label: "置信度", value: "\(result.confidencePercent)%")
         }
-        .accessibilityIdentifier("S1-28-preview-result")
+        .accessibilityIdentifier("classifier-settings-preview-result")
     }
 
     private var writesDisabled: Bool {

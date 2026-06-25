@@ -1,32 +1,32 @@
 @testable import AreaMatrix
 import XCTest
 
-final class S309PageIntegrationVerifyTests: XCTestCase {
+final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
     @MainActor
     // swiftlint:disable:next function_body_length
-    func testS309FullPageFlowKeepsC301C303C309OnDeclaredBridgePaths() async {
-        let settingsStore = S309IntegrationAISettingsStore(snapshot: .s309IntegrationReady(repoPath: "/tmp/s309"))
+    func testAIPrivacyRulesFullPageFlowKeepsAISettingsConfigCoreRemoteProviderConfigCoreAIPrivacyRulesCoreOnDeclaredBridgePaths() async {
+        let settingsStore = AIPrivacyRulesIntegrationAISettingsStore(snapshot: .aiPrivacyRulesIntegrationReady(repoPath: "/tmp/aiPrivacyRules"))
         let settingsModel = AISettingsModel(
-            repoPath: "/tmp/s309",
+            repoPath: "/tmp/aiPrivacyRules",
             loader: settingsStore,
             updater: settingsStore,
-            errorMapper: S309IntegrationErrorMapper()
+            errorMapper: AIPrivacyRulesIntegrationErrorMapper()
         )
-        let providerBridge = RemoteProviderConfigBridge(initial: .s309IntegrationProviderReady())
+        let providerBridge = RemoteProviderConfigBridge(initial: .aiPrivacyRulesIntegrationProviderReady())
         let providerModel = AIPrivacyRemoteProviderStateModel(
-            repoPath: "/tmp/s309",
+            repoPath: "/tmp/aiPrivacyRules",
             providerReader: providerBridge,
-            errorMapper: S309IntegrationErrorMapper()
+            errorMapper: AIPrivacyRulesIntegrationErrorMapper()
         )
         let privacyBridge = RemotePrivacyRulesBridge(
-            snapshot: .s309IntegrationRules(privacyGateEnabled: true),
-            evaluationReport: .s309IntegrationProviderGateBlocked()
+            snapshot: .aiPrivacyRulesIntegrationRules(privacyGateEnabled: true),
+            evaluationReport: .aiPrivacyRulesIntegrationProviderGateBlocked()
         )
         let privacyModel = AIPrivacyRulesModel(
-            repoPath: "/tmp/s309",
+            repoPath: "/tmp/aiPrivacyRules",
             rulesManager: privacyBridge,
             evaluator: privacyBridge,
-            errorMapper: S309IntegrationErrorMapper(),
+            errorMapper: AIPrivacyRulesIntegrationErrorMapper(),
             settingsSync: settingsModel
         )
 
@@ -35,7 +35,7 @@ final class S309PageIntegrationVerifyTests: XCTestCase {
         await privacyModel.load()
         await privacyModel.setPrivacyGate(false)
         await privacyModel.setField(.noteSummary, allowRemote: false)
-        let editedRule = AIPrivacyRuleEditorDraft(record: .s309IntegrationRule()).withPattern("finance/private/q2/")
+        let editedRule = AIPrivacyRuleEditorDraft(record: .aiPrivacyRulesIntegrationRule()).withPattern("finance/private/q2/")
         await privacyModel.saveRule(editedRule)
         await privacyModel.addRules([AIPrivacyRuleTemplate.confidentialKeywords.ruleInput])
         await privacyModel.evaluate(context: AIPrivacyRuleTestFileContext(
@@ -52,7 +52,7 @@ final class S309PageIntegrationVerifyTests: XCTestCase {
         XCTAssertFalse(settingsRequests[0].privacyGateEnabled)
         await settingsModel.load()
         XCTAssertEqual(settingsModel.snapshot?.config.privacyGateEnabled, false)
-        XCTAssertEqual(settingsModel.snapshot.map { S309AISettingsPrivacySummary(snapshot: $0).label }, "Off")
+        XCTAssertEqual(settingsModel.snapshot.map { AIPrivacyRulesAISettingsPrivacySummary(snapshot: $0).label }, "Off")
         XCTAssertEqual(providerRequests.loadCount, 1)
         XCTAssertNil(providerRequests.disable)
         XCTAssertEqual(privacyRequests.loadCount, 1)
@@ -64,7 +64,7 @@ final class S309PageIntegrationVerifyTests: XCTestCase {
         )
         XCTAssertEqual(privacyRequests.updates[2].rules.first?.pattern, "finance/private/q2/")
         XCTAssertEqual(privacyRequests.updates[3].rules.last?.name, "Confidential keywords")
-        XCTAssertEqual(privacyRequests.evaluations.map(\.feature), AiFeatureKind.s309Cases)
+        XCTAssertEqual(privacyRequests.evaluations.map(\.feature), AiFeatureKind.aiPrivacyRulesCases)
         XCTAssertEqual(privacyRequests.evaluations.first?.context.repoRelativePath, "finance/private/q2/report.key")
         XCTAssertEqual(privacyRequests.evaluations.first?.context.category, "finance")
         XCTAssertEqual(privacyRequests.evaluations.first?.context.tags, ["client-private"])
@@ -73,25 +73,25 @@ final class S309PageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(privacyModel.featureEvaluations.count, 4)
     }
 
-    func testS309RouteFocusTargetsRuleAndFieldRowsForOneShotHighlight() {
+    func testAIPrivacyRulesRouteFocusTargetsRuleAndFieldRowsForOneShotHighlight() {
         let ruleFocus = AIPrivacyRulesRouteFocus.rule(ruleID: " rule-confidential ")
-        XCTAssertEqual(ruleFocus.targetID, "s309-rule-rule-confidential")
+        XCTAssertEqual(ruleFocus.targetID, "aiPrivacyRules-rule-rule-confidential")
         XCTAssertEqual(ruleFocus.label, "Focused privacy rule rule-confidential")
         XCTAssertTrue(ruleFocus.matches(ruleID: "rule-confidential"))
         XCTAssertFalse(ruleFocus.matches(ruleID: "rule-other"))
 
         let fieldFocus = AIPrivacyRulesRouteFocus.field(.noteSummary)
-        XCTAssertEqual(fieldFocus.targetID, "s309-field-noteSummary")
+        XCTAssertEqual(fieldFocus.targetID, "aiPrivacyRules-field-noteSummary")
         XCTAssertEqual(fieldFocus.label, "Focused remote field note summary")
         XCTAssertTrue(fieldFocus.matches(field: .noteSummary))
         XCTAssertFalse(fieldFocus.matches(field: .fileName))
     }
 
     @MainActor
-    func testS304PrivacySkippedActionBuildsS309RuleFocusedRoute() {
-        let model = s304SuggestionModel(
+    func testAICategorySuggestionPrivacySkippedActionBuildsAIPrivacyRulesRuleFocusedRoute() {
+        let model = aiCategorySuggestionSuggestionModel(
             request: AIClassificationSuggestionRequestState(fileID: 309, contextPolicy: .fileNameAndPath),
-            bridge: S304SuggestionBridge(result: .success(.s304Suggested(fileID: 309)))
+            bridge: AICategorySuggestionSuggestionBridge(result: .success(.aiCategorySuggestionSuggested(fileID: 309)))
         )
         let panel = AIClassificationSuggestionPanel(
             model: model,
@@ -99,20 +99,20 @@ final class S309PageIntegrationVerifyTests: XCTestCase {
             currentPath: "inbox/confidential.pdf"
         )
 
-        let route = panel.s309PrivacyRuleRoute(ruleID: " rule-confidential ")
+        let route = panel.aiPrivacyRulesPrivacyRuleRoute(ruleID: " rule-confidential ")
 
         XCTAssertEqual(route?.repoPath, "/tmp/repo")
         XCTAssertEqual(route?.focus, .rule(ruleID: "rule-confidential"))
-        XCTAssertEqual(route?.focus?.targetID, "s309-rule-rule-confidential")
+        XCTAssertEqual(route?.focus?.targetID, "aiPrivacyRules-rule-rule-confidential")
     }
 
     @MainActor
-    func testS306PrivacySkippedNoticeBuildsS309RuleAndFieldFocusedRoutes() {
+    func testAISummaryPrivacySkippedNoticeBuildsAIPrivacyRulesRuleAndFieldFocusedRoutes() {
         let ruleNotice = AISummaryEditorNotice(
             title: "Skipped by privacy rule",
             detail: "A privacy rule blocked the summary input.",
             recovery: "Review privacy rules before generating this summary.",
-            capability: "C3-09",
+            capability: "ai-privacy-rules-core",
             opensAISettings: false,
             privacyRuleID: " rule-summary ",
             privacyField: nil,
@@ -122,27 +122,27 @@ final class S309PageIntegrationVerifyTests: XCTestCase {
             title: "No eligible summary input",
             detail: "All remote summary fields are blocked.",
             recovery: "Review privacy rules before generating this summary.",
-            capability: "C3-09",
+            capability: "ai-privacy-rules-core",
             opensAISettings: false,
             privacyRuleID: nil,
             privacyField: .noteSummary,
             reason: .noEligibleInput(AISummaryPrivacySkip(summaryReason: .noEligibleInput))
         )
 
-        let ruleRoute = ruleNotice.s309PrivacyRulesRoute(repoPath: "/tmp/s309")
-        let fieldRoute = fieldNotice.s309PrivacyRulesRoute(repoPath: "/tmp/s309")
+        let ruleRoute = ruleNotice.aiPrivacyRulesPrivacyRulesRoute(repoPath: "/tmp/aiPrivacyRules")
+        let fieldRoute = fieldNotice.aiPrivacyRulesPrivacyRulesRoute(repoPath: "/tmp/aiPrivacyRules")
 
-        XCTAssertEqual(ruleRoute?.repoPath, "/tmp/s309")
+        XCTAssertEqual(ruleRoute?.repoPath, "/tmp/aiPrivacyRules")
         XCTAssertEqual(ruleRoute?.focus, .rule(ruleID: "rule-summary"))
-        XCTAssertEqual(ruleRoute?.focus?.targetID, "s309-rule-rule-summary")
-        XCTAssertEqual(ruleNotice.s309PrivacyRulesRouteAccessibilitySuffix, "privacy-rule-rule-summary")
-        XCTAssertEqual(fieldRoute?.repoPath, "/tmp/s309")
+        XCTAssertEqual(ruleRoute?.focus?.targetID, "aiPrivacyRules-rule-rule-summary")
+        XCTAssertEqual(ruleNotice.aiPrivacyRulesPrivacyRulesRouteAccessibilitySuffix, "privacy-rule-rule-summary")
+        XCTAssertEqual(fieldRoute?.repoPath, "/tmp/aiPrivacyRules")
         XCTAssertEqual(fieldRoute?.focus, .field(.noteSummary))
-        XCTAssertEqual(fieldRoute?.focus?.targetID, "s309-field-noteSummary")
-        XCTAssertEqual(fieldNotice.s309PrivacyRulesRouteAccessibilitySuffix, "privacy-field-noteSummary")
+        XCTAssertEqual(fieldRoute?.focus?.targetID, "aiPrivacyRules-field-noteSummary")
+        XCTAssertEqual(fieldNotice.aiPrivacyRulesPrivacyRulesRouteAccessibilitySuffix, "privacy-field-noteSummary")
     }
 
-    func testS309EditorDraftValidationCoversRequiredRuleTypesAndUnsavedState() {
+    func testAIPrivacyRulesEditorDraftValidationCoversRequiredRuleTypesAndUnsavedState() {
         var folder = AIPrivacyRuleEditorDraft()
         folder.pattern = "/absolute/path"
         XCTAssertEqual(
@@ -180,7 +180,7 @@ final class S309PageIntegrationVerifyTests: XCTestCase {
             "Ready to save."
         )
 
-        let rule = AiPrivacyRuleRecord.s309IntegrationRule()
+        let rule = AiPrivacyRuleRecord.aiPrivacyRulesIntegrationRule()
         var edit = AIPrivacyRuleEditorDraft(record: rule)
         XCTAssertFalse(edit.hasChanges)
         edit.description = "Updated reason"
@@ -189,16 +189,16 @@ final class S309PageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS309SaveFailuresKeepFieldPendingStateAndExposeRetryOrRevert() async {
+    func testAIPrivacyRulesSaveFailuresKeepFieldPendingStateAndExposeRetryOrRevert() async {
         let bridge = RemotePrivacyRulesBridge(
-            snapshot: .s309IntegrationRules(privacyGateEnabled: true),
+            snapshot: .aiPrivacyRulesIntegrationRules(privacyGateEnabled: true),
             updateFails: true
         )
         let model = AIPrivacyRulesModel(
-            repoPath: "/tmp/s309",
+            repoPath: "/tmp/aiPrivacyRules",
             rulesManager: bridge,
             evaluator: bridge,
-            errorMapper: S309IntegrationErrorMapper()
+            errorMapper: AIPrivacyRulesIntegrationErrorMapper()
         )
 
         await model.load()
@@ -212,13 +212,13 @@ final class S309PageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS309RegistryReaderUsesClassifierCategoriesAndTagFacets() async throws {
+    func testAIPrivacyRulesRegistryReaderUsesClassifierCategoriesAndTagFacets() async throws {
         let reader = CoreAIPrivacyRuleRegistryReader(
-            classifierReader: S309ClassifierRegistryBridge(),
-            facetReader: S309FacetRegistryBridge()
+            classifierReader: AIPrivacyRulesClassifierRegistryBridge(),
+            facetReader: AIPrivacyRulesFacetRegistryBridge()
         )
 
-        let registry = try await reader.loadRegistry(repoPath: "/tmp/s309")
+        let registry = try await reader.loadRegistry(repoPath: "/tmp/aiPrivacyRules")
 
         XCTAssertEqual(registry.categories, ["finance", "inbox"])
         XCTAssertEqual(registry.tags, ["client-private", "legal"])
@@ -227,7 +227,7 @@ final class S309PageIntegrationVerifyTests: XCTestCase {
     }
 }
 
-private actor S309IntegrationAISettingsStore: CoreAISettingsLoading, CoreAISettingsUpdating {
+private actor AIPrivacyRulesIntegrationAISettingsStore: CoreAISettingsLoading, CoreAISettingsUpdating {
     private var snapshot: AISettingsSnapshot
     private var recorded: [AISettingsConfigSnapshot] = []
 
@@ -255,20 +255,20 @@ private actor S309IntegrationAISettingsStore: CoreAISettingsLoading, CoreAISetti
     }
 }
 
-private actor S309IntegrationErrorMapper: CoreErrorMapping {
+private actor AIPrivacyRulesIntegrationErrorMapper: CoreErrorMapping {
     func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .db,
-            userMessage: "S3-09 integration bridge failed",
+            userMessage: "ai-privacy-rules integration bridge failed",
             severity: .medium,
             suggestedAction: "Retry",
             recoverability: .retryable,
-            rawContext: "S3-09 page integration"
+            rawContext: "ai-privacy-rules page integration"
         )
     }
 }
 
-private struct S309AISettingsPrivacySummary {
+private struct AIPrivacyRulesAISettingsPrivacySummary {
     let label: String
 
     init(snapshot: AISettingsSnapshot) {
@@ -281,7 +281,7 @@ private struct S309AISettingsPrivacySummary {
     }
 }
 
-private actor S309ClassifierRegistryBridge: CoreClassifierRuleEditing {
+private actor AIPrivacyRulesClassifierRegistryBridge: CoreClassifierRuleEditing {
     func listClassifierRules(repoPath _: String) async throws -> ClassifierRuleEditorSnapshotState {
         ClassifierRuleEditorSnapshotState(
             rules: [
@@ -318,25 +318,25 @@ private actor S309ClassifierRegistryBridge: CoreClassifierRuleEditing {
         repoPath _: String,
         request _: ClassifierRuleCreateRequestSnapshot
     ) async throws -> ClassifierRuleEditorSnapshotState {
-        throw CoreError.Internal(message: "S3-09 registry test is read-only")
+        throw CoreError.Internal(message: "ai-privacy-rules registry test is read-only")
     }
 
     func updateClassifierRule(
         repoPath _: String,
         request _: ClassifierRuleUpdateSnapshot
     ) async throws -> ClassifierRuleEditorSnapshotState {
-        throw CoreError.Internal(message: "S3-09 registry test is read-only")
+        throw CoreError.Internal(message: "ai-privacy-rules registry test is read-only")
     }
 
     func deleteClassifierRule(
         repoPath _: String,
         request _: ClassifierRuleDeleteRequestSnapshot
     ) async throws -> ClassifierRuleEditorSnapshotState {
-        throw CoreError.Internal(message: "S3-09 registry test is read-only")
+        throw CoreError.Internal(message: "ai-privacy-rules registry test is read-only")
     }
 }
 
-private actor S309FacetRegistryBridge: CoreSearchFiltering {
+private actor AIPrivacyRulesFacetRegistryBridge: CoreSearchFiltering {
     func listFilterFacets(
         repoPath _: String,
         request: SearchFacetRequestSnapshot
@@ -371,7 +371,7 @@ private actor S309FacetRegistryBridge: CoreSearchFiltering {
 }
 
 private extension AISettingsSnapshot {
-    static func s309IntegrationReady(repoPath: String) -> AISettingsSnapshot {
+    static func aiPrivacyRulesIntegrationReady(repoPath: String) -> AISettingsSnapshot {
         let config = AISettingsConfigSnapshot(
             repoPath: repoPath,
             aiEnabled: true,
@@ -394,7 +394,7 @@ private extension AISettingsSnapshot {
 }
 
 private extension RemoteProviderConfigState {
-    static func s309IntegrationProviderReady() -> RemoteProviderConfigState {
+    static func aiPrivacyRulesIntegrationProviderReady() -> RemoteProviderConfigState {
         RemoteProviderConfigState(
             providerConfigured: true,
             providerVerified: true,
@@ -411,10 +411,10 @@ private extension RemoteProviderConfigState {
 }
 
 private extension AiPrivacyRulesSnapshot {
-    static func s309IntegrationRules(privacyGateEnabled: Bool) -> AiPrivacyRulesSnapshot {
+    static func aiPrivacyRulesIntegrationRules(privacyGateEnabled: Bool) -> AiPrivacyRulesSnapshot {
         AiPrivacyRulesSnapshot(
             privacyGateEnabled: privacyGateEnabled,
-            rules: [.s309IntegrationRule()],
+            rules: [.aiPrivacyRulesIntegrationRule()],
             remoteAllowedFields: [
                 AiPrivacyFieldState(field: .fileName, allowRemote: true, lastMatchedCount: 0),
                 AiPrivacyFieldState(field: .repoRelativePath, allowRemote: true, lastMatchedCount: 1),
@@ -437,7 +437,7 @@ private extension AiPrivacyRulesSnapshot {
 }
 
 private extension AiPrivacyRuleRecord {
-    static func s309IntegrationRule() -> AiPrivacyRuleRecord {
+    static func aiPrivacyRulesIntegrationRule() -> AiPrivacyRuleRecord {
         AiPrivacyRuleRecord(
             ruleId: "rule-finance-folder",
             name: "Folder finance/private/",
@@ -461,7 +461,7 @@ private extension AIPrivacyRuleEditorDraft {
 }
 
 private extension AiPrivacyEvaluationReport {
-    static func s309IntegrationProviderGateBlocked() -> AiPrivacyEvaluationReport {
+    static func aiPrivacyRulesIntegrationProviderGateBlocked() -> AiPrivacyEvaluationReport {
         AiPrivacyEvaluationReport(
             decision: .skipped,
             skippedReason: .privacyGateDisabled,

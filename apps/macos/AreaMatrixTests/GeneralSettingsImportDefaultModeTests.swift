@@ -3,13 +3,13 @@ import XCTest
 
 final class GeneralSettingsImportDefaultModeTests: XCTestCase {
     @MainActor
-    func testS305CallLogLoadsThroughC305BridgeFilterAndPagination() async {
-        let page = s305Page(records: [s305Record(id: 601), s305Record(id: 602, feature: .providerTest)])
-        let lister = S305CallLogLister(pages: [page])
+    func testAICallLogCallLogLoadsThroughAICallLogCoreBridgeFilterAndPagination() async {
+        let page = aiCallLogPage(records: [aiCallLogRecord(id: 601), aiCallLogRecord(id: 602, feature: .providerTest)])
+        let lister = AICallLogCallLogLister(pages: [page])
         let model = AICallLogModel(
             repoPath: "/tmp/repo",
             lister: lister,
-            clearer: S305CallLogClearer(),
+            clearer: AICallLogCallLogClearer(),
             errorMapper: GeneralSettingsImportDefaultErrorMapper()
         )
 
@@ -28,15 +28,15 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
     }
 
     @MainActor
-    func testS305DateRangeFeedsC305OccurredBoundsAndClearsFilters() async {
-        let lister = S305CallLogLister(pages: [
-            s305Page(records: []),
-            s305Page(records: [])
+    func testAICallLogDateRangeFeedsAICallLogCoreOccurredBoundsAndClearsFilters() async {
+        let lister = AICallLogCallLogLister(pages: [
+            aiCallLogPage(records: []),
+            aiCallLogPage(records: [])
         ])
         let model = AICallLogModel(
             repoPath: "/tmp/repo",
             lister: lister,
-            clearer: S305CallLogClearer(),
+            clearer: AICallLogCallLogClearer(),
             errorMapper: GeneralSettingsImportDefaultErrorMapper()
         )
         let now = Date(timeIntervalSince1970: 1_700_000_000)
@@ -55,11 +55,11 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
     }
 
     @MainActor
-    func testS305FilterEmptyStateIsDistinctFromNoLogState() async {
+    func testAICallLogFilterEmptyStateIsDistinctFromNoLogState() async {
         let model = AICallLogModel(
             repoPath: "/tmp/repo",
-            lister: S305CallLogLister(pages: [s305Page(records: [])]),
-            clearer: S305CallLogClearer(),
+            lister: AICallLogCallLogLister(pages: [aiCallLogPage(records: [])]),
+            clearer: AICallLogCallLogClearer(),
             errorMapper: GeneralSettingsImportDefaultErrorMapper()
         )
 
@@ -73,12 +73,12 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
     }
 
     @MainActor
-    func testS305ClearLogCallsC305ClearAllAndRefreshesEmptyState() async {
-        let lister = S305CallLogLister(pages: [
-            s305Page(records: [s305Record(id: 603)]),
-            s305Page(records: [])
+    func testAICallLogClearLogCallsAICallLogCoreClearAllAndRefreshesEmptyState() async {
+        let lister = AICallLogCallLogLister(pages: [
+            aiCallLogPage(records: [aiCallLogRecord(id: 603)]),
+            aiCallLogPage(records: [])
         ])
-        let clearer = S305CallLogClearer()
+        let clearer = AICallLogCallLogClearer()
         let model = AICallLogModel(
             repoPath: "/tmp/repo",
             lister: lister,
@@ -97,12 +97,12 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
     }
 
     @MainActor
-    func testS305DeleteSelectedOnlySendsSelectedLogIds() async {
-        let lister = S305CallLogLister(pages: [
-            s305Page(records: [s305Record(id: 604), s305Record(id: 605)]),
-            s305Page(records: [s305Record(id: 604)])
+    func testAICallLogDeleteSelectedOnlySendsSelectedLogIds() async {
+        let lister = AICallLogCallLogLister(pages: [
+            aiCallLogPage(records: [aiCallLogRecord(id: 604), aiCallLogRecord(id: 605)]),
+            aiCallLogPage(records: [aiCallLogRecord(id: 604)])
         ])
-        let clearer = S305CallLogClearer()
+        let clearer = AICallLogCallLogClearer()
         let model = AICallLogModel(
             repoPath: "/tmp/repo",
             lister: lister,
@@ -122,12 +122,12 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
     }
 
     @MainActor
-    func testS305SingleDeleteConfirmationTitleMatchesSpec() async {
-        let lister = S305CallLogLister(pages: [s305Page(records: [s305Record(id: 606)])])
+    func testAICallLogSingleDeleteConfirmationTitleMatchesSpec() async {
+        let lister = AICallLogCallLogLister(pages: [aiCallLogPage(records: [aiCallLogRecord(id: 606)])])
         let model = AICallLogModel(
             repoPath: "/tmp/repo",
             lister: lister,
-            clearer: S305CallLogClearer(),
+            clearer: AICallLogCallLogClearer(),
             errorMapper: GeneralSettingsImportDefaultErrorMapper()
         )
 
@@ -139,8 +139,8 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
         XCTAssertEqual(model.deleteConfirmationTitle, "Delete selected AI call log entries?")
     }
 
-    func testS305VisibleRowIncludesRemoteScopeAndResultColumns() {
-        let record = s305Record(id: 607, feature: .providerTest)
+    func testAICallLogVisibleRowIncludesRemoteScopeAndResultColumns() {
+        let record = aiCallLogRecord(id: 607, feature: .providerTest)
         let row = AICallLogRowPresentation(record: record)
 
         XCTAssertEqual(row.remote, "-")
@@ -149,18 +149,18 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
     }
 
     @MainActor
-    func testS305FailureMapsCoreErrorAndDoesNotFakeLoadedState() async {
+    func testAICallLogFailureMapsCoreErrorAndDoesNotFakeLoadedState() async {
         let model = AICallLogModel(
             repoPath: "/tmp/repo",
-            lister: S305CallLogLister(error: CoreError.Db(message: "locked")),
-            clearer: S305CallLogClearer(),
+            lister: AICallLogCallLogLister(error: CoreError.Db(message: "locked")),
+            clearer: AICallLogCallLogClearer(),
             errorMapper: GeneralSettingsImportDefaultErrorMapper()
         )
 
         await model.load()
 
         guard case let .failed(error) = model.state else {
-            return XCTFail("Expected failed C3-05 state.")
+            return XCTFail("Expected failed ai-call-log-core state.")
         }
         XCTAssertEqual(error.message, "AI call log could not be loaded.")
         XCTAssertEqual(model.records, [])
@@ -168,7 +168,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
     }
 
     @MainActor
-    func testS126MoveDefaultFeedsLaterImportSheetDefaults() async throws {
+    func testGeneralSettingsMoveDefaultFeedsLaterImportSheetDefaults() async throws {
         let opening = RepositoryOpeningResult.generalSettingsImportFixture(defaultMode: "Moved")
         let sourceURL = URL(fileURLWithPath: "/tmp/source.pdf")
         let model = OnboardingModel(
@@ -189,8 +189,8 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
     @MainActor
     private func assertSingleFileSheetUsesMove(request: ImportEntryRequest) async throws {
         let singleModel = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
-            importer: S117RecordingImporter(),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+            importer: ImportSingleFileRecordingImporter(),
             preflight: ImportSingleFileStaticPreflight.ready(),
             errorMapper: GeneralSettingsImportDefaultErrorMapper()
         )
@@ -203,12 +203,12 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
     @MainActor
     private func assertBatchSheetUsesMove(opening: RepositoryOpeningResult, sourceURL: URL) {
         let batchModel = ImportBatchCopyImportModel(
-            importer: S118RecordingBatchImporter(),
+            importer: ImportBatchRecordingBatchImporter(),
             errorMapper: GeneralSettingsImportDefaultErrorMapper()
         )
         batchModel.applyPreviewRows(
             [
-                ImportBatchPreviewRow.ready(url: sourceURL, prediction: .s117Fixture())
+                ImportBatchPreviewRow.ready(url: sourceURL, prediction: .importSingleFileFixture())
             ],
             request: ImportEntryRequest(
                 repoPath: opening.config.repoPath,
@@ -227,11 +227,11 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
     @MainActor
     private func assertFolderSheetUsesMove(opening: RepositoryOpeningResult) async {
         let folderModel = ImportFolderPreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
-            importer: S118RecordingBatchImporter(),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+            importer: ImportBatchRecordingBatchImporter(),
             errorMapper: GeneralSettingsImportDefaultErrorMapper(),
-            conflictPrechecker: S119NoopConflictPrechecker(),
-            scanner: S119StaticFolderScanner(result: ImportFolderScanResult(
+            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
+            scanner: ImportFolderStaticFolderScanner(result: ImportFolderScanResult(
                 rows: [],
                 folderCount: 0,
                 skippedRules: [],
@@ -252,7 +252,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
     }
 }
 
-private actor S305CallLogLister: CoreAICallLogListing {
+private actor AICallLogCallLogLister: CoreAICallLogListing {
     typealias Request = (filter: AiCallLogFilter, pagination: AiCallLogPagination)
 
     private var pages: [AiCallLogPage]
@@ -271,7 +271,7 @@ private actor S305CallLogLister: CoreAICallLogListing {
     ) async throws -> AiCallLogPage {
         recordedRequests.append((filter, pagination))
         if let error { throw error }
-        return pages.isEmpty ? s305Page(records: []) : pages.removeFirst()
+        return pages.isEmpty ? aiCallLogPage(records: []) : pages.removeFirst()
     }
 
     func requests() -> [Request] {
@@ -279,7 +279,7 @@ private actor S305CallLogLister: CoreAICallLogListing {
     }
 }
 
-private actor S305CallLogClearer: CoreAICallLogClearing {
+private actor AICallLogCallLogClearer: CoreAICallLogClearing {
     private var recordedRequests: [AiCallLogClearRequest] = []
 
     func clearAICallLog(repoPath _: String, request: AiCallLogClearRequest) async throws -> AiCallLogClearReport {
@@ -309,12 +309,12 @@ private actor GeneralSettingsImportDefaultErrorMapper: CoreErrorMapping {
             severity: .medium,
             suggestedAction: "Retry",
             recoverability: .retryable,
-            rawContext: "S1-26 import default"
+            rawContext: "general-settings import default"
         )
     }
 }
 
-private func s305Page(records: [AiCallLogRecord]) -> AiCallLogPage {
+private func aiCallLogPage(records: [AiCallLogRecord]) -> AiCallLogPage {
     AiCallLogPage(
         totalCount: Int64(records.count),
         records: records,
@@ -326,7 +326,7 @@ private func s305Page(records: [AiCallLogRecord]) -> AiCallLogPage {
     )
 }
 
-private func s305Record(
+private func aiCallLogRecord(
     id: Int64,
     feature: AiCallLogFeature = .classification,
     status: AiCallLogStatus = .success

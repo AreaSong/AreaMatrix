@@ -9,18 +9,18 @@ public static class PlatformDifferencesTests
 {
     public static async Task RunAllAsync()
     {
-        await LinuxHelpPageChecksC401BindingContract();
-        await LinuxHelpPageLoadsC417PlatformCapabilities();
-        LinuxCapabilityRowsCoverS4X02PageSpecMatrix();
+        await LinuxHelpPageChecksCrossPlatformBindingContractCoreBindingContract();
+        await LinuxHelpPageLoadsPlatformCapabilitiesCorePlatformCapabilities();
+        LinuxCapabilityRowsCoverPlatformDifferencesPageSpecMatrix();
         await CapabilityFailureShowsUnknownRowsWithoutStaticAvailability();
         await ContractFailureShowsRecoveryWithoutStaticSuccess();
-        await OpenRepositorySettingsActionRoutesToS4X08();
+        await OpenRepositorySettingsActionRoutesToRepositorySettingsCrossPlatform();
         await ShellOpensPlatformDifferencesHelpPage();
-        PlatformDifferencesUiDeclaresC401AndC417Only();
+        PlatformDifferencesUiDeclaresCrossPlatformBindingContractCoreAndPlatformCapabilitiesCoreOnly();
         NativeClientExportsInspectBindingContract();
     }
 
-    private static async Task LinuxHelpPageChecksC401BindingContract()
+    private static async Task LinuxHelpPageChecksCrossPlatformBindingContractCoreBindingContract()
     {
         FakePlatformDifferencesCoreBridge bridge = new(ContractReport(PlatformDifferencesBindingTarget.Python));
         PlatformDifferencesViewModel model = new(bridge);
@@ -37,7 +37,7 @@ public static class PlatformDifferencesTests
         TestAssert.SequenceEqual([1L], bridge.BindingVersions, "requested versions");
     }
 
-    private static async Task LinuxHelpPageLoadsC417PlatformCapabilities()
+    private static async Task LinuxHelpPageLoadsPlatformCapabilitiesCorePlatformCapabilities()
     {
         FakePlatformDifferencesCoreBridge bridge = new(ContractReport(PlatformDifferencesBindingTarget.Python))
         {
@@ -56,7 +56,7 @@ public static class PlatformDifferencesTests
             "capability row");
     }
 
-    private static void LinuxCapabilityRowsCoverS4X02PageSpecMatrix()
+    private static void LinuxCapabilityRowsCoverPlatformDifferencesPageSpecMatrix()
     {
         IReadOnlyList<string> rows = PlatformDifferencesCapabilitiesDisplay.RowsFor(CapabilityReport());
 
@@ -98,7 +98,7 @@ public static class PlatformDifferencesTests
         TestAssert.Null(model.Report, nameof(model.Report));
     }
 
-    private static async Task OpenRepositorySettingsActionRoutesToS4X08()
+    private static async Task OpenRepositorySettingsActionRoutesToRepositorySettingsCrossPlatform()
     {
         FakePlatformDifferencesCoreBridge bridge = new(ContractReport(PlatformDifferencesBindingTarget.Python));
         PlatformDifferencesView view = new(new PlatformDifferencesViewModel(bridge));
@@ -107,8 +107,8 @@ public static class PlatformDifferencesTests
 
         bool didOpen = await view.OpenRepositorySettingsAsync();
 
-        TestAssert.True(didOpen, "S4-X-08 repository settings action");
-        TestAssert.True(didRequestRepositorySettings, "S4-X-08 repository settings route");
+        TestAssert.True(didOpen, "repository-settings repository settings action");
+        TestAssert.True(didRequestRepositorySettings, "repository-settings repository settings route");
     }
 
     private static async Task ShellOpensPlatformDifferencesHelpPage()
@@ -129,14 +129,14 @@ public static class PlatformDifferencesTests
         TestAssert.SequenceEqual([PlatformDifferencesBindingTarget.Python], bridge.Targets, "shell target");
     }
 
-    private static void PlatformDifferencesUiDeclaresC401AndC417Only()
+    private static void PlatformDifferencesUiDeclaresCrossPlatformBindingContractCoreAndPlatformCapabilitiesCoreOnly()
     {
         string ui = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Features/Help/PlatformDifferencesView.ui"));
         string shell = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs"));
 
-        TestAssert.Contains("page_id: S4-X-02", ui, "page id");
+        TestAssert.Contains("page_id: platform-differences", ui, "page id");
         TestAssert.Contains(
             "open_repository_settings: PlatformDifferencesView.OpenRepositorySettingsAsync",
             ui,
@@ -147,8 +147,8 @@ public static class PlatformDifferencesTests
             ui,
             "capability action");
         TestAssert.Contains("check_contract: PlatformDifferencesView.CheckContractAsync", ui, "check action");
-        TestAssert.Contains("get_platform_capabilities", ui, "C4-17 Core call");
-        TestAssert.Contains("inspect_binding_contract", ui, "C4-01 Core call");
+        TestAssert.Contains("get_platform_capabilities", ui, "platform-capabilities Core call");
+        TestAssert.Contains("inspect_binding_contract", ui, "binding-contract Core call");
         TestAssert.Contains("does not call watcher health", ui, "same-page capability exclusion");
         TestAssert.Contains("OpenPlatformDifferencesAsync", shell, "shell route");
         TestAssert.Contains("new PlatformDifferencesCoreBridge(nativeCoreClient)", shell, "real Core bridge");
@@ -167,12 +167,12 @@ public static class PlatformDifferencesTests
             "uniffi_area_matrix_core_fn_func_inspect_binding_contract",
             nativeLibrary,
             "inspect_binding_contract native binding");
-        TestAssert.Contains("InspectBindingContractAsync", nativeClient, "C4-01 native client method");
-        TestAssert.Contains("InspectBindingContractChecksum = 34434", contract, "C4-01 checksum");
+        TestAssert.Contains("InspectBindingContractAsync", nativeClient, "binding-contract native client method");
+        TestAssert.Contains("InspectBindingContractChecksum = 34434", contract, "binding-contract checksum");
         TestAssert.NotContains(
             "Get" + "Platform" + "CapabilitiesAsync",
             nativeClient,
-            "no same-page capability bridge in C4-01 client");
+            "no same-page capability bridge in binding-contract client");
     }
 
     private static PlatformDifferencesBindingContractReport ContractReport(
@@ -185,7 +185,7 @@ public static class PlatformDifferencesTests
             [
                 new PlatformDifferencesBindingApiContract(
                     "inspect_binding_contract",
-                    "C4-01",
+                    "binding-contract",
                     PlatformDifferencesBindingSupportStatus.Supported,
                     null)
             ],

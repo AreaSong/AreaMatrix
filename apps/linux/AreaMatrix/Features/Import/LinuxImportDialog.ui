@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk" version="4.0" />
-  <object class="GtkDialog" id="S4Lnx05ImportDialog">
+  <object class="GtkDialog" id="LinuxImportFlowImportDialog">
     <property name="title">Import to AreaMatrix</property>
     <property name="default-width">760</property>
     <property name="modal">true</property>

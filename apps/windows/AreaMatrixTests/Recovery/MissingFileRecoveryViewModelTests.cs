@@ -8,15 +8,15 @@ public static class MissingFileRecoveryViewModelTests
 {
     public static async Task RunAllAsync()
     {
-        await OpeningRecoveryLoadsC418State();
+        await OpeningRecoveryLoadsMissingFileRecoveryCoreState();
         await TryAgainOnlyRefreshesMissingState();
         await RelinkUsesConfirmedCoreRequestAndReportsHashMismatch();
         await RemoveRecordRequiresConfirmationAndDoesNotDeleteFiles();
         await CoreBridgeMapsRecoveryContract();
-        S4X06WiresMainWindowRecoveryRouteToCoreBridge();
+        MissingFileRecoveryWiresMainWindowRecoveryRouteToCoreBridge();
     }
 
-    private static async Task OpeningRecoveryLoadsC418State()
+    private static async Task OpeningRecoveryLoadsMissingFileRecoveryCoreState()
     {
         FakeMissingFileRecoveryCoreBridge bridge = new();
         MissingFileRecoveryViewModel model = new(bridge);
@@ -106,7 +106,7 @@ public static class MissingFileRecoveryViewModelTests
         TestAssert.Equal(3, client.LastRemoveRequest?.FileId, "core remove file id");
     }
 
-    private static void S4X06WiresMainWindowRecoveryRouteToCoreBridge()
+    private static void MissingFileRecoveryWiresMainWindowRecoveryRouteToCoreBridge()
     {
         string mainWindow = File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml.cs"));
         string mainWindowXaml = File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml"));
@@ -123,11 +123,11 @@ public static class MissingFileRecoveryViewModelTests
         TestAssert.Contains("OpenMissingFileRecoveryRequested", libraryCode + mainWindow, "recovery route event");
         TestAssert.Contains("MissingFileRecoveryPage", mainWindowXaml + mainWindow, "recovery page host");
         TestAssert.Contains("new MissingFileRecoveryCoreBridge(coreClient)", mainWindow, "real core bridge");
-        TestAssert.Contains("GetMissingFileStateAsync", bridge, "C4-18 state call");
-        TestAssert.Contains("RelinkMissingFileAsync", bridge + dialog, "C4-18 relink call");
-        TestAssert.Contains("RemoveMissingFileRecordAsync", bridge + dialog, "C4-18 remove call");
-        TestAssert.DoesNotContain("ReindexFromFilesystemAsync", dialog, "C4-18 must not run rescan");
-        TestAssert.DoesNotContain("PreviewManualRescanAsync", dialog, "C4-18 must not preview rescan");
+        TestAssert.Contains("GetMissingFileStateAsync", bridge, "missing-file-recovery-core state call");
+        TestAssert.Contains("RelinkMissingFileAsync", bridge + dialog, "missing-file-recovery-core relink call");
+        TestAssert.Contains("RemoveMissingFileRecordAsync", bridge + dialog, "missing-file-recovery-core remove call");
+        TestAssert.DoesNotContain("ReindexFromFilesystemAsync", dialog, "missing-file-recovery-core must not run rescan");
+        TestAssert.DoesNotContain("PreviewManualRescanAsync", dialog, "missing-file-recovery-core must not preview rescan");
     }
 
     private static MissingFileRecoveryState State(long fileId)
@@ -249,7 +249,7 @@ public static class MissingFileRecoveryViewModelTests
                 true,
                 true,
                 false,
-                "Rescan is a separate C4-19 route."));
+                "Rescan is a separate manual-rescan route."));
         }
 
         public Task<CoreMissingFileRecoveryReport> RelinkMissingFileAsync(

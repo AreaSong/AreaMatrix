@@ -3,7 +3,7 @@ import XCTest
 
 final class RepoSettingsPageIntegrationTests: XCTestCase {
     @MainActor
-    func testS4X08PageIntegrationConnectsCoreConfigCapabilitiesAndSafeActions() async throws {
+    func testRepositorySettingsCrossPlatformPageIntegrationConnectsCoreConfigCapabilitiesAndSafeActions() async throws {
         let context = try await makeRepositorySettingsIntegrationContext()
         defer {
             try? FileManager.default.removeItem(at: context.repoURL)
@@ -24,14 +24,14 @@ final class RepoSettingsPageIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS127ChangeRepositoryCancelReturnsToRepositorySettingsWithoutSavingCandidate() {
+    func testRepositorySettingsChangeRepositoryCancelReturnsToRepositorySettingsWithoutSavingCandidate() {
         let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/current-repo", fileCount: 1)
         let writer = ShellRecordingSettingsWriter()
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .settingsGeneral(opening)
@@ -46,7 +46,7 @@ final class RepoSettingsPageIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS127ChangeRepositoryOpensCandidateOnlyAfterValidationAndCoreOpen() async {
+    func testRepositorySettingsChangeRepositoryOpensCandidateOnlyAfterValidationAndCoreOpen() async {
         let currentOpening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/current-repo", fileCount: 1)
         let newOpening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/new-repo", fileCount: 2)
         let validation = RepoPathValidationSnapshot.shellFixture(
@@ -70,8 +70,8 @@ final class RepoSettingsPageIntegrationTests: XCTestCase {
                 configuredRepoPath: "/tmp/new-repo"
             ),
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .settingsGeneral(currentOpening)
@@ -99,7 +99,7 @@ private struct RepositorySettingsIntegrationContext {
     let finder: ShellRecordingFinderOpener
     let copier: ShellRecordingPathCopier
     let diagnostics: ShellRecordingDiagnosticsCollector
-    let announcer: S117RecordingAccessibilityAnnouncer
+    let announcer: ImportSingleFileRecordingAccessibilityAnnouncer
     let model: RepositorySettingsModel
 }
 
@@ -113,7 +113,7 @@ private struct RepositorySettingsIntegrationDoubles {
     let finder: ShellRecordingFinderOpener
     let copier: ShellRecordingPathCopier
     let diagnostics: ShellRecordingDiagnosticsCollector
-    let announcer: S117RecordingAccessibilityAnnouncer
+    let announcer: ImportSingleFileRecordingAccessibilityAnnouncer
 }
 
 @MainActor
@@ -172,7 +172,7 @@ private func makeRepositorySettingsDiagnosticsSnapshot(repoURL: URL) -> Diagnost
         snapshotPath: repoURL
             .appendingPathComponent(".areamatrix", isDirectory: true)
             .appendingPathComponent("diagnostics", isDirectory: true)
-            .appendingPathComponent("s4-x-08.zip")
+            .appendingPathComponent("repository-settings-diagnostics.zip")
             .path,
         createdAt: 1_778_000_000,
         warnings: []
@@ -187,7 +187,7 @@ private func makeRepositorySettingsIntegrationDoubles(
         finder: ShellRecordingFinderOpener(),
         copier: ShellRecordingPathCopier(),
         diagnostics: ShellRecordingDiagnosticsCollector(result: .success(diagnosticsSnapshot)),
-        announcer: S117RecordingAccessibilityAnnouncer()
+        announcer: ImportSingleFileRecordingAccessibilityAnnouncer()
     )
 }
 

@@ -34,7 +34,7 @@ struct AIPrivacyRuleEditorView: View {
     var body: some View {
         AdvancedSettingsSection(title: title) {
             Picker("Type", selection: $draft.kind) {
-                ForEach(AiPrivacyRuleKind.s309Cases, id: \.self) { Text($0.s309Label).tag($0) }
+                ForEach(AiPrivacyRuleKind.aiPrivacyRulesCases, id: \.self) { Text($0.aiPrivacyRulesLabel).tag($0) }
             }
             .pickerStyle(.segmented)
             TextField("Pattern", text: $draft.pattern)
@@ -50,7 +50,7 @@ struct AIPrivacyRuleEditorView: View {
             HStack(spacing: 10) {
                 Button("Save rule", action: onSave)
                     .disabled(!draft.canSave(registry: registry) || isSaving)
-                    .accessibilityIdentifier("S3-09-C3-09-save-rule")
+                    .accessibilityIdentifier("ai-privacy-rules-ai-privacy-rules-core-save-rule")
                 Button("Cancel", action: onCancel)
                 Text(draft.validationMessage(registry: registry))
                     .font(.caption)
@@ -112,7 +112,7 @@ struct AIPrivacyRuleTestResultView: View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(evaluations) { evaluation in
                 let report = evaluation.report
-                Text("\(evaluation.feature.s309Label): \(report.decision.s309Label)")
+                Text("\(evaluation.feature.aiPrivacyRulesLabel): \(report.decision.aiPrivacyRulesLabel)")
                     .font(.callout.weight(.medium))
                 Text(report.message)
                     .font(.caption)
@@ -140,7 +140,7 @@ struct AIPrivacyRuleTestResultView: View {
                         .foregroundStyle(.secondary)
                 }
                 if let skippedReason = report.skippedReason {
-                    Text("Skipped reason: \(skippedReason.s309Label)")
+                    Text("Skipped reason: \(skippedReason.aiPrivacyRulesLabel)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -150,6 +150,6 @@ struct AIPrivacyRuleTestResultView: View {
     }
 
     private func providerGateText(_ report: AiPrivacyEvaluationReport) -> String {
-        report.providerGateReason?.s309Label ?? "none"
+        report.providerGateReason?.aiPrivacyRulesLabel ?? "none"
     }
 }

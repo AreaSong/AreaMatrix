@@ -381,7 +381,7 @@ struct SearchEmptyRouteView: View {
         .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("S2-04-search-empty")
+        .accessibilityIdentifier("search-empty-search-empty")
     }
 
     private var conditionSummary: some View {

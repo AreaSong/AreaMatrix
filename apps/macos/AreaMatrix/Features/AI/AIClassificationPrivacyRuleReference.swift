@@ -399,7 +399,7 @@ struct AIClassificationPrivacyRuleReferenceSheet: View {
         .padding(24)
         .frame(width: 540, alignment: .topLeading)
         .task { await model.load() }
-        .accessibilityIdentifier("S3-04-C3-09-privacy-rule-reference")
+        .accessibilityIdentifier("ai-category-suggestion-ai-privacy-rules-core-privacy-rule-reference")
     }
 
     private var header: some View {
@@ -446,19 +446,19 @@ struct AIClassificationPrivacyRuleReferenceSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .accessibilityIdentifier("S3-04-C3-09-privacy-rule-loaded")
+        .accessibilityIdentifier("ai-category-suggestion-ai-privacy-rules-core-privacy-rule-loaded")
     }
 
     private func notFoundContent(_ ruleID: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Privacy rule could not be found.", systemImage: "exclamationmark.triangle")
                 .foregroundStyle(.orange)
-            Text("Rule \(ruleID) is not present in the current C3-09 privacy rules snapshot.")
+            Text("Rule \(ruleID) is not present in the current ai-privacy-rules-core privacy rules snapshot.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Button("Retry") { Task { await model.load() } }
         }
-        .accessibilityIdentifier("S3-04-C3-09-privacy-rule-not-found")
+        .accessibilityIdentifier("ai-category-suggestion-ai-privacy-rules-core-privacy-rule-not-found")
     }
 
     private func failureContent(_ error: AISettingsError) -> some View {
@@ -473,7 +473,7 @@ struct AIClassificationPrivacyRuleReferenceSheet: View {
                 .foregroundStyle(.secondary)
             Button("Retry") { Task { await model.load() } }
         }
-        .accessibilityIdentifier("S3-04-C3-09-privacy-rule-error")
+        .accessibilityIdentifier("ai-category-suggestion-ai-privacy-rules-core-privacy-rule-error")
     }
 
     private func referenceRow(_ label: String, _ value: String) -> some View {

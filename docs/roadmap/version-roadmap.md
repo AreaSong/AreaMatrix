@@ -1,6 +1,6 @@
 # 里程碑路线图
 
-> AreaMatrix 分四阶段演进：MVP → 体验完善 → 智能化 → 多端扩展。每阶段 3-6 个月，按"先深后广"推进。
+> AreaMatrix 按版本演进：v1 基础闭环 → v2 体验完善 → 后续智能化 → 后续多端扩展。每个版本按"先深后广"推进。
 >
 > 阅读时长：约 5 分钟。
 
@@ -14,28 +14,28 @@ gantt
     dateFormat  YYYY-MM
     axisFormat  %Y-%m
 
-    section Stage 1 MVP
+    section v1 基础闭环
     技术验证          :s1a, 2026-05, 60d
     核心功能闭环      :s1b, after s1a, 60d
     内测打磨          :s1c, after s1b, 30d
 
-    section Stage 2 体验完善
+    section v2 体验完善
     高级特性          :s2a, after s1c, 60d
     冲突解决 UI       :s2b, after s2a, 30d
     自定义分类        :s2c, after s2b, 30d
 
-    section Stage 3 智能化
+    section 后续智能化
     AI 分类           :s3a, after s2c, 60d
     自动摘要 / 标签   :s3b, after s3a, 60d
 
-    section Stage 4 多端
+    section 后续多端
     iOS 端            :s4a, after s3b, 90d
     Windows / Linux   :s4b, after s4a, 120d
 ```
 
 ---
 
-## Stage 1：MVP（约 5 个月）
+## v1：基础闭环（约 5 个月）
 
 > **目标**：单机 macOS 上完成"拖入 → 自动归类 → 树状导航 → 详情查看"的完整闭环。能用、稳定、不丢数据。
 
@@ -59,8 +59,8 @@ gantt
 ### 不做（明确推迟）
 
 - AI 分类
-- 标签系统（Stage 2）
-- 全文搜索（Stage 2）
+- 标签系统（v2 候选）
+- 全文搜索（v2 候选）
 - 自定义分类规则编辑器 UI（仅命令行编辑 yaml）
 - 多窗口 / 多仓库
 - 主题切换 / 暗色模式深度优化
@@ -68,7 +68,7 @@ gantt
 
 ### 验收
 
-详见 [v1-mvp Stage 1 source](../../workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md) 完整任务清单与验收清单。
+详见 [v1-mvp historical source](../../workflow/versions/v1-mvp/source-docs/) 完整任务清单与验收清单。
 
 ### 时间预算
 
@@ -78,9 +78,9 @@ gantt
 
 ---
 
-## Stage 2：体验完善（约 4 个月）
+## v2：体验完善（约 4 个月）
 
-> **目标**：把 MVP 打磨到"日常用 30 天不出大问题"，并加入第二波核心特性。
+> **目标**：把 v1 基础闭环打磨到"日常用 30 天不出大问题"，并加入第二波核心特性。
 
 ### 计划交付
 
@@ -119,7 +119,7 @@ gantt
 - 快捷键体系
 - 命令面板（⌘K）
 - 拖拽预览动画
-- Touch Bar / Stage Manager 适配
+- Touch Bar / macOS 窗口管理适配
 
 ### 时间预算
 
@@ -129,7 +129,7 @@ gantt
 
 ---
 
-## Stage 3：智能化（约 4 个月）
+## 后续智能化（约 4 个月）
 
 > **目标**：引入 AI 能力，让分类与组织自动化程度更高，但仍保持本地优先。
 
@@ -173,7 +173,7 @@ gantt
 
 ---
 
-## Stage 4：多端扩展（约 7 个月）
+## 后续多端扩展（约 7 个月）
 
 > **目标**：把 macOS 的能力扩展到 iOS / Windows / Linux，复用 Rust core。
 
@@ -212,7 +212,7 @@ gantt
 
 ---
 
-## 长期愿景（Stage 5+）
+## 长期愿景
 
 不在当前路线图中，但可能未来纳入：
 
@@ -226,27 +226,27 @@ gantt
 
 ## 决策原则
 
-不论哪个阶段，遵守：
+不论哪个版本，遵守：
 
 1. **不破坏向后兼容**：DB schema / API / 配置文件升级必须有 migration 路径
 2. **不引入云依赖**：核心功能离线可用
 3. **不打破隐私承诺**：用户数据默认不出本机
 4. **不为新功能牺牲稳定性**：现有功能必须保持稳定
-5. **每个 Stage 结束**做一次完整 retrospective，更新本文件
+5. **每个版本结束**做一次完整 retrospective，更新本文件
 
 ---
 
 ## 重审节奏
 
-- **每月**：检查当前 Stage 进度、调整短期任务
-- **每个 Stage 结束**：评估下个 Stage 的范围与时间
+- **每月**：检查当前版本进度、调整短期任务
+- **每个版本结束**：评估下个版本的范围与时间
 - **每年 WWDC 后**：评估 macOS / Apple 生态变化对路线图的影响
 
 ---
 
 ## Related
 
-- [v1-mvp Stage 1 source](../../workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md)
+- [v1-mvp historical source](../../workflow/versions/v1-mvp/source-docs/)
 - [../product/prd.md](../product/prd.md)
 - [../adr/README.md](../adr/README.md)
 - [../../CHANGELOG.md](../../CHANGELOG.md)

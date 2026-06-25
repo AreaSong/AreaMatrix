@@ -141,7 +141,7 @@ struct FileSystemClassifierRulesManager: ClassifierRulesManaging {
         return metadataURL.appendingPathComponent("classifier.last-valid.yaml", isDirectory: false)
     }
 
-    /// Kept aligned with the Stage 1 Core default until Core exposes a default-classifier writer.
+    /// Kept aligned with the Core default until Core exposes a default-classifier writer.
     private static let defaultClassifierYAML = """
     version: 1
     default: inbox

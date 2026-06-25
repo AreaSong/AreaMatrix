@@ -133,7 +133,7 @@ struct DetailTagSection: View {
                 onClose: { isPopoverPresented = false }
             )
         }
-        .accessibilityIdentifier("S2-07-tags-add")
+        .accessibilityIdentifier("tag-crud-tags-add")
     }
 
     private func openSuggestions() {
@@ -250,7 +250,7 @@ private struct TagEditorPopover: View {
                 .focused($isInputFocused)
                 .disabled(disabledReason != nil)
                 .onSubmit(performSubmit)
-                .accessibilityIdentifier("S2-07-tag-search-create")
+                .accessibilityIdentifier("tag-crud-tag-search-create")
             if shouldShowValidationMessage, let tagValidationMessage {
                 Text(tagValidationMessage)
                     .font(.caption)
@@ -260,9 +260,9 @@ private struct TagEditorPopover: View {
             tagList
             HStack {
                 Button("Suggestions...", action: onOpenSuggestions)
-                    .accessibilityIdentifier("S2-23-C2-19-open-tag-suggestions")
+                    .accessibilityIdentifier("tag-suggestions-tag-suggestions-core-open-tag-suggestions")
                 Button("AI suggestions...", action: onOpenAISuggestions)
-                    .accessibilityIdentifier("S3-07-C3-07-open-ai-tag-suggestions")
+                    .accessibilityIdentifier("ai-tag-suggestions-ai-tags-suggestion-open-ai-tag-suggestions")
                 Spacer()
                 Button("Close", action: onClose)
             }
@@ -428,7 +428,7 @@ struct AITagSuggestionsPanel: View {
                 privacyRuleRoute = nil
             }
         }
-        .accessibilityIdentifier("S3-07-C3-07-ai-tag-suggestions")
+        .accessibilityIdentifier("ai-tag-suggestions-ai-tags-suggestion-ai-tag-suggestions")
     }
 
     @ViewBuilder private var content: some View {
@@ -467,7 +467,7 @@ struct AITagSuggestionsPanel: View {
             }
             if let ruleID = privacyRuleID(for: report) {
                 Button("View privacy rule") { privacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID) }
-                    .accessibilityIdentifier("S3-07-C3-09-view-privacy-rule")
+                    .accessibilityIdentifier("ai-tag-suggestions-ai-privacy-rules-core-view-privacy-rule")
             }
             if let callLogID = report.callLogId {
                 Button("View AI call") { callLogRoute = AITagCallLogRoute(callLogID: callLogID) }

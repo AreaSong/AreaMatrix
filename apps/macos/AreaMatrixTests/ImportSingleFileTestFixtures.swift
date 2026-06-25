@@ -3,10 +3,6 @@ import Foundation
 import XCTest
 
 extension ClassifyResultSnapshot {
-    static func s117Fixture() -> ClassifyResultSnapshot {
-        makeImportSingleFileFixture()
-    }
-
     static func importSingleFileFixture() -> ClassifyResultSnapshot {
         makeImportSingleFileFixture()
     }
@@ -22,21 +18,6 @@ extension ClassifyResultSnapshot {
 }
 
 extension FileEntrySnapshot {
-    static func s117Fixture(
-        currentName: String,
-        category: String,
-        hashSha256: String = "hash",
-        storageMode: String = "Copied"
-    ) -> FileEntrySnapshot {
-        makeImportSingleFileFixture(
-            id: 117,
-            currentName: currentName,
-            category: category,
-            hashSha256: hashSha256,
-            storageMode: storageMode
-        )
-    }
-
     static func importSingleFileFixture(
         currentName: String,
         category: String,
@@ -77,7 +58,7 @@ extension FileEntrySnapshot {
 }
 
 extension ImportEntryRequest {
-    static func s117ImportRequest() -> ImportEntryRequest {
+    static func importSingleFileImportRequest() -> ImportEntryRequest {
         ImportEntryRequest(
             repoPath: "/tmp/repo",
             source: .filePicker,
@@ -104,11 +85,11 @@ extension ImportEntryRequest {
 }
 
 extension CoreErrorMappingSnapshot {
-    static func s117Error(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
+    static func importSingleFileError(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
         makeImportSingleFileError(
             kind: kind,
             suggestedAction: "Resolve the conflict and retry.",
-            rawContext: "S1-17 import-single-sheet"
+            rawContext: "import-single import-single-sheet"
         )
     }
 
@@ -186,7 +167,7 @@ extension ImportSingleFileStorageMode {
 }
 
 extension RepositoryOpeningResult {
-    static func s117Fixture(repoPath: String) -> RepositoryOpeningResult {
+    static func importSingleFileFixture(repoPath: String) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
             config: RepoConfigSnapshot(
                 repoPath: repoPath,
@@ -243,7 +224,7 @@ func waitForImportSingleFilePreflightToSettle(
 }
 
 @MainActor
-func importS117Mode(
+func importImportSingleFileMode(
     model: ImportSingleFilePreviewModel,
     request: ImportEntryRequest,
     mode: ImportSingleFileStorageMode,
@@ -261,7 +242,7 @@ func importS117Mode(
     XCTAssertEqual(imported?.storageMode, storageMode)
 }
 
-func s117CoreCapabilityRequest() -> ImportEntryRequest {
+func importSingleFileCoreCapabilityRequest() -> ImportEntryRequest {
     ImportEntryRequest(
         repoPath: "/tmp/repo",
         source: .filePicker,
@@ -271,7 +252,7 @@ func s117CoreCapabilityRequest() -> ImportEntryRequest {
     )
 }
 
-func s117CoreCapabilityPrediction() -> ClassifyResultSnapshot {
+func importSingleFileCoreCapabilityPrediction() -> ClassifyResultSnapshot {
     ClassifyResultSnapshot(
         category: "docs",
         suggestedName: "2026Q1_合同.pdf",
@@ -280,19 +261,19 @@ func s117CoreCapabilityPrediction() -> ClassifyResultSnapshot {
     )
 }
 
-func s117CoreCapabilityImportRequests() -> [S117ImportRequest] {
+func importSingleFileCoreCapabilityImportRequests() -> [ImportSingleFileImportRequest] {
     [
-        s117ImportRequest(mode: .copy, filename: "copy.pdf"),
-        s117ImportRequest(mode: .move, filename: "move.pdf"),
-        s117ImportRequest(mode: .indexOnly, filename: "indexed.pdf")
+        importSingleFileImportRequest(mode: .copy, filename: "copy.pdf"),
+        importSingleFileImportRequest(mode: .move, filename: "move.pdf"),
+        importSingleFileImportRequest(mode: .indexOnly, filename: "indexed.pdf")
     ]
 }
 
-func s117ImportRequest(
+func importSingleFileImportRequest(
     mode: ImportSingleFileStorageMode,
     filename: String
-) -> S117ImportRequest {
-    S117ImportRequest(
+) -> ImportSingleFileImportRequest {
+    ImportSingleFileImportRequest(
         mode: mode,
         overrideCategory: "finance",
         overrideFilename: filename,

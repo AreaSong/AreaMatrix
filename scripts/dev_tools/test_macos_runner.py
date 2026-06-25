@@ -8,9 +8,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts.dev_tools.macos import (
-    STAGE1_APP_LAUNCH_BLOCKED,
+    RELEASE_APP_LAUNCH_BLOCKED,
     _codex_local_xcode_system_content_blocked,
-    _handle_stage1_app_launch_probe_result,
+    _handle_release_app_launch_probe_result,
     _run_sandbox_fallback,
     _run_macos_tests_inner,
     _test_base_args,
@@ -18,7 +18,7 @@ from scripts.dev_tools.macos import (
     _xcode_system_content_failure,
     _xcode_test_env,
 )
-from scripts.dev_tools.macos_stage1_probe import (
+from scripts.dev_tools.macos_release_probe import (
     _direct_launch_probe_blocked,
     _launchservices_probe_blocked,
 )
@@ -179,21 +179,21 @@ class MacOSTestRunnerTest(unittest.TestCase):
         with patch.dict("os.environ", {"CODEX_SANDBOX": ""}, clear=False):
             self.assertFalse(_direct_launch_probe_blocked(output))
 
-    def test_stage1_launch_probe_block_keeps_local_validation_green(self) -> None:
-        self.assertEqual(_handle_stage1_app_launch_probe_result(STAGE1_APP_LAUNCH_BLOCKED), 0)
+    def test_release_launch_probe_block_keeps_local_validation_green(self) -> None:
+        self.assertEqual(_handle_release_app_launch_probe_result(RELEASE_APP_LAUNCH_BLOCKED), 0)
 
-    def test_stage1_launch_probe_keeps_real_probe_failure_red(self) -> None:
-        self.assertEqual(_handle_stage1_app_launch_probe_result(42), 42)
+    def test_release_launch_probe_keeps_real_probe_failure_red(self) -> None:
+        self.assertEqual(_handle_release_app_launch_probe_result(42), 42)
 
-    def test_stage1_perf_tests_are_enabled_only_for_explicit_perf_selection(self) -> None:
+    def test_release_perf_tests_are_enabled_only_for_explicit_perf_selection(self) -> None:
         self.assertIsNone(_xcode_test_env([]))
-        self.assertIsNone(_xcode_test_env(["AreaMatrixTests/S306AISummaryPrivacyRuleTests"]))
+        self.assertIsNone(_xcode_test_env(["AreaMatrixTests/AISummaryPrivacyRuleTests"]))
         self.assertEqual(
             _xcode_test_env(["AreaMatrixTests/AreaMatrixPerfTests"]),
             {"AREAMATRIX_RUN_PERF_TESTS": "1"},
         )
         self.assertEqual(
-            _xcode_test_env(["AreaMatrixTests/AreaMatrixPerfTests/testMemoryBaselinesUnderStage1Thresholds"]),
+            _xcode_test_env(["AreaMatrixTests/AreaMatrixPerfTests/testMemoryBaselinesUnderReleaseThresholds"]),
             {"AREAMATRIX_RUN_PERF_TESTS": "1"},
         )
 
@@ -204,14 +204,14 @@ class MacOSTestRunnerTest(unittest.TestCase):
             "platform=macOS,arch=arm64",
             self.tmp_path / "DerivedData",
             "TestResults.xcresult",
-            ["AreaMatrixTests/S212BatchCategoryVerifyTests"],
+            ["AreaMatrixTests/BatchChangeCategoryPageIntegrationVerifyTests"],
             disable_parallel_testing=True,
         )
 
         self.assertIn("-parallel-testing-enabled", args)
         flag_index = args.index("-parallel-testing-enabled")
         self.assertEqual(args[flag_index + 1], "NO")
-        self.assertLess(flag_index, args.index("-only-testing:AreaMatrixTests/S212BatchCategoryVerifyTests"))
+        self.assertLess(flag_index, args.index("-only-testing:AreaMatrixTests/BatchChangeCategoryPageIntegrationVerifyTests"))
 
     def test_parallel_testing_flag_is_omitted_by_default(self) -> None:
         args = _test_base_args(
@@ -231,7 +231,7 @@ class MacOSTestRunnerTest(unittest.TestCase):
 
         with patch("scripts.dev_tools.macos._find_or_build_test_bundle", return_value=bundle), \
             patch("scripts.dev_tools.macos._run_filtered_xctest_bundle", return_value=0), \
-            patch("scripts.dev_tools.macos.run_stage1_app_launch_probe", return_value=STAGE1_APP_LAUNCH_BLOCKED):
+            patch("scripts.dev_tools.macos.run_release_app_launch_probe", return_value=RELEASE_APP_LAUNCH_BLOCKED):
             result = _run_sandbox_fallback(
                 self.tmp_path,
                 self.tmp_path,
@@ -250,7 +250,7 @@ class MacOSTestRunnerTest(unittest.TestCase):
 
         with patch("scripts.dev_tools.macos._find_or_build_test_bundle", return_value=bundle), \
             patch("scripts.dev_tools.macos._run_filtered_xctest_bundle", return_value=0), \
-            patch("scripts.dev_tools.macos.run_stage1_app_launch_probe", return_value=42):
+            patch("scripts.dev_tools.macos.run_release_app_launch_probe", return_value=42):
             result = _run_sandbox_fallback(
                 self.tmp_path,
                 self.tmp_path,
@@ -263,7 +263,7 @@ class MacOSTestRunnerTest(unittest.TestCase):
 
         self.assertEqual(result, 42)
 
-    def test_teardown_sandbox_pass_still_runs_stage1_release_probe(self) -> None:
+    def test_teardown_sandbox_pass_still_runs_release_probe(self) -> None:
         project = self.tmp_path / "AreaMatrix.xcodeproj"
         project.mkdir()
         test_log = self.tmp_path / "xcodebuild-test.log"
@@ -285,8 +285,8 @@ class MacOSTestRunnerTest(unittest.TestCase):
 
         with patch("scripts.dev_tools.macos._run_and_tee", side_effect=fake_run_and_tee), \
             patch(
-                "scripts.dev_tools.macos.run_stage1_app_launch_probe",
-                return_value=STAGE1_APP_LAUNCH_BLOCKED,
+                "scripts.dev_tools.macos.run_release_app_launch_probe",
+                return_value=RELEASE_APP_LAUNCH_BLOCKED,
             ) as probe:
             result = _run_macos_tests_inner(
                 self.tmp_path,

@@ -120,7 +120,7 @@ final class SyncConflictReviewModel: ObservableObject {
         }
         if requiresReplaceConfirmation(preview), !isReplaceConfirmed(for: preview) {
             return replaceConfirmationDisabledReason
-                ?? "Confirm the S4-X-09 replace plan before applying Use incoming version."
+                ?? "Confirm the replace-resolution replace plan before applying Use incoming version."
         }
         if !preview.canApply, !canApplyConfirmedReplace(preview) {
             return preview.blockedReasonDisplay ?? "Core reported this resolution cannot be applied."
@@ -310,7 +310,7 @@ final class SyncConflictReviewModel: ObservableObject {
                 ? String(character)
                 : "-"
         }.joined()
-        return "S4-X-09-C4-21-\(safeID)"
+        return "replace-resolution-replace-confirmation-\(safeID)"
     }
 }
 

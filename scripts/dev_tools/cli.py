@@ -26,9 +26,9 @@ from .discussion import run_workflow_discuss
 from .macos import run_macos_tests
 from .middle_layer import run_workflow_middle
 from .release import (
-    DEFAULT_LOCAL_QA_DERIVED_DATA,
+    DEFAULT_READINESS_BUILD_DERIVED_DATA,
     DEFAULT_NOTARY_PROFILE,
-    run_release_local_qa,
+    run_release_readiness_build,
     run_release_preflight,
 )
 from .tasks import TASK_KINDS, TASK_LAYERS, TASK_PRIORITIES, TASK_RISKS, run_tasks_command
@@ -108,26 +108,26 @@ def _build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_NOTARY_PROFILE,
         help=f"notarytool keychain profile to check; defaults to {DEFAULT_NOTARY_PROFILE}",
     )
-    release_local_qa = release_sub.add_parser(
-        "local-qa",
-        help="Build a timestamped local QA Release app without Developer ID signing or notarization",
+    release_readiness_build = release_sub.add_parser(
+        "readiness-build",
+        help="Build a timestamped ad-hoc signed Release app for local readiness validation",
     )
-    release_local_qa.add_argument("--install", action="store_true", help="Install the built app to /Applications/AreaMatrix.app")
-    release_local_qa.add_argument(
+    release_readiness_build.add_argument("--install", action="store_true", help="Install the built app to /Applications/AreaMatrix.app")
+    release_readiness_build.add_argument(
         "--build-number",
         help="Override the generated YYYYMMDDHHMM build number; defaults to the current local time",
     )
-    release_local_qa.add_argument(
+    release_readiness_build.add_argument(
         "--derived-data-path",
-        default=DEFAULT_LOCAL_QA_DERIVED_DATA,
-        help=f"DerivedData output path; defaults to {DEFAULT_LOCAL_QA_DERIVED_DATA}",
+        default=DEFAULT_READINESS_BUILD_DERIVED_DATA,
+        help=f"DerivedData output path; defaults to {DEFAULT_READINESS_BUILD_DERIVED_DATA}",
     )
-    release_local_qa.add_argument(
+    release_readiness_build.add_argument(
         "--destination",
         default="platform=macOS,arch=arm64",
         help="xcodebuild destination; defaults to platform=macOS,arch=arm64",
     )
-    release_local_qa.add_argument(
+    release_readiness_build.add_argument(
         "--applications-dir",
         default="/Applications",
         help="Applications directory used with --install; defaults to /Applications",
@@ -344,8 +344,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return run_bindings_update(root, args.udl, args.out_dir)
         if args.command == "release" and args.release_command == "preflight":
             return run_release_preflight(root, notary_profile=args.notary_profile)
-        if args.command == "release" and args.release_command == "local-qa":
-            return run_release_local_qa(
+        if args.command == "release" and args.release_command == "readiness-build":
+            return run_release_readiness_build(
                 root,
                 install=args.install,
                 build_number=args.build_number,

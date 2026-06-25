@@ -16,23 +16,23 @@ enum SyncConflictEntryCopy {
 }
 
 enum SyncConflictEntryAccessibilityID {
-    static let panel = "S4-X-03-C4-15-sync-conflict-entry"
-    static let banner = "S4-X-03-C4-15-conflict-banner"
-    static let list = "S4-X-03-C4-15-needs-review-list"
-    static let loading = "S4-X-03-C4-15-loading"
-    static let empty = "S4-X-03-C4-15-empty"
-    static let error = "S4-X-03-C4-15-error"
-    static let retry = "S4-X-03-C4-15-retry"
-    static let later = "S4-X-03-C4-15-later"
-    static let review = "S4-X-03-C4-15-review"
-    static let detailBanner = "S4-X-03-C4-15-detail-banner"
+    static let panel = "sync-conflict-entry-sync-conflict-detect-sync-conflict-entry"
+    static let banner = "sync-conflict-entry-sync-conflict-detect-conflict-banner"
+    static let list = "sync-conflict-entry-sync-conflict-detect-needs-review-list"
+    static let loading = "sync-conflict-entry-sync-conflict-detect-loading"
+    static let empty = "sync-conflict-entry-sync-conflict-detect-empty"
+    static let error = "sync-conflict-entry-sync-conflict-detect-error"
+    static let retry = "sync-conflict-entry-sync-conflict-detect-retry"
+    static let later = "sync-conflict-entry-sync-conflict-detect-later"
+    static let review = "sync-conflict-entry-sync-conflict-detect-review"
+    static let detailBanner = "sync-conflict-entry-sync-conflict-detect-detail-banner"
 
     static func row(_ conflictID: String) -> String {
-        "S4-X-03-C4-15-row-\(safeID(conflictID))"
+        "sync-conflict-entry-sync-conflict-detect-row-\(safeID(conflictID))"
     }
 
     static func review(_ conflictID: String) -> String {
-        "S4-X-03-C4-15-review-\(safeID(conflictID))"
+        "sync-conflict-entry-sync-conflict-detect-review-\(safeID(conflictID))"
     }
 
     private static func safeID(_ value: String) -> String {

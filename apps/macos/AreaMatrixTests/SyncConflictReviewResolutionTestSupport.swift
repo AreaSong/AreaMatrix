@@ -1,17 +1,17 @@
 @testable import AreaMatrix
 import Foundation
 
-actor S4X01RecordingSyncConflictResolver: CoreSyncConflictResolving {
+actor SyncConflictReviewRecordingSyncConflictResolver: CoreSyncConflictResolving {
     private let previewResults: [
         SyncConflictResolutionStrategySnapshot: Result<SyncConflictResolutionPreviewSnapshot, Error>
     ]
     private let resolveResult: Result<SyncConflictResolveReportSnapshot, Error>
-    private var previewRequests: [S4X01SyncConflictPreviewRequest] = []
-    private var resolveRequests: [S4X01SyncConflictResolveRequest] = []
+    private var previewRequests: [SyncConflictReviewSyncConflictPreviewRequest] = []
+    private var resolveRequests: [SyncConflictReviewSyncConflictResolveRequest] = []
 
     init(
         previewResults: [SyncConflictResolutionStrategySnapshot: Result<SyncConflictResolutionPreviewSnapshot, Error>],
-        resolveResult: Result<SyncConflictResolveReportSnapshot, Error> = .success(.s4x01ResolveFixture())
+        resolveResult: Result<SyncConflictResolveReportSnapshot, Error> = .success(.syncConflictReviewResolveFixture())
     ) {
         self.previewResults = previewResults
         self.resolveResult = resolveResult
@@ -22,12 +22,12 @@ actor S4X01RecordingSyncConflictResolver: CoreSyncConflictResolving {
         conflictID: String,
         resolution: SyncConflictResolutionStrategySnapshot
     ) async throws -> SyncConflictResolutionPreviewSnapshot {
-        previewRequests.append(S4X01SyncConflictPreviewRequest(
+        previewRequests.append(SyncConflictReviewSyncConflictPreviewRequest(
             repoPath: repoPath,
             conflictID: conflictID,
             resolution: resolution
         ))
-        return try (previewResults[resolution] ?? .success(.s4x01PreviewFixture(resolution: resolution))).get()
+        return try (previewResults[resolution] ?? .success(.syncConflictReviewPreviewFixture(resolution: resolution))).get()
     }
 
     func resolveSyncConflict(
@@ -35,7 +35,7 @@ actor S4X01RecordingSyncConflictResolver: CoreSyncConflictResolving {
         conflictID: String,
         request: SyncConflictResolutionRequestSnapshot
     ) async throws -> SyncConflictResolveReportSnapshot {
-        resolveRequests.append(S4X01SyncConflictResolveRequest(
+        resolveRequests.append(SyncConflictReviewSyncConflictResolveRequest(
             repoPath: repoPath,
             conflictID: conflictID,
             request: request
@@ -43,40 +43,40 @@ actor S4X01RecordingSyncConflictResolver: CoreSyncConflictResolving {
         return try resolveResult.get()
     }
 
-    func recordedPreviewRequests() -> [S4X01SyncConflictPreviewRequest] {
+    func recordedPreviewRequests() -> [SyncConflictReviewSyncConflictPreviewRequest] {
         previewRequests
     }
 
-    func recordedResolveRequests() -> [S4X01SyncConflictResolveRequest] {
+    func recordedResolveRequests() -> [SyncConflictReviewSyncConflictResolveRequest] {
         resolveRequests
     }
 }
 
-struct S4X01SyncConflictPreviewRequest: Equatable {
+struct SyncConflictReviewSyncConflictPreviewRequest: Equatable {
     var repoPath: String
     var conflictID: String
     var resolution: SyncConflictResolutionStrategySnapshot
 }
 
-struct S4X01SyncConflictResolveRequest: Equatable {
+struct SyncConflictReviewSyncConflictResolveRequest: Equatable {
     var repoPath: String
     var conflictID: String
     var request: SyncConflictResolutionRequestSnapshot
 
-    static let s4x01UseIncomingConfirmedRequest = S4X01SyncConflictResolveRequest(
-        repoPath: "/tmp/s4x01-repo",
+    static let syncConflictReviewUseIncomingConfirmedRequest = SyncConflictReviewSyncConflictResolveRequest(
+        repoPath: "/tmp/syncConflictReview-repo",
         conflictID: "conflict-report",
         request: SyncConflictResolutionRequestSnapshot(
             strategy: .useIncoming,
             previewToken: "preview-token-use-incoming",
             replaceConfirmed: true,
-            replaceConfirmationID: "S4-X-09-C4-21-conflict-report-preview-token-use-incoming"
+            replaceConfirmationID: "replace-resolution-replace-confirmation-conflict-report-preview-token-use-incoming"
         )
     )
 }
 
 extension SyncConflictResolutionPreviewSnapshot {
-    static func s4x01PreviewFixture(
+    static func syncConflictReviewPreviewFixture(
         conflictID: String = "conflict-report",
         resolution: SyncConflictResolutionStrategySnapshot = .keepBoth,
         canApply: Bool = true,
@@ -92,8 +92,8 @@ extension SyncConflictResolutionPreviewSnapshot {
             defaultResolution: .keepBoth,
             statusAfter: .resolved,
             versionImpacts: [
-                .s4x01ImpactFixture(path: "docs/report.pdf", role: .existing, willBeCanonical: true),
-                .s4x01ImpactFixture(
+                .syncConflictReviewImpactFixture(path: "docs/report.pdf", role: .existing, willBeCanonical: true),
+                .syncConflictReviewImpactFixture(
                     path: "docs/report (Windows conflict).pdf",
                     fileID: 43,
                     role: .incoming,
@@ -113,7 +113,7 @@ extension SyncConflictResolutionPreviewSnapshot {
             canApply: canApply,
             blockedReason: blockedReason,
             previewToken: previewToken,
-            replacePlan: resolution == .useIncoming ? .s4x01ReplacePlanFixture(backupTarget: backupTarget) : nil
+            replacePlan: resolution == .useIncoming ? .syncConflictReviewReplacePlanFixture(backupTarget: backupTarget) : nil
         )
     }
 
@@ -130,7 +130,7 @@ extension SyncConflictResolutionPreviewSnapshot {
 }
 
 extension SyncConflictVersionImpactSnapshot {
-    static func s4x01ImpactFixture(
+    static func syncConflictReviewImpactFixture(
         path: String,
         fileID: Int64 = 42,
         role: SyncConflictFileRoleSnapshot,
@@ -145,13 +145,13 @@ extension SyncConflictVersionImpactSnapshot {
             willRemainUserVisible: true,
             willMoveToTrash: false,
             recoveryTarget: nil,
-            reason: "Visible file is preserved by C4-16."
+            reason: "Visible file is preserved by sync-conflict-resolve."
         )
     }
 }
 
 extension SyncConflictReplacePlanSnapshot {
-    static func s4x01ReplacePlanFixture(backupTarget: String? = "Trash") -> SyncConflictReplacePlanSnapshot {
+    static func syncConflictReviewReplacePlanFixture(backupTarget: String? = "Trash") -> SyncConflictReplacePlanSnapshot {
         SyncConflictReplacePlanSnapshot(
             oldPath: "docs/report.pdf",
             newPath: "docs/report (Windows conflict).pdf",
@@ -161,13 +161,13 @@ extension SyncConflictReplacePlanSnapshot {
             backupTarget: backupTarget,
             databaseUpdate: "canonical record points to incoming",
             changeLogAction: "conflict_resolved_use_incoming",
-            recoveryNote: "S4-X-09 confirmation is required."
+            recoveryNote: "replace-resolution confirmation is required."
         )
     }
 }
 
 extension SyncConflictResolveReportSnapshot {
-    static func s4x01ResolveFixture(
+    static func syncConflictReviewResolveFixture(
         resolution: SyncConflictResolutionStrategySnapshot = .keepBoth
     ) -> SyncConflictResolveReportSnapshot {
         SyncConflictResolveReportSnapshot(

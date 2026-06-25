@@ -3,7 +3,7 @@ import XCTest
 
 final class RepositorySettingsPageIntegrationTests: XCTestCase {
     @MainActor
-    func testS4X08LoadsRepositoryConfigCapabilitiesAndCoreVersion() async {
+    func testRepositorySettingsCrossPlatformLoadsRepositoryConfigCapabilitiesAndCoreVersion() async {
         let bridge = FakeMobileRepositoryCoreBridge(validation: .initialized(path: "/tmp/AreaMatrixRepo"))
         let capabilityLoader = RecordingRepositorySettingsCapabilityLoader(capabilities: .repositorySettingsFixture())
         let model = RepositorySettingsViewModel(
@@ -32,7 +32,7 @@ final class RepositorySettingsPageIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X08SavesRepositoryConfigThroughUpdateConfig() async {
+    func testRepositorySettingsCrossPlatformSavesRepositoryConfigThroughUpdateConfig() async {
         let bridge = FakeMobileRepositoryCoreBridge(validation: .initialized(path: "/tmp/AreaMatrixRepo"))
         let model = RepositorySettingsViewModel(
             repoPath: "/tmp/AreaMatrixRepo",
@@ -51,7 +51,7 @@ final class RepositorySettingsPageIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X08ExportsRedactedDiagnosticsFromLoadedSnapshot() async {
+    func testRepositorySettingsCrossPlatformExportsRedactedDiagnosticsFromLoadedSnapshot() async {
         let bridge = FakeMobileRepositoryCoreBridge(validation: .initialized(path: "/tmp/AreaMatrixRepo"))
         let exporter = RecordingRepositorySettingsDiagnosticsExporter(outputPath: "/tmp/diag.txt")
         let model = RepositorySettingsViewModel(
@@ -71,7 +71,7 @@ final class RepositorySettingsPageIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X08ShowsNoRepositoryConnectedEmptyState() async {
+    func testRepositorySettingsCrossPlatformShowsNoRepositoryConnectedEmptyState() async {
         let model = RepositorySettingsViewModel(
             repoPath: nil,
             bridge: FakeMobileRepositoryCoreBridge(validation: .initialized(path: "/tmp/unused")),

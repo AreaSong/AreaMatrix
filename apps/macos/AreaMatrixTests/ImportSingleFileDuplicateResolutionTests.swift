@@ -3,14 +3,14 @@ import XCTest
 
 final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
     @MainActor
-    func testS122DuplicateSkipDoesNotCallImporter() async {
+    func testDuplicateConflictDuplicateSkipDoesNotCallImporter() async {
         let result = duplicateResult()
-        let importer = S117RecordingImporter()
+        let importer = ImportSingleFileRecordingImporter()
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: result),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         await model.load(request: .importSingleFileFixture())
@@ -25,13 +25,13 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
     }
 
     @MainActor
-    func testS122KeepBothUsesCoreKeepBothStrategyAndPreviewPath() async {
-        let importer = S117RecordingImporter()
+    func testDuplicateConflictKeepBothUsesCoreKeepBothStrategyAndPreviewPath() async {
+        let importer = ImportSingleFileRecordingImporter()
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         await model.load(request: .importSingleFileFixture())
@@ -45,18 +45,18 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
     }
 
     @MainActor
-    func testS122DuplicateResolutionCasesStayWithinPageFeatureScope() {
+    func testDuplicateConflictDuplicateResolutionCasesStayWithinPageFeatureScope() {
         XCTAssertEqual(SingleFileDuplicateResolutionStrategy.allCases, [.skip, .keepBoth, .replace])
     }
 
     @MainActor
-    func testS122ReplaceRequiresSecondConfirmationBeforeCoreOverwrite() async throws {
-        let importer = S117RecordingImporter()
+    func testDuplicateConflictReplaceRequiresSecondConfirmationBeforeCoreOverwrite() async throws {
+        let importer = ImportSingleFileRecordingImporter()
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -87,13 +87,13 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
     }
 
     @MainActor
-    func testS124DuplicateReplaceConfirmationFailureKeepsSheetRecoverable() async throws {
-        let importer = S117RecordingImporter()
+    func testReplaceConfirmDuplicateReplaceConfirmationFailureKeepsSheetRecoverable() async throws {
+        let importer = ImportSingleFileRecordingImporter()
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -134,7 +134,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
     }
 
     @MainActor
-    func testS124DuplicateReplaceConfirmationCarriesCoreDuplicateSummaryWithoutImportSideEffect() async throws {
+    func testReplaceConfirmDuplicateReplaceConfirmationCarriesCoreDuplicateSummaryWithoutImportSideEffect() async throws {
         let existingFile = FileEntrySnapshot(
             id: 124,
             path: "docs/reports/报告.pdf",
@@ -149,9 +149,9 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
             importedAt: 1_700_000_000,
             updatedAt: 1_776_660_840
         )
-        let importer = S117RecordingImporter()
+        let importer = ImportSingleFileRecordingImporter()
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: ImportSingleFilePreflightResult(
                 sourceSizeBytes: 912 * 1024,
@@ -162,7 +162,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
                 keepBothTargetRelativePath: "docs/reports/报告_1.pdf",
                 existingFile: existingFile
             )),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -186,12 +186,12 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
     }
 
     @MainActor
-    func testS122ReplaceDisabledWhenTrashUnavailableAndHiddenWhenSettingIsOff() async {
+    func testDuplicateConflictReplaceDisabledWhenTrashUnavailableAndHiddenWhenSettingIsOff() async {
         let trashUnavailableModel = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
-            importer: S117RecordingImporter(),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+            importer: ImportSingleFileRecordingImporter(),
             preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
         await trashUnavailableModel.load(request: .importSingleFileFixture(
             allowReplaceDuringImport: true,
@@ -203,10 +203,10 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
         XCTAssertEqual(trashUnavailableModel.primaryActionDisabledReason, "Replace requires system Trash")
 
         let hiddenModel = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
-            importer: S117RecordingImporter(),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+            importer: ImportSingleFileRecordingImporter(),
             preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
         await hiddenModel.load(request: .importSingleFileFixture(
             allowReplaceDuringImport: false,
@@ -221,13 +221,13 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
 
 final class ImportSingleFileNameConflictTests: XCTestCase {
     @MainActor
-    func testS123NameConflictDefaultsToKeepBothAndUsesCoreKeepBothStrategy() async {
-        let importer = S117RecordingImporter()
+    func testNameConflictNameConflictDefaultsToKeepBothAndUsesCoreKeepBothStrategy() async {
+        let importer = ImportSingleFileRecordingImporter()
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         await model.load(request: .importSingleFileFixture())
@@ -243,13 +243,13 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
     }
 
     @MainActor
-    func testS123RenameIncomingValidatesConflictsAndUsesEditedName() async {
-        let importer = S117RecordingImporter()
+    func testNameConflictRenameIncomingValidatesConflictsAndUsesEditedName() async {
+        let importer = ImportSingleFileRecordingImporter()
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         await model.load(request: .importSingleFileFixture())
@@ -268,13 +268,13 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
     }
 
     @MainActor
-    func testS123ReplaceRequiresS124ConfirmationBeforeCoreOverwrite() async throws {
-        let importer = S117RecordingImporter()
+    func testNameConflictReplaceRequiresReplaceConfirmConfirmationBeforeCoreOverwrite() async throws {
+        let importer = ImportSingleFileRecordingImporter()
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -300,14 +300,14 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
     }
 
     @MainActor
-    func testS124NameConflictReplaceConfirmationMarksC110ReplaceWithoutImportSideEffect() async throws {
+    func testReplaceConfirmNameConflictReplaceConfirmationMarksResolveNameConflictCoreReplaceWithoutImportSideEffect() async throws {
         let existingFile = nameConflictReplaceExistingFile()
-        let importer = S117RecordingImporter()
+        let importer = ImportSingleFileRecordingImporter()
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: nameConflictReplaceResult(existingFile: existingFile)),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -337,7 +337,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
         _ = await model.importSelectedFile()
         let requests = await importer.recordedRequests()
         XCTAssertEqual(requests, [
-            S117ImportRequest(
+            ImportSingleFileImportRequest(
                 mode: .copy,
                 overrideCategory: "docs",
                 overrideFilename: "source.pdf",
@@ -347,14 +347,14 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
     }
 
     @MainActor
-    func testS124NameConflictReplacePrimaryActionOpensConfirmationBeforeCoreOverwrite() async throws {
+    func testReplaceConfirmNameConflictReplacePrimaryActionOpensConfirmationBeforeCoreOverwrite() async throws {
         let existingFile = nameConflictReplaceExistingFile()
-        let importer = S117RecordingImporter()
+        let importer = ImportSingleFileRecordingImporter()
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: nameConflictReplaceResult(existingFile: existingFile)),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -384,15 +384,15 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
     }
 
     @MainActor
-    func testS124NameConflictReplaceCannotBypassConfirmationThroughModelImport() async {
-        let importer = S117RecordingImporter()
+    func testReplaceConfirmNameConflictReplaceCannotBypassConfirmationThroughModelImport() async {
+        let importer = ImportSingleFileRecordingImporter()
         let model = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: nameConflictReplaceResult(
                 existingFile: nameConflictReplaceExistingFile()
             )),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -410,12 +410,12 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
     }
 
     @MainActor
-    func testS123ReplaceCannotBeSelectedWhenTrashUnavailableOrSettingHidden() async {
+    func testNameConflictReplaceCannotBeSelectedWhenTrashUnavailableOrSettingHidden() async {
         let trashUnavailableModel = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
-            importer: S117RecordingImporter(),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+            importer: ImportSingleFileRecordingImporter(),
             preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
         await trashUnavailableModel.load(request: .importSingleFileFixture(
             allowReplaceDuringImport: true,
@@ -427,10 +427,10 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
         XCTAssertEqual(trashUnavailableModel.nameConflictResolution, .keepBoth)
 
         let hiddenModel = ImportSingleFilePreviewModel(
-            predictor: S117RecordingPredictor(result: .s117Fixture()),
-            importer: S117RecordingImporter(),
+            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+            importer: ImportSingleFileRecordingImporter(),
             preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
         await hiddenModel.load(request: .importSingleFileFixture(
             allowReplaceDuringImport: false,

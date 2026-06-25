@@ -141,13 +141,13 @@ struct AIPrivacyRulesView: View {
             HStack(spacing: 10) {
                 Button("Allow remote AI after provider consent", action: allowRemoteGate)
                     .disabled(allowRemoteGateDisabled)
-                    .accessibilityIdentifier("S3-09-C3-09-allow-remote-ai-after-provider-consent")
+                    .accessibilityIdentifier("ai-privacy-rules-ai-privacy-rules-core-allow-remote-ai-after-provider-consent")
                 Button("Block remote AI with privacy gate", action: blockRemoteGate)
                     .disabled(privacyModel.isSaving || privacyModel.snapshot?.privacyGateEnabled == false)
-                    .accessibilityIdentifier("S3-09-C3-09-block-remote-ai-privacy-gate")
+                    .accessibilityIdentifier("ai-privacy-rules-ai-privacy-rules-core-block-remote-ai-privacy-gate")
             }
             Button("Configure remote AI", action: onConfigureRemoteAI)
-                .accessibilityIdentifier("S3-09-C3-03-configure-remote-ai")
+                .accessibilityIdentifier("ai-privacy-rules-remote-provider-config-core-configure-remote-ai")
         }
     }
 

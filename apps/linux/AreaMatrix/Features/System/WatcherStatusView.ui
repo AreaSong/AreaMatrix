@@ -1,6 +1,6 @@
-page_id: S4-LNX-04
+page_id: linux-watcher-status
 title: File watcher status
-description: Linux inotify watcher status with C4-19 manual-rescan confirmation handoff.
+description: Linux inotify watcher status with manual-rescan manual-rescan confirmation handoff.
 status_card:
   - Status: Running / Paused / Error / Unavailable
   - Backend: inotify
@@ -31,9 +31,9 @@ disabled_rules:
   run_rescan_now: Disabled while snapshot missing, path missing, DB locked, Starting, backend unavailable, or manual rescan running.
 safety:
   - The page calls record_watcher_health through LinuxWatcherStatusCoreBridge.
-  - Run rescan now calls get_latest_scan_session and preview_manual_rescan before raising S4-X-07.
+  - Run rescan now calls get_latest_scan_session and preview_manual_rescan before raising rescan-confirm.
   - The page captures Linux inotify health in LinuxWatcherDiagnostics before recording the Core snapshot.
-  - Run rescan now raises OpenRescanConfirmRequested with LinuxRescanConfirmRequest for S4-X-07 and never calls reindex directly.
+  - Run rescan now raises OpenRescanConfirmRequested with LinuxRescanConfirmRequest for rescan-confirm and never calls reindex directly.
   - Export diagnostics writes only status metadata under .areamatrix/generated/diagnostics.
   - Recent events are relative path samples only; file contents are not exported.
   - The page does not call sync_external_changes, set_fs_event_cursor, reindex_from_filesystem, or resume_scan_session.

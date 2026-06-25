@@ -11,7 +11,7 @@ struct DeleteFileConfirmSheet: View {
     @State private var isConfirmed = false
 
     var body: some View {
-        MainFileActionSheetContainer(title: operation?.title ?? "Move File to Trash?", pageID: "S1-34") {
+        MainFileActionSheetContainer(title: operation?.title ?? "Move File to Trash?", pageID: "delete-file") {
             if let file, let operation {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(operation.message)
@@ -38,7 +38,7 @@ struct DeleteFileConfirmSheet: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("The file is recoverable from system Trash while Trash retains it.")
             Text("AreaMatrix keeps a deleted metadata record for at least 30 days for traceability.")
-            Text("Permanent delete is not available in Stage 1.")
+            Text("Permanent delete is not available from AreaMatrix.")
         }
         .font(.caption)
         .foregroundStyle(.secondary)

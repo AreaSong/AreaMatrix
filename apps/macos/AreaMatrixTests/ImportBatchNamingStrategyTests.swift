@@ -3,12 +3,12 @@ import XCTest
 
 final class ImportBatchNamingStrategyTests: XCTestCase {
     @MainActor
-    func testS118BatchNamingStrategiesUpdateImportFilenames() async {
+    func testImportBatchBatchNamingStrategiesUpdateImportFilenames() async {
         let unsafeURL = URL(fileURLWithPath: "/tmp/Quarter:Plan?.pdf")
-        let importer = S118RecordingBatchImporter()
+        let importer = ImportBatchRecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
         let rows = [
             ImportBatchPreviewRow.ready(
@@ -24,7 +24,7 @@ final class ImportBatchNamingStrategyTests: XCTestCase {
 
         model.applyPreviewRows(
             rows,
-            request: s118NamingRequest(urls: [unsafeURL]),
+            request: importBatchNamingRequest(urls: [unsafeURL]),
             selectedDestination: .autoClassify
         )
         XCTAssertEqual(model.rows.first?.suggestedName, "Suggested.pdf")
@@ -37,7 +37,7 @@ final class ImportBatchNamingStrategyTests: XCTestCase {
         _ = await model.importReadyFiles(selectedDestination: .autoClassify)
         let recordedRequests = await importer.recordedRequests()
         XCTAssertEqual(recordedRequests, [
-            S118BatchImportRequest(
+            ImportBatchBatchImportRequest(
                 destination: .autoClassify,
                 suggestedCategory: "docs",
                 overrideFilename: "Batch-Quarter-Plan-.pdf",
@@ -49,13 +49,13 @@ final class ImportBatchNamingStrategyTests: XCTestCase {
 
 final class SavedSearchPageFeatureTests: XCTestCase {
     @MainActor
-    func testS203SavedSearchFailureShowsRetryAndUnavailableResultCount() {
+    func testSavedSearchSavedSearchFailureShowsRetryAndUnavailableResultCount() {
         var model = SavedSearchSheetModel(
-            request: .s203SavedSearchFixture(query: "Finance"),
+            request: .savedSearchSavedSearchFixture(query: "Finance"),
             resultCountState: .failed
         )
 
-        model.saveFailure = .s203SavedSearchDbFixture()
+        model.saveFailure = .savedSearchSavedSearchDbFixture()
 
         XCTAssertEqual(model.resultCountSummary, "Result count unavailable")
         XCTAssertTrue(model.canSave)
@@ -64,9 +64,9 @@ final class SavedSearchPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS203SavedSearchSuccessInsertsSidebarRowAndRestoresQuery() async {
-        let request = SearchQueryRequestSnapshot.s203SavedSearchFixture(query: "Finance")
-        let saved = SavedSearchSnapshot.s203Fixture(
+    func testSavedSearchSavedSearchSuccessInsertsSidebarRowAndRestoresQuery() async {
+        let request = SearchQueryRequestSnapshot.savedSearchSavedSearchFixture(query: "Finance")
+        let saved = SavedSearchSnapshot.savedSearchFixture(
             id: 77,
             request: CreateSavedSearchRequestSnapshot(
                 name: "Finance",
@@ -76,21 +76,21 @@ final class SavedSearchPageFeatureTests: XCTestCase {
                 pinned: true
             )
         )
-        let resultFile = FileEntrySnapshot.s203SavedSearchFixture()
+        let resultFile = FileEntrySnapshot.savedSearchSavedSearchFixture()
         let searcher = MainListRecordingSearchQuerying(results: [
-            .success(.s203SavedSearchFixture(
+            .success(.savedSearchSavedSearchFixture(
                 request: SearchQueryRequestSnapshot(savedSearchQuery: saved.query),
                 files: [resultFile]
             ))
         ])
         let model = MainFileListModel(
-            opening: .s203SavedSearchFixture(repoPath: "/tmp/repo", tree: .s203SavedSearchFixtureTree()),
+            opening: .savedSearchSavedSearchFixture(repoPath: "/tmp/repo", tree: .savedSearchSavedSearchFixtureTree()),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: searcher,
-            errorMapper: MainListRecordingErrorMapper(mapping: .s203SavedSearchDbFixture())
+            errorMapper: MainListRecordingErrorMapper(mapping: .savedSearchSavedSearchDbFixture())
         )
-        let updatedTree = RepositoryTreeNodeSnapshot.s203SavedSearchFixtureTree().insertingSavedSearch(saved)
+        let updatedTree = RepositoryTreeNodeSnapshot.savedSearchSavedSearchFixtureTree().insertingSavedSearch(saved)
 
         await model.restoreSavedSearch(saved)
 
@@ -108,9 +108,9 @@ final class SavedSearchPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS203SidebarSelectionRestoresCachedSavedSearchQuery() async {
-        let request = SearchQueryRequestSnapshot.s203SavedSearchFixture(query: "Finance")
-        let saved = SavedSearchSnapshot.s203Fixture(
+    func testSavedSearchSidebarSelectionRestoresCachedSavedSearchQuery() async {
+        let request = SearchQueryRequestSnapshot.savedSearchSavedSearchFixture(query: "Finance")
+        let saved = SavedSearchSnapshot.savedSearchFixture(
             id: 77,
             request: CreateSavedSearchRequestSnapshot(
                 name: "Finance",
@@ -120,22 +120,22 @@ final class SavedSearchPageFeatureTests: XCTestCase {
                 pinned: true
             )
         )
-        let resultFile = FileEntrySnapshot.s203SavedSearchFixture()
+        let resultFile = FileEntrySnapshot.savedSearchSavedSearchFixture()
         let searcher = MainListRecordingSearchQuerying(results: [
-            .success(.s203SavedSearchFixture(
+            .success(.savedSearchSavedSearchFixture(
                 request: SearchQueryRequestSnapshot(savedSearchQuery: saved.query),
                 files: [resultFile]
             ))
         ])
         let model = MainFileListModel(
-            opening: .s203SavedSearchFixture(
+            opening: .savedSearchSavedSearchFixture(
                 repoPath: "/tmp/repo",
-                tree: .s203SavedSearchFixtureTree().insertingSavedSearch(saved)
+                tree: .savedSearchSavedSearchFixtureTree().insertingSavedSearch(saved)
             ),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: searcher,
-            errorMapper: MainListRecordingErrorMapper(mapping: .s203SavedSearchDbFixture())
+            errorMapper: MainListRecordingErrorMapper(mapping: .savedSearchSavedSearchDbFixture())
         )
 
         await model.restoreSavedSearch(saved)
@@ -153,8 +153,8 @@ final class SavedSearchPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS206RenameBuildsUpdateRequestAndBlocksDuplicateName() {
-        let saved = SavedSearchSnapshot.s206Fixture(id: 77, name: "Finance", pinned: true, updatedAt: 10)
+    func testSmartListRenameBuildsUpdateRequestAndBlocksDuplicateName() {
+        let saved = SavedSearchSnapshot.smartListFixture(id: 77, name: "Finance", pinned: true, updatedAt: 10)
         var model = SmartListEditorModel(
             mode: .rename,
             savedSearch: saved,
@@ -180,8 +180,8 @@ final class SavedSearchPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS206DuplicateCreatesUnpinnedRequestWithoutMutatingOriginal() {
-        let saved = SavedSearchSnapshot.s206Fixture(id: 77, name: "Finance", pinned: true, updatedAt: 10)
+    func testSmartListDuplicateCreatesUnpinnedRequestWithoutMutatingOriginal() {
+        let saved = SavedSearchSnapshot.smartListFixture(id: 77, name: "Finance", pinned: true, updatedAt: 10)
         var model = SmartListEditorModel(
             mode: .duplicate,
             savedSearch: saved,
@@ -201,14 +201,14 @@ final class SavedSearchPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS206LoadSmartListsUsesCoreListAndBuildsPinnedSortedSidebar() async {
-        let pinnedOld = SavedSearchSnapshot.s206Fixture(id: 1, name: "Pinned Old", pinned: true, updatedAt: 10)
-        let pinnedNew = SavedSearchSnapshot.s206Fixture(id: 2, name: "Pinned New", pinned: true, updatedAt: 20)
-        let alpha = SavedSearchSnapshot.s206Fixture(id: 3, name: "Alpha", pinned: false, updatedAt: 30)
-        let store = S206RecordingSavedSearchStore(results: [.listSuccess([alpha, pinnedOld, pinnedNew])])
+    func testSmartListLoadSmartListsUsesCoreListAndBuildsPinnedSortedSidebar() async {
+        let pinnedOld = SavedSearchSnapshot.smartListFixture(id: 1, name: "Pinned Old", pinned: true, updatedAt: 10)
+        let pinnedNew = SavedSearchSnapshot.smartListFixture(id: 2, name: "Pinned New", pinned: true, updatedAt: 20)
+        let alpha = SavedSearchSnapshot.smartListFixture(id: 3, name: "Alpha", pinned: false, updatedAt: 30)
+        let store = SmartListRecordingSavedSearchStore(results: [.listSuccess([alpha, pinnedOld, pinnedNew])])
         let saved = try? await store.listSavedSearches(repoPath: "/tmp/repo")
         let rows = RepositoryTreeNodeSnapshot
-            .s203SavedSearchFixtureTree()
+            .savedSearchSavedSearchFixtureTree()
             .appendingSortedSavedSearches(saved ?? [])
 
         let recordedRepoPaths = await store.recordedListRepoPaths()
@@ -219,11 +219,11 @@ final class SavedSearchPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS206LoadSmartListsFailureKeepsNormalSidebarRecoverable() async {
-        let mapping = CoreErrorMappingSnapshot.s203SavedSearchDbFixture()
+    func testSmartListLoadSmartListsFailureKeepsNormalSidebarRecoverable() async {
+        let mapping = CoreErrorMappingSnapshot.savedSearchSavedSearchDbFixture()
         let mapper = MainListRecordingErrorMapper(mapping: mapping)
-        let store = S206RecordingSavedSearchStore(results: [.listFailure(CoreError.Db(message: "db locked"))])
-        let tree = RepositoryTreeNodeSnapshot.s203SavedSearchFixtureTree()
+        let store = SmartListRecordingSavedSearchStore(results: [.listFailure(CoreError.Db(message: "db locked"))])
+        let tree = RepositoryTreeNodeSnapshot.savedSearchSavedSearchFixtureTree()
         do {
             _ = try await store.listSavedSearches(repoPath: "/tmp/repo")
             XCTFail("Expected saved search list to fail.")
@@ -242,8 +242,8 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         }
     }
 
-    func testS206DeleteCopyStatesFilesAreNotMovedOrDeleted() {
-        let saved = SavedSearchSnapshot.s206Fixture(id: 77, name: "Finance", pinned: true, updatedAt: 10)
+    func testSmartListDeleteCopyStatesFilesAreNotMovedOrDeleted() {
+        let saved = SavedSearchSnapshot.smartListFixture(id: 77, name: "Finance", pinned: true, updatedAt: 10)
         let model = SmartListEditorModel(
             mode: .delete,
             savedSearch: saved,
@@ -261,7 +261,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
     }
 }
 
-private func s118NamingRequest(urls: [URL]) -> ImportEntryRequest {
+private func importBatchNamingRequest(urls: [URL]) -> ImportEntryRequest {
     ImportEntryRequest(
         repoPath: "/tmp/repo",
         source: .dropZone,
@@ -273,7 +273,7 @@ private func s118NamingRequest(urls: [URL]) -> ImportEntryRequest {
 }
 
 private extension SearchQueryRequestSnapshot {
-    static func s203SavedSearchFixture(query: String) -> SearchQueryRequestSnapshot {
+    static func savedSearchSavedSearchFixture(query: String) -> SearchQueryRequestSnapshot {
         SearchQueryRequestSnapshot(
             query: query,
             scope: .all,
@@ -299,7 +299,7 @@ private extension SearchQueryRequestSnapshot {
 }
 
 private extension SavedSearchSnapshot {
-    static func s203Fixture(id: Int64, request: CreateSavedSearchRequestSnapshot) -> SavedSearchSnapshot {
+    static func savedSearchFixture(id: Int64, request: CreateSavedSearchRequestSnapshot) -> SavedSearchSnapshot {
         SavedSearchSnapshot(
             id: id,
             name: request.name,
@@ -312,13 +312,13 @@ private extension SavedSearchSnapshot {
         )
     }
 
-    static func s206Fixture(
+    static func smartListFixture(
         id: Int64,
         name: String,
         pinned: Bool,
         updatedAt: Int64
     ) -> SavedSearchSnapshot {
-        let request = SearchQueryRequestSnapshot.s203SavedSearchFixture(query: name)
+        let request = SearchQueryRequestSnapshot.savedSearchSavedSearchFixture(query: name)
         return SavedSearchSnapshot(
             id: id,
             name: name,
@@ -332,7 +332,7 @@ private extension SavedSearchSnapshot {
     }
 }
 
-private actor S206RecordingSavedSearchStore: CoreSavedSearchCRUD {
+private actor SmartListRecordingSavedSearchStore: CoreSavedSearchCRUD {
     enum Result {
         case listSuccess([SavedSearchSnapshot])
         case listFailure(Error)
@@ -349,7 +349,7 @@ private actor S206RecordingSavedSearchStore: CoreSavedSearchCRUD {
         repoPath _: String,
         request _: CreateSavedSearchRequestSnapshot
     ) async throws -> SavedSearchSnapshot {
-        throw CoreError.Internal(message: "create_saved_search is not used by S2-06 list tests")
+        throw CoreError.Internal(message: "create_saved_search is not used by smart-list-management list tests")
     }
 
     func listSavedSearches(repoPath: String) async throws -> [SavedSearchSnapshot] {
@@ -369,7 +369,7 @@ private actor S206RecordingSavedSearchStore: CoreSavedSearchCRUD {
 }
 
 private extension SearchResultPageSnapshot {
-    static func s203SavedSearchFixture(
+    static func savedSearchSavedSearchFixture(
         request: SearchQueryRequestSnapshot,
         files: [FileEntrySnapshot]
     ) -> SearchResultPageSnapshot {
@@ -402,7 +402,7 @@ private extension RepositoryTreeNodeSnapshot {
 }
 
 private extension FileEntrySnapshot {
-    static func s203SavedSearchFixture() -> FileEntrySnapshot {
+    static func savedSearchSavedSearchFixture() -> FileEntrySnapshot {
         FileEntrySnapshot(
             id: 203,
             path: "docs/finance/report.pdf",
@@ -422,7 +422,7 @@ private extension FileEntrySnapshot {
 }
 
 private extension RepositoryOpeningResult {
-    static func s203SavedSearchFixture(
+    static func savedSearchSavedSearchFixture(
         repoPath: String,
         tree: RepositoryTreeNodeSnapshot
     ) -> RepositoryOpeningResult {
@@ -446,7 +446,7 @@ private extension RepositoryOpeningResult {
 }
 
 private extension RepositoryTreeNodeSnapshot {
-    static func s203SavedSearchFixtureTree() -> RepositoryTreeNodeSnapshot {
+    static func savedSearchSavedSearchFixtureTree() -> RepositoryTreeNodeSnapshot {
         RepositoryTreeNodeSnapshot(
             slug: "__root__",
             displayName: "Repository",
@@ -467,7 +467,7 @@ private extension RepositoryTreeNodeSnapshot {
 }
 
 private extension CoreErrorMappingSnapshot {
-    static func s203SavedSearchDbFixture() -> CoreErrorMappingSnapshot {
+    static func savedSearchSavedSearchDbFixture() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .db,
             userMessage: "Saved search is unavailable.",

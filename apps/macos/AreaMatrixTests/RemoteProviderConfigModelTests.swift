@@ -22,7 +22,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
         XCTAssertEqual(requests.test?.keyReference, "keychain:openAi-managed")
         XCTAssertEqual(requests.test?.modelID, "gpt-4.1-mini")
         XCTAssertEqual(requests.enable?.keyReference, "keychain:openAi-managed")
-        XCTAssertEqual(requests.enable?.verificationToken, "verified-s303")
+        XCTAssertEqual(requests.enable?.verificationToken, "verified-remoteProviderConfig")
         XCTAssertEqual(requests.enable?.featureScope, [.autoSummaries, .autoTags])
         XCTAssertEqual(requests.enable?.dataFlowConfirmed, true)
         XCTAssertEqual(store.storedKeys(), ["keychain:openAi-managed": "dummy-api-key"])
@@ -260,10 +260,10 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     }
 
     @MainActor
-    func testS303C309EnableTurnsOnPrivacyGateWithProviderScope() async {
-        let bridge = RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(privacyGateEnabled: false))
+    func testRemoteProviderConfigAIPrivacyRulesCoreEnableTurnsOnPrivacyGateWithProviderScope() async {
+        let bridge = RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(privacyGateEnabled: false))
         let model = RemotePrivacyGateModel(
-            repoPath: "/tmp/s303",
+            repoPath: "/tmp/remoteProviderConfig",
             bridge: bridge,
             errorMapper: RemoteProviderConfigErrorMapper()
         )
@@ -284,10 +284,10 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     }
 
     @MainActor
-    func testS303C309DisableTurnsOffPrivacyGateWithoutClearingProviderConfig() async {
-        let bridge = RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(privacyGateEnabled: true))
+    func testRemoteProviderConfigAIPrivacyRulesCoreDisableTurnsOffPrivacyGateWithoutClearingProviderConfig() async {
+        let bridge = RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(privacyGateEnabled: true))
         let model = RemotePrivacyGateModel(
-            repoPath: "/tmp/s303",
+            repoPath: "/tmp/remoteProviderConfig",
             bridge: bridge,
             errorMapper: RemoteProviderConfigErrorMapper()
         )
@@ -305,10 +305,10 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     }
 
     @MainActor
-    func testS303C309PrivacyGateFailureKeepsRetryableAction() async {
+    func testRemoteProviderConfigAIPrivacyRulesCorePrivacyGateFailureKeepsRetryableAction() async {
         let bridge = RemotePrivacyRulesBridge(updateFails: true)
         let model = RemotePrivacyGateModel(
-            repoPath: "/tmp/s303",
+            repoPath: "/tmp/remoteProviderConfig",
             bridge: bridge,
             errorMapper: RemoteProviderConfigErrorMapper()
         )
@@ -325,13 +325,13 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     }
 
     @MainActor
-    func testS303PageIntegrationWiresEntryEnablePrivacyGateDisableAndExitRefresh() async {
+    func testRemoteProviderConfigPageIntegrationWiresEntryEnablePrivacyGateDisableAndExitRefresh() async {
         let providerBridge = RemoteProviderConfigBridge()
-        let privacyBridge = RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(privacyGateEnabled: false))
+        let privacyBridge = RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(privacyGateEnabled: false))
         let store = RemoteProviderTestCredentialStore()
         let remoteModel = makeModel(bridge: providerBridge, store: store)
         let privacyModel = RemotePrivacyGateModel(
-            repoPath: "/tmp/s303",
+            repoPath: "/tmp/remoteProviderConfig",
             bridge: privacyBridge,
             errorMapper: RemoteProviderConfigErrorMapper()
         )
@@ -349,7 +349,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
 
         XCTAssertTrue(didEnable)
         XCTAssertTrue(didEnableGate)
-        assertS303EnabledPageIntegration(
+        assertRemoteProviderConfigEnabledPageIntegration(
             remoteModel: remoteModel,
             privacyModel: privacyModel,
             providerRequests: providerRequestsAfterEnable,
@@ -364,7 +364,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
 
         XCTAssertTrue(didDisable)
         XCTAssertTrue(didDisableGate)
-        assertS303DisabledPageIntegration(
+        assertRemoteProviderConfigDisabledPageIntegration(
             remoteModel: remoteModel,
             privacyModel: privacyModel,
             providerRequests: providerRequestsAfterDisable,
@@ -374,12 +374,12 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     }
 
     @MainActor
-    func testS303PageIntegrationKeepsProviderEnabledAndOffersRecoveryWhenPrivacyGateEnableFails() async {
+    func testRemoteProviderConfigPageIntegrationKeepsProviderEnabledAndOffersRecoveryWhenPrivacyGateEnableFails() async {
         let providerBridge = RemoteProviderConfigBridge()
         let privacyBridge = RemotePrivacyRulesBridge(updateFails: true)
         let remoteModel = makeModel(bridge: providerBridge, store: RemoteProviderTestCredentialStore())
         let privacyModel = RemotePrivacyGateModel(
-            repoPath: "/tmp/s303",
+            repoPath: "/tmp/remoteProviderConfig",
             bridge: privacyBridge,
             errorMapper: RemoteProviderConfigErrorMapper()
         )
@@ -409,7 +409,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
         store: RemoteProviderTestCredentialStore
     ) -> RemoteProviderConfigModel {
         RemoteProviderConfigModel(
-            repoPath: "/tmp/s303",
+            repoPath: "/tmp/remoteProviderConfig",
             bridge: bridge,
             credentialStore: store,
             errorMapper: RemoteProviderConfigErrorMapper()

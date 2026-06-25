@@ -543,21 +543,21 @@ flowchart LR
         A4[app 2.0.0]
     end
     subgraph Schemas
-        S1[schema v1]
-        S2[schema v2]
-        S3[schema v3]
-        S4[schema v4]
-        S5[schema v5]
+        SchemaV1[schema v1]
+        SchemaV2[schema v2]
+        SchemaV3[schema v3]
+        SchemaV4[schema v4]
+        SchemaV5[schema v5]
     end
 
-    A0 --> S1
-    A1 --> S1
-    A1 --> S2
-    A2 --> S3
-    A3 --> S3
-    A3 --> S4
-    A4 --> S4
-    A4 --> S5
+    A0 --> SchemaV1
+    A1 --> SchemaV1
+    A1 --> SchemaV2
+    A2 --> SchemaV3
+    A3 --> SchemaV3
+    A3 --> SchemaV4
+    A4 --> SchemaV4
+    A4 --> SchemaV5
 ```
 
 | App | reads | writes (default) | upgrades | refuses |

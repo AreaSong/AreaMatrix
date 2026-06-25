@@ -141,7 +141,7 @@ UI 形态：全屏 blocking（repoError），必须修复或换 repo。
 ```
 
 Repair（修复）最小实现策略（产品侧）：\n
-- Stage 1 可先提供“Full rescan”按钮（重扫重建索引）\n
+- 当前可先提供“Full rescan”按钮（重扫重建索引）\n
 
 ---
 

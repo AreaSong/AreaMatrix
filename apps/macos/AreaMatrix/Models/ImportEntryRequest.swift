@@ -139,10 +139,10 @@ extension ImportEntryKind {
 }
 
 enum CommandPaletteLinkedPageRoute: String, Equatable, Identifiable, CaseIterable {
-    case classifierImpactPreview = "S2-18"
-    case importConflictBatch = "S2-21"
-    case redo = "S2-22"
-    case tagSuggestions = "S2-23"
+    case classifierImpactPreview = "classifier-impact-preview"
+    case importConflictBatch = "import-conflict-batch"
+    case redo = "redo-action-log"
+    case tagSuggestions = "tag-suggestions"
 
     var id: String {
         rawValue
@@ -159,7 +159,7 @@ enum CommandPaletteLinkedPageRoute: String, Equatable, Identifiable, CaseIterabl
                 kind: .validation,
                 userMessage: "Classifier impact preview is not available yet.",
                 severity: .medium,
-                suggestedAction: "Open classifier rules first; S2-18 will provide the real preview flow.",
+                suggestedAction: "Open classifier rules first; classifier-impact-preview will provide the real preview flow.",
                 recoverability: .userActionRequired,
                 rawContext: pageID
             )
@@ -177,7 +177,7 @@ enum CommandPaletteLinkedPageRoute: String, Equatable, Identifiable, CaseIterabl
                 kind: .conflict,
                 userMessage: "Redo latest is handled in Undo History.",
                 severity: .medium,
-                suggestedAction: "Review Undo History until S2-22 redo is available.",
+                suggestedAction: "Review Undo History until redo-action-log redo is available.",
                 recoverability: .refreshRequired,
                 rawContext: pageID
             )
@@ -194,6 +194,6 @@ enum CommandPaletteLinkedPageRoute: String, Equatable, Identifiable, CaseIterabl
     }
 
     var accessibilityIdentifier: String {
-        "S2-15-C2-11-route-\(pageID)"
+        "command-palette-command-index-route-\(pageID)"
     }
 }

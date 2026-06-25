@@ -12,7 +12,7 @@ struct RepoPlatformCapabilitySection: View {
             Button(action: onOpenPlatformCapabilities) {
                 Label("Platform capabilities", systemImage: "rectangle.3.group")
             }
-            .accessibilityIdentifier("S4-X-08-C4-17-open-platform-capabilities")
+            .accessibilityIdentifier("repository-settings-platform-capabilities-open-platform-capabilities")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

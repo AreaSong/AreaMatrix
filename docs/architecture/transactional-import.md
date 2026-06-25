@@ -20,7 +20,7 @@
 ## 整体流程
 
 本流程描述 `StorageMode::Copied` 与 `StorageMode::Moved` 的资料库内落位。
-C1-08 的 `StorageMode::Indexed` 不进入 staging/final 文件落位流程：Core 只
+`StorageMode::Indexed` 不进入 staging/final 文件落位流程：Core 只
 校验和读取外部源文件，计算 hash，写 `files.storage_mode = indexed`、
 保留 `files.source_path`，并写 `change_log.imported`。Indexed 成功后源文件
 仍在原路径，资料库内不得出现最终文件副本。
@@ -72,7 +72,7 @@ DB 中 `files.status` 字段反映 `Staging` / `Active` / `Deleted`。其他中�
 <repo>/.areamatrix/staging/
 ├── 01HF5Y...uuid1     // 当前进行中的 import
 ├── 01HF5Y...uuid2     // 另一个并发 import
-└── tmp_chunked/       // 分块 hash 产生的中间文件（Stage 2）
+└── tmp_chunked/       // 分块 hash 产生的中间文件（后续并行 hash）
     └── 01HF5Y.../
         ├── chunk-0
         ├── chunk-1
@@ -382,7 +382,7 @@ class ProgressBridge: ImportProgressCallback {
 
 详见 [../api/uniffi-recipes.md](../api/uniffi-recipes.md) 的 callback 章节。
 
-### 大文件并行（Stage 3）
+### 大文件并行（后续优化）
 
 3GB+ 视频/数据集的 hash 单线程 ≈ 6-8 秒。改用 rayon 并行：
 
@@ -413,7 +413,7 @@ pub fn sha256_parallel(path: &Path, chunk_size: u64) -> CoreResult<String> {
 }
 ```
 
-注意：并行 hash 的"hash of hashes"与单线程 hash 结果**不同**。需要在 schema 加 `hash_algorithm` 字段区分（`sha256` vs `sha256-of-chunks`），或仅用于内部去重不持久化。MVP 不启用。
+注意：并行 hash 的"hash of hashes"与单线程 hash 结果**不同**。需要在 schema 加 `hash_algorithm` 字段区分（`sha256` vs `sha256-of-chunks`），或仅用于内部去重不持久化。当前默认不启用。
 
 ---
 
@@ -635,14 +635,14 @@ pub fn recover_on_startup(repo: &Path) -> CoreResult<RecoveryReport> {
 
 | 场景 | DB 状态 | FS 状态 | 恢复动作 |
 |---|---|---|---|
-| A: staging 阶段断电 | 无 staging 行 | staging 文件可能存在 | 启动删 staging 文件 |
-| B: hash 阶段进程被 kill | 无 staging 行 | staging 文件存在 | 启动删 staging 文件 |
+| A: staging 期间断电 | 无 staging 行 | staging 文件可能存在 | 启动删 staging 文件 |
+| B: hash 期间进程被 kill | 无 staging 行 | staging 文件存在 | 启动删 staging 文件 |
 | C: INSERT 后 rename 前 panic | 有 staging 行 | staging 文件存在 | 启动删行 + 删文件 |
 | D: rename 中跨卷失败 | 有 staging 行 | staging 文件存在 | 启动删行 + 删文件（用户重导） |
 | E: rename 成功后 commit 失败 | 无 active 行 | 文件在 final 位置 | reindex 把孤儿文件登记 |
 | F: commit 后概览重生成失败 | 数据已 active | 文件已落位 | 不影响数据；用户下次操作触发概览重写 |
 | G: 24h 未完成的 staging | 有/无 staging 行 | staging 文件存在 | GC 清理 |
-| H: SIGKILL 在任何阶段 | 由 SQLite WAL 自动 ROLLBACK | 启动恢复保底 | 同上 |
+| H: SIGKILL 在任何步骤 | 由 SQLite WAL 自动 ROLLBACK | 启动恢复保底 | 同上 |
 | I: Indexed DB 写入失败 | staging 行由 guard 回滚或 SQLite ROLLBACK | 外部源文件保持原路径 | 不生成最终文件副本；用户可重试 |
 
 ---
@@ -668,13 +668,13 @@ pub fn recover_on_startup(repo: &Path) -> CoreResult<RecoveryReport> {
 
 ## 并发与死锁
 
-### MVP 阶段
+### 当前默认
 
 - 不支持多文件并发 import（顺序处理）
 - SQLite 在 WAL 模式下读不阻塞写、写不阻塞读
 - 启动恢复期间禁止用户操作（UI 显示 loading）
 
-### Stage 2 起
+### 后续批量导入
 
 - 批量导入用 worker pool（CPU 核数 × 2，封顶 8）
 - 每个 worker 独立事务
@@ -742,7 +742,7 @@ dictionary ImportOptions {
 | 场景 | 测试方式 | 文件 |
 |---|---|---|
 | 正常导入 Move/Copy/Index | 单元测试 + tempdir；Index 额外断言无 staging/final 副本 | `import_modes_test.rs` |
-| Staging 中崩溃 | 集成测试，hash 阶段强制 panic | `crash_during_staging_test.rs` |
+| Staging 中崩溃 | 集成测试，hash 期间强制 panic | `crash_during_staging_test.rs` |
 | Hash 重复 | 不同策略路径覆盖 | `dedup_test.rs` |
 | 冲突重命名 | 相同 target_filename 多次 | `conflict_test.rs` |
 | 启动恢复 | 手动放 staging 文件 + INSERT staging 行 | `recovery_test.rs` |

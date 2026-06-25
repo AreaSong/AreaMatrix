@@ -142,7 +142,7 @@ struct MainLoadingState: Equatable {
         [
             "Opening repository",
             recoveryStatusText,
-            scanAccessibilityStageText,
+            scanAccessibilityStatusText,
             scanStatusText,
             scanProgressText,
             scanCurrentPathText,
@@ -151,7 +151,7 @@ struct MainLoadingState: Equatable {
         ].compactMap { $0 }.joined(separator: "。")
     }
 
-    private var scanAccessibilityStageText: String? {
+    private var scanAccessibilityStatusText: String? {
         guard scanSession != nil || scanSessionErrorMapping != nil else { return nil }
         return "Scanning changes"
     }

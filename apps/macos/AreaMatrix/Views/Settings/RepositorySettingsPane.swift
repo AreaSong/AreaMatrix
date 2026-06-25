@@ -103,7 +103,7 @@ extension RepositorySettingsPane {
             Text("Connect a repository to view cross-platform repository settings.")
         } actions: {
             Button("Connect Repository", action: onChangeRepository)
-                .accessibilityIdentifier("S4-X-08-connect-repository")
+                .accessibilityIdentifier("repository-settings-connect-repository")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -236,17 +236,17 @@ extension RepositorySettingsPane {
     private var repositorySafeActionsSection: some View {
         RepositorySettingsSection(title: "Actions") {
             Button("Reconnect Repository", action: onChangeRepository)
-                .accessibilityIdentifier("S4-X-08-reconnect-repository")
+                .accessibilityIdentifier("repository-settings-reconnect-repository")
 
             Button("Choose Another Folder", action: onChangeRepository)
-                .accessibilityIdentifier("S4-X-08-choose-another-folder")
+                .accessibilityIdentifier("repository-settings-choose-another-folder")
 
             Button(diagnosticsButtonTitle) {
                 model.requestDiagnosticsExport()
             }
             .disabled(model.diagnosticsState.isCollecting || !capabilityModel.allowsDiagnosticsExport)
             .help(capabilityModel.diagnosticsDisabledReason ?? "Diagnostics export is available.")
-            .accessibilityIdentifier("S4-X-08-export-diagnostics")
+            .accessibilityIdentifier("repository-settings-export-diagnostics")
 
             Text("Diagnostics do not include your original file contents and are not uploaded automatically.")
                 .font(.callout)
@@ -259,15 +259,15 @@ extension RepositorySettingsPane {
             Button("Reveal in Finder") {
                 model.revealRepositoryInFinder()
             }
-            .accessibilityIdentifier("S4-X-08-reveal-repository")
+            .accessibilityIdentifier("repository-settings-reveal-repository")
 
             Button("Copy path") {
                 model.copyRepositoryPath()
             }
-            .accessibilityIdentifier("S4-X-08-copy-repository-path")
+            .accessibilityIdentifier("repository-settings-copy-repository-path")
 
             Button("Change repository...", action: onChangeRepository)
-                .accessibilityIdentifier("S4-X-08-change-repository")
+                .accessibilityIdentifier("repository-settings-change-repository")
         }
     }
 

@@ -309,13 +309,13 @@ struct SearchTagFacetPicker: View {
             TextField("Search tags", text: $query)
                 .textFieldStyle(.roundedBorder)
                 .focused($isSearchFocused)
-                .accessibilityIdentifier("S2-08-tag-search")
+                .accessibilityIdentifier("tag-filters-tag-search")
             SelectedTagChips(filters: $filters, tagFacets: tagOptions)
             TagMatchModeControl(filters: $filters)
             tagList
             tagFooter
         }
-        .accessibilityIdentifier("S2-08-tags-filter")
+        .accessibilityIdentifier("tag-filters-tags-filter")
         .onAppear { isSearchFocused = true }
         .task(id: tagRegistryAnchorFileID) {
             onLoadTagRegistry(tagRegistryAnchorFileID)

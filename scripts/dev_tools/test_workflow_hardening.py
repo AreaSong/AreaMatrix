@@ -67,7 +67,7 @@ class WorkflowHardeningTest(unittest.TestCase):
 
         self.assertTrue(any("status must be one of" in error for error in errors), errors)
 
-    def test_workflow_doctor_rejects_missing_late_stage_templates(self) -> None:
+    def test_workflow_doctor_rejects_missing_late_lifecycle_templates(self) -> None:
         for name in ["approval.yaml", "apply.yaml", "projection.yaml", "closeout.yaml"]:
             (self.root / "workflow/templates" / name).unlink()
 

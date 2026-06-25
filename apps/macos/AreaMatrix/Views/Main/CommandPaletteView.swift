@@ -12,7 +12,7 @@ struct CommandPaletteView: View {
     @State private var selectedTargetID: String?
 
     var body: some View {
-        MainFileActionSheetContainer(title: "Command Palette", pageID: "S2-15") {
+        MainFileActionSheetContainer(title: "Command Palette", pageID: "command-palette") {
             commandSearchField
             commandStatus
             commandSections
@@ -39,7 +39,7 @@ struct CommandPaletteView: View {
             moveSelectedTarget(offset: 1)
             return .handled
         }
-        .accessibilityIdentifier("S2-15-C2-11-command-palette")
+        .accessibilityIdentifier("command-palette-command-index-command-palette")
     }
 
     private var commandSearchField: some View {
@@ -47,7 +47,7 @@ struct CommandPaletteView: View {
             Image(systemName: "magnifyingglass")
             TextField("Type a command or search...", text: $query)
                 .textFieldStyle(.roundedBorder)
-                .accessibilityIdentifier("S2-15-C2-11-search-field")
+                .accessibilityIdentifier("command-palette-command-index-search-field")
             Text("Esc")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -61,19 +61,19 @@ struct CommandPaletteView: View {
             Text("Loading commands...")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-                .accessibilityIdentifier("S2-15-C2-11-loading")
+                .accessibilityIdentifier("command-palette-command-index-loading")
         }
         if let error = state.errorMapping {
             Text("\(error.userMessage) \(error.suggestedAction)")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-                .accessibilityIdentifier("S2-15-C2-11-error")
+                .accessibilityIdentifier("command-palette-command-index-error")
         }
         if state.snapshot?.isEmpty == true {
             Text(noResultsMessage)
                 .font(.callout)
                 .foregroundStyle(.secondary)
-                .accessibilityIdentifier("S2-15-C2-11-empty")
+                .accessibilityIdentifier("command-palette-command-index-empty")
         }
     }
 
@@ -124,7 +124,7 @@ struct CommandPaletteView: View {
             Text(emptySmartListMessage)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .accessibilityIdentifier("S2-15-C2-04-smart-list-empty")
+                .accessibilityIdentifier("command-palette-smart-list-smart-list-empty")
         }
     }
 
@@ -226,7 +226,7 @@ private struct CommandPaletteResultRow: View {
         }
         .accessibilityLabel(accessibilityLabel)
         .accessibilityHint(accessibilityHint)
-        .accessibilityIdentifier("S2-15-C2-11-command-\(target.id)")
+        .accessibilityIdentifier("command-palette-command-index-command-\(target.id)")
     }
 
     private var rowContent: some View {

@@ -14,7 +14,7 @@ AreaMatrix 是一个本地优先的资料管理桌面应用，首发目标是 ma
 - **原生体验优先**：用户预期是 Finder / Apple Notes 级别的流畅度和细节
 - **本地数据安全**：纯本地，不依赖云端
 - **后期跨端复用**：未来加 Windows / Linux 时不应推翻现有架构
-- **小团队可维护**：MVP 阶段单人或 2-3 人开发
+- **小团队可维护**：早期实现期单人或 2-3 人开发
 - **性能敏感**：大量文件 IO、hash 计算、FSEvents 监听
 
 ## 决定
@@ -38,7 +38,7 @@ AreaMatrix 是一个本地优先的资料管理桌面应用，首发目标是 ma
    - 内存安全，无 GC，IO 密集场景表现稳定
    - 跨平台编译成熟（aarch64 + x86_64 macOS、Linux、Windows、iOS、Android 均支持）
    - 生态完备：rusqlite / serde / tokio 都开箱即用
-4. **SwiftUI 在 macOS 14+ 已成熟**：Sonoma 起 List / Sidebar / Drag-drop API 完整，足以覆盖 MVP
+4. **SwiftUI 在 macOS 14+ 已成熟**：Sonoma 起 List / Sidebar / Drag-drop API 完整，足以覆盖基础闭环
 5. **避开 Web 框架陷阱**：Electron / Tauri 都被排除（详见 [备选](#考虑过的备选)）
 
 ## 考虑过的备选

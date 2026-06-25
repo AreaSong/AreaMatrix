@@ -9,11 +9,11 @@
 
 ## 故事编号约定
 
-`US-<Stage>.<编号>` —— 例如 `US-1.03` 表示 Stage 1 的第 3 个故事。
+`US-<版本序号>.<编号>` —— 例如 `US-1.03` 表示 v1 的第 3 个故事。
 
 ---
 
-## Stage 1（MVP）
+## v1 基础闭环
 
 ### US-1.01 拖拽导入文件
 
@@ -217,7 +217,7 @@
 
 ---
 
-## Stage 2 故事节选
+## v2 体验完善故事节选
 
 ### US-2.01 全文搜索（基于文件名 + 笔记）
 ### US-2.02 批量重分类
@@ -229,7 +229,7 @@
 
 ---
 
-## Stage 3 故事节选
+## 后续智能化故事节选
 
 ### US-3.01 启用 Ollama 本地 AI 兜底分类
 ### US-3.02 启用 OpenAI / DeepSeek 云端 AI（明确告知数据流向）
@@ -238,7 +238,7 @@
 
 ---
 
-## Stage 4 故事节选
+## 后续多端故事节选
 
 ### US-4.01 Windows 端发布
 ### US-4.02 Linux 端发布
@@ -251,4 +251,4 @@
 
 - [prd.md](prd.md)
 - [glossary.md](glossary.md)
-- [v1-mvp Stage 1 archive](../../workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md)
+- [v1-mvp historical archive](../../workflow/versions/v1-mvp/source-docs/)

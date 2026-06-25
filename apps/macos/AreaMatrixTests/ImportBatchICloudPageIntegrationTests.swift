@@ -4,13 +4,13 @@ import XCTest
 
 // swiftlint:disable file_length
 final class ImportBatchICloudPageIntegrationTests: XCTestCase {
-    func testS209PageIntegrationAllowsReadOnlyEntryButBlocksApply() {
+    func testBatchAddTagsPageIntegrationAllowsReadOnlyEntryButBlocksApply() {
         let disabledReason = MainFileWriteActionDisabledReason.repoReadOnly.rawValue
         let help = BatchAddTagsEntryPolicy.openHelp(disabledReason: disabledReason)
         let pending = BatchTagValidation.pendingStateAfterAdding(
             input: "urgent",
             pendingTags: [],
-            catalog: .s209TagCatalogFixture(fileID: 31),
+            catalog: .batchAddTagsTagCatalogFixture(fileID: 31),
             disabledReason: disabledReason
         )
 
@@ -29,9 +29,9 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
         )))
     }
 
-    func testS209PageIntegrationBuildsListAndCommandPaletteRoutesForSameSheet() {
-        let first = FileEntrySnapshot.s209RouteFixture(id: 1, currentName: "a.pdf")
-        let second = FileEntrySnapshot.s209RouteFixture(id: 2, currentName: "b.pdf")
+    func testBatchAddTagsPageIntegrationBuildsListAndCommandPaletteRoutesForSameSheet() {
+        let first = FileEntrySnapshot.batchAddTagsRouteFixture(id: 1, currentName: "a.pdf")
+        let second = FileEntrySnapshot.batchAddTagsRouteFixture(id: 2, currentName: "b.pdf")
         let route = BatchAddTagsRoute(
             source: .listContextMenu,
             fileIDs: [first.id, second.id],
@@ -57,9 +57,9 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
         XCTAssertEqual(commandRoute.selectedCount, route.selectedCount)
     }
 
-    func testS209CommandPaletteRouteExposesContextualAddTagsCommand() {
+    func testBatchAddTagsCommandPaletteRouteExposesContextualAddTagsCommand() {
         var commandQuery = "tag"
-        let body = s209RouteMirrorDescription(of: SearchCommandPaletteRouteView(
+        let body = batchAddTagsRouteMirrorDescription(of: SearchCommandPaletteRouteView(
             query: Binding(get: { commandQuery }, set: { commandQuery = $0 }),
             state: .idle,
             onLoad: {},
@@ -67,18 +67,18 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
             onClose: {}
         ).body)
 
-        XCTAssertTrue(body.contains("S2-15-search-route"))
+        XCTAssertTrue(body.contains("command-palette-search-route"))
         XCTAssertTrue(body.contains("CommandPaletteView"))
     }
 
     @MainActor
-    func testS210C207LoadsLatestUndoActionFromCoreActionLog() async {
-        let action = UndoActionRecordSnapshot.s210MovedFilesToTrash()
-        let undoStore = S210RecordingUndoStore(results: [.list(.success([action]))])
+    func testUndoToastUndoActionLogCoreLoadsLatestUndoActionFromCoreActionLog() async {
+        let action = UndoActionRecordSnapshot.undoToastMovedFilesToTrash()
+        let undoStore = UndoToastRecordingUndoStore(results: [.list(.success([action]))])
         let result = await BatchTagUndoAction.loadLatestAction(
             repoPath: "/tmp/repo",
             undoStore: undoStore,
-            errorMapper: S210ErrorMapper()
+            errorMapper: UndoToastErrorMapper()
         )
 
         XCTAssertEqual(result.toastState, .ready(action))
@@ -88,20 +88,20 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS210C207RefreshLatestToastCoversUndoableWriteSummaries() async {
+    func testUndoToastUndoActionLogCoreRefreshLatestToastCoversUndoableWriteSummaries() async {
         let actions: [UndoActionRecordSnapshot] = [
-            .s210RenamedFiles(),
-            .s210MovedFilesToCategory(),
-            .s210MovedFilesToTrash(),
-            .s210AddedTags()
+            .undoToastRenamedFiles(),
+            .undoToastMovedFilesToCategory(),
+            .undoToastMovedFilesToTrash(),
+            .undoToastAddedTags()
         ]
 
         for action in actions {
-            let undoStore = S210RecordingUndoStore(results: [.list(.success([action]))])
+            let undoStore = UndoToastRecordingUndoStore(results: [.list(.success([action]))])
             let state = await BatchTagUndoAction.refreshLatestToastState(
                 repoPath: "/tmp/repo",
                 undoStore: undoStore,
-                errorMapper: S210ErrorMapper()
+                errorMapper: UndoToastErrorMapper()
             )
 
             XCTAssertEqual(state, .ready(action))
@@ -111,31 +111,31 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS210C207ExecutesUndoAndUsesRefreshTargets() async {
-        let action = UndoActionRecordSnapshot.s210MovedFilesToTrash()
-        let undoStore = S210RecordingUndoStore(results: [
-            .undo(.success(.s210UndoneTrashMove())),
-            .list(.success([.s210ExecutedTrashMove()]))
+    func testUndoToastUndoActionLogCoreExecutesUndoAndUsesRefreshTargets() async {
+        let action = UndoActionRecordSnapshot.undoToastMovedFilesToTrash()
+        let undoStore = UndoToastRecordingUndoStore(results: [
+            .undo(.success(.undoToastUndoneTrashMove())),
+            .list(.success([.undoToastExecutedTrashMove()]))
         ])
 
         let applied = await BatchTagUndoAction.undo(
             repoPath: "/tmp/repo",
             action: action,
             undoStore: undoStore,
-            errorMapper: S210ErrorMapper()
+            errorMapper: UndoToastErrorMapper()
         )
         let plan = BatchTagUndoRefreshPlan(refreshTargets: applied.result?.refreshTargets ?? [])
         let refreshed = await BatchTagUndoAction.refreshActionLog(
             repoPath: "/tmp/repo",
             actionID: action.actionID,
             undoStore: undoStore,
-            errorMapper: S210ErrorMapper()
+            errorMapper: UndoToastErrorMapper()
         )
 
-        XCTAssertEqual(applied.result, .s210UndoneTrashMove())
+        XCTAssertEqual(applied.result, .undoToastUndoneTrashMove())
         XCTAssertTrue(plan.refreshesCurrentList)
         XCTAssertTrue(plan.refreshesUndoActions)
-        XCTAssertEqual(refreshed.action, .s210ExecutedTrashMove())
+        XCTAssertEqual(refreshed.action, .undoToastExecutedTrashMove())
         let undoRequests = await undoStore.undoRequests()
         let listRequests = await undoStore.listRequests()
         XCTAssertEqual(undoRequests, ["/tmp/repo|\(action.actionID)"])
@@ -143,13 +143,13 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS210C207BlockedUndoKeepsVisibleReasonWithoutExecuting() async {
-        let action = UndoActionRecordSnapshot.s210BlockedRename()
-        let undoStore = S210RecordingUndoStore(results: [.list(.success([action]))])
+    func testUndoToastUndoActionLogCoreBlockedUndoKeepsVisibleReasonWithoutExecuting() async {
+        let action = UndoActionRecordSnapshot.undoToastBlockedRename()
+        let undoStore = UndoToastRecordingUndoStore(results: [.list(.success([action]))])
         let result = await BatchTagUndoAction.loadLatestAction(
             repoPath: "/tmp/repo",
             undoStore: undoStore,
-            errorMapper: S210ErrorMapper()
+            errorMapper: UndoToastErrorMapper()
         )
 
         XCTAssertEqual(result.toastState, .disabled(action, reason: "External change prevents undo."))
@@ -157,8 +157,8 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
         XCTAssertEqual(undoRequests, [])
     }
 
-    func testS210C207ViewHistoryCreatesToastScopedRequest() {
-        let action = UndoActionRecordSnapshot.s210MovedFilesToTrash()
+    func testUndoToastUndoActionLogCoreViewHistoryCreatesToastScopedRequest() {
+        let action = UndoActionRecordSnapshot.undoToastMovedFilesToTrash()
         let request = UndoToastHistoryRequest(source: .viewHistory, state: .ready(action), actionLogRefreshFailure: nil)
 
         XCTAssertTrue(request.id.contains("viewHistory:\(action.actionID)"))
@@ -166,9 +166,9 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
         XCTAssertEqual(request.state, .ready(action))
     }
 
-    func testS210C207ViewDetailsCreatesToastScopedFailureRequest() {
-        let action = UndoActionRecordSnapshot.s210MovedFilesToTrash()
-        let failure = CoreErrorMappingSnapshot.s210UndoFailure()
+    func testUndoToastUndoActionLogCoreViewDetailsCreatesToastScopedFailureRequest() {
+        let action = UndoActionRecordSnapshot.undoToastMovedFilesToTrash()
+        let failure = CoreErrorMappingSnapshot.undoToastUndoFailure()
         let request = UndoToastHistoryRequest(
             source: .viewDetails,
             state: .failed(failure, previous: action),
@@ -182,21 +182,21 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
 
     @MainActor
     // swiftlint:disable:next function_body_length
-    func testS118ICloudPendingRowsDoNotSilentlyImportUnavailableRows() async {
+    func testImportBatchICloudPendingRowsDoNotSilentlyImportUnavailableRows() async {
         let localURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let cloudURL = URL(fileURLWithPath: "/tmp/iCloudOnly.pdf.icloud")
-        let request = s118BatchRequest(urls: [localURL, cloudURL])
+        let request = importBatchBatchRequest(urls: [localURL, cloudURL])
         let rows = [
-            s118ReadyBatchRow(url: localURL),
+            importBatchReadyBatchRow(url: localURL),
             ImportBatchPreviewRow.iCloudPlaceholder(
                 url: cloudURL,
                 message: "iCloud placeholder 需要下载后才能导入"
             )
         ]
-        let importer = S118RecordingBatchImporter()
+        let importer = ImportBatchRecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: S117RecordingErrorMapper()
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
@@ -222,7 +222,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
             pending: 1,
             items: [
                 ImportBatchProgressSnapshot.Item(
-                    fileID: 117,
+                    fileID: 42,
                     sourcePath: "/tmp/source.pdf",
                     targetPath: "finance/Invoice_2026Q1.pdf",
                     phase: .done,
@@ -231,7 +231,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
             ]
         ))
         XCTAssertEqual(recordedRequests, [
-            S118BatchImportRequest(
+            ImportBatchBatchImportRequest(
                 destination: .autoClassify,
                 suggestedCategory: "finance",
                 overrideFilename: "Invoice_2026Q1.pdf",
@@ -241,7 +241,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testS118AllICloudPendingStillBlocksImport() {
+    func testImportBatchAllICloudPendingStillBlocksImport() {
         let cloudURLs = [
             URL(fileURLWithPath: "/tmp/iCloudOnlyA.pdf.icloud"),
             URL(fileURLWithPath: "/tmp/iCloudOnlyB.pdf.icloud")
@@ -261,8 +261,8 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
             )
         }
         let model = ImportBatchCopyImportModel(
-            importer: S118RecordingBatchImporter(),
-            errorMapper: S117RecordingErrorMapper()
+            importer: ImportBatchRecordingBatchImporter(),
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
@@ -302,7 +302,7 @@ extension MainRepositoryDetailPaneTagActions {
 }
 
 private extension FileEntrySnapshot {
-    static func s209RouteFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
+    static func batchAddTagsRouteFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
         FileEntrySnapshot(
             id: id,
             path: "docs/\(currentName)",
@@ -310,7 +310,7 @@ private extension FileEntrySnapshot {
             currentName: currentName,
             category: "docs",
             sizeBytes: 128,
-            hashSha256: "s209-route-\(id)",
+            hashSha256: "batchAddTags-route-\(id)",
             storageMode: "Copied",
             origin: "Imported",
             sourcePath: nil,
@@ -320,25 +320,25 @@ private extension FileEntrySnapshot {
     }
 }
 
-private func s209RouteMirrorDescription(of value: Any) -> String {
+private func batchAddTagsRouteMirrorDescription(of value: Any) -> String {
     var lines: [String] = []
-    appendS209RouteMirrorDescription(of: value, to: &lines)
+    appendBatchAddTagsRouteMirrorDescription(of: value, to: &lines)
     return lines.joined(separator: "\n")
 }
 
-private func appendS209RouteMirrorDescription(of value: Any, to lines: inout [String]) {
+private func appendBatchAddTagsRouteMirrorDescription(of value: Any, to lines: inout [String]) {
     lines.append(String(describing: type(of: value)))
     lines.append(String(describing: value))
     for child in Mirror(reflecting: value).children {
         if let label = child.label {
             lines.append(label)
         }
-        appendS209RouteMirrorDescription(of: child.value, to: &lines)
+        appendBatchAddTagsRouteMirrorDescription(of: child.value, to: &lines)
     }
 }
 
 private extension UndoActionRecordSnapshot {
-    static func s210MovedFilesToTrash() -> UndoActionRecordSnapshot {
+    static func undoToastMovedFilesToTrash() -> UndoActionRecordSnapshot {
         UndoActionRecordSnapshot(
             actionID: "undo-trash-3",
             kind: "trash_delete",
@@ -353,8 +353,8 @@ private extension UndoActionRecordSnapshot {
         )
     }
 
-    static func s210BlockedRename() -> UndoActionRecordSnapshot {
-        var action = s210RenamedFiles()
+    static func undoToastBlockedRename() -> UndoActionRecordSnapshot {
+        var action = undoToastRenamedFiles()
         action.actionID = "undo-rename-blocked"
         action.status = .blocked
         action.canUndo = false
@@ -362,7 +362,7 @@ private extension UndoActionRecordSnapshot {
         return action
     }
 
-    static func s210RenamedFiles() -> UndoActionRecordSnapshot {
+    static func undoToastRenamedFiles() -> UndoActionRecordSnapshot {
         UndoActionRecordSnapshot(
             actionID: "undo-rename-12",
             kind: "rename_files",
@@ -377,7 +377,7 @@ private extension UndoActionRecordSnapshot {
         )
     }
 
-    static func s210MovedFilesToCategory() -> UndoActionRecordSnapshot {
+    static func undoToastMovedFilesToCategory() -> UndoActionRecordSnapshot {
         UndoActionRecordSnapshot(
             actionID: "undo-move-finance-5",
             kind: "move_files",
@@ -392,7 +392,7 @@ private extension UndoActionRecordSnapshot {
         )
     }
 
-    static func s210AddedTags() -> UndoActionRecordSnapshot {
+    static func undoToastAddedTags() -> UndoActionRecordSnapshot {
         UndoActionRecordSnapshot(
             actionID: "undo-tags-24",
             kind: "batch_add_tags",
@@ -407,8 +407,8 @@ private extension UndoActionRecordSnapshot {
         )
     }
 
-    static func s210ExecutedTrashMove() -> UndoActionRecordSnapshot {
-        var action = s210MovedFilesToTrash()
+    static func undoToastExecutedTrashMove() -> UndoActionRecordSnapshot {
+        var action = undoToastMovedFilesToTrash()
         action.status = .executed
         action.canUndo = false
         action.updatedAt = 1_700_000_030
@@ -417,7 +417,7 @@ private extension UndoActionRecordSnapshot {
 }
 
 private extension UndoActionResultSnapshot {
-    static func s210UndoneTrashMove() -> UndoActionResultSnapshot {
+    static func undoToastUndoneTrashMove() -> UndoActionResultSnapshot {
         UndoActionResultSnapshot(
             actionID: "undo-trash-3",
             status: .executed,
@@ -430,19 +430,19 @@ private extension UndoActionResultSnapshot {
 }
 
 private extension CoreErrorMappingSnapshot {
-    static func s210UndoFailure() -> CoreErrorMappingSnapshot {
+    static func undoToastUndoFailure() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .conflict,
             userMessage: "Undo failed",
             severity: .medium,
             suggestedAction: "View details in Undo history.",
             recoverability: .refreshRequired,
-            rawContext: "S2-10 C2-07 undo-action-log"
+            rawContext: "undo-toast undo-action-log undo-action-log"
         )
     }
 }
 
-private actor S210RecordingUndoStore: CoreUndoActionLogging {
+private actor UndoToastRecordingUndoStore: CoreUndoActionLogging {
     enum Result {
         case list(Swift.Result<[UndoActionRecordSnapshot], Error>)
         case undo(Swift.Result<UndoActionResultSnapshot, Error>)
@@ -485,7 +485,7 @@ private actor S210RecordingUndoStore: CoreUndoActionLogging {
     }
 }
 
-private actor S210ErrorMapper: CoreErrorMapping {
+private actor UndoToastErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: kind(for: error),
@@ -493,7 +493,7 @@ private actor S210ErrorMapper: CoreErrorMapping {
             severity: .medium,
             suggestedAction: "View details in Undo history.",
             recoverability: .refreshRequired,
-            rawContext: "S2-10 C2-07 undo-action-log"
+            rawContext: "undo-toast undo-action-log undo-action-log"
         )
     }
 

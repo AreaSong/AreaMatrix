@@ -11,7 +11,7 @@ extension RemoteProviderOutcome {
 }
 
 @MainActor
-func assertS303EnabledPageIntegration(
+func assertRemoteProviderConfigEnabledPageIntegration(
     remoteModel: RemoteProviderConfigModel,
     privacyModel: RemotePrivacyGateModel,
     providerRequests: RemoteProviderConfigBridge.Requests,
@@ -44,7 +44,7 @@ func assertS303EnabledPageIntegration(
 }
 
 @MainActor
-func assertS303DisabledPageIntegration(
+func assertRemoteProviderConfigDisabledPageIntegration(
     remoteModel: RemoteProviderConfigModel,
     privacyModel: RemotePrivacyGateModel,
     providerRequests: RemoteProviderConfigBridge.Requests,
@@ -123,7 +123,7 @@ actor RemoteProviderConfigBridge: CoreRemoteProviderConfiguring {
             endpointURL: request.endpointURL,
             status: .succeeded,
             providerVerified: true,
-            verificationToken: "verified-s303",
+            verificationToken: "verified-remoteProviderConfig",
             sanitizedMessage: "Connection verified"
         )
     }
@@ -187,8 +187,8 @@ actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging, CoreAIPrivacyEvaluat
     private var recorded = Requests()
 
     init(
-        snapshot: AiPrivacyRulesSnapshot = .s303PrivacyRules(),
-        evaluationReport: AiPrivacyEvaluationReport = .s303AllowedPrivacyEvaluation(),
+        snapshot: AiPrivacyRulesSnapshot = .remoteProviderConfigPrivacyRules(),
+        evaluationReport: AiPrivacyEvaluationReport = .remoteProviderConfigAllowedPrivacyEvaluation(),
         updateFails: Bool = false
     ) {
         self.snapshot = snapshot
@@ -227,7 +227,7 @@ actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging, CoreAIPrivacyEvaluat
 }
 
 extension AiPrivacyEvaluationReport {
-    static func s303AllowedPrivacyEvaluation() -> AiPrivacyEvaluationReport {
+    static func remoteProviderConfigAllowedPrivacyEvaluation() -> AiPrivacyEvaluationReport {
         AiPrivacyEvaluationReport(
             decision: .allowed,
             skippedReason: nil,
@@ -241,7 +241,7 @@ extension AiPrivacyEvaluationReport {
         )
     }
 
-    static func s307PrivacyRuleBlocked() -> AiPrivacyEvaluationReport {
+    static func aiTagSuggestionPrivacyRuleBlocked() -> AiPrivacyEvaluationReport {
         AiPrivacyEvaluationReport(
             decision: .skipped,
             skippedReason: .privacyRule,
@@ -298,13 +298,13 @@ extension RemoteProviderConfigState {
 }
 
 extension AiPrivacyRulesSnapshot {
-    static func s303PrivacyRules(
+    static func remoteProviderConfigPrivacyRules(
         privacyGateEnabled: Bool = false,
         featureScope: [AiFeatureKind] = [.autoSummaries]
     ) -> AiPrivacyRulesSnapshot {
         AiPrivacyRulesSnapshot(
             privacyGateEnabled: privacyGateEnabled,
-            rules: [.s303RuleRecord()],
+            rules: [.remoteProviderConfigRuleRecord()],
             remoteAllowedFields: [
                 AiPrivacyFieldState(field: .fileName, allowRemote: true, lastMatchedCount: 0),
                 AiPrivacyFieldState(field: .extractedTextExcerpt, allowRemote: false, lastMatchedCount: 2),
@@ -334,7 +334,7 @@ extension AiPrivacyRulesSnapshot {
 }
 
 extension AiPrivacyRuleRecord {
-    static func s303RuleRecord() -> AiPrivacyRuleRecord {
+    static func remoteProviderConfigRuleRecord() -> AiPrivacyRuleRecord {
         AiPrivacyRuleRecord(
             ruleId: "rule-confidential",
             name: "Block confidential",
@@ -491,7 +491,7 @@ actor RemoteProviderConfigErrorMapper: CoreErrorMapping {
             severity: .medium,
             suggestedAction: "Retry",
             recoverability: .retryable,
-            rawContext: "S3-03 remote provider"
+            rawContext: "remote-provider-config remote provider"
         )
     }
 }

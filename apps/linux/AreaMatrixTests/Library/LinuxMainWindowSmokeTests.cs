@@ -6,12 +6,12 @@ public static class LinuxMainWindowSmokeTests
 {
     public static void RunAll()
     {
-        LinuxMainWindowPageExposesC411UserTriggers();
+        LinuxMainWindowPageExposesDesktopMainQueryCoreUserTriggers();
         LinuxDesktopShellWiresRouteToRealCoreBridge();
-        NativeClientBindsOnlyC411QueryFunctions();
+        NativeClientBindsOnlyDesktopMainQueryCoreQueryFunctions();
     }
 
-    private static void LinuxMainWindowPageExposesC411UserTriggers()
+    private static void LinuxMainWindowPageExposesDesktopMainQueryCoreUserTriggers()
     {
         string ui = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Features/Library/MainWindow.ui"));
@@ -26,7 +26,7 @@ public static class LinuxMainWindowSmokeTests
 
         foreach (string fragment in new[]
         {
-            "page_id: S4-LNX-02",
+            "page_id: linux-main-window",
             "AreaMatrix Library",
             "Search",
             "Refresh",
@@ -84,7 +84,7 @@ public static class LinuxMainWindowSmokeTests
         TestAssert.NotContains("FakeDesktopMainQueryCoreBridge", shell, "no fake bridge in production shell");
     }
 
-    private static void NativeClientBindsOnlyC411QueryFunctions()
+    private static void NativeClientBindsOnlyDesktopMainQueryCoreQueryFunctions()
     {
         string nativeLibrary = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Core/NativeCoreLibrary.cs"));

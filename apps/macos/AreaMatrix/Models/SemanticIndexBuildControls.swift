@@ -102,11 +102,11 @@ private extension SemanticSearchResultPageSnapshot {
 private enum SemanticIndexBuildControlError {
     static let pauseUnsupported = CoreErrorMappingSnapshot(
         kind: .config,
-        userMessage: "Pause index build requires a Core pause API that is not available in C3-08.",
+        userMessage: "Pause index build requires a Core pause API that is not available in semantic-search-core.",
         severity: .high,
         suggestedAction: "Use Cancel index build to stop the active build, or retry after Core exposes pause support.",
         recoverability: .userActionRequired,
-        rawContext: "S3-08 pause index build missing Core API"
+        rawContext: "semantic-search pause index build missing Core API"
     )
 
     static let noActiveBuild = CoreErrorMappingSnapshot(
@@ -115,6 +115,6 @@ private enum SemanticIndexBuildControlError {
         severity: .medium,
         suggestedAction: "Start a semantic index build before canceling.",
         recoverability: .refreshRequired,
-        rawContext: "S3-08 cancel index build without active task"
+        rawContext: "semantic-search cancel index build without active task"
     )
 }

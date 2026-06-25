@@ -18,7 +18,7 @@ AreaMatrix 是一款 **source-available（源码可得）** 的桌面端资料�
 
 - **拖拽即归档** — 把文件拖进窗口任意位置，本地完成智能分类
 - **接管已有目录** — 任意非空文件夹都可以作为资料库根，首次打开会扫描并建立索引
-- **混合分类策略** — 先走扩展名 + 关键词规则；AI 兜底可选（Stage 3）
+- **混合分类策略** — 先走扩展名 + 关键词规则；AI 兜底可按配置启用
 - **三种存储模式** — 每次拖入可选 *移动 / 复制 / 仅索引*
 - **专属资料库概览** — 默认写入 `.areamatrix/generated/`，可选生成 `AREAMATRIX.md`，不覆盖用户已有 `README.md`
 - **树状图导航** — 完整仓库结构展示在侧边栏，大资料库下虚拟化渲染
@@ -55,17 +55,14 @@ AreaMatrix 的所有架构决策围绕三条原则：
 
 ## 项目状态
 
-实现态 pre-alpha 阶段。`v1-mvp` 技术 prompt 队列已完成 `637/637` 个任务，
-仓库内已经包含 Rust core、SwiftUI macOS app、测试，以及早期 iOS / Windows /
-Linux 表面层。
+实现态，尚未进入正式分发放行。v1 技术队列已完成，仓库内已经包含 Rust core、
+SwiftUI macOS app、测试，以及早期 iOS / Windows / Linux 表面层。
 
-`v0.1.0-unnotarized-preview.2` 已准备为 GitHub prerelease 轨道，可提供给可信测试者。
-它是 ad-hoc signed，未使用 Developer ID 签名，也未经过 Apple 公证。`0.1.0-local-qa`
-仍只作为内部 QA 产物存在；local QA 和 unnotarized preview 都不等于正式 alpha。
-正式 alpha 仍被 release 证据阻断，包括 iCloud placeholder 真实环境冒烟、Developer ID
-签名、公证、干净 Mac 首启验证，以及最终 `v0.1.0` tag。
+v1 技术归档不等于正式分发放行。正式分发仍被 release 证据和 release decision
+阻断；当前 release 状态以 release 指南和 residual ledger 为准，不从历史 prompt
+归档推断。
 
-四阶段路线图见 [docs/roadmap/milestones.md](docs/roadmap/milestones.md)。
+版本路线图见 [docs/roadmap/version-roadmap.md](docs/roadmap/version-roadmap.md)。
 
 ## 仓库目录层次
 
@@ -79,7 +76,7 @@ AreaMatrix 把源码、规划治理和本地运行材料分开看：
 | Codex 运行入口 | `.codex/`、`.agents/skills/`、`dev`、`task-loop`、`scripts/` | 仓库内 Codex skills、发现入口和 task-loop 工具。这些是稳定工具入口，不应为了视觉收紧而移动。 |
 | 本地生成物 | `.build/`、`build/`、`core/target/`、`apps/*/.build`、`apps/**/bin`、`apps/**/obj`、`apps/macos/DerivedData/` | 已忽略的本地构建产物，不属于源码目录形态。 |
 
-`.codex/skills-src/`、`.agents/skills/`、`workflow/`、`dev`、`task-loop` 这类固定路径需要保留在原位；Codex skills 和任务循环脚本会依赖它们。v1 历史 prompt 队列现在位于 `workflow/versions/v1-mvp/execution/`。轻量独立任务放在 `tasks/active/` 和 `tasks/done/`；`tasks/backlog/` 保持候选池语义，不代表当前任务进度。
+`.codex/skills-src/`、`.agents/skills/`、`workflow/`、`dev`、`task-loop` 这类固定路径需要保留在原位；Codex skills 和任务循环脚本会依赖它们。v1 历史 prompt 队列位于 `workflow/versions/v1-mvp/execution/`，只作为归档。轻量独立任务放在 `tasks/active/` 和 `tasks/done/`；`tasks/backlog/` 保持候选池语义，不代表当前任务进度。
 
 状态边界：产品事实以 `docs/`、`core/`、`apps/` 和 `assets/brand/final/` 为准；
 `workflow/` 承载规划、归档和参考材料；轻量任务状态只看 `tasks/active/` 与

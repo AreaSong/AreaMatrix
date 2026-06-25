@@ -10,12 +10,12 @@ final class AreaMatrixPerfTests: XCTestCase {
     override func setUpWithError() throws {
         try super.setUpWithError()
         guard ProcessInfo.processInfo.environment["AREAMATRIX_RUN_PERF_TESTS"] == "1" else {
-            throw XCTSkip("AreaMatrixPerfTests run only through the explicit Stage 1 performance gate.")
+            throw XCTSkip("AreaMatrixPerfTests run only through the explicit release performance gate.")
         }
     }
 
     @MainActor
-    func testApplicationLaunchToFirstScreenBaselineUnderStage1Threshold() async throws {
+    func testApplicationLaunchToFirstScreenBaselineUnderReleaseThreshold() async throws {
         let repoURL = try makePerfTemporaryRepoURL("startup-empty")
         defer { try? FileManager.default.removeItem(at: repoURL) }
         try await CoreBridge().initializeEmptyRepository(repoPath: repoURL.path)
@@ -51,7 +51,7 @@ final class AreaMatrixPerfTests: XCTestCase {
         XCTAssertLessThan(elapsed, Duration.milliseconds(1500))
     }
 
-    func testSingleFileImportBaselineUnderStage1Threshold() async throws {
+    func testSingleFileImportBaselineUnderReleaseThreshold() async throws {
         let repoURL = try makePerfTemporaryRepoURL("single-import-repo")
         let sourceRoot = try makePerfTemporaryRepoURL("single-import-source")
         defer {
@@ -77,7 +77,7 @@ final class AreaMatrixPerfTests: XCTestCase {
         XCTAssertLessThan(elapsed, Duration.milliseconds(200))
     }
 
-    func testBatchImportAndListBaselineUnderStage1Threshold() async throws {
+    func testBatchImportAndListBaselineUnderReleaseThreshold() async throws {
         let repoURL = try makePerfTemporaryRepoURL("batch-import-repo")
         let sourceRoot = try makePerfTemporaryRepoURL("batch-import-source")
         defer {
@@ -115,7 +115,7 @@ final class AreaMatrixPerfTests: XCTestCase {
         XCTAssertLessThan(elapsed, Duration.milliseconds(5000))
     }
 
-    func testTreeAndListResponseBaselineUnderStage1Thresholds() async throws {
+    func testTreeAndListResponseBaselineUnderReleaseThresholds() async throws {
         let repoURL = try makePerfTemporaryRepoURL("tree-list")
         defer { try? FileManager.default.removeItem(at: repoURL) }
         try writePerfRepositoryDataset(repoURL, count: 1000, sizeBytes: 128)
@@ -139,7 +139,7 @@ final class AreaMatrixPerfTests: XCTestCase {
         XCTAssertLessThan(listElapsed, listFilesThreshold)
     }
 
-    func testMemoryBaselinesUnderStage1Thresholds() async throws {
+    func testMemoryBaselinesUnderReleaseThresholds() async throws {
         let bridge = CoreBridge()
         let idleRepo = try makePerfTemporaryRepoURL("memory-idle")
         let oneThousandRepo = try makePerfTemporaryRepoURL("memory-1k")
@@ -352,7 +352,7 @@ private func recordPerfMetric(name: String, value: Duration, threshold: Duration
         + Double(threshold.components.seconds) * 1000
     let result = value < threshold ? "PASS" : "FAIL"
     print(String(
-        format: "STAGE1_PERF name=\"%@\" value_ms=%.3f threshold_ms=%.3f result=%@",
+        format: "RELEASE_PERF name=\"%@\" value_ms=%.3f threshold_ms=%.3f result=%@",
         name,
         milliseconds,
         thresholdMilliseconds,
@@ -364,7 +364,7 @@ private func recordMemoryMetric(name: String, thresholdMegabytes: Double) throws
     let valueMegabytes = try ProcessMemoryGauge.residentMegabytes()
     let result = valueMegabytes < thresholdMegabytes ? "PASS" : "FAIL"
     print(String(
-        format: "STAGE1_MEMORY name=\"%@\" value_mb=%.3f threshold_mb=%.3f result=%@",
+        format: "RELEASE_MEMORY name=\"%@\" value_mb=%.3f threshold_mb=%.3f result=%@",
         name,
         valueMegabytes,
         thresholdMegabytes,

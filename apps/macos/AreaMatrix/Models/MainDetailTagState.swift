@@ -144,7 +144,7 @@ extension CoreErrorMappingSnapshot {
             severity: .medium,
             suggestedAction: "Select files before adding tags.",
             recoverability: .userActionRequired,
-            rawContext: "S2-09 C2-06 batch_add_tags"
+            rawContext: "batch-add-tags batch-add-tags-core batch_add_tags"
         )
     }
 }

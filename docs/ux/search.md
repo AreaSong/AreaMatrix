@@ -1,6 +1,6 @@
 # 搜索（Search UX）
 
-> 定义 Stage 2 搜索能力的产品行为：搜索入口、作用域（文件名/笔记/元数据）、过滤与排序、历史与保存搜索、以及高级查询语法。本文先锁定 UX 概念与交互，工程实现可从轻到重逐步落地。
+> 定义 v2 搜索能力的产品行为：搜索入口、作用域（文件名/笔记/元数据）、过滤与排序、历史与保存搜索、以及高级查询语法。本文先锁定 UX 概念与交互，工程实现可从轻到重逐步落地。
 >
 > 阅读时长：约 16 分钟。
 
@@ -14,13 +14,13 @@
 2. **范围明确**：用户知道自己是在搜“当前分类”还是“全库”。\n
 3. **可组合**：关键词 + 过滤 + 排序能覆盖 80% 场景。\n
 4. **可复用**：常用查询可以保存为“智能列表”。\n
-5. **不做承诺过早**：Stage 2 只做文件名+笔记+部分元数据；全文/OCR 属于 Stage 3。\n
+5. **不做承诺过早**：v2 先做文件名+笔记+部分元数据；全文内容索引和 OCR 属于后续智能化能力。\n
 
 ### 成功标准（验收）
 
 - **Q1**：⌘F 聚焦搜索框，输入即出结果（debounce）。\n
 - **Q2**：用户可一键切换“当前分类/全库”。\n
-- **Q3**：支持基本过滤：category/type/date/tag（tag Stage 2）。\n
+- **Q3**：支持基本过滤：category/type/date/tag。\n
 - **Q4**：支持保存搜索并在侧边栏显示“智能列表”。\n
 - **Q5**：高级查询语法可选（不强迫），错误时有提示。\n
 
@@ -32,7 +32,7 @@
 
 - Toolbar 右侧提供 Search field\n
 - 快捷键：`⌘F`\n
-- Cmd+K 命令面板（Stage 2）：`Search…`\n
+- Cmd+K 命令面板：`Search…`\n
 
 ### 搜索框（ASCII）
 
@@ -57,7 +57,7 @@
 
 ---
 
-## 搜索对象与字段（Stage 2）
+## 搜索对象与字段
 
 ### 必须支持
 
@@ -74,7 +74,7 @@
 - 大小（size）\n
 - hash 前缀（debug）\n
 
-### 明确不支持（Stage 3 才支持）
+### 明确不支持（后续智能化才支持）
 
 - PDF/图片 OCR\n
 - 文件内容全文\n
@@ -114,7 +114,7 @@ Filters 按钮打开 popover：\n
 Category: [All ▾]
 Type:     [All ▾]
 Date:     [Any ▾]  (Last 7 days / Last 30 days / Custom…)
-Tags:     [Any ▾]  (Stage 2)
+Tags:     [Any ▾]
 [ Reset filters ]
 ```
 
@@ -168,7 +168,7 @@ Tags:     [Any ▾]  (Stage 2)
 | `cat:` | `cat:finance` | 分类 |
 | `after:` | `after:2026-04-01` | 导入/修改时间下界（工程决定） |
 | `before:` | `before:2026-04-30` | 时间上界 |
-| `tag:` | `tag:urgent` | 标签（Stage 2） |
+| `tag:` | `tag:urgent` | 标签 |
 | `note:` | `note:\"invoice\"` | 只在笔记中搜 |
 
 ### 错误提示
@@ -184,7 +184,7 @@ Tags:     [Any ▾]  (Stage 2)
 必须给“下一步”：\n
 - `Clear filters`\n
 - `Search in All`（若当前 scope=Current）\n
-- `Create note`（若用户搜索笔记内容，Stage 2 可选）\n
+- `Create note`（若用户搜索笔记内容，可选）\n
 
 ```
 没有结果

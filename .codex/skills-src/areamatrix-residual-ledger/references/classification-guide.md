@@ -6,7 +6,7 @@ Use this guide to keep AreaMatrix residual tracking separate from product docs, 
 
 | Type | Meaning | Can become a task? |
 |---|---|---|
-| `release-evidence` | Formal release or alpha evidence is missing or blocked. | Only after the release owner defines executable local work. |
+| `release-evidence` | Distribution evidence or release decisions are missing or blocked. | Only after the release owner defines executable local work. |
 | `closeout-exception` | Historical gap accepted by closeout. | No; do not rewrite historical logs or Git state. |
 | `historical-reference` | Non-current vision or planning material. | Only through a fresh planning gate. |
 | `template-reference` | Template or sample version material. | No; create a real version separately. |
@@ -36,8 +36,8 @@ Always include both groups when they exist. The answer must cover every ID in `w
 
 Conclusion wording:
 
-- Good: "当前没有 active task；当前阻塞正式 alpha 的是 release evidence / release decision。完整 residual ledger 还包括 reference-only、template-only、accepted-exception、closed backlog 和 product-doc marker 项。"
-- Avoid: "真正没解决的只有正式 Stage 1 alpha 发布证据。" This hides indexed residuals unless followed immediately by the full residual inventory.
+- Good: "当前没有 active task；当前阻塞 v1 分发的是 release evidence / release decision。完整 residual ledger 还包括 reference-only、template-only、accepted-exception、closed backlog 和 product-doc marker 项。"
+- Avoid: "真正没解决的只有 release evidence。" This hides indexed residuals unless followed immediately by the full residual inventory.
 
 Completeness check before answering:
 

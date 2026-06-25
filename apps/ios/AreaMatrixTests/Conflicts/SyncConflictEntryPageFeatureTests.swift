@@ -3,7 +3,7 @@ import XCTest
 
 @MainActor
 final class SyncConflictEntryPageFeatureTests: XCTestCase {
-    func testS4X03LoadsNeedsReviewConflictsFromC415CoreBridge() async {
+    func testSyncConflictEntryLoadsNeedsReviewConflictsFromSyncConflictDetectCoreCoreBridge() async {
         let reviewable = SyncConflictEntryConflict.fixture(
             conflictID: "ios-review",
             primaryPath: "docs/review.pdf"
@@ -22,7 +22,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         XCTAssertTrue(model.isBannerVisible)
     }
 
-    func testS4X03LaterDoesNotClearNeedsReviewList() async {
+    func testSyncConflictEntryLaterDoesNotClearNeedsReviewList() async {
         let bridge = RecordingSyncConflictEntryCoreBridge(conflicts: [
             .fixture(conflictID: "ios-later")
         ])
@@ -36,7 +36,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.reviewableConflicts.first?.status, .needsReview)
     }
 
-    func testS4X03ReviewRouteUsesStableConflictID() async {
+    func testSyncConflictEntryReviewRouteUsesStableConflictID() async {
         let conflict = SyncConflictEntryConflict.fixture(
             conflictID: "ios-route",
             primaryPath: "docs/route.pdf"
@@ -53,7 +53,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         ))
     }
 
-    func testS4X03DetailEntryMatchesAffectedFile() async {
+    func testSyncConflictEntryDetailEntryMatchesAffectedFile() async {
         let conflict = SyncConflictEntryConflict.fixture(
             conflictID: "ios-detail",
             primaryPath: "docs/current.pdf",
@@ -69,7 +69,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.detailConflict(fileID: 42, path: "docs/archive.pdf"), conflict)
     }
 
-    func testS4X03MapsCoreLoadFailureToRetryableError() async {
+    func testSyncConflictEntryMapsCoreLoadFailureToRetryableError() async {
         let bridge = RecordingSyncConflictEntryCoreBridge(error: .database("metadata locked"))
         let model = SyncConflictEntryViewModel(repoPath: "/tmp/Repo", bridge: bridge)
 
@@ -82,7 +82,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         XCTAssertEqual(error.recovery, "Try again after the repository database is available.")
     }
 
-    func testS4X03TopLevelTakeoverRoutesReviewAction() throws {
+    func testSyncConflictEntryTopLevelTakeoverRoutesReviewAction() throws {
         let appSource = try Self.readSource("../../AreaMatrix/App/AreaMatrixIOSApp.swift")
         let routeViewSource = try Self.readSource(
             "../../AreaMatrix/Features/Conflicts/SyncConflictReviewRouteView.swift"
@@ -92,13 +92,13 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         XCTAssertTrue(appSource.contains("onOpenSyncConflictReview: openSyncConflictReview"))
         XCTAssertTrue(appSource.contains(".navigationDestination(item: $pendingSyncConflictReviewRoute)"))
         XCTAssertTrue(appSource.contains("SyncConflictReviewRouteView(route: route)"))
-        XCTAssertTrue(routeViewSource.contains("S4-X-01-C4-15-ios-review-route"))
+        XCTAssertTrue(routeViewSource.contains("sync-conflict-review-sync-conflict-detect-ios-review-route"))
         XCTAssertTrue(routeViewSource.contains("previewSyncConflictResolution"))
         XCTAssertTrue(routeViewSource.contains("resolveSyncConflict"))
-        XCTAssertTrue(routeViewSource.contains("S4-X-09-C4-21-ios-replace-confirm"))
+        XCTAssertTrue(routeViewSource.contains("replace-resolution-replace-confirmation-ios-replace-confirm"))
     }
 
-    func testS4X09ReviewRoutePreviewsConfirmsAndAppliesReplace() async {
+    func testReplaceResolutionReviewRoutePreviewsConfirmsAndAppliesReplace() async {
         let route = SyncConflictEntryReviewRoute(
             repoPath: "/tmp/Repo",
             conflictID: "ios-replace",
@@ -125,13 +125,13 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
             strategy: .useIncoming,
             previewToken: "ios-preview-token",
             replaceConfirmed: true,
-            replaceConfirmationID: "S4-X-09-C4-21-ios-replace-ios-preview-token"
+            replaceConfirmationID: "replace-resolution-replace-confirmation-ios-replace-ios-preview-token"
         ))
         XCTAssertEqual(model.result?.status, .resolved)
         XCTAssertNil(model.error)
     }
 
-    func testS4X09ReviewRouteKeepsPreviewFailureRetryable() async {
+    func testReplaceResolutionReviewRouteKeepsPreviewFailureRetryable() async {
         let route = SyncConflictEntryReviewRoute(
             repoPath: "/tmp/Repo",
             conflictID: "ios-preview-failure",
@@ -150,7 +150,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         XCTAssertFalse(model.canApplyReplace)
     }
 
-    func testS4X03ConnectRoutePassesReviewHandlerToMobileLibrary() throws {
+    func testSyncConflictEntryConnectRoutePassesReviewHandlerToMobileLibrary() throws {
         let connectSource = try Self.readSource("../../AreaMatrix/Features/Onboarding/ConnectRepositoryView.swift")
         let routeSource = try Self.readSource(
             "../../AreaMatrix/Features/Onboarding/ConnectRepositoryRouteDestinationView.swift"

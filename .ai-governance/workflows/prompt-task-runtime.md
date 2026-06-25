@@ -13,13 +13,13 @@
 ## Prompt 任务流程
 
 1. 运行 `doctor` 确认任务库健康。
-2. 运行 `plan` 查看阶段顺序和依赖。
+2. 运行 `plan` 查看执行顺序和依赖。
 3. 运行 `render --task <label>` 生成可复制执行的 prompt。
 4. 按 prompt 阅读文档、工程质量规则、编码规范、实现代码、运行验证。
 5. 运行 `verify --task <label>` 生成只读验收 prompt。
 6. 验收必须同时覆盖功能完成度、验证证据和工程质量；任一不达标都不能 mark completed。
 7. 验收通过后，用 `mark --task <label> --status completed` 记录本地进度。
-8. 阶段结束时运行 `verify --phase <phase>` 做阶段验收。
+8. 执行分组结束时运行对应版本的分组验收命令；若历史工具仍暴露 `verify --phase <phase>`，该 flag 只表示版本内执行分组。
 
 ## 自动任务循环
 
@@ -28,8 +28,8 @@
 并归档，`./task-loop` 主要用于 v1 历史队列审计、恢复或未来经显式 approval /
 live mapping 后的版本执行；它不是 v2 或新需求的起点。
 
-- copy-ready 是实施阶段，允许按 task / manifest 边界修改文件。
-- verify-ready 是验收阶段，语义上必须只读：不得修改文件、不得修复失败项，只输出 PASS / FAIL / BLOCKED 证据。
+- copy-ready 是实施 prompt，允许按 task / manifest 边界修改文件。
+- verify-ready 是验收 prompt，语义上必须只读：不得修改文件、不得修复失败项，只输出 PASS / FAIL / BLOCKED 证据。
 - 当前 runner 默认对 copy / verify 子进程都使用 `CODEX_EXEC_SANDBOX=danger-full-access`，以避免 macOS XCTest 在低权限 sandbox 下触发本机 `testmanagerd` fallback；只读性由 verify prompt、runner 重试规则和验收门禁共同约束。
 - 只有排障时才临时覆盖 `CODEX_EXEC_SANDBOX=workspace-write` 或 `CODEX_EXEC_SANDBOX=read-only`，不能把 read-only dry-run 成功当成 task 完成证据。
 - 验收失败时，脚本把失败摘要注入下一轮执行，继续修复同一个 task。
@@ -77,13 +77,14 @@ Codex subagents 可以用于当前任务内的并行协作，但不能替代 pro
 - `Forbidden Touches`：除非重新确认，否则不得触碰的路径。
 - `Risk Level`：Low / Medium / High / Mission-Critical。
 - `Validation`：任务完成后必须尝试的检查。
-- `Engineering Quality`：由 `workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md` 和 `docs/development/coding-standards.md` 共同定义的质量门禁。
+- `Engineering Quality`：由当前版本 execution 的共享工程质量规则、v1 历史质量规则（仅审计 v1
+  时适用）和 `docs/development/coding-standards.md` 共同定义的质量门禁。
 
 ## 验收规则
 
 - 执行 prompt 可以改文件，验收 prompt 禁止改文件。
 - 单任务验收必须逐项检查 task 核对清单和完成标准。
-- 阶段验收中任一 task 不通过，则阶段不通过。
+- 分组验收中任一 task 不通过，则该分组不通过。
 - 无法证明通过的项目默认不通过。
 - 代码结构、错误处理、注释、测试或真实闭环不达标时，默认不通过。
 - `mark` 只记录人工进度，不能替代验收结论。

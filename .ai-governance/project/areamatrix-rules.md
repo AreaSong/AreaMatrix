@@ -43,9 +43,9 @@ exclude 隐藏，不纳入源码目录语义。
 - 架构与目录：`docs/architecture/`
 - Core API：`docs/api/core-api.md`
 - 开发规范：`docs/development/`
-- v1 MVP 历史拆解归档：`workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md`
+- v1 source docs archive：`workflow/versions/v1-mvp/source-docs/`
 - 版本化 workflow：`workflow/versions/`、`workflow/templates/`
-- 长期路线图：`docs/roadmap/milestones.md`
+- 长期路线图：`docs/roadmap/version-roadmap.md`
 
 ## 资产与原型边界
 
@@ -66,7 +66,8 @@ exclude 隐藏，不纳入源码目录语义。
 ## 安全重点
 
 - 用户原文件、`.areamatrix/` 元数据、DB、staging 临时区、索引、日志、配置和 AI 请求 / 响应内容是默认保护资产。
-- 文件系统与 DB、一阶段 staging 与最终目录、FSEvents / iCloud 外部事件、本机与远程 AI / 网络服务之间都是默认信任边界。
+- 文件系统与 DB、导入 staging 区与最终目录、FSEvents / iCloud 外部事件、本机与远程 AI /
+  网络服务之间都是默认信任边界。
 - 命中高风险边界的设计或 review 必须说明 abuse path、缓解措施和 residual risk，不能只写“已考虑安全”。
 
 ## 分层约束
@@ -79,7 +80,9 @@ exclude 隐藏，不纳入源码目录语义。
 ## 验证基线
 
 - Workflow 结构：`./dev workflow doctor`
-- v1 历史 prompt 执行库：`python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor`
+- 版本化 workflow：`./dev workflow doctor`
+- v1 历史 prompt 执行库审计 / 恢复：
+  `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor`
 - Rust：`cargo fmt`、`cargo clippy`、`cargo test`
 - Swift：`xcodebuild test`、SwiftFormat、SwiftLint
 - 发布前：按 `docs/development/testing.md` 的手工冒烟清单验证。

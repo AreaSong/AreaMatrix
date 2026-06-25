@@ -17,9 +17,9 @@ public static class LinuxSyncConflictEntryPageFeatureTests
         await ErrorStateMapsCoreConflictError();
         await ReviewRoutePreviewsConfirmsAndAppliesReplace();
         await CoreSafetyBackupAllowsReplaceWhenTrashUnavailable();
-        await ReplacePlanTextShowsCompleteS4X09Fields();
-        LinuxMainWindowSmokeExposesS4X03C415Entry();
-        LinuxDesktopShellWiresS4X03ToRealCoreBridge();
+        await ReplacePlanTextShowsCompleteReplaceResolutionFields();
+        LinuxMainWindowSmokeExposesSyncConflictEntrySyncConflictDetectCoreEntry();
+        LinuxDesktopShellWiresSyncConflictEntryToRealCoreBridge();
     }
 
     private static async Task LoadsNeedsReviewConflictsFromCoreBridge()
@@ -140,7 +140,7 @@ public static class LinuxSyncConflictEntryPageFeatureTests
             syncBridge.PreviewRequests[0].Resolution,
             "preview strategy");
         TestAssert.Contains(
-            "S4-X-09-C4-21",
+            "replace-resolution-replace-confirmation",
             syncBridge.ResolveRequests[0].Request.ReplaceConfirmationId ?? "",
             "confirmation id");
         TestAssert.True(syncBridge.ResolveRequests[0].Request.ReplaceConfirmed, "replace confirmed");
@@ -171,7 +171,7 @@ public static class LinuxSyncConflictEntryPageFeatureTests
             "backup target");
     }
 
-    private static async Task ReplacePlanTextShowsCompleteS4X09Fields()
+    private static async Task ReplacePlanTextShowsCompleteReplaceResolutionFields()
     {
         FakeSyncConflictEntryCoreBridge syncBridge = new([
             Conflict("plan", primaryPath: "Contracts/client-contract-1.pdf")
@@ -203,7 +203,7 @@ public static class LinuxSyncConflictEntryPageFeatureTests
         }
     }
 
-    private static void LinuxMainWindowSmokeExposesS4X03C415Entry()
+    private static void LinuxMainWindowSmokeExposesSyncConflictEntrySyncConflictDetectCoreEntry()
     {
         string mainUi = File.ReadAllText(RepositoryPath("apps/linux/AreaMatrix/Features/Library/MainWindow.ui"));
         string entryUi = ReadSyncConflictEntryUi();
@@ -214,26 +214,26 @@ public static class LinuxSyncConflictEntryPageFeatureTests
 
         foreach (string fragment in new[]
         {
-            "page_id: S4-X-03",
+            "page_id: sync-conflict-entry",
             "Sync conflict needs review",
             "Needs Review",
             "This file has a sync conflict",
             "The page calls detect_sync_conflicts through SyncConflictEntryCoreBridge."
         })
         {
-            TestAssert.Contains(fragment, entryUi + mainUi, $"S4-X-03 fragment {fragment}");
+            TestAssert.Contains(fragment, entryUi + mainUi, $"sync-conflict-entry fragment {fragment}");
         }
 
-        TestAssert.Contains("DetectSyncConflictsAsync", bridge, "C4-15 bridge call");
-        TestAssert.Contains("PreviewSyncConflictResolutionAsync", bridge + viewModel, "C4-16 preview");
-        TestAssert.Contains("ResolveSyncConflictAsync", bridge + viewModel, "C4-16 resolve");
+        TestAssert.Contains("DetectSyncConflictsAsync", bridge, "sync-conflict-detect bridge call");
+        TestAssert.Contains("PreviewSyncConflictResolutionAsync", bridge + viewModel, "sync-conflict-resolve preview");
+        TestAssert.Contains("ResolveSyncConflictAsync", bridge + viewModel, "sync-conflict-resolve resolve");
         TestAssert.Contains("Status == SyncConflictEntryStatus.NeedsReview", viewModel, "needs review filter");
-        TestAssert.Contains("ConfirmReplacePlan", entryUi + viewModel, "S4-X-09 confirmation");
-        TestAssert.Contains("S4-X-09-C4-21", viewModel, "C4-21 confirmation id");
+        TestAssert.Contains("ConfirmReplacePlan", entryUi + viewModel, "replace-resolution confirmation");
+        TestAssert.Contains("replace-resolution-replace-confirmation", viewModel, "replace-confirmation confirmation id");
         TestAssert.Contains("DismissBanner", viewModel, "later action");
     }
 
-    private static void LinuxDesktopShellWiresS4X03ToRealCoreBridge()
+    private static void LinuxDesktopShellWiresSyncConflictEntryToRealCoreBridge()
     {
         string shell = File.ReadAllText(RepositoryPath(
             "apps/linux/AreaMatrix/Features/Library/LinuxDesktopShell.cs"));

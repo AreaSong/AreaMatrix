@@ -10,7 +10,7 @@ struct ClassifierRuleEditorSection: View {
                 status
                 content
             }
-            .accessibilityIdentifier("S2-19-classifier-rule-editor")
+            .accessibilityIdentifier("classifier-rule-editor-classifier-rule-editor")
         }
     }
 
@@ -20,7 +20,7 @@ struct ClassifierRuleEditorSection: View {
                 Label("New category", systemImage: "plus")
             }
             .disabled(model.classifierRuleEditor.isBusy)
-            .accessibilityIdentifier("S2-19-new-category")
+            .accessibilityIdentifier("classifier-rule-editor-new-category")
 
             Button {
                 Task { await model.loadClassifierRuleEditor() }
@@ -42,7 +42,7 @@ struct ClassifierRuleEditorSection: View {
         case .loading:
             ProgressView("Loading classifier rules...")
                 .controlSize(.small)
-                .accessibilityIdentifier("S2-19-loading-classifier-rules")
+                .accessibilityIdentifier("classifier-rule-editor-loading-classifier-rules")
         case let .failed(mapping):
             classifierRuleEditorError(mapping)
         }
@@ -52,7 +52,7 @@ struct ClassifierRuleEditorSection: View {
         if case .saved = model.classifierRuleEditor.saveState {
             Label("Classifier rule saved", systemImage: "checkmark.circle")
                 .foregroundStyle(.green)
-                .accessibilityIdentifier("S2-19-save-success")
+                .accessibilityIdentifier("classifier-rule-editor-save-success")
         }
     }
 
@@ -79,7 +79,7 @@ struct ClassifierRuleEditorSection: View {
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityIdentifier("S2-19-error")
+        .accessibilityIdentifier("classifier-rule-editor-error")
     }
 }
 
@@ -99,7 +99,7 @@ private struct ClassifierRuleListView: View {
                 .buttonStyle(.plain)
                 .padding(8)
                 .background(ruleListBackground(rule), in: RoundedRectangle(cornerRadius: 8))
-                .accessibilityIdentifier("S2-19-rule-row-\(rule.slug)")
+                .accessibilityIdentifier("classifier-rule-editor-rule-row-\(rule.slug)")
             }
         }
         .frame(width: 210, alignment: .topLeading)
@@ -158,19 +158,19 @@ private struct ClassifierRuleDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             TextField("slug", text: draftBinding(\.slug))
                 .textFieldStyle(.roundedBorder)
-                .accessibilityIdentifier("S2-19-slug")
+                .accessibilityIdentifier("classifier-rule-editor-slug")
             TextField("display name", text: draftBinding(\.displayName))
                 .textFieldStyle(.roundedBorder)
-                .accessibilityIdentifier("S2-19-display-name")
+                .accessibilityIdentifier("classifier-rule-editor-display-name")
             TextField("description", text: draftBinding(\.description))
                 .textFieldStyle(.roundedBorder)
-                .accessibilityIdentifier("S2-19-description")
+                .accessibilityIdentifier("classifier-rule-editor-description")
             Stepper(value: priorityBinding, in: ClassifierRuleEditorValidation.priorityRange) {
                 Text("Priority \(draft.priority)")
             }
             TextField("naming template", text: draftBinding(\.namingTemplate))
                 .textFieldStyle(.roundedBorder)
-                .accessibilityIdentifier("S2-19-naming-template")
+                .accessibilityIdentifier("classifier-rule-editor-naming-template")
         }
         .disabled(model.classifierRuleEditor.isBusy)
     }
@@ -197,7 +197,7 @@ private struct ClassifierRuleDetailView: View {
             } label: {
                 Label(value, systemImage: "xmark.circle")
             }
-            .accessibilityIdentifier("S2-19-remove-\(isExtension ? "extension" : "keyword")-\(value)")
+            .accessibilityIdentifier("classifier-rule-editor-remove-\(isExtension ? "extension" : "keyword")-\(value)")
         }
     }
 
@@ -206,7 +206,7 @@ private struct ClassifierRuleDetailView: View {
         if !draft.previewConfirmed {
             Label("Impact summary required before Save; existing files are not moved or deleted.", systemImage: "eye")
                 .foregroundStyle(.orange)
-                .accessibilityIdentifier("S2-19-impact-required")
+                .accessibilityIdentifier("classifier-rule-editor-impact-required")
         }
         ForEach(draft.validationErrors, id: \.self) { error in
             Label(error, systemImage: "exclamationmark.triangle")
@@ -219,20 +219,20 @@ private struct ClassifierRuleDetailView: View {
         HStack(spacing: 10) {
             Button("Preview impact") { model.requestClassifierRuleImpactSummary() }
                 .disabled(model.classifierRuleEditor.isBusy)
-                .accessibilityIdentifier("S2-19-preview-impact")
+                .accessibilityIdentifier("classifier-rule-editor-preview-impact")
             Button("Validate") { model.validateClassifierRuleDraft() }
                 .disabled(model.classifierRuleEditor.isBusy)
-                .accessibilityIdentifier("S2-19-validate")
+                .accessibilityIdentifier("classifier-rule-editor-validate")
             Button("Save") { Task { await model.saveClassifierRuleDraft() } }
                 .disabled(!model.classifierRuleEditor.canSave)
                 .keyboardShortcut(.defaultAction)
-                .accessibilityIdentifier("S2-19-save")
+                .accessibilityIdentifier("classifier-rule-editor-save")
             Button("Revert") { model.revertClassifierRuleDraft() }
                 .disabled(!model.classifierRuleEditor.canRevert)
-                .accessibilityIdentifier("S2-19-revert")
+                .accessibilityIdentifier("classifier-rule-editor-revert")
             Button("Delete category...") { model.requestDeleteSelectedClassifierRule() }
                 .disabled(!model.classifierRuleEditor.canDeleteSelectedRule)
-                .accessibilityIdentifier("S2-19-delete-category")
+                .accessibilityIdentifier("classifier-rule-editor-delete-category")
         }
     }
 
@@ -248,7 +248,7 @@ private struct ClassifierRuleDetailView: View {
     }
 
     private func matcherImpactSummary(_ removal: ClassifierRuleMatcherRemoval) -> some View {
-        riskPanel(identifier: "S2-19-matcher-impact-summary") {
+        riskPanel(identifier: "classifier-rule-editor-matcher-impact-summary") {
             Label("Impact summary", systemImage: "eye")
                 .font(.callout.weight(.semibold))
             Text(matcherImpactCopy(removal))
@@ -258,13 +258,13 @@ private struct ClassifierRuleDetailView: View {
                 Button("Cancel") { model.cancelClassifierRuleRiskConfirmation() }
                 Button("Confirm removal") { model.confirmClassifierRuleImpactSummary() }
                     .keyboardShortcut(.defaultAction)
-                    .accessibilityIdentifier("S2-19-confirm-matcher-removal")
+                    .accessibilityIdentifier("classifier-rule-editor-confirm-matcher-removal")
             }
         }
     }
 
     private func categoryDeleteConfirmation(_ deletion: ClassifierRuleDeleteConfirmation) -> some View {
-        riskPanel(identifier: "S2-19-delete-category-confirmation") {
+        riskPanel(identifier: "classifier-rule-editor-delete-category-confirmation") {
             Label("Delete category?", systemImage: "exclamationmark.triangle")
                 .font(.callout.weight(.semibold))
             Text("This removes the category from classifier.yaml. Existing files are not moved or deleted.")
@@ -277,13 +277,13 @@ private struct ClassifierRuleDetailView: View {
                 Button("Cancel") { model.cancelClassifierRuleRiskConfirmation() }
                 Button("Confirm delete") { Task { await model.confirmDeleteSelectedClassifierRule() } }
                     .keyboardShortcut(.defaultAction)
-                    .accessibilityIdentifier("S2-19-confirm-delete-category")
+                    .accessibilityIdentifier("classifier-rule-editor-confirm-delete-category")
             }
         }
     }
 
     private var draftImpactSummary: some View {
-        riskPanel(identifier: "S2-19-impact-summary") {
+        riskPanel(identifier: "classifier-rule-editor-impact-summary") {
             Label("Impact summary", systemImage: "eye")
                 .font(.callout.weight(.semibold))
             Text("Saving this classifier draft updates future classification rules only.")
@@ -296,7 +296,7 @@ private struct ClassifierRuleDetailView: View {
                 Button("Cancel") { model.cancelClassifierRuleRiskConfirmation() }
                 Button("Confirm summary") { model.confirmClassifierRuleImpactSummary() }
                     .keyboardShortcut(.defaultAction)
-                    .accessibilityIdentifier("S2-19-confirm-impact-summary")
+                    .accessibilityIdentifier("classifier-rule-editor-confirm-impact-summary")
             }
         }
     }

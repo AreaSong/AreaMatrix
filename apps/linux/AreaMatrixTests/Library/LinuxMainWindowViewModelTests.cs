@@ -15,7 +15,7 @@ public static class LinuxMainWindowViewModelTests
         await LocalFolderNoticeRouteIsHostedBeforeContinuing();
         await RepositoryInitConfirmRouteCreatesThenOpensMainWindow();
         await RepositoryAdoptConfirmRouteAdoptsThenOpensMainWindow();
-        await WatcherRescanHandoffOpensS4X07ConfirmationView();
+        await WatcherRescanHandoffOpensRescanConfirmConfirmationView();
         await OpenRepositoryLoadsTreeAndFirstPageFromCoreBridge();
         await LoadMoreAdvancesListOffsetThroughCoreBridge();
         await SearchUsesCoreSearchWithoutScanningRepository();
@@ -158,7 +158,7 @@ public static class LinuxMainWindowViewModelTests
         TestAssert.SequenceEqual([path], queryBridge.ListRequests, "main query after adopt");
     }
 
-    private static async Task WatcherRescanHandoffOpensS4X07ConfirmationView()
+    private static async Task WatcherRescanHandoffOpensRescanConfirmConfirmationView()
     {
         const string path = "/home/me/AreaMatrix";
         FakeDesktopMainQueryCoreBridge queryBridge = new();

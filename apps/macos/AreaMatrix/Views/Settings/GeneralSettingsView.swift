@@ -435,7 +435,7 @@ struct GeneralSettingsLoadingContent: View {
                 .font(.headline)
             Button("Close", action: onClose)
                 .keyboardShortcut(.cancelAction)
-                .accessibilityIdentifier("S1-26-loading-close-settings")
+                .accessibilityIdentifier("general-settings-loading-close-settings")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

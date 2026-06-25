@@ -360,7 +360,7 @@ extension MainRepositoryDetailPane {
             }
             .padding(10)
             .background(Color.blue.opacity(0.08))
-            .accessibilityIdentifier("S3-08-semantic-detail-explanation")
+            .accessibilityIdentifier("semantic-search-semantic-detail-explanation")
         }
     }
 
@@ -373,46 +373,46 @@ extension MainRepositoryDetailPane {
                     onBeginRenameFile(detail.id)
                 }
                 .disabled(disabledReason != nil)
-                .accessibilityIdentifier("S1-12-rename-file")
+                .accessibilityIdentifier("file-detail-rename-file")
                 Button("Change Category...") {
                     onBeginChangeCategoryFile(detail.id)
                 }
                 .disabled(disabledReason != nil)
-                .accessibilityIdentifier("S1-12-change-category")
+                .accessibilityIdentifier("file-detail-change-category")
                 Button("Correct Classification...") {
                     onBeginClassifierCorrectionFile(detail.id)
                 }
                 .disabled(disabledReason != nil)
-                .accessibilityIdentifier("S2-16-correct-classification")
+                .accessibilityIdentifier("classifier-correction-correct-classification")
                 Button("Review AI Suggestion...") {
                     onBeginAIClassificationSuggestionFile(detail.id)
                 }
                 .disabled(disabledReason != nil)
-                .accessibilityIdentifier("S3-04-review-ai-suggestion")
+                .accessibilityIdentifier("ai-category-suggestion-review-ai-suggestion")
                 Button("Review Sync Conflict...") {
                     onBeginSyncConflictReview(detail)
                 }
                 .disabled(disabledReason != nil)
-                .accessibilityIdentifier("S4-X-01-C4-15-review-sync-conflict")
+                .accessibilityIdentifier("sync-conflict-review-sync-conflict-detect-review-sync-conflict")
                 if detail.hasICloudConflictCopySignal {
                     Button("Resolve iCloud Conflict...") {
                         onBeginICloudConflictResolution(detail.id)
                     }
                     .disabled(disabledReason != nil)
-                    .accessibilityIdentifier("S1-25-resolve-icloud-conflict")
+                    .accessibilityIdentifier("icloud-conflict-minimal-resolve-icloud-conflict")
                 }
                 if shouldShowRemoveFromIndex(for: detail) {
                     Button("Remove from Index", role: .destructive) {
                         onBeginDeleteFile(detail.id)
                     }
                     .disabled(disabledReason != nil)
-                    .accessibilityIdentifier("S1-12-remove-from-index")
+                    .accessibilityIdentifier("file-detail-remove-from-index")
                 }
             } label: {
                 Label("More", systemImage: "ellipsis.circle")
             }
             .help(disabledReason?.rawValue ?? "File actions")
-            .accessibilityIdentifier("S1-12-file-action-menu")
+            .accessibilityIdentifier("file-detail-file-action-menu")
         }
     }
 
@@ -521,6 +521,6 @@ private enum DetailRemoveFromIndexButtonStyle {
     case primary, secondary
 
     var accessibilityIdentifier: String {
-        self == .primary ? "S1-12-missing-remove-from-index" : "S1-12-inline-remove-from-index"
+        self == .primary ? "file-detail-missing-remove-from-index" : "file-detail-inline-remove-from-index"
     }
 }

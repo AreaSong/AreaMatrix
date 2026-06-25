@@ -181,7 +181,7 @@ struct ChangeCategorySheet: View {
     }
 
     var pageID: String {
-        mode == .classifierCorrection ? "S2-16" : "S1-35"
+        mode == .classifierCorrection ? "classifier-correction" : "change-category"
     }
 
     var pageTitle: String {
@@ -292,7 +292,7 @@ struct ClassifierRuleEditorRouteView: View {
 
     private func createBar(_ context: BatchChangeCategoryReturnContext) -> some View {
         HStack(spacing: 12) {
-            Text("Edit classifier.yaml in S2-19. Validate returns to S2-12 when one new category is saved.")
+            Text("Edit classifier.yaml in classifier-rule-editor. Validate returns to batch-change-category when one new category is saved.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Spacer()
@@ -300,7 +300,7 @@ struct ClassifierRuleEditorRouteView: View {
                 .keyboardShortcut(.cancelAction)
         }
         .padding(.horizontal, 34).padding(.vertical, 12)
-        .accessibilityIdentifier("S2-12-classifier-editor-return-context")
+        .accessibilityIdentifier("batch-change-category-classifier-editor-return-context")
     }
 
     private func handleClassifierSave(_ notification: Notification) {

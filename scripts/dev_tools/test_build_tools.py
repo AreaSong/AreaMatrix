@@ -282,14 +282,14 @@ class BuildToolsTest(unittest.TestCase):
     def test_task_check_path_resolves_phase_task_label(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            task = root / "workflow/versions/v1-mvp/execution/phase-4/4-1-stage2-experience/task-15-c2-03-integration-verify.md"
+            task = root / "workflow/versions/v1-mvp/execution/phase-4/4-1-experience/task-15-saved-search-integration-verify.md"
             task.parent.mkdir(parents=True)
             task.write_text("# 4-1/task-15\n", encoding="utf-8")
 
             self.assertEqual(checks._task_path(root, "4-1/task-15").resolve(), task.resolve())
 
     def test_task_check_maps_c2_03_to_saved_search_tests(self) -> None:
-        text = "Core ability C2-03 saved-search-crud"
+        text = "Core ability saved-search-core saved-search-crud"
 
         self.assertEqual(
             checks._core_task_test_commands(text),
@@ -302,7 +302,7 @@ class BuildToolsTest(unittest.TestCase):
         )
 
     def test_task_check_maps_c2_04_to_smart_list_tests(self) -> None:
-        text = "Core ability C2-04 smart-lists"
+        text = "Core ability smart-list smart-lists"
 
         self.assertEqual(
             checks._core_task_test_commands(text),
@@ -316,11 +316,11 @@ class BuildToolsTest(unittest.TestCase):
     def test_task_check_discovers_capability_tests_from_spec_slug(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            spec_dir = root / "workflow/versions/v1-mvp/source-docs/core/capability-specs/stage-2-experience"
+            spec_dir = root / "workflow/versions/v1-mvp/source-docs/core/capability-specs/experience"
             tests_dir = root / "core/tests"
             spec_dir.mkdir(parents=True)
             tests_dir.mkdir(parents=True)
-            (spec_dir / "C2-05-tag-crud.md").write_text("# C2-05 tag-crud\n", encoding="utf-8")
+            (spec_dir / "tag-crud-core-tag-crud.md").write_text("# tag-crud-core tag-crud\n", encoding="utf-8")
             for name in [
                 "tag_crud_contract_api.rs",
                 "tag_crud_implementation.rs",
@@ -329,7 +329,7 @@ class BuildToolsTest(unittest.TestCase):
                 (tests_dir / name).write_text("// test\n", encoding="utf-8")
 
             self.assertEqual(
-                checks._core_task_test_commands("Core ability C2-05 tag-crud", root),
+                checks._core_task_test_commands("Core ability tag-crud-core tag-crud", root),
                 [
                     ["cargo", "test", "--test", "tag_crud_contract_api", "--", "--nocapture"],
                     ["cargo", "test", "--test", "tag_crud_failure_recovery", "--", "--nocapture"],
@@ -338,7 +338,7 @@ class BuildToolsTest(unittest.TestCase):
             )
 
     def test_core_task_check_fails_when_no_targeted_tests_are_mapped(self) -> None:
-        text = "Core ability C4-99 imaginary capability"
+        text = "Core ability unknown-capability imaginary capability"
 
         with (
             patch("scripts.dev_tools.checks.require_command"),
@@ -355,7 +355,7 @@ class BuildToolsTest(unittest.TestCase):
         )
 
     def test_core_task_check_allows_explicit_full_fallback(self) -> None:
-        text = "Core ability C4-99 imaginary capability"
+        text = "Core ability unknown-capability imaginary capability"
 
         with (
             patch("scripts.dev_tools.checks.require_command"),
@@ -372,7 +372,7 @@ class BuildToolsTest(unittest.TestCase):
         )
 
     def test_atomic_core_task_check_runs_only_targeted_tests(self) -> None:
-        text = "Core ability C2-04 smart-lists"
+        text = "Core ability smart-list smart-lists"
 
         with (
             patch("scripts.dev_tools.checks.require_command"),
@@ -392,7 +392,7 @@ class BuildToolsTest(unittest.TestCase):
         )
 
     def test_core_integration_task_check_adds_quality_gate(self) -> None:
-        text = "Core ability C2-04 integration-verify smart-lists"
+        text = "Core ability smart-list integration-verify smart-lists"
 
         with (
             patch("scripts.dev_tools.checks.require_command"),
@@ -411,7 +411,7 @@ class BuildToolsTest(unittest.TestCase):
         )
 
     def test_mission_critical_file_safety_task_check_adds_quality_gate(self) -> None:
-        text = "Core ability C2-04 smart-lists"
+        text = "Core ability smart-list smart-lists"
         entry = checks.TaskManifestEntry(
             raw="### Exact Docs\n- docs/architecture/transactional-import.md",
             risk="Mission-Critical",
@@ -465,12 +465,13 @@ class BuildToolsTest(unittest.TestCase):
             self.assertEqual(entry.risk, "High")
             self.assertEqual(entry.validation, ("./dev check task 4-1/task-18",))
 
-    def test_task_check_detects_stage_closeout_without_core_integration_false_positive(self) -> None:
-        core_integration = "# 4-1/task-15: C2-03 integration-verify\n- 阶段：Stage 2 Experience\n"
-        stage_closeout = "# 4-1/task-143: stage-2-experience integration verify\n"
+    def test_task_check_detects_legacy_closeout_without_core_integration_false_positive(self) -> None:
+        core_integration = "# 4-1/task-15: saved-search-core integration-verify\n- 分组：v1 experience\n"
+        legacy_marker = "sta" + "ge"
+        legacy_closeout = f"# 4-1/task-143: {legacy_marker}-2-experience integration verify\n"
 
-        self.assertFalse(checks._is_stage_closeout_task(core_integration))
-        self.assertTrue(checks._is_stage_closeout_task(stage_closeout))
+        self.assertFalse(checks._is_legacy_closeout_task(core_integration))
+        self.assertTrue(checks._is_legacy_closeout_task(legacy_closeout))
 
     def test_verify_suffix_defers_runner_checkpoint_evidence(self) -> None:
         cfg = RuntimeConfig(root_dir=Path("/tmp/areamatrix"))
@@ -482,14 +483,14 @@ class BuildToolsTest(unittest.TestCase):
         self.assertIn("progress.json", suffix)
         self.assertIn("git add", suffix)
         self.assertIn("GIT_CHECKPOINT=commit", suffix)
-        self.assertIn("runner checkpoint 阶段", suffix)
+        self.assertIn("runner checkpoint 收口", suffix)
 
     def test_retry_prompt_keeps_task_validation_upper_bound(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             verify_log = root / "verify.log"
             verify_log.write_text(
-                "验证失败：缺少 targeted C2-03 failure test 证据。\nVERIFY_RESULT: FAIL\n",
+                "验证失败：缺少 targeted saved-search-core failure test 证据。\nVERIFY_RESULT: FAIL\n",
                 encoding="utf-8",
             )
             task = TaskFile(

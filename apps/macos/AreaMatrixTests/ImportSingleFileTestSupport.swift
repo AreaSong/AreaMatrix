@@ -40,19 +40,19 @@ struct ImportSingleFileStaticLocalizedError: LocalizedError {
     }
 }
 
-struct S117PredictRequest: Equatable {
+struct ImportSingleFilePredictRequest: Equatable {
     var repoPath: String
     var filename: String
 }
 
-struct S117ImportRequest: Equatable {
+struct ImportSingleFileImportRequest: Equatable {
     var mode: ImportSingleFileStorageMode
     var overrideCategory: String
     var overrideFilename: String
     var duplicateStrategy: DuplicateStrategy = .ask
 }
 
-struct S118BatchImportRequest: Equatable {
+struct ImportBatchBatchImportRequest: Equatable {
     var storageMode: ImportSingleFileStorageMode = .copy
     var destination: ImportEntryDestination
     var suggestedCategory: String?
@@ -60,26 +60,26 @@ struct S118BatchImportRequest: Equatable {
     var duplicateStrategy: DuplicateStrategy
 }
 
-actor S117RecordingPredictor: CoreCategoryPredicting {
+actor ImportSingleFileRecordingPredictor: CoreCategoryPredicting {
     private let result: ClassifyResultSnapshot
-    private var requests: [S117PredictRequest] = []
+    private var requests: [ImportSingleFilePredictRequest] = []
 
     init(result: ClassifyResultSnapshot) {
         self.result = result
     }
 
     func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
-        requests.append(S117PredictRequest(repoPath: repoPath, filename: filename))
+        requests.append(ImportSingleFilePredictRequest(repoPath: repoPath, filename: filename))
         return result
     }
 
-    func recordedRequests() -> [S117PredictRequest] {
+    func recordedRequests() -> [ImportSingleFilePredictRequest] {
         requests
     }
 }
 
-actor S117RecordingImporter: CoreFileImporting {
-    private var requests: [S117ImportRequest] = []
+actor ImportSingleFileRecordingImporter: CoreFileImporting {
+    private var requests: [ImportSingleFileImportRequest] = []
 
     func importCopiedFile(
         repoPath _: String,
@@ -126,7 +126,7 @@ actor S117RecordingImporter: CoreFileImporting {
         )
     }
 
-    func recordedRequests() -> [S117ImportRequest] {
+    func recordedRequests() -> [ImportSingleFileImportRequest] {
         requests
     }
 
@@ -136,13 +136,13 @@ actor S117RecordingImporter: CoreFileImporting {
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) -> FileEntrySnapshot {
-        requests.append(S117ImportRequest(
+        requests.append(ImportSingleFileImportRequest(
             mode: mode,
             overrideCategory: overrideCategory,
             overrideFilename: overrideFilename,
             duplicateStrategy: duplicateStrategy
         ))
-        return FileEntrySnapshot.s117Fixture(
+        return FileEntrySnapshot.importSingleFileFixture(
             currentName: overrideFilename,
             category: overrideCategory,
             storageMode: mode.coreStorageMode
@@ -150,10 +150,10 @@ actor S117RecordingImporter: CoreFileImporting {
     }
 }
 
-actor S117SuspendingImporter: CoreFileImporting {
-    private let gate: S117ImportGate
+actor ImportSingleFileSuspendingImporter: CoreFileImporting {
+    private let gate: ImportSingleFileImportGate
 
-    init(gate: S117ImportGate) {
+    init(gate: ImportSingleFileImportGate) {
         self.gate = gate
     }
 
@@ -166,7 +166,7 @@ actor S117SuspendingImporter: CoreFileImporting {
     ) async throws -> FileEntrySnapshot {
         await gate.markStarted()
         await gate.waitUntilFinished()
-        return FileEntrySnapshot.s117Fixture(currentName: overrideFilename, category: overrideCategory)
+        return FileEntrySnapshot.importSingleFileFixture(currentName: overrideFilename, category: overrideCategory)
     }
 
     func importMovedFile(
@@ -190,7 +190,7 @@ actor S117SuspendingImporter: CoreFileImporting {
     }
 }
 
-actor S117ImportGate {
+actor ImportSingleFileImportGate {
     private var isStarted = false
     private var isFinished = false
     private var startContinuations: [CheckedContinuation<Void, Never>] = []
@@ -227,7 +227,7 @@ actor S117ImportGate {
     }
 }
 
-actor S117FailingImporter: CoreFileImporting {
+actor ImportSingleFileFailingImporter: CoreFileImporting {
     private let error: CoreError
 
     init(error: CoreError) {
@@ -265,8 +265,8 @@ actor S117FailingImporter: CoreFileImporting {
     }
 }
 
-actor S118RecordingBatchImporter: CoreBatchCopyImporting {
-    private var requests: [S118BatchImportRequest] = []
+actor ImportBatchRecordingBatchImporter: CoreBatchCopyImporting {
+    private var requests: [ImportBatchBatchImportRequest] = []
 
     func importCopiedFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot {
         try await importBatchFile(request: CoreBatchImportRequest(
@@ -281,7 +281,7 @@ actor S118RecordingBatchImporter: CoreBatchCopyImporting {
     }
 
     func importBatchFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot {
-        requests.append(S118BatchImportRequest(
+        requests.append(ImportBatchBatchImportRequest(
             storageMode: request.storageMode,
             destination: request.destination,
             suggestedCategory: request.suggestedCategory,
@@ -298,28 +298,28 @@ actor S118RecordingBatchImporter: CoreBatchCopyImporting {
             "__root__"
         }
 
-        return FileEntrySnapshot.s117Fixture(
+        return FileEntrySnapshot.importSingleFileFixture(
             currentName: request.overrideFilename,
             category: category,
             storageMode: request.storageMode.coreStorageMode
         )
     }
 
-    func recordedRequests() -> [S118BatchImportRequest] {
+    func recordedRequests() -> [ImportBatchBatchImportRequest] {
         requests
     }
 }
 
-actor S118SequenceBatchImporter: CoreBatchCopyImporting {
+actor ImportBatchSequenceBatchImporter: CoreBatchCopyImporting {
     private var results: [Result<FileEntrySnapshot, Error>]
-    private var requests: [S118BatchImportRequest] = []
+    private var requests: [ImportBatchBatchImportRequest] = []
 
     init(results: [Result<FileEntrySnapshot, Error>]) {
         self.results = results
     }
 
     func importCopiedFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot {
-        requests.append(S118BatchImportRequest(
+        requests.append(ImportBatchBatchImportRequest(
             storageMode: .copy,
             destination: request.destination,
             suggestedCategory: request.suggestedCategory,
@@ -338,7 +338,7 @@ actor S118SequenceBatchImporter: CoreBatchCopyImporting {
     }
 
     func importBatchFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot {
-        requests.append(S118BatchImportRequest(
+        requests.append(ImportBatchBatchImportRequest(
             storageMode: request.storageMode,
             destination: request.destination,
             suggestedCategory: request.suggestedCategory,
@@ -356,20 +356,20 @@ actor S118SequenceBatchImporter: CoreBatchCopyImporting {
         }
     }
 
-    func recordedRequests() -> [S118BatchImportRequest] {
+    func recordedRequests() -> [ImportBatchBatchImportRequest] {
         requests
     }
 }
 
-struct S118NameConflictPrecheckRequest: Equatable {
+struct ImportBatchNameConflictPrecheckRequest: Equatable {
     var repoPath: String
     var rowIDs: [String]
     var destination: ImportBatchDestinationOption
 }
 
-actor S118StaticNameConflictPrechecker: ImportBatchNameConflictPrechecking {
+actor ImportBatchStaticNameConflictPrechecker: ImportBatchNameConflictPrechecking {
     private let results: [String: ImportBatchNameConflictPrecheckResult]
-    private var requests: [S118NameConflictPrecheckRequest] = []
+    private var requests: [ImportBatchNameConflictPrecheckRequest] = []
 
     init(results: [String: ImportBatchNameConflictPrecheckResult]) {
         self.results = results
@@ -380,7 +380,7 @@ actor S118StaticNameConflictPrechecker: ImportBatchNameConflictPrechecking {
         rows: [ImportBatchPreviewRow],
         destination: ImportBatchDestinationOption
     ) async -> [String: ImportBatchNameConflictPrecheckResult] {
-        requests.append(S118NameConflictPrecheckRequest(
+        requests.append(ImportBatchNameConflictPrecheckRequest(
             repoPath: repoPath,
             rowIDs: rows.map(\.id),
             destination: destination
@@ -388,17 +388,17 @@ actor S118StaticNameConflictPrechecker: ImportBatchNameConflictPrechecking {
         return results
     }
 
-    func recordedRequests() -> [S118NameConflictPrecheckRequest] {
+    func recordedRequests() -> [ImportBatchNameConflictPrecheckRequest] {
         requests
     }
 }
 
-actor S117RecordingErrorMapper: CoreErrorMapping {
+actor ImportSingleFileRecordingErrorMapper: CoreErrorMapping {
     private var errors: [CoreError] = []
 
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         errors.append(error)
-        return .s117Error(kind: kind(for: error))
+        return .importSingleFileError(kind: kind(for: error))
     }
 
     func recordedErrors() -> [CoreError] {
@@ -425,7 +425,7 @@ actor S117RecordingErrorMapper: CoreErrorMapping {
     }
 }
 
-struct S117StaticSettingsReader: AppSettingsReading {
+struct ImportSingleFileStaticSettingsReader: AppSettingsReading {
     let repoPath: String?
 
     func configuredRepoPath() -> String? {
@@ -433,12 +433,12 @@ struct S117StaticSettingsReader: AppSettingsReading {
     }
 }
 
-struct S117NoopWelcomeHelpOpener: WelcomeHelpOpening {
+struct ImportSingleFileNoopWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {}
 }
 
 @MainActor
-final class S117RecordingAccessibilityAnnouncer: AccessibilityAnnouncing {
+final class ImportSingleFileRecordingAccessibilityAnnouncer: AccessibilityAnnouncing {
     private(set) var announcements: [String] = []
 
     func announce(_ message: String) {
@@ -446,7 +446,7 @@ final class S117RecordingAccessibilityAnnouncer: AccessibilityAnnouncing {
     }
 }
 
-actor S117StaticRepositoryOpener: CoreEmptyRepositoryOpening {
+actor ImportSingleFileStaticRepositoryOpener: CoreEmptyRepositoryOpening {
     let opening: RepositoryOpeningResult
 
     init(opening: RepositoryOpeningResult) {

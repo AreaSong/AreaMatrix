@@ -36,7 +36,7 @@ flowchart TB
 | 全 core 加权 | ≥ 70% | CI 强制 |
 | Swift Watcher | ≥ 60% | Xcode coverage |
 | Swift Bridge | ≥ 50%（其余靠集成测试） | - |
-| SwiftUI 视图 | 不强制 | 靠 E2E 和 UI snapshot（Stage 2+） |
+| SwiftUI 视图 | 不强制 | 靠 E2E 和 UI snapshot（后续 UI 自动化） |
 
 ---
 
@@ -223,7 +223,7 @@ xcodebuild test \
 ```
 
 部分受限本地执行器无法访问 `com.apple.testmanagerd.control`，会在测试 runner
-通信阶段失败。此时使用：
+通信时失败。此时使用：
 
 ```bash
 ./dev test macos
@@ -234,11 +234,11 @@ xcodebuild test \
 `AreaMatrixTests.xctest`，通过 `xcrun xctest` 直接执行 hostless XCTest
 bundle。普通编译失败、断言失败、链接失败或非沙箱错误仍然按失败处理。
 如果 `xcodebuild test` 已经输出目标 XCTest suite 全部通过，但仅在测试结束后的
-`testmanagerd` 日志收集或分布式通知阶段被本地 sandbox 拦截，`./dev test macos`
+`testmanagerd` 日志收集或分布式通知时被本地 sandbox 拦截，`./dev test macos`
 会把该结果视为标准 XCTest 证据通过；这种判定不得掩盖真实构建失败或断言失败。
 
 当仅运行 `AreaMatrixTests/AreaMatrixPerfTests` 时，`./dev test macos` 还会在
-显式开启 Stage 1 performance XCTest，并在 performance 通过后构建 signed Release `.app`，执行 codesign、自包含链接检查和
+显式开启 v1 performance XCTest，并在 performance 通过后构建 signed Release `.app`，执行 codesign、自包含链接检查和
 `scripts/dev_tools/macos_launch_probe.swift` 启动探针。若当前本地 sandbox 阻断
 LaunchServices 启动，或 direct executable probe 无法创建可见窗口，命令可以作为本地
 validation 通过，但 release checklist 必须继续记录“真实 `.app` 启动到首屏证据
@@ -262,7 +262,7 @@ resident memory 指标在共享 CI runner 上造成随机失败；需要验证�
 
 `core/tests/` 下，全场景从 init_repo → import → 改名 → 删除。
 
-### macOS 端（XCUITest，Stage 2 起）
+### macOS 端（XCUITest，后续 UI 自动化）
 
 ```swift
 // 自动化端到端：启动 app → 拖文件 → 验证树/列表
@@ -275,13 +275,13 @@ final class FullFlowTests: XCTestCase {
 }
 ```
 
-MVP 不强制 UI 测试（手工冒烟覆盖）。
+当前不强制 UI 测试（手工冒烟覆盖）。
 
 ---
 
 ## 手工冒烟清单
 
-发布前必跑。Stage 1 历史验收清单归档在 [v1-mvp Stage 1 source](../../workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md)，恢复类手工证据规则见 [recovery.md](recovery.md)：
+发布前必跑。v1 历史验收清单归档在 [v1 source archive](../../workflow/versions/v1-mvp/source-docs/)，恢复类手工证据规则见 [recovery.md](recovery.md)：
 
 - [ ] 从干净状态启动 → 首次启动向导 → 选目录 → 完成
 - [ ] 拖单个 PDF → ImportSheet 默认 Copy → 确认 → 列表出现
@@ -453,4 +453,4 @@ fn sigkill_during_import_safe() {
 - [troubleshooting.md](troubleshooting.md)
 - [recovery.md](recovery.md)
 - [../api/uniffi-recipes.md](../api/uniffi-recipes.md)
-- [../../workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md](../../workflow/versions/v1-mvp/source-docs/roadmap/stage-1-mvp.md)
+- [../../workflow/versions/v1-mvp/source-docs/](../../workflow/versions/v1-mvp/source-docs/)

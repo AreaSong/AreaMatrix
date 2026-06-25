@@ -183,29 +183,29 @@ enum MainSearchDestination: Equatable, Identifiable {
 
     var id: String {
         switch self {
-        case let .savedSearchSheet(request): "S2-03-\(request.query)"
-        case let .searchEmpty(request): "S2-04-\(request.query)"
-        case let .queryError(request, diagnostic): "S2-05-\(request.query)-\(diagnostic.message)"
-        case let .indexingStatus(request): "S2-01-indexing-\(request.query)"
-        case .commandPalette: "S2-15-command-palette"
+        case let .savedSearchSheet(request): "saved-search-\(request.query)"
+        case let .searchEmpty(request): "search-empty-\(request.query)"
+        case let .queryError(request, diagnostic): "query-error-\(request.query)-\(diagnostic.message)"
+        case let .indexingStatus(request): "search-index-status-indexing-\(request.query)"
+        case .commandPalette: "command-palette-command-palette"
         case let .classifierRuleEditor(context):
-            "S2-19-classifier-rule-editor-\(context?.handoff.id ?? "settings")"
+            "classifier-rule-editor-classifier-rule-editor-\(context?.handoff.id ?? "settings")"
         }
     }
 
     var pageID: String {
         switch self {
         case .savedSearchSheet:
-            "S2-03"
+            "saved-search"
         case .searchEmpty:
-            "S2-04"
+            "search-empty"
         case .queryError:
-            "S2-05"
+            "query-error"
         case .indexingStatus:
-            "S2-01-indexing-status"
+            "search-index-status-indexing-status"
         case .commandPalette:
-            "S2-15"
-        case .classifierRuleEditor: "S2-19"
+            "command-palette"
+        case .classifierRuleEditor: "classifier-rule-editor"
         }
     }
 

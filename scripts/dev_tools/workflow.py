@@ -628,7 +628,7 @@ def queue_md_content(root: Path, version: str, record: Any) -> str:
             "",
             "## Promotion Notes",
             "",
-            f"- Do not write `workflow/versions/{version}/execution/**` in this phase.",
+            f"- Do not write `workflow/versions/{version}/execution/**` from this queue candidate.",
             "- Promotion must be a later explicit command after gates pass.",
             "- Queue candidates can be reviewed as template-only preview artifacts; promotion still requires explicit approval and live mapping.",
         ]

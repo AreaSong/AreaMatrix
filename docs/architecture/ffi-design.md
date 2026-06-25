@@ -471,7 +471,7 @@ UI 层只用 CoreBridge，不直接 `import area_matrix`。
 - SQLite Connection 不是 Send，因此每次调用内部新建（轻量）或用 thread-local
 - 长耗时操作（hash 大文件、tree 扫描）应在 Swift 侧用 `Task.detached` 调用，避免阻塞主线程
 
-### 异步设计（Stage 2 起）
+### 异步设计
 
 UniFFI 0.28+ 支持 `[Async]` 标记将 Rust async fn 暴露为 Swift async：
 
@@ -490,7 +490,8 @@ pub async fn reindex_from_filesystem(repo_path: String) -> CoreResult<ReindexRep
 let report = try await reindexFromFilesystem(repoPath: ...)
 ```
 
-MVP 阶段全部用同步函数 + Swift 侧 `Task.detached`，简单足够。
+当前默认用同步函数 + Swift 侧 `Task.detached`；需要跨边界 async 时，再把稳定接口提升为
+`[Async]` 合同。
 
 ---
 

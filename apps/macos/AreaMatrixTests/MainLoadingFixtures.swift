@@ -10,10 +10,10 @@ extension RepositoryOpeningResult {
         )
     }
 
-    static func s215CommandFixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
+    static func commandPaletteCommandFixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
             config: .mainLoadingFixture(repoPath: repoPath),
-            tree: .s215CommandFixtureTree(),
+            tree: .commandPaletteCommandFixtureTree(),
             currentCategoryFiles: files
         )
     }
@@ -56,7 +56,7 @@ extension RepositoryTreeNodeSnapshot {
         )
     }
 
-    static func s215CommandFixtureTree() -> RepositoryTreeNodeSnapshot {
+    static func commandPaletteCommandFixtureTree() -> RepositoryTreeNodeSnapshot {
         RepositoryTreeNodeSnapshot(
             slug: "__root__",
             displayName: "Repository",
@@ -230,7 +230,7 @@ extension CoreErrorMappingSnapshot {
         )
     }
 
-    static func s215CommandDb(rawContext: String) -> CoreErrorMappingSnapshot {
+    static func commandPaletteCommandDb(rawContext: String) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .db,
             userMessage: "Some commands are unavailable",
@@ -243,7 +243,7 @@ extension CoreErrorMappingSnapshot {
 }
 
 extension FileEntrySnapshot {
-    static func s215CommandFileFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
+    static func commandPaletteCommandFileFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
         FileEntrySnapshot(
             id: id,
             path: "docs/\(currentName)",
@@ -251,7 +251,7 @@ extension FileEntrySnapshot {
             currentName: currentName,
             category: "docs",
             sizeBytes: 256,
-            hashSha256: "s215-command-\(id)",
+            hashSha256: "commandPalette-command-\(id)",
             storageMode: "Copied",
             origin: "Imported",
             sourcePath: nil,
@@ -262,7 +262,7 @@ extension FileEntrySnapshot {
 }
 
 extension SavedSearchSnapshot {
-    static func s215CommandPaletteFixture() -> SavedSearchSnapshot {
+    static func commandPaletteCommandPaletteFixture() -> SavedSearchSnapshot {
         let request = SearchQueryRequestSnapshot(
             query: "Finance",
             scope: .all,
@@ -287,7 +287,7 @@ extension SavedSearchSnapshot {
 }
 
 extension SearchResultPageSnapshot {
-    static func s215CommandSmartListPage(saved: SavedSearchSnapshot) -> SearchResultPageSnapshot {
+    static func commandPaletteCommandSmartListPage(saved: SavedSearchSnapshot) -> SearchResultPageSnapshot {
         SearchResultPageSnapshot(
             query: saved.query.query,
             totalCount: 0,
@@ -297,7 +297,7 @@ extension SearchResultPageSnapshot {
         )
     }
 
-    static func s215CommandSmartListPage(
+    static func commandPaletteCommandSmartListPage(
         saved: SavedSearchSnapshot,
         files: [FileEntrySnapshot]
     ) -> SearchResultPageSnapshot {
@@ -325,7 +325,7 @@ extension SearchResultPageSnapshot {
 }
 
 extension CommandTargetSnapshot {
-    static func s215RouteFixture(
+    static func commandPaletteRouteFixture(
         id: String,
         title: String = "Delete selected files...",
         action: CommandTargetActionSnapshot,
@@ -355,7 +355,7 @@ extension CommandTargetSnapshot {
 }
 
 extension CommandIndex {
-    static func s215Fixture(
+    static func commandPaletteFixture(
         commands: [CommandTarget] = [],
         smartLists: [CommandTarget] = []
     ) -> CommandIndex {
@@ -372,7 +372,7 @@ extension CommandIndex {
 }
 
 extension CommandTarget {
-    static func s215Fixture(
+    static func commandPaletteFixture(
         id: String,
         title: String,
         action: CommandTargetAction,
@@ -397,17 +397,17 @@ extension CommandTarget {
     }
 }
 
-func s215CommandMirrorDescription(of value: Any) -> String {
+func commandPaletteCommandMirrorDescription(of value: Any) -> String {
     var lines: [String] = []
-    appendS215CommandMirrorDescription(of: value, to: &lines)
+    appendCommandPaletteCommandMirrorDescription(of: value, to: &lines)
     return lines.joined(separator: "\n")
 }
 
-private func appendS215CommandMirrorDescription(of value: Any, to lines: inout [String]) {
+private func appendCommandPaletteCommandMirrorDescription(of value: Any, to lines: inout [String]) {
     lines.append(String(describing: type(of: value)))
     lines.append(String(describing: value))
     for child in Mirror(reflecting: value).children {
-        appendS215CommandMirrorDescription(of: child.value, to: &lines)
+        appendCommandPaletteCommandMirrorDescription(of: child.value, to: &lines)
     }
 }
 

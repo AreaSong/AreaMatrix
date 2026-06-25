@@ -119,14 +119,14 @@ macOS API 提供文件操作协调机制。
 ### 风险
 
 - staging 文件被外部工具误处理（如 Time Machine 备份）→ 可接受，仅是冗余备份
-- 大文件（>1GB）staging 阶段崩溃需要再次完整复制（缓解：分块 hash + 增量 staging 是 Stage 3+ 优化）
+- 大文件（>1GB）staging 过程中崩溃需要再次完整复制（缓解：分块 hash + 增量 staging 是后续大文件优化）
 
 ## 何时重审
 
 - 性能 profile 显示 staging 复制是瓶颈 → 评估同卷场景下的 reflink / clonefile（macOS APFS 支持）
 - 用户报告 staging 目录无故膨胀 → 加强 cleanup 频率
 - 出现"非崩溃但事务卡住"的 case → 加超时强制 rollback
-- 加 Stage 3 AI 分类后引入异步流程 → 重审事务边界
+- 加 AI 分类等异步流程后 → 重审事务边界
 
 ## Related
 

@@ -290,7 +290,7 @@ struct CoreBridgePlaceholderState: Equatable {
     static let phase0 = CoreBridgePlaceholderState(
         statusLabel: "CoreBridge placeholder",
         generatedBindingsPath: "apps/macos/AreaMatrix/Bridge/Generated/area_matrix.swift",
-        coreLibraryStatus: "UniFFI bindings and static library are not linked in Phase 0",
+        coreLibraryStatus: "UniFFI bindings and static library are not linked in the placeholder configuration",
         declaredBoundaryCount: CoreBridgeBoundary.allCases.count
     )
 }

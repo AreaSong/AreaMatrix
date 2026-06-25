@@ -1,4 +1,4 @@
-"""Release distribution and local QA build helpers behind ./dev."""
+"""Release distribution and local readiness build helpers behind ./dev."""
 
 from __future__ import annotations
 
@@ -15,8 +15,8 @@ from .common import command_text, fail, require_command, run_step
 
 
 DEFAULT_NOTARY_PROFILE = "AC_PASSWORD"
-DEFAULT_LOCAL_QA_DERIVED_DATA = "build/ReleaseReadiness"
-DEFAULT_LOCAL_QA_DESTINATION = "platform=macOS,arch=arm64"
+DEFAULT_READINESS_BUILD_DERIVED_DATA = "build/ReleaseReadiness"
+DEFAULT_READINESS_BUILD_DESTINATION = "platform=macOS,arch=arm64"
 DEFAULT_APPLICATIONS_DIR = "/Applications"
 
 
@@ -106,7 +106,7 @@ def run_release_preflight(root: Path, *, notary_profile: str = DEFAULT_NOTARY_PR
         check_notary_profile(notary_profile),
     ]
 
-    print("Stage 1 release distribution preflight")
+    print("release distribution preflight")
     for check in checks:
         print(f"- {check.status}: {check.name} - {check.detail}")
 
@@ -118,13 +118,13 @@ def run_release_preflight(root: Path, *, notary_profile: str = DEFAULT_NOTARY_PR
     return 1
 
 
-def default_local_qa_build_number(now: datetime | None = None) -> str:
-    """Return the timestamp-style build number used for local QA builds."""
+def default_readiness_build_number(now: datetime | None = None) -> str:
+    """Return the timestamp-style build number used for local readiness builds."""
 
     return (now or datetime.now()).strftime("%Y%m%d%H%M")
 
 
-def _local_qa_xcodebuild_command(
+def _readiness_xcodebuild_command(
     root: Path,
     *,
     build_number: str,
@@ -180,16 +180,16 @@ def _codesign_summary(app_path: Path) -> list[str]:
 def _verify_app_signature(app_path: Path) -> None:
     proc = _run_capture(["codesign", "--verify", "--deep", "--strict", "--verbose=2", app_path])
     if proc.returncode != 0:
-        fail(f"local QA app bundle codesign verification failed: {(proc.stdout or '').strip()}", proc.returncode)
+        fail(f"readiness app bundle codesign verification failed: {(proc.stdout or '').strip()}", proc.returncode)
 
 
 def _verify_app_is_self_contained(app_path: Path) -> None:
     executable = app_path / "Contents/MacOS/AreaMatrix"
     proc = _run_capture(["otool", "-L", executable])
     if proc.returncode != 0:
-        fail(f"unable to inspect local QA app dependencies: {(proc.stdout or '').strip()}", proc.returncode)
+        fail(f"unable to inspect readiness app dependencies: {(proc.stdout or '').strip()}", proc.returncode)
     if "libarea_matrix_core.dylib" in (proc.stdout or ""):
-        fail("local QA app links libarea_matrix_core.dylib; rebuild with the static core archive before distribution.")
+        fail("readiness app links libarea_matrix_core.dylib; rebuild with the static core archive before distribution.")
 
 
 def _is_area_matrix_running() -> bool:
@@ -219,14 +219,14 @@ def _quit_area_matrix_for_install() -> None:
 def _install_app_bundle(app_path: Path, applications_dir: Path) -> Path:
     require_command("ditto")
     if not app_path.is_dir():
-        fail(f"local QA app bundle not found at {app_path}.")
+        fail(f"readiness app bundle not found at {app_path}.")
     if not applications_dir.is_dir():
         fail(f"Applications directory not found at {applications_dir}.")
 
     _quit_area_matrix_for_install()
 
     destination = applications_dir / "AreaMatrix.app"
-    temp_destination = applications_dir / f".AreaMatrix.app.local-qa-{os.getpid()}"
+    temp_destination = applications_dir / f".AreaMatrix.app.readiness-{os.getpid()}"
     backup_destination = applications_dir / f".AreaMatrix.app.previous-{os.getpid()}"
 
     shutil.rmtree(temp_destination, ignore_errors=True)
@@ -251,7 +251,7 @@ def _install_app_bundle(app_path: Path, applications_dir: Path) -> Path:
     return destination
 
 
-def _print_local_qa_summary(label: str, app_path: Path) -> None:
+def _print_readiness_summary(label: str, app_path: Path) -> None:
     executable = app_path / "Contents/MacOS/AreaMatrix"
     print(f"{label}: {app_path}")
     print(f"- app version: {_plist_value(app_path, 'CFBundleShortVersionString')}")
@@ -261,34 +261,34 @@ def _print_local_qa_summary(label: str, app_path: Path) -> None:
         print(f"- {line}")
 
 
-def run_release_local_qa(
+def run_release_readiness_build(
     root: Path,
     *,
     install: bool = False,
     build_number: str | None = None,
-    derived_data_path: str | Path = DEFAULT_LOCAL_QA_DERIVED_DATA,
-    destination: str = DEFAULT_LOCAL_QA_DESTINATION,
+    derived_data_path: str | Path = DEFAULT_READINESS_BUILD_DERIVED_DATA,
+    destination: str = DEFAULT_READINESS_BUILD_DESTINATION,
     applications_dir: str | Path = DEFAULT_APPLICATIONS_DIR,
 ) -> int:
     require_command("xcodebuild")
     require_command("codesign")
     require_command("shasum")
 
-    build_number = build_number or default_local_qa_build_number()
+    build_number = build_number or default_readiness_build_number()
     if not re.fullmatch(r"\d{12}", build_number):
-        fail("local QA build number must use YYYYMMDDHHMM format.")
+        fail("readiness build number must use YYYYMMDDHHMM format.")
 
     derived_data = Path(derived_data_path)
     if not derived_data.is_absolute():
         derived_data = root / derived_data
 
-    print("AreaMatrix local QA release build")
+    print("AreaMatrix release readiness build")
     print(f"- build number: {build_number}")
-    print("- signing: adhoc / local QA only")
+    print("- signing: adhoc / local readiness only")
     print("- notarization: skipped")
 
     rc = run_step(
-        _local_qa_xcodebuild_command(
+        _readiness_xcodebuild_command(
             root,
             build_number=build_number,
             derived_data_path=derived_data,
@@ -307,14 +307,14 @@ def run_release_local_qa(
     _verify_app_is_self_contained(app_path)
 
     print()
-    _print_local_qa_summary("local QA app", app_path)
+    _print_readiness_summary("readiness app", app_path)
 
     if install:
         installed_path = _install_app_bundle(app_path, Path(applications_dir))
         print()
-        _print_local_qa_summary("installed app", installed_path)
+        _print_readiness_summary("installed app", installed_path)
 
     print()
-    print("local QA build: PASS")
+    print("release readiness build: PASS")
     print("distribution release: BLOCKED until Developer ID signing and notarization are configured")
     return 0

@@ -72,7 +72,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
     }
 
     @MainActor
-    func testMainListSearchQueriesAllRepoThroughC201SearchFiles() async {
+    func testMainListSearchQueriesAllRepoThroughSearchQueryFilesCoreSearchFiles() async {
         let resultFile = FileEntrySnapshot.integrationFilterFixture(
             id: 201,
             path: "docs/contracts/customer.pdf",
@@ -212,17 +212,17 @@ final class MainListIntegrationFilterTests: XCTestCase {
     }
 
     @MainActor
-    func testS308SemanticSearchLoadsC310FallbackStatusFromCore() async {
+    func testSemanticSearchSemanticSearchLoadsAIFallbackCoreFallbackStatusFromCore() async {
         let tree = RepositoryTreeNodeSnapshot.integrationFilterFixtureTree()
         guard let row = tree.sidebarRow(id: "docs/contracts") else {
             return XCTFail("expected docs/contracts sidebar row")
         }
-        let fallback = MainListRecordingSemanticFallbackReader(status: .s308SemanticIndexNotReady())
+        let fallback = MainListRecordingSemanticFallbackReader(status: .semanticSearchSemanticIndexNotReady())
         let model = MainFileListModel(
             opening: .integrationFilterFixture(repoPath: "/tmp/repo", currentCategoryFiles: []),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
-            semanticSearching: MainListRecordingSemanticSearcher(page: .s308SemanticFallbackFixture()),
+            semanticSearching: MainListRecordingSemanticSearcher(page: .semanticSearchSemanticFallbackFixture()),
             semanticFallbackReader: fallback,
             errorMapper: MainListRecordingErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
         )
@@ -428,7 +428,7 @@ actor MainListRecordingSemanticSearcher: CoreSemanticSearching {
         repoPath _: String,
         request _: SearchQueryRequestSnapshot
     ) async throws -> SemanticIndexBuildReportSnapshot {
-        throw CoreError.Internal(message: "S3-08 C3-10 test does not build the semantic index")
+        throw CoreError.Internal(message: "semantic-search ai-fallback-core test does not build the semantic index")
     }
 }
 
@@ -478,7 +478,7 @@ private extension SearchResultPageSnapshot {
         )
     }
 
-    static func s308SemanticFallbackFixture() -> SearchResultPageSnapshot {
+    static func semanticSearchSemanticFallbackFixture() -> SearchResultPageSnapshot {
         SearchResultPageSnapshot(
             query: "客户合同",
             totalCount: 0,
@@ -505,7 +505,7 @@ private extension SearchResultPageSnapshot {
 }
 
 private extension AiFallbackStatus {
-    static func s308SemanticIndexNotReady() -> AiFallbackStatus {
+    static func semanticSearchSemanticIndexNotReady() -> AiFallbackStatus {
         AiFallbackStatus(
             operation: .semanticSearch,
             kind: .semanticIndexNotReady,

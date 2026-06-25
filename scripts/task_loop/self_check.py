@@ -256,7 +256,7 @@ def write_live_activity(lock_dir: Path, tmp: Path) -> None:
         lock_dir,
         {
             "status": "running",
-            "stage": "copy",
+            "mode": "copy",
             "task_label": "0-1/task-01",
             "task_name": "0-1-task-01",
             "attempt": 1,
@@ -1267,7 +1267,7 @@ fi
         },
     )
     assert_contains(result.stdout, "live activity heartbeat", "runner prints live activity heartbeat")
-    assert_contains(result.stdout, "current task | stage=copy | task=0-1/task-01", "runner live task status line")
+    assert_contains(result.stdout, "current task | mode=copy | task=0-1/task-01", "runner live task status line")
     assert_contains(result.stdout, "  live log:", "runner live log section")
     assert_contains(result.stdout, "    state:", "runner live log state")
     assert_contains(result.stdout, "current command | heartbeat=1s | command_elapsed=", "runner live command status line")
@@ -1633,7 +1633,7 @@ def check_runner_activity_replace_and_orphan_detection(h: Harness) -> None:
     lock_dir = activity_root / "lock"
     write_live_lock(lock_dir, "activity-replace")
     state.write_lock_activity(lock_dir, {"status": "finished", "finished_at": "old", "returncode": 0})
-    state.replace_lock_activity(lock_dir, {"status": "starting", "stage": "copy", "task_label": "0-1/task-01"})
+    state.replace_lock_activity(lock_dir, {"status": "starting", "mode": "copy", "task_label": "0-1/task-01"})
     activity = read_json(lock_dir / "activity.json")
     if "finished_at" in activity or "returncode" in activity:
         raise CheckFailure("replace_lock_activity retained stale finished fields")

@@ -2,23 +2,23 @@
 @testable import AreaMatrix
 import XCTest
 
-final class S308PageIntegrationVerifyTests: XCTestCase {
+final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
     @MainActor
-    func testS308PresentationKeepsSemanticAndNormalGroupsWithDuplicateExpansion() {
-        let semanticFile = FileEntrySnapshot.s308PageFile(id: 8701, name: "invoice_0426.pdf")
-        let duplicateFile = FileEntrySnapshot.s308PageFile(id: 8702, name: "invoice_notes.txt")
-        let normalOnlyFile = FileEntrySnapshot.s308PageFile(id: 8703, name: "payment_notes.txt")
-        let page = SemanticSearchResultPageSnapshot.s308Page(
+    func testSemanticSearchPresentationKeepsSemanticAndNormalGroupsWithDuplicateExpansion() {
+        let semanticFile = FileEntrySnapshot.semanticSearchPageFile(id: 8701, name: "invoice_0426.pdf")
+        let duplicateFile = FileEntrySnapshot.semanticSearchPageFile(id: 8702, name: "invoice_notes.txt")
+        let normalOnlyFile = FileEntrySnapshot.semanticSearchPageFile(id: 8703, name: "payment_notes.txt")
+        let page = SemanticSearchResultPageSnapshot.semanticSearchPage(
             semanticMatches: [
-                .s308Page(result: .s308PageResult(file: semanticFile), alsoMatchedNormalSearch: true)
+                .semanticSearchPage(result: .semanticSearchPageResult(file: semanticFile), alsoMatchedNormalSearch: true)
             ],
             normalMatches: [
                 SemanticNormalSearchMatchSnapshot(
-                    result: .s308PageResult(file: duplicateFile, snippet: "filename contains invoice"),
+                    result: .semanticSearchPageResult(file: duplicateFile, snippet: "filename contains invoice"),
                     dedupedBySemantic: true
                 ),
                 SemanticNormalSearchMatchSnapshot(
-                    result: .s308PageResult(file: normalOnlyFile, snippet: "note mentions payment"),
+                    result: .semanticSearchPageResult(file: normalOnlyFile, snippet: "note mentions payment"),
                     dedupedBySemantic: false
                 )
             ],
@@ -39,25 +39,25 @@ final class S308PageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS308LoadMoreSemanticMergesOnlyRequestedGroup() async {
-        let tree = RepositoryTreeNodeSnapshot.s308Tree()
+    func testSemanticSearchLoadMoreSemanticMergesOnlyRequestedGroup() async {
+        let tree = RepositoryTreeNodeSnapshot.semanticSearchTree()
         guard let row = tree.sidebarRow(id: "finance/invoices") else {
             return XCTFail("expected finance invoices sidebar row")
         }
-        let firstSemantic = FileEntrySnapshot.s308PageFile(id: 8704, name: "invoice_a.pdf")
-        let nextSemantic = FileEntrySnapshot.s308PageFile(id: 8705, name: "invoice_b.pdf")
-        let normalFile = FileEntrySnapshot.s308PageFile(id: 8706, name: "invoice_notes.txt")
-        let searcher = S308PagedSemanticSearcher(pages: [
-            .s308SearchPage(semantic: [firstSemantic], normal: [normalFile], semanticTotalCount: 2),
-            .s308SearchPage(semantic: [nextSemantic], normal: [], semanticTotalCount: 2)
+        let firstSemantic = FileEntrySnapshot.semanticSearchPageFile(id: 8704, name: "invoice_a.pdf")
+        let nextSemantic = FileEntrySnapshot.semanticSearchPageFile(id: 8705, name: "invoice_b.pdf")
+        let normalFile = FileEntrySnapshot.semanticSearchPageFile(id: 8706, name: "invoice_notes.txt")
+        let searcher = SemanticSearchPagedSemanticSearcher(pages: [
+            .semanticSearchSearchPage(semantic: [firstSemantic], normal: [normalFile], semanticTotalCount: 2),
+            .semanticSearchSearchPage(semantic: [nextSemantic], normal: [], semanticTotalCount: 2)
         ])
         let model = MainFileListModel(
-            opening: .s308PageOpening(tree: tree),
-            fileLister: S308PageLister(),
-            fileDetailer: S308PageDetailer(file: firstSemantic),
-            searchQuerying: S308PageNormalSearcher(),
+            opening: .semanticSearchPageOpening(tree: tree),
+            fileLister: SemanticSearchPageLister(),
+            fileDetailer: SemanticSearchPageDetailer(file: firstSemantic),
+            searchQuerying: SemanticSearchPageNormalSearcher(),
             semanticSearching: searcher,
-            errorMapper: S308PageErrorMapper()
+            errorMapper: SemanticSearchPageErrorMapper()
         )
 
         await model.runSearch(
@@ -81,19 +81,19 @@ final class S308PageIntegrationVerifyTests: XCTestCase {
 
     @MainActor
     // swiftlint:disable:next function_body_length
-    func testS308IndexLifecycleCancelsActiveCoreBuildAndKeepsLaterReportOutOfPage() async {
-        let tree = RepositoryTreeNodeSnapshot.s308Tree()
+    func testSemanticSearchIndexLifecycleCancelsActiveCoreBuildAndKeepsLaterReportOutOfPage() async {
+        let tree = RepositoryTreeNodeSnapshot.semanticSearchTree()
         guard let row = tree.sidebarRow(id: "finance/invoices") else {
             return XCTFail("expected finance invoices sidebar row")
         }
-        let searcher = S308DelayedSemanticSearcher(page: .s308IndexBuildingPage())
+        let searcher = SemanticSearchDelayedSemanticSearcher(page: .semanticSearchIndexBuildingPage())
         let model = MainFileListModel(
-            opening: .s308PageOpening(tree: tree),
-            fileLister: S308PageLister(),
-            fileDetailer: S308PageDetailer(file: .s308PageFile(id: 8707)),
-            searchQuerying: S308PageNormalSearcher(),
+            opening: .semanticSearchPageOpening(tree: tree),
+            fileLister: SemanticSearchPageLister(),
+            fileDetailer: SemanticSearchPageDetailer(file: .semanticSearchPageFile(id: 8707)),
+            searchQuerying: SemanticSearchPageNormalSearcher(),
             semanticSearching: searcher,
-            errorMapper: S308PageErrorMapper()
+            errorMapper: SemanticSearchPageErrorMapper()
         )
 
         await model.runSearch(
@@ -114,7 +114,7 @@ final class S308PageIntegrationVerifyTests: XCTestCase {
         guard case let .pauseFailed(_, pauseError) = model.semanticIndexControlState else {
             return XCTFail("Expected pause to expose the missing Core pause contract.")
         }
-        XCTAssertEqual(pauseError.rawContext, "S3-08 pause index build missing Core API")
+        XCTAssertEqual(pauseError.rawContext, "semantic-search pause index build missing Core API")
         XCTAssertTrue(model.semanticIndexBuildState.isBuilding)
 
         model.requestCancelSemanticIndexBuildForCurrentSearch()
@@ -146,8 +146,8 @@ final class S308PageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS310C308SemanticFallbackUsesSemanticSearchOutputWithoutWaitingForC310Reader() {
-        let page = SemanticSearchResultPageSnapshot.s308Page(
+    func testAIFallbackSemanticSearchCoreSemanticFallbackUsesSemanticSearchOutputWithoutWaitingForAIFallbackCoreReader() {
+        let page = SemanticSearchResultPageSnapshot.semanticSearchPage(
             semanticMatches: [],
             normalMatches: [],
             indexStatus: .notReady,
@@ -162,7 +162,7 @@ final class S308PageIntegrationVerifyTests: XCTestCase {
             isPrivacyGateChecking: false,
             onAction: { _ in }
         )
-        let body = s135MirrorDescription(of: region.body)
+        let body = changeCategoryMirrorDescription(of: region.body)
 
         XCTAssertEqual(status.primaryAction, .buildSemanticIndex)
         XCTAssertEqual(status.nonAiFallbackAction, .useNormalSearch)
@@ -175,8 +175,8 @@ final class S308PageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS310C308ProviderFallbackKeepsNormalSearchAndCallLogActions() {
-        let page = SemanticSearchResultPageSnapshot.s308Page(
+    func testAIFallbackSemanticSearchCoreProviderFallbackKeepsNormalSearchAndCallLogActions() {
+        let page = SemanticSearchResultPageSnapshot.semanticSearchPage(
             semanticMatches: [],
             normalMatches: [],
             indexStatus: .failed,
@@ -191,7 +191,7 @@ final class S308PageIntegrationVerifyTests: XCTestCase {
             isPrivacyGateChecking: false,
             onAction: { _ in }
         )
-        let body = s135MirrorDescription(of: region.body)
+        let body = changeCategoryMirrorDescription(of: region.body)
 
         XCTAssertEqual(status.title, "Remote AI could not be reached")
         XCTAssertTrue(status.retryable)
@@ -204,7 +204,7 @@ final class S308PageIntegrationVerifyTests: XCTestCase {
     }
 }
 
-private actor S308PagedSemanticSearcher: CoreSemanticSearching {
+private actor SemanticSearchPagedSemanticSearcher: CoreSemanticSearching {
     private var pages: [SearchResultPageSnapshot]
     private var recordedRequests: [SearchQueryRequestSnapshot] = []
 
@@ -224,7 +224,7 @@ private actor S308PagedSemanticSearcher: CoreSemanticSearching {
         repoPath _: String,
         request _: SearchQueryRequestSnapshot
     ) async throws -> SemanticIndexBuildReportSnapshot {
-        .s308ReadyReport()
+        .semanticSearchReadyReport()
     }
 
     func requests() -> [SearchQueryRequestSnapshot] {
@@ -232,7 +232,7 @@ private actor S308PagedSemanticSearcher: CoreSemanticSearching {
     }
 }
 
-private actor S308DelayedSemanticSearcher: CoreSemanticSearching {
+private actor SemanticSearchDelayedSemanticSearcher: CoreSemanticSearching {
     private let page: SearchResultPageSnapshot
     private var continuation: CheckedContinuation<Void, Never>?
     private var buildStarted = false
@@ -260,7 +260,7 @@ private actor S308DelayedSemanticSearcher: CoreSemanticSearching {
             Task { await self.recordCancellation() }
         }
         try Task.checkCancellation()
-        return .s308ReadyReport()
+        return .semanticSearchReadyReport()
     }
 
     func waitForBuildStart() async {
@@ -283,19 +283,19 @@ private actor S308DelayedSemanticSearcher: CoreSemanticSearching {
     }
 }
 
-private actor S308PageNormalSearcher: CoreSearchQuerying {
+private actor SemanticSearchPageNormalSearcher: CoreSearchQuerying {
     func searchFiles(repoPath _: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
         SearchResultPageSnapshot(query: request.query, totalCount: 0, results: [], diagnostics: [], indexStatus: .ready)
     }
 }
 
-private actor S308PageLister: CoreFileListing {
+private actor SemanticSearchPageLister: CoreFileListing {
     func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         []
     }
 }
 
-private actor S308PageDetailer: CoreFileDetailing {
+private actor SemanticSearchPageDetailer: CoreFileDetailing {
     private let file: FileEntrySnapshot
 
     init(file: FileEntrySnapshot) {
@@ -307,21 +307,21 @@ private actor S308PageDetailer: CoreFileDetailing {
     }
 }
 
-private struct S308PageErrorMapper: CoreErrorMapping {
+private struct SemanticSearchPageErrorMapper: CoreErrorMapping {
     func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .internal,
-            userMessage: "S3-08 semantic page failed",
+            userMessage: "semantic-search semantic page failed",
             severity: .medium,
             suggestedAction: "Retry the failed semantic group.",
             recoverability: .retryable,
-            rawContext: "S3-08"
+            rawContext: "semantic-search"
         )
     }
 }
 
 private extension FileEntrySnapshot {
-    static func s308PageFile(id: Int64, name: String = "invoice.pdf") -> FileEntrySnapshot {
+    static func semanticSearchPageFile(id: Int64, name: String = "invoice.pdf") -> FileEntrySnapshot {
         FileEntrySnapshot(
             id: id,
             path: "finance/invoices/\(name)",
@@ -329,7 +329,7 @@ private extension FileEntrySnapshot {
             currentName: name,
             category: "finance",
             sizeBytes: 128,
-            hashSha256: "s308-\(id)",
+            hashSha256: "semanticSearch-\(id)",
             storageMode: "Copied",
             origin: "Imported",
             sourcePath: nil,
@@ -340,7 +340,7 @@ private extension FileEntrySnapshot {
 }
 
 private extension SearchFileResultSnapshot {
-    static func s308PageResult(file: FileEntrySnapshot,
+    static func semanticSearchPageResult(file: FileEntrySnapshot,
                                snippet: String = "filename contains invoice") -> SearchFileResultSnapshot {
         SearchFileResultSnapshot(
             file: file,
@@ -352,13 +352,13 @@ private extension SearchFileResultSnapshot {
 }
 
 private extension RepositoryOpeningResult {
-    static func s308PageOpening(tree: RepositoryTreeNodeSnapshot) -> RepositoryOpeningResult {
-        RepositoryOpeningResult(config: .s308PageConfig(), tree: tree, currentCategoryFiles: [])
+    static func semanticSearchPageOpening(tree: RepositoryTreeNodeSnapshot) -> RepositoryOpeningResult {
+        RepositoryOpeningResult(config: .semanticSearchPageConfig(), tree: tree, currentCategoryFiles: [])
     }
 }
 
 private extension RepoConfigSnapshot {
-    static func s308PageConfig() -> RepoConfigSnapshot {
+    static func semanticSearchPageConfig() -> RepoConfigSnapshot {
         RepoConfigSnapshot(
             repoPath: "/tmp/repo",
             defaultMode: "Copied",
@@ -375,7 +375,7 @@ private extension RepoConfigSnapshot {
 }
 
 private extension RepositoryTreeNodeSnapshot {
-    static func s308Tree() -> RepositoryTreeNodeSnapshot {
+    static func semanticSearchTree() -> RepositoryTreeNodeSnapshot {
         RepositoryTreeNodeSnapshot(
             slug: "__root__",
             displayName: "Repository",
@@ -383,11 +383,11 @@ private extension RepositoryTreeNodeSnapshot {
             relativePath: "",
             fileCount: 0,
             depth: 0,
-            children: [.s308FinanceNode()]
+            children: [.semanticSearchFinanceNode()]
         )
     }
 
-    static func s308FinanceNode() -> RepositoryTreeNodeSnapshot {
+    static func semanticSearchFinanceNode() -> RepositoryTreeNodeSnapshot {
         RepositoryTreeNodeSnapshot(
             slug: "finance",
             displayName: "finance",
@@ -408,7 +408,7 @@ private extension RepositoryTreeNodeSnapshot {
 }
 
 private extension SemanticSearchMatchSnapshot {
-    static func s308Page(
+    static func semanticSearchPage(
         result: SearchFileResultSnapshot,
         alsoMatchedNormalSearch: Bool = false
     ) -> SemanticSearchMatchSnapshot {
@@ -426,7 +426,7 @@ private extension SemanticSearchMatchSnapshot {
 }
 
 private extension SemanticSearchResultPageSnapshot {
-    static func s308Page(
+    static func semanticSearchPage(
         semanticMatches: [SemanticSearchMatchSnapshot],
         normalMatches: [SemanticNormalSearchMatchSnapshot],
         dedupedNormalCount: Int64 = 0,
@@ -454,16 +454,16 @@ private extension SemanticSearchResultPageSnapshot {
 }
 
 private extension SearchResultPageSnapshot {
-    static func s308SearchPage(
+    static func semanticSearchSearchPage(
         semantic: [FileEntrySnapshot],
         normal: [FileEntrySnapshot],
         semanticTotalCount: Int64? = nil,
         indexStatus: SemanticIndexStatusSnapshot = .ready
     ) -> SearchResultPageSnapshot {
-        let semanticPage = SemanticSearchResultPageSnapshot.s308Page(
-            semanticMatches: semantic.map { .s308Page(result: .s308PageResult(file: $0)) },
+        let semanticPage = SemanticSearchResultPageSnapshot.semanticSearchPage(
+            semanticMatches: semantic.map { .semanticSearchPage(result: .semanticSearchPageResult(file: $0)) },
             normalMatches: normal.map {
-                SemanticNormalSearchMatchSnapshot(result: .s308PageResult(file: $0), dedupedBySemantic: false)
+                SemanticNormalSearchMatchSnapshot(result: .semanticSearchPageResult(file: $0), dedupedBySemantic: false)
             },
             semanticTotalCount: semanticTotalCount,
             indexStatus: indexStatus
@@ -478,13 +478,13 @@ private extension SearchResultPageSnapshot {
         )
     }
 
-    static func s308IndexBuildingPage() -> SearchResultPageSnapshot {
-        s308SearchPage(semantic: [], normal: [], indexStatus: .building)
+    static func semanticSearchIndexBuildingPage() -> SearchResultPageSnapshot {
+        semanticSearchSearchPage(semantic: [], normal: [], indexStatus: .building)
     }
 }
 
 private extension SemanticIndexBuildReportSnapshot {
-    static func s308ReadyReport() -> SemanticIndexBuildReportSnapshot {
+    static func semanticSearchReadyReport() -> SemanticIndexBuildReportSnapshot {
         SemanticIndexBuildReportSnapshot(
             status: .ready,
             route: .local,

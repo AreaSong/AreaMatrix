@@ -1,7 +1,7 @@
 @testable import AreaMatrix
 import Foundation
 
-enum S125OutOfScopeAction: Equatable {
+enum ICloudConflictMinimalOutOfScopeAction: Equatable {
     case rename
     case delete
     case removeIndex
@@ -12,7 +12,7 @@ enum S125OutOfScopeAction: Equatable {
     case diagnostics
 }
 
-actor S125RecordingMainCore: CoreFileListing,
+actor ICloudConflictMinimalRecordingMainCore: CoreFileListing,
     CoreFileDetailing,
     CoreFileRenaming,
     CoreFileDeleting,
@@ -21,7 +21,7 @@ actor S125RecordingMainCore: CoreFileListing,
     CoreExternalChangesSyncing,
     CoreDiagnosticsCollecting {
     private var filesByID: [Int64: FileEntrySnapshot]
-    private var outOfScopeActions: [S125OutOfScopeAction] = []
+    private var outOfScopeActions: [ICloudConflictMinimalOutOfScopeAction] = []
 
     init(files: [FileEntrySnapshot]) {
         filesByID = Dictionary(uniqueKeysWithValues: files.map { ($0.id, $0) })
@@ -79,25 +79,25 @@ actor S125RecordingMainCore: CoreFileListing,
 
     func listChanges(repoPath _: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
         outOfScopeActions.append(.listChanges)
-        return [.s125ConflictResolved(fileID: filter.fileID)]
+        return [.iCloudConflictMinimalConflictResolved(fileID: filter.fileID)]
     }
 
     func syncExternalCreated(repoPath _: String, relativePath _: String,
                              fsEventID _: Int64) async throws -> SyncResultSnapshot {
         outOfScopeActions.append(.syncExternalChanges)
-        return .s125NoopSyncResult()
+        return .iCloudConflictMinimalNoopSyncResult()
     }
 
     func syncExternalRenamed(repoPath _: String, relativePath _: String,
                              fsEventID _: Int64) async throws -> SyncResultSnapshot {
         outOfScopeActions.append(.syncExternalChanges)
-        return .s125NoopSyncResult()
+        return .iCloudConflictMinimalNoopSyncResult()
     }
 
     func syncExternalRemoved(repoPath _: String, relativePath _: String,
                              fsEventID _: Int64) async throws -> SyncResultSnapshot {
         outOfScopeActions.append(.syncExternalChanges)
-        return .s125NoopSyncResult()
+        return .iCloudConflictMinimalNoopSyncResult()
     }
 
     func getFSEventCursor(repoPath _: String) async throws -> Int64? {
@@ -111,12 +111,12 @@ actor S125RecordingMainCore: CoreFileListing,
         return DiagnosticsSnapshotSnapshot(snapshotPath: "", createdAt: 0, warnings: [])
     }
 
-    func recordedOutOfScopeActions() -> [S125OutOfScopeAction] {
+    func recordedOutOfScopeActions() -> [ICloudConflictMinimalOutOfScopeAction] {
         outOfScopeActions
     }
 }
 
-actor S125RecordingICloudConflictResolver: ICloudConflictResolving {
+actor ICloudConflictMinimalRecordingICloudConflictResolver: ICloudConflictResolving {
     nonisolated let iCloudConflictResolutionCapability: ICloudConflictResolutionCapability
     private let result: Result<ICloudConflictResolutionResult, Error>
     private var requests: [ICloudConflictResolutionRequest] = []
@@ -140,7 +140,7 @@ actor S125RecordingICloudConflictResolver: ICloudConflictResolving {
     }
 }
 
-actor S220RecordingConflictReviewer: CoreICloudConflictReviewing {
+actor ICloudConflictVisualRecordingConflictReviewer: CoreICloudConflictReviewing {
     struct PreviewRequest: Equatable {
         var repoPath: String
         var conflictID: String
@@ -190,7 +190,7 @@ actor S220RecordingConflictReviewer: CoreICloudConflictReviewing {
     }
 }
 
-actor S125RecordingPathValidator: CoreRepositoryPathValidating {
+actor ICloudConflictMinimalRecordingPathValidator: CoreRepositoryPathValidating {
     private let result: Result<RepoPathValidationSnapshot, Error>
     private var repoPaths: [String] = []
 
@@ -208,7 +208,7 @@ actor S125RecordingPathValidator: CoreRepositoryPathValidating {
     }
 }
 
-actor S125RecordingErrorMapper: CoreErrorMapping {
+actor ICloudConflictMinimalRecordingErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
     private var errors: [CoreError] = []
 
@@ -226,7 +226,7 @@ actor S125RecordingErrorMapper: CoreErrorMapping {
     }
 }
 
-actor S125NoopNoteStore: CoreNoteReadingWriting {
+actor ICloudConflictMinimalNoopNoteStore: CoreNoteReadingWriting {
     func readNote(repoPath _: String, fileID _: Int64) async throws -> String? {
         nil
     }
@@ -235,7 +235,7 @@ actor S125NoopNoteStore: CoreNoteReadingWriting {
 }
 
 extension SyncResultSnapshot {
-    static func s125NoopSyncResult() -> SyncResultSnapshot {
+    static func iCloudConflictMinimalNoopSyncResult() -> SyncResultSnapshot {
         SyncResultSnapshot(
             detectedCreates: 0,
             detectedRenames: 0,
@@ -247,28 +247,28 @@ extension SyncResultSnapshot {
 }
 
 extension MainDetailLogState {
-    var s125LoadedFileID: Int64? {
+    var iCloudConflictMinimalLoadedFileID: Int64? {
         guard case let .loaded(fileID, _) = self else { return nil }
         return fileID
     }
 }
 
 extension ChangeLogEntrySnapshot {
-    static func s125ConflictResolved(fileID: Int64?) -> ChangeLogEntrySnapshot {
+    static func iCloudConflictMinimalConflictResolved(fileID: Int64?) -> ChangeLogEntrySnapshot {
         ChangeLogEntrySnapshot(
             id: 1,
             fileID: fileID,
             filename: "report (Conflicted Copy).pdf",
             category: "docs",
             action: "conflict_resolved_keep_both",
-            detailJSON: #"{"conflict_id":"s125","kept_paths":["docs/report.pdf","docs/report (Conflicted Copy).pdf"]}"#,
+            detailJSON: #"{"conflict_id":"iCloudConflictMinimal","kept_paths":["docs/report.pdf","docs/report (Conflicted Copy).pdf"]}"#,
             occurredAt: 1_775_020_900
         )
     }
 }
 
 extension RepositoryOpeningResult {
-    static func s125Fixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
+    static func iCloudConflictMinimalFixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
             config: .shellFixture(repoPath: repoPath),
             tree: RepositoryTreeNodeSnapshot(
@@ -290,7 +290,7 @@ extension RepositoryOpeningResult {
 }
 
 extension FileEntrySnapshot {
-    static func s125ConflictFixture(id: Int64) -> FileEntrySnapshot {
+    static func iCloudConflictMinimalConflictFixture(id: Int64) -> FileEntrySnapshot {
         FileEntrySnapshot(
             id: id,
             path: "docs/report (Conflicted Copy).pdf",
@@ -298,7 +298,7 @@ extension FileEntrySnapshot {
             currentName: "report (Conflicted Copy).pdf",
             category: "docs",
             sizeBytes: 512,
-            hashSha256: "s125-conflict-\(id)",
+            hashSha256: "iCloudConflictMinimal-conflict-\(id)",
             storageMode: "Copied",
             origin: "Imported",
             sourcePath: nil,
@@ -309,9 +309,9 @@ extension FileEntrySnapshot {
 }
 
 extension RepoPathValidationSnapshot {
-    static func s125ICloudConflictFixture() -> RepoPathValidationSnapshot {
+    static func iCloudConflictMinimalICloudConflictFixture() -> RepoPathValidationSnapshot {
         RepoPathValidationSnapshot.shellFixture(
-            repoPath: "/tmp/s125-repo",
+            repoPath: "/tmp/iCloudConflictMinimal-repo",
             isEmpty: false,
             isInitialized: true,
             isICloudPath: true,
@@ -322,7 +322,7 @@ extension RepoPathValidationSnapshot {
 }
 
 extension ICloudConflictVersionSnapshot {
-    static func s125Original(repoPath: String) -> ICloudConflictVersionSnapshot {
+    static func iCloudConflictMinimalOriginal(repoPath: String) -> ICloudConflictVersionSnapshot {
         ICloudConflictVersionSnapshot(
             role: .original,
             path: "\(repoPath)/docs/report.pdf",
@@ -331,7 +331,7 @@ extension ICloudConflictVersionSnapshot {
         )
     }
 
-    static func s125ConflictedCopy(repoPath: String) -> ICloudConflictVersionSnapshot {
+    static func iCloudConflictMinimalConflictedCopy(repoPath: String) -> ICloudConflictVersionSnapshot {
         ICloudConflictVersionSnapshot(
             role: .conflictedCopy,
             path: "\(repoPath)/docs/report (Conflicted Copy).pdf",
@@ -342,9 +342,9 @@ extension ICloudConflictVersionSnapshot {
 }
 
 extension CoreErrorMappingSnapshot {
-    static func s125Mapping(
+    static func iCloudConflictMinimalMapping(
         kind: CoreErrorKindSnapshot = .iCloudPlaceholder,
-        rawContext: String = "/tmp/s125-repo/docs/report.pdf.icloud"
+        rawContext: String = "/tmp/iCloudConflictMinimal-repo/docs/report.pdf.icloud"
     ) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: kind,
@@ -359,7 +359,7 @@ extension CoreErrorMappingSnapshot {
 
 extension ICloudConflictPreviewSnapshot {
     // swiftlint:disable:next function_body_length
-    static func s220Preview(
+    static func iCloudConflictVisualPreview(
         conflictID: String,
         metadataComplete: Bool = true,
         trashAvailable: Bool = true
@@ -422,7 +422,7 @@ extension ICloudConflictPreviewSnapshot {
 }
 
 extension ICloudConflictResolveReportSnapshot {
-    static func s220ResolvedReport(conflictID: String) -> ICloudConflictResolveReportSnapshot {
+    static func iCloudConflictVisualResolvedReport(conflictID: String) -> ICloudConflictResolveReportSnapshot {
         ICloudConflictResolveReportSnapshot(
             conflictID: conflictID,
             resolution: .keepBoth,
@@ -438,19 +438,19 @@ extension ICloudConflictResolveReportSnapshot {
     }
 }
 
-func s125IntegrationMirrorDescription(of value: Any) -> String {
+func iCloudConflictMinimalIntegrationMirrorDescription(of value: Any) -> String {
     var lines: [String] = []
-    appendS125IntegrationMirrorDescription(of: value, to: &lines)
+    appendICloudConflictMinimalIntegrationMirrorDescription(of: value, to: &lines)
     return lines.joined(separator: "\n")
 }
 
-private func appendS125IntegrationMirrorDescription(of value: Any, to lines: inout [String]) {
+private func appendICloudConflictMinimalIntegrationMirrorDescription(of value: Any, to lines: inout [String]) {
     lines.append(String(describing: type(of: value)))
     lines.append(String(describing: value))
     for child in Mirror(reflecting: value).children {
         if let label = child.label {
             lines.append(label)
         }
-        appendS125IntegrationMirrorDescription(of: child.value, to: &lines)
+        appendICloudConflictMinimalIntegrationMirrorDescription(of: child.value, to: &lines)
     }
 }

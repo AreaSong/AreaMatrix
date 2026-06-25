@@ -22,7 +22,7 @@
 - 任务涉及 OpenAI、Codex、model、API、SDK、hooks、MCP、skills、plugins、Computer Use 或其他 OpenAI 运行层能力时，默认先核对 OpenAI 官方文档；可用时优先使用 `openaiDeveloperDocs` Docs MCP。
 - 回答“最新”“当前”“默认”“是否仍支持”等易变化问题前，必须重新核对官方文档或官方 OpenAI 域名，不把记忆、旧本地笔记或历史运行经验当作最新事实。
 - OpenAI 官方文档只用于判断 OpenAI / Codex 运行层能力、限制和推荐做法；它不替代 AreaMatrix 产品、架构、API、UX 和开发规范的 `docs/**` 源事实。
-- 不写死易过期的模型、价格、地区、配额、功能状态或 release 阶段；确需记录时，必须同时标注核对日期和官方来源。
+- 不写死易过期的模型、价格、地区、配额、功能状态或 release 状态；确需记录时，必须同时标注核对日期和官方来源。
 - OpenAI Docs MCP 是只读文档入口，不是 OpenAI API 调用凭证；不得把 token、auth 配置或个人全局 `~/.codex/**` 内容写入仓库。
 
 ## 任务分级
@@ -35,7 +35,10 @@
 
 - 原因不明的失败先复现、收证、分层归因、提出单一可证伪假设，再修复。
 - 不把 copy、verify、validation command、runner、Git checkpoint、docs/API/UDL/prompt 漂移或文件安全边界混成一个笼统的“失败”。
-- task-loop 失败先看 `./dev status --verbose`、`./task-loop status`、`workflow/versions/v1-mvp/execution/_shared/progress.json`、run summary、copy / verify logs，再决定归因层。
+- task-loop 失败先看 `./dev status --verbose`、`./task-loop status`、当前 live 版本的
+  `workflow/versions/<version>/execution/_shared/progress.json`、run summary、copy / verify logs，再决定归因层。
+  只有审计或恢复 v1 历史队列时，才把 `workflow/versions/v1-mvp/execution/_shared/progress.json`
+  作为默认入口。
 - 失败跨越多组件时，先检查组件边界的输入、输出、配置和状态传播；不要直接在最深层症状处补丁。
 - 调试和归因参考 `.codex/references/debugging-failure-attribution-runbook.md`；具体 owner 仍由 repo-local skills 分担。
 

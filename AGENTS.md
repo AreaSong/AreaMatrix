@@ -3,7 +3,8 @@
 ## 定位
 
 - 本仓库是 AreaMatrix：Rust 核心库 + SwiftUI macOS 原生应用 + UniFFI 桥接的桌面资料管理工具。
-- 当前仓库以文档为主，v1 历史 prompt 执行队列已硬迁移到 `workflow/versions/v1-mvp/execution/`。
+- 当前仓库已有真实 Rust core、SwiftUI macOS app、测试与版本化 workflow；v1 历史 prompt
+  执行队列已硬迁移到 `workflow/versions/v1-mvp/execution/`。
 - 对话、说明、提交说明、任务汇报默认使用中文；代码标识符、类型名、文件名中的技术标识保持英文。
 
 ## 入口顺序
@@ -53,7 +54,10 @@
 
 ## 验证要求
 
-- Prompt 体系变更：运行 `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor`，并按需要运行 `plan`、`render`、`status`。
+- Prompt / workflow 体系变更：优先运行 `./dev workflow doctor`，涉及具体版本 discussion gate
+  时运行 `./dev workflow discuss --version <version> doctor`。只有审计或恢复 v1 历史执行队列时，
+  才运行 `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor`，并按需要运行
+  v1 历史 pipeline 的 `plan`、`render`、`status`。
 - Rust core 变更：运行 `cargo fmt --all -- --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`。
 - macOS app 变更：运行相关 `xcodebuild`、SwiftFormat、SwiftLint 检查。
 - 无法运行的检查必须在汇报中明确说明原因。

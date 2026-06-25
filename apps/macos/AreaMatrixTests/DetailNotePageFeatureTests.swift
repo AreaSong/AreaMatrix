@@ -4,7 +4,7 @@ import XCTest
 
 final class DetailNotePageFeatureTests: XCTestCase {
     @MainActor
-    func testS114C114LoadsEmptyNoteAndWritesDraftThroughCoreBridgeContract() async {
+    func testDetailNoteReadWriteNoteCoreLoadsEmptyNoteAndWritesDraftThroughCoreBridgeContract() async {
         let file = FileEntrySnapshot.detailMetaFixture(id: 114, currentName: "note.pdf")
         let noteStore = DetailNoteRecordingStore(readResults: [.success(nil)], writeResults: [.success(())])
         let tracker = DetailNoteRecordingInFlightTracker()
@@ -40,7 +40,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS114C114SaveFailureKeepsDraftAndRetryWritesLatestContent() async {
+    func testDetailNoteReadWriteNoteCoreSaveFailureKeepsDraftAndRetryWritesLatestContent() async {
         let file = FileEntrySnapshot.detailMetaFixture(id: 115, currentName: "retry.pdf")
         let mapping = CoreErrorMappingSnapshot.detailNoteIo()
         let noteStore = DetailNoteRecordingStore(
@@ -76,7 +76,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS114C114CreateNoteRequestsEditorFocus() async {
+    func testDetailNoteReadWriteNoteCoreCreateNoteRequestsEditorFocus() async {
         let file = FileEntrySnapshot.detailMetaFixture(id: 119, currentName: "focus.pdf")
         let model = DetailNoteModel(
             repoPath: "/tmp/repo",
@@ -96,7 +96,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS114C114FailedDraftReportsWhenLeavingSelectedFile() async {
+    func testDetailNoteReadWriteNoteCoreFailedDraftReportsWhenLeavingSelectedFile() async {
         let file = FileEntrySnapshot.detailMetaFixture(id: 120, currentName: "leave.pdf")
         let mapping = CoreErrorMappingSnapshot.detailNoteIo()
         let noteStore = DetailNoteRecordingStore(
@@ -127,7 +127,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS114C114ReadOnlyAndMissingFilesDisableWritesWithoutClearingExistingNote() async {
+    func testDetailNoteReadWriteNoteCoreReadOnlyAndMissingFilesDisableWritesWithoutClearingExistingNote() async {
         let missingFile = FileEntrySnapshot.detailMetaFixture(
             id: 116,
             currentName: "missing.pdf",
@@ -155,7 +155,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS114C114MainListMapsReadOnlyAndMissingWriteBlocks() {
+    func testDetailNoteReadWriteNoteCoreMainListMapsReadOnlyAndMissingWriteBlocks() {
         let available = FileEntrySnapshot.detailMetaFixture(id: 117, currentName: "available.pdf")
         let missing = FileEntrySnapshot.detailMetaFixture(id: 118, currentName: "missing.pdf", availability: .missing)
         let model = MainFileListModel(
@@ -178,7 +178,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS114C114WatcherIgnoresInFlightNoteSidecarWrite() async {
+    func testDetailNoteReadWriteNoteCoreWatcherIgnoresInFlightNoteSidecarWrite() async {
         let repoPath = "/tmp/repo"
         let relativePath = "docs/contracts/note.pdf.md"
         let absolutePath = "\(repoPath)/\(relativePath)"
@@ -202,7 +202,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
         XCTAssertTrue(isInFlight)
     }
 
-    func testS114C114DefaultCoreBridgeReadsAndWritesRealSidecarNote() async throws {
+    func testDetailNoteReadWriteNoteCoreDefaultCoreBridgeReadsAndWritesRealSidecarNote() async throws {
         let repoURL = try makeDetailNoteTemporaryRepositoryURL()
         let sourceRoot = try makeDetailNoteTemporaryRepositoryURL()
         defer {
@@ -345,7 +345,7 @@ extension CoreErrorMappingSnapshot {
             severity: .medium,
             suggestedAction: "请确认资料库可写，然后重试。",
             recoverability: .retryable,
-            rawContext: "S1-14 C1-14 write_note"
+            rawContext: "detail-note note-sidecar write_note"
         )
     }
 }

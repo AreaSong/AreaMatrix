@@ -189,7 +189,7 @@ fn recovery_scenarios_staging_repair_icloud_and_permission_have_release_gates() 
     assert_contains(SWIFT_IMPORT_FOLDER, "downloadICloudPlaceholdersAndRetry");
     assert_contains(
         SWIFT_QUEUE_RECOVERY,
-        "testS120FatalCopyRetryContinuesRemainingQueue",
+        "testImportProgressFatalCopyRetryContinuesRemainingQueue",
     );
     assert_contains(SCENARIOS, "M-02 缺失时阻断发布");
     assert_contains(SCENARIOS, "M-03 缺失时阻断发布");

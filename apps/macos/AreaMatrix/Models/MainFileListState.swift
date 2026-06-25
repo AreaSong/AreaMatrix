@@ -60,15 +60,15 @@ enum MainFileActionDestination: Equatable {
     var pageID: String {
         switch self {
         case .rename:
-            "S1-33"
+            "rename-file"
         case .aiClassificationSuggestion:
-            "S3-04"
+            "ai-category-suggestion"
         case let .changeCategory(_, _, mode, ruleRoute):
-            ruleRoute?.pageID ?? (mode == .classifierCorrection ? "S2-16" : "S1-35")
+            ruleRoute?.pageID ?? (mode == .classifierCorrection ? "classifier-correction" : "change-category")
         case .delete:
-            "S1-34"
+            "delete-file"
         case .iCloudConflict:
-            "S1-25"
+            "icloud-conflict-minimal"
         }
     }
 

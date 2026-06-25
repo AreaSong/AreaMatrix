@@ -52,10 +52,10 @@ struct AdvancedSettingsError: Equatable {
 }
 
 enum AdvancedSettingsAccessibilityID {
-    static let overviewOutput = "S1-30-C1-20-overview-output"
-    static let overviewRetrySave = "S1-30-C1-20-retry-save"
-    static let replaceRetrySave = "S1-30-C1-04-retry-save"
-    static let genericRetrySave = "S1-30-retry-save"
+    static let overviewOutput = "advanced-settings-overview-generated-overview-output"
+    static let overviewRetrySave = "advanced-settings-overview-generated-retry-save"
+    static let replaceRetrySave = "advanced-settings-repository-config-retry-save"
+    static let genericRetrySave = "advanced-settings-retry-save"
 }
 
 struct AdvancedSettingsDraft: Equatable {

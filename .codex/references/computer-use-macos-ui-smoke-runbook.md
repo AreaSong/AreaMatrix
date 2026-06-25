@@ -62,7 +62,7 @@ UI smoke evidence:
 - Target app/window:
   - App: AreaMatrix
   - Window title: <observed title>
-  - Build/artifact: <Debug app / Release local QA app / DMG app>
+  - Build/artifact: <Debug app / same-machine QA app / DMG app>
 - Environment:
   - macOS: <version if relevant>
   - Repo fixture: <temp QA repo path, never personal library>
@@ -76,7 +76,7 @@ UI smoke evidence:
 - Safety notes:
   - <no passwords / no system permission prompt / fixture-only user files>
 - Result: PASS / FAIL / BLOCKED
-- Residual risk: <for example: local QA smoke only, not clean Mac / Gatekeeper / notarized app>
+- Residual risk: <for example: same-machine QA smoke only, not clean Mac / Gatekeeper / notarized app>
 ```
 
 ## 判定规则
@@ -85,13 +85,13 @@ UI smoke evidence:
 - `FAIL`：目标 UI 与任务预期不一致，点击或输入无法完成，或 UI smoke 暴露真实功能错误。
 - `BLOCKED`：缺少 macOS 权限、目标 app 无法启动、环境没有真实 iCloud / Finder / signed app 条件、出现系统隐私或用户文件确认，需要用户或外部环境介入。
 
-Release 相关 smoke 必须标清证据等级。`local QA smoke` 只能证明当前开发机上的受控构建可打开和可交互，不能写成 clean Mac、Gatekeeper、Developer ID signing、notarization 或正式 DMG 放行证据。
+Release 相关 smoke 必须标清证据等级。`same-machine QA smoke` 只能证明当前开发机上的受控构建可打开和可交互，不能写成 clean Mac、Gatekeeper、Developer ID signing、notarization 或正式 DMG 放行证据。
 
 ## 示例
 
 ```text
 UI smoke evidence:
-- Scope: S1 settings page smoke after `2-x/task-yy`
+- Scope: <task label / settings page smoke>
 - Command gates:
   - `xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO`: PASS
   - `./dev test macos`: PASS

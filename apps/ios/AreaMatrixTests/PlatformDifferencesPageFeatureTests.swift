@@ -3,7 +3,7 @@ import XCTest
 
 @MainActor
 final class PlatformDifferencesPageFeatureTests: XCTestCase {
-    func testIOSPlatformDifferencesLoadsC401BindingContract() async {
+    func testIOSPlatformDifferencesLoadsCrossPlatformBindingContractCoreBindingContract() async {
         let inspector = RecordingPlatformDifferencesInspector(report: .fixture(targetPlatform: .swift))
         let capabilities = RecordingPlatformDifferencesCapabilityLoader(capabilities: .iosFixture())
         let model = PlatformDifferencesViewModel(
@@ -29,7 +29,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
         XCTAssertEqual(capabilityRequests, [CapabilityRequestRecord(platform: .ios, appVersion: "1.2.3")])
     }
 
-    func testChangingBindingTargetRechecksOnlyC401Contract() async {
+    func testChangingBindingTargetRechecksOnlyCrossPlatformBindingContractCoreContract() async {
         let inspector = RecordingPlatformDifferencesInspector(report: .fixture(targetPlatform: .python))
         let capabilities = RecordingPlatformDifferencesCapabilityLoader(capabilities: .iosFixture())
         let model = PlatformDifferencesViewModel(
@@ -86,7 +86,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.capabilityState, expectedState)
     }
 
-    func testIOSCapabilityRowsCoverS4X02PageSpecMatrix() {
+    func testIOSCapabilityRowsCoverPlatformDifferencesPageSpecMatrix() {
         let rowNames = PlatformDifferencesCapabilities.iosFixture().pageSpecRows.map(\.name)
 
         XCTAssertEqual(rowNames, [
@@ -228,7 +228,7 @@ private extension PlatformDifferencesBindingContractReport {
             supportedApis: [
                 PlatformDifferencesBindingApiContract(
                     name: "inspect_binding_contract",
-                    capability: "C4-01",
+                    capability: "binding-contract",
                     status: .supported,
                     reason: nil
                 )

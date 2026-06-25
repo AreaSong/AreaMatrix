@@ -102,7 +102,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
     }
 
     @MainActor
-    func testS219RuleEditorUpdatesExistingRuleThroughCoreCrudAfterValidation() async throws {
+    func testClassifierRuleEditorRuleEditorUpdatesExistingRuleThroughCoreCrudAfterValidation() async throws {
         let repoURL = try temporaryClassifierRecoveryRepo()
         defer { try? FileManager.default.removeItem(at: repoURL) }
         let editor = ClassifierSettingsRecordingRuleEditor(
@@ -141,7 +141,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
     }
 
     @MainActor
-    func testS219NewCategoryUsesCreateCrudAndRequiresValidate() async throws {
+    func testClassifierRuleEditorNewCategoryUsesCreateCrudAndRequiresValidate() async throws {
         let repoURL = try temporaryClassifierRecoveryRepo()
         defer { try? FileManager.default.removeItem(at: repoURL) }
         let editor = ClassifierSettingsRecordingRuleEditor(
@@ -176,7 +176,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
     }
 
     @MainActor
-    func testS219DeleteRuleUsesCrudWithoutMovingHistoricalFiles() async throws {
+    func testClassifierRuleEditorDeleteRuleUsesCrudWithoutMovingHistoricalFiles() async throws {
         let repoURL = try temporaryClassifierRecoveryRepo()
         defer { try? FileManager.default.removeItem(at: repoURL) }
         let editor = ClassifierSettingsRecordingRuleEditor(
@@ -206,7 +206,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
     }
 
     @MainActor
-    func testS219RemovingMatcherRequiresImpactSummaryBeforeSave() async throws {
+    func testClassifierRuleEditorRemovingMatcherRequiresImpactSummaryBeforeSave() async throws {
         let repoURL = try temporaryClassifierRecoveryRepo()
         defer { try? FileManager.default.removeItem(at: repoURL) }
         let editor = ClassifierSettingsRecordingRuleEditor(listResult: .success(.classifierEditorFixture()))

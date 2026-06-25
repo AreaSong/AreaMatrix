@@ -5,8 +5,8 @@ import XCTest
 // swiftlint:disable file_length
 // swiftlint:disable:next type_body_length
 final class MainRepoExternalRemovalTests: XCTestCase {
-    func testS201PageIntegrationRendersSearchRouteViews() {
-        let request = SearchQueryRequestSnapshot.s201RouteFixture(query: "合同")
+    func testSearchResultsPageIntegrationRendersSearchRouteViews() {
+        let request = SearchQueryRequestSnapshot.searchResultsRouteFixture(query: "合同")
         let emptyView = SearchEmptyRouteView(
             request: request,
             onClearSearch: {},
@@ -14,8 +14,8 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             onRemoveFilter: { _ in },
             onSearchAllFileTypes: {}
         )
-        let emptyBody = s201RouteMirrorDescription(of: emptyView.body)
-        let errorBody = s201RouteMirrorDescription(of: QueryErrorRouteView(
+        let emptyBody = searchResultsRouteMirrorDescription(of: emptyView.body)
+        let errorBody = searchResultsRouteMirrorDescription(of: QueryErrorRouteView(
             request: request,
             diagnostic: SearchQueryDiagnosticSnapshot(
                 severityDisplayName: "Error",
@@ -24,8 +24,8 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             ),
             onClear: {}
         ).body)
-        let savedSearchStore = S203RecordingSavedSearchStore(results: [.listSuccess([])])
-        let saveBody = s201RouteMirrorDescription(of: SavedSearchSheetRouteView(
+        let savedSearchStore = SavedSearchRecordingSavedSearchStore(results: [.listSuccess([])])
+        let saveBody = searchResultsRouteMirrorDescription(of: SavedSearchSheetRouteView(
             request: request,
             repoPath: "/tmp/repo",
             resultCountState: .loaded(3),
@@ -33,14 +33,14 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             errorMapper: MainListRecordingErrorMapper(mapping: .searchFiltersDbFixture()),
             onCancel: {}
         ).body)
-        let indexingBody = s201RouteMirrorDescription(of: SearchIndexingStatusRouteView(
+        let indexingBody = searchResultsRouteMirrorDescription(of: SearchIndexingStatusRouteView(
             request: request,
             indexStatus: .unavailable,
             onRetry: {},
             onClose: {}
         ).body)
         var commandQuery = "合同"
-        let commandBody = s201RouteMirrorDescription(of: SearchCommandPaletteRouteView(
+        let commandBody = searchResultsRouteMirrorDescription(of: SearchCommandPaletteRouteView(
             query: Binding(get: { commandQuery }, set: { commandQuery = $0 }),
             state: .idle,
             onLoad: {},
@@ -48,21 +48,21 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             onClose: {}
         ).body)
 
-        XCTAssertTrue(emptyBody.contains("S2-04-search-empty"))
+        XCTAssertTrue(emptyBody.contains("search-empty-search-empty"))
         XCTAssertTrue(emptyBody.contains("Clear filters") && emptyBody.contains("Search all file types"))
         XCTAssertTrue(errorBody.contains("Unknown field: owner"))
-        XCTAssertTrue(errorBody.contains("S2-05-query-error"))
-        XCTAssertTrue(saveBody.contains("S2-03-search-route"))
-        XCTAssertTrue(indexingBody.contains("S2-01-indexing-status-search-route"))
-        XCTAssertTrue(commandBody.contains("S2-15-search-route"))
+        XCTAssertTrue(errorBody.contains("query-error-query-error"))
+        XCTAssertTrue(saveBody.contains("saved-search-search-route"))
+        XCTAssertTrue(indexingBody.contains("search-index-status-indexing-status-search-route"))
+        XCTAssertTrue(commandBody.contains("command-palette-search-route"))
     }
 
     @MainActor
-    func testS203SavedSearchSheetCreatesSmartListThroughCoreBridge() async {
-        let request = SearchQueryRequestSnapshot.s201RouteFixture(query: "合同")
+    func testSavedSearchSavedSearchSheetCreatesSmartListThroughCoreBridge() async {
+        let request = SearchQueryRequestSnapshot.searchResultsRouteFixture(query: "合同")
         let model = SavedSearchSheetModel(request: request, resultCount: 0)
-        let saved = SavedSearchSnapshot.s203Fixture(id: 77, request: model.createRequest)
-        let store = S203RecordingSavedSearchStore(results: [.listSuccess([]), .createSuccess(saved)])
+        let saved = SavedSearchSnapshot.savedSearchFixture(id: 77, request: model.createRequest)
+        let store = SavedSearchRecordingSavedSearchStore(results: [.listSuccess([]), .createSuccess(saved)])
 
         _ = try? await store.listSavedSearches(repoPath: "/tmp/repo")
         let created = try? await store.createSavedSearch(repoPath: "/tmp/repo", request: model.createRequest)
@@ -78,11 +78,11 @@ final class MainRepoExternalRemovalTests: XCTestCase {
     }
 
     @MainActor
-    func testS203SavedSearchSheetBlocksDuplicateNameBeforeCreate() async {
-        let request = SearchQueryRequestSnapshot.s201RouteFixture(query: "Finance")
+    func testSavedSearchSavedSearchSheetBlocksDuplicateNameBeforeCreate() async {
+        let request = SearchQueryRequestSnapshot.searchResultsRouteFixture(query: "Finance")
         var model = SavedSearchSheetModel(request: request, resultCount: 12)
         model.existingNames = ["finance"]
-        let store = S203RecordingSavedSearchStore(results: [.listSuccess([.s203Fixture(
+        let store = SavedSearchRecordingSavedSearchStore(results: [.listSuccess([.savedSearchFixture(
             id: 1,
             request: model.createRequest
         )])])
@@ -95,12 +95,12 @@ final class MainRepoExternalRemovalTests: XCTestCase {
     }
 
     @MainActor
-    func testS203SavedSearchFailureKeepsDraftAndMapsError() async {
-        let request = SearchQueryRequestSnapshot.s201RouteFixture(query: "Finance")
+    func testSavedSearchSavedSearchFailureKeepsDraftAndMapsError() async {
+        let request = SearchQueryRequestSnapshot.searchResultsRouteFixture(query: "Finance")
         var model = SavedSearchSheetModel(request: request, resultCount: nil)
         let mapping = CoreErrorMappingSnapshot.searchFiltersDbFixture()
         let mapper = MainListRecordingErrorMapper(mapping: mapping)
-        let store = S203RecordingSavedSearchStore(results: [.createFailure(CoreError.Db(message: "db locked"))])
+        let store = SavedSearchRecordingSavedSearchStore(results: [.createFailure(CoreError.Db(message: "db locked"))])
 
         do {
             _ = try await store.createSavedSearch(repoPath: "/tmp/repo", request: model.createRequest)
@@ -118,7 +118,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertEqual(recordedErrors, [CoreError.Db(message: "db locked")])
     }
 
-    func testS202TagFilterEditingSupportsMultipleTagsAndAllMatchMode() {
+    func testSearchFiltersTagFilterEditingSupportsMultipleTagsAndAllMatchMode() {
         let filters = SearchFilterStateSnapshot.empty
         let withFinance = SearchFilterEditing.togglingTag("finance", in: filters)
         let withTax = SearchFilterEditing.togglingTag("tax", in: withFinance)
@@ -134,7 +134,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertEqual(withoutTags.tagMatchMode, .any)
     }
 
-    func testS202SearchFilterEditingKeepsInvalidCustomDateOutOfFilterState() {
+    func testSearchFiltersSearchFilterEditingKeepsInvalidCustomDateOutOfFilterState() {
         let filters = SearchFilterStateSnapshot.searchFiltersFixture()
         let invalid = SearchFilterEditing.settingCustomDateRange(
             from: Date(timeIntervalSince1970: 1_800_086_400),
@@ -164,7 +164,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertNil(valid.errorMessage)
     }
 
-    func testS202FilterChipsRemoveSingleFiltersWithoutClearingQueryOwnedState() {
+    func testSearchFiltersFilterChipsRemoveSingleFiltersWithoutClearingQueryOwnedState() {
         let filters = SearchFilterStateSnapshot.searchFiltersFixture()
 
         XCTAssertEqual(
@@ -188,7 +188,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
     }
 
     @MainActor
-    func testS202SmartListEditingUpdatesDraftFiltersWithoutSavingOrOpeningCreateSheet() {
+    func testSearchFiltersSmartListEditingUpdatesDraftFiltersWithoutSavingOrOpeningCreateSheet() {
         let model = MainFileListModel(
             opening: .searchFiltersFixture(repoPath: "/tmp/repo", tree: .searchFiltersFixtureTree()),
             fileLister: MainListRecordingFileLister(results: []),
@@ -218,7 +218,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
     }
 
     @MainActor
-    func testS202SearchFilterRoutingWritesBannerChipRemovalIntoSmartListDraftOnly() {
+    func testSearchFiltersSearchFilterRoutingWritesBannerChipRemovalIntoSmartListDraftOnly() {
         let model = MainFileListModel(
             opening: .searchFiltersFixture(repoPath: "/tmp/repo", tree: .searchFiltersFixtureTree()),
             fileLister: MainListRecordingFileLister(results: []),
@@ -355,13 +355,13 @@ final class MainRepoExternalRemovalTests: XCTestCase {
 }
 
 private extension SearchQueryRequestSnapshot {
-    static func s201RouteFixture(query: String) -> SearchQueryRequestSnapshot {
+    static func searchResultsRouteFixture(query: String) -> SearchQueryRequestSnapshot {
         SearchQueryRequestSnapshot(
             query: query,
             scope: .current,
             currentPath: "docs/contracts",
             category: "docs",
-            filters: .s201RouteFilters,
+            filters: .searchResultsRouteFilters,
             sort: .relevance,
             limit: 50,
             offset: 0
@@ -409,7 +409,7 @@ private extension SearchFilterStateSnapshot {
         )
     }
 
-    static let s201RouteFilters = SearchFilterStateSnapshot(
+    static let searchResultsRouteFilters = SearchFilterStateSnapshot(
         category: "docs",
         fileKind: "pdf",
         tags: ["contract"],
@@ -436,12 +436,12 @@ private extension CoreErrorMappingSnapshot {
     }
 }
 
-private struct S203SavedSearchRequestRecord: Equatable {
+private struct SavedSearchSavedSearchRequestRecord: Equatable {
     var repoPath: String
     var request: CreateSavedSearchRequestSnapshot
 }
 
-private actor S203RecordingSavedSearchStore: CoreSavedSearchCRUD {
+private actor SavedSearchRecordingSavedSearchStore: CoreSavedSearchCRUD {
     enum Result {
         case listSuccess([SavedSearchSnapshot])
         case createSuccess(SavedSearchSnapshot)
@@ -449,7 +449,7 @@ private actor S203RecordingSavedSearchStore: CoreSavedSearchCRUD {
     }
 
     private var results: [Result]
-    private var createRecords: [S203SavedSearchRequestRecord] = []
+    private var createRecords: [SavedSearchSavedSearchRequestRecord] = []
 
     init(results: [Result]) {
         self.results = results
@@ -459,7 +459,7 @@ private actor S203RecordingSavedSearchStore: CoreSavedSearchCRUD {
         repoPath: String,
         request: CreateSavedSearchRequestSnapshot
     ) async throws -> SavedSearchSnapshot {
-        createRecords.append(S203SavedSearchRequestRecord(repoPath: repoPath, request: request))
+        createRecords.append(SavedSearchSavedSearchRequestRecord(repoPath: repoPath, request: request))
         guard !results.isEmpty else { throw CoreError.Db(message: "missing saved search result") }
         switch results.removeFirst() {
         case let .createSuccess(saved):
@@ -481,13 +481,13 @@ private actor S203RecordingSavedSearchStore: CoreSavedSearchCRUD {
         }
     }
 
-    func createdRequests() -> [S203SavedSearchRequestRecord] {
+    func createdRequests() -> [SavedSearchSavedSearchRequestRecord] {
         createRecords
     }
 }
 
 private extension SavedSearchSnapshot {
-    static func s203Fixture(id: Int64, request: CreateSavedSearchRequestSnapshot) -> SavedSearchSnapshot {
+    static func savedSearchFixture(id: Int64, request: CreateSavedSearchRequestSnapshot) -> SavedSearchSnapshot {
         SavedSearchSnapshot(
             id: id,
             name: request.name,
@@ -501,17 +501,17 @@ private extension SavedSearchSnapshot {
     }
 }
 
-private func s201RouteMirrorDescription(of value: Any) -> String {
+private func searchResultsRouteMirrorDescription(of value: Any) -> String {
     var lines: [String] = []
-    s201RouteAppendMirrorDescription(of: value, to: &lines)
+    searchResultsRouteAppendMirrorDescription(of: value, to: &lines)
     return lines.joined(separator: "\n")
 }
 
-private func s201RouteAppendMirrorDescription(of value: Any, to lines: inout [String]) {
+private func searchResultsRouteAppendMirrorDescription(of value: Any, to lines: inout [String]) {
     lines.append(String(describing: type(of: value)))
     lines.append(String(describing: value))
     for child in Mirror(reflecting: value).children {
         if let label = child.label { lines.append(label) }
-        s201RouteAppendMirrorDescription(of: child.value, to: &lines)
+        searchResultsRouteAppendMirrorDescription(of: child.value, to: &lines)
     }
 }

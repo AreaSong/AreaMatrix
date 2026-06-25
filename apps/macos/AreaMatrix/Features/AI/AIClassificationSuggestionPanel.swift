@@ -45,7 +45,7 @@ struct AIClassificationSuggestionRouteView: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: "AI Category Suggestion", pageID: "S3-04") {
+        MainFileActionSheetContainer(title: "AI Category Suggestion", pageID: "ai-category-suggestion") {
             if let file {
                 AIClassificationSuggestionPanel(
                     model: model,
@@ -167,11 +167,11 @@ struct AIClassificationSuggestionPanel: View {
             fileSummary
             Text(model.statusText)
                 .foregroundStyle(statusTint)
-                .accessibilityIdentifier("S3-04-C3-04-status")
+                .accessibilityIdentifier("ai-category-suggestion-ai-classification-suggestion-status")
             if let returnContext {
                 Label(returnContext.message, systemImage: "checkmark.circle")
                     .foregroundStyle(.green)
-                    .accessibilityIdentifier("S3-04-C3-04-return-status")
+                    .accessibilityIdentifier("ai-category-suggestion-ai-classification-suggestion-return-status")
             }
             if let suggestion = model.suggestion {
                 suggestionContent(suggestion)
@@ -179,7 +179,7 @@ struct AIClassificationSuggestionPanel: View {
             if let fallbackStatus = model.fallbackStatus {
                 fallbackContent(fallbackStatus)
             } else if model.isResolvingFallbackStatus {
-                fallbackContent(.s310ResolvingClassificationStatus)
+                fallbackContent(.aiFallbackResolvingClassificationStatus)
             }
             if let failure = model.failure {
                 failureContent(failure)
@@ -212,7 +212,7 @@ struct AIClassificationSuggestionPanel: View {
                 Task { await model.askForSuggestion() }
             }
             .disabled(!model.canAskForSuggestion)
-            .accessibilityIdentifier("S3-04-C3-04-ask-ai-suggestion")
+            .accessibilityIdentifier("ai-category-suggestion-ai-classification-suggestion-ask-ai-suggestion")
             Button("Classify manually", action: onClassifyManually)
                 .disabled(model.isResolvingFallbackStatus)
             Spacer()
@@ -245,7 +245,7 @@ struct AIClassificationSuggestionPanel: View {
             Text(failure.recovery)
                 .font(.caption)
         }
-        .accessibilityIdentifier("S3-04-C3-04-error")
+        .accessibilityIdentifier("ai-category-suggestion-ai-classification-suggestion-error")
     }
 
     func performFallbackAction(_ action: AiFallbackAction) {
@@ -259,7 +259,7 @@ struct AIClassificationSuggestionPanel: View {
         case .configureRemoteAi:
             onConfigureRemoteAI()
         case .viewPrivacyRule:
-            privacyRuleRoute = s309PrivacyRuleRoute(ruleID: model.fallbackStatus?.privacyRuleId)
+            privacyRuleRoute = aiPrivacyRulesPrivacyRuleRoute(ruleID: model.fallbackStatus?.privacyRuleId)
         case .viewCallLog:
             if let callLogID = model.fallbackStatus?.callLogId {
                 onViewCall(callLogID)
@@ -271,7 +271,7 @@ struct AIClassificationSuggestionPanel: View {
         }
     }
 
-    func s309PrivacyRuleRoute(ruleID: String?) -> AIPrivacyRulesRoute? {
+    func aiPrivacyRulesPrivacyRuleRoute(ruleID: String?) -> AIPrivacyRulesRoute? {
         let normalizedRuleID = ruleID?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !normalizedRuleID.isEmpty else { return nil }
         return AIPrivacyRulesRoute(repoPath: model.repoPath, focus: .rule(ruleID: normalizedRuleID))
@@ -334,7 +334,7 @@ struct AIClassificationSuggestionPanel: View {
 }
 
 private extension AiFallbackStatus {
-    static let s310ResolvingClassificationStatus = AiFallbackStatus(
+    static let aiFallbackResolvingClassificationStatus = AiFallbackStatus(
         operation: .classificationSuggestion,
         kind: .internalFailure,
         category: .unavailable,
@@ -376,7 +376,7 @@ private struct AIFallbackStatusRegion: View {
         .background(.quaternary.opacity(0.35))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("S3-10-C3-04-ai-fallback")
+        .accessibilityIdentifier("ai-fallback-ai-classification-suggestion-ai-fallback")
     }
 
     private var reasonBadge: some View {
@@ -386,7 +386,7 @@ private struct AIFallbackStatusRegion: View {
             .padding(.vertical, 4)
             .background(badgeTint.opacity(0.14))
             .clipShape(RoundedRectangle(cornerRadius: 6))
-            .accessibilityIdentifier("S3-10-C3-04-reason-badge")
+            .accessibilityIdentifier("ai-fallback-ai-classification-suggestion-reason-badge")
     }
 
     private var actionRow: some View {
@@ -424,13 +424,13 @@ private struct AIFallbackStatusRegion: View {
             onAction(action)
         }
         .disabled(isActionDisabled(action))
-        .accessibilityIdentifier("S3-10-C3-04-action-\(actionID(action))")
+        .accessibilityIdentifier("ai-fallback-ai-classification-suggestion-action-\(actionID(action))")
     }
 
     private func resolvingActionButton(_ action: AiFallbackAction) -> some View {
         Button(actionTitle(action)) {}
             .disabled(true)
-            .accessibilityIdentifier("S3-10-C3-04-action-\(actionID(action))-resolving")
+            .accessibilityIdentifier("ai-fallback-ai-classification-suggestion-action-\(actionID(action))-resolving")
     }
 
     private var resolvingMessage: String {

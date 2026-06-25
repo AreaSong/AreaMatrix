@@ -354,7 +354,7 @@ private final class AboutSettingsRecordingAnnouncer: AccessibilityAnnouncing {
 private extension AboutDiagnosticsExportSnapshot {
     static func fixture() -> AboutDiagnosticsExportSnapshot {
         AboutDiagnosticsExportSnapshot(
-            exportPath: "/tmp/AreaMatrix/Diagnostics/s1-31",
+            exportPath: "/tmp/AreaMatrix/Diagnostics/about-settings-diagnostics",
             createdAt: 1_714_000_000,
             warnings: []
         )

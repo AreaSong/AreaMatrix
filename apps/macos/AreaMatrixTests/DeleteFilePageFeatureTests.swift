@@ -3,7 +3,7 @@ import XCTest
 
 final class DeleteFilePageFeatureTests: XCTestCase {
     @MainActor
-    func testS134C123MoveToTrashUsesCoreBridgeAndClearsSelection() async {
+    func testDeleteFileDeleteRemoveIndexCoreMoveToTrashUsesCoreBridgeAndClearsSelection() async {
         let file = FileEntrySnapshot.deleteFixture(id: 230, name: "owned.pdf", storageMode: "Copied")
         let deleter = DeleteRecordingDeleter()
         let model = MainFileListModel(
@@ -31,7 +31,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS134C123IndexedAndMissingEntriesUseRemoveFromIndex() async {
+    func testDeleteFileDeleteRemoveIndexCoreIndexedAndMissingEntriesUseRemoveFromIndex() async {
         let indexed = FileEntrySnapshot.deleteFixture(id: 231, name: "indexed.pdf", storageMode: "Indexed")
         var missing = FileEntrySnapshot.deleteFixture(id: 232, name: "missing.pdf", storageMode: "Copied")
         let external = FileEntrySnapshot.deleteFixture(
@@ -66,7 +66,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS134C123FailureKeepsSheetOpenAndMapsCoreError() async {
+    func testDeleteFileDeleteRemoveIndexCoreFailureKeepsSheetOpenAndMapsCoreError() async {
         let file = FileEntrySnapshot.deleteFixture(id: 233, name: "locked.pdf", storageMode: "Copied")
         let mapping = CoreErrorMappingSnapshot.deletePermissionDenied()
         let mapper = DetailMetaErrorMapper(mapping: mapping)
@@ -93,7 +93,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS134C123DetailMissingBannerRoutesRemoveFromIndexToDeleteSheet() async {
+    func testDeleteFileDeleteRemoveIndexCoreDetailMissingBannerRoutesRemoveFromIndexToDeleteSheet() async {
         var missing = FileEntrySnapshot.deleteFixture(id: 235, name: "missing.pdf", storageMode: "Copied")
         missing.availability = .missing
         let model = MainFileListModel(
@@ -110,10 +110,10 @@ final class DeleteFilePageFeatureTests: XCTestCase {
         XCTAssertEqual(model.detailErrorMapping?.kind, .fileNotFound)
         XCTAssertEqual(MainFileDeleteOperation.recommended(for: missing), .removeFromIndex)
         XCTAssertEqual(model.pendingActionDestination, .delete(fileID: missing.id))
-        XCTAssertEqual(model.pendingActionDestination?.pageID, "S1-34")
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "delete-file")
     }
 
-    func testS134C123FailurePrimaryActionUsesRetryCopy() {
+    func testDeleteFileDeleteRemoveIndexCoreFailurePrimaryActionUsesRetryCopy() {
         let fileID: Int64 = 236
         let state = MainFileDeleteState.failed(fileID: fileID, operation: .removeFromIndex, .deleteIo())
 
@@ -127,7 +127,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
         )
     }
 
-    func testS134C123DefaultCoreBridgeRemovesIndexedEntryWithoutTouchingSource() async throws {
+    func testDeleteFileDeleteRemoveIndexCoreDefaultCoreBridgeRemovesIndexedEntryWithoutTouchingSource() async throws {
         let repoURL = try makeDeleteTemporaryDirectory(prefix: "repo")
         let sourceRoot = try makeDeleteTemporaryDirectory(prefix: "source")
         defer {
@@ -155,7 +155,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
         XCTAssertTrue(changes.contains { $0.action == "removed_from_index" })
     }
 
-    func testS134C123DefaultCoreBridgeRejectsWrongOperationWithoutSideEffects() async throws {
+    func testDeleteFileDeleteRemoveIndexCoreDefaultCoreBridgeRejectsWrongOperationWithoutSideEffects() async throws {
         let repoURL = try makeDeleteTemporaryDirectory(prefix: "repo")
         let sourceRoot = try makeDeleteTemporaryDirectory(prefix: "source")
         defer {
@@ -252,7 +252,7 @@ private extension CoreErrorMappingSnapshot {
             severity: .high,
             suggestedAction: "Review file permissions and retry.",
             recoverability: .retryable,
-            rawContext: "S1-34 C1-23 delete_file"
+            rawContext: "delete-file delete-remove-index delete_file"
         )
     }
 
@@ -263,7 +263,7 @@ private extension CoreErrorMappingSnapshot {
             severity: .high,
             suggestedAction: "Grant access or handle the file in Finder, then retry.",
             recoverability: .userActionRequired,
-            rawContext: "S1-34 C1-23 delete_file"
+            rawContext: "delete-file delete-remove-index delete_file"
         )
     }
 }

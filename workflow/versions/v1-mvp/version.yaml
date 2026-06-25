@@ -1,5 +1,5 @@
 id: v1-mvp
-title: AreaMatrix MVP live task queue
+title: AreaMatrix v1 historical task queue
 lifecycle_status: archived
 queue_completion_status: complete
 closeout_status: decision-recorded
@@ -24,7 +24,7 @@ progress_source: workflow/versions/v1-mvp/execution/_shared/progress.json
 runner: ./task-loop
 console: ./dev
 middle_layers: skipped
-middle_layers_reason: MVP scope is mandatory, so docs were directly split into executable tasks.
+middle_layers_reason: v1 scope was already fixed, so docs were directly split into executable tasks.
 discussion:
   required: false
   status: skipped

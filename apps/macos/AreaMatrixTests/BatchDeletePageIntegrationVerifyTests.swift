@@ -2,10 +2,10 @@
 import Foundation
 import XCTest
 
-final class S213BatchDeleteVerifyTests: XCTestCase {
+final class BatchDeleteBatchDeleteVerifyTests: XCTestCase {
     // swiftlint:disable:next function_body_length
-    func testS213MoveToTrashUsesRealCorePreviewApplyAndUndoToken() async throws {
-        let context = try await makeS213IntegrationContext()
+    func testBatchDeleteMoveToTrashUsesRealCorePreviewApplyAndUndoToken() async throws {
+        let context = try await makeBatchDeleteIntegrationContext()
         defer { context.cleanUp() }
 
         let route = BatchDeleteRoute(
@@ -22,7 +22,7 @@ final class S213BatchDeleteVerifyTests: XCTestCase {
         )
         XCTAssertNil(route.disabledReason)
 
-        try await withS213TestTrash(homeURL: context.homeURL) {
+        try await withBatchDeleteTestTrash(homeURL: context.homeURL) {
             let preview = try await context.bridge.previewBatchDelete(
                 repoPath: context.repoURL.path,
                 fileIDs: route.fileIDs,
@@ -69,7 +69,7 @@ final class S213BatchDeleteVerifyTests: XCTestCase {
                 errorMapper: context.bridge
             )
             guard case let .ready(action) = undoState else {
-                return XCTFail("Expected real C2-09 apply to expose a C2-07 undo action")
+                return XCTFail("Expected real batch-delete-trash apply to expose a undo-action-log undo action")
             }
             XCTAssertEqual(action.actionID, undoToken)
             XCTAssertEqual(action.kind, "trash_delete")
@@ -78,12 +78,12 @@ final class S213BatchDeleteVerifyTests: XCTestCase {
         }
     }
 
-    func testS213RemoveFromIndexUsesRealCoreWithoutTouchingExternalSource() async throws {
-        let context = try await makeS213IntegrationContext()
+    func testBatchDeleteRemoveFromIndexUsesRealCoreWithoutTouchingExternalSource() async throws {
+        let context = try await makeBatchDeleteIntegrationContext()
         defer { context.cleanUp() }
         let externalBytes = try Data(contentsOf: context.indexOnlySourceURL)
 
-        try await withS213TestTrash(homeURL: context.homeURL) {
+        try await withBatchDeleteTestTrash(homeURL: context.homeURL) {
             let wrongModePreview = try await context.bridge.previewBatchDelete(
                 repoPath: context.repoURL.path,
                 fileIDs: [context.indexOnly.id],
@@ -130,8 +130,8 @@ final class S213BatchDeleteVerifyTests: XCTestCase {
         }
     }
 
-    func testS213ValidationUsesPreviewFileIDsForRetrySubset() {
-        let preview = BatchDeletePreviewReportSnapshot.s213Fixture(fileIDs: [20])
+    func testBatchDeleteValidationUsesPreviewFileIDsForRetrySubset() {
+        let preview = BatchDeletePreviewReportSnapshot.batchDeleteFixture(fileIDs: [20])
 
         XCTAssertTrue(BatchDeleteValidation.canApply(BatchDeleteApplyGate(
             fileIDs: [10, 20],
@@ -152,7 +152,7 @@ final class S213BatchDeleteVerifyTests: XCTestCase {
     }
 }
 
-private struct S213IntegrationContext {
+private struct BatchDeleteIntegrationContext {
     let repoURL: URL
     let sourceRootURL: URL
     let homeURL: URL
@@ -170,10 +170,10 @@ private struct S213IntegrationContext {
     }
 }
 
-private func makeS213IntegrationContext() async throws -> S213IntegrationContext {
-    let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "s213-repo")
-    let sourceRootURL = try makeImportSingleFileTemporaryDirectory(prefix: "s213-source")
-    let homeURL = try makeImportSingleFileTemporaryDirectory(prefix: "s213-home")
+private func makeBatchDeleteIntegrationContext() async throws -> BatchDeleteIntegrationContext {
+    let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "batchDelete-repo")
+    let sourceRootURL = try makeImportSingleFileTemporaryDirectory(prefix: "batchDelete-source")
+    let homeURL = try makeImportSingleFileTemporaryDirectory(prefix: "batchDelete-home")
     let trashURL = homeURL.appendingPathComponent(".Trash", isDirectory: true)
     try FileManager.default.createDirectory(at: trashURL, withIntermediateDirectories: true)
 
@@ -199,7 +199,7 @@ private func makeS213IntegrationContext() async throws -> S213IntegrationContext
         duplicateStrategy: .skip
     )
 
-    return S213IntegrationContext(
+    return BatchDeleteIntegrationContext(
         repoURL: repoURL,
         sourceRootURL: sourceRootURL,
         homeURL: homeURL,
@@ -212,11 +212,11 @@ private func makeS213IntegrationContext() async throws -> S213IntegrationContext
     )
 }
 
-private func withS213TestTrash<T>(
+private func withBatchDeleteTestTrash<T>(
     homeURL: URL,
     operation: () async throws -> T
 ) async throws -> T {
-    await s213TrashEnvironmentGate.acquire()
+    await batchDeleteTrashEnvironmentGate.acquire()
     let environment = ProcessInfo.processInfo.environment
     let previousHome = environment["HOME"]
     let previousForce = environment["AREAMATRIX_TEST_FORCE_USER_TRASH"]
@@ -224,19 +224,19 @@ private func withS213TestTrash<T>(
     setenv("AREAMATRIX_TEST_FORCE_USER_TRASH", "1", 1)
     do {
         let result = try await operation()
-        restoreS213Env(name: "HOME", value: previousHome)
-        restoreS213Env(name: "AREAMATRIX_TEST_FORCE_USER_TRASH", value: previousForce)
-        await s213TrashEnvironmentGate.release()
+        restoreBatchDeleteEnv(name: "HOME", value: previousHome)
+        restoreBatchDeleteEnv(name: "AREAMATRIX_TEST_FORCE_USER_TRASH", value: previousForce)
+        await batchDeleteTrashEnvironmentGate.release()
         return result
     } catch {
-        restoreS213Env(name: "HOME", value: previousHome)
-        restoreS213Env(name: "AREAMATRIX_TEST_FORCE_USER_TRASH", value: previousForce)
-        await s213TrashEnvironmentGate.release()
+        restoreBatchDeleteEnv(name: "HOME", value: previousHome)
+        restoreBatchDeleteEnv(name: "AREAMATRIX_TEST_FORCE_USER_TRASH", value: previousForce)
+        await batchDeleteTrashEnvironmentGate.release()
         throw error
     }
 }
 
-private actor S213TrashEnvironmentGate {
+private actor BatchDeleteTrashEnvironmentGate {
     private var isLocked = false
     private var waiters: [CheckedContinuation<Void, Never>] = []
 
@@ -260,9 +260,9 @@ private actor S213TrashEnvironmentGate {
     }
 }
 
-private let s213TrashEnvironmentGate = S213TrashEnvironmentGate()
+private let batchDeleteTrashEnvironmentGate = BatchDeleteTrashEnvironmentGate()
 
-private func restoreS213Env(name: String, value: String?) {
+private func restoreBatchDeleteEnv(name: String, value: String?) {
     if let value {
         setenv(name, value, 1)
     } else {
@@ -271,7 +271,7 @@ private func restoreS213Env(name: String, value: String?) {
 }
 
 private extension BatchDeletePreviewReportSnapshot {
-    static func s213Fixture(fileIDs: [Int64]) -> BatchDeletePreviewReportSnapshot {
+    static func batchDeleteFixture(fileIDs: [Int64]) -> BatchDeletePreviewReportSnapshot {
         BatchDeletePreviewReportSnapshot(
             requestedFileCount: Int64(fileIDs.count),
             deleteMode: .moveToTrash,

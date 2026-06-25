@@ -2,46 +2,46 @@
 import XCTest
 
 final class SyncConflictEntryPageFeatureTests: XCTestCase {
-    private static let declaredCapabilities: Set<String> = ["C4-15"]
+    private static let declaredCapabilities: Set<String> = ["sync-conflict-detect"]
 
-    func testS4X03DeclaresOnlyC415Boundary() {
-        XCTAssertEqual(Self.declaredCapabilities, ["C4-15"])
+    func testSyncConflictEntryDeclaresOnlySyncConflictDetectCoreBoundary() {
+        XCTAssertEqual(Self.declaredCapabilities, ["sync-conflict-detect"])
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.detectSyncConflicts))
     }
 
     @MainActor
-    func testS4X03LoadsNeedsReviewConflictsFromCoreDetector() async {
-        let reviewable = SyncConflictSnapshot.s4x01Fixture(
+    func testSyncConflictEntryLoadsNeedsReviewConflictsFromCoreDetector() async {
+        let reviewable = SyncConflictSnapshot.syncConflictReviewFixture(
             conflictID: "entry-review",
             primaryPath: "docs/review.pdf"
         )
-        let detector = S4X01RecordingSyncConflictDetector(result: .success([
-            .s4x01Fixture(conflictID: "entry-resolved", status: .resolved),
+        let detector = SyncConflictReviewRecordingSyncConflictDetector(result: .success([
+            .syncConflictReviewFixture(conflictID: "entry-resolved", status: .resolved),
             reviewable
         ]))
         let model = SyncConflictEntryModel(
-            repoPath: "/tmp/s4x03-repo",
+            repoPath: "/tmp/syncConflictEntry-repo",
             conflictDetector: detector,
-            errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.loadIfNeeded()
         let requests = await detector.recordedRequests()
 
-        XCTAssertEqual(requests, ["/tmp/s4x03-repo"])
+        XCTAssertEqual(requests, ["/tmp/syncConflictEntry-repo"])
         XCTAssertEqual(model.snapshot?.conflicts, [reviewable])
         XCTAssertEqual(model.snapshot?.count, 1)
         XCTAssertTrue(model.isBannerVisible)
     }
 
     @MainActor
-    func testS4X03LaterOnlyDismissesBannerAndKeepsNeedsReviewList() async {
+    func testSyncConflictEntryLaterOnlyDismissesBannerAndKeepsNeedsReviewList() async {
         let model = SyncConflictEntryModel(
-            repoPath: "/tmp/s4x03-repo",
-            conflictDetector: S4X01RecordingSyncConflictDetector(result: .success([
-                .s4x01Fixture(conflictID: "entry-later")
+            repoPath: "/tmp/syncConflictEntry-repo",
+            conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .success([
+                .syncConflictReviewFixture(conflictID: "entry-later")
             ])),
-            errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.loadIfNeeded()
@@ -53,34 +53,34 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X03ReviewRouteUsesStableConflictIDFromCore() async {
-        let conflict = SyncConflictSnapshot.s4x01Fixture(
+    func testSyncConflictEntryReviewRouteUsesStableConflictIDFromCore() async {
+        let conflict = SyncConflictSnapshot.syncConflictReviewFixture(
             conflictID: "entry-route",
             primaryPath: "docs/route.pdf"
         )
         let model = SyncConflictEntryModel(
-            repoPath: "/tmp/s4x03-repo",
-            conflictDetector: S4X01RecordingSyncConflictDetector(result: .success([conflict])),
-            errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+            repoPath: "/tmp/syncConflictEntry-repo",
+            conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .success([conflict])),
+            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.loadIfNeeded()
         let route = model.reviewRoute(for: conflict)
 
         XCTAssertEqual(route, SyncConflictReviewRoute(
-            repoPath: "/tmp/s4x03-repo",
+            repoPath: "/tmp/syncConflictEntry-repo",
             conflictID: "entry-route",
             primaryPath: "docs/route.pdf"
         ))
     }
 
     @MainActor
-    func testS4X03MissingConflictIDDisablesReviewAndShowsRepairCopy() async {
-        let conflict = SyncConflictSnapshot.s4x01Fixture(conflictID: "   ")
+    func testSyncConflictEntryMissingConflictIDDisablesReviewAndShowsRepairCopy() async {
+        let conflict = SyncConflictSnapshot.syncConflictReviewFixture(conflictID: "   ")
         let model = SyncConflictEntryModel(
-            repoPath: "/tmp/s4x03-repo",
-            conflictDetector: S4X01RecordingSyncConflictDetector(result: .success([conflict])),
-            errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+            repoPath: "/tmp/syncConflictEntry-repo",
+            conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .success([conflict])),
+            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.loadIfNeeded()
@@ -92,21 +92,21 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X03ErrorStateMapsCoreErrorAndKeepsRetryVisible() async {
-        let mapper = S4X01RecordingErrorMapper(mapping: .s4x01Mapping(
+    func testSyncConflictEntryErrorStateMapsCoreErrorAndKeepsRetryVisible() async {
+        let mapper = SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping(
             kind: .db,
             rawContext: "conflict state locked"
         ))
         let model = SyncConflictEntryModel(
-            repoPath: "/tmp/s4x03-repo",
-            conflictDetector: S4X01RecordingSyncConflictDetector(result: .failure(CoreError.Db(
+            repoPath: "/tmp/syncConflictEntry-repo",
+            conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .failure(CoreError.Db(
                 message: "conflict state locked"
             ))),
             errorMapper: mapper
         )
 
         await model.loadIfNeeded()
-        let body = s4x01MirrorDescription(of: SyncConflictEntryPanel(model: model, onReview: { _ in }).body)
+        let body = syncConflictReviewMirrorDescription(of: SyncConflictEntryPanel(model: model, onReview: { _ in }).body)
         let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(mappedErrors, [CoreError.Db(message: "conflict state locked")])
@@ -115,24 +115,24 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X03DetailBannerRoutesSelectedFileToConflictReview() {
-        let conflict = SyncConflictSnapshot.s4x01Fixture(
+    func testSyncConflictEntryDetailBannerRoutesSelectedFileToConflictReview() {
+        let conflict = SyncConflictSnapshot.syncConflictReviewFixture(
             conflictID: "entry-detail",
             primaryPath: "docs/report.pdf"
         )
         let model = SyncConflictEntryModel(
-            repoPath: "/tmp/s4x03-repo",
-            conflictDetector: S4X01RecordingSyncConflictDetector(result: .success([conflict])),
-            errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+            repoPath: "/tmp/syncConflictEntry-repo",
+            conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .success([conflict])),
+            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
-        let file = FileEntrySnapshot.s4x01Fixture(
+        let file = FileEntrySnapshot.syncConflictReviewFixture(
             id: 42,
             path: "docs/report.pdf",
             currentName: "report.pdf"
         )
 
         let route = model.reviewRoute(for: conflict)
-        let body = s4x01MirrorDescription(of: SyncConflictDetailBanner(
+        let body = syncConflictReviewMirrorDescription(of: SyncConflictDetailBanner(
             conflict: conflict,
             onReview: { _ in }
         ).body)

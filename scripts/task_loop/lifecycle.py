@@ -8,7 +8,7 @@ from typing import Any
 
 
 VERSION_ROOT = Path("workflow/versions")
-LIFECYCLE_STAGES = ("discussion", "changes", "plans", "drafts", "queue", "promotion", "live", "archive")
+LIFECYCLE_NODES = ("discussion", "changes", "plans", "drafts", "queue", "promotion", "live", "archive")
 
 
 @dataclass(frozen=True)
@@ -28,7 +28,7 @@ class VersionLifecycle:
     drafts_count: int
     queue_count: int
     promotion_count: int
-    stage_statuses: dict[str, str]
+    node_statuses: dict[str, str]
 
 
 @dataclass(frozen=True)
@@ -146,7 +146,7 @@ def _live_mapping_label(data: dict[str, Any]) -> str:
     return f"configured ({config.get('phase', 'unknown')}/{config.get('batch', 'unknown')})"
 
 
-def _stage_statuses(data: dict[str, Any], version_dir: Path, counts: dict[str, int]) -> dict[str, str]:
+def _node_statuses(data: dict[str, Any], version_dir: Path, counts: dict[str, int]) -> dict[str, str]:
     status = str(data.get("lifecycle_status") or data.get("status") or "unknown")
     promotion = str(data.get("promotion") or "missing")
     live_queue = str(data.get("live_queue") or "")
@@ -202,7 +202,7 @@ def load_lifecycle_snapshot(root: Path) -> LifecycleSnapshot:
                 drafts_count=counts["drafts"],
                 queue_count=counts["queue"],
                 promotion_count=counts["promotion"],
-                stage_statuses=_stage_statuses(data, version_dir, counts),
+                node_statuses=_node_statuses(data, version_dir, counts),
             )
         )
     live = next((item.version_id for item in versions if item.status == "live-running"), "none")

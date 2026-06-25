@@ -335,7 +335,7 @@ extension CommandTargetSnapshot {
         switch route {
         case "import":
             .importFiles
-        case "S2-09":
+        case "batch-add-tags":
             .batchAddTags
         default:
             linkedPageRoute ?? .unsupported
@@ -344,11 +344,11 @@ extension CommandTargetSnapshot {
 
     private var confirmationRoute: CommandPaletteTargetRoute {
         switch route {
-        case "S2-12":
+        case "batch-change-category":
             .batchChangeCategory
-        case "S2-13":
+        case "batch-delete":
             .batchDelete
-        case "S2-14":
+        case "batch-rename":
             .batchRename
         default:
             linkedPageRoute ?? .unsupported
@@ -363,7 +363,7 @@ extension CommandTargetSnapshot {
             .openRepository
         case "help":
             .help
-        case "S2-19":
+        case "classifier-rule-editor":
             .classifierRuleEditor
         case "search":
             .beginSearch

@@ -341,7 +341,7 @@ categories:
     display_name: { zh-Hans: 未分类, en: Inbox }
 ```
 
-### 案例 6：开发者（按项目阶段分）
+### 案例 6：开发者（按项目状态分）
 
 ```yaml
 version: 1
@@ -396,7 +396,7 @@ categories:
 
 文件 `Receipt-Contract-2026.pdf` 同时含 receipt 和 contract → receipts.priority=30 > contracts.priority=20 → 归 receipts。
 
-### 案例 8：使用 naming_template（Stage 2+）
+### 案例 8：使用 naming_template
 
 ```yaml
 version: 1
@@ -676,7 +676,7 @@ unknown field `extensoins`, expected one of `slug`, `display_name`, `description
 
 未识别的占位符保留原样：`{unknown}` 不被替换。
 
-MVP 不启用模板（保持 original），避免用户被改名困扰。
+当前默认不启用模板（保持 original），避免用户被改名困扰。
 
 ---
 
@@ -686,7 +686,7 @@ MVP 不启用模板（保持 original），避免用户被改名困扰。
 
 应用 `init_repo` 时复制到 `<repo>/.areamatrix/classifier.yaml`。
 
-后续 Core 升级**不**自动覆盖用户的 yaml。如果新版本引入了新的默认分类，提示用户「我们建议加入 xxx 分类」+ 一键合并按钮（Stage 2）。
+后续 Core 升级**不**自动覆盖用户的 yaml。如果新版本引入了新的默认分类，提示用户「我们建议加入 xxx 分类」并提供一键合并入口。
 
 ---
 
@@ -714,7 +714,7 @@ sequenceDiagram
     end
 ```
 
-Stage 2 起加图形化编辑器（设置面板内）。
+后续配置 UI 可加入图形化编辑器（设置面板内）。
 
 ---
 

@@ -25,7 +25,7 @@ public sealed class LocalFolderNoticeViewModel : INotifyPropertyChanged
         this.platformCapabilitiesBridge = platformCapabilitiesBridge
             ?? coreBridge as ILinuxPlatformCapabilitiesCoreBridge
             ?? throw new ArgumentException(
-                "Local folder notice requires C4-17 platform capabilities.",
+                "Local folder notice requires platform-capabilities platform capabilities.",
                 nameof(coreBridge));
         this.appVersion = LocalFolderNoticePresentation.NormalizeAppVersion(appVersion);
     }

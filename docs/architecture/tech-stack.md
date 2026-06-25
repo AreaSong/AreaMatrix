@@ -175,7 +175,7 @@ Rust 与 Swift 的跨语言调用通过 UniFFI 0.28+ 实现，UDL（UniFFI Defin
 ### 不直接引入但保留余量
 
 - `tokio`：当前同步 IO 已足够；如果未来 AI 调用 / 网络密集再引入 async runtime
-- `reqwest`：留给 Stage 3 AI 集成
+- `reqwest`：留给 opt-in AI / provider 集成
 - `regex`：classifier 关键词匹配如复杂化时引入
 
 ### 依赖审查原则
@@ -201,7 +201,7 @@ Rust 与 Swift 的跨语言调用通过 UniFFI 0.28+ 实现，UDL（UniFFI Defin
 
 ### 第三方依赖（通过 SPM）
 
-MVP 阶段**不引入**任何第三方 Swift 包，全部用系统框架实现。Stage 2+ 视需要再引入。
+当前默认**不引入**第三方 Swift 包，全部用系统框架实现；后续如需引入，必须走依赖审查。
 
 ---
 

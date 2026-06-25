@@ -14,6 +14,6 @@
 
 ## Promotion Notes
 
-- Do not write `workflow/versions/v-template/execution/**` in this phase.
+- Do not write `workflow/versions/v-template/execution/**` from this queue candidate.
 - Promotion must be a later explicit command after gates pass.
 - Queue candidates can be reviewed as template-only preview artifacts; promotion still requires explicit approval and live mapping.

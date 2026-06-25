@@ -1,5 +1,5 @@
-page_id: S4-X-05
-platform_slice: Linux C4-10 linux-repo-connect
+page_id: repository-adopt-confirm
+platform_slice: Linux linux-repo-connect linux-repo-connect
 title: Use Existing Folder
 description: Confirm Linux non-empty repository adoption before Core creates AreaMatrix metadata.
 summary:
@@ -34,7 +34,7 @@ actions:
 details:
   - .areamatrix stores metadata, generated overview files, staging state, and the repository database.
 handoff:
-  success: S4-LNX-02
+  success: linux-main-window
 safety:
   - The page calls validate_repo_path through LinuxRepositoryCoreBridge when opened.
   - The page calls init_repo with AdoptExisting through LinuxRepositoryCoreBridge only after Use This Folder.

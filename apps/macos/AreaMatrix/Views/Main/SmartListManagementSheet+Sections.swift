@@ -103,7 +103,7 @@ extension MainRepositoryContentView {
             Button("View privacy rule") {
                 semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
             }
-            .accessibilityIdentifier("S3-08-C3-09-view-privacy-rule")
+            .accessibilityIdentifier("semantic-search-ai-privacy-rules-core-view-privacy-rule")
         }
         switch fileListModel.semanticPrivacyGateState {
         case .blocked, .failed:
@@ -183,7 +183,7 @@ extension MainRepositoryContentView {
         }
         .font(.callout)
         .foregroundStyle(.secondary)
-        .accessibilityIdentifier("S3-10-C3-08-ai-fallback")
+        .accessibilityIdentifier("ai-fallback-semantic-search-core-ai-fallback")
     }
 
     private func performSemanticFallbackAction(_ action: AiFallbackAction) {
@@ -257,27 +257,27 @@ extension MainRepositoryContentView {
                 Task { await fileListModel.pauseSemanticIndexBuildForCurrentSearch() }
             }
             .disabled(fileListModel.semanticIndexControlState.isCanceling)
-            .accessibilityIdentifier("S3-08-pause-index-build")
+            .accessibilityIdentifier("semantic-search-pause-index-build")
         }
         if fileListModel.semanticIndexBuildState.canCancel {
             Button("Cancel index build") {
                 fileListModel.requestCancelSemanticIndexBuildForCurrentSearch()
             }
             .disabled(fileListModel.semanticIndexControlState.isCanceling)
-            .accessibilityIdentifier("S3-08-cancel-index-build")
+            .accessibilityIdentifier("semantic-search-cancel-index-build")
         }
         if fileListModel.semanticIndexBuildState.canResume {
             Button("Resume index build") {
                 Task { await fileListModel.resumeSemanticIndexBuildForCurrentSearch() }
             }
-            .accessibilityIdentifier("S3-08-resume-index-build")
+            .accessibilityIdentifier("semantic-search-resume-index-build")
         }
         if fileListModel.semanticIndexBuildState.canRetryFailedItems {
             Button("Retry failed items") {
                 Task { await fileListModel.retryFailedSemanticIndexItemsForCurrentSearch() }
             }
             .disabled(fileListModel.semanticIndexControlState.isCanceling)
-            .accessibilityIdentifier("S3-08-retry-failed-items")
+            .accessibilityIdentifier("semantic-search-retry-failed-items")
         }
     }
 
@@ -337,7 +337,7 @@ extension MainRepositoryContentView {
                     fileListModel.semanticIndexControlState.isCanceling ||
                     fileListModel.semanticPrivacyGateState.isChecking
             )
-            .accessibilityIdentifier("S3-08-C3-09-build-semantic-index-privacy-check")
+            .accessibilityIdentifier("semantic-search-ai-privacy-rules-core-build-semantic-index-privacy-check")
         }
     }
 
@@ -389,7 +389,7 @@ extension SmartListManagementSheet {
         if let validationMessage = model.validationMessage {
             Label(validationMessage, systemImage: "exclamationmark.triangle")
                 .foregroundStyle(.orange)
-                .accessibilityIdentifier("S2-06-validation-error")
+                .accessibilityIdentifier("smart-list-management-validation-error")
         }
         if let failure = model.failure {
             HStack(spacing: 8) {
@@ -397,11 +397,11 @@ extension SmartListManagementSheet {
                 Spacer()
                 if model.showsRetry {
                     Button("Retry") { Task { await submit() } }
-                        .accessibilityIdentifier("S2-06-save-retry")
+                        .accessibilityIdentifier("smart-list-management-save-retry")
                 }
             }
             .foregroundStyle(.red)
-            .accessibilityIdentifier("S2-06-save-error")
+            .accessibilityIdentifier("smart-list-management-save-error")
         }
         if let diagnostic = model.queryDiagnostic {
             QueryDiagnosticSummary(diagnostic: diagnostic, query: model.queryDiagnosticRequest.query)
@@ -412,7 +412,7 @@ extension SmartListManagementSheet {
         TextField("Name", text: $model.name)
             .textFieldStyle(.roundedBorder)
             .disabled(model.isSaving)
-            .accessibilityIdentifier("S2-06-smart-list-name")
+            .accessibilityIdentifier("smart-list-management-smart-list-name")
     }
 
     var savedSummary: some View {
@@ -439,7 +439,7 @@ extension SmartListManagementSheet {
                 }
             }
         }
-        .accessibilityIdentifier("S2-06-edit-query-fields")
+        .accessibilityIdentifier("smart-list-management-edit-query-fields")
     }
 
     var preview: some View {
@@ -447,7 +447,7 @@ extension SmartListManagementSheet {
             metadataRow("Filters", model.filterSummary)
             metadataRow("Current results", model.resultCountSummary)
         }
-        .accessibilityIdentifier("S2-06-smart-list-preview")
+        .accessibilityIdentifier("smart-list-management-smart-list-preview")
     }
 
     var deleteContent: some View {
@@ -477,7 +477,7 @@ extension SmartListManagementSheet {
             }
             .keyboardShortcut(.defaultAction)
             .disabled(!model.canSubmit)
-            .accessibilityIdentifier("S2-06-primary-action")
+            .accessibilityIdentifier("smart-list-management-primary-action")
         }
     }
 

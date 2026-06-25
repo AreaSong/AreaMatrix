@@ -95,7 +95,7 @@ final class ImportDropPreviewModelTests: XCTestCase {
         XCTAssertFalse(model.presentation?.isPredicting ?? true)
     }
 
-    func testSidebarRowsExposeS116DropTargets() {
+    func testSidebarRowsExposeDragHoverDropTargets() {
         let root = RepositorySidebarRowSnapshot(node: RepositoryTreeNodeSnapshot(
             slug: "__root__",
             displayName: "Repository",
@@ -218,7 +218,7 @@ final class ImportDropBatchPreviewTests: XCTestCase {
     }
 
     @MainActor
-    func testBatchPreviewDuplicatePrecheckFeedsS118ConflictRowsBeforeImport() async {
+    func testBatchPreviewDuplicatePrecheckFeedsImportBatchConflictRowsBeforeImport() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
         let predictor = ImportDropRecordingPredictor(results: [
@@ -243,8 +243,8 @@ final class ImportDropBatchPreviewTests: XCTestCase {
             duplicatePrechecker: duplicatePrechecker
         )
         let importModel = ImportBatchCopyImportModel(
-            importer: S118RecordingBatchImporter(),
-            errorMapper: S117RecordingErrorMapper()
+            importer: ImportBatchRecordingBatchImporter(),
+            errorMapper: ImportSingleFileRecordingErrorMapper()
         )
         let request = ImportEntryRequest(
             repoPath: "/tmp/repo",
@@ -274,10 +274,10 @@ final class ImportDropBatchPreviewTests: XCTestCase {
         let fixture = try makeImportDropMetadataPrecheckFixture()
         defer { try? FileManager.default.removeItem(at: fixture.sourceRoot) }
         let predictor = ImportDropRecordingPredictor(results: importDropMetadataPrecheckPredictions())
-        let duplicateFileLoader = S118StaticBatchFileLoader(pagesByCategory: [
+        let duplicateFileLoader = ImportBatchStaticBatchFileLoader(pagesByCategory: [
             "__all__": [[fixture.duplicateFile, fixture.nameConflictFile]]
         ])
-        let nameConflictFileLoader = S118StaticBatchFileLoader(pagesByCategory: [
+        let nameConflictFileLoader = ImportBatchStaticBatchFileLoader(pagesByCategory: [
             "docs": [[fixture.nameConflictFile]]
         ])
         let model = ImportBatchPreviewModel(
@@ -451,16 +451,16 @@ private func makeImportDropTemporaryDirectory(prefix: String) throws -> URL {
 
 private func importDropFailurePreviewPredictions() -> [Result<ClassifyResultSnapshot, Error>] {
     [
-        .success(.s118Prediction(category: "finance", suggestedName: "Invoice_2026Q1.pdf")),
-        .success(.s118Prediction(category: "finance", suggestedName: "Duplicate.pdf", confidence: 0.7)),
+        .success(.importBatchPrediction(category: "finance", suggestedName: "Invoice_2026Q1.pdf")),
+        .success(.importBatchPrediction(category: "finance", suggestedName: "Duplicate.pdf", confidence: 0.7)),
         .failure(CoreError.Config(reason: "classifier.yaml line 7"))
     ]
 }
 
 private func importDropMetadataPrecheckPredictions() -> [Result<ClassifyResultSnapshot, Error>] {
     [
-        .success(.s118Prediction(category: "finance", suggestedName: "Invoice_2026Q1.pdf")),
-        .success(.s118Prediction(category: "docs", suggestedName: "合同.pdf", confidence: 0.82))
+        .success(.importBatchPrediction(category: "finance", suggestedName: "Invoice_2026Q1.pdf")),
+        .success(.importBatchPrediction(category: "docs", suggestedName: "合同.pdf", confidence: 0.82))
     ]
 }
 
@@ -475,11 +475,11 @@ private func makeImportDropMetadataPrecheckFixture() throws -> ImportDropMetadat
         sourceRoot: sourceRoot,
         invoiceURL: invoiceURL,
         contractURL: contractURL,
-        duplicateFile: .s117Fixture(
+        duplicateFile: .importSingleFileFixture(
             currentName: "existing-invoice.pdf",
             category: "finance",
             hashSha256: duplicateHash
         ),
-        nameConflictFile: .s117Fixture(currentName: "合同.pdf", category: "docs", hashSha256: "different-contract-hash")
+        nameConflictFile: .importSingleFileFixture(currentName: "合同.pdf", category: "docs", hashSha256: "different-contract-hash")
     )
 }

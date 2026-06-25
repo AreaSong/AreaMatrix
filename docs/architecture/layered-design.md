@@ -81,7 +81,7 @@ flowchart TB
 - 引用 UniFFI 之外的 FFI 工具
 - 假设调用线程的属性（不要假设在主线程；不要 spawn UI 相关任务）
 - 弹窗 / 用户交互（必须返回错误让上层决定）
-- 网络 IO（MVP 阶段；Stage 3 引入时只在 ai 子模块内）
+- 网络 IO 默认不进通用 Core 路径；AI / provider 网络能力只能在专用模块内显式隔离
 
 ### 测试策略
 
@@ -110,7 +110,7 @@ flowchart TB
 
 - UDL 中定义跨边界类型（dictionary / enum / interface / sequence / record）
 - 用 `[Throws=CoreError]` 标记 fallible 函数
-- 用 `[Async]` 标记异步函数（Stage 2 起）
+- 用 `[Async]` 标记已稳定的异步函数
 
 ### 禁止
 

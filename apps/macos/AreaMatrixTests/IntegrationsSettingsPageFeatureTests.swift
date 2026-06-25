@@ -3,7 +3,7 @@ import XCTest
 
 final class IntegrationsSettingsPageFeatureTests: XCTestCase {
     @MainActor
-    func testLoadUsesC104ConfigForVisibleICloudIntegrationState() async {
+    func testLoadUsesRepositoryConfigCoreConfigForVisibleICloudIntegrationState() async {
         let loader = IntegrationsSettingsRecordingLoader(results: [
             .success(.integrationsFixture(repoPath: "/tmp/repo", iCloudWarn: false))
         ])
@@ -173,8 +173,8 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
 }
 
 extension AiFallbackStatus {
-    static func s304AiDisabled() -> AiFallbackStatus {
-        s304RecoveryStatus(
+    static func aiCategorySuggestionAiDisabled() -> AiFallbackStatus {
+        aiCategorySuggestionRecoveryStatus(
             kind: .aiDisabled,
             category: .disabled,
             title: "AI classification suggestions are off",
@@ -184,8 +184,8 @@ extension AiFallbackStatus {
         )
     }
 
-    static func s304LocalModelNotReady() -> AiFallbackStatus {
-        s304RecoveryStatus(
+    static func aiCategorySuggestionLocalModelNotReady() -> AiFallbackStatus {
+        aiCategorySuggestionRecoveryStatus(
             kind: .localModelNotReady,
             category: .unavailable,
             title: "Local model is not ready",
@@ -195,8 +195,8 @@ extension AiFallbackStatus {
         )
     }
 
-    static func s304RemoteNotConfigured() -> AiFallbackStatus {
-        s304RecoveryStatus(
+    static func aiCategorySuggestionRemoteNotConfigured() -> AiFallbackStatus {
+        aiCategorySuggestionRecoveryStatus(
             kind: .remoteNotConfigured,
             category: .disabled,
             title: "Remote AI is not configured",
@@ -207,7 +207,7 @@ extension AiFallbackStatus {
     }
 
     // swiftlint:disable:next function_parameter_count
-    static func s304RecoveryStatus(
+    static func aiCategorySuggestionRecoveryStatus(
         kind: AiFallbackKind,
         category: AiFallbackCategory,
         title: String,
@@ -234,7 +234,7 @@ extension AiFallbackStatus {
     }
 }
 
-actor S304SuggestionBridge: CoreAIClassificationSuggesting {
+actor AICategorySuggestionSuggestionBridge: CoreAIClassificationSuggesting {
     enum Result {
         case success(AIClassificationSuggestionState)
         case failure(CoreError)
@@ -265,7 +265,7 @@ actor S304SuggestionBridge: CoreAIClassificationSuggesting {
     }
 }
 
-actor S304FallbackBridge: CoreAIClassificationFallbackStatusReading {
+actor AICategorySuggestionFallbackBridge: CoreAIClassificationFallbackStatusReading {
     enum Result {
         case success(AiFallbackStatus)
         case failure(CoreError)
@@ -396,7 +396,7 @@ private actor IntegrationsSettingsStaticErrorMapper: CoreErrorMapping {
             severity: .medium,
             suggestedAction: kind == .db ? "Retry save" : "Retry status",
             recoverability: .retryable,
-            rawContext: "S1-29 C1-04"
+            rawContext: "integrations-settings repository-config"
         )
     }
 

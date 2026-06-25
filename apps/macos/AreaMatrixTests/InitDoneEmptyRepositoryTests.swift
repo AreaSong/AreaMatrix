@@ -4,7 +4,7 @@ import XCTest
 
 final class InitDoneEmptyRepositoryTests: XCTestCase {
     @MainActor
-    func testOpenRepositoryFromInitDoneUsesC102CoreOpenBoundary() async {
+    func testOpenRepositoryFromInitDoneUsesInitEmptyRepoCoreCoreOpenBoundary() async {
         let opening = RepositoryOpeningResult.initDoneFixture(repoPath: "/tmp/empty-repo", fileCount: 0)
         let opener = RecordingEmptyRepositoryOpener(result: .success(opening))
         let model = OnboardingModel(
@@ -108,7 +108,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
     }
 
     @MainActor
-    func testOpenRepositoryFromAdoptDoneUsesC103CoreOpenBoundary() async {
+    func testOpenRepositoryFromAdoptDoneUsesAdoptExistingRepoCoreCoreOpenBoundary() async {
         let opening = RepositoryOpeningResult.initDoneFixture(repoPath: "/tmp/adopted-repo", fileCount: 1)
         let opener = RecordingEmptyRepositoryOpener(result: .success(opening))
         let model = OnboardingModel(

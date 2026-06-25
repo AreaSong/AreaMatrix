@@ -3,7 +3,7 @@ import XCTest
 
 final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
     @MainActor
-    func testS113C119ProductionRelayCreatesCurrentMainWindowRemovedEvent() throws {
+    func testDetailLogSyncExternalRemovedCoreProductionRelayCreatesCurrentMainWindowRemovedEvent() throws {
         let opening = RepositoryOpeningResult.detailMetaFixture(repoPath: "/tmp/repo", files: [])
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
@@ -29,7 +29,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         XCTAssertNil(model.externalCreatedEvent(for: opening))
     }
 
-    func testS113C119WatcherBuildsRemovedSignalForUserFileOnly() {
+    func testDetailLogSyncExternalRemovedCoreWatcherBuildsRemovedSignalForUserFileOnly() {
         let removedFlags = FSEventStreamEventFlags(kFSEventStreamEventFlagItemRemoved)
 
         let signal = MainExternalCreatedFileWatcher.signal(
@@ -58,7 +58,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS113C119ConsumesSelectedExternalRemovedEventThenRefreshesListAndLog() async throws {
+    func testDetailLogSyncExternalRemovedCoreConsumesSelectedExternalRemovedEventThenRefreshesListAndLog() async throws {
         let removed = FileEntrySnapshot.detailMetaFixture(id: 40, currentName: "removed.pdf")
         let keeper = FileEntrySnapshot.detailMetaFixture(id: 41, currentName: "keeper.pdf")
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
@@ -108,7 +108,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS113C119MapsCoreFailureWithoutRefreshingLog() async throws {
+    func testDetailLogSyncExternalRemovedCoreMapsCoreFailureWithoutRefreshingLog() async throws {
         let selected = FileEntrySnapshot.detailMetaFixture(id: 42, currentName: "selected.pdf")
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
             kind: .removed,
@@ -140,7 +140,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS113C119TreatsMissingDetectedDeleteAsFailure() async throws {
+    func testDetailLogSyncExternalRemovedCoreTreatsMissingDetectedDeleteAsFailure() async throws {
         let selected = FileEntrySnapshot.detailMetaFixture(id: 43, currentName: "partial.pdf")
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
             kind: .removed,
@@ -173,7 +173,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         XCTAssertTrue(message.contains("removed event 10003 did not report a detected delete"))
     }
 
-    func testS113C119RejectsInvalidExternalRemovedEventsBeforeCoreBridge() {
+    func testDetailLogSyncExternalRemovedCoreRejectsInvalidExternalRemovedEventsBeforeCoreBridge() {
         XCTAssertNil(MainExternalCreatedFileEvent(kind: .removed, relativePath: "", fsEventID: 1))
         XCTAssertNil(MainExternalCreatedFileEvent(
             kind: .removed,
@@ -185,7 +185,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         XCTAssertNil(MainExternalCreatedFileEvent(kind: .removed, relativePath: "docs/gone.pdf", fsEventID: 0))
     }
 
-    func testS113C119DefaultCoreBridgeSyncsRealExternalRemovedFileIntoListDetailAndLog() async throws {
+    func testDetailLogSyncExternalRemovedCoreDefaultCoreBridgeSyncsRealExternalRemovedFileIntoListDetailAndLog() async throws {
         let repoURL = try makeDetailLogExternalRemovedTemporaryRepositoryURL()
         defer { try? FileManager.default.removeItem(at: repoURL) }
 
@@ -303,12 +303,12 @@ private actor DetailLogExternalRemovedSyncer: CoreExternalChangesSyncing {
 
     func syncExternalCreated(repoPath _: String, relativePath _: String,
                              fsEventID _: Int64) async throws -> SyncResultSnapshot {
-        throw CoreError.Internal(message: "external created is outside S1-13 C1-19")
+        throw CoreError.Internal(message: "external created is outside detail-change-log sync-external-removed")
     }
 
     func syncExternalRenamed(repoPath _: String, relativePath _: String,
                              fsEventID _: Int64) async throws -> SyncResultSnapshot {
-        throw CoreError.Internal(message: "external renamed is outside S1-13 C1-19")
+        throw CoreError.Internal(message: "external renamed is outside detail-change-log sync-external-removed")
     }
 
     func syncExternalRemoved(repoPath: String, relativePath: String,
@@ -393,7 +393,7 @@ private extension CoreErrorMappingSnapshot {
             severity: .medium,
             suggestedAction: "请确认文件确实已离开资料库，然后等待下一次文件系统事件或刷新。",
             recoverability: .userActionRequired,
-            rawContext: "S1-13 C1-19 sync_external_changes Removed"
+            rawContext: "detail-change-log sync-external-removed sync_external_changes Removed"
         )
     }
 }

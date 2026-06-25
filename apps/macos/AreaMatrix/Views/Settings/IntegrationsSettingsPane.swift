@@ -36,7 +36,7 @@ struct IntegrationsSettingsPane: View {
         .sheet(isPresented: $isConflictListPresented) {
             ICloudConflictListView(
                 model: ICloudConflictListModel(repoPath: model.repoPath),
-                pageContext: .s220ConflictVisual,
+                pageContext: .iCloudConflictVisualConflictVisual,
                 onClose: { isConflictListPresented = false },
                 onResolve: model.recordConflictResolveEntry,
                 onCollectDiagnostics: model.recordConflictDiagnosticsEntry
@@ -70,7 +70,7 @@ struct IntegrationsSettingsPane: View {
                 } label: {
                     Label("Retry status", systemImage: "arrow.clockwise")
                 }
-                .accessibilityIdentifier("S1-29-retry-status")
+                .accessibilityIdentifier("integrations-settings-retry-status")
             }
         }
         .padding(.horizontal, 34)
@@ -113,7 +113,7 @@ struct IntegrationsSettingsPane: View {
                     await model.load()
                 }
             }
-            .accessibilityIdentifier("S1-29-load-error-retry-status")
+            .accessibilityIdentifier("integrations-settings-load-error-retry-status")
         }
     }
 
@@ -172,7 +172,7 @@ struct IntegrationsSettingsPane: View {
     private var iCloudWarningsToggle: some View {
         Toggle("Show iCloud warnings", isOn: iCloudWarningsSelection)
             .disabled(writesDisabled)
-            .accessibilityIdentifier("S1-29-C1-04-icloud-warnings")
+            .accessibilityIdentifier("integrations-settings-repository-config-icloud-warnings")
     }
 
     private func iCloudDriveActions(_ summary: IntegrationsSettingsSummary) -> some View {
@@ -192,7 +192,7 @@ struct IntegrationsSettingsPane: View {
         } label: {
             Label("Open iCloud help", systemImage: "questionmark.circle")
         }
-        .accessibilityIdentifier("S1-29-open-icloud-help")
+        .accessibilityIdentifier("integrations-settings-open-icloud-help")
     }
 
     private var reviewConflictsButton: some View {
@@ -210,7 +210,7 @@ struct IntegrationsSettingsPane: View {
         } label: {
             Label("Reveal repository in Finder", systemImage: "folder")
         }
-        .accessibilityIdentifier("S1-29-reveal-repository")
+        .accessibilityIdentifier("integrations-settings-reveal-repository")
     }
 
     private var retryStatusButton: some View {
@@ -220,7 +220,7 @@ struct IntegrationsSettingsPane: View {
             Label("Retry status", systemImage: "arrow.clockwise")
         }
         .disabled(model.loadState == .loading)
-        .accessibilityIdentifier("S1-29-card-retry-status")
+        .accessibilityIdentifier("integrations-settings-card-retry-status")
     }
 
     private var iCloudRiskWarning: some View {
@@ -234,7 +234,7 @@ struct IntegrationsSettingsPane: View {
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityIdentifier("S1-29-icloud-risk-warning")
+        .accessibilityIdentifier("integrations-settings-icloud-risk-warning")
     }
 
     private var externalToolsSection: some View {
@@ -279,7 +279,7 @@ struct IntegrationsSettingsPane: View {
                             await model.retrySave()
                         }
                     }
-                    .accessibilityIdentifier("S1-29-retry-save")
+                    .accessibilityIdentifier("integrations-settings-retry-save")
                 }
             }
         }

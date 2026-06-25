@@ -120,12 +120,18 @@ open apps/macos/AreaMatrix.xcodeproj
 
 ## AI task-loop 贡献
 
-自动任务循环会按 `copy -> verify(read-only) -> repair retry -> PASS -> Git checkpoint -> next` 执行。相关贡献必须保留：
+自动任务循环会按 `copy -> verify(read-only) -> repair retry -> PASS -> Git checkpoint -> next` 执行。
+新版本只有通过 workflow promotion、显式 approval 和 live mapping 后，才会写入对应版本的
+`workflow/versions/<version>/execution/**`。相关贡献必须保留：
 
-- `workflow/versions/v1-mvp/execution/_shared/progress.json`
+- 当前 live 版本的 `workflow/versions/<version>/execution/_shared/progress.json`
 - `.codex/runtime/task-loop/logs/**`
-- `workflow/versions/v1-mvp/evidence/task-loop-runs/**`
+- 当前 live 版本的 `workflow/versions/<version>/evidence/task-loop-runs/**`
 - PASS task 的 Git checkpoint 证据
+
+v1 历史队列位于 `workflow/versions/v1-mvp/execution/**`，对应 evidence 位于
+`workflow/versions/v1-mvp/evidence/**`；这些材料只用于审计、恢复和归档引用，不作为 v2
+或后续版本的新工作状态面。
 
 ## 文档要求
 

@@ -3,7 +3,7 @@ import XCTest
 
 final class ImportSingleFileIndexImportTests: XCTestCase {
     @MainActor
-    func testIndexOnlyImportCallsC108ImporterWithEditedCategoryAndFilename() async {
+    func testIndexOnlyImportCallsImportIndexFileCoreImporterWithEditedCategoryAndFilename() async {
         let sourceURL = URL(fileURLWithPath: "/tmp/source.pdf")
         let predictor = IndexImportRecordingPredictor(results: [
             .success(ClassifyResultSnapshot(

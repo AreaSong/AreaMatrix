@@ -21,9 +21,9 @@ public static class WindowsSyncConflictEntryPageFeatureTests
         await ErrorStateMapsCoreConflictError();
         await ReviewRoutePreviewsConfirmsAndAppliesReplace();
         await CoreSafetyBackupAllowsReplaceWhenRecycleBinUnavailable();
-        await ReplacePlanTextShowsCompleteS4X09Fields();
-        WindowsMainWindowSmokeExposesS4X03C415Entry();
-        WindowsMainWindowWiresS4X03ReviewRoute();
+        await ReplacePlanTextShowsCompleteReplaceResolutionFields();
+        WindowsMainWindowSmokeExposesSyncConflictEntrySyncConflictDetectCoreEntry();
+        WindowsMainWindowWiresSyncConflictEntryReviewRoute();
     }
 
     private static async Task LoadsNeedsReviewConflictsFromCoreBridge()
@@ -138,7 +138,7 @@ public static class WindowsSyncConflictEntryPageFeatureTests
         TestAssert.Equal(@"C:\Repos\AreaMatrix", syncBridge.PreviewRequests[0].RepoPath, "preview repo");
         TestAssert.Equal("replace", syncBridge.PreviewRequests[0].ConflictId, "preview conflict");
         TestAssert.Equal(SyncConflictResolutionStrategy.UseIncoming, syncBridge.PreviewRequests[0].Resolution, "preview strategy");
-        TestAssert.Contains("S4-X-09-C4-21", syncBridge.ResolveRequests[0].Request.ReplaceConfirmationId ?? "", "confirmation id");
+        TestAssert.Contains("replace-resolution-replace-confirmation", syncBridge.ResolveRequests[0].Request.ReplaceConfirmationId ?? "", "confirmation id");
         TestAssert.True(syncBridge.ResolveRequests[0].Request.ReplaceConfirmed, "replace confirmed");
         TestAssert.Equal(SyncConflictEntryStatus.Resolved, model.ReplaceResult?.Status, "resolved status");
         TestAssert.Equal(0, model.Conflicts.Count, "resolved conflict removed");
@@ -167,7 +167,7 @@ public static class WindowsSyncConflictEntryPageFeatureTests
             "backup target");
     }
 
-    private static async Task ReplacePlanTextShowsCompleteS4X09Fields()
+    private static async Task ReplacePlanTextShowsCompleteReplaceResolutionFields()
     {
         FakeSyncConflictEntryCoreBridge syncBridge = new([
             Conflict("plan", primaryPath: @"Contracts\client-contract.pdf")
@@ -199,7 +199,7 @@ public static class WindowsSyncConflictEntryPageFeatureTests
         }
     }
 
-    private static void WindowsMainWindowSmokeExposesS4X03C415Entry()
+    private static void WindowsMainWindowSmokeExposesSyncConflictEntrySyncConflictDetectCoreEntry()
     {
         XElement view = LoadXml(RepositoryPath("apps/windows/AreaMatrix/Features/Library/WindowsMainWindow.xaml"));
         string codeBehind = File.ReadAllText(RepositoryPath(
@@ -220,16 +220,16 @@ public static class WindowsSyncConflictEntryPageFeatureTests
         TestAssert.Contains("Sync conflict needs review", view.ToString(), "banner copy");
         TestAssert.Contains("Confirm Replace", view.ToString(), "replace confirm copy");
         TestAssert.Contains("This file has a sync conflict", view.ToString(), "detail copy");
-        TestAssert.Contains("DetectSyncConflictsAsync", bridge, "C4-15 bridge call");
-        TestAssert.Contains("PreviewSyncConflictResolutionAsync", bridge + viewModel, "C4-16 preview");
-        TestAssert.Contains("ResolveSyncConflictAsync", bridge + viewModel, "C4-16 resolve");
+        TestAssert.Contains("DetectSyncConflictsAsync", bridge, "sync-conflict-detect bridge call");
+        TestAssert.Contains("PreviewSyncConflictResolutionAsync", bridge + viewModel, "sync-conflict-resolve preview");
+        TestAssert.Contains("ResolveSyncConflictAsync", bridge + viewModel, "sync-conflict-resolve resolve");
         TestAssert.Contains("Status == SyncConflictEntryStatus.NeedsReview", viewModel, "needs review filter");
-        TestAssert.Contains("ConfirmReplacePlan", codeBehind + viewModel, "S4-X-09 confirmation");
-        TestAssert.Contains("S4-X-09-C4-21", viewModel, "C4-21 confirmation id");
+        TestAssert.Contains("ConfirmReplacePlan", codeBehind + viewModel, "replace-resolution confirmation");
+        TestAssert.Contains("replace-resolution-replace-confirmation", viewModel, "replace-confirmation confirmation id");
         TestAssert.Contains("DismissBanner", codeBehind + viewModel, "later action");
     }
 
-    private static void WindowsMainWindowWiresS4X03ReviewRoute()
+    private static void WindowsMainWindowWiresSyncConflictEntryReviewRoute()
     {
         string mainWindow = File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml.cs"));
         string codeBehind = File.ReadAllText(RepositoryPath(

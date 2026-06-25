@@ -23,7 +23,7 @@ actor MainLoadingStaticStartupRecoverer: CoreStartupRecovering {
     }
 }
 
-func s135MirrorDescription(of value: Any, depth: Int = 0) -> String {
+func changeCategoryMirrorDescription(of value: Any, depth: Int = 0) -> String {
     guard depth < 8 else { return "" }
 
     var lines: [String] = []
@@ -33,13 +33,13 @@ func s135MirrorDescription(of value: Any, depth: Int = 0) -> String {
         if let label = child.label {
             lines.append(label)
         }
-        lines.append(s135MirrorDescription(of: child.value, depth: depth + 1))
+        lines.append(changeCategoryMirrorDescription(of: child.value, depth: depth + 1))
     }
     return lines.joined(separator: "\n")
 }
 
-func makeS135TemporaryDirectory(prefix: String) throws -> URL {
-    let name = "AreaMatrixS135Integration-\(prefix)-\(UUID().uuidString)"
+func makeChangeCategoryTemporaryDirectory(prefix: String) throws -> URL {
+    let name = "AreaMatrixChangeCategoryIntegration-\(prefix)-\(UUID().uuidString)"
     let url = FileManager.default.temporaryDirectory.appendingPathComponent(name, isDirectory: true)
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
@@ -65,25 +65,25 @@ enum ImportBatchICloudErrorKindMapper {
 }
 
 extension CoreErrorMappingSnapshot {
-    static func s135Conflict() -> CoreErrorMappingSnapshot {
+    static func changeCategoryConflict() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .conflict,
             userMessage: "Path conflict.",
             severity: .medium,
             suggestedAction: "Rename the file first, then retry.",
             recoverability: .userActionRequired,
-            rawContext: "S1-35 C1-10 safe target name"
+            rawContext: "change-category resolve-name-conflict safe target name"
         )
     }
 
-    static func s135PermissionDenied() -> CoreErrorMappingSnapshot {
+    static func changeCategoryPermissionDenied() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .permissionDenied,
             userMessage: "Target category is not writable.",
             severity: .high,
             suggestedAction: "Grant folder access in Finder, then retry.",
             recoverability: .userActionRequired,
-            rawContext: "S1-35 C1-24 preview_move_to_category permission"
+            rawContext: "change-category move-to-category preview_move_to_category permission"
         )
     }
 }
@@ -350,16 +350,16 @@ func waitForMainLoadingState(
     return nil
 }
 
-struct S215CommandIndexRequest: Equatable {
+struct CommandPaletteCommandIndexRequest: Equatable {
     var repoPath: String
     var context: CommandIndexContext
 }
 
-actor S215CommandIndexStore: CoreCommandIndexing {
+actor CommandPaletteCommandIndexStore: CoreCommandIndexing {
     enum Result { case success(CommandIndex), failure(Error) }
 
     private var results: [Result]
-    private var requests: [S215CommandIndexRequest] = []
+    private var requests: [CommandPaletteCommandIndexRequest] = []
 
     init(results: [Result]) {
         self.results = results
@@ -367,7 +367,7 @@ actor S215CommandIndexStore: CoreCommandIndexing {
 
     func listCommandTargets(repoPath: String, context: CommandIndexContext) async throws -> CommandIndex {
         requests.append(.init(repoPath: repoPath, context: context))
-        guard !results.isEmpty else { return .s215Fixture() }
+        guard !results.isEmpty else { return .commandPaletteFixture() }
         switch results.removeFirst() {
         case let .success(index):
             return index
@@ -376,12 +376,12 @@ actor S215CommandIndexStore: CoreCommandIndexing {
         }
     }
 
-    func recordedRequests() -> [S215CommandIndexRequest] {
+    func recordedRequests() -> [CommandPaletteCommandIndexRequest] {
         requests
     }
 }
 
-actor S215CommandErrorMapper: CoreErrorMapping {
+actor CommandPaletteCommandErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
     private var errors: [CoreError] = []
 
@@ -399,18 +399,18 @@ actor S215CommandErrorMapper: CoreErrorMapping {
     }
 }
 
-struct S215SmartListRunRequest: Equatable {
+struct CommandPaletteSmartListRunRequest: Equatable {
     var repoPath: String
     var savedSearchID: Int64
     var limit: Int64
     var offset: Int64
 }
 
-actor S215SmartListRunner: CoreSearchQuerying {
+actor CommandPaletteSmartListRunner: CoreSearchQuerying {
     enum Result { case success(SearchResultPageSnapshot), failure(Error) }
 
     private var results: [Result]
-    private var runRequests: [S215SmartListRunRequest] = []
+    private var runRequests: [CommandPaletteSmartListRunRequest] = []
     private var searchRequests: [SearchQueryRequestSnapshot] = []
 
     init(results: [Result]) {
@@ -419,7 +419,7 @@ actor S215SmartListRunner: CoreSearchQuerying {
 
     func searchFiles(repoPath _: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
         searchRequests.append(request)
-        throw CoreError.Internal(message: "search_files must not run S2-15 C2-04 Smart List execution")
+        throw CoreError.Internal(message: "search_files must not run command-palette smart-list Smart List execution")
     }
 
     func runSmartList(
@@ -428,7 +428,7 @@ actor S215SmartListRunner: CoreSearchQuerying {
         limit: Int64,
         offset: Int64
     ) async throws -> SearchResultPageSnapshot {
-        runRequests.append(S215SmartListRunRequest(
+        runRequests.append(CommandPaletteSmartListRunRequest(
             repoPath: repoPath,
             savedSearchID: savedSearchID,
             limit: limit,
@@ -445,7 +445,7 @@ actor S215SmartListRunner: CoreSearchQuerying {
         }
     }
 
-    func recordedRunRequests() -> [S215SmartListRunRequest] {
+    func recordedRunRequests() -> [CommandPaletteSmartListRunRequest] {
         runRequests
     }
 

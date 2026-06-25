@@ -63,12 +63,12 @@ struct UndoPreviewPane: View {
                     .foregroundStyle(redoAction.canRedo ? .green : .secondary)
                 fileSamples(redoAction.affectedFileNames)
             }
-            .accessibilityIdentifier("S2-22-C2-18-redo-row")
+            .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-row")
             .accessibilityLabel(source.accessibilityText)
         } else {
             Text("No redoable actions")
                 .foregroundStyle(.secondary)
-                .accessibilityIdentifier("S2-22-C2-18-redo-empty")
+                .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-empty")
         }
     }
 
@@ -175,7 +175,7 @@ struct BatchRenameTrigger: View {
     var body: some View {
         Button("Rename...") { isPresented = true }
             .help(BatchRenameEntryPolicy.openHelp(disabledReason: disabledReason))
-            .accessibilityIdentifier("S2-14-batch-rename-open")
+            .accessibilityIdentifier("batch-rename-batch-rename-open")
             .sheet(isPresented: $isPresented) {
                 BatchRenameSheet(
                     repoPath: repoPath,
@@ -222,7 +222,7 @@ struct BatchAITagSuggestionTrigger: View {
                 onClose: { isPresented = false }
             )
         }
-        .accessibilityIdentifier("S3-07-C3-07-open-batch-ai-tag-suggestions")
+        .accessibilityIdentifier("ai-tag-suggestions-ai-tags-suggestion-open-batch-ai-tag-suggestions")
     }
 
     private var openDisabledReason: String? {
@@ -281,7 +281,7 @@ struct BatchAITagSuggestionSheet: View {
                 privacyRuleRoute = nil
             }
         }
-        .accessibilityIdentifier("S3-07-C3-07-batch-ai-tag-suggestions")
+        .accessibilityIdentifier("ai-tag-suggestions-ai-tags-suggestion-batch-ai-tag-suggestions")
     }
 
     var actionBar: some View {

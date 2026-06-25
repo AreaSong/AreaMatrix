@@ -61,7 +61,7 @@ struct MobileFileDetailView: View {
             Label(model.statusText, systemImage: statusIcon)
                 .font(.footnote.weight(.medium))
                 .foregroundStyle(statusColor)
-                .accessibilityIdentifier("S4-IOS-05-C4-07-status")
+                .accessibilityIdentifier("ios-mobile-detail-mobile-detail-status")
         }
     }
 
@@ -92,7 +92,7 @@ struct MobileFileDetailView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .accessibilityIdentifier("S4-IOS-05-C4-07-segments")
+                .accessibilityIdentifier("ios-mobile-detail-mobile-detail-segments")
             }
             selectedSection(file: file)
         }
@@ -185,7 +185,7 @@ private struct FilePreviewHeader: View {
                     } label: {
                         Label("Recover Missing File", systemImage: "arrow.uturn.backward.circle")
                     }
-                    .accessibilityIdentifier("S4-IOS-05-C4-07-missing-recovery")
+                    .accessibilityIdentifier("ios-mobile-detail-mobile-detail-missing-recovery")
                 }
             }
             .accessibilityElement(children: .combine)
@@ -205,7 +205,7 @@ private struct MobileMetadataSection: View {
             DetailValueRow(label: "Hash", value: file.hashSha256, monospaced: true)
             DetailValueRow(label: "Imported at", value: dateText(file.importedAt))
         }
-        .accessibilityIdentifier("S4-IOS-05-C4-07-meta")
+        .accessibilityIdentifier("ios-mobile-detail-mobile-detail-meta")
     }
 }
 
@@ -231,7 +231,7 @@ private struct MobileChangeLogSection: View {
                 Button("Try again", action: onRetry)
             }
         }
-        .accessibilityIdentifier("S4-IOS-05-C4-07-log")
+        .accessibilityIdentifier("ios-mobile-detail-mobile-detail-log")
     }
 }
 
@@ -281,7 +281,7 @@ private struct MobileNoteSection: View {
                 Button("Try again", action: onRetry)
             }
         }
-        .accessibilityIdentifier("S4-IOS-05-C4-07-note")
+        .accessibilityIdentifier("ios-mobile-detail-mobile-detail-note")
     }
 }
 

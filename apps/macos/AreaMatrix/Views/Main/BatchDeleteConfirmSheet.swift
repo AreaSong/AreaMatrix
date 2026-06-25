@@ -16,7 +16,7 @@ struct BatchDeleteTrigger: View {
     var body: some View {
         Button("Delete...") { isPresented = true }
             .help(BatchDeleteEntryPolicy.openHelp(disabledReason: disabledReason))
-            .accessibilityIdentifier("S2-13-batch-delete-open")
+            .accessibilityIdentifier("batch-delete-batch-delete-open")
             .sheet(isPresented: $isPresented) {
                 BatchDeleteConfirmSheet(
                     repoPath: repoPath,
@@ -56,7 +56,7 @@ struct BatchDeleteConfirmSheet: View {
     @State private var undoConfirmationAccepted = false
 
     var body: some View {
-        MainFileActionSheetContainer(title: title, pageID: "S2-13") {
+        MainFileActionSheetContainer(title: title, pageID: "batch-delete") {
             if selectedCount == 0 {
                 Text("No items selected")
                     .foregroundStyle(.secondary)
@@ -66,7 +66,7 @@ struct BatchDeleteConfirmSheet: View {
             }
         }
         .task(id: previewTaskKey) { await refreshPreview() }
-        .accessibilityIdentifier("S2-13-C2-09-batch-delete-confirm")
+        .accessibilityIdentifier("batch-delete-batch-delete-trash-batch-delete-confirm")
     }
 
     private var title: String {
@@ -99,7 +99,7 @@ struct BatchDeleteConfirmSheet: View {
         }
         .pickerStyle(.segmented)
         .disabled(isApplying || disabledReason != nil)
-        .accessibilityIdentifier("S2-13-delete-mode")
+        .accessibilityIdentifier("batch-delete-delete-mode")
     }
 
     @ViewBuilder
@@ -179,14 +179,14 @@ struct BatchDeleteConfirmSheet: View {
                     Task { await apply(mode: .removeFromIndex) }
                 }
                 .disabled(!canApplyMode(.removeFromIndex))
-                .accessibilityIdentifier("S2-13-C2-09-remove-from-index")
+                .accessibilityIdentifier("batch-delete-batch-delete-trash-remove-from-index")
             }
             Button(primaryTitle, role: .destructive) {
                 Task { await apply(mode: .moveToTrash) }
             }
             .keyboardShortcut(.defaultAction)
             .disabled(!canApplyMode(.moveToTrash))
-            .accessibilityIdentifier("S2-13-C2-09-move-to-trash")
+            .accessibilityIdentifier("batch-delete-batch-delete-trash-move-to-trash")
         }
     }
 

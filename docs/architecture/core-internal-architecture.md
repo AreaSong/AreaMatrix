@@ -256,7 +256,7 @@ DB 查询、源码聚合或断言 helper 移入 `core/tests/support/**`。但测
 
 ## 何时拆多 crate
 
-当前阶段保持单 crate。只有满足以下条件之一，才考虑 workspace 多 crate：
+当前架构保持单 crate。只有满足以下条件之一，才考虑 workspace 多 crate：
 
 - 某个边界已经稳定，并且需要被其他二进制、工具或平台独立复用。
 - 编译时间、feature flag 或依赖体积已经明显影响日常开发。

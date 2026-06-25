@@ -22,7 +22,7 @@ small docs updates, and follow-up bugs from a completed workflow.
   may or may not be convertible into lightweight tasks.
 - `tasks/templates/`: reusable lightweight task templates.
 
-`tasks/` must not create a second workflow system. Do not add phase trees,
+`tasks/` must not create a second workflow system. Do not add execution-group trees,
 promotion ledgers, queue candidates, `progress.json`, checkpoint state, or a
 second task-loop runner under `tasks/`.
 

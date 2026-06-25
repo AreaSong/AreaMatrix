@@ -21,7 +21,7 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 
 | 范围 | 状态 | 入口 | 说明 |
 |---|---|---|---|
-| v1-mvp release evidence | `blocked-external` / `blocked-decision` / `deferred` | [../versions/v1-mvp/residuals/](../versions/v1-mvp/residuals/) | 正式 Stage 1 alpha 仍因 release evidence 和 release decision 不放行；其中 `v1-ref-003-1-task-05` 走 release evidence review。 |
+| v1-mvp distribution evidence | `blocked-external` / `blocked-decision` / `deferred` | [../versions/v1-mvp/residuals/](../versions/v1-mvp/residuals/) | v1 分发证据和分发决策未关闭；其中 `v1-ref-003-1-task-05` 走分发证据 review。 |
 | v1-mvp checkpoint gaps | `accepted-exception` | [../versions/v1-mvp/residuals/accepted-exceptions.md](../versions/v1-mvp/residuals/accepted-exceptions.md) | 35 个历史 checkpoint gaps 已接受为 closeout exceptions，不回填历史。 |
 | AreaFlow | `reference-only` | [non-current-references.md](non-current-references.md) | 历史愿景材料，不是当前产品范围或 active backlog。 |
 | v-template | `template-only` | [non-current-references.md](non-current-references.md) | 模板参考实例，blocked-by-design，不是真版本未完成。 |
@@ -33,11 +33,11 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 
 | ID | 状态 | 类型 | 当前影响 | 说明 |
 |---|---|---|---|---|
-| `v1-rl-002` | `blocked-external` | `release-evidence` | formal alpha blocked | 真实 iCloud placeholder 环境冒烟证据缺失。 |
-| `v1-rl-003` | `blocked-external` | `release-evidence` | formal alpha blocked | Developer ID signing / notarization / stapled DMG / clean Mac 首启证据缺失。 |
-| `v1-rl-004` | `blocked-decision` | `release-evidence` | formal alpha blocked | final `v0.1.0` tag 依赖 release gates 关闭。 |
-| `v1-rl-006` | `blocked-decision` | `release-evidence` | formal alpha blocked | alpha tester 名单和反馈入口未记录。 |
-| `v1-ref-003-1-task-05` | `deferred` | `release-evidence` | formal alpha blocked | release-gate review item 走 release evidence review，不补造 task-loop verify evidence。 |
+| `v1-rl-002` | `blocked-external` | `release-evidence` | v1 distribution not cleared | 真实 iCloud placeholder 环境冒烟证据缺失。 |
+| `v1-rl-003` | `blocked-external` | `release-evidence` | v1 distribution not cleared | Developer ID signing / notarization / stapled DMG / clean Mac 首启证据缺失。 |
+| `v1-rl-004` | `blocked-decision` | `release-evidence` | v1 distribution not cleared | final `v0.1.0` tag 依赖分发证据和分发决策关闭。 |
+| `v1-rl-006` | `blocked-decision` | `release-evidence` | v1 distribution not cleared | 可信测试者名单和反馈入口未记录。 |
+| `v1-ref-003-1-task-05` | `deferred` | `release-evidence` | v1 distribution not cleared | 分发 review item 走分发证据 review，不补造 task-loop verify evidence。 |
 | `v1-ex-001` | `accepted-exception` | `closeout-exception` | none | 35 个历史 checkpoint gaps 已接受为 closeout exceptions。 |
 | `global-ref-areaflow` | `reference-only` | `historical-reference` | none | AreaFlow 历史愿景材料，不是当前 AreaMatrix 产品范围或 active task。 |
 | `global-template-vtemplate` | `template-only` | `template-reference` | none | `v-template` 是模板参考实例，不是真版本未完成。 |
@@ -63,7 +63,7 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 
 | 场景 | 记录位置 | 说明 |
 |---|---|---|
-| discussion 阶段的普通 open question / blocker | `workflow/versions/v2/discussion/decisions.yaml` | 不创建 residual；先通过 discussion gate 决策。 |
+| discussion 期间的普通 open question / blocker | `workflow/versions/v2/discussion/decisions.yaml` | 不创建 residual；先通过 discussion gate 决策。 |
 | gate 后仍需长期可见的 release / planning / governance 阻断 | `workflow/versions/v2/residuals/README.md` 和 `residuals.yaml` | 同步把 `workflow/versions/v2/residuals/residuals.yaml` 登记到全局 `version_residuals`。 |
 | 历史愿景、模板、closed backlog、产品文档状态词 | `workflow/residuals/**` global item | 只索引，不转 live task。 |
 | 小型、明确、可立即执行的独立修复 | `tasks/active/**` | 只在 owner、scope、validation、close condition 明确，且不需要 workflow discussion / promotion 时创建。 |

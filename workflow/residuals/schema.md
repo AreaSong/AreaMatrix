@@ -41,7 +41,7 @@ type: release-evidence
 title: iCloud placeholder real-environment smoke
 source: workflow/versions/v1-mvp/evidence/release-checklist.md
 owner: release
-current_impact: formal-alpha-blocked
+current_impact: v1-distribution-not-cleared
 executable_task: false
 promotion_required: false
 close_condition: Real iCloud placeholder smoke evidence is recorded.
@@ -63,7 +63,7 @@ close_condition: Real iCloud placeholder smoke evidence is recorded.
 | `global-template-*` | 跨版本模板参考项。 |
 | `v1-rl-*` | v1 release blocker / release evidence。 |
 | `v1-ex-*` | v1 accepted exception。 |
-| `v1-ref-*` | v1 historical reference 或特殊 release gate review。 |
+| `v1-ref-*` | v1 historical reference 或特殊分发 review。 |
 | `task-idx-*` | task 视角索引项。 |
 
 ## Version Residual 同步规则

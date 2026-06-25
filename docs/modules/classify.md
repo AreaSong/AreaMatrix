@@ -1,6 +1,6 @@
 # 模块：分类引擎（classify）
 
-> 输入文件名，输出分类 + 建议命名 + 决策依据。MVP 阶段是纯规则引擎；Stage 3 加 AI 兜底。
+> 输入文件名，输出分类 + 建议命名 + 决策依据。当前基础闭环以规则引擎为主，AI 兜底按配置启用。
 >
 > 阅读时长：约 12 分钟。
 
@@ -73,7 +73,7 @@ core/src/classify/
 ├── normalize.rs  // NFKC + lowercase + tokenize
 ├── matcher.rs    // 关键词匹配（trie）/ 扩展名匹配（HashMap）
 ├── naming.rs     // suggested_name 生成
-└── ai.rs         // (Stage 3) AI 兜底接口
+└── ai.rs         // AI 兜底接口
 ```
 
 ---
@@ -469,7 +469,7 @@ fn render_template(template: &str, original: &str) -> String {
 }
 ```
 
-MVP 默认所有分类的 `naming_template` 为空，即保留原文件名。Stage 2 起在设置 UI 提供模板编辑。
+当前默认所有分类的 `naming_template` 为空，即保留原文件名；模板编辑由分类规则编辑 UI 承接。
 
 ---
 
@@ -516,11 +516,11 @@ categories:
 - FSEvents 监听到 `~/AreaMatrix/.areamatrix/classifier.yaml` 修改
 - 单元测试调用 `invalidate_cache`
 
-缓存 key 是 repo 路径，支持多仓库场景（虽然 MVP 只允许一个）。
+缓存 key 是 repo 路径，支持多仓库场景。
 
 ---
 
-## AI 兜底（Stage 3 预留）
+## AI 兜底
 
 ```rust
 // core/src/classify/ai.rs
@@ -537,10 +537,10 @@ pub struct AiResult {
 
 实现方案：
 
-| 方案 | Stage |
+| 方案 | 状态 |
 |---|---|
-| Ollama 本地（llama3 / qwen2） | 3 |
-| OpenAI / DeepSeek API | 3 (opt-in) |
+| Ollama 本地（llama3 / qwen2） | 可选 provider |
+| OpenAI / DeepSeek API | opt-in provider |
 
 隐私原则：
 

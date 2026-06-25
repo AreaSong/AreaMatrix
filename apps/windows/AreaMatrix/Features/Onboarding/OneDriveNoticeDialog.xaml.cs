@@ -38,7 +38,7 @@ public sealed partial class OneDriveNoticeDialog : UserControl
                 value.PropertyChanged += ViewModel_PropertyChanged;
             }
 
-            UpdateC414Visibility();
+            UpdateOneDriveRiskStateCoreVisibility();
         }
     }
 
@@ -50,7 +50,7 @@ public sealed partial class OneDriveNoticeDialog : UserControl
         }
 
         await ViewModel.LoadRouteAsync(route);
-        UpdateC414Visibility();
+        UpdateOneDriveRiskStateCoreVisibility();
     }
 
     private async void ContinueWithOneDriveButton_Click(object sender, RoutedEventArgs e)
@@ -118,10 +118,10 @@ public sealed partial class OneDriveNoticeDialog : UserControl
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        UpdateC414Visibility();
+        UpdateOneDriveRiskStateCoreVisibility();
     }
 
-    private void UpdateC414Visibility()
+    private void UpdateOneDriveRiskStateCoreVisibility()
     {
         Visibility confirmationVisibility = ViewModel?.ShouldShowConfirmation == true
             ? Visibility.Visible

@@ -193,7 +193,7 @@ struct TagSuggestionsPanel: View {
         }
         .padding(16)
         .frame(width: 420, alignment: .topLeading)
-        .accessibilityIdentifier("S2-23-C2-19-tag-suggestions-panel")
+        .accessibilityIdentifier("tag-suggestions-tag-suggestions-core-tag-suggestions-panel")
     }
 
     private var header: some View {
@@ -233,7 +233,7 @@ struct TagSuggestionsPanel: View {
             HStack {
                 Button("Retry", action: onRetry)
                 Button("Add tag manually", action: onAddManually)
-                    .accessibilityIdentifier("S2-23-C2-05-add-tag-manually")
+                    .accessibilityIdentifier("tag-suggestions-tag-crud-core-add-tag-manually")
             }
         }
     }
@@ -268,7 +268,7 @@ struct TagSuggestionsPanel: View {
             Text("No tag suggestions")
                 .font(.callout.weight(.semibold))
             Button("Add tag manually", action: onAddManually)
-                .accessibilityIdentifier("S2-23-C2-05-add-tag-manually")
+                .accessibilityIdentifier("tag-suggestions-tag-crud-core-add-tag-manually")
         }
     }
 
@@ -316,7 +316,7 @@ struct TagSuggestionsPanel: View {
                 )
             }
         }
-        .accessibilityIdentifier("S2-23-C2-19-edit-selected-tags")
+        .accessibilityIdentifier("tag-suggestions-tag-suggestions-core-edit-selected-tags")
     }
 
     private func applySummary(_ report: TagSuggestionApplyReportSnapshot) -> some View {
@@ -331,7 +331,7 @@ struct TagSuggestionsPanel: View {
                     Button("Retry failed", action: onRetryFailed)
                         .disabled(!canRetryFailed)
                     Button("Add tag manually", action: onAddManually)
-                        .accessibilityIdentifier("S2-23-C2-05-add-tag-manually-after-failure")
+                        .accessibilityIdentifier("tag-suggestions-tag-crud-core-add-tag-manually-after-failure")
                 }
             }
         }

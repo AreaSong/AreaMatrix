@@ -32,7 +32,7 @@ struct BatchDeletePreviewSummary: View {
             Label(
                 [
                     "Trash is not available for this location.",
-                    "AreaMatrix will not permanently delete these files in Stage 2."
+                    "AreaMatrix will not permanently delete these files."
                 ].joined(separator: " "),
                 systemImage: "trash.slash"
             )
@@ -165,7 +165,7 @@ extension BatchAITagSuggestionSheet {
                     .foregroundStyle(.secondary)
             }
         }
-        .accessibilityIdentifier("S3-07-C3-07-batch-reject-feedback")
+        .accessibilityIdentifier("ai-tag-suggestions-ai-tags-suggestion-batch-reject-feedback")
     }
 
     func fileList(_ review: AITagBatchSuggestionReview) -> some View {
@@ -306,7 +306,7 @@ extension BatchAITagSuggestionSheet {
                     privacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
                 }
                 .buttonStyle(.link)
-                .accessibilityIdentifier("S3-07-C3-09-view-batch-privacy-rule")
+                .accessibilityIdentifier("ai-tag-suggestions-ai-privacy-rules-core-view-batch-privacy-rule")
             }
             if let callLogID = report.callLogId {
                 Button("View AI call") {

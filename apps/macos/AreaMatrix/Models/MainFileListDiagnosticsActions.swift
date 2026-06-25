@@ -236,7 +236,7 @@ enum UndoHistoryActionLog {
             severity: .medium,
             suggestedAction: "Review details in Undo History.",
             recoverability: .refreshRequired,
-            rawContext: "S2-11 C2-07 undo-action-log"
+            rawContext: "undo-history undo-action-log undo-action-log"
         )
     }
 
@@ -247,7 +247,7 @@ enum UndoHistoryActionLog {
             severity: .medium,
             suggestedAction: "Review details in Undo History.",
             recoverability: .refreshRequired,
-            rawContext: "S2-22 C2-18 redo-action-log"
+            rawContext: "redo-action-log redo-action-log-core redo-action-log"
         )
     }
 
@@ -258,7 +258,7 @@ enum UndoHistoryActionLog {
 }
 
 struct UndoHistoryPanel: View {
-    static let accessibilityID = "S2-11-C2-07-undo-history-panel"
+    static let accessibilityID = "undo-history-undo-action-log-undo-history-panel"
     let repoPath: String
     let focusedActionID: String?
     let initialFailure: CoreErrorMappingSnapshot?
@@ -330,7 +330,7 @@ struct UndoHistoryPanel: View {
             Spacer()
             Button("Retry") { Task { await loadActions() } }
                 .disabled(state.isBusy)
-                .accessibilityIdentifier("S2-11-C2-07-retry")
+                .accessibilityIdentifier("undo-history-undo-action-log-retry")
         }
         .padding(18)
     }
@@ -373,11 +373,11 @@ struct UndoHistoryPanel: View {
             Spacer()
             Button("Undo latest") { Task { await undoLatest() } }
                 .disabled(!canUndoLatest)
-                .accessibilityIdentifier("S2-11-C2-07-undo-latest")
+                .accessibilityIdentifier("undo-history-undo-action-log-undo-latest")
             Button("Redo latest") { Task { await redoLatest() } }
                 .disabled(!canRedoLatest)
                 .help("Redo latest action")
-                .accessibilityIdentifier("S2-22-C2-18-redo-latest")
+                .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-latest")
             Button("Close", action: onClose)
                 .keyboardShortcut(.cancelAction)
         }

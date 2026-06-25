@@ -17,26 +17,26 @@ enum SyncConflictReviewCopy {
 }
 
 enum SyncConflictReviewAccessibilityID {
-    static let page = "S4-X-01-C4-15-sync-conflict-review"
-    static let loading = "S4-X-01-C4-15-loading"
-    static let empty = "S4-X-01-C4-15-empty"
-    static let error = "S4-X-01-C4-15-error"
-    static let retry = "S4-X-01-C4-15-retry"
-    static let refresh = "S4-X-01-C4-15-refresh"
-    static let back = "S4-X-01-C4-15-back"
-    static let close = "S4-X-01-C4-15-close"
-    static let summary = "S4-X-01-C4-15-summary"
-    static let versions = "S4-X-01-C4-15-versions"
-    static let resolution = "S4-X-01-C4-16-resolution"
-    static let impact = "S4-X-01-C4-16-impact"
-    static let apply = "S4-X-01-C4-16-apply"
-    static let applyFailure = "S4-X-01-C4-16-apply-failure"
-    static let applySuccess = "S4-X-01-C4-16-apply-success"
-    static let replaceConfirmation = "S4-X-09-C4-21-replace-confirmation"
-    static let replaceConfirm = "S4-X-09-C4-21-confirm-replace-plan"
+    static let page = "sync-conflict-review-sync-conflict-detect-sync-conflict-review"
+    static let loading = "sync-conflict-review-sync-conflict-detect-loading"
+    static let empty = "sync-conflict-review-sync-conflict-detect-empty"
+    static let error = "sync-conflict-review-sync-conflict-detect-error"
+    static let retry = "sync-conflict-review-sync-conflict-detect-retry"
+    static let refresh = "sync-conflict-review-sync-conflict-detect-refresh"
+    static let back = "sync-conflict-review-sync-conflict-detect-back"
+    static let close = "sync-conflict-review-sync-conflict-detect-close"
+    static let summary = "sync-conflict-review-sync-conflict-detect-summary"
+    static let versions = "sync-conflict-review-sync-conflict-detect-versions"
+    static let resolution = "sync-conflict-review-sync-conflict-resolve-resolution"
+    static let impact = "sync-conflict-review-sync-conflict-resolve-impact"
+    static let apply = "sync-conflict-review-sync-conflict-resolve-apply"
+    static let applyFailure = "sync-conflict-review-sync-conflict-resolve-apply-failure"
+    static let applySuccess = "sync-conflict-review-sync-conflict-resolve-apply-success"
+    static let replaceConfirmation = "replace-resolution-replace-confirmation-replace-confirmation"
+    static let replaceConfirm = "replace-resolution-replace-confirmation-confirm-replace-plan"
 
     static func versionCard(fileID: String) -> String {
-        "S4-X-01-C4-15-version-\(safeID(fileID))"
+        "sync-conflict-review-sync-conflict-detect-version-\(safeID(fileID))"
     }
 
     private static func safeID(_ value: String) -> String {
@@ -291,7 +291,7 @@ private extension SyncConflictReviewView {
                 ("Trash paths", listDisplay(preview.plannedTrashPaths))
             ])
             if preview.requiresReplaceConfirmation {
-                Label("Use incoming version requires S4-X-09 replace confirmation.", systemImage: "lock.shield")
+                Label("Use incoming version requires replace-resolution replace confirmation.", systemImage: "lock.shield")
                     .foregroundStyle(.orange)
             }
             replaceConfirmationContent(preview)

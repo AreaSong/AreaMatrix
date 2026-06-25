@@ -55,7 +55,7 @@
 
 **学者/研究生**：大量 PDF 论文、笔记、数据集
 **自由设计师**：素材、客户文件、报价单、合同
-**小团队负责人**：合同、发票、内部文档（团队共享留 Stage 4）
+**小团队负责人**：合同、发票、内部文档（团队共享留后续多端协作版本）
 
 ### 2.3 不是我们的用户（明确排除）
 
@@ -79,7 +79,7 @@
 
 ## 4. 核心功能（按优先级）
 
-### P0 - MVP（Stage 1 必须）
+### P0 - v1 基础闭环
 
 | 编号 | 功能 | 说明 |
 |---|---|---|
@@ -99,7 +99,7 @@
 | F14 | 首次启动向导 | 选位置、打开已有库或接管已有目录 |
 | F15 | iCloud 兼容 | 检测 iCloud 路径，处理占位符 |
 
-### P1 - 可用版（Stage 2）
+### P1 - v2 体验完善候选
 
 - F15 全文搜索（基于文件名 + 笔记）
 - F16 批量操作（选中多个文件批量重分类）
@@ -108,14 +108,14 @@
 - F19 标签系统（独立于分类的 cross-cutting 标签）
 - F20 深色模式打磨
 
-### P2 - 智能版（Stage 3）
+### P2 - 后续智能化候选
 
 - F21 AI 兜底分类（Ollama 本地 / OpenAI 云端可选）
 - F22 智能命名（基于文件内容生成）
 - F23 相似文件检测（语义级别）
 - F24 OCR（图片 / PDF 文本提取，便于搜索）
 
-### P3 - 多端版（Stage 4）
+### P3 - 后续多端候选
 
 - F25 Windows 端（WinUI 3）
 - F26 Linux 端（GTK）
@@ -212,13 +212,13 @@ sequenceDiagram
 ### 6.3 安全与隐私
 
 - 所有数据保留在本地，**不上传任何信息**
-- AI 兜底（Stage 3）默认关闭，启用时明确告知数据流向
+- AI 兜底默认关闭，启用时明确告知数据流向
 - 不收集遥测、不发送崩溃报告（除非用户主动提交）
 - 所有日志在用户本地 `~/Library/Logs/AreaMatrix/`
 
 ### 6.4 可访问性
 
-- 完整的 VoiceOver 支持（Stage 2 起）
+- 完整的 VoiceOver 支持按 v2 可访问性计划补齐
 - 全键盘导航（不依赖鼠标也可完成核心操作）
 - 高对比度模式适配
 
@@ -226,7 +226,7 @@ sequenceDiagram
 
 - 核心库（Rust）与平台无关，未来可扩 Windows/Linux/iOS
 - 分类规则用户可通过 YAML 自定义
-- 支持插件机制（Stage 4 考虑）
+- 支持插件机制（后续多端 / 扩展版本考虑）
 
 ---
 
@@ -246,24 +246,24 @@ sequenceDiagram
 
 - 默认 PolyForm Noncommercial 1.0.0：个人/教育/研究/内部使用免费
 - 商业使用需单独授权（见 [COMMERCIAL_LICENSE.md](../../COMMERCIAL_LICENSE.md)）
-- 不做订阅、不做内购、不做 SaaS（Stage 1-3）
+- 不做订阅、不做内购、不做 SaaS（当前个人资料管理主线）
 - 长期可能：企业版（多设备同步 + 团队协作）
 
 ---
 
 ## 9. 成功指标
 
-### MVP 阶段（Stage 1）
+### v1 基础闭环
 - 完成所有 P0 功能
 - 端到端验收清单 100% 通过
-- 至少 1 位外部 alpha 用户使用 7 天无 P0 级别问题
+- 至少 1 位外部可信测试者使用 7 天无 P0 级别问题
 
-### Stage 2
+### v2 体验完善
 - GitHub Star ≥ 1000
 - 月活贡献者 ≥ 5
 - 0 已知 P0 bug
 
-### Stage 3
+### 后续智能化
 - 月活用户 ≥ 5000（自报告）
 - AI 分类准确率 ≥ 85%
 
@@ -273,10 +273,10 @@ sequenceDiagram
 
 | 风险 | 影响 | 缓解 |
 |---|---|---|
-| 用户接受度未知 | 投入打水漂 | 先做 MVP 找 5-10 位 alpha 用户验证 |
+| 用户接受度未知 | 投入打水漂 | 先完成 v1 基础闭环，再找 5-10 位可信测试者验证 |
 | 分类准确率不达预期 | 用户失望 | 规则透明可改，AI 是兜底不是替代 |
-| FSEvents + iCloud 复杂度高 | 实施延期 | Stage 1 可降级为"仅警告 iCloud 路径"，Stage 2 完整支持 |
-| 仅 macOS 限制用户基数 | 增长慢 | 接受这个限制，专注做精，Stage 4 再扩 |
+| FSEvents + iCloud 复杂度高 | 实施延期 | v1 允许降级为"仅警告 iCloud 路径"，v2 再补齐完整支持 |
+| 仅 macOS 限制用户基数 | 增长慢 | 接受这个限制，专注做精，后续多端版本再扩 |
 
 ---
 
@@ -285,7 +285,7 @@ sequenceDiagram
 - [user-stories.md](user-stories.md)
 - [glossary.md](glossary.md)
 - [../architecture/overview.md](../architecture/overview.md)
-- [../roadmap/milestones.md](../roadmap/milestones.md)
+- [../roadmap/version-roadmap.md](../roadmap/version-roadmap.md)
 - [../ux/first-launch.md](../ux/first-launch.md)
 - [../ux/drag-import-flow.md](../ux/drag-import-flow.md)
 - [../ux/ui-states.md](../ux/ui-states.md)

@@ -129,7 +129,7 @@ struct QueryErrorRouteView: View {
         .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("S2-05-query-error")
+        .accessibilityIdentifier("query-error-query-error")
     }
 
     private var inlineDiagnostic: some View {
@@ -230,7 +230,7 @@ struct QuerySyntaxHintPopover: View {
         }
         .padding(14)
         .frame(width: 300, alignment: .leading)
-        .accessibilityIdentifier("S2-05-query-help")
+        .accessibilityIdentifier("query-error-query-help")
     }
 }
 
@@ -252,7 +252,7 @@ struct QueryDiagnosticSummary: View {
         .background(Color.red.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("S2-05-query-error")
+        .accessibilityIdentifier("query-error-query-error")
         .accessibilityHint(diagnostic.problemAccessibilityHint)
     }
 }

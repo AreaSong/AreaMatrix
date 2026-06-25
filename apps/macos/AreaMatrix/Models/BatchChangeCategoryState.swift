@@ -112,8 +112,8 @@ enum BatchChangeCategoryUndoAction {
 }
 
 struct BatchChangeCategoryNewCategoryHandoff: Equatable, Identifiable {
-    var sourcePageID: String = "S2-12"
-    var targetPageID: String = "S2-19"
+    var sourcePageID: String = "batch-change-category"
+    var targetPageID: String = "classifier-rule-editor"
     var selectedFileIDs: [Int64]
     var currentTargetCategory: String
 

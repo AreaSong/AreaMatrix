@@ -3,7 +3,7 @@ import XCTest
 
 final class ValidatePathErrorMappingTests: XCTestCase {
     @MainActor
-    func testValidatePathMapsCoreFailureThroughC121ErrorMapper() async {
+    func testValidatePathMapsCoreFailureThroughErrorMappingCoreErrorMapper() async {
         let mapping = CoreErrorMappingSnapshot.errorSmokePermissionDeniedFixture(rawContext: "/tmp/repo")
         let errorMapper = ErrorSmokeRecordingErrorMapper(mapping: mapping)
         let model = OnboardingModel(
@@ -76,7 +76,7 @@ final class ValidatePathIntegrationSmokeTests: XCTestCase {
 }
 
 final class QueryErrorDiagnosticSnapshotTests: XCTestCase {
-    func testS205DiagnosticSnapshotPreservesCoreTokenRangeAndSuggestion() {
+    func testQueryErrorDiagnosticSnapshotPreservesCoreTokenRangeAndSuggestion() {
         let diagnostic = SearchQueryDiagnostic(
             kind: .unknownField,
             severity: .error,
@@ -98,19 +98,19 @@ final class QueryErrorDiagnosticSnapshotTests: XCTestCase {
     }
 }
 
-final class S307AITagSuggestionPageFeatureTests: XCTestCase {
+final class AITagSuggestionAITagSuggestionPageFeatureTests: XCTestCase {
     @MainActor
-    func testS307C307AITagSuggestionSkipsDisableAllSubmitActions() {
+    func testAITagSuggestionAITagsSuggestionCoreAITagSuggestionSkipsDisableAllSubmitActions() {
         let states = [
             AITagSuggestionState.loaded(
                 fileID: 707,
-                s307AITagReport(fileID: 707, status: .skipped, skippedReason: .privacyRule),
+                aiTagSuggestionAITagReport(fileID: 707, status: .skipped, skippedReason: .privacyRule),
                 []
             ),
-            .loaded(fileID: 708, s307AITagReport(fileID: 708, status: .noSuggestion), []),
-            .loaded(fileID: 709, s307AITagReport(
+            .loaded(fileID: 708, aiTagSuggestionAITagReport(fileID: 708, status: .noSuggestion), []),
+            .loaded(fileID: 709, aiTagSuggestionAITagReport(
                 fileID: 709,
-                suggestions: [s307AITagSuggestion(id: "s3-07-low", slug: "maybe", confidence: 0.55)]
+                suggestions: [aiTagSuggestionAITagSuggestion(id: "ai-tag-low", slug: "maybe", confidence: 0.55)]
             ), [])
         ]
 
@@ -123,42 +123,42 @@ final class S307AITagSuggestionPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS307C307AcceptHighConfidenceExcludesPreviouslySelectedLowConfidence() {
-        let report = s307AITagReport(fileID: 707, suggestions: [
-            s307AITagSuggestion(id: "s3-07-finance", slug: "finance", confidence: 0.91, selectedByDefault: false),
-            s307AITagSuggestion(id: "s3-07-low", slug: "maybe", confidence: 0.42, selectedByDefault: false)
+    func testAITagSuggestionAITagsSuggestionCoreAcceptHighConfidenceExcludesPreviouslySelectedLowConfidence() {
+        let report = aiTagSuggestionAITagReport(fileID: 707, suggestions: [
+            aiTagSuggestionAITagSuggestion(id: "ai-tag-finance", slug: "finance", confidence: 0.91, selectedByDefault: false),
+            aiTagSuggestionAITagSuggestion(id: "ai-tag-low", slug: "maybe", confidence: 0.42, selectedByDefault: false)
         ])
-        let lowSelected = AITagSuggestionState.loaded(fileID: 707, report, ["s3-07-low"])
+        let lowSelected = AITagSuggestionState.loaded(fileID: 707, report, ["ai-tag-low"])
         let highConfidenceOnly = AITagSuggestionAction.selectingHighConfidence(in: lowSelected)
 
-        XCTAssertEqual(highConfidenceOnly.selectedIDs, ["s3-07-finance"])
+        XCTAssertEqual(highConfidenceOnly.selectedIDs, ["ai-tag-finance"])
         XCTAssertEqual(
             AITagSuggestionAction.selectedApplyItems(in: highConfidenceOnly).map(\.suggestionId),
-            ["s3-07-finance"]
+            ["ai-tag-finance"]
         )
     }
 
     @MainActor
-    func testS307C307AITagSuggestionUsesCoreBridgeAndAppliesOnlyReviewedTags() async {
+    func testAITagSuggestionAITagsSuggestionCoreAITagSuggestionUsesCoreBridgeAndAppliesOnlyReviewedTags() async {
         let file = FileEntrySnapshot.detailMetaFixture(id: 707, currentName: "invoice.pdf")
-        let bridge = S307AITagBridge(s307AITagReport(fileID: file.id, suggestions: [
-            s307AITagSuggestion(id: "s3-07-finance", slug: "finance", confidence: 0.91),
-            s307AITagSuggestion(id: "s3-07-low", slug: "maybe", confidence: 0.42, selectedByDefault: false)
+        let bridge = AITagSuggestionAITagBridge(aiTagSuggestionAITagReport(fileID: file.id, suggestions: [
+            aiTagSuggestionAITagSuggestion(id: "ai-tag-finance", slug: "finance", confidence: 0.91),
+            aiTagSuggestionAITagSuggestion(id: "ai-tag-low", slug: "maybe", confidence: 0.42, selectedByDefault: false)
         ]))
-        let privacy = RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(featureScope: [.autoTags]))
+        let privacy = RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags]))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
-            tagStore: DetailTagRecordingStore(listResults: [.success(.s207Fixture(
+            tagStore: DetailTagRecordingStore(listResults: [.success(.tagAddFixture(
                 fileID: file.id,
                 values: ["client"]
             ))]),
-            aiSettingsLoader: S307AISettingsLoader(),
+            aiSettingsLoader: AITagSuggestionAISettingsLoader(),
             aiTagSuggestionStore: bridge,
             aiPrivacyRules: privacy,
-            changeLogLister: DetailLogRecordingChangeLister(entries: [.s223Applied()]),
-            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+            changeLogLister: DetailLogRecordingChangeLister(entries: [.tagSuggestionsApplied()]),
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([file.id])
@@ -174,62 +174,62 @@ final class S307AITagSuggestionPageFeatureTests: XCTestCase {
         XCTAssertEqual(requests.apply.first?.fileId, file.id)
         XCTAssertEqual(requests.apply.first?.confirmed, true)
         XCTAssertEqual(requests.apply.first?.callLogId, 7707)
-        XCTAssertEqual(requests.apply.first?.suggestions.map(\.suggestionId), ["s3-07-finance"])
+        XCTAssertEqual(requests.apply.first?.suggestions.map(\.suggestionId), ["ai-tag-finance"])
         XCTAssertEqual(model.aiTagSuggestionState.appliedReport?.appliedCount, 1)
         XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["finance"])
         XCTAssertNil(undoState)
     }
 
     @MainActor
-    func testS307C307SingleRowAddImmediatelyAppliesThroughCoreBridge() async {
+    func testAITagSuggestionAITagsSuggestionCoreSingleRowAddImmediatelyAppliesThroughCoreBridge() async {
         let file = FileEntrySnapshot.detailMetaFixture(id: 710, currentName: "invoice-single-add.pdf")
-        let bridge = S307AITagBridge(s307AITagReport(fileID: file.id, suggestions: [
-            s307AITagSuggestion(id: "s3-07-finance", slug: "finance", confidence: 0.91, selectedByDefault: false),
-            s307AITagSuggestion(id: "s3-07-low", slug: "maybe", confidence: 0.42, selectedByDefault: false)
+        let bridge = AITagSuggestionAITagBridge(aiTagSuggestionAITagReport(fileID: file.id, suggestions: [
+            aiTagSuggestionAITagSuggestion(id: "ai-tag-finance", slug: "finance", confidence: 0.91, selectedByDefault: false),
+            aiTagSuggestionAITagSuggestion(id: "ai-tag-low", slug: "maybe", confidence: 0.42, selectedByDefault: false)
         ]))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
-            tagStore: DetailTagRecordingStore(listResults: [.success(.s207Fixture(fileID: file.id, values: []))]),
-            aiSettingsLoader: S307AISettingsLoader(),
+            tagStore: DetailTagRecordingStore(listResults: [.success(.tagAddFixture(fileID: file.id, values: []))]),
+            aiSettingsLoader: AITagSuggestionAISettingsLoader(),
             aiTagSuggestionStore: bridge,
-            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(featureScope: [.autoTags])),
-            changeLogLister: DetailLogRecordingChangeLister(entries: [.s223Applied()]),
-            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])),
+            changeLogLister: DetailLogRecordingChangeLister(entries: [.tagSuggestionsApplied()]),
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([file.id])
         await model.loadSelectedFileAITagSuggestions()
-        let undoState = await model.applySelectedFileAITagSuggestion("s3-07-finance")
+        let undoState = await model.applySelectedFileAITagSuggestion("ai-tag-finance")
         let requests = await bridge.requests()
 
         XCTAssertEqual(model.aiTagSuggestionState.selectedIDs, [])
         XCTAssertEqual(requests.apply.count, 1)
         XCTAssertEqual(requests.apply.first?.fileId, file.id)
         XCTAssertEqual(requests.apply.first?.confirmed, true)
-        XCTAssertEqual(requests.apply.first?.suggestions.map(\.suggestionId), ["s3-07-finance"])
+        XCTAssertEqual(requests.apply.first?.suggestions.map(\.suggestionId), ["ai-tag-finance"])
         XCTAssertEqual(model.aiTagSuggestionState.appliedReport?.appliedCount, 1)
         XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["finance"])
         XCTAssertNil(undoState)
     }
 
     @MainActor
-    func testS307C307RejectSelectedHidesSuggestionsAndDoesNotApply() async {
+    func testAITagSuggestionAITagsSuggestionCoreRejectSelectedHidesSuggestionsAndDoesNotApply() async {
         let file = FileEntrySnapshot.detailMetaFixture(id: 713, currentName: "invoice-reject.pdf")
-        let bridge = S307AITagBridge(s307AITagReport(fileID: file.id, suggestions: [
-            s307AITagSuggestion(id: "s3-07-finance", slug: "finance", confidence: 0.91),
-            s307AITagSuggestion(id: "s3-07-tax", slug: "tax", confidence: 0.86)
+        let bridge = AITagSuggestionAITagBridge(aiTagSuggestionAITagReport(fileID: file.id, suggestions: [
+            aiTagSuggestionAITagSuggestion(id: "ai-tag-finance", slug: "finance", confidence: 0.91),
+            aiTagSuggestionAITagSuggestion(id: "ai-tag-tax", slug: "tax", confidence: 0.86)
         ]))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
-            tagStore: DetailTagRecordingStore(listResults: [.success(.s207Fixture(fileID: file.id, values: []))]),
-            aiSettingsLoader: S307AISettingsLoader(),
+            tagStore: DetailTagRecordingStore(listResults: [.success(.tagAddFixture(fileID: file.id, values: []))]),
+            aiSettingsLoader: AITagSuggestionAISettingsLoader(),
             aiTagSuggestionStore: bridge,
-            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(featureScope: [.autoTags])),
-            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])),
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([file.id])
@@ -240,7 +240,7 @@ final class S307AITagSuggestionPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(model.aiTagSuggestionState.report?.suggestions, [])
         XCTAssertEqual(model.aiTagSuggestionState.selectedIDs, [])
-        XCTAssertEqual(model.aiTagSuggestionState.rejectedFeedback?.rejectedIDs, ["s3-07-finance", "s3-07-tax"])
+        XCTAssertEqual(model.aiTagSuggestionState.rejectedFeedback?.rejectedIDs, ["ai-tag-finance", "ai-tag-tax"])
         XCTAssertEqual(
             model.aiTagSuggestionState.rejectedFeedback?.message,
             "2 suggestions rejected. Feedback recorded for this review."
@@ -250,11 +250,11 @@ final class S307AITagSuggestionPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS307C307AITagSuggestionOffDoesNotEvaluatePrivacyOrGenerateTags() async {
+    func testAITagSuggestionAITagsSuggestionCoreAITagSuggestionOffDoesNotEvaluatePrivacyOrGenerateTags() async {
         let file = FileEntrySnapshot.detailMetaFixture(id: 711, currentName: "invoice-ai-off.pdf")
-        let bridge = S307AITagBridge(s307AITagReport(fileID: file.id))
-        let privacy = RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(featureScope: [.autoTags]))
-        let settings = S307AISettingsLoader(aiEnabled: false)
+        let bridge = AITagSuggestionAITagBridge(aiTagSuggestionAITagReport(fileID: file.id))
+        let privacy = RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags]))
+        let settings = AITagSuggestionAISettingsLoader(aiEnabled: false)
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: DetailMetaNoopLister(),
@@ -262,7 +262,7 @@ final class S307AITagSuggestionPageFeatureTests: XCTestCase {
             aiSettingsLoader: settings,
             aiTagSuggestionStore: bridge,
             aiPrivacyRules: privacy,
-            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([file.id])
@@ -284,18 +284,18 @@ final class S307AITagSuggestionPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS307C307AutoTagsOffDoesNotEvaluatePrivacyOrGenerateTags() async {
+    func testAITagSuggestionAITagsSuggestionCoreAutoTagsOffDoesNotEvaluatePrivacyOrGenerateTags() async {
         let file = FileEntrySnapshot.detailMetaFixture(id: 712, currentName: "invoice-auto-tags-off.pdf")
-        let bridge = S307AITagBridge(s307AITagReport(fileID: file.id))
-        let privacy = RemotePrivacyRulesBridge(snapshot: .s303PrivacyRules(featureScope: [.autoTags]))
+        let bridge = AITagSuggestionAITagBridge(aiTagSuggestionAITagReport(fileID: file.id))
+        let privacy = RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags]))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
-            aiSettingsLoader: S307AISettingsLoader(autoTagsEnabled: false),
+            aiSettingsLoader: AITagSuggestionAISettingsLoader(autoTagsEnabled: false),
             aiTagSuggestionStore: bridge,
             aiPrivacyRules: privacy,
-            errorMapper: DetailMetaErrorMapper(mapping: .s207TagDb())
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([file.id])

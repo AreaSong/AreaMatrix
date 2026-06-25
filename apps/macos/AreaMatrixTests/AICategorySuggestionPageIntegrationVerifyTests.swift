@@ -1,18 +1,18 @@
 @testable import AreaMatrix
 import XCTest
 
-final class S304PageIntegrationVerifyTests: XCTestCase {
+final class AICategorySuggestionPageIntegrationVerifyTests: XCTestCase {
     @MainActor
     func testAcceptRequiresPreviewThenAppliesThroughClassifierCorrectionBridge() async {
-        let original = s304File(id: 590)
-        let corrected = s304File(id: original.id, path: "finance/invoices/invoice.pdf", category: "finance/invoices")
-        let preview = s304Preview(fileID: original.id)
-        let mover = S304RecordingCategoryMover(
+        let original = aiCategorySuggestionFile(id: 590)
+        let corrected = aiCategorySuggestionFile(id: original.id, path: "finance/invoices/invoice.pdf", category: "finance/invoices")
+        let preview = aiCategorySuggestionPreview(fileID: original.id)
+        let mover = AICategorySuggestionRecordingCategoryMover(
             previewResult: .success(preview),
-            correctionResult: .success(s304Correction(updatedFile: corrected))
+            correctionResult: .success(aiCategorySuggestionCorrection(updatedFile: corrected))
         )
-        let model = s304MainModel(file: original, mover: mover)
-        let suggestion = AIClassificationSuggestionState.s304Suggested(fileID: original.id)
+        let model = aiCategorySuggestionMainModel(file: original, mover: mover)
+        let suggestion = AIClassificationSuggestionState.aiCategorySuggestionSuggested(fileID: original.id)
 
         model.beginAIClassificationSuggestion(fileID: original.id)
         await model.loadMoveToCategoryPreview(fileID: original.id, targetCategory: "finance/invoices")
@@ -32,7 +32,7 @@ final class S304PageIntegrationVerifyTests: XCTestCase {
             .correction(fileID: original.id, targetCategory: "finance/invoices", moveFile: true, remember: false)
         ])
         XCTAssertEqual(model.selectedFileDetail, corrected)
-        XCTAssertEqual(model.pendingActionDestination?.pageID, "S3-04")
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "ai-category-suggestion")
         XCTAssertEqual(
             model.pendingActionDestination?.aiClassificationReturnContext?.appliedCategory,
             "finance/invoices"
@@ -40,15 +40,15 @@ final class S304PageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testAcceptFailureKeepsS304PanelOpenWithRetryEvidence() async {
-        let original = s304File(id: 591)
-        let preview = s304Preview(fileID: original.id)
-        let mover = S304RecordingCategoryMover(
+    func testAcceptFailureKeepsAICategorySuggestionPanelOpenWithRetryEvidence() async {
+        let original = aiCategorySuggestionFile(id: 591)
+        let preview = aiCategorySuggestionPreview(fileID: original.id)
+        let mover = AICategorySuggestionRecordingCategoryMover(
             previewResult: .success(preview),
             correctionResult: .failure(CoreError.Classify(reason: "target unavailable"))
         )
-        let model = s304MainModel(file: original, mover: mover)
-        let suggestion = AIClassificationSuggestionState.s304Suggested(fileID: original.id)
+        let model = aiCategorySuggestionMainModel(file: original, mover: mover)
+        let suggestion = AIClassificationSuggestionState.aiCategorySuggestionSuggested(fileID: original.id)
 
         model.beginAIClassificationSuggestion(fileID: original.id)
         let didApply = await model.submitAIClassificationSuggestion(AIClassificationSuggestionApplyRequest(
@@ -71,10 +71,10 @@ final class S304PageIntegrationVerifyTests: XCTestCase {
 
     @MainActor
     func testRejectRecordsVisibleFeedbackWithoutCoreMutation() async {
-        let suggestion = AIClassificationSuggestionState.s304Suggested(fileID: 592)
-        let model = s304SuggestionModel(
+        let suggestion = AIClassificationSuggestionState.aiCategorySuggestionSuggested(fileID: 592)
+        let model = aiCategorySuggestionSuggestionModel(
             request: AIClassificationSuggestionRequestState(fileID: 592, contextPolicy: .limitedTextSummary),
-            bridge: S304SuggestionBridge(result: .success(suggestion))
+            bridge: AICategorySuggestionSuggestionBridge(result: .success(suggestion))
         )
         await model.askForSuggestion()
         var panel = AIClassificationSuggestionPanel(
@@ -90,12 +90,12 @@ final class S304PageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testRememberRuleFromS304CarriesAIProvenanceAndCancelReturnsToPanel() async {
-        let original = s304File(id: 593)
-        let corrected = s304File(id: original.id, path: "finance/invoices/invoice.pdf", category: "finance/invoices")
-        let mover = S304RecordingCategoryMover(correctionResult: .success(s304Correction(updatedFile: corrected)))
-        let model = s304MainModel(file: original, mover: mover)
-        let suggestion = AIClassificationSuggestionState.s304Suggested(fileID: original.id)
+    func testRememberRuleFromAICategorySuggestionCarriesAIProvenanceAndCancelReturnsToPanel() async {
+        let original = aiCategorySuggestionFile(id: 593)
+        let corrected = aiCategorySuggestionFile(id: original.id, path: "finance/invoices/invoice.pdf", category: "finance/invoices")
+        let mover = AICategorySuggestionRecordingCategoryMover(correctionResult: .success(aiCategorySuggestionCorrection(updatedFile: corrected)))
+        let model = aiCategorySuggestionMainModel(file: original, mover: mover)
+        let suggestion = AIClassificationSuggestionState.aiCategorySuggestionSuggested(fileID: original.id)
 
         model.beginAIClassificationSuggestion(fileID: original.id)
         let didApply = await model.submitAIClassificationSuggestion(AIClassificationSuggestionApplyRequest(
@@ -104,15 +104,15 @@ final class S304PageIntegrationVerifyTests: XCTestCase {
             moveFile: true,
             rememberRule: true,
             suggestion: suggestion,
-            preview: s304Preview(fileID: original.id)
+            preview: aiCategorySuggestionPreview(fileID: original.id)
         ))
 
         XCTAssertTrue(didApply)
-        XCTAssertEqual(model.pendingActionDestination?.pageID, "S2-17")
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "classifier-rule-save")
         guard case let .saveRule(handoff) = model.pendingActionDestination?.classifierRuleRoute else {
-            return XCTFail("Expected S3-04 to route into S2-17 rule save.")
+            return XCTFail("Expected ai-category-suggestion to route into classifier-rule-save rule save.")
         }
-        XCTAssertEqual(handoff.sourcePageID, "S3-04")
+        XCTAssertEqual(handoff.sourcePageID, "ai-category-suggestion")
         XCTAssertEqual(handoff.aiProvenance?.suggestedCategory, "finance/invoices")
         XCTAssertEqual(handoff.aiProvenance?.finalCategory, "finance/invoices")
         XCTAssertEqual(handoff.aiProvenance?.callLogID, 304)
@@ -120,14 +120,14 @@ final class S304PageIntegrationVerifyTests: XCTestCase {
 
         model.cancelClassifierRuleRoute()
 
-        XCTAssertEqual(model.pendingActionDestination?.pageID, "S3-04")
+        XCTAssertEqual(model.pendingActionDestination?.pageID, "ai-category-suggestion")
         XCTAssertEqual(model.pendingActionDestination?.aiClassificationReturnContext?.ruleStatus, .cancelled)
     }
 
     @MainActor
     func testViewAICallLoadsClassificationLogDetailThroughCoreBridgeContract() async {
-        let record = s304CallLogRecord(id: 304)
-        let lister = S304CallLogLister(page: AiCallLogPage(
+        let record = aiCategorySuggestionCallLogRecord(id: 304)
+        let lister = AICategorySuggestionCallLogLister(page: AiCallLogPage(
             totalCount: 1,
             records: [record],
             limit: 100,
@@ -140,7 +140,7 @@ final class S304PageIntegrationVerifyTests: XCTestCase {
             repoPath: "/tmp/repo",
             callLogID: 304,
             lister: lister,
-            errorMapper: S304PageErrorMapper()
+            errorMapper: AICategorySuggestionPageErrorMapper()
         )
 
         await model.load()
@@ -152,15 +152,15 @@ final class S304PageIntegrationVerifyTests: XCTestCase {
     }
 }
 
-private enum S304CategoryMoveRequest: Equatable {
+private enum AICategorySuggestionCategoryMoveRequest: Equatable {
     case preview(fileID: Int64, targetCategory: String)
     case correction(fileID: Int64, targetCategory: String, moveFile: Bool, remember: Bool)
 }
 
-private actor S304RecordingCategoryMover: CoreFileCategoryMoving {
+private actor AICategorySuggestionRecordingCategoryMover: CoreFileCategoryMoving {
     private let previewResult: Result<MoveToCategoryPreviewSnapshot, Error>
     private let correctionResult: Result<ClassifierCorrectionResultSnapshot, Error>
-    private var recordedRequests: [S304CategoryMoveRequest] = []
+    private var recordedRequests: [AICategorySuggestionCategoryMoveRequest] = []
 
     init(
         previewResult: Result<MoveToCategoryPreviewSnapshot, Error> = .failure(CoreError.Internal(message: "preview")),
@@ -180,7 +180,7 @@ private actor S304RecordingCategoryMover: CoreFileCategoryMoving {
     }
 
     func moveToCategory(repoPath _: String, fileID _: Int64, newCategory _: String) async throws -> FileEntrySnapshot {
-        throw CoreError.Internal(message: "S3-04 must use classifier correction apply")
+        throw CoreError.Internal(message: "ai-category-suggestion must use classifier correction apply")
     }
 
     func correctFileCategory(
@@ -199,12 +199,12 @@ private actor S304RecordingCategoryMover: CoreFileCategoryMoving {
         return try correctionResult.get()
     }
 
-    func requests() -> [S304CategoryMoveRequest] {
+    func requests() -> [AICategorySuggestionCategoryMoveRequest] {
         recordedRequests
     }
 }
 
-private actor S304CallLogLister: CoreAICallLogListing {
+private actor AICategorySuggestionCallLogLister: CoreAICallLogListing {
     typealias Request = (filter: AiCallLogFilter, pagination: AiCallLogPagination)
 
     private let page: AiCallLogPage
@@ -229,21 +229,21 @@ private actor S304CallLogLister: CoreAICallLogListing {
 }
 
 @MainActor
-private func s304MainModel(
+private func aiCategorySuggestionMainModel(
     file: FileEntrySnapshot,
     mover: any CoreFileCategoryMoving
 ) -> MainFileListModel {
     MainFileListModel(
-        opening: .s304Fixture(repoPath: "/tmp/repo", files: [file]),
-        fileLister: S304NoopLister(),
-        fileDetailer: S304Detailer(file: file),
+        opening: .aiCategorySuggestionFixture(repoPath: "/tmp/repo", files: [file]),
+        fileLister: AICategorySuggestionNoopLister(),
+        fileDetailer: AICategorySuggestionDetailer(file: file),
         fileCategoryMover: mover,
-        changeLogLister: S304ChangeLogLister(),
-        errorMapper: S304PageErrorMapper()
+        changeLogLister: AICategorySuggestionChangeLogLister(),
+        errorMapper: AICategorySuggestionPageErrorMapper()
     )
 }
 
-private func s304File(
+private func aiCategorySuggestionFile(
     id: Int64,
     path: String = "inbox/invoice.pdf",
     category: String = "inbox"
@@ -255,7 +255,7 @@ private func s304File(
         currentName: "invoice.pdf",
         category: category,
         sizeBytes: 128,
-        hashSha256: "s304-\(id)",
+        hashSha256: "aiCategorySuggestion-\(id)",
         storageMode: "Copied",
         origin: "Imported",
         sourcePath: nil,
@@ -264,7 +264,7 @@ private func s304File(
     )
 }
 
-private func s304Preview(fileID: Int64) -> MoveToCategoryPreviewSnapshot {
+private func aiCategorySuggestionPreview(fileID: Int64) -> MoveToCategoryPreviewSnapshot {
     MoveToCategoryPreviewSnapshot(
         fileID: fileID,
         fromCategory: "inbox",
@@ -279,7 +279,7 @@ private func s304Preview(fileID: Int64) -> MoveToCategoryPreviewSnapshot {
     )
 }
 
-private func s304Correction(updatedFile: FileEntrySnapshot) -> ClassifierCorrectionResultSnapshot {
+private func aiCategorySuggestionCorrection(updatedFile: FileEntrySnapshot) -> ClassifierCorrectionResultSnapshot {
     ClassifierCorrectionResultSnapshot(
         updatedFile: updatedFile,
         ruleDraft: ClassifierRuleDraftSnapshot(
@@ -295,7 +295,7 @@ private func s304Correction(updatedFile: FileEntrySnapshot) -> ClassifierCorrect
     )
 }
 
-private func s304CallLogRecord(id: Int64) -> AiCallLogRecord {
+private func aiCategorySuggestionCallLogRecord(id: Int64) -> AiCallLogRecord {
     AiCallLogRecord(
         id: id,
         occurredAt: 1_700_000_000,
@@ -319,13 +319,13 @@ private func s304CallLogRecord(id: Int64) -> AiCallLogRecord {
     )
 }
 
-private actor S304NoopLister: CoreFileListing {
+private actor AICategorySuggestionNoopLister: CoreFileListing {
     func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         []
     }
 }
 
-private actor S304Detailer: CoreFileDetailing {
+private actor AICategorySuggestionDetailer: CoreFileDetailing {
     let file: FileEntrySnapshot
 
     init(file: FileEntrySnapshot) {
@@ -337,27 +337,27 @@ private actor S304Detailer: CoreFileDetailing {
     }
 }
 
-private actor S304ChangeLogLister: CoreChangeLogListing {
+private actor AICategorySuggestionChangeLogLister: CoreChangeLogListing {
     func listChanges(repoPath _: String, filter _: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
         []
     }
 }
 
-private struct S304PageErrorMapper: CoreErrorMapping {
+private struct AICategorySuggestionPageErrorMapper: CoreErrorMapping {
     func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .classify,
-            userMessage: "S3-04 apply failed",
+            userMessage: "ai-category-suggestion apply failed",
             severity: .medium,
             suggestedAction: "Retry apply or classify manually.",
             recoverability: .retryable,
-            rawContext: "S3-04 C3-04"
+            rawContext: "ai-category-suggestion ai-classification-suggestion"
         )
     }
 }
 
 private extension RepositoryOpeningResult {
-    static func s304Fixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
+    static func aiCategorySuggestionFixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
             config: RepoConfigSnapshot(
                 repoPath: repoPath,

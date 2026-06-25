@@ -3,10 +3,10 @@ import XCTest
 
 final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
     @MainActor
-    func testS308C309SemanticIndexChecksPrivacyRulesBeforeCoreBuild() async {
-        let request = SearchQueryRequestSnapshot.s308SemanticPrivacyFixture()
-        let semantic = S308PrivacySemanticSearcher()
-        let privacy = S308PrivacyRulesBridge(report: .s308Allowed())
+    func testSemanticSearchAIPrivacyRulesCoreSemanticIndexChecksPrivacyRulesBeforeCoreBuild() async {
+        let request = SearchQueryRequestSnapshot.semanticSearchSemanticPrivacyFixture()
+        let semantic = SemanticSearchPrivacySemanticSearcher()
+        let privacy = SemanticSearchPrivacyRulesBridge(report: .semanticSearchAllowed())
         let model = MainFileListModel(
             opening: .initDoneFixture(repoPath: "/tmp/repo", fileCount: 0),
             fileLister: DetailMetaNoopLister(),
@@ -17,9 +17,9 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
             ))),
             semanticSearching: semantic,
             aiPrivacyRules: privacy,
-            errorMapper: S308PrivacyErrorMapper()
+            errorMapper: SemanticSearchPrivacyErrorMapper()
         )
-        model.searchState = .loaded(request: request, page: .s308SemanticPrivacyPage(route: .remote))
+        model.searchState = .loaded(request: request, page: .semanticSearchSemanticPrivacyPage(route: .remote))
 
         await model.buildSemanticIndexForCurrentSearch()
 
@@ -38,10 +38,10 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS308C309PrivacyRuleBlockPreventsSemanticIndexBuild() async {
-        let request = SearchQueryRequestSnapshot.s308SemanticPrivacyFixture()
-        let semantic = S308PrivacySemanticSearcher()
-        let privacy = S308PrivacyRulesBridge(report: .s308Blocked())
+    func testSemanticSearchAIPrivacyRulesCorePrivacyRuleBlockPreventsSemanticIndexBuild() async {
+        let request = SearchQueryRequestSnapshot.semanticSearchSemanticPrivacyFixture()
+        let semantic = SemanticSearchPrivacySemanticSearcher()
+        let privacy = SemanticSearchPrivacyRulesBridge(report: .semanticSearchBlocked())
         let model = MainFileListModel(
             opening: .initDoneFixture(repoPath: "/tmp/repo", fileCount: 0),
             fileLister: DetailMetaNoopLister(),
@@ -52,9 +52,9 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
             ))),
             semanticSearching: semantic,
             aiPrivacyRules: privacy,
-            errorMapper: S308PrivacyErrorMapper()
+            errorMapper: SemanticSearchPrivacyErrorMapper()
         )
-        model.searchState = .loaded(request: request, page: .s308SemanticPrivacyPage(route: .remote))
+        model.searchState = .loaded(request: request, page: .semanticSearchSemanticPrivacyPage(route: .remote))
 
         await model.buildSemanticIndexForCurrentSearch()
 
@@ -65,8 +65,8 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testS132PageIntegrationConnectsStartupRecoveryMappingEntryExitAndTreeState() async throws {
-        let mapping = CoreErrorMappingSnapshot.s132IntegrationMapping(
+    func testStartupRecoveryPageIntegrationConnectsStartupRecoveryMappingEntryExitAndTreeState() async throws {
+        let mapping = CoreErrorMappingSnapshot.startupRecoveryIntegrationMapping(
             userMessage: "Startup recovery could not finish",
             severity: .medium,
             recoverability: .retryable,
@@ -77,49 +77,49 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
             .success(RecoveryReportSnapshot(cleanedStagingFiles: 1, revertedStagingDbRows: 1, warnings: []))
         ])
         let opener = MainLoadingPausingRepositoryOpener(
-            opening: .mainLoadingFixture(repoPath: "/tmp/s132-repo", fileCount: 1)
+            opening: .mainLoadingFixture(repoPath: "/tmp/startupRecovery-repo", fileCount: 1)
         )
         let treeLister = MainLoadingRecordingTreeLister(result: .success(.mainLoadingTreeFixture()))
         let model = OnboardingModel(
             settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
             settingsWriter: MainLoadingRecordingSettingsWriter(),
-            pathValidator: S132IntegrationPathValidator(),
-            initializedPathValidator: S132IntegrationInitializedPathValidator(),
+            pathValidator: StartupRecoveryIntegrationPathValidator(),
+            initializedPathValidator: StartupRecoveryIntegrationInitializedPathValidator(),
             emptyRepositoryOpener: opener,
             mainLoadingTreeLister: treeLister,
             startupRecoverer: recoverer,
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
-            errorMapper: S132IntegrationErrorMapper(mapping: mapping),
+            errorMapper: StartupRecoveryIntegrationErrorMapper(mapping: mapping),
             helpOpener: MainLoadingNoopWelcomeHelpOpener()
         )
 
         await model.openExistingRepository(
-            RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/s132-repo")
+            RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/startupRecovery-repo")
         )
-        let failedState = try requireS132MainLoadingState(model)
+        let failedState = try requireStartupRecoveryMainLoadingState(model)
 
         let initialRecoveryRequests = await recoverer.requestedRepoPaths()
         let initialOpenRequests = await opener.requestedConfiguredRepoPaths()
-        XCTAssertEqual(initialRecoveryRequests, ["/tmp/s132-repo"])
+        XCTAssertEqual(initialRecoveryRequests, ["/tmp/startupRecovery-repo"])
         XCTAssertEqual(initialOpenRequests, [])
-        assertS132StartupRecoveryFailureState(failedState, mapping: mapping)
+        assertStartupRecoveryStartupRecoveryFailureState(failedState, mapping: mapping)
 
-        let retryTask = await assertS132RetryingState(model: model, opener: opener, recoverer: recoverer)
+        let retryTask = await assertStartupRecoveryRetryingState(model: model, opener: opener, recoverer: recoverer)
 
         await opener.finishOpen()
         await retryTask.value
 
         let treeRequests = await treeLister.requestedRepoPaths()
-        XCTAssertEqual(treeRequests, ["/tmp/s132-repo"])
+        XCTAssertEqual(treeRequests, ["/tmp/startupRecovery-repo"])
         XCTAssertEqual(
             model.route,
-            OnboardingModel.Route.mainList(.mainLoadingFixture(repoPath: "/tmp/s132-repo", fileCount: 1))
+            OnboardingModel.Route.mainList(.mainLoadingFixture(repoPath: "/tmp/startupRecovery-repo", fileCount: 1))
         )
     }
 
     @MainActor
-    func testS132PageIntegrationRoutesFatalDbMappingToRepairWithoutRunningRepair() async {
-        let mapping = CoreErrorMappingSnapshot.s132IntegrationMapping(
+    func testStartupRecoveryPageIntegrationRoutesFatalDbMappingToRepairWithoutRunningRepair() async {
+        let mapping = CoreErrorMappingSnapshot.startupRecoveryIntegrationMapping(
             userMessage: "Repository metadata needs repair",
             severity: .critical,
             recoverability: .fatal,
@@ -130,29 +130,29 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
         )
         let model = OnboardingModel(
             settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
-            pathValidator: S132IntegrationPathValidator(),
-            initializedPathValidator: S132IntegrationInitializedPathValidator(),
+            pathValidator: StartupRecoveryIntegrationPathValidator(),
+            initializedPathValidator: StartupRecoveryIntegrationInitializedPathValidator(),
             emptyRepositoryOpener: MainLoadingFailingRepositoryOpener(
                 error: CoreError.Internal(message: "should not open")
             ),
             startupRecoverer: recoverer,
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
-            errorMapper: S132IntegrationErrorMapper(mapping: mapping),
+            errorMapper: StartupRecoveryIntegrationErrorMapper(mapping: mapping),
             helpOpener: MainLoadingNoopWelcomeHelpOpener()
         )
 
         await model.openExistingRepository(
-            RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/s132-corrupt")
+            RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/startupRecovery-corrupt")
         )
 
         let recoveryRequests = await recoverer.requestedRepoPaths()
-        XCTAssertEqual(recoveryRequests, ["/tmp/s132-corrupt"])
-        XCTAssertEqual(model.route, OnboardingModel.Route.mainRepoError("/tmp/s132-corrupt", mapping))
-        model.openMainRepositoryRepair(repoPath: "/tmp/s132-corrupt")
+        XCTAssertEqual(recoveryRequests, ["/tmp/startupRecovery-corrupt"])
+        XCTAssertEqual(model.route, OnboardingModel.Route.mainRepoError("/tmp/startupRecovery-corrupt", mapping))
+        model.openMainRepositoryRepair(repoPath: "/tmp/startupRecovery-corrupt")
         XCTAssertEqual(
             model.route,
             OnboardingModel.Route.dbRepairConfirm(DatabaseRepairRouteState(
-                repoPath: "/tmp/s132-corrupt",
+                repoPath: "/tmp/startupRecovery-corrupt",
                 scanSession: nil,
                 mapping: mapping,
                 returnRoute: .mainRepoError(mapping)
@@ -162,13 +162,13 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
 }
 
 @MainActor
-private func assertS132RetryingState(
+private func assertStartupRecoveryRetryingState(
     model: OnboardingModel,
     opener: MainLoadingPausingRepositoryOpener,
     recoverer: MainLoadingRecordingStartupRecoverer
 ) async -> Task<Void, Never> {
     let retryTask = Task {
-        await model.retryMainRepositoryFromError(repoPath: "/tmp/s132-repo")
+        await model.retryMainRepositoryFromError(repoPath: "/tmp/startupRecovery-repo")
     }
     await opener.waitUntilStarted()
     let expectedRecoveryReport = RecoveryReportSnapshot(
@@ -176,7 +176,7 @@ private func assertS132RetryingState(
         revertedStagingDbRows: 1,
         warnings: []
     )
-    let retryingState = await waitForS132IntegrationMainLoadingState(model) { state in
+    let retryingState = await waitForStartupRecoveryIntegrationMainLoadingState(model) { state in
         state.startupRecovery == .completed(expectedRecoveryReport) &&
             state.treeLoading?.loadedTree != nil
     }
@@ -188,8 +188,8 @@ private func assertS132RetryingState(
 
     let retryRecoveryRequests = await recoverer.requestedRepoPaths()
     let retryOpenRequests = await opener.requestedConfiguredRepoPaths()
-    XCTAssertEqual(retryRecoveryRequests, ["/tmp/s132-repo", "/tmp/s132-repo"])
-    XCTAssertEqual(retryOpenRequests, ["/tmp/s132-repo"])
+    XCTAssertEqual(retryRecoveryRequests, ["/tmp/startupRecovery-repo", "/tmp/startupRecovery-repo"])
+    XCTAssertEqual(retryOpenRequests, ["/tmp/startupRecovery-repo"])
     XCTAssertEqual(retryingState.recoveryVisibleReport?.cleanedStagingFiles, 1)
     XCTAssertEqual(retryingRecoveryView.retryButtonTitle, "Retrying...")
     XCTAssertTrue(retryingRecoveryView.retryButtonIsDisabled)
@@ -197,14 +197,14 @@ private func assertS132RetryingState(
 }
 
 @MainActor
-private func requireS132MainLoadingState(
+private func requireStartupRecoveryMainLoadingState(
     _ model: OnboardingModel,
     file: StaticString = #filePath,
     line: UInt = #line
 ) throws -> MainLoadingState {
     guard case let .mainLoading(state) = model.route else {
         XCTFail(
-            "Expected startup recovery failure to remain on S1-32 main loading error recovery",
+            "Expected startup recovery failure to remain on startup-recovery main loading error recovery",
             file: file,
             line: line
         )
@@ -213,7 +213,7 @@ private func requireS132MainLoadingState(
     return state
 }
 
-private func assertS132StartupRecoveryFailureState(
+private func assertStartupRecoveryStartupRecoveryFailureState(
     _ state: MainLoadingState,
     mapping: CoreErrorMappingSnapshot
 ) {
@@ -222,7 +222,7 @@ private func assertS132StartupRecoveryFailureState(
         isRetrying: false,
         onRetry: {}
     )
-    let mainBody = s132IntegrationMirrorDescription(of: MainLoadingView(
+    let mainBody = startupRecoveryIntegrationMirrorDescription(of: MainLoadingView(
         state: state,
         isRetryingStartupRecovery: false,
         onCancelOpening: {},
@@ -239,19 +239,19 @@ private func assertS132StartupRecoveryFailureState(
     XCTAssertFalse(RepositoryErrorPresentation.mainRepo(mapping: mapping).primaryAction == .openRepair)
 }
 
-private actor S132IntegrationPathValidator: CoreRepositoryPathValidating {
+private actor StartupRecoveryIntegrationPathValidator: CoreRepositoryPathValidating {
     func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
         .mainLoadingInitializedFixture(repoPath: repoPath)
     }
 }
 
-private actor S132IntegrationInitializedPathValidator: CoreInitializedRepositoryPathValidating {
+private actor StartupRecoveryIntegrationInitializedPathValidator: CoreInitializedRepositoryPathValidating {
     func validateInitializedRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
         .mainLoadingInitializedFixture(repoPath: repoPath)
     }
 }
 
-private actor S132IntegrationErrorMapper: CoreErrorMapping {
+private actor StartupRecoveryIntegrationErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
 
     init(mapping: CoreErrorMappingSnapshot) {
@@ -263,12 +263,12 @@ private actor S132IntegrationErrorMapper: CoreErrorMapping {
     }
 }
 
-private actor S308PrivacySemanticSearcher: CoreSemanticSearching {
+private actor SemanticSearchPrivacySemanticSearcher: CoreSemanticSearching {
     private var recordedIndexRequests: [SearchQueryRequestSnapshot] = []
 
     func semanticSearch(repoPath _: String,
                         request _: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
-        throw CoreError.Internal(message: "S3-08 C3-09 test does not execute semantic search")
+        throw CoreError.Internal(message: "semantic-search ai-privacy-rules-core test does not execute semantic search")
     }
 
     func buildEmbeddingIndex(
@@ -296,7 +296,7 @@ private actor S308PrivacySemanticSearcher: CoreSemanticSearching {
     }
 }
 
-private actor S308PrivacyRulesBridge: CoreAIPrivacyEvaluating {
+private actor SemanticSearchPrivacyRulesBridge: CoreAIPrivacyEvaluating {
     struct Requests: Equatable {
         var loadCount = 0
         var evaluations: [AiPrivacyEvaluationRequest] = []
@@ -311,7 +311,7 @@ private actor S308PrivacyRulesBridge: CoreAIPrivacyEvaluating {
 
     func loadAIPrivacyRules(repoPath _: String) async throws -> AiPrivacyRulesSnapshot {
         recorded.loadCount += 1
-        return .s308PrivacyRules()
+        return .semanticSearchPrivacyRules()
     }
 
     func evaluateAIPrivacy(
@@ -327,7 +327,7 @@ private actor S308PrivacyRulesBridge: CoreAIPrivacyEvaluating {
     }
 }
 
-private struct S308PrivacyErrorMapper: CoreErrorMapping {
+private struct SemanticSearchPrivacyErrorMapper: CoreErrorMapping {
     func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .config,
@@ -335,13 +335,13 @@ private struct S308PrivacyErrorMapper: CoreErrorMapping {
             severity: .high,
             suggestedAction: "Retry privacy check.",
             recoverability: .retryable,
-            rawContext: "S3-08 C3-09"
+            rawContext: "semantic-search ai-privacy-rules-core"
         )
     }
 }
 
 private extension CoreErrorMappingSnapshot {
-    static func s132IntegrationMapping(
+    static func startupRecoveryIntegrationMapping(
         userMessage: String,
         severity: CoreErrorSeveritySnapshot,
         recoverability: CoreErrorRecoverabilitySnapshot,
@@ -359,7 +359,7 @@ private extension CoreErrorMappingSnapshot {
 }
 
 private extension SearchQueryRequestSnapshot {
-    static func s308SemanticPrivacyFixture() -> SearchQueryRequestSnapshot {
+    static func semanticSearchSemanticPrivacyFixture() -> SearchQueryRequestSnapshot {
         var filters = SearchFilterStateSnapshot.empty
         filters.category = "finance"
         filters.fileKind = ".pdf"
@@ -379,7 +379,7 @@ private extension SearchQueryRequestSnapshot {
 }
 
 private extension SearchResultPageSnapshot {
-    static func s308SemanticPrivacyPage(route: SemanticSearchRouteSnapshot) -> SearchResultPageSnapshot {
+    static func semanticSearchSemanticPrivacyPage(route: SemanticSearchRouteSnapshot) -> SearchResultPageSnapshot {
         let semanticPage = SemanticSearchResultPageSnapshot(
             query: "客户合同",
             semanticTotalCount: 0,
@@ -407,7 +407,7 @@ private extension SearchResultPageSnapshot {
 }
 
 private extension AiPrivacyRulesSnapshot {
-    static func s308PrivacyRules() -> AiPrivacyRulesSnapshot {
+    static func semanticSearchPrivacyRules() -> AiPrivacyRulesSnapshot {
         AiPrivacyRulesSnapshot(
             privacyGateEnabled: true,
             rules: [],
@@ -429,7 +429,7 @@ private extension AiPrivacyRulesSnapshot {
 }
 
 private extension AiPrivacyEvaluationReport {
-    static func s308Allowed() -> AiPrivacyEvaluationReport {
+    static func semanticSearchAllowed() -> AiPrivacyEvaluationReport {
         AiPrivacyEvaluationReport(
             decision: .allowed,
             skippedReason: nil,
@@ -443,7 +443,7 @@ private extension AiPrivacyEvaluationReport {
         )
     }
 
-    static func s308Blocked() -> AiPrivacyEvaluationReport {
+    static func semanticSearchBlocked() -> AiPrivacyEvaluationReport {
         AiPrivacyEvaluationReport(
             decision: .skipped,
             skippedReason: .privacyRule,
@@ -468,7 +468,7 @@ private extension AiPrivacyEvaluationReport {
 }
 
 @MainActor
-private func waitForS132IntegrationMainLoadingState(
+private func waitForStartupRecoveryIntegrationMainLoadingState(
     _ model: OnboardingModel,
     matching predicate: (MainLoadingState) -> Bool,
     file: StaticString = #filePath,
@@ -481,19 +481,19 @@ private func waitForS132IntegrationMainLoadingState(
     return MainLoadingState(repoPath: "")
 }
 
-private func s132IntegrationMirrorDescription(of value: Any) -> String {
+private func startupRecoveryIntegrationMirrorDescription(of value: Any) -> String {
     var lines: [String] = []
-    appendS132IntegrationMirrorDescription(of: value, to: &lines)
+    appendStartupRecoveryIntegrationMirrorDescription(of: value, to: &lines)
     return lines.joined(separator: "\n")
 }
 
-private func appendS132IntegrationMirrorDescription(of value: Any, to lines: inout [String]) {
+private func appendStartupRecoveryIntegrationMirrorDescription(of value: Any, to lines: inout [String]) {
     lines.append(String(describing: type(of: value)))
     lines.append(String(describing: value))
     for child in Mirror(reflecting: value).children {
         if let label = child.label {
             lines.append(label)
         }
-        appendS132IntegrationMirrorDescription(of: child.value, to: &lines)
+        appendStartupRecoveryIntegrationMirrorDescription(of: child.value, to: &lines)
     }
 }

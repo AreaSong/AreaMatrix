@@ -260,7 +260,7 @@ final class AISummaryEditorModel: ObservableObject {
                 recovery: mapping.recovery,
                 reason: .privacyUnavailable,
                 opensAISettings: false,
-                capability: "C3-09"
+                capability: "ai-privacy-rules-core"
             )
         }
     }
@@ -281,7 +281,7 @@ final class AISummaryEditorModel: ObservableObject {
             recovery: "Review privacy rules before generating this summary.",
             reason: reason,
             opensAISettings: false,
-            capability: "C3-09",
+            capability: "ai-privacy-rules-core",
             privacyRuleID: skip.ruleID,
             privacyField: skip.matchedField
         )
@@ -425,7 +425,7 @@ final class AISummaryEditorModel: ObservableObject {
                 recovery: "Review privacy rules before generating this summary.",
                 reason: .privacyBlocked(AISummaryPrivacySkip(summaryReason: reason)),
                 opensAISettings: false,
-                capability: "C3-09"
+                capability: "ai-privacy-rules-core"
             )
         case .noEligibleInput:
             gateNotice(
@@ -434,7 +434,7 @@ final class AISummaryEditorModel: ObservableObject {
                 recovery: "Return to detail or choose a file with readable summary input.",
                 reason: .noEligibleInput(AISummaryPrivacySkip(summaryReason: reason)),
                 opensAISettings: false,
-                capability: "C3-09"
+                capability: "ai-privacy-rules-core"
             )
         case .callLogUnavailable:
             gateNotice(
@@ -504,7 +504,7 @@ final class AISummaryEditorModel: ObservableObject {
         recovery: String,
         reason: AISummaryEditorGateReason,
         opensAISettings: Bool,
-        capability: String = "C3-06",
+        capability: String = "ai-summary-core",
         privacyRuleID: String? = nil,
         privacyField: AiPrivacyInputField? = nil
     ) -> AISummaryEditorNotice {

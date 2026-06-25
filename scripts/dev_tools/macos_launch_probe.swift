@@ -111,7 +111,7 @@ private func runProbe(_ options: ProbeOptions) throws {
     guard isReady else { throw ProbeError.firstScreenTimedOut }
     let result = elapsedMilliseconds < options.thresholdMilliseconds ? "PASS" : "FAIL"
     print(String(
-        format: "STAGE1_PERF name=\"%@\" value_ms=%.3f threshold_ms=%.3f result=%@",
+        format: "RELEASE_PERF name=\"%@\" value_ms=%.3f threshold_ms=%.3f result=%@",
         options.metricName,
         elapsedMilliseconds,
         options.thresholdMilliseconds,

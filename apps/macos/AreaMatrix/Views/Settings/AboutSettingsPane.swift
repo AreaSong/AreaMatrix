@@ -112,7 +112,7 @@ struct AboutSettingsPane: View {
                 } label: {
                     Label("Retry version check", systemImage: "arrow.clockwise")
                 }
-                .accessibilityIdentifier("S1-31-retry-version-check")
+                .accessibilityIdentifier("about-settings-retry-version-check")
             }
         }
         .padding(.horizontal, 34)
@@ -164,7 +164,7 @@ struct AboutSettingsPane: View {
             } label: {
                 Label("Copy versions", systemImage: "doc.on.doc")
             }
-            .accessibilityIdentifier("S1-31-copy-versions")
+            .accessibilityIdentifier("about-settings-copy-versions")
         }
     }
 
@@ -173,7 +173,7 @@ struct AboutSettingsPane: View {
             Text("PolyForm Noncommercial")
                 .font(.callout)
                 .textSelection(.enabled)
-                .accessibilityIdentifier("S1-31-license")
+                .accessibilityIdentifier("about-settings-license")
         }
     }
 
@@ -187,14 +187,14 @@ struct AboutSettingsPane: View {
                         } label: {
                             Label(link.title, systemImage: link.systemImage)
                         }
-                        .accessibilityIdentifier("S1-31-open-\(link.rawValue)")
+                        .accessibilityIdentifier("about-settings-open-\(link.rawValue)")
 
                         Button {
                             model.copyExternalLink(link)
                         } label: {
                             Label("Copy URL", systemImage: "doc.on.doc")
                         }
-                        .accessibilityIdentifier("S1-31-copy-\(link.rawValue)")
+                        .accessibilityIdentifier("about-settings-copy-\(link.rawValue)")
                     }
 
                     Text(link.urlString)
@@ -216,7 +216,7 @@ struct AboutSettingsPane: View {
                 Label(model.diagnosticsButtonTitle, systemImage: "doc.badge.gearshape")
             }
             .disabled(model.diagnosticsState.isCollecting)
-            .accessibilityIdentifier("S1-31-collect-diagnostics")
+            .accessibilityIdentifier("about-settings-collect-diagnostics")
 
             Text("Diagnostics are redacted, exclude original file contents, and are not uploaded automatically.")
                 .font(.callout)
@@ -285,14 +285,14 @@ struct AboutSettingsPane: View {
                     Label("Open logs in Console", systemImage: "terminal")
                 }
                 .disabled(model.diagnosticsState.isCollecting)
-                .accessibilityIdentifier("S1-31-open-logs")
+                .accessibilityIdentifier("about-settings-open-logs")
 
                 Button {
                     model.copyLogsPath()
                 } label: {
                     Label("Copy logs path", systemImage: "doc.on.doc")
                 }
-                .accessibilityIdentifier("S1-31-copy-logs-path")
+                .accessibilityIdentifier("about-settings-copy-logs-path")
             }
 
             Text(model.logsPath)

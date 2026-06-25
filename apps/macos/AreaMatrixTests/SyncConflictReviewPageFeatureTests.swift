@@ -2,56 +2,56 @@
 import XCTest
 
 final class SyncConflictReviewPageFeatureTests: XCTestCase {
-    private static let declaredCapabilities: Set<String> = ["C4-15", "C4-16", "C4-21"]
+    private static let declaredCapabilities: Set<String> = ["sync-conflict-detect", "sync-conflict-resolve", "replace-confirmation"]
 
-    func testS4X01DeclaresOnlyC415C416AndC421Boundaries() {
-        XCTAssertEqual(Self.declaredCapabilities, ["C4-15", "C4-16", "C4-21"])
+    func testSyncConflictReviewDeclaresOnlySyncConflictDetectCoreSyncConflictResolveCoreAndReplaceConfirmCrossPlatformCoreBoundaries() {
+        XCTAssertEqual(Self.declaredCapabilities, ["sync-conflict-detect", "sync-conflict-resolve", "replace-confirmation"])
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.detectSyncConflicts))
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.previewSyncConflictResolution))
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.resolveSyncConflict))
     }
 
     @MainActor
-    func testS4X01C415LoadUsesCoreBridgeDetectorAndSelectsRequestedConflict() async {
-        let expected = SyncConflictSnapshot.s4x01Fixture(conflictID: "conflict-selected")
-        let detector = S4X01RecordingSyncConflictDetector(result: .success([
-            .s4x01Fixture(conflictID: "conflict-other"),
+    func testSyncConflictReviewSyncConflictDetectCoreLoadUsesCoreBridgeDetectorAndSelectsRequestedConflict() async {
+        let expected = SyncConflictSnapshot.syncConflictReviewFixture(conflictID: "conflict-selected")
+        let detector = SyncConflictReviewRecordingSyncConflictDetector(result: .success([
+            .syncConflictReviewFixture(conflictID: "conflict-other"),
             expected
         ]))
         let model = SyncConflictReviewModel(
-            repoPath: "/tmp/s4x01-repo",
+            repoPath: "/tmp/syncConflictReview-repo",
             conflictID: "conflict-selected",
             conflictDetector: detector,
-            conflictResolver: S4X01RecordingSyncConflictResolver(previewResults: [
-                .keepBoth: .success(.s4x01PreviewFixture(conflictID: "conflict-selected"))
+            conflictResolver: SyncConflictReviewRecordingSyncConflictResolver(previewResults: [
+                .keepBoth: .success(.syncConflictReviewPreviewFixture(conflictID: "conflict-selected"))
             ]),
-            errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.load()
         let requests = await detector.recordedRequests()
 
-        XCTAssertEqual(requests, ["/tmp/s4x01-repo"])
+        XCTAssertEqual(requests, ["/tmp/syncConflictReview-repo"])
         XCTAssertEqual(model.state, .loaded(expected))
         XCTAssertEqual(model.conflict, expected)
         XCTAssertFalse(model.isLoading)
     }
 
     @MainActor
-    func testS4X01C415FileDetailRouteSelectsConflictByAffectedPath() async {
-        let expected = SyncConflictSnapshot.s4x01Fixture(conflictID: "conflict-matching-file")
-        let detector = S4X01RecordingSyncConflictDetector(result: .success([
-            .s4x01Fixture(conflictID: "conflict-other", primaryPath: "docs/other.pdf"),
+    func testSyncConflictReviewSyncConflictDetectCoreFileDetailRouteSelectsConflictByAffectedPath() async {
+        let expected = SyncConflictSnapshot.syncConflictReviewFixture(conflictID: "conflict-matching-file")
+        let detector = SyncConflictReviewRecordingSyncConflictDetector(result: .success([
+            .syncConflictReviewFixture(conflictID: "conflict-other", primaryPath: "docs/other.pdf"),
             expected
         ]))
         let model = SyncConflictReviewModel(
-            repoPath: "/tmp/s4x01-repo",
+            repoPath: "/tmp/syncConflictReview-repo",
             primaryPath: "docs/report (Windows conflict).pdf",
             conflictDetector: detector,
-            conflictResolver: S4X01RecordingSyncConflictResolver(previewResults: [
-                .keepBoth: .success(.s4x01PreviewFixture(conflictID: "conflict-matching-file"))
+            conflictResolver: SyncConflictReviewRecordingSyncConflictResolver(previewResults: [
+                .keepBoth: .success(.syncConflictReviewPreviewFixture(conflictID: "conflict-matching-file"))
             ]),
-            errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.load()
@@ -60,30 +60,30 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X01C415FileDetailEntryCanRouteToReviewSheet() async {
-        let file = FileEntrySnapshot.s4x01Fixture(id: 141, path: "docs/report.pdf", currentName: "report.pdf")
-        let opening = RepositoryOpeningResult.s4x01Fixture(repoPath: "/tmp/s4x01-repo", files: [file])
+    func testSyncConflictReviewSyncConflictDetectCoreFileDetailEntryCanRouteToReviewSheet() async {
+        let file = FileEntrySnapshot.syncConflictReviewFixture(id: 141, path: "docs/report.pdf", currentName: "report.pdf")
+        let opening = RepositoryOpeningResult.syncConflictReviewFixture(repoPath: "/tmp/syncConflictReview-repo", files: [file])
         var routedFile: FileEntrySnapshot?
 
         let model = MainFileListModel(
             opening: opening,
-            fileLister: S4X01NoopFileLister(),
-            fileDetailer: S4X01RecordingFileDetailer(result: .success(file)),
-            errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+            fileLister: SyncConflictReviewNoopFileLister(),
+            fileDetailer: SyncConflictReviewRecordingFileDetailer(result: .success(file)),
+            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
         await model.selectFiles([file.id])
-        let detailPane = makeS4X01DetailPane(
+        let detailPane = makeSyncConflictReviewDetailPane(
             model: model,
             opening: opening,
             onBeginSyncConflictReview: { routedFile = $0 }
         )
-        let body = s4x01MirrorDescription(of: detailPane.body)
+        let body = syncConflictReviewMirrorDescription(of: detailPane.body)
         let route = SyncConflictReviewRoute.fileDetail(repoPath: opening.config.repoPath, file: file)
 
         XCTAssertTrue(body.contains("Review Sync Conflict..."))
-        XCTAssertTrue(body.contains("S4-X-01-C4-15-review-sync-conflict"))
+        XCTAssertTrue(body.contains("sync-conflict-review-sync-conflict-detect-review-sync-conflict"))
         XCTAssertEqual(route, SyncConflictReviewRoute(
-            repoPath: "/tmp/s4x01-repo",
+            repoPath: "/tmp/syncConflictReview-repo",
             conflictID: nil,
             primaryPath: "docs/report.pdf"
         ))
@@ -91,19 +91,19 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X01C415MissingOrResolvedConflictShowsEmptyState() async {
+    func testSyncConflictReviewSyncConflictDetectCoreMissingOrResolvedConflictShowsEmptyState() async {
         let model = SyncConflictReviewModel(
-            repoPath: "/tmp/s4x01-repo",
+            repoPath: "/tmp/syncConflictReview-repo",
             conflictID: "missing-conflict",
-            conflictDetector: S4X01RecordingSyncConflictDetector(result: .success([
-                .s4x01Fixture(conflictID: "resolved-conflict", status: .resolved)
+            conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .success([
+                .syncConflictReviewFixture(conflictID: "resolved-conflict", status: .resolved)
             ])),
-            conflictResolver: S4X01RecordingSyncConflictResolver(previewResults: [:]),
-            errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+            conflictResolver: SyncConflictReviewRecordingSyncConflictResolver(previewResults: [:]),
+            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.load()
-        let body = s4x01MirrorDescription(of: SyncConflictReviewView(
+        let body = syncConflictReviewMirrorDescription(of: SyncConflictReviewView(
             model: model,
             onBackToNeedsReview: {},
             onClose: {}
@@ -116,22 +116,22 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS4X01C415ErrorStateMapsCoreErrorAndKeepsRetryVisible() async {
-        let mapper = S4X01RecordingErrorMapper(mapping: .s4x01Mapping(
+    func testSyncConflictReviewSyncConflictDetectCoreErrorStateMapsCoreErrorAndKeepsRetryVisible() async {
+        let mapper = SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping(
             kind: .conflict,
             rawContext: "stale conflict id"
         ))
         let model = SyncConflictReviewModel(
-            repoPath: "/tmp/s4x01-repo",
-            conflictDetector: S4X01RecordingSyncConflictDetector(result: .failure(CoreError.Conflict(
+            repoPath: "/tmp/syncConflictReview-repo",
+            conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .failure(CoreError.Conflict(
                 path: "stale conflict id"
             ))),
-            conflictResolver: S4X01RecordingSyncConflictResolver(previewResults: [:]),
+            conflictResolver: SyncConflictReviewRecordingSyncConflictResolver(previewResults: [:]),
             errorMapper: mapper
         )
 
         await model.load()
-        let body = s4x01MirrorDescription(of: SyncConflictReviewView(
+        let body = syncConflictReviewMirrorDescription(of: SyncConflictReviewView(
             model: model,
             onBackToNeedsReview: {},
             onClose: {}
@@ -146,7 +146,7 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
 }
 
 @MainActor
-private func makeS4X01DetailPane(
+private func makeSyncConflictReviewDetailPane(
     model: MainFileListModel,
     opening: RepositoryOpeningResult,
     onBeginSyncConflictReview: @escaping (FileEntrySnapshot) -> Void
@@ -199,20 +199,20 @@ private func makeS4X01DetailPane(
         onOpenAISettings: {},
         writeActionDisabledReason: model.writeActionDisabledReason,
         summaryExitController: AISummaryEditorExitController(),
-        noteModel: makeS4X01DetailNoteModel(repoPath: opening.config.repoPath)
+        noteModel: makeSyncConflictReviewDetailNoteModel(repoPath: opening.config.repoPath)
     )
 }
 
 @MainActor
-private func makeS4X01DetailNoteModel(repoPath: String) -> DetailNoteModel {
+private func makeSyncConflictReviewDetailNoteModel(repoPath: String) -> DetailNoteModel {
     DetailNoteModel(
         repoPath: repoPath,
-        noteStore: S4X01NoopNoteStore(),
-        errorMapper: S4X01RecordingErrorMapper(mapping: .s4x01Mapping())
+        noteStore: SyncConflictReviewNoopNoteStore(),
+        errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
     )
 }
 
-actor S4X01RecordingSyncConflictDetector: CoreSyncConflictDetecting {
+actor SyncConflictReviewRecordingSyncConflictDetector: CoreSyncConflictDetecting {
     private let result: Result<[SyncConflictSnapshot], Error>
     private var requests: [String] = []
 
@@ -230,7 +230,7 @@ actor S4X01RecordingSyncConflictDetector: CoreSyncConflictDetecting {
     }
 }
 
-actor S4X01RecordingErrorMapper: CoreErrorMapping {
+actor SyncConflictReviewRecordingErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
     private var errors: [CoreError] = []
 
@@ -249,7 +249,7 @@ actor S4X01RecordingErrorMapper: CoreErrorMapping {
 }
 
 extension SyncConflictSnapshot {
-    static func s4x01Fixture(
+    static func syncConflictReviewFixture(
         conflictID: String = "conflict-report",
         status: SyncConflictStatusSnapshot = .needsReview,
         primaryPath: String = "docs/report.pdf"
@@ -261,8 +261,8 @@ extension SyncConflictSnapshot {
             status: status,
             primaryPath: primaryPath,
             affectedFiles: [
-                .s4x01FileFixture(path: primaryPath, role: .existing),
-                .s4x01FileFixture(
+                .syncConflictReviewFileFixture(path: primaryPath, role: .existing),
+                .syncConflictReviewFileFixture(
                     path: primaryPath == "docs/report.pdf"
                         ? "docs/report (Windows conflict).pdf"
                         : "docs/other (Windows conflict).pdf",
@@ -281,7 +281,7 @@ extension SyncConflictSnapshot {
 }
 
 extension RepositoryOpeningResult {
-    static func s4x01Fixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
+    static func syncConflictReviewFixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
             config: RepoConfigSnapshot(
                 repoPath: repoPath,
@@ -310,7 +310,7 @@ extension RepositoryOpeningResult {
 }
 
 extension FileEntrySnapshot {
-    static func s4x01Fixture(id: Int64, path: String, currentName: String) -> FileEntrySnapshot {
+    static func syncConflictReviewFixture(id: Int64, path: String, currentName: String) -> FileEntrySnapshot {
         FileEntrySnapshot(
             id: id,
             path: path,
@@ -318,7 +318,7 @@ extension FileEntrySnapshot {
             currentName: currentName,
             category: "docs",
             sizeBytes: 2048,
-            hashSha256: "s4x01-file-\(id)",
+            hashSha256: "syncConflictReview-file-\(id)",
             storageMode: "Copied",
             origin: "Imported",
             sourcePath: nil,
@@ -329,7 +329,7 @@ extension FileEntrySnapshot {
 }
 
 extension SyncConflictAffectedFileSnapshot {
-    static func s4x01FileFixture(
+    static func syncConflictReviewFileFixture(
         path: String = "docs/report.pdf",
         fileID: Int64? = 42,
         role: SyncConflictFileRoleSnapshot = .existing,
@@ -348,7 +348,7 @@ extension SyncConflictAffectedFileSnapshot {
     }
 }
 
-actor S4X01RecordingFileDetailer: CoreFileDetailing {
+actor SyncConflictReviewRecordingFileDetailer: CoreFileDetailing {
     private let result: Result<FileEntrySnapshot, Error>
 
     init(result: Result<FileEntrySnapshot, Error>) {
@@ -360,13 +360,13 @@ actor S4X01RecordingFileDetailer: CoreFileDetailing {
     }
 }
 
-struct S4X01NoopFileLister: CoreFileListing {
+struct SyncConflictReviewNoopFileLister: CoreFileListing {
     func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         []
     }
 }
 
-actor S4X01NoopNoteStore: CoreNoteReadingWriting {
+actor SyncConflictReviewNoopNoteStore: CoreNoteReadingWriting {
     func readNote(repoPath _: String, fileID _: Int64) async throws -> String? {
         nil
     }
@@ -375,9 +375,9 @@ actor S4X01NoopNoteStore: CoreNoteReadingWriting {
 }
 
 extension CoreErrorMappingSnapshot {
-    static func s4x01Mapping(
+    static func syncConflictReviewMapping(
         kind: CoreErrorKindSnapshot = .conflict,
-        rawContext: String = "/tmp/s4x01-repo"
+        rawContext: String = "/tmp/syncConflictReview-repo"
     ) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: kind,
@@ -390,19 +390,19 @@ extension CoreErrorMappingSnapshot {
     }
 }
 
-func s4x01MirrorDescription(of value: Any) -> String {
+func syncConflictReviewMirrorDescription(of value: Any) -> String {
     var lines: [String] = []
-    appendS4X01MirrorDescription(of: value, to: &lines)
+    appendSyncConflictReviewMirrorDescription(of: value, to: &lines)
     return lines.joined(separator: "\n")
 }
 
-private func appendS4X01MirrorDescription(of value: Any, to lines: inout [String]) {
+private func appendSyncConflictReviewMirrorDescription(of value: Any, to lines: inout [String]) {
     lines.append(String(describing: type(of: value)))
     lines.append(String(describing: value))
     for child in Mirror(reflecting: value).children {
         if let label = child.label {
             lines.append(label)
         }
-        appendS4X01MirrorDescription(of: child.value, to: &lines)
+        appendSyncConflictReviewMirrorDescription(of: child.value, to: &lines)
     }
 }

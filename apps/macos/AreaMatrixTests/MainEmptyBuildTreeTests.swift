@@ -36,7 +36,7 @@ final class MainEmptyBuildTreeTests: XCTestCase {
     }
 
     @MainActor
-    func testMainEmptyOpeningUsesC115TreeNodesForVisibleSidebar() async {
+    func testMainEmptyOpeningUsesBuildTreeCoreTreeNodesForVisibleSidebar() async {
         let tree = RepositoryTreeNodeSnapshot.mainEmptyFixtureTree()
         let opening = RepositoryOpeningResult.mainEmptyBuildTreeFixture(repoPath: "/tmp/repo", tree: tree)
         let opener = BuildTreeRecordingRepositoryOpener(opening: opening)
@@ -61,16 +61,16 @@ final class MainEmptyBuildTreeTests: XCTestCase {
     }
 
     @MainActor
-    func testS215CommandPaletteNoRepositoryShowsOnlySafeCommands() {
+    func testCommandPaletteCommandPaletteNoRepositoryShowsOnlySafeCommands() {
         let content = MainRepositoryContentView(
-            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
+            opening: .commandPaletteCommandFixture(repoPath: "/tmp/repo", files: []),
             state: .empty,
             onImport: {},
             onDropImport: { _, _ in },
             onOpenSettings: {},
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
-            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+            errorMapper: CommandPaletteCommandErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
         )
 
         XCTAssertEqual(content.visibleCommandPaletteState.snapshot?.targetTitles, [
@@ -79,18 +79,18 @@ final class MainEmptyBuildTreeTests: XCTestCase {
     }
 
     @MainActor
-    func testS215CommandPaletteIndexFailureKeepsAvailableCommands() async {
+    func testCommandPaletteCommandPaletteIndexFailureKeepsAvailableCommands() async {
         let previous = CommandPaletteSnapshot(
             sections: [.init(title: "Commands", targets: [.importFiles])],
             generatedAt: 1
         )
-        let mapping = CoreErrorMappingSnapshot.s215CommandDb(rawContext: "command registry locked")
+        let mapping = CoreErrorMappingSnapshot.commandPaletteCommandDb(rawContext: "command registry locked")
         let model = MainFileListModel(
-            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
+            opening: .commandPaletteCommandFixture(repoPath: "/tmp/repo", files: []),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
-            commandIndexer: S215CommandIndexStore(results: [.failure(CoreError.Db(message: "locked"))]),
-            errorMapper: S215CommandErrorMapper(mapping: mapping)
+            commandIndexer: CommandPaletteCommandIndexStore(results: [.failure(CoreError.Db(message: "locked"))]),
+            errorMapper: CommandPaletteCommandErrorMapper(mapping: mapping)
         )
 
         model.commandPaletteState = .loaded(previous)
@@ -101,7 +101,7 @@ final class MainEmptyBuildTreeTests: XCTestCase {
     }
 
     @MainActor
-    func testS215CommandPaletteLinkedRoutesPreserveBlockedEvidenceOrOpenRedoHost() {
+    func testCommandPaletteCommandPaletteLinkedRoutesPreserveBlockedEvidenceOrOpenRedoHost() {
         let snapshot = CommandPaletteSnapshot.commandRegistryRecovery(query: "classifier")
         let classifierMapping = CommandPaletteLinkedPageRoute.classifierImpactPreview.blockedMapping
         let redoRequest = UndoHistoryActionLog.redoShortcutRequest(
@@ -109,14 +109,14 @@ final class MainEmptyBuildTreeTests: XCTestCase {
             failure: CommandPaletteLinkedPageRoute.redo.blockedMapping
         )
 
-        XCTAssertEqual(classifierMapping.rawContext, "S2-18")
+        XCTAssertEqual(classifierMapping.rawContext, "classifier-impact-preview")
         XCTAssertEqual(snapshot.sections.count, 1)
         XCTAssertEqual(redoRequest.source, .viewHistory)
-        XCTAssertEqual(redoRequest.failureMapping?.rawContext, "S2-22")
+        XCTAssertEqual(redoRequest.failureMapping?.rawContext, "redo-action-log")
     }
 
     @MainActor
-    func testS221CommandPaletteOpensImportConflictBatchWhenActiveProgressRouteExists() {
+    func testImportConflictBatchCommandPaletteOpensImportConflictBatchWhenActiveProgressRouteExists() {
         let item = ImportBatchProgressSnapshot.Item(
             sourcePath: "/tmp/source.pdf",
             targetPath: "docs/source.pdf",
@@ -141,16 +141,16 @@ final class MainEmptyBuildTreeTests: XCTestCase {
     }
 
     @MainActor
-    func testS221CommandPaletteDoesNotFabricateImportConflictBatchWithoutActiveRoute() {
+    func testImportConflictBatchCommandPaletteDoesNotFabricateImportConflictBatchWithoutActiveRoute() {
         let route = ImportConflictBatchRoute(metadata: [], source: .importConflictBatch)
         let mapping = CommandPaletteLinkedPageRoute.importConflictBatch.blockedMapping
 
         XCTAssertNil(route)
-        XCTAssertEqual(mapping.rawContext, "S2-21")
+        XCTAssertEqual(mapping.rawContext, "import-conflict-batch")
     }
 
     @MainActor
-    func testS221OnboardingStartsImportConflictBatchReviewFromRealRouteMetadata() {
+    func testImportConflictBatchOnboardingStartsImportConflictBatchReviewFromRealRouteMetadata() {
         let opening = RepositoryOpeningResult.mainEmptyBuildTreeFixture(
             repoPath: "/tmp/repo",
             tree: .mainEmptyFixtureTree()

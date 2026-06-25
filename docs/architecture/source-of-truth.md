@@ -67,27 +67,27 @@ flowchart TB
     Filter[InFlight filter]
     Classify[classify event]
 
-    S1[1 rename 同分类]
-    S2[2 move 跨分类]
-    S3[3 delete]
-    S4[4 modify content]
-    S5[5 create new file]
-    S6[6 delete category dir]
-    S7[7 edit overview / README]
-    S8[8 edit companion .md]
-    S9[9 DB lost / .areamatrix gone]
+    CaseRename[1 rename 同分类]
+    CaseMove[2 move 跨分类]
+    CaseDelete[3 delete]
+    CaseModify[4 modify content]
+    CaseCreate[5 create new file]
+    CaseDeleteCategory[6 delete category dir]
+    CaseEditOverview[7 edit overview / README]
+    CaseEditCompanion[8 edit companion .md]
+    CaseDbLost[9 DB lost / .areamatrix gone]
 
     Event --> Filter
     Filter --> Classify
-    Classify --> S1
-    Classify --> S2
-    Classify --> S3
-    Classify --> S4
-    Classify --> S5
-    Classify --> S6
-    Classify --> S7
-    Classify --> S8
-    Classify --> S9
+    Classify --> CaseRename
+    Classify --> CaseMove
+    Classify --> CaseDelete
+    Classify --> CaseModify
+    Classify --> CaseCreate
+    Classify --> CaseDeleteCategory
+    Classify --> CaseEditOverview
+    Classify --> CaseEditCompanion
+    Classify --> CaseDbLost
 ```
 
 ---
@@ -637,7 +637,7 @@ CI 集成测试覆盖：
 | 没有孤立的 staging 行 | recover 后 status='staging' 行数为 0 |
 | change_log 单调 | occurred_at 单调递增 |
 
-`fsck` 命令（Stage 2）：用户可主动跑一致性检查并打印报告。
+`fsck` 命令：用户可主动跑一致性检查并打印报告。
 
 ---
 

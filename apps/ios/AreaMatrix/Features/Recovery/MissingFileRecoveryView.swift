@@ -17,12 +17,12 @@ enum MissingFileRecoveryCopy {
 }
 
 enum MissingFileRecoveryAccessibilityID {
-    static let sheet = "S4-X-06-C4-18-ios-sheet"
-    static let locate = "S4-X-06-C4-18-ios-locate"
-    static let relink = "S4-X-06-C4-18-ios-relink"
-    static let tryAgain = "S4-X-06-C4-18-ios-try-again"
-    static let removeRecord = "S4-X-06-C4-18-ios-remove-record"
-    static let confirmRemove = "S4-X-06-C4-18-ios-confirm-remove"
+    static let sheet = "missing-file-recovery-missing-file-recovery-core-ios-sheet"
+    static let locate = "missing-file-recovery-missing-file-recovery-core-ios-locate"
+    static let relink = "missing-file-recovery-missing-file-recovery-core-ios-relink"
+    static let tryAgain = "missing-file-recovery-missing-file-recovery-core-ios-try-again"
+    static let removeRecord = "missing-file-recovery-missing-file-recovery-core-ios-remove-record"
+    static let confirmRemove = "missing-file-recovery-missing-file-recovery-core-ios-confirm-remove"
 }
 
 struct MissingFileRecoveryRoute: Identifiable, Equatable {

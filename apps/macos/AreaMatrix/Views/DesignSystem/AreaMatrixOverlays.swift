@@ -62,7 +62,7 @@ struct AreaMatrixScanOverlay: View {
     let accent: Color
     var darkLogoName = "AreaMatrixLogoMarkDark"
     var lightLogoName = "AreaMatrixLogoMarkLight"
-    var scanColors = AreaMatrixTheme.Colors.stageSpectrum
+    var scanColors = AreaMatrixTheme.Colors.sceneSpectrum
 
     @Environment(\.colorScheme) private var colorScheme
     @State private var cursorVisible = true

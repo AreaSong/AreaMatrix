@@ -13,8 +13,8 @@ struct WelcomeStepView: View {
     let onLearnMore: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
-    @State private var activeStage: WelcomeStage = .default
-    @State private var hoverStage: WelcomeStage?
+    @State private var activeScene: WelcomeScene = .default
+    @State private var hoverScene: WelcomeScene?
     @State private var isScanning = false
     @State private var isDeepDiving = false
     @State private var whiteFlash = false
@@ -38,9 +38,9 @@ struct WelcomeStepView: View {
     @State private var themeOverride: ColorScheme?
     @State private var shimmerPhase: CGFloat = -1.5
 
-    /// Derived stage to show
-    private var displayStage: WelcomeStage {
-        hoverStage ?? activeStage
+    /// Derived scene to show.
+    private var displayScene: WelcomeScene {
+        hoverScene ?? activeScene
     }
 
     var body: some View {
@@ -69,18 +69,18 @@ struct WelcomeStepView: View {
             .focusable()
             .focusEffectDisabled()
             .onKeyPress(.leftArrow) {
-                navigateStage(direction: -1)
+                navigateScene(direction: -1)
                 return .handled
             }
             .onKeyPress(.rightArrow) {
-                navigateStage(direction: 1)
+                navigateScene(direction: 1)
                 return .handled
             }
     }
 
     private var welcomeSurface: some View {
         ZStack {
-            AreaMatrixAmbientBackground(scene: displayStage.ambientScene, parallax: mouseParallax)
+            AreaMatrixAmbientBackground(scene: displayScene.ambientScene, parallax: mouseParallax)
                 .blur(radius: isScanning ? 16 : 0)
                 .animation(.areaMatrixOverlayFade, value: isScanning)
 
@@ -92,7 +92,7 @@ struct WelcomeStepView: View {
         .overlay(
             RoundedRectangle(cornerRadius: WelcomeWindowMetrics.cornerRadius, style: .continuous)
                 .stroke(windowBorderColor, lineWidth: 1)
-                .animation(.areaMatrixOverlayFade, value: displayStage)
+                .animation(.areaMatrixOverlayFade, value: displayScene)
         )
         .shadow(
             color: isDeepDiving ? .clear : AreaMatrixTheme.Surfaces.windowShadow(colorScheme: colorScheme),
@@ -108,7 +108,7 @@ struct WelcomeStepView: View {
                     terminalLines: scanTerminalLines,
                     cursorColorToken: scanCursorColorToken,
                     progressFraction: scanProgressFraction,
-                    accent: displayStage.accentColor
+                    accent: displayScene.accentColor
                 )
                 .opacity(isDeepDiving ? 0 : 1)
                 .areaMatrixDeepDive(isActive: isDeepDiving, scale: 2.5)
@@ -137,7 +137,7 @@ struct WelcomeStepView: View {
 
             Spacer()
 
-            WelcomeStageSwitcher(stage: displayStage, parallax: mouseParallax)
+            WelcomeSceneSwitcher(scene: displayScene, parallax: mouseParallax)
                 .frame(height: 340)
                 .padding(.horizontal, 60)
 
@@ -155,7 +155,7 @@ struct WelcomeStepView: View {
     }
 
     private var windowBorderColor: Color {
-        let accent = displayStage.accentColor
+        let accent = displayScene.accentColor
         return AreaMatrixTheme.Surfaces.windowBorder(accent: accent, colorScheme: colorScheme)
     }
 }
@@ -181,18 +181,18 @@ private extension WelcomeStepView {
     private var featuresGrid: some View {
         AreaMatrixFeatureCardGroup(
             cards: featureCards,
-            activeID: hoverStage,
-            onHoverChanged: { stage, hovering in
+            activeID: hoverScene,
+            onHoverChanged: { scene, hovering in
                 if hovering {
-                    activateHoverStage(stage)
-                } else if hoverStage == stage {
-                    scheduleHoverReset(for: stage)
+                    activateHoverScene(scene)
+                } else if hoverScene == scene {
+                    scheduleHoverReset(for: scene)
                 }
             }
         )
     }
 
-    private var featureCards: [AreaMatrixFeatureCardSpec<WelcomeStage>] {
+    private var featureCards: [AreaMatrixFeatureCardSpec<WelcomeScene>] {
         [
             AreaMatrixFeatureCardSpec(
                 id: .feat1,
@@ -238,8 +238,8 @@ private extension WelcomeStepView {
             .focusEffectDisabled()
             .onChange(of: isLearnMoreFocused) { _, focused in
                 if focused {
-                    activateHoverStage(.feat4)
-                } else if hoverStage == .feat4 {
+                    activateHoverScene(.feat4)
+                } else if hoverScene == .feat4 {
                     scheduleHoverReset(for: .feat4)
                 }
             }
@@ -247,7 +247,7 @@ private extension WelcomeStepView {
                 isLearnMoreHovered = hovering
                 if hovering {
                     NSCursor.pointingHand.push()
-                    activateHoverStage(.feat4)
+                    activateHoverScene(.feat4)
                 } else {
                     NSCursor.pop()
                     scheduleHoverReset(for: .feat4)
@@ -281,8 +281,8 @@ private extension WelcomeStepView {
             .focusEffectDisabled()
             .onChange(of: isChooseFolderFocused) { _, focused in
                 if focused {
-                    activateHoverStage(.feat5)
-                } else if hoverStage == .feat5 {
+                    activateHoverScene(.feat5)
+                } else if hoverScene == .feat5 {
                     scheduleHoverReset(for: .feat5)
                 }
             }
@@ -290,7 +290,7 @@ private extension WelcomeStepView {
                 isCtaHovered = hovering
                 if hovering {
                     NSCursor.pointingHand.push()
-                    activateHoverStage(.feat5)
+                    activateHoverScene(.feat5)
                 } else {
                     NSCursor.pop()
                     scheduleHoverReset(for: .feat5)
@@ -302,33 +302,33 @@ private extension WelcomeStepView {
         .padding(.top, 20)
     }
 
-    private func activateHoverStage(_ stage: WelcomeStage) {
+    private func activateHoverScene(_ scene: WelcomeScene) {
         hoverResetTask?.cancel()
-        guard hoverStage != stage else { return }
-        hoverStage = stage
+        guard hoverScene != scene else { return }
+        hoverScene = scene
     }
 
-    private func scheduleHoverReset(for stage: WelcomeStage) {
+    private func scheduleHoverReset(for scene: WelcomeScene) {
         hoverResetTask?.cancel()
         hoverResetTask = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(100))
-            guard !Task.isCancelled, hoverStage == stage else { return }
-            hoverStage = nil
+            guard !Task.isCancelled, hoverScene == scene else { return }
+            hoverScene = nil
         }
     }
 
-    private func navigateStage(direction: Int, wrap: Bool = false) {
-        let stages = WelcomeStage.allCases
-        let current = stages.firstIndex(of: activeStage) ?? 0
+    private func navigateScene(direction: Int, wrap: Bool = false) {
+        let scenes = WelcomeScene.allCases
+        let current = scenes.firstIndex(of: activeScene) ?? 0
         let next: Int = if wrap {
-            (current + direction + stages.count) % stages.count
+            (current + direction + scenes.count) % scenes.count
         } else {
-            max(0, min(stages.count - 1, current + direction))
+            max(0, min(scenes.count - 1, current + direction))
         }
-        guard stages[next] != activeStage else { return }
+        guard scenes[next] != activeScene else { return }
         NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
-        withAnimation(.areaMatrixStageEnterExit) {
-            activeStage = stages[next]
+        withAnimation(.areaMatrixSceneEnterExit) {
+            activeScene = scenes[next]
         }
     }
 
@@ -347,13 +347,13 @@ private extension WelcomeStepView {
                 ("建立 AREAMATRIX.md 概览映射...", AreaMatrixTheme.Colors.tealText),
                 ("接管完毕，安全网罩已启动。", AreaMatrixTheme.Colors.goldText)
             ]
-            let stages: [WelcomeStage] = [.feat1, .feat2, .feat3, .feat4]
+            let scenes: [WelcomeScene] = [.feat1, .feat2, .feat3, .feat4]
 
             for (index, log) in logs.enumerated() {
                 guard await typeScanLog(log.0, colorToken: log.1) else { return }
                 withAnimation(.areaMatrixProgressStep) {
                     scanProgressFraction = CGFloat(index + 1) / 5.0
-                    activeStage = stages[index]
+                    activeScene = scenes[index]
                 }
                 try? await Task.sleep(for: .milliseconds(240))
             }
@@ -363,7 +363,7 @@ private extension WelcomeStepView {
             guard await typeScanLog(">>> 授权通过，正在进入 <<<", colorToken: AreaMatrixTheme.Colors.goldText) else { return }
             withAnimation(.areaMatrixProgressStep) {
                 scanProgressFraction = 1.0
-                activeStage = .feat5
+                activeScene = .feat5
             }
 
             try? await Task.sleep(for: .seconds(0.5))

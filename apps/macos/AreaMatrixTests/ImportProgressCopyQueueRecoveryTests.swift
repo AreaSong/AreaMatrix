@@ -34,11 +34,11 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
             ]
         ))
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             startupRecoverer: MainLoadingStaticStartupRecoverer(),
             importBatchSessionStore: store,
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.finishSuccessfulRepositoryOpen(opening)
@@ -83,11 +83,11 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
             ]
         ))
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             startupRecoverer: MainLoadingStaticStartupRecoverer(),
             importBatchSessionStore: store,
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.finishSuccessfulRepositoryOpen(opening)
@@ -106,11 +106,11 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
     func testCorruptedOrMissingInterruptedCopySessionDoesNotBlockMainRoute() async {
         let opening = RepositoryOpeningResult.mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 1)
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             startupRecoverer: MainLoadingStaticStartupRecoverer(),
             importBatchSessionStore: StaticImportBatchSessionStore(session: nil),
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.finishSuccessfulRepositoryOpen(opening)
@@ -123,8 +123,8 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
     }
 
     @MainActor
-    func testS120C107DiagnosticsAndStopActionsStayOnSafeUiPaths() async {
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+    func testImportProgressImportMoveFileCoreDiagnosticsAndStopActionsStayOnSafeUiPaths() async {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let snapshot = DiagnosticsSnapshotSnapshot(
             snapshotPath: ".areamatrix/diagnostics/import-fatal.zip",
             createdAt: 1_700_000_100,
@@ -133,11 +133,11 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         let diagnostics = ShellRecordingDiagnosticsCollector(result: .success(snapshot))
         let finder = ShellRecordingFinderOpener()
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             diagnosticsCollector: diagnostics,
             finderOpener: finder,
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -147,7 +147,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         )
         model.failImportEntry(
             progress: Self.moveFailedProgress,
-            mapping: CoreErrorMappingSnapshot.s120FatalCopyError,
+            mapping: CoreErrorMappingSnapshot.importProgressFatalCopyError,
             retryContext: Self.moveRetryContext(sourcePath: "/tmp/source.pdf"),
             recoveryCheck: .retryAllowed(nil)
         )
@@ -161,7 +161,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         XCTAssertEqual(finder.openedRepoPaths, ["/tmp/repo"])
         XCTAssertNil(model.toastMessage)
         guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected S1-21 import result route")
+            return XCTFail("Expected import-result import result route")
         }
         XCTAssertEqual(result.resultSummaryText, "Imported 0, failed 1, stopped 0, pending 0.")
         XCTAssertEqual(result.items.map(\.status), [.failed])
@@ -170,17 +170,17 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
     }
 
     @MainActor
-    func testS120StopAfterCurrentFileStopsBatchAtSafePointAndReturnsResults() async {
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+    func testImportProgressStopAfterCurrentFileStopsBatchAtSafePointAndReturnsResults() async {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let controlState = ImportProgressControlState()
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             importProgressControlState: controlState,
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
-        let importer = S118RecordingBatchImporter()
-        let importModel = ImportBatchCopyImportModel(importer: importer, errorMapper: S117RecordingErrorMapper())
+        let importer = ImportBatchRecordingBatchImporter()
+        let importModel = ImportBatchCopyImportModel(importer: importer, errorMapper: ImportSingleFileRecordingErrorMapper())
         let firstURL = URL(fileURLWithPath: "/tmp/first.pdf")
         let secondURL = URL(fileURLWithPath: "/tmp/second.pdf")
 
@@ -208,7 +208,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         }
         let requests = await importer.recordedRequests()
 
-        XCTAssertEqual(requests, [S118BatchImportRequest(
+        XCTAssertEqual(requests, [ImportBatchBatchImportRequest(
             destination: .autoClassify,
             suggestedCategory: "docs",
             overrideFilename: "first.pdf",
@@ -217,7 +217,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         XCTAssertTrue(outcome?.didStopAfterCurrentFile == true)
         XCTAssertNil(model.toastMessage)
         guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected S1-21 import result route")
+            return XCTFail("Expected import-result import result route")
         }
         XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 0, stopped 1, pending 0.")
         XCTAssertEqual(result.items.map(\.status), [.imported, .skipped])
@@ -226,12 +226,12 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
     }
 
     @MainActor
-    func testS120ResultSummaryRoutesToS121ImportResult() {
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+    func testImportProgressResultSummaryRoutesToImportResultImportResult() {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -239,7 +239,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         model.showImportEntryResults(Self.partialResultProgress)
 
         guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected S1-21 import result route")
+            return XCTFail("Expected import-result import result route")
         }
         XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 1, stopped 0, pending 0.")
         XCTAssertEqual(result.items.map(\.status), [.imported, .failed])
@@ -247,7 +247,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
     }
 
     @MainActor
-    func testS120FatalCopyRetryContinuesRemainingQueue() async {
+    func testImportProgressFatalCopyRetryContinuesRemainingQueue() async {
         let scenario = Self.fatalCopyRetryScenario()
 
         let outcome = await scenario.importModel.importReadyFiles(
@@ -258,7 +258,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         }
 
         guard let progress = scenario.model.currentImportProgressState else {
-            return XCTFail("Expected failed S1-20 progress route")
+            return XCTFail("Expected failed import-progress progress route")
         }
         XCTAssertEqual(
             outcome?.fatalRetryContext,
@@ -268,7 +268,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
 
         scenario.model.failImportEntry(
             progress: progress.progressSnapshot,
-            mapping: CoreErrorMappingSnapshot.s120FatalCopyError,
+            mapping: CoreErrorMappingSnapshot.importProgressFatalCopyError,
             retryContext: outcome?.fatalRetryContext,
             recoveryCheck: .retryAllowed(nil)
         )
@@ -280,35 +280,35 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
 }
 
 @MainActor
-struct S120FatalCopyRetryScenario {
+struct ImportProgressFatalCopyRetryScenario {
     let opening: RepositoryOpeningResult
     let controlState: ImportProgressControlState
-    let importer: S118SequenceBatchImporter
-    let retryImporter: S117RecordingImporter
+    let importer: ImportBatchSequenceBatchImporter
+    let retryImporter: ImportSingleFileRecordingImporter
     let model: OnboardingModel
     let importModel: ImportBatchCopyImportModel
 }
 
 extension ImportProgressCopyQueueRecoveryTests {
     @MainActor
-    static func fatalCopyRetryScenario() -> S120FatalCopyRetryScenario {
-        let opening = RepositoryOpeningResult.s117Fixture(repoPath: "/tmp/repo")
+    static func fatalCopyRetryScenario() -> ImportProgressFatalCopyRetryScenario {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let controlState = ImportProgressControlState()
-        let importer = S118SequenceBatchImporter(results: [
-            .success(.s117Fixture(currentName: "first.pdf", category: "docs")),
+        let importer = ImportBatchSequenceBatchImporter(results: [
+            .success(.importSingleFileFixture(currentName: "first.pdf", category: "docs")),
             .failure(CoreError.Io(message: "staging write failed")),
-            .success(.s117Fixture(currentName: "third.pdf", category: "docs"))
+            .success(.importSingleFileFixture(currentName: "third.pdf", category: "docs"))
         ])
-        let retryImporter = S117RecordingImporter()
+        let retryImporter = ImportSingleFileRecordingImporter()
         let model = OnboardingModel(
-            settingsReader: S117StaticSettingsReader(repoPath: nil),
+            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             importProgressImporter: retryImporter,
             startupRecoverer: MainLoadingStaticStartupRecoverer(),
             importProgressControlState: controlState,
-            accessibilityAnnouncer: S117RecordingAccessibilityAnnouncer(),
-            helpOpener: S117NoopWelcomeHelpOpener()
+            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
-        let importModel = ImportBatchCopyImportModel(importer: importer, errorMapper: S120FatalCopyErrorMapper())
+        let importModel = ImportBatchCopyImportModel(importer: importer, errorMapper: ImportProgressFatalCopyErrorMapper())
 
         importModel.applyPreviewRows(
             fatalCopyRetryRows(),
@@ -316,7 +316,7 @@ extension ImportProgressCopyQueueRecoveryTests {
             selectedDestination: .autoClassify
         )
         model.route = .mainList(opening)
-        return S120FatalCopyRetryScenario(
+        return ImportProgressFatalCopyRetryScenario(
             opening: opening,
             controlState: controlState,
             importer: importer,
@@ -339,12 +339,12 @@ extension ImportProgressCopyQueueRecoveryTests {
     }
 
     @MainActor
-    static func assertFatalCopyRetryCompleted(_ scenario: S120FatalCopyRetryScenario) async {
+    static func assertFatalCopyRetryCompleted(_ scenario: ImportProgressFatalCopyRetryScenario) async {
         let retryRequests = await scenario.retryImporter.recordedRequests()
         let batchRequests = await scenario.importer.recordedRequests()
 
         XCTAssertEqual(retryRequests, [
-            S117ImportRequest(
+            ImportSingleFileImportRequest(
                 mode: .copy,
                 overrideCategory: "docs",
                 overrideFilename: "second.pdf",
@@ -472,24 +472,24 @@ actor StaticImportBatchSessionStore: ImportBatchSessionPersisting {
     }
 }
 
-private actor S120FatalCopyErrorMapper: CoreErrorMapping {
+private actor ImportProgressFatalCopyErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         switch error {
-        case .Io: .s120FatalCopyError
-        default: .s117Error(kind: .internal)
+        case .Io: .importProgressFatalCopyError
+        default: .importSingleFileError(kind: .internal)
         }
     }
 }
 
 private extension CoreErrorMappingSnapshot {
-    static var s120FatalCopyError: CoreErrorMappingSnapshot {
+    static var importProgressFatalCopyError: CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .io,
             userMessage: "文件读写失败",
             severity: .critical,
             suggestedAction: "AreaMatrix 会先确认 staging 状态，再允许重试当前项。",
             recoverability: .fatal,
-            rawContext: "S1-20 fatal copy retry"
+            rawContext: "import-progress fatal copy retry"
         )
     }
 }

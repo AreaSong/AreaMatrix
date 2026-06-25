@@ -606,7 +606,8 @@ mod tests_protection {
 
 每次重生成 = 2 次 SQL 查询（list + changes）+ 1 次文件写。1000 文件下 < 30ms。
 
-批量导入场景（一次性 50 个文件）下，重生成可能被触发 50 次。MVP 接受这个开销；Stage 2 加 debounce：
+批量导入场景（一次性 50 个文件）下，重生成可能被触发 50 次。当前默认接受这个开销；
+高频写入场景再加 debounce：
 
 ```rust
 pub struct OverviewRegenScheduler {

@@ -46,6 +46,14 @@ REQUIRED_MANIFEST_SECTIONS = (
     "Validation",
 )
 
+LEGACY_DOC_PATH_ALIASES = {
+    ROOT / "docs/roadmap/milestones.md": ROOT / "docs/roadmap/version-roadmap.md",
+}
+
+
+def canonical_doc_path(path: Path) -> Path:
+    return LEGACY_DOC_PATH_ALIASES.get(path, path)
+
 
 def validate_graph(tasks: dict[str, TaskFile], manifests: dict[str, ManifestEntry]) -> list[str]:
     errors: list[str] = []
@@ -199,7 +207,7 @@ def validate_markdown_target(
     raw_target: str,
     target: str,
 ) -> list[str]:
-    resolved = (path.parent / target).resolve()
+    resolved = canonical_doc_path((path.parent / target).resolve())
     try:
         resolved.relative_to(ROOT)
     except ValueError:
@@ -304,7 +312,7 @@ def source_task_matches(task: TaskFile, entry: ManifestEntry) -> bool:
 
 def append_exact_doc_errors(errors: list[str], label: str, entry: ManifestEntry) -> None:
     for doc in entry.exact_docs:
-        if not (ROOT / doc).exists():
+        if not canonical_doc_path((ROOT / doc).resolve()).exists():
             errors.append(f"{label}: missing Exact Docs path: {doc}")
 
 

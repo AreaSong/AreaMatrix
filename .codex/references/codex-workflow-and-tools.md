@@ -34,7 +34,7 @@ AreaMatrix 当前对应关系：
 
 ```bash
 codex --version
-# codex-cli 0.130.0-alpha.5
+# 输出以当前本机安装版本为准
 ```
 
 当前默认模型配置在 `~/.codex/config.toml`：
@@ -144,7 +144,7 @@ codex mcp list
 - 如果当前 Codex 环境无法使用 `openaiDeveloperDocs`，只能退到 OpenAI 官方域名，例如 `developers.openai.com` 或 `platform.openai.com`；不要用第三方文章或旧记忆替代官方来源。
 - 回答“最新”“当前默认”“是否支持”“地区/价格/功能状态”等易变化问题前，必须重新核对官方文档，并在需要固化到仓库时标注核对日期和来源链接。
 - OpenAI 官方文档只裁定 OpenAI / Codex 运行层能力和限制，不裁定 AreaMatrix 产品行为。AreaMatrix 产品、架构、API、UX 和开发规范仍以 `docs/**` 为源事实，AI 协作规则仍以 `.ai-governance/**` 为源事实。
-- 不在仓库文档中写死易过期的模型、价格、地区、配额或 release 阶段；如果为了追踪当下状态必须记录，必须使用“截至 YYYY-MM-DD 核对”措辞并附官方来源。
+- 不在仓库文档中写死易过期的模型、价格、地区、配额或 release 状态；如果为了追踪当下状态必须记录，必须使用“截至 YYYY-MM-DD 核对”措辞并附官方来源。
 - OpenAI Docs MCP 是 documentation-only 的只读文档入口，不是 API key、auth token 或产品运行凭证；仓库不得保存个人 token、auth 配置或全局 `~/.codex/**` 内容。
 
 ## Codex 原生命令入口
@@ -467,7 +467,7 @@ workflow/versions/<version>/execution/**
 
 - `v1-mvp`
 - `637` tasks
-- 状态：`637/637` completed，Stage 1 MVP 已收口
+- 状态：`637/637` completed，v1 技术队列已收口
 - 进度源事实：`workflow/versions/v1-mvp/execution/_shared/progress.json`
 - 健康检查：`python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor`
 - 状态检查：`python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py status`
@@ -582,12 +582,12 @@ Automations / Cloud / Worktrees 的细化门禁见 [Codex Automations / Cloud / 
 |---|---|---|---|
 | P0 | 保护当前 `./task-loop` 主线，不启动第二 runner | 当前已有 live lock，且 dirty worktree 会挡 checkpoint | 状态源冲突，可能让 PASS task 无法 checkpoint |
 | P1 | 增加 repo-local warn-only / read-only hooks guardrail | 当前依赖人工记住 runner / dirty worktree / 危险路径边界 | 容易重复启动、误碰高风险路径或错过 checkpoint 风险 |
-| P1 | 制定 Computer Use macOS UI smoke runbook | Phase 2/4 页面任务需要真实 UI 证据 | 验收仍偏命令层，缺少交互和窗口状态证据 |
+| P1 | 制定 Computer Use macOS UI smoke runbook | macOS 页面验证需要真实 UI 证据 | 验收仍偏命令层，缺少交互和窗口状态证据 |
 | P1 | 固化 OpenAI Docs MCP 使用规则 | 官方 Codex / model / API 更新快 | 容易用过期记忆判断“最新” |
 | P2 | 定义 Subagent 使用边界 | 大范围审计可以并行，但写入冲突风险高 | 并行 agent 可能互相覆盖或重复工作 |
 | P2 | 增加 Changelog / Feature Maturity 刷新流程 | Codex 能力变化快 | 文档会逐渐落后官网 |
 | P4 | 暂缓 Automations / Cloud / Worktrees / GitHub Action 接主线 | 本地 runner 已能闭环，v1 队列已完成归档 | 过早接入会多一个状态系统；Automations 仅允许非写入提醒 / 检查 / 汇报候选 |
-| P5 | 暂缓 SDK / app-server / remote-control / Slack / Linear | 当前不是平台化 Codex runtime 的阶段 | 增加复杂度但不提高当前验收质量 |
+| P5 | 暂缓 SDK / app-server / remote-control / Slack / Linear | 当前不是平台化 Codex runtime 的合适时机 | 增加复杂度但不提高当前验收质量 |
 
 ### 短期任务清单
 

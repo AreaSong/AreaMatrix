@@ -8,11 +8,11 @@
 
 ## 发布频率
 
-| 阶段 | 节奏 |
+| 版本范围 | 节奏 |
 |---|---|
-| Stage 1 (MVP) | 不公开发布；alpha tester 内部分发 |
-| Stage 2 | 月度 / 双月度 minor 版本 |
-| Stage 3+ | 视情况，至少季度一次 |
+| v1 基础闭环 | 不公开发布；历史验证记录见 v1 归档 |
+| v2 体验完善 | 月度 / 双月度 minor 版本 |
+| 后续版本 | 视情况，至少季度一次 |
 | 安全修复 | 随时发 patch |
 
 ---
@@ -33,16 +33,14 @@
 
 发布人执行：
 
-- [ ] Stage 1 alpha 分发前，先更新并通过
-      [v1 release checklist](../../workflow/versions/v1-mvp/evidence/release-checklist.md)；若该清单仍有
-      P0/P1、check-all 失败、手工冒烟未跑、性能基线缺失或签名/公证状态不明，
-      不得放行最终集成验收。
+- [ ] 若需要追溯 v1 历史分发判断，先读取
+      [v1 release checklist](../../workflow/versions/v1-mvp/evidence/release-checklist.md)；该清单是
+      v1 归档证据，不作为 v2 发布命名模板。
 - [ ] `./dev release preflight` 通过，确认本机存在 Developer ID Application
       signing identity，且 `AC_PASSWORD` notarytool keychain profile 可用；该预检
       只证明发布凭据可用，不能替代最终 codesign、notarytool submit、stapler、DMG
       和干净 Mac 首启证据。
-- [ ] 若当前未加入付费 Apple Developer Program，则不得继续执行 Developer ID alpha
-      分发；只能产出 local QA build，并在 checklist / release notes 中保留 P1-RL-003 blocked。
+- [ ] 若当前未加入付费 Apple Developer Program，则不得继续执行 Developer ID 分发。
 - [ ] `main` 分支所有 PR 已合并
 - [ ] 全部 CI 绿
 - [ ] CHANGELOG `[Unreleased]` 段落内容完整
@@ -54,87 +52,10 @@
 
 ---
 
-## 不付费 local QA build
+## Developer ID / notarization 补证
 
 未加入付费 Apple Developer Program 时，项目不能获取 Developer ID Application 证书，也不能完成
-notarytool 公证。此时允许制作 **local QA build** 用于本机或受控测试机验证，但它不是正式 alpha
-分发物，不能关闭 [v1 release checklist](../../workflow/versions/v1-mvp/evidence/release-checklist.md) 中的 P1-RL-003。
-
-local QA build 可使用 Xcode 本地构建、ad-hoc signing 或自签名证书验证包结构和启动行为；测试记录
-必须写明以下限制：
-
-- 不是 Developer ID signed app。
-- 没有 notarytool accepted log，也没有 stapler 证据。
-- DMG 若生成，只能标记为 local QA DMG，不得上传为正式 alpha 分发物。
-- 干净 Mac 首启只能证明受控环境行为，不能替代 notarized app 的 Gatekeeper 验证。
-
-恢复正式 alpha 分发的唯一闭环是：加入 Apple Developer Program，取得 Developer ID Application
-证书，配置 `AC_PASSWORD` notarytool profile，随后重新执行 `./dev release preflight`、codesign、
-notarytool submit、stapler、DMG 公证和干净 Mac 首启验证。
-
-`0.1.0-local-qa` 内部测试构建入口：
-
-```bash
-./dev release local-qa --install
-```
-
-该命令会用当前本地时间生成 `YYYYMMDDHHMM` 形式的 `CURRENT_PROJECT_VERSION`，执行 Release
-构建，使用 ad-hoc bundle signing，并显式链接 Rust staticlib，避免产物依赖开发机上的
-`libarea_matrix_core.dylib`。`--install` 会安装到 `/Applications/AreaMatrix.app`。
-About 页中的 build number 因此表示该二进制的构建时间，而不是 Xcode 项目里长期写死的版本号。
-
-如需只生成 local QA DMG，可在构建通过后使用：
-
-```bash
-APP_PATH="build/Build/Products/Release/AreaMatrix.app"
-hdiutil create \
-  -volname "AreaMatrix 0.1.0 Local QA" \
-  -srcfolder "$APP_PATH" \
-  -ov \
-  -format UDZO \
-  AreaMatrix-0.1.0-local-qa.dmg
-shasum -a 256 AreaMatrix-0.1.0-local-qa.dmg
-```
-
-发布记录必须明确写出 `Signature=adhoc`、`TeamIdentifier=not set`、无 notarytool accepted
-log、无 stapler 证据，并保留 P1-RL-003 blocked。local QA 不创建 `v0.1.0` tag，也不创建
-GitHub Release。
-
-local QA 首启交互 smoke 可以用来证明受控测试机上 `.app` 能打开、窗口能置前并接收基本输入事件。
-该证据必须标记为 **local QA smoke**，不得写成干净 Mac 首启、Gatekeeper 或 notarized app 证据。
-
-```bash
-open -n "/Volumes/AreaMatrix 0.1.0 Local QA/AreaMatrix.app"
-
-osascript <<'APPLESCRIPT'
-tell application "System Events"
-  tell process "AreaMatrix"
-    set frontmost to true
-    set position of window 1 to {60, 50}
-    set size of window 1 to {1500, 980}
-    get {exists window 1, position of window 1, size of window 1, name of window 1}
-  end tell
-end tell
-APPLESCRIPT
-
-cat > /tmp/areamatrix_scroll_down.swift <<'SWIFT'
-import CoreGraphics
-import Foundation
-
-let source = CGEventSource(stateID: .hidSystemState)
-let point = CGPoint(x: 900, y: 610)
-CGEvent(mouseEventSource: source, mouseType: .mouseMoved, mouseCursorPosition: point, mouseButton: .left)?
-    .post(tap: .cghidEventTap)
-Thread.sleep(forTimeInterval: 0.1)
-for _ in 0..<7 {
-    CGEvent(scrollWheelEvent2Source: source, units: .line, wheelCount: 1, wheel1: -6, wheel2: 0, wheel3: 0)?
-        .post(tap: .cghidEventTap)
-    Thread.sleep(forTimeInterval: 0.08)
-}
-print("scroll_probe=posted events=7 point=900,610")
-SWIFT
-xcrun swift /tmp/areamatrix_scroll_down.swift
-```
+notarytool 公证；这种环境只能做本机工程验证，不能产生用户分发结论。
 
 Developer ID / notarization 后续补证必须至少包含：
 
@@ -146,87 +67,7 @@ Developer ID / notarization 后续补证必须至少包含：
 - DMG 也完成签名、公证、staple / assess，并记录 SHA-256。
 - 干净 Mac 上首次打开通过 Gatekeeper，完成 repo 选择或已配置 repo 首屏加载。
 
-## 未公证 GitHub prerelease
-
-`unnotarized-preview` 是给可信测试者的临时双轨分发方式：可以把 ad-hoc signed、未公证 DMG
-上传到 GitHub prerelease，但不得称为正式 Stage 1 alpha，也不得关闭 P1-RL-003。
-
-适用边界：
-
-- 只给明确信任本仓库来源的 tester。
-- GitHub Release 必须勾选 **Pre-release**。
-- tag 使用预览命名，例如 `v0.1.0-unnotarized-preview.2`，不得占用正式 `v0.1.0`。
-- release notes 必须写明 **not Developer ID signed**、**not notarized**、
-  **TeamIdentifier=not set**。
-- tester 可使用 Control-click Open 或 System Settings > Privacy & Security > Open Anyway。
-- 不提供、也不建议全局关闭 Gatekeeper 的命令。
-
-`v0.1.0-unnotarized-preview.1` 未发布：首次创建空 prerelease 后，GitHub 返回
-`Cannot upload assets to an immutable release`；删除空 release 后，同名 tag / release 又被
-immutable release 与仓库 tag 创建规则阻止复用。因此当前对外预览版改用
-`v0.1.0-unnotarized-preview.2`。
-
-`v0.1.0-unnotarized-preview.2` 构建与 DMG：
-
-```bash
-./dev release local-qa \
-  --build-number 202606161707 \
-  --derived-data-path build/UnnotarizedPreview-0.1.0-preview.2-cli
-
-APP_PATH="build/UnnotarizedPreview-0.1.0-preview.2-cli/Build/Products/Release/AreaMatrix.app"
-hdiutil create \
-  -volname "AreaMatrix 0.1.0 Unnotarized Preview 2" \
-  -srcfolder "$APP_PATH" \
-  -ov \
-  -format UDZO \
-  AreaMatrix-v0.1.0-unnotarized-preview.2.dmg
-shasum -a 256 AreaMatrix-v0.1.0-unnotarized-preview.2.dmg
-```
-
-本轮产物：
-
-- app version: `0.1.0`
-- build number: `202606161707`
-- executable SHA-256:
-  `1a4881522acb93282cb6e0252810ea3849c7ab1095e74b8583a40e8018f28aea`
-- DMG SHA-256:
-  `d01d44c82e2287c0f1cd12aea4e78ece46301fe2f4709b2598c5710ba89864b2`
-- archive copy:
-  `workflow/versions/v1-mvp/evidence/artifacts/AreaMatrix-v0.1.0-unnotarized-preview.2.dmg`
-
-挂载验证：
-
-```bash
-hdiutil attach AreaMatrix-v0.1.0-unnotarized-preview.2.dmg -nobrowse
-VOL="/Volumes/AreaMatrix 0.1.0 Unnotarized Preview 2"
-codesign --verify --deep --strict --verbose=2 "$VOL/AreaMatrix.app"
-codesign -dv --verbose=4 "$VOL/AreaMatrix.app"
-otool -L "$VOL/AreaMatrix.app/Contents/MacOS/AreaMatrix"
-hdiutil detach "$VOL"
-```
-
-预期证据：
-
-- `codesign --verify --deep --strict` 通过。
-- `codesign -dv` 显示 `Signature=adhoc`、`TeamIdentifier=not set`。
-- `otool -L` 不包含 `libarea_matrix_core.dylib` 或仓库绝对路径。
-- 无 notarytool accepted log、无 stapler 证据、无干净 Mac Gatekeeper 通过证据。
-
-创建 GitHub prerelease：
-
-```bash
-git tag -a v0.1.0-unnotarized-preview.2 \
-  -m "AreaMatrix v0.1.0-unnotarized-preview.2"
-git push origin main v0.1.0-unnotarized-preview.2
-gh release create v0.1.0-unnotarized-preview.2 \
-  --title "AreaMatrix 0.1.0 Unnotarized Preview 2" \
-  --notes-file workflow/versions/v1-mvp/evidence/release-notes/release-notes-v0.1.0-unnotarized-preview.2.md \
-  --prerelease \
-  AreaMatrix-v0.1.0-unnotarized-preview.2.dmg
-```
-
-该 prerelease 只证明“可信测试者可下载未公证预览包”。正式 Stage 1 alpha 仍需 Developer ID
-签名、公证、stapler、正式 DMG、公证后干净 Mac 首启和 `v0.1.0` tag。
+v1 曾经保留过受控环境构建与测试者下载证据；这些内容只作为历史 release evidence 查阅，不在当前发布流程中复用命名或命令。
 
 ---
 
@@ -264,8 +105,7 @@ git commit -m "chore(release): 0.1.0"
 ```bash
 git tag -a v0.1.0 -m "Release 0.1.0
 
-主要变化：
-- MVP 完整端到端功能
+- v1 基础闭环端到端功能
 - 拖拽导入、自动分类、改动追踪
 - iCloud 兼容
 - 详见 CHANGELOG.md
@@ -322,7 +162,7 @@ ls -la "$APP_PATH"  # 验证产出
 </plist>
 ```
 
-> 注：MVP 不开 sandbox，因为 FSEvents + 整库读写在沙盒下很复杂。Stage 2+ 重新评估沙盒化。
+> 注：当前默认不开 sandbox，因为 FSEvents + 整库读写在沙盒下很复杂。后续公开分发前重新评估沙盒化。
 
 ### 签名
 
@@ -410,13 +250,13 @@ gh release create v0.1.0 \
   AreaMatrix.zip
 ```
 
-`release-notes-0.1.0.md` 来自 CHANGELOG 该版本段落 + 致谢 + 已知问题；Stage 1 historical local QA notes 已归档在 `workflow/versions/v1-mvp/evidence/release-notes/`。
+`release-notes-0.1.0.md` 来自 CHANGELOG 该版本段落 + 致谢 + 已知问题；v1 历史发布说明已归档在 `workflow/versions/v1-mvp/evidence/release-notes/`。
 
 ---
 
 ## 步骤 8：post-release
 
-- [ ] 关闭对应 milestone
+- [ ] 关闭对应 release checklist item
 - [ ] 在 Discussions 发 release 公告
 - [ ] 更新文档站（如有）
 - [ ] 更新顶层 README 中的 status badge / 版本徽标
@@ -447,7 +287,7 @@ git checkout main && git pull
 
 ---
 
-## CI 自动化（未来 Stage 2+）
+## CI 自动化（后续）
 
 `.github/workflows/release.yml` 当前尚未启用。未来加入后，它可以在 tag push 时：
 
@@ -457,7 +297,7 @@ git checkout main && git pull
 4. 上传 .dmg / .zip 到 GitHub Release
 5. 发邮件通知维护者
 
-MVP 阶段全手工，Stage 2+ 自动化。
+当前 release 流程全手工；后续按治理审查启用自动化。
 
 ---
 

@@ -22,7 +22,7 @@ baseline
 -> closeout
 ```
 
-在 Stage 1 历史实现中，执行层内容曾放在根目录 `tasks/prompts/**`。标准化后，版本级执行材料归属到：
+在 v1 历史实现中，执行层内容曾放在根目录 `tasks/prompts/**`。标准化后，版本级执行材料归属到：
 
 ```text
 workflow/versions/<version>/execution/
@@ -50,7 +50,7 @@ workflow/versions/<version>/execution/
 
 ## Standard Shape
 
-第一轮硬迁移保留了原 Stage 1 队列内部结构，降低脚本迁移风险：
+第一轮硬迁移保留了原 v1 队列内部结构，降低脚本迁移风险：
 
 ```text
 workflow/versions/<version>/execution/
@@ -104,9 +104,9 @@ execution 的验收必须区分两个层级：
 | Layer | Purpose | Blocks |
 | --- | --- | --- |
 | task-scope verify | 判断当前 task 是否在 Expected Paths 和 manifest 边界内完成 | 当前 task checkpoint |
-| repo-wide gate | 判断仓库整体健康度，例如 lint、test、build、release gate | phase / milestone / closeout |
+| repo-wide gate | 判断仓库整体健康度，例如 lint、test、build、release readiness | 执行分组 / closeout |
 
-单个 task 的完成状态不应被无关的全仓库历史问题永久阻塞。repo-wide gate 失败必须记录为 phase、milestone 或 closeout 风险，并在 projection 中说明影响范围。
+单个 task 的完成状态不应被无关的全仓库历史问题永久阻塞。repo-wide gate 失败必须记录为执行分组或 closeout 风险，并在 projection 中说明影响范围。
 
 ## Failure Routing
 

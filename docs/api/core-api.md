@@ -3418,7 +3418,7 @@ remote provider configuration 的远程 provider 禁用入口，服务 remote pr
 
 - remote provider settings surface 可以从返回快照立即刷新 Off 状态和 credential presence。
 - AI privacy rules surface 继续只读展示 provider gate 状态；`Block remote AI with privacy gate` 不能被实现为本 API。
-- 本合同不新增 control map 之外的页面能力；隐私 gate、日志、fallback 和 AI 调用仍由各自 C3 能力覆盖。
+- 本合同不新增 control map 之外的页面能力；隐私 gate、日志、fallback 和 AI 调用仍由各自 AI 能力合同覆盖。
 
 ### `suggest_category_with_ai(repoPath: String, request: AiCategorySuggestionRequest) throws -> AiCategorySuggestion`
 
@@ -3969,7 +3969,7 @@ scope 摘要。
 - AI privacy rules surface 可以从返回快照恢复保存成功基线、展示失败回滚状态，并继续区分 privacy gate 与 provider
   disable。
 - 本合同不新增 control map 之外的页面能力；provider key/scope/test 属于 remote provider configuration，AI call log 属于
-  AI call log，AI 结果生成和保存属于各自 C3 能力。
+  AI call log，AI 结果生成和保存属于各自 AI 能力合同。
 
 ### `evaluate_ai_privacy(repoPath: String, request: AiPrivacyEvaluationRequest) throws -> AiPrivacyEvaluationReport`
 

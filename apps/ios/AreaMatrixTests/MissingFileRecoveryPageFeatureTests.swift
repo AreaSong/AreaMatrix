@@ -3,7 +3,7 @@ import XCTest
 
 @MainActor
 final class MissingFileRecoveryPageFeatureTests: XCTestCase {
-    func testS4X06LoadsMissingStateFromC418CoreBridge() async {
+    func testMissingFileRecoveryLoadsMissingStateFromMissingFileRecoveryCoreCoreBridge() async {
         let bridge = RecordingMissingFileRecoveryCoreBridge(state: .fixture(fileID: 42))
         let model = MissingFileRecoveryViewModel(repoPath: "/tmp/Repo", fileID: 42, bridge: bridge)
 
@@ -16,7 +16,7 @@ final class MissingFileRecoveryPageFeatureTests: XCTestCase {
         XCTAssertFalse(model.canRemoveRecord)
     }
 
-    func testS4X06TryAgainIsReadOnlyStateRefresh() async {
+    func testMissingFileRecoveryTryAgainIsReadOnlyStateRefresh() async {
         let bridge = RecordingMissingFileRecoveryCoreBridge(state: .fixture(fileID: 7))
         let model = MissingFileRecoveryViewModel(repoPath: "/tmp/Repo", fileID: 7, bridge: bridge)
 
@@ -30,7 +30,7 @@ final class MissingFileRecoveryPageFeatureTests: XCTestCase {
         ])
     }
 
-    func testS4X06RelinkUsesConfirmedCoreRequestAndKeepsHashMismatchVisible() async {
+    func testMissingFileRecoveryRelinkUsesConfirmedCoreRequestAndKeepsHashMismatchVisible() async {
         let bridge = RecordingMissingFileRecoveryCoreBridge(
             state: .fixture(fileID: 9),
             relinkReport: .fixture(fileID: 9, status: .hashMismatch, hashMatched: false)
@@ -58,7 +58,7 @@ final class MissingFileRecoveryPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.actionError?.message, "Selected file does not match the missing record.")
     }
 
-    func testS4X06LocateFileRequiresPickerSelectionBeforeRelink() async {
+    func testMissingFileRecoveryLocateFileRequiresPickerSelectionBeforeRelink() async {
         let bridge = RecordingMissingFileRecoveryCoreBridge(state: .fixture(fileID: 10))
         let model = MissingFileRecoveryViewModel(repoPath: "/tmp/Repo", fileID: 10, bridge: bridge)
 
@@ -71,7 +71,7 @@ final class MissingFileRecoveryPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.selectedRelinkPath, "")
     }
 
-    func testS4X06LocateFilePermissionFailureStaysVisibleAndSkipsCoreRelink() async {
+    func testMissingFileRecoveryLocateFilePermissionFailureStaysVisibleAndSkipsCoreRelink() async {
         let bridge = RecordingMissingFileRecoveryCoreBridge(state: .fixture(fileID: 13))
         let fileAccess = RecordingMissingFileRecoveryFileAccess(error: .permissionDenied("/private/report.pdf"))
         let model = MissingFileRecoveryViewModel(
@@ -90,7 +90,7 @@ final class MissingFileRecoveryPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.actionError, .permissionDenied("/private/report.pdf"))
     }
 
-    func testS4X06RemoveRecordRequiresConfirmationAndNeverClaimsFileDeletion() async {
+    func testMissingFileRecoveryRemoveRecordRequiresConfirmationAndNeverClaimsFileDeletion() async {
         let bridge = RecordingMissingFileRecoveryCoreBridge(
             state: .fixture(fileID: 11),
             removeReport: .fixture(
@@ -118,7 +118,7 @@ final class MissingFileRecoveryPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.report?.changeLogAction, "missing_file_record_removed")
     }
 
-    func testS4X06IOSProductionEntriesRouteMissingDetailActionToRecoverySheet() throws {
+    func testMissingFileRecoveryIOSProductionEntriesRouteMissingDetailActionToRecoverySheet() throws {
         let appSource = try Self.readSource("../AreaMatrix/App/AreaMatrixIOSApp.swift")
         let routeSource = try Self.readSource(
             "../AreaMatrix/Features/Onboarding/ConnectRepositoryRouteDestinationView.swift"
@@ -140,7 +140,7 @@ final class MissingFileRecoveryPageFeatureTests: XCTestCase {
         XCTAssertTrue(detailSource.contains("onOpenMissingRecovery(fileID)"))
     }
 
-    func testS4X06IOSUsesPlatformFileImporterAndSecurityScopedRelinkAccess() throws {
+    func testMissingFileRecoveryIOSUsesPlatformFileImporterAndSecurityScopedRelinkAccess() throws {
         let viewSource = try Self.readSource("../AreaMatrix/Features/Recovery/MissingFileRecoveryView.swift")
         let accessSource = try Self.readSource(
             "../AreaMatrix/Features/Recovery/MissingFileRecoveryFileAccess.swift"

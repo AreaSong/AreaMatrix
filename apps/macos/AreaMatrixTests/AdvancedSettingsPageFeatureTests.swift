@@ -3,7 +3,7 @@ import XCTest
 
 final class AdvancedSettingsPageFeatureTests: XCTestCase {
     @MainActor
-    func testLoadUsesC104ConfigSnapshotForVisibleAdvancedSettings() async {
+    func testLoadUsesRepositoryConfigCoreConfigSnapshotForVisibleAdvancedSettings() async {
         let loader = AdvancedSettingsRecordingLoader(result: .success(.advancedSettingsFixture(
             repoPath: "/tmp/repo",
             overviewOutput: "RootAreaMatrixFile",
@@ -26,7 +26,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testRecoveryToolsSectionExposesS130C116EntrypointWithoutInlineRecovery() {
+    func testRecoveryToolsSectionExposesAdvancedSettingsStartupRecoveryCoreEntrypointWithoutInlineRecovery() {
         var didOpenRecoveryTools = false
         let section = AdvancedSettingsRecoveryToolsSection {
             didOpenRecoveryTools = true
@@ -35,14 +35,14 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
 
         XCTAssertTrue(bodyText.contains("Recovery tools"))
         XCTAssertTrue(bodyText.contains("Open recovery tools..."))
-        XCTAssertTrue(bodyText.contains("S1-30-C1-16-open-recovery-tools"))
+        XCTAssertTrue(bodyText.contains("advanced-settings-startup-recovery-core-open-recovery-tools"))
 
         section.onOpenRecoveryTools()
         XCTAssertTrue(didOpenRecoveryTools)
     }
 
     @MainActor
-    func testS130RecoveryToolsEntrypointRoutesToRepairConfirmationWithoutRunningRecovery() async {
+    func testAdvancedSettingsRecoveryToolsEntrypointRoutesToRepairConfirmationWithoutRunningRecovery() async {
         let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 1)
         let recoverer = AdvancedSettingsStartupRecoverer()
         let model = OnboardingModel(
@@ -69,7 +69,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testS137CancelFromAdvancedSettingsReturnsToSourceSettingsPage() {
+    func testDatabaseRepairCancelFromAdvancedSettingsReturnsToSourceSettingsPage() {
         let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 1)
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
@@ -124,7 +124,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testOverviewSaveFailureUsesC120RetryIdentifierAndRollsBack() async {
+    func testOverviewSaveFailureUsesOverviewGeneratedCoreRetryIdentifierAndRollsBack() async {
         let updater = AdvancedSettingsRecordingUpdater(result: .failureThenSuccess(CoreError.Db(message: "locked")))
         let model = await loadedAdvancedModel(updater: updater)
 
@@ -133,7 +133,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(model.draft?.overviewOutput, .generatedOnly)
         XCTAssertEqual(model.saveError?.message, "Could not save overview setting")
-        XCTAssertEqual(model.retrySaveAccessibilityIdentifier, "S1-30-C1-20-retry-save")
+        XCTAssertEqual(model.retrySaveAccessibilityIdentifier, "advanced-settings-overview-generated-retry-save")
         XCTAssertTrue(model.hasRetryableSave)
 
         await model.retrySave()
@@ -145,10 +145,10 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testOverviewOutputSectionIsTaggedAsS130C120Feature() {
+    func testOverviewOutputSectionIsTaggedAsAdvancedSettingsOverviewGeneratedCoreFeature() {
         XCTAssertEqual(AdvancedSettingsOverviewOutput.generatedOnly.label, "Generated only")
         XCTAssertEqual(AdvancedSettingsOverviewOutput.rootAreaMatrixFile.label, "Root AREAMATRIX.md")
-        XCTAssertEqual(AdvancedSettingsAccessibilityID.overviewOutput, "S1-30-C1-20-overview-output")
+        XCTAssertEqual(AdvancedSettingsAccessibilityID.overviewOutput, "advanced-settings-overview-generated-overview-output")
     }
 
     @MainActor

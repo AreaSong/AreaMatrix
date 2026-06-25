@@ -10,17 +10,17 @@ public static class MissingFileRecoveryViewModelTests
 {
     public static async Task RunAllAsync()
     {
-        await OpeningRecoveryLoadsC418State();
+        await OpeningRecoveryLoadsMissingFileRecoveryCoreState();
         await TryAgainOnlyRefreshesMissingState();
         await LocateFileUsesNativePickerAndDoesNotRelinkOnCancel();
         await RelinkUsesConfirmedCoreRequestAndReportsHashMismatch();
         await RemoveRecordRequiresConfirmationAndDoesNotDeleteFiles();
         await CoreBridgeMapsRecoveryContract();
         await LinuxDesktopShellOpensRecoveryRouteFromMissingSelection();
-        S4X06WiresLinuxRecoveryRouteToCoreBridge();
+        MissingFileRecoveryWiresLinuxRecoveryRouteToCoreBridge();
     }
 
-    private static async Task OpeningRecoveryLoadsC418State()
+    private static async Task OpeningRecoveryLoadsMissingFileRecoveryCoreState()
     {
         FakeMissingFileRecoveryCoreBridge bridge = new();
         MissingFileRecoveryViewModel model = new(bridge);
@@ -157,7 +157,7 @@ public static class MissingFileRecoveryViewModelTests
             "recovery routes");
     }
 
-    private static void S4X06WiresLinuxRecoveryRouteToCoreBridge()
+    private static void MissingFileRecoveryWiresLinuxRecoveryRouteToCoreBridge()
     {
         string project = File.ReadAllText(RepositoryPath("apps/linux/AreaMatrix/AreaMatrix.Linux.csproj"));
         string ui = File.ReadAllText(RepositoryPath(
@@ -184,8 +184,8 @@ public static class MissingFileRecoveryViewModelTests
             "apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.cs"));
 
         TestAssert.Contains("MissingFileRecoveryView.ui", project, "recovery UI resource");
-        TestAssert.Contains("page_id: S4-X-06", ui, "S4-X-06 UI id");
-        TestAssert.Contains("<object class=\"GtkDialog\" id=\"S4X06MissingFileRecoveryDialog\">", ui, "native GTK dialog");
+        TestAssert.Contains("page_id: missing-file-recovery", ui, "missing-file-recovery UI id");
+        TestAssert.Contains("<object class=\"GtkDialog\" id=\"MissingFileRecoveryMissingFileRecoveryDialog\">", ui, "native GTK dialog");
         TestAssert.Contains("id=\"LocateFileButton\"", ui, "locate file button");
         TestAssert.Contains("<property name=\"action-name\">recovery.locate-file</property>", ui, "locate action");
         TestAssert.Contains("id=\"RelinkFileButton\"", ui, "relink file button");
@@ -201,9 +201,9 @@ public static class MissingFileRecoveryViewModelTests
         TestAssert.Contains("kdialog", picker, "kdialog native picker");
         TestAssert.Contains("RelinkSelectedFileAsync", view, "relink user action");
         TestAssert.Contains("RemoveRecordAsync", view, "remove record user action");
-        TestAssert.Contains("GetMissingFileStateAsync", viewModel + bridge, "C4-18 state call");
-        TestAssert.Contains("RelinkMissingFileAsync", viewModel + bridge, "C4-18 relink call");
-        TestAssert.Contains("RemoveMissingFileRecordAsync", viewModel + bridge, "C4-18 remove call");
+        TestAssert.Contains("GetMissingFileStateAsync", viewModel + bridge, "missing-file-recovery-core state call");
+        TestAssert.Contains("RelinkMissingFileAsync", viewModel + bridge, "missing-file-recovery-core relink call");
+        TestAssert.Contains("RemoveMissingFileRecordAsync", viewModel + bridge, "missing-file-recovery-core remove call");
         TestAssert.Contains("uniffi_area_matrix_core_fn_func_get_missing_file_state", nativeLibrary, "state native binding");
         TestAssert.Contains("uniffi_area_matrix_core_fn_func_relink_missing_file", nativeLibrary, "relink native binding");
         TestAssert.Contains("uniffi_area_matrix_core_fn_func_remove_missing_file_record", nativeLibrary, "remove native binding");
@@ -213,8 +213,8 @@ public static class MissingFileRecoveryViewModelTests
         TestAssert.Contains("RemoveMissingFileRecordChecksum = 46697", coreClient, "remove checksum");
         TestAssert.Contains("LowerMissingFileRelinkRequest", nativeClient, "relink request lowering");
         TestAssert.Contains("LowerMissingFileRemoveRecordRequest", nativeClient, "remove request lowering");
-        TestAssert.NotContains("ReindexFromFilesystemAsync", view + viewModel + bridge, "C4-18 must not run rescan");
-        TestAssert.NotContains("PreviewManualRescanAsync", view + viewModel + bridge, "C4-18 must not preview rescan");
+        TestAssert.NotContains("ReindexFromFilesystemAsync", view + viewModel + bridge, "missing-file-recovery-core must not run rescan");
+        TestAssert.NotContains("PreviewManualRescanAsync", view + viewModel + bridge, "missing-file-recovery-core must not preview rescan");
     }
 
     private static MissingFileRecoveryState State(long fileId)
@@ -336,7 +336,7 @@ public static class MissingFileRecoveryViewModelTests
                 true,
                 true,
                 false,
-                "Rescan is a separate C4-19 route."));
+                "Rescan is a separate manual-rescan route."));
         }
 
         public Task<CoreMissingFileRecoveryReport> RelinkMissingFileAsync(

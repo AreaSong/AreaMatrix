@@ -10,13 +10,13 @@ struct ClassifierRuleHandoffRouteView: View {
         }
 
         var pageID: String {
-            self == .saveRule ? "S2-17" : "S2-18"
+            self == .saveRule ? "classifier-rule-save" : "classifier-impact-preview"
         }
 
         var intro: String {
             self == .saveRule
                 ? "Review the rule draft before saving it for future imports."
-                : "Preview impact will be calculated by the S2-18 rule impact flow."
+                : "Preview impact will be calculated by the classifier-impact-preview rule impact flow."
         }
 
         var note: String {
@@ -88,7 +88,7 @@ struct ClassifierRuleHandoffRouteView: View {
             if mode == .saveRule {
                 Button("Preview impact") { onPreviewImpact(model.previewHandoff) }
                     .disabled(model.isSaving || model.hasNoCandidates)
-                    .accessibilityIdentifier("S2-17-preview-impact")
+                    .accessibilityIdentifier("classifier-rule-save-preview-impact")
             } else {
                 Button("Back") { onBack(handoff) }
             }
@@ -101,7 +101,7 @@ struct ClassifierRuleHandoffRouteView: View {
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(!model.canSave)
-                .accessibilityIdentifier("S2-17-save-rule")
+                .accessibilityIdentifier("classifier-rule-save-save-rule")
             }
         }
     }
@@ -132,13 +132,13 @@ struct ClassifierRuleHandoffRouteView: View {
             Label(warning, systemImage: "exclamationmark.triangle")
                 .font(.caption)
                 .foregroundStyle(.orange)
-                .accessibilityIdentifier("S2-17-rule-warning")
+                .accessibilityIdentifier("classifier-rule-save-rule-warning")
         }
         if let validationMessage = model.validationMessage {
             Label(validationMessage, systemImage: "exclamationmark.triangle")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .accessibilityIdentifier("S2-17-validation-error")
+                .accessibilityIdentifier("classifier-rule-save-validation-error")
         }
         if let failure = model.failure {
             VStack(alignment: .leading, spacing: 4) {
@@ -151,13 +151,13 @@ struct ClassifierRuleHandoffRouteView: View {
                     .textSelection(.enabled)
             }
             .foregroundStyle(.red)
-            .accessibilityIdentifier("S2-17-save-error")
+            .accessibilityIdentifier("classifier-rule-save-save-error")
         }
         if let saved = model.savedRule {
             Label(saved.summaryText, systemImage: "checkmark.circle")
                 .font(.caption)
                 .foregroundStyle(.green)
-                .accessibilityIdentifier("S2-17-save-success")
+                .accessibilityIdentifier("classifier-rule-save-save-success")
         }
     }
 
@@ -224,7 +224,7 @@ private struct RuleBasisPicker: View {
                 .disabled(isDisabled)
             }
         }
-        .accessibilityIdentifier("S2-17-rule-basis")
+        .accessibilityIdentifier("classifier-rule-save-rule-basis")
     }
 
     private func keywordBinding(_ keyword: String) -> Binding<Bool> {
@@ -255,7 +255,7 @@ private struct RulePreviewCard: View {
         }
         .padding(10)
         .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityIdentifier("S2-17-rule-preview")
+        .accessibilityIdentifier("classifier-rule-save-rule-preview")
     }
 }
 
@@ -294,7 +294,7 @@ struct ClassifierImpactPreviewSheet: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: "Preview rule impact", pageID: "S2-18") {
+        MainFileActionSheetContainer(title: "Preview rule impact", pageID: "classifier-impact-preview") {
             VStack(alignment: .leading, spacing: 12) {
                 ruleSummary
                 previewState
@@ -306,7 +306,7 @@ struct ClassifierImpactPreviewSheet: View {
             }
         }
         .task(id: previewTaskKey) { await refreshPreview() }
-        .accessibilityIdentifier("S2-18-classifier-impact-preview")
+        .accessibilityIdentifier("classifier-impact-preview-classifier-impact-preview")
     }
 
     private var previewTaskKey: String {
@@ -327,7 +327,7 @@ struct ClassifierImpactPreviewSheet: View {
             metadataRow("Move preference", model.moveFiles ? "Move files to new category folders" : "Metadata only")
             Toggle("Move files to new category folders", isOn: moveFilesBinding)
                 .disabled(model.loadState.isLoading)
-                .accessibilityIdentifier("S2-18-move-files")
+                .accessibilityIdentifier("classifier-impact-preview-move-files")
         }
     }
 
@@ -336,7 +336,7 @@ struct ClassifierImpactPreviewSheet: View {
         if model.loadState.isLoading {
             Label("Previewing impact...", systemImage: "arrow.triangle.2.circlepath")
                 .foregroundStyle(.secondary)
-                .accessibilityIdentifier("S2-18-loading")
+                .accessibilityIdentifier("classifier-impact-preview-loading")
         }
         if let failure = model.loadState.failure {
             VStack(alignment: .leading, spacing: 4) {
@@ -344,10 +344,10 @@ struct ClassifierImpactPreviewSheet: View {
                     .font(.caption.weight(.semibold))
                 Text(failure.suggestedAction).font(.caption)
                 Button("Retry preview") { Task { await refreshPreview() } }
-                    .accessibilityIdentifier("S2-18-retry-preview")
+                    .accessibilityIdentifier("classifier-impact-preview-retry-preview")
             }
             .foregroundStyle(.red)
-            .accessibilityIdentifier("S2-18-preview-error")
+            .accessibilityIdentifier("classifier-impact-preview-preview-error")
         }
     }
 
@@ -369,10 +369,10 @@ struct ClassifierImpactPreviewSheet: View {
                 Label(reason, systemImage: "exclamationmark.triangle")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .accessibilityIdentifier("S2-18-apply-disabled-reason")
+                    .accessibilityIdentifier("classifier-impact-preview-apply-disabled-reason")
             }
         }
-        .accessibilityIdentifier("S2-18-impact-summary")
+        .accessibilityIdentifier("classifier-impact-preview-impact-summary")
     }
 
     private var impactTable: some View {
@@ -383,7 +383,7 @@ struct ClassifierImpactPreviewSheet: View {
                 }
             }
             .pickerStyle(.segmented)
-            .accessibilityIdentifier("S2-18-filter")
+            .accessibilityIdentifier("classifier-impact-preview-filter")
 
             Table(model.filteredSamples) {
                 TableColumn("File") { sample in
@@ -403,7 +403,7 @@ struct ClassifierImpactPreviewSheet: View {
                 }
             }
             .frame(minHeight: 220)
-            .accessibilityIdentifier("S2-18-impact-table")
+            .accessibilityIdentifier("classifier-impact-preview-impact-table")
         }
     }
 
@@ -415,7 +415,7 @@ struct ClassifierImpactPreviewSheet: View {
             Button("Cancel", action: onCancel).keyboardShortcut(.cancelAction)
             Button("Save rule only") {}
                 .disabled(true)
-                .help("Rule saving is handled by S2-17.")
+                .help("Rule saving is handled by classifier-rule-save.")
             Button("Save and apply to existing files") {}
                 .keyboardShortcut(.defaultAction)
                 .disabled(true)

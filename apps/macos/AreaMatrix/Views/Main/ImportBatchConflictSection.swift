@@ -320,7 +320,7 @@ private extension ImportBatchCopyImportModel {
         let summary = conflictBatchPreviewReport?.replaceConfirmationSummary ?? conflictBatchScopeSummary
         return [
             "Existing files in the selected scope will be moved to Trash before imported files take their place.",
-            "AreaMatrix does not permanently delete files in Stage 2.",
+            "AreaMatrix does not permanently delete files.",
             "Scope: \(summary)"
         ].joined(separator: " ")
     }

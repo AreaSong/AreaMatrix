@@ -17,7 +17,7 @@ struct BatchAddTagsTrigger: View {
         VStack(alignment: .leading, spacing: 8) {
             Button("Add tag...") { isPresented = true }
                 .help(BatchAddTagsEntryPolicy.openHelp(disabledReason: disabledReason))
-                .accessibilityIdentifier("S2-09-batch-add-tags-open")
+                .accessibilityIdentifier("batch-add-tags-batch-add-tags-open")
         }
         .sheet(isPresented: $isPresented) {
             BatchAddTagsSheet(
@@ -57,7 +57,7 @@ struct BatchTagUndoToastView: View {
         .font(.caption)
         .padding(8)
         .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityIdentifier("S2-10-C2-07-undo-toast")
+        .accessibilityIdentifier("undo-toast-undo-action-log-undo-toast")
     }
 
     @ViewBuilder
@@ -96,20 +96,20 @@ struct BatchTagUndoToastView: View {
     private var toastActions: some View {
         if case let .ready(action) = state {
             Button("Undo") { onUndo(action) }
-                .accessibilityIdentifier("S2-10-C2-07-undo-action")
+                .accessibilityIdentifier("undo-toast-undo-action-log-undo-action")
         } else if case .disabled = state {
             Button("Undo") {}
                 .disabled(true)
-                .accessibilityIdentifier("S2-10-C2-07-undo-action-disabled")
+                .accessibilityIdentifier("undo-toast-undo-action-log-undo-action-disabled")
         }
         if case .failed = state {
             Button("View details") { onOpenHistory(.viewDetails) }
                 .help("Open Undo History details for this failed undo.")
-                .accessibilityIdentifier("S2-10-C2-07-view-details")
+                .accessibilityIdentifier("undo-toast-undo-action-log-view-details")
         } else {
             Button("View history") { onOpenHistory(.viewHistory) }
                 .help("Open Undo History for this action.")
-                .accessibilityIdentifier("S2-10-C2-07-view-history")
+                .accessibilityIdentifier("undo-toast-undo-action-log-view-history")
         }
         Button("Dismiss", action: onDismiss)
     }
@@ -149,7 +149,7 @@ struct BatchAddTagsSheet: View {
     @State private var showsDetails = false
 
     var body: some View {
-        MainFileActionSheetContainer(title: "批量添加标签", pageID: "S2-09") {
+        MainFileActionSheetContainer(title: "批量添加标签", pageID: "batch-add-tags") {
             if selectedCount == 0 {
                 Text("No files selected")
                     .foregroundStyle(.secondary)
@@ -306,7 +306,7 @@ private struct BatchAddTagsSheetContent: View {
                 .disabled(isApplying || disabledReason != nil)
                 .onSubmit(onAddPendingTag)
                 .onChange(of: draft.input) { _, _ in draft.fieldError = nil }
-                .accessibilityIdentifier("S2-09-tag-input")
+                .accessibilityIdentifier("batch-add-tags-tag-input")
             Text(inputHelpText)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -433,7 +433,7 @@ private struct BatchAddTagsSheetContent: View {
             Button(isApplying ? "Applying..." : "Apply", action: onApply)
                 .keyboardShortcut(.defaultAction)
                 .disabled(!canApply)
-                .accessibilityIdentifier("S2-09-batch-add-tags-apply")
+                .accessibilityIdentifier("batch-add-tags-batch-add-tags-apply")
         }
     }
 

@@ -3,7 +3,7 @@ import XCTest
 
 final class ICloudConflictMinimalValidationTests: XCTestCase {
     @MainActor
-    func testS125C101ValidationUsesCoreBridgeStateAndAllowsKeepBoth() async {
+    func testICloudConflictMinimalValidateRepoPathCoreValidationUsesCoreBridgeStateAndAllowsKeepBoth() async {
         let validation = RepoPathValidationSnapshot.shellFixture(
             repoPath: "/tmp/repo",
             isEmpty: false,
@@ -27,7 +27,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
     }
 
     @MainActor
-    func testS125C101BlocksApplyWhenValidationRejectsRepositoryPath() async {
+    func testICloudConflictMinimalValidateRepoPathCoreBlocksApplyWhenValidationRejectsRepositoryPath() async {
         let validation = RepoPathValidationSnapshot.shellFixture(
             repoPath: "/tmp/repo/.areamatrix",
             exists: true,
@@ -56,7 +56,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
     }
 
     @MainActor
-    func testS125C121FailureMapsCoreErrorAndKeepsApplyDisabled() async {
+    func testICloudConflictMinimalErrorMappingCoreFailureMapsCoreErrorAndKeepsApplyDisabled() async {
         let mapping = CoreErrorMappingSnapshot.icloudConflictFixture(
             kind: .iCloudPlaceholder,
             rawContext: "/tmp/repo/docs/report.pdf.icloud"
@@ -84,7 +84,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
     }
 
     @MainActor
-    func testS125C121NonCoreFailureMapsAsInternalError() async {
+    func testICloudConflictMinimalErrorMappingCoreNonCoreFailureMapsAsInternalError() async {
         let validator = ICloudConflictRecordingPathValidator(
             result: .failure(ICloudConflictTestError.staleConflictContext)
         )
@@ -109,7 +109,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
     }
 
     @MainActor
-    func testS125C121SheetShowsMappedFailureAndRetryHook() async {
+    func testICloudConflictMinimalErrorMappingCoreSheetShowsMappedFailureAndRetryHook() async {
         let mapping = CoreErrorMappingSnapshot.icloudConflictFixture(
             kind: .permissionDenied,
             rawContext: "/tmp/repo"
@@ -133,17 +133,17 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
             onApply: { _ in },
             onCollectDiagnostics: {}
         )
-        let body = s125MirrorDescription(of: view.body)
+        let body = iCloudConflictMinimalMirrorDescription(of: view.body)
 
-        XCTAssertTrue(body.contains("S1-25-C1-21-error-mapping"))
+        XCTAssertTrue(body.contains("icloud-conflict-minimal-error-mapping-error-mapping"))
         XCTAssertTrue(body.contains("Repository check failed: PermissionDenied"))
         XCTAssertTrue(body.contains("AreaMatrix cannot inspect this conflict source."))
         XCTAssertTrue(body.contains("Severity: High; Recoverability: UserActionRequired"))
-        XCTAssertTrue(body.contains("S1-25-C1-21-retry-repository-check"))
+        XCTAssertTrue(body.contains("icloud-conflict-minimal-error-mapping-retry-repository-check"))
     }
 
     @MainActor
-    func testS125C101DefaultCoreBridgeValidatesRepositoryWithoutMovingConflictFiles() async throws {
+    func testICloudConflictMinimalValidateRepoPathCoreDefaultCoreBridgeValidatesRepositoryWithoutMovingConflictFiles() async throws {
         let repoURL = try makeICloudConflictTemporaryDirectory(prefix: "repo")
         defer {
             try? FileManager.default.removeItem(at: repoURL)
@@ -175,14 +175,14 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
     }
 
     @MainActor
-    func testS220C216PreviewFailureMapsErrorAndKeepsResolutionDisabled() async {
+    func testICloudConflictVisualICloudConflictVisualCorePreviewFailureMapsErrorAndKeepsResolutionDisabled() async {
         let mapper = ICloudConflictRecordingErrorMapper(mapping: .icloudConflictFixture(
             kind: .conflict,
             rawContext: "stale conflict id"
         ))
-        let reviewer = S220RecordingConflictReviewer(
+        let reviewer = ICloudConflictVisualRecordingConflictReviewer(
             previewResult: .failure(CoreError.Conflict(path: "stale conflict id")),
-            resolveResult: .success(.s220ResolvedReport(conflictID: "stale"))
+            resolveResult: .success(.iCloudConflictVisualResolvedReport(conflictID: "stale"))
         )
         let model = ICloudConflictMinimalModel(
             repoPath: "/tmp/repo",
@@ -190,7 +190,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
             originalVersion: .original(path: "/tmp/repo/docs/report.pdf"),
             conflictedCopyVersion: .conflictedCopy(path: "/tmp/repo/docs/report (copy).pdf"),
             pathValidator: ICloudConflictRecordingPathValidator(result: .success(
-                .s125ICloudConflictFixture().with(repoPath: "/tmp/repo")
+                .iCloudConflictMinimalICloudConflictFixture().with(repoPath: "/tmp/repo")
             )),
             conflictReviewer: reviewer,
             errorMapper: mapper
@@ -198,7 +198,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
 
         await model.validateRepositoryPath()
         await model.loadPreview()
-        let body = s125MirrorDescription(of: ICloudConflictMinimalSheet(
+        let body = iCloudConflictMinimalMirrorDescription(of: ICloudConflictMinimalSheet(
             model: model,
             resolutionCapability: .supported,
             isTrashAvailable: true,
@@ -210,23 +210,23 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         let resolveRequests = await reviewer.recordedResolveRequests()
         let mappedErrors = await mapper.recordedErrors()
 
-        XCTAssertEqual(previewRequests, [S220RecordingConflictReviewer.PreviewRequest(
+        XCTAssertEqual(previewRequests, [ICloudConflictVisualRecordingConflictReviewer.PreviewRequest(
             repoPath: "/tmp/repo",
             conflictID: "stale"
         )])
         XCTAssertEqual(resolveRequests, [])
         XCTAssertEqual(mappedErrors, [CoreError.Conflict(path: "stale conflict id")])
         XCTAssertFalse(model.canApply(strategy: .keepBoth, isTrashAvailable: true, didConfirmSingleVersion: false))
-        XCTAssertTrue(body.contains("S2-20-C2-16-preview-error"))
+        XCTAssertTrue(body.contains("icloud-conflict-review-icloud-conflict-visual-preview-error"))
         XCTAssertTrue(body.contains("Conflict detail failed: Conflict"))
         XCTAssertTrue(body.contains("Retry"))
     }
 
     @MainActor
-    func testS220C216KeepBothResolveCallsReviewerAndReturnsReport() async {
-        let reviewer = S220RecordingConflictReviewer(
-            previewResult: .success(.s220Preview(conflictID: "conflict-1")),
-            resolveResult: .success(.s220ResolvedReport(conflictID: "conflict-1"))
+    func testICloudConflictVisualICloudConflictVisualCoreKeepBothResolveCallsReviewerAndReturnsReport() async {
+        let reviewer = ICloudConflictVisualRecordingConflictReviewer(
+            previewResult: .success(.iCloudConflictVisualPreview(conflictID: "conflict-1")),
+            resolveResult: .success(.iCloudConflictVisualResolvedReport(conflictID: "conflict-1"))
         )
         let model = ICloudConflictMinimalModel(
             repoPath: "/tmp/repo",
@@ -234,7 +234,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
             originalVersion: .original(path: "/tmp/repo/docs/report.pdf"),
             conflictedCopyVersion: .conflictedCopy(path: "/tmp/repo/docs/report (copy).pdf"),
             pathValidator: ICloudConflictRecordingPathValidator(result: .success(
-                .s125ICloudConflictFixture().with(repoPath: "/tmp/repo")
+                .iCloudConflictMinimalICloudConflictFixture().with(repoPath: "/tmp/repo")
             )),
             conflictReviewer: reviewer,
             errorMapper: ICloudConflictRecordingErrorMapper(mapping: .icloudConflictFixture(kind: .internal))
@@ -245,7 +245,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         let result = await model.resolveConflict(strategy: .keepBoth)
         let resolveRequests = await reviewer.recordedResolveRequests()
 
-        XCTAssertEqual(resolveRequests, [S220RecordingConflictReviewer.ResolveRequest(
+        XCTAssertEqual(resolveRequests, [ICloudConflictVisualRecordingConflictReviewer.ResolveRequest(
             repoPath: "/tmp/repo",
             conflictID: "conflict-1",
             strategy: .keepBoth
@@ -253,7 +253,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         XCTAssertEqual(result, .resolved(ICloudConflictResolutionResult(
             focusFileID: nil,
             conflictID: "conflict-1",
-            report: .s220ResolvedReport(conflictID: "conflict-1"),
+            report: .iCloudConflictVisualResolvedReport(conflictID: "conflict-1"),
             status: .resolved,
             keptPaths: [
                 "docs/report.pdf",
@@ -268,8 +268,8 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
     }
 
     @MainActor
-    func testS220C216DefaultCoreBridgePreviewsAndKeepsBothVersionsWithoutFileMoves() async throws {
-        let repoURL = try makeICloudConflictTemporaryDirectory(prefix: "s220-core")
+    func testICloudConflictVisualICloudConflictVisualCoreDefaultCoreBridgePreviewsAndKeepsBothVersionsWithoutFileMoves() async throws {
+        let repoURL = try makeICloudConflictTemporaryDirectory(prefix: "iCloudConflictVisual-core")
         defer {
             try? FileManager.default.removeItem(at: repoURL)
         }
@@ -278,8 +278,8 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         try FileManager.default.createDirectory(at: docsURL, withIntermediateDirectories: true)
         let originalURL = docsURL.appendingPathComponent("report.pdf")
         let conflictedURL = docsURL.appendingPathComponent("report (Alice's conflicted copy).pdf")
-        let originalData = Data("original stage 2 bytes".utf8)
-        let conflictedData = Data("conflicted stage 2 bytes".utf8)
+        let originalData = Data("original conflict bytes".utf8)
+        let conflictedData = Data("conflicted copy bytes".utf8)
         try originalData.write(to: originalURL)
         try conflictedData.write(to: conflictedURL)
 
@@ -439,19 +439,19 @@ private extension CoreErrorMappingSnapshot {
     }
 }
 
-private func s125MirrorDescription(of value: Any) -> String {
+private func iCloudConflictMinimalMirrorDescription(of value: Any) -> String {
     var lines: [String] = []
-    appendS125MirrorDescription(of: value, to: &lines)
+    appendICloudConflictMinimalMirrorDescription(of: value, to: &lines)
     return lines.joined(separator: "\n")
 }
 
-private func appendS125MirrorDescription(of value: Any, to lines: inout [String]) {
+private func appendICloudConflictMinimalMirrorDescription(of value: Any, to lines: inout [String]) {
     lines.append(String(describing: type(of: value)))
     lines.append(String(describing: value))
     for child in Mirror(reflecting: value).children {
         if let label = child.label {
             lines.append(label)
         }
-        appendS125MirrorDescription(of: child.value, to: &lines)
+        appendICloudConflictMinimalMirrorDescription(of: child.value, to: &lines)
     }
 }

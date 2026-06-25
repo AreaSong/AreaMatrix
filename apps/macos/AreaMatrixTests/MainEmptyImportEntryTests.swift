@@ -48,7 +48,7 @@ final class MainEmptyImportEntryTests: XCTestCase {
     }
 
     @MainActor
-    func testMainEmptyMultipleDropEntryCreatesBatchRequestForS118() {
+    func testMainEmptyMultipleDropEntryCreatesBatchRequestForImportBatch() {
         let firstURL = URL(fileURLWithPath: "/tmp/a.pdf")
         let secondURL = URL(fileURLWithPath: "/tmp/b.pdf")
         let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
@@ -99,32 +99,32 @@ final class MainEmptyImportEntryTests: XCTestCase {
         XCTAssertNil(decodedRemoteURL)
     }
 
-    func testS215CommandPaletteRendersSmartListC204Targets() {
-        let saved = SavedSearchSnapshot.s215CommandPaletteFixture()
+    func testCommandPaletteCommandPaletteRendersSmartListSmartListsCoreTargets() {
+        let saved = SavedSearchSnapshot.commandPaletteCommandPaletteFixture()
         let targets = CommandPaletteSmartListTarget.matching([saved], query: "fin")
 
         XCTAssertEqual(targets.map(\.savedSearch.id), [77])
         XCTAssertEqual(targets.map(\.title), ["Finance"])
-        XCTAssertEqual(targets.map(\.accessibilityIdentifier), ["S2-15-C2-04-smart-list-77"])
+        XCTAssertEqual(targets.map(\.accessibilityIdentifier), ["command-palette-smart-list-smart-list-77"])
     }
 
     @MainActor
-    func testS215C211LoadsCommandIndexAndKeepsQuerySeparateFromFileSearch() async {
+    func testCommandPaletteCommandIndexCoreLoadsCommandIndexAndKeepsQuerySeparateFromFileSearch() async {
         let searcher = MainListRecordingSearchQuerying(results: [])
-        let target = CommandTarget.s215Fixture(
+        let target = CommandTarget.commandPaletteFixture(
             id: "selection.delete",
             title: "Delete selected files...",
             action: .openConfirmation,
-            route: "S2-13"
+            route: "batch-delete"
         )
-        let indexer = S215CommandIndexStore(results: [.success(.s215Fixture(commands: [target]))])
+        let indexer = CommandPaletteCommandIndexStore(results: [.success(.commandPaletteFixture(commands: [target]))])
         let model = MainFileListModel(
             opening: .mainEmptyImportFixture(repoPath: "/tmp/repo"),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: searcher,
             commandIndexer: indexer,
-            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+            errorMapper: CommandPaletteCommandErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
         )
 
         await model.loadCommandIndex(query: " delete ", selectedFileIDs: [20, 10], currentPath: "docs")
@@ -138,14 +138,14 @@ final class MainEmptyImportEntryTests: XCTestCase {
     }
 
     @MainActor
-    func testS215C211MapsCommandIndexFailureForInlineError() async {
-        let mapping = CoreErrorMappingSnapshot.s215CommandDb(rawContext: "command db locked")
-        let mapper = S215CommandErrorMapper(mapping: mapping)
+    func testCommandPaletteCommandIndexCoreMapsCommandIndexFailureForInlineError() async {
+        let mapping = CoreErrorMappingSnapshot.commandPaletteCommandDb(rawContext: "command db locked")
+        let mapper = CommandPaletteCommandErrorMapper(mapping: mapping)
         let model = MainFileListModel(
             opening: .mainEmptyImportFixture(repoPath: "/tmp/repo"),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
-            commandIndexer: S215CommandIndexStore(results: [.failure(CoreError.Db(message: "command db locked"))]),
+            commandIndexer: CommandPaletteCommandIndexStore(results: [.failure(CoreError.Db(message: "command db locked"))]),
             errorMapper: mapper
         )
 
@@ -156,19 +156,19 @@ final class MainEmptyImportEntryTests: XCTestCase {
         XCTAssertEqual(mappedErrors, [CoreError.Db(message: "command db locked")])
     }
 
-    func testS215C211CommandPaletteRowsAreExecutableAndShowDangerBoundary() {
+    func testCommandPaletteCommandIndexCoreCommandPaletteRowsAreExecutableAndShowDangerBoundary() {
         var query = "delete"
-        let target = CommandTargetSnapshot.s215RouteFixture(
+        let target = CommandTargetSnapshot.commandPaletteRouteFixture(
             id: "selection.delete",
             action: .openConfirmation,
-            route: "S2-13",
+            route: "batch-delete",
             requiresConfirmation: true
         )
         let snapshot = CommandPaletteSnapshot(
             sections: [.init(title: "Current Selection", targets: [target])],
             generatedAt: 1
         )
-        let body = s215CommandMirrorDescription(of: CommandPaletteView(
+        let body = commandPaletteCommandMirrorDescription(of: CommandPaletteView(
             query: Binding(get: { query }, set: { query = $0 }),
             state: .loaded(snapshot),
             onLoad: {},
@@ -182,11 +182,11 @@ final class MainEmptyImportEntryTests: XCTestCase {
         XCTAssertEqual(target.executionRoute, .batchDelete)
     }
 
-    func testS215C211DisabledCommandTargetsCannotExecute() {
-        let target = CommandTargetSnapshot.s215RouteFixture(
+    func testCommandPaletteCommandIndexCoreDisabledCommandTargetsCannotExecute() {
+        let target = CommandTargetSnapshot.commandPaletteRouteFixture(
             id: "selection.delete",
             action: .openConfirmation,
-            route: "S2-13",
+            route: "batch-delete",
             disabled: true,
             disabledReason: "Select files first.",
             requiresConfirmation: true
@@ -196,12 +196,12 @@ final class MainEmptyImportEntryTests: XCTestCase {
         XCTAssertEqual(target.executionRoute, .batchDelete)
     }
 
-    func testS222C218RedoCommandTargetBypassesStaticCoreDisabledAndUsesDynamicRedoStack() {
-        let target = CommandTargetSnapshot.s215RouteFixture(
+    func testRedoActionLogRedoActionLogCoreRedoCommandTargetBypassesStaticCoreDisabledAndUsesDynamicRedoStack() {
+        let target = CommandTargetSnapshot.commandPaletteRouteFixture(
             id: "redo.latest",
             title: "Redo latest action",
             action: .navigate,
-            route: "S2-22",
+            route: "redo-action-log",
             disabled: true,
             disabledReason: "Redo stack is unavailable."
         )
@@ -211,12 +211,12 @@ final class MainEmptyImportEntryTests: XCTestCase {
         XCTAssertNil(target.effectiveDisabledReason)
     }
 
-    func testS215C211BuildsCoreDeleteTargetAsBatchDeleteConfirmationRoute() {
-        let file = FileEntrySnapshot.s215CommandFileFixture(id: 515, currentName: "delete.pdf")
-        let target = CommandTargetSnapshot.s215RouteFixture(
+    func testCommandPaletteCommandIndexCoreBuildsCoreDeleteTargetAsBatchDeleteConfirmationRoute() {
+        let file = FileEntrySnapshot.commandPaletteCommandFileFixture(id: 515, currentName: "delete.pdf")
+        let target = CommandTargetSnapshot.commandPaletteRouteFixture(
             id: "selection.delete",
             action: .openConfirmation,
-            route: "S2-13",
+            route: "batch-delete",
             requiresConfirmation: true
         )
         let route = CommandPaletteBatchRouteBuilder.batchDeleteRoute(
@@ -234,9 +234,9 @@ final class MainEmptyImportEntryTests: XCTestCase {
         XCTAssertNil(route.disabledReason)
     }
 
-    func testS215C211ResolvesCoreSmartListTargetThroughSavedSearchRoute() {
-        let saved = SavedSearchSnapshot.s215CommandPaletteFixture()
-        let target = CommandTargetSnapshot.s215RouteFixture(
+    func testCommandPaletteCommandIndexCoreResolvesCoreSmartListTargetThroughSavedSearchRoute() {
+        let saved = SavedSearchSnapshot.commandPaletteCommandPaletteFixture()
+        let target = CommandTargetSnapshot.commandPaletteRouteFixture(
             id: "smart-list:77",
             action: .runSmartList,
             route: nil,
@@ -249,23 +249,23 @@ final class MainEmptyImportEntryTests: XCTestCase {
         XCTAssertNil(CommandPaletteSmartListRouting.savedSearch(savedSearchID: 404, in: [saved]))
     }
 
-    func testS215PageIntegrationRoutesAllPageSpecCommandTargets() {
+    func testCommandPalettePageIntegrationRoutesAllPageSpecCommandTargets() {
         // swiftlint:disable:next large_tuple
         let routes: [(String, CommandTargetActionSnapshot, CommandPaletteTargetRoute)] = [
-            ("S2-18", .navigate, .linkedPage(.classifierImpactPreview)),
-            ("S2-18", .openSheet, .linkedPage(.classifierImpactPreview)),
-            ("S2-21", .openSheet, .linkedPage(.importConflictBatch)),
-            ("S2-22", .navigate, .linkedPage(.redo)),
-            ("S2-23", .navigate, .linkedPage(.tagSuggestions)),
-            ("S2-19", .navigate, .classifierRuleEditor)
+            ("classifier-impact-preview", .navigate, .linkedPage(.classifierImpactPreview)),
+            ("classifier-impact-preview", .openSheet, .linkedPage(.classifierImpactPreview)),
+            ("import-conflict-batch", .openSheet, .linkedPage(.importConflictBatch)),
+            ("redo-action-log", .navigate, .linkedPage(.redo)),
+            ("tag-suggestions", .navigate, .linkedPage(.tagSuggestions)),
+            ("classifier-rule-editor", .navigate, .classifierRuleEditor)
         ]
 
         for (route, action, expectedRoute) in routes {
-            let target = CommandTargetSnapshot.s215RouteFixture(
+            let target = CommandTargetSnapshot.commandPaletteRouteFixture(
                 id: "target-\(route)-\(action.rawValue)",
                 action: action,
                 route: route,
-                requiresConfirmation: route == "S2-21"
+                requiresConfirmation: route == "import-conflict-batch"
             )
 
             XCTAssertEqual(target.executionRoute, expectedRoute)
@@ -273,15 +273,15 @@ final class MainEmptyImportEntryTests: XCTestCase {
         }
     }
 
-    func testS215KeyboardSelectionSkipsDisabledTargetsAndWraps() {
-        let first = CommandTargetSnapshot.s215RouteFixture(id: "import", action: .openSheet, route: "import")
-        let disabled = CommandTargetSnapshot.s215RouteFixture(
+    func testCommandPaletteKeyboardSelectionSkipsDisabledTargetsAndWraps() {
+        let first = CommandTargetSnapshot.commandPaletteRouteFixture(id: "import", action: .openSheet, route: "import")
+        let disabled = CommandTargetSnapshot.commandPaletteRouteFixture(
             id: "disabled",
             action: .openSheet,
-            route: "S2-09",
+            route: "batch-add-tags",
             disabled: true
         )
-        let last = CommandTargetSnapshot.s215RouteFixture(id: "settings", action: .navigate, route: "settings")
+        let last = CommandTargetSnapshot.commandPaletteRouteFixture(id: "settings", action: .navigate, route: "settings")
         let targets = [first, disabled, last]
 
         XCTAssertEqual(CommandPaletteSelectionRouting.nextSelectedID(
@@ -302,27 +302,27 @@ final class MainEmptyImportEntryTests: XCTestCase {
     }
 
     @MainActor
-    func testS215PageIntegrationWiresEntryCloseCommandIndexAndSmartListRun() async {
-        let saved = SavedSearchSnapshot.s215CommandPaletteFixture()
-        let resultFile = FileEntrySnapshot.s215CommandFileFixture(id: 88, currentName: "finance.pdf")
-        let indexTarget = CommandTarget.s215Fixture(
+    func testCommandPalettePageIntegrationWiresEntryCloseCommandIndexAndSmartListRun() async {
+        let saved = SavedSearchSnapshot.commandPaletteCommandPaletteFixture()
+        let resultFile = FileEntrySnapshot.commandPaletteCommandFileFixture(id: 88, currentName: "finance.pdf")
+        let indexTarget = CommandTarget.commandPaletteFixture(
             id: "smart-list:77",
             title: "Finance",
             action: .runSmartList,
             route: nil,
             savedSearchID: saved.id
         )
-        let indexer = S215CommandIndexStore(results: [.success(.s215Fixture(smartLists: [indexTarget]))])
-        let smartListRunner = S215SmartListRunner(results: [
-            .success(.s215CommandSmartListPage(saved: saved, files: [resultFile]))
+        let indexer = CommandPaletteCommandIndexStore(results: [.success(.commandPaletteFixture(smartLists: [indexTarget]))])
+        let smartListRunner = CommandPaletteSmartListRunner(results: [
+            .success(.commandPaletteCommandSmartListPage(saved: saved, files: [resultFile]))
         ])
         let model = MainFileListModel(
-            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
+            opening: .commandPaletteCommandFixture(repoPath: "/tmp/repo", files: []),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: smartListRunner,
             commandIndexer: indexer,
-            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+            errorMapper: CommandPaletteCommandErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
         )
 
         model.openCommandPaletteForSearch()
@@ -342,7 +342,7 @@ final class MainEmptyImportEntryTests: XCTestCase {
         XCTAssertEqual(indexRequests.map(\.context.currentPath), ["docs"])
         XCTAssertEqual(indexRequests.map(\.context.query), ["finance"])
         XCTAssertEqual(runRequests, [
-            S215SmartListRunRequest(repoPath: "/tmp/repo", savedSearchID: saved.id, limit: 50, offset: 0)
+            CommandPaletteSmartListRunRequest(repoPath: "/tmp/repo", savedSearchID: saved.id, limit: 50, offset: 0)
         ])
         XCTAssertEqual(searchRequests, [])
         XCTAssertEqual(model.files, [resultFile])
@@ -352,18 +352,18 @@ final class MainEmptyImportEntryTests: XCTestCase {
     }
 
     @MainActor
-    func testS215PageIntegrationRoutesDangerCommandsToConfirmationWithoutDirectMutation() {
-        let file = FileEntrySnapshot.s215CommandFileFixture(id: 515, currentName: "delete.pdf")
+    func testCommandPalettePageIntegrationRoutesDangerCommandsToConfirmationWithoutDirectMutation() {
+        let file = FileEntrySnapshot.commandPaletteCommandFileFixture(id: 515, currentName: "delete.pdf")
         let model = MainFileListModel(
-            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: [file]),
+            opening: .commandPaletteCommandFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
-            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+            errorMapper: CommandPaletteCommandErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
         )
-        let target = CommandTargetSnapshot.s215RouteFixture(
+        let target = CommandTargetSnapshot.commandPaletteRouteFixture(
             id: "selection.delete",
             action: .openConfirmation,
-            route: "S2-13",
+            route: "batch-delete",
             requiresConfirmation: true
         )
         let route = CommandPaletteBatchRouteBuilder.batchDeleteRoute(
@@ -374,7 +374,7 @@ final class MainEmptyImportEntryTests: XCTestCase {
             writeLockedFileIDs: model.writeLockedFileIDs
         )
 
-        model.commandPaletteState = .loaded(CommandPaletteSnapshot(coreIndex: .s215Fixture()))
+        model.commandPaletteState = .loaded(CommandPaletteSnapshot(coreIndex: .commandPaletteFixture()))
         model.commandPaletteQuery = "delete"
         model.pendingSearchDestination = .commandPalette
         model.clearCommandPaletteState()
@@ -393,12 +393,12 @@ final class MainEmptyImportEntryTests: XCTestCase {
     }
 
     @MainActor
-    func testS215CommandPaletteToggleRestoresPreviousSearchFocus() {
+    func testCommandPaletteCommandPaletteToggleRestoresPreviousSearchFocus() {
         let model = MainFileListModel(
-            opening: .s215CommandFixture(repoPath: "/tmp/repo", files: []),
+            opening: .commandPaletteCommandFixture(repoPath: "/tmp/repo", files: []),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
-            errorMapper: S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+            errorMapper: CommandPaletteCommandErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
         )
 
         model.openCommandPaletteForSearch()
@@ -412,14 +412,14 @@ final class MainEmptyImportEntryTests: XCTestCase {
     }
 
     @MainActor
-    func testS222CommandPaletteRedoExecutesLatestRedoActionDirectly() async {
-        let redoStore = S222RecordingRedoStore(results: [
-            .list(.success([.s222AvailableMoveRedo()])),
-            .redo(.success(.s222RedoneMove())),
-            .list(.success([.s222ExecutedMoveRedo()]))
+    func testRedoActionLogCommandPaletteRedoExecutesLatestRedoActionDirectly() async {
+        let redoStore = RedoActionLogRecordingRedoStore(results: [
+            .list(.success([.redoActionLogAvailableMoveRedo()])),
+            .redo(.success(.redoActionLogRedoneMove())),
+            .list(.success([.redoActionLogExecutedMoveRedo()]))
         ])
-        let undoStore = S215NoopUndoStore()
-        let errorMapper = S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        let undoStore = CommandPaletteNoopUndoStore()
+        let errorMapper = CommandPaletteCommandErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
 
         let loaded = await UndoHistoryActionLog.load(
             repoPath: "/tmp/repo",
@@ -438,8 +438,8 @@ final class MainEmptyImportEntryTests: XCTestCase {
         guard case let .redone(result, refreshed) = state else {
             return XCTFail("expected redone state, got \(state)")
         }
-        XCTAssertEqual(result, .s222RedoneMove())
-        XCTAssertEqual(refreshed.redoActions, [.s222ExecutedMoveRedo()])
+        XCTAssertEqual(result, .redoActionLogRedoneMove())
+        XCTAssertEqual(refreshed.redoActions, [.redoActionLogExecutedMoveRedo()])
         let redoRequests = await redoStore.redoRequests()
         XCTAssertEqual(redoRequests, ["/tmp/repo|redo-move-3"])
         let listRequests = await redoStore.listRequests()
@@ -447,14 +447,14 @@ final class MainEmptyImportEntryTests: XCTestCase {
     }
 
     @MainActor
-    func testS222ShiftCommandZExecutesSameLatestRedoAction() async {
-        let redoStore = S222RecordingRedoStore(results: [
-            .list(.success([.s222AvailableMoveRedo()])),
-            .redo(.success(.s222RedoneMove())),
-            .list(.success([.s222ExecutedMoveRedo()]))
+    func testRedoActionLogShiftCommandZExecutesSameLatestRedoAction() async {
+        let redoStore = RedoActionLogRecordingRedoStore(results: [
+            .list(.success([.redoActionLogAvailableMoveRedo()])),
+            .redo(.success(.redoActionLogRedoneMove())),
+            .list(.success([.redoActionLogExecutedMoveRedo()]))
         ])
-        let undoStore = S215NoopUndoStore()
-        let errorMapper = S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+        let undoStore = CommandPaletteNoopUndoStore()
+        let errorMapper = CommandPaletteCommandErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
 
         let loaded = await UndoHistoryActionLog.load(
             repoPath: "/tmp/repo",
@@ -478,10 +478,10 @@ final class MainEmptyImportEntryTests: XCTestCase {
     }
 
     @MainActor
-    func testS222ShortcutKeepsUndoHistoryFailureEvidenceWhenRedoIsUnavailable() async {
-        let redoStore = S222RecordingRedoStore(results: [.list(.success([]))])
-        let undoStore = S215NoopUndoStore()
-        let errorMapper = S215CommandErrorMapper(mapping: .s215CommandDb(rawContext: "unused"))
+    func testRedoActionLogShortcutKeepsUndoHistoryFailureEvidenceWhenRedoIsUnavailable() async {
+        let redoStore = RedoActionLogRecordingRedoStore(results: [.list(.success([]))])
+        let undoStore = CommandPaletteNoopUndoStore()
+        let errorMapper = CommandPaletteCommandErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
 
         let loaded = await UndoHistoryActionLog.load(
             repoPath: "/tmp/repo",
@@ -503,19 +503,19 @@ final class MainEmptyImportEntryTests: XCTestCase {
 
         XCTAssertEqual(state, .loaded(UndoHistorySnapshot(undoActions: [], redoActions: [])))
         XCTAssertEqual(request.source, .viewHistory)
-        XCTAssertEqual(request.failureMapping?.rawContext, "S2-22 C2-18 redo-action-log")
+        XCTAssertEqual(request.failureMapping?.rawContext, "redo-action-log redo-action-log-core redo-action-log")
         let redoRequests = await redoStore.redoRequests()
         XCTAssertEqual(redoRequests, [])
     }
 }
 
-private actor S215NoopUndoStore: CoreUndoActionLogging {
+private actor CommandPaletteNoopUndoStore: CoreUndoActionLogging {
     func listUndoActions(repoPath _: String) async throws -> [UndoActionRecordSnapshot] {
         []
     }
 
     func undoAction(repoPath _: String, actionID _: String) async throws -> UndoActionResultSnapshot {
-        throw CoreError.Internal(message: "S2-15/S2-22 test does not execute undo actions")
+        throw CoreError.Internal(message: "command-palette/redo-action-log test does not execute undo actions")
     }
 }
 

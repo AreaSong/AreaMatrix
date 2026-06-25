@@ -19,7 +19,7 @@ future versions -> workflow/versions/<version>/execution/**
 workflow/versions/<version>/execution/
 ```
 
-`v1-mvp` 的 Stage 1 历史队列迁移后保留内部形状：
+`v1-mvp` 的旧执行队列迁移后保留内部形状：
 
 ```text
 workflow/versions/v1-mvp/execution/
@@ -55,7 +55,7 @@ workflow/versions/<version>/execution/
 
 - 不引入 symlink、shadow copy 或长期 compatibility wrapper。
 - 不把 `.codex/` 变成 execution source of truth。
-- 不重排 task label、phase、batch、manifest 结构。
+- 不重排 task label、phase directory、batch、manifest 结构。
 - 不修改 product behavior、Core API、UDL 或 macOS app 行为。
 
 ## Path Owner
@@ -214,11 +214,11 @@ Required updates:
 
 Generated or historical source-doc links under `workflow/versions/v1-mvp/source-docs/**` may keep old references only when they are explicitly historical. Any current command or rule must use execution paths.
 
-## Migration Phases
+## Migration Steps
 
-以下 phase 是本次硬迁移的执行记录和复核清单。旧路径命令只作为迁移前 inventory 证据保留，不是当前 runtime 命令。
+以下 step 是本次硬迁移的执行记录和复核清单。旧路径命令只作为迁移前 inventory 证据保留，不是当前 runtime 命令。
 
-### Phase 0: Freeze And Inventory
+### Step 0: Freeze And Inventory
 
 Purpose: prove there is no live runner and record source state.
 
@@ -238,7 +238,7 @@ Expected evidence:
 - prompt doctor OK
 - dirty worktree understood before file moves
 
-### Phase 1: Add Path Owner
+### Step 1: Add Path Owner
 
 Implement:
 
@@ -247,7 +247,7 @@ scripts/dev_tools/execution_paths.py
 scripts/dev_tools/execution_repository.py
 ```
 
-At this phase, do not move files yet. Use tests with temporary execution roots to prove the new resolver works.
+At this step, do not move files yet. Use tests with temporary execution roots to prove the new resolver works.
 
 Required checks:
 
@@ -256,11 +256,11 @@ python3 -m py_compile scripts/dev_tools/*.py scripts/task_loop/*.py
 ./dev workflow doctor
 ```
 
-### Phase 2: Convert Runtime Defaults
+### Step 2: Convert Runtime Defaults
 
 Update runner, console, dev checks, workflow projection, and promotion code to use `execution_paths.py`.
 
-Important rule: after this phase, runtime code should have no production default that points to `tasks/prompts`.
+Important rule: after this step, runtime code should have no production default that points to `tasks/prompts`.
 
 Allowed temporary condition: tests may create fixture directories named `tasks/prompts` only when testing historical input or explicit migration errors.
 
@@ -272,7 +272,7 @@ python3 -m py_compile scripts/dev_tools/*.py scripts/task_loop/*.py
 ./dev workflow check-template
 ```
 
-### Phase 3: Move Stage 1 Queue
+### Step 3: Move V1 Queue
 
 Use `git mv` to preserve history:
 
@@ -302,7 +302,7 @@ python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py status
 ./task-loop check
 ```
 
-### Phase 4: Rewrite Current References
+### Step 4: Rewrite Current References
 
 Rewrite current runtime and governance references from old to new paths.
 
@@ -327,7 +327,7 @@ Forbidden residuals:
 - current README fixed-path warnings
 - current skill instructions
 
-### Phase 5: Final Hard-migration Gate
+### Step 5: Final Hard-migration Gate
 
 Required checks:
 
@@ -356,9 +356,9 @@ Expected final state:
 
 ## Rollback Strategy
 
-Before Phase 3, rollback is normal code revert.
+Before the queue move, rollback is normal code revert.
 
-After Phase 3, rollback must use `git mv` back to the old path, not copy/delete:
+After the queue move, rollback must use `git mv` back to the old path, not copy/delete:
 
 ```bash
 git mv workflow/versions/v1-mvp/execution/_shared tasks/prompts/_shared
@@ -375,7 +375,7 @@ Do not edit `progress.json` to fake rollback success. Re-run status and doctor a
 
 The hard migration is complete only when all are true:
 
-- Stage 1 queue physically lives under `workflow/versions/v1-mvp/execution/**`.
+- V1 queue physically lives under `workflow/versions/v1-mvp/execution/**`.
 - Runtime defaults point to execution paths.
 - Python imports no longer depend on `tasks.prompts`.
 - Prompt doctor/status pass from the new path.

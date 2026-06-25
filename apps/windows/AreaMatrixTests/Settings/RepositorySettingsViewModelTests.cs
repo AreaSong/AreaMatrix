@@ -13,7 +13,7 @@ public static class RepositorySettingsViewModelTests
         await SavesRepositoryConfigThroughUpdateConfig();
         await ExportsDiagnosticsFromLoadedSnapshot();
         await EmptyRepositoryShowsNoConnectedState();
-        WindowsSettingsPageDeclaresC417AndC420Closure();
+        WindowsSettingsPageDeclaresPlatformCapabilitiesCoreAndRepositorySettingsCoreClosure();
     }
 
     private static async Task LoadsRepositoryConfigCapabilitiesAndCoreVersion()
@@ -83,7 +83,7 @@ public static class RepositorySettingsViewModelTests
         TestAssert.Empty(bridge.LoadedConfigPaths, nameof(bridge.LoadedConfigPaths));
     }
 
-    private static void WindowsSettingsPageDeclaresC417AndC420Closure()
+    private static void WindowsSettingsPageDeclaresPlatformCapabilitiesCoreAndRepositorySettingsCoreClosure()
     {
         string view = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Features/Settings/RepositorySettingsView.xaml"));
@@ -96,13 +96,13 @@ public static class RepositorySettingsViewModelTests
         string lazyClient = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Core/LazyAreaMatrixWindowsCoreClient.cs"));
 
-        TestAssert.Contains("FallbackToInboxCheckBox", view, "C4-20 visible save control");
-        TestAssert.Contains("FallbackToInboxCheckBox_Click", codeBehind, "C4-20 save handler");
-        TestAssert.Contains("SaveFallbackToInboxAsync", codeBehind, "C4-20 save call");
+        TestAssert.Contains("FallbackToInboxCheckBox", view, "repository-settings-core visible save control");
+        TestAssert.Contains("FallbackToInboxCheckBox_Click", codeBehind, "repository-settings-core save handler");
+        TestAssert.Contains("SaveFallbackToInboxAsync", codeBehind, "repository-settings-core save call");
         TestAssert.Contains("coreVersionLoader(cancellationToken)", viewModel, "real Core version loader");
         TestAssert.Contains("Core version: {snapshot.CoreVersion}", codeBehind, "Core version row");
-        TestAssert.Contains("settings:RepositorySettingsView", mainWindow, "S4-X-08 page host");
-        TestAssert.Contains("OpenRepositorySettingsRequested", mainCode, "S4-X-02 to S4-X-08 route");
+        TestAssert.Contains("settings:RepositorySettingsView", mainWindow, "repository-settings page host");
+        TestAssert.Contains("OpenRepositorySettingsRequested", mainCode, "platform-differences to repository-settings route");
         TestAssert.Contains("coreClient.GetVersionAsync", mainCode, "production get_version wiring");
         TestAssert.Contains("RepositorySettingsPage.ExportDiagnosticsRequested +=", mainCode, "diagnostics event subscription");
         TestAssert.Contains("RepositorySettingsPage.ExportDiagnosticsAsync", mainCode, "real diagnostics handler");

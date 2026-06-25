@@ -8,8 +8,8 @@
 
 ## 一、执行规则
 
-- copy 阶段：`codex exec` 默认使用 `danger-full-access`，按 `copy-ready` 任务提示执行实现。
-- verify 阶段：`codex exec` 默认使用 `danger-full-access`，按 `verify-ready` 提示做只读验收；只读约束由 verify prompt 与验收规则保证，不依赖 Codex 沙盒。
+- copy 子步骤：`codex exec` 默认使用 `danger-full-access`，按 `copy-ready` 任务提示执行实现。
+- verify 子步骤：`codex exec` 默认使用 `danger-full-access`，按 `verify-ready` 提示做只读验收；只读约束由 verify prompt 与验收规则保证，不依赖 Codex 沙盒。
 - 默认 sandbox 可通过 `CODEX_EXEC_SANDBOX=read-only|workspace-write|danger-full-access` 或 `--codex-exec-sandbox` 覆盖；当前默认禁用沙盒是为了让 macOS XCTest 正常访问本机 `testmanagerd`。
 - copy / verify 都会读取工程质量规则和编码规范，验收不只看能否运行，也看代码是否可维护、可测试、可长期演进。
 - 验收必须通过（日志里出现 `VERIFY_RESULT: PASS`）才会继续下一任务。
@@ -136,7 +136,7 @@ NO_COLOR=1 ./dev
 ```
 
 当 runner 正在执行 copy 或 verify 子步骤时，前台日志会按从上到下三段显示 live
-activity：上段 `current task` 是横向状态条，放当前阶段、task label、attempt、
+activity：上段 `current task` 是横向状态条，放当前子步骤、task label、attempt、
 PID 和耗时；中段 `live log` 纵向列出 prompt、输出日志路径和日志状态；下段
 `current command` 也是横向状态条，放心跳间隔、命令耗时和完整 `codex exec`
 命令。后续心跳仍按这个从上到下的结构刷新，避免把长命令重复塞进单行日志。
@@ -193,13 +193,13 @@ START_FROM=phase-1/1-1-task-01 \
 
 `START_FROM` 同时支持 `phase-1/1-1-task-01` 和 `1-1/task-01`。
 
-### 3) 只跑某个 phase
+### 3) 只跑某个执行分组
 
 ```bash
 MAX_RETRIES=1 ./task-loop run --phase phase-1 --max-tasks 20
 ```
 
-> 注意：`--phase` 可重复，形成子集，如 `--phase phase-1 --phase phase-2`。
+> 注意：历史 CLI flag 名仍是 `--phase`；它表示执行分组，可重复形成子集，如 `--phase phase-1 --phase phase-2`。
 
 ---
 
@@ -376,7 +376,7 @@ workflow/versions/v1-mvp/execution/_shared/progress.json
 
 - `copy-ready` / `verify-ready` 已经用 `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py export --all` 生成；
 - 对应任务本身在文档与 manifest 上自洽；
-- 阶段通过后再做后续阶段。
+- 当前执行分组通过后再进入下一个执行分组。
 
 ---
 
