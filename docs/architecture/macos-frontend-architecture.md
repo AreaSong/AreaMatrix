@@ -86,11 +86,13 @@ Swift 调用 Rust Core 的手写入口是 `Bridge/`。
 
 ## 渐进迁移顺序
 
-1. 先固定规则：更新 `apps/macos/AGENTS.md` 和本文。
-2. 先修最明显的边界外溢：把 CoreBridge 实现从 `Models` 收回 `Bridge`。
-3. 再拆 1-2 个低风险膨胀点：优先 route、composition、filtering、action support。
-4. 后续随 feature 开发收拢：Search、Import、Settings、Onboarding、AI、SyncConflicts、FileActions。
-5. 当 2-3 个 feature 已按新规则跑通后，再评估是否做更大的目录迁移。
+1. 规则与路线图先固定：`apps/macos/AGENTS.md`、本文和
+   `docs/roadmap/engineering-maturity-roadmap.md` 保持一致。
+2. 已起步 feature 持续样板化：MainList、FileActions、Search、CommandPalette、
+   SyncConflicts、AI。
+3. 下一批优先治理高风险或高膨胀 owner：Import、Settings、Onboarding。
+4. 触达平台副作用时收敛到 `PlatformServices/` 或保留明确退出条件。
+5. 当多个 feature 跑通同一种 state / action / routing / validation 模式后，再抽共享支撑。
 
 ## 不做
 

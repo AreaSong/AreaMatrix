@@ -3111,7 +3111,7 @@ AI settings 的 AI settings 更新入口，只保存 AI 设置元数据：总开
 - 该 API 不接受 API key、provider endpoint、model id、prompt、用户文件路径列表或文件内容。
 - 启用远程路线只表达“允许后续 gate 考虑远程”；不测试远程 provider、不启用远程 provider、
   不调用模型、不上传数据。
-- Pause all AI 可通过 `ai_enabled = false` 表达；清除未采纳建议和草稿属于后续清理能力，
+- Pause all AI 可通过 `ai_enabled = false` 表达；清除未采纳建议和草稿属于独立清理能力，
   不由 AI settings 更新入口隐式执行。
 
 错误与回滚：
@@ -4214,8 +4214,8 @@ semantic search 的 embedding index 构建入口，服务 semantic search surfac
   AI call log；不得移动、删除、重命名、覆盖、Trash、导入或改写任何用户文件。
 - 远程 embedding 只在远程 AI 显式启用、SemanticSearch scope 允许、测试连接成功、隐私规则通过且
   call-log gate 可用后进入；隐私命中文件不得进入远程队列，sent fields 必须为 none。
-- 取消、暂停、清理未提交临时 index batch 和远程队列停止语义由后续 semantic search failure-edge /
-  implementation 任务补齐；本合同只定义启动和报告形状。
+- 取消、暂停、清理未提交 index batch 和远程队列停止语义由独立的 semantic search
+  recovery / queue-management 合同承载；本合同只定义启动和报告形状。
 
 错误：
 
@@ -5750,7 +5750,7 @@ classifier category slug；`keywords` 和 `extensions` 是追加到目标分类�
 - classifier save-rule surface/classifier impact preview surface 可以用 `preview_confirmed = true` 表达用户已完成必需预览后的
   `Save rule only` 回流；Core 只保存规则配置，不计算影响量、不批量应用历史文件。
 - classifier save-rule surface 不能从本合同得到历史影响量、批量应用结果或规则列表编辑状态；这些分别属于
-  classifier impact preview、后续 apply 行为和 classifier rule editor。本合同不新增 control map 之外的页面能力。
+  classifier impact preview、独立 apply 行为和 classifier rule editor。本合同不新增 control map 之外的页面能力。
 
 ### `preview_classifier_rule_impact(repoPath, request) throws -> RuleImpactReport`
 
@@ -5815,7 +5815,7 @@ metadata 变化，不因目标路径同名文件阻断。`replacement_category` 
   不修改 `classifier.yaml`，也不得移动、删除或重命名历史文件。
 - 不得保存规则、重分类、移动、重命名、删除、Trash、导入、reindex、写 notes、
   tags、saved searches、generated overview、change_log、undo_actions 或任何用户文件。
-- 不实现 classifier rule save、classifier rule editor CRUD、后续 apply 行为、AI 自动生成规则、
+- 不实现 classifier rule save、classifier rule editor CRUD、独立 apply 行为、AI 自动生成规则、
   后台持续规则评估或跨端同步。
 
 错误：
@@ -5832,7 +5832,7 @@ metadata 变化，不因目标路径同名文件阻断。`replacement_category` 
   Move on/off 的冲突差异、过宽 warning、Apply 是否可用、禁用原因、删除匹配值影响
   和删除 category replacement 缺失状态。
 - classifier impact preview surface 不能从本合同保存规则、应用到现有文件、写 Undo stack、编辑规则列表或创建新分类；
-  这些分别属于 classifier rule save、后续 apply 行为、undo action log、classifier rule editor 和 classifier editor 流程。
+  这些分别属于 classifier rule save、独立 apply 行为、undo action log、classifier rule editor 和 classifier editor 流程。
   本合同不新增 control map 之外的页面能力。
 
 ### `list_classifier_rules(repoPath) throws -> ClassifierRuleEditorSnapshot`
@@ -5875,7 +5875,7 @@ YAML reload 后刷新、保存成功后刷新和 Revert。输入只包含已初�
 - classifier rule editor surface 可以从合同得到分类列表、dirty/revert 的 last-valid 基线、字段初值、
   default category 删除禁用状态、空态、加载失败和 reload 后刷新状态。
 - classifier rule editor surface 不能从本合同得到历史影响量、批量应用结果、Open YAML 的平台动作或 AI 规则建议；
-  这些分别属于 classifier impact preview、后续 apply 行为、平台层和 AI 规则能力。本合同不新增 control map
+  这些分别属于 classifier impact preview、独立 apply 行为、平台层和 AI 规则能力。本合同不新增 control map
   之外的页面能力。
 
 ### `create_classifier_rule(repoPath, request) throws -> ClassifierRuleEditorSnapshot`
@@ -6250,7 +6250,7 @@ let report = try AreaMatrix.relinkMissingFile(
 ```
 
 `relink_missing_file` 是 missing-file recovery 的用户定位后重新关联入口。平台层负责 picker、授权、
-权限恢复和用户取消；Core 只接收已授权的新路径。后续 implementation 必须先用
+权限恢复和用户取消；Core 只接收已授权的新路径。实现必须先用
 metadata 中的期望 hash 校验选中文件；hash 匹配才可更新 file path 并写 change log。
 hash 不匹配必须保持原记录为 missing，并通过 `status = HashMismatch` 和
 `hash_matched = false` 给页面显示，不能覆盖、移动或直接关联。

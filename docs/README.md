@@ -197,6 +197,7 @@ docs/adr/README.md  (索引)
 | 文档 | 说明 |
 |---|---|
 | [roadmap/version-roadmap.md](roadmap/version-roadmap.md) | 版本路线图 |
+| [roadmap/engineering-maturity-roadmap.md](roadmap/engineering-maturity-roadmap.md) | 工程成熟路线图 |
 | [v1-mvp archive](../workflow/versions/v1-mvp/) | v1 任务切片、证据和 closeout 归档 |
 
 ---

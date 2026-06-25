@@ -232,7 +232,7 @@ fn classifier_impact_preview_contract_docs_api_udl_and_control_map_stay_aligned(
         "没有 `replacement_category` 时必须返回 `can_apply = false`",
         "只读读取 classifier 配置和文件 metadata",
         "不得保存规则、重分类、移动、重命名、删除、Trash、导入、reindex",
-        "不实现 classifier rule save、classifier rule editor CRUD、后续 apply 行为",
+        "不实现 classifier rule save、classifier rule editor CRUD、独立 apply 行为",
         "本合同不新增 control map 之外的页面能力。",
     ] {
         assert_contains(CORE_API, fragment);
