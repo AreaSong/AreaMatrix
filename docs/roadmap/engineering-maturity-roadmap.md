@@ -30,9 +30,10 @@
 - 顶层运行架构：已清晰，采用 Rust Core / UniFFI / Swift Platform / SwiftUI Feature UI。
 - macOS 前端落点规则：已稳定起步，已有 `Features/MainList/`、`Features/FileActions/`、
   `Features/Search/`、`Features/CommandPalette/`、`Features/SyncConflicts/`、
-  `Features/AI/` 和 `PlatformServices/`。
+  `Features/AI/`、`Features/Import/` 和 `PlatformServices/`。
 - 执行层复用：仍在迁移中。主要 feature owner 已开始归位，但 `Views/Main`、顶层
-  `Models`、Import / Settings / Onboarding 以及测试支撑仍承载较多历史代码。
+  `Models`、Settings / Onboarding 以及测试支撑仍承载较多历史代码；Import 已有 owner
+  落点，但平台副作用抽取和测试支撑复用尚未完成。
 - 当前治理重点：从“功能各自能跑”继续推进到“状态、动作、routing、validation、测试
   fixture 可以跨 feature 复用”。
 
@@ -124,6 +125,11 @@ routing actions 已归入 `Features/SyncConflicts/`；Bridge 封装仍保持在 
 ### 5. Import 高风险治理
 
 目标：把导入路径变成高风险 feature 的标准模板。
+
+状态：已起步，single file、folder、batch、progress、result、duplicate / naming conflict、
+iCloud placeholder 相关 View / Model / State / Actions 已归入 `Features/Import/`；
+`Bridge/CoreImporting.swift` 仍保持在 `Bridge/`。后续重点是把 FileManager / iCloud /
+session persistence 等可复用平台副作用进一步收敛到稳定服务边界，并收敛测试支撑。
 
 范围：
 

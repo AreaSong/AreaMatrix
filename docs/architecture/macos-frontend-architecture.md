@@ -89,8 +89,8 @@ Swift 调用 Rust Core 的手写入口是 `Bridge/`。
 1. 规则与路线图先固定：`apps/macos/AGENTS.md`、本文和
    `docs/roadmap/engineering-maturity-roadmap.md` 保持一致。
 2. 已起步 feature 持续样板化：MainList、FileActions、Search、CommandPalette、
-   SyncConflicts、AI。
-3. 下一批优先治理高风险或高膨胀 owner：Import、Settings、Onboarding。
+   SyncConflicts、AI、Import。
+3. 下一批优先治理高风险或高膨胀 owner：Settings、Onboarding。
 4. 触达平台副作用时收敛到 `PlatformServices/` 或保留明确退出条件。
 5. 当多个 feature 跑通同一种 state / action / routing / validation 模式后，再抽共享支撑。
 

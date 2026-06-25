@@ -237,14 +237,26 @@
 		0A0000000000000000000608 /* SmartListManagementSheet+Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000609 /* SmartListManagementSheet+Sections.swift */; };
 		0A000000000000000000060A /* SearchRouteViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000060B /* SearchRouteViews.swift */; };
 		0A0000000000000000000834 /* SearchFilterChips.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000835 /* SearchFilterChips.swift */; };
+		0A0000000000000000000836 /* MainSearchModelSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000837 /* MainSearchModelSupport.swift */; };
+		0A0000000000000000000839 /* MainListSelectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000083A /* MainListSelectionState.swift */; };
+		0A000000000000000000083B /* MainListStatusBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000083C /* MainListStatusBanner.swift */; };
+		0A000000000000000000083D /* QueryErrorRouteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000083E /* QueryErrorRouteView.swift */; };
+		0A000000000000000000083F /* MainListPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000840 /* MainListPane.swift */; };
+		0A0000000000000000000841 /* MainMultiSelectionDetailPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000842 /* MainMultiSelectionDetailPane.swift */; };
 		0A000000000000000000060C /* CoreFileListing+DisplayNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000060D /* CoreFileListing+DisplayNames.swift */; };
-		0A000000000000000000060E /* MainFileActionRoutingActions+CommandMappings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000060F /* MainFileActionRoutingActions+CommandMappings.swift */; };
+		0A000000000000000000060E /* CommandPaletteState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000060F /* CommandPaletteState.swift */; };
 		0A0000000000000000000610 /* MainFileListExternalSyncActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000611 /* MainFileListExternalSyncActions.swift */; };
 		0A0000000000000000000612 /* ImportBatchICloudPlaceholderActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000613 /* ImportBatchICloudPlaceholderActions.swift */; };
 		0A0000000000000000000614 /* SearchFilterChipsBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000615 /* SearchFilterChipsBar.swift */; };
 		0A0000000000000000000616 /* CommandPaletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000617 /* CommandPaletteView.swift */; };
 		0A0000000000000000000618 /* ICloudConflictApplyResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000619 /* ICloudConflictApplyResult.swift */; };
 		0A000000000000000000061A /* ICloudConflictApplyContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000061B /* ICloudConflictApplyContext.swift */; };
+		0A0000000000000000000846 /* AITagBatchSuggestionAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000847 /* AITagBatchSuggestionAction.swift */; };
+		0A0000000000000000000848 /* MainICloudConflictRoutingActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000849 /* MainICloudConflictRoutingActions.swift */; };
+		0A0000000000000000000850 /* SavedSearchSheetRouteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000851 /* SavedSearchSheetRouteView.swift */; };
+		0A0000000000000000000852 /* SmartListManagementSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000853 /* SmartListManagementSheet.swift */; };
+		0A0000000000000000000854 /* SemanticSearchMainContentSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000855 /* SemanticSearchMainContentSupport.swift */; };
+		0A0000000000000000000858 /* LocalModelStatusState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000859 /* LocalModelStatusState.swift */; };
 		0A0000000000000000000710 /* CoreRemoteProviderConfiguring.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000711 /* CoreRemoteProviderConfiguring.swift */; };
 		0A0000000000000000000712 /* RemoteProviderConfigState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000713 /* RemoteProviderConfigState.swift */; };
 		0A0000000000000000000714 /* RemoteProviderCredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000715 /* RemoteProviderCredentialStore.swift */; };
@@ -424,54 +436,66 @@
 		0A0000000000000000000101 /* CoreFileListing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreFileListing.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000060D /* CoreFileListing+DisplayNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AreaMatrix/Bridge/CoreFileListing+DisplayNames.swift"; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000111 /* MainEmptyBuildTreeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainEmptyBuildTreeTests.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000121 /* ImportEntryRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportEntryRequest.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000121 /* ImportEntryRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportEntryRequest.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000123 /* OnboardingModelInputs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/OnboardingModelInputs.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000125 /* AppPlatformServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AppPlatformServices.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000127 /* FileDropAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/FileDropAdapter.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000129 /* ImportEntrySheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportEntrySheetView.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001A5 /* ImportEntrySheetHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportEntrySheetHelpers.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001AF /* ImportBatchOverviewSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportBatchOverviewSections.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000129 /* ImportEntrySheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportEntrySheetView.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001A5 /* ImportEntrySheetHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportEntrySheetHelpers.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001AF /* ImportBatchOverviewSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchOverviewSections.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000012B /* MainEmptyImportEntryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainEmptyImportEntryTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000229 /* MainExternalCreatedFileWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/MainExternalCreatedFileWatcher.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000131 /* MainFileListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileListModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000611 /* MainFileListExternalSyncActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileListExternalSyncActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002BB /* CoreFileRenaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreFileRenaming.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000002BD /* MainFileRenameActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileRenameActions.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002BD /* MainFileRenameActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileRenameActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002BF /* RenameFilePageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RenameFilePageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000041B /* BatchRenameUndoAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/BatchRenameUndoAction.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000041D /* BatchRenameUndoPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/BatchRenameUndoPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000041F /* BatchRenameTrigger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/BatchRenameTrigger.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002C1 /* CoreFileDeleting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreFileDeleting.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000315 /* CoreTagCRUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreTagCRUD.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000002C3 /* MainFileDeleteActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileDeleteActions.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002C3 /* MainFileDeleteActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileDeleteActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002C5 /* DeleteFilePageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DeleteFilePageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002C7 /* CoreMoveToCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreMoveToCategory.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000331 /* CoreBatchChangeCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBatchChangeCategory.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000411 /* CoreBatchDelete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBatchDelete.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileCategoryMoveActions.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000002CB /* MainFileCategoryMoveState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileCategoryMoveState.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileCategoryMoveActions.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002CB /* MainFileCategoryMoveState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileCategoryMoveState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000733 /* AIClassificationSuggestionApplyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/AIClassificationSuggestionApplyState.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000333 /* BatchChangeCategoryState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/BatchChangeCategoryState.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000413 /* BatchDeleteState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/BatchDeleteState.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000002CD /* MainFileActionRoutingActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileActionRoutingActions.swift; sourceTree = SOURCE_ROOT; };
-		0A000000000000000000060F /* MainFileActionRoutingActions+CommandMappings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AreaMatrix/Models/MainFileActionRoutingActions+CommandMappings.swift"; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000333 /* BatchChangeCategoryState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/BatchChangeCategoryState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000413 /* BatchDeleteState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/BatchDeleteState.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002CD /* MainFileActionRoutingActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileActionRoutingActions.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000060F /* CommandPaletteState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/CommandPalette/CommandPaletteState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000503 /* MainFileClassifierCorrectionRoutingActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainFileClassifierCorrectionRoutingActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002CF /* ChangeCategoryPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ChangeCategoryPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002D5 /* ChangeCategoryPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ChangeCategoryPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002D7 /* FileActionsIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/FileActionsIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000002D9 /* ICloudConflictMinimalValidation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ICloudConflictMinimalValidation.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000002DB /* ICloudConflictMinimalSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ICloudConflictMinimalSheet.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000601 /* ICloudConflictMinimalSheet+Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AreaMatrix/Views/Main/ICloudConflictMinimalSheet+Sections.swift"; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002D9 /* ICloudConflictMinimalValidation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/ICloudConflictMinimalValidation.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002DB /* ICloudConflictMinimalSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/ICloudConflictMinimalSheet.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000601 /* ICloudConflictMinimalSheet+Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AreaMatrix/Features/SyncConflicts/ICloudConflictMinimalSheet+Sections.swift"; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000603 /* ChangeCategorySheet+Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AreaMatrix/Views/Main/ChangeCategorySheet+Sections.swift"; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000605 /* BatchChangeCategorySheet+Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AreaMatrix/Views/Main/BatchChangeCategorySheet+Sections.swift"; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000607 /* ImportBatchConflictSection+Rows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AreaMatrix/Views/Main/ImportBatchConflictSection+Rows.swift"; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000609 /* SmartListManagementSheet+Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AreaMatrix/Views/Main/SmartListManagementSheet+Sections.swift"; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000607 /* ImportBatchConflictSection+Rows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AreaMatrix/Features/Import/ImportBatchConflictSection+Rows.swift"; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000609 /* SmartListManagementSheet+Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AreaMatrix/Features/Search/SmartListManagementSheet+Sections.swift"; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000060B /* SearchRouteViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/SearchRouteViews.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000835 /* SearchFilterChips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/SearchFilterChips.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000837 /* MainSearchModelSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/MainSearchModelSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000083A /* MainListSelectionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainListSelectionState.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000083C /* MainListStatusBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainListStatusBanner.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000083E /* QueryErrorRouteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/QueryErrorRouteView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000840 /* MainListPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainListPane.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000842 /* MainMultiSelectionDetailPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainMultiSelectionDetailPane.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000615 /* SearchFilterChipsBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/SearchFilterChipsBar.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000617 /* CommandPaletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/CommandPaletteView.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000619 /* ICloudConflictApplyResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ICloudConflictApplyResult.swift; sourceTree = SOURCE_ROOT; };
-		0A000000000000000000061B /* ICloudConflictApplyContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ICloudConflictApplyContext.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000617 /* CommandPaletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/CommandPalette/CommandPaletteView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000619 /* ICloudConflictApplyResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/ICloudConflictApplyResult.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000061B /* ICloudConflictApplyContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/ICloudConflictApplyContext.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000847 /* AITagBatchSuggestionAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AITagBatchSuggestionAction.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000849 /* MainICloudConflictRoutingActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/MainICloudConflictRoutingActions.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000851 /* SavedSearchSheetRouteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/SavedSearchSheetRouteView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000853 /* SmartListManagementSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/SmartListManagementSheet.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000855 /* SemanticSearchMainContentSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/SemanticSearchMainContentSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000859 /* LocalModelStatusState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/LocalModelStatusState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000711 /* CoreRemoteProviderConfiguring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreRemoteProviderConfiguring.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000713 /* RemoteProviderConfigState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteProviderConfigState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000715 /* RemoteProviderCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteProviderCredentialStore.swift; sourceTree = SOURCE_ROOT; };
@@ -504,22 +528,22 @@
 		0A0000000000000000000749 /* SemanticSearchPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SemanticSearchPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002DD /* ICloudConflictMinimalValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalValidationTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002DF /* ICloudConflictMinimalPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ICloudConflictMinimalResolution.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/ICloudConflictMinimalResolution.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002E3 /* ICloudConflictMinimalPageIntegrationTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalPageIntegrationTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002E5 /* CoreICloudConflictListing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreICloudConflictListing.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000002E7 /* ICloudConflictListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ICloudConflictListModel.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000002E9 /* ICloudConflictListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ICloudConflictListView.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002E7 /* ICloudConflictListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/ICloudConflictListModel.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002E9 /* ICloudConflictListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/ICloudConflictListView.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002EB /* ICloudConflictListPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictListPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000761 /* CoreSyncConflictDetecting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreSyncConflictDetecting.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000763 /* SyncConflictReviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/SyncConflictReviewModel.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000765 /* SyncConflictReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/SyncConflictReviewView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000763 /* SyncConflictReviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/SyncConflictReviewModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000765 /* SyncConflictReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/SyncConflictReviewView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000767 /* SyncConflictReviewPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SyncConflictReviewPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000769 /* SyncConflictReviewResolutionTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SyncConflictReviewResolutionTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000076B /* CoreSyncConflictResolving.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreSyncConflictResolving.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000076D /* SyncConflictReviewResolutionPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SyncConflictReviewResolutionPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
-		0A000000000000000000076F /* SyncConflictReplaceConfirmationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/SyncConflictReplaceConfirmationPanel.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000779 /* SyncConflictEntryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/SyncConflictEntryModel.swift; sourceTree = SOURCE_ROOT; };
-		0A000000000000000000077B /* SyncConflictEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/SyncConflictEntryView.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000076F /* SyncConflictReplaceConfirmationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/SyncConflictReplaceConfirmationPanel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000779 /* SyncConflictEntryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/SyncConflictEntryModel.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000077B /* SyncConflictEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/SyncConflictEntryView.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000077D /* SyncConflictEntryPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SyncConflictEntryPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000771 /* CoreBindingContractInspecting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBindingContractInspecting.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000773 /* PlatformDifferencesModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/PlatformDifferencesModel.swift; sourceTree = SOURCE_ROOT; };
@@ -542,7 +566,7 @@
 		0A0000000000000000000205 /* DetailLogExternalRenamedPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogExternalRenamedPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000207 /* DetailLogExternalRemovedPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogExternalRemovedPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000231 /* DetailLogPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainListVisibleFileFiltering.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainListVisibleFileFiltering.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000137 /* MainListIntegrationFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainListIntegrationFilterTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000139 /* MainListIntegrationClosureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainListIntegrationClosureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000013D /* MainRepositoryDetailPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryDetailPane.swift; sourceTree = SOURCE_ROOT; };
@@ -640,72 +664,72 @@
 		0A0000000000000000000161 /* MainRepoErrorMappingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainRepoErrorMappingTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000163 /* MainRepoErrorActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/MainRepoErrorActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000165 /* MainWindowIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainWindowIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000167 /* ImportDropPreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportDropPreviewModel.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000169 /* ImportDropTargetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportDropTargetView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000167 /* ImportDropPreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportDropPreviewModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000169 /* ImportDropTargetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportDropTargetView.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000016B /* ImportDropPreviewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportDropPreviewModelTests.swift; sourceTree = SOURCE_ROOT; };
-		0A000000000000000000016D /* ImportSingleFilePreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreviewModel.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000016D /* ImportSingleFilePreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportSingleFilePreviewModel.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000016F /* ImportSingleFilePreviewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFilePreviewModelTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000171 /* CoreImporting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreImporting.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000173 /* ImportSingleFileSheetSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportSingleFileSheetSections.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000173 /* ImportSingleFileSheetSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportSingleFileSheetSections.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000175 /* ImportSingleFileMoveImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileMoveImportTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000177 /* ImportSingleFileIndexImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileIndexImportTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000179 /* ImportSingleFilePageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFilePageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
-		0A000000000000000000017B /* ImportSingleFilePreflight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreflight.swift; sourceTree = SOURCE_ROOT; };
-		0A000000000000000000017D /* ImportProgressRouteState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportProgressRouteState.swift; sourceTree = SOURCE_ROOT; };
-		0A000000000000000000017F /* ImportProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportProgressView.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001D5 /* ImportResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportResultView.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001D7 /* ImportProgressListIntegration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportProgressListIntegration.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001CF /* ImportProgressActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportProgressActions.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001DF /* ImportResultRouteActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportResultRouteActions.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000017B /* ImportSingleFilePreflight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportSingleFilePreflight.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000017D /* ImportProgressRouteState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportProgressRouteState.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000017F /* ImportProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportProgressView.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001D5 /* ImportResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportResultView.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001D7 /* ImportProgressListIntegration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportProgressListIntegration.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001CF /* ImportProgressActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportProgressActions.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001DF /* ImportResultRouteActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportResultRouteActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000181 /* ImportSingleFileTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000183 /* ImportSingleFilePreflightTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFilePreflightTests.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000185 /* ImportSingleFilePreflightCorePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreflightCorePreview.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000187 /* ImportSingleFilePreviewModelState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreviewModelState.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001E5 /* ImportSingleFileDuplicateResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFileDuplicateResolution.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000185 /* ImportSingleFilePreflightCorePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportSingleFilePreflightCorePreview.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000187 /* ImportSingleFilePreviewModelState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportSingleFilePreviewModelState.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001E5 /* ImportSingleFileDuplicateResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportSingleFileDuplicateResolution.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001E7 /* ImportSingleFileDuplicateResolutionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001F1 /* ReplaceConfirmPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ReplaceConfirmPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001F5 /* ImportConflictIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportConflictIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001F7 /* ImportFolderCoreBridgeModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportFolderCoreBridgeModeTests.swift; sourceTree = SOURCE_ROOT; };
-			0A00000000000000000001E9 /* ImportSingleFilePreviewPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportSingleFilePreviewPresentation.swift; sourceTree = SOURCE_ROOT; };
-			0A00000000000000000001EB /* ImportEntrySingleFileFooter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportEntrySingleFileFooter.swift; sourceTree = SOURCE_ROOT; };
+			0A00000000000000000001E9 /* ImportSingleFilePreviewPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportSingleFilePreviewPresentation.swift; sourceTree = SOURCE_ROOT; };
+			0A00000000000000000001EB /* ImportEntrySingleFileFooter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportEntrySingleFileFooter.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001EF /* ReplaceConfirmSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ReplaceConfirmSheet.swift; sourceTree = SOURCE_ROOT; };
-			0A00000000000000000001F3 /* ImportEntryReplaceConfirmationSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportEntryReplaceConfirmationSheets.swift; sourceTree = SOURCE_ROOT; };
+			0A00000000000000000001F3 /* ImportEntryReplaceConfirmationSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportEntryReplaceConfirmationSheets.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001ED /* ImportSingleFileNameConflictCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileNameConflictCoreTests.swift; sourceTree = SOURCE_ROOT; };
 			0A0000000000000000000189 /* ImportSingleFileTestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileTestFixtures.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000195 /* ImportBatchPreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchPreviewModel.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000197 /* ImportBatchDuplicatePrecheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchDuplicatePrecheck.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000199 /* ImportBatchConflictSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportBatchConflictSection.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001A1 /* ImportBatchNamingOptionsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportBatchNamingOptionsSection.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001B3 /* ImportFolderPreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportFolderPreviewModel.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001B5 /* ImportFolderScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportFolderScanner.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001B7 /* ImportFolderPreviewSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportFolderPreviewSections.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000195 /* ImportBatchPreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchPreviewModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000197 /* ImportBatchDuplicatePrecheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchDuplicatePrecheck.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000199 /* ImportBatchConflictSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchConflictSection.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001A1 /* ImportBatchNamingOptionsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchNamingOptionsSection.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001B3 /* ImportFolderPreviewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportFolderPreviewModel.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001B5 /* ImportFolderScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportFolderScanner.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001B7 /* ImportFolderPreviewSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportFolderPreviewSections.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001B9 /* ImportFolderPreviewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportFolderPreviewModelTests.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001BB /* ImportFolderImporting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportFolderImporting.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001BD /* ImportFolderScanState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportFolderScanState.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001D9 /* ImportFolderImportContinuation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportFolderImportContinuation.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001DB /* MainCurrentListErrorPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainCurrentListErrorPane.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001BB /* ImportFolderImporting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportFolderImporting.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001BD /* ImportFolderScanState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportFolderScanState.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001D9 /* ImportFolderImportContinuation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportFolderImportContinuation.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001DB /* MainCurrentListErrorPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainCurrentListErrorPane.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001DD /* ImportProgressPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportProgressPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001BF /* ImportFolderTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportFolderTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001C1 /* ImportFolderPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportFolderPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001C3 /* ImportFolderPreviewState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportFolderPreviewState.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001C5 /* ImportFolderConflictActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportFolderConflictActions.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001C7 /* ImportFolderConflictSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportFolderConflictSection.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001C3 /* ImportFolderPreviewState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportFolderPreviewState.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001C5 /* ImportFolderConflictActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportFolderConflictActions.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001C7 /* ImportFolderConflictSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportFolderConflictSection.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001C9 /* ImportFolderConflictResolutionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportFolderConflictResolutionTests.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001CB /* ImportBatchProgressItems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchProgressItems.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001CB /* ImportBatchProgressItems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchProgressItems.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001CD /* ImportProgressCopyPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportProgressCopyPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001D1 /* ImportBatchCopyImportContinuation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchCopyImportContinuation.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001D1 /* ImportBatchCopyImportContinuation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchCopyImportContinuation.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001D3 /* ImportProgressCopyQueueRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportProgressCopyQueueRecoveryTests.swift; sourceTree = SOURCE_ROOT; };
-		0A000000000000000000018D /* ImportBatchCopyImportModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchCopyImportModel.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000301 /* ImportBatchCopyImportExecution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchCopyImportExecution.swift; sourceTree = SOURCE_ROOT; };
-		0A000000000000000000019B /* ImportBatchCopyImportState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchCopyImportState.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000303 /* ImportBatchCopyImportSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchCopyImportSession.swift; sourceTree = SOURCE_ROOT; };
-		0A000000000000000000019F /* ImportBatchConflictActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchConflictActions.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000613 /* ImportBatchICloudPlaceholderActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchICloudPlaceholderActions.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001A3 /* ImportBatchNamingActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchNamingActions.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000001AB /* ImportBatchNamingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ImportBatchNamingState.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000018D /* ImportBatchCopyImportModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchCopyImportModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000301 /* ImportBatchCopyImportExecution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchCopyImportExecution.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000019B /* ImportBatchCopyImportState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchCopyImportState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000303 /* ImportBatchCopyImportSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchCopyImportSession.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000019F /* ImportBatchConflictActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchConflictActions.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000613 /* ImportBatchICloudPlaceholderActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchICloudPlaceholderActions.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001A3 /* ImportBatchNamingActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchNamingActions.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000001AB /* ImportBatchNamingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchNamingState.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000018F /* ImportBatchCopyImportModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchCopyImportModelTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000019D /* ImportBatchDuplicateResolutionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchDuplicateResolutionTests.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000191 /* ImportBatchCopyFooterSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ImportBatchCopyFooterSection.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000191 /* ImportBatchCopyFooterSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchCopyFooterSection.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000193 /* ImportBatchCopyPageIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchCopyPageIntegrationTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001A7 /* ImportBatchResultSummaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchResultSummaryTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000401 /* BatchChangeCategoryPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/BatchChangeCategoryPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
@@ -833,38 +857,11 @@
 				0A0000000000000000000415 /* BatchDeleteConfirmSheet.swift */,
 				0A0000000000000000000417 /* BatchDeleteConfirmSections.swift */,
 				0A0000000000000000000145 /* DeleteFileConfirmSheet.swift */,
-				0A00000000000000000002DB /* ICloudConflictMinimalSheet.swift */,
-				0A0000000000000000000619 /* ICloudConflictApplyResult.swift */,
-				0A000000000000000000061B /* ICloudConflictApplyContext.swift */,
-				0A0000000000000000000601 /* ICloudConflictMinimalSheet+Sections.swift */,
-				0A00000000000000000002E9 /* ICloudConflictListView.swift */,
-				0A0000000000000000000765 /* SyncConflictReviewView.swift */,
-				0A000000000000000000076F /* SyncConflictReplaceConfirmationPanel.swift */,
-				0A000000000000000000077B /* SyncConflictEntryView.swift */,
 				0A0000000000000000000149 /* MainLoadingView.swift */,
 				0A00000000000000000002B4 /* StartupRecoveryErrorRecoveryView.swift */,
 				0A000000000000000000015F /* RepositoryErrorView.swift */,
 				0A0000000000000000000127 /* FileDropAdapter.swift */,
-				0A0000000000000000000169 /* ImportDropTargetView.swift */,
-				0A0000000000000000000129 /* ImportEntrySheetView.swift */,
-				0A00000000000000000001A5 /* ImportEntrySheetHelpers.swift */,
-				0A00000000000000000001AF /* ImportBatchOverviewSections.swift */,
-				0A00000000000000000001B7 /* ImportFolderPreviewSections.swift */,
-				0A00000000000000000001C7 /* ImportFolderConflictSection.swift */,
-				0A0000000000000000000191 /* ImportBatchCopyFooterSection.swift */,
-				0A00000000000000000001EB /* ImportEntrySingleFileFooter.swift */,
 				0A00000000000000000001EF /* ReplaceConfirmSheet.swift */,
-				0A00000000000000000001F3 /* ImportEntryReplaceConfirmationSheets.swift */,
-				0A0000000000000000000199 /* ImportBatchConflictSection.swift */,
-				0A0000000000000000000607 /* ImportBatchConflictSection+Rows.swift */,
-				0A00000000000000000001A1 /* ImportBatchNamingOptionsSection.swift */,
-				0A0000000000000000000173 /* ImportSingleFileSheetSections.swift */,
-				0A000000000000000000017F /* ImportProgressView.swift */,
-				0A00000000000000000001D5 /* ImportResultView.swift */,
-				0A00000000000000000001D7 /* ImportProgressListIntegration.swift */,
-				0A00000000000000000001DB /* MainCurrentListErrorPane.swift */,
-				0A0000000000000000000609 /* SmartListManagementSheet+Sections.swift */,
-					0A0000000000000000000617 /* CommandPaletteView.swift */,
 				0A000000000000000000001F /* ValidatePathStepView.swift */,
 				0A0000000000000000000F19 /* ValidatePathDisplaySupport.swift */,
 				0A00000000000000000000A0 /* InitializingStepView.swift */,
@@ -915,23 +912,144 @@
 				isa = PBXGroup;
 				children = (
 					0A000000000000000000071B /* AI */,
+					0A0000000000000000000856 /* CommandPalette */,
+					0A0000000000000000000843 /* FileActions */,
+					0A000000000000000000085A /* Import */,
+					0A0000000000000000000838 /* MainList */,
 					0A0000000000000000000833 /* Search */,
+					0A0000000000000000000857 /* SyncConflicts */,
 				);
 				name = Features;
+				sourceTree = "<group>";
+			};
+			0A0000000000000000000843 /* FileActions */ = {
+				isa = PBXGroup;
+				children = (
+					0A00000000000000000002BD /* MainFileRenameActions.swift */,
+					0A00000000000000000002C3 /* MainFileDeleteActions.swift */,
+					0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */,
+					0A00000000000000000002CB /* MainFileCategoryMoveState.swift */,
+					0A00000000000000000002CD /* MainFileActionRoutingActions.swift */,
+					0A0000000000000000000333 /* BatchChangeCategoryState.swift */,
+					0A0000000000000000000413 /* BatchDeleteState.swift */,
+				);
+				name = FileActions;
+				sourceTree = "<group>";
+			};
+			0A000000000000000000085A /* Import */ = {
+				isa = PBXGroup;
+				children = (
+					0A0000000000000000000121 /* ImportEntryRequest.swift */,
+					0A0000000000000000000167 /* ImportDropPreviewModel.swift */,
+					0A0000000000000000000169 /* ImportDropTargetView.swift */,
+					0A0000000000000000000129 /* ImportEntrySheetView.swift */,
+					0A00000000000000000001A5 /* ImportEntrySheetHelpers.swift */,
+					0A00000000000000000001EB /* ImportEntrySingleFileFooter.swift */,
+					0A00000000000000000001F3 /* ImportEntryReplaceConfirmationSheets.swift */,
+					0A000000000000000000016D /* ImportSingleFilePreviewModel.swift */,
+					0A0000000000000000000187 /* ImportSingleFilePreviewModelState.swift */,
+					0A000000000000000000017B /* ImportSingleFilePreflight.swift */,
+					0A0000000000000000000185 /* ImportSingleFilePreflightCorePreview.swift */,
+					0A00000000000000000001E5 /* ImportSingleFileDuplicateResolution.swift */,
+					0A00000000000000000001E9 /* ImportSingleFilePreviewPresentation.swift */,
+					0A0000000000000000000173 /* ImportSingleFileSheetSections.swift */,
+					0A0000000000000000000195 /* ImportBatchPreviewModel.swift */,
+					0A0000000000000000000197 /* ImportBatchDuplicatePrecheck.swift */,
+					0A000000000000000000018D /* ImportBatchCopyImportModel.swift */,
+					0A000000000000000000019B /* ImportBatchCopyImportState.swift */,
+					0A0000000000000000000301 /* ImportBatchCopyImportExecution.swift */,
+					0A00000000000000000001D1 /* ImportBatchCopyImportContinuation.swift */,
+					0A0000000000000000000303 /* ImportBatchCopyImportSession.swift */,
+					0A00000000000000000001CB /* ImportBatchProgressItems.swift */,
+					0A000000000000000000019F /* ImportBatchConflictActions.swift */,
+					0A0000000000000000000613 /* ImportBatchICloudPlaceholderActions.swift */,
+					0A00000000000000000001A3 /* ImportBatchNamingActions.swift */,
+					0A00000000000000000001AB /* ImportBatchNamingState.swift */,
+					0A00000000000000000001AF /* ImportBatchOverviewSections.swift */,
+					0A0000000000000000000199 /* ImportBatchConflictSection.swift */,
+					0A0000000000000000000607 /* ImportBatchConflictSection+Rows.swift */,
+					0A0000000000000000000191 /* ImportBatchCopyFooterSection.swift */,
+					0A00000000000000000001A1 /* ImportBatchNamingOptionsSection.swift */,
+					0A00000000000000000001B3 /* ImportFolderPreviewModel.swift */,
+					0A00000000000000000001C3 /* ImportFolderPreviewState.swift */,
+					0A00000000000000000001B5 /* ImportFolderScanner.swift */,
+					0A00000000000000000001BD /* ImportFolderScanState.swift */,
+					0A00000000000000000001BB /* ImportFolderImporting.swift */,
+					0A00000000000000000001D9 /* ImportFolderImportContinuation.swift */,
+					0A00000000000000000001C5 /* ImportFolderConflictActions.swift */,
+					0A00000000000000000001B7 /* ImportFolderPreviewSections.swift */,
+					0A00000000000000000001C7 /* ImportFolderConflictSection.swift */,
+					0A000000000000000000017D /* ImportProgressRouteState.swift */,
+					0A00000000000000000001CF /* ImportProgressActions.swift */,
+					0A000000000000000000017F /* ImportProgressView.swift */,
+					0A00000000000000000001D7 /* ImportProgressListIntegration.swift */,
+					0A00000000000000000001DF /* ImportResultRouteActions.swift */,
+					0A00000000000000000001D5 /* ImportResultView.swift */,
+				);
+				name = Import;
+				sourceTree = "<group>";
+			};
+			0A0000000000000000000838 /* MainList */ = {
+				isa = PBXGroup;
+				children = (
+					0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */,
+					0A00000000000000000001DB /* MainCurrentListErrorPane.swift */,
+					0A0000000000000000000840 /* MainListPane.swift */,
+					0A0000000000000000000842 /* MainMultiSelectionDetailPane.swift */,
+					0A000000000000000000083A /* MainListSelectionState.swift */,
+					0A000000000000000000083C /* MainListStatusBanner.swift */,
+				);
+				name = MainList;
 				sourceTree = "<group>";
 			};
 			0A0000000000000000000833 /* Search */ = {
 				isa = PBXGroup;
 				children = (
+					0A0000000000000000000837 /* MainSearchModelSupport.swift */,
+					0A000000000000000000083E /* QueryErrorRouteView.swift */,
 					0A000000000000000000060B /* SearchRouteViews.swift */,
+					0A0000000000000000000851 /* SavedSearchSheetRouteView.swift */,
+					0A0000000000000000000853 /* SmartListManagementSheet.swift */,
+					0A0000000000000000000609 /* SmartListManagementSheet+Sections.swift */,
 					0A0000000000000000000313 /* SearchFiltersPopover.swift */,
 					0A0000000000000000000835 /* SearchFilterChips.swift */,
 					0A0000000000000000000615 /* SearchFilterChipsBar.swift */,
 					0A0000000000000000000747 /* SemanticSearchResultsView.swift */,
 					0A0000000000000000000743 /* SemanticSearchPresentation.swift */,
 					0A0000000000000000000745 /* SemanticIndexBuildControls.swift */,
+					0A0000000000000000000855 /* SemanticSearchMainContentSupport.swift */,
 				);
 				name = Search;
+				sourceTree = "<group>";
+			};
+			0A0000000000000000000856 /* CommandPalette */ = {
+				isa = PBXGroup;
+				children = (
+					0A000000000000000000060F /* CommandPaletteState.swift */,
+					0A0000000000000000000617 /* CommandPaletteView.swift */,
+				);
+				name = CommandPalette;
+				sourceTree = "<group>";
+			};
+			0A0000000000000000000857 /* SyncConflicts */ = {
+				isa = PBXGroup;
+				children = (
+					0A00000000000000000002D9 /* ICloudConflictMinimalValidation.swift */,
+					0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */,
+					0A00000000000000000002E7 /* ICloudConflictListModel.swift */,
+					0A00000000000000000002DB /* ICloudConflictMinimalSheet.swift */,
+					0A0000000000000000000601 /* ICloudConflictMinimalSheet+Sections.swift */,
+					0A0000000000000000000619 /* ICloudConflictApplyResult.swift */,
+					0A000000000000000000061B /* ICloudConflictApplyContext.swift */,
+					0A00000000000000000002E9 /* ICloudConflictListView.swift */,
+					0A0000000000000000000763 /* SyncConflictReviewModel.swift */,
+					0A0000000000000000000765 /* SyncConflictReviewView.swift */,
+					0A000000000000000000076F /* SyncConflictReplaceConfirmationPanel.swift */,
+					0A0000000000000000000779 /* SyncConflictEntryModel.swift */,
+					0A000000000000000000077B /* SyncConflictEntryView.swift */,
+					0A0000000000000000000849 /* MainICloudConflictRoutingActions.swift */,
+				);
+				name = SyncConflicts;
 				sourceTree = "<group>";
 			};
 		0A000000000000000000071B /* AI */ = {
@@ -956,6 +1074,7 @@
 				0A0000000000000000000739 /* AISummaryEditorState.swift */,
 				0A000000000000000000073B /* AISummaryEditorGateState.swift */,
 				0A0000000000000000000741 /* AISummaryMetadataReader.swift */,
+				0A0000000000000000000847 /* AITagBatchSuggestionAction.swift */,
 			);
 			name = AI;
 			sourceTree = "<group>";
@@ -1020,57 +1139,15 @@
 				0A0000000000000000000801 /* RepositorySettingsPlatformCapabilities.swift */,
 				0A0000000000000000000811 /* RepositorySettingsConfigModel.swift */,
 				0A0000000000000000000289 /* RepositorySettingsActionState.swift */,
+				0A0000000000000000000859 /* LocalModelStatusState.swift */,
 				0A000000000000000000014F /* OnboardingRoute.swift */,
 				0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */,
-				0A0000000000000000000121 /* ImportEntryRequest.swift */,
-				0A0000000000000000000167 /* ImportDropPreviewModel.swift */,
-				0A0000000000000000000195 /* ImportBatchPreviewModel.swift */,
-				0A00000000000000000001B3 /* ImportFolderPreviewModel.swift */,
-				0A00000000000000000001C3 /* ImportFolderPreviewState.swift */,
-				0A00000000000000000001C5 /* ImportFolderConflictActions.swift */,
-				0A00000000000000000001BB /* ImportFolderImporting.swift */,
-				0A00000000000000000001D9 /* ImportFolderImportContinuation.swift */,
-				0A00000000000000000001BD /* ImportFolderScanState.swift */,
-				0A00000000000000000001B5 /* ImportFolderScanner.swift */,
-				0A000000000000000000018D /* ImportBatchCopyImportModel.swift */,
-				0A0000000000000000000301 /* ImportBatchCopyImportExecution.swift */,
-				0A00000000000000000001D1 /* ImportBatchCopyImportContinuation.swift */,
-				0A000000000000000000019B /* ImportBatchCopyImportState.swift */,
-				0A0000000000000000000303 /* ImportBatchCopyImportSession.swift */,
-				0A00000000000000000001CB /* ImportBatchProgressItems.swift */,
-				0A000000000000000000019F /* ImportBatchConflictActions.swift */,
-				0A0000000000000000000613 /* ImportBatchICloudPlaceholderActions.swift */,
-				0A00000000000000000001A3 /* ImportBatchNamingActions.swift */,
-				0A00000000000000000001AB /* ImportBatchNamingState.swift */,
-				0A000000000000000000016D /* ImportSingleFilePreviewModel.swift */,
-				0A0000000000000000000187 /* ImportSingleFilePreviewModelState.swift */,
-				0A00000000000000000001E5 /* ImportSingleFileDuplicateResolution.swift */,
-				0A00000000000000000001E9 /* ImportSingleFilePreviewPresentation.swift */,
-				0A000000000000000000017B /* ImportSingleFilePreflight.swift */,
-				0A0000000000000000000185 /* ImportSingleFilePreflightCorePreview.swift */,
-				0A0000000000000000000197 /* ImportBatchDuplicatePrecheck.swift */,
-				0A000000000000000000017D /* ImportProgressRouteState.swift */,
-				0A00000000000000000001CF /* ImportProgressActions.swift */,
-				0A00000000000000000001DF /* ImportResultRouteActions.swift */,
 				0A0000000000000000000123 /* OnboardingModelInputs.swift */,
 				0A0000000000000000000131 /* MainFileListModel.swift */,
 				0A0000000000000000000611 /* MainFileListExternalSyncActions.swift */,
-				0A00000000000000000002BD /* MainFileRenameActions.swift */,
 				0A000000000000000000041B /* BatchRenameUndoAction.swift */,
-				0A00000000000000000002C3 /* MainFileDeleteActions.swift */,
-				0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */,
-				0A00000000000000000002CB /* MainFileCategoryMoveState.swift */,
 				0A0000000000000000000733 /* AIClassificationSuggestionApplyState.swift */,
-				0A0000000000000000000333 /* BatchChangeCategoryState.swift */,
-				0A0000000000000000000413 /* BatchDeleteState.swift */,
-				0A00000000000000000002CD /* MainFileActionRoutingActions.swift */,
-				0A000000000000000000060F /* MainFileActionRoutingActions+CommandMappings.swift */,
 				0A0000000000000000000503 /* MainFileClassifierCorrectionRoutingActions.swift */,
-				0A00000000000000000002D9 /* ICloudConflictMinimalValidation.swift */,
-				0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */,
-				0A00000000000000000002E7 /* ICloudConflictListModel.swift */,
-				0A0000000000000000000763 /* SyncConflictReviewModel.swift */,
-				0A0000000000000000000779 /* SyncConflictEntryModel.swift */,
 				0A00000000000000000002F0 /* DatabaseRepairConfirmModel.swift */,
 				0A0000000000000000000261 /* MainFileListDetailSupport.swift */,
 				0A0000000000000000000223 /* MainFileListState.swift */,
@@ -1081,8 +1158,7 @@
 				0A000000000000000000024D /* MainListSystemActions.swift */,
 				0A0000000000000000000311 /* MainFileListDiagnosticsActions.swift */,
 				0A0000000000000000000221 /* MainDetailExternalCreateSyncState.swift */,
-				0A0000000000000000000227 /* MainExternalCreatedFileActions.swift */,
-					0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */,
+					0A0000000000000000000227 /* MainExternalCreatedFileActions.swift */,
 				0A0000000000000000000147 /* MainLoadingState.swift */,
 					0A000000000000000000014D /* StartupRecoveryModels.swift */,
 					0A00000000000000000000F7 /* DiagnosticsSnapshotState.swift */,
@@ -1357,7 +1433,8 @@
 				0A00000000000000000002C8 /* MainFileCategoryMoveActions.swift in Sources */,
 				0A00000000000000000002CA /* MainFileCategoryMoveState.swift in Sources */,
 				0A00000000000000000002CC /* MainFileActionRoutingActions.swift in Sources */,
-				0A000000000000000000060E /* MainFileActionRoutingActions+CommandMappings.swift in Sources */,
+				0A000000000000000000060E /* CommandPaletteState.swift in Sources */,
+				0A0000000000000000000848 /* MainICloudConflictRoutingActions.swift in Sources */,
 				0A0000000000000000000502 /* MainFileClassifierCorrectionRoutingActions.swift in Sources */,
 				0A00000000000000000002D8 /* ICloudConflictMinimalValidation.swift in Sources */,
 				0A00000000000000000002E0 /* ICloudConflictMinimalResolution.swift in Sources */,
@@ -1369,7 +1446,11 @@
 				0A0000000000000000000714 /* RemoteProviderCredentialStore.swift in Sources */,
 				0A0000000000000000000716 /* RemoteProviderConfigModel.swift in Sources */,
 				0A0000000000000000000724 /* RemoteProviderProbeRuntime.swift in Sources */,
+				0A0000000000000000000846 /* AITagBatchSuggestionAction.swift in Sources */,
 				0A0000000000000000000134 /* MainListVisibleFileFiltering.swift in Sources */,
+				0A0000000000000000000836 /* MainSearchModelSupport.swift in Sources */,
+				0A0000000000000000000839 /* MainListSelectionState.swift in Sources */,
+				0A000000000000000000083B /* MainListStatusBanner.swift in Sources */,
 				0A0000000000000000000122 /* OnboardingModelInputs.swift in Sources */,
 				0A0000000000000000000126 /* FileDropAdapter.swift in Sources */,
 				0A0000000000000000000168 /* ImportDropTargetView.swift in Sources */,
@@ -1428,6 +1509,7 @@
 				0A0000000000000000000800 /* RepositorySettingsPlatformCapabilities.swift in Sources */,
 				0A0000000000000000000810 /* RepositorySettingsConfigModel.swift in Sources */,
 				0A0000000000000000000288 /* RepositorySettingsActionState.swift in Sources */,
+				0A0000000000000000000858 /* LocalModelStatusState.swift in Sources */,
 				0A00000000000000000001CE /* ImportProgressActions.swift in Sources */,
 				0A00000000000000000001DE /* ImportResultRouteActions.swift in Sources */,
 				0A000000000000000000024C /* MainListSystemActions.swift in Sources */,
@@ -1435,9 +1517,12 @@
 				0A00000000000000000001D4 /* ImportResultView.swift in Sources */,
 				0A00000000000000000001D6 /* ImportProgressListIntegration.swift in Sources */,
 				0A00000000000000000001DA /* MainCurrentListErrorPane.swift in Sources */,
+				0A000000000000000000083F /* MainListPane.swift in Sources */,
+				0A0000000000000000000841 /* MainMultiSelectionDetailPane.swift in Sources */,
 				0A0000000000000000000608 /* SmartListManagementSheet+Sections.swift in Sources */,
 				0A000000000000000000060A /* SearchRouteViews.swift in Sources */,
 				0A0000000000000000000834 /* SearchFilterChips.swift in Sources */,
+				0A000000000000000000083D /* QueryErrorRouteView.swift in Sources */,
 				0A0000000000000000000616 /* CommandPaletteView.swift in Sources */,
 				0A0000000000000000000272 /* GeneralSettingsView.swift in Sources */,
 				0A0000000000000000000292 /* ClassifierSettingsPane.swift in Sources */,
@@ -1475,6 +1560,9 @@
 				0A000000000000000000024E /* MainRepositoryContentNoteDrafts.swift in Sources */,
 				0A0000000000000000000312 /* SearchFiltersPopover.swift in Sources */,
 				0A0000000000000000000614 /* SearchFilterChipsBar.swift in Sources */,
+				0A0000000000000000000850 /* SavedSearchSheetRouteView.swift in Sources */,
+				0A0000000000000000000852 /* SmartListManagementSheet.swift in Sources */,
+				0A0000000000000000000854 /* SemanticSearchMainContentSupport.swift in Sources */,
 				0A00000000000000000002D0 /* MainRepositoryContentCategoryMoveRefresh.swift in Sources */,
 				0A00000000000000000002D2 /* MainRepositoryContentActionRouting.swift in Sources */,
 				0A0000000000000000000336 /* MainRepositoryMultiSelectionActions.swift in Sources */,

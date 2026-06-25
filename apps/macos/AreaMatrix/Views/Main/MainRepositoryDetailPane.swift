@@ -1,4 +1,3 @@
-// swiftlint:disable file_length
 import SwiftUI
 
 struct MainRepositoryDetailPane: View {
@@ -91,102 +90,6 @@ extension MainRepositoryDetailPane {
             }
             Button("Save changes") { Task { await saveAndFinishPendingSummaryExit() } }
         } message: { Text("Save or discard the AI summary draft before leaving this file summary.") }
-    }
-
-    private var multiSelectionDetailPane: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                multiSelectionHeader
-                multiSelectionWarnings
-                multiSelectionStatistics
-                multiSelectionFileTypes
-                multiSelectionActions
-            }
-            .padding(18)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-        }
-        .accessibilityElement(children: .contain)
-    }
-
-    private var multiSelectionHeader: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(multiSelectionSummary.title)
-                .font(.headline)
-            Text(multiSelectionSummary.subtitle)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            if multiSelectionSummary.isUpdating {
-                Label("Updating selection...", systemImage: "arrow.triangle.2.circlepath")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-            if let detailErrorMapping {
-                Label(detailErrorMapping.userMessage, systemImage: "exclamationmark.triangle")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var multiSelectionWarnings: some View {
-        if !multiSelectionSummary.warningMessages.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(multiSelectionSummary.warningMessages, id: \.self) { warning in
-                    Label(warning, systemImage: "exclamationmark.triangle")
-                        .font(.callout)
-                }
-            }
-            .padding(10)
-            .background(Color.yellow.opacity(0.12))
-        }
-    }
-
-    private var multiSelectionStatistics: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(multiSelectionSummary.statisticRows) { row in
-                metadataRow(row.label, row.value)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var multiSelectionFileTypes: some View {
-        if !multiSelectionSummary.fileTypeRows.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("File types")
-                    .font(.callout.weight(.semibold))
-                ForEach(multiSelectionSummary.fileTypeRows) { row in
-                    metadataRow(row.label, row.value)
-                }
-            }
-        }
-    }
-
-    private var multiSelectionActions: some View {
-        MainRepositoryMultiSelectionActions(
-            selection: selection,
-            summary: multiSelectionSummary,
-            detailErrorMapping: detailErrorMapping,
-            repoPath: repoPath,
-            categoryRows: categoryRows,
-            batchTagStore: batchTagStore,
-            batchTagUndoStore: batchTagUndoStore,
-            batchTagErrorMapper: batchTagErrorMapper,
-            batchDeleter: batchDeleter,
-            batchCategoryChanger: batchCategoryChanger,
-            batchRenamer: batchRenamer,
-            tagActions: tagActions,
-            writeActionDisabledReason: writeActionDisabledReason,
-            onCopyPaths: onCopyPaths,
-            onRetrySelectedFileDetail: onRetrySelectedFileDetail,
-            onRefreshChangeLog: onRefreshChangeLog,
-            onBatchCategoryApplied: onBatchCategoryApplied,
-            onBatchDeleteApplied: onBatchDeleteApplied,
-            onBatchRenameApplied: onBatchRenameApplied,
-            onBatchCategoryCreateNewCategory: onBatchCategoryCreateNewCategory
-        )
     }
 
     private var emptyDetailPane: some View {
