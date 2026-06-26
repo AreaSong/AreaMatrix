@@ -201,7 +201,7 @@ AreaMatrix/                            # Git 仓库
 ├── scripts/                           # ./dev 与 task-loop 支撑脚本
 ├── workflow/                          # 版本讨论、计划、预览、execution 和 closeout
 │   └── versions/
-│       ├── v1-mvp/                    # completed 637-task queue archive
+│       ├── v1-mvp/                    # completed v1 execution archive
 │       └── v-template/                # template reference, not a product version
 │
 ├── tasks/                             # lightweight task progress and backlog

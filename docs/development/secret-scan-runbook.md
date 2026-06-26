@@ -13,10 +13,17 @@
 
 ```bash
 ./dev check secrets
-rg '/Users/[A-Za-z0-9._-]+/' workflow/versions/v1-mvp/execution/_shared/progress.json workflow/versions/v1-mvp/evidence/task-loop-runs || true
 ```
 
 工作区干净且没有领先 `origin/main` 的 commit 时，会输出 `nothing to scan` 并 **PASS**。
+
+## 维护者：v1 归档路径补扫（可选）
+
+v1 历史执行队列已经归档；需要复核旧 progress 或 task-loop evidence 是否重新出现本机绝对路径时，单独运行：
+
+```bash
+rg '/Users/[A-Za-z0-9._-]+/' workflow/versions/v1-mvp/execution/_shared/progress.json workflow/versions/v1-mvp/evidence/task-loop-runs || true
+```
 
 ## 维护者：全历史审计（可选）
 

@@ -1,6 +1,4 @@
 import Foundation
-
-// swiftlint:disable file_length
 import SwiftUI
 
 extension MainRepositoryContentView {
@@ -13,13 +11,6 @@ extension MainRepositoryContentView {
 
     func showUnsavedNoteDraftPreserved(fileID: Int64) {
         fileListModel.showUnsavedNoteDraftPreserved(fileID: fileID)
-    }
-
-    var listCountText: String {
-        if fileListModel.searchState.isActive {
-            return "\(fileListModel.searchState.page?.totalCount ?? Int64(visibleFiles.count)) results"
-        }
-        return "\(visibleFiles.count) files"
     }
 
     var searchTaskKey: String {
@@ -40,75 +31,6 @@ extension MainRepositoryContentView {
             effectiveSearchFilters.taskKey,
             selectedSidebarID
         ].joined(separator: "|")
-    }
-
-    var visibleFiles: [FileEntrySnapshot] {
-        if fileListModel.searchState.isActive {
-            return fileListModel.files
-        }
-        return MainListVisibleFileFiltering.visibleFiles(
-            from: fileListModel.files,
-            sidebarRow: selectedSidebarRow,
-            filterText: filterText
-        )
-        .sorted(using: tableSortOrder)
-    }
-
-    func searchMatchText(for fileID: Int64) -> String {
-        guard let result = fileListModel.searchState.page?.results.first(where: { $0.file.id == fileID }) else {
-            return "-"
-        }
-        if let semantic = fileListModel.searchState.page?.semanticPage?.result(for: fileID) {
-            return semanticMatchText(semantic)
-        }
-        if let noteSnippet = result.noteSnippet, !noteSnippet.isEmpty {
-            return "Note: \(noteSnippet)"
-        }
-        guard let match = result.matches.first else { return "Match" }
-        return "\(match.kindDisplayName): \(match.fieldDisplayName) - \(match.snippet)"
-    }
-
-    var importProgressRows: [ImportProgressListRow] {
-        importProgressItems.map(ImportProgressListRow.init)
-    }
-
-    @ViewBuilder
-    var emptyListOverlay: some View {
-        if !fileListModel.isLoading, visibleFiles.isEmpty, importProgressRows.isEmpty {
-            if let destination = fileListModel.searchPageDestination {
-                searchRouteStatus(destination)
-            } else {
-                Text(fileListModel.searchState.isActive ? "No search results" : "No files in this category")
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    @ViewBuilder
-    var statusBanner: some View {
-        if fileListModel.searchState.isActive {
-            searchStatusBanner
-        } else if let banner = fileListModel.statusBanner {
-            HStack(spacing: 10) {
-                Label(banner.message, systemImage: banner.systemImage)
-                    .font(.callout)
-                Spacer()
-                Button("Retry") {
-                    Task {
-                        await fileListModel.retryCurrentCategory()
-                    }
-                }
-                Button("Dismiss") {
-                    fileListModel.clearStatusBanner()
-                }
-            }
-            .padding(10)
-            .background(Color.yellow.opacity(0.12))
-        } else if state == .list {
-            SyncConflictEntryPanel(model: syncConflictEntryModel) { route in
-                pendingSyncConflictReviewRoute = route
-            }
-        }
     }
 
     var detailPane: some View {
@@ -212,7 +134,7 @@ extension MainRepositoryContentView {
     }
 
     @ViewBuilder
-    private var searchStatusBanner: some View {
+    var searchStatusBanner: some View {
         if let request = fileListModel.searchState.request {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 10) {

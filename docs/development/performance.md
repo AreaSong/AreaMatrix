@@ -494,7 +494,7 @@ struct FileEntry {
 
 ```mermaid
 gantt
-    title 启动时间预算（目标 < 1.5s）
+    title 启动耗时预算（目标 < 1.5s）
     dateFormat  X
     axisFormat %s
 

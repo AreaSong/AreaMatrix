@@ -1,4 +1,3 @@
-// swiftlint:disable file_length
 import Combine
 import Foundation
 
@@ -95,7 +94,9 @@ final class AISummaryEditorModel: ObservableObject {
         } catch {
             guard token == entryLoadToken else { return }
             failedAction = .load
-            operation = await .failed(summaryError(for: error, message: "Summary could not be loaded."))
+            operation = await .failed(
+                summaryError(for: error, message: "Summary could not be loaded.")
+            )
             return
         }
         _ = await refreshGenerationGate()
@@ -165,7 +166,9 @@ final class AISummaryEditorModel: ObservableObject {
         } catch {
             guard token == generationToken else { return }
             failedAction = .generate
-            operation = await .failed(summaryError(for: error, message: "Summary could not be generated."))
+            operation = await .failed(
+                summaryError(for: error, message: "Summary could not be generated.")
+            )
         }
     }
 
@@ -195,7 +198,9 @@ final class AISummaryEditorModel: ObservableObject {
             return true
         } catch {
             failedAction = .save
-            operation = await .failed(summaryError(for: error, message: "Summary could not be saved."))
+            operation = await .failed(
+                summaryError(for: error, message: "Summary could not be saved.")
+            )
             return false
         }
     }
@@ -230,7 +235,9 @@ final class AISummaryEditorModel: ObservableObject {
             operation = .idle
         } catch {
             failedAction = .clear
-            operation = await .failed(summaryError(for: error, message: "Summary could not be cleared."))
+            operation = await .failed(
+                summaryError(for: error, message: "Summary could not be cleared.")
+            )
         }
     }
 
@@ -254,14 +261,7 @@ final class AISummaryEditorModel: ObservableObject {
         } catch {
             let mapping = await summaryError(for: error, message: "AI privacy rules could not be checked.")
             gateState = .failed(mapping)
-            return gateNotice(
-                title: "AI privacy rules could not be checked",
-                detail: mapping.detail,
-                recovery: mapping.recovery,
-                reason: .privacyUnavailable,
-                opensAISettings: false,
-                capability: "ai-privacy-rules-core"
-            )
+            return AISummaryEditorPresentationSupport.privacyUnavailableNotice(mapping)
         }
     }
 
@@ -273,18 +273,7 @@ final class AISummaryEditorModel: ObservableObject {
         )
         guard report.decision != .allowed else { return nil }
         let skip = AISummaryPrivacySkip(report: report)
-        let reason: AISummaryEditorGateReason = skip.reasonLabel == "No eligible summary input" ?
-            .noEligibleInput(skip) : .privacyBlocked(skip)
-        return gateNotice(
-            title: skip.reasonLabel,
-            detail: skip.message,
-            recovery: "Review privacy rules before generating this summary.",
-            reason: reason,
-            opensAISettings: false,
-            capability: "ai-privacy-rules-core",
-            privacyRuleID: skip.ruleID,
-            privacyField: skip.matchedField
-        )
+        return AISummaryEditorPresentationSupport.privacyBlockedNotice(skip)
     }
 
     private func handleBlockedGenerate(
@@ -311,7 +300,9 @@ final class AISummaryEditorModel: ObservableObject {
             operation = .idle
         } catch {
             failedAction = .generate
-            operation = await .failed(summaryError(for: error, message: "Summary could not be generated."))
+            operation = await .failed(
+                summaryError(for: error, message: "Summary could not be generated.")
+            )
         }
     }
 
@@ -407,44 +398,7 @@ final class AISummaryEditorModel: ObservableObject {
 
     private func updateGateState(for reason: AiSummarySkipReason?) {
         guard let reason else { return }
-        gateState = .blocked(notice(for: reason))
-    }
-
-    private func notice(for reason: AiSummarySkipReason) -> AISummaryEditorNotice {
-        switch reason {
-        case .aiDisabled:
-            .aiDisabled()
-        case .featureDisabled:
-            .featureDisabled(nil)
-        case .providerUnavailable:
-            .providerUnavailable(nil)
-        case .privacyRule:
-            gateNotice(
-                title: aiSummarySkipReasonLabel(reason),
-                detail: "No content was sent because the summary was skipped by privacy rules.",
-                recovery: "Review privacy rules before generating this summary.",
-                reason: .privacyBlocked(AISummaryPrivacySkip(summaryReason: reason)),
-                opensAISettings: false,
-                capability: "ai-privacy-rules-core"
-            )
-        case .noEligibleInput:
-            gateNotice(
-                title: aiSummarySkipReasonLabel(reason),
-                detail: "This file has no eligible metadata or extracted text for AI summaries.",
-                recovery: "Return to detail or choose a file with readable summary input.",
-                reason: .noEligibleInput(AISummaryPrivacySkip(summaryReason: reason)),
-                opensAISettings: false,
-                capability: "ai-privacy-rules-core"
-            )
-        case .callLogUnavailable:
-            gateNotice(
-                title: aiSummarySkipReasonLabel(reason),
-                detail: "Summary generation cannot proceed because AI call logging is unavailable.",
-                recovery: "Retry after repository metadata is writable.",
-                reason: .callLogUnavailable,
-                opensAISettings: false
-            )
-        }
+        gateState = .blocked(AISummaryEditorPresentationSupport.notice(for: reason))
     }
 
     private func saveRequest() -> AiSummarySaveRequest {
@@ -483,40 +437,10 @@ final class AISummaryEditorModel: ObservableObject {
     }
 
     private func summaryError(for error: Error, message: String) async -> AISettingsError {
-        guard let coreError = error as? CoreError else {
-            return AISettingsError(
-                message: message,
-                recovery: "Retry or return to detail.",
-                detail: error.localizedDescription
-            )
-        }
-        let mapping = await errorMapper.mapCoreError(coreError)
-        return AISettingsError(
+        await AISummaryEditorPresentationSupport.error(
+            for: error,
             message: message,
-            recovery: mapping.suggestedAction.isEmpty ? "Retry or return to detail." : mapping.suggestedAction,
-            detail: mapping.userMessage
-        )
-    }
-
-    private func gateNotice(
-        title: String,
-        detail: String,
-        recovery: String,
-        reason: AISummaryEditorGateReason,
-        opensAISettings: Bool,
-        capability: String = "ai-summary-core",
-        privacyRuleID: String? = nil,
-        privacyField: AiPrivacyInputField? = nil
-    ) -> AISummaryEditorNotice {
-        AISummaryEditorNotice(
-            title: title,
-            detail: detail,
-            recovery: recovery,
-            capability: capability,
-            opensAISettings: opensAISettings,
-            privacyRuleID: privacyRuleID,
-            privacyField: privacyField,
-            reason: reason
+            errorMapper: errorMapper
         )
     }
 }

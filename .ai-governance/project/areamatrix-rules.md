@@ -47,6 +47,15 @@ exclude 隐藏，不纳入源码目录语义。
 - 版本化 workflow：`workflow/versions/`、`workflow/templates/`
 - 长期路线图：`docs/roadmap/version-roadmap.md`
 
+## 长期源事实口径
+
+- `docs/**`、`core/**`、README、Core API / UDL、ADR、开发规范和治理规则应表达长期产品、架构、API、UX、测试或发布事实，不使用阶段性执行口径替代长期语义。
+- 长期源事实不得新引入 `stage` / `phase` / `MVP` / `local-qa` / `unnotarized` / `prerelease` / `release gate` / `alpha` / `beta` / `milestone` / `iteration` / `sprint` / `C1-C4` / `S1-S4` 等作为当前命名、当前发布轨道、当前 API 合同、当前任务拆解或当前完成标准。
+- 中文长期文档不得用“本任务”“对应版本任务”“任务补齐”“implementation 任务”“后续 apply 行为”“临时 mock”“静态占位”“假数据”“交付期”“临时版本”“进入对应阶段”“核心交付”“计划交付”“时间预算”“第一刀”或 `GL-*` 等执行期措辞描述当前产品事实。
+- 允许保留明确标注为历史归档、证据、旧执行实例或工具兼容说明的引用，例如 `workflow/versions/v1-mvp/**`、历史 release checklist、历史 recovery evidence 和旧工具 flag；上下文必须说明它们不是当前模板、当前发布命名或当前执行状态。
+- 允许保留合法技术语义，例如事务式 `staging` / `staged`、Xcode `Build Phase`、macOS beta 测试、DB schema/migration version、外部 API version、Cargo dependency version、UUID v4、示例数据中的 `alpha` / `beta`。
+- 修改长期源事实、Core API / UDL、README 或 repo-local skill 后，必须用 `rg` 复扫上述口径，确认剩余命中均为归档证据或合法技术语义。
+
 ## 资产与原型边界
 
 - `assets/brand/` 是品牌资产入口；`assets/brand/final/` 是权威可引用版本。

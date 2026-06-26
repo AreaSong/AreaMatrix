@@ -2681,8 +2681,7 @@ interface CoreError {
 | 已初始化 repo 元数据摘要 | initialized repository metadata surface, main-window repository summary | repository path validation, error mapping | 已存在完整 repo 分支需要展示 `schema_version` 和 last opened，用于区分可打开、需修复和不可兼容状态 | initialized repository metadata surface 先用 macOS app 的只读 metadata inspector 读取 `.areamatrix/index.db` 中的 `schema_version`，last opened 无记录时显示未记录；不得伪造静态值。main-window repository summary 仍需要独立 Core summary API 提升 |
 | 错误映射元数据 | initialized repository metadata surface, import error surface, main-window repository summary, error recovery surface, error recovery surface | error mapping | 每个错误返回 severity、suggested_action、recoverability，避免 UI 解析字符串 | `map_core_error` 返回 Core 侧稳定映射元数据，Swift `AppError` 包装层只负责本地化与展示编排 |
 
-这些缺口不得被 UI 静态占位或本地假数据掩盖。若某个 UI 能力进入真实闭环验收，而所需
-Core 合同尚未实现或没有明确替代路径，验收应判定不通过。
+这些缺口不得被 UI 伪造成已实现能力。若某个 UI 能力需要稳定 Core 合同，但对应合同尚未实现且没有明确替代路径，调用方必须展示不可用或缺口状态。
 
 ### 已提升接口与合同外参考
 
@@ -2718,7 +2717,7 @@ Core 合同尚未实现或没有明确替代路径，验收应判定不通过。
   跨平台导入、同步冲突、缺失恢复、手动重扫等其余接口已在本文相关章节稳定描述。
 
 新能力纳入稳定 Core 合同前，必须先把确定 API 提升到本文和 `core/area_matrix.udl`；
-未提升前不得让 UI 依赖静态占位、假数据或未实现替代路径通过真实闭环验收。
+未提升前不得让 UI 把占位状态、模拟数据或未实现替代路径当作可用能力。
 
 ---
 
@@ -2865,7 +2864,7 @@ case nil:
 输出：
 
 - `exists` / `isDirectory`：路径是否存在且是否为目录。
-- `isReadable` / `isWritable`：Core 是否可读取目录内容、是否具备后续初始化写入能力。
+- `isReadable` / `isWritable`：Core 是否可读取目录内容、是否具备初始化所需的写入能力。
 - `isEmpty`：目录是否没有用户可见条目。
 - `isInitialized`：目录下是否已有 `.areamatrix/` 元数据。
 - `isInsideAreaMatrix`：选择位置是否为 `.areamatrix/` 或其子路径。
@@ -3056,7 +3055,7 @@ ai-privacy-rules` 对远程 gate 的只读状态展示。返回 `AiConfigSnapsho
 - `config.provider_preference`：`LocalFirst`、`LocalOnly` 或 `RemoteFirst`，只表达
   设置偏好，不代表 provider 已可用。
 - `config.local_ai_enabled` / `config.remote_ai_allowed`：本地和远程路线是否允许进入
-  后续 provider gate。
+  provider gate。
 - `config.privacy_gate_enabled` / `privacy_policy_ref`：AI privacy rules surface 远程隐私 gate 状态和
   可选策略引用；不内嵌隐私规则列表。
 - `config.feature_toggles`：`ClassificationSuggestions`、`AutoSummaries`、
@@ -3109,7 +3108,7 @@ AI settings 的 AI settings 更新入口，只保存 AI 设置元数据：总开
 - `feature_toggles` 必须包含且只包含 AI settings 四个功能：
   `ClassificationSuggestions`、`AutoSummaries`、`AutoTags`、`SemanticSearch`。
 - 该 API 不接受 API key、provider endpoint、model id、prompt、用户文件路径列表或文件内容。
-- 启用远程路线只表达“允许后续 gate 考虑远程”；不测试远程 provider、不启用远程 provider、
+- 启用远程路线只表达“允许 gate 将远程路线纳入候选”；不测试远程 provider、不启用远程 provider、
   不调用模型、不上传数据。
 - Pause all AI 可通过 `ai_enabled = false` 表达；清除未采纳建议和草稿属于独立清理能力，
   不由 AI settings 更新入口隐式执行。
@@ -3185,7 +3184,7 @@ local model status 的本地模型状态读取入口，服务 `local model statu
   不写 AI call log，不自动启用远程 fallback。
 - 本地模型不可用时，调用方只能显示本地修复、安装帮助、诊断或非 AI 回退；不得把返回状态解释成
   允许启用远程 AI。
-- 轻量 `RepairMetadata` 只是 UI 可展示的建议动作；实际 repair 行为必须由后续独立能力实现。
+- 轻量 `RepairMetadata` 只是 UI 可展示的建议动作；实际 repair 行为必须由独立能力实现。
 
 错误：
 
@@ -3274,7 +3273,7 @@ provider、model、可选自定义 endpoint 和平台安全存储 key reference�
 - 测试连接只允许做最小 provider 可用性探测；不得发送文件名、repo-relative path、提取文本、
   note summary、tag/category context、prompt 或任何用户文件内容。
 - 测试不得启用远程 provider，不保存 `feature_scope`，不修改 `privacy_gate_enabled`，不生成 AI 结果。
-- 后续实现可按 AI call log 写脱敏 `Provider Test` 日志，sent fields 必须为 none；日志不得包含 key、
+- 实现方可按 AI call log 写脱敏 `Provider Test` 日志，sent fields 必须为 none；日志不得包含 key、
   key 片段或 provider 原始响应体。
 
 错误：
@@ -3287,7 +3286,7 @@ provider、model、可选自定义 endpoint 和平台安全存储 key reference�
 
 - remote provider settings surface 可以从 `status`、`provider_verified` 和 `sanitized_message` 渲染连接成功、key 被拒绝、
   网络失败、unsupported provider 和 Enable 禁用原因。
-- AI privacy rules surface 不应从本合同开启 privacy gate；它只读取后续 enable 快照中的 provider 状态。
+- AI privacy rules surface 不应从本合同开启 privacy gate；它只读取 enable 快照中的 provider 状态。
 
 ### `load_remote_ai_provider_config(repoPath: String) throws -> RemoteProviderConfigSnapshot`
 
@@ -3437,7 +3436,7 @@ AI category suggestion 的 AI 分类建议入口，服务 `AI category suggestio
 `Ask AI for suggestion...`，并为 `AI fallback` 提供可展示的 skipped /
 unavailable 状态。输入是已初始化 `repoPath` 和一个 `AiCategorySuggestionRequest`：
 
-- `file_id`：一个 active file row。后续实现必须拒绝缺失、删除态或不可访问的 file id。
+- `file_id`：一个 active file row。实现必须拒绝缺失、删除态或不可访问的 file id。
 - `context_policy`：调用方允许的最大上下文提取范围：
   `FileNameOnly`、`FileNameAndPath` 或 `LimitedTextSummary`。
 - `privacy_policy_ref`：可选稳定隐私策略引用。规则内容和 CRUD 属于 AI privacy rules，不内嵌在本请求。
@@ -3456,7 +3455,7 @@ unavailable 状态。输入是已初始化 `repoPath` 和一个 `AiCategorySugge
   `NoEligibleContext`、`PrivacyRule` 或 `ProviderUnavailable`。
 - `privacy_rule_id` / `call_log_id`：供页面跳转隐私规则和调用日志；具体日志读写属于 AI call log，
   隐私规则详情属于 AI privacy rules。
-- `requires_user_confirmation`：必须为 true。后续采纳、修改、拒绝、移动确认或规则沉淀不由本 API
+- `requires_user_confirmation`：必须为 true。采纳、修改、拒绝、移动确认或规则沉淀不由本 API
   隐式执行。
 
 副作用边界：
@@ -3468,7 +3467,7 @@ unavailable 状态。输入是已初始化 `repoPath` 和一个 `AiCategorySugge
 - 远程路线必须同时通过 AI settings、remote provider gate、AI privacy gate、
   feature scope 和调用日志 gate；本 API 不启用远程 provider，不保存 API key，不绕过隐私规则。
 - 隐私规则命中时必须返回 `Skipped` / `PrivacyRule`，`used_context` 为空或只包含允许展示字段，
-  sent fields 由后续 AI call log 日志记录为 none。
+  sent fields 由 AI call log 记录为 none。
 - 失败或跳过不得改变文件、分类、标签、摘要、notes、saved searches、change log、undo/redo、
   generated overview 或任何用户文件。
 
@@ -3616,7 +3615,7 @@ AI summary 的 AI 摘要草稿生成入口，服务 `AI summary editor surface a
 `Generate summary` 和确认后的 `Regenerate...`。输入是已初始化 `repoPath` 和一个
 `AiSummaryGenerationRequest`：
 
-- `file_id`：一个 active file row。后续实现必须拒绝缺失、删除态或不可访问的 file id。
+- `file_id`：一个 active file row。实现必须拒绝缺失、删除态或不可访问的 file id。
 - `provider_scope`：`LocalOnly`、`LocalPreferred` 或 `RemoteAllowed`，只表达本次生成允许的
   provider 路线；远程仍必须经过 AI settings、remote provider configuration 和 AI privacy rules gate。
 - `context_policy`：`MetadataOnly`、`MetadataAndExtractedText` 或
@@ -3650,7 +3649,7 @@ AI summary 的 AI 摘要草稿生成入口，服务 `AI summary editor surface a
 - 远程路线必须同时通过 AI settings、remote provider gate、AI privacy gate、
   feature scope 和 AI call log gate；本 API 不启用远程 provider，不保存 API key，不绕过隐私规则。
 - 隐私规则命中时必须返回 `Skipped` / `PrivacyRule`，`used_context` 为空或只包含允许展示字段；
-  sent fields 由后续 AI call log 日志记录为 none。
+  sent fields 由 AI call log 记录为 none。
 - 失败、跳过或取消不得改变文件、摘要、notes、tags、分类、AI settings、provider metadata、
   privacy rules、AI call log、generated overview 或任何用户文件。
 
@@ -3658,7 +3657,7 @@ AI summary 的 AI 摘要草稿生成入口，服务 `AI summary editor surface a
 
 - `Config`：`repoPath`、`file_id`、`provider_scope`、`context_policy`、`privacy_policy_ref` 或
   AI gate 配置无效；AI 关闭或功能关闭也可返回结构化 `Skipped`，由实现按 UX 需要选择。
-- `FileNotFound`：目标 file id 不存在、已删除或后续实现无法找到对应 active file metadata。
+- `FileNotFound`：目标 file id 不存在、已删除或实现无法找到对应 active file metadata。
 - `PermissionDenied`：repository metadata、允许的上下文字段、本地模型状态或 provider credential
   reference 无法 inspection。
 - `Db`：summary metadata、AI call log gate 或相关 repository metadata 读取/写入失败。
@@ -3722,7 +3721,7 @@ AI summary 的 AI 摘要保存入口，服务 AI summary editor surface 的 `Sav
 错误：
 
 - `Config`：`repoPath`、`file_id`、`summary_text`、`draft_id` 或 provenance 字段无效。
-- `FileNotFound`：目标 file id 不存在、已删除或后续实现无法找到对应 active file metadata。
+- `FileNotFound`：目标 file id 不存在、已删除或实现无法找到对应 active file metadata。
 - `PermissionDenied`：summary metadata 不可写。
 - `Db`：summary metadata 或相关 repository metadata 持久化失败。
 
@@ -3762,7 +3761,7 @@ AI summary 的 AI 摘要清除入口，服务 AI summary editor surface 的 `Cle
 错误：
 
 - `Config`：`repoPath`、`file_id` 无效，或缺少确认。
-- `FileNotFound`：目标 file id 不存在、已删除或后续实现无法找到对应 active file metadata。
+- `FileNotFound`：目标 file id 不存在、已删除或实现无法找到对应 active file metadata。
 - `PermissionDenied`：summary metadata 不可写。
 - `Db`：summary metadata 或相关 repository metadata 持久化失败。
 
@@ -3786,7 +3785,7 @@ let report = try AreaMatrix.suggestTagsWithAi(
 
 AI tag suggestions 的 AI 标签建议入口，服务 `AI tag suggestion surface ai-tags-suggestion` 的 review sheet。输入：
 
-- `file_id`：一个 active file row。后续实现必须拒绝缺失、删除态或不可访问的 file id。
+- `file_id`：一个 active file row。实现必须拒绝缺失、删除态或不可访问的 file id。
 - `candidate_tags`：调用方可提供的候选标签或 tag registry 摘要，用来提示合并、复用或避免重复。
   候选标签只作为建议上下文，不代表要写入的标签。
 - `privacy_policy_ref`：可选稳定隐私策略引用。规则内容和 CRUD 属于 AI privacy rules，不内嵌在本请求。
@@ -3822,7 +3821,7 @@ AI tag suggestions 的 AI 标签建议入口，服务 `AI tag suggestion surface
 错误：
 
 - `Config`：`repoPath`、候选标签、隐私策略引用或 AI gate 配置无效。
-- `FileNotFound`：目标 file id 不存在、已删除或后续实现无法找到对应 active file metadata。
+- `FileNotFound`：目标 file id 不存在、已删除或实现无法找到对应 active file metadata。
 - `Db`：file metadata、tag registry、AI call log gate 或相关 repository metadata 读取失败。
 
 页面消费状态：
@@ -3876,7 +3875,7 @@ batch apply。输入：
 错误：
 
 - `Config`：`repoPath`、确认状态、建议行、编辑后的 tag 名称或追溯 id 无效。
-- `FileNotFound`：目标 file id 不存在、已删除或后续实现无法找到对应 active file metadata。
+- `FileNotFound`：目标 file id 不存在、已删除或实现无法找到对应 active file metadata。
 - `Db`：tag metadata、change log、undo action 或 AI call log provenance 持久化失败。
 
 页面消费状态：
@@ -3940,7 +3939,7 @@ let updated = try AreaMatrix.updateAiPrivacyRules(
 
 AI privacy rules 的隐私规则保存入口。输入是 replace-style 请求：
 
-- `privacy_gate_enabled`：AI privacy rules surface 的全局远程隐私 gate。关闭只阻止后续远程 AI，不修改 remote provider configuration。
+- `privacy_gate_enabled`：AI privacy rules surface 的全局远程隐私 gate。关闭只阻止远程 AI 调用，不修改 remote provider configuration。
 - `rules`：完整规则集合。规则类型固定为 Folder、Category、Keyword、Extension、Tag；
   `applies_to` 固定为 `RemoteAi` 或 `LocalAndRemoteAi`。
 - `remote_allowed_fields`：完整远程字段过滤设置。缺失或重复字段必须拒绝。
@@ -4020,7 +4019,7 @@ AI privacy rules 的隐私 gate 评估入口。AI 分类、摘要、标签和语
 错误：
 
 - `Config`：`repoPath`、字段集合、规则、provider scope 或 context 无效。
-- `Db`：后续实现需要加载 privacy metadata、registry 或匹配统计但读取失败。
+- `Db`：实现需要加载 privacy metadata、registry 或匹配统计但读取失败。
 
 页面消费状态：
 
@@ -4090,14 +4089,14 @@ semantic search 已返回的 fallback metadata。输入是已初始化 `repoPath
 - 隐私跳过不得提供 Retry；remote failed / timeout 只能 retry 同一 provider、model、scope 和输入快照，
   且 retry 前仍必须重新检查 AI privacy rules。
 - 自动 provider failover 不在当前 AI fallback 合同内；本地失败不得自动启用远程 AI。
-- 后续实现可以按 AI call log 合同记录 AI call failure，但记录内容必须保持 sent fields、error code 和
+- 实现可以按 AI call log 合同记录 AI call failure，但记录内容必须保持 sent fields、error code 和
   result summary 脱敏。
 
 错误：
 
 - `Config`：`repoPath`、reason metadata、provider error code、privacy rule id、call log id 或
   retry timestamp 无效。
-- `PermissionDenied`：后续实现需要 inspection fallback metadata、call log 或 privacy metadata 但被权限阻断。
+- `PermissionDenied`：实现需要 inspection fallback metadata、call log 或 privacy metadata 但被权限阻断。
 - `Internal`：fallback 状态从脱敏 metadata 解析失败。
 
 页面消费状态：
@@ -4195,7 +4194,7 @@ semantic search 的 embedding index 构建入口，服务 semantic search surfac
 启动/重试路径。输入 `SemanticIndexScope`：
 
 - `filter`：索引范围，复用普通搜索 filter/scope。
-- `route`：可选 `Local` / `Remote` 偏好；为 `nil` 时后续实现按 AI settings 和 provider gate 选择。
+- `route`：可选 `Local` / `Remote` 偏好；为 `nil` 时实现按 AI settings 和 provider gate 选择。
 - `privacy_policy_ref`：可选隐私策略引用。
 - `confirmed`：semantic search surface `Build semantic index?` 已确认；为 false 必须返回 `Config` 错误。
 
@@ -4210,7 +4209,7 @@ semantic search 的 embedding index 构建入口，服务 semantic search surfac
 
 副作用边界：
 
-- 允许的写入仅限 AreaMatrix-owned semantic index metadata、embedding metadata、临时索引批次和
+- 允许的写入仅限 AreaMatrix-owned semantic index metadata、embedding metadata、索引批次状态和
   AI call log；不得移动、删除、重命名、覆盖、Trash、导入或改写任何用户文件。
 - 远程 embedding 只在远程 AI 显式启用、SemanticSearch scope 允许、测试连接成功、隐私规则通过且
   call-log gate 可用后进入；隐私命中文件不得进入远程队列，sent fields 必须为 none。
@@ -4590,7 +4589,7 @@ func removeIndexEntry(_ entry: FileEntry) async {
 
 - 不触碰外部源文件，即使 `files.source_path` 指向的文件存在。
 - 不触发 iCloud placeholder 下载。
-- 不删除 notes / tags 等关联 metadata，除非后续恢复/清理 task 明确扩展。
+- 不删除 notes / tags 等关联 metadata，除非独立恢复/清理能力明确扩展。
 - 不替代 Finder/FSEvents 外部删除同步；外部 removed 仍属于
   `sync_external_changes`。
 
@@ -4902,7 +4901,7 @@ saved searches 的保存搜索入口，服务 `saved search sheet`。输入 `Cre
 
 输出 `SavedSearch`：
 
-- `id`：稳定 saved search 标识，供后续 update/delete 和 sidebar selection 使用。
+- `id`：稳定 saved search 标识，供 update/delete 和 sidebar selection 使用。
 - `name`：用户可见 Smart List 名称。
 - `query`：可复现搜索的 query/filter/sort/scope 状态。
 - `icon` / `color`：用户选择的显示元数据；不得表达语义、AI 或多端能力依赖。
@@ -5395,7 +5394,7 @@ batch category change 的批量改分类执行入口，服务 `batch change-cate
   每行状态、Apply 是否可用和禁用原因。
 - batch change-category surface 可以从执行报告得到成功/失败/跳过摘要、刷新用 `updated_files`、失败详情和
   `undo_token`。
-- undo toast surface / undo action log 只消费 `undo_token` 和后续 `list_undo_actions` / `undo_action` 状态；
+- undo toast surface / undo action log 只消费 `undo_token` 和 `list_undo_actions` / `undo_action` 状态；
   本合同不新增 control map 之外的页面能力。
 
 ### `preview_batch_delete(repoPath, fileIds, deleteMode) throws -> BatchDeletePreviewReport`
@@ -5516,7 +5515,7 @@ Trash 可用性或 inspected state 变化，Core 必须拒绝不安全写入并�
   仅移除索引 / missing / skipped / blocked 数量、每行状态、Apply 是否可用和禁用原因。
 - batch delete confirmation 可以从执行报告得到成功/失败/跳过摘要、刷新用 `affected_file_ids`、失败详情和
   `undo_token`。
-- undo toast surface / undo action log 只消费 `undo_token` 和后续 `list_undo_actions` / `undo_action` 状态；
+- undo toast surface / undo action log 只消费 `undo_token` 和 `list_undo_actions` / `undo_action` 状态；
   本合同不新增 control map 之外的页面能力。
 
 ### `preview_batch_rename(repoPath, fileIds, rule) throws -> BatchRenamePreviewReport`
@@ -5642,7 +5641,7 @@ batch rename 的批量重命名执行入口，服务 `batch rename surface` 的 
   index-only display-name 行、unchanged 行、阻塞原因、Apply 是否可用和禁用原因。
 - batch rename surface 可以从执行报告得到成功/失败/跳过摘要、刷新用 `updated_files`、失败详情和
   `undo_token`。
-- undo toast surface / undo action log 只消费 `undo_token` 和后续 `list_undo_actions` / `undo_action` 状态；
+- undo toast surface / undo action log 只消费 `undo_token` 和 `list_undo_actions` / `undo_action` 状态；
   本合同不新增 control map 之外的页面能力。
 
 ### `correct_file_category(repoPath, fileId, category, moveFile, remember) throws -> ClassifierCorrectionResult`
@@ -5746,7 +5745,7 @@ classifier category slug；`keywords` 和 `extensions` 是追加到目标分类�
 页面消费状态：
 
 - classifier save-rule surface 可以从合同得到保存后的目标分类、独立关键词、独立扩展名和 priority，用于成功摘要、
-  toast、表单恢复和后续 rule-store 刷新。
+  toast、表单恢复和 rule-store 刷新。
 - classifier save-rule surface/classifier impact preview surface 可以用 `preview_confirmed = true` 表达用户已完成必需预览后的
   `Save rule only` 回流；Core 只保存规则配置，不计算影响量、不批量应用历史文件。
 - classifier save-rule surface 不能从本合同得到历史影响量、批量应用结果或规则列表编辑状态；这些分别属于
@@ -5809,7 +5808,7 @@ metadata 变化，不因目标路径同名文件阻断。`replacement_category` 
 副作用边界：
 
 - 只读读取 classifier 配置和文件 metadata；RuleDraft 必须按当前
-  `classifier.yaml` matcher 语义临时叠加草稿后重新计算新分类，DB 查询和
+  `classifier.yaml` matcher 语义叠加草稿后重新计算新分类，DB 查询和
   move dry-run 的冲突检测语义只在 `move_files = true` 时参与 Apply 禁用判断。
 - 删除 keyword、extension 或 category 的预览只计算现有 metadata 会如何变化；
   不修改 `classifier.yaml`，也不得移动、删除或重命名历史文件。
@@ -6009,8 +6008,8 @@ default 状态、dirty 状态和 warning。
 副作用边界：
 
 - 只允许原子更新 classifier 配置，删除对应 classifier category 或 rule row。
-- 删除规则不自动移动、删除、重命名或重分类历史文件；是否更新现有文件分类只能通过后续
-  impact/apply 流程执行。
+- 删除规则不自动移动、删除、重命名或重分类历史文件；是否更新现有文件分类只能通过独立
+  impact/apply 能力执行。
 - 必须拒绝删除默认分类、最后一个分类、缺失 replacement 的分类删除、未完成影响确认的删除。
 - 不写 `files`、`change_log`、`undo_actions`、notes、tags、saved searches、
   generated overview，不执行 Trash、reindex、AI/network provider 或 Open YAML 平台动作。
@@ -6053,7 +6052,7 @@ Undo stack snapshot，让 toast、历史面板、Cmd+Z 状态和 VoiceOver 可�
 - `affected_file_names`：最多若干文件名样例，供 `undo history surface` preview 使用。
 - `status`：`Pending`、`Executed`、`Expired`、`Blocked`。
 - `can_undo`：当前是否允许通过 `undo_action` 执行。
-- `disabled_reason`：过期、被后续写操作阻塞、外部变化不可撤销、Trash
+- `disabled_reason`：过期、被较新的写操作阻塞、外部变化不可撤销、Trash
   不可恢复或权限不足时的用户可读原因。
 - `created_at` / `updated_at`：排序、相对时间和状态刷新使用的 Unix 秒级时间戳。
 
@@ -6096,7 +6095,7 @@ redo action log。
 
 - `FileNotFound`：`action_id` 为空、找不到 pending undo action、或反向操作引用的
   文件已不存在。
-- `Conflict`：外部变化、后续写操作或当前状态让反向操作不再安全。
+- `Conflict`：外部变化、较新的写操作或当前状态让反向操作不再安全。
 - `PermissionDenied`：metadata、目标文件、Trash restore 或目录写入被权限阻断。
 - `Db`：读取/标记 undo action、写入反向 `change_log` 或恢复 metadata 失败。
 - `Io`：反向文件操作失败。
@@ -6203,7 +6202,7 @@ detailView.show(entry)
 
 文件不存在抛 `FileNotFound`。
 返回的 `FileEntry.availability_status` 与 `list_files` 一致；缺失物理文件的 active
-metadata 行仍返回 `FileAvailabilityStatus.Missing`，恢复动作由 missing-file recovery / mobile file detail 后续入口处理。
+metadata 行仍返回 `FileAvailabilityStatus.Missing`，恢复动作由 missing-file recovery / mobile file detail 入口处理。
 
 ### `get_missing_file_state(repoPath, fileId) throws -> MissingFileState`
 
@@ -6230,7 +6229,7 @@ recoverySheet.show(state)
 
 - missing-file recovery surface 可以从 `relative_path`、`last_known_path`、`last_seen_at` 和 `reason`
   渲染摘要区与缺失原因。
-- missing-file recovery surface 可以从 `expected_hash_sha256` 判断后续 relink 是否必须做 hash 校验。
+- missing-file recovery surface 可以从 `expected_hash_sha256` 判断 relink 是否必须做 hash 校验。
 - missing-file recovery surface 可以从 `can_locate`、`can_try_again`、`can_remove_record`、
   `remove_record_requires_confirmation`、`can_run_rescan` 和
   `rescan_disabled_reason` 决定按钮显示、禁用原因和是否路由到 rescan confirmation surface。
@@ -6373,7 +6372,7 @@ let needsReview = conflicts.filter { $0.status == .needsReview }
 
 输出为 `SyncConflict` 列表：
 
-- `conflict_id`：稳定冲突 ID，供 Review 和后续 sync conflict resolution resolve 绑定。
+- `conflict_id`：稳定冲突 ID，供 Review 和 sync conflict resolution resolve 绑定。
 - `conflict_type`：`SameNameDifferentContent`、`ConcurrentModification`、
   `MetadataMismatch`、`MissingVersion` 或 `Unknown`。
 - `severity`：`Low`、`Medium` 或 `High`，供入口排序、徽标和错误摘要使用。
@@ -6447,7 +6446,7 @@ sync conflict detection 返回的稳定 `conflict_id`，以及用户当前选择
 - `change_log_action`：计划写入的 change-log action。
 - `destructive` / `requires_replace_confirmation` / `trash_required` /
   `trash_available` / `can_apply` / `blocked_reason`：按钮可用性和二次确认状态。
-- `preview_token`：后续 `resolve_sync_conflict` 绑定同一预览所需的 token。
+- `preview_token`：`resolve_sync_conflict` 绑定同一预览所需的 token。
 - `replace_plan`：`UseIncoming` 等可能替换 canonical version 的策略必须返回，
   供 replace confirmation surface 展示 old/new path、hash、affected record、backup target、
   database update、change log 和 recovery note。
@@ -6554,7 +6553,7 @@ let needsReview = conflicts.filter { $0.status == .needsReview }
 用于 iCloud conflict list。输入是已初始化的资料库根路径；输出按冲突副本返回
 `ICloudConflictPair`：
 
-- `conflict_id`：稳定冲突 ID，供后续单项 resolve 入口使用。
+- `conflict_id`：稳定冲突 ID，供单项 resolve 入口使用。
 - `original_path` / `original_modified_at`：可识别时返回原始版本路径和修改时间。
 - `conflicted_copy_path` / `conflicted_modified_at`：冲突副本路径和修改时间。
 - `status`：当前状态；识别不确定或需要用户决策时必须为 `NeedsReview`。
@@ -6565,7 +6564,7 @@ let needsReview = conflicts.filter { $0.status == .needsReview }
 - 只扫描 iCloud conflicted copy 和可选 conflict state metadata。
 - 不删除、不移动、不重命名、不覆盖、不合并任何原始文件或冲突副本。
 - 不触发 iCloud placeholder 下载；下载协调属于平台层。
-- 不写 `files` 记录；后续 `mark_icloud_conflict_resolved` 这类单项 resolve
+- 不写 `files` 记录；`mark_icloud_conflict_resolved` 这类单项 resolve
   入口必须显式由用户确认，不能藏在列表查询中。
 
 错误：
@@ -6770,7 +6769,7 @@ OneDrive 风险文案后调用；调用成功后返回刷新后的 `CloudStorage
 - 只写 `.areamatrix/index.db` 中的 `repo_config` 元数据，不写用户文件。
 - 不自动创建 `.areamatrix/`、不初始化 repo、不 reindex、不移动、不删除、不重命名、不覆盖用户文件。
 - 不触发 iCloud placeholder 下载，不调用 iCloud / OneDrive SDK，不打开系统设置，不修改云盘同步策略。
-- UI 仍负责确认复选框、文案展示、Explorer reveal、进入 watcher 状态页和后续导航。
+- UI 仍负责确认复选框、文案展示、Explorer reveal、进入 watcher 状态页和导航。
 
 错误：
 
@@ -6827,7 +6826,7 @@ applyButton.isEnabled = preview.canApply && !preview.replaceConfirmationRequired
 - 不写 `files`、`change_log`、`undo_actions`，不清空 staging，不 reindex，不更新 generated
   overview，不触发 iCloud 下载，不调用 AI/网络。
 - Index-only 目标必须在 preview 中阻断 Replace；不得通过二次确认绕过。
-- Ask-per-item 只作为输出状态和后续路由依据；本接口不打开 duplicate import review/name-conflict review/replace confirmation，也不执行逐项策略。
+- Ask-per-item 只作为输出状态和路由依据；本接口不打开 duplicate import review/name-conflict review/replace confirmation，也不执行逐项策略。
 
 错误：
 
@@ -6894,7 +6893,7 @@ Replace 二次确认后调用。输入 `ImportConflictBatchApplyRequest` 与 pre
   Apply/Ask-per-item 是否可用和 VoiceOver 所需状态文本。
 - import conflict review surface 可以从执行报告得到成功/失败/跳过/替换/保留两份/pending/逐项队列摘要、刷新用
   `affected_file_ids`、`undo_token`、change log action 和失败恢复摘要。
-- undo toast surface / undo action log 只消费 `undo_token` 和后续 `list_undo_actions` / `undo_action` 状态。
+- undo toast surface / undo action log 只消费 `undo_token` 和 `list_undo_actions` / `undo_action` 状态。
 - Ask-per-item 进入 duplicate import review / name-conflict review / replace confirmation 的路由由对应页面能力处理；本合同不新增
   control map 之外的页面能力。
 
@@ -7044,7 +7043,7 @@ watcher status 页面渲染状态卡、禁用条件、错误摘要和诊断预�
 错误：
 
 - `Db`：health signal 无效、watcher health metadata 不可读写、DB locked 或 schema 不可用。
-- `Io`：后续实现读取或写入 AreaMatrix-owned metadata 时发生文件系统错误。
+- `Io`：实现读取或写入 AreaMatrix-owned metadata 时发生文件系统错误。
 
 页面消费状态：
 
@@ -7214,7 +7213,7 @@ extension CoreError {
 
 UniFFI 0.x 不支持 Rust 端 cooperative cancellation。Swift 端 `Task.cancel()` 不会立刻打断 Rust 调用。对策：
 
-- 长任务（reindex / sync）拆成多次小调用
+- 长时间运行操作（reindex / sync）拆成多次小调用
 - 启动时显示 indeterminate 进度，超过 X 秒提示用户耐心
 - 不为单次调用加 timeout
 
