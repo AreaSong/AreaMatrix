@@ -54,28 +54,29 @@ TEXT_SUFFIXES = {
 }
 
 TERM_RE = re.compile(
-    r"\b[Ss]tage[ _-]?[0-9]\b"
-    r"|\b[Ss]tage\b"
-    r"|\b[Pp]hase[ _-]?[0-9]\b"
-    r"|\b[Pp]hase\b"
-    r"|\bmvp\b"
-    r"|\bMVP\b"
-    r"|MVP_"
-    r"|\bv1-mvp\b"
-    r"|\blocal-qa\b"
-    r"|\bunnotarized\b"
-    r"|\bprerelease\b"
-    r"|\brelease gate\b"
-    r"|\brelease-gate\b"
-    r"|\bmilestone\b"
-    r"|\biteration\b"
-    r"|\bsprint\b"
-    r"|\balpha\b"
-    r"|\bbeta\b"
+    r"\b(?i:stage)[ _-]?[0-9]\b"
+    r"|\b(?i:stage)\b"
+    r"|\b(?i:phase)[ _-]?[0-9]\b"
+    r"|\b(?i:phase)\b"
+    r"|\b(?i:mvp)\b"
+    r"|(?i:MVP_)"
+    r"|\b(?i:v1-mvp)\b"
+    r"|\b(?i:local-qa)\b"
+    r"|\b(?i:unnotarized)\b"
+    r"|\b(?i:prerelease)\b"
+    r"|\b(?i:release gate)\b"
+    r"|\b(?i:release-gate)\b"
+    r"|\b(?i:milestone)\b"
+    r"|\b(?i:iteration)\b"
+    r"|\b(?i:sprint)\b"
+    r"|\b(?i:alpha)\b"
+    r"|\b(?i:beta)\b"
     r"|\bC[1-4]-"
     r"|\bc[1-4]-"
     r"|\bS[1-4]-"
     r"|\bs[1-4]-"
+    r"|(?i:source)\\?\"\s*:\s*\\?\"[cC][1-4]"
+    r"|(?i:area-matrix:[c][1-4]-)"
     r"|本任务"
     r"|对应版本任务"
     r"|任务补齐"
@@ -139,16 +140,57 @@ def _iter_files(root: Path, rel_paths: tuple[str, ...]) -> list[Path]:
 
 
 def _is_policy_path(rel_path: str) -> bool:
-    return (
-        rel_path == "AGENTS.md"
-        or rel_path == "core/AGENTS.md"
-        or rel_path.startswith(".ai-governance/")
-        or rel_path.startswith(".codex/skills-src/")
-    )
+    return rel_path == "AGENTS.md" or rel_path == "core/AGENTS.md" or rel_path.startswith(".ai-governance/")
 
 
 def _is_test_path(rel_path: str) -> bool:
     return rel_path.startswith("core/tests/")
+
+
+def _is_skill_path(rel_path: str) -> bool:
+    return rel_path.startswith(".codex/skills-src/")
+
+
+def _is_policy_inventory_line(line: str) -> bool:
+    inventory_markers = (
+        "受控词",
+        "不得新引入",
+        "不得用",
+        "do not introduce",
+        "avoid current",
+        "execution-period wording",
+        "long-term source wording rules",
+        "classify remaining hits",
+        "do not treat",
+        "remaining stage",
+    )
+    lower_line = line.lower()
+    return any(marker.lower() in lower_line for marker in inventory_markers)
+
+
+def _is_skill_operational_line(line: str) -> bool:
+    lower_line = line.lower()
+    operation_markers = (
+        "workflow/versions/v1-mvp/",
+        "workflow/versions/<version>/execution/phase-*",
+        "prompt_pipeline.py",
+        "./task-loop run --phase",
+        "start_from=phase-",
+        ".codex/runtime/task-loop/logs/<timestamp>/<phase>/",
+        "phase filter",
+        "start task or phase",
+        "first eligible task in phase order",
+        "`--phase`",
+        "`phase-",
+        "version-local numbering",
+        "technical queue complete",
+        "prompt task quality",
+    )
+    return any(marker in lower_line for marker in operation_markers)
+
+
+def _is_skill_allowed_line(line: str) -> bool:
+    return _is_policy_inventory_line(line) or _is_skill_operational_line(line)
 
 
 def _is_allowed_technical(rel_path: str, term: str, line: str) -> tuple[bool, str]:
@@ -172,6 +214,8 @@ def _is_allowed_technical(rel_path: str, term: str, line: str) -> tuple[bool, st
 def _classify(rel_path: str, line_no: int, term: str, line: str) -> WordingHit:
     if _is_policy_path(rel_path):
         return WordingHit(rel_path, line_no, term, "allowed-policy", "治理或 skill 规则清单需要列出受控词", line)
+    if _is_skill_path(rel_path) and _is_skill_allowed_line(line):
+        return WordingHit(rel_path, line_no, term, "allowed-policy", "repo-local skill 规则或操作说明需要列出受控词", line)
     if rel_path in ARCHIVED_EVIDENCE_TESTS:
         return WordingHit(rel_path, line_no, term, "allowed-archive-test", "集中历史证据测试，不作为当前命名", line)
     allowed, reason = _is_allowed_technical(rel_path, term, line)

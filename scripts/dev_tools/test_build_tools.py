@@ -261,6 +261,10 @@ class BuildToolsTest(unittest.TestCase):
                 "\n".join(
                     [
                         "Current release uses Stage 1 alpha.",
+                        "Current release uses Alpha distribution.",
+                        "Current release uses BETA distribution.",
+                        "Current release uses RELEASE GATE policy.",
+                        "Current release uses SPRINT planning.",
                         "后续任务补齐真实闭环验收。",
                     ]
                 ),
@@ -271,7 +275,92 @@ class BuildToolsTest(unittest.TestCase):
 
             self.assertEqual(file_count, 1)
             self.assertTrue(any(hit.category == "blocked" for hit in hits))
+            self.assertTrue(any(hit.term == "Alpha" for hit in hits))
+            self.assertTrue(any(hit.term == "BETA" for hit in hits))
+            self.assertTrue(any(hit.term == "RELEASE GATE" for hit in hits))
+            self.assertTrue(any(hit.term == "SPRINT" for hit in hits))
             self.assertTrue(any(hit.term == "后续任务" for hit in hits))
+
+    def test_wording_audit_blocks_fixture_source_track_ids(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "core/tests/example.rs"
+            path.parent.mkdir(parents=True)
+            path.write_text(
+                "\n".join(
+                    [
+                        '{ "source":"c1", "id": "area-matrix:C2-demo" }',
+                        '{ "source" : "C3", "id": "AREA-MATRIX:c4-demo" }',
+                        r'{ \"source\" : \"C4\" }',
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            hits, file_count = audit_wording(root)
+
+            self.assertEqual(file_count, 1)
+            self.assertTrue(any(hit.category == "blocked-test" for hit in hits))
+            self.assertTrue(any(hit.term == 'source":"c1' for hit in hits))
+            self.assertTrue(any(hit.term == 'source" : "C3' for hit in hits))
+            self.assertTrue(any(hit.term == r'source\" : \"C4' for hit in hits))
+            self.assertTrue(any(hit.term == "area-matrix:C2-" for hit in hits))
+            self.assertTrue(any(hit.term == "AREA-MATRIX:c4-" for hit in hits))
+
+    def test_wording_audit_blocks_skill_body_track_terms(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / ".codex/skills-src/example/SKILL.md"
+            path.parent.mkdir(parents=True)
+            path.write_text("Current docs use Stage 1 alpha release.\n", encoding="utf-8")
+
+            hits, file_count = audit_wording(root)
+
+            self.assertEqual(file_count, 1)
+            self.assertTrue(any(hit.category == "blocked" for hit in hits))
+
+    def test_wording_audit_allows_skill_policy_inventory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / ".codex/skills-src/example/SKILL.md"
+            path.parent.mkdir(parents=True)
+            path.write_text(
+                "\n".join(
+                    [
+                        "Do not introduce stage / MVP terms into source-of-truth material.",
+                        "Do not treat alpha/beta fixture values as stage pollution.",
+                        "Report remaining stage / delivery-track wording hits.",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            hits, file_count = audit_wording(root)
+
+            self.assertEqual(file_count, 1)
+            self.assertTrue(hits)
+            self.assertTrue(all(hit.category == "allowed-policy" for hit in hits))
+
+    def test_wording_audit_allows_skill_operational_history_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / ".codex/skills-src/example/SKILL.md"
+            path.parent.mkdir(parents=True)
+            path.write_text(
+                "\n".join(
+                    [
+                        "Run `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor`.",
+                        "Use `MAX_RETRIES=0 ./task-loop run --phase phase-1` for runner diagnostics.",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            hits, file_count = audit_wording(root)
+
+            self.assertEqual(file_count, 1)
+            self.assertTrue(hits)
+            self.assertTrue(all(hit.category == "allowed-policy" for hit in hits))
 
     def test_wording_audit_allows_technical_terms(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
