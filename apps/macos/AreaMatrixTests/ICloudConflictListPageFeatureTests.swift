@@ -57,19 +57,18 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         )
 
         await model.load()
-        let body = testMirrorDescription(of: ICloudConflictListView(
-            model: model,
-            onClose: {},
-            onResolve: { _ in },
-            onCollectDiagnostics: {}
-        ).body)
         let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(
             mappedErrors,
             [CoreError.ICloudPlaceholder(path: "/tmp/iCloudConflictList-repo/docs/report.pdf.icloud")]
         )
-        assertTestDescription(body, contains: [
+        assertTestMirrorDescription(of: ICloudConflictListView(
+            model: model,
+            onClose: {},
+            onResolve: { _ in },
+            onCollectDiagnostics: {}
+        ).body, contains: [
             "icloud-conflicts-icloud-conflicts-core-error",
             "Unable to list iCloud conflicts",
             "Retry",
@@ -85,11 +84,15 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
             errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping())
         )
         await emptyModel.load()
-        let emptyBody = testMirrorDescription(of: ICloudConflictListView(
+
+        assertTestMirrorDescription(of: ICloudConflictListView(
             model: emptyModel,
             onClose: {},
             onResolve: { _ in }
-        ).body)
+        ).body, contains: [
+            ICloudConflictListCopy.emptyTitle,
+            ICloudConflictListAccessibilityID.emptyRefresh
+        ])
 
         let conflict = ICloudConflictPairSnapshot.iCloudConflictListFixture()
         let loadedModel = ICloudConflictListModel(
@@ -98,17 +101,12 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
             errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping())
         )
         await loadedModel.load()
-        let loadedBody = testMirrorDescription(of: ICloudConflictListView(
+
+        assertTestMirrorDescription(of: ICloudConflictListView(
             model: loadedModel,
             onClose: {},
             onResolve: { _ in XCTFail("Body inspection must not invoke row actions") }
-        ).body)
-
-        assertTestDescription(emptyBody, contains: [
-            ICloudConflictListCopy.emptyTitle,
-            ICloudConflictListAccessibilityID.emptyRefresh
-        ])
-        assertTestDescription(loadedBody, contains: [
+        ).body, contains: [
             ICloudConflictListCopy.title,
             ICloudConflictListCopy.subtitle
         ])
@@ -223,27 +221,25 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         )
         await sheetModel.validateRepositoryPath()
         await sheetModel.loadPreview()
-        let sheetBody = testMirrorDescription(of: ICloudConflictMinimalSheet(
-            model: sheetModel,
-            resolutionCapability: route.resolutionCapability,
-            isTrashAvailable: true,
-            onCancel: {},
-            onApply: { _ in },
-            onCollectDiagnostics: {}
-        ).body)
         let validatorRequests = await validator.recordedRequests()
 
         XCTAssertEqual(validatorRequests, ["/tmp/iCloudConflictList-repo"])
         XCTAssertEqual(sheetModel.previewState.preview?.conflictID, route.conflict.conflictID)
         XCTAssertEqual(sheetModel.previewVersions.map(\.previewStatus), [.available, .available])
         XCTAssertTrue(sheetModel.canApply(strategy: .keepBoth, isTrashAvailable: true, didConfirmSingleVersion: false))
-        assertTestDescription(sheetBody, contains: [
+        assertTestMirrorDescription(of: ICloudConflictMinimalSheet(
+            model: sheetModel,
+            resolutionCapability: route.resolutionCapability,
+            isTrashAvailable: true,
+            onCancel: {},
+            onApply: { _ in },
+            onCollectDiagnostics: {}
+        ).body, contains: [
             "icloud-conflict-review-icloud-conflict-visual-icloud-conflict-visual",
             "Conflict details loaded",
             "Original preview",
             "Conflicted preview"
-        ])
-        assertTestDescription(sheetBody, doesNotContain: [
+        ], doesNotContain: [
             "icloud-conflict-minimal-core-resolution-blocked"
         ])
 
@@ -262,22 +258,20 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         )
 
         await model.load()
-        let body = testMirrorDescription(of: ICloudConflictListView(
-            model: model,
-            pageContext: .iCloudConflictVisualConflictVisual,
-            onClose: {},
-            onResolve: { _ in XCTFail("Body inspection must not invoke icloud-conflict-visual resolution") }
-        ).body)
         let requests = await lister.recordedRequests()
 
         XCTAssertEqual(requests, ["/tmp/iCloudConflictVisual-repo"])
         XCTAssertEqual(model.state, .loaded([conflict]))
-        assertTestDescription(body, contains: [
+        assertTestMirrorDescription(of: ICloudConflictListView(
+            model: model,
+            pageContext: .iCloudConflictVisualConflictVisual,
+            onClose: {},
+            onResolve: { _ in XCTFail("Body inspection must not invoke icloud-conflict-visual resolution") }
+        ).body, contains: [
             ICloudConflictListAccessibilityID.iCloudConflictVisualPage,
             ICloudConflictListCopy.iCloudConflictVisualTitle,
             "1 conflict groups found"
-        ])
-        assertTestDescription(body, doesNotContain: [
+        ], doesNotContain: [
             "icloud-conflict-review-icloud-conflict-visual-icloud-conflict-visual"
         ])
     }

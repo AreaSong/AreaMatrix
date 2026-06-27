@@ -23,10 +23,6 @@ actor MainLoadingStaticStartupRecoverer: CoreStartupRecovering {
     }
 }
 
-func changeCategoryMirrorDescription(of value: Any) -> String {
-    testMirrorDescription(of: value, maxDepth: 8)
-}
-
 func makeChangeCategoryTemporaryDirectory(prefix: String) throws -> URL {
     try makeTestTemporaryDirectory(prefix: prefix, named: "AreaMatrixChangeCategoryIntegration")
 }

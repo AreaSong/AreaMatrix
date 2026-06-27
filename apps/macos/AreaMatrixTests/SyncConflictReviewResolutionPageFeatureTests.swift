@@ -17,11 +17,11 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
 
         await model.load()
         let loadedConflict = try XCTUnwrap(model.conflict)
-        let body = syncConflictReviewMirrorDescription(of: SyncConflictReviewView(
+        let body = SyncConflictReviewView(
             model: model,
             onBackToNeedsReview: {},
             onClose: {}
-        ).body)
+        ).body
         let previewRequests = await resolver.recordedPreviewRequests()
 
         XCTAssertEqual(loadedConflict.conflictType.displayName, "Same name, different content")
@@ -37,16 +37,12 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
         XCTAssertEqual(model.selectedResolution, .keepBoth)
         XCTAssertEqual(model.previewState.preview?.changeLogAction, "conflict_resolved_keep_both")
         XCTAssertTrue(model.canApplyResolution)
-        XCTAssertTrue(body.contains(SyncConflictReviewAccessibilityID.resolution))
-        XCTAssertTrue(body.contains(SyncConflictReviewAccessibilityID.impact))
-        XCTAssertTrue(body.contains(SyncConflictReviewCopy.applyAction))
         XCTAssertEqual(SyncConflictResolutionStrategySnapshot.allCases.map(\.title), [
             "Keep both",
             "Use existing version",
             "Use incoming version"
         ])
-        XCTAssertTrue(body.contains("Keep both"))
-        XCTAssertTrue(body.contains("conflict_resolved_keep_both"))
+        assertSyncConflictReviewLoadedBody(body)
     }
 
     @MainActor
@@ -134,12 +130,12 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
         await model.applyResolution()
         let preview = try XCTUnwrap(model.previewState.preview)
         let confirmation = try XCTUnwrap(model.replaceConfirmation)
-        let panelBody = syncConflictReviewMirrorDescription(of: SyncConflictReplaceConfirmationPanel(
+        let panelBody = SyncConflictReplaceConfirmationPanel(
             preview: preview,
             confirmation: confirmation,
             disabledReason: model.replaceConfirmationDisabledReason,
             onConfirm: { _ in }
-        ).body)
+        ).body
         let resolveRequests = await resolver.recordedResolveRequests()
 
         XCTAssertEqual(confirmation.previewToken, "preview-token-use-incoming")
@@ -198,11 +194,11 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
 
         await model.load()
         await model.applyResolution()
-        let body = syncConflictReviewMirrorDescription(of: SyncConflictReviewView(
+        let body = SyncConflictReviewView(
             model: model,
             onBackToNeedsReview: {},
             onClose: {}
-        ).body)
+        ).body
         let resolveRequests = await resolver.recordedResolveRequests()
 
         XCTAssertEqual(resolveRequests, [
@@ -220,9 +216,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
         XCTAssertEqual(model.applyState, .succeeded(.syncConflictReviewResolveFixture()))
         XCTAssertEqual(model.applyDisabledReason, "Resolution has already been applied.")
         XCTAssertFalse(model.canApplyResolution)
-        XCTAssertTrue(body.contains(SyncConflictReviewAccessibilityID.applySuccess))
-        XCTAssertTrue(body.contains("Resolution applied."))
-        XCTAssertTrue(body.contains("conflict_resolved_keep_both"))
+        assertSyncConflictReviewAppliedBody(body)
     }
 
     @MainActor
@@ -388,15 +382,35 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
     }
 }
 
-private func assertSyncConflictReviewConfirmedReplacePanel(_ panelBody: String) {
-    XCTAssertTrue(panelBody.contains(SyncConflictReviewAccessibilityID.replaceConfirmation))
-    XCTAssertTrue(panelBody.contains(SyncConflictReviewAccessibilityID.replaceConfirm))
-    XCTAssertTrue(panelBody.contains("Confirm Replace"))
-    XCTAssertTrue(panelBody.contains("I understand this will replace the existing file."))
-    XCTAssertTrue(panelBody.contains("Old file path"))
-    XCTAssertTrue(panelBody.contains("Old version will be kept at"))
-    XCTAssertTrue(panelBody.contains("Replace plan confirmed for this preview token."))
-    XCTAssertTrue(panelBody.contains("conflict_resolved_use_incoming"))
+private func assertSyncConflictReviewLoadedBody(_ body: Any) {
+    assertTestMirrorDescription(of: body, contains: [
+        SyncConflictReviewAccessibilityID.resolution,
+        SyncConflictReviewAccessibilityID.impact,
+        SyncConflictReviewCopy.applyAction,
+        "Keep both",
+        "conflict_resolved_keep_both"
+    ])
+}
+
+private func assertSyncConflictReviewAppliedBody(_ body: Any) {
+    assertTestMirrorDescription(of: body, contains: [
+        SyncConflictReviewAccessibilityID.applySuccess,
+        "Resolution applied.",
+        "conflict_resolved_keep_both"
+    ])
+}
+
+private func assertSyncConflictReviewConfirmedReplacePanel(_ panelBody: Any) {
+    assertTestMirrorDescription(of: panelBody, contains: [
+        SyncConflictReviewAccessibilityID.replaceConfirmation,
+        SyncConflictReviewAccessibilityID.replaceConfirm,
+        "Confirm Replace",
+        "I understand this will replace the existing file.",
+        "Old file path",
+        "Old version will be kept at",
+        "Replace plan confirmed for this preview token.",
+        "conflict_resolved_use_incoming"
+    ])
 }
 
 @MainActor

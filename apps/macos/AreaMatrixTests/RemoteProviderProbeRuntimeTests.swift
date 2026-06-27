@@ -151,15 +151,16 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
             fileName: "confidential.pdf",
             currentPath: "inbox/confidential.pdf"
         )
-        let body = changeCategoryMirrorDescription(of: panel.body)
 
         XCTAssertEqual(model.fallbackStatus?.kind, .privacySkipped)
         XCTAssertEqual(model.fallbackStatus?.primaryAction, .viewPrivacyRule)
         XCTAssertEqual(model.fallbackStatus?.secondaryAction, .viewCallLog)
         XCTAssertEqual(model.fallbackStatus?.nonAiFallbackAction, .classifyManually)
-        XCTAssertTrue(body.contains("Skipped by privacy rule"))
-        XCTAssertTrue(body.contains("View privacy rule"))
-        XCTAssertTrue(body.contains("Classify manually"))
+        assertTestMirrorDescription(of: panel.body, contains: [
+            "Skipped by privacy rule",
+            "View privacy rule",
+            "Classify manually"
+        ], maxDepth: 8)
         XCTAssertFalse(panel.isFallbackActionDisabled(.viewPrivacyRule))
     }
 
@@ -208,7 +209,6 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
         )
 
         await model.askForSuggestion()
-        let body = changeCategoryMirrorDescription(of: panel.body)
         let fallbackRequests = await fallbackBridge.recordedRequests()
 
         XCTAssertEqual(fallbackRequests.first?.operation, .classificationSuggestion)
@@ -217,8 +217,10 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
         XCTAssertEqual(model.fallbackStatus?.primaryAction, .retry)
         XCTAssertEqual(model.fallbackStatus?.secondaryAction, .viewCallLog)
         XCTAssertEqual(model.fallbackStatus?.nonAiFallbackAction, .classifyManually)
-        XCTAssertTrue(body.contains("Retry"))
-        XCTAssertTrue(body.contains("Classify manually"))
+        assertTestMirrorDescription(of: panel.body, contains: [
+            "Retry",
+            "Classify manually"
+        ], maxDepth: 8)
         XCTAssertFalse(panel.isFallbackActionDisabled(.retry))
         XCTAssertFalse(panel.isFallbackActionDisabled(.viewCallLog))
         XCTAssertNotEqual(model.fallbackStatus?.primaryAction, .buildSemanticIndex)

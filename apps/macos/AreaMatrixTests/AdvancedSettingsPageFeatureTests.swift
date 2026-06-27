@@ -31,11 +31,12 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         let section = AdvancedSettingsRecoveryToolsSection {
             didOpenRecoveryTools = true
         }
-        let bodyText = advancedSettingsMirrorDescription(of: section.body)
 
-        XCTAssertTrue(bodyText.contains("Recovery tools"))
-        XCTAssertTrue(bodyText.contains("Open recovery tools..."))
-        XCTAssertTrue(bodyText.contains("advanced-settings-startup-recovery-core-open-recovery-tools"))
+        assertTestMirrorDescription(of: section.body, contains: [
+            "Recovery tools",
+            "Open recovery tools...",
+            "advanced-settings-startup-recovery-core-open-recovery-tools"
+        ])
 
         section.onOpenRecoveryTools()
         XCTAssertTrue(didOpenRecoveryTools)
@@ -414,8 +415,4 @@ private extension CoreErrorMappingSnapshot {
 
 private func temporaryAdvancedSettingsRepo() throws -> URL {
     try makeTestTemporaryDirectory(named: "AreaMatrixAdvancedSettings")
-}
-
-private func advancedSettingsMirrorDescription(of value: Any) -> String {
-    testMirrorDescription(of: value)
 }

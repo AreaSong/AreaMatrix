@@ -51,11 +51,12 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
             errorMapper: UndoToastHistoryErrorMapper()
         )
 
-        let sheetDescription = importProgressMirrorDescription(of: content.undoHistorySheet(request))
-
-        XCTAssertTrue(sheetDescription.contains("UndoHistoryPanel"))
+        assertTestMirrorDescription(
+            of: content.undoHistorySheet(request),
+            contains: "UndoHistoryPanel",
+            doesNotContain: "UndoToastHistoryRouteSheet"
+        )
         XCTAssertEqual(UndoHistoryPanel.accessibilityID, "undo-history-undo-action-log-undo-history-panel")
-        XCTAssertFalse(sheetDescription.contains("UndoToastHistoryRouteSheet"))
         XCTAssertEqual(request.focusedActionID, action.actionID)
     }
 
@@ -180,11 +181,11 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
             onUndoCompleted: { _ in },
             onRedoCompleted: { _ in }
         )
-        let description = importProgressMirrorDescription(of: panel.body)
-
-        XCTAssertTrue(description.contains("Undo History"))
-        XCTAssertTrue(description.contains("Undo latest"))
-        XCTAssertTrue(description.contains("Redo latest"))
+        assertTestMirrorDescription(of: panel.body, contains: [
+            "Undo History",
+            "Undo latest",
+            "Redo latest"
+        ])
         XCTAssertEqual(UndoHistoryPanel.accessibilityID, "undo-history-undo-action-log-undo-history-panel")
     }
 
@@ -327,10 +328,6 @@ private extension UndoActionRecordSnapshot {
             updatedAt: 1_700_000_010
         )
     }
-}
-
-private func importProgressMirrorDescription(of value: Any) -> String {
-    testMirrorDescription(of: value)
 }
 
 private actor UndoToastHistoryErrorMapper: CoreErrorMapping {

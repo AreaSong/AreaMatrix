@@ -17,25 +17,26 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
             state: .failed(.startupRecoveryStartupRecoveryMapping(rawContext: "recovery db locked")),
             onRetry: {}
         )
-        let completedBody = startupRecoveryMirrorDescription(of: completedView.body)
-        let failedBody = startupRecoveryMirrorDescription(of: failedView.body)
 
-        assertTestDescription(completedBody, contains: [
+        assertTestMirrorDescription(of: completedView.body, contains: [
             "Startup recovery complete",
             "启动恢复已完成",
             "startup-recovery-startup-recovery-core-startup-recovery",
             "startup-recovery-startup-recovery-core-recovery-report"
         ])
-        assertTestDescription(failedBody, contains: [
-            "Startup recovery failed",
-            "Retry startup recovery",
-            "startup-recovery-startup-recovery-core-retry-startup-recovery",
-            "ErrorRecoveryMappedErrorView"
-        ])
-        assertTestDescription(failedBody, doesNotContain: [
-            "Open repair",
-            "Remove from index"
-        ])
+        assertTestMirrorDescription(
+            of: failedView.body,
+            contains: [
+                "Startup recovery failed",
+                "Retry startup recovery",
+                "startup-recovery-startup-recovery-core-retry-startup-recovery",
+                "ErrorRecoveryMappedErrorView"
+            ],
+            doesNotContain: [
+                "Open repair",
+                "Remove from index"
+            ]
+        )
     }
 
     @MainActor
@@ -48,21 +49,23 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
             retryAccessibilityIdentifier: "startup-recovery-error-mapping-retry",
             onRetry: {}
         )
-        let body = startupRecoveryMirrorDescription(of: view.body)
 
-        assertTestDescription(body, contains: [
-            "startup-recovery-error-mapping-error-mapping",
-            "Startup recovery could not finish",
-            "Severity: Medium",
-            "Recoverability: Retryable",
-            "database is locked",
-            "startup-recovery-error-mapping-retry"
-        ])
-        assertTestDescription(body, doesNotContain: [
-            "Open repair",
-            "Remove from index",
-            "Download & retry"
-        ])
+        assertTestMirrorDescription(
+            of: view.body,
+            contains: [
+                "startup-recovery-error-mapping-error-mapping",
+                "Startup recovery could not finish",
+                "Severity: Medium",
+                "Recoverability: Retryable",
+                "database is locked",
+                "startup-recovery-error-mapping-retry"
+            ],
+            doesNotContain: [
+                "Open repair",
+                "Remove from index",
+                "Download & retry"
+            ]
+        )
     }
 
     @MainActor
@@ -82,9 +85,8 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
             retryAccessibilityIdentifier: "startup-recovery-error-mapping-retry",
             onRetry: {}
         )
-        let body = startupRecoveryMirrorDescription(of: view.body)
 
-        assertTestDescription(body, contains: [
+        assertTestMirrorDescription(of: view.body, contains: [
             "Internal",
             "Severity: Critical",
             "Recoverability: Fatal",
@@ -100,11 +102,10 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
             isRetrying: true,
             onRetry: {}
         )
-        let failedBody = startupRecoveryMirrorDescription(of: failedView.body)
 
         XCTAssertTrue(failedView.retryButtonTitle == "Retrying...")
         XCTAssertTrue(failedView.retryButtonIsDisabled)
-        assertTestDescription(failedBody, contains: ["Retrying..."])
+        assertTestMirrorDescription(of: failedView.body, contains: "Retrying...")
     }
 
     @MainActor
@@ -457,8 +458,4 @@ private extension CoreErrorMappingSnapshot {
 
 private func startupRecoveryTemporaryDirectory() throws -> URL {
     try makeTestTemporaryDirectory(named: "AreaMatrixStartupRecoveryStartupRecovery")
-}
-
-private func startupRecoveryMirrorDescription(of value: Any) -> String {
-    testMirrorDescription(of: value)
 }

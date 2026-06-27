@@ -91,10 +91,9 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
             opening: opening,
             onBeginSyncConflictReview: { routedFile = $0 }
         )
-        let body = syncConflictReviewMirrorDescription(of: detailPane.body)
         let route = SyncConflictReviewRoute.fileDetail(repoPath: opening.config.repoPath, file: file)
 
-        assertTestDescription(body, contains: [
+        assertTestMirrorDescription(of: detailPane.body, contains: [
             "Review Sync Conflict...",
             "sync-conflict-review-sync-conflict-detect-review-sync-conflict"
         ])
@@ -119,14 +118,14 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
         )
 
         await model.load()
-        let body = syncConflictReviewMirrorDescription(of: SyncConflictReviewView(
+        let body = SyncConflictReviewView(
             model: model,
             onBackToNeedsReview: {},
             onClose: {}
-        ).body)
+        ).body
 
         XCTAssertEqual(model.state, .empty)
-        assertTestDescription(body, contains: [
+        assertTestMirrorDescription(of: body, contains: [
             SyncConflictReviewCopy.emptyTitle,
             SyncConflictReviewCopy.backAction,
             SyncConflictReviewAccessibilityID.empty
@@ -149,15 +148,15 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
         )
 
         await model.load()
-        let body = syncConflictReviewMirrorDescription(of: SyncConflictReviewView(
+        let body = SyncConflictReviewView(
             model: model,
             onBackToNeedsReview: {},
             onClose: {}
-        ).body)
+        ).body
         let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(mappedErrors, [CoreError.Conflict(path: "stale conflict id")])
-        assertTestDescription(body, contains: [
+        assertTestMirrorDescription(of: body, contains: [
             SyncConflictReviewAccessibilityID.error,
             SyncConflictReviewCopy.errorTitle,
             "Retry"
@@ -230,186 +229,4 @@ private func makeSyncConflictReviewDetailNoteModel(repoPath: String) -> DetailNo
         noteStore: SyncConflictReviewNoopNoteStore(),
         errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
     )
-}
-
-actor SyncConflictReviewDetector: CoreSyncConflictDetecting {
-    private let result: Result<[SyncConflictSnapshot], Error>
-    private var requests: [String] = []
-
-    init(result: Result<[SyncConflictSnapshot], Error>) {
-        self.result = result
-    }
-
-    func detectSyncConflicts(repoPath: String) async throws -> [SyncConflictSnapshot] {
-        requests.append(repoPath)
-        return try result.get()
-    }
-
-    func recordedRequests() -> [String] {
-        requests
-    }
-}
-
-actor SyncConflictReviewRecordingErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-    private var errors: [CoreError] = []
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        errors.append(error)
-        return mapping
-    }
-
-    func recordedErrors() -> [CoreError] {
-        errors
-    }
-}
-
-extension SyncConflictSnapshot {
-    static func syncConflictReviewFixture(
-        conflictID: String = "conflict-report",
-        status: SyncConflictStatusSnapshot = .needsReview,
-        primaryPath: String = "docs/report.pdf"
-    ) -> SyncConflictSnapshot {
-        SyncConflictSnapshot(
-            conflictID: conflictID,
-            conflictType: .sameNameDifferentContent,
-            severity: .high,
-            status: status,
-            primaryPath: primaryPath,
-            affectedFiles: [
-                .syncConflictReviewFileFixture(path: primaryPath, role: .existing),
-                .syncConflictReviewFileFixture(
-                    path: primaryPath == "docs/report.pdf"
-                        ? "docs/report (Windows conflict).pdf"
-                        : "docs/other (Windows conflict).pdf",
-                    fileID: 43,
-                    role: .incoming,
-                    hashSha256: "fedcba9876543210",
-                    sourcePlatform: "Windows"
-                )
-            ],
-            versionCount: 2,
-            sourceProvider: "OneDrive",
-            detectedAt: 1_778_738_400,
-            summary: "Two versions of docs/report.pdf need review."
-        )
-    }
-}
-
-extension RepositoryOpeningResult {
-    static func syncConflictReviewFixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
-        RepositoryOpeningResult(
-            config: RepoConfigSnapshot(
-                repoPath: repoPath,
-                defaultMode: "Copied",
-                overviewOutput: "GeneratedOnly",
-                aiEnabled: false,
-                locale: "zh-Hans",
-                iCloudWarn: true,
-                enableExtensionRules: true,
-                enableKeywordRules: true,
-                fallbackToInbox: true,
-                allowReplaceDuringImport: false
-            ),
-            tree: RepositoryTreeNodeSnapshot(
-                slug: "__root__",
-                displayName: "Repository",
-                kind: "RepositoryRoot",
-                relativePath: "",
-                fileCount: Int64(files.count),
-                depth: 0,
-                children: []
-            ),
-            currentCategoryFiles: files
-        )
-    }
-}
-
-extension FileEntrySnapshot {
-    static func syncConflictReviewFixture(id: Int64, path: String, currentName: String) -> FileEntrySnapshot {
-        FileEntrySnapshot(
-            id: id,
-            path: path,
-            originalName: currentName,
-            currentName: currentName,
-            category: "docs",
-            sizeBytes: 2048,
-            hashSha256: "syncConflictReview-file-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_778_738_300,
-            updatedAt: 1_778_738_400
-        )
-    }
-}
-
-extension SyncConflictAffectedFileSnapshot {
-    static func syncConflictReviewFileFixture(
-        path: String = "docs/report.pdf",
-        fileID: Int64? = 42,
-        role: SyncConflictFileRoleSnapshot = .existing,
-        hashSha256: String? = "abcdef1234567890",
-        sourcePlatform: String? = "macOS"
-    ) -> SyncConflictAffectedFileSnapshot {
-        SyncConflictAffectedFileSnapshot(
-            path: path,
-            fileID: fileID,
-            role: role,
-            sizeBytes: 2048,
-            modifiedAt: 1_778_738_400,
-            hashSha256: hashSha256,
-            sourcePlatform: sourcePlatform
-        )
-    }
-}
-
-actor SyncConflictReviewRecordingFileDetailer: CoreFileDetailing {
-    private let result: Result<FileEntrySnapshot, Error>
-
-    init(result: Result<FileEntrySnapshot, Error>) {
-        self.result = result
-    }
-
-    func getFile(repoPath _: String, fileID _: Int64) async throws -> FileEntrySnapshot {
-        try result.get()
-    }
-}
-
-struct SyncConflictReviewNoopFileLister: CoreFileListing {
-    func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
-        []
-    }
-}
-
-actor SyncConflictReviewNoopNoteStore: CoreNoteReadingWriting {
-    func readNote(repoPath _: String, fileID _: Int64) async throws -> String? {
-        nil
-    }
-
-    func writeNote(repoPath _: String, fileID _: Int64, contentMarkdown _: String) async throws {}
-}
-
-extension CoreErrorMappingSnapshot {
-    static func syncConflictReviewMapping(
-        kind: CoreErrorKindSnapshot = .conflict,
-        rawContext: String = "/tmp/syncConflictReview-repo"
-    ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: kind,
-            userMessage: "AreaMatrix cannot inspect this sync conflict.",
-            severity: .high,
-            suggestedAction: "Refresh the conflict list or retry after sync finishes.",
-            recoverability: .refreshRequired,
-            rawContext: rawContext
-        )
-    }
-}
-
-func syncConflictReviewMirrorDescription(of value: Any) -> String {
-    testMirrorDescription(of: value)
 }

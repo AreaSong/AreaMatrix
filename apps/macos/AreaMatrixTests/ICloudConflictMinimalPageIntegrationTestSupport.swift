@@ -438,7 +438,3 @@ extension ICloudConflictResolveReportSnapshot {
         )
     }
 }
-
-func iCloudConflictMinimalIntegrationMirrorDescription(of value: Any) -> String {
-    testMirrorDescription(of: value)
-}

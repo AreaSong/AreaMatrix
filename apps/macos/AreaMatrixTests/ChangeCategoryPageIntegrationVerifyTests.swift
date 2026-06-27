@@ -125,11 +125,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
                 errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryConflict())
             )
         )
-        let body = changeCategoryMirrorDescription(of: pane.body)
-
-        XCTAssertTrue(body.contains("Change Category..."))
-        XCTAssertTrue(body.contains("Correct Classification..."))
-        XCTAssertTrue(body.contains("Review AI Suggestion..."))
+        assertChangeCategoryDetailActions(of: pane.body)
         pane.onBeginChangeCategoryFile(file.id)
         XCTAssertEqual(model.pendingActionDestination, .changeCategory(fileID: file.id))
         XCTAssertEqual(model.pendingActionDestination?.pageID, "change-category")
@@ -221,13 +217,33 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             onOpenPermissionRecovery: { openedPermissionRecovery = true },
             onCollectDiagnostics: {}
         )
-        let body = changeCategoryMirrorDescription(of: sheet.body)
-
-        XCTAssertTrue(body.contains("Open folder permissions"))
-        XCTAssertTrue(body.contains("Collect Diagnostics..."))
+        assertChangeCategoryPermissionRecovery(of: sheet.body)
         sheet.onOpenPermissionRecovery()
         XCTAssertTrue(openedPermissionRecovery)
     }
+}
+
+private func assertChangeCategoryDetailActions(
+    of value: Any,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    assertTestMirrorDescription(of: value, contains: [
+        "Change Category...",
+        "Correct Classification...",
+        "Review AI Suggestion..."
+    ], maxDepth: 8, file: file, line: line)
+}
+
+private func assertChangeCategoryPermissionRecovery(
+    of value: Any,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    assertTestMirrorDescription(of: value, contains: [
+        "Open folder permissions",
+        "Collect Diagnostics..."
+    ], maxDepth: 8, file: file, line: line)
 }
 
 @MainActor

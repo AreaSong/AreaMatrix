@@ -70,10 +70,6 @@ extension FileEntrySnapshot {
     }
 }
 
-func batchAddTagsRouteMirrorDescription(of value: Any) -> String {
-    testMirrorDescription(of: value)
-}
-
 extension UndoActionRecordSnapshot {
     static func undoToastMovedFilesToTrash() -> UndoActionRecordSnapshot {
         UndoActionRecordSnapshot(

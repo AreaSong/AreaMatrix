@@ -58,16 +58,16 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
 
     func testBatchAddTagsCommandPaletteRouteExposesContextualAddTagsCommand() {
         var commandQuery = "tag"
-        let body = batchAddTagsRouteMirrorDescription(of: SearchCommandPaletteRouteView(
+        assertTestMirrorDescription(of: SearchCommandPaletteRouteView(
             query: Binding(get: { commandQuery }, set: { commandQuery = $0 }),
             state: .idle,
             onLoad: {},
             onExecuteTarget: { _ in },
             onClose: {}
-        ).body)
-
-        XCTAssertTrue(body.contains("command-palette-search-route"))
-        XCTAssertTrue(body.contains("CommandPaletteView"))
+        ).body, contains: [
+            "command-palette-search-route",
+            "CommandPaletteView"
+        ])
     }
 
     @MainActor

@@ -101,12 +101,13 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
         let loadingContent = GeneralSettingsLoadingContent {
             didClose = true
         }
-        let bodyText = generalSettingsMirrorDescription(of: loadingContent.body)
 
-        XCTAssertTrue(bodyText.contains("Loading settings..."))
-        XCTAssertTrue(bodyText.contains("Button"))
-        XCTAssertTrue(bodyText.contains("Close"))
-        XCTAssertTrue(bodyText.contains("general-settings-loading-close-settings"))
+        assertTestMirrorDescription(of: loadingContent.body, contains: [
+            "Loading settings...",
+            "Button",
+            "Close",
+            "general-settings-loading-close-settings"
+        ])
 
         loadingContent.onClose()
         XCTAssertTrue(didClose)
@@ -406,8 +407,4 @@ private extension FileEntrySnapshot {
 
 private func makeGeneralSettingsIntegrationTemporaryRepository() throws -> URL {
     try makeTestTemporaryDirectory(named: "AreaMatrixGeneralSettingsIntegration")
-}
-
-private func generalSettingsMirrorDescription(of value: Any) -> String {
-    testMirrorDescription(of: value)
 }

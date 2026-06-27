@@ -11,12 +11,12 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
         await context.model.applyResolution()
         let unresolvedRequests = await context.resolver.recordedResolveRequests()
         let preview = try XCTUnwrap(context.model.previewState.preview)
-        let panelBody = syncConflictReviewMirrorDescription(of: SyncConflictReplaceConfirmationPanel(
+        let panelBody = SyncConflictReplaceConfirmationPanel(
             preview: preview,
             confirmation: context.model.replaceConfirmation,
             disabledReason: context.model.replaceConfirmationDisabledReason,
             onConfirm: { _ in }
-        ).body)
+        ).body
 
         assertReplaceResolutionReplacePanelBlocksUnconfirmedApply(
             model: context.model,
@@ -286,17 +286,19 @@ private func makeReplaceResolutionReplaceContext() -> ReplaceResolutionReplaceCo
 private func assertReplaceResolutionReplacePanelBlocksUnconfirmedApply(
     model: SyncConflictReviewModel,
     unresolvedRequests: [SyncConflictResolveRequest],
-    panelBody: String
+    panelBody: Any
 ) {
     XCTAssertEqual(unresolvedRequests, [])
     XCTAssertFalse(model.canApplyResolution)
     XCTAssertTrue(model.canConfirmReplacePlan)
-    XCTAssertTrue(panelBody.contains("Confirm Replace"))
-    XCTAssertTrue(panelBody.contains("Old file path"))
-    XCTAssertTrue(panelBody.contains("Old version will be kept at"))
-    XCTAssertTrue(panelBody.contains("Affected record"))
-    XCTAssertTrue(panelBody.contains("Change log"))
-    XCTAssertTrue(panelBody.contains("Recovery note"))
+    assertTestMirrorDescription(of: panelBody, contains: [
+        "Confirm Replace",
+        "Old file path",
+        "Old version will be kept at",
+        "Affected record",
+        "Change log",
+        "Recovery note"
+    ])
 }
 
 @MainActor

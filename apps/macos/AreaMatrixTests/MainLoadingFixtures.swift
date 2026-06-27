@@ -397,10 +397,6 @@ extension CommandTarget {
     }
 }
 
-func commandPaletteCommandMirrorDescription(of value: Any) -> String {
-    testMirrorDescription(of: value, includeLabels: false)
-}
-
 func makeMainLoadingTemporaryRepositoryURL() throws -> URL {
     try makeTestTemporaryDirectory(named: "AreaMatrixMainLoadingTreeTests")
 }

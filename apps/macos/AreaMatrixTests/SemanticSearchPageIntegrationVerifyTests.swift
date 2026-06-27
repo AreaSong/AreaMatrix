@@ -164,16 +164,16 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
             isPrivacyGateChecking: false,
             onAction: { _ in }
         )
-        let body = changeCategoryMirrorDescription(of: region.body)
 
         XCTAssertEqual(status.primaryAction, .buildSemanticIndex)
         XCTAssertEqual(status.nonAiFallbackAction, .useNormalSearch)
         XCTAssertEqual(status.actions, [.buildSemanticIndex, .useNormalSearch])
         XCTAssertTrue(status.canBuildSemanticIndex)
-        XCTAssertTrue(body.contains("Semantic index is not ready"))
-        XCTAssertTrue(body.contains("Build semantic index"))
-        XCTAssertTrue(body.contains("Use normal search"))
-        XCTAssertFalse(body.contains("Classify manually"))
+        assertTestMirrorDescription(of: region.body, contains: [
+            "Semantic index is not ready",
+            "Build semantic index",
+            "Use normal search"
+        ], doesNotContain: "Classify manually", maxDepth: 8)
     }
 
     @MainActor
@@ -193,15 +193,15 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
             isPrivacyGateChecking: false,
             onAction: { _ in }
         )
-        let body = changeCategoryMirrorDescription(of: region.body)
 
         XCTAssertEqual(status.title, "Remote AI could not be reached")
         XCTAssertTrue(status.retryable)
         XCTAssertEqual(status.actions, [.viewCallLog, .useNormalSearch])
         XCTAssertFalse(status.canBuildSemanticIndex)
-        XCTAssertTrue(body.contains("Retry"))
-        XCTAssertTrue(body.contains("View call log"))
-        XCTAssertTrue(body.contains("Use normal search"))
-        XCTAssertFalse(body.contains("Classify manually"))
+        assertTestMirrorDescription(of: region.body, contains: [
+            "Retry",
+            "View call log",
+            "Use normal search"
+        ], doesNotContain: "Classify manually", maxDepth: 8)
     }
 }

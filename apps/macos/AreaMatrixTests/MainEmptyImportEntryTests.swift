@@ -168,16 +168,18 @@ final class MainEmptyImportEntryTests: XCTestCase {
             sections: [.init(title: "Current Selection", targets: [target])],
             generatedAt: 1
         )
-        let body = commandPaletteCommandMirrorDescription(of: CommandPaletteView(
+        let body = CommandPaletteView(
             query: Binding(get: { query }, set: { query = $0 }),
             state: .loaded(snapshot),
             onLoad: {},
             onExecuteTarget: { _ in },
             onClose: {}
-        ).body)
+        ).body
 
-        XCTAssertTrue(body.contains("Button"))
-        XCTAssertTrue(body.contains("Delete selected files..."))
+        assertTestMirrorDescription(of: body, contains: [
+            "Button",
+            "Delete selected files..."
+        ], includeLabels: false)
         XCTAssertEqual(target.confirmationLabel, "Requires confirmation")
         XCTAssertEqual(target.executionRoute, .batchDelete)
     }

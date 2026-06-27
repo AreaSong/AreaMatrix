@@ -133,13 +133,14 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
             onApply: { _ in },
             onCollectDiagnostics: {}
         )
-        let body = iCloudConflictMinimalMirrorDescription(of: view.body)
 
-        XCTAssertTrue(body.contains("icloud-conflict-minimal-error-mapping-error-mapping"))
-        XCTAssertTrue(body.contains("Repository check failed: PermissionDenied"))
-        XCTAssertTrue(body.contains("AreaMatrix cannot inspect this conflict source."))
-        XCTAssertTrue(body.contains("Severity: High; Recoverability: UserActionRequired"))
-        XCTAssertTrue(body.contains("icloud-conflict-minimal-error-mapping-retry-repository-check"))
+        assertTestMirrorDescription(of: view.body, contains: [
+            "icloud-conflict-minimal-error-mapping-error-mapping",
+            "Repository check failed: PermissionDenied",
+            "AreaMatrix cannot inspect this conflict source.",
+            "Severity: High; Recoverability: UserActionRequired",
+            "icloud-conflict-minimal-error-mapping-retry-repository-check"
+        ])
     }
 
     @MainActor
@@ -197,14 +198,18 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
 
         await model.validateRepositoryPath()
         await model.loadPreview()
-        let body = iCloudConflictMinimalMirrorDescription(of: ICloudConflictMinimalSheet(
+        assertTestMirrorDescription(of: ICloudConflictMinimalSheet(
             model: model,
             resolutionCapability: .supported,
             isTrashAvailable: true,
             onCancel: {},
             onApply: { _ in XCTFail("Preview failure must keep Apply unavailable") },
             onCollectDiagnostics: {}
-        ).body)
+        ).body, contains: [
+            "icloud-conflict-review-icloud-conflict-visual-preview-error",
+            "Conflict detail failed: Conflict",
+            "Retry"
+        ])
         let previewRequests = await reviewer.recordedPreviewRequests()
         let resolveRequests = await reviewer.recordedResolveRequests()
         let mappedErrors = await mapper.recordedErrors()
@@ -216,9 +221,6 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         XCTAssertEqual(resolveRequests, [])
         XCTAssertEqual(mappedErrors, [CoreError.Conflict(path: "stale conflict id")])
         XCTAssertFalse(model.canApply(strategy: .keepBoth, isTrashAvailable: true, didConfirmSingleVersion: false))
-        XCTAssertTrue(body.contains("icloud-conflict-review-icloud-conflict-visual-preview-error"))
-        XCTAssertTrue(body.contains("Conflict detail failed: Conflict"))
-        XCTAssertTrue(body.contains("Retry"))
     }
 
     @MainActor
@@ -432,8 +434,4 @@ private extension CoreErrorMappingSnapshot {
             rawContext: rawContext
         )
     }
-}
-
-private func iCloudConflictMinimalMirrorDescription(of value: Any) -> String {
-    testMirrorDescription(of: value)
 }

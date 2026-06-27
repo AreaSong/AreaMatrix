@@ -63,21 +63,21 @@ final class ImportFolderCoreBridgeModeTests: XCTestCase {
 final class QueryErrorPageFeatureTests: XCTestCase {
     func testQueryErrorQueryErrorRouteRendersParseProblemHelpAndActions() {
         let diagnostic = SearchQueryDiagnosticSnapshot.queryErrorUnknownField()
-        let body = testMirrorDescription(of: QueryErrorRouteView(
+        assertTestMirrorDescription(of: QueryErrorRouteView(
             request: .queryErrorQueryFixture(query: "kindd:pdf tag:finance"),
             diagnostic: diagnostic,
             onApplySuggestion: { _ in },
             onClear: {}
-        ).body)
-
-        XCTAssertTrue(body.contains("Query could not be parsed"))
-        XCTAssertTrue(body.contains("Fix the highlighted part of your query to continue searching."))
-        XCTAssertTrue(body.contains("[kindd]:pdf tag:finance"))
-        XCTAssertTrue(body.contains("Unknown field: kindd"))
-        XCTAssertTrue(body.contains("Apply suggestion"))
-        XCTAssertTrue(body.contains("Clear query"))
-        XCTAssertTrue(body.contains("Open query help"))
-        XCTAssertTrue(body.contains("query-error-query-error"))
+        ).body, contains: [
+            "Query could not be parsed",
+            "Fix the highlighted part of your query to continue searching.",
+            "[kindd]:pdf tag:finance",
+            "Unknown field: kindd",
+            "Apply suggestion",
+            "Clear query",
+            "Open query help",
+            "query-error-query-error"
+        ])
     }
 
     func testQueryErrorApplySuggestionReplacesOnlyTheFailedToken() {
@@ -161,14 +161,15 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.validationMessage, "Fix query syntax before saving changes.")
         XCTAssertFalse(model.canSubmit)
 
-        let body = testMirrorDescription(of: QueryDiagnosticSummary(
+        assertTestMirrorDescription(of: QueryDiagnosticSummary(
             diagnostic: diagnostic,
             query: model.query
-        ).body)
-        XCTAssertTrue(body.contains("Query could not be parsed"))
-        XCTAssertTrue(body.contains("[kindd]:pdf tag:finance"))
-        XCTAssertTrue(body.contains("Unknown field: kindd"))
-        XCTAssertTrue(body.contains("query-error-query-error"))
+        ).body, contains: [
+            "Query could not be parsed",
+            "[kindd]:pdf tag:finance",
+            "Unknown field: kindd",
+            "query-error-query-error"
+        ])
     }
 
     func testSmartListEditQueryRequiresFreshDiagnosticBeforeSaveChanges() {

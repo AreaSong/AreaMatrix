@@ -222,20 +222,18 @@ private func assertStartupRecoveryStartupRecoveryFailureState(
         isRetrying: false,
         onRetry: {}
     )
-    let mainBody = testMirrorDescription(of: MainLoadingView(
+    XCTAssertEqual(state.recoveryErrorMapping, mapping)
+    XCTAssertTrue(state.recoveryStatusText?.contains("Startup recovery could not finish") == true)
+    XCTAssertEqual(recoveryView.retryButtonTitle, "Retry startup recovery")
+    XCTAssertFalse(recoveryView.retryButtonIsDisabled)
+    assertTestMirrorDescription(of: MainLoadingView(
         state: state,
         isRetryingStartupRecovery: false,
         onCancelOpening: {},
         onRetryStartupRecovery: {},
         onRetryTree: {},
         onRetryOpening: {}
-    ).body)
-
-    XCTAssertEqual(state.recoveryErrorMapping, mapping)
-    XCTAssertTrue(state.recoveryStatusText?.contains("Startup recovery could not finish") == true)
-    XCTAssertEqual(recoveryView.retryButtonTitle, "Retry startup recovery")
-    XCTAssertFalse(recoveryView.retryButtonIsDisabled)
-    XCTAssertTrue(mainBody.contains("Cancel opening"))
+    ).body, contains: "Cancel opening")
     XCTAssertFalse(RepositoryErrorPresentation.mainRepo(mapping: mapping).primaryAction == .openRepair)
 }
 

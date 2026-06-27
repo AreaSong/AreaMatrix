@@ -190,17 +190,14 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             onRepairSucceeded: {},
             onOpenRepositoryInFinder: {}
         )
-        let body = testMirrorDescription(of: view.body)
-
-        assertTestDescription(body, contains: [
+        assertTestMirrorDescription(of: view.body, contains: [
             "Repair Repository Metadata?",
             "AreaMatrix cannot read the repository metadata database",
             "Run Full Rescan",
             "Export diagnostics...",
             "database-repair-metadata-repair-run-full-rescan",
             "database-repair-metadata-repair-confirm-metadata-only"
-        ])
-        assertTestDescription(body, doesNotContain: [
+        ], doesNotContain: [
             "Resume",
             "Clean up and retry",
             "Remove from index"
@@ -226,26 +223,20 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             onRetry: {}
         )
 
-        let checkingBody = testMirrorDescription(of: checkingView.body)
-        let completedBody = testMirrorDescription(of: completedView.body)
-        let failedBody = testMirrorDescription(of: failedView.body)
-
-        assertTestDescription(checkingBody, contains: [
+        assertTestMirrorDescription(of: checkingView.body, contains: [
             "Checking startup recovery state...",
             "database-repair-startup-recovery-core-startup-recovery-checking"
         ])
-        assertTestDescription(completedBody, contains: [
+        assertTestMirrorDescription(of: completedView.body, contains: [
             "Startup recovery checked",
             "Kept active staging file",
             "database-repair-startup-recovery-core-startup-recovery-completed"
-        ])
-        assertTestDescription(failedBody, contains: [
+        ], doesNotContain: ["Remove from index"])
+        assertTestMirrorDescription(of: failedView.body, contains: [
             "Startup recovery failed",
             "Retry startup recovery",
             "database-repair-startup-recovery-core-retry-startup-recovery"
-        ])
-        assertTestDescription(completedBody, doesNotContain: ["Remove from index"])
-        assertTestDescription(failedBody, doesNotContain: ["Download & retry"])
+        ], doesNotContain: ["Download & retry"])
     }
 
     @MainActor
@@ -265,13 +256,10 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             onRepairSucceeded: {},
             onOpenRepositoryInFinder: {}
         )
-        let body = testMirrorDescription(of: view.body)
-
-        assertTestDescription(body, contains: [
+        assertTestMirrorDescription(of: view.body, contains: [
             "Run Full Rescan",
             "Export diagnostics..."
-        ])
-        assertTestDescription(body, doesNotContain: [
+        ], doesNotContain: [
             "Resume",
             "Clean up and retry",
             "Interrupted scan"

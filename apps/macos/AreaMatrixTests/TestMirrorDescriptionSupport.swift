@@ -10,6 +10,149 @@ func testMirrorDescription(
     return lines.joined(separator: "\n")
 }
 
+func assertTestMirrorDescription(
+    of value: Any,
+    contains expectedFragment: String,
+    includeLabels: Bool = true,
+    maxDepth: Int? = nil,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    assertTestMirrorDescription(
+        of: value,
+        contains: [expectedFragment],
+        includeLabels: includeLabels,
+        maxDepth: maxDepth,
+        file: file,
+        line: line
+    )
+}
+
+func assertTestMirrorDescription(
+    of value: Any,
+    contains expectedFragments: [String],
+    includeLabels: Bool = true,
+    maxDepth: Int? = nil,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    let description = testMirrorDescription(of: value, includeLabels: includeLabels, maxDepth: maxDepth)
+    assertTestDescription(description, contains: expectedFragments, file: file, line: line)
+}
+
+func assertTestMirrorDescription(
+    of value: Any,
+    doesNotContain unexpectedFragment: String,
+    includeLabels: Bool = true,
+    maxDepth: Int? = nil,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    assertTestMirrorDescription(
+        of: value,
+        doesNotContain: [unexpectedFragment],
+        includeLabels: includeLabels,
+        maxDepth: maxDepth,
+        file: file,
+        line: line
+    )
+}
+
+func assertTestMirrorDescription(
+    of value: Any,
+    doesNotContain unexpectedFragments: [String],
+    includeLabels: Bool = true,
+    maxDepth: Int? = nil,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    let description = testMirrorDescription(of: value, includeLabels: includeLabels, maxDepth: maxDepth)
+    assertTestDescription(description, doesNotContain: unexpectedFragments, file: file, line: line)
+}
+
+func assertTestMirrorDescription(
+    of value: Any,
+    contains expectedFragments: [String],
+    doesNotContain unexpectedFragments: [String],
+    includeLabels: Bool = true,
+    maxDepth: Int? = nil,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    let description = testMirrorDescription(of: value, includeLabels: includeLabels, maxDepth: maxDepth)
+    assertTestDescription(description, contains: expectedFragments, file: file, line: line)
+    assertTestDescription(description, doesNotContain: unexpectedFragments, file: file, line: line)
+}
+
+func assertTestMirrorDescription(
+    of value: Any,
+    contains expectedFragment: String,
+    doesNotContain unexpectedFragment: String,
+    includeLabels: Bool = true,
+    maxDepth: Int? = nil,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    assertTestMirrorDescription(
+        of: value,
+        contains: [expectedFragment],
+        doesNotContain: [unexpectedFragment],
+        includeLabels: includeLabels,
+        maxDepth: maxDepth,
+        file: file,
+        line: line
+    )
+}
+
+func assertTestMirrorDescription(
+    of value: Any,
+    contains expectedFragment: String,
+    doesNotContain unexpectedFragments: [String],
+    includeLabels: Bool = true,
+    maxDepth: Int? = nil,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    assertTestMirrorDescription(
+        of: value,
+        contains: [expectedFragment],
+        doesNotContain: unexpectedFragments,
+        includeLabels: includeLabels,
+        maxDepth: maxDepth,
+        file: file,
+        line: line
+    )
+}
+
+func assertTestMirrorDescription(
+    of value: Any,
+    contains expectedFragments: [String],
+    doesNotContain unexpectedFragment: String,
+    includeLabels: Bool = true,
+    maxDepth: Int? = nil,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    assertTestMirrorDescription(
+        of: value,
+        contains: expectedFragments,
+        doesNotContain: [unexpectedFragment],
+        includeLabels: includeLabels,
+        maxDepth: maxDepth,
+        file: file,
+        line: line
+    )
+}
+
+func assertTestDescription(
+    _ description: String,
+    contains expectedFragment: String,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    assertTestDescription(description, contains: [expectedFragment], file: file, line: line)
+}
+
 func assertTestDescription(
     _ description: String,
     contains expectedFragments: [String],
@@ -24,6 +167,15 @@ func assertTestDescription(
             line: line
         )
     }
+}
+
+func assertTestDescription(
+    _ description: String,
+    doesNotContain unexpectedFragment: String,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    assertTestDescription(description, doesNotContain: [unexpectedFragment], file: file, line: line)
 }
 
 func assertTestDescription(

@@ -20,7 +20,8 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         let model = makeMainFileListModel(conflictFile: conflictFile, core: core)
 
         await model.selectFiles([conflictFile.id])
-        XCTAssertTrue(makeDetailPaneBody(model: model).contains("Resolve iCloud Conflict..."))
+        let detailPaneBody = makeDetailPaneBody(model: model)
+        assertTestMirrorDescription(of: detailPaneBody, contains: "Resolve iCloud Conflict...")
 
         model.beginICloudConflictResolution(fileID: conflictFile.id)
         XCTAssertEqual(model.pendingActionDestination, .iCloudConflict(fileID: conflictFile.id))
@@ -39,7 +40,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         )
         let outOfScopeActions = await core.recordedOutOfScopeActions()
 
-        assertTestDescription(body, contains: [
+        assertTestMirrorDescription(of: body, contains: [
             "icloud-conflict-minimal-core-resolution-blocked",
             "Core resolution unavailable",
             "Missing Core API: resolve_icloud_conflict or mark_icloud_conflict_resolved"
@@ -85,7 +86,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         XCTAssertEqual(model.pendingActionDestination, .iCloudConflict(fileID: conflictFile.id))
         let recordedErrors = await mapper.recordedErrors()
         XCTAssertEqual(recordedErrors, [ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.coreError])
-        assertTestDescription(failedBody, contains: [
+        assertTestMirrorDescription(of: failedBody, contains: [
             "icloud-conflict-minimal-error-mapping-apply-failure",
             "Apply failed: Internal",
             "Retry",
@@ -126,7 +127,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             "Move other version to Trash and Apply"
         )
         XCTAssertTrue(ICloudConflictResolutionStrategy.keepOriginalOnly.requiresSecondConfirmation)
-        assertTestDescription(body, contains: [
+        assertTestMirrorDescription(of: body, contains: [
             "Single-version resolution requires system Trash",
             "requires Core support to clear conflict state and write change_log",
             "icloud-conflict-minimal-core-resolution-blocked"
@@ -155,7 +156,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         let recordedErrors = await mapper.recordedErrors()
         XCTAssertEqual(recordedErrors, [CoreError.PermissionDenied(path: "/tmp/iCloudConflictMinimal-repo")])
         XCTAssertFalse(failedModel.canApplyKeepBoth)
-        assertTestDescription(failedBody, contains: [
+        assertTestMirrorDescription(of: failedBody, contains: [
             "icloud-conflict-minimal-error-mapping-error-mapping",
             "Repository check failed: PermissionDenied",
             "Retry repository check"
@@ -222,7 +223,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
 
     @MainActor
     // swiftlint:disable:next function_body_length
-    private func makeDetailPaneBody(model: MainFileListModel) -> String {
+    private func makeDetailPaneBody(model: MainFileListModel) -> Any {
         let detailPane = MainRepositoryDetailPane(
             selection: model.selection,
             multiSelectionSummary: MultiSelectionDetailSummary(selection: model.selection, files: model.files),
@@ -278,7 +279,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             )
         )
 
-        return iCloudConflictMinimalIntegrationMirrorDescription(of: detailPane.body)
+        return detailPane.body
     }
 
     @MainActor
@@ -312,8 +313,8 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         resolutionState: ICloudConflictResolutionState,
         resolutionCapability: ICloudConflictResolutionCapability,
         isTrashAvailable: Bool
-    ) -> String {
-        iCloudConflictMinimalIntegrationMirrorDescription(of: ICloudConflictMinimalSheet(
+    ) -> Any {
+        ICloudConflictMinimalSheet(
             model: model,
             resolutionState: resolutionState,
             resolutionCapability: resolutionCapability,
@@ -321,6 +322,6 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             onCancel: {},
             onApply: { _ in },
             onCollectDiagnostics: {}
-        ).body)
+        ).body
     }
 }

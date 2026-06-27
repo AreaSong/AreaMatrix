@@ -47,13 +47,13 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             onClose: {}
         ).body)
 
-        XCTAssertTrue(emptyBody.contains("search-empty-search-empty"))
-        XCTAssertTrue(emptyBody.contains("Clear filters") && emptyBody.contains("Search all file types"))
-        XCTAssertTrue(errorBody.contains("Unknown field: owner"))
-        XCTAssertTrue(errorBody.contains("query-error-query-error"))
-        XCTAssertTrue(saveBody.contains("saved-search-search-route"))
-        XCTAssertTrue(indexingBody.contains("search-index-status-indexing-status-search-route"))
-        XCTAssertTrue(commandBody.contains("command-palette-search-route"))
+        assertMainRepoSearchRouteDescriptions(MainRepoSearchRouteDescriptions(
+            empty: emptyBody,
+            error: errorBody,
+            save: saveBody,
+            indexing: indexingBody,
+            command: commandBody
+        ))
     }
 
     @MainActor
@@ -351,4 +351,33 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertEqual(model.mainRepoRecoveryErrorMapping?.kind, .db)
         XCTAssertFalse(model.isRetryingMainRepository)
     }
+}
+
+private struct MainRepoSearchRouteDescriptions {
+    let empty: String
+    let error: String
+    let save: String
+    let indexing: String
+    let command: String
+}
+
+private func assertMainRepoSearchRouteDescriptions(
+    _ descriptions: MainRepoSearchRouteDescriptions,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    assertTestDescription(descriptions.empty, contains: [
+        "search-empty-search-empty",
+        "Clear filters",
+        "Search all file types"
+    ], file: file, line: line)
+    assertTestDescription(descriptions.error, contains: [
+        "Unknown field: owner",
+        "query-error-query-error"
+    ], file: file, line: line)
+    assertTestDescription(descriptions.save, contains: "saved-search-search-route", file: file, line: line)
+    assertTestDescription(descriptions.indexing, contains: [
+        "search-index-status-indexing-status-search-route"
+    ], file: file, line: line)
+    assertTestDescription(descriptions.command, contains: "command-palette-search-route", file: file, line: line)
 }

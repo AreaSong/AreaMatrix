@@ -106,13 +106,14 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         )
 
         await model.loadIfNeeded()
-        let body = syncConflictReviewMirrorDescription(of: SyncConflictEntryPanel(model: model, onReview: { _ in
-        }).body)
         let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(mappedErrors, [CoreError.Db(message: "conflict state locked")])
-        XCTAssertTrue(body.contains(SyncConflictEntryAccessibilityID.error))
-        XCTAssertTrue(body.contains(SyncConflictEntryCopy.retryAction))
+        assertTestMirrorDescription(of: SyncConflictEntryPanel(model: model, onReview: { _ in
+        }).body, contains: [
+            SyncConflictEntryAccessibilityID.error,
+            SyncConflictEntryCopy.retryAction
+        ])
     }
 
     @MainActor
@@ -133,14 +134,16 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         )
 
         let route = model.reviewRoute(for: conflict)
-        let body = syncConflictReviewMirrorDescription(of: SyncConflictDetailBanner(
+        let body = SyncConflictDetailBanner(
             conflict: conflict,
             onReview: { _ in }
-        ).body)
+        ).body
 
         XCTAssertTrue(conflict.matchesSyncConflictEntry(file: file))
         XCTAssertEqual(route.conflictID, "entry-detail")
-        XCTAssertTrue(body.contains(SyncConflictEntryCopy.detailTitle))
-        XCTAssertTrue(body.contains(SyncConflictEntryAccessibilityID.detailBanner))
+        assertTestMirrorDescription(of: body, contains: [
+            SyncConflictEntryCopy.detailTitle,
+            SyncConflictEntryAccessibilityID.detailBanner
+        ])
     }
 }
