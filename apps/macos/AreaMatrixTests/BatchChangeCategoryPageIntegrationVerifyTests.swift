@@ -1,7 +1,7 @@
 @testable import AreaMatrix
 import XCTest
 
-final class BatchChangeCategoryBatchCategoryVerifyTests: XCTestCase {
+final class BatchChangeCategoryVerifyTests: XCTestCase {
     @MainActor
     // swiftlint:disable:next function_body_length
     func testBatchChangeCategoryPageIntegrationUsesRealCorePreviewApplyUndoAndExitRefresh() async throws {
@@ -135,18 +135,18 @@ final class BatchChangeCategoryBatchCategoryVerifyTests: XCTestCase {
     @MainActor
     func testBatchChangeCategoryClassifierSettingsValidatePublishesSavedCategoryForRealReturnEvent() async throws {
         let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "batchChangeCategory-classifier")
-        defer { try? FileManager.default.removeItem(at: repoURL) }
-        let manager = BatchChangeCategoryClassifierRulesManager()
+        defer { removeTestTemporaryItems(repoURL) }
+        let manager = BatchCategoryRulesManager()
         var savedCategories: [String] = []
         try manager.writeClassifier(repoURL: repoURL, slugs: ["docs", "inbox"])
         let model = ClassifierSettingsModel(
             repoPath: repoURL.path,
-            loader: BatchChangeCategoryClassifierSettingsLoader(repoPath: repoURL.path),
-            updater: BatchChangeCategoryClassifierSettingsUpdater(),
-            predictor: BatchChangeCategoryClassifierSettingsPredictor(),
-            errorMapper: BatchChangeCategoryClassifierSettingsErrorMapper(),
+            loader: BatchCategorySettingsLoader(repoPath: repoURL.path),
+            updater: BatchCategorySettingsUpdater(),
+            predictor: BatchCategorySettingsPredictor(),
+            errorMapper: BatchCategorySettingsErrorMapper(),
             classifierRulesManager: manager,
-            accessibilityAnnouncer: BatchChangeCategoryClassifierSettingsAnnouncer(),
+            accessibilityAnnouncer: BatchCategorySettingsAnnouncer(),
             onSavedCategory: { savedCategories.append($0) }
         )
         await model.load()
@@ -180,8 +180,7 @@ private struct BatchChangeCategoryIntegrationContext {
     let indexOnly: FileEntrySnapshot
 
     func cleanUp() {
-        try? FileManager.default.removeItem(at: repoURL)
-        try? FileManager.default.removeItem(at: sourceRootURL)
+        removeTestTemporaryItems(repoURL, sourceRootURL)
     }
 }
 
@@ -240,7 +239,7 @@ private func makeBatchChangeCategoryOpening(repoURL: URL, bridge: CoreBridge) as
     return RepositoryOpeningResult(config: config, tree: tree, currentCategoryFiles: [])
 }
 
-private actor BatchChangeCategoryClassifierSettingsLoader: CoreConfigurationLoading {
+private actor BatchCategorySettingsLoader: CoreConfigurationLoading {
     private let repoPath: String
 
     init(repoPath: String) {
@@ -252,17 +251,17 @@ private actor BatchChangeCategoryClassifierSettingsLoader: CoreConfigurationLoad
     }
 }
 
-private actor BatchChangeCategoryClassifierSettingsUpdater: CoreConfigurationUpdating {
+private actor BatchCategorySettingsUpdater: CoreConfigurationUpdating {
     func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
 }
 
-private actor BatchChangeCategoryClassifierSettingsPredictor: CoreCategoryPredicting {
+private actor BatchCategorySettingsPredictor: CoreCategoryPredicting {
     func predictCategory(repoPath _: String, filename: String) async throws -> ClassifyResultSnapshot {
         ClassifyResultSnapshot(category: "inbox", suggestedName: filename, reason: .default, confidence: 0)
     }
 }
 
-private actor BatchChangeCategoryClassifierSettingsErrorMapper: CoreErrorMapping {
+private actor BatchCategorySettingsErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .config,
@@ -275,12 +274,12 @@ private actor BatchChangeCategoryClassifierSettingsErrorMapper: CoreErrorMapping
     }
 }
 
-private struct BatchChangeCategoryClassifierSettingsAnnouncer: AccessibilityAnnouncing {
+private struct BatchCategorySettingsAnnouncer: AccessibilityAnnouncing {
     @MainActor
     func announce(_: String) {}
 }
 
-private final class BatchChangeCategoryClassifierRulesManager: ClassifierRulesManaging {
+private final class BatchCategoryRulesManager: ClassifierRulesManaging {
     private let fileManager = FileManager.default
 
     func classifierFileExists(repoPath: String) -> Bool {

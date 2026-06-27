@@ -2,10 +2,17 @@
 import XCTest
 
 final class SyncConflictReviewPageFeatureTests: XCTestCase {
-    private static let declaredCapabilities: Set<String> = ["sync-conflict-detect", "sync-conflict-resolve", "replace-confirmation"]
+    private static let declaredCapabilities: Set<String> = [
+        "sync-conflict-detect",
+        "sync-conflict-resolve",
+        "replace-confirmation"
+    ]
 
-    func testSyncConflictReviewDeclaresOnlySyncConflictDetectCoreSyncConflictResolveCoreAndReplaceConfirmCrossPlatformCoreBoundaries() {
-        XCTAssertEqual(Self.declaredCapabilities, ["sync-conflict-detect", "sync-conflict-resolve", "replace-confirmation"])
+    func testSyncConflictReviewDeclaresOnlyDetectResolveAndReplaceConfirmBoundaries() {
+        XCTAssertEqual(
+            Self.declaredCapabilities,
+            ["sync-conflict-detect", "sync-conflict-resolve", "replace-confirmation"]
+        )
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.detectSyncConflicts))
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.previewSyncConflictResolution))
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.resolveSyncConflict))
@@ -14,7 +21,7 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
     @MainActor
     func testSyncConflictReviewSyncConflictDetectCoreLoadUsesCoreBridgeDetectorAndSelectsRequestedConflict() async {
         let expected = SyncConflictSnapshot.syncConflictReviewFixture(conflictID: "conflict-selected")
-        let detector = SyncConflictReviewRecordingSyncConflictDetector(result: .success([
+        let detector = SyncConflictReviewDetector(result: .success([
             .syncConflictReviewFixture(conflictID: "conflict-other"),
             expected
         ]))
@@ -22,7 +29,7 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
             repoPath: "/tmp/syncConflictReview-repo",
             conflictID: "conflict-selected",
             conflictDetector: detector,
-            conflictResolver: SyncConflictReviewRecordingSyncConflictResolver(previewResults: [
+            conflictResolver: SyncConflictReviewResolver(previewResults: [
                 .keepBoth: .success(.syncConflictReviewPreviewFixture(conflictID: "conflict-selected"))
             ]),
             errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
@@ -40,7 +47,7 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
     @MainActor
     func testSyncConflictReviewSyncConflictDetectCoreFileDetailRouteSelectsConflictByAffectedPath() async {
         let expected = SyncConflictSnapshot.syncConflictReviewFixture(conflictID: "conflict-matching-file")
-        let detector = SyncConflictReviewRecordingSyncConflictDetector(result: .success([
+        let detector = SyncConflictReviewDetector(result: .success([
             .syncConflictReviewFixture(conflictID: "conflict-other", primaryPath: "docs/other.pdf"),
             expected
         ]))
@@ -48,7 +55,7 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
             repoPath: "/tmp/syncConflictReview-repo",
             primaryPath: "docs/report (Windows conflict).pdf",
             conflictDetector: detector,
-            conflictResolver: SyncConflictReviewRecordingSyncConflictResolver(previewResults: [
+            conflictResolver: SyncConflictReviewResolver(previewResults: [
                 .keepBoth: .success(.syncConflictReviewPreviewFixture(conflictID: "conflict-matching-file"))
             ]),
             errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
@@ -61,8 +68,15 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
 
     @MainActor
     func testSyncConflictReviewSyncConflictDetectCoreFileDetailEntryCanRouteToReviewSheet() async {
-        let file = FileEntrySnapshot.syncConflictReviewFixture(id: 141, path: "docs/report.pdf", currentName: "report.pdf")
-        let opening = RepositoryOpeningResult.syncConflictReviewFixture(repoPath: "/tmp/syncConflictReview-repo", files: [file])
+        let file = FileEntrySnapshot.syncConflictReviewFixture(
+            id: 141,
+            path: "docs/report.pdf",
+            currentName: "report.pdf"
+        )
+        let opening = RepositoryOpeningResult.syncConflictReviewFixture(
+            repoPath: "/tmp/syncConflictReview-repo",
+            files: [file]
+        )
         var routedFile: FileEntrySnapshot?
 
         let model = MainFileListModel(
@@ -80,8 +94,10 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
         let body = syncConflictReviewMirrorDescription(of: detailPane.body)
         let route = SyncConflictReviewRoute.fileDetail(repoPath: opening.config.repoPath, file: file)
 
-        XCTAssertTrue(body.contains("Review Sync Conflict..."))
-        XCTAssertTrue(body.contains("sync-conflict-review-sync-conflict-detect-review-sync-conflict"))
+        assertTestDescription(body, contains: [
+            "Review Sync Conflict...",
+            "sync-conflict-review-sync-conflict-detect-review-sync-conflict"
+        ])
         XCTAssertEqual(route, SyncConflictReviewRoute(
             repoPath: "/tmp/syncConflictReview-repo",
             conflictID: nil,
@@ -95,10 +111,10 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
         let model = SyncConflictReviewModel(
             repoPath: "/tmp/syncConflictReview-repo",
             conflictID: "missing-conflict",
-            conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .success([
+            conflictDetector: SyncConflictReviewDetector(result: .success([
                 .syncConflictReviewFixture(conflictID: "resolved-conflict", status: .resolved)
             ])),
-            conflictResolver: SyncConflictReviewRecordingSyncConflictResolver(previewResults: [:]),
+            conflictResolver: SyncConflictReviewResolver(previewResults: [:]),
             errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
@@ -110,9 +126,11 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
         ).body)
 
         XCTAssertEqual(model.state, .empty)
-        XCTAssertTrue(body.contains(SyncConflictReviewCopy.emptyTitle))
-        XCTAssertTrue(body.contains(SyncConflictReviewCopy.backAction))
-        XCTAssertTrue(body.contains(SyncConflictReviewAccessibilityID.empty))
+        assertTestDescription(body, contains: [
+            SyncConflictReviewCopy.emptyTitle,
+            SyncConflictReviewCopy.backAction,
+            SyncConflictReviewAccessibilityID.empty
+        ])
     }
 
     @MainActor
@@ -123,10 +141,10 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
         ))
         let model = SyncConflictReviewModel(
             repoPath: "/tmp/syncConflictReview-repo",
-            conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .failure(CoreError.Conflict(
+            conflictDetector: SyncConflictReviewDetector(result: .failure(CoreError.Conflict(
                 path: "stale conflict id"
             ))),
-            conflictResolver: SyncConflictReviewRecordingSyncConflictResolver(previewResults: [:]),
+            conflictResolver: SyncConflictReviewResolver(previewResults: [:]),
             errorMapper: mapper
         )
 
@@ -139,9 +157,11 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
         let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(mappedErrors, [CoreError.Conflict(path: "stale conflict id")])
-        XCTAssertTrue(body.contains(SyncConflictReviewAccessibilityID.error))
-        XCTAssertTrue(body.contains(SyncConflictReviewCopy.errorTitle))
-        XCTAssertTrue(body.contains("Retry"))
+        assertTestDescription(body, contains: [
+            SyncConflictReviewAccessibilityID.error,
+            SyncConflictReviewCopy.errorTitle,
+            "Retry"
+        ])
     }
 }
 
@@ -212,7 +232,7 @@ private func makeSyncConflictReviewDetailNoteModel(repoPath: String) -> DetailNo
     )
 }
 
-actor SyncConflictReviewRecordingSyncConflictDetector: CoreSyncConflictDetecting {
+actor SyncConflictReviewDetector: CoreSyncConflictDetecting {
     private let result: Result<[SyncConflictSnapshot], Error>
     private var requests: [String] = []
 
@@ -391,18 +411,5 @@ extension CoreErrorMappingSnapshot {
 }
 
 func syncConflictReviewMirrorDescription(of value: Any) -> String {
-    var lines: [String] = []
-    appendSyncConflictReviewMirrorDescription(of: value, to: &lines)
-    return lines.joined(separator: "\n")
-}
-
-private func appendSyncConflictReviewMirrorDescription(of value: Any, to lines: inout [String]) {
-    lines.append(String(describing: type(of: value)))
-    lines.append(String(describing: value))
-    for child in Mirror(reflecting: value).children {
-        if let label = child.label {
-            lines.append(label)
-        }
-        appendSyncConflictReviewMirrorDescription(of: child.value, to: &lines)
-    }
+    testMirrorDescription(of: value)
 }

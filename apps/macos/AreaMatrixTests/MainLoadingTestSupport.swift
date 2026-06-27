@@ -23,26 +23,12 @@ actor MainLoadingStaticStartupRecoverer: CoreStartupRecovering {
     }
 }
 
-func changeCategoryMirrorDescription(of value: Any, depth: Int = 0) -> String {
-    guard depth < 8 else { return "" }
-
-    var lines: [String] = []
-    lines.append(String(describing: type(of: value)))
-    lines.append(String(describing: value))
-    for child in Mirror(reflecting: value).children {
-        if let label = child.label {
-            lines.append(label)
-        }
-        lines.append(changeCategoryMirrorDescription(of: child.value, depth: depth + 1))
-    }
-    return lines.joined(separator: "\n")
+func changeCategoryMirrorDescription(of value: Any) -> String {
+    testMirrorDescription(of: value, maxDepth: 8)
 }
 
 func makeChangeCategoryTemporaryDirectory(prefix: String) throws -> URL {
-    let name = "AreaMatrixChangeCategoryIntegration-\(prefix)-\(UUID().uuidString)"
-    let url = FileManager.default.temporaryDirectory.appendingPathComponent(name, isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(prefix: prefix, named: "AreaMatrixChangeCategoryIntegration")
 }
 
 enum ImportBatchICloudErrorKindMapper {

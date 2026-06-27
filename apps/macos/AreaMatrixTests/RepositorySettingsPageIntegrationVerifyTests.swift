@@ -6,8 +6,7 @@ final class RepoSettingsPageIntegrationTests: XCTestCase {
     func testRepositorySettingsCrossPlatformPageIntegrationConnectsCoreConfigCapabilitiesAndSafeActions() async throws {
         let context = try await makeRepositorySettingsIntegrationContext()
         defer {
-            try? FileManager.default.removeItem(at: context.repoURL)
-            try? FileManager.default.removeItem(at: context.sourceRootURL)
+            removeTestTemporaryItems(context.repoURL, context.sourceRootURL)
         }
 
         await context.model.load()
@@ -30,7 +29,7 @@ final class RepoSettingsPageIntegrationTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -70,7 +69,7 @@ final class RepoSettingsPageIntegrationTests: XCTestCase {
                 configuredRepoPath: "/tmp/new-repo"
             ),
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -99,7 +98,7 @@ private struct RepositorySettingsIntegrationContext {
     let finder: ShellRecordingFinderOpener
     let copier: ShellRecordingPathCopier
     let diagnostics: ShellRecordingDiagnosticsCollector
-    let announcer: ImportSingleFileRecordingAccessibilityAnnouncer
+    let announcer: RecordingAccessibilityAnnouncer
     let model: RepositorySettingsModel
 }
 
@@ -113,7 +112,7 @@ private struct RepositorySettingsIntegrationDoubles {
     let finder: ShellRecordingFinderOpener
     let copier: ShellRecordingPathCopier
     let diagnostics: ShellRecordingDiagnosticsCollector
-    let announcer: ImportSingleFileRecordingAccessibilityAnnouncer
+    let announcer: RecordingAccessibilityAnnouncer
 }
 
 @MainActor
@@ -123,7 +122,7 @@ private func makeRepositorySettingsIntegrationContext() async throws -> Reposito
     var didSucceed = false
     defer {
         if !didSucceed {
-            cleanupURLs.forEach { try? FileManager.default.removeItem(at: $0) }
+            removeTestTemporaryItems(cleanupURLs)
         }
     }
 
@@ -187,7 +186,7 @@ private func makeRepositorySettingsIntegrationDoubles(
         finder: ShellRecordingFinderOpener(),
         copier: ShellRecordingPathCopier(),
         diagnostics: ShellRecordingDiagnosticsCollector(result: .success(diagnosticsSnapshot)),
-        announcer: ImportSingleFileRecordingAccessibilityAnnouncer()
+        announcer: RecordingAccessibilityAnnouncer()
     )
 }
 

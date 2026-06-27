@@ -438,7 +438,7 @@ struct ImportSingleFileNoopWelcomeHelpOpener: WelcomeHelpOpening {
 }
 
 @MainActor
-final class ImportSingleFileRecordingAccessibilityAnnouncer: AccessibilityAnnouncing {
+final class RecordingAccessibilityAnnouncer: AccessibilityAnnouncing {
     private(set) var announcements: [String] = []
 
     func announce(_ message: String) {

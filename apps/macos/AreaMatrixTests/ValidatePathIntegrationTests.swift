@@ -300,7 +300,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
 final class ValidatePathCoreInitializationTests: XCTestCase {
     func testDefaultCoreAdoptExistingPreservesUserFiles() async throws {
         let repoURL = try makeRepairTemporaryAdoptRepoURL()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
 
         let readmeURL = repoURL.appendingPathComponent("README.md")
         try "# User project\n".write(to: readmeURL, atomically: true, encoding: .utf8)
@@ -315,7 +315,7 @@ final class ValidatePathCoreInitializationTests: XCTestCase {
 
     func testDefaultCoreCreateEmptyWritesRecoverableMetadataOnly() async throws {
         let repoURL = try makeRepairTemporaryAdoptRepoURL()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
 
         try await CoreBridge().initializeEmptyRepository(repoPath: repoURL.path)
 

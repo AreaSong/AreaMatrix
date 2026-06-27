@@ -114,7 +114,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testLoadSynchronizesStaleRepoPathThroughUpdateConfig() async throws {
         let repoURL = try temporaryRepositorySettingsRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         try createRepositorySettingsMetadataDatabaseMarker(in: repoURL)
 
         var config = RepoConfigSnapshot.shellFixture(repoPath: "/tmp/stale-repo")
@@ -161,7 +161,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testUpdateConfigFailureKeepsVisibleSettingsAndMapsSyncError() async throws {
         let repoURL = try temporaryRepositorySettingsRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         try createRepositorySettingsMetadataDatabaseMarker(in: repoURL)
 
         let loader = RepositorySettingsRecordingLoader(results: [
@@ -205,7 +205,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testDefaultCoreBridgeLoadsRealConfigWithoutCreatingManagedRootFiles() async throws {
         let repoURL = try temporaryRepositorySettingsRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
         let model = RepositorySettingsModel(
@@ -233,7 +233,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testDefaultCoreBridgeRevealsGeneratedOverviewFromGeneratedRootPath() async throws {
         let repoURL = try temporaryRepositorySettingsRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
         let generatedURL = repoURL
@@ -300,7 +300,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
     @MainActor
     func testMetadataReaderReadsSchemaVersionFromRealInitializedRepositoryWithoutWalSidecars() async throws {
         let repoURL = try temporaryRepositorySettingsRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
         removeRepositorySettingsMetadataDatabaseSidecars(in: repoURL)
@@ -318,10 +318,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         let originalURL = try temporaryRepositorySettingsRepo()
         let movedURL = originalURL.deletingLastPathComponent()
             .appendingPathComponent("AreaMatrixRepositorySettings-Moved-\(UUID().uuidString)", isDirectory: true)
-        defer {
-            try? FileManager.default.removeItem(at: originalURL)
-            try? FileManager.default.removeItem(at: movedURL)
-        }
+        defer { removeTestTemporaryItems(originalURL, movedURL) }
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: originalURL.path)
         try FileManager.default.moveItem(at: originalURL, to: movedURL)
@@ -355,10 +352,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
     func testDefaultCoreBridgeShowsIndexedFileCountAfterIndexedImport() async throws {
         let repoURL = try temporaryRepositorySettingsRepo()
         let sourceRoot = try temporaryRepositorySettingsRepo()
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
 
         let sourceURL = sourceRoot.appendingPathComponent("indexed.pdf")
         try Data("indexed bytes".utf8).write(to: sourceURL)
@@ -433,7 +427,8 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testRepositorySettingsCrossPlatformPlatformCapabilitiesCoreLoadsPlatformCapabilitiesAndDisablesDiagnosticsWhenAccessIsLimited() async {
+    func testRepositorySettingsLoadsPlatformCapabilitiesAndDisablesDiagnosticsWhenAccessIsLimited(
+    ) async {
         let limitedAccess = repositorySettingsCapabilitySupport(
             status: .limited,
             uiEnabled: false,

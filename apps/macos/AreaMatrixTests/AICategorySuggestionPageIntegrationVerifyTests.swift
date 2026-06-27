@@ -1,13 +1,17 @@
 @testable import AreaMatrix
 import XCTest
 
-final class AICategorySuggestionPageIntegrationVerifyTests: XCTestCase {
+final class AICategorySuggestionVerifyTests: XCTestCase {
     @MainActor
     func testAcceptRequiresPreviewThenAppliesThroughClassifierCorrectionBridge() async {
         let original = aiCategorySuggestionFile(id: 590)
-        let corrected = aiCategorySuggestionFile(id: original.id, path: "finance/invoices/invoice.pdf", category: "finance/invoices")
+        let corrected = aiCategorySuggestionFile(
+            id: original.id,
+            path: "finance/invoices/invoice.pdf",
+            category: "finance/invoices"
+        )
         let preview = aiCategorySuggestionPreview(fileID: original.id)
-        let mover = AICategorySuggestionRecordingCategoryMover(
+        let mover = AICategorySuggestionMover(
             previewResult: .success(preview),
             correctionResult: .success(aiCategorySuggestionCorrection(updatedFile: corrected))
         )
@@ -43,7 +47,7 @@ final class AICategorySuggestionPageIntegrationVerifyTests: XCTestCase {
     func testAcceptFailureKeepsAICategorySuggestionPanelOpenWithRetryEvidence() async {
         let original = aiCategorySuggestionFile(id: 591)
         let preview = aiCategorySuggestionPreview(fileID: original.id)
-        let mover = AICategorySuggestionRecordingCategoryMover(
+        let mover = AICategorySuggestionMover(
             previewResult: .success(preview),
             correctionResult: .failure(CoreError.Classify(reason: "target unavailable"))
         )
@@ -92,8 +96,15 @@ final class AICategorySuggestionPageIntegrationVerifyTests: XCTestCase {
     @MainActor
     func testRememberRuleFromAICategorySuggestionCarriesAIProvenanceAndCancelReturnsToPanel() async {
         let original = aiCategorySuggestionFile(id: 593)
-        let corrected = aiCategorySuggestionFile(id: original.id, path: "finance/invoices/invoice.pdf", category: "finance/invoices")
-        let mover = AICategorySuggestionRecordingCategoryMover(correctionResult: .success(aiCategorySuggestionCorrection(updatedFile: corrected)))
+        let corrected = aiCategorySuggestionFile(
+            id: original.id,
+            path: "finance/invoices/invoice.pdf",
+            category: "finance/invoices"
+        )
+        let mover =
+            AICategorySuggestionMover(
+                correctionResult: .success(aiCategorySuggestionCorrection(updatedFile: corrected))
+            )
         let model = aiCategorySuggestionMainModel(file: original, mover: mover)
         let suggestion = AIClassificationSuggestionState.aiCategorySuggestionSuggested(fileID: original.id)
 
@@ -157,7 +168,7 @@ private enum AICategorySuggestionCategoryMoveRequest: Equatable {
     case correction(fileID: Int64, targetCategory: String, moveFile: Bool, remember: Bool)
 }
 
-private actor AICategorySuggestionRecordingCategoryMover: CoreFileCategoryMoving {
+private actor AICategorySuggestionMover: CoreFileCategoryMoving {
     private let previewResult: Result<MoveToCategoryPreviewSnapshot, Error>
     private let correctionResult: Result<ClassifierCorrectionResultSnapshot, Error>
     private var recordedRequests: [AICategorySuggestionCategoryMoveRequest] = []

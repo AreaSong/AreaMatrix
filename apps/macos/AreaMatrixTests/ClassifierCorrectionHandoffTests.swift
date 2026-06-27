@@ -139,8 +139,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
         let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "classifierRuleSave-repo")
         let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "classifierRuleSave-source")
         defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
+            removeTestTemporaryItems(repoURL, sourceRoot)
         }
         let sourceURL = sourceRoot.appendingPathComponent("contract-classifierRuleSave.txt")
         try Data("rule-save bytes".utf8).write(to: sourceURL)
@@ -182,7 +181,10 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
     @MainActor
     func testClassifierImpactPreviewPreviewModelBuildsRuleDraftRequestAndFiltersReportRows() {
         let file = classifierCorrectionFile(id: 263, name: "contract.pdf")
-        var model = ClassifierImpactPreviewSheetModel(handoff: classifierCorrectionHandoff(file: file, targetCategory: "finance"))
+        var model = ClassifierImpactPreviewSheetModel(handoff: classifierCorrectionHandoff(
+            file: file,
+            targetCategory: "finance"
+        ))
         let request = model.request
 
         XCTAssertEqual(request.mode, .ruleDraft)
@@ -203,12 +205,12 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
         XCTAssertEqual(model.filteredSamples.map(\.status), [.alreadyCorrect, .indexOnly])
     }
 
-    func testClassifierImpactPreviewDefaultCoreBridgePreviewsImpactWithoutSavingRuleOrChangingExistingFile() async throws {
+    func testClassifierImpactPreviewDefaultCoreBridgePreviewsImpactWithoutSavingRuleOrChangingExistingFile(
+    ) async throws {
         let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "classifierImpactPreview-repo")
         let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "classifierImpactPreview-source")
         defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
+            removeTestTemporaryItems(repoURL, sourceRoot)
         }
         let sourceURL = sourceRoot.appendingPathComponent("contract-classifierImpactPreview.txt")
         try Data("impact preview bytes".utf8).write(to: sourceURL)
@@ -372,7 +374,8 @@ private func classifierCorrectionClassifierCorrectionClassifyMapping() -> CoreEr
     )
 }
 
-private func classifierImpactPreviewReport(request: ClassifierImpactPreviewRequestSnapshot) -> RuleImpactReportSnapshot {
+private func classifierImpactPreviewReport(request: ClassifierImpactPreviewRequestSnapshot)
+    -> RuleImpactReportSnapshot {
     RuleImpactReportSnapshot(
         request: request,
         affectedFileCount: 3,
@@ -395,7 +398,8 @@ private func classifierImpactPreviewReport(request: ClassifierImpactPreviewReque
     )
 }
 
-private func classifierImpactPreviewSample(fileID: Int64, status: RuleImpactStatusSnapshot) -> RuleImpactSampleSnapshot {
+private func classifierImpactPreviewSample(fileID: Int64,
+                                           status: RuleImpactStatusSnapshot) -> RuleImpactSampleSnapshot {
     RuleImpactSampleSnapshot(
         fileID: fileID,
         path: "docs/contract-\(fileID).pdf",

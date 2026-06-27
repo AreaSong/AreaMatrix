@@ -143,11 +143,10 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
     }
 
     @MainActor
-    func testICloudConflictMinimalValidateRepoPathCoreDefaultCoreBridgeValidatesRepositoryWithoutMovingConflictFiles() async throws {
+    func testICloudConflictMinimalValidateRepoPathCoreDefaultCoreBridgeValidatesRepositoryWithoutMovingConflictFiles(
+    ) async throws {
         let repoURL = try makeICloudConflictTemporaryDirectory(prefix: "repo")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-        }
+        defer { removeTestTemporaryItems(repoURL) }
         let docsURL = repoURL.appendingPathComponent("docs", isDirectory: true)
         try await CoreBridge().initializeEmptyRepository(repoPath: repoURL.path)
         try FileManager.default.createDirectory(at: docsURL, withIntermediateDirectories: true)
@@ -180,7 +179,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
             kind: .conflict,
             rawContext: "stale conflict id"
         ))
-        let reviewer = ICloudConflictVisualRecordingConflictReviewer(
+        let reviewer = ICloudConflictReviewer(
             previewResult: .failure(CoreError.Conflict(path: "stale conflict id")),
             resolveResult: .success(.iCloudConflictVisualResolvedReport(conflictID: "stale"))
         )
@@ -210,7 +209,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         let resolveRequests = await reviewer.recordedResolveRequests()
         let mappedErrors = await mapper.recordedErrors()
 
-        XCTAssertEqual(previewRequests, [ICloudConflictVisualRecordingConflictReviewer.PreviewRequest(
+        XCTAssertEqual(previewRequests, [ICloudConflictReviewer.PreviewRequest(
             repoPath: "/tmp/repo",
             conflictID: "stale"
         )])
@@ -224,7 +223,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
 
     @MainActor
     func testICloudConflictVisualICloudConflictVisualCoreKeepBothResolveCallsReviewerAndReturnsReport() async {
-        let reviewer = ICloudConflictVisualRecordingConflictReviewer(
+        let reviewer = ICloudConflictReviewer(
             previewResult: .success(.iCloudConflictVisualPreview(conflictID: "conflict-1")),
             resolveResult: .success(.iCloudConflictVisualResolvedReport(conflictID: "conflict-1"))
         )
@@ -245,7 +244,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         let result = await model.resolveConflict(strategy: .keepBoth)
         let resolveRequests = await reviewer.recordedResolveRequests()
 
-        XCTAssertEqual(resolveRequests, [ICloudConflictVisualRecordingConflictReviewer.ResolveRequest(
+        XCTAssertEqual(resolveRequests, [ICloudConflictReviewer.ResolveRequest(
             repoPath: "/tmp/repo",
             conflictID: "conflict-1",
             strategy: .keepBoth
@@ -268,11 +267,10 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
     }
 
     @MainActor
-    func testICloudConflictVisualICloudConflictVisualCoreDefaultCoreBridgePreviewsAndKeepsBothVersionsWithoutFileMoves() async throws {
+    func testICloudConflictVisualICloudConflictVisualCoreDefaultCoreBridgePreviewsAndKeepsBothVersionsWithoutFileMoves(
+    ) async throws {
         let repoURL = try makeICloudConflictTemporaryDirectory(prefix: "iCloudConflictVisual-core")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-        }
+        defer { removeTestTemporaryItems(repoURL) }
         try await CoreBridge().initializeEmptyRepository(repoPath: repoURL.path)
         let docsURL = repoURL.appendingPathComponent("docs", isDirectory: true)
         try FileManager.default.createDirectory(at: docsURL, withIntermediateDirectories: true)
@@ -391,10 +389,7 @@ private extension RepoPathValidationSnapshot {
 }
 
 private func makeICloudConflictTemporaryDirectory(prefix: String) throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixICloudConflict-\(prefix)-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(prefix: prefix, named: "AreaMatrixICloudConflict")
 }
 
 private enum ICloudConflictTestError: LocalizedError {
@@ -440,18 +435,5 @@ private extension CoreErrorMappingSnapshot {
 }
 
 private func iCloudConflictMinimalMirrorDescription(of value: Any) -> String {
-    var lines: [String] = []
-    appendICloudConflictMinimalMirrorDescription(of: value, to: &lines)
-    return lines.joined(separator: "\n")
-}
-
-private func appendICloudConflictMinimalMirrorDescription(of value: Any, to lines: inout [String]) {
-    lines.append(String(describing: type(of: value)))
-    lines.append(String(describing: value))
-    for child in Mirror(reflecting: value).children {
-        if let label = child.label {
-            lines.append(label)
-        }
-        appendICloudConflictMinimalMirrorDescription(of: child.value, to: &lines)
-    }
+    testMirrorDescription(of: value)
 }

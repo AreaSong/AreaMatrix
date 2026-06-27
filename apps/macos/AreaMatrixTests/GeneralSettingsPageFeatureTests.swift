@@ -108,7 +108,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testRootOverviewRequiresConfirmationAndDoesNotWriteFilesDuringSettingsSave() async throws {
         let repoURL = try temporaryGeneralSettingsRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         try "user overview\n".write(
             to: repoURL.appendingPathComponent("AREAMATRIX.md"),
             atomically: true,
@@ -186,7 +186,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testDefaultCoreBridgeUpdatesRealRepoConfigWithoutCreatingRootFiles() async throws {
         let repoURL = try temporaryGeneralSettingsRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
         let model = GeneralSettingsModel(repoPath: repoURL.path, loader: bridge, updater: bridge)
@@ -214,10 +214,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
     func testDefaultCoreBridgePersistsImportMoveFileCoreMoveDefaultWithoutMovingExternalFiles() async throws {
         let repoURL = try temporaryGeneralSettingsRepo()
         let sourceRoot = try temporaryGeneralSettingsRepo()
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
         let sourceURL = sourceRoot.appendingPathComponent("source.txt")
         try "source".write(to: sourceURL, atomically: true, encoding: .utf8)
         let bridge = CoreBridge()
@@ -459,8 +456,5 @@ private extension CoreErrorMappingSnapshot {
 }
 
 private func temporaryGeneralSettingsRepo() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixGeneralSettings-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixGeneralSettings")
 }

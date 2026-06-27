@@ -91,7 +91,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testRootOverviewRequiresConfirmationAndDoesNotWriteRootFiles() async throws {
         let repoURL = try temporaryAdvancedSettingsRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         try "user overview\n".write(
             to: repoURL.appendingPathComponent("AREAMATRIX.md"),
             atomically: true,
@@ -148,7 +148,10 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
     func testOverviewOutputSectionIsTaggedAsAdvancedSettingsOverviewGeneratedCoreFeature() {
         XCTAssertEqual(AdvancedSettingsOverviewOutput.generatedOnly.label, "Generated only")
         XCTAssertEqual(AdvancedSettingsOverviewOutput.rootAreaMatrixFile.label, "Root AREAMATRIX.md")
-        XCTAssertEqual(AdvancedSettingsAccessibilityID.overviewOutput, "advanced-settings-overview-generated-overview-output")
+        XCTAssertEqual(
+            AdvancedSettingsAccessibilityID.overviewOutput,
+            "advanced-settings-overview-generated-overview-output"
+        )
     }
 
     @MainActor
@@ -200,7 +203,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testDefaultCoreBridgePersistsAdvancedConfigWithoutCreatingRootFiles() async throws {
         let repoURL = try temporaryAdvancedSettingsRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
         let model = AdvancedSettingsModel(repoPath: repoURL.path, loader: bridge, updater: bridge)
@@ -223,10 +226,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
     func testDefaultCoreBridgeAppliesRootOverviewOnNextRegenerationWithoutTouchingReadme() async throws {
         let repoURL = try temporaryAdvancedSettingsRepo()
         let sourceRootURL = try temporaryAdvancedSettingsRepo()
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRootURL)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRootURL) }
         let sourceURL = sourceRootURL.appendingPathComponent("overview-source.txt")
         let readmeURL = repoURL.appendingPathComponent("README.md")
         try Data("overview source".utf8).write(to: sourceURL)
@@ -413,25 +413,9 @@ private extension CoreErrorMappingSnapshot {
 }
 
 private func temporaryAdvancedSettingsRepo() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixAdvancedSettings-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixAdvancedSettings")
 }
 
 private func advancedSettingsMirrorDescription(of value: Any) -> String {
-    var lines: [String] = []
-    appendAdvancedSettingsMirrorDescription(of: value, to: &lines)
-    return lines.joined(separator: "\n")
-}
-
-private func appendAdvancedSettingsMirrorDescription(of value: Any, to lines: inout [String]) {
-    lines.append(String(describing: type(of: value)))
-    lines.append(String(describing: value))
-    for child in Mirror(reflecting: value).children {
-        if let label = child.label {
-            lines.append(label)
-        }
-        appendAdvancedSettingsMirrorDescription(of: child.value, to: &lines)
-    }
+    testMirrorDescription(of: value)
 }

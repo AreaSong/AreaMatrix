@@ -17,7 +17,7 @@ final class AreaMatrixPerfTests: XCTestCase {
     @MainActor
     func testApplicationLaunchToFirstScreenBaselineUnderReleaseThreshold() async throws {
         let repoURL = try makePerfTemporaryRepoURL("startup-empty")
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         try await CoreBridge().initializeEmptyRepository(repoPath: repoURL.path)
 
         if isDirectXCTestFallback {
@@ -54,10 +54,7 @@ final class AreaMatrixPerfTests: XCTestCase {
     func testSingleFileImportBaselineUnderReleaseThreshold() async throws {
         let repoURL = try makePerfTemporaryRepoURL("single-import-repo")
         let sourceRoot = try makePerfTemporaryRepoURL("single-import-source")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
         let sourceURL = sourceRoot.appendingPathComponent("invoice.pdf")
         try writePerfFile(sourceURL, sizeBytes: 1 * 1024 * 1024)
         let bridge = CoreBridge()
@@ -80,10 +77,7 @@ final class AreaMatrixPerfTests: XCTestCase {
     func testBatchImportAndListBaselineUnderReleaseThreshold() async throws {
         let repoURL = try makePerfTemporaryRepoURL("batch-import-repo")
         let sourceRoot = try makePerfTemporaryRepoURL("batch-import-source")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
         let sourceURLs = try (0 ..< 100).map { index in
             let url = sourceRoot.appendingPathComponent(String(format: "batch-%03d.txt", index))
             try writePerfFile(url, sizeBytes: 4 * 1024, seed: index)
@@ -117,7 +111,7 @@ final class AreaMatrixPerfTests: XCTestCase {
 
     func testTreeAndListResponseBaselineUnderReleaseThresholds() async throws {
         let repoURL = try makePerfTemporaryRepoURL("tree-list")
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         try writePerfRepositoryDataset(repoURL, count: 1000, sizeBytes: 128)
         let bridge = CoreBridge()
         try await bridge.adoptExistingRepository(repoPath: repoURL.path)
@@ -144,11 +138,7 @@ final class AreaMatrixPerfTests: XCTestCase {
         let idleRepo = try makePerfTemporaryRepoURL("memory-idle")
         let oneThousandRepo = try makePerfTemporaryRepoURL("memory-1k")
         let tenThousandRepo = try makePerfTemporaryRepoURL("memory-10k")
-        defer {
-            try? FileManager.default.removeItem(at: idleRepo)
-            try? FileManager.default.removeItem(at: oneThousandRepo)
-            try? FileManager.default.removeItem(at: tenThousandRepo)
-        }
+        defer { removeTestTemporaryItems(idleRepo, oneThousandRepo, tenThousandRepo) }
 
         try await bridge.initializeEmptyRepository(repoPath: idleRepo.path)
         _ = try await bridge.openConfiguredRepository(repoPath: idleRepo.path)
@@ -321,10 +311,7 @@ private extension FileFilterSnapshot {
 }
 
 private func makePerfTemporaryRepoURL(_ name: String) throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixPerfTests-\(name)-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(prefix: name, named: "AreaMatrixPerfTests")
 }
 
 private func writePerfRepositoryDataset(_ repoURL: URL, count: Int, sizeBytes: Int) throws {

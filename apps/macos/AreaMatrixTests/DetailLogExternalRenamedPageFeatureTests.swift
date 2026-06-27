@@ -58,7 +58,8 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testDetailLogSyncExternalRenamedCoreConsumesRealExternalRenamedEventThenRefreshesListDetailAndLog() async throws {
+    func testDetailLogSyncExternalRenamedCoreConsumesRealExternalRenamedEventThenRefreshesListDetailAndLog(
+    ) async throws {
         let original = FileEntrySnapshot.detailMetaFixture(id: 30, currentName: "original.pdf")
         let renamed = FileEntrySnapshot.detailMetaFixture(id: 30, currentName: "renamed.pdf")
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
@@ -179,9 +180,10 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         XCTAssertNil(MainExternalCreatedFileEvent(kind: .renamed, relativePath: "docs/new.pdf", fsEventID: 0))
     }
 
-    func testDetailLogSyncExternalRenamedCoreDefaultCoreBridgeSyncsRealExternalRenamedFileIntoListDetailAndLog() async throws {
+    func testDetailLogSyncExternalRenamedCoreDefaultCoreBridgeSyncsRealExternalRenamedFileIntoListDetailAndLog(
+    ) async throws {
         let repoURL = try makeDetailLogExternalRenamedTemporaryRepositoryURL()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
 
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
@@ -326,8 +328,5 @@ private extension CoreErrorMappingSnapshot {
 }
 
 private func makeDetailLogExternalRenamedTemporaryRepositoryURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixDetailExternalRenamed-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixDetailExternalRenamed")
 }

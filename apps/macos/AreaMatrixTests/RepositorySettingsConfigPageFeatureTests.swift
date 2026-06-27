@@ -6,7 +6,7 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
     func testRepositorySettingsCrossPlatformRepositorySettingsCoreSavesRepositoryConfigThroughUpdateConfig() async {
         let current = RepoConfigSnapshot.repositorySettingsRepositorySettingsCoreFixture(repoPath: "/tmp/repo")
         let updater = RepositorySettingsRecordingUpdater(result: .success)
-        let announcer = ImportSingleFileRecordingAccessibilityAnnouncer()
+        let announcer = RecordingAccessibilityAnnouncer()
         let model = RepositorySettingsConfigModel(
             repoPath: "/tmp/repo",
             updater: updater,
@@ -36,12 +36,13 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testRepositorySettingsCrossPlatformRepositorySettingsCoreSaveFailureMapsCoreErrorAndKeepsPayloadObservable() async {
+    func testRepositorySettingsCrossPlatformRepositorySettingsCoreSaveFailureMapsCoreErrorAndKeepsPayloadObservable(
+    ) async {
         let current = RepoConfigSnapshot.repositorySettingsRepositorySettingsCoreFixture(repoPath: "/tmp/repo")
         let updater =
             RepositorySettingsRecordingUpdater(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
         let mapper = RepositorySettingsStaticErrorMapper()
-        let announcer = ImportSingleFileRecordingAccessibilityAnnouncer()
+        let announcer = RecordingAccessibilityAnnouncer()
         let model = RepositorySettingsConfigModel(
             repoPath: "/tmp/repo",
             updater: updater,

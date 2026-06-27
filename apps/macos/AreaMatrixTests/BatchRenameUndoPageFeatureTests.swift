@@ -2,11 +2,11 @@
 import Foundation
 import XCTest
 
-final class BatchRenameUndoBatchRenameUndoPageFeatureTests: XCTestCase {
+final class BatchRenameUndoPageFeatureTests: XCTestCase {
     @MainActor
     func testBatchRenameUndoUndoActionLogCoreBatchRenameLoadsUndoActionFromCoreActionLog() async {
         let action = UndoActionRecordSnapshot.batchRenameUndoPendingBatchRename()
-        let undoStore = BatchRenameUndoBatchRenameRecordingUndoStore(results: [.list(.success([action]))])
+        let undoStore = BatchRenameUndoStore(results: [.list(.success([action]))])
         let state = await BatchRenameUndoAction.stateAfterBatchApply(
             repoPath: "/tmp/repo",
             report: .report(token: action.actionID),
@@ -24,7 +24,7 @@ final class BatchRenameUndoBatchRenameUndoPageFeatureTests: XCTestCase {
 
     @MainActor
     func testBatchRenameUndoUndoActionLogCoreBatchRenameReportsUnavailableWhenUndoTokenIsMissing() async {
-        let undoStore = BatchRenameUndoBatchRenameRecordingUndoStore(results: [])
+        let undoStore = BatchRenameUndoStore(results: [])
         let state = await BatchRenameUndoAction.stateAfterBatchApply(
             repoPath: "/tmp/repo",
             report: .report(token: nil),
@@ -40,7 +40,7 @@ final class BatchRenameUndoBatchRenameUndoPageFeatureTests: XCTestCase {
 
     @MainActor
     func testBatchRenameUndoUndoActionLogCoreBatchRenameDoesNotFakeUndoStateOnApplyFailure() async {
-        let undoStore = BatchRenameUndoBatchRenameRecordingUndoStore(results: [])
+        let undoStore = BatchRenameUndoStore(results: [])
         let state = await BatchRenameUndoAction.stateAfterBatchApply(
             repoPath: "/tmp/repo",
             report: nil,
@@ -62,7 +62,7 @@ final class BatchRenameUndoBatchRenameUndoPageFeatureTests: XCTestCase {
             .redo(.success(.redoActionLogRedoneMove())),
             .list(.success([.redoActionLogExecutedMoveRedo()]))
         ])
-        let undoStore = BatchRenameUndoBatchRenameRecordingUndoStore(results: [.list(.success([undo]))])
+        let undoStore = BatchRenameUndoStore(results: [.list(.success([undo]))])
 
         let state = await UndoHistoryActionLog.redoLatest(
             repoPath: "/tmp/repo",
@@ -88,7 +88,7 @@ final class BatchRenameUndoBatchRenameUndoPageFeatureTests: XCTestCase {
         let state = await UndoHistoryActionLog.redoLatest(
             repoPath: "/tmp/repo",
             snapshot: UndoHistorySnapshot(undoActions: [], redoActions: [cleared]),
-            undoStore: BatchRenameUndoBatchRenameRecordingUndoStore(results: []),
+            undoStore: BatchRenameUndoStore(results: []),
             redoStore: redoStore,
             errorMapper: BatchRenameErrorMapper(mapping: .batchRenameUndoUndoFailure())
         )
@@ -222,8 +222,7 @@ private struct BatchRenameUndoIntegrationContext {
     let indexOnly: FileEntrySnapshot
 
     func cleanUp() {
-        try? FileManager.default.removeItem(at: repoURL)
-        try? FileManager.default.removeItem(at: sourceRootURL)
+        removeTestTemporaryItems(repoURL, sourceRootURL)
     }
 }
 
@@ -329,7 +328,7 @@ private func assertBatchRenameUndoUndoRestored(_ context: BatchRenameUndoIntegra
     XCTAssertEqual(files.first { $0.id == context.repoOwned.id }?.currentName, "owned.pdf")
 }
 
-private actor BatchRenameUndoBatchRenameRecordingUndoStore: CoreUndoActionLogging {
+private actor BatchRenameUndoStore: CoreUndoActionLogging {
     enum Result {
         case list(Swift.Result<[UndoActionRecordSnapshot], Error>)
         case undo(Swift.Result<UndoActionResultSnapshot, Error>)

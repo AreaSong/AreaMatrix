@@ -239,7 +239,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
 
     func testDefaultCoreBridgeListsRealRepositoryTreeForMainLoading() async throws {
         let repoURL = try makeMainLoadingTemporaryRepositoryURL()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
 
         let docsURL = repoURL.appendingPathComponent("docs", isDirectory: true)
         try FileManager.default.createDirectory(at: docsURL, withIntermediateDirectories: true)

@@ -23,7 +23,7 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
             recoverability: .userActionRequired,
             rawContext: "/tmp/repo/.areamatrix/index.db"
         )
-        let repairer = DatabaseRepairIntegrationRecordingMetadataRepairer(
+        let repairer = RecordingMetadataRepairer(
             result: .failure(CoreError.PermissionDenied(path: "/tmp/repo/.areamatrix/index.db"))
         )
         let finder = ShellRecordingFinderOpener()
@@ -45,8 +45,10 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
             lastOpenedAt: nil,
             metadataRepairer: repairer,
             startupRecoverer: MainLoadingStaticStartupRecoverer(),
-            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.databaseRepairIntegrationDiagnostics)),
-            errorMapper: DatabaseRepairIntegrationStaticErrorMapper(mapping: mapping)
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(
+                result: .success(.databaseRepairIntegrationDiagnostics)
+            ),
+            errorMapper: StaticRepairErrorMapper(mapping: mapping)
         )
 
         repairModel.isMetadataSafetyConfirmed = true
@@ -76,7 +78,7 @@ private struct DatabaseRepairIntegrationRepairRequest: Equatable {
     var options: RepairOptionsSnapshot
 }
 
-private actor DatabaseRepairIntegrationRecordingMetadataRepairer: CoreMetadataRepairing {
+private actor RecordingMetadataRepairer: CoreMetadataRepairing {
     private let result: Result<RepairReportSnapshot, Error>
     private var recordedRequests: [DatabaseRepairIntegrationRepairRequest] = []
 
@@ -94,7 +96,7 @@ private actor DatabaseRepairIntegrationRecordingMetadataRepairer: CoreMetadataRe
     }
 }
 
-private actor DatabaseRepairIntegrationStaticErrorMapper: CoreErrorMapping {
+private actor StaticRepairErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
 
     init(mapping: CoreErrorMappingSnapshot) {
@@ -110,7 +112,7 @@ private struct DatabaseRepairIntegrationSuccessContext {
     let repoURL: URL
     let readmeURL: URL
     let specURL: URL
-    let beforeRepair: [DatabaseRepairIntegrationUserFileSnapshot]
+    let beforeRepair: [UserFileSnapshot]
     let mapping: CoreErrorMappingSnapshot
     let bridge: CoreBridge
     let writer: ShellRecordingSettingsWriter
@@ -122,8 +124,16 @@ private struct DatabaseRepairIntegrationSuccessContext {
         let repoURL = try databaseRepairIntegrationTemporaryDirectory()
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        let readmeURL = try databaseRepairIntegrationWriteRepoFile(repoURL, relativePath: "README.md", contents: "user readme\n")
-        let specURL = try databaseRepairIntegrationWriteRepoFile(repoURL, relativePath: "docs/spec.txt", contents: "spec\n")
+        let readmeURL = try databaseRepairIntegrationWriteRepoFile(
+            repoURL,
+            relativePath: "README.md",
+            contents: "user readme\n"
+        )
+        let specURL = try databaseRepairIntegrationWriteRepoFile(
+            repoURL,
+            relativePath: "docs/spec.txt",
+            contents: "spec\n"
+        )
         let mapping = CoreErrorMappingSnapshot.databaseRepairIntegrationMapping(
             kind: .db,
             severity: .critical,
@@ -157,7 +167,8 @@ private struct DatabaseRepairIntegrationSuccessContext {
     func openRepairRoute() throws -> DatabaseRepairRouteState {
         shell.openMainRepositoryRepair(repoPath: repoURL.path)
         guard case let .dbRepairConfirm(repairRoute) = shell.route else {
-            throw DatabaseRepairIntegrationFailure.unexpectedRoute("Expected database-repair repair route, got \(shell.route)")
+            throw DatabaseRepairIntegrationFailure
+                .unexpectedRoute("Expected database-repair repair route, got \(shell.route)")
         }
 
         XCTAssertEqual(repairRoute.mapping, mapping)
@@ -213,7 +224,7 @@ private struct DatabaseRepairIntegrationSuccessContext {
     }
 
     func cleanup() {
-        try? FileManager.default.removeItem(at: repoURL)
+        removeTestTemporaryItems(repoURL)
     }
 
     @MainActor
@@ -234,7 +245,8 @@ private struct DatabaseRepairIntegrationSuccessContext {
         XCTAssertTrue(repairModel.canRunFullRescan)
         await repairModel.runFullRescan()
         guard case let .succeeded(report) = repairModel.repairState else {
-            throw DatabaseRepairIntegrationFailure.unexpectedRoute("Expected repair success, got \(repairModel.repairState)")
+            throw DatabaseRepairIntegrationFailure
+                .unexpectedRoute("Expected repair success, got \(repairModel.repairState)")
         }
 
         XCTAssertNotNil(report.scanSessionId)
@@ -314,7 +326,7 @@ private actor DatabaseRepairPausingRepositoryOpener: CoreEmptyRepositoryOpening 
     }
 }
 
-private struct DatabaseRepairIntegrationUserFileSnapshot: Equatable {
+private struct UserFileSnapshot: Equatable {
     var path: String
     var data: Data
 }
@@ -361,10 +373,7 @@ private extension CoreErrorMappingSnapshot {
 }
 
 private func databaseRepairIntegrationTemporaryDirectory() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixDatabaseRepairIntegration-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixDatabaseRepairIntegration")
 }
 
 private func databaseRepairIntegrationWriteRepoFile(
@@ -378,8 +387,9 @@ private func databaseRepairIntegrationWriteRepoFile(
     return url
 }
 
-private func databaseRepairIntegrationUserFileSnapshot(_ urls: [URL]) throws -> [DatabaseRepairIntegrationUserFileSnapshot] {
+private func databaseRepairIntegrationUserFileSnapshot(_ urls: [URL]) throws
+    -> [UserFileSnapshot] {
     try urls.map { url in
-        try DatabaseRepairIntegrationUserFileSnapshot(path: url.path, data: Data(contentsOf: url))
+        try UserFileSnapshot(path: url.path, data: Data(contentsOf: url))
     }
 }

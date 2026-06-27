@@ -45,7 +45,12 @@ final class AISummaryPageIntegrationVerifyTests: XCTestCase {
         let privacy = AISummaryIntegrationPrivacyBridge()
         let summary = AISummaryIntegrationSummaryBridge(drafts: [
             .aiSummaryIntegrationDraft(fileID: 706, text: "Initial AI summary.", draftID: "draft-a", callLogID: 1706),
-            .aiSummaryIntegrationDraft(fileID: 706, text: "Regenerated AI summary.", draftID: "draft-b", callLogID: 2706)
+            .aiSummaryIntegrationDraft(
+                fileID: 706,
+                text: "Regenerated AI summary.",
+                draftID: "draft-b",
+                callLogID: 2706
+            )
         ])
         let model = aiSummaryIntegrationModel(fileID: 706, summary: summary, privacy: privacy)
 

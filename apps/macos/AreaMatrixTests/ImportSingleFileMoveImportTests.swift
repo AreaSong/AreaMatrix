@@ -95,10 +95,7 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
     func testDefaultCoreBridgeImportsMovedFileAndRemovesSource() async throws {
         let repoURL = try makeMoveImportTemporaryDirectory(prefix: "repo")
         let sourceRoot = try makeMoveImportTemporaryDirectory(prefix: "source")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
         let sourceURL = sourceRoot.appendingPathComponent("move.pdf")
         try Data("move bytes".utf8).write(to: sourceURL)
         let bridge = CoreBridge()
@@ -292,8 +289,5 @@ private extension CoreErrorMappingSnapshot {
 }
 
 private func makeMoveImportTemporaryDirectory(prefix: String) throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixImportMove-\(prefix)-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(prefix: prefix, named: "AreaMatrixImportMove")
 }

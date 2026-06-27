@@ -37,7 +37,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             startupRecoverer: MainLoadingStaticStartupRecoverer(),
             importBatchSessionStore: store,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -86,7 +86,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             startupRecoverer: MainLoadingStaticStartupRecoverer(),
             importBatchSessionStore: store,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -109,7 +109,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             startupRecoverer: MainLoadingStaticStartupRecoverer(),
             importBatchSessionStore: StaticImportBatchSessionStore(session: nil),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -136,7 +136,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             diagnosticsCollector: diagnostics,
             finderOpener: finder,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -176,11 +176,14 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             importProgressControlState: controlState,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
         let importer = ImportBatchRecordingBatchImporter()
-        let importModel = ImportBatchCopyImportModel(importer: importer, errorMapper: ImportSingleFileRecordingErrorMapper())
+        let importModel = ImportBatchCopyImportModel(
+            importer: importer,
+            errorMapper: ImportSingleFileRecordingErrorMapper()
+        )
         let firstURL = URL(fileURLWithPath: "/tmp/first.pdf")
         let secondURL = URL(fileURLWithPath: "/tmp/second.pdf")
 
@@ -190,14 +193,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
             selectedDestination: .autoClassify
         )
         model.route = .mainList(opening)
-        model.updateImportEntryProgress(ImportBatchProgressSnapshot(
-            completed: 0,
-            failed: 0,
-            total: 2,
-            remaining: 2,
-            currentPath: "docs/first.pdf",
-            items: importModel.progressItems()
-        ))
+        model.showInitialStopAfterCurrentProgress(importModel: importModel)
         model.stopImportProgressAfterCurrentFile()
 
         let outcome = await importModel.importReadyFiles(
@@ -214,15 +210,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
             overrideFilename: "first.pdf",
             duplicateStrategy: .ask
         )])
-        XCTAssertTrue(outcome?.didStopAfterCurrentFile == true)
-        XCTAssertNil(model.toastMessage)
-        guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected import-result import result route")
-        }
-        XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 0, stopped 1, pending 0.")
-        XCTAssertEqual(result.items.map(\.status), [.imported, .skipped])
-        model.finishImportResult()
-        XCTAssertEqual(model.route, .mainEmpty(opening))
+        assertStopAfterCurrentFileResult(outcome: outcome, model: model, opening: opening)
     }
 
     @MainActor
@@ -230,7 +218,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -280,6 +268,25 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
 }
 
 @MainActor
+private func assertStopAfterCurrentFileResult(
+    outcome: ImportBatchImportResult?,
+    model: OnboardingModel,
+    opening: RepositoryOpeningResult,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    XCTAssertTrue(outcome?.didStopAfterCurrentFile == true, file: file, line: line)
+    XCTAssertNil(model.toastMessage, file: file, line: line)
+    guard case let .importResult(result) = model.route else {
+        return XCTFail("Expected import-result import result route", file: file, line: line)
+    }
+    XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 0, stopped 1, pending 0.", file: file, line: line)
+    XCTAssertEqual(result.items.map(\.status), [.imported, .skipped], file: file, line: line)
+    model.finishImportResult()
+    XCTAssertEqual(model.route, .mainEmpty(opening), file: file, line: line)
+}
+
+@MainActor
 struct ImportProgressFatalCopyRetryScenario {
     let opening: RepositoryOpeningResult
     let controlState: ImportProgressControlState
@@ -287,6 +294,20 @@ struct ImportProgressFatalCopyRetryScenario {
     let retryImporter: ImportSingleFileRecordingImporter
     let model: OnboardingModel
     let importModel: ImportBatchCopyImportModel
+}
+
+private extension OnboardingModel {
+    @MainActor
+    func showInitialStopAfterCurrentProgress(importModel: ImportBatchCopyImportModel) {
+        updateImportEntryProgress(ImportBatchProgressSnapshot(
+            completed: 0,
+            failed: 0,
+            total: 2,
+            remaining: 2,
+            currentPath: "docs/first.pdf",
+            items: importModel.progressItems()
+        ))
+    }
 }
 
 extension ImportProgressCopyQueueRecoveryTests {
@@ -305,10 +326,13 @@ extension ImportProgressCopyQueueRecoveryTests {
             importProgressImporter: retryImporter,
             startupRecoverer: MainLoadingStaticStartupRecoverer(),
             importProgressControlState: controlState,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
-        let importModel = ImportBatchCopyImportModel(importer: importer, errorMapper: ImportProgressFatalCopyErrorMapper())
+        let importModel = ImportBatchCopyImportModel(
+            importer: importer,
+            errorMapper: ImportProgressFatalCopyErrorMapper()
+        )
 
         importModel.applyPreviewRows(
             fatalCopyRetryRows(),
@@ -425,71 +449,4 @@ extension ImportProgressCopyQueueRecoveryTests {
             .init(sourcePath: "/tmp/合同.pdf", targetPath: "finance/合同.pdf", phase: .failed, errorMessage: "无访问权限")
         ]
     )
-}
-
-extension OnboardingModel {
-    var currentImportProgressState: ImportProgressRouteState? {
-        guard case let .importProgress(state) = route else { return nil }
-        return state
-    }
-}
-
-@MainActor
-func waitForImportResultRoute(
-    _ model: OnboardingModel,
-    file: StaticString = #filePath,
-    line: UInt = #line
-) async -> ImportResultRouteState? {
-    for _ in 0 ..< 100 {
-        if case let .importResult(state) = model.route { return state }
-        await Task.yield()
-    }
-    XCTFail("Timed out waiting for import result route, got \(model.route)", file: file, line: line)
-    return nil
-}
-
-actor StaticImportBatchSessionStore: ImportBatchSessionPersisting {
-    private let session: ImportBatchSessionSnapshot?
-    private var cleared: [String] = []
-
-    init(session: ImportBatchSessionSnapshot?) {
-        self.session = session
-    }
-
-    func saveSession(_: ImportBatchSessionSnapshot) async {}
-
-    func loadSession(repoPath: String) async -> ImportBatchSessionSnapshot? {
-        guard session?.repoPath == repoPath else { return nil }
-        return session
-    }
-
-    func clearSession(repoPath: String) {
-        cleared.append(repoPath)
-    }
-
-    func clearedRepoPaths() -> [String] {
-        cleared
-    }
-}
-
-private actor ImportProgressFatalCopyErrorMapper: CoreErrorMapping {
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        switch error {
-        case .Io: .importProgressFatalCopyError
-        default: .importSingleFileError(kind: .internal)
-        }
-    }
-}
-
-private extension CoreErrorMappingSnapshot {
-    static var importProgressFatalCopyError: CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .io,
-            userMessage: "文件读写失败",
-            severity: .critical,
-            suggestedAction: "AreaMatrix 会先确认 staging 状态，再允许重试当前项。",
-            recoverability: .fatal,
-            rawContext: "import-progress fatal copy retry"
-        )
-    }
 }

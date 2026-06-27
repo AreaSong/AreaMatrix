@@ -19,11 +19,9 @@
 
 ## 维护者：v1 归档路径补扫（可选）
 
-v1 历史执行队列已经归档；需要复核旧 progress 或 task-loop evidence 是否重新出现本机绝对路径时，单独运行：
+历史执行队列已经归档；需要复核旧 progress 或 task-loop evidence 是否重新出现本机绝对路径时，先从 [workflow versions](../../workflow/versions/README.md) 定位归档路径，再单独运行定向扫描。
 
-```bash
-rg '/Users/[A-Za-z0-9._-]+/' workflow/versions/v1-mvp/execution/_shared/progress.json workflow/versions/v1-mvp/evidence/task-loop-runs || true
-```
+不要把归档路径补扫加入提交前门禁；它只用于维护者专项审计。
 
 ## 维护者：全历史审计（可选）
 

@@ -7,7 +7,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -27,7 +27,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
         let mapping = CoreErrorMappingSnapshot.importSingleFileError(kind: .permissionDenied)
@@ -57,7 +57,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             startupRecoverer: recoverer,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -93,7 +93,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -127,7 +127,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             startupRecoverer: recoverer,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
         let mapping = CoreErrorMappingSnapshot.importProgressFatalImportError(kind: .io)
@@ -167,7 +167,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
     func testImportProgressImportMoveFileCoreRetryCurrentMoveItemUsesRealImporterAndReturnsToRepository() async {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let importer = ImportSingleFileRecordingImporter()
-        let announcer = ImportSingleFileRecordingAccessibilityAnnouncer()
+        let announcer = RecordingAccessibilityAnnouncer()
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             importProgressImporter: importer,
@@ -209,7 +209,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -243,7 +243,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             startupRecoverer: recoverer,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -286,7 +286,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             importProgressImporter: importer,
             startupRecoverer: MainLoadingStaticStartupRecoverer(),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 

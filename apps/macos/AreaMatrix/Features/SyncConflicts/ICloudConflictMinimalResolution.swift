@@ -104,8 +104,8 @@ struct ICloudConflictResolutionBlocker: Equatable {
     static let missingCoreResolutionEndpoint = ICloudConflictResolutionBlocker(
         title: "Core resolution unavailable",
         message: """
-        icloud-conflict-minimal can validate the repository and map errors, but the Core resolution endpoint that clears conflict state \
-        and writes change_log is not available yet.
+        icloud-conflict-minimal can validate the repository and map errors, but the Core resolution endpoint that \
+        clears conflict state and writes change_log is not available yet.
         """,
         suggestedAction: """
         Keep the conflict unresolved and return after the iCloud conflict resolution capability is implemented.

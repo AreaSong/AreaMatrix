@@ -45,6 +45,7 @@ from .workflow import (
     run_workflow_queue,
     run_workflow_status,
 )
+from .wording import run_wording_audit
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -55,9 +56,15 @@ def _build_parser() -> argparse.ArgumentParser:
     check.add_argument(
         "target",
         nargs="?",
-        choices=["governance", "skills", "quality", "task-loop", "prompts", "diff", "secrets", "all", "task"],
+        choices=["governance", "skills", "quality", "wording", "task-loop", "prompts", "diff", "secrets", "all", "task"],
     )
     check.add_argument("task_label", nargs="?", help="Task label for './dev check task', for example 4-1/task-15")
+
+    wording = subparsers.add_parser("wording", help="Audit long-term source wording")
+    wording_sub = wording.add_subparsers(dest="wording_command", required=True)
+    wording_audit = wording_sub.add_parser("audit", help="Scan for staged / delivery-track wording drift")
+    wording_audit.add_argument("--show-allowed", action="store_true", help="Print allowed technical, policy, and archive hits")
+    wording_audit.add_argument("--max-lines", type=int, default=80, help="Maximum hits to print per group")
 
     build = subparsers.add_parser("build", help="Build developer artifacts")
     build_sub = build.add_subparsers(dest="build_target", required=True)
@@ -310,6 +317,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 return run_skills_check(root)
             if args.target == "quality":
                 return run_quality_check(root)
+            if args.target == "wording":
+                return run_wording_audit(root)
             if args.target == "task-loop":
                 return run_task_loop_check(root)
             if args.target == "prompts":
@@ -324,6 +333,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 if not args.task_label:
                     parser.error("'./dev check task' requires a task label")
                 return run_task_check(args.task_label, root)
+        if args.command == "wording" and args.wording_command == "audit":
+            return run_wording_audit(root, args)
         if args.command == "build" and args.build_target == "core":
             return run_core_build(root, profile=args.profile, out_dir=args.out_dir, deployment_target=args.deployment_target)
         if args.command == "test" and args.test_target == "macos":

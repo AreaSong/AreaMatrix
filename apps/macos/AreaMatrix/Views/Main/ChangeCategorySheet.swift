@@ -292,9 +292,12 @@ struct ClassifierRuleEditorRouteView: View {
 
     private func createBar(_ context: BatchChangeCategoryReturnContext) -> some View {
         HStack(spacing: 12) {
-            Text("Edit classifier.yaml in classifier-rule-editor. Validate returns to batch-change-category when one new category is saved.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+            Text(
+                "Edit classifier.yaml in classifier-rule-editor. Validate returns to batch-change-category " +
+                    "when one new category is saved."
+            )
+            .font(.callout)
+            .foregroundStyle(.secondary)
             Spacer()
             Button("Cancel") { onCancelFromBatchCategory(context) }
                 .keyboardShortcut(.cancelAction)

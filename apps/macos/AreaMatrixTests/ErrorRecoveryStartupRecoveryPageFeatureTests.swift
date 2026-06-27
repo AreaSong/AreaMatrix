@@ -20,16 +20,22 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
         let completedBody = startupRecoveryMirrorDescription(of: completedView.body)
         let failedBody = startupRecoveryMirrorDescription(of: failedView.body)
 
-        XCTAssertTrue(completedBody.contains("Startup recovery complete"))
-        XCTAssertTrue(completedBody.contains("启动恢复已完成"))
-        XCTAssertTrue(completedBody.contains("startup-recovery-startup-recovery-core-startup-recovery"))
-        XCTAssertTrue(completedBody.contains("startup-recovery-startup-recovery-core-recovery-report"))
-        XCTAssertTrue(failedBody.contains("Startup recovery failed"))
-        XCTAssertTrue(failedBody.contains("Retry startup recovery"))
-        XCTAssertTrue(failedBody.contains("startup-recovery-startup-recovery-core-retry-startup-recovery"))
-        XCTAssertTrue(failedBody.contains("ErrorRecoveryMappedErrorView"))
-        XCTAssertFalse(failedBody.contains("Open repair"))
-        XCTAssertFalse(failedBody.contains("Remove from index"))
+        assertTestDescription(completedBody, contains: [
+            "Startup recovery complete",
+            "启动恢复已完成",
+            "startup-recovery-startup-recovery-core-startup-recovery",
+            "startup-recovery-startup-recovery-core-recovery-report"
+        ])
+        assertTestDescription(failedBody, contains: [
+            "Startup recovery failed",
+            "Retry startup recovery",
+            "startup-recovery-startup-recovery-core-retry-startup-recovery",
+            "ErrorRecoveryMappedErrorView"
+        ])
+        assertTestDescription(failedBody, doesNotContain: [
+            "Open repair",
+            "Remove from index"
+        ])
     }
 
     @MainActor
@@ -44,15 +50,19 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
         )
         let body = startupRecoveryMirrorDescription(of: view.body)
 
-        XCTAssertTrue(body.contains("startup-recovery-error-mapping-error-mapping"))
-        XCTAssertTrue(body.contains("Startup recovery could not finish"))
-        XCTAssertTrue(body.contains("Severity: Medium"))
-        XCTAssertTrue(body.contains("Recoverability: Retryable"))
-        XCTAssertTrue(body.contains("database is locked"))
-        XCTAssertTrue(body.contains("startup-recovery-error-mapping-retry"))
-        XCTAssertFalse(body.contains("Open repair"))
-        XCTAssertFalse(body.contains("Remove from index"))
-        XCTAssertFalse(body.contains("Download & retry"))
+        assertTestDescription(body, contains: [
+            "startup-recovery-error-mapping-error-mapping",
+            "Startup recovery could not finish",
+            "Severity: Medium",
+            "Recoverability: Retryable",
+            "database is locked",
+            "startup-recovery-error-mapping-retry"
+        ])
+        assertTestDescription(body, doesNotContain: [
+            "Open repair",
+            "Remove from index",
+            "Download & retry"
+        ])
     }
 
     @MainActor
@@ -74,11 +84,13 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
         )
         let body = startupRecoveryMirrorDescription(of: view.body)
 
-        XCTAssertTrue(body.contains("Internal"))
-        XCTAssertTrue(body.contains("Severity: Critical"))
-        XCTAssertTrue(body.contains("Recoverability: Fatal"))
-        XCTAssertTrue(body.contains("Retry the failed action or collect diagnostics from the source page."))
-        XCTAssertTrue(body.contains("No technical context was provided by Core."))
+        assertTestDescription(body, contains: [
+            "Internal",
+            "Severity: Critical",
+            "Recoverability: Fatal",
+            "Retry the failed action or collect diagnostics from the source page.",
+            "No technical context was provided by Core."
+        ])
     }
 
     @MainActor
@@ -92,7 +104,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
 
         XCTAssertTrue(failedView.retryButtonTitle == "Retrying...")
         XCTAssertTrue(failedView.retryButtonIsDisabled)
-        XCTAssertTrue(failedBody.contains("Retrying..."))
+        assertTestDescription(failedBody, contains: ["Retrying..."])
     }
 
     @MainActor
@@ -113,7 +125,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
             emptyRepositoryOpener: opener,
             startupRecoverer: recoverer,
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
-            errorMapper: StartupRecoveryStartupRecoveryErrorMapper(mapping: mapping),
+            errorMapper: StartupRecoveryErrorMapper(mapping: mapping),
             helpOpener: MainLoadingNoopWelcomeHelpOpener()
         )
 
@@ -148,7 +160,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
     @MainActor
     func testStartupRecoveryStartupRecoveryCoreDefaultCoreBridgeUsesGeneratedRecoverOnStartupBoundary() async throws {
         let repoURL = try startupRecoveryTemporaryDirectory()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let bridge = CoreBridge()
 
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
@@ -158,7 +170,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
     }
 }
 
-final class AITagSuggestionAITagBatchPageFeatureTests: XCTestCase {
+final class AITagBatchPageFeatureTests: XCTestCase {
     @MainActor
     func testAITagSuggestionAITagsSuggestionCoreBatchReviewConfirmsBeforeApplyingTags() async {
         let files = [
@@ -176,7 +188,9 @@ final class AITagSuggestionAITagBatchPageFeatureTests: XCTestCase {
             fileDetailer: DetailTagFileDetailer(files: files),
             aiSettingsLoader: AITagSuggestionAISettingsLoader(),
             aiTagSuggestionStore: bridge,
-            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])),
+            aiPrivacyRules: RemotePrivacyRulesBridge(
+                snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])
+            ),
             changeLogLister: DetailLogRecordingChangeLister(entries: [.tagSuggestionsApplied()]),
             errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
@@ -228,7 +242,9 @@ final class AITagSuggestionAITagBatchPageFeatureTests: XCTestCase {
             fileDetailer: DetailTagFileDetailer(files: [first, second]),
             aiSettingsLoader: AITagSuggestionAISettingsLoader(),
             aiTagSuggestionStore: bridge,
-            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])),
+            aiPrivacyRules: RemotePrivacyRulesBridge(
+                snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])
+            ),
             errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
@@ -301,7 +317,9 @@ final class AITagSuggestionAITagBatchPageFeatureTests: XCTestCase {
             fileDetailer: DetailTagFileDetailer(files: files),
             aiSettingsLoader: AITagSuggestionAISettingsLoader(),
             aiTagSuggestionStore: bridge,
-            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])),
+            aiPrivacyRules: RemotePrivacyRulesBridge(
+                snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])
+            ),
             errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 
@@ -368,29 +386,8 @@ final class AITagSuggestionAITagBatchPageFeatureTests: XCTestCase {
     func testAITagSuggestionAITagsSuggestionCoreBatchEditedMergeSuggestionAppliesEditedRequest() async {
         let file = FileEntrySnapshot.detailMetaFixture(id: 720, currentName: "invoice-merge.pdf")
         let unchangedFile = FileEntrySnapshot.detailMetaFixture(id: 721, currentName: "invoice-context.pdf")
-        let bridge = AITagSuggestionBatchAITagBridge(reports: [
-            file.id: aiTagSuggestionAITagReport(fileID: file.id, suggestions: [
-                aiTagSuggestionAITagSuggestion(
-                    id: "ai-tag-merge",
-                    slug: "finances",
-                    confidence: 0.91,
-                    selectedByDefault: false,
-                    displayName: "Finances",
-                    mergeAction: .mergeWithExistingTag,
-                    matchedExistingSlug: "finance"
-                )
-            ]),
-            unchangedFile.id: aiTagSuggestionAITagReport(fileID: unchangedFile.id, status: .noSuggestion)
-        ])
-        let model = MainFileListModel(
-            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file, unchangedFile]),
-            fileLister: DetailMetaNoopLister(),
-            fileDetailer: DetailTagFileDetailer(files: [file, unchangedFile]),
-            aiSettingsLoader: AITagSuggestionAISettingsLoader(),
-            aiTagSuggestionStore: bridge,
-            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])),
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
-        )
+        let bridge = Self.aiTagMergeBridge(file: file, unchangedFile: unchangedFile)
+        let model = Self.aiTagMergeModel(file: file, unchangedFile: unchangedFile, bridge: bridge)
 
         await model.selectFiles([file.id, unchangedFile.id])
         await model.loadBatchAITagSuggestions(files: [file, unchangedFile])
@@ -421,7 +418,7 @@ final class AITagSuggestionAITagBatchPageFeatureTests: XCTestCase {
     }
 }
 
-private actor StartupRecoveryStartupRecoveryErrorMapper: CoreErrorMapping {
+private actor StartupRecoveryErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
 
     init(mapping: CoreErrorMappingSnapshot) {
@@ -459,25 +456,9 @@ private extension CoreErrorMappingSnapshot {
 }
 
 private func startupRecoveryTemporaryDirectory() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixStartupRecoveryStartupRecovery-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixStartupRecoveryStartupRecovery")
 }
 
 private func startupRecoveryMirrorDescription(of value: Any) -> String {
-    var lines: [String] = []
-    appendStartupRecoveryMirrorDescription(of: value, to: &lines)
-    return lines.joined(separator: "\n")
-}
-
-private func appendStartupRecoveryMirrorDescription(of value: Any, to lines: inout [String]) {
-    lines.append(String(describing: type(of: value)))
-    lines.append(String(describing: value))
-    for child in Mirror(reflecting: value).children {
-        if let label = child.label {
-            lines.append(label)
-        }
-        appendStartupRecoveryMirrorDescription(of: child.value, to: &lines)
-    }
+    testMirrorDescription(of: value)
 }

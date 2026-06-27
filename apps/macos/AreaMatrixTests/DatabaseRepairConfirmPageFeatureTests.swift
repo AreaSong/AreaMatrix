@@ -18,7 +18,9 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             lastOpenedAt: nil,
             metadataRepairer: repairer,
             startupRecoverer: recoverer,
-            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.databaseRepairDiagnosticsFixture())),
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(
+                result: .success(.databaseRepairDiagnosticsFixture())
+            ),
             errorMapper: DatabaseRepairRepairErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db))
         )
 
@@ -43,9 +45,13 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             scanSession: nil,
             mapping: nil,
             lastOpenedAt: nil,
-            metadataRepairer: DatabaseRepairRecordingMetadataRepairer(result: .success(.databaseRepairRepairReportFixture())),
+            metadataRepairer: DatabaseRepairRecordingMetadataRepairer(
+                result: .success(.databaseRepairRepairReportFixture())
+            ),
             startupRecoverer: recoverer,
-            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.databaseRepairDiagnosticsFixture())),
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(
+                result: .success(.databaseRepairDiagnosticsFixture())
+            ),
             errorMapper: DatabaseRepairRepairErrorMapper(mapping: mapping)
         )
 
@@ -79,7 +85,9 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             mapping: nil,
             lastOpenedAt: nil,
             metadataRepairer: repairer,
-            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.databaseRepairDiagnosticsFixture())),
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(
+                result: .success(.databaseRepairDiagnosticsFixture())
+            ),
             errorMapper: DatabaseRepairRepairErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db))
         )
 
@@ -116,7 +124,9 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             mapping: nil,
             lastOpenedAt: nil,
             metadataRepairer: repairer,
-            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.databaseRepairDiagnosticsFixture())),
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(
+                result: .success(.databaseRepairDiagnosticsFixture())
+            ),
             errorMapper: DatabaseRepairRepairErrorMapper(mapping: mapping)
         )
 
@@ -138,7 +148,9 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             scanSession: nil,
             mapping: nil,
             lastOpenedAt: nil,
-            metadataRepairer: DatabaseRepairRecordingMetadataRepairer(result: .success(.databaseRepairRepairReportFixture())),
+            metadataRepairer: DatabaseRepairRecordingMetadataRepairer(
+                result: .success(.databaseRepairRepairReportFixture())
+            ),
             diagnosticsCollector: diagnosticsCollector,
             errorMapper: DatabaseRepairRepairErrorMapper(mapping: .databaseRepairRepairMapping(kind: .permissionDenied))
         )
@@ -167,24 +179,32 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             scanSession: nil,
             mapping: .databaseRepairRepairMapping(kind: .db, rawContext: "database corrupted"),
-            metadataRepairer: DatabaseRepairRecordingMetadataRepairer(result: .success(.databaseRepairRepairReportFixture())),
-            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.databaseRepairDiagnosticsFixture())),
+            metadataRepairer: DatabaseRepairRecordingMetadataRepairer(
+                result: .success(.databaseRepairRepairReportFixture())
+            ),
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(
+                result: .success(.databaseRepairDiagnosticsFixture())
+            ),
             errorMapper: DatabaseRepairRepairErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db)),
             onCancel: {},
             onRepairSucceeded: {},
             onOpenRepositoryInFinder: {}
         )
-        let body = databaseRepairMirrorDescription(of: view.body)
+        let body = testMirrorDescription(of: view.body)
 
-        XCTAssertTrue(body.contains("Repair Repository Metadata?"))
-        XCTAssertTrue(body.contains("AreaMatrix cannot read the repository metadata database"))
-        XCTAssertTrue(body.contains("Run Full Rescan"))
-        XCTAssertTrue(body.contains("Export diagnostics..."))
-        XCTAssertTrue(body.contains("database-repair-metadata-repair-run-full-rescan"))
-        XCTAssertTrue(body.contains("database-repair-metadata-repair-confirm-metadata-only"))
-        XCTAssertFalse(body.contains("Resume"))
-        XCTAssertFalse(body.contains("Clean up and retry"))
-        XCTAssertFalse(body.contains("Remove from index"))
+        assertTestDescription(body, contains: [
+            "Repair Repository Metadata?",
+            "AreaMatrix cannot read the repository metadata database",
+            "Run Full Rescan",
+            "Export diagnostics...",
+            "database-repair-metadata-repair-run-full-rescan",
+            "database-repair-metadata-repair-confirm-metadata-only"
+        ])
+        assertTestDescription(body, doesNotContain: [
+            "Resume",
+            "Clean up and retry",
+            "Remove from index"
+        ])
     }
 
     @MainActor
@@ -206,20 +226,26 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             onRetry: {}
         )
 
-        let checkingBody = databaseRepairMirrorDescription(of: checkingView.body)
-        let completedBody = databaseRepairMirrorDescription(of: completedView.body)
-        let failedBody = databaseRepairMirrorDescription(of: failedView.body)
+        let checkingBody = testMirrorDescription(of: checkingView.body)
+        let completedBody = testMirrorDescription(of: completedView.body)
+        let failedBody = testMirrorDescription(of: failedView.body)
 
-        XCTAssertTrue(checkingBody.contains("Checking startup recovery state..."))
-        XCTAssertTrue(checkingBody.contains("database-repair-startup-recovery-core-startup-recovery-checking"))
-        XCTAssertTrue(completedBody.contains("Startup recovery checked"))
-        XCTAssertTrue(completedBody.contains("Kept active staging file"))
-        XCTAssertTrue(completedBody.contains("database-repair-startup-recovery-core-startup-recovery-completed"))
-        XCTAssertTrue(failedBody.contains("Startup recovery failed"))
-        XCTAssertTrue(failedBody.contains("Retry startup recovery"))
-        XCTAssertTrue(failedBody.contains("database-repair-startup-recovery-core-retry-startup-recovery"))
-        XCTAssertFalse(completedBody.contains("Remove from index"))
-        XCTAssertFalse(failedBody.contains("Download & retry"))
+        assertTestDescription(checkingBody, contains: [
+            "Checking startup recovery state...",
+            "database-repair-startup-recovery-core-startup-recovery-checking"
+        ])
+        assertTestDescription(completedBody, contains: [
+            "Startup recovery checked",
+            "Kept active staging file",
+            "database-repair-startup-recovery-core-startup-recovery-completed"
+        ])
+        assertTestDescription(failedBody, contains: [
+            "Startup recovery failed",
+            "Retry startup recovery",
+            "database-repair-startup-recovery-core-retry-startup-recovery"
+        ])
+        assertTestDescription(completedBody, doesNotContain: ["Remove from index"])
+        assertTestDescription(failedBody, doesNotContain: ["Download & retry"])
     }
 
     @MainActor
@@ -228,20 +254,28 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             scanSession: ScanSessionSnapshot.mainLoadingReindexFixture(status: .interrupted),
             mapping: .databaseRepairRepairMapping(kind: .db, rawContext: "database corrupted"),
-            metadataRepairer: DatabaseRepairRecordingMetadataRepairer(result: .success(.databaseRepairRepairReportFixture())),
-            diagnosticsCollector: ShellRecordingDiagnosticsCollector(result: .success(.databaseRepairDiagnosticsFixture())),
+            metadataRepairer: DatabaseRepairRecordingMetadataRepairer(
+                result: .success(.databaseRepairRepairReportFixture())
+            ),
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(
+                result: .success(.databaseRepairDiagnosticsFixture())
+            ),
             errorMapper: DatabaseRepairRepairErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db)),
             onCancel: {},
             onRepairSucceeded: {},
             onOpenRepositoryInFinder: {}
         )
-        let body = databaseRepairMirrorDescription(of: view.body)
+        let body = testMirrorDescription(of: view.body)
 
-        XCTAssertTrue(body.contains("Run Full Rescan"))
-        XCTAssertTrue(body.contains("Export diagnostics..."))
-        XCTAssertFalse(body.contains("Resume"))
-        XCTAssertFalse(body.contains("Clean up and retry"))
-        XCTAssertFalse(body.contains("Interrupted scan"))
+        assertTestDescription(body, contains: [
+            "Run Full Rescan",
+            "Export diagnostics..."
+        ])
+        assertTestDescription(body, doesNotContain: [
+            "Resume",
+            "Clean up and retry",
+            "Interrupted scan"
+        ])
     }
 
     func testDatabaseRepairRepairReindexMetadataCoreCoreBridgeDeclaresRepairMetadataBoundary() async {
@@ -378,22 +412,5 @@ private extension CoreErrorMappingSnapshot {
             recoverability: .retryable,
             rawContext: rawContext
         )
-    }
-}
-
-private func databaseRepairMirrorDescription(of value: Any) -> String {
-    var lines: [String] = []
-    appendDatabaseRepairMirrorDescription(of: value, to: &lines)
-    return lines.joined(separator: "\n")
-}
-
-private func appendDatabaseRepairMirrorDescription(of value: Any, to lines: inout [String]) {
-    lines.append(String(describing: type(of: value)))
-    lines.append(String(describing: value))
-    for child in Mirror(reflecting: value).children {
-        if let label = child.label {
-            lines.append(label)
-        }
-        appendDatabaseRepairMirrorDescription(of: child.value, to: &lines)
     }
 }

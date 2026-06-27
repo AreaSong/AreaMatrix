@@ -69,7 +69,7 @@ AreaMatrix keeps source, planning, and local runtime material separate:
 | Codex runtime | `.codex/`, `.agents/skills/`, `dev`, `task-loop`, `scripts/` | Repo-local Codex skills, discovery entrypoints, and task-loop tooling. These are stable tool entrypoints and should not be moved just to reduce visual clutter. |
 | Local generated output | `.build/`, `build/`, `core/target/`, `apps/*/.build`, `apps/**/bin`, `apps/**/obj`, `apps/macos/DerivedData/` | Ignored local build products. They are not part of the source layout. |
 
-Fixed paths such as `.codex/skills-src/`, `.agents/skills/`, `workflow/`, `dev`, and `task-loop` are intentionally kept in place because local Codex skills and task-loop scripts rely on them. The historical v1 prompt queue lives under `workflow/versions/v1-mvp/execution/` as an archive. Lightweight independent tasks live under `tasks/active/` and `tasks/done/`; `tasks/backlog/` remains a candidate pool, not current task progress.
+Fixed paths such as `.codex/skills-src/`, `.agents/skills/`, `workflow/`, `dev`, and `task-loop` are intentionally kept in place because local Codex skills and task-loop scripts rely on them. Historical prompt queues are indexed through [workflow versions](workflow/versions/README.md). Lightweight independent tasks live under `tasks/active/` and `tasks/done/`; `tasks/backlog/` remains a candidate pool, not current task progress.
 
 Status boundaries: product facts come from `docs/`, `core/`, `apps/`, and
 `assets/brand/final/`; planning, archive, and reference material lives under

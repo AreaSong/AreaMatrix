@@ -188,8 +188,7 @@ private struct FileActionsRealCoreContext {
     var indexedFile: FileEntrySnapshot
 
     func cleanUp() {
-        try? FileManager.default.removeItem(at: repoURL)
-        try? FileManager.default.removeItem(at: sourceRootURL)
+        removeTestTemporaryItems(repoURL, sourceRootURL)
     }
 }
 
@@ -440,8 +439,5 @@ private func assertChangeLogContains(
 }
 
 private func makeFileActionsTemporaryDirectory(prefix: String) throws -> URL {
-    let name = "AreaMatrixFileActions-\(prefix)-\(UUID().uuidString)"
-    let url = FileManager.default.temporaryDirectory.appendingPathComponent(name, isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(prefix: prefix, named: "AreaMatrixFileActions")
 }

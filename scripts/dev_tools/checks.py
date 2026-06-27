@@ -14,6 +14,7 @@ from .common import fail, project_root, require_command, require_file, run_step
 from .execution_paths import manifest_root, prompt_pipeline_path, shared_root, task_root
 from .macos import run_macos_tests
 from .skills import SimpleYAMLError, parse_frontmatter, parse_simple_yaml
+from .wording import run_wording_audit
 
 
 V1_LEGACY_CAPABILITY_TEST_TARGETS = {
@@ -237,6 +238,7 @@ def run_governance_check(root: Path | None = None) -> int:
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check governance", "governance check")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check skills", "skill health")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check quality", "quality smoke")
+    _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check wording", "wording audit")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check task-loop", "task-loop health")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check prompts", "prompt doctor")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check diff", "diff whitespace check")
@@ -470,8 +472,11 @@ def run_quality_check(root: Path | None = None) -> int:
         "8th residual-ledger skill navigation",
     )
     _require_text(root, failures, ".codex/references/index.md", "./dev check quality", "quality smoke reference")
+    _require_text(root, failures, ".codex/references/index.md", "./dev check wording", "wording audit reference")
     _require_text(root, failures, "docs/development/ci-governance.md", "./dev check quality", "CI quality smoke docs")
+    _require_text(root, failures, "docs/development/ci-governance.md", "./dev check wording", "CI wording audit docs")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check quality", "CI quality smoke step")
+    _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check wording", "CI wording audit step")
 
     stale_skill_count_patterns = (
         r"现有 " + r"7 个",
@@ -963,6 +968,7 @@ def run_all_check(root: Path | None = None) -> int:
         ("governance", lambda: run_governance_check(root)),
         ("skills", lambda: run_skills_check(root)),
         ("quality smoke", lambda: run_quality_check(root)),
+        ("wording audit", lambda: run_wording_audit(root)),
         ("task-loop", lambda: run_task_loop_check(root)),
         ("prompt doctor", lambda: run_prompts_check(root)),
         ("diff check", lambda: run_diff_check(root)),

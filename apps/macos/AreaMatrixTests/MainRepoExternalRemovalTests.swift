@@ -2,11 +2,10 @@
 import SwiftUI
 import XCTest
 
-// swiftlint:disable file_length
 // swiftlint:disable:next type_body_length
 final class MainRepoExternalRemovalTests: XCTestCase {
     func testSearchResultsPageIntegrationRendersSearchRouteViews() {
-        let request = SearchQueryRequestSnapshot.searchResultsRouteFixture(query: "合同")
+        let request = SearchQueryRequestSnapshot.mainRepoSearchResultsRouteFixture(query: "合同")
         let emptyView = SearchEmptyRouteView(
             request: request,
             onClearSearch: {},
@@ -14,8 +13,8 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             onRemoveFilter: { _ in },
             onSearchAllFileTypes: {}
         )
-        let emptyBody = searchResultsRouteMirrorDescription(of: emptyView.body)
-        let errorBody = searchResultsRouteMirrorDescription(of: QueryErrorRouteView(
+        let emptyBody = mainRepoSearchResultsRouteMirrorDescription(of: emptyView.body)
+        let errorBody = mainRepoSearchResultsRouteMirrorDescription(of: QueryErrorRouteView(
             request: request,
             diagnostic: SearchQueryDiagnosticSnapshot(
                 severityDisplayName: "Error",
@@ -24,23 +23,23 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             ),
             onClear: {}
         ).body)
-        let savedSearchStore = SavedSearchRecordingSavedSearchStore(results: [.listSuccess([])])
-        let saveBody = searchResultsRouteMirrorDescription(of: SavedSearchSheetRouteView(
+        let savedSearchStore = MainRepoSavedSearchRecordingStore(results: [.listSuccess([])])
+        let saveBody = mainRepoSearchResultsRouteMirrorDescription(of: SavedSearchSheetRouteView(
             request: request,
             repoPath: "/tmp/repo",
             resultCountState: .loaded(3),
             savedSearchStore: savedSearchStore,
-            errorMapper: MainListRecordingErrorMapper(mapping: .searchFiltersDbFixture()),
+            errorMapper: MainListRecordingErrorMapper(mapping: .mainRepoSearchFiltersDbFixture()),
             onCancel: {}
         ).body)
-        let indexingBody = searchResultsRouteMirrorDescription(of: SearchIndexingStatusRouteView(
+        let indexingBody = mainRepoSearchResultsRouteMirrorDescription(of: SearchIndexingStatusRouteView(
             request: request,
             indexStatus: .unavailable,
             onRetry: {},
             onClose: {}
         ).body)
         var commandQuery = "合同"
-        let commandBody = searchResultsRouteMirrorDescription(of: SearchCommandPaletteRouteView(
+        let commandBody = mainRepoSearchResultsRouteMirrorDescription(of: SearchCommandPaletteRouteView(
             query: Binding(get: { commandQuery }, set: { commandQuery = $0 }),
             state: .idle,
             onLoad: {},
@@ -59,10 +58,10 @@ final class MainRepoExternalRemovalTests: XCTestCase {
 
     @MainActor
     func testSavedSearchSavedSearchSheetCreatesSmartListThroughCoreBridge() async {
-        let request = SearchQueryRequestSnapshot.searchResultsRouteFixture(query: "合同")
+        let request = SearchQueryRequestSnapshot.mainRepoSearchResultsRouteFixture(query: "合同")
         let model = SavedSearchSheetModel(request: request, resultCount: 0)
-        let saved = SavedSearchSnapshot.savedSearchFixture(id: 77, request: model.createRequest)
-        let store = SavedSearchRecordingSavedSearchStore(results: [.listSuccess([]), .createSuccess(saved)])
+        let saved = SavedSearchSnapshot.mainRepoSavedSearchFixture(id: 77, request: model.createRequest)
+        let store = MainRepoSavedSearchRecordingStore(results: [.listSuccess([]), .createSuccess(saved)])
 
         _ = try? await store.listSavedSearches(repoPath: "/tmp/repo")
         let created = try? await store.createSavedSearch(repoPath: "/tmp/repo", request: model.createRequest)
@@ -79,10 +78,10 @@ final class MainRepoExternalRemovalTests: XCTestCase {
 
     @MainActor
     func testSavedSearchSavedSearchSheetBlocksDuplicateNameBeforeCreate() async {
-        let request = SearchQueryRequestSnapshot.searchResultsRouteFixture(query: "Finance")
+        let request = SearchQueryRequestSnapshot.mainRepoSearchResultsRouteFixture(query: "Finance")
         var model = SavedSearchSheetModel(request: request, resultCount: 12)
         model.existingNames = ["finance"]
-        let store = SavedSearchRecordingSavedSearchStore(results: [.listSuccess([.savedSearchFixture(
+        let store = MainRepoSavedSearchRecordingStore(results: [.listSuccess([.mainRepoSavedSearchFixture(
             id: 1,
             request: model.createRequest
         )])])
@@ -96,11 +95,11 @@ final class MainRepoExternalRemovalTests: XCTestCase {
 
     @MainActor
     func testSavedSearchSavedSearchFailureKeepsDraftAndMapsError() async {
-        let request = SearchQueryRequestSnapshot.searchResultsRouteFixture(query: "Finance")
+        let request = SearchQueryRequestSnapshot.mainRepoSearchResultsRouteFixture(query: "Finance")
         var model = SavedSearchSheetModel(request: request, resultCount: nil)
-        let mapping = CoreErrorMappingSnapshot.searchFiltersDbFixture()
+        let mapping = CoreErrorMappingSnapshot.mainRepoSearchFiltersDbFixture()
         let mapper = MainListRecordingErrorMapper(mapping: mapping)
-        let store = SavedSearchRecordingSavedSearchStore(results: [.createFailure(CoreError.Db(message: "db locked"))])
+        let store = MainRepoSavedSearchRecordingStore(results: [.createFailure(CoreError.Db(message: "db locked"))])
 
         do {
             _ = try await store.createSavedSearch(repoPath: "/tmp/repo", request: model.createRequest)
@@ -135,7 +134,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
     }
 
     func testSearchFiltersSearchFilterEditingKeepsInvalidCustomDateOutOfFilterState() {
-        let filters = SearchFilterStateSnapshot.searchFiltersFixture()
+        let filters = SearchFilterStateSnapshot.mainRepoSearchFiltersFixture()
         let invalid = SearchFilterEditing.settingCustomDateRange(
             from: Date(timeIntervalSince1970: 1_800_086_400),
             until: Date(timeIntervalSince1970: 1_800_000_000),
@@ -165,7 +164,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
     }
 
     func testSearchFiltersFilterChipsRemoveSingleFiltersWithoutClearingQueryOwnedState() {
-        let filters = SearchFilterStateSnapshot.searchFiltersFixture()
+        let filters = SearchFilterStateSnapshot.mainRepoSearchFiltersFixture()
 
         XCTAssertEqual(
             SearchFilterChips.items(for: filters).map(\.kind),
@@ -190,12 +189,12 @@ final class MainRepoExternalRemovalTests: XCTestCase {
     @MainActor
     func testSearchFiltersSmartListEditingUpdatesDraftFiltersWithoutSavingOrOpeningCreateSheet() {
         let model = MainFileListModel(
-            opening: .searchFiltersFixture(repoPath: "/tmp/repo", tree: .searchFiltersFixtureTree()),
+            opening: .mainRepoSearchFiltersFixture(repoPath: "/tmp/repo", tree: .mainRepoSearchFiltersFixtureTree()),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: MainListRecordingSearchQuerying(results: []),
             searchFiltering: MainListRecordingSearchFiltering(results: []),
-            errorMapper: MainListRecordingErrorMapper(mapping: .searchFiltersDbFixture())
+            errorMapper: MainListRecordingErrorMapper(mapping: .mainRepoSearchFiltersDbFixture())
         )
         let baseFilters = SearchFilterStateSnapshot.empty
         let draftFilters = SearchFilterEditing.settingTagMatchMode(
@@ -220,12 +219,12 @@ final class MainRepoExternalRemovalTests: XCTestCase {
     @MainActor
     func testSearchFiltersSearchFilterRoutingWritesBannerChipRemovalIntoSmartListDraftOnly() {
         let model = MainFileListModel(
-            opening: .searchFiltersFixture(repoPath: "/tmp/repo", tree: .searchFiltersFixtureTree()),
+            opening: .mainRepoSearchFiltersFixture(repoPath: "/tmp/repo", tree: .mainRepoSearchFiltersFixtureTree()),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: MainListRecordingSearchQuerying(results: []),
             searchFiltering: MainListRecordingSearchFiltering(results: []),
-            errorMapper: MainListRecordingErrorMapper(mapping: .searchFiltersDbFixture())
+            errorMapper: MainListRecordingErrorMapper(mapping: .mainRepoSearchFiltersDbFixture())
         )
         var searchFilters = SearchFilterStateSnapshot(
             category: "docs",
@@ -239,7 +238,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             storageMode: .copied,
             includeDeleted: false
         )
-        let draftFilters = SearchFilterStateSnapshot.searchFiltersFixture(tag: "draft")
+        let draftFilters = SearchFilterStateSnapshot.mainRepoSearchFiltersFixture(tag: "draft")
 
         model.beginSmartListFilterDraft(id: 42, name: "最近合同", filters: draftFilters)
         let updated = SearchFilterEditing.removing(
@@ -351,167 +350,5 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertEqual(routeMapping?.kind, .db)
         XCTAssertEqual(model.mainRepoRecoveryErrorMapping?.kind, .db)
         XCTAssertFalse(model.isRetryingMainRepository)
-    }
-}
-
-private extension SearchQueryRequestSnapshot {
-    static func searchResultsRouteFixture(query: String) -> SearchQueryRequestSnapshot {
-        SearchQueryRequestSnapshot(
-            query: query,
-            scope: .current,
-            currentPath: "docs/contracts",
-            category: "docs",
-            filters: .searchResultsRouteFilters,
-            sort: .relevance,
-            limit: 50,
-            offset: 0
-        )
-    }
-}
-
-private extension RepositoryOpeningResult {
-    static func searchFiltersFixture(repoPath: String, tree: RepositoryTreeNodeSnapshot) -> RepositoryOpeningResult {
-        RepositoryOpeningResult(
-            config: .shellFixture(repoPath: repoPath),
-            tree: tree,
-            currentCategoryFiles: []
-        )
-    }
-}
-
-private extension RepositoryTreeNodeSnapshot {
-    static func searchFiltersFixtureTree() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
-            children: []
-        )
-    }
-}
-
-private extension SearchFilterStateSnapshot {
-    static func searchFiltersFixture(tag: String = "finance") -> SearchFilterStateSnapshot {
-        SearchFilterStateSnapshot(
-            category: "docs",
-            fileKind: "pdf",
-            tags: [tag],
-            tagMatchMode: .all,
-            importedAfter: nil,
-            importedBefore: nil,
-            modifiedAfter: 1_700_000_000,
-            modifiedBefore: nil,
-            storageMode: .copied,
-            includeDeleted: true
-        )
-    }
-
-    static let searchResultsRouteFilters = SearchFilterStateSnapshot(
-        category: "docs",
-        fileKind: "pdf",
-        tags: ["contract"],
-        tagMatchMode: .any,
-        importedAfter: nil,
-        importedBefore: nil,
-        modifiedAfter: nil,
-        modifiedBefore: nil,
-        storageMode: .copied,
-        includeDeleted: false
-    )
-}
-
-private extension CoreErrorMappingSnapshot {
-    static func searchFiltersDbFixture() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .db,
-            userMessage: "过滤器不可用",
-            severity: .high,
-            suggestedAction: "请重试过滤器。",
-            recoverability: .retryable,
-            rawContext: "facet db locked"
-        )
-    }
-}
-
-private struct SavedSearchSavedSearchRequestRecord: Equatable {
-    var repoPath: String
-    var request: CreateSavedSearchRequestSnapshot
-}
-
-private actor SavedSearchRecordingSavedSearchStore: CoreSavedSearchCRUD {
-    enum Result {
-        case listSuccess([SavedSearchSnapshot])
-        case createSuccess(SavedSearchSnapshot)
-        case createFailure(Error)
-    }
-
-    private var results: [Result]
-    private var createRecords: [SavedSearchSavedSearchRequestRecord] = []
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func createSavedSearch(
-        repoPath: String,
-        request: CreateSavedSearchRequestSnapshot
-    ) async throws -> SavedSearchSnapshot {
-        createRecords.append(SavedSearchSavedSearchRequestRecord(repoPath: repoPath, request: request))
-        guard !results.isEmpty else { throw CoreError.Db(message: "missing saved search result") }
-        switch results.removeFirst() {
-        case let .createSuccess(saved):
-            return saved
-        case let .createFailure(error):
-            throw error
-        case .listSuccess:
-            throw CoreError.Internal(message: "expected saved search create result")
-        }
-    }
-
-    func listSavedSearches(repoPath _: String) async throws -> [SavedSearchSnapshot] {
-        guard !results.isEmpty else { return [] }
-        switch results.removeFirst() {
-        case let .listSuccess(saved):
-            return saved
-        case .createSuccess, .createFailure:
-            throw CoreError.Internal(message: "expected saved search list result")
-        }
-    }
-
-    func createdRequests() -> [SavedSearchSavedSearchRequestRecord] {
-        createRecords
-    }
-}
-
-private extension SavedSearchSnapshot {
-    static func savedSearchFixture(id: Int64, request: CreateSavedSearchRequestSnapshot) -> SavedSearchSnapshot {
-        SavedSearchSnapshot(
-            id: id,
-            name: request.name,
-            query: request.query,
-            icon: request.icon,
-            color: request.color,
-            pinned: request.pinned,
-            createdAt: 1_700_000_000,
-            updatedAt: 1_700_000_000
-        )
-    }
-}
-
-private func searchResultsRouteMirrorDescription(of value: Any) -> String {
-    var lines: [String] = []
-    searchResultsRouteAppendMirrorDescription(of: value, to: &lines)
-    return lines.joined(separator: "\n")
-}
-
-private func searchResultsRouteAppendMirrorDescription(of value: Any, to lines: inout [String]) {
-    lines.append(String(describing: type(of: value)))
-    lines.append(String(describing: value))
-    for child in Mirror(reflecting: value).children {
-        if let label = child.label { lines.append(label) }
-        searchResultsRouteAppendMirrorDescription(of: child.value, to: &lines)
     }
 }

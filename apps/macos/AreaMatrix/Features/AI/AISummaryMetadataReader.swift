@@ -169,7 +169,8 @@ final class AIPrivacyRulesModel: ObservableObject {
     @discardableResult
     func deleteRule(_ record: AiPrivacyRuleRecord) async -> Bool {
         guard let snapshot else { return false }
-        let rules = snapshot.rules.filter { $0.ruleId != record.ruleId }.map(AiPrivacyRuleInput.init(aiPrivacyRulesRecord:))
+        let rules = snapshot.rules.filter { $0.ruleId != record.ruleId }
+            .map(AiPrivacyRuleInput.init(aiPrivacyRulesRecord:))
         return await save(snapshot, gate: snapshot.privacyGateEnabled, rules: rules, success: "Privacy rule deleted.")
     }
 

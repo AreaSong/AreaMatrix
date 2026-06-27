@@ -58,7 +58,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testDetailLogSyncExternalRemovedCoreConsumesSelectedExternalRemovedEventThenRefreshesListAndLog() async throws {
+    func testDetailLogConsumesSelectedExternalRemovedEventThenRefreshesListAndLog() async throws {
         let removed = FileEntrySnapshot.detailMetaFixture(id: 40, currentName: "removed.pdf")
         let keeper = FileEntrySnapshot.detailMetaFixture(id: 41, currentName: "keeper.pdf")
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
@@ -185,9 +185,10 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         XCTAssertNil(MainExternalCreatedFileEvent(kind: .removed, relativePath: "docs/gone.pdf", fsEventID: 0))
     }
 
-    func testDetailLogSyncExternalRemovedCoreDefaultCoreBridgeSyncsRealExternalRemovedFileIntoListDetailAndLog() async throws {
+    func testDetailLogSyncExternalRemovedCoreDefaultCoreBridgeSyncsRealExternalRemovedFileIntoListDetailAndLog(
+    ) async throws {
         let repoURL = try makeDetailLogExternalRemovedTemporaryRepositoryURL()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
 
         let bridge = CoreBridge()
         let fixture = try await prepareRealExternalRemovedFixture(repoURL: repoURL, bridge: bridge)
@@ -399,8 +400,5 @@ private extension CoreErrorMappingSnapshot {
 }
 
 private func makeDetailLogExternalRemovedTemporaryRepositoryURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixDetailExternalRemoved-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixDetailExternalRemoved")
 }

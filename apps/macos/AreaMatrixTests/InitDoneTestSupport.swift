@@ -3,10 +3,7 @@ import Foundation
 import XCTest
 
 func makeInitDoneTemporaryRepositoryURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixInitDoneTests-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixInitDoneTests")
 }
 
 extension RepoConfigSnapshot {
@@ -311,6 +308,47 @@ actor AITagSuggestionAISettingsLoader: CoreAISettingsLoading {
 
     func requests() -> [String] {
         recordedRepoPaths
+    }
+}
+
+extension AITagBatchPageFeatureTests {
+    static func aiTagMergeBridge(
+        file: FileEntrySnapshot,
+        unchangedFile: FileEntrySnapshot
+    ) -> AITagSuggestionBatchAITagBridge {
+        AITagSuggestionBatchAITagBridge(reports: [
+            file.id: aiTagSuggestionAITagReport(fileID: file.id, suggestions: [
+                aiTagSuggestionAITagSuggestion(
+                    id: "ai-tag-merge",
+                    slug: "finances",
+                    confidence: 0.91,
+                    selectedByDefault: false,
+                    displayName: "Finances",
+                    mergeAction: .mergeWithExistingTag,
+                    matchedExistingSlug: "finance"
+                )
+            ]),
+            unchangedFile.id: aiTagSuggestionAITagReport(fileID: unchangedFile.id, status: .noSuggestion)
+        ])
+    }
+
+    @MainActor
+    static func aiTagMergeModel(
+        file: FileEntrySnapshot,
+        unchangedFile: FileEntrySnapshot,
+        bridge: AITagSuggestionBatchAITagBridge
+    ) -> MainFileListModel {
+        MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file, unchangedFile]),
+            fileLister: DetailMetaNoopLister(),
+            fileDetailer: DetailTagFileDetailer(files: [file, unchangedFile]),
+            aiSettingsLoader: AITagSuggestionAISettingsLoader(),
+            aiTagSuggestionStore: bridge,
+            aiPrivacyRules: RemotePrivacyRulesBridge(
+                snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])
+            ),
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+        )
     }
 }
 

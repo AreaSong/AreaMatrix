@@ -152,7 +152,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testValidateClassifierRulesRequiresPhysicalClassifierYamlBeforeCorePreviewFallback() async throws {
         let repoURL = try temporaryClassifierSettingsRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let predictor = ClassifierSettingsRecordingPredictor(
             result: .success(classifierSettingsValidationProbeResult())
         )
@@ -174,7 +174,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testRevertToLastValidIsDisabledUntilAValidatedBackupExists() async throws {
         let repoURL = try temporaryClassifierSettingsRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let metadataURL = repoURL.appendingPathComponent(".areamatrix", isDirectory: true)
         try FileManager.default.createDirectory(at: metadataURL, withIntermediateDirectories: true)
         try "version: 1\n".write(
@@ -211,7 +211,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testDefaultCoreBridgeUpdatesRealClassifierConfigWithoutCreatingClassifierYaml() async throws {
         let repoURL = try temporaryClassifierSettingsRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
         let classifierURL = repoURL
@@ -243,7 +243,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testDefaultCoreBridgePreviewReadsRealClassifierYamlWithoutWritingFiles() async throws {
         let repoURL = try temporaryClassifierSettingsRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
         let classifierURL = repoURL
@@ -480,8 +480,5 @@ private extension RepoConfigSnapshot {
 }
 
 private func temporaryClassifierSettingsRepo() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixClassifierSettings-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixClassifierSettings")
 }

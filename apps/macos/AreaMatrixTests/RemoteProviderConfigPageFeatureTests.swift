@@ -1,7 +1,7 @@
 @testable import AreaMatrix
 import XCTest
 
-final class AIPrivacyRulesRemoteProviderConfigPageFeatureTests: XCTestCase {
+final class RemoteProviderConfigFeatureTests: XCTestCase {
     @MainActor
     func testAIPrivacyRulesLoadsRemoteProviderConfigCoreProviderStatusForPrivacyRulesGate() async {
         let bridge = RemoteProviderConfigBridge(initial: .aiPrivacyRulesRemoteProviderConfigured())
@@ -50,7 +50,8 @@ final class AIPrivacyRulesRemoteProviderConfigPageFeatureTests: XCTestCase {
 
     @MainActor
     func testAIPrivacyRulesProviderLoadFailureMapsCoreErrorWithoutMockingReadyState() async {
-        let bridge = AIPrivacyRulesFailingRemoteProviderReader(error: CoreError.PermissionDenied(path: "remote provider"))
+        let bridge = FailingRemoteProviderReader(error: CoreError
+            .PermissionDenied(path: "remote provider"))
         let model = AIPrivacyRemoteProviderStateModel(
             repoPath: "/tmp/aiPrivacyRules",
             providerReader: bridge,
@@ -74,10 +75,12 @@ final class AIPrivacyRulesRemoteProviderConfigPageFeatureTests: XCTestCase {
 
     @MainActor
     func testAIPrivacyRulesBlocksPrivacyGateWithoutTouchingRemoteProviderConfigCoreProviderConfig() async {
-        let updater = AIPrivacyRulesRemoteProviderAISettingsUpdater()
+        let updater = RemoteAISettingsUpdater()
         let model = AISettingsModel(
             repoPath: "/tmp/aiPrivacyRules",
-            loader: AIPrivacyRulesRemoteProviderAISettingsLoader(snapshot: .aiPrivacyRulesRemoteReady(repoPath: "/tmp/aiPrivacyRules")),
+            loader: RemoteAISettingsLoader(
+                snapshot: .aiPrivacyRulesRemoteReady(repoPath: "/tmp/aiPrivacyRules")
+            ),
             updater: updater,
             errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
         )
@@ -198,7 +201,7 @@ final class AIPrivacyRulesRemoteProviderConfigPageFeatureTests: XCTestCase {
     }
 }
 
-private actor AIPrivacyRulesFailingRemoteProviderReader: CoreRemoteProviderConfiguring {
+private actor FailingRemoteProviderReader: CoreRemoteProviderConfiguring {
     let error: CoreError
 
     init(error: CoreError) {
@@ -231,7 +234,7 @@ private actor AIPrivacyRulesFailingRemoteProviderReader: CoreRemoteProviderConfi
     }
 }
 
-private actor AIPrivacyRulesRemoteProviderAISettingsLoader: CoreAISettingsLoading {
+private actor RemoteAISettingsLoader: CoreAISettingsLoading {
     let snapshot: AISettingsSnapshot
 
     init(snapshot: AISettingsSnapshot) {
@@ -243,7 +246,7 @@ private actor AIPrivacyRulesRemoteProviderAISettingsLoader: CoreAISettingsLoadin
     }
 }
 
-private actor AIPrivacyRulesRemoteProviderAISettingsUpdater: CoreAISettingsUpdating {
+private actor RemoteAISettingsUpdater: CoreAISettingsUpdating {
     private var recorded: [AISettingsConfigSnapshot] = []
 
     func updateAISettings(

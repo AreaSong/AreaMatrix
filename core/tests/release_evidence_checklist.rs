@@ -15,6 +15,32 @@ const RELEASE_NOTES_PREVIEW_010: &str =
 const CARGO_TOML: &str = include_str!("../Cargo.toml");
 const XCODE_PROJECT: &str = include_str!("../../apps/macos/AreaMatrix.xcodeproj/project.pbxproj");
 
+// Archived v1 evidence strings intentionally preserve old distribution-track
+// wording. Current long-lived docs are checked below to keep those terms out.
+const ARCHIVED_DISTRIBUTION_READINESS: &[&str] = &[
+    "当前结论：**不放行 Stage 1 alpha 分发**",
+    "最终集成验收：**不放行**",
+    "不得标记为可 alpha 分发",
+    "`v0.1.0-unnotarized-preview.2`：**可作为 GitHub prerelease 提供给可信测试者**",
+    "不代表正式 Stage 1 alpha 可分发",
+    "P1-RL-001",
+    "P1-RL-002",
+    "P1-RL-003",
+    "P1-RL-004",
+    "P1-RL-005",
+];
+
+const ARCHIVED_DISTRIBUTION_TERMS_FORBIDDEN_IN_ACTIVE_DOCS: &[&str] = &[
+    "local-qa",
+    "local QA build",
+    "local QA DMG",
+    "unnotarized-preview",
+    "GitHub prerelease",
+    "--prerelease",
+    "Stage 1 alpha",
+    "Stage 2",
+];
+
 fn assert_contains(haystack: &str, needle: &str) {
     assert!(
         haystack.contains(needle),
@@ -36,22 +62,8 @@ fn assert_all_contains(haystack: &str, needles: &[&str]) {
 }
 
 #[test]
-fn release_checklist_answers_alpha_distribution_readiness() {
-    assert_all_contains(
-        CHECKLIST,
-        &[
-            "当前结论：**不放行 Stage 1 alpha 分发**",
-            "最终集成验收：**不放行**",
-            "不得标记为可 alpha 分发",
-            "`v0.1.0-unnotarized-preview.2`：**可作为 GitHub prerelease 提供给可信测试者**",
-            "不代表正式 Stage 1 alpha 可分发",
-            "P1-RL-001",
-            "P1-RL-002",
-            "P1-RL-003",
-            "P1-RL-004",
-            "P1-RL-005",
-        ],
-    );
+fn release_checklist_answers_archived_distribution_readiness() {
+    assert_all_contains(CHECKLIST, ARCHIVED_DISTRIBUTION_READINESS);
 }
 
 #[test]
@@ -172,21 +184,13 @@ fn release_checklist_records_distribution_preflight_blocker_without_release_clai
 #[test]
 fn active_release_docs_do_not_reintroduce_v1_distribution_tracks() {
     for active_doc in [RELEASE, BUILD] {
-        for stale_term in [
-            "local-qa",
-            "local QA build",
-            "local QA DMG",
-            "unnotarized-preview",
-            "GitHub prerelease",
-            "--prerelease",
-            "Stage 1 alpha",
-            "Stage 2",
-        ] {
+        for stale_term in ARCHIVED_DISTRIBUTION_TERMS_FORBIDDEN_IN_ACTIVE_DOCS {
             assert_not_contains(active_doc, stale_term);
         }
     }
 
-    assert_contains(RELEASE, "v1 归档证据，不作为 v2 发布命名模板");
+    assert_contains(RELEASE, "workflow/versions/README.md");
+    assert_contains(RELEASE, "归档清单不作为后续版本发布命名模板");
     assert_contains(BUILD, "不作为后续版本的发布命名模板");
 }
 
@@ -257,16 +261,11 @@ fn release_checklist_records_unnotarized_preview_without_alpha_claim() {
 
 #[test]
 fn release_checklist_keeps_release_build_and_archive_docs_aligned() {
-    assert_contains(
-        RELEASE,
-        "workflow/versions/v1-mvp/evidence/release-checklist.md",
-    );
-    assert_contains(RELEASE, "v1 归档证据，不作为 v2 发布命名模板");
+    assert_contains(RELEASE, "workflow/versions/README.md");
+    assert_contains(RELEASE, "归档清单不作为后续版本发布命名模板");
     assert_contains(BUILD, "## 发布构建");
-    assert_contains(
-        BUILD,
-        "workflow/versions/v1-mvp/evidence/release-checklist.md",
-    );
+    assert_contains(BUILD, "workflow/versions/README.md");
+    assert_contains(BUILD, "不作为后续版本的发布命名模板");
     assert!(
         !BUILD.contains("发布构建（Stage 2 起激活）"),
         "build.md must not contradict archived v1 alpha release gates"

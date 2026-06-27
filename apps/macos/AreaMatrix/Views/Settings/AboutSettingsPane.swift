@@ -321,36 +321,7 @@ private struct AboutSettingsKeyValueRow: View {
     let value: String
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 16) {
-            Text(label)
-                .foregroundStyle(.secondary)
-                .frame(width: 130, alignment: .leading)
-            Text(value)
-                .textSelection(.enabled)
-                .lineLimit(2)
-                .truncationMode(.middle)
-                .accessibilityLabel("\(label): \(value)")
-        }
-        .font(.callout)
-    }
-}
-
-private struct AboutSettingsSection<Content: View>: View {
-    let title: String
-    private let content: Content
-
-    init(title: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.headline)
-            content
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        SettingsKeyValueRow(label: label, value: value, labelWidth: 130)
     }
 }
 

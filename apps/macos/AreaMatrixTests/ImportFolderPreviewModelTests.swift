@@ -139,7 +139,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
 
     func testDefaultCoreBridgeFolderPreviewPredictsCategoryFromInitializedRepository() async throws {
         let repoURL = try makeImportFolderTemporaryDirectory()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let bridge = CoreBridge()
 
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)

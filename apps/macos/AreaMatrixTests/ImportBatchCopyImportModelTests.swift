@@ -5,10 +5,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
     func testDefaultCoreBridgeBatchCopyAutoClassifyKeepsSourceAndCreatesRepoCopy() async throws {
         let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "importBatch-auto-repo")
         let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "importBatch-auto-source")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
 
         let sourceURL = sourceRoot.appendingPathComponent("invoice.pdf")
         try Data("invoice bytes".utf8).write(to: sourceURL)
@@ -37,10 +34,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
     func testDefaultCoreBridgeBatchCopyCategoryUsesExplicitCategoryDirectory() async throws {
         let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "importBatch-category-repo")
         let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "importBatch-category-source")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
 
         let sourceURL = sourceRoot.appendingPathComponent("合同.pdf")
         try Data("contract bytes".utf8).write(to: sourceURL)
@@ -71,10 +65,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
     func testImportProgressImportCopyFileCoreCopyProgressItemsComeFromRealCoreImportCallbacks() async throws {
         let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "importProgress-progress-repo")
         let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "importProgress-progress-source")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
 
         let sourceURL = sourceRoot.appendingPathComponent("invoice.pdf")
         try Data("invoice bytes".utf8).write(to: sourceURL)
@@ -106,7 +97,10 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
 
         XCTAssertEqual(try Data(contentsOf: sourceURL), sourceBefore)
         XCTAssertEqual(outcome?.succeededEntries.first?.storageMode, "Copied")
-        XCTAssertEqual(progressSnapshots.first?.items, [importProgressProgressItem(sourceURL: sourceURL, phase: .copying)])
+        XCTAssertEqual(
+            progressSnapshots.first?.items,
+            [importProgressProgressItem(sourceURL: sourceURL, phase: .copying)]
+        )
         XCTAssertEqual(progressSnapshots.last?.items, [importProgressProgressItem(sourceURL: sourceURL, phase: .done)])
         XCTAssertTrue(FileManager.default.fileExists(
             atPath: repoURL.appendingPathComponent("finance/invoice-copy.pdf").path

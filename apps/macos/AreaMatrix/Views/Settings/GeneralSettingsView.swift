@@ -259,7 +259,7 @@ extension GeneralSettingsView {
     }
 
     private var storageSection: some View {
-        SettingsSection(title: "默认存储模式") {
+        SettingsFormSection(title: "默认存储模式") {
             Picker("Default storage mode", selection: storageSelection) {
                 ForEach(GeneralSettingsStorageMode.allCases) { mode in
                     Text(mode.label).tag(mode)
@@ -274,7 +274,7 @@ extension GeneralSettingsView {
     }
 
     private var overviewSection: some View {
-        SettingsSection(title: "资料库概览") {
+        SettingsFormSection(title: "资料库概览") {
             Picker("Repository overview output", selection: overviewSelection) {
                 Text("仅保存在 .areamatrix/generated/").tag(GeneralSettingsOverviewOutput.generatedOnly)
                 Text("同时在根目录生成 AREAMATRIX.md").tag(GeneralSettingsOverviewOutput.rootAreaMatrixFile)
@@ -288,7 +288,7 @@ extension GeneralSettingsView {
     }
 
     private var ignoreRulesSection: some View {
-        SettingsSection(title: "忽略规则") {
+        SettingsFormSection(title: "忽略规则") {
             Button("Open ignore.yaml", action: model.openIgnoreRules)
                 .disabled(writesDisabled)
             Text("Missing ignore.yaml can be recreated only inside .areamatrix/.")
@@ -298,7 +298,7 @@ extension GeneralSettingsView {
     }
 
     private var languageSection: some View {
-        SettingsSection(title: "语言") {
+        SettingsFormSection(title: "语言") {
             Picker("Language", selection: localeSelection) {
                 ForEach(GeneralSettingsLocale.allCases) { locale in
                     Text(locale.label).tag(locale)
@@ -311,7 +311,7 @@ extension GeneralSettingsView {
     }
 
     private var appearanceSection: some View {
-        SettingsSection(title: "外观") {
+        SettingsFormSection(title: "外观") {
             Picker("Appearance", selection: .constant(GeneralSettingsAppearance.system)) {
                 ForEach(GeneralSettingsAppearance.allCases) { appearance in
                     Text(appearance.label).tag(appearance)
@@ -438,25 +438,6 @@ struct GeneralSettingsLoadingContent: View {
                 .accessibilityIdentifier("general-settings-loading-close-settings")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
-private struct SettingsSection<Content: View>: View {
-    let title: String
-    private let content: Content
-
-    init(title: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.headline)
-            content
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

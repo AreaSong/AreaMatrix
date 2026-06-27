@@ -28,6 +28,7 @@ macOS app 工程尚未存在时，`macos-ci.yml` 可以按现有保护逻辑跳�
 ./dev check governance
 ./dev check skills
 ./dev check quality
+./dev check wording
 ./dev check task-loop
 ./dev check prompts
 ./dev check diff
@@ -103,6 +104,18 @@ Task-loop 的 `VERIFY_RESULT: PASS` 是单任务验收证据。合并前仍需 C
 - governance CI 是否继续运行这条 smoke gate。
 
 它不替代 `cargo fmt`、`cargo clippy`、SwiftLint、SwiftFormat、XCTest、review 或 release evidence，只负责把“该读哪个规则、该触发哪个 owner”固定成可执行检查。
+
+## Long-term Wording Audit
+
+`./dev check wording` 是长期源事实口径门禁。它扫描 `docs/**`、Core 正式代码面、Core UDL / Cargo 元数据、README、治理规则、repo-local skills 和 `core/tests/**`，阻止当前长期源重新出现短期执行口径、旧发布轨道命名或历史拆分措辞。
+
+专项审计可运行：
+
+```bash
+./dev wording audit --show-allowed
+```
+
+检查会把允许项单独分类：事务式 `staging`、Xcode `Build Phase`、Apple/macOS beta 测试、系统临时文件、治理规则中的受控词清单，以及集中历史证据测试。其他长期源事实命中必须改成长期产品、架构、API、UX、测试或发布语义。
 
 ## Secret Scan Checkout
 

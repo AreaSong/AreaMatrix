@@ -194,10 +194,7 @@ actor ImportFolderNoopConflictPrechecker: ImportFolderConflictPrechecking {
 }
 
 func makeImportFolderTemporaryDirectory() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixImportFolderTests-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixImportFolderTests")
 }
 
 func importFolderLoadingRow(_ fileURL: URL) -> ImportFolderPreviewRow {

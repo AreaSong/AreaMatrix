@@ -6,9 +6,7 @@ final class CoreBridgeRepositoryTests: XCTestCase {
     @MainActor
     func testOnboardingLoadsConfiguredRepoThroughDefaultCoreBridge() async throws {
         let repoURL = try makeTemporaryRepoURL()
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-        }
+        defer { removeTestTemporaryItems(repoURL) }
         try await CoreBridge().initializeEmptyRepository(repoPath: repoURL.path)
 
         let model = OnboardingModel(
@@ -52,9 +50,7 @@ final class CoreBridgeRepositoryTests: XCTestCase {
 
     func testCoreBridgeValidatesTemporaryRepoPathWithoutCreatingMetadata() async throws {
         let repoURL = try makeTemporaryRepoURL()
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-        }
+        defer { removeTestTemporaryItems(repoURL) }
 
         let validation = try await CoreBridge().validateRepoPath(repoPath: repoURL.path)
 
@@ -67,9 +63,7 @@ final class CoreBridgeRepositoryTests: XCTestCase {
 
     func testCoreBridgeValidateInitializedRepoPathRequiresInitializedMetadata() async throws {
         let repoURL = try makeTemporaryRepoURL()
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-        }
+        defer { removeTestTemporaryItems(repoURL) }
 
         do {
             _ = try await CoreBridge().validateInitializedRepoPath(repoPath: repoURL.path)
@@ -83,10 +77,7 @@ final class CoreBridgeRepositoryTests: XCTestCase {
 }
 
 private func makeTemporaryRepoURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixCoreBridgeRepositoryTests-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixCoreBridgeRepositoryTests")
 }
 
 private struct CoreBridgeTestSettingsReader: AppSettingsReading {
@@ -437,7 +428,8 @@ actor SmartListRecordingSmartListRunner: CoreSearchQuerying {
 
     func searchFiles(repoPath _: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
         searchRequests.append(request)
-        throw CoreError.Internal(message: "search_files must not run smart-list-management smart-list Smart List execution")
+        throw CoreError
+            .Internal(message: "search_files must not run smart-list-management smart-list Smart List execution")
     }
 
     func runSmartList(

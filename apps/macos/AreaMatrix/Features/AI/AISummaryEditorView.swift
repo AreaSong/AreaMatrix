@@ -140,7 +140,7 @@ struct AISummaryEditor: View {
             Button("Open AI settings", action: onOpenAISettings)
                 .accessibilityIdentifier("ai-summary-\(notice.capability)-open-ai-settings")
         } else if let route = notice.aiPrivacyRulesPrivacyRulesRoute(repoPath: repoPath),
-                  let suffix = notice.aiPrivacyRulesPrivacyRulesRouteAccessibilitySuffix {
+                  let suffix = notice.aiPrivacyRulesRouteAccessibilitySuffix {
             Button("View privacy rule") {
                 privacyRuleRoute = route
             }

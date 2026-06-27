@@ -16,8 +16,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
     func testDetailViewToDetailMultiSelectDetailLoopUsesRealCoreBridgeWithoutFinalMock() async throws {
         let context = try await makeDetailIntegrationContext()
         defer {
-            try? FileManager.default.removeItem(at: context.repoURL)
-            try? FileManager.default.removeItem(at: context.sourceRootURL)
+            removeTestTemporaryItems(context.repoURL, context.sourceRootURL)
         }
 
         try await verifySingleFileMetaAndInitialLog(context)
@@ -111,7 +110,9 @@ final class DetailIntegrationVerifyTests: XCTestCase {
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
-            searchQuerying: MainListRecordingSearchQuerying(results: [.success(.tagFilterIntegrationSearchPage(.empty))]),
+            searchQuerying: MainListRecordingSearchQuerying(
+                results: [.success(.tagFilterIntegrationSearchPage(.empty))]
+            ),
             searchFiltering: MainListRecordingSearchFiltering(results: [.success(.tagFilterIntegrationFacets())]),
             tagStore: tagStore,
             errorMapper: DetailMetaErrorMapper(mapping: .tagFilterFilterFailure())
@@ -400,10 +401,7 @@ private func waitForDetailIntegrationNoteSave(_ model: DetailNoteModel) async {
 }
 
 private func makeDetailIntegrationTemporaryRepositoryURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixDetailIntegration-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixDetailIntegration")
 }
 
 private extension [DetailMetaMetadataRow] {

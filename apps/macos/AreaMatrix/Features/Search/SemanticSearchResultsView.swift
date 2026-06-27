@@ -348,7 +348,9 @@ private struct SemanticSearchGroupView: View {
             .foregroundStyle(.secondary)
         } else if hasMore {
             Button(loadMoreTitle, action: onLoadMore)
-                .accessibilityIdentifier("semantic-search-\(loadMoreTitle.lowercased().replacingOccurrences(of: " ", with: "-"))")
+                .accessibilityIdentifier(
+                    "semantic-search-\(loadMoreTitle.lowercased().replacingOccurrences(of: " ", with: "-"))"
+                )
         }
     }
 }

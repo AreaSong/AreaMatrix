@@ -3,7 +3,6 @@ import Foundation
 import SwiftUI
 import XCTest
 
-// swiftlint:disable file_length
 // swiftlint:disable:next type_body_length
 final class MainEmptyImportEntryTests: XCTestCase {
     @MainActor
@@ -145,7 +144,8 @@ final class MainEmptyImportEntryTests: XCTestCase {
             opening: .mainEmptyImportFixture(repoPath: "/tmp/repo"),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
-            commandIndexer: CommandPaletteCommandIndexStore(results: [.failure(CoreError.Db(message: "command db locked"))]),
+            commandIndexer: CommandPaletteCommandIndexStore(results: [.failure(CoreError
+                    .Db(message: "command db locked"))]),
             errorMapper: mapper
         )
 
@@ -250,55 +250,37 @@ final class MainEmptyImportEntryTests: XCTestCase {
     }
 
     func testCommandPalettePageIntegrationRoutesAllPageSpecCommandTargets() {
-        // swiftlint:disable:next large_tuple
-        let routes: [(String, CommandTargetActionSnapshot, CommandPaletteTargetRoute)] = [
-            ("classifier-impact-preview", .navigate, .linkedPage(.classifierImpactPreview)),
-            ("classifier-impact-preview", .openSheet, .linkedPage(.classifierImpactPreview)),
-            ("import-conflict-batch", .openSheet, .linkedPage(.importConflictBatch)),
-            ("redo-action-log", .navigate, .linkedPage(.redo)),
-            ("tag-suggestions", .navigate, .linkedPage(.tagSuggestions)),
-            ("classifier-rule-editor", .navigate, .classifierRuleEditor)
-        ]
-
-        for (route, action, expectedRoute) in routes {
+        for routeCase in MainEmptyCommandPaletteRouteCase.pageSpecRoutes {
             let target = CommandTargetSnapshot.commandPaletteRouteFixture(
-                id: "target-\(route)-\(action.rawValue)",
-                action: action,
-                route: route,
-                requiresConfirmation: route == "import-conflict-batch"
+                id: routeCase.targetID,
+                action: routeCase.action,
+                route: routeCase.route,
+                requiresConfirmation: routeCase.requiresConfirmation
             )
 
-            XCTAssertEqual(target.executionRoute, expectedRoute)
+            XCTAssertEqual(target.executionRoute, routeCase.expectedRoute)
             XCTAssertTrue(target.isExecutable)
         }
     }
 
     func testCommandPaletteKeyboardSelectionSkipsDisabledTargetsAndWraps() {
-        let first = CommandTargetSnapshot.commandPaletteRouteFixture(id: "import", action: .openSheet, route: "import")
-        let disabled = CommandTargetSnapshot.commandPaletteRouteFixture(
-            id: "disabled",
-            action: .openSheet,
-            route: "batch-add-tags",
-            disabled: true
-        )
-        let last = CommandTargetSnapshot.commandPaletteRouteFixture(id: "settings", action: .navigate, route: "settings")
-        let targets = [first, disabled, last]
+        let targets = MainEmptyCommandPaletteKeyboardTargets.fixture
 
         XCTAssertEqual(CommandPaletteSelectionRouting.nextSelectedID(
             currentID: nil,
-            targets: targets,
+            targets: targets.allTargets,
             offset: 1
-        ), first.id)
+        ), targets.first.id)
         XCTAssertEqual(CommandPaletteSelectionRouting.nextSelectedID(
-            currentID: first.id,
-            targets: targets,
+            currentID: targets.first.id,
+            targets: targets.allTargets,
             offset: 1
-        ), last.id)
+        ), targets.last.id)
         XCTAssertEqual(CommandPaletteSelectionRouting.nextSelectedID(
-            currentID: first.id,
-            targets: targets,
+            currentID: targets.first.id,
+            targets: targets.allTargets,
             offset: -1
-        ), last.id)
+        ), targets.last.id)
     }
 
     @MainActor
@@ -312,7 +294,8 @@ final class MainEmptyImportEntryTests: XCTestCase {
             route: nil,
             savedSearchID: saved.id
         )
-        let indexer = CommandPaletteCommandIndexStore(results: [.success(.commandPaletteFixture(smartLists: [indexTarget]))])
+        let indexer =
+            CommandPaletteCommandIndexStore(results: [.success(.commandPaletteFixture(smartLists: [indexTarget]))])
         let smartListRunner = CommandPaletteSmartListRunner(results: [
             .success(.commandPaletteCommandSmartListPage(saved: saved, files: [resultFile]))
         ])
@@ -506,66 +489,5 @@ final class MainEmptyImportEntryTests: XCTestCase {
         XCTAssertEqual(request.failureMapping?.rawContext, "redo-action-log redo-action-log-core redo-action-log")
         let redoRequests = await redoStore.redoRequests()
         XCTAssertEqual(redoRequests, [])
-    }
-}
-
-private actor CommandPaletteNoopUndoStore: CoreUndoActionLogging {
-    func listUndoActions(repoPath _: String) async throws -> [UndoActionRecordSnapshot] {
-        []
-    }
-
-    func undoAction(repoPath _: String, actionID _: String) async throws -> UndoActionResultSnapshot {
-        throw CoreError.Internal(message: "command-palette/redo-action-log test does not execute undo actions")
-    }
-}
-
-private struct MainEmptyImportStaticSettingsReader: AppSettingsReading {
-    let repoPath: String?
-
-    func configuredRepoPath() -> String? {
-        repoPath
-    }
-}
-
-private struct MainEmptyImportNoopWelcomeHelpOpener: WelcomeHelpOpening {
-    func openWelcomeHelp() throws {}
-}
-
-private struct MainEmptyImportStaticImportPicker: RepositoryImportPicking {
-    let urls: [URL]?
-
-    @MainActor
-    func chooseImportURLs() -> [URL]? {
-        urls
-    }
-}
-
-@MainActor
-private final class MainEmptyImportAnnouncer: AccessibilityAnnouncing {
-    private(set) var announcements: [String] = []
-
-    func announce(_ message: String) {
-        announcements.append(message)
-    }
-}
-
-private extension RepositoryOpeningResult {
-    static func mainEmptyImportFixture(repoPath: String) -> RepositoryOpeningResult {
-        RepositoryOpeningResult(
-            config: RepoConfigSnapshot(
-                repoPath: repoPath,
-                defaultMode: "Copied",
-                overviewOutput: "GeneratedOnly",
-                aiEnabled: false,
-                locale: "zh-Hans",
-                iCloudWarn: true,
-                enableExtensionRules: true,
-                enableKeywordRules: true,
-                fallbackToInbox: true,
-                allowReplaceDuringImport: false
-            ),
-            tree: RepositoryTreeNodeSnapshot(slug: "__root__", displayName: "资料库", fileCount: 0, children: []),
-            currentCategoryFiles: []
-        )
     }
 }

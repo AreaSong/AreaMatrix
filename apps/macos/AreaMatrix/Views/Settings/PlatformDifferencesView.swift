@@ -297,14 +297,7 @@ private struct PlatformDifferencesKeyValueRow: View {
     let value: String
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(label)
-                .foregroundStyle(.secondary)
-                .frame(width: 130, alignment: .leading)
-            Text(value)
-                .textSelection(.enabled)
-        }
-        .font(.callout)
+        SettingsKeyValueRow(label: label, value: value, labelWidth: 130, spacing: 12, valueLayout: .plain)
     }
 }
 

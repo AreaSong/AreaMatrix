@@ -202,10 +202,7 @@ extension RepositoryOpeningResult {
 }
 
 func makeImportSingleFileTemporaryDirectory(prefix: String) throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixImportSingleFile-\(prefix)-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(prefix: prefix, named: "AreaMatrixImportSingleFile")
 }
 
 @MainActor

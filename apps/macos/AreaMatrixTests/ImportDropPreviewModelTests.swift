@@ -29,7 +29,7 @@ final class ImportDropPreviewModelTests: XCTestCase {
 
     func testDefaultCoreBridgePredictsCategoryFromInitializedRepository() async throws {
         let repoURL = try makeImportDropTemporaryRepositoryURL()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let bridge = CoreBridge()
 
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
@@ -272,7 +272,7 @@ final class ImportDropBatchPreviewTests: XCTestCase {
     @MainActor
     func testBatchPreviewUsesRealCoreMetadataForDuplicateAndNameConflictPrecheck() async throws {
         let fixture = try makeImportDropMetadataPrecheckFixture()
-        defer { try? FileManager.default.removeItem(at: fixture.sourceRoot) }
+        defer { removeTestTemporaryItems(fixture.sourceRoot) }
         let predictor = ImportDropRecordingPredictor(results: importDropMetadataPrecheckPredictions())
         let duplicateFileLoader = ImportBatchStaticBatchFileLoader(pagesByCategory: [
             "__all__": [[fixture.duplicateFile, fixture.nameConflictFile]]
@@ -329,8 +329,7 @@ final class ImportDropBatchPreviewTests: XCTestCase {
         let repoURL = try makeImportDropTemporaryRepositoryURL()
         let sourceRoot = try makeImportDropTemporaryDirectory(prefix: "duplicate-source")
         defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
+            removeTestTemporaryItems(repoURL, sourceRoot)
         }
 
         let firstURL = sourceRoot.appendingPathComponent("existing.pdf")
@@ -436,17 +435,11 @@ private actor ImportBatchStaticDuplicatePrechecker: ImportBatchDuplicatePrecheck
 }
 
 private func makeImportDropTemporaryRepositoryURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixImportDropTests-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixImportDropTests")
 }
 
 private func makeImportDropTemporaryDirectory(prefix: String) throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixImportDropTests-\(prefix)-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(prefix: prefix, named: "AreaMatrixImportDropTests")
 }
 
 private func importDropFailurePreviewPredictions() -> [Result<ClassifyResultSnapshot, Error>] {
@@ -480,6 +473,10 @@ private func makeImportDropMetadataPrecheckFixture() throws -> ImportDropMetadat
             category: "finance",
             hashSha256: duplicateHash
         ),
-        nameConflictFile: .importSingleFileFixture(currentName: "合同.pdf", category: "docs", hashSha256: "different-contract-hash")
+        nameConflictFile: .importSingleFileFixture(
+            currentName: "合同.pdf",
+            category: "docs",
+            hashSha256: "different-contract-hash"
+        )
     )
 }

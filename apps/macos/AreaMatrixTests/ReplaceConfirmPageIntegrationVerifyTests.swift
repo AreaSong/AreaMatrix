@@ -41,7 +41,7 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
 
     @MainActor
     func testReplaceResolutionCoreSafetyBackupAllowsReplaceWhenTrashUnavailable() async throws {
-        let resolver = SyncConflictReviewRecordingSyncConflictResolver(previewResults: [
+        let resolver = SyncConflictReviewResolver(previewResults: [
             .keepBoth: .success(.syncConflictReviewPreviewFixture()),
             .useIncoming: .success(.syncConflictReviewPreviewFixture(
                 resolution: .useIncoming,
@@ -55,7 +55,9 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
         ])
         let model = SyncConflictReviewModel(
             repoPath: "/tmp/syncConflictReview-repo",
-            conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .success([.syncConflictReviewFixture()])),
+            conflictDetector: SyncConflictReviewDetector(
+                result: .success([.syncConflictReviewFixture()])
+            ),
             conflictResolver: resolver,
             errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
@@ -72,11 +74,12 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
         await model.applyResolution()
         let resolveRequests = await resolver.recordedResolveRequests()
 
-        XCTAssertEqual(resolveRequests, [.syncConflictReviewUseIncomingConfirmedRequest])
+        XCTAssertEqual(resolveRequests, [.useIncomingConfirmedRequest])
     }
 
     @MainActor
-    func testReplaceConfirmSingleFileReplaceConfirmCoversDetectDuplicateCoreAndResolveNameConflictCoreWithoutImmediateCoreImport() async throws {
+    func testReplaceConfirmSingleFileCoversDuplicateAndNameConflictWithoutImmediateCoreImport(
+    ) async throws {
         let importer = ImportSingleFileRecordingImporter()
         let duplicateModel = ImportSingleFilePreviewModel(
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
@@ -230,8 +233,8 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
 }
 
 private struct ReplaceResolutionReplaceContext {
-    let detector: SyncConflictReviewRecordingSyncConflictDetector
-    let resolver: SyncConflictReviewRecordingSyncConflictResolver
+    let detector: SyncConflictReviewDetector
+    let resolver: SyncConflictReviewResolver
     let model: SyncConflictReviewModel
     let view: SyncConflictReviewView
     let resolvedReports: ReplaceResolutionResolvedReports
@@ -243,8 +246,8 @@ private final class ReplaceResolutionResolvedReports {
 
 @MainActor
 private func makeReplaceResolutionReplaceContext() -> ReplaceResolutionReplaceContext {
-    let detector = SyncConflictReviewRecordingSyncConflictDetector(result: .success([.syncConflictReviewFixture()]))
-    let resolver = SyncConflictReviewRecordingSyncConflictResolver(
+    let detector = SyncConflictReviewDetector(result: .success([.syncConflictReviewFixture()]))
+    let resolver = SyncConflictReviewResolver(
         previewResults: [
             .keepBoth: .success(.syncConflictReviewPreviewFixture()),
             .useIncoming: .success(.syncConflictReviewPreviewFixture(
@@ -282,7 +285,7 @@ private func makeReplaceResolutionReplaceContext() -> ReplaceResolutionReplaceCo
 @MainActor
 private func assertReplaceResolutionReplacePanelBlocksUnconfirmedApply(
     model: SyncConflictReviewModel,
-    unresolvedRequests: [SyncConflictReviewSyncConflictResolveRequest],
+    unresolvedRequests: [SyncConflictResolveRequest],
     panelBody: String
 ) {
     XCTAssertEqual(unresolvedRequests, [])
@@ -300,13 +303,13 @@ private func assertReplaceResolutionReplacePanelBlocksUnconfirmedApply(
 private func assertReplaceResolutionReplaceApplyExit(
     model: SyncConflictReviewModel,
     detectRequests: [String],
-    previewRequests: [SyncConflictReviewSyncConflictPreviewRequest],
-    resolveRequests: [SyncConflictReviewSyncConflictResolveRequest],
+    previewRequests: [SyncConflictPreviewRequest],
+    resolveRequests: [SyncConflictResolveRequest],
     resolvedReports: [SyncConflictResolveReportSnapshot]
 ) {
     XCTAssertEqual(detectRequests, ["/tmp/syncConflictReview-repo"])
     XCTAssertEqual(previewRequests.map(\.resolution), [.keepBoth, .useIncoming])
-    XCTAssertEqual(resolveRequests, [.syncConflictReviewUseIncomingConfirmedRequest])
+    XCTAssertEqual(resolveRequests, [.useIncomingConfirmedRequest])
     XCTAssertEqual(resolvedReports, [.syncConflictReviewResolveFixture(resolution: .useIncoming)])
     XCTAssertEqual(model.applyDisabledReason, "Resolution has already been applied.")
 }
@@ -327,7 +330,9 @@ private func makeFolderReplaceConfirmationModel(
         sourceURL.path: .nameConflict(existingPath: "docs/name.pdf")
     ])
     return ImportFolderPreviewModel(
-        predictor: ImportFolderRecordingPredictor(results: [.success(.importFolderPrediction(suggestedName: "name.pdf"))]),
+        predictor: ImportFolderRecordingPredictor(
+            results: [.success(.importFolderPrediction(suggestedName: "name.pdf"))]
+        ),
         importer: importer,
         errorMapper: ImportSingleFileRecordingErrorMapper(),
         conflictPrechecker: prechecker,

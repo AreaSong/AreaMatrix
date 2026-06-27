@@ -114,9 +114,10 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testDetailMultiSelectPageIntegrationUsesRealListFilesCoreAndGetFileDetailCoreCoreBridgeForMultiSelection() async throws {
+    func testDetailMultiSelectPageIntegrationUsesRealListFilesCoreAndGetFileDetailCoreCoreBridgeForMultiSelection(
+    ) async throws {
         let repoURL = try makeDetailMultiSelectTemporaryRepositoryURL()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let docsURL = repoURL.appendingPathComponent("docs", isDirectory: true)
         try FileManager.default.createDirectory(at: docsURL, withIntermediateDirectories: true)
         try "contract".write(to: docsURL.appendingPathComponent("contract.pdf"), atomically: true, encoding: .utf8)
@@ -207,7 +208,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
         await model.selectFiles([available.id, stale.id])
         let summary = MultiSelectionDetailSummary(selection: model.selection, files: model.files)
         let copier = ShellRecordingPathCopier()
-        let announcer = ImportSingleFileRecordingAccessibilityAnnouncer()
+        let announcer = RecordingAccessibilityAnnouncer()
         let shell = OnboardingModel(
             pathCopier: copier,
             accessibilityAnnouncer: announcer
@@ -464,8 +465,5 @@ private actor BatchAddTagsRecordingUndoStore: CoreUndoActionLogging {
 }
 
 private func makeDetailMultiSelectTemporaryRepositoryURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixDetailMultiSelectIntegration-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixDetailMultiSelectIntegration")
 }

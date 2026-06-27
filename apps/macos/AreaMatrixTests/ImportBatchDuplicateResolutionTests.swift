@@ -5,8 +5,11 @@ import XCTest
 final class ImportBatchDuplicateResolutionTests: XCTestCase {
     @MainActor
     func testImportConflictBatchManualScopeWithoutSelectionShowsSelectAtLeastOneConflict() async {
-        let batcher = ImportConflictBatchIntegrationConflictBatcher(previews: [.importConflictBatchMixedPreview()])
-        let model = importConflictBatchIntegrationModel(conflictBatcher: batcher, undoStore: ImportConflictBatchIntegrationUndoStore())
+        let batcher = ImportConflictBatcher(previews: [.importConflictBatchMixedPreview()])
+        let model = importConflictBatchIntegrationModel(
+            conflictBatcher: batcher,
+            undoStore: ImportConflictBatchIntegrationUndoStore()
+        )
 
         model.applyPreviewRows(
             [importBatchReadyBatchRow(url: URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf"))],
@@ -36,8 +39,14 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
 
     @MainActor
     func testImportConflictBatchAskPerItemRoutesSelectedConflicts() async {
-        let batcher = ImportConflictBatchIntegrationConflictBatcher(previews: [.importConflictBatchMixedPreview(), .importConflictBatchMixedPreview()])
-        let model = importConflictBatchIntegrationModel(conflictBatcher: batcher, undoStore: ImportConflictBatchIntegrationUndoStore())
+        let batcher = ImportConflictBatcher(previews: [
+            .importConflictBatchMixedPreview(),
+            .importConflictBatchMixedPreview()
+        ])
+        let model = importConflictBatchIntegrationModel(
+            conflictBatcher: batcher,
+            undoStore: ImportConflictBatchIntegrationUndoStore()
+        )
 
         model.applyPreviewRows(
             [importBatchReadyBatchRow(url: URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf"))],
@@ -246,7 +255,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             fileRevealer: revealer,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
@@ -268,11 +277,12 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
 
     @MainActor
     func testShowExistingFileFailureReportsActionError() {
-        let revealer = ImportBatchRecordingFileRevealer(result: .failure(RepositoryFileActionError.fileMissing("missing.pdf")))
+        let revealer =
+            ImportBatchRecordingFileRevealer(result: .failure(RepositoryFileActionError.fileMissing("missing.pdf")))
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             fileRevealer: revealer,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")

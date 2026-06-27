@@ -90,7 +90,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
     func testDefaultCoreBridgeOpensRealEmptyRepositoryThroughLoadConfigAndTree() async throws {
         let repoURL = try makeInitDoneTemporaryRepositoryURL()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
 
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
@@ -163,7 +163,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
     @MainActor
     func testOpenInitDoneRepositoryInFinderReportsNonBlockingFailure() async {
         let finderOpener = RecordingFinderOpener(result: .failure(.openRejected("/tmp/adopted-repo")))
-        let accessibilityAnnouncer = RecordingAccessibilityAnnouncer()
+        let accessibilityAnnouncer = InitDoneAccessibilityAnnouncer()
         let result = RepositoryInitializationResult(
             repoPath: "/tmp/adopted-repo",
             mode: .adoptExisting,
@@ -191,7 +191,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
     func testDefaultCoreBridgeOpensRealAdoptedRepositoryThroughLoadConfigAndTree() async throws {
         let repoURL = try makeInitDoneTemporaryRepositoryURL()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
 
         let readmeURL = repoURL.appendingPathComponent("README.md")
         try "# User project\n".write(to: readmeURL, atomically: true, encoding: .utf8)
@@ -211,7 +211,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
     func testDefaultCoreBridgeReopensConfiguredEmptyRepositoryThroughTreeAndCurrentCategoryList() async throws {
         let repoURL = try makeInitDoneTemporaryRepositoryURL()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
 
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
@@ -376,7 +376,7 @@ private final class RecordingFinderOpener: RepositoryFinderOpening {
 }
 
 @MainActor
-private final class RecordingAccessibilityAnnouncer: AccessibilityAnnouncing {
+private final class InitDoneAccessibilityAnnouncer: AccessibilityAnnouncing {
     private(set) var announcements: [String] = []
 
     func announce(_ message: String) {

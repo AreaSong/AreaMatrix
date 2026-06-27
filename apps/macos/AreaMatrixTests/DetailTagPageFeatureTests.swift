@@ -149,7 +149,9 @@ final class DetailTagPageFeatureTests: XCTestCase {
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
             fileLister: DetailMetaNoopLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .failure(CoreError.FileNotFound(path: "unused"))),
-            searchQuerying: MainListRecordingSearchQuerying(results: [.success(.tagFilterSearchPage(filters: filters))]),
+            searchQuerying: MainListRecordingSearchQuerying(
+                results: [.success(.tagFilterSearchPage(filters: filters))]
+            ),
             searchFiltering: MainListRecordingSearchFiltering(results: [.success(.tagFilterFacets())]),
             tagStore: tagStore,
             errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
@@ -264,7 +266,8 @@ final class DetailTagPageFeatureTests: XCTestCase {
         )
         XCTAssertEqual(filters.tags, [])
         XCTAssertEqual(
-            TagFacetFiltering.visibleTags(query: "TAX", facets: SearchFacetsSnapshot.tagFilterFacets().tags).map(\.value),
+            TagFacetFiltering.visibleTags(query: "TAX", facets: SearchFacetsSnapshot.tagFilterFacets().tags)
+                .map(\.value),
             ["tax"]
         )
     }
@@ -353,7 +356,8 @@ final class DetailTagPageFeatureTests: XCTestCase {
             suggestionResults: [.success(report)],
             applySuggestionResults: [.success(applyReport)]
         )
-        let undoStore = TagSuggestionsUndoActionStore(actions: [.tagSuggestionsApplySuggestion(token: "undo-tagSuggestions")])
+        let undoStore =
+            TagSuggestionsUndoActionStore(actions: [.tagSuggestionsApplySuggestion(token: "undo-tagSuggestions")])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
             fileLister: DetailMetaNoopLister(),
@@ -440,7 +444,10 @@ final class DetailTagPageFeatureTests: XCTestCase {
         XCTAssertEqual(duplicate.editSession?.drafts.last?.status.label, "Duplicate")
         XCTAssertEqual(readOnly.editSession?.drafts.map(\.status.label), ["Blocked", "Blocked"])
         XCTAssertEqual(DetailTagSuggestionAction.editedItems(in: invalid), [])
-        XCTAssertEqual(DetailTagSuggestionAction.cancelingEdit(in: invalid).selectedIDs, ["tagSuggestions-finance", "tagSuggestions-tax"])
+        XCTAssertEqual(
+            DetailTagSuggestionAction.cancelingEdit(in: invalid).selectedIDs,
+            ["tagSuggestions-finance", "tagSuggestions-tax"]
+        )
     }
 
     @MainActor

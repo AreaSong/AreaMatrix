@@ -16,7 +16,7 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
-            accessibilityAnnouncer: GeneralSettingsNoopAccessibilityAnnouncer(),
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer(),
             helpOpener: ShellNoopWelcomeHelpOpener()
         )
 
@@ -40,7 +40,7 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
     @MainActor
     func testGeneralSettingsPageIntegrationCoversConfigMoveOverviewIgnoreRulesAndFailureRecovery() async throws {
         let (repoURL, sourceURL) = try makeGeneralSettingsIntegrationRepositoryFixture()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
 
         let updater = GeneralSettingsIntegrationUpdater(results: [
             .success,
@@ -48,10 +48,11 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
             .failure(CoreError.Config(reason: "locked")),
             .success
         ])
-        let ignoreRulesManager = GeneralSettingsRecordingIgnoreRulesManager(openResult: .missingThenSuccess)
+        let ignoreRulesManager = RecordingIgnoreRulesManager(openResult: .missingThenSuccess)
         let model = GeneralSettingsModel(
             repoPath: repoURL.path,
-            loader: GeneralSettingsStaticConfigLoader(config: RepoConfigSnapshot.generalSettingsIntegrationFixture(repoPath: repoURL.path)),
+            loader: GeneralSettingsStaticConfigLoader(config: RepoConfigSnapshot
+                .generalSettingsIntegrationFixture(repoPath: repoURL.path)),
             updater: updater,
             rootOverviewInspector: LocalRootOverviewFileInspector(),
             rootOverviewRevealer: GeneralSettingsNoopFileRevealer(),
@@ -255,7 +256,7 @@ private enum GeneralSettingsIgnoreOpenResult {
 }
 
 @MainActor
-private final class GeneralSettingsRecordingIgnoreRulesManager: RepositoryIgnoreRulesManaging {
+private final class RecordingIgnoreRulesManager: RepositoryIgnoreRulesManaging {
     private let openResult: GeneralSettingsIgnoreOpenResult
     private var openAttempts = 0
     private(set) var openedPaths: [String] = []
@@ -336,7 +337,7 @@ private final class GeneralSettingsNoopFileRevealer: RepositoryFileRevealing {
 }
 
 @MainActor
-private final class GeneralSettingsNoopAccessibilityAnnouncer: AccessibilityAnnouncing {
+private final class NoopAccessibilityAnnouncer: AccessibilityAnnouncing {
     func announce(_: String) {}
 }
 
@@ -404,25 +405,9 @@ private extension FileEntrySnapshot {
 }
 
 private func makeGeneralSettingsIntegrationTemporaryRepository() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixGeneralSettingsIntegration-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixGeneralSettingsIntegration")
 }
 
 private func generalSettingsMirrorDescription(of value: Any) -> String {
-    var lines: [String] = []
-    generalSettingsAppendMirrorDescription(of: value, to: &lines)
-    return lines.joined(separator: "\n")
-}
-
-private func generalSettingsAppendMirrorDescription(of value: Any, to lines: inout [String]) {
-    lines.append(String(describing: type(of: value)))
-    lines.append(String(describing: value))
-    for child in Mirror(reflecting: value).children {
-        if let label = child.label {
-            lines.append(label)
-        }
-        generalSettingsAppendMirrorDescription(of: child.value, to: &lines)
-    }
+    testMirrorDescription(of: value)
 }

@@ -291,8 +291,11 @@ private extension SyncConflictReviewView {
                 ("Trash paths", listDisplay(preview.plannedTrashPaths))
             ])
             if preview.requiresReplaceConfirmation {
-                Label("Use incoming version requires replace-resolution replace confirmation.", systemImage: "lock.shield")
-                    .foregroundStyle(.orange)
+                Label(
+                    "Use incoming version requires replace-resolution replace confirmation.",
+                    systemImage: "lock.shield"
+                )
+                .foregroundStyle(.orange)
             }
             replaceConfirmationContent(preview)
             if let blockedReason = preview.blockedReasonDisplay {

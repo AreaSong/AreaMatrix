@@ -93,7 +93,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: ImportSingleFileStaticRepositoryOpener(opening: opening),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
         let progress = ImportBatchProgressSnapshot(
@@ -137,7 +137,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
         let progress = ImportBatchProgressSnapshot(
@@ -166,7 +166,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
         let progress = ImportBatchProgressSnapshot(

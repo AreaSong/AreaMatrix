@@ -5,7 +5,7 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
     // swiftlint:disable:next function_body_length
     func testClassifierRuleEditorDefaultCoreBridgePersistsClassifierRuleCrudToClassifierYaml() async throws {
         let repoURL = try temporaryClassifierRuleEditorRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
 
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
@@ -137,7 +137,7 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
     @MainActor
     func testAISettingsDefaultCoreBridgePersistsAIConfigWithoutCreatingRootFiles() async throws {
         let repoURL = try temporaryClassifierRuleEditorRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
 
@@ -160,7 +160,7 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
 
     @MainActor
     func testLocalModelStatusLocalModelStatusModelRefreshesThroughInjectedCoreBridgeReader() async {
-        let reader = LocalModelStatusRecordingLocalModelStatusReader(
+        let reader = RecordingLocalModelReader(
             status: .localModelStatusSnapshot(
                 storageLocation: "/tmp/localModelStatus-models",
                 availability: .notInstalled,
@@ -168,12 +168,12 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
             ),
             location: .localModelStatusLocation(folderPath: "/tmp/localModelStatus-models", openable: false)
         )
-        let copier = LocalModelStatusRecordingDiagnosticsCopier()
+        let copier = RecordingDiagnosticsCopier()
         let model = LocalModelStatusModel(
             repoPath: "/tmp/localModelStatus",
             storageLocation: "/tmp/localModelStatus-models",
             statusReader: reader,
-            installHelpOpener: LocalModelStatusRecordingInstallHelpOpener(),
+            installHelpOpener: RecordingInstallHelpOpener(),
             folderOpener: LocalModelStatusRecordingFolderOpener(),
             diagnosticsCopier: copier,
             errorMapper: LocalModelStatusStaticErrorMapper()
@@ -193,8 +193,8 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
     }
 
     @MainActor
-    func testLocalModelStatusOpenModelLocationUsesLocalModelStatusCoreLocationResultWithoutCreatingFallbackPath() async {
-        let reader = LocalModelStatusRecordingLocalModelStatusReader(
+    func testLocalModelStatusOpenModelLocationUsesCoreLocationWithoutFallbackPath() async {
+        let reader = RecordingLocalModelReader(
             status: .localModelStatusSnapshot(
                 storageLocation: "/tmp/localModelStatus-models",
                 availability: .ready,
@@ -207,9 +207,9 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
             repoPath: "/tmp/localModelStatus",
             storageLocation: "/tmp/localModelStatus-models",
             statusReader: reader,
-            installHelpOpener: LocalModelStatusRecordingInstallHelpOpener(),
+            installHelpOpener: RecordingInstallHelpOpener(),
             folderOpener: folderOpener,
-            diagnosticsCopier: LocalModelStatusRecordingDiagnosticsCopier(),
+            diagnosticsCopier: RecordingDiagnosticsCopier(),
             errorMapper: LocalModelStatusStaticErrorMapper()
         )
 
@@ -226,7 +226,7 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
     @MainActor
     func testLocalModelStatusDefaultCoreBridgeReadsLocalModelStatusWithoutCreatingModelFolder() async throws {
         let repoURL = try temporaryClassifierRuleEditorRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
         let modelURL = repoURL.appendingPathComponent("Models/areamatrix-local-classifier", isDirectory: true)
@@ -316,7 +316,7 @@ private actor AISettingsStaticAIErrorMapper: CoreErrorMapping {
     }
 }
 
-private actor LocalModelStatusRecordingLocalModelStatusReader: CoreLocalModelStatusReading {
+private actor RecordingLocalModelReader: CoreLocalModelStatusReading {
     struct StatusRequest: Equatable {
         var repoPath: String
         var request: LocalModelStatusRequestState
@@ -376,7 +376,7 @@ private struct LocalModelStatusStaticErrorMapper: CoreErrorMapping {
 }
 
 @MainActor
-private final class LocalModelStatusRecordingInstallHelpOpener: LocalModelInstallHelpOpening {
+private final class RecordingInstallHelpOpener: LocalModelInstallHelpOpening {
     private(set) var openCount = 0
 
     func openLocalModelInstallHelp() throws {
@@ -394,7 +394,7 @@ private final class LocalModelStatusRecordingFolderOpener: LocalModelFolderOpeni
 }
 
 @MainActor
-private final class LocalModelStatusRecordingDiagnosticsCopier: LocalModelDiagnosticsCopying {
+private final class RecordingDiagnosticsCopier: LocalModelDiagnosticsCopying {
     private(set) var summaries: [String] = []
 
     func copyLocalModelDiagnostics(_ summary: String) throws {
@@ -469,10 +469,7 @@ private extension LocalModelFolderLocationState {
 }
 
 private func temporaryClassifierRuleEditorRepo() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixClassifierRuleEditor-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixClassifierRuleEditor")
 }
 
 private func classifierYaml(_ repoURL: URL) throws -> String {

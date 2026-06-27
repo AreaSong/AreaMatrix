@@ -32,7 +32,8 @@ Trigger it for changes to `docs/**`, Core API, `core/area_matrix.udl`, prompt ma
 2. Load the source map to decide which files are authoritative.
 3. Load the drift checklist before declaring docs and generated prompt surfaces aligned.
 4. For long-lived `docs/**`, `core/**`, README, Core API / UDL, ADR, development, roadmap, or governance text, enforce the long-term source wording rules in `.ai-governance/project/areamatrix-rules.md`: do not introduce current-stage, temporary-delivery, historical-task, mock/placeholder, or old release-track wording into source-of-truth material.
-5. Before reporting completion for those surfaces, run a focused `rg` sweep for phase/stage/MVP/local QA/prerelease/milestone/sprint/C*-S*, route-style labels such as `GL-*`, and Chinese execution-period wording such as `核心交付`, `计划交付`, `时间预算`, and `第一刀`; then classify every remaining hit as historical evidence, technical terminology, fixture data, or an item that still needs cleanup.
+5. Use the strict long-term source rule: docs and README should point to neutral archive or residual-ledger entrypoints instead of scattering old release-track names, deep historical paths, or historical task labels. Keep historical evidence strings concentrated in dedicated tests or archived workflow evidence, not in current product or API text.
+6. Before reporting completion for those surfaces, run `./dev check wording`. For manual review, run `./dev wording audit --show-allowed`; remaining hits must be classified as policy inventory, archived evidence, legal technical terminology, fixture data, or cleanup work.
 
 ## Guardrails
 
@@ -42,4 +43,4 @@ Trigger it for changes to `docs/**`, Core API, `core/area_matrix.udl`, prompt ma
 - Do not change product semantics in `.codex/skills-src/**`, `.agents/skills/**`, `.codex/references/**`, or `tasks/backlog/**`; update `docs/**` or `.ai-governance/**` first when the source rule itself changes.
 - Do not make `workflow/residuals/**` the only place where product behavior, release evidence, or task state is defined.
 - Do not treat `preview`, transactional `staging` / `staged`, Xcode `Build Phase`, macOS beta testing, DB/API/schema/dependency versions, UUID v4, or alpha/beta fixture values as stage pollution unless the surrounding context describes a current release track, current delivery phase, or current task status.
-- Do not remove historical evidence references such as `workflow/versions/v1-mvp/**` when the surrounding text clearly marks them as archived evidence and not a current template or current execution state.
+- Do not rewrite historical evidence files just to reduce wording-audit noise. Prefer removing scattered deep archive links from long-lived docs, or routing them through `workflow/versions/README.md`, `workflow/versions/source-docs-guide.md`, and residual-ledger indexes.

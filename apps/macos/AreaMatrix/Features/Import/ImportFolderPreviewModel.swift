@@ -401,10 +401,3 @@ private extension ImportEntryDestination {
         }
     }
 }
-
-private extension [ImportBatchDestinationOption] {
-    func uniqued() -> [ImportBatchDestinationOption] {
-        var seen = Set<ImportBatchDestinationOption>()
-        return filter { seen.insert($0).inserted }
-    }
-}

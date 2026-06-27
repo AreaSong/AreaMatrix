@@ -443,7 +443,7 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
         let revealer = ShellRecordingFileRevealer()
         let opener = ShellRecordingFileOpener()
         let copier = ShellRecordingPathCopier()
-        let announcer = ImportSingleFileRecordingAccessibilityAnnouncer()
+        let announcer = RecordingAccessibilityAnnouncer()
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             fileRevealer: revealer,

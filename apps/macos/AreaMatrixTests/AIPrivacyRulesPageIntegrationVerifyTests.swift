@@ -4,8 +4,10 @@ import XCTest
 final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
     @MainActor
     // swiftlint:disable:next function_body_length
-    func testAIPrivacyRulesFullPageFlowKeepsAISettingsConfigCoreRemoteProviderConfigCoreAIPrivacyRulesCoreOnDeclaredBridgePaths() async {
-        let settingsStore = AIPrivacyRulesIntegrationAISettingsStore(snapshot: .aiPrivacyRulesIntegrationReady(repoPath: "/tmp/aiPrivacyRules"))
+    func testAIPrivacyRulesFullPageFlowKeepsDeclaredBridgePaths() async {
+        let settingsStore = AIPrivacyRulesIntegrationAISettingsStore(
+            snapshot: .aiPrivacyRulesIntegrationReady(repoPath: "/tmp/aiPrivacyRules")
+        )
         let settingsModel = AISettingsModel(
             repoPath: "/tmp/aiPrivacyRules",
             loader: settingsStore,
@@ -35,7 +37,8 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
         await privacyModel.load()
         await privacyModel.setPrivacyGate(false)
         await privacyModel.setField(.noteSummary, allowRemote: false)
-        let editedRule = AIPrivacyRuleEditorDraft(record: .aiPrivacyRulesIntegrationRule()).withPattern("finance/private/q2/")
+        let editedRule = AIPrivacyRuleEditorDraft(record: .aiPrivacyRulesIntegrationRule())
+            .withPattern("finance/private/q2/")
         await privacyModel.saveRule(editedRule)
         await privacyModel.addRules([AIPrivacyRuleTemplate.confidentialKeywords.ruleInput])
         await privacyModel.evaluate(context: AIPrivacyRuleTestFileContext(
@@ -135,11 +138,11 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(ruleRoute?.repoPath, "/tmp/aiPrivacyRules")
         XCTAssertEqual(ruleRoute?.focus, .rule(ruleID: "rule-summary"))
         XCTAssertEqual(ruleRoute?.focus?.targetID, "aiPrivacyRules-rule-rule-summary")
-        XCTAssertEqual(ruleNotice.aiPrivacyRulesPrivacyRulesRouteAccessibilitySuffix, "privacy-rule-rule-summary")
+        XCTAssertEqual(ruleNotice.aiPrivacyRulesRouteAccessibilitySuffix, "privacy-rule-rule-summary")
         XCTAssertEqual(fieldRoute?.repoPath, "/tmp/aiPrivacyRules")
         XCTAssertEqual(fieldRoute?.focus, .field(.noteSummary))
         XCTAssertEqual(fieldRoute?.focus?.targetID, "aiPrivacyRules-field-noteSummary")
-        XCTAssertEqual(fieldNotice.aiPrivacyRulesPrivacyRulesRouteAccessibilitySuffix, "privacy-field-noteSummary")
+        XCTAssertEqual(fieldNotice.aiPrivacyRulesRouteAccessibilitySuffix, "privacy-field-noteSummary")
     }
 
     func testAIPrivacyRulesEditorDraftValidationCoversRequiredRuleTypesAndUnsavedState() {

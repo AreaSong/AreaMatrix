@@ -29,7 +29,8 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
     @MainActor
     func testAISummaryFailurePreservesDraftAndMapsCoreError() async {
         let mapper = AISummarySummaryErrorMapper()
-        let summary = AISummaryPrivacySummaryBridge(saveResult: .failure(CoreError.Db(message: "summary metadata locked")))
+        let summary =
+            AISummaryPrivacySummaryBridge(saveResult: .failure(CoreError.Db(message: "summary metadata locked")))
         let model = aiSummaryModel(
             fileID: 607, report: aiSummaryReport(nil), scope: .localPreferred, summary: summary, mapper: mapper
         ).0
@@ -107,7 +108,11 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
         ]
 
         for item in cases {
-            let (model, summary, _) = aiSummaryModel(fileID: item.0, report: aiSummaryReport(item.1), scope: .remoteAllowed)
+            let (model, summary, _) = aiSummaryModel(
+                fileID: item.0,
+                report: aiSummaryReport(item.1),
+                scope: .remoteAllowed
+            )
 
             await model.generate(regenerate: false)
 

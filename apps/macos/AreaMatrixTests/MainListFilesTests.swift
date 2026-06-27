@@ -205,7 +205,7 @@ final class MainListFilesTests: XCTestCase {
 
     func testDefaultCoreBridgeGetsRealFileDetailForMainListSelection() async throws {
         let repoURL = try makeMainListTemporaryRepositoryURL()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let docsURL = repoURL.appendingPathComponent("docs", isDirectory: true)
         try FileManager.default.createDirectory(at: docsURL, withIntermediateDirectories: true)
         try "# User project\n".write(
@@ -225,7 +225,7 @@ final class MainListFilesTests: XCTestCase {
 
     func testDefaultCoreBridgeMarksMissingFilesFromFilesystemState() async throws {
         let repoURL = try makeMainListTemporaryRepositoryURL()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let docsURL = repoURL.appendingPathComponent("docs", isDirectory: true)
         let reportURL = docsURL.appendingPathComponent("report.md")
         try FileManager.default.createDirectory(at: docsURL, withIntermediateDirectories: true)
@@ -241,7 +241,7 @@ final class MainListFilesTests: XCTestCase {
 
     func testDefaultCoreBridgeListsRealPopulatedRepositoryTreeForMainList() async throws {
         let repoURL = try makeMainListTemporaryRepositoryURL()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let contractsURL = repoURL.appendingPathComponent("docs/contracts", isDirectory: true)
         let referencesURL = repoURL.appendingPathComponent("docs/references", isDirectory: true)
         try FileManager.default.createDirectory(at: contractsURL, withIntermediateDirectories: true)
@@ -420,10 +420,7 @@ private extension CoreErrorMappingSnapshot {
 }
 
 private func makeMainListTemporaryRepositoryURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixMainListTests-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixMainListTests")
 }
 
 private func firstListedFile(

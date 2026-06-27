@@ -5,7 +5,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
     @MainActor
     func testCreateDefaultClassifierYamlCreatesOnlyMetadataFileAndStoresBackup() async throws {
         let repoURL = try temporaryClassifierRecoveryRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         try FileManager.default.createDirectory(
             at: repoURL.appendingPathComponent(".areamatrix", isDirectory: true),
             withIntermediateDirectories: true
@@ -34,7 +34,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
     @MainActor
     func testCreateDefaultClassifierYamlDoesNotOverwriteExistingRules() async throws {
         let repoURL = try temporaryClassifierRecoveryRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let existing = "version: 1\ndefault: inbox\ncategories: []\n"
         try writeClassifier(existing, repoURL: repoURL)
         let predictor = ClassifierSettingsSequencePredictor(results: [.success(classifierRecoveryProbeResult())])
@@ -52,7 +52,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
     @MainActor
     func testValidateStoresLastValidBackupAndRevertRestoresThatContent() async throws {
         let repoURL = try temporaryClassifierRecoveryRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let original = """
         version: 1
         default: inbox
@@ -83,7 +83,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
     @MainActor
     func testValidationFailureShowsLineFieldAndErrorText() async throws {
         let repoURL = try temporaryClassifierRecoveryRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         try writeClassifier("version: 1\ndefault: inbox\ncategories: []\n", repoURL: repoURL)
         let predictor = ClassifierSettingsSequencePredictor(results: [
             .failure(CoreError.Config(reason: "categories[2].slug duplicate at line 47 column 5"))
@@ -104,7 +104,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
     @MainActor
     func testClassifierRuleEditorRuleEditorUpdatesExistingRuleThroughCoreCrudAfterValidation() async throws {
         let repoURL = try temporaryClassifierRecoveryRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let editor = ClassifierSettingsRecordingRuleEditor(
             listResult: .success(.classifierEditorFixture()),
             mutationResult: .success(.classifierEditorFixture(updatedRuleID: "finance"))
@@ -143,7 +143,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
     @MainActor
     func testClassifierRuleEditorNewCategoryUsesCreateCrudAndRequiresValidate() async throws {
         let repoURL = try temporaryClassifierRecoveryRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let editor = ClassifierSettingsRecordingRuleEditor(
             listResult: .success(.classifierEditorFixture()),
             mutationResult: .success(.classifierEditorFixture(updatedRuleID: "tax"))
@@ -178,7 +178,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
     @MainActor
     func testClassifierRuleEditorDeleteRuleUsesCrudWithoutMovingHistoricalFiles() async throws {
         let repoURL = try temporaryClassifierRecoveryRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let editor = ClassifierSettingsRecordingRuleEditor(
             listResult: .success(.classifierEditorFixture()),
             mutationResult: .success(.classifierEditorFixture(updatedRuleID: "docs"))
@@ -208,7 +208,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
     @MainActor
     func testClassifierRuleEditorRemovingMatcherRequiresImpactSummaryBeforeSave() async throws {
         let repoURL = try temporaryClassifierRecoveryRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let editor = ClassifierSettingsRecordingRuleEditor(listResult: .success(.classifierEditorFixture()))
         let model = await recoveryModel(
             repoURL: repoURL,
@@ -475,10 +475,7 @@ private func classifierRecoveryProbeResult() -> ClassifyResultSnapshot {
 }
 
 private func temporaryClassifierRecoveryRepo() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixClassifierRecovery-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixClassifierRecovery")
 }
 
 private func classifierURL(repoURL: URL) -> URL {

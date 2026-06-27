@@ -164,9 +164,7 @@ private struct BatchDeleteIntegrationContext {
     let indexOnly: FileEntrySnapshot
 
     func cleanUp() {
-        try? FileManager.default.removeItem(at: repoURL)
-        try? FileManager.default.removeItem(at: sourceRootURL)
-        try? FileManager.default.removeItem(at: homeURL)
+        removeTestTemporaryItems(repoURL, sourceRootURL, homeURL)
     }
 }
 

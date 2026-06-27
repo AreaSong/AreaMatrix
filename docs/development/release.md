@@ -33,9 +33,8 @@
 
 发布人执行：
 
-- [ ] 若需要追溯 v1 历史分发判断，先读取
-      [v1 release checklist](../../workflow/versions/v1-mvp/evidence/release-checklist.md)；该清单是
-      v1 归档证据，不作为 v2 发布命名模板。
+- [ ] 若需要追溯历史分发判断，先从
+      [workflow versions](../../workflow/versions/README.md) 定位对应归档证据；归档清单不作为后续版本发布命名模板。
 - [ ] `./dev release preflight` 通过，确认本机存在 Developer ID Application
       signing identity，且 `AC_PASSWORD` notarytool keychain profile 可用；该预检
       只证明发布凭据可用，不能替代最终 codesign、notarytool submit、stapler、DMG
@@ -250,7 +249,7 @@ gh release create v0.1.0 \
   AreaMatrix.zip
 ```
 
-`release-notes-0.1.0.md` 来自 CHANGELOG 该版本段落 + 致谢 + 已知问题；v1 历史发布说明已归档在 `workflow/versions/v1-mvp/evidence/release-notes/`。
+`release-notes-0.1.0.md` 来自 CHANGELOG 该版本段落 + 致谢 + 已知问题；历史发布说明从 [workflow versions](../../workflow/versions/README.md) 的归档入口查阅。
 
 ---
 

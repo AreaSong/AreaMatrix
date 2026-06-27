@@ -119,7 +119,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testDefaultCoreBridgePersistsICloudWarningsWithoutCreatingUserRootFiles() async throws {
         let repoURL = try temporaryIntegrationsSettingsRepo()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
         let current = try await bridge.loadConfig(repoPath: repoURL.path)
@@ -441,8 +441,5 @@ private extension RepoConfigSnapshot {
 }
 
 private func temporaryIntegrationsSettingsRepo() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixIntegrationsSettings-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixIntegrationsSettings")
 }

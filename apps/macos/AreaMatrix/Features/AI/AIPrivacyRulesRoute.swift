@@ -56,7 +56,7 @@ extension AISummaryEditorNotice {
         return privacyField.map { AIPrivacyRulesRoute(repoPath: repoPath, focus: .field($0)) }
     }
 
-    var aiPrivacyRulesPrivacyRulesRouteAccessibilitySuffix: String? {
+    var aiPrivacyRulesRouteAccessibilitySuffix: String? {
         if let ruleID = aiPrivacyRulesNormalizedPrivacyRuleID { return "privacy-rule-\(ruleID)" }
         return privacyField.map { "privacy-field-\($0)" }
     }

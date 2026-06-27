@@ -64,7 +64,9 @@ final class InitFailedErrorMappingTests: XCTestCase {
         let updater = AIPrivacyRulesRecordingAISettingsUpdater(result: .success)
         let model = AISettingsModel(
             repoPath: "/tmp/aiPrivacyRules",
-            loader: AIPrivacyRulesStaticAISettingsLoader(snapshot: .aiPrivacyRulesRemoteReady(repoPath: "/tmp/aiPrivacyRules")),
+            loader: AIPrivacyRulesStaticAISettingsLoader(
+                snapshot: .aiPrivacyRulesRemoteReady(repoPath: "/tmp/aiPrivacyRules")
+            ),
             updater: updater,
             errorMapper: AIPrivacyRulesStaticAIErrorMapper()
         )
@@ -104,7 +106,8 @@ final class InitFailedErrorMappingTests: XCTestCase {
         XCTAssertEqual(model.actionFeedback, .failed(AISettingsError(
             message: "Remote AI requires provider consent.",
             recovery: "Configure remote AI before allowing the privacy gate.",
-            detail: "remote-provider-config owns provider setup, API key storage, connection verification, and remote scope."
+            detail: "remote-provider-config owns provider setup, API key storage, "
+                + "connection verification, and remote scope."
         )))
     }
 
@@ -115,7 +118,9 @@ final class InitFailedErrorMappingTests: XCTestCase {
         )))
         let model = AISettingsModel(
             repoPath: "/tmp/aiPrivacyRules",
-            loader: AIPrivacyRulesStaticAISettingsLoader(snapshot: .aiPrivacyRulesRemoteReady(repoPath: "/tmp/aiPrivacyRules")),
+            loader: AIPrivacyRulesStaticAISettingsLoader(
+                snapshot: .aiPrivacyRulesRemoteReady(repoPath: "/tmp/aiPrivacyRules")
+            ),
             updater: updater,
             errorMapper: AIPrivacyRulesStaticAIErrorMapper()
         )

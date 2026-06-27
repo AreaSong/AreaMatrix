@@ -115,7 +115,10 @@ struct BatchChangeCategorySheet: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: "Change category for \(selectedCount) files", pageID: "batch-change-category") {
+        MainFileActionSheetContainer(
+            title: "Change category for \(selectedCount) files",
+            pageID: "batch-change-category"
+        ) {
             if selectedCount == 0 {
                 Text("No files selected")
                     .foregroundStyle(.secondary)

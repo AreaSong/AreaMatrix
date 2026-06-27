@@ -123,6 +123,7 @@ _ACTION_SPECS = (
     ActionSpec("workflow-doctor", group="workflow", label_key="action.workflow-doctor.label", note_key="action.workflow-doctor.note"),
     ActionSpec("changes-preview", group="workflow", label_key="action.changes-preview.label", note_key="action.changes-preview.note"),
     ActionSpec("check", command="check", shortcuts=("c",), group="tool", label_key="action.check.label", note_key="action.check.note", passthrough=True),
+    ActionSpec("wording", command="wording", group="tool", label_key="action.wording.label", note_key="action.wording.note", passthrough=True),
     ActionSpec("build", command="build", group="tool", label_key="action.build.label", note_key="action.build.note", passthrough=True),
     ActionSpec("test", command="test", group="tool", label_key="action.test.label", note_key="action.test.note", passthrough=True),
     ActionSpec("bindings", command="bindings", group="tool", label_key="action.bindings.label", note_key="action.bindings.note", passthrough=True),
@@ -163,7 +164,7 @@ MENUS = {
     "tools": MenuSpec(
         "tools",
         "submenu.tools.title",
-        ("check", "release", "processes", "workflow-status", "tasks-status", "workflow-doctor", "changes-preview", "language-menu", "help"),
+        ("check", "wording", "release", "processes", "workflow-status", "tasks-status", "workflow-doctor", "changes-preview", "language-menu", "help"),
     ),
 }
 
@@ -207,6 +208,7 @@ REQUIRED_COMMANDS = (
     "shortcuts",
     "tools",
     "check",
+    "wording",
     "build",
     "test",
     "bindings",

@@ -270,10 +270,7 @@ final class RepositorySettingsRecordingFileRevealer: RepositoryFileRevealing {
 }
 
 func temporaryRepositorySettingsRepo() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixRepositorySettings-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixRepositorySettings")
 }
 
 func createRepositorySettingsMetadataDatabaseMarker(in repoURL: URL) throws {

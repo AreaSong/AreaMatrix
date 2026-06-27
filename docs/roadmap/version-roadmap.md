@@ -53,7 +53,7 @@ flowchart LR
 
 ### 验收
 
-详见 [v1-mvp historical source](../../workflow/versions/v1-mvp/source-docs/) 归档范围与验收清单。
+详见 [workflow source docs guide](../../workflow/versions/source-docs-guide.md) 中的归档范围读法与验收清单定位方式。
 
 ### 推进顺序
 
@@ -222,7 +222,7 @@ flowchart LR
 
 ## Related
 
-- [v1-mvp historical source](../../workflow/versions/v1-mvp/source-docs/)
+- [workflow source docs guide](../../workflow/versions/source-docs-guide.md)
 - [../product/prd.md](../product/prd.md)
 - [../adr/README.md](../adr/README.md)
 - [../../CHANGELOG.md](../../CHANGELOG.md)

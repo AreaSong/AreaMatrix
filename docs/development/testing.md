@@ -281,7 +281,7 @@ final class FullFlowTests: XCTestCase {
 
 ## 手工冒烟清单
 
-发布前必跑。v1 历史验收清单归档在 [v1 source archive](../../workflow/versions/v1-mvp/source-docs/)，恢复类手工证据规则见 [recovery.md](recovery.md)：
+发布前必跑。历史验收清单从 [workflow source docs guide](../../workflow/versions/source-docs-guide.md) 定位，恢复类手工证据规则见 [recovery.md](recovery.md)：
 
 - [ ] 从干净状态启动 → 首次启动向导 → 选目录 → 完成
 - [ ] 拖单个 PDF → ImportSheet 默认 Copy → 确认 → 列表出现
@@ -453,4 +453,4 @@ fn sigkill_during_import_safe() {
 - [troubleshooting.md](troubleshooting.md)
 - [recovery.md](recovery.md)
 - [../api/uniffi-recipes.md](../api/uniffi-recipes.md)
-- [../../workflow/versions/v1-mvp/source-docs/](../../workflow/versions/v1-mvp/source-docs/)
+- [../../workflow/versions/source-docs-guide.md](../../workflow/versions/source-docs-guide.md)

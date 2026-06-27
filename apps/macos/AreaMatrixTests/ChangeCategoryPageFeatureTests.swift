@@ -1,7 +1,6 @@
 @testable import AreaMatrix
 import XCTest
 
-// swiftlint:disable file_length
 // swiftlint:disable:next type_body_length
 final class ChangeCategoryPageFeatureTests: XCTestCase {
     @MainActor
@@ -339,12 +338,12 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     }
 
     // swiftlint:disable:next function_body_length
-    func testChangeCategoryMoveToCategoryCoreDefaultCoreBridgePreviewsThenMovesCopiedFileAndWritesChangeLog() async throws {
+    func testChangeCategoryMoveToCategoryCoreDefaultCoreBridgePreviewsThenMovesCopiedFileAndWritesChangeLog(
+    ) async throws {
         let repoURL = try makeChangeCategoryFeatureTemporaryDirectory(prefix: "repo")
         let sourceRoot = try makeChangeCategoryFeatureTemporaryDirectory(prefix: "source")
         defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
+            removeTestTemporaryItems(repoURL, sourceRoot)
         }
         let sourceURL = sourceRoot.appendingPathComponent("contract.pdf")
         try Data("category bytes".utf8).write(to: sourceURL)
@@ -401,12 +400,12 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         XCTAssertTrue(changes.contains { $0.action == "moved" })
     }
 
-    func testChangeCategoryResolveNameConflictCoreDefaultCoreBridgePreviewsAutoNumberedTargetNameWithoutMovingFile() async throws {
+    func testChangeCategoryResolveNameConflictCoreDefaultCoreBridgePreviewsAutoNumberedTargetNameWithoutMovingFile(
+    ) async throws {
         let repoURL = try makeChangeCategoryFeatureTemporaryDirectory(prefix: "repo")
         let sourceRoot = try makeChangeCategoryFeatureTemporaryDirectory(prefix: "source")
         defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
+            removeTestTemporaryItems(repoURL, sourceRoot)
         }
         let financeSourceURL = sourceRoot.appendingPathComponent("finance-contract.pdf")
         let docsSourceURL = sourceRoot.appendingPathComponent("docs-contract.pdf")
@@ -450,207 +449,4 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             atPath: repoURL.appendingPathComponent("finance/contract.pdf").path
         ))
     }
-}
-
-private enum ChangeCategoryRequest: Equatable {
-    case preview(repoPath: String, fileID: Int64, targetCategory: String)
-    case move(repoPath: String, fileID: Int64, targetCategory: String)
-    case correction(repoPath: String, fileID: Int64, targetCategory: String, moveFile: Bool, remember: Bool)
-}
-
-private actor ChangeCategoryRecordingMover: CoreFileCategoryMoving {
-    private let previewResult: Result<MoveToCategoryPreviewSnapshot, Error>
-    private let moveResult: Result<FileEntrySnapshot, Error>
-    private let correctionResult: Result<ClassifierCorrectionResultSnapshot, Error>
-    private var requests: [ChangeCategoryRequest] = []
-
-    init(
-        previewResult: Result<MoveToCategoryPreviewSnapshot, Error>,
-        moveResult: Result<FileEntrySnapshot, Error> = .failure(CoreError.Internal(message: "unexpected move")),
-        correctionResult: Result<ClassifierCorrectionResultSnapshot, Error> = .failure(
-            CoreError.Internal(message: "unexpected classifier correction")
-        )
-    ) {
-        self.previewResult = previewResult
-        self.moveResult = moveResult
-        self.correctionResult = correctionResult
-    }
-
-    func previewMoveToCategory(
-        repoPath: String,
-        fileID: Int64,
-        newCategory: String
-    ) async throws -> MoveToCategoryPreviewSnapshot {
-        requests.append(.preview(repoPath: repoPath, fileID: fileID, targetCategory: newCategory))
-        return try previewResult.get()
-    }
-
-    func moveToCategory(repoPath: String, fileID: Int64, newCategory: String) async throws -> FileEntrySnapshot {
-        requests.append(.move(repoPath: repoPath, fileID: fileID, targetCategory: newCategory))
-        return try moveResult.get()
-    }
-
-    func correctFileCategory(
-        repoPath: String,
-        fileID: Int64,
-        targetCategory: String,
-        moveFile: Bool,
-        remember: Bool
-    ) async throws -> ClassifierCorrectionResultSnapshot {
-        requests.append(.correction(
-            repoPath: repoPath,
-            fileID: fileID,
-            targetCategory: targetCategory,
-            moveFile: moveFile,
-            remember: remember
-        ))
-        return try correctionResult.get()
-    }
-
-    func recordedRequests() -> [ChangeCategoryRequest] {
-        requests
-    }
-}
-
-private struct ChangeCategoryPredictionRequest: Equatable {
-    var repoPath: String
-    var filename: String
-}
-
-private actor ChangeCategoryRecordingPredictor: CoreCategoryPredicting {
-    private let result: Result<ClassifyResultSnapshot, Error>
-    private var requests: [ChangeCategoryPredictionRequest] = []
-
-    init(result: Result<ClassifyResultSnapshot, Error>) {
-        self.result = result
-    }
-
-    func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
-        requests.append(ChangeCategoryPredictionRequest(repoPath: repoPath, filename: filename))
-        return try result.get()
-    }
-
-    func recordedRequests() -> [ChangeCategoryPredictionRequest] {
-        requests
-    }
-}
-
-private actor ChangeCategoryRecordingLister: CoreFileListing {
-    enum Result {
-        case success([FileEntrySnapshot])
-        case failure(Error)
-    }
-
-    private var results: [Result]
-    private var requests: [FileFilterSnapshot] = []
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func listFiles(repoPath _: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
-        requests.append(filter)
-        guard !results.isEmpty else { return [] }
-
-        switch results.removeFirst() {
-        case let .success(files):
-            return files
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func recordedRequests() -> [FileFilterSnapshot] {
-        requests
-    }
-}
-
-private extension FileEntrySnapshot {
-    static func changeCategoryFixture(
-        id: Int64,
-        path: String = "docs/contracts/contract.pdf",
-        category: String = "docs",
-        name: String,
-        updatedAt: Int64 = 1_700_000_100
-    ) -> FileEntrySnapshot {
-        FileEntrySnapshot(
-            id: id,
-            path: path,
-            originalName: name,
-            currentName: name,
-            category: category,
-            sizeBytes: 512,
-            hashSha256: "change-category-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: updatedAt
-        )
-    }
-}
-
-private extension RepositoryTreeNodeSnapshot {
-    static func changeCategoryTree(docsCount: Int64, financeCount: Int64) -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
-            children: [
-                RepositoryTreeNodeSnapshot(slug: "docs", displayName: "docs", fileCount: docsCount, children: []),
-                RepositoryTreeNodeSnapshot(
-                    slug: "finance",
-                    displayName: "finance",
-                    fileCount: financeCount,
-                    children: []
-                )
-            ]
-        )
-    }
-}
-
-private extension MoveToCategoryPreviewSnapshot {
-    static func changeCategoryFixture(
-        fileID: Int64,
-        targetPath: String,
-        targetName: String,
-        indexOnly: Bool = false,
-        nameConflictResolved: Bool = false
-    ) -> MoveToCategoryPreviewSnapshot {
-        MoveToCategoryPreviewSnapshot(
-            fileID: fileID,
-            fromCategory: "docs",
-            toCategory: "finance",
-            currentPath: "docs/contracts/\(targetName)",
-            targetPath: targetPath,
-            targetName: targetName,
-            storageMode: indexOnly ? "Indexed" : "Copied",
-            indexOnly: indexOnly,
-            nameConflictResolved: nameConflictResolved,
-            willMoveFile: !indexOnly
-        )
-    }
-}
-
-private extension CoreErrorMappingSnapshot {
-    static func changeCategoryClassify() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .classify,
-            userMessage: "Target category is unavailable.",
-            severity: .medium,
-            suggestedAction: "Choose another category, then retry.",
-            recoverability: .userActionRequired,
-            rawContext: "change-category move-to-category preview_move_to_category"
-        )
-    }
-}
-
-private func makeChangeCategoryFeatureTemporaryDirectory(prefix: String) throws -> URL {
-    let name = "AreaMatrixChangeCategory-\(prefix)-\(UUID().uuidString)"
-    let url = FileManager.default.temporaryDirectory.appendingPathComponent(name, isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
 }

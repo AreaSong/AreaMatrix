@@ -5,9 +5,9 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
     @MainActor
     func testImportFolderEntryCancelAndImportRoutesThroughImportProgressProgressAndResult() async throws {
         let folderURL = try makeImportFolderTemporaryDirectory()
-        defer { try? FileManager.default.removeItem(at: folderURL) }
+        defer { removeTestTemporaryItems(folderURL) }
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
-        let announcer = ImportSingleFileRecordingAccessibilityAnnouncer()
+        let announcer = RecordingAccessibilityAnnouncer()
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: ImportSingleFileStaticRepositoryOpener(opening: opening),
@@ -58,7 +58,8 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    func testImportFolderPageIntegrationUsesClassifyPreviewCoreImportCopyFileCoreAndImportIndexFileCoreWithoutControlMapOutOfScopeCalls() async {
+    func testImportFolderIntegrationUsesClassifyCopyAndIndexWithoutOutOfScopeCalls(
+    ) async {
         let copyURL = URL(fileURLWithPath: "/tmp/client-a/invoice.pdf")
         let indexURL = URL(fileURLWithPath: "/tmp/client-a/reference.pdf")
         let scanner = importFolderStaticScanner(urls: [copyURL, indexURL])
@@ -74,7 +75,10 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
             conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
-        let request = importFolderFolderRequest(rootURL: URL(fileURLWithPath: "/tmp/client-a"), destination: .category("docs"))
+        let request = importFolderFolderRequest(
+            rootURL: URL(fileURLWithPath: "/tmp/client-a"),
+            destination: .category("docs")
+        )
 
         await model.load(request: request)
         XCTAssertEqual(model.selectedDestination, .category("docs"))
@@ -231,7 +235,8 @@ final class ImportFolderConflictIntegrationTests: XCTestCase {
     func testImportFolderFolderFatalImportRoutesToImportProgressPauseWithRetryContextAndPendingRows() async {
         let scenario = makeImportFolderFatalFolderImportScenario()
 
-        await scenario.importModel.load(request: importFolderFolderRequest(rootURL: URL(fileURLWithPath: "/tmp/client-a")))
+        await scenario.importModel
+            .load(request: importFolderFolderRequest(rootURL: URL(fileURLWithPath: "/tmp/client-a")))
         scenario.model.route = .mainList(scenario.opening)
         let outcome = await scenario.importModel.importReadyFiles(controlState: scenario.controlState) { progress in
             scenario.model.updateImportEntryProgress(progress)
@@ -262,7 +267,7 @@ final class ImportFolderConflictIntegrationTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
         let progress = ImportBatchProgressSnapshot(
@@ -417,7 +422,7 @@ private func makeImportFolderFatalFolderImportScenario() -> ImportFolderFatalFol
     let model = OnboardingModel(
         settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
         importProgressControlState: controlState,
-        accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+        accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
         helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
     )
     return ImportFolderFatalFolderImportScenario(

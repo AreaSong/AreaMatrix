@@ -84,7 +84,7 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
             settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
             settingsWriter: MainLoadingRecordingSettingsWriter(),
             pathValidator: StartupRecoveryIntegrationPathValidator(),
-            initializedPathValidator: StartupRecoveryIntegrationInitializedPathValidator(),
+            initializedPathValidator: InitializedPathValidator(),
             emptyRepositoryOpener: opener,
             mainLoadingTreeLister: treeLister,
             startupRecoverer: recoverer,
@@ -131,7 +131,7 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
             pathValidator: StartupRecoveryIntegrationPathValidator(),
-            initializedPathValidator: StartupRecoveryIntegrationInitializedPathValidator(),
+            initializedPathValidator: InitializedPathValidator(),
             emptyRepositoryOpener: MainLoadingFailingRepositoryOpener(
                 error: CoreError.Internal(message: "should not open")
             ),
@@ -222,7 +222,7 @@ private func assertStartupRecoveryStartupRecoveryFailureState(
         isRetrying: false,
         onRetry: {}
     )
-    let mainBody = startupRecoveryIntegrationMirrorDescription(of: MainLoadingView(
+    let mainBody = testMirrorDescription(of: MainLoadingView(
         state: state,
         isRetryingStartupRecovery: false,
         onCancelOpening: {},
@@ -245,7 +245,7 @@ private actor StartupRecoveryIntegrationPathValidator: CoreRepositoryPathValidat
     }
 }
 
-private actor StartupRecoveryIntegrationInitializedPathValidator: CoreInitializedRepositoryPathValidating {
+private actor InitializedPathValidator: CoreInitializedRepositoryPathValidating {
     func validateInitializedRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
         .mainLoadingInitializedFixture(repoPath: repoPath)
     }
@@ -479,21 +479,4 @@ private func waitForStartupRecoveryIntegrationMainLoadingState(
     }
 
     return MainLoadingState(repoPath: "")
-}
-
-private func startupRecoveryIntegrationMirrorDescription(of value: Any) -> String {
-    var lines: [String] = []
-    appendStartupRecoveryIntegrationMirrorDescription(of: value, to: &lines)
-    return lines.joined(separator: "\n")
-}
-
-private func appendStartupRecoveryIntegrationMirrorDescription(of value: Any, to lines: inout [String]) {
-    lines.append(String(describing: type(of: value)))
-    lines.append(String(describing: value))
-    for child in Mirror(reflecting: value).children {
-        if let label = child.label {
-            lines.append(label)
-        }
-        appendStartupRecoveryIntegrationMirrorDescription(of: child.value, to: &lines)
-    }
 }

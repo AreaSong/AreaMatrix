@@ -362,8 +362,5 @@ private extension AboutDiagnosticsExportSnapshot {
 }
 
 private func makeAboutSettingsTemporaryDirectory() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("areamatrix-about-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "areamatrix-about")
 }

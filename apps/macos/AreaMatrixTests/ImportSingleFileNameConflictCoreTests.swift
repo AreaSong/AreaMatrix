@@ -5,7 +5,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
     @MainActor
     func testImportConflictBatchLoadsCoreConflictBatchPreviewWithDefaultSafeStrategies() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let conflictBatcher = ImportConflictBatchRecordingConflictBatcher()
+        let conflictBatcher = RecordingConflictBatcher()
         let model = ImportBatchCopyImportModel(
             importer: ImportBatchRecordingBatchImporter(),
             errorMapper: ImportSingleFileRecordingErrorMapper(),
@@ -40,7 +40,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
     @MainActor
     func testImportConflictBatchApplyRequiresReplaceConfirmationBeforeCallingCore() async {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let conflictBatcher = ImportConflictBatchRecordingConflictBatcher(preview: .importConflictBatchReplacePreview)
+        let conflictBatcher = RecordingConflictBatcher(preview: .importConflictBatchReplacePreview)
         let model = ImportBatchCopyImportModel(
             importer: ImportBatchRecordingBatchImporter(),
             errorMapper: ImportSingleFileRecordingErrorMapper(),
@@ -82,7 +82,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
         let blockedPreview = ImportConflictBatchPreviewReportSnapshot.importConflictBatchDefaultPreview
             .withBlockedSameNameRow()
-        let conflictBatcher = ImportConflictBatchRecordingConflictBatcher(preview: blockedPreview)
+        let conflictBatcher = RecordingConflictBatcher(preview: blockedPreview)
         let model = ImportBatchCopyImportModel(
             importer: ImportBatchRecordingBatchImporter(),
             errorMapper: ImportSingleFileRecordingErrorMapper(),
@@ -112,10 +112,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
     func testNameConflictRealCoreSameNameDifferentContentDefaultsToNumberedKeepBothImport() async throws {
         let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "nameConflict-repo")
         let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "nameConflict-source")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
         let existingURL = sourceRoot.appendingPathComponent("existing.pdf")
         let incomingURL = sourceRoot.appendingPathComponent("source.pdf")
         try Data("existing bytes".utf8).write(to: existingURL)
@@ -146,10 +143,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
     func testNameConflictRealCoreRenameIncomingUsesEditedSafeName() async throws {
         let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "nameConflict-rename-repo")
         let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "nameConflict-rename-source")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
         let existingURL = sourceRoot.appendingPathComponent("existing.pdf")
         let incomingURL = sourceRoot.appendingPathComponent("source.pdf")
         try Data("existing bytes".utf8).write(to: existingURL)
@@ -227,7 +221,7 @@ private struct ImportConflictBatchApplyRequest: Equatable {
     var previewToken: String
 }
 
-private actor ImportConflictBatchRecordingConflictBatcher: CoreImportConflictBatching {
+private actor RecordingConflictBatcher: CoreImportConflictBatching {
     private let preview: ImportConflictBatchPreviewReportSnapshot
     private var recordedPreviewRequests: [ImportConflictBatchPreviewRequest] = []
     private var recordedApplyRequests: [ImportConflictBatchApplyRequest] = []
@@ -340,7 +334,8 @@ private extension ImportConflictBatchPreviewReportSnapshot {
         copy.requestedConflictCount = Int64(request.conflictIDs.count)
         copy.includedCount = Int64(request.conflictIDs.count)
         copy.items = request.conflictIDs.map { conflictID in
-            let source = items.first { $0.conflictID == conflictID } ?? .importConflictBatchDuplicate(conflictID: conflictID)
+            let source = items
+                .first { $0.conflictID == conflictID } ?? .importConflictBatchDuplicate(conflictID: conflictID)
             return source.withStrategies(
                 duplicateStrategy: request.duplicateStrategy,
                 sameNameStrategy: request.sameNameStrategy

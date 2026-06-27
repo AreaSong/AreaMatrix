@@ -6,7 +6,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
     func testImportSingleFileEntryCancelAndImportRoutesThroughImportProgressProgress() async {
         let sourceURL = URL(fileURLWithPath: "/tmp/source.pdf")
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
-        let announcer = ImportSingleFileRecordingAccessibilityAnnouncer()
+        let announcer = RecordingAccessibilityAnnouncer()
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: ImportSingleFileStaticRepositoryOpener(opening: opening),
@@ -50,7 +50,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -71,7 +71,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         let sourceURL = URL(fileURLWithPath: "/tmp/source.pdf")
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -89,7 +89,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -105,7 +105,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -140,8 +140,20 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         XCTAssertEqual(model.suggestedName, "2026Q1_合同.pdf")
         XCTAssertEqual(model.selectedStorageMode, .copy)
 
-        await importImportSingleFileMode(model: model, request: request, mode: .copy, name: "copy.pdf", storageMode: "Copied")
-        await importImportSingleFileMode(model: model, request: request, mode: .move, name: "move.pdf", storageMode: "Moved")
+        await importImportSingleFileMode(
+            model: model,
+            request: request,
+            mode: .copy,
+            name: "copy.pdf",
+            storageMode: "Copied"
+        )
+        await importImportSingleFileMode(
+            model: model,
+            request: request,
+            mode: .move,
+            name: "move.pdf",
+            storageMode: "Moved"
+        )
         await importImportSingleFileMode(
             model: model,
             request: request,
@@ -313,10 +325,7 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
     func testDuplicateConflictRealCorePreImportDuplicateRendersPageAndSkipDoesNotWrite() async throws {
         let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "duplicateConflict-repo")
         let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "duplicateConflict-source")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
         let existingURL = sourceRoot.appendingPathComponent("existing.pdf")
         try Data("source".utf8).write(to: existingURL)
         let sourceURL = sourceRoot.appendingPathComponent("source.pdf")
@@ -366,10 +375,7 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
     func testDuplicateConflictRealCoreKeepBothPreviewMatchesFinalNumberedImport() async throws {
         let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "duplicateConflict-keepboth-repo")
         let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "duplicateConflict-keepboth-source")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
         let existingURL = sourceRoot.appendingPathComponent("existing.pdf")
         let sourceURL = sourceRoot.appendingPathComponent("source.pdf")
         try Data("same".utf8).write(to: existingURL)
@@ -412,7 +418,7 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
     @MainActor
     func testImportSingleFileFileMetadataAndFilenameValidationMatchPageSpec() async throws {
         let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "importSingleFile-metadata")
-        defer { try? FileManager.default.removeItem(at: sourceRoot) }
+        defer { removeTestTemporaryItems(sourceRoot) }
         let sourceURL = sourceRoot.appendingPathComponent("合同.pdf")
         try Data("abc".utf8).write(to: sourceURL)
         let model = ImportSingleFilePreviewModel(

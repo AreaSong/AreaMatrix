@@ -6,8 +6,7 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
     func testAdvancedSettingsPageIntegrationConnectsDeclaredCapabilitiesDiagnosticsLogsAndRecoveryExit() async throws {
         let context = try await makeAdvancedSettingsIntegrationContext()
         defer {
-            try? FileManager.default.removeItem(at: context.repoURL)
-            try? FileManager.default.removeItem(at: context.sourceRootURL)
+            removeTestTemporaryItems(context.repoURL, context.sourceRootURL)
         }
 
         await context.model.load()
@@ -34,7 +33,7 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
         try await assertAdvancedSettingsDiagnosticsAndOverview(context)
 
         let opening = RepositoryOpeningResult.shellFixture(repoPath: context.repoURL.path, fileCount: 1)
-        let recoverer = AdvancedSettingsRecordingStartupRecoverer()
+        let recoverer = RecordingStartupRecoverer()
         let shell = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             startupRecoverer: recoverer,
@@ -45,7 +44,12 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
         shell.openMainRepositoryRepair(repoPath: context.repoURL.path)
         let recoveryRequests = await recoverer.requestedRepoPaths()
 
-        assertAdvancedSettingsRepairExit(shell: shell, opening: opening, context: context, recoveryRequests: recoveryRequests)
+        assertAdvancedSettingsRepairExit(
+            shell: shell,
+            opening: opening,
+            context: context,
+            recoveryRequests: recoveryRequests
+        )
     }
 
     @MainActor
@@ -173,7 +177,7 @@ private struct AdvancedSettingsIntegrationContext {
     let diagnosticsSnapshot: DiagnosticsSnapshotSnapshot
     let diagnosticsCollector: ShellRecordingDiagnosticsCollector
     let logsOpener: AdvancedSettingsRecordingLogsOpener
-    let summaryCopier: AdvancedSettingsRecordingDiagnosticSummaryCopier
+    let summaryCopier: RecordingDiagnosticSummaryCopier
     let bridge: CoreBridge
     let model: AdvancedSettingsModel
 }
@@ -185,7 +189,7 @@ private func makeAdvancedSettingsIntegrationContext() async throws -> AdvancedSe
     var didSucceed = false
     defer {
         if !didSucceed {
-            cleanupURLs.forEach { try? FileManager.default.removeItem(at: $0) }
+            removeTestTemporaryItems(cleanupURLs)
         }
     }
 
@@ -203,9 +207,14 @@ private func makeAdvancedSettingsIntegrationContext() async throws -> AdvancedSe
     )
     let diagnosticsCollector = ShellRecordingDiagnosticsCollector(result: .success(diagnosticsSnapshot))
     let logsOpener = AdvancedSettingsRecordingLogsOpener(result: .success(advancedSettingsLogsPath(repoURL: repoURL)))
-    let summaryCopier = AdvancedSettingsRecordingDiagnosticSummaryCopier()
-    let model = advancedSettingsIntegrationModel(repoURL: repoURL, bridge: bridge, diagnosticsCollector: diagnosticsCollector,
-                                     logsOpener: logsOpener, summaryCopier: summaryCopier)
+    let summaryCopier = RecordingDiagnosticSummaryCopier()
+    let model = advancedSettingsIntegrationModel(
+        repoURL: repoURL,
+        bridge: bridge,
+        diagnosticsCollector: diagnosticsCollector,
+        logsOpener: logsOpener,
+        summaryCopier: summaryCopier
+    )
 
     didSucceed = true
     return AdvancedSettingsIntegrationContext(
@@ -248,7 +257,7 @@ private func advancedSettingsIntegrationModel(
     bridge: CoreBridge,
     diagnosticsCollector: ShellRecordingDiagnosticsCollector,
     logsOpener: AdvancedSettingsRecordingLogsOpener,
-    summaryCopier: AdvancedSettingsRecordingDiagnosticSummaryCopier
+    summaryCopier: RecordingDiagnosticSummaryCopier
 ) -> AdvancedSettingsModel {
     AdvancedSettingsModel(
         repoPath: repoURL.path,
@@ -296,13 +305,13 @@ private func loadedAdvancedSettingsModel(
         repoPath: "/tmp/repo",
         loader: AdvancedSettingsStaticConfigLoader(config: .advancedSettingsFixture(repoPath: "/tmp/repo")),
         updater: AdvancedSettingsNoopConfigUpdater(),
-        rootOverviewInspector: AdvancedSettingsStaticRootOverviewInspector(status: .missing),
+        rootOverviewInspector: StaticRootOverviewInspector(status: .missing),
         diagnosticsCollector: diagnosticsCollector,
         appVersionReader: AdvancedSettingsStaticAppVersionReader(version: "1.0.0"),
         coreVersionReader: AdvancedSettingsStaticCoreVersionReader(version: "0.1.0"),
         metadataReader: AdvancedSettingsStaticMetadataReader(schemaVersion: 1),
         logsOpener: resolvedLogsOpener,
-        summaryCopier: AdvancedSettingsRecordingDiagnosticSummaryCopier(),
+        summaryCopier: RecordingDiagnosticSummaryCopier(),
         errorMapper: CoreBridge()
     )
     await model.load()
@@ -337,7 +346,7 @@ private actor AdvancedSettingsNoopConfigUpdater: CoreConfigurationUpdating {
     func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
 }
 
-private struct AdvancedSettingsStaticRootOverviewInspector: RootOverviewFileInspecting {
+private struct StaticRootOverviewInspector: RootOverviewFileInspecting {
     let status: RootOverviewFileStatus
 
     func status(repoPath _: String) -> RootOverviewFileStatus {
@@ -393,7 +402,7 @@ private final class AdvancedSettingsRecordingLogsOpener: AdvancedSettingsLogFold
 }
 
 @MainActor
-private final class AdvancedSettingsRecordingDiagnosticSummaryCopier: AdvancedSettingsDiagnosticSummaryCopying {
+private final class RecordingDiagnosticSummaryCopier: AdvancedSettingsDiagnosticSummaryCopying {
     private(set) var copiedSummaries: [String] = []
 
     func copyDiagnosticSummary(_ summary: String) throws {
@@ -401,7 +410,7 @@ private final class AdvancedSettingsRecordingDiagnosticSummaryCopier: AdvancedSe
     }
 }
 
-private actor AdvancedSettingsRecordingStartupRecoverer: CoreStartupRecovering {
+private actor RecordingStartupRecoverer: CoreStartupRecovering {
     private var repoPaths: [String] = []
 
     func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
@@ -415,10 +424,7 @@ private actor AdvancedSettingsRecordingStartupRecoverer: CoreStartupRecovering {
 }
 
 private func advancedSettingsTemporaryDirectory() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixAdvancedSettings-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixAdvancedSettings")
 }
 
 private extension RepoConfigSnapshot {

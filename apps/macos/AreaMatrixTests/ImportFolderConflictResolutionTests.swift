@@ -215,7 +215,10 @@ private struct ImportFolderFolderConflictFixture {
 
         if includeBlocked {
             rows.append(ImportFolderPreviewRow.loading(fileURL: blockedURL, rootURL: rootURL))
-            predictions["blocked.pdf"] = .success(.importFolderPrediction(category: "docs", suggestedName: "blocked.pdf"))
+            predictions["blocked.pdf"] = .success(.importFolderPrediction(
+                category: "docs",
+                suggestedName: "blocked.pdf"
+            ))
             results[blockedURL.path] = .blocked("Conflict precheck failed: permission denied")
         }
 

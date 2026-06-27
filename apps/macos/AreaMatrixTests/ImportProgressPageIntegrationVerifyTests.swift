@@ -17,7 +17,7 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -330,20 +330,7 @@ private extension UndoActionRecordSnapshot {
 }
 
 private func importProgressMirrorDescription(of value: Any) -> String {
-    var lines: [String] = []
-    appendImportProgressMirrorDescription(of: value, to: &lines)
-    return lines.joined(separator: "\n")
-}
-
-private func appendImportProgressMirrorDescription(of value: Any, to lines: inout [String]) {
-    lines.append(String(describing: type(of: value)))
-    lines.append(String(describing: value))
-    for child in Mirror(reflecting: value).children {
-        if let label = child.label {
-            lines.append(label)
-        }
-        appendImportProgressMirrorDescription(of: child.value, to: &lines)
-    }
+    testMirrorDescription(of: value)
 }
 
 private actor UndoToastHistoryErrorMapper: CoreErrorMapping {

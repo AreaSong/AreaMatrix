@@ -24,6 +24,9 @@ jobs:
       - name: Quality smoke
         run: ./dev check quality
 
+      - name: Long-term wording audit
+        run: ./dev check wording
+
       - name: Task-loop health
         run: ./dev check task-loop
 

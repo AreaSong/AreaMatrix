@@ -1,13 +1,13 @@
 @testable import AreaMatrix
 import Foundation
 
-actor SyncConflictReviewRecordingSyncConflictResolver: CoreSyncConflictResolving {
+actor SyncConflictReviewResolver: CoreSyncConflictResolving {
     private let previewResults: [
         SyncConflictResolutionStrategySnapshot: Result<SyncConflictResolutionPreviewSnapshot, Error>
     ]
     private let resolveResult: Result<SyncConflictResolveReportSnapshot, Error>
-    private var previewRequests: [SyncConflictReviewSyncConflictPreviewRequest] = []
-    private var resolveRequests: [SyncConflictReviewSyncConflictResolveRequest] = []
+    private var previewRequests: [SyncConflictPreviewRequest] = []
+    private var resolveRequests: [SyncConflictResolveRequest] = []
 
     init(
         previewResults: [SyncConflictResolutionStrategySnapshot: Result<SyncConflictResolutionPreviewSnapshot, Error>],
@@ -22,12 +22,13 @@ actor SyncConflictReviewRecordingSyncConflictResolver: CoreSyncConflictResolving
         conflictID: String,
         resolution: SyncConflictResolutionStrategySnapshot
     ) async throws -> SyncConflictResolutionPreviewSnapshot {
-        previewRequests.append(SyncConflictReviewSyncConflictPreviewRequest(
+        previewRequests.append(SyncConflictPreviewRequest(
             repoPath: repoPath,
             conflictID: conflictID,
             resolution: resolution
         ))
-        return try (previewResults[resolution] ?? .success(.syncConflictReviewPreviewFixture(resolution: resolution))).get()
+        return try (previewResults[resolution] ?? .success(.syncConflictReviewPreviewFixture(resolution: resolution)))
+            .get()
     }
 
     func resolveSyncConflict(
@@ -35,7 +36,7 @@ actor SyncConflictReviewRecordingSyncConflictResolver: CoreSyncConflictResolving
         conflictID: String,
         request: SyncConflictResolutionRequestSnapshot
     ) async throws -> SyncConflictResolveReportSnapshot {
-        resolveRequests.append(SyncConflictReviewSyncConflictResolveRequest(
+        resolveRequests.append(SyncConflictResolveRequest(
             repoPath: repoPath,
             conflictID: conflictID,
             request: request
@@ -43,27 +44,27 @@ actor SyncConflictReviewRecordingSyncConflictResolver: CoreSyncConflictResolving
         return try resolveResult.get()
     }
 
-    func recordedPreviewRequests() -> [SyncConflictReviewSyncConflictPreviewRequest] {
+    func recordedPreviewRequests() -> [SyncConflictPreviewRequest] {
         previewRequests
     }
 
-    func recordedResolveRequests() -> [SyncConflictReviewSyncConflictResolveRequest] {
+    func recordedResolveRequests() -> [SyncConflictResolveRequest] {
         resolveRequests
     }
 }
 
-struct SyncConflictReviewSyncConflictPreviewRequest: Equatable {
+struct SyncConflictPreviewRequest: Equatable {
     var repoPath: String
     var conflictID: String
     var resolution: SyncConflictResolutionStrategySnapshot
 }
 
-struct SyncConflictReviewSyncConflictResolveRequest: Equatable {
+struct SyncConflictResolveRequest: Equatable {
     var repoPath: String
     var conflictID: String
     var request: SyncConflictResolutionRequestSnapshot
 
-    static let syncConflictReviewUseIncomingConfirmedRequest = SyncConflictReviewSyncConflictResolveRequest(
+    static let useIncomingConfirmedRequest = SyncConflictResolveRequest(
         repoPath: "/tmp/syncConflictReview-repo",
         conflictID: "conflict-report",
         request: SyncConflictResolutionRequestSnapshot(
@@ -113,7 +114,10 @@ extension SyncConflictResolutionPreviewSnapshot {
             canApply: canApply,
             blockedReason: blockedReason,
             previewToken: previewToken,
-            replacePlan: resolution == .useIncoming ? .syncConflictReviewReplacePlanFixture(backupTarget: backupTarget) : nil
+            replacePlan: resolution == .useIncoming ? .syncConflictReviewReplacePlanFixture(
+                backupTarget: backupTarget
+            ) :
+                nil
         )
     }
 
@@ -151,7 +155,8 @@ extension SyncConflictVersionImpactSnapshot {
 }
 
 extension SyncConflictReplacePlanSnapshot {
-    static func syncConflictReviewReplacePlanFixture(backupTarget: String? = "Trash") -> SyncConflictReplacePlanSnapshot {
+    static func syncConflictReviewReplacePlanFixture(backupTarget: String? = "Trash")
+        -> SyncConflictReplacePlanSnapshot {
         SyncConflictReplacePlanSnapshot(
             oldPath: "docs/report.pdf",
             newPath: "docs/report (Windows conflict).pdf",

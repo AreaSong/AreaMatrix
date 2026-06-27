@@ -141,7 +141,9 @@ struct AIPrivacyRulesView: View {
             HStack(spacing: 10) {
                 Button("Allow remote AI after provider consent", action: allowRemoteGate)
                     .disabled(allowRemoteGateDisabled)
-                    .accessibilityIdentifier("ai-privacy-rules-ai-privacy-rules-core-allow-remote-ai-after-provider-consent")
+                    .accessibilityIdentifier(
+                        "ai-privacy-rules-ai-privacy-rules-core-allow-remote-ai-after-provider-consent"
+                    )
                 Button("Block remote AI with privacy gate", action: blockRemoteGate)
                     .disabled(privacyModel.isSaving || privacyModel.snapshot?.privacyGateEnabled == false)
                     .accessibilityIdentifier("ai-privacy-rules-ai-privacy-rules-core-block-remote-ai-privacy-gate")

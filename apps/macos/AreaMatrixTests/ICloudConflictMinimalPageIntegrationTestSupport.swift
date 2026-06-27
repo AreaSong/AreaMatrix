@@ -116,7 +116,7 @@ actor ICloudConflictMinimalRecordingMainCore: CoreFileListing,
     }
 }
 
-actor ICloudConflictMinimalRecordingICloudConflictResolver: ICloudConflictResolving {
+actor ICloudConflictResolver: ICloudConflictResolving {
     nonisolated let iCloudConflictResolutionCapability: ICloudConflictResolutionCapability
     private let result: Result<ICloudConflictResolutionResult, Error>
     private var requests: [ICloudConflictResolutionRequest] = []
@@ -140,7 +140,7 @@ actor ICloudConflictMinimalRecordingICloudConflictResolver: ICloudConflictResolv
     }
 }
 
-actor ICloudConflictVisualRecordingConflictReviewer: CoreICloudConflictReviewing {
+actor ICloudConflictReviewer: CoreICloudConflictReviewing {
     struct PreviewRequest: Equatable {
         var repoPath: String
         var conflictID: String
@@ -190,7 +190,7 @@ actor ICloudConflictVisualRecordingConflictReviewer: CoreICloudConflictReviewing
     }
 }
 
-actor ICloudConflictMinimalRecordingPathValidator: CoreRepositoryPathValidating {
+actor ICloudPathValidator: CoreRepositoryPathValidating {
     private let result: Result<RepoPathValidationSnapshot, Error>
     private var repoPaths: [String] = []
 
@@ -208,7 +208,7 @@ actor ICloudConflictMinimalRecordingPathValidator: CoreRepositoryPathValidating 
     }
 }
 
-actor ICloudConflictMinimalRecordingErrorMapper: CoreErrorMapping {
+actor ICloudErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
     private var errors: [CoreError] = []
 
@@ -261,7 +261,8 @@ extension ChangeLogEntrySnapshot {
             filename: "report (Conflicted Copy).pdf",
             category: "docs",
             action: "conflict_resolved_keep_both",
-            detailJSON: #"{"conflict_id":"iCloudConflictMinimal","kept_paths":["docs/report.pdf","docs/report (Conflicted Copy).pdf"]}"#,
+            detailJSON: #"{"conflict_id":"iCloudConflictMinimal","kept_paths":["docs/report.pdf","# +
+                #""docs/report (Conflicted Copy).pdf"]}"#,
             occurredAt: 1_775_020_900
         )
     }
@@ -439,18 +440,5 @@ extension ICloudConflictResolveReportSnapshot {
 }
 
 func iCloudConflictMinimalIntegrationMirrorDescription(of value: Any) -> String {
-    var lines: [String] = []
-    appendICloudConflictMinimalIntegrationMirrorDescription(of: value, to: &lines)
-    return lines.joined(separator: "\n")
-}
-
-private func appendICloudConflictMinimalIntegrationMirrorDescription(of value: Any, to lines: inout [String]) {
-    lines.append(String(describing: type(of: value)))
-    lines.append(String(describing: value))
-    for child in Mirror(reflecting: value).children {
-        if let label = child.label {
-            lines.append(label)
-        }
-        appendICloudConflictMinimalIntegrationMirrorDescription(of: child.value, to: &lines)
-    }
+    testMirrorDescription(of: value)
 }

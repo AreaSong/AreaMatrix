@@ -156,7 +156,9 @@ struct RemoteModelConfigSheet: View {
         AdvancedSettingsSection(title: "Usage scope") {
             ForEach(AISettingsFeatureKind.allCases) { feature in
                 Toggle(feature.title, isOn: scopeBinding(feature))
-                    .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-scope-\(feature.rawValue)")
+                    .accessibilityIdentifier(
+                        "remote-provider-config-remote-provider-config-core-scope-\(feature.rawValue)"
+                    )
                 Text(sentFieldsText(for: feature))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -320,7 +322,9 @@ private struct DisableRemoteAIConfirmationSheet: View {
                 Spacer()
                 Button("Cancel", action: onCancel)
                 Button("Disable remote AI", role: .destructive, action: onDisable)
-                    .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-confirm-disable-remote-ai")
+                    .accessibilityIdentifier(
+                        "remote-provider-config-remote-provider-config-core-confirm-disable-remote-ai"
+                    )
             }
         }
         .padding(24)

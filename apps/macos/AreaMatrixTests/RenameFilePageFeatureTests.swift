@@ -1,7 +1,6 @@
 @testable import AreaMatrix
 import XCTest
 
-// swiftlint:disable file_length
 // swiftlint:disable:next type_body_length
 final class RenameFilePageFeatureTests: XCTestCase {
     @MainActor
@@ -177,10 +176,10 @@ final class RenameFilePageFeatureTests: XCTestCase {
 
     func testRenameFileRenameFileCoreDefaultCoreBridgeRenamesRealCopiedFileAndWritesChangeLog() async throws {
         let repoURL = try makeRenameTemporaryRepositoryURL()
-        let sourceURL = try makeRenameTemporaryRepositoryURL().appendingPathComponent("source.pdf")
+        let sourceRootURL = try makeRenameTemporaryRepositoryURL()
+        let sourceURL = sourceRootURL.appendingPathComponent("source.pdf")
         defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceURL.deletingLastPathComponent())
+            removeTestTemporaryItems(repoURL, sourceRootURL)
         }
         try "rename bytes".write(to: sourceURL, atomically: true, encoding: .utf8)
 
@@ -300,8 +299,16 @@ final class RenameFilePageFeatureTests: XCTestCase {
         let renamer = BatchRenameRecordingRenamer(preview: .success(preview), apply: .success(report))
         let mapper = BatchRenameErrorMapper(mapping: .batchRenameConflict)
 
-        let loadedPreview = await BatchRenameAction.batchRenameUndoPreview(rule: rule, renamer: renamer, errorMapper: mapper)
-        let applyResult = await BatchRenameAction.batchRenameUndoApply(preview: preview, renamer: renamer, errorMapper: mapper)
+        let loadedPreview = await BatchRenameAction.batchRenameUndoPreview(
+            rule: rule,
+            renamer: renamer,
+            errorMapper: mapper
+        )
+        let applyResult = await BatchRenameAction.batchRenameUndoApply(
+            preview: preview,
+            renamer: renamer,
+            errorMapper: mapper
+        )
 
         XCTAssertEqual(loadedPreview.applyReport, preview)
         XCTAssertEqual(applyResult.report, report)
@@ -398,115 +405,4 @@ final class RenameFilePageFeatureTests: XCTestCase {
         let mappedErrorCount = await mapper.errors.count
         XCTAssertEqual(mappedErrorCount, 2)
     }
-}
-
-private struct RenameRequest: Equatable {
-    var repoPath: String
-    var fileID: Int64
-    var newName: String
-}
-
-private actor RenameRecordingRenamer: CoreFileRenaming {
-    private let result: Result<FileEntrySnapshot, Error>
-    private var requests: [RenameRequest] = []
-
-    init(result: Result<FileEntrySnapshot, Error>) {
-        self.result = result
-    }
-
-    func renameFile(repoPath: String, fileID: Int64, newName: String) async throws -> FileEntrySnapshot {
-        requests.append(RenameRequest(repoPath: repoPath, fileID: fileID, newName: newName))
-        return try result.get()
-    }
-
-    func recordedRequests() -> [RenameRequest] {
-        requests
-    }
-}
-
-private extension FileEntrySnapshot {
-    static func renameFixture(id: Int64, name: String, updatedAt: Int64 = 1_700_000_100) -> FileEntrySnapshot {
-        FileEntrySnapshot(
-            id: id,
-            path: "docs/contracts/\(name)",
-            originalName: "old.pdf",
-            currentName: name,
-            category: "docs",
-            sizeBytes: 512,
-            hashSha256: "rename-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: updatedAt
-        )
-    }
-}
-
-private extension RepositoryOpeningResult {
-    static func renameFixture(
-        repoPath: String,
-        files: [FileEntrySnapshot],
-        writeLockedFileIDs: Set<Int64> = []
-    ) -> RepositoryOpeningResult {
-        var opening = RepositoryOpeningResult.detailMetaFixture(repoPath: repoPath, files: files)
-        opening.writeLockedFileIDs = writeLockedFileIDs
-        return opening
-    }
-}
-
-private extension CoreErrorMappingSnapshot {
-    static func renameConflict() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .conflict,
-            userMessage: "A file with this name already exists.",
-            severity: .medium,
-            suggestedAction: "Choose a different name, then retry.",
-            recoverability: .userActionRequired,
-            rawContext: "rename-file rename-file-core rename_file"
-        )
-    }
-}
-
-private extension BatchRenameValidation {
-    static func batchRenameUndoCanApply(
-        fileIDs: [Int64],
-        preview: BatchRenamePreviewReportSnapshot?,
-        rule: BatchRenameRuleSnapshot,
-        disabledReason: String? = nil,
-        isApplying: Bool = false
-    ) -> Bool {
-        canApply(
-            fileIDs: fileIDs,
-            preview: preview,
-            rule: rule,
-            disabledReason: disabledReason,
-            isApplying: isApplying
-        )
-    }
-}
-
-private extension BatchRenameAction {
-    static func batchRenameUndoPreview(
-        rule: BatchRenameRuleSnapshot,
-        renamer: any CoreBatchRenaming,
-        errorMapper: any CoreErrorMapping
-    ) async -> BatchRenamePreviewState {
-        await preview(repoPath: "/repo", fileIDs: [11, 12], rule: rule, renamer: renamer, errorMapper: errorMapper)
-    }
-
-    static func batchRenameUndoApply(
-        preview: BatchRenamePreviewReportSnapshot,
-        renamer: any CoreBatchRenaming,
-        errorMapper: any CoreErrorMapping
-    ) async -> BatchRenameApplyResult {
-        await apply(repoPath: "/repo", fileIDs: [11, 12], preview: preview, renamer: renamer, errorMapper: errorMapper)
-    }
-}
-
-private func makeRenameTemporaryRepositoryURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixRenameFile-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
 }

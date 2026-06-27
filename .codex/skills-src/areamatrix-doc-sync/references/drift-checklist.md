@@ -8,9 +8,10 @@ Use this checklist before declaring docs, API, UDL, prompts, and Codex materials
 - Do README files only summarize or navigate to the authoritative doc?
 - Are ADRs historical records rather than the only current rule?
 - If behavior changed, did tests or prompt tasks reference the updated source?
-- Do long-lived source files avoid current `stage` / `phase` / `MVP` / `local-qa` / `unnotarized` / `prerelease` / `release gate` / `alpha` / `beta` / `milestone` / `iteration` / `sprint` / `C1-C4` / `S1-S4` naming unless the context clearly marks archived evidence or a legitimate technical term?
+- Do long-lived source files avoid current `stage` / `phase` / `MVP` / `local-qa` / `unnotarized` / `prerelease` / `release gate` / `alpha` / `beta` / `milestone` / `iteration` / `sprint` / `C1-C4` / `S1-S4` naming unless the hit is policy inventory, concentrated archived evidence, fixture data, or a legitimate technical term?
 - Do Chinese source docs avoid execution-period wording such as `本任务`, `对应版本任务`, `任务补齐`, `implementation 任务`, `后续 apply 行为`, `临时 mock`, `静态占位`, `假数据`, `交付期`, `临时版本`, `进入对应阶段`, `核心交付`, `计划交付`, `时间预算`, `第一刀`, and `GL-*` route labels?
-- After edits, did the agent run an `rg` sweep for those terms and classify remaining hits as archived evidence, legal technical semantics, fixture data, or cleanup work?
+- Do docs and README route historical details through neutral archive entrypoints instead of scattering deep historical paths or old distribution names?
+- After edits, did the agent run `./dev check wording` or `./dev wording audit --show-allowed` and classify remaining hits as policy inventory, archived evidence, legal technical semantics, fixture data, or cleanup work?
 
 ## Core API And UDL Drift
 
@@ -44,3 +45,4 @@ Report:
 - commands run
 - remaining alignment risk
 - remaining stage / delivery-track wording hits and why each is acceptable or still needs cleanup
+- `./dev check wording` result when long-term sources, Core API / UDL, README, governance, or repo-local skill text changed

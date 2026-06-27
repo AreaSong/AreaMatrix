@@ -267,14 +267,8 @@ private struct ChangeCategoryIntegrationContext {
     let movingFile: FileEntrySnapshot
 
     func cleanUp() {
-        try? FileManager.default.removeItem(at: repoURL)
-        try? FileManager.default.removeItem(at: sourceRootURL)
+        removeTestTemporaryItems(repoURL, sourceRootURL)
     }
-}
-
-private enum ChangeCategoryMoveRequest: Equatable {
-    case preview(repoPath: String, fileID: Int64, targetCategory: String)
-    case move(repoPath: String, fileID: Int64, targetCategory: String)
 }
 
 private struct ChangeCategoryRenameRequest: Equatable {
@@ -297,38 +291,6 @@ private actor ChangeCategoryRecordingRenamer: CoreFileRenaming {
     }
 
     func recordedRequests() -> [ChangeCategoryRenameRequest] {
-        requests
-    }
-}
-
-private actor ChangeCategoryRecordingMover: CoreFileCategoryMoving {
-    private let previewResult: Result<MoveToCategoryPreviewSnapshot, Error>
-    private let moveResult: Result<FileEntrySnapshot, Error>
-    private var requests: [ChangeCategoryMoveRequest] = []
-
-    init(
-        previewResult: Result<MoveToCategoryPreviewSnapshot, Error>,
-        moveResult: Result<FileEntrySnapshot, Error> = .failure(CoreError.Internal(message: "unexpected move"))
-    ) {
-        self.previewResult = previewResult
-        self.moveResult = moveResult
-    }
-
-    func previewMoveToCategory(
-        repoPath: String,
-        fileID: Int64,
-        newCategory: String
-    ) async throws -> MoveToCategoryPreviewSnapshot {
-        requests.append(.preview(repoPath: repoPath, fileID: fileID, targetCategory: newCategory))
-        return try previewResult.get()
-    }
-
-    func moveToCategory(repoPath: String, fileID: Int64, newCategory: String) async throws -> FileEntrySnapshot {
-        requests.append(.move(repoPath: repoPath, fileID: fileID, targetCategory: newCategory))
-        return try moveResult.get()
-    }
-
-    func recordedRequests() -> [ChangeCategoryMoveRequest] {
         requests
     }
 }
@@ -437,53 +399,6 @@ private func assertChangeCategoryCompletedMove(
     ))
     XCTAssertFalse(FileManager.default.fileExists(atPath: context.movingDocsURL.path))
     XCTAssertEqual(try String(contentsOf: context.existingFinanceURL), "existing finance bytes")
-}
-
-private extension FileEntrySnapshot {
-    static func changeCategoryFixture(
-        id: Int64,
-        path: String = "docs/contracts/contract.pdf",
-        category: String = "docs",
-        name: String,
-        updatedAt: Int64 = 1_700_000_100
-    ) -> FileEntrySnapshot {
-        FileEntrySnapshot(
-            id: id,
-            path: path,
-            originalName: name,
-            currentName: name,
-            category: category,
-            sizeBytes: 512,
-            hashSha256: "changeCategory-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: updatedAt
-        )
-    }
-}
-
-private extension RepositoryTreeNodeSnapshot {
-    static func changeCategoryTree(docsCount: Int64, financeCount: Int64) -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
-            children: [
-                RepositoryTreeNodeSnapshot(slug: "docs", displayName: "docs", fileCount: docsCount, children: []),
-                RepositoryTreeNodeSnapshot(
-                    slug: "finance",
-                    displayName: "finance",
-                    fileCount: financeCount,
-                    children: []
-                )
-            ]
-        )
-    }
 }
 
 private extension [RepositorySidebarRowSnapshot] {

@@ -159,7 +159,8 @@ enum CommandPaletteLinkedPageRoute: String, Equatable, Identifiable, CaseIterabl
                 kind: .validation,
                 userMessage: "Classifier impact preview is not available yet.",
                 severity: .medium,
-                suggestedAction: "Open classifier rules first; classifier-impact-preview will provide the real preview flow.",
+                suggestedAction: "Open classifier rules first; classifier-impact-preview will provide " +
+                    "the real preview flow.",
                 recoverability: .userActionRequired,
                 rawContext: pageID
             )

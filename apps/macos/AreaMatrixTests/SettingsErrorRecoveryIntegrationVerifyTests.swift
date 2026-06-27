@@ -239,16 +239,11 @@ private struct Task31IntegrationContext {
     }
 
     func cleanup() {
-        try? FileManager.default.removeItem(at: repoURL)
-        try? FileManager.default.removeItem(at: sourceRootURL)
-        try? FileManager.default.removeItem(at: diagnosticsURL)
+        removeTestTemporaryItems(repoURL, sourceRootURL, diagnosticsURL)
     }
 
     private static func temporaryDirectory(prefix: String) throws -> URL {
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("\(prefix)-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-        return url
+        try makeTestTemporaryDirectory(named: prefix)
     }
 }
 

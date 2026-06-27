@@ -95,10 +95,7 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
     func testDefaultCoreBridgeImportsIndexedFileWithoutMovingOrCopyingSource() async throws {
         let repoURL = try makeIndexImportTemporaryDirectory(prefix: "repo")
         let sourceRoot = try makeIndexImportTemporaryDirectory(prefix: "source")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
         let sourceURL = sourceRoot.appendingPathComponent("indexed.pdf")
         try Data("indexed bytes".utf8).write(to: sourceURL)
         let sourceBefore = try Data(contentsOf: sourceURL)
@@ -295,8 +292,5 @@ private extension CoreErrorMappingSnapshot {
 }
 
 private func makeIndexImportTemporaryDirectory(prefix: String) throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixImportIndex-\(prefix)-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(prefix: prefix, named: "AreaMatrixImportIndex")
 }

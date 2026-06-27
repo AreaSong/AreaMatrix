@@ -15,7 +15,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
             conflictID: "entry-review",
             primaryPath: "docs/review.pdf"
         )
-        let detector = SyncConflictReviewRecordingSyncConflictDetector(result: .success([
+        let detector = SyncConflictReviewDetector(result: .success([
             .syncConflictReviewFixture(conflictID: "entry-resolved", status: .resolved),
             reviewable
         ]))
@@ -38,7 +38,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
     func testSyncConflictEntryLaterOnlyDismissesBannerAndKeepsNeedsReviewList() async {
         let model = SyncConflictEntryModel(
             repoPath: "/tmp/syncConflictEntry-repo",
-            conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .success([
+            conflictDetector: SyncConflictReviewDetector(result: .success([
                 .syncConflictReviewFixture(conflictID: "entry-later")
             ])),
             errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
@@ -60,7 +60,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         )
         let model = SyncConflictEntryModel(
             repoPath: "/tmp/syncConflictEntry-repo",
-            conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .success([conflict])),
+            conflictDetector: SyncConflictReviewDetector(result: .success([conflict])),
             errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
@@ -79,7 +79,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         let conflict = SyncConflictSnapshot.syncConflictReviewFixture(conflictID: "   ")
         let model = SyncConflictEntryModel(
             repoPath: "/tmp/syncConflictEntry-repo",
-            conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .success([conflict])),
+            conflictDetector: SyncConflictReviewDetector(result: .success([conflict])),
             errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
@@ -99,14 +99,15 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         ))
         let model = SyncConflictEntryModel(
             repoPath: "/tmp/syncConflictEntry-repo",
-            conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .failure(CoreError.Db(
+            conflictDetector: SyncConflictReviewDetector(result: .failure(CoreError.Db(
                 message: "conflict state locked"
             ))),
             errorMapper: mapper
         )
 
         await model.loadIfNeeded()
-        let body = syncConflictReviewMirrorDescription(of: SyncConflictEntryPanel(model: model, onReview: { _ in }).body)
+        let body = syncConflictReviewMirrorDescription(of: SyncConflictEntryPanel(model: model, onReview: { _ in
+        }).body)
         let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(mappedErrors, [CoreError.Db(message: "conflict state locked")])
@@ -122,7 +123,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         )
         let model = SyncConflictEntryModel(
             repoPath: "/tmp/syncConflictEntry-repo",
-            conflictDetector: SyncConflictReviewRecordingSyncConflictDetector(result: .success([conflict])),
+            conflictDetector: SyncConflictReviewDetector(result: .success([conflict])),
             errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
         let file = FileEntrySnapshot.syncConflictReviewFixture(

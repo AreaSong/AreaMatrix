@@ -393,44 +393,6 @@ extension RepositorySettingsPane {
     }
 }
 
-private struct RepositorySettingsSection<Content: View>: View {
-    let title: String
-    private let content: Content
-
-    init(title: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.headline)
-            content
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-private struct RepositorySettingsKeyValueRow: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 16) {
-            Text(label)
-                .foregroundStyle(.secondary)
-                .frame(width: 140, alignment: .leading)
-            Text(value)
-                .textSelection(.enabled)
-                .lineLimit(2)
-                .truncationMode(.middle)
-                .accessibilityLabel("\(label): \(value)")
-        }
-        .font(.callout)
-    }
-}
-
 private struct RepositorySettingsHealthSection: View {
     let summary: RepositorySettingsHealthSummary?
 

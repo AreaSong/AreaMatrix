@@ -69,6 +69,7 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 
 - Skills：`./dev check skills`
 - Quality smoke：`./dev check quality`
+- Long-term wording audit：`./dev check wording`
 - Governance：`./dev check governance`
 - Prompt runner：`python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor`
 - Task loop full check：`./task-loop check`

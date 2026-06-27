@@ -28,8 +28,8 @@ If required validation cannot run, or any review, security, dependency, CI, or G
 | prompt manifests or shared rules | add `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py status` and render one affected task |
 | prompt coverage or control maps | add `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py audit --pages` |
 | `task-loop`, `dev`, `scripts/task_loop/**`, `scripts/dev_tools/**` | `python3 -m py_compile scripts/task_loop/*.py scripts/dev_tools/*.py`; `./task-loop status`; `./dev preflight`; `./task-loop check` |
-| `.codex/skills-src/**` or `.agents/skills/**` | `./dev check skills`; `./dev check quality`; `./dev check prompts` |
-| governance docs, PR/issue templates, CODEOWNERS, CI workflows | `./dev check governance`; `./dev check skills`; `./dev check quality`; `./dev check prompts`; YAML parse workflows |
+| `.codex/skills-src/**` or `.agents/skills/**` | `./dev check skills`; `./dev check quality`; `./dev check wording`; `./dev check prompts` |
+| governance docs, PR/issue templates, CODEOWNERS, CI workflows | `./dev check governance`; `./dev check skills`; `./dev check quality`; `./dev check wording`; `./dev check prompts`; YAML parse workflows |
 
 Dry-run examples:
 
@@ -123,6 +123,7 @@ Docs-only changes do not need code tests by default. Still run targeted checks w
 - API or UDL docs: inspect `docs/api/core-api.md` and `core/area_matrix.udl` alignment.
 - UX page specs with control maps: run page audit when prompt coverage can drift.
 - Skill docs: run `./dev check skills`.
+- Long-lived docs, README, governance, Core API / UDL, or repo-local skill wording: run `./dev check wording`.
 
 ## Mixed Changes
 

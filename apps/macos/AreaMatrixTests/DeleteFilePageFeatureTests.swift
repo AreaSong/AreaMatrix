@@ -130,10 +130,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
     func testDeleteFileDeleteRemoveIndexCoreDefaultCoreBridgeRemovesIndexedEntryWithoutTouchingSource() async throws {
         let repoURL = try makeDeleteTemporaryDirectory(prefix: "repo")
         let sourceRoot = try makeDeleteTemporaryDirectory(prefix: "source")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
         let sourceURL = sourceRoot.appendingPathComponent("external.pdf")
         try Data("external bytes".utf8).write(to: sourceURL)
         let sourceBefore = try Data(contentsOf: sourceURL)
@@ -158,10 +155,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
     func testDeleteFileDeleteRemoveIndexCoreDefaultCoreBridgeRejectsWrongOperationWithoutSideEffects() async throws {
         let repoURL = try makeDeleteTemporaryDirectory(prefix: "repo")
         let sourceRoot = try makeDeleteTemporaryDirectory(prefix: "source")
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
         let sourceURL = sourceRoot.appendingPathComponent("owned.pdf")
         try Data("owned bytes".utf8).write(to: sourceURL)
         let bridge = CoreBridge()
@@ -269,8 +263,5 @@ private extension CoreErrorMappingSnapshot {
 }
 
 private func makeDeleteTemporaryDirectory(prefix: String) throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixDeleteFile-\(prefix)-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(prefix: prefix, named: "AreaMatrixDeleteFile")
 }

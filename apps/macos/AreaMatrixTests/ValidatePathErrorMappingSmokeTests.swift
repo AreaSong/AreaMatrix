@@ -98,7 +98,7 @@ final class QueryErrorDiagnosticSnapshotTests: XCTestCase {
     }
 }
 
-final class AITagSuggestionAITagSuggestionPageFeatureTests: XCTestCase {
+final class AITagSuggestionPageFeatureTests: XCTestCase {
     @MainActor
     func testAITagSuggestionAITagsSuggestionCoreAITagSuggestionSkipsDisableAllSubmitActions() {
         let states = [
@@ -125,7 +125,12 @@ final class AITagSuggestionAITagSuggestionPageFeatureTests: XCTestCase {
     @MainActor
     func testAITagSuggestionAITagsSuggestionCoreAcceptHighConfidenceExcludesPreviouslySelectedLowConfidence() {
         let report = aiTagSuggestionAITagReport(fileID: 707, suggestions: [
-            aiTagSuggestionAITagSuggestion(id: "ai-tag-finance", slug: "finance", confidence: 0.91, selectedByDefault: false),
+            aiTagSuggestionAITagSuggestion(
+                id: "ai-tag-finance",
+                slug: "finance",
+                confidence: 0.91,
+                selectedByDefault: false
+            ),
             aiTagSuggestionAITagSuggestion(id: "ai-tag-low", slug: "maybe", confidence: 0.42, selectedByDefault: false)
         ])
         let lowSelected = AITagSuggestionState.loaded(fileID: 707, report, ["ai-tag-low"])
@@ -184,7 +189,12 @@ final class AITagSuggestionAITagSuggestionPageFeatureTests: XCTestCase {
     func testAITagSuggestionAITagsSuggestionCoreSingleRowAddImmediatelyAppliesThroughCoreBridge() async {
         let file = FileEntrySnapshot.detailMetaFixture(id: 710, currentName: "invoice-single-add.pdf")
         let bridge = AITagSuggestionAITagBridge(aiTagSuggestionAITagReport(fileID: file.id, suggestions: [
-            aiTagSuggestionAITagSuggestion(id: "ai-tag-finance", slug: "finance", confidence: 0.91, selectedByDefault: false),
+            aiTagSuggestionAITagSuggestion(
+                id: "ai-tag-finance",
+                slug: "finance",
+                confidence: 0.91,
+                selectedByDefault: false
+            ),
             aiTagSuggestionAITagSuggestion(id: "ai-tag-low", slug: "maybe", confidence: 0.42, selectedByDefault: false)
         ]))
         let model = MainFileListModel(
@@ -194,7 +204,9 @@ final class AITagSuggestionAITagSuggestionPageFeatureTests: XCTestCase {
             tagStore: DetailTagRecordingStore(listResults: [.success(.tagAddFixture(fileID: file.id, values: []))]),
             aiSettingsLoader: AITagSuggestionAISettingsLoader(),
             aiTagSuggestionStore: bridge,
-            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])),
+            aiPrivacyRules: RemotePrivacyRulesBridge(
+                snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])
+            ),
             changeLogLister: DetailLogRecordingChangeLister(entries: [.tagSuggestionsApplied()]),
             errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
@@ -228,7 +240,9 @@ final class AITagSuggestionAITagSuggestionPageFeatureTests: XCTestCase {
             tagStore: DetailTagRecordingStore(listResults: [.success(.tagAddFixture(fileID: file.id, values: []))]),
             aiSettingsLoader: AITagSuggestionAISettingsLoader(),
             aiTagSuggestionStore: bridge,
-            aiPrivacyRules: RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])),
+            aiPrivacyRules: RemotePrivacyRulesBridge(
+                snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])
+            ),
             errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
         )
 

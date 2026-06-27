@@ -83,7 +83,8 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testDetailLogSyncExternalCreatedCoreConsumesRealExternalCreatedEventThenRefreshesListDetailAndLog() async throws {
+    func testDetailLogSyncExternalCreatedCoreConsumesRealExternalCreatedEventThenRefreshesListDetailAndLog(
+    ) async throws {
         let existing = FileEntrySnapshot.detailMetaFixture(id: 22, currentName: "selected.pdf")
         let created = FileEntrySnapshot.detailMetaFixture(
             id: 23,
@@ -197,9 +198,10 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         XCTAssertNil(MainExternalCreatedFileEvent(relativePath: "docs/new.pdf", fsEventID: 0))
     }
 
-    func testDetailLogSyncExternalCreatedCoreDefaultCoreBridgeSyncsRealExternalCreatedFileIntoListTreeDetailAndLog() async throws {
+    func testDetailLogSyncExternalCreatedCoreDefaultCoreBridgeSyncsRealExternalCreatedFileIntoListTreeDetailAndLog(
+    ) async throws {
         let repoURL = try makeDetailLogExternalCreatedTemporaryRepositoryURL()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
 
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
@@ -361,8 +363,5 @@ private extension FileEntrySnapshot {
 }
 
 private func makeDetailLogExternalCreatedTemporaryRepositoryURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixDetailExternalCreated-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixDetailExternalCreated")
 }

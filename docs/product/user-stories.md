@@ -251,4 +251,4 @@
 
 - [prd.md](prd.md)
 - [glossary.md](glossary.md)
-- [v1-mvp historical archive](../../workflow/versions/v1-mvp/source-docs/)
+- [workflow source docs guide](../../workflow/versions/source-docs-guide.md)

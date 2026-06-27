@@ -194,9 +194,12 @@ struct LocalModelStatusView: View {
                 Button("Open diagnostics", action: model.showDiagnostics)
                     .accessibilityIdentifier("local-model-status-local-model-status-core-open-diagnostics")
             }
-            Text("Status checks and diagnostics use only local-model-status-core local model metadata and do not enable remote AI.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+            Text(
+                "Status checks and diagnostics use only local-model-status-core local model metadata " +
+                    "and do not enable remote AI."
+            )
+            .font(.callout)
+            .foregroundStyle(.secondary)
         }
     }
 

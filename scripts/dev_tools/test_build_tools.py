@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts.dev_tools import build, checks
+from scripts.dev_tools.wording import audit_wording
 from scripts.task_loop import console
 from scripts.task_loop.runner import RuntimeConfig, TaskFile, TaskLoopRunner
 
@@ -194,11 +195,11 @@ class BuildToolsTest(unittest.TestCase):
                 "docs/development/release.md": "Developer ID notarization 公证\n",
                 "scripts/dev_tools/release.py": "# release helper\n",
                 ".codex/skills-src/README.md": "areamatrix-residual-ledger\n",
-                ".codex/references/index.md": "./dev check quality\n",
+                ".codex/references/index.md": "./dev check quality\n./dev check wording\n",
                 ".codex/references/codex-workflow-and-tools.md": "已有 8 个 AreaMatrix skills\n",
                 "tasks/backlog/codex-operating-layer-boundary-regression.md": "现有 8 个 repo-local skills\n",
-                "docs/development/ci-governance.md": "./dev check quality\n",
-                ".github/workflows/governance-ci.yml": "./dev check quality\n",
+                "docs/development/ci-governance.md": "./dev check quality\n./dev check wording\n",
+                ".github/workflows/governance-ci.yml": "./dev check quality\n./dev check wording\n",
                 ".codex/skills-src/areamatrix-validation-driver/SKILL.md": "macOS app\n",
                 ".codex/skills-src/areamatrix-doc-sync/SKILL.md": "Core API and UDL\n",
                 ".codex/skills-src/areamatrix-file-safety/SKILL.md": "DB metadata and migrations\n",
@@ -231,11 +232,11 @@ class BuildToolsTest(unittest.TestCase):
                 "docs/development/release.md": "notarization\n",
                 "scripts/dev_tools/release.py": "",
                 ".codex/skills-src/README.md": "areamatrix-residual-ledger\n",
-                ".codex/references/index.md": "./dev check quality\n",
+                ".codex/references/index.md": "./dev check quality\n./dev check wording\n",
                 ".codex/references/codex-workflow-and-tools.md": "已有 " + "7 个 " + "AreaMatrix skills\n",
                 "tasks/backlog/codex-operating-layer-boundary-regression.md": "现有 8 个 repo-local skills\n",
-                "docs/development/ci-governance.md": "./dev check quality\n",
-                ".github/workflows/governance-ci.yml": "./dev check quality\n",
+                "docs/development/ci-governance.md": "./dev check quality\n./dev check wording\n",
+                ".github/workflows/governance-ci.yml": "./dev check quality\n./dev check wording\n",
                 ".codex/skills-src/areamatrix-validation-driver/SKILL.md": "macOS app\n",
                 ".codex/skills-src/areamatrix-doc-sync/SKILL.md": "Core API UDL\n",
                 ".codex/skills-src/areamatrix-file-safety/SKILL.md": "DB metadata migrations\n",
@@ -250,6 +251,52 @@ class BuildToolsTest(unittest.TestCase):
                 path.write_text(text, encoding="utf-8")
 
             self.assertEqual(checks.run_quality_check(root), 1)
+
+    def test_wording_audit_blocks_long_term_track_terms(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "docs/README.md"
+            path.parent.mkdir(parents=True)
+            path.write_text(
+                "\n".join(
+                    [
+                        "Current release uses Stage 1 alpha.",
+                        "后续任务补齐真实闭环验收。",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            hits, file_count = audit_wording(root)
+
+            self.assertEqual(file_count, 1)
+            self.assertTrue(any(hit.category == "blocked" for hit in hits))
+            self.assertTrue(any(hit.term == "后续任务" for hit in hits))
+
+    def test_wording_audit_allows_technical_terms(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "docs/development/build.md"
+            path.parent.mkdir(parents=True)
+            path.write_text("Xcode Build Phase order matters.\n", encoding="utf-8")
+
+            hits, file_count = audit_wording(root)
+
+            self.assertEqual(file_count, 1)
+            self.assertTrue(hits)
+            self.assertTrue(all(hit.category == "allowed-technical" for hit in hits))
+
+    def test_wording_audit_allows_neutral_archive_navigation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "docs/README.md"
+            path.parent.mkdir(parents=True)
+            path.write_text("历史归档里的旧内部编号不代表未来版本已经开始。\n", encoding="utf-8")
+
+            hits, file_count = audit_wording(root)
+
+            self.assertEqual(file_count, 1)
+            self.assertEqual([hit.category for hit in hits], ["allowed-technical"])
 
     def test_core_build_checks_required_targets_before_bindgen_fallback(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -10,12 +10,12 @@
 
 本文是长期源事实，规定恢复场景、手工冒烟和 release evidence 的记录方式。具体版本的执行结果、截图、日志、blocked 原因和 release checklist 不放在 `docs/`，而是归档到对应版本目录。
 
-当前 v1 历史证据位于：
+历史恢复证据通过 [workflow versions](../../workflow/versions/README.md) 和 residual ledger 定位。常见证据类型包括：
 
-- [v1 recovery scenarios](../../workflow/versions/v1-mvp/evidence/recovery-scenarios.md)
-- [v1 release checklist](../../workflow/versions/v1-mvp/evidence/release-checklist.md)
-- [v1 performance baseline](../../workflow/versions/v1-mvp/evidence/performance-baseline.md)
-- [v1 closeout decision](../../workflow/versions/v1-mvp/closeout/closeout-decision.md)
+- recovery scenarios
+- release checklist
+- performance baseline
+- closeout decision
 
 ## 不变量
 

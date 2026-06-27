@@ -5,7 +5,7 @@ import XCTest
 final class MainEmptyBuildTreeTests: XCTestCase {
     func testDefaultCoreBridgeListsRealEmptyRepositoryTreeForMainEmpty() async throws {
         let repoURL = try makeBuildTreeTemporaryRepositoryURL()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
 
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
@@ -23,7 +23,7 @@ final class MainEmptyBuildTreeTests: XCTestCase {
 
     func testDefaultCoreBridgePropagatesBuildTreeRepoNotInitializedError() async throws {
         let repoURL = try makeBuildTreeTemporaryRepositoryURL()
-        defer { try? FileManager.default.removeItem(at: repoURL) }
+        defer { removeTestTemporaryItems(repoURL) }
 
         do {
             _ = try await CoreBridge().listTree(repoPath: repoURL.path, locale: "zh-Hans")
@@ -285,8 +285,5 @@ private extension RepositoryTreeNodeSnapshot {
 }
 
 private func makeBuildTreeTemporaryRepositoryURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixBuildTreeTests-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixBuildTreeTests")
 }

@@ -206,8 +206,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
         let repoURL = try makeDetailNoteTemporaryRepositoryURL()
         let sourceRoot = try makeDetailNoteTemporaryRepositoryURL()
         defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
+            removeTestTemporaryItems(repoURL, sourceRoot)
         }
         let sourceURL = sourceRoot.appendingPathComponent("source-note.txt")
         try "source".write(to: sourceURL, atomically: true, encoding: .utf8)
@@ -361,8 +360,5 @@ private func waitForDetailNoteSave(_ model: DetailNoteModel) async {
 }
 
 private func makeDetailNoteTemporaryRepositoryURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixDetailNoteTests-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixDetailNoteTests")
 }

@@ -6,10 +6,7 @@ final class ImportFolderCoreBridgeModeTests: XCTestCase {
     func testDefaultCoreBridgeFolderCopyImportKeepsSourceAndCreatesRepoCopy() async throws {
         let repoURL = try makeImportFolderTemporaryDirectory()
         let sourceRoot = try makeImportFolderTemporaryDirectory()
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
 
         let sourceURL = sourceRoot.appendingPathComponent("invoice.pdf")
         try Data("invoice bytes".utf8).write(to: sourceURL)
@@ -36,10 +33,7 @@ final class ImportFolderCoreBridgeModeTests: XCTestCase {
     func testDefaultCoreBridgeFolderIndexOnlyImportKeepsSourceWithoutRepoCopy() async throws {
         let repoURL = try makeImportFolderTemporaryDirectory()
         let sourceRoot = try makeImportFolderTemporaryDirectory()
-        defer {
-            try? FileManager.default.removeItem(at: repoURL)
-            try? FileManager.default.removeItem(at: sourceRoot)
-        }
+        defer { removeTestTemporaryItems(repoURL, sourceRoot) }
 
         let sourceURL = sourceRoot.appendingPathComponent("reference.pdf")
         try Data("reference bytes".utf8).write(to: sourceURL)
@@ -69,7 +63,7 @@ final class ImportFolderCoreBridgeModeTests: XCTestCase {
 final class QueryErrorPageFeatureTests: XCTestCase {
     func testQueryErrorQueryErrorRouteRendersParseProblemHelpAndActions() {
         let diagnostic = SearchQueryDiagnosticSnapshot.queryErrorUnknownField()
-        let body = queryErrorRouteMirrorDescription(of: QueryErrorRouteView(
+        let body = testMirrorDescription(of: QueryErrorRouteView(
             request: .queryErrorQueryFixture(query: "kindd:pdf tag:finance"),
             diagnostic: diagnostic,
             onApplySuggestion: { _ in },
@@ -167,7 +161,7 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.validationMessage, "Fix query syntax before saving changes.")
         XCTAssertFalse(model.canSubmit)
 
-        let body = queryErrorRouteMirrorDescription(of: QueryDiagnosticSummary(
+        let body = testMirrorDescription(of: QueryDiagnosticSummary(
             diagnostic: diagnostic,
             query: model.query
         ).body)
@@ -251,7 +245,10 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
         let saved = SavedSearchSnapshot.smartListFixture(query: "Finance")
         let request = SearchQueryRequestSnapshot(savedSearchQuery: saved.query)
         let model = MainFileListModel(
-            opening: .queryErrorOpening(repoPath: "/tmp/repo", tree: .queryErrorFixtureTree().insertingSavedSearch(saved)),
+            opening: .queryErrorOpening(
+                repoPath: "/tmp/repo",
+                tree: .queryErrorFixtureTree().insertingSavedSearch(saved)
+            ),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: MainListRecordingSearchQuerying(results: []),
@@ -468,22 +465,5 @@ private extension CoreErrorMappingSnapshot {
             recoverability: .userActionRequired,
             rawContext: "query-error"
         )
-    }
-}
-
-private func queryErrorRouteMirrorDescription(of value: Any) -> String {
-    var lines: [String] = []
-    queryErrorRouteAppendMirrorDescription(of: value, to: &lines)
-    return lines.joined(separator: "\n")
-}
-
-private func queryErrorRouteAppendMirrorDescription(of value: Any, to lines: inout [String]) {
-    lines.append(String(describing: type(of: value)))
-    lines.append(String(describing: value))
-    for child in Mirror(reflecting: value).children {
-        if let label = child.label {
-            lines.append(label)
-        }
-        queryErrorRouteAppendMirrorDescription(of: child.value, to: &lines)
     }
 }

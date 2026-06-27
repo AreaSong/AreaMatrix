@@ -230,9 +230,8 @@ PR 要全绿才能合并。
 
 ## 发布构建
 
-面向用户分发的构建必须走 Developer ID 签名、公证、DMG 和干净 Mac 首启验证。v1 历史发布放行状态以
-[v1 release checklist](../../workflow/versions/v1-mvp/evidence/release-checklist.md) 为准；该清单是归档证据，
-不作为后续版本的发布命名模板。
+面向用户分发的构建必须走 Developer ID 签名、公证、DMG 和干净 Mac 首启验证。历史发布放行状态只通过
+[workflow versions](../../workflow/versions/README.md) 追溯；归档清单不作为后续版本的发布命名模板。
 
 发布凭据预检：
 

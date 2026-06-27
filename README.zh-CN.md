@@ -76,7 +76,7 @@ AreaMatrix 把源码、规划治理和本地运行材料分开看：
 | Codex 运行入口 | `.codex/`、`.agents/skills/`、`dev`、`task-loop`、`scripts/` | 仓库内 Codex skills、发现入口和 task-loop 工具。这些是稳定工具入口，不应为了视觉收紧而移动。 |
 | 本地生成物 | `.build/`、`build/`、`core/target/`、`apps/*/.build`、`apps/**/bin`、`apps/**/obj`、`apps/macos/DerivedData/` | 已忽略的本地构建产物，不属于源码目录形态。 |
 
-`.codex/skills-src/`、`.agents/skills/`、`workflow/`、`dev`、`task-loop` 这类固定路径需要保留在原位；Codex skills 和任务循环脚本会依赖它们。v1 历史 prompt 队列位于 `workflow/versions/v1-mvp/execution/`，只作为归档。轻量独立任务放在 `tasks/active/` 和 `tasks/done/`；`tasks/backlog/` 保持候选池语义，不代表当前任务进度。
+`.codex/skills-src/`、`.agents/skills/`、`workflow/`、`dev`、`task-loop` 这类固定路径需要保留在原位；Codex skills 和任务循环脚本会依赖它们。历史 prompt 队列通过 [workflow versions](workflow/versions/README.md) 索引。轻量独立任务放在 `tasks/active/` 和 `tasks/done/`；`tasks/backlog/` 保持候选池语义，不代表当前任务进度。
 
 状态边界：产品事实以 `docs/`、`core/`、`apps/` 和 `assets/brand/final/` 为准；
 `workflow/` 承载规划、归档和参考材料；轻量任务状态只看 `tasks/active/` 与

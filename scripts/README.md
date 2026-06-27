@@ -53,6 +53,7 @@ scripts/
 ./dev --once
 ./dev check governance
 ./dev check skills
+./dev check wording
 ./dev workflow status
 ./dev tasks status
 ./task-loop status

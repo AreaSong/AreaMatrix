@@ -398,22 +398,9 @@ extension CommandTarget {
 }
 
 func commandPaletteCommandMirrorDescription(of value: Any) -> String {
-    var lines: [String] = []
-    appendCommandPaletteCommandMirrorDescription(of: value, to: &lines)
-    return lines.joined(separator: "\n")
-}
-
-private func appendCommandPaletteCommandMirrorDescription(of value: Any, to lines: inout [String]) {
-    lines.append(String(describing: type(of: value)))
-    lines.append(String(describing: value))
-    for child in Mirror(reflecting: value).children {
-        appendCommandPaletteCommandMirrorDescription(of: child.value, to: &lines)
-    }
+    testMirrorDescription(of: value, includeLabels: false)
 }
 
 func makeMainLoadingTemporaryRepositoryURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixMainLoadingTreeTests-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixMainLoadingTreeTests")
 }

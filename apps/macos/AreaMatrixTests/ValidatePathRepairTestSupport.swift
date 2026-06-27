@@ -2,10 +2,7 @@
 import Foundation
 
 func makeRepairTemporaryAdoptRepoURL() throws -> URL {
-    let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("AreaMatrixAdoptExisting-\(UUID().uuidString)", isDirectory: true)
-    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    return url
+    try makeTestTemporaryDirectory(named: "AreaMatrixAdoptExisting")
 }
 
 struct RepairStaticSettingsReader: AppSettingsReading {
@@ -310,7 +307,8 @@ extension TagSuggestionReportSnapshot {
         )
     }
 
-    static func tagSuggestionsEmptyFixture(fileID: Int64, existingValues: [String] = []) -> TagSuggestionReportSnapshot {
+    static func tagSuggestionsEmptyFixture(fileID: Int64,
+                                           existingValues: [String] = []) -> TagSuggestionReportSnapshot {
         TagSuggestionReportSnapshot(
             fileID: fileID,
             suggestions: [],

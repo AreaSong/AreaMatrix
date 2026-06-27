@@ -134,7 +134,8 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
     }
 
     @MainActor
-    func testReplaceConfirmDuplicateReplaceConfirmationCarriesCoreDuplicateSummaryWithoutImportSideEffect() async throws {
+    func testReplaceConfirmDuplicateReplaceConfirmationCarriesCoreDuplicateSummaryWithoutImportSideEffect(
+    ) async throws {
         let existingFile = FileEntrySnapshot(
             id: 124,
             path: "docs/reports/报告.pdf",
@@ -300,7 +301,8 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
     }
 
     @MainActor
-    func testReplaceConfirmNameConflictReplaceConfirmationMarksResolveNameConflictCoreReplaceWithoutImportSideEffect() async throws {
+    func testReplaceConfirmNameConflictReplaceConfirmationMarksResolveNameConflictCoreReplaceWithoutImportSideEffect(
+    ) async throws {
         let existingFile = nameConflictReplaceExistingFile()
         let importer = ImportSingleFileRecordingImporter()
         let model = ImportSingleFilePreviewModel(

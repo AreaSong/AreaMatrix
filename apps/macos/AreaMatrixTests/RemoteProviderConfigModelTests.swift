@@ -327,7 +327,8 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     @MainActor
     func testRemoteProviderConfigPageIntegrationWiresEntryEnablePrivacyGateDisableAndExitRefresh() async {
         let providerBridge = RemoteProviderConfigBridge()
-        let privacyBridge = RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(privacyGateEnabled: false))
+        let privacyBridge =
+            RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(privacyGateEnabled: false))
         let store = RemoteProviderTestCredentialStore()
         let remoteModel = makeModel(bridge: providerBridge, store: store)
         let privacyModel = RemotePrivacyGateModel(
@@ -374,7 +375,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     }
 
     @MainActor
-    func testRemoteProviderConfigPageIntegrationKeepsProviderEnabledAndOffersRecoveryWhenPrivacyGateEnableFails() async {
+    func testRemoteProviderConfigKeepsProviderEnabledWhenPrivacyGateEnableFails() async {
         let providerBridge = RemoteProviderConfigBridge()
         let privacyBridge = RemotePrivacyRulesBridge(updateFails: true)
         let remoteModel = makeModel(bridge: providerBridge, store: RemoteProviderTestCredentialStore())

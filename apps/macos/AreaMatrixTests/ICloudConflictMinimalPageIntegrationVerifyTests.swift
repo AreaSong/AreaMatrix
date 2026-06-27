@@ -39,9 +39,11 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         )
         let outOfScopeActions = await core.recordedOutOfScopeActions()
 
-        XCTAssertTrue(body.contains("icloud-conflict-minimal-core-resolution-blocked"))
-        XCTAssertTrue(body.contains("Core resolution unavailable"))
-        XCTAssertTrue(body.contains("Missing Core API: resolve_icloud_conflict or mark_icloud_conflict_resolved"))
+        assertTestDescription(body, contains: [
+            "icloud-conflict-minimal-core-resolution-blocked",
+            "Core resolution unavailable",
+            "Missing Core API: resolve_icloud_conflict or mark_icloud_conflict_resolved"
+        ])
         XCTAssertEqual(outOfScopeActions, [])
         XCTAssertEqual(model.pendingActionDestination, .iCloudConflict(fileID: conflictFile.id))
         XCTAssertNil(model.statusBanner)
@@ -52,11 +54,11 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
     func testICloudConflictMinimalApplyMapsCapabilityBlockerWithoutCallingOutOfScopeCoreActions() async {
         let conflictFile = FileEntrySnapshot.iCloudConflictMinimalConflictFixture(id: 126)
         let core = ICloudConflictMinimalRecordingMainCore(files: [conflictFile])
-        let mapper = ICloudConflictMinimalRecordingErrorMapper(mapping: .iCloudConflictMinimalMapping(
+        let mapper = ICloudErrorMapper(mapping: .iCloudConflictMinimalMapping(
             kind: .internal,
             rawContext: ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.rawContext
         ))
-        let blockedResolver = ICloudConflictMinimalRecordingICloudConflictResolver(
+        let blockedResolver = ICloudConflictResolver(
             capability: .blocked(.missingCoreResolutionEndpoint),
             result: .failure(ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.coreError)
         )
@@ -83,11 +85,13 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         XCTAssertEqual(model.pendingActionDestination, .iCloudConflict(fileID: conflictFile.id))
         let recordedErrors = await mapper.recordedErrors()
         XCTAssertEqual(recordedErrors, [ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.coreError])
-        XCTAssertTrue(failedBody.contains("icloud-conflict-minimal-error-mapping-apply-failure"))
-        XCTAssertTrue(failedBody.contains("Apply failed: Internal"))
-        XCTAssertTrue(failedBody.contains("Retry"))
-        XCTAssertTrue(failedBody.contains("Cancel"))
-        XCTAssertTrue(failedBody.contains("Collect Diagnostics..."))
+        assertTestDescription(failedBody, contains: [
+            "icloud-conflict-minimal-error-mapping-apply-failure",
+            "Apply failed: Internal",
+            "Retry",
+            "Cancel",
+            "Collect Diagnostics..."
+        ])
         let outOfScopeActions = await core.recordedOutOfScopeActions()
         XCTAssertEqual(outOfScopeActions, [])
         XCTAssertNil(model.statusBanner)
@@ -122,17 +126,19 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             "Move other version to Trash and Apply"
         )
         XCTAssertTrue(ICloudConflictResolutionStrategy.keepOriginalOnly.requiresSecondConfirmation)
-        XCTAssertTrue(body.contains("Single-version resolution requires system Trash"))
-        XCTAssertTrue(body.contains("requires Core support to clear conflict state and write change_log"))
-        XCTAssertTrue(body.contains("icloud-conflict-minimal-core-resolution-blocked"))
+        assertTestDescription(body, contains: [
+            "Single-version resolution requires system Trash",
+            "requires Core support to clear conflict state and write change_log",
+            "icloud-conflict-minimal-core-resolution-blocked"
+        ])
     }
 
     @MainActor
     func testICloudConflictMinimalValidationErrorStateMapsCoreError() async {
-        let failedValidator = ICloudConflictMinimalRecordingPathValidator(
+        let failedValidator = ICloudPathValidator(
             result: .failure(CoreError.PermissionDenied(path: "/tmp/iCloudConflictMinimal-repo"))
         )
-        let mapper = ICloudConflictMinimalRecordingErrorMapper(mapping: .iCloudConflictMinimalMapping(
+        let mapper = ICloudErrorMapper(mapping: .iCloudConflictMinimalMapping(
             kind: .permissionDenied,
             rawContext: "/tmp/iCloudConflictMinimal-repo"
         ))
@@ -149,16 +155,18 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         let recordedErrors = await mapper.recordedErrors()
         XCTAssertEqual(recordedErrors, [CoreError.PermissionDenied(path: "/tmp/iCloudConflictMinimal-repo")])
         XCTAssertFalse(failedModel.canApplyKeepBoth)
-        XCTAssertTrue(failedBody.contains("icloud-conflict-minimal-error-mapping-error-mapping"))
-        XCTAssertTrue(failedBody.contains("Repository check failed: PermissionDenied"))
-        XCTAssertTrue(failedBody.contains("Retry repository check"))
+        assertTestDescription(failedBody, contains: [
+            "icloud-conflict-minimal-error-mapping-error-mapping",
+            "Repository check failed: PermissionDenied",
+            "Retry repository check"
+        ])
     }
 
     @MainActor
     func testICloudConflictMinimalSupportedResolverCompletesRefreshAndChangeLogEvidence() async {
         let conflictFile = FileEntrySnapshot.iCloudConflictMinimalConflictFixture(id: 127)
         let core = ICloudConflictMinimalRecordingMainCore(files: [conflictFile])
-        let resolver = ICloudConflictMinimalRecordingICloudConflictResolver(
+        let resolver = ICloudConflictResolver(
             result: .success(ICloudConflictResolutionResult(
                 focusFileID: conflictFile.id,
                 didClearConflictState: true,
@@ -172,7 +180,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             iCloudConflictResolver: resolver,
             changeLogLister: core,
             externalChangesSyncer: core,
-            errorMapper: ICloudConflictMinimalRecordingErrorMapper(mapping: .iCloudConflictMinimalMapping()),
+            errorMapper: ICloudErrorMapper(mapping: .iCloudConflictMinimalMapping()),
             diagnosticsCollector: core
         )
 
@@ -194,7 +202,8 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
     private func makeMainFileListModel(
         conflictFile: FileEntrySnapshot,
         core: ICloudConflictMinimalRecordingMainCore,
-        errorMapper: ICloudConflictMinimalRecordingErrorMapper = ICloudConflictMinimalRecordingErrorMapper(mapping: .iCloudConflictMinimalMapping())
+        errorMapper: ICloudErrorMapper =
+            ICloudErrorMapper(mapping: .iCloudConflictMinimalMapping())
     ) -> MainFileListModel {
         MainFileListModel(
             opening: .iCloudConflictMinimalFixture(repoPath: "/tmp/iCloudConflictMinimal-repo", files: [conflictFile]),
@@ -265,7 +274,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             noteModel: DetailNoteModel(
                 repoPath: "/tmp/iCloudConflictMinimal-repo",
                 noteStore: ICloudConflictMinimalNoopNoteStore(),
-                errorMapper: ICloudConflictMinimalRecordingErrorMapper(mapping: .iCloudConflictMinimalMapping())
+                errorMapper: ICloudErrorMapper(mapping: .iCloudConflictMinimalMapping())
             )
         )
 
@@ -274,7 +283,8 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
 
     @MainActor
     private func makeReadyICloudConflictModel() async -> ICloudConflictMinimalModel {
-        let validator = ICloudConflictMinimalRecordingPathValidator(result: .success(.iCloudConflictMinimalICloudConflictFixture()))
+        let validator =
+            ICloudPathValidator(result: .success(.iCloudConflictMinimalICloudConflictFixture()))
         let model = makeICloudConflictModel(pathValidator: validator)
         await model.validateRepositoryPath()
         return model
@@ -283,7 +293,8 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
     @MainActor
     private func makeICloudConflictModel(
         pathValidator: CoreRepositoryPathValidating,
-        errorMapper: CoreErrorMapping = ICloudConflictMinimalRecordingErrorMapper(mapping: .iCloudConflictMinimalMapping())
+        errorMapper: CoreErrorMapping =
+            ICloudErrorMapper(mapping: .iCloudConflictMinimalMapping())
     ) -> ICloudConflictMinimalModel {
         ICloudConflictMinimalModel(
             repoPath: "/tmp/iCloudConflictMinimal-repo",

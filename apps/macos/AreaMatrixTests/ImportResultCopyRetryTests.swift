@@ -9,7 +9,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             importProgressImporter: importer,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -42,7 +42,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             importProgressImporter: ImportSingleFileSuspendingImporter(gate: gate),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -78,7 +78,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             importProgressImporter: importer,
             errorMapper: errorMapper,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -107,7 +107,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             importResultChangeLister: lister,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -128,13 +128,14 @@ final class ImportResultCopyRetryTests: XCTestCase {
     @MainActor
     func testImportResultListChangeLogCoreMapsListChangesFailureInline() async {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
-        let lister = ImportResultRecordingChangeLogLister(results: [.failure(CoreError.Db(message: "change log locked"))])
+        let lister =
+            ImportResultRecordingChangeLogLister(results: [.failure(CoreError.Db(message: "change log locked"))])
         let errorMapper = ImportSingleFileRecordingErrorMapper()
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             importResultChangeLister: lister,
             errorMapper: errorMapper,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -166,7 +167,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             fileRevealer: revealer,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -190,7 +191,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -263,11 +264,11 @@ final class ImportResultCopyRetryTests: XCTestCase {
     @MainActor
     func testImportResultExportDetailsUsesRedactedPathsAndPrivacyState() {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
-        let exporter = ImportResultRecordingImportResultExporter()
+        let exporter = ImportResultExporter()
         let model = OnboardingModel(
             settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
             importResultExporter: exporter,
-            accessibilityAnnouncer: ImportSingleFileRecordingAccessibilityAnnouncer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
         )
 
@@ -402,7 +403,7 @@ private final class ImportResultRecordingFileRevealer: RepositoryFileRevealing {
 }
 
 @MainActor
-private final class ImportResultRecordingImportResultExporter: ImportResultDetailsExporting {
+private final class ImportResultExporter: ImportResultDetailsExporting {
     private(set) var requests: [(details: String, suggestedFilename: String)] = []
 
     func exportDetails(_ details: String, suggestedFilename: String) throws -> String {
