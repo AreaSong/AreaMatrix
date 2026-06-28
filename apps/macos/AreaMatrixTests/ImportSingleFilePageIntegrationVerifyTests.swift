@@ -8,10 +8,10 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let announcer = RecordingAccessibilityAnnouncer()
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: ImportSingleFileStaticRepositoryOpener(opening: opening),
             accessibilityAnnouncer: announcer,
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainEmpty(opening)
@@ -49,9 +49,9 @@ final class SingleFileImportIntegrationTests: XCTestCase {
     func testImportSingleFileFailedImportRoutesThroughImportResultResultSummary() {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -70,9 +70,9 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let sourceURL = URL(fileURLWithPath: "/tmp/source.pdf")
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -88,9 +88,9 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         let sourceURL = URL(fileURLWithPath: "/tmp/source.pdf")
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.startImportEntry(opening: opening, source: .filePicker, urls: [sourceURL])
@@ -104,9 +104,9 @@ final class SingleFileImportIntegrationTests: XCTestCase {
     func testImportSingleFileImportEntryCarriesRealRepositoryCategoriesForEditableSelection() {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)

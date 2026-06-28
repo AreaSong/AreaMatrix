@@ -1,11 +1,5 @@
 @testable import AreaMatrix
 
-actor MainListIntegrationNoopLister: CoreFileListing {
-    func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
-        []
-    }
-}
-
 actor MainListIntegrationSuspendedLister: CoreFileListing {
     private var continuation: CheckedContinuation<Void, Never>?
     private var didReceiveRequest = false

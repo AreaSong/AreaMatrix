@@ -256,24 +256,12 @@ actor BatchCategoryChanger: CoreBatchCategoryChanging {
 actor BatchChangeCategoryErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
-            kind: kind(for: error),
+            kind: CoreErrorKindTestMapper.kind(for: error),
             userMessage: "Batch category update failed",
             severity: .medium,
             suggestedAction: "Review failed items and refresh the preview.",
             recoverability: .refreshRequired,
             rawContext: "batch-change-category batch-change-category-core batch-change-category"
         )
-    }
-
-    private func kind(for error: CoreError) -> CoreErrorKindSnapshot {
-        switch error {
-        case .Conflict: .conflict
-        case .FileNotFound: .fileNotFound
-        case .PermissionDenied: .permissionDenied
-        case .Db: .db
-        case .Io: .io
-        default:
-            .internal
-        }
     }
 }

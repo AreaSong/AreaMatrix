@@ -8,10 +8,10 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         let opening = RepositoryOpeningResult.initDoneFixture(repoPath: "/tmp/empty-repo", fileCount: 0)
         let opener = RecordingEmptyRepositoryOpener(result: .success(opening))
         let model = OnboardingModel(
-            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
-            startupRecoverer: ShellStaticStartupRecoverer(),
-            helpOpener: InitDoneNoopWelcomeHelpOpener()
+            startupRecoverer: StaticStartupRecoverer(),
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .initializationDone(RepositoryInitializationResult(
@@ -41,11 +41,11 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
             recoveryReport: nil
         )
         let model = OnboardingModel(
-            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
-            startupRecoverer: ShellStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             errorMapper: errorMapper,
-            helpOpener: InitDoneNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .initializationDone(result)
@@ -61,10 +61,10 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         let opening = RepositoryOpeningResult.initDoneFixture(repoPath: "/tmp/empty-repo", fileCount: 0)
         let opener = PausingEmptyRepositoryOpener(opening: opening)
         let model = OnboardingModel(
-            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
-            startupRecoverer: ShellStaticStartupRecoverer(),
-            helpOpener: InitDoneNoopWelcomeHelpOpener()
+            startupRecoverer: StaticStartupRecoverer(),
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .initializationDone(RepositoryInitializationResult(
@@ -112,10 +112,10 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         let opening = RepositoryOpeningResult.initDoneFixture(repoPath: "/tmp/adopted-repo", fileCount: 1)
         let opener = RecordingEmptyRepositoryOpener(result: .success(opening))
         let model = OnboardingModel(
-            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
-            startupRecoverer: ShellStaticStartupRecoverer(),
-            helpOpener: InitDoneNoopWelcomeHelpOpener()
+            startupRecoverer: StaticStartupRecoverer(),
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .initializationDone(RepositoryInitializationResult(
@@ -145,11 +145,11 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
             recoveryReport: nil
         )
         let model = OnboardingModel(
-            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
-            startupRecoverer: ShellStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             errorMapper: errorMapper,
-            helpOpener: InitDoneNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .initializationDone(result)
@@ -162,8 +162,10 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
     @MainActor
     func testOpenInitDoneRepositoryInFinderReportsNonBlockingFailure() async {
-        let finderOpener = RecordingFinderOpener(result: .failure(.openRejected("/tmp/adopted-repo")))
-        let accessibilityAnnouncer = InitDoneAccessibilityAnnouncer()
+        let finderOpener = RecordingRepositoryFinderOpener(
+            result: .failure(RepositoryFinderOpenError.openRejected("/tmp/adopted-repo"))
+        )
+        let accessibilityAnnouncer = RecordingAccessibilityAnnouncer()
         let result = RepositoryInitializationResult(
             repoPath: "/tmp/adopted-repo",
             mode: .adoptExisting,
@@ -171,10 +173,10 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
             recoveryReport: nil
         )
         let model = OnboardingModel(
-            settingsReader: InitDoneStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             finderOpener: finderOpener,
             accessibilityAnnouncer: accessibilityAnnouncer,
-            helpOpener: InitDoneNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .initializationDone(result)
@@ -183,7 +185,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
             return XCTFail("expected Finder failure toast")
         }
 
-        XCTAssertEqual(finderOpener.openedRepoPaths, ["/tmp/adopted-repo"])
+        XCTAssertEqual(finderOpener.repoPaths, ["/tmp/adopted-repo"])
         XCTAssertEqual(model.route, .initializationDone(result))
         XCTAssertTrue(message.contains("无法在 Finder 中打开资料库"))
         XCTAssertEqual(accessibilityAnnouncer.announcements, [message])
@@ -358,42 +360,6 @@ private actor PausingEmptyRepositoryOpener: CoreEmptyRepositoryOpening {
         startContinuations.removeAll()
         continuations.forEach { $0.resume() }
     }
-}
-
-private final class RecordingFinderOpener: RepositoryFinderOpening {
-    private let result: Result<Void, RepositoryFinderOpenError>
-    private(set) var openedRepoPaths: [String] = []
-
-    init(result: Result<Void, RepositoryFinderOpenError>) {
-        self.result = result
-    }
-
-    @MainActor
-    func openRepositoryInFinder(repoPath: String) throws {
-        openedRepoPaths.append(repoPath)
-        try result.get()
-    }
-}
-
-@MainActor
-private final class InitDoneAccessibilityAnnouncer: AccessibilityAnnouncing {
-    private(set) var announcements: [String] = []
-
-    func announce(_ message: String) {
-        announcements.append(message)
-    }
-}
-
-private struct InitDoneStaticSettingsReader: AppSettingsReading {
-    let repoPath: String?
-
-    func configuredRepoPath() -> String? {
-        repoPath
-    }
-}
-
-private struct InitDoneNoopWelcomeHelpOpener: WelcomeHelpOpening {
-    func openWelcomeHelp() throws {}
 }
 
 private final class InitDoneRecordingErrorMapper: CoreErrorMapping {

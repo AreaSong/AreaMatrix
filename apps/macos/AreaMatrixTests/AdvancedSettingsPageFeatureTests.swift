@@ -49,7 +49,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             startupRecoverer: recoverer,
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .settingsGeneral(opening)
@@ -74,7 +74,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 1)
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         model.route = .settingsGeneral(opening)
         model.settingsGeneralSelectedTab = "advanced"

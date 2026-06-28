@@ -133,7 +133,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testOpenClassifierYamlUsesRepositoryFileOpener() async {
-        let opener = ClassifierSettingsRecordingFileOpener()
+        let opener = RecordingRepositoryFileOpener()
         let model = await loadedModel(
             updater: ClassifierSettingsRecordingUpdater(result: .success),
             fileOpener: opener
@@ -141,11 +141,11 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
 
         model.openClassifierYaml()
 
-        let expected = ClassifierSettingsRecordingFileOpener.Request(
+        let expected = RecordingRepositoryFileOpener.Request(
             repoPath: "/tmp/repo",
             relativePath: ".areamatrix/classifier.yaml"
         )
-        XCTAssertEqual(opener.requests(), [expected])
+        XCTAssertEqual(opener.requests, [expected])
         XCTAssertNil(model.fileActionError)
     }
 
@@ -322,32 +322,6 @@ private actor ClassifierSettingsRecordingPredictor: CoreCategoryPredicting {
         case let .success(preview):
             return preview
         case let .failure(error):
-            throw error
-        }
-    }
-
-    func requests() -> [Request] {
-        requestsStorage
-    }
-}
-
-@MainActor
-private final class ClassifierSettingsRecordingFileOpener: RepositoryFileOpening {
-    struct Request: Equatable {
-        var repoPath: String
-        var relativePath: String
-    }
-
-    private let error: Error?
-    private var requestsStorage: [Request] = []
-
-    init(error: Error? = nil) {
-        self.error = error
-    }
-
-    func openFile(repoPath: String, relativePath: String) throws {
-        requestsStorage.append(Request(repoPath: repoPath, relativePath: relativePath))
-        if let error {
             throw error
         }
     }

@@ -57,7 +57,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
         let mapper = DetailMetaErrorMapper(mapping: .tagFilterFilterFailure())
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             searchQuerying: searcher,
             searchFiltering: facets,
@@ -108,7 +108,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
         let tagStore = DetailTagRecordingStore(listResults: [.success(.tagFilterRegistryFixture(fileID: detail.id))])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             searchQuerying: MainListRecordingSearchQuerying(
                 results: [.success(.tagFilterIntegrationSearchPage(.empty))]
@@ -274,7 +274,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
             expectedAction: "renamed"
         )
 
-        try FileManager.default.removeItem(at: renamedURL)
+        try removeTestTemporaryItem(renamedURL)
         try await syncAndAssertDetailLog(
             model: context.model,
             kind: .removed,

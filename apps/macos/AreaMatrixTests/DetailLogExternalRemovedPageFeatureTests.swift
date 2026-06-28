@@ -7,8 +7,8 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         let opening = RepositoryOpeningResult.detailMetaFixture(repoPath: "/tmp/repo", files: [])
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            startupRecoverer: ShellStaticStartupRecoverer(),
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            startupRecoverer: StaticStartupRecoverer(),
+            helpOpener: NoopWelcomeHelpOpener()
         )
         model.route = .mainList(opening)
 
@@ -193,7 +193,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         let bridge = CoreBridge()
         let fixture = try await prepareRealExternalRemovedFixture(repoURL: repoURL, bridge: bridge)
         let removedFile = fixture.removedFile
-        try FileManager.default.removeItem(at: fixture.removedURL)
+        try removeTestTemporaryItem(fixture.removedURL)
 
         let result = try await bridge.syncExternalRemoved(
             repoPath: repoURL.path,

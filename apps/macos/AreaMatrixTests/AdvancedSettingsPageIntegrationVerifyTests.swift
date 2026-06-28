@@ -37,7 +37,7 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
         let shell = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             startupRecoverer: recoverer,
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         shell.route = .settingsGeneral(opening)
         shell.settingsGeneralSelectedTab = "advanced"
@@ -57,7 +57,7 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
         let model = AdvancedSettingsModel(
             repoPath: "/tmp/advancedSettings-broken-repo",
             loader: AdvancedSettingsFailingConfigLoader(error: CoreError.Config(reason: "invalid repo_config")),
-            updater: AdvancedSettingsNoopConfigUpdater(),
+            updater: NoopConfigurationUpdater(),
             errorMapper: CoreBridge()
         )
 
@@ -265,7 +265,7 @@ private func advancedSettingsIntegrationModel(
         updater: bridge,
         rootOverviewInspector: LocalRootOverviewFileInspector(),
         diagnosticsCollector: diagnosticsCollector,
-        appVersionReader: AdvancedSettingsStaticAppVersionReader(version: "9.8.7 (654)"),
+        appVersionReader: StaticAppVersionReader(version: "9.8.7 (654)"),
         coreVersionReader: AdvancedSettingsStaticCoreVersionReader(version: "0.1.0-test"),
         metadataReader: SQLiteExistingRepositoryMetadataReader(),
         logsOpener: logsOpener,
@@ -304,10 +304,10 @@ private func loadedAdvancedSettingsModel(
     let model = AdvancedSettingsModel(
         repoPath: "/tmp/repo",
         loader: AdvancedSettingsStaticConfigLoader(config: .advancedSettingsFixture(repoPath: "/tmp/repo")),
-        updater: AdvancedSettingsNoopConfigUpdater(),
+        updater: NoopConfigurationUpdater(),
         rootOverviewInspector: StaticRootOverviewInspector(status: .missing),
         diagnosticsCollector: diagnosticsCollector,
-        appVersionReader: AdvancedSettingsStaticAppVersionReader(version: "1.0.0"),
+        appVersionReader: StaticAppVersionReader(version: "1.0.0"),
         coreVersionReader: AdvancedSettingsStaticCoreVersionReader(version: "0.1.0"),
         metadataReader: AdvancedSettingsStaticMetadataReader(schemaVersion: 1),
         logsOpener: resolvedLogsOpener,
@@ -342,23 +342,11 @@ private actor AdvancedSettingsFailingConfigLoader: CoreConfigurationLoading {
     }
 }
 
-private actor AdvancedSettingsNoopConfigUpdater: CoreConfigurationUpdating {
-    func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
-}
-
 private struct StaticRootOverviewInspector: RootOverviewFileInspecting {
     let status: RootOverviewFileStatus
 
     func status(repoPath _: String) -> RootOverviewFileStatus {
         status
-    }
-}
-
-private struct AdvancedSettingsStaticAppVersionReader: AppVersionReading {
-    let version: String
-
-    func appVersion() -> String {
-        version
     }
 }
 

@@ -91,10 +91,10 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
     func testImportBatchBatchImportRoutesThroughImportProgressProgressWithBatchCounts() {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: ImportSingleFileStaticRepositoryOpener(opening: opening),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         let progress = ImportBatchProgressSnapshot(
             completed: 1,
@@ -136,9 +136,9 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
     func testImportBatchBatchImportFailureRoutesToImportResultResultInsteadOfFatalPause() {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         let progress = ImportBatchProgressSnapshot(
             completed: 1,
@@ -165,9 +165,9 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
     func testImportProgressViewDetailsRoutesToImportResultImportResult() {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         let progress = ImportBatchProgressSnapshot(
             completed: 1,

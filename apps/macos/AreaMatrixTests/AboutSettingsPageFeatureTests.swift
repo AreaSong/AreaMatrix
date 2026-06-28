@@ -11,7 +11,7 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
         )))
         let model = AboutSettingsModel(
             repoPath: "/tmp/repo",
-            appVersionReader: AboutSettingsStaticAppVersionReader(version: "1.2.3 (45)"),
+            appVersionReader: StaticAppVersionReader(version: "1.2.3 (45)"),
             coreVersionReader: coreReader,
             metadataReader: metadataReader,
             diagnosticsExporter: AboutDiagnosticsExporter(result: .success(.fixture())),
@@ -41,7 +41,7 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
     func testSchemaFailureKeepsAboutPaneUsableWithUnknownAndDiagnosticsHint() async {
         let model = AboutSettingsModel(
             repoPath: "/tmp/repo",
-            appVersionReader: AboutSettingsStaticAppVersionReader(version: "1.0"),
+            appVersionReader: StaticAppVersionReader(version: "1.0"),
             coreVersionReader: AboutSettingsStaticCoreVersionReader(result: .success("0.1.0")),
             metadataReader: AboutSettingsStaticMetadataReader(result: .failure(CoreError.Db(message: "missing"))),
             diagnosticsExporter: AboutDiagnosticsExporter(result: .success(.fixture())),
@@ -161,7 +161,7 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
     ) -> AboutSettingsModel {
         AboutSettingsModel(
             repoPath: "/tmp/repo",
-            appVersionReader: AboutSettingsStaticAppVersionReader(version: "1.0"),
+            appVersionReader: StaticAppVersionReader(version: "1.0"),
             coreVersionReader: AboutSettingsStaticCoreVersionReader(result: .success("0.1.0")),
             metadataReader: AboutSettingsStaticMetadataReader(result: .success(ExistingRepositoryMetadataSnapshot(
                 schemaVersion: 1,
@@ -175,14 +175,6 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
             errorMapper: AboutSettingsStaticErrorMapper(),
             accessibilityAnnouncer: accessibilityAnnouncer
         )
-    }
-}
-
-private struct AboutSettingsStaticAppVersionReader: AppVersionReading {
-    let version: String
-
-    func appVersion() -> String {
-        version
     }
 }
 

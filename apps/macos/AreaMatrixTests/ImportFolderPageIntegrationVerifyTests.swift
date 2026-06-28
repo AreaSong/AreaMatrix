@@ -9,10 +9,10 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let announcer = RecordingAccessibilityAnnouncer()
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: ImportSingleFileStaticRepositoryOpener(opening: opening),
             accessibilityAnnouncer: announcer,
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -266,9 +266,9 @@ final class ImportFolderConflictIntegrationTests: XCTestCase {
     func testImportFolderFailedImportRoutesToImportResultResultInsteadOfFatalPause() {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         let progress = ImportBatchProgressSnapshot(
             completed: 1,
@@ -420,10 +420,10 @@ private func makeImportFolderFatalFolderImportScenario() -> ImportFolderFatalFol
     )
     let controlState = ImportProgressControlState()
     let model = OnboardingModel(
-        settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+        settingsReader: StaticSettingsReader(repoPath: nil),
         importProgressControlState: controlState,
         accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-        helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+        helpOpener: NoopWelcomeHelpOpener()
     )
     return ImportFolderFatalFolderImportScenario(
         secondURL: urls[1],

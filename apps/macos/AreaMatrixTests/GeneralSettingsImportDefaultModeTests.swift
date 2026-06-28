@@ -174,7 +174,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: GeneralSettingsImportDefaultAnnouncer(),
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.startImportEntry(opening: opening, source: .filePicker, urls: [sourceURL])

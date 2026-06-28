@@ -17,17 +17,22 @@ func removeTestTemporaryItems(_ urls: URL..., fileManager: FileManager = .defaul
 
 func removeTestTemporaryItems(_ urls: [URL], fileManager: FileManager = .default) {
     for url in urls {
-        removeTestTemporaryItem(url, fileManager: fileManager)
+        try? removeTestTemporaryItem(url, fileManager: fileManager)
     }
 }
 
-private func removeTestTemporaryItem(_ url: URL, fileManager: FileManager) {
+func removeTestTemporaryItem(_ url: URL, fileManager: FileManager = .default) throws {
     guard isTestTemporaryItem(url, fileManager: fileManager) else {
-        assertionFailure("Refusing to remove non-temporary test item: \(url.path)")
-        return
+        let message = "Refusing to remove non-temporary test item: \(url.path)"
+        assertionFailure(message)
+        throw NSError(
+            domain: "AreaMatrixTests.TestTemporaryDirectorySupport",
+            code: 1,
+            userInfo: [NSLocalizedDescriptionKey: message]
+        )
     }
 
-    try? fileManager.removeItem(at: url)
+    try fileManager.removeItem(at: url)
 }
 
 private func isTestTemporaryItem(_ url: URL, fileManager: FileManager) -> Bool {

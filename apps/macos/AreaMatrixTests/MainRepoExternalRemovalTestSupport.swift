@@ -153,7 +153,3 @@ extension SavedSearchSnapshot {
         )
     }
 }
-
-func mainRepoSearchResultsRouteMirrorDescription(of value: Any) -> String {
-    testMirrorDescription(of: value)
-}

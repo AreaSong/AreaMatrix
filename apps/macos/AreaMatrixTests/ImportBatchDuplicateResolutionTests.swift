@@ -251,12 +251,12 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
 
     @MainActor
     func testShowExistingFileRevealsDuplicatePathFromPendingBatchRequest() {
-        let revealer = ImportBatchRecordingFileRevealer()
+        let revealer = RecordingRepositoryFileRevealer()
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             fileRevealer: revealer,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
 
@@ -278,12 +278,12 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
     @MainActor
     func testShowExistingFileFailureReportsActionError() {
         let revealer =
-            ImportBatchRecordingFileRevealer(result: .failure(RepositoryFileActionError.fileMissing("missing.pdf")))
+            RecordingRepositoryFileRevealer(result: .failure(RepositoryFileActionError.fileMissing("missing.pdf")))
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             fileRevealer: revealer,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
 
@@ -367,21 +367,6 @@ private func importBatchBatchRequest(urls: [URL]) -> ImportEntryRequest {
         kind: .multipleItems(urls.count),
         availableCategories: ["inbox", "docs", "finance"]
     )
-}
-
-@MainActor
-private final class ImportBatchRecordingFileRevealer: RepositoryFileRevealing {
-    private let result: Result<Void, Error>
-    private(set) var requests: [(repoPath: String, relativePath: String)] = []
-
-    init(result: Result<Void, Error> = .success(())) {
-        self.result = result
-    }
-
-    func revealFile(repoPath: String, relativePath: String) throws {
-        requests.append((repoPath: repoPath, relativePath: relativePath))
-        try result.get()
-    }
 }
 
 extension ImportConflictBatchPreviewReportSnapshot {

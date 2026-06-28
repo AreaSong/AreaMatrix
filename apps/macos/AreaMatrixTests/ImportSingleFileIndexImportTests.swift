@@ -230,32 +230,11 @@ private actor IndexImportRecordingErrorMapper: CoreErrorMapping {
 
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         errors.append(error)
-        return CoreErrorMappingSnapshot.indexImportFixture(kind: kind(for: error))
+        return CoreErrorMappingSnapshot.indexImportFixture(kind: CoreErrorKindTestMapper.kind(for: error))
     }
 
     func recordedErrors() -> [CoreError] {
         errors
-    }
-
-    private func kind(for error: CoreError) -> CoreErrorKindSnapshot {
-        switch error {
-        case .DuplicateFile:
-            .duplicateFile
-        case .InvalidPath:
-            .invalidPath
-        case .ICloudPlaceholder:
-            .iCloudPlaceholder
-        case .PermissionDenied:
-            .permissionDenied
-        case .FileNotFound:
-            .fileNotFound
-        case .Io:
-            .io
-        case .Db:
-            .db
-        default:
-            .internal
-        }
     }
 }
 

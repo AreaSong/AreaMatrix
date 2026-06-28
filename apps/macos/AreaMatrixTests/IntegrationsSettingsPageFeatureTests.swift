@@ -12,7 +12,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
             loader: loader,
             updater: IntegrationsSettingsRecordingUpdater(results: [.success]),
             errorMapper: IntegrationsSettingsStaticErrorMapper(),
-            statusDetector: IntegrationsSettingsStaticStatusDetector(
+            statusDetector: StaticICloudStatusDetector(
                 snapshot: IntegrationsICloudSnapshot(repositoryLocation: .iCloudDrive, iCloudStatus: .available)
             )
         )
@@ -79,7 +79,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
             loader: loader,
             updater: IntegrationsSettingsRecordingUpdater(results: [.success]),
             errorMapper: mapper,
-            statusDetector: IntegrationsSettingsStaticStatusDetector(
+            statusDetector: StaticICloudStatusDetector(
                 snapshot: IntegrationsICloudSnapshot(repositoryLocation: .unknown, iCloudStatus: .unknown)
             )
         )
@@ -97,7 +97,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testPlatformActionsStayInMacLayerWithoutConfigWrites() async {
-        let finderOpener = IntegrationsFinderOpener()
+        let finderOpener = RecordingRepositoryFinderOpener()
         let helpOpener = IntegrationsSettingsRecordingHelpOpener()
         let updater = IntegrationsSettingsRecordingUpdater(results: [.success])
         let model = await loadedModel(
@@ -111,7 +111,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
         let requests = await updater.requests()
 
         XCTAssertEqual(helpOpener.openCount, 1)
-        XCTAssertEqual(finderOpener.requests, ["/tmp/repo"])
+        XCTAssertEqual(finderOpener.repoPaths, ["/tmp/repo"])
         XCTAssertEqual(requests, [])
         XCTAssertEqual(model.actionFeedback, .success("Repository folder revealed in Finder."))
     }
@@ -129,7 +129,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
             loader: bridge,
             updater: bridge,
             errorMapper: bridge,
-            statusDetector: IntegrationsSettingsStaticStatusDetector(
+            statusDetector: StaticICloudStatusDetector(
                 snapshot: IntegrationsICloudSnapshot(repositoryLocation: .localFolder, iCloudStatus: .unavailable)
             )
         )
@@ -161,10 +161,10 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
             ]),
             updater: updater,
             errorMapper: errorMapper,
-            statusDetector: IntegrationsSettingsStaticStatusDetector(
+            statusDetector: StaticICloudStatusDetector(
                 snapshot: IntegrationsICloudSnapshot(repositoryLocation: .localFolder, iCloudStatus: .unavailable)
             ),
-            finderOpener: finderOpener ?? IntegrationsFinderOpener(),
+            finderOpener: finderOpener ?? RecordingRepositoryFinderOpener(),
             helpOpener: helpOpener ?? IntegrationsSettingsRecordingHelpOpener()
         )
         await model.load()
@@ -363,14 +363,6 @@ private actor IntegrationsSettingsRecordingUpdater: CoreConfigurationUpdating {
     }
 }
 
-private struct IntegrationsSettingsStaticStatusDetector: ICloudStatusDetecting {
-    let snapshot: IntegrationsICloudSnapshot
-
-    func snapshot(repoPath _: String, config _: RepoConfigSnapshot) async -> IntegrationsICloudSnapshot {
-        snapshot
-    }
-}
-
 private actor IntegrationsSettingsStaticErrorMapper: CoreErrorMapping {
     private var errors: [CoreError] = []
 
@@ -402,15 +394,6 @@ private actor IntegrationsSettingsStaticErrorMapper: CoreErrorMapping {
 
     func mappedErrors() -> [CoreError] {
         errors
-    }
-}
-
-@MainActor
-private final class IntegrationsFinderOpener: RepositoryFinderOpening {
-    private(set) var requests: [String] = []
-
-    func openRepositoryInFinder(repoPath: String) throws {
-        requests.append(repoPath)
     }
 }
 

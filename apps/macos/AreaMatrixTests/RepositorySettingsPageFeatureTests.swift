@@ -240,7 +240,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             .appendingPathComponent(".areamatrix", isDirectory: true)
             .appendingPathComponent("generated", isDirectory: true)
             .appendingPathComponent("root.md", isDirectory: false)
-        let revealer = RepositorySettingsRecordingFileRevealer()
+        let revealer = RecordingRepositoryFileRevealer()
         let model = RepositorySettingsModel(
             repoPath: repoURL.path,
             loader: bridge,
@@ -256,7 +256,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         model.revealGeneratedOverviewInFinder()
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: generatedURL.path))
-        XCTAssertEqual(revealer.requests, [RepositorySettingsRecordingFileRevealer.Request(
+        XCTAssertEqual(revealer.requests, [RecordingRepositoryFileRevealer.Request(
             repoPath: repoURL.path,
             relativePath: RepositorySettingsSummary.generatedOverviewRelativePath
         )])
@@ -269,7 +269,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testRevealGeneratedOverviewFailureShowsRecoverableError() {
-        let revealer = RepositorySettingsRecordingFileRevealer(
+        let revealer = RecordingRepositoryFileRevealer(
             result: .failure(RepositoryFileActionError.fileMissing(
                 RepositorySettingsSummary.generatedOverviewRelativePath
             ))
@@ -284,7 +284,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
 
         model.revealGeneratedOverviewInFinder()
 
-        XCTAssertEqual(revealer.requests, [RepositorySettingsRecordingFileRevealer.Request(
+        XCTAssertEqual(revealer.requests, [RecordingRepositoryFileRevealer.Request(
             repoPath: "/tmp/repo",
             relativePath: RepositorySettingsSummary.generatedOverviewRelativePath
         )])

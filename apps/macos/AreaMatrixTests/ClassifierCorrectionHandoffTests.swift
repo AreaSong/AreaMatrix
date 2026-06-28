@@ -8,7 +8,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
         let mover = ClassifierCorrectionNoopCategoryMover()
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             fileCategoryMover: mover,
             errorMapper: DetailMetaErrorMapper(mapping: classifierCorrectionClassifierCorrectionClassifyMapping())
@@ -106,7 +106,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
         let file = classifierCorrectionFile(id: 262, name: "contract.pdf")
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             errorMapper: DetailMetaErrorMapper(mapping: classifierCorrectionClassifierCorrectionClassifyMapping())
         )

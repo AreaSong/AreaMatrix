@@ -233,7 +233,7 @@ final class MainListFilesTests: XCTestCase {
 
         let bridge = CoreBridge()
         try await bridge.adoptExistingRepository(repoPath: repoURL.path)
-        try FileManager.default.removeItem(at: reportURL)
+        try removeTestTemporaryItem(reportURL)
         let listed = try await firstListedFile(bridge: bridge, repoPath: repoURL.path, category: "docs")
 
         XCTAssertEqual(listed.statusDisplay, "Missing")

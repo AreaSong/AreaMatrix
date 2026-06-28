@@ -246,7 +246,7 @@ private func aiCategorySuggestionMainModel(
 ) -> MainFileListModel {
     MainFileListModel(
         opening: .aiCategorySuggestionFixture(repoPath: "/tmp/repo", files: [file]),
-        fileLister: AICategorySuggestionNoopLister(),
+        fileLister: NoopFileLister(),
         fileDetailer: AICategorySuggestionDetailer(file: file),
         fileCategoryMover: mover,
         changeLogLister: AICategorySuggestionChangeLogLister(),
@@ -328,12 +328,6 @@ private func aiCategorySuggestionCallLogRecord(id: Int64) -> AiCallLogRecord {
         resultSummary: "finance/invoices",
         errorCode: nil
     )
-}
-
-private actor AICategorySuggestionNoopLister: CoreFileListing {
-    func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
-        []
-    }
 }
 
 private actor AICategorySuggestionDetailer: CoreFileDetailing {

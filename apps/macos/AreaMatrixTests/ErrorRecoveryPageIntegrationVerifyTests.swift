@@ -9,7 +9,7 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
         let privacy = SemanticSearchPrivacyRulesBridge(report: .semanticSearchAllowed())
         let model = MainFileListModel(
             opening: .initDoneFixture(repoPath: "/tmp/repo", fileCount: 0),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(.deleteFixture(
                 id: 680,
                 name: "invoice.pdf",
@@ -44,7 +44,7 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
         let privacy = SemanticSearchPrivacyRulesBridge(report: .semanticSearchBlocked())
         let model = MainFileListModel(
             opening: .initDoneFixture(repoPath: "/tmp/repo", fileCount: 0),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(.deleteFixture(
                 id: 681,
                 name: "confidential.pdf",
@@ -81,7 +81,7 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
         )
         let treeLister = MainLoadingRecordingTreeLister(result: .success(.mainLoadingTreeFixture()))
         let model = OnboardingModel(
-            settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: MainLoadingRecordingSettingsWriter(),
             pathValidator: StartupRecoveryIntegrationPathValidator(),
             initializedPathValidator: InitializedPathValidator(),
@@ -90,7 +90,7 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
             startupRecoverer: recoverer,
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
             errorMapper: StartupRecoveryIntegrationErrorMapper(mapping: mapping),
-            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         await model.openExistingRepository(
@@ -129,7 +129,7 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
             result: .failure(CoreError.Db(message: "database corrupted"))
         )
         let model = OnboardingModel(
-            settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             pathValidator: StartupRecoveryIntegrationPathValidator(),
             initializedPathValidator: InitializedPathValidator(),
             emptyRepositoryOpener: MainLoadingFailingRepositoryOpener(
@@ -138,7 +138,7 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
             startupRecoverer: recoverer,
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
             errorMapper: StartupRecoveryIntegrationErrorMapper(mapping: mapping),
-            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         await model.openExistingRepository(

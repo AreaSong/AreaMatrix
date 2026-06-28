@@ -11,7 +11,7 @@ final class ValidatePathErrorMappingTests: XCTestCase {
             configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
             pathValidator: ShellRecordingPathValidator(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo"))),
             errorMapper: errorMapper,
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
@@ -42,7 +42,7 @@ final class ValidatePathErrorMappingTests: XCTestCase {
             configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
             pathValidator: ShellRecordingPathValidator(result: .failure(CoreError.Config(reason: "schema mismatch"))),
             errorMapper: ErrorSmokeRecordingErrorMapper(mapping: mapping),
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
@@ -64,7 +64,7 @@ final class ValidatePathIntegrationSmokeTests: XCTestCase {
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
             pathValidator: ShellRecordingPathValidator(result: .success(validation)),
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
@@ -153,7 +153,7 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
         let privacy = RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags]))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             tagStore: DetailTagRecordingStore(listResults: [.success(.tagAddFixture(
                 fileID: file.id,
@@ -199,7 +199,7 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
         ]))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             tagStore: DetailTagRecordingStore(listResults: [.success(.tagAddFixture(fileID: file.id, values: []))]),
             aiSettingsLoader: AITagSuggestionAISettingsLoader(),
@@ -235,7 +235,7 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
         ]))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             tagStore: DetailTagRecordingStore(listResults: [.success(.tagAddFixture(fileID: file.id, values: []))]),
             aiSettingsLoader: AITagSuggestionAISettingsLoader(),
@@ -271,7 +271,7 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
         let settings = AITagSuggestionAISettingsLoader(aiEnabled: false)
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             aiSettingsLoader: settings,
             aiTagSuggestionStore: bridge,
@@ -304,7 +304,7 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
         let privacy = RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags]))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             aiSettingsLoader: AITagSuggestionAISettingsLoader(autoTagsEnabled: false),
             aiTagSuggestionStore: bridge,

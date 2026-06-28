@@ -10,14 +10,14 @@ final class InitFailedErrorMappingTests: XCTestCase {
         let errorMapper = InitFailedRecordingErrorMapper(mapping: mapping)
         let writer = InitFailedRecordingSettingsWriter()
         let model = OnboardingModel(
-            settingsReader: InitFailedStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             pathValidator: StaticPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
-            scanSessionReader: StaticInitFailedScanSessionReader(),
+            scanSessionReader: StaticScanSessionReader(),
             errorMapper: errorMapper,
-            helpOpener: InitFailedNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/adopt")
@@ -151,10 +151,10 @@ final class InitFailedErrorMappingTests: XCTestCase {
         let collector = InitFailedRecordingDiagnosticsCollector(result: .success(snapshot))
         let writer = InitFailedRecordingSettingsWriter()
         let model = OnboardingModel(
-            settingsReader: InitFailedStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             diagnosticsCollector: collector,
-            helpOpener: InitFailedNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .initializationFailed("/Users/example/private-repo", nil, nil)
@@ -174,10 +174,10 @@ final class InitFailedErrorMappingTests: XCTestCase {
             InitFailedRecordingDiagnosticsCollector(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
         let errorMapper = InitFailedRecordingErrorMapper(mapping: mapping)
         let model = OnboardingModel(
-            settingsReader: InitFailedStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             diagnosticsCollector: collector,
             errorMapper: errorMapper,
-            helpOpener: InitFailedNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .initializationFailed("/tmp/repo", nil, nil)
@@ -214,14 +214,6 @@ private actor RetryingRepositoryInitializer: CoreRepositoryInitializing {
 
     func adoptRequests() -> [String] {
         adoptPaths
-    }
-}
-
-private struct InitFailedStaticSettingsReader: AppSettingsReading {
-    let repoPath: String?
-
-    func configuredRepoPath() -> String? {
-        repoPath
     }
 }
 
@@ -273,18 +265,6 @@ private actor StaticPathValidator: CoreRepositoryPathValidating {
     }
 }
 
-private actor StaticStartupRecoverer: CoreStartupRecovering {
-    func recoverOnStartup(repoPath _: String) async throws -> RecoveryReportSnapshot {
-        RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
-    }
-}
-
-private actor StaticInitFailedScanSessionReader: CoreScanSessionReading {
-    func latestScanSession(repoPath _: String) async throws -> ScanSessionSnapshot? {
-        nil
-    }
-}
-
 private final class InitFailedRecordingErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
     private(set) var mappedErrors: [CoreError] = []
@@ -297,10 +277,6 @@ private final class InitFailedRecordingErrorMapper: CoreErrorMapping {
         mappedErrors.append(error)
         return mapping
     }
-}
-
-private struct InitFailedNoopWelcomeHelpOpener: WelcomeHelpOpening {
-    func openWelcomeHelp() throws {}
 }
 
 private actor AIPrivacyRulesStaticAISettingsLoader: CoreAISettingsLoading {

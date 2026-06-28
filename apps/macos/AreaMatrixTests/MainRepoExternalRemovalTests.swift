@@ -13,8 +13,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             onRemoveFilter: { _ in },
             onSearchAllFileTypes: {}
         )
-        let emptyBody = mainRepoSearchResultsRouteMirrorDescription(of: emptyView.body)
-        let errorBody = mainRepoSearchResultsRouteMirrorDescription(of: QueryErrorRouteView(
+        let errorBody = QueryErrorRouteView(
             request: request,
             diagnostic: SearchQueryDiagnosticSnapshot(
                 severityDisplayName: "Error",
@@ -22,33 +21,33 @@ final class MainRepoExternalRemovalTests: XCTestCase {
                 suggestion: "Use category:"
             ),
             onClear: {}
-        ).body)
+        ).body
         let savedSearchStore = MainRepoSavedSearchRecordingStore(results: [.listSuccess([])])
-        let saveBody = mainRepoSearchResultsRouteMirrorDescription(of: SavedSearchSheetRouteView(
+        let saveBody = SavedSearchSheetRouteView(
             request: request,
             repoPath: "/tmp/repo",
             resultCountState: .loaded(3),
             savedSearchStore: savedSearchStore,
             errorMapper: MainListRecordingErrorMapper(mapping: .mainRepoSearchFiltersDbFixture()),
             onCancel: {}
-        ).body)
-        let indexingBody = mainRepoSearchResultsRouteMirrorDescription(of: SearchIndexingStatusRouteView(
+        ).body
+        let indexingBody = SearchIndexingStatusRouteView(
             request: request,
             indexStatus: .unavailable,
             onRetry: {},
             onClose: {}
-        ).body)
+        ).body
         var commandQuery = "合同"
-        let commandBody = mainRepoSearchResultsRouteMirrorDescription(of: SearchCommandPaletteRouteView(
+        let commandBody = SearchCommandPaletteRouteView(
             query: Binding(get: { commandQuery }, set: { commandQuery = $0 }),
             state: .idle,
             onLoad: {},
             onExecuteTarget: { _ in },
             onClose: {}
-        ).body)
+        ).body
 
-        assertMainRepoSearchRouteDescriptions(MainRepoSearchRouteDescriptions(
-            empty: emptyBody,
+        assertMainRepoSearchRouteBodies(MainRepoSearchRouteBodies(
+            empty: emptyView.body,
             error: errorBody,
             save: saveBody,
             indexing: indexingBody,
@@ -271,9 +270,9 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             initializedPathValidator: initializedValidator,
             emptyRepositoryOpener: opener,
-            startupRecoverer: ShellStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             externalChangesSyncer: syncer,
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         await model.updateMainRepoExternalRemoval(
@@ -299,9 +298,9 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         let syncer = ShellRecordingExternalChangesSyncer(result: .success(.shellDeletedFixture()))
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            startupRecoverer: ShellStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             externalChangesSyncer: syncer,
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         await model.updateMainRepoExternalRemoval(
@@ -325,9 +324,9 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
-            startupRecoverer: ShellStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             externalChangesSyncer: syncer,
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         await model.updateMainRepoExternalRemoval(
@@ -353,31 +352,31 @@ final class MainRepoExternalRemovalTests: XCTestCase {
     }
 }
 
-private struct MainRepoSearchRouteDescriptions {
-    let empty: String
-    let error: String
-    let save: String
-    let indexing: String
-    let command: String
+private struct MainRepoSearchRouteBodies {
+    let empty: Any
+    let error: Any
+    let save: Any
+    let indexing: Any
+    let command: Any
 }
 
-private func assertMainRepoSearchRouteDescriptions(
-    _ descriptions: MainRepoSearchRouteDescriptions,
+private func assertMainRepoSearchRouteBodies(
+    _ bodies: MainRepoSearchRouteBodies,
     file: StaticString = #filePath,
     line: UInt = #line
 ) {
-    assertTestDescription(descriptions.empty, contains: [
+    assertTestMirrorDescription(of: bodies.empty, contains: [
         "search-empty-search-empty",
         "Clear filters",
         "Search all file types"
     ], file: file, line: line)
-    assertTestDescription(descriptions.error, contains: [
+    assertTestMirrorDescription(of: bodies.error, contains: [
         "Unknown field: owner",
         "query-error-query-error"
     ], file: file, line: line)
-    assertTestDescription(descriptions.save, contains: "saved-search-search-route", file: file, line: line)
-    assertTestDescription(descriptions.indexing, contains: [
+    assertTestMirrorDescription(of: bodies.save, contains: "saved-search-search-route", file: file, line: line)
+    assertTestMirrorDescription(of: bodies.indexing, contains: [
         "search-index-status-indexing-status-search-route"
     ], file: file, line: line)
-    assertTestDescription(descriptions.command, contains: "command-palette-search-route", file: file, line: line)
+    assertTestMirrorDescription(of: bodies.command, contains: "command-palette-search-route", file: file, line: line)
 }

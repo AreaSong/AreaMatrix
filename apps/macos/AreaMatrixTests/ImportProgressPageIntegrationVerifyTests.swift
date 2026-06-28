@@ -16,9 +16,9 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
     func testImportProgressFatalImportExitMustRouteThroughImportResultResultSummary() {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -338,135 +338,39 @@ private actor UndoToastHistoryErrorMapper: CoreErrorMapping {
 
 private extension UndoActionRecordSnapshot {
     static func undoHistoryMovedFilesToTrash() -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
-            actionID: "undo-trash-3",
-            kind: "trash_delete",
-            summary: "Moved 3 files to Trash.",
-            affectedCount: 3,
-            affectedFileNames: ["a.pdf", "b.pdf", "c.pdf"],
-            status: .pending,
-            canUndo: true,
-            disabledReason: nil,
-            createdAt: 1_700_000_000,
-            updatedAt: 1_700_000_010
-        )
+        testMovedFilesToTrashUndoAction()
     }
 
     static func undoHistoryBlockedRename() -> UndoActionRecordSnapshot {
-        var action = undoHistoryRenamedFiles()
-        action.actionID = "undo-rename-blocked"
-        action.status = .blocked
-        action.canUndo = false
-        action.disabledReason = "External change prevents undo."
-        return action
+        testBlockedRenameUndoAction()
     }
 
     static func undoHistoryRenamedFiles() -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
-            actionID: "undo-rename-12",
-            kind: "rename_files",
-            summary: "Renamed 12 files.",
-            affectedCount: 12,
-            affectedFileNames: ["a.pdf", "b.pdf"],
-            status: .pending,
-            canUndo: true,
-            disabledReason: nil,
-            createdAt: 1_700_000_020,
-            updatedAt: 1_700_000_020
-        )
+        testRenamedFilesUndoAction()
     }
 
     static func undoHistoryExecutedTrashMove() -> UndoActionRecordSnapshot {
-        var action = undoHistoryMovedFilesToTrash()
-        action.status = .executed
-        action.canUndo = false
-        action.updatedAt = 1_700_000_030
-        return action
+        testExecutedTrashMoveUndoAction()
     }
 }
 
 private extension UndoActionResultSnapshot {
     static func undoHistoryUndoneTrashMove() -> UndoActionResultSnapshot {
-        UndoActionResultSnapshot(
-            actionID: "undo-trash-3",
-            status: .executed,
-            summary: "Undone: moved 3 files to Trash.",
-            affectedCount: 3,
-            refreshTargets: ["files", "undo_actions", "change_log"],
-            completedAt: 1_700_000_040
-        )
+        testUndoneTrashMoveUndoResult()
     }
 }
 
-private actor UndoHistoryRecordingUndoStore: CoreUndoActionLogging {
-    enum Result {
-        case list(Swift.Result<[UndoActionRecordSnapshot], Error>)
-        case undo(Swift.Result<UndoActionResultSnapshot, Error>)
-    }
-
-    private var results: [Result]
-    private var recordedListRequests: [String] = []
-    private var recordedUndoRequests: [String] = []
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func listUndoActions(repoPath: String) async throws -> [UndoActionRecordSnapshot] {
-        recordedListRequests.append(repoPath)
-        guard !results.isEmpty else { return [] }
-        guard case let .list(result) = results.removeFirst() else {
-            throw CoreError.Internal(message: "Expected listUndoActions")
-        }
-        return try result.get()
-    }
-
-    func undoAction(repoPath: String, actionID: String) async throws -> UndoActionResultSnapshot {
-        recordedUndoRequests.append("\(repoPath)|\(actionID)")
-        guard !results.isEmpty else {
-            throw CoreError.FileNotFound(path: actionID)
-        }
-        guard case let .undo(result) = results.removeFirst() else {
-            throw CoreError.Internal(message: "Expected undoAction")
-        }
-        return try result.get()
-    }
-
-    func listRequests() -> [String] {
-        recordedListRequests
-    }
-
-    func undoRequests() -> [String] {
-        recordedUndoRequests
-    }
-}
+private typealias UndoHistoryRecordingUndoStore = LenientUndoActionRecordingTestStore
 
 private actor UndoHistoryHistoryErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
-            kind: kind(for: error),
+            kind: CoreErrorKindTestMapper.kind(for: error),
             userMessage: "Undo failed",
             severity: .medium,
             suggestedAction: "View details in Undo history.",
             recoverability: .refreshRequired,
             rawContext: "undo-history undo-action-log undo-action-log"
         )
-    }
-
-    private func kind(for error: CoreError) -> CoreErrorKindSnapshot {
-        switch error {
-        case .Conflict:
-            .conflict
-        case .FileNotFound:
-            .fileNotFound
-        case .PermissionDenied:
-            .permissionDenied
-        case .Db:
-            .db
-        case .Io:
-            .io
-        default:
-            .internal
-        }
     }
 }

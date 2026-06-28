@@ -10,8 +10,8 @@ final class CoreBridgeRepositoryTests: XCTestCase {
         try await CoreBridge().initializeEmptyRepository(repoPath: repoURL.path)
 
         let model = OnboardingModel(
-            settingsReader: CoreBridgeTestSettingsReader(repoPath: repoURL.path),
-            helpOpener: CoreBridgeTestHelpOpener()
+            settingsReader: StaticSettingsReader(repoPath: repoURL.path),
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         await model.bootstrapIfNeeded()
@@ -78,18 +78,6 @@ final class CoreBridgeRepositoryTests: XCTestCase {
 
 private func makeTemporaryRepoURL() throws -> URL {
     try makeTestTemporaryDirectory(named: "AreaMatrixCoreBridgeRepositoryTests")
-}
-
-private struct CoreBridgeTestSettingsReader: AppSettingsReading {
-    let repoPath: String?
-
-    func configuredRepoPath() -> String? {
-        repoPath
-    }
-}
-
-private struct CoreBridgeTestHelpOpener: WelcomeHelpOpening {
-    func openWelcomeHelp() throws {}
 }
 
 final class MainSearchFiltersPageFeatureTests: XCTestCase {

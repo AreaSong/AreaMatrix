@@ -291,7 +291,7 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
         let file = FileEntrySnapshot.detailMetaFixture(id: 304, currentName: "invoice.pdf")
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
         )

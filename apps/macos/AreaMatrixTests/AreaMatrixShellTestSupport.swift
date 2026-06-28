@@ -268,44 +268,9 @@ actor ShellRecordingDiagnosticsCollector: CoreDiagnosticsCollecting {
     }
 }
 
-struct ShellNoopWelcomeHelpOpener: WelcomeHelpOpening { func openWelcomeHelp() throws {} }
-
 struct ShellFailingWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {
         throw WelcomeHelpError.helpDocumentUnavailable
-    }
-}
-
-@MainActor
-final class ShellRecordingFinderOpener: RepositoryFinderOpening {
-    private let result: Result<Void, RepositoryFinderOpenError>
-    private(set) var openedRepoPaths: [String] = []
-
-    init(result: Result<Void, RepositoryFinderOpenError> = .success(())) {
-        self.result = result
-    }
-
-    func openRepositoryInFinder(repoPath: String) throws {
-        openedRepoPaths.append(repoPath)
-        try result.get()
-    }
-}
-
-@MainActor
-final class ShellRecordingFileRevealer: RepositoryFileRevealing {
-    private(set) var requests: [(repoPath: String, relativePath: String)] = []
-
-    func revealFile(repoPath: String, relativePath: String) throws {
-        requests.append((repoPath: repoPath, relativePath: relativePath))
-    }
-}
-
-@MainActor
-final class ShellRecordingFileOpener: RepositoryFileOpening {
-    private(set) var requests: [(repoPath: String, relativePath: String)] = []
-
-    func openFile(repoPath: String, relativePath: String) throws {
-        requests.append((repoPath: repoPath, relativePath: relativePath))
     }
 }
 
@@ -438,11 +403,5 @@ extension RepoPathValidationSnapshot {
             recommendedMode: recommendedMode,
             issues: issues
         )
-    }
-}
-
-actor ShellStaticStartupRecoverer: CoreStartupRecovering {
-    func recoverOnStartup(repoPath _: String) async throws -> RecoveryReportSnapshot {
-        RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
     }
 }

@@ -280,10 +280,10 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
             settingsWriter: writer,
             emptyRepositoryOpener: opener,
             mainLoadingTreeLister: treeLister,
-            startupRecoverer: ShellStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
             errorMapper: errorMapper,
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
     }
 }

@@ -82,10 +82,10 @@ final class MainRepoErrorMappingTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: "/tmp/repo"),
             emptyRepositoryOpener: ShellRecordingRepositoryOpener(result: .failure(error)),
-            startupRecoverer: ShellStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
             errorMapper: errorMapper,
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         await model.bootstrapIfNeeded()
@@ -114,7 +114,7 @@ final class MainRepoErrorMappingTests: XCTestCase {
         )
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         model.route = .mainRepoError("/tmp/repo", mapping)
         model.mainRepoRecoveryErrorMapping = mapping
@@ -143,7 +143,7 @@ final class MainRepoErrorMappingTests: XCTestCase {
         )
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         model.route = .mainRepoError("/tmp/repo", mapping)
         model.openMainRepositoryRepair(repoPath: "/tmp/repo")
@@ -169,9 +169,9 @@ final class MainRepoErrorMappingTests: XCTestCase {
             settingsReader: ShellStaticSettingsReader(repoPath: "/tmp/repo"),
             emptyRepositoryOpener: ShellRecordingRepositoryOpener(result: .failure(CoreError
                     .Db(message: "db corrupt"))),
-            startupRecoverer: ShellStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             errorMapper: errorMapper,
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         await model.bootstrapIfNeeded()
@@ -191,7 +191,7 @@ final class MainRepoErrorMappingTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             diagnosticsCollector: collector,
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         model.route = .mainRepoError("/tmp/repo", nil)
 
@@ -215,7 +215,7 @@ final class MainRepoErrorMappingTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             diagnosticsCollector: collector,
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         model.route = .mainRepoError("/tmp/repo", nil)
 
@@ -237,7 +237,7 @@ final class MainRepoErrorMappingTests: XCTestCase {
                 repoPath: nil,
                 lastOpenedAtByRepoPath: ["/tmp/repo": 1_777_000_000]
             ),
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.routeMainRepositoryError(repoPath: "/tmp/repo", mapping: nil)
@@ -266,12 +266,12 @@ final class MainRepoErrorMappingTests: XCTestCase {
             settingsWriter: writer,
             initializedPathValidator: initializedValidator,
             emptyRepositoryOpener: opener,
-            startupRecoverer: ShellStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             existingRepositoryMetadataReader: ShellExistingRepoMetadataReader(
                 schemaVersion: 1,
                 configuredRepoPath: "/tmp/repo"
             ),
-            helpOpener: ShellNoopWelcomeHelpOpener(),
+            helpOpener: NoopWelcomeHelpOpener(),
             directoryPicker: picker
         )
         model.route = OnboardingModel.Route.mainRepoError(
@@ -310,12 +310,12 @@ final class MainRepoErrorMappingTests: XCTestCase {
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             initializedPathValidator: initializedValidator,
             emptyRepositoryOpener: opener,
-            startupRecoverer: ShellStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             existingRepositoryMetadataReader: ShellExistingRepoMetadataReader(
                 schemaVersion: 1,
                 configuredRepoPath: "/tmp/some-other-repo"
             ),
-            helpOpener: ShellNoopWelcomeHelpOpener(),
+            helpOpener: NoopWelcomeHelpOpener(),
             directoryPicker: picker
         )
         model.route = OnboardingModel.Route.mainRepoError(

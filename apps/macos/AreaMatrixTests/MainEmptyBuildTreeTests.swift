@@ -41,10 +41,10 @@ final class MainEmptyBuildTreeTests: XCTestCase {
         let opening = RepositoryOpeningResult.mainEmptyBuildTreeFixture(repoPath: "/tmp/repo", tree: tree)
         let opener = BuildTreeRecordingRepositoryOpener(opening: opening)
         let model = OnboardingModel(
-            settingsReader: BuildTreeStaticSettingsReader(repoPath: "/tmp/repo"),
+            settingsReader: StaticSettingsReader(repoPath: "/tmp/repo"),
             emptyRepositoryOpener: opener,
-            startupRecoverer: ShellStaticStartupRecoverer(),
-            helpOpener: BuildTreeNoopWelcomeHelpOpener()
+            startupRecoverer: StaticStartupRecoverer(),
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         await model.bootstrapIfNeeded()
@@ -156,9 +156,9 @@ final class MainEmptyBuildTreeTests: XCTestCase {
             tree: .mainEmptyFixtureTree()
         )
         let model = OnboardingModel(
-            settingsReader: BuildTreeStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: BuildTreeAnnouncer(),
-            helpOpener: BuildTreeNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.startImportConflictBatchReview(
@@ -207,18 +207,6 @@ private actor BuildTreeRecordingRepositoryOpener: CoreEmptyRepositoryOpening {
     func requestedConfiguredRepoPaths() -> [String] {
         configuredPaths
     }
-}
-
-private struct BuildTreeStaticSettingsReader: AppSettingsReading {
-    let repoPath: String?
-
-    func configuredRepoPath() -> String? {
-        repoPath
-    }
-}
-
-private struct BuildTreeNoopWelcomeHelpOpener: WelcomeHelpOpening {
-    func openWelcomeHelp() throws {}
 }
 
 @MainActor

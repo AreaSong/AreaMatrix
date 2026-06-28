@@ -7,8 +7,8 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         let opening = RepositoryOpeningResult.detailMetaFixture(repoPath: "/tmp/repo", files: [])
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            startupRecoverer: ShellStaticStartupRecoverer(),
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            startupRecoverer: StaticStartupRecoverer(),
+            helpOpener: NoopWelcomeHelpOpener()
         )
         model.route = .mainList(opening)
 
@@ -33,8 +33,8 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         let opening = RepositoryOpeningResult.detailMetaFixture(repoPath: "/tmp/repo", files: [])
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            startupRecoverer: ShellStaticStartupRecoverer(),
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            startupRecoverer: StaticStartupRecoverer(),
+            helpOpener: NoopWelcomeHelpOpener()
         )
         model.route = .mainList(opening)
 

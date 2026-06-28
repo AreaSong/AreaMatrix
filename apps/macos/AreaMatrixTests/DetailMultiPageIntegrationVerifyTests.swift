@@ -163,7 +163,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
         ])
         let model = MainFileListModel(
             opening: .detailMultiSelectFixture(repoPath: "/tmp/repo", files: [first, second]),
-            fileLister: DetailMultiSelectNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: detailer,
             errorMapper: DetailMultiSelectErrorMapper(mapping: .detailMultiSelectDbMapping())
         )
@@ -197,7 +197,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
         let mapping = CoreErrorMappingSnapshot.detailMultiSelectFileNotFoundMapping()
         let model = MainFileListModel(
             opening: .detailMultiSelectFixture(repoPath: "/tmp/repo", files: [available, stale]),
-            fileLister: DetailMultiSelectNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMultiSelectSequenceDetailer(results: [
                 .success(available),
                 .failure(CoreError.FileNotFound(path: stale.path))
@@ -224,12 +224,6 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(copier.multiPathRequests.map(\.relativePaths), [[available.path, stale.path]])
         XCTAssertEqual(shell.toastMessage, "2 paths copied.")
         XCTAssertEqual(announcer.announcements, ["2 paths copied."])
-    }
-}
-
-private actor DetailMultiSelectNoopLister: CoreFileListing {
-    func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
-        []
     }
 }
 
@@ -420,49 +414,7 @@ private extension BatchMutationReportSnapshot {
     }
 }
 
-private actor BatchAddTagsRecordingUndoStore: CoreUndoActionLogging {
-    enum Result { case list(Swift.Result<[UndoActionRecordSnapshot], Error>), undo(Swift.Result<
-        UndoActionResultSnapshot,
-        Error
-    >) }
-
-    private var results: [Result]
-    private var recordedListRequests: [String] = []
-    private var recordedUndoRequests: [String] = []
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func listUndoActions(repoPath: String) async throws -> [UndoActionRecordSnapshot] {
-        recordedListRequests.append(repoPath)
-        guard case let .list(result) = try consumeResult() else {
-            throw CoreError.Internal(message: "expected list_undo_actions before undo_action")
-        }
-        return try result.get()
-    }
-
-    func undoAction(repoPath: String, actionID: String) async throws -> UndoActionResultSnapshot {
-        recordedUndoRequests.append("\(repoPath)|\(actionID)")
-        guard case let .undo(result) = try consumeResult() else {
-            throw CoreError.Internal(message: "expected undo_action result")
-        }
-        return try result.get()
-    }
-
-    func listRequests() -> [String] {
-        recordedListRequests
-    }
-
-    func undoRequests() -> [String] {
-        recordedUndoRequests
-    }
-
-    private func consumeResult() throws -> Result {
-        guard !results.isEmpty else { throw CoreError.Db(message: "missing undo action result") }
-        return results.removeFirst()
-    }
-}
+private typealias BatchAddTagsRecordingUndoStore = UndoActionRecordingTestStore
 
 private func makeDetailMultiSelectTemporaryRepositoryURL() throws -> URL {
     try makeTestTemporaryDirectory(named: "AreaMatrixDetailMultiSelectIntegration")

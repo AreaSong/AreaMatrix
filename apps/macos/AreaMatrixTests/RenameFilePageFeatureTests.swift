@@ -12,7 +12,7 @@ final class RenameFilePageFeatureTests: XCTestCase {
         let logLister = DetailLogRecordingLister(results: [.success([logEntry])])
         let model = MainFileListModel(
             opening: .renameFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             fileRenamer: renamer,
             changeLogLister: logLister,
@@ -45,7 +45,7 @@ final class RenameFilePageFeatureTests: XCTestCase {
         let renamer = RenameRecordingRenamer(result: .failure(CoreError.Conflict(path: "docs/contracts/new.pdf")))
         let model = MainFileListModel(
             opening: .renameFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             fileRenamer: renamer,
             errorMapper: mapper
@@ -69,7 +69,7 @@ final class RenameFilePageFeatureTests: XCTestCase {
         let original = FileEntrySnapshot.renameFixture(id: 126, name: "detail.pdf")
         let model = MainFileListModel(
             opening: .renameFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             errorMapper: DetailMetaErrorMapper(mapping: .renameConflict())
         )
@@ -91,7 +91,7 @@ final class RenameFilePageFeatureTests: XCTestCase {
                 files: [original],
                 writeLockedFileIDs: [original.id]
             ),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             errorMapper: DetailMetaErrorMapper(mapping: .renameConflict())
         )

@@ -9,7 +9,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
         let detailer = MainListIntegrationDetailer(results: [.success(docsFile), .success(financeFile)])
         let model = MainFileListModel(
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [docsFile, financeFile]),
-            fileLister: MainListIntegrationNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: detailer,
             errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
         )
@@ -28,7 +28,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
         let docsFile = FileEntrySnapshot.integrationClosureFixture(id: 7, currentName: "a.pdf")
         let model = MainFileListModel(
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [docsFile]),
-            fileLister: MainListIntegrationNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: MainListIntegrationDetailer(results: [.success(docsFile)]),
             errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
         )
@@ -93,7 +93,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
         let second = FileEntrySnapshot.integrationClosureFixture(id: 2, currentName: "b.pdf")
         let model = MainFileListModel(
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [first, second]),
-            fileLister: MainListIntegrationNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: MainListIntegrationNoopDetailer(),
             errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
         )
@@ -111,7 +111,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
         let file = FileEntrySnapshot.integrationClosureFixture(id: 3, currentName: "readonly.pdf")
         let model = MainFileListModel(
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [file], isReadOnly: true),
-            fileLister: MainListIntegrationNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: MainListIntegrationDetailer(results: [.success(file)]),
             errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
         )
@@ -158,7 +158,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
                 files: [file],
                 writeLockedFileIDs: [file.id]
             ),
-            fileLister: MainListIntegrationNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: MainListIntegrationDetailer(results: [.success(file)]),
             errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
         )
@@ -181,7 +181,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
         let collector = MainListIntegrationDiagnosticsCollector(result: .success(snapshot))
         let model = MainFileListModel(
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: []),
-            fileLister: MainListIntegrationNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: MainListIntegrationNoopDetailer(),
             errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture()),
             diagnosticsCollector: collector
@@ -200,7 +200,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
         let renamed = FileEntrySnapshot.integrationClosureFixture(id: 5, currentName: "new.pdf")
         let model = MainFileListModel(
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: MainListIntegrationNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: MainListIntegrationDetailer(results: [.success(original)]),
             errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
         )
@@ -219,7 +219,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
         let selected = FileEntrySnapshot.integrationClosureFixture(id: 9, currentName: "gone.pdf")
         let model = MainFileListModel(
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [selected]),
-            fileLister: MainListIntegrationNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: MainListIntegrationDetailer(results: [.success(selected)]),
             errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
         )

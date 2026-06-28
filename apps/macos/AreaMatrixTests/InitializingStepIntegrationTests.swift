@@ -10,14 +10,14 @@ final class InitializingStepIntegrationTests: XCTestCase {
         let writer = InitializingRecordingSettingsWriter()
         let initializer = PausingRepositoryInitializer()
         let model = OnboardingModel(
-            settingsReader: InitializingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
             pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: StaticScanSessionReader(session: scanSession),
-            helpOpener: InitializingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         model.updateRepositoryPath("/tmp/adopt")
         await model.continueFromChoosePath()
@@ -50,7 +50,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
         let errorMapper = InitializingRecordingErrorMapper(mapping: mapping)
         let writer = InitializingRecordingSettingsWriter()
         let model = OnboardingModel(
-            settingsReader: InitializingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
             pathValidator: InitializingRecordingPathValidator(validation: validation),
@@ -58,7 +58,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
             startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: StaticScanSessionReader(session: nil),
             errorMapper: errorMapper,
-            helpOpener: InitializingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         model.updateRepositoryPath("/tmp/adopt")
         await model.continueFromChoosePath()
@@ -85,13 +85,13 @@ final class InitializingStepIntegrationTests: XCTestCase {
         let startupRecoverer = RecordingStartupRecoverer(result: .success(report))
         let initializer = PausingRepositoryInitializer()
         let model = OnboardingModel(
-            settingsReader: InitializingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: InitializingRecordingSettingsWriter(),
             configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
             pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: startupRecoverer,
-            helpOpener: InitializingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         model.updateRepositoryPath("/tmp/adopt")
         await model.continueFromChoosePath()
@@ -119,14 +119,14 @@ final class InitializingStepIntegrationTests: XCTestCase {
         let errorMapper = InitializingRecordingErrorMapper(mapping: mapping)
         let writer = InitializingRecordingSettingsWriter()
         let model = OnboardingModel(
-            settingsReader: InitializingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
             pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: PausingRepositoryInitializer(),
             startupRecoverer: RecordingStartupRecoverer(result: .failure(CoreError.Db(message: "recovery db"))),
             errorMapper: errorMapper,
-            helpOpener: InitializingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         model.updateRepositoryPath("/tmp/adopt")
         await model.continueFromChoosePath()
@@ -148,13 +148,13 @@ final class InitializingStepIntegrationTests: XCTestCase {
         let writer = InitializingRecordingSettingsWriter()
         let initializer = PausingRepositoryInitializer()
         let model = OnboardingModel(
-            settingsReader: InitializingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
             pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
-            helpOpener: InitializingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         model.updateRepositoryPath("/tmp/adopt")
         await model.continueFromChoosePath()
@@ -196,7 +196,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
             )
         )
         let model = OnboardingModel(
-            settingsReader: InitializingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
             pathValidator: InitializingRecordingPathValidator(
@@ -205,7 +205,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
             repositoryInitializer: PausingRepositoryInitializer(),
             startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: scanReader,
-            helpOpener: InitializingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         await model.resumeInterruptedInitialization(repoPath: "/tmp/adopt", scanSession: scanSession)
         let resumedRequests = await scanReader.resumedRequests()
@@ -240,12 +240,12 @@ final class InitializingStepIntegrationTests: XCTestCase {
             warnings: []
         )))
         let model = OnboardingModel(
-            settingsReader: InitializingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
             pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: PausingRepositoryInitializer(),
             startupRecoverer: startupRecoverer,
-            helpOpener: InitializingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         await model.cleanUpInterruptedInitialization(repoPath: "/tmp/adopt")
         let recoveredPaths = await startupRecoverer.requestedRepoPaths()
@@ -267,13 +267,6 @@ final class InitializingStepIntegrationTests: XCTestCase {
         for _ in 0 ..< 100 where model.initializationScanSession == nil {
             try? await Task.sleep(nanoseconds: 10_000_000)
         }
-    }
-}
-
-private struct InitializingStaticSettingsReader: AppSettingsReading {
-    let repoPath: String?
-    func configuredRepoPath() -> String? {
-        repoPath
     }
 }
 
@@ -341,12 +334,6 @@ private enum StartupRecoveryResult {
     case failure(Error)
 }
 
-private actor StaticStartupRecoverer: CoreStartupRecovering {
-    func recoverOnStartup(repoPath _: String) async throws -> RecoveryReportSnapshot {
-        RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
-    }
-}
-
 private actor RecordingStartupRecoverer: CoreStartupRecovering {
     private let result: StartupRecoveryResult
     private var paths: [String] = []
@@ -377,17 +364,6 @@ private actor RecordingStartupRecoverer: CoreStartupRecovering {
     }
 }
 
-private actor StaticScanSessionReader: CoreScanSessionReading {
-    private let session: ScanSessionSnapshot?
-    init(session: ScanSessionSnapshot?) {
-        self.session = session
-    }
-
-    func latestScanSession(repoPath _: String) async throws -> ScanSessionSnapshot? {
-        session
-    }
-}
-
 private actor RecordingResumeScanSessionReader: CoreScanSessionReading {
     private let session: ScanSessionSnapshot
     private let resumeReport: ReindexReportSnapshot
@@ -409,10 +385,6 @@ private actor RecordingResumeScanSessionReader: CoreScanSessionReading {
     func resumedRequests() -> [String] {
         requests
     }
-}
-
-private struct InitializingNoopWelcomeHelpOpener: WelcomeHelpOpening {
-    func openWelcomeHelp() throws {}
 }
 
 private actor InitializingRecordingErrorMapper: CoreErrorMapping {

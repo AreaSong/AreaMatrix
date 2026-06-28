@@ -239,36 +239,6 @@ func repositorySettingsCapabilitiesFixture(
     )
 }
 
-enum RepositorySettingsRevealResult {
-    case success
-    case failure(Error)
-}
-
-@MainActor
-final class RepositorySettingsRecordingFileRevealer: RepositoryFileRevealing {
-    struct Request: Equatable {
-        var repoPath: String
-        var relativePath: String
-    }
-
-    private let result: RepositorySettingsRevealResult
-    private(set) var requests: [Request] = []
-
-    init(result: RepositorySettingsRevealResult = .success) {
-        self.result = result
-    }
-
-    func revealFile(repoPath: String, relativePath: String) throws {
-        requests.append(Request(repoPath: repoPath, relativePath: relativePath))
-        switch result {
-        case .success:
-            return
-        case let .failure(error):
-            throw error
-        }
-    }
-}
-
 func temporaryRepositorySettingsRepo() throws -> URL {
     try makeTestTemporaryDirectory(named: "AreaMatrixRepositorySettings")
 }
@@ -282,7 +252,7 @@ func createRepositorySettingsMetadataDatabaseMarker(in repoURL: URL) throws {
 func removeRepositorySettingsMetadataDatabaseSidecars(in repoURL: URL) {
     let metadataURL = repoURL.appendingPathComponent(".areamatrix", isDirectory: true)
     for name in ["index.db-wal", "index.db-shm"] {
-        try? FileManager.default.removeItem(at: metadataURL.appendingPathComponent(name))
+        try? removeTestTemporaryItem(metadataURL.appendingPathComponent(name))
     }
 }
 

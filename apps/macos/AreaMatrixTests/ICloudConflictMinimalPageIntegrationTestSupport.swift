@@ -226,14 +226,6 @@ actor ICloudErrorMapper: CoreErrorMapping {
     }
 }
 
-actor ICloudConflictMinimalNoopNoteStore: CoreNoteReadingWriting {
-    func readNote(repoPath _: String, fileID _: Int64) async throws -> String? {
-        nil
-    }
-
-    func writeNote(repoPath _: String, fileID _: Int64, contentMarkdown _: String) async throws {}
-}
-
 extension SyncResultSnapshot {
     static func iCloudConflictMinimalNoopSyncResult() -> SyncResultSnapshot {
         SyncResultSnapshot(

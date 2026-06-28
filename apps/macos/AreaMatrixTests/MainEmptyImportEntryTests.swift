@@ -10,9 +10,9 @@ final class MainEmptyImportEntryTests: XCTestCase {
         let importURL = URL(fileURLWithPath: "/tmp/source.pdf")
         let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
         let model = OnboardingModel(
-            settingsReader: MainEmptyImportStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: MainEmptyImportAnnouncer(),
-            helpOpener: MainEmptyImportNoopWelcomeHelpOpener(),
+            helpOpener: NoopWelcomeHelpOpener(),
             importPicker: MainEmptyImportStaticImportPicker(urls: [importURL])
         )
 
@@ -30,9 +30,9 @@ final class MainEmptyImportEntryTests: XCTestCase {
         let importURL = URL(fileURLWithPath: "/tmp/source.pdf")
         let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
         let model = OnboardingModel(
-            settingsReader: MainEmptyImportStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: MainEmptyImportAnnouncer(),
-            helpOpener: MainEmptyImportNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.startImportEntry(
@@ -52,9 +52,9 @@ final class MainEmptyImportEntryTests: XCTestCase {
         let secondURL = URL(fileURLWithPath: "/tmp/b.pdf")
         let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
         let model = OnboardingModel(
-            settingsReader: MainEmptyImportStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: MainEmptyImportAnnouncer(),
-            helpOpener: MainEmptyImportNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.startImportEntry(
@@ -75,9 +75,9 @@ final class MainEmptyImportEntryTests: XCTestCase {
         let accessibilityAnnouncer = MainEmptyImportAnnouncer()
         let remoteURL = try XCTUnwrap(URL(string: "https://example.com/a"))
         let model = OnboardingModel(
-            settingsReader: MainEmptyImportStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: accessibilityAnnouncer,
-            helpOpener: MainEmptyImportNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.startImportEntry(opening: opening, source: .dropZone, urls: [remoteURL])

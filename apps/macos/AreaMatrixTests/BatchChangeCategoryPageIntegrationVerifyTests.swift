@@ -142,7 +142,7 @@ final class BatchChangeCategoryVerifyTests: XCTestCase {
         let model = ClassifierSettingsModel(
             repoPath: repoURL.path,
             loader: BatchCategorySettingsLoader(repoPath: repoURL.path),
-            updater: BatchCategorySettingsUpdater(),
+            updater: NoopConfigurationUpdater(),
             predictor: BatchCategorySettingsPredictor(),
             errorMapper: BatchCategorySettingsErrorMapper(),
             classifierRulesManager: manager,
@@ -249,10 +249,6 @@ private actor BatchCategorySettingsLoader: CoreConfigurationLoading {
     func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
         RepoConfigSnapshot.batchChangeCategoryClassifierFixture(repoPath: repoPath)
     }
-}
-
-private actor BatchCategorySettingsUpdater: CoreConfigurationUpdating {
-    func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
 }
 
 private actor BatchCategorySettingsPredictor: CoreCategoryPredicting {

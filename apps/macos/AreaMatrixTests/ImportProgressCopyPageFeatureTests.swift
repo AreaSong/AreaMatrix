@@ -6,9 +6,9 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
     func testImportProgressImportCopyFileCoreProgressRouteShowsCopyRowStatesAndStopSemantics() {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -26,9 +26,9 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
     func testImportProgressImportCopyFileCoreOrdinaryFailedCopyProgressRoutesToResultSummary() {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         let mapping = CoreErrorMappingSnapshot.importSingleFileError(kind: .permissionDenied)
 
@@ -55,10 +55,10 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
             warnings: []
         )))
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             startupRecoverer: recoverer,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -92,9 +92,9 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
     func testImportProgressImportMoveFileCoreSingleMoveProgressShowsMovingPhase() {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -125,10 +125,10 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
             warnings: []
         )))
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             startupRecoverer: recoverer,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         let mapping = CoreErrorMappingSnapshot.importProgressFatalImportError(kind: .io)
 
@@ -169,11 +169,11 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         let importer = ImportSingleFileRecordingImporter()
         let announcer = RecordingAccessibilityAnnouncer()
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             importProgressImporter: importer,
-            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             accessibilityAnnouncer: announcer,
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -208,9 +208,9 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
     func testImportProgressImportIndexFileCoreSingleIndexProgressShowsWritingIndexPhase() {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -241,10 +241,10 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
             warnings: []
         )))
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             startupRecoverer: recoverer,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -283,11 +283,11 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let importer = ImportSingleFileRecordingImporter()
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             importProgressImporter: importer,
-            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)

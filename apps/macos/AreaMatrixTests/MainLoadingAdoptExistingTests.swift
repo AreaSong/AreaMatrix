@@ -14,11 +14,11 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             opening: .mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 1)
         )
         let model = OnboardingModel(
-            settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
             startupRecoverer: startupRecoverer,
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
-            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")
@@ -61,13 +61,13 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             opening: .mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 1)
         )
         let model = OnboardingModel(
-            settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             emptyRepositoryOpener: opener,
             startupRecoverer: startupRecoverer,
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
             errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
-            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")
@@ -93,13 +93,13 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         let mapping = CoreErrorMappingSnapshot.mainLoadingDbFixture(rawContext: "database is locked")
         let opener = MainLoadingFailingRepositoryOpener(error: CoreError.Db(message: "database is locked"))
         let model = OnboardingModel(
-            settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             emptyRepositoryOpener: opener,
-            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
             errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
-            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")
@@ -123,13 +123,13 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         let tree = RepositoryTreeNodeSnapshot.mainLoadingTreeFixture()
         let opener = MainLoadingFailingRepositoryOpener(error: CoreError.Db(message: "database is locked"))
         let model = OnboardingModel(
-            settingsReader: MainLoadingStaticSettingsReader(repoPath: "/tmp/repo"),
+            settingsReader: StaticSettingsReader(repoPath: "/tmp/repo"),
             emptyRepositoryOpener: opener,
             mainLoadingTreeLister: MainLoadingRecordingTreeLister(result: .success(tree)),
-            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
             errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
-            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         await model.bootstrapIfNeeded()
@@ -155,12 +155,12 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         )
         let treeLister = MainLoadingRecordingTreeLister(result: .success(tree))
         let model = OnboardingModel(
-            settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
             mainLoadingTreeLister: treeLister,
-            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
-            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")
@@ -195,13 +195,13 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             .success(.mainLoadingTreeFixture())
         ])
         let model = OnboardingModel(
-            settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
             mainLoadingTreeLister: treeLister,
-            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
             errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
-            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")
@@ -262,11 +262,11 @@ final class MainLoadingScanSessionTests: XCTestCase {
             opening: .mainLoadingFixture(repoPath: "/tmp/adopted-repo", fileCount: 1)
         )
         let model = OnboardingModel(
-            settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
-            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(scanSession)),
-            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .initializationDone(RepositoryInitializationResult(
@@ -305,13 +305,13 @@ final class MainLoadingScanSessionTests: XCTestCase {
             opening: .mainLoadingFixture(repoPath: "/tmp/adopted-repo", fileCount: 1)
         )
         let model = OnboardingModel(
-            settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
-            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .failure(CoreError
                     .Db(message: "scan db locked"))),
             errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
-            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .initializationDone(RepositoryInitializationResult(
@@ -347,12 +347,12 @@ final class MainLoadingScanSessionTests: XCTestCase {
         )
         let treeLister = MainLoadingRecordingTreeLister(result: .success(tree))
         let model = OnboardingModel(
-            settingsReader: MainLoadingStaticSettingsReader(repoPath: "/tmp/saved-repo"),
+            settingsReader: StaticSettingsReader(repoPath: "/tmp/saved-repo"),
             emptyRepositoryOpener: opener,
             mainLoadingTreeLister: treeLister,
-            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(scanSession)),
-            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         let bootstrapTask = Task {
@@ -402,12 +402,12 @@ final class MainLoadingScanSessionTests: XCTestCase {
         let opening = RepositoryOpeningResult.mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 1)
         let opener = MainLoadingPausingRepositoryOpener(opening: opening)
         let model = OnboardingModel(
-            settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             emptyRepositoryOpener: opener,
-            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
-            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")

@@ -5,13 +5,6 @@ func makeRepairTemporaryAdoptRepoURL() throws -> URL {
     try makeTestTemporaryDirectory(named: "AreaMatrixAdoptExisting")
 }
 
-struct RepairStaticSettingsReader: AppSettingsReading {
-    let repoPath: String?
-    func configuredRepoPath() -> String? {
-        repoPath
-    }
-}
-
 final class RepairRecordingSettingsWriter: AppSettingsWriting {
     private(set) var savedRepoPaths: [String] = []
     func saveConfiguredRepoPath(_ repoPath: String) {
@@ -142,12 +135,6 @@ actor RepairPausingRepositoryInitializer: CoreRepositoryInitializing {
     }
 }
 
-actor RepairStaticStartupRecoverer: CoreStartupRecovering {
-    func recoverOnStartup(repoPath _: String) async throws -> RecoveryReportSnapshot {
-        RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
-    }
-}
-
 struct RepairExistingRepoMetadataReader: ExistingRepositoryMetadataReading {
     let schemaVersion: Int64
 
@@ -155,8 +142,6 @@ struct RepairExistingRepoMetadataReader: ExistingRepositoryMetadataReading {
         ExistingRepositoryMetadataSnapshot(schemaVersion: schemaVersion, lastOpenedAt: nil)
     }
 }
-
-struct RepairNoopWelcomeHelpOpener: WelcomeHelpOpening { func openWelcomeHelp() throws {} }
 
 extension RepoConfigSnapshot {
     static func repairFixture(repoPath: String) -> RepoConfigSnapshot {

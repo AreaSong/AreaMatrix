@@ -15,7 +15,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         let mapper = DetailMetaErrorMapper(mapping: mapping)
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             tagStore: tagStore,
             errorMapper: mapper
@@ -56,7 +56,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         let mapping = CoreErrorMappingSnapshot.tagAddTagDb()
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             tagStore: tagStore,
             errorMapper: DetailMetaErrorMapper(mapping: mapping)
@@ -92,7 +92,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         )
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [first, second]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailTagFileDetailer(files: [first, second]),
             tagStore: tagStore,
             errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
@@ -147,7 +147,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         let tagStore = TagFilterForbiddenTagStore()
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .failure(CoreError.FileNotFound(path: "unused"))),
             searchQuerying: MainListRecordingSearchQuerying(
                 results: [.success(.tagFilterSearchPage(filters: filters))]
@@ -184,7 +184,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         let tagStore = DetailTagRecordingStore(listResults: [.success(registry)])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             searchQuerying: MainListRecordingSearchQuerying(results: [.success(.tagFilterSearchPage(filters: .empty))]),
             searchFiltering: MainListRecordingSearchFiltering(results: [.success(.tagFilterFacets())]),
@@ -222,7 +222,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         let mapper = DetailMetaErrorMapper(mapping: mapping)
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             tagStore: tagStore,
             errorMapper: mapper
@@ -244,7 +244,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         let tagStore = DetailTagRecordingStore(listResults: [.success(registry)])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             tagStore: tagStore,
             errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
@@ -279,7 +279,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         let tagStore = DetailTagRecordingStore(suggestionResults: [.success(report)])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             tagStore: tagStore,
             errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
@@ -360,7 +360,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
             TagSuggestionsUndoActionStore(actions: [.tagSuggestionsApplySuggestion(token: "undo-tagSuggestions")])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             tagStore: tagStore,
             undoActionStore: undoStore,

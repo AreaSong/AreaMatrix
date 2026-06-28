@@ -34,11 +34,11 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
             ]
         ))
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            startupRecoverer: StaticStartupRecoverer(),
             importBatchSessionStore: store,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.finishSuccessfulRepositoryOpen(opening)
@@ -83,11 +83,11 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
             ]
         ))
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            startupRecoverer: StaticStartupRecoverer(),
             importBatchSessionStore: store,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.finishSuccessfulRepositoryOpen(opening)
@@ -106,11 +106,11 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
     func testCorruptedOrMissingInterruptedCopySessionDoesNotBlockMainRoute() async {
         let opening = RepositoryOpeningResult.mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 1)
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
-            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            startupRecoverer: StaticStartupRecoverer(),
             importBatchSessionStore: StaticImportBatchSessionStore(session: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.finishSuccessfulRepositoryOpen(opening)
@@ -131,13 +131,13 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
             warnings: ["paths redacted"]
         )
         let diagnostics = ShellRecordingDiagnosticsCollector(result: .success(snapshot))
-        let finder = ShellRecordingFinderOpener()
+        let finder = RecordingRepositoryFinderOpener()
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             diagnosticsCollector: diagnostics,
             finderOpener: finder,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -158,7 +158,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         let diagnosticPaths = await diagnostics.requestedRepoPaths()
 
         XCTAssertEqual(diagnosticPaths, ["/tmp/repo"])
-        XCTAssertEqual(finder.openedRepoPaths, ["/tmp/repo"])
+        XCTAssertEqual(finder.repoPaths, ["/tmp/repo"])
         XCTAssertNil(model.toastMessage)
         guard case let .importResult(result) = model.route else {
             return XCTFail("Expected import-result import result route")
@@ -174,10 +174,10 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let controlState = ImportProgressControlState()
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             importProgressControlState: controlState,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         let importer = ImportBatchRecordingBatchImporter()
         let importModel = ImportBatchCopyImportModel(
@@ -217,9 +217,9 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
     func testImportProgressResultSummaryRoutesToImportResultImportResult() {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -322,12 +322,12 @@ extension ImportProgressCopyQueueRecoveryTests {
         ])
         let retryImporter = ImportSingleFileRecordingImporter()
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             importProgressImporter: retryImporter,
-            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             importProgressControlState: controlState,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         let importModel = ImportBatchCopyImportModel(
             importer: importer,

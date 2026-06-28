@@ -30,7 +30,7 @@ final class RepoSettingsPageIntegrationTests: XCTestCase {
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .settingsGeneral(opening)
@@ -63,14 +63,14 @@ final class RepoSettingsPageIntegrationTests: XCTestCase {
             settingsWriter: writer,
             pathValidator: validator,
             emptyRepositoryOpener: opener,
-            startupRecoverer: ShellStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             existingRepositoryMetadataReader: ShellExistingRepoMetadataReader(
                 schemaVersion: 1,
                 configuredRepoPath: "/tmp/new-repo"
             ),
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .settingsGeneral(currentOpening)
@@ -95,7 +95,7 @@ private struct RepositorySettingsIntegrationContext {
     let sourceURL: URL
     let imported: FileEntrySnapshot
     let diagnosticsSnapshot: DiagnosticsSnapshotSnapshot
-    let finder: ShellRecordingFinderOpener
+    let finder: RecordingRepositoryFinderOpener
     let copier: ShellRecordingPathCopier
     let diagnostics: ShellRecordingDiagnosticsCollector
     let announcer: RecordingAccessibilityAnnouncer
@@ -109,7 +109,7 @@ private struct RepositorySettingsIntegrationURLs {
 }
 
 private struct RepositorySettingsIntegrationDoubles {
-    let finder: ShellRecordingFinderOpener
+    let finder: RecordingRepositoryFinderOpener
     let copier: ShellRecordingPathCopier
     let diagnostics: ShellRecordingDiagnosticsCollector
     let announcer: RecordingAccessibilityAnnouncer
@@ -183,7 +183,7 @@ private func makeRepositorySettingsIntegrationDoubles(
     diagnosticsSnapshot: DiagnosticsSnapshotSnapshot
 ) -> RepositorySettingsIntegrationDoubles {
     RepositorySettingsIntegrationDoubles(
-        finder: ShellRecordingFinderOpener(),
+        finder: RecordingRepositoryFinderOpener(),
         copier: ShellRecordingPathCopier(),
         diagnostics: ShellRecordingDiagnosticsCollector(result: .success(diagnosticsSnapshot)),
         announcer: RecordingAccessibilityAnnouncer()
@@ -221,7 +221,7 @@ private func assertRepositorySettingsIntegrationState(
     let healthSummary = context.model.healthSummary
     let repositoryActionError = context.model.repositoryActionError
     let diagnosticsState = context.model.diagnosticsState
-    let openedRepoPaths = context.finder.openedRepoPaths
+    let openedRepoPaths = context.finder.repoPaths
     let copyRequests = context.copier.requests
     let announcements = context.announcer.announcements
 

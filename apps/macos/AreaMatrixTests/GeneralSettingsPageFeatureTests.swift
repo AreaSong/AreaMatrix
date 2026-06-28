@@ -141,12 +141,14 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testUnsafeRootOverviewOffersFinderRecoveryWithoutUpdatingConfig() async {
+        let unsafeReason = "Cannot safely update AREAMATRIX.md"
         let updater = GeneralSettingsRecordingUpdater(result: .success)
-        let revealer = GeneralSettingsRecordingFileRevealer()
+        let revealer = RecordingRepositoryFileRevealer()
         let model = await loadedModel(
             updater: updater,
             inspector: GeneralRootOverviewInspector(
-                status: .unsafe("Cannot safely update AREAMATRIX.md")
+                // swiftformat:disable:next spaceAroundParens
+                status: RootOverviewFileStatus.unsafe(unsafeReason)
             ),
             revealer: revealer
         )
@@ -155,8 +157,9 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
         model.revealRootOverviewInFinder()
         let requests = await updater.requests()
 
-        XCTAssertEqual(model.pendingRootOverviewStatus, .unsafe("Cannot safely update AREAMATRIX.md"))
-        XCTAssertEqual(revealer.requests, [GeneralSettingsRecordingFileRevealer.Request(
+        // swiftformat:disable:next spaceAroundParens
+        XCTAssertEqual(model.pendingRootOverviewStatus, RootOverviewFileStatus.unsafe(unsafeReason))
+        XCTAssertEqual(revealer.requests, [RecordingRepositoryFileRevealer.Request(
             repoPath: "/tmp/repo",
             relativePath: "AREAMATRIX.md"
         )])
@@ -256,7 +259,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
             loader: GeneralSettingsRecordingLoader(result: .success(config)),
             updater: updater,
             rootOverviewInspector: inspector,
-            rootOverviewRevealer: revealer ?? GeneralSettingsRecordingFileRevealer(),
+            rootOverviewRevealer: revealer ?? RecordingRepositoryFileRevealer(),
             errorMapper: GeneralSettingsStaticErrorMapper()
         )
         await model.load()
@@ -385,20 +388,6 @@ private struct GeneralRootOverviewInspector: RootOverviewFileInspecting {
 
     func status(repoPath _: String) -> RootOverviewFileStatus {
         status
-    }
-}
-
-@MainActor
-private final class GeneralSettingsRecordingFileRevealer: RepositoryFileRevealing {
-    struct Request: Equatable {
-        var repoPath: String
-        var relativePath: String
-    }
-
-    private(set) var requests: [Request] = []
-
-    func revealFile(repoPath: String, relativePath: String) throws {
-        requests.append(Request(repoPath: repoPath, relativePath: relativePath))
     }
 }
 

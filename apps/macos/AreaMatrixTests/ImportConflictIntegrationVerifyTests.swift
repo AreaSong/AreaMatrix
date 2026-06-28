@@ -49,9 +49,9 @@ private extension ImportConflictIntegrationVerifyTests {
 
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         model.route = .mainList(opening)
         model.startImportEntry(opening: opening, source: .dropZone, urls: [sourceURL])
@@ -256,10 +256,10 @@ private extension ImportConflictIntegrationVerifyTests {
             ChangeLogEntrySnapshot.importConflictFixture(filename: "Invoice_2026Q1.pdf")
         ])])
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             importResultChangeLister: lister,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         let progress = ImportBatchProgressSnapshot(
             completed: 1,

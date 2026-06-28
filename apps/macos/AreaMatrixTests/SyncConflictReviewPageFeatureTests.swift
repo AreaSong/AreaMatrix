@@ -81,7 +81,7 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
 
         let model = MainFileListModel(
             opening: opening,
-            fileLister: SyncConflictReviewNoopFileLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: SyncConflictReviewRecordingFileDetailer(result: .success(file)),
             errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
         )
@@ -226,7 +226,7 @@ private func makeSyncConflictReviewDetailPane(
 private func makeSyncConflictReviewDetailNoteModel(repoPath: String) -> DetailNoteModel {
     DetailNoteModel(
         repoPath: repoPath,
-        noteStore: SyncConflictReviewNoopNoteStore(),
+        noteStore: NoopNoteStore(),
         errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
     )
 }

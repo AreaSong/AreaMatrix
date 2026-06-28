@@ -325,30 +325,12 @@ extension ImportConflictBatchApplyReportSnapshot {
 
 extension UndoActionRecordSnapshot {
     static func importConflictBatchIntegrationAction() -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
-            actionID: "undo-import-conflict-batch",
-            kind: "import_conflict_batch",
-            summary: "Replaced 1 import conflict.",
-            affectedCount: 1,
-            affectedFileNames: ["Invoice_2026Q1.pdf"],
-            status: .pending,
-            canUndo: true,
-            disabledReason: nil,
-            createdAt: 1_700_000_400,
-            updatedAt: 1_700_000_400
-        )
+        testImportConflictBatchUndoAction()
     }
 }
 
 extension UndoActionResultSnapshot {
     static func importConflictBatchIntegrationResult() -> UndoActionResultSnapshot {
-        UndoActionResultSnapshot(
-            actionID: "undo-import-conflict-batch",
-            status: .executed,
-            summary: "Undone: replaced 1 import conflict.",
-            affectedCount: 1,
-            refreshTargets: ["files", "change_log", "undo_actions"],
-            completedAt: 1_700_000_420
-        )
+        testExecutedImportConflictBatchUndoResult()
     }
 }

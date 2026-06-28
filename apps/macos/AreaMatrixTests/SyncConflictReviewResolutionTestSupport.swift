@@ -338,20 +338,6 @@ actor SyncConflictReviewRecordingFileDetailer: CoreFileDetailing {
     }
 }
 
-struct SyncConflictReviewNoopFileLister: CoreFileListing {
-    func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
-        []
-    }
-}
-
-actor SyncConflictReviewNoopNoteStore: CoreNoteReadingWriting {
-    func readNote(repoPath _: String, fileID _: Int64) async throws -> String? {
-        nil
-    }
-
-    func writeNote(repoPath _: String, fileID _: Int64, contentMarkdown _: String) async throws {}
-}
-
 extension CoreErrorMappingSnapshot {
     static func syncConflictReviewMapping(
         kind: CoreErrorKindSnapshot = .conflict,

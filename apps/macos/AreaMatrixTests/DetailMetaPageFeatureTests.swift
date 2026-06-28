@@ -9,7 +9,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
         let detailer = DetailMetaSuspendedDetailer(result: .success(refreshed))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [cached]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: detailer,
             errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
         )
@@ -37,7 +37,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
         let mapper = DetailMetaErrorMapper(mapping: mapping)
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [cached]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .failure(CoreError.FileNotFound(path: cached.path))),
             errorMapper: mapper
         )
@@ -80,7 +80,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
         let lister = DetailLogRecordingLister(results: [.success([entry])])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             changeLogLister: lister,
             errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
@@ -103,7 +103,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
         let mapper = DetailMetaErrorMapper(mapping: mapping)
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             changeLogLister: DetailLogRecordingLister(results: [.failure(CoreError.Db(message: "change log locked"))]),
             errorMapper: mapper
@@ -126,7 +126,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
         ])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [oldFile, newFile]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaSequenceDetailer(results: [.success(oldFile), .success(newFile)]),
             changeLogLister: lister,
             errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
@@ -155,7 +155,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
         let diagnosticsCollector = ShellRecordingDiagnosticsCollector(result: .success(snapshot))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             changeLogLister: DetailLogRecordingLister(results: [.failure(CoreError.Db(message: "change log locked"))]),
             errorMapper: DetailMetaErrorMapper(mapping: mapping),
@@ -188,7 +188,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
         )
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             changeLogLister: DetailLogRecordingLister(results: [.failure(CoreError.Db(message: "change log locked"))]),
             errorMapper: mapper,
@@ -206,12 +206,6 @@ final class DetailMetaPageFeatureTests: XCTestCase {
             CoreError.Db(message: "change log locked"),
             CoreError.PermissionDenied(path: "/tmp/repo")
         ])
-    }
-}
-
-actor DetailMetaNoopLister: CoreFileListing {
-    func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
-        []
     }
 }
 

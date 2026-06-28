@@ -398,51 +398,11 @@ actor ImportSingleFileRecordingErrorMapper: CoreErrorMapping {
 
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         errors.append(error)
-        return .importSingleFileError(kind: kind(for: error))
+        return .importSingleFileError(kind: CoreErrorKindTestMapper.kind(for: error))
     }
 
     func recordedErrors() -> [CoreError] {
         errors
-    }
-
-    private func kind(for error: CoreError) -> CoreErrorKindSnapshot {
-        switch error {
-        case .DuplicateFile:
-            .duplicateFile
-        case .InvalidPath:
-            .invalidPath
-        case .PermissionDenied:
-            .permissionDenied
-        case .ICloudPlaceholder:
-            .iCloudPlaceholder
-        case .Io:
-            .io
-        case .Db:
-            .db
-        default:
-            .internal
-        }
-    }
-}
-
-struct ImportSingleFileStaticSettingsReader: AppSettingsReading {
-    let repoPath: String?
-
-    func configuredRepoPath() -> String? {
-        repoPath
-    }
-}
-
-struct ImportSingleFileNoopWelcomeHelpOpener: WelcomeHelpOpening {
-    func openWelcomeHelp() throws {}
-}
-
-@MainActor
-final class RecordingAccessibilityAnnouncer: AccessibilityAnnouncing {
-    private(set) var announcements: [String] = []
-
-    func announce(_ message: String) {
-        announcements.append(message)
     }
 }
 

@@ -178,7 +178,7 @@ extension MainFileListModel {
     ) -> MainFileListModel {
         MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             tagStore: tagStore,
             errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
@@ -340,7 +340,7 @@ extension AITagBatchPageFeatureTests {
     ) -> MainFileListModel {
         MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file, unchangedFile]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailTagFileDetailer(files: [file, unchangedFile]),
             aiSettingsLoader: AITagSuggestionAISettingsLoader(),
             aiTagSuggestionStore: bridge,

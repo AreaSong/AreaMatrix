@@ -166,8 +166,8 @@ final class AreaMatrixPerfTests: XCTestCase {
 private func measureHostlessFirstScreenFallback(repoPath: String) async throws -> Duration {
     let start = ContinuousClock.now
     let model = OnboardingModel(
-        settingsReader: PerfTestSettingsReader(repoPath: repoPath),
-        helpOpener: PerfTestHelpOpener()
+        settingsReader: StaticSettingsReader(repoPath: repoPath),
+        helpOpener: NoopWelcomeHelpOpener()
     )
 
     await model.bootstrapIfNeeded()
@@ -283,18 +283,6 @@ private func terminateLaunchedApplication(_ application: NSRunningApplication) {
     if !application.isTerminated {
         application.forceTerminate()
     }
-}
-
-private struct PerfTestSettingsReader: AppSettingsReading {
-    let repoPath: String?
-
-    func configuredRepoPath() -> String? {
-        repoPath
-    }
-}
-
-private struct PerfTestHelpOpener: WelcomeHelpOpening {
-    func openWelcomeHelp() throws {}
 }
 
 private extension FileFilterSnapshot {

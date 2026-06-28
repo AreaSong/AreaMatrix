@@ -274,7 +274,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             summaryExitController: AISummaryEditorExitController(),
             noteModel: DetailNoteModel(
                 repoPath: "/tmp/iCloudConflictMinimal-repo",
-                noteStore: ICloudConflictMinimalNoopNoteStore(),
+                noteStore: NoopNoteStore(),
                 errorMapper: ICloudErrorMapper(mapping: .iCloudConflictMinimalMapping())
             )
         )

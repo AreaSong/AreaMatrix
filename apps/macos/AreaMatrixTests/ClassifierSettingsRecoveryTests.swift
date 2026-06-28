@@ -241,7 +241,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
         let model = ClassifierSettingsModel(
             repoPath: repoURL.path,
             loader: ClassifierSettingsRecoveryLoader(config: .classifierRecoveryFixture(repoPath: repoURL.path)),
-            updater: ClassifierSettingsRecoveryUpdater(),
+            updater: NoopConfigurationUpdater(),
             predictor: predictor,
             ruleEditor: editor,
             errorMapper: ClassifierSettingsRecoveryErrorMapper(),
@@ -381,10 +381,6 @@ private actor ClassifierSettingsRecoveryLoader: CoreConfigurationLoading {
     func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
         config
     }
-}
-
-private actor ClassifierSettingsRecoveryUpdater: CoreConfigurationUpdating {
-    func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
 }
 
 private actor ClassifierSettingsRecoveryErrorMapper: CoreErrorMapping {

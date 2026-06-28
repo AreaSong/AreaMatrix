@@ -14,7 +14,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         let mover = ChangeCategoryRecordingMover(previewResult: .success(preview))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             fileCategoryMover: mover,
             errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryClassify())
@@ -55,7 +55,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         let logLister = DetailLogRecordingLister(results: [.success([logEntry])])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             fileCategoryMover: mover,
             changeLogLister: logLister,
@@ -163,7 +163,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         )
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             fileCategoryMover: mover,
             errorMapper: mapper
@@ -196,7 +196,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         let mover = ChangeCategoryRecordingMover(previewResult: .success(preview))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             fileCategoryMover: mover,
             errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryClassify())
@@ -236,7 +236,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         let mover = ChangeCategoryRecordingMover(previewResult: .success(preview))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             fileCategoryMover: mover,
             categoryPredictor: predictor,
@@ -300,7 +300,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         )
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             fileCategoryMover: mover,
             changeLogLister: DetailLogRecordingLister(results: [.success([])]),

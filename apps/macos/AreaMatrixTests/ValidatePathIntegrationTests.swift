@@ -157,13 +157,13 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         let writer = RepairRecordingSettingsWriter()
         let initializer = RepairRecordingRepositoryInitializer()
         let model = OnboardingModel(
-            settingsReader: RepairStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             configLoader: RepairRecordingConfigLoader(config: .repairFixture(repoPath: "/tmp/repo")),
             pathValidator: RepairRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
-            startupRecoverer: RepairStaticStartupRecoverer(),
-            helpOpener: RepairNoopWelcomeHelpOpener()
+            startupRecoverer: StaticStartupRecoverer(),
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
@@ -225,13 +225,13 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         let writer = RepairRecordingSettingsWriter()
         let initializer = RepairPausingRepositoryInitializer()
         let model = OnboardingModel(
-            settingsReader: RepairStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             configLoader: RepairRecordingConfigLoader(config: .repairFixture(repoPath: "/tmp/repo")),
             pathValidator: RepairRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
-            startupRecoverer: RepairStaticStartupRecoverer(),
-            helpOpener: RepairNoopWelcomeHelpOpener()
+            startupRecoverer: StaticStartupRecoverer(),
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
@@ -272,13 +272,13 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         let writer = RepairRecordingSettingsWriter()
         let initializer = RepairRecordingRepositoryInitializer()
         let model = OnboardingModel(
-            settingsReader: RepairStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             configLoader: RepairRecordingConfigLoader(config: .repairFixture(repoPath: "/tmp/repo")),
             pathValidator: validator,
             repositoryInitializer: initializer,
-            startupRecoverer: RepairStaticStartupRecoverer(),
-            helpOpener: RepairNoopWelcomeHelpOpener()
+            startupRecoverer: StaticStartupRecoverer(),
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.updateRepositoryPath("/tmp/repo")
@@ -358,15 +358,15 @@ extension ValidatePathRepairRegressionTests {
                 fileCount: 1
             )))
         return OnboardingModel(
-            settingsReader: RepairStaticSettingsReader(repoPath: settingsRepoPath),
+            settingsReader: StaticSettingsReader(repoPath: settingsRepoPath),
             settingsWriter: writer,
             configLoader: RepairRecordingConfigLoader(config: .repairFixture(repoPath: settingsRepoPath ??
                     "/tmp/repo")),
             pathValidator: RepairRecordingPathValidator(validation: validation),
             emptyRepositoryOpener: repositoryOpener,
-            startupRecoverer: RepairStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             existingRepositoryMetadataReader: RepairExistingRepoMetadataReader(schemaVersion: 1),
-            helpOpener: RepairNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
     }
 }

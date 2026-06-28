@@ -7,10 +7,10 @@ final class ImportResultCopyRetryTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let importer = ImportSingleFileRecordingImporter()
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             importProgressImporter: importer,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -40,10 +40,10 @@ final class ImportResultCopyRetryTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let gate = ImportSingleFileImportGate()
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             importProgressImporter: ImportSingleFileSuspendingImporter(gate: gate),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -75,11 +75,11 @@ final class ImportResultCopyRetryTests: XCTestCase {
         let importer = ImportSingleFileFailingImporter(error: CoreError.PermissionDenied(path: "/tmp/failed.pdf"))
         let errorMapper = ImportSingleFileRecordingErrorMapper()
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             importProgressImporter: importer,
             errorMapper: errorMapper,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -105,10 +105,10 @@ final class ImportResultCopyRetryTests: XCTestCase {
             ChangeLogEntrySnapshot.importResultFixture(id: 1, filename: "imported.pdf")
         ])])
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             importResultChangeLister: lister,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -132,11 +132,11 @@ final class ImportResultCopyRetryTests: XCTestCase {
             ImportResultRecordingChangeLogLister(results: [.failure(CoreError.Db(message: "change log locked"))])
         let errorMapper = ImportSingleFileRecordingErrorMapper()
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             importResultChangeLister: lister,
             errorMapper: errorMapper,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -163,12 +163,12 @@ final class ImportResultCopyRetryTests: XCTestCase {
     @MainActor
     func testImportResultSkippedDuplicateCanShowExistingFileFromResultSummary() {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
-        let revealer = ImportResultRecordingFileRevealer()
+        let revealer = RecordingRepositoryFileRevealer()
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             fileRevealer: revealer,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -190,9 +190,9 @@ final class ImportResultCopyRetryTests: XCTestCase {
     func testTagSuggestionsTagSuggestionsCoreImportResultQueuesTagSuggestionReviewForImportedFile() {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -266,10 +266,10 @@ final class ImportResultCopyRetryTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let exporter = ImportResultExporter()
         let model = OnboardingModel(
-            settingsReader: ImportSingleFileStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             importResultExporter: exporter,
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: ImportSingleFileNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(opening)
@@ -390,15 +390,6 @@ private actor ImportResultRecordingChangeLogLister: CoreChangeLogListing {
 
     func recordedRequests() -> [ImportResultChangeLogRequest] {
         requests
-    }
-}
-
-@MainActor
-private final class ImportResultRecordingFileRevealer: RepositoryFileRevealing {
-    private(set) var requests: [(repoPath: String, relativePath: String)] = []
-
-    func revealFile(repoPath: String, relativePath: String) throws {
-        requests.append((repoPath: repoPath, relativePath: relativePath))
     }
 }
 

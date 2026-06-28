@@ -216,7 +216,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         ])
         let model = MainFileListModel(
             opening: .detailMultiFixture(repoPath: "/tmp/repo", files: [first, second]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: detailer,
             errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
         )
@@ -251,7 +251,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         ])
         let model = MainFileListModel(
             opening: .detailMultiFixture(repoPath: "/tmp/repo", files: [first, second]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: detailer,
             errorMapper: mapper
         )

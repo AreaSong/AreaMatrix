@@ -288,49 +288,7 @@ private actor ImportConflictBatchUndoConflictBatcher: CoreImportConflictBatching
     }
 }
 
-private actor ImportConflictBatchUndoStore: CoreUndoActionLogging {
-    enum Result {
-        case list(Swift.Result<[UndoActionRecordSnapshot], Error>)
-        case undo(Swift.Result<UndoActionResultSnapshot, Error>)
-    }
-
-    private var results: [Result]
-    private var recordedListRequests: [String] = []
-    private var recordedUndoRequests: [String] = []
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func listUndoActions(repoPath: String) async throws -> [UndoActionRecordSnapshot] {
-        recordedListRequests.append(repoPath)
-        guard case let .list(result) = try consumeResult() else {
-            throw CoreError.Internal(message: "expected list_undo_actions before undo_action")
-        }
-        return try result.get()
-    }
-
-    func undoAction(repoPath: String, actionID: String) async throws -> UndoActionResultSnapshot {
-        recordedUndoRequests.append("\(repoPath)|\(actionID)")
-        guard case let .undo(result) = try consumeResult() else {
-            throw CoreError.Internal(message: "expected undo_action result")
-        }
-        return try result.get()
-    }
-
-    func listRequests() -> [String] {
-        recordedListRequests
-    }
-
-    func undoRequests() -> [String] {
-        recordedUndoRequests
-    }
-
-    private func consumeResult() throws -> Result {
-        guard !results.isEmpty else { throw CoreError.Db(message: "missing undo action result") }
-        return results.removeFirst()
-    }
-}
+private typealias ImportConflictBatchUndoStore = UndoActionRecordingTestStore
 
 private extension ImportConflictBatchPreviewReportSnapshot {
     static var importConflictBatchDefaultUndoPreview: ImportConflictBatchPreviewReportSnapshot {
@@ -434,30 +392,12 @@ private extension ImportConflictBatchApplyReportSnapshot {
 
 private extension UndoActionRecordSnapshot {
     static func importConflictBatchPendingImportConflictBatch() -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
-            actionID: "undo-import-conflict-batch",
-            kind: "import_conflict_batch",
-            summary: "Replaced 1 import conflict.",
-            affectedCount: 1,
-            affectedFileNames: ["Invoice_2026Q1.pdf"],
-            status: .pending,
-            canUndo: true,
-            disabledReason: nil,
-            createdAt: 1_700_000_400,
-            updatedAt: 1_700_000_400
-        )
+        testImportConflictBatchUndoAction()
     }
 }
 
 private extension UndoActionResultSnapshot {
     static func importConflictBatchExecutedImportConflictBatch() -> UndoActionResultSnapshot {
-        UndoActionResultSnapshot(
-            actionID: "undo-import-conflict-batch",
-            status: .executed,
-            summary: "Undone: replaced 1 import conflict.",
-            affectedCount: 1,
-            refreshTargets: ["files", "change_log", "undo_actions"],
-            completedAt: 1_700_000_420
-        )
+        testExecutedImportConflictBatchUndoResult()
     }
 }

@@ -144,6 +144,10 @@
 		0A00000000000000000002F7 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F8 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift */; };
 		0A00000000000000000008A2 /* TestTemporaryDirectorySupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008A3 /* TestTemporaryDirectorySupport.swift */; };
 		0A00000000000000000008BC /* TestMirrorDescriptionSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008BD /* TestMirrorDescriptionSupport.swift */; };
+		0A00000000000000000008BE /* UndoRedoActionSnapshotTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008BF /* UndoRedoActionSnapshotTestSupport.swift */; };
+		0A00000000000000000008C0 /* CoreErrorKindTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008C1 /* CoreErrorKindTestSupport.swift */; };
+		0A00000000000000000008C2 /* PlatformActionRecordingTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008C3 /* PlatformActionRecordingTestSupport.swift */; };
+		0A00000000000000000008C4 /* CoreTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008C5 /* CoreTestDoubleSupport.swift */; };
 		0A0000000000000000000260 /* MainFileListDetailSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000261 /* MainFileListDetailSupport.swift */; };
 		0A0000000000000000000874 /* BatchTagUndoSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000875 /* BatchTagUndoSupport.swift */; };
 		0A0000000000000000000222 /* MainFileListState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000223 /* MainFileListState.swift */; };
@@ -794,6 +798,10 @@
 		0A00000000000000000008A1 /* ImportProgressTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportProgressTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008A3 /* TestTemporaryDirectorySupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/TestTemporaryDirectorySupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008BD /* TestMirrorDescriptionSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/TestMirrorDescriptionSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008BF /* UndoRedoActionSnapshotTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/UndoRedoActionSnapshotTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008C1 /* CoreErrorKindTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/CoreErrorKindTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008C3 /* PlatformActionRecordingTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/PlatformActionRecordingTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008C5 /* CoreTestDoubleSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/CoreTestDoubleSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000018D /* ImportBatchCopyImportModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchCopyImportModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000301 /* ImportBatchCopyImportExecution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchCopyImportExecution.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000019B /* ImportBatchCopyImportState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchCopyImportState.swift; sourceTree = SOURCE_ROOT; };
@@ -1314,6 +1322,10 @@
 				0A00000000000000000008A1 /* ImportProgressTestSupport.swift */,
 					0A00000000000000000008A3 /* TestTemporaryDirectorySupport.swift */,
 					0A00000000000000000008BD /* TestMirrorDescriptionSupport.swift */,
+					0A00000000000000000008BF /* UndoRedoActionSnapshotTestSupport.swift */,
+					0A00000000000000000008C1 /* CoreErrorKindTestSupport.swift */,
+					0A00000000000000000008C3 /* PlatformActionRecordingTestSupport.swift */,
+					0A00000000000000000008C5 /* CoreTestDoubleSupport.swift */,
 					0A000000000000000000018F /* ImportBatchCopyImportModelTests.swift */,
 					0A000000000000000000019D /* ImportBatchDuplicateResolutionTests.swift */,
 					0A00000000000000000001A7 /* ImportBatchResultSummaryTests.swift */,
@@ -1838,6 +1850,10 @@
 				0A00000000000000000008A0 /* ImportProgressTestSupport.swift in Sources */,
 				0A00000000000000000008A2 /* TestTemporaryDirectorySupport.swift in Sources */,
 				0A00000000000000000008BC /* TestMirrorDescriptionSupport.swift in Sources */,
+				0A00000000000000000008BE /* UndoRedoActionSnapshotTestSupport.swift in Sources */,
+				0A00000000000000000008C0 /* CoreErrorKindTestSupport.swift in Sources */,
+				0A00000000000000000008C2 /* PlatformActionRecordingTestSupport.swift in Sources */,
+				0A00000000000000000008C4 /* CoreTestDoubleSupport.swift in Sources */,
 				0A000000000000000000018E /* ImportBatchCopyImportModelTests.swift in Sources */,
 				0A000000000000000000019C /* ImportBatchDuplicateResolutionTests.swift in Sources */,
 				0A00000000000000000001A6 /* ImportBatchResultSummaryTests.swift in Sources */,

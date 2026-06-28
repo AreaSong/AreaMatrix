@@ -111,7 +111,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
         )
         let listModel = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
         )
@@ -160,7 +160,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
         let missing = FileEntrySnapshot.detailMetaFixture(id: 118, currentName: "missing.pdf", availability: .missing)
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [available, missing], isReadOnly: true),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(available)),
             errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
         )
@@ -169,7 +169,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
 
         let writableModel = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [missing]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(missing)),
             errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
         )

@@ -11,18 +11,6 @@ actor CommandPaletteNoopUndoStore: CoreUndoActionLogging {
     }
 }
 
-struct MainEmptyImportStaticSettingsReader: AppSettingsReading {
-    let repoPath: String?
-
-    func configuredRepoPath() -> String? {
-        repoPath
-    }
-}
-
-struct MainEmptyImportNoopWelcomeHelpOpener: WelcomeHelpOpening {
-    func openWelcomeHelp() throws {}
-}
-
 struct MainEmptyImportStaticImportPicker: RepositoryImportPicking {
     let urls: [URL]?
 

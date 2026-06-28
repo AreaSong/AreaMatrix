@@ -17,33 +17,8 @@ enum MainLoadingStartupRecoveryResult {
     case failure(Error)
 }
 
-actor MainLoadingStaticStartupRecoverer: CoreStartupRecovering {
-    func recoverOnStartup(repoPath _: String) async throws -> RecoveryReportSnapshot {
-        RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
-    }
-}
-
 func makeChangeCategoryTemporaryDirectory(prefix: String) throws -> URL {
     try makeTestTemporaryDirectory(prefix: prefix, named: "AreaMatrixChangeCategoryIntegration")
-}
-
-enum ImportBatchICloudErrorKindMapper {
-    static func kind(for error: CoreError) -> CoreErrorKindSnapshot {
-        switch error {
-        case .Conflict:
-            .conflict
-        case .FileNotFound:
-            .fileNotFound
-        case .PermissionDenied:
-            .permissionDenied
-        case .Db:
-            .db
-        case .Io:
-            .io
-        default:
-            .internal
-        }
-    }
 }
 
 extension CoreErrorMappingSnapshot {
@@ -299,18 +274,6 @@ final class MainLoadingRecordingErrorMapper: CoreErrorMapping {
     func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         mapping
     }
-}
-
-struct MainLoadingStaticSettingsReader: AppSettingsReading {
-    let repoPath: String?
-
-    func configuredRepoPath() -> String? {
-        repoPath
-    }
-}
-
-struct MainLoadingNoopWelcomeHelpOpener: WelcomeHelpOpening {
-    func openWelcomeHelp() throws {}
 }
 
 @MainActor

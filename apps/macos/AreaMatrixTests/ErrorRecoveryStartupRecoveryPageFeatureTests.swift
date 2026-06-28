@@ -119,7 +119,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
             opening: .mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 1)
         )
         let model = OnboardingModel(
-            settingsReader: MainLoadingStaticSettingsReader(repoPath: nil),
+            settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: ShellRecordingSettingsWriter(),
             pathValidator: MainLoadingStaticPathValidator(),
             initializedPathValidator: StaticInitializedPathValidator(),
@@ -127,7 +127,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
             startupRecoverer: recoverer,
             scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
             errorMapper: StartupRecoveryErrorMapper(mapping: mapping),
-            helpOpener: MainLoadingNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")
@@ -185,7 +185,7 @@ final class AITagBatchPageFeatureTests: XCTestCase {
         }))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: files),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailTagFileDetailer(files: files),
             aiSettingsLoader: AITagSuggestionAISettingsLoader(),
             aiTagSuggestionStore: bridge,
@@ -239,7 +239,7 @@ final class AITagBatchPageFeatureTests: XCTestCase {
         )
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [first, second]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailTagFileDetailer(files: [first, second]),
             aiSettingsLoader: AITagSuggestionAISettingsLoader(),
             aiTagSuggestionStore: bridge,
@@ -314,7 +314,7 @@ final class AITagBatchPageFeatureTests: XCTestCase {
         ])
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: files),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailTagFileDetailer(files: files),
             aiSettingsLoader: AITagSuggestionAISettingsLoader(),
             aiTagSuggestionStore: bridge,
@@ -362,7 +362,7 @@ final class AITagBatchPageFeatureTests: XCTestCase {
             )
             let model = MainFileListModel(
                 opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
-                fileLister: DetailMetaNoopLister(),
+                fileLister: NoopFileLister(),
                 fileDetailer: DetailTagFileDetailer(files: [file]),
                 aiSettingsLoader: AITagSuggestionAISettingsLoader(),
                 aiTagSuggestionStore: bridge,

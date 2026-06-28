@@ -72,7 +72,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         let file = FileEntrySnapshot.changeCategoryFixture(id: 249, name: "detail.pdf")
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryConflict())
         )
@@ -121,7 +121,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             summaryExitController: AISummaryEditorExitController(),
             noteModel: DetailNoteModel(
                 repoPath: "/tmp/repo",
-                noteStore: ChangeCategoryNoopNoteStore(),
+                noteStore: NoopNoteStore(),
                 errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryConflict())
             )
         )
@@ -157,7 +157,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         let renamer = ChangeCategoryRecordingRenamer(result: .success(renamed))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             fileRenamer: renamer,
             fileCategoryMover: mover,
@@ -309,14 +309,6 @@ private actor ChangeCategoryRecordingRenamer: CoreFileRenaming {
     func recordedRequests() -> [ChangeCategoryRenameRequest] {
         requests
     }
-}
-
-private actor ChangeCategoryNoopNoteStore: CoreNoteReadingWriting {
-    func readNote(repoPath _: String, fileID _: Int64) async throws -> String? {
-        nil
-    }
-
-    func writeNote(repoPath _: String, fileID _: Int64, contentMarkdown _: String) async throws {}
 }
 
 @MainActor

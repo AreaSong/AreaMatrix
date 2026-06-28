@@ -8,7 +8,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
         let deleter = DeleteRecordingDeleter()
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             fileDeleter: deleter,
             changeLogLister: DetailLogRecordingLister(results: [.success([])]),
@@ -44,7 +44,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
         let deleter = DeleteRecordingDeleter()
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [indexed, missing, external]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(indexed)),
             fileDeleter: deleter,
             errorMapper: DetailMetaErrorMapper(mapping: .deleteIo())
@@ -73,7 +73,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
         let deleter = DeleteRecordingDeleter(deleteResult: .failure(CoreError.PermissionDenied(path: file.path)))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             fileDeleter: deleter,
             errorMapper: mapper
@@ -98,7 +98,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
         missing.availability = .missing
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [missing]),
-            fileLister: DetailMetaNoopLister(),
+            fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .failure(CoreError.FileNotFound(path: missing.path))),
             errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
         )

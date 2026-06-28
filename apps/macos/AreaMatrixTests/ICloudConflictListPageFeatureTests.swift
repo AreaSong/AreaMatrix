@@ -124,8 +124,8 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
     @MainActor
     func testICloudConflictListICloudConflictCoreRevealUsesPlatformServicesWithoutCoreWrites() {
         let conflict = ICloudConflictPairSnapshot.iCloudConflictListFixture()
-        let finder = ICloudConflictListRecordingFinderOpener()
-        let revealer = ICloudConflictListRecordingFileRevealer()
+        let finder = RecordingRepositoryFinderOpener()
+        let revealer = RecordingRepositoryFileRevealer()
         let model = ICloudConflictListModel(
             repoPath: "/tmp/iCloudConflictList-repo",
             conflictLister: ICloudConflictLister(result: .success([conflict])),
@@ -137,8 +137,8 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         model.revealRepositoryInFinder()
         model.revealConflict(conflict)
 
-        XCTAssertEqual(finder.requests, ["/tmp/iCloudConflictList-repo"])
-        XCTAssertEqual(revealer.requests, [ICloudConflictListRecordingFileRevealer.Request(
+        XCTAssertEqual(finder.repoPaths, ["/tmp/iCloudConflictList-repo"])
+        XCTAssertEqual(revealer.requests, [RecordingRepositoryFileRevealer.Request(
             repoPath: "/tmp/iCloudConflictList-repo",
             relativePath: "docs/report (Alice's conflicted copy).pdf"
         )])
@@ -147,19 +147,19 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
 
     @MainActor
     func testICloudConflictListICloudConflictCoreSettingsEntryOpensReviewConflictsTarget() async {
-        let opener = ICloudConflictListRecordingFinderOpener()
+        let opener = RecordingRepositoryFinderOpener()
         let model = IntegrationsSettingsModel(
             repoPath: "/tmp/iCloudConflictList-repo",
             loader: ICloudConflictListIntegrationsLoader(
                 config: .iCloudConflictListIntegrationsFixture(repoPath: "/tmp/stale")
             ),
-            updater: NoopIntegrationsUpdater(),
+            updater: NoopConfigurationUpdater(),
             errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping()),
-            statusDetector: ICloudConflictListStaticStatusDetector(
+            statusDetector: StaticICloudStatusDetector(
                 snapshot: IntegrationsICloudSnapshot(repositoryLocation: .iCloudDrive, iCloudStatus: .available)
             ),
             finderOpener: opener,
-            helpOpener: ICloudConflictListNoopHelpOpener()
+            helpOpener: NoopICloudHelpOpener()
         )
 
         await model.load()
@@ -316,29 +316,6 @@ private actor ICloudConflictLister: CoreICloudConflictListing {
     }
 }
 
-@MainActor
-private final class ICloudConflictListRecordingFinderOpener: RepositoryFinderOpening {
-    private(set) var requests: [String] = []
-
-    func openRepositoryInFinder(repoPath: String) throws {
-        requests.append(repoPath)
-    }
-}
-
-@MainActor
-private final class ICloudConflictListRecordingFileRevealer: RepositoryFileRevealing {
-    struct Request: Equatable {
-        var repoPath: String
-        var relativePath: String
-    }
-
-    private(set) var requests: [Request] = []
-
-    func revealFile(repoPath: String, relativePath: String) throws {
-        requests.append(Request(repoPath: repoPath, relativePath: relativePath))
-    }
-}
-
 private actor ICloudConflictListRecordingErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
     private var errors: [CoreError] = []
@@ -385,22 +362,6 @@ private actor ICloudConflictListIntegrationsLoader: CoreConfigurationLoading {
     func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
         config
     }
-}
-
-private actor NoopIntegrationsUpdater: CoreConfigurationUpdating {
-    func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
-}
-
-private struct ICloudConflictListStaticStatusDetector: ICloudStatusDetecting {
-    let snapshot: IntegrationsICloudSnapshot
-
-    func snapshot(repoPath _: String, config _: RepoConfigSnapshot) async -> IntegrationsICloudSnapshot {
-        snapshot
-    }
-}
-
-private struct ICloudConflictListNoopHelpOpener: ICloudHelpOpening {
-    func openICloudHelp() throws {}
 }
 
 private extension ICloudConflictPairSnapshot {

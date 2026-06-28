@@ -17,7 +17,7 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
             accessibilityAnnouncer: NoopAccessibilityAnnouncer(),
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
 
         model.route = .mainList(initialOpening)
@@ -55,7 +55,7 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
                 .generalSettingsIntegrationFixture(repoPath: repoURL.path)),
             updater: updater,
             rootOverviewInspector: LocalRootOverviewFileInspector(),
-            rootOverviewRevealer: GeneralSettingsNoopFileRevealer(),
+            rootOverviewRevealer: RecordingRepositoryFileRevealer(),
             ignoreRulesManager: ignoreRulesManager,
             errorMapper: GeneralSettingsIntegrationErrorMapper()
         )
@@ -330,16 +330,6 @@ private actor GeneralSettingsRecordingRepositoryOpener: CoreEmptyRepositoryOpeni
     func requestedRepoPaths() -> [String] {
         repoPaths
     }
-}
-
-@MainActor
-private final class GeneralSettingsNoopFileRevealer: RepositoryFileRevealing {
-    func revealFile(repoPath _: String, relativePath _: String) throws {}
-}
-
-@MainActor
-private final class NoopAccessibilityAnnouncer: AccessibilityAnnouncing {
-    func announce(_: String) {}
 }
 
 private extension RepoConfigSnapshot {

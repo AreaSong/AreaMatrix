@@ -26,11 +26,11 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
         let repairer = RecordingMetadataRepairer(
             result: .failure(CoreError.PermissionDenied(path: "/tmp/repo/.areamatrix/index.db"))
         )
-        let finder = ShellRecordingFinderOpener()
+        let finder = RecordingRepositoryFinderOpener()
         let shell = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             finderOpener: finder,
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         shell.route = .mainRepoError("/tmp/repo", mapping)
         shell.openMainRepositoryRepair(repoPath: "/tmp/repo")
@@ -44,7 +44,7 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
             mapping: repairRoute.mapping,
             lastOpenedAt: nil,
             metadataRepairer: repairer,
-            startupRecoverer: MainLoadingStaticStartupRecoverer(),
+            startupRecoverer: StaticStartupRecoverer(),
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairIntegrationDiagnostics)
             ),
@@ -66,7 +66,7 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
         XCTAssertEqual(shell.route, .dbRepairConfirm(repairRoute))
 
         shell.revealMainRepositoryFolder(repoPath: repairRoute.repoPath)
-        XCTAssertEqual(finder.openedRepoPaths, ["/tmp/repo"])
+        XCTAssertEqual(finder.repoPaths, ["/tmp/repo"])
 
         shell.returnFromDatabaseRepair(repairRoute)
         XCTAssertEqual(shell.route, .mainRepoError("/tmp/repo", mapping))
@@ -146,7 +146,7 @@ private struct DatabaseRepairIntegrationSuccessContext {
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
             emptyRepositoryOpener: opener,
-            helpOpener: ShellNoopWelcomeHelpOpener()
+            helpOpener: NoopWelcomeHelpOpener()
         )
         shell.route = .mainRepoError(repoURL.path, mapping)
 

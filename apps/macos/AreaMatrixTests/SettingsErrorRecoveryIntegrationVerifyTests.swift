@@ -20,8 +20,8 @@ private func verifyGeneralSettingsAndImportDefaults(_ context: Task31Integration
         loader: context.bridge,
         updater: context.bridge,
         rootOverviewInspector: LocalRootOverviewFileInspector(),
-        rootOverviewRevealer: Task31NoopFileRevealer(),
-        ignoreRulesManager: Task31NoopIgnoreRulesManager(),
+        rootOverviewRevealer: RecordingRepositoryFileRevealer(),
+        ignoreRulesManager: NoopRepositoryIgnoreRulesManager(),
         errorMapper: context.bridge
     )
 
@@ -40,7 +40,7 @@ private func verifyGeneralSettingsAndImportDefaults(_ context: Task31Integration
     XCTAssertEqual(try String(contentsOf: context.readmeURL), "user readme\n")
 
     let opening = try await context.bridge.openConfiguredRepository(repoPath: context.repoURL.path)
-    let shell = OnboardingModel(helpOpener: Task31NoopWelcomeHelpOpener())
+    let shell = OnboardingModel(helpOpener: NoopWelcomeHelpOpener())
     shell.route = .mainList(opening)
     shell.showGeneralSettings(opening: opening)
     shell.startImportEntry(opening: opening, source: .filePicker, urls: [context.sourceURL])
@@ -56,7 +56,7 @@ private func verifyClassifierRepositoryAndOverview(_ context: Task31IntegrationC
         updater: context.bridge,
         predictor: context.bridge,
         errorMapper: context.bridge,
-        accessibilityAnnouncer: Task31NoopAccessibilityAnnouncer()
+        accessibilityAnnouncer: NoopAccessibilityAnnouncer()
     )
 
     await classifier.load()
@@ -76,7 +76,7 @@ private func verifyClassifierRepositoryAndOverview(_ context: Task31IntegrationC
     XCTAssertTrue(FileManager.default.fileExists(atPath: context.sourceURL.path))
     XCTAssertFalse(FileManager.default.fileExists(atPath: context.repoURL.appendingPathComponent(imported.path).path))
 
-    let generatedRevealer = Task31RecordingFileRevealer()
+    let generatedRevealer = RecordingRepositoryFileRevealer()
     let repository = RepositorySettingsModel(
         repoPath: context.repoURL.path,
         loader: context.bridge,
@@ -113,9 +113,9 @@ private func verifyIntegrationsAdvancedAboutAndRecovery(_ context: Task31Integra
         loader: context.bridge,
         updater: context.bridge,
         errorMapper: context.bridge,
-        statusDetector: Task31StaticICloudDetector(),
-        finderOpener: Task31NoopFinderOpener(),
-        helpOpener: Task31NoopICloudHelpOpener()
+        statusDetector: StaticICloudStatusDetector(),
+        finderOpener: RecordingRepositoryFinderOpener(),
+        helpOpener: NoopICloudHelpOpener()
     )
     await integrations.load()
     await integrations.setICloudWarningsEnabled(false)
@@ -146,7 +146,7 @@ private func makeTask31AdvancedModel(_ context: Task31IntegrationContext) -> Adv
         updater: context.bridge,
         rootOverviewInspector: LocalRootOverviewFileInspector(),
         diagnosticsCollector: Task31RecordingDiagnosticsCollector(),
-        appVersionReader: Task31StaticAppVersionReader(version: "2.3.31"),
+        appVersionReader: StaticAppVersionReader(version: "2.3.31"),
         coreVersionReader: context.bridge,
         metadataReader: SQLiteExistingRepositoryMetadataReader(),
         logsOpener: Task31RecordingAdvancedLogsOpener(),
@@ -159,16 +159,16 @@ private func makeTask31AdvancedModel(_ context: Task31IntegrationContext) -> Adv
 private func verifyTask31AboutAndRecoveryRoute(_ context: Task31IntegrationContext) async throws {
     let about = AboutSettingsModel(
         repoPath: context.repoURL.path,
-        appVersionReader: Task31StaticAppVersionReader(version: "2.3.31"),
+        appVersionReader: StaticAppVersionReader(version: "2.3.31"),
         coreVersionReader: context.bridge,
         metadataReader: SQLiteExistingRepositoryMetadataReader(),
         diagnosticsExporter: LocalAboutDiagnosticsExporter(baseDirectory: context.diagnosticsURL),
-        externalLinkOpener: Task31NoopAboutExternalLinkOpener(),
+        externalLinkOpener: NoopAboutExternalLinkOpener(),
         logsOpener: Task31RecordingAboutLogsOpener(),
         stringCopier: Task31RecordingStringCopier(),
-        diagnosticsRevealer: Task31NoopAboutDiagnosticsRevealer(),
+        diagnosticsRevealer: NoopAboutDiagnosticsRevealer(),
         errorMapper: context.bridge,
-        accessibilityAnnouncer: Task31NoopAccessibilityAnnouncer()
+        accessibilityAnnouncer: NoopAccessibilityAnnouncer()
     )
     await about.load()
     about.requestDiagnosticsExport()
@@ -186,7 +186,7 @@ private func verifyTask31AboutAndRecoveryRoute(_ context: Task31IntegrationConte
     }
 
     let mapping = await context.bridge.mapCoreError(CoreError.Db(message: "database corrupted"))
-    let shell = OnboardingModel(helpOpener: Task31NoopWelcomeHelpOpener())
+    let shell = OnboardingModel(helpOpener: NoopWelcomeHelpOpener())
     shell.route = .mainRepoError(context.repoURL.path, mapping)
     shell.openMainRepositoryRepair(repoPath: context.repoURL.path)
     XCTAssertEqual(
@@ -247,49 +247,6 @@ private struct Task31IntegrationContext {
     }
 }
 
-private final class Task31NoopFileRevealer: RepositoryFileRevealing {
-    @MainActor
-    func revealFile(repoPath _: String, relativePath _: String) throws {}
-}
-
-private final class Task31RecordingFileRevealer: RepositoryFileRevealing {
-    struct Request: Equatable {
-        var repoPath: String
-        var relativePath: String
-    }
-
-    private(set) var requests: [Request] = []
-
-    @MainActor
-    func revealFile(repoPath: String, relativePath: String) throws {
-        requests.append(Request(repoPath: repoPath, relativePath: relativePath))
-    }
-}
-
-private final class Task31NoopIgnoreRulesManager: RepositoryIgnoreRulesManaging {
-    @MainActor
-    func openIgnoreRules(repoPath _: String) throws {}
-
-    @MainActor
-    func createDefaultIgnoreRules(repoPath _: String) throws {}
-}
-
-private struct Task31StaticICloudDetector: ICloudStatusDetecting {
-    func snapshot(repoPath _: String, config _: RepoConfigSnapshot) async -> IntegrationsICloudSnapshot {
-        IntegrationsICloudSnapshot(repositoryLocation: .localFolder, iCloudStatus: .unavailable)
-    }
-}
-
-private final class Task31NoopFinderOpener: RepositoryFinderOpening {
-    @MainActor
-    func openRepositoryInFinder(repoPath _: String) throws {}
-}
-
-private struct Task31NoopICloudHelpOpener: ICloudHelpOpening {
-    @MainActor
-    func openICloudHelp() throws {}
-}
-
 private actor Task31RecordingDiagnosticsCollector: CoreDiagnosticsCollecting {
     private var repoPaths: [String] = []
 
@@ -300,14 +257,6 @@ private actor Task31RecordingDiagnosticsCollector: CoreDiagnosticsCollecting {
             createdAt: 1_778_031_000,
             warnings: []
         )
-    }
-}
-
-private struct Task31StaticAppVersionReader: AppVersionReading {
-    let version: String
-
-    func appVersion() -> String {
-        version
     }
 }
 
@@ -324,13 +273,6 @@ private final class Task31RecordingAdvancedSummaryCopier: AdvancedSettingsDiagno
     @MainActor
     func copyDiagnosticSummary(_ summary: String) throws {
         summaries.append(summary)
-    }
-}
-
-private struct Task31NoopAboutExternalLinkOpener: AboutExternalLinkOpening {
-    @MainActor
-    func open(link: AboutExternalLink) throws -> String {
-        link.urlString
     }
 }
 
@@ -353,18 +295,4 @@ private final class Task31RecordingStringCopier: AboutStringCopying {
     func copy(_ value: String) throws {
         values.append(value)
     }
-}
-
-private struct Task31NoopAboutDiagnosticsRevealer: AboutDiagnosticsRevealing {
-    @MainActor
-    func revealDiagnostics(at _: String) throws {}
-}
-
-private struct Task31NoopWelcomeHelpOpener: WelcomeHelpOpening {
-    func openWelcomeHelp() throws {}
-}
-
-private final class Task31NoopAccessibilityAnnouncer: AccessibilityAnnouncing {
-    @MainActor
-    func announce(_: String) {}
 }
