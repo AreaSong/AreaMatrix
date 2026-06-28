@@ -93,9 +93,9 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
         )
         let route = SyncConflictReviewRoute.fileDetail(repoPath: opening.config.repoPath, file: file)
 
-        assertTestMirrorDescription(of: detailPane.body, contains: [
-            "Review Sync Conflict...",
-            "sync-conflict-review-sync-conflict-detect-review-sync-conflict"
+        assertTestMirrorDescription(of: detailPane.body, contains: "MainRepositoryDetailFileActionMenu")
+        assertMainRepositoryDetailFileActionMenu(for: file, contains: [
+            "Review Sync Conflict..."
         ])
         XCTAssertEqual(route, SyncConflictReviewRoute(
             repoPath: "/tmp/syncConflictReview-repo",

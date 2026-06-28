@@ -39,20 +39,46 @@ struct AboutSettingsPane: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            header
+            AboutSettingsHeader(
+                repoPath: model.repoPath,
+                isLoadingVersionInfo: model.isLoadingVersionInfo,
+                onRetryVersionCheck: {
+                    Task {
+                        await model.load()
+                    }
+                }
+            )
             SettingsPageScrollContent {
                 versionErrorBanner
                 actionFeedbackBanner
-                versionsSection
+                AboutSettingsVersionsSection(
+                    versionInfo: model.versionInfo,
+                    onCopyVersions: model.copyVersionSummary
+                )
                 PlatformDifferencesView(
                     repositoryText: model.repoPath,
                     onOpenRepositorySettings: onOpenRepositorySettings,
                     onClose: onClose
                 )
-                licenseSection
-                linksSection
-                diagnosticsSection
-                logsSection
+                AboutSettingsLicenseSection()
+                AboutSettingsLinksSection(
+                    onOpenLink: model.openExternalLink,
+                    onCopyLink: model.copyExternalLink
+                )
+                AboutSettingsDiagnosticsSection(
+                    diagnosticsButtonTitle: model.diagnosticsButtonTitle,
+                    diagnosticsState: model.diagnosticsState,
+                    onRequestDiagnostics: model.requestDiagnosticsExport,
+                    onRevealDiagnostics: model.revealDiagnostics,
+                    onCopyDiagnosticsPath: model.copyDiagnosticsPath,
+                    onCopyError: model.copyActionDetail
+                )
+                AboutSettingsLogsSection(
+                    isDisabled: model.diagnosticsState.isCollecting,
+                    logsPath: model.logsPath,
+                    onOpenLogs: model.openLogs,
+                    onCopyLogsPath: model.copyLogsPath
+                )
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -71,47 +97,6 @@ struct AboutSettingsPane: View {
             }
         } message: {
             Text("Diagnostics do not include your original file contents and are not uploaded automatically.")
-        }
-    }
-
-    private var header: some View {
-        HStack {
-            HStack(spacing: 12) {
-                Image("AreaMatrixLogoMark")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 36, height: 36)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("AreaMatrix")
-                        .font(.title2.weight(.semibold))
-                        .accessibilityAddTraits(.isHeader)
-                    Text(model.repoPath)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .textSelection(.enabled)
-                }
-            }
-            Spacer()
-            if model.isLoadingVersionInfo {
-                SettingsHeaderProgressIndicator(label: "Loading version information")
-            } else {
-                Button {
-                    Task {
-                        await model.load()
-                    }
-                } label: {
-                    Label("Retry version check", systemImage: "arrow.clockwise")
-                }
-                .accessibilityIdentifier("about-settings-retry-version-check")
-            }
-        }
-        .padding(.horizontal, 34)
-        .padding(.vertical, 18)
-        .overlay(alignment: .bottom) {
-            Divider()
         }
     }
 
@@ -142,143 +127,6 @@ struct AboutSettingsPane: View {
         }
     }
 
-    private var versionsSection: some View {
-        AboutSettingsSection(title: "Versions") {
-            AboutSettingsKeyValueRow(label: "App version", value: model.versionInfo.appVersion)
-            AboutSettingsKeyValueRow(label: "Core version", value: model.versionInfo.coreVersion)
-            AboutSettingsKeyValueRow(label: "Schema version", value: model.versionInfo.schemaVersion)
-            Button {
-                model.copyVersionSummary()
-            } label: {
-                Label("Copy versions", systemImage: "doc.on.doc")
-            }
-            .accessibilityIdentifier("about-settings-copy-versions")
-        }
-    }
-
-    private var licenseSection: some View {
-        AboutSettingsSection(title: "License") {
-            Text("PolyForm Noncommercial")
-                .font(.callout)
-                .textSelection(.enabled)
-                .accessibilityIdentifier("about-settings-license")
-        }
-    }
-
-    private var linksSection: some View {
-        AboutSettingsSection(title: "Links") {
-            ForEach(AboutExternalLink.allCases) { link in
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 10) {
-                        Button {
-                            model.openExternalLink(link)
-                        } label: {
-                            Label(link.title, systemImage: link.systemImage)
-                        }
-                        .accessibilityIdentifier("about-settings-open-\(link.rawValue)")
-
-                        Button {
-                            model.copyExternalLink(link)
-                        } label: {
-                            Label("Copy URL", systemImage: "doc.on.doc")
-                        }
-                        .accessibilityIdentifier("about-settings-copy-\(link.rawValue)")
-                    }
-
-                    Text(link.urlString)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                        .lineLimit(2)
-                        .truncationMode(.middle)
-                }
-            }
-        }
-    }
-
-    private var diagnosticsSection: some View {
-        AboutSettingsSection(title: "Diagnostics") {
-            Button {
-                model.requestDiagnosticsExport()
-            } label: {
-                Label(model.diagnosticsButtonTitle, systemImage: "doc.badge.gearshape")
-            }
-            .disabled(model.diagnosticsState.isCollecting)
-            .accessibilityIdentifier("about-settings-collect-diagnostics")
-
-            Text("Diagnostics are redacted, exclude original file contents, and are not uploaded automatically.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            diagnosticsStatus
-        }
-    }
-
-    @ViewBuilder
-    private var diagnosticsStatus: some View {
-        switch model.diagnosticsState {
-        case .idle, .confirmingPrivacy:
-            EmptyView()
-        case .collecting:
-            SettingsProgressBanner(title: "Collecting redacted diagnostics...")
-        case let .collected(snapshot):
-            SettingsStatusBanner(title: "Diagnostics exported", systemImage: "checkmark.circle", tint: .green) {
-                Text(snapshot.exportPath)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-                    .lineLimit(2)
-                    .truncationMode(.middle)
-                HStack(spacing: 10) {
-                    Button("Reveal in Finder") {
-                        model.revealDiagnostics(snapshot)
-                    }
-                    Button("Copy diagnostics path") {
-                        model.copyDiagnosticsPath(snapshot)
-                    }
-                }
-            }
-        case let .failed(error):
-            AboutSettingsBanner(error: error, tint: .red) {
-                Button("Copy error") {
-                    model.copyActionDetail(error)
-                }
-                Button("Retry") {
-                    model.requestDiagnosticsExport()
-                }
-            }
-        }
-    }
-
-    private var logsSection: some View {
-        AboutSettingsSection(title: "Logs") {
-            HStack(spacing: 10) {
-                Button {
-                    model.openLogs()
-                } label: {
-                    Label("Open logs in Console", systemImage: "terminal")
-                }
-                .disabled(model.diagnosticsState.isCollecting)
-                .accessibilityIdentifier("about-settings-open-logs")
-
-                Button {
-                    model.copyLogsPath()
-                } label: {
-                    Label("Copy logs path", systemImage: "doc.on.doc")
-                }
-                .accessibilityIdentifier("about-settings-copy-logs-path")
-            }
-
-            Text(model.logsPath)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .textSelection(.enabled)
-                .lineLimit(2)
-                .truncationMode(.middle)
-        }
-    }
-
     private var diagnosticsConfirmationBinding: Binding<Bool> {
         Binding(
             get: { model.diagnosticsState.isConfirmingPrivacy },
@@ -288,43 +136,5 @@ struct AboutSettingsPane: View {
                 }
             }
         )
-    }
-}
-
-private struct AboutSettingsKeyValueRow: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        SettingsKeyValueRow(label: label, value: value, labelWidth: 130)
-    }
-}
-
-private struct AboutSettingsBanner<Actions: View>: View {
-    let error: AboutSettingsError
-    let tint: Color
-    private let actions: Actions
-
-    init(error: AboutSettingsError, tint: Color, @ViewBuilder actions: () -> Actions) {
-        self.error = error
-        self.tint = tint
-        self.actions = actions()
-    }
-
-    var body: some View {
-        SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: tint) {
-            Text(error.recovery)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            Text(error.copyableDetail)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .textSelection(.enabled)
-                .lineLimit(3)
-                .truncationMode(.middle)
-            HStack(spacing: 10) {
-                actions
-            }
-        }
     }
 }

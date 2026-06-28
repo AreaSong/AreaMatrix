@@ -125,7 +125,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
                 errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryConflict())
             )
         )
-        assertChangeCategoryDetailActions(of: pane.body)
+        assertChangeCategoryDetailActions(of: pane.body, detail: file)
         pane.onBeginChangeCategoryFile(file.id)
         XCTAssertEqual(model.pendingActionDestination, .changeCategory(fileID: file.id))
         XCTAssertEqual(model.pendingActionDestination?.pageID, "change-category")
@@ -223,16 +223,25 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
     }
 }
 
+@MainActor
 private func assertChangeCategoryDetailActions(
     of value: Any,
+    detail: FileEntrySnapshot,
     file: StaticString = #filePath,
     line: UInt = #line
 ) {
-    assertTestMirrorDescription(of: value, contains: [
+    assertTestMirrorDescription(
+        of: value,
+        contains: "MainRepositoryDetailFileActionMenu",
+        maxDepth: 8,
+        file: file,
+        line: line
+    )
+    assertMainRepositoryDetailFileActionMenu(for: detail, contains: [
         "Change Category...",
         "Correct Classification...",
         "Review AI Suggestion..."
-    ], maxDepth: 8, file: file, line: line)
+    ], file: file, line: line)
 }
 
 private func assertChangeCategoryPermissionRecovery(

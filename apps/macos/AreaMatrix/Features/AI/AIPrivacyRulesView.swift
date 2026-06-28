@@ -87,18 +87,7 @@ struct AIPrivacyRulesView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("AI Privacy Rules").font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
-            Text(model.repoPath).font(.caption).foregroundStyle(.secondary)
-                .lineLimit(1).truncationMode(.middle).textSelection(.enabled)
-            Text(
-                "Privacy rules are checked before AI uses file metadata or extracted text. " +
-                    "Remote AI is blocked by default for matching rules."
-            )
-            .font(.callout)
-            .foregroundStyle(.secondary)
-        }
-        .padding(24)
+        AIPrivacyRulesHeader(repoPath: model.repoPath)
     }
 
     @ViewBuilder
@@ -126,31 +115,18 @@ struct AIPrivacyRulesView: View {
     }
 
     private var remoteGateSection: some View {
-        AdvancedSettingsSection(title: "Remote AI privacy gate") {
-            AdvancedSettingsKeyValueRow(label: "Status", value: remoteGateStatus)
-            AdvancedSettingsKeyValueRow(label: "Remote provider", value: providerModel.providerStatusText)
-            AdvancedSettingsKeyValueRow(label: "Provider verified", value: providerModel.verifiedStatusText)
-            AdvancedSettingsKeyValueRow(label: "Remote provider enabled", value: providerModel.enabledStatusText)
-            AdvancedSettingsKeyValueRow(label: "Feature scope", value: providerModel.featureScopeText)
-            Text(
-                "This is a privacy gate, not the provider disable page. Blocking here does not delete " +
-                    "Keychain credentials, provider configuration, local AI settings, summaries, tags, or call logs."
-            )
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            HStack(spacing: 10) {
-                Button("Allow remote AI after provider consent", action: allowRemoteGate)
-                    .disabled(allowRemoteGateDisabled)
-                    .accessibilityIdentifier(
-                        "ai-privacy-rules-ai-privacy-rules-core-allow-remote-ai-after-provider-consent"
-                    )
-                Button("Block remote AI with privacy gate", action: blockRemoteGate)
-                    .disabled(privacyModel.isSaving || privacyModel.snapshot?.privacyGateEnabled == false)
-                    .accessibilityIdentifier("ai-privacy-rules-ai-privacy-rules-core-block-remote-ai-privacy-gate")
-            }
-            Button("Configure remote AI", action: onConfigureRemoteAI)
-                .accessibilityIdentifier("ai-privacy-rules-remote-provider-config-core-configure-remote-ai")
-        }
+        AIPrivacyRulesRemoteGateSection(
+            remoteGateStatus: remoteGateStatus,
+            providerStatusText: providerModel.providerStatusText,
+            verifiedStatusText: providerModel.verifiedStatusText,
+            enabledStatusText: providerModel.enabledStatusText,
+            featureScopeText: providerModel.featureScopeText,
+            allowRemoteGateDisabled: allowRemoteGateDisabled,
+            blockRemoteGateDisabled: privacyModel.isSaving || privacyModel.snapshot?.privacyGateEnabled == false,
+            onAllowRemoteGate: allowRemoteGate,
+            onBlockRemoteGate: blockRemoteGate,
+            onConfigureRemoteAI: onConfigureRemoteAI
+        )
     }
 
     @ViewBuilder
@@ -200,14 +176,7 @@ struct AIPrivacyRulesView: View {
     }
 
     private var footer: some View {
-        HStack {
-            if privacyModel.isSaving {
-                ProgressView().controlSize(.small).accessibilityLabel("Saving AI privacy rules")
-            }
-            Spacer()
-            Button("Close", action: requestClose)
-        }
-        .padding(16)
+        AIPrivacyRulesFooter(isSaving: privacyModel.isSaving, onClose: requestClose)
     }
 
     private var remoteGateStatus: String {

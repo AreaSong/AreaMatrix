@@ -25,6 +25,121 @@ struct AdvancedSettingsRecoveryToolsSection: View {
     }
 }
 
+struct AdvancedSettingsDiagnosticsSection: View {
+    let versionInfo: AdvancedSettingsVersionInfo
+    let buttonTitle: String
+    let isCollecting: Bool
+    let onExportDiagnostics: () -> Void
+
+    var body: some View {
+        AdvancedSettingsSection(title: "Diagnostics") {
+            AdvancedSettingsKeyValueRow(label: "App version", value: versionInfo.appVersion)
+            AdvancedSettingsKeyValueRow(label: "Core version", value: versionInfo.coreVersion)
+            AdvancedSettingsKeyValueRow(
+                label: "Repo schema version",
+                value: versionInfo.repoSchemaVersionLabel
+            )
+
+            Button {
+                onExportDiagnostics()
+            } label: {
+                Label(buttonTitle, systemImage: "doc.badge.gearshape")
+            }
+            .disabled(isCollecting)
+            .accessibilityIdentifier("advanced-settings-export-diagnostics")
+
+            Text(
+                "Diagnostics do not include your original file contents, are not uploaded automatically, " +
+                    "and paths and usernames are redacted before display."
+            )
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+struct AdvancedSettingsLogsSection: View {
+    let isCollecting: Bool
+    let onOpenLogsFolder: () -> Void
+    let onCopyDiagnosticSummary: () -> Void
+
+    var body: some View {
+        AdvancedSettingsSection(title: "Logs") {
+            HStack(spacing: 10) {
+                Button {
+                    onOpenLogsFolder()
+                } label: {
+                    Label("Open logs folder", systemImage: "folder")
+                }
+                .disabled(isCollecting)
+                .accessibilityIdentifier("advanced-settings-open-logs-folder")
+
+                Button {
+                    onCopyDiagnosticSummary()
+                } label: {
+                    Label("Copy diagnostic summary", systemImage: "doc.on.doc")
+                }
+                .accessibilityIdentifier("advanced-settings-copy-diagnostic-summary")
+            }
+
+            Text("Diagnostics do not include your original file contents.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+struct AdvancedSettingsOverviewOutputSection: View {
+    let selection: Binding<AdvancedSettingsOverviewOutput>
+    let writesDisabled: Bool
+
+    var body: some View {
+        AdvancedSettingsSection(title: "Generated overview output") {
+            Picker("Generated overview output", selection: selection) {
+                ForEach(AdvancedSettingsOverviewOutput.allCases) { output in
+                    Text(output.label).tag(output)
+                }
+            }
+            .pickerStyle(.segmented)
+            .disabled(writesDisabled)
+            .frame(maxWidth: 320)
+            .accessibilityIdentifier(AdvancedSettingsAccessibilityID.overviewOutput)
+
+            Text("Generated only writes under .areamatrix/generated/.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Text("Root AREAMATRIX.md adds a managed marker block to the repository root file.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Text("README.md is never managed.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+struct AdvancedSettingsAllowReplaceSection: View {
+    let isOn: Binding<Bool>
+    let writesDisabled: Bool
+
+    var body: some View {
+        AdvancedSettingsSection(title: "Dangerous import option") {
+            Toggle("Allow replace during import", isOn: isOn)
+                .disabled(writesDisabled)
+                .accessibilityIdentifier("advanced-settings-repository-config-allow-replace")
+
+            Text(
+                "When enabled, ImportSheet may show Replace for duplicate or name conflicts. " +
+                    "Replace still requires Trash and a second confirmation."
+            )
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
 struct AdvancedSettingsKeyValueRow: View {
     let label: String
     let value: String

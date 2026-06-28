@@ -40,22 +40,22 @@ extension ChangeCategorySheet {
     }
 
     func ruleSuggestionPanel(for file: FileEntrySnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Rule suggestions")
-                .font(.callout.weight(.semibold))
-            Text(ruleSuggestionText(for: file))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text("Apply correction changes only this file. Save a rule from Edit rule or Preview impact.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            HStack {
-                ruleHandoffSubmitButton("Edit rule...", file: file, destination: .saveRule)
-                ruleHandoffSubmitButton("Preview impact", file: file, destination: .impactPreview)
+        NeutralSummaryPanel {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Rule suggestions")
+                    .font(.callout.weight(.semibold))
+                Text(ruleSuggestionText(for: file))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("Apply correction changes only this file. Save a rule from Edit rule or Preview impact.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack {
+                    ruleHandoffSubmitButton("Edit rule...", file: file, destination: .saveRule)
+                    ruleHandoffSubmitButton("Preview impact", file: file, destination: .impactPreview)
+                }
             }
         }
-        .padding(10)
-        .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
     }
 
     func targetPathText(for file: FileEntrySnapshot) -> String {

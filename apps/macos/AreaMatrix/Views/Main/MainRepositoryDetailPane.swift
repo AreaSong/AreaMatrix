@@ -65,11 +65,25 @@ extension MainRepositoryDetailPane {
             } else if let detail = selectedFileDetail {
                 detailMetadataPane(detail)
             } else if let error = detailErrorMapping {
-                detailErrorPane(error)
+                MainRepositoryDetailErrorPane(
+                    error: error,
+                    missingFile: missingErrorFile(),
+                    selection: selection,
+                    detailLogState: detailLogState,
+                    detailLogDiagnosticsState: detailLogDiagnosticsState,
+                    detailExternalCreateSyncState: detailExternalCreateSyncState,
+                    onRetry: onRetrySelectedFileDetail,
+                    onRefreshChangeLog: onRefreshChangeLog,
+                    onRequestDetailLogDiagnostics: onRequestDetailLogDiagnostics,
+                    onConfirmDetailLogDiagnostics: onConfirmDetailLogDiagnostics,
+                    onCancelDetailLogDiagnostics: onCancelDetailLogDiagnostics,
+                    onBeginDeleteFile: onBeginDeleteFile,
+                    writeActionDisabledReason: writeActionDisabledReason
+                )
             } else if isDetailLoading {
-                detailLoadingPane
+                MainRepositoryDetailLoadingPane()
             } else {
-                emptyDetailPane
+                MainRepositoryEmptyDetailPane()
             }
         }
         .onChange(of: detailTabRequest) { _, request in
@@ -86,64 +100,11 @@ extension MainRepositoryDetailPane {
         ) {
             Button("Cancel", role: .cancel) { pendingSummaryExitTab = nil }
             Button("Discard changes", role: .destructive) {
-                summaryExitController.discardChanges(); finishPendingSummaryExit()
+                summaryExitController.discardChanges()
+                finishPendingSummaryExit()
             }
             Button("Save changes") { Task { await saveAndFinishPendingSummaryExit() } }
         } message: { Text("Save or discard the AI summary draft before leaving this file summary.") }
-    }
-
-    private var emptyDetailPane: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("选择一个文件查看详情")
-                .font(.headline)
-            Text("文件的元数据、改动时间线和伴生笔记会显示在这里。")
-                .foregroundStyle(.secondary)
-        }
-        .padding(18)
-    }
-
-    private var detailLoadingPane: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ProgressView()
-                .controlSize(.small)
-            Text("Loading file details")
-                .font(.headline)
-        }
-        .padding(18)
-    }
-
-    private func detailErrorPane(_ error: CoreErrorMappingSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("File details cannot be loaded", systemImage: "exclamationmark.triangle")
-                .font(.headline)
-            Text(error.userMessage)
-                .foregroundStyle(.secondary)
-            Text(error.suggestedAction)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            HStack(spacing: 10) {
-                Button("Retry", action: onRetrySelectedFileDetail)
-                removeFromIndexButton(for: missingErrorFile(), style: .primary)
-            }
-            DisclosureGroup("Technical Details") {
-                Text(error.rawContext)
-                    .font(.system(.caption, design: .monospaced))
-                    .textSelection(.enabled)
-            }
-            Divider()
-            DetailLogTabView(
-                selection: selection,
-                detailLogState: detailLogState,
-                diagnosticsState: detailLogDiagnosticsState,
-                externalCreateSyncState: detailExternalCreateSyncState,
-                onRefreshChangeLog: onRefreshChangeLog,
-                onRequestDiagnostics: onRequestDetailLogDiagnostics,
-                onConfirmDiagnostics: onConfirmDetailLogDiagnostics,
-                onCancelDiagnostics: onCancelDetailLogDiagnostics
-            )
-        }
-        .padding(18)
-        .accessibilityElement(children: .contain)
     }
 
     private func detailMetadataPane(_ detail: FileEntrySnapshot) -> some View {
@@ -164,7 +125,17 @@ extension MainRepositoryDetailPane {
                 .pickerStyle(.segmented)
                 .labelsHidden()
                 detailTabContent(for: detail)
-                detailFileActions(for: detail)
+                MainRepositoryDetailFileActionMenu(
+                    detail: detail,
+                    disabledReason: writeActionDisabledReason(detail.id),
+                    onBeginRenameFile: onBeginRenameFile,
+                    onBeginChangeCategoryFile: onBeginChangeCategoryFile,
+                    onBeginClassifierCorrectionFile: onBeginClassifierCorrectionFile,
+                    onBeginAIClassificationSuggestionFile: onBeginAIClassificationSuggestionFile,
+                    onBeginDeleteFile: onBeginDeleteFile,
+                    onBeginICloudConflictResolution: onBeginICloudConflictResolution,
+                    onBeginSyncConflictReview: onBeginSyncConflictReview
+                )
             }
             .padding(18)
             .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -236,86 +207,13 @@ extension MainRepositoryDetailPane {
             disabledReason: writeActionDisabledReason(detail.id),
             tagActions: tagActions
         )
-        metadataRows(for: detail)
+        DetailMetadataRows(detail: detail)
     }
 
     @ViewBuilder
     private var semanticSearchDetailBanner: some View {
         if let semanticDetail {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(semanticDetail.title)
-                    .font(.callout.weight(.semibold))
-                Text("Relevance \(semanticDetail.relevance)  \(semanticDetail.routeLabel)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                DisclosureGroup("Why this matched") {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(semanticDetail.matchedReason)
-                        Text(semanticDetail.whyThisMatched)
-                        if semanticDetail.alsoMatchedNormalSearch {
-                            Text("Also matched normal search")
-                        }
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-                }
-            }
-            .padding(10)
-            .background(Color.blue.opacity(0.08))
-            .accessibilityIdentifier("semantic-search-semantic-detail-explanation")
-        }
-    }
-
-    private func detailFileActions(for detail: FileEntrySnapshot) -> some View {
-        let disabledReason = writeActionDisabledReason(detail.id)
-        return HStack(spacing: 10) {
-            Spacer()
-            Menu {
-                Button("Rename...") {
-                    onBeginRenameFile(detail.id)
-                }
-                .disabled(disabledReason != nil)
-                .accessibilityIdentifier("file-detail-rename-file")
-                Button("Change Category...") {
-                    onBeginChangeCategoryFile(detail.id)
-                }
-                .disabled(disabledReason != nil)
-                .accessibilityIdentifier("file-detail-change-category")
-                Button("Correct Classification...") {
-                    onBeginClassifierCorrectionFile(detail.id)
-                }
-                .disabled(disabledReason != nil)
-                .accessibilityIdentifier("classifier-correction-correct-classification")
-                Button("Review AI Suggestion...") {
-                    onBeginAIClassificationSuggestionFile(detail.id)
-                }
-                .disabled(disabledReason != nil)
-                .accessibilityIdentifier("ai-category-suggestion-review-ai-suggestion")
-                Button("Review Sync Conflict...") {
-                    onBeginSyncConflictReview(detail)
-                }
-                .disabled(disabledReason != nil)
-                .accessibilityIdentifier("sync-conflict-review-sync-conflict-detect-review-sync-conflict")
-                if detail.hasICloudConflictCopySignal {
-                    Button("Resolve iCloud Conflict...") {
-                        onBeginICloudConflictResolution(detail.id)
-                    }
-                    .disabled(disabledReason != nil)
-                    .accessibilityIdentifier("icloud-conflict-minimal-resolve-icloud-conflict")
-                }
-                if shouldShowRemoveFromIndex(for: detail) {
-                    Button("Remove from Index", role: .destructive) {
-                        onBeginDeleteFile(detail.id)
-                    }
-                    .disabled(disabledReason != nil)
-                    .accessibilityIdentifier("file-detail-remove-from-index")
-                }
-            } label: {
-                Label("More", systemImage: "ellipsis.circle")
-            }
-            .help(disabledReason?.rawValue ?? "File actions")
-            .accessibilityIdentifier("file-detail-file-action-menu")
+            SemanticSearchDetailBanner(detail: semanticDetail)
         }
     }
 
@@ -346,90 +244,19 @@ extension MainRepositoryDetailPane {
         selectedTab = tab
     }
 
-    @ViewBuilder
     private var detailStatusSection: some View {
-        if let error = detailErrorMapping {
-            detailInlineError(error)
-        } else if isDetailLoading {
-            HStack(spacing: 8) {
-                ProgressView()
-                    .controlSize(.small)
-                Text("Refreshing file details")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-            .accessibilityElement(children: .combine)
-        }
-    }
-
-    private func detailInlineError(_ error: CoreErrorMappingSnapshot) -> some View {
-        TintedStatusBanner(
-            tint: .yellow,
-            cornerRadius: 0,
-            fillsWidth: false,
-            contentPadding: 10,
-            backgroundOpacity: 0.12
-        ) {
-            VStack(alignment: .leading, spacing: 8) {
-                Label("无法加载文件详情", systemImage: "exclamationmark.triangle")
-                    .font(.callout.weight(.semibold))
-                Text(error.userMessage)
-                    .foregroundStyle(.secondary)
-                HStack(spacing: 10) {
-                    Button("Retry", action: onRetrySelectedFileDetail)
-                    removeFromIndexButton(for: selectedFileDetail, style: .secondary)
-                }
-            }
-        }
-        .accessibilityElement(children: .contain)
-    }
-
-    @ViewBuilder
-    private func removeFromIndexButton(for file: FileEntrySnapshot?,
-                                       style: DetailRemoveFromIndexButtonStyle) -> some View {
-        if let file, shouldShowRemoveFromIndex(for: file) {
-            Button("Remove from Index", role: .destructive) {
-                onBeginDeleteFile(file.id)
-            }
-            .disabled(writeActionDisabledReason(file.id) != nil)
-            .accessibilityIdentifier(style.accessibilityIdentifier)
-        }
+        MainRepositoryDetailStatusSection(
+            error: detailErrorMapping,
+            isLoading: isDetailLoading,
+            selectedFile: selectedFileDetail,
+            onRetry: onRetrySelectedFileDetail,
+            onBeginDeleteFile: onBeginDeleteFile,
+            writeActionDisabledReason: writeActionDisabledReason
+        )
     }
 
     private func missingErrorFile() -> FileEntrySnapshot? {
         guard let selectedFileDetail, selectedFileDetail.availability == .missing else { return nil }
         return selectedFileDetail
-    }
-
-    private func shouldShowRemoveFromIndex(for detail: FileEntrySnapshot) -> Bool {
-        MainFileDeleteOperation.recommended(for: detail) == .removeFromIndex
-    }
-
-    private func metadataRows(for detail: FileEntrySnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(detailMetaMetadataRows(for: detail)) { row in
-                metadataRow(row.label, row.value)
-            }
-        }
-    }
-
-    private func metadataRow(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.callout)
-                .textSelection(.enabled)
-                .lineLimit(3)
-        }
-    }
-}
-
-private enum DetailRemoveFromIndexButtonStyle {
-    case primary, secondary
-
-    var accessibilityIdentifier: String {
-        self == .primary ? "file-detail-missing-remove-from-index" : "file-detail-inline-remove-from-index"
     }
 }

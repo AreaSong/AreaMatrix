@@ -232,32 +232,3 @@ extension ImportEntryRequest {
         }
     }
 }
-
-struct DetailMetaMetadataRow: Equatable, Identifiable {
-    let label: String
-    let value: String
-
-    var id: String {
-        label
-    }
-}
-
-func detailMetaMetadataRows(for detail: FileEntrySnapshot) -> [DetailMetaMetadataRow] {
-    [
-        DetailMetaMetadataRow(label: "Category", value: detail.category),
-        DetailMetaMetadataRow(label: "Path", value: detail.path),
-        DetailMetaMetadataRow(label: "Size", value: detail.sizeDisplay),
-        DetailMetaMetadataRow(label: "Storage", value: detail.storageMode),
-        DetailMetaMetadataRow(label: "Origin", value: detail.origin),
-        DetailMetaMetadataRow(label: "Imported", value: detail.importedAtDisplay),
-        DetailMetaMetadataRow(label: "Modified", value: detail.updatedAtDisplay),
-        DetailMetaMetadataRow(label: "SHA-256", value: detail.hashSha256),
-        DetailMetaMetadataRow(label: "Source", value: detailMetaDisplayValue(detail.sourcePath)),
-        DetailMetaMetadataRow(label: "Status", value: detail.statusDisplay)
-    ]
-}
-
-private func detailMetaDisplayValue(_ value: String?) -> String {
-    guard let value, !value.isEmpty else { return "Not available" }
-    return value
-}

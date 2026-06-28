@@ -109,9 +109,3 @@ private actor DetailMetaSuspendedDetailer: CoreFileDetailing {
         continuation = nil
     }
 }
-
-private extension [DetailMetaMetadataRow] {
-    func value(for label: String) -> String? {
-        first { $0.label == label }?.value
-    }
-}

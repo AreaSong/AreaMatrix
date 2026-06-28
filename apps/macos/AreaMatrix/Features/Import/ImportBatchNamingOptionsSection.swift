@@ -143,19 +143,19 @@ private struct BatchRenamePreviewSummary: View {
 
     var body: some View {
         let presentation = BatchRenamePreviewReportPresentation(report: preview)
-        VStack(alignment: .leading, spacing: 6) {
-            Text(presentation.renameSummaryText)
-            Text(presentation.displayOnlySummaryText)
-            Text(presentation.unchangedSummaryText)
-            Text(presentation.blockedSummaryText)
-            Text(presentation.conflictSummaryText)
-            if let reason = preview.applyBlockedReason, !reason.isEmpty {
-                Text(reason)
+        NeutralSummaryPanel {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(presentation.renameSummaryText)
+                Text(presentation.displayOnlySummaryText)
+                Text(presentation.unchangedSummaryText)
+                Text(presentation.blockedSummaryText)
+                Text(presentation.conflictSummaryText)
+                if let reason = preview.applyBlockedReason, !reason.isEmpty {
+                    Text(reason)
+                }
+                BatchRenamePreviewTable(items: preview.items)
             }
-            BatchRenamePreviewTable(items: preview.items)
         }
-        .padding(10)
-        .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .contain)
     }
 }
@@ -186,16 +186,16 @@ struct BatchRenameResultSummary: View {
     var body: some View {
         if let result {
             let presentation = BatchRenameReportPresentation(report: result)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(presentation.renamedSummaryText)
-                Text(presentation.unchangedSummaryText)
-                Text(presentation.failedSummaryText)
-                ForEach(result.itemResults.filter { $0.status == .failed }) { item in
-                    Text("File \(item.fileID): \(item.error ?? "Failed")").font(.caption)
+            NeutralSummaryPanel {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(presentation.renamedSummaryText)
+                    Text(presentation.unchangedSummaryText)
+                    Text(presentation.failedSummaryText)
+                    ForEach(result.itemResults.filter { $0.status == .failed }) { item in
+                        Text("File \(item.fileID): \(item.error ?? "Failed")").font(.caption)
+                    }
                 }
             }
-            .padding(10)
-            .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
         }
     }
 }

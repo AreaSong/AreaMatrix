@@ -11,17 +11,22 @@ struct BatchTagUndoToastView: View {
     let onDismiss: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                toastLabel
-                Spacer()
-                toastActions
+        TintedStatusBanner(
+            tint: .secondary,
+            fillsWidth: false,
+            contentPadding: 8,
+            backgroundOpacity: 0.12
+        ) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    toastLabel
+                    Spacer()
+                    toastActions
+                }
+                RedoFeedbackRegion(state: redoState, sourceUndoAction: redoSourceUndoAction, onRedo: onRedo)
             }
-            RedoFeedbackRegion(state: redoState, sourceUndoAction: redoSourceUndoAction, onRedo: onRedo)
+            .font(.caption)
         }
-        .font(.caption)
-        .padding(8)
-        .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityIdentifier("undo-toast-undo-action-log-undo-toast")
     }
 

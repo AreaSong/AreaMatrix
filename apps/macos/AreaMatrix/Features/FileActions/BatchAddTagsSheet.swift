@@ -265,22 +265,20 @@ private struct BatchAddTagsSheetContent: View {
     }
 
     private func pendingChip(_ chip: BatchPendingTagChip) -> some View {
-        HStack(spacing: 8) {
-            Text(chip.value)
-            Text(chip.status.rawValue).foregroundStyle(.secondary)
-            Button {
-                draft.pendingTags.removeAll { $0 == chip.value }
-            } label: {
-                Image(systemName: "xmark.circle").imageScale(.small)
+        NeutralCapsuleChip {
+            HStack(spacing: 8) {
+                Text(chip.value)
+                Text(chip.status.rawValue).foregroundStyle(.secondary)
+                Button {
+                    draft.pendingTags.removeAll { $0 == chip.value }
+                } label: {
+                    Image(systemName: "xmark.circle").imageScale(.small)
+                }
+                .buttonStyle(.borderless)
+                .disabled(isApplying)
+                .accessibilityLabel("Remove pending tag \(chip.value)")
             }
-            .buttonStyle(.borderless)
-            .disabled(isApplying)
-            .accessibilityLabel("Remove pending tag \(chip.value)")
         }
-        .font(.caption)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3)
-        .background(Color.secondary.opacity(0.12), in: Capsule())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Pending tag \(chip.value), \(chip.status.rawValue)")
     }
@@ -295,14 +293,14 @@ private struct BatchAddTagsSheetContent: View {
     private var resultSummary: some View {
         if let report {
             let presentation = BatchMutationReportPresentation(report: report)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(presentation.addedSummaryText)
-                Text(presentation.skippedSummaryText)
-                Text(presentation.failedSummaryText)
-                failureDetails(for: report)
+            NeutralSummaryPanel {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(presentation.addedSummaryText)
+                    Text(presentation.skippedSummaryText)
+                    Text(presentation.failedSummaryText)
+                    failureDetails(for: report)
+                }
             }
-            .padding(10)
-            .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
         }
         if let failure {
             Label(failure.userMessage, systemImage: "exclamationmark.triangle")

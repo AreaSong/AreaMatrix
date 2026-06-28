@@ -204,55 +204,20 @@ extension AdvancedSettingsPane {
     }
 
     private var diagnosticsSection: some View {
-        AdvancedSettingsSection(title: "Diagnostics") {
-            AdvancedSettingsKeyValueRow(label: "App version", value: model.versionInfo.appVersion)
-            AdvancedSettingsKeyValueRow(label: "Core version", value: model.versionInfo.coreVersion)
-            AdvancedSettingsKeyValueRow(
-                label: "Repo schema version",
-                value: model.versionInfo.repoSchemaVersionLabel
-            )
-
-            Button {
-                model.requestDiagnosticsExport()
-            } label: {
-                Label(diagnosticsButtonTitle, systemImage: "doc.badge.gearshape")
-            }
-            .disabled(model.diagnosticsState.isCollecting)
-            .accessibilityIdentifier("advanced-settings-export-diagnostics")
-
-            Text(
-                "Diagnostics do not include your original file contents, are not uploaded automatically, " +
-                    "and paths and usernames are redacted before display."
-            )
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
-        }
+        AdvancedSettingsDiagnosticsSection(
+            versionInfo: model.versionInfo,
+            buttonTitle: diagnosticsButtonTitle,
+            isCollecting: model.diagnosticsState.isCollecting,
+            onExportDiagnostics: model.requestDiagnosticsExport
+        )
     }
 
     private var logsSection: some View {
-        AdvancedSettingsSection(title: "Logs") {
-            HStack(spacing: 10) {
-                Button {
-                    model.openLogsFolder()
-                } label: {
-                    Label("Open logs folder", systemImage: "folder")
-                }
-                .disabled(model.diagnosticsState.isCollecting)
-                .accessibilityIdentifier("advanced-settings-open-logs-folder")
-
-                Button {
-                    model.copyDiagnosticSummary()
-                } label: {
-                    Label("Copy diagnostic summary", systemImage: "doc.on.doc")
-                }
-                .accessibilityIdentifier("advanced-settings-copy-diagnostic-summary")
-            }
-
-            Text("Diagnostics do not include your original file contents.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
+        AdvancedSettingsLogsSection(
+            isCollecting: model.diagnosticsState.isCollecting,
+            onOpenLogsFolder: model.openLogsFolder,
+            onCopyDiagnosticSummary: model.copyDiagnosticSummary
+        )
     }
 
     @ViewBuilder
@@ -298,43 +263,17 @@ extension AdvancedSettingsPane {
     }
 
     private var overviewOutputSection: some View {
-        AdvancedSettingsSection(title: "Generated overview output") {
-            Picker("Generated overview output", selection: overviewOutputSelection) {
-                ForEach(AdvancedSettingsOverviewOutput.allCases) { output in
-                    Text(output.label).tag(output)
-                }
-            }
-            .pickerStyle(.segmented)
-            .disabled(model.writesDisabled)
-            .frame(maxWidth: 320)
-            .accessibilityIdentifier(AdvancedSettingsAccessibilityID.overviewOutput)
-
-            Text("Generated only writes under .areamatrix/generated/.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            Text("Root AREAMATRIX.md adds a managed marker block to the repository root file.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            Text("README.md is never managed.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
+        AdvancedSettingsOverviewOutputSection(
+            selection: overviewOutputSelection,
+            writesDisabled: model.writesDisabled
+        )
     }
 
     private var allowReplaceSection: some View {
-        AdvancedSettingsSection(title: "Dangerous import option") {
-            Toggle("Allow replace during import", isOn: allowReplaceSelection)
-                .disabled(model.writesDisabled)
-                .accessibilityIdentifier("advanced-settings-repository-config-allow-replace")
-
-            Text(
-                "When enabled, ImportSheet may show Replace for duplicate or name conflicts. " +
-                    "Replace still requires Trash and a second confirmation."
-            )
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
-        }
+        AdvancedSettingsAllowReplaceSection(
+            isOn: allowReplaceSelection,
+            writesDisabled: model.writesDisabled
+        )
     }
 
     private var overviewOutputSelection: Binding<AdvancedSettingsOverviewOutput> {

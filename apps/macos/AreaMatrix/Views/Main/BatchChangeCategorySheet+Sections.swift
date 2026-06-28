@@ -76,23 +76,23 @@ extension BatchChangeCategorySheet {
 
     func previewSummary(_ preview: BatchCategoryPreviewReportSnapshot) -> some View {
         let presentation = BatchCategoryPreviewReportPresentation(report: preview)
-        return VStack(alignment: .leading, spacing: 6) {
-            Text(presentation.moveSummaryText)
-            Text(presentation.metadataSummaryText)
-            Text(presentation.skippedSummaryText)
-            Text(presentation.blockedSummaryText)
-            if let reason = preview.applyBlockedReason, !reason.isEmpty {
-                Text(reason).foregroundStyle(.secondary)
-            }
-            Button(showsDetails ? "Hide details" : "Show details") {
-                showsDetails.toggle()
-            }
-            if showsDetails {
-                BatchChangeCategoryPreviewTable(items: preview.items)
+        return NeutralSummaryPanel {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(presentation.moveSummaryText)
+                Text(presentation.metadataSummaryText)
+                Text(presentation.skippedSummaryText)
+                Text(presentation.blockedSummaryText)
+                if let reason = preview.applyBlockedReason, !reason.isEmpty {
+                    Text(reason).foregroundStyle(.secondary)
+                }
+                Button(showsDetails ? "Hide details" : "Show details") {
+                    showsDetails.toggle()
+                }
+                if showsDetails {
+                    BatchChangeCategoryPreviewTable(items: preview.items)
+                }
             }
         }
-        .padding(10)
-        .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .contain)
     }
 
@@ -100,16 +100,16 @@ extension BatchChangeCategorySheet {
     var resultSection: some View {
         if let result {
             let presentation = BatchCategoryChangeReportPresentation(report: result)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(presentation.changedSummaryText)
-                Text(presentation.skippedSummaryText)
-                Text(presentation.failedSummaryText)
-                if result.failedCount > 0 {
-                    failureResultDetails(for: result)
+            NeutralSummaryPanel {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(presentation.changedSummaryText)
+                    Text(presentation.skippedSummaryText)
+                    Text(presentation.failedSummaryText)
+                    if result.failedCount > 0 {
+                        failureResultDetails(for: result)
+                    }
                 }
             }
-            .padding(10)
-            .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
         }
         if let failure {
             Label(failure.userMessage, systemImage: "exclamationmark.triangle")

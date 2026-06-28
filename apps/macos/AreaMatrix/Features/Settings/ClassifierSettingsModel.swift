@@ -147,7 +147,10 @@ extension ClassifierSettingsModel {
             hasLastValidBackup = false
             classifierRuleEditor = ClassifierRuleEditorModelState()
             loadedClassifierSlugs = []
-            loadState = await .failed(loadError(for: error))
+            loadState = await .failed(ClassifierSettingsErrorFactory.loadError(
+                for: error,
+                mapper: errorMapper
+            ))
         }
     }
 
@@ -269,7 +272,10 @@ extension ClassifierSettingsModel {
             guard previewGeneration == currentGeneration else {
                 return
             }
-            let mappedError = await previewError(for: error)
+            let mappedError = await ClassifierSettingsErrorFactory.previewError(
+                for: error,
+                mapper: errorMapper
+            )
             guard previewGeneration == currentGeneration else {
                 return
             }
@@ -302,7 +308,10 @@ extension ClassifierSettingsModel {
                 filename: Self.validationProbeFilename
             )
         } catch {
-            validationState = await .failed(validationError(for: error))
+            validationState = await .failed(ClassifierSettingsErrorFactory.validationError(
+                for: error,
+                mapper: errorMapper
+            ))
             accessibilityAnnouncer.announce(validationStateAnnouncement)
             return false
         }
@@ -366,7 +375,10 @@ extension ClassifierSettingsModel {
             if let savedConfig {
                 draft = ClassifierSettingsDraft(config: savedConfig)
             }
-            let mappedError = await saveError(for: error)
+            let mappedError = await ClassifierSettingsErrorFactory.saveError(
+                for: error,
+                mapper: errorMapper
+            )
             saveError = mappedError
             pendingRetry = ClassifierSettingsPendingSave(config: config, error: mappedError)
         }
@@ -399,76 +411,6 @@ extension ClassifierSettingsModel {
             return
         }
         onSavedCategory?(savedCategory)
-    }
-
-    private func loadError(for error: Error) async -> ClassifierSettingsLoadError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
-            return ClassifierSettingsLoadError(
-                message: mapping.userMessage,
-                recovery: "Retry status"
-            )
-        }
-
-        return ClassifierSettingsLoadError(
-            message: error.localizedDescription,
-            recovery: "Retry status after the repository is available."
-        )
-    }
-
-    private func saveError(for error: Error) async -> ClassifierSettingsSaveError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
-            return ClassifierSettingsSaveError(
-                message: mapping.userMessage,
-                recovery: "Retry save"
-            )
-        }
-
-        return ClassifierSettingsSaveError(
-            message: error.localizedDescription,
-            recovery: "Retry save after the repository is available."
-        )
-    }
-
-    private func previewError(for error: Error) async -> ClassifierSettingsPreviewError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
-            return ClassifierSettingsPreviewError(
-                message: mapping.userMessage,
-                recovery: "Retry preview"
-            )
-        }
-
-        return ClassifierSettingsPreviewError(
-            message: error.localizedDescription,
-            recovery: "Retry preview after the repository is available."
-        )
-    }
-
-    private func validationError(for error: Error) async -> ClassifierSettingsValidationError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
-            if case let .Config(reason) = coreError {
-                return ClassifierSettingsValidationError(
-                    message: ClassifierValidationErrorFormatter.message(
-                        coreReason: reason,
-                        mappedMessage: mapping.userMessage
-                    ),
-                    recovery: "Open classifier.yaml and fix the reported line and field."
-                )
-            }
-
-            return ClassifierSettingsValidationError(
-                message: mapping.userMessage,
-                recovery: "Open classifier.yaml and fix the reported line."
-            )
-        }
-
-        return ClassifierSettingsValidationError(
-            message: error.localizedDescription,
-            recovery: "Open classifier.yaml and try again."
-        )
     }
 
     private var validationStateAnnouncement: String {

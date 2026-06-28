@@ -7,22 +7,22 @@ struct BatchDeletePreviewSummary: View {
 
     var body: some View {
         let presentation = BatchDeletePreviewReportPresentation(report: preview)
-        VStack(alignment: .leading, spacing: 6) {
-            Text(presentation.trashSummaryText)
-            Text(presentation.indexOnlySummaryText)
-            Text("\(preview.missingCount) missing items can be removed from the index")
-            Text(presentation.blockedSummaryText)
-            Text(presentation.undoSummaryText)
-            Text(presentation.safetySummaryText)
-            availabilityWarnings
-            if let reason = preview.applyBlockedReason, !reason.isEmpty {
-                Text(reason).foregroundStyle(.secondary)
+        NeutralSummaryPanel {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(presentation.trashSummaryText)
+                Text(presentation.indexOnlySummaryText)
+                Text("\(preview.missingCount) missing items can be removed from the index")
+                Text(presentation.blockedSummaryText)
+                Text(presentation.undoSummaryText)
+                Text(presentation.safetySummaryText)
+                availabilityWarnings
+                if let reason = preview.applyBlockedReason, !reason.isEmpty {
+                    Text(reason).foregroundStyle(.secondary)
+                }
+                Button(showsDetails ? "Hide details" : "View details", action: onToggleDetails)
+                previewRows
             }
-            Button(showsDetails ? "Hide details" : "View details", action: onToggleDetails)
-            previewRows
         }
-        .padding(10)
-        .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .contain)
     }
 
@@ -64,15 +64,15 @@ struct BatchDeleteResultSummary: View {
 
     var body: some View {
         let presentation = BatchDeleteReportPresentation(report: result)
-        VStack(alignment: .leading, spacing: 6) {
-            Text(presentation.successSummaryText)
-            Text(presentation.skippedSummaryText)
-            Text(presentation.failedSummaryText)
-            Text(presentation.undoSummaryText)
-            failedDetails
+        NeutralSummaryPanel {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(presentation.successSummaryText)
+                Text(presentation.skippedSummaryText)
+                Text(presentation.failedSummaryText)
+                Text(presentation.undoSummaryText)
+                failedDetails
+            }
         }
-        .padding(10)
-        .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
     }
 
     @ViewBuilder
@@ -140,21 +140,23 @@ extension BatchAITagSuggestionSheet {
     }
 
     func impactSummary(_ review: AITagBatchSuggestionReview) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("\(review.selectedFileCount) files will receive \(review.selectedTagCount) tags.")
-            Text("Low confidence tags are excluded.")
-            Text("Existing tags will not be duplicated.")
-            Text("Excluded: \(review.lowConfidenceExcludedCount) low confidence, \(review.duplicateCount) duplicate.")
+        NeutralSummaryPanel {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(review.selectedFileCount) files will receive \(review.selectedTagCount) tags.")
+                Text("Low confidence tags are excluded.")
+                Text("Existing tags will not be duplicated.")
+                Text(
+                    "Excluded: \(review.lowConfidenceExcludedCount) low confidence, \(review.duplicateCount) duplicate."
+                )
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            if review.invalidCount > 0 {
-                Text("\(review.invalidCount) invalid or blocked suggestions must be rejected before applying.")
-                    .font(.caption)
-                    .foregroundStyle(.red)
+                if review.invalidCount > 0 {
+                    Text("\(review.invalidCount) invalid or blocked suggestions must be rejected before applying.")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
             }
         }
-        .padding(10)
-        .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
     }
 
     func rejectedFeedbackSummary(_ review: AITagBatchSuggestionReview) -> some View {
@@ -281,22 +283,22 @@ extension BatchAITagSuggestionSheet {
     }
 
     func aiOffNotice(_ reason: AiTagSuggestionSkipReason) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(skipReasonText(reason))
-                .font(.subheadline.weight(.semibold))
-            Text("AI tag suggestions are not generated while this setting is off.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            HStack {
-                Button("Open AI settings", action: onOpenAISettings)
-                Button("Close") {
-                    actions.cancel()
-                    onClose()
+        NeutralSummaryPanel {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(skipReasonText(reason))
+                    .font(.subheadline.weight(.semibold))
+                Text("AI tag suggestions are not generated while this setting is off.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack {
+                    Button("Open AI settings", action: onOpenAISettings)
+                    Button("Close") {
+                        actions.cancel()
+                        onClose()
+                    }
                 }
             }
         }
-        .padding(10)
-        .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
     }
 
     func reportTraceLinks(_ report: AiTagSuggestionReport) -> some View {

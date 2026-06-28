@@ -296,9 +296,3 @@ private func waitForDetailIntegrationNoteSave(_ model: DetailNoteModel) async {
 private func makeDetailIntegrationTemporaryRepositoryURL() throws -> URL {
     try makeTestTemporaryDirectory(named: "AreaMatrixDetailIntegration")
 }
-
-private extension [DetailMetaMetadataRow] {
-    func value(for label: String) -> String? {
-        first { $0.label == label }?.value
-    }
-}
