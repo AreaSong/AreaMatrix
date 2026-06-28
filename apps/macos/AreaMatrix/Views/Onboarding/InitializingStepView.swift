@@ -330,18 +330,16 @@ struct InitDoneStepView: View {
     @ViewBuilder
     private var openErrorSection: some View {
         if let errorMapping {
-            VStack(alignment: .leading, spacing: 8) {
-                Label("无法打开资料库", systemImage: "exclamationmark.triangle")
-                    .font(.headline)
-                Text(errorMapping.userMessage)
-                Text(errorMapping.suggestedAction)
-                    .foregroundStyle(.secondary)
+            TintedOutlinedStatusBanner(tint: .red) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("无法打开资料库", systemImage: "exclamationmark.triangle")
+                        .font(.headline)
+                    Text(errorMapping.userMessage)
+                    Text(errorMapping.suggestedAction)
+                        .foregroundStyle(.secondary)
+                }
+                .font(.callout)
             }
-            .font(.callout)
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.red.opacity(0.15), lineWidth: 1))
         }
     }
 

@@ -107,7 +107,13 @@ struct AISummaryEditor: View {
         case .allowed:
             EmptyView()
         case let .blocked(notice):
-            noticeView(notice, accessibilityID: gateAccessibilityID(for: notice))
+            AISummaryGateNoticeView(
+                notice: notice,
+                repoPath: repoPath,
+                accessibilityID: gateAccessibilityID(for: notice),
+                onOpenAISettings: onOpenAISettings,
+                onOpenPrivacyRule: { privacyRuleRoute = $0 }
+            )
         case let .failed(error):
             VStack(alignment: .leading, spacing: 4) {
                 Label(error.message, systemImage: "exclamationmark.triangle")
@@ -116,35 +122,6 @@ struct AISummaryEditor: View {
             }
             .foregroundStyle(.orange)
             .accessibilityIdentifier("ai-summary-ai-summary-core-generate-gate-error")
-        }
-    }
-
-    private func noticeView(_ notice: AISummaryEditorNotice, accessibilityID: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(notice.title, systemImage: "exclamationmark.triangle")
-            Text(notice.detail).font(.caption).foregroundStyle(.secondary)
-            HStack(spacing: 10) {
-                Text(notice.recovery).font(.caption).foregroundStyle(.secondary)
-                Spacer()
-                noticeAction(notice)
-            }
-        }
-        .padding(8)
-        .background(Color.yellow.opacity(0.12))
-        .accessibilityIdentifier(accessibilityID)
-    }
-
-    @ViewBuilder
-    private func noticeAction(_ notice: AISummaryEditorNotice) -> some View {
-        if notice.opensAISettings {
-            Button("Open AI settings", action: onOpenAISettings)
-                .accessibilityIdentifier("ai-summary-\(notice.capability)-open-ai-settings")
-        } else if let route = notice.aiPrivacyRulesPrivacyRulesRoute(repoPath: repoPath),
-                  let suffix = notice.aiPrivacyRulesRouteAccessibilitySuffix {
-            Button("View privacy rule") {
-                privacyRuleRoute = route
-            }
-            .accessibilityIdentifier("ai-summary-\(notice.capability)-view-\(suffix)")
         }
     }
 
@@ -313,6 +290,49 @@ struct AISummaryEditor: View {
             await model.save()
         } discardHandler: {
             model.discardChanges()
+        }
+    }
+}
+
+private struct AISummaryGateNoticeView: View {
+    let notice: AISummaryEditorNotice
+    let repoPath: String
+    let accessibilityID: String
+    let onOpenAISettings: () -> Void
+    let onOpenPrivacyRule: (AIPrivacyRulesRoute) -> Void
+
+    var body: some View {
+        TintedStatusBanner(
+            tint: .yellow,
+            cornerRadius: 0,
+            fillsWidth: false,
+            contentPadding: 8,
+            backgroundOpacity: 0.12
+        ) {
+            VStack(alignment: .leading, spacing: 6) {
+                Label(notice.title, systemImage: "exclamationmark.triangle")
+                Text(notice.detail).font(.caption).foregroundStyle(.secondary)
+                HStack(spacing: 10) {
+                    Text(notice.recovery).font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    action
+                }
+            }
+        }
+        .accessibilityIdentifier(accessibilityID)
+    }
+
+    @ViewBuilder
+    private var action: some View {
+        if notice.opensAISettings {
+            Button("Open AI settings", action: onOpenAISettings)
+                .accessibilityIdentifier("ai-summary-\(notice.capability)-open-ai-settings")
+        } else if let route = notice.aiPrivacyRulesPrivacyRulesRoute(repoPath: repoPath),
+                  let suffix = notice.aiPrivacyRulesRouteAccessibilitySuffix {
+            Button("View privacy rule") {
+                onOpenPrivacyRule(route)
+            }
+            .accessibilityIdentifier("ai-summary-\(notice.capability)-view-\(suffix)")
         }
     }
 }

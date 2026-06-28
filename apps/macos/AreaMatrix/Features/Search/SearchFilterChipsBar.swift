@@ -33,41 +33,41 @@ struct LocalModelStatusBanner: View {
     var body: some View {
         switch (feedback, phase) {
         case let (.success(message), _):
-            Label(message, systemImage: "checkmark.circle")
-                .foregroundStyle(.green)
-                .padding(12)
-                .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-                .accessibilityElement(children: .combine)
+            TintedStatusBanner(tint: .green, fillsWidth: false) {
+                Label(message, systemImage: "checkmark.circle")
+                    .foregroundStyle(.green)
+            }
+            .accessibilityElement(children: .combine)
         case let (.failed(error), _):
             failureBanner(error)
         case let (nil, .failed(error)):
             failureBanner(error)
         case let (_, .checking(message)):
-            HStack(spacing: 10) {
-                ProgressView()
-                    .controlSize(.small)
-                Text(message)
+            TintedStatusBanner(tint: .blue, fillsWidth: false) {
+                HStack(spacing: 10) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text(message)
+                }
             }
-            .padding(12)
-            .background(Color.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
         default:
             EmptyView()
         }
     }
 
     private func failureBanner(_ error: LocalModelStatusError) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(error.message, systemImage: "exclamationmark.triangle")
-                .foregroundStyle(.red)
-            Text(error.detail)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            Text(error.recovery)
-                .font(.callout)
-                .foregroundStyle(.secondary)
+        TintedStatusBanner(tint: .red, fillsWidth: false) {
+            VStack(alignment: .leading, spacing: 6) {
+                Label(error.message, systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.red)
+                Text(error.detail)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Text(error.recovery)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
         }
-        .padding(12)
-        .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
     }
 }
 

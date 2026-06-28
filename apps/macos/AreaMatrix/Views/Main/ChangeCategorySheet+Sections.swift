@@ -111,19 +111,25 @@ extension ChangeCategorySheet {
     }
 
     func failureView(_ failure: CoreErrorMappingSnapshot, file: FileEntrySnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(failureMessage(failure, file: file), systemImage: "exclamationmark.triangle")
-                .font(.caption.weight(.semibold))
-            Text(failure.suggestedAction)
-                .font(.caption)
-            Text(failure.rawContext)
-                .font(.system(.caption, design: .monospaced))
-                .textSelection(.enabled)
-            failureActions(failure, file: file)
+        TintedStatusBanner(
+            tint: .yellow,
+            cornerRadius: 0,
+            fillsWidth: false,
+            contentPadding: 10,
+            backgroundOpacity: 0.12
+        ) {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(failureMessage(failure, file: file), systemImage: "exclamationmark.triangle")
+                    .font(.caption.weight(.semibold))
+                Text(failure.suggestedAction)
+                    .font(.caption)
+                Text(failure.rawContext)
+                    .font(.system(.caption, design: .monospaced))
+                    .textSelection(.enabled)
+                failureActions(failure, file: file)
+            }
+            .foregroundStyle(.secondary)
         }
-        .foregroundStyle(.secondary)
-        .padding(10)
-        .background(Color.yellow.opacity(0.12))
     }
 
     func failureActions(_ failure: CoreErrorMappingSnapshot, file: FileEntrySnapshot) -> some View {

@@ -91,14 +91,7 @@ struct PlatformDifferencesView: View {
     private var capabilityContent: some View {
         switch model.capabilityState {
         case .loading:
-            HStack(spacing: 10) {
-                ProgressView()
-                    .controlSize(.small)
-                Text("Checking platform capabilities...")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-            .accessibilityElement(children: .combine)
+            SettingsInlineProgressStatus(title: "Checking platform capabilities...")
         case let .loaded(capabilities):
             capabilityMatrix(capabilities)
         case let .failed(capabilities, error):
@@ -111,14 +104,7 @@ struct PlatformDifferencesView: View {
     private var contractContent: some View {
         switch model.contractState {
         case .loading:
-            HStack(spacing: 10) {
-                ProgressView()
-                    .controlSize(.small)
-                Text("Checking binding contract...")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-            .accessibilityElement(children: .combine)
+            SettingsInlineProgressStatus(title: "Checking binding contract...")
         case let .loaded(report):
             contractReport(report)
         case let .failed(error):
@@ -358,9 +344,7 @@ private struct PlatformDifferencesCapabilityErrorBanner: View {
     let error: PlatformDifferencesCapabilityError
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(error.message, systemImage: "exclamationmark.triangle")
-                .foregroundStyle(.orange)
+        SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .orange) {
             Text(error.recovery)
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -371,10 +355,6 @@ private struct PlatformDifferencesCapabilityErrorBanner: View {
                 .lineLimit(3)
                 .truncationMode(.middle)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityElement(children: .combine)
     }
 }
 
@@ -382,9 +362,7 @@ private struct PlatformDifferencesErrorBanner: View {
     let error: PlatformDifferencesContractError
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(error.message, systemImage: "exclamationmark.triangle")
-                .foregroundStyle(.red)
+        SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
             Text(error.recovery)
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -395,9 +373,5 @@ private struct PlatformDifferencesErrorBanner: View {
                 .lineLimit(3)
                 .truncationMode(.middle)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityElement(children: .combine)
     }
 }

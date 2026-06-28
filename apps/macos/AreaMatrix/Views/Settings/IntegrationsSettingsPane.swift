@@ -45,23 +45,11 @@ struct IntegrationsSettingsPane: View {
     }
 
     private var header: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("集成")
-                    .font(.title2.weight(.semibold))
-                    .accessibilityAddTraits(.isHeader)
-                Text(model.repoPath)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .textSelection(.enabled)
-            }
-            Spacer()
+        SettingsPageHeader(title: "集成", subtitle: model.repoPath) {
             if model.loadState == .loading || model.isSaving {
-                ProgressView()
-                    .controlSize(.small)
-                    .accessibilityLabel(model.isSaving ? "Saving integration settings" : "Checking iCloud status")
+                SettingsHeaderProgressIndicator(
+                    label: model.isSaving ? "Saving integration settings" : "Checking iCloud status"
+                )
             } else if model.canRetryStatus {
                 Button {
                     Task {
@@ -72,11 +60,6 @@ struct IntegrationsSettingsPane: View {
                 }
                 .accessibilityIdentifier("integrations-settings-retry-status")
             }
-        }
-        .padding(.horizontal, 34)
-        .padding(.vertical, 18)
-        .overlay(alignment: .bottom) {
-            Divider()
         }
     }
 
@@ -93,21 +76,15 @@ struct IntegrationsSettingsPane: View {
     }
 
     private var loadingContent: some View {
-        VStack(spacing: 12) {
-            ProgressView()
-            Text("Checking integrations...")
-                .font(.headline)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        SettingsPageLoadingContent(title: "Checking integrations...")
     }
 
     private func loadErrorContent(_ error: IntegrationsSettingsError) -> some View {
-        ContentUnavailableView {
-            Label("Unable to load integrations", systemImage: "exclamationmark.triangle")
-        } description: {
-            Text(error.message)
-            Text(error.recovery)
-        } actions: {
+        SettingsPageErrorContent(
+            title: "Unable to load integrations",
+            message: error.message,
+            recovery: error.recovery
+        ) {
             Button("Retry status") {
                 Task {
                     await model.load()
@@ -118,18 +95,13 @@ struct IntegrationsSettingsPane: View {
     }
 
     private var loadedContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                feedbackBanner
-                saveErrorBanner
-                if let summary = model.summary {
-                    iCloudDriveSection(summary)
-                    externalToolsSection
-                }
+        SettingsPageScrollContent {
+            feedbackBanner
+            saveErrorBanner
+            if let summary = model.summary {
+                iCloudDriveSection(summary)
+                externalToolsSection
             }
-            .frame(maxWidth: 700, alignment: .leading)
-            .padding(.horizontal, 34)
-            .padding(.vertical, 28)
         }
     }
 
@@ -224,16 +196,11 @@ struct IntegrationsSettingsPane: View {
     }
 
     private var iCloudRiskWarning: some View {
-        Label {
-            Text("iCloud may delay sync, keep placeholder files offline, or create conflicted copies.")
-                .fixedSize(horizontal: false, vertical: true)
-        } icon: {
-            Image(systemName: "exclamationmark.triangle")
-        }
-        .foregroundStyle(.orange)
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        SettingsStatusBanner(
+            title: "iCloud may delay sync, keep placeholder files offline, or create conflicted copies.",
+            systemImage: "exclamationmark.triangle",
+            tint: .orange
+        )
         .accessibilityIdentifier("integrations-settings-icloud-risk-warning")
     }
 
@@ -253,12 +220,7 @@ struct IntegrationsSettingsPane: View {
         if let feedback = model.actionFeedback {
             switch feedback {
             case let .success(message):
-                Label(message, systemImage: "checkmark.circle")
-                    .foregroundStyle(.green)
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-                    .accessibilityElement(children: .combine)
+                SettingsStatusBanner(title: message, systemImage: "checkmark.circle", tint: .green)
             case let .failed(error):
                 IntegrationsSettingsErrorBanner(error: error, tint: .red)
             }
@@ -315,16 +277,10 @@ private struct IntegrationsSettingsErrorBanner: View {
     let tint: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(error.message, systemImage: "exclamationmark.triangle")
-                .foregroundStyle(tint)
+        SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: tint) {
             Text(error.recovery)
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityElement(children: .combine)
     }
 }

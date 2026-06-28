@@ -134,19 +134,19 @@ struct BatchDeleteConfirmSheet: View {
     @ViewBuilder
     private var undoConfirmationSection: some View {
         if previewState.report?.undoAvailable == false {
-            VStack(alignment: .leading, spacing: 8) {
-                Label(
-                    "Undo will not be available for these items. Review the list before continuing.",
-                    systemImage: "exclamationmark.triangle"
-                )
-                Toggle("I understand undo will not be available for these items.", isOn: $undoConfirmationAccepted)
-                    .accessibilityLabel(
-                        "Required confirmation. Undo will not be available for this deletion or index removal."
+            TintedStatusBanner(tint: .yellow, fillsWidth: false, contentPadding: 10, backgroundOpacity: 0.12) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label(
+                        "Undo will not be available for these items. Review the list before continuing.",
+                        systemImage: "exclamationmark.triangle"
                     )
+                    Toggle("I understand undo will not be available for these items.", isOn: $undoConfirmationAccepted)
+                        .accessibilityLabel(
+                            "Required confirmation. Undo will not be available for this deletion or index removal."
+                        )
+                }
             }
             .font(.callout)
-            .padding(10)
-            .background(Color.yellow.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
         }
     }
 

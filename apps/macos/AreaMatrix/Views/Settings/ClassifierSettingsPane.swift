@@ -47,27 +47,11 @@ extension ClassifierSettingsPane {
     }
 
     private var header: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("分类规则")
-                    .font(.title2.weight(.semibold))
-                    .accessibilityAddTraits(.isHeader)
-                Text(model.repoPath)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .textSelection(.enabled)
-            }
-            Spacer()
+        SettingsPageHeader(title: "分类规则", subtitle: model.repoPath) {
             if model.isLoading {
-                ProgressView()
-                    .controlSize(.small)
-                    .accessibilityLabel("Checking classifier settings")
+                SettingsHeaderProgressIndicator(label: "Checking classifier settings")
             } else if model.isSaving {
-                ProgressView()
-                    .controlSize(.small)
-                    .accessibilityLabel("Saving classifier settings")
+                SettingsHeaderProgressIndicator(label: "Saving classifier settings")
             } else {
                 Button("Retry status") {
                     Task {
@@ -76,11 +60,6 @@ extension ClassifierSettingsPane {
                 }
                 .accessibilityIdentifier("classifier-settings-classifier-retry-status")
             }
-        }
-        .padding(.horizontal, 34)
-        .padding(.vertical, 18)
-        .overlay(alignment: .bottom) {
-            Divider()
         }
     }
 
@@ -97,21 +76,15 @@ extension ClassifierSettingsPane {
     }
 
     private var loadingContent: some View {
-        VStack(spacing: 12) {
-            ProgressView()
-            Text("Checking classifier settings...")
-                .font(.headline)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        SettingsPageLoadingContent(title: "Checking classifier settings...")
     }
 
     private func loadErrorContent(_ error: ClassifierSettingsLoadError) -> some View {
-        ContentUnavailableView {
-            Label("Unable to load classifier settings", systemImage: "exclamationmark.triangle")
-        } description: {
-            Text(error.message)
-            Text(error.recovery)
-        } actions: {
+        SettingsPageErrorContent(
+            title: "Unable to load classifier settings",
+            message: error.message,
+            recovery: error.recovery
+        ) {
             Button("Retry status") {
                 Task {
                     await model.load()
@@ -121,334 +94,9 @@ extension ClassifierSettingsPane {
     }
 
     private var loadedContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                saveErrorBanner
-                configPathSection
-                ClassifierRuleEditorSection(model: model)
-                rulesSection
-                yamlActionsSection
-                previewSection
-            }
-            .frame(maxWidth: 700, alignment: .leading)
-            .padding(.horizontal, 34)
-            .padding(.vertical, 28)
-        }
-    }
-
-    private var configPathSection: some View {
-        ClassifierSettingsSection(title: "配置路径") {
-            ClassifierSettingsKeyValueRow(
-                label: "classifier.yaml",
-                value: model.classifierConfigPath
-            )
-            ClassifierSettingsKeyValueRow(
-                label: "Validation",
-                value: model.validationStatusLabel
-            )
-        }
-    }
-
-    private var rulesSection: some View {
-        ClassifierSettingsSection(title: "规则引擎") {
-            VStack(alignment: .leading, spacing: 12) {
-                Toggle("Enable extension rules", isOn: extensionRulesSelection)
-                    .accessibilityIdentifier("classifier-settings-enable-extension-rules")
-                Text("Match file extensions before falling back to inbox.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-
-                Toggle("Enable keyword rules", isOn: keywordRulesSelection)
-                    .accessibilityIdentifier("classifier-settings-enable-keyword-rules")
-                Text("Use keyword matching for the current repository configuration.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-
-                Toggle("Fallback to inbox", isOn: fallbackToInboxSelection)
-                    .accessibilityIdentifier("classifier-settings-fallback-to-inbox")
-                Text("Keep unmatched files in inbox.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-            .disabled(writesDisabled)
-
-            Text("这些开关写入当前资料库配置。")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var yamlActionsSection: some View {
-        ClassifierSettingsSection(title: "YAML 操作") {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 10) {
-                    Button {
-                        model.openClassifierYaml()
-                    } label: {
-                        Label("Open classifier.yaml", systemImage: "doc.text")
-                    }
-                    .disabled(model.isSaving)
-                    .accessibilityIdentifier("classifier-settings-open-classifier-yaml")
-
-                    Button {
-                        model.revealClassifierYamlInFinder()
-                    } label: {
-                        Label("Reveal in Finder", systemImage: "folder")
-                    }
-                    .disabled(model.isSaving)
-                    .accessibilityIdentifier("classifier-settings-reveal-classifier-yaml")
-
-                    Button {
-                        Task {
-                            _ = await model.validateClassifierRules()
-                        }
-                    } label: {
-                        if model.isValidating {
-                            HStack(spacing: 6) {
-                                ProgressView()
-                                    .controlSize(.small)
-                                Text("Validate")
-                            }
-                        } else {
-                            Label("Validate", systemImage: "checkmark.circle")
-                        }
-                    }
-                    .disabled(model.isSaving || model.isValidating)
-                    .accessibilityLabel("Validate classifier rules")
-                    .accessibilityIdentifier("classifier-settings-validate-classifier-rules")
-
-                    Button {
-                        showingRevertConfirmation = true
-                    } label: {
-                        Label("Revert to last valid", systemImage: "arrow.counterclockwise")
-                    }
-                    .disabled(!model.canRevertToLastValid || model.isSaving || model.isValidating)
-                    .accessibilityIdentifier("classifier-settings-revert-classifier-rules")
-                }
-
-                if model.isValidating {
-                    ProgressView("Validating...")
-                        .controlSize(.small)
-                        .accessibilityIdentifier("classifier-settings-classifier-validating")
-                }
-
-                if let error = model.fileActionError {
-                    fileActionErrorView(error)
-                }
-
-                if let error = model.validationError {
-                    validationErrorView(error)
-                }
-            }
-        }
-    }
-
-    private func fileActionErrorView(_ error: ClassifierSettingsFileActionError) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(error.message, systemImage: "exclamationmark.triangle")
-                .foregroundStyle(.red)
-            Text(error.recovery)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            HStack(spacing: 10) {
-                Button("Reveal in Finder") {
-                    model.revealClassifierYamlInFinder()
-                }
-                .accessibilityIdentifier("classifier-settings-file-error-reveal-classifier-yaml")
-                Button("Create default") {
-                    Task {
-                        await model.createDefaultClassifierYaml()
-                    }
-                }
-                .accessibilityIdentifier("classifier-settings-file-error-create-default-classifier-yaml")
-            }
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("classifier-settings-classifier-file-action-error")
-    }
-
-    private func validationErrorView(_ error: ClassifierSettingsValidationError) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(error.message, systemImage: "exclamationmark.triangle")
-                .foregroundStyle(.red)
-            Text(error.recovery)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            HStack(spacing: 10) {
-                Button("Open classifier.yaml") {
-                    model.openClassifierYaml()
-                }
-                Button("Reveal in Finder") {
-                    model.revealClassifierYamlInFinder()
-                }
-                .accessibilityIdentifier("classifier-settings-validation-reveal-classifier-yaml")
-                Button("Create default") {
-                    Task {
-                        await model.createDefaultClassifierYaml()
-                    }
-                }
-                .accessibilityIdentifier("classifier-settings-validation-create-default-classifier-yaml")
-            }
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("classifier-settings-classifier-validation-error")
-    }
-
-    private var previewSection: some View {
-        ClassifierSettingsSection(title: "分类预览") {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    TextField("Invoice_2026Q1.pdf", text: previewFilenameBinding)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(maxWidth: .infinity)
-                        .accessibilityLabel("Preview filename")
-                        .accessibilityIdentifier("classifier-settings-preview-filename")
-                    Button {
-                        Task {
-                            await model.previewClassification()
-                        }
-                    } label: {
-                        if model.isPreviewing {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Label("Preview", systemImage: "play.circle")
-                        }
-                    }
-                    .disabled(previewButtonDisabled)
-                    .accessibilityLabel("Preview classification")
-                    .accessibilityIdentifier("classifier-settings-preview-classify")
-                }
-
-                if let error = model.previewError {
-                    previewErrorView(error)
-                } else if let result = model.previewResult {
-                    previewResultView(result)
-                } else if model.isPreviewing {
-                    ProgressView("Previewing...")
-                        .controlSize(.small)
-                }
-            }
-            .accessibilityIdentifier("classifier-settings-classify-preview")
-        }
-    }
-
-    @ViewBuilder
-    private var saveErrorBanner: some View {
-        if let error = model.saveError {
-            VStack(alignment: .leading, spacing: 8) {
-                Label(error.message, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.red)
-                Text(error.recovery)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                Text("The UI has been restored to the last saved values.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                if model.hasRetryableSave {
-                    Button("Retry save") {
-                        Task {
-                            await model.retrySave()
-                        }
-                    }
-                }
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-            .accessibilityElement(children: .combine)
-        }
-    }
-
-    private func previewErrorView(_ error: ClassifierSettingsPreviewError) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(error.message, systemImage: "exclamationmark.triangle")
-                .foregroundStyle(.red)
-            Text(error.recovery)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            Button {
-                Task {
-                    await model.previewClassification()
-                }
-            } label: {
-                Label("Retry preview", systemImage: "arrow.clockwise")
-            }
-            .disabled(previewButtonDisabled)
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("classifier-settings-preview-error")
-    }
-
-    private func previewResultView(_ result: ClassifyResultSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("预览结果")
-                .font(.subheadline.weight(.semibold))
-            ClassifierSettingsKeyValueRow(label: "分类", value: result.category)
-            ClassifierSettingsKeyValueRow(label: "建议名称", value: result.suggestedName)
-            ClassifierSettingsKeyValueRow(label: "原因", value: result.reason.displayLabel)
-            ClassifierSettingsKeyValueRow(label: "置信度", value: "\(result.confidencePercent)%")
-        }
-        .accessibilityIdentifier("classifier-settings-preview-result")
-    }
-
-    private var writesDisabled: Bool {
-        model.isSaving || !model.isLoaded
-    }
-
-    private var previewButtonDisabled: Bool {
-        model.isSaving || model.isPreviewing ||
-            model.previewFilename.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    private var extensionRulesSelection: Binding<Bool> {
-        Binding(
-            get: { model.draft?.enableExtensionRules ?? true },
-            set: { isEnabled in
-                Task {
-                    await model.requestEnableExtensionRules(isEnabled)
-                }
-            }
-        )
-    }
-
-    private var keywordRulesSelection: Binding<Bool> {
-        Binding(
-            get: { model.draft?.enableKeywordRules ?? true },
-            set: { isEnabled in
-                Task {
-                    await model.requestEnableKeywordRules(isEnabled)
-                }
-            }
-        )
-    }
-
-    private var previewFilenameBinding: Binding<String> {
-        Binding(
-            get: { model.previewFilename },
-            set: { newValue in
-                model.updatePreviewFilename(newValue)
-            }
-        )
-    }
-
-    private var fallbackToInboxSelection: Binding<Bool> {
-        Binding(
-            get: { model.draft?.fallbackToInbox ?? true },
-            set: { isEnabled in
-                Task {
-                    await model.requestFallbackToInbox(isEnabled)
-                }
-            }
+        ClassifierSettingsLoadedContent(
+            model: model,
+            showingRevertConfirmation: $showingRevertConfirmation
         )
     }
 }

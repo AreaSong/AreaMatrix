@@ -38,17 +38,23 @@ struct DetailExternalCreateSyncStatusView: View {
         event: MainExternalCreatedFileEvent,
         mapping: CoreErrorMappingSnapshot
     ) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Label("External \(event.kind.displayName) sync failed", systemImage: "exclamationmark.triangle")
-            Text(event.relativePath)
-                .foregroundStyle(.secondary)
-            Text(mapping.userMessage)
-            Text(mapping.suggestedAction)
-                .foregroundStyle(.secondary)
+        TintedStatusBanner(
+            tint: .yellow,
+            cornerRadius: 0,
+            fillsWidth: false,
+            contentPadding: 8,
+            backgroundOpacity: 0.12
+        ) {
+            VStack(alignment: .leading, spacing: 4) {
+                Label("External \(event.kind.displayName) sync failed", systemImage: "exclamationmark.triangle")
+                Text(event.relativePath)
+                    .foregroundStyle(.secondary)
+                Text(mapping.userMessage)
+                Text(mapping.suggestedAction)
+                    .foregroundStyle(.secondary)
+            }
+            .font(.caption)
         }
-        .font(.caption)
-        .padding(8)
-        .background(Color.yellow.opacity(0.12))
     }
 
     private func summary(

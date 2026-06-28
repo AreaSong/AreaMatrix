@@ -114,32 +114,43 @@ struct DetailNoteTabView: View {
     }
 
     private func noteLoadError(_ error: CoreErrorMappingSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("无法加载笔记", systemImage: "exclamationmark.triangle")
-                .font(.callout.weight(.semibold))
-            Text(error.userMessage)
-                .foregroundStyle(.secondary)
-            Button("Retry") {
-                Task { await model.retryLoad() }
+        TintedStatusBanner(
+            tint: .yellow,
+            cornerRadius: 0,
+            fillsWidth: false,
+            contentPadding: 10,
+            backgroundOpacity: 0.12
+        ) {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("无法加载笔记", systemImage: "exclamationmark.triangle")
+                    .font(.callout.weight(.semibold))
+                Text(error.userMessage)
+                    .foregroundStyle(.secondary)
+                Button("Retry") {
+                    Task { await model.retryLoad() }
+                }
             }
         }
-        .padding(10)
-        .background(Color.yellow.opacity(0.12))
         .accessibilityElement(children: .contain)
     }
 
     private func saveErrorView(_ error: CoreErrorMappingSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("无法保存笔记", systemImage: "exclamationmark.triangle")
-                .font(.callout.weight(.semibold))
-            Text(error.userMessage)
-                .foregroundStyle(.secondary)
-            Button("Retry") {
-                Task { await model.retrySave() }
+        TintedStatusBanner(
+            tint: .red,
+            cornerRadius: 0,
+            fillsWidth: false,
+            contentPadding: 10
+        ) {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("无法保存笔记", systemImage: "exclamationmark.triangle")
+                    .font(.callout.weight(.semibold))
+                Text(error.userMessage)
+                    .foregroundStyle(.secondary)
+                Button("Retry") {
+                    Task { await model.retrySave() }
+                }
             }
         }
-        .padding(10)
-        .background(Color.red.opacity(0.08))
         .accessibilityElement(children: .contain)
     }
 }

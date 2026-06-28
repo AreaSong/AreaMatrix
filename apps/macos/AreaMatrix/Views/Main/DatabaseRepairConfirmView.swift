@@ -382,25 +382,25 @@ struct RepairProgressView: View {
     let currentStep: DatabaseRepairProgressStep
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("Repair in progress", systemImage: "arrow.clockwise.circle")
-                .font(.headline)
-            ForEach(DatabaseRepairProgressStep.allCases, id: \.self) { step in
-                HStack(spacing: 8) {
-                    if step == currentStep {
-                        ProgressView()
-                            .controlSize(.small)
-                    } else {
-                        Image(systemName: "circle")
-                            .foregroundStyle(.secondary)
+        TintedStatusBanner(tint: .blue, fillsWidth: false) {
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Repair in progress", systemImage: "arrow.clockwise.circle")
+                    .font(.headline)
+                ForEach(DatabaseRepairProgressStep.allCases, id: \.self) { step in
+                    HStack(spacing: 8) {
+                        if step == currentStep {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Image(systemName: "circle")
+                                .foregroundStyle(.secondary)
+                        }
+                        Text(step.rawValue)
+                            .font(.callout)
+                            .foregroundStyle(step == currentStep ? .primary : .secondary)
                     }
-                    Text(step.rawValue)
-                        .font(.callout)
-                        .foregroundStyle(step == currentStep ? .primary : .secondary)
                 }
             }
         }
-        .padding(12)
-        .background(Color.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
     }
 }

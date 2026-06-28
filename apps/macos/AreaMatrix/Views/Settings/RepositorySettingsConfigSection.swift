@@ -107,17 +107,13 @@ struct RepositorySettingsConfigSection: View {
             Label("Saving repository settings...", systemImage: "arrow.triangle.2.circlepath")
                 .foregroundStyle(.secondary)
         case let .saved(message):
-            Label(message, systemImage: "checkmark.circle")
-                .foregroundStyle(.green)
+            SettingsStatusBanner(title: message, systemImage: "checkmark.circle", tint: .green)
         case let .failed(error):
-            VStack(alignment: .leading, spacing: 6) {
-                Label(error.message, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.red)
+            SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
                 Text(error.recovery)
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
-            .accessibilityElement(children: .combine)
         }
     }
 

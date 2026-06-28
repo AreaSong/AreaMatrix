@@ -109,23 +109,9 @@ extension RepositorySettingsPane {
     }
 
     private var header: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Repository Settings")
-                    .font(.title2.weight(.semibold))
-                    .accessibilityAddTraits(.isHeader)
-                Text(model.repoPath)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .textSelection(.enabled)
-            }
-            Spacer()
+        SettingsPageHeader(title: "Repository Settings", subtitle: model.repoPath) {
             if model.isLoading {
-                ProgressView()
-                    .controlSize(.small)
-                    .accessibilityLabel("Checking repository configuration")
+                SettingsHeaderProgressIndicator(label: "Checking repository configuration")
             } else {
                 Button("Retry status") {
                     Task {
@@ -133,11 +119,6 @@ extension RepositorySettingsPane {
                     }
                 }
             }
-        }
-        .padding(.horizontal, 34)
-        .padding(.vertical, 18)
-        .overlay(alignment: .bottom) {
-            Divider()
         }
     }
 
@@ -154,21 +135,15 @@ extension RepositorySettingsPane {
     }
 
     private var loadingContent: some View {
-        VStack(spacing: 12) {
-            ProgressView()
-            Text("Loading repository settings...")
-                .font(.headline)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        SettingsPageLoadingContent(title: "Loading repository settings...")
     }
 
     private func loadErrorContent(_ error: RepositorySettingsLoadError) -> some View {
-        ContentUnavailableView {
-            Label("Could not load repository status", systemImage: "exclamationmark.triangle")
-        } description: {
-            Text(error.message)
-            Text(error.recovery)
-        } actions: {
+        SettingsPageErrorContent(
+            title: "Could not load repository status",
+            message: error.message,
+            recovery: error.recovery
+        ) {
             Button("Try again") {
                 Task {
                     await model.load()
@@ -179,22 +154,17 @@ extension RepositorySettingsPane {
     }
 
     private func loadedContent(_ summary: RepositorySettingsSummary) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                syncErrorBanner
-                healthErrorBanner
-                repositoryActionBanner
-                diagnosticsStatusBanner
+        SettingsPageScrollContent {
+            syncErrorBanner
+            healthErrorBanner
+            repositoryActionBanner
+            diagnosticsStatusBanner
 
-                repositoryPathSection(summary)
-                repositoryHealthSection
-                platformCapabilitySection
-                repositoryConfigSection
-                repositorySafeActionsSection
-            }
-            .frame(maxWidth: 700, alignment: .leading)
-            .padding(.horizontal, 34)
-            .padding(.vertical, 28)
+            repositoryPathSection(summary)
+            repositoryHealthSection
+            platformCapabilitySection
+            repositoryConfigSection
+            repositorySafeActionsSection
         }
     }
 
@@ -274,24 +244,13 @@ extension RepositorySettingsPane {
     @ViewBuilder
     private var repositoryActionBanner: some View {
         if let error = model.repositoryActionError {
-            VStack(alignment: .leading, spacing: 8) {
-                Label(error.message, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.red)
+            SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
                 Text(error.recovery)
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-            .accessibilityElement(children: .combine)
         } else if let message = model.repositoryActionMessage {
-            Label(message, systemImage: "checkmark.circle")
-                .foregroundStyle(.green)
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-                .accessibilityElement(children: .combine)
+            SettingsStatusBanner(title: message, systemImage: "checkmark.circle", tint: .green)
         }
     }
 
@@ -301,39 +260,20 @@ extension RepositorySettingsPane {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case .collecting:
-            HStack(spacing: 10) {
-                ProgressView()
-                    .controlSize(.small)
-                Text("Preparing diagnostics...")
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            SettingsProgressBanner(title: "Preparing diagnostics...")
         case let .collected(snapshot):
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Diagnostics exported", systemImage: "checkmark.circle")
-                    .foregroundStyle(.green)
+            SettingsStatusBanner(title: "Diagnostics exported", systemImage: "checkmark.circle", tint: .green) {
                 Text(snapshot.snapshotPath)
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-            .accessibilityElement(children: .combine)
         case let .failed(error):
-            VStack(alignment: .leading, spacing: 8) {
-                Label(error.message, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.red)
+            SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
                 Text(error.recovery)
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-            .accessibilityElement(children: .combine)
         }
     }
 
@@ -360,17 +300,11 @@ extension RepositorySettingsPane {
     @ViewBuilder
     private var syncErrorBanner: some View {
         if let error = model.syncError {
-            VStack(alignment: .leading, spacing: 8) {
-                Label(error.message, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.red)
+            SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
                 Text(error.recovery)
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-            .accessibilityElement(children: .combine)
         }
     }
 
@@ -378,17 +312,11 @@ extension RepositorySettingsPane {
     private var healthErrorBanner: some View {
         if let error = model.healthError {
             let tint: Color = error.databaseStatus == .locked ? .orange : .red
-            VStack(alignment: .leading, spacing: 8) {
-                Label(error.message, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(tint)
+            SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: tint) {
                 Text(error.recovery)
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-            .accessibilityElement(children: .combine)
         }
     }
 }

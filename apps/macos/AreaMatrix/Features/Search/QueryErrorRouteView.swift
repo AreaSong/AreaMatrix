@@ -52,21 +52,20 @@ struct QueryErrorRouteView: View {
     }
 
     private var diagnosticDetails: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            metadataRow("Query", highlightedQuery)
-            metadataRow("Problem", diagnostic.problemText)
-            if let suggestion = diagnostic.safeSuggestion {
-                metadataRow("Suggestion", suggestion)
-            }
-            if let applyFailure {
-                Label(applyFailure, systemImage: "exclamationmark.circle")
-                    .font(.caption)
-                    .foregroundStyle(.red)
+        TintedStatusBanner(tint: .red, fillsWidth: false) {
+            VStack(alignment: .leading, spacing: 8) {
+                metadataRow("Query", highlightedQuery)
+                metadataRow("Problem", diagnostic.problemText)
+                if let suggestion = diagnostic.safeSuggestion {
+                    metadataRow("Suggestion", suggestion)
+                }
+                if let applyFailure {
+                    Label(applyFailure, systemImage: "exclamationmark.circle")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
             }
         }
-        .padding(12)
-        .background(Color.red.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     private var actions: some View {
@@ -135,18 +134,17 @@ struct QueryDiagnosticSummary: View {
     let query: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Query could not be parsed", systemImage: "exclamationmark.triangle")
-                .font(.callout.weight(.semibold))
-            metadataRow("Query", QueryTokenHighlighter.highlighted(query: query, diagnostic: diagnostic))
-            metadataRow("Problem", diagnostic.problemText)
-            if let suggestion = diagnostic.safeSuggestion {
-                metadataRow("Suggestion", suggestion)
+        TintedStatusBanner(tint: .red, fillsWidth: false) {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Query could not be parsed", systemImage: "exclamationmark.triangle")
+                    .font(.callout.weight(.semibold))
+                metadataRow("Query", QueryTokenHighlighter.highlighted(query: query, diagnostic: diagnostic))
+                metadataRow("Problem", diagnostic.problemText)
+                if let suggestion = diagnostic.safeSuggestion {
+                    metadataRow("Suggestion", suggestion)
+                }
             }
         }
-        .padding(12)
-        .background(Color.red.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("query-error-query-error")
         .accessibilityHint(diagnostic.problemAccessibilityHint)

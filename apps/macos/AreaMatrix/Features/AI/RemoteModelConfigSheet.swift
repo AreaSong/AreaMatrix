@@ -89,10 +89,10 @@ struct RemoteModelConfigSheet: View {
     private var remoteProviderBanner: some View {
         switch model.outcome {
         case let .success(message):
-            Label(message, systemImage: "checkmark.circle")
-                .foregroundStyle(.green)
-                .padding(12)
-                .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            TintedStatusBanner(tint: .green, fillsWidth: false) {
+                Label(message, systemImage: "checkmark.circle")
+                    .foregroundStyle(.green)
+            }
         case let .failed(error):
             AISettingsInlineBanner(error: error, tint: .red) {
                 if model.unusedCredentialReference != nil {

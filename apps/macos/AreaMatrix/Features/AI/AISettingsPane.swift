@@ -55,28 +55,11 @@ struct AISettingsPane: View {
     }
 
     private var header: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("AI")
-                    .font(.title2.weight(.semibold))
-                    .accessibilityAddTraits(.isHeader)
-                Text(model.repoPath)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .textSelection(.enabled)
-            }
-            Spacer()
+        SettingsPageHeader(title: "AI", subtitle: model.repoPath) {
             if model.isSaving {
-                ProgressView()
-                    .controlSize(.small)
-                    .accessibilityLabel("Saving AI settings")
+                SettingsHeaderProgressIndicator(label: "Saving AI settings")
             }
         }
-        .padding(.horizontal, 34)
-        .padding(.vertical, 18)
-        .overlay(alignment: .bottom) { Divider() }
     }
 }
 
@@ -336,38 +319,6 @@ private extension AISettingsPane {
         returnsToPrivacyRulesAfterRemoteConfig = true
         privacyRulesRoute = nil
         openRemoteConfig()
-    }
-}
-
-struct AISettingsInlineBanner<Actions: View>: View {
-    let error: AISettingsError
-    let tint: Color
-    private let actions: Actions
-
-    init(error: AISettingsError, tint: Color, @ViewBuilder actions: () -> Actions) {
-        self.error = error
-        self.tint = tint
-        self.actions = actions()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(error.message, systemImage: "exclamationmark.triangle")
-                .foregroundStyle(tint)
-            Text(error.detail)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            Text(error.recovery)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            HStack(spacing: 8) {
-                actions
-            }
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityElement(children: .contain)
     }
 }
 

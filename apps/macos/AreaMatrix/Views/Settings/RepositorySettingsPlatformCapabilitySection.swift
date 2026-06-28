@@ -21,14 +21,7 @@ struct RepoPlatformCapabilitySection: View {
     private var content: some View {
         switch state {
         case .loading:
-            HStack(spacing: 10) {
-                ProgressView()
-                    .controlSize(.small)
-                Text("Loading platform capabilities...")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-            .accessibilityElement(children: .combine)
+            SettingsInlineProgressStatus(title: "Loading platform capabilities...")
         case let .loaded(capabilities):
             capabilityRows(capabilities.repositorySettingsRows)
         case let .failed(capabilities, error):
@@ -88,9 +81,7 @@ private struct RepositorySettingsCapabilityErrorBanner: View {
     let error: RepositorySettingsCapabilityError
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(error.message, systemImage: "exclamationmark.triangle")
-                .foregroundStyle(.orange)
+        SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .orange) {
             Text(error.recovery)
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -98,10 +89,6 @@ private struct RepositorySettingsCapabilityErrorBanner: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityElement(children: .combine)
     }
 }
 

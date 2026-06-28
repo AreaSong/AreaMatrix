@@ -78,32 +78,38 @@ struct DetailLogTabView: View {
     }
 
     private func errorState(fileID: Int64, _ mapping: CoreErrorMappingSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("无法加载改动记录", systemImage: "exclamationmark.triangle")
-                .font(.callout.weight(.semibold))
-            Text(mapping.userMessage)
-                .foregroundStyle(.secondary)
-            Text(mapping.suggestedAction)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            HStack {
-                Button("Retry", action: onRefreshChangeLog)
-                Button("Collect Diagnostics...", action: onRequestDiagnostics)
-                    .disabled(isCollectingDiagnostics)
-            }
-            Text("Diagnostics redact paths and usernames, exclude user file contents, and are not uploaded.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            diagnosticsStatus(fileID: fileID)
-            DisclosureGroup("Technical Details") {
-                Text(mapping.rawContext)
-                    .font(.system(.caption, design: .monospaced))
-                    .textSelection(.enabled)
+        TintedStatusBanner(
+            tint: .yellow,
+            cornerRadius: 0,
+            fillsWidth: false,
+            contentPadding: 10,
+            backgroundOpacity: 0.12
+        ) {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("无法加载改动记录", systemImage: "exclamationmark.triangle")
+                    .font(.callout.weight(.semibold))
+                Text(mapping.userMessage)
+                    .foregroundStyle(.secondary)
+                Text(mapping.suggestedAction)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack {
+                    Button("Retry", action: onRefreshChangeLog)
+                    Button("Collect Diagnostics...", action: onRequestDiagnostics)
+                        .disabled(isCollectingDiagnostics)
+                }
+                Text("Diagnostics redact paths and usernames, exclude user file contents, and are not uploaded.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                diagnosticsStatus(fileID: fileID)
+                DisclosureGroup("Technical Details") {
+                    Text(mapping.rawContext)
+                        .font(.system(.caption, design: .monospaced))
+                        .textSelection(.enabled)
+                }
             }
         }
-        .padding(10)
-        .background(Color.yellow.opacity(0.12))
     }
 
     @ViewBuilder

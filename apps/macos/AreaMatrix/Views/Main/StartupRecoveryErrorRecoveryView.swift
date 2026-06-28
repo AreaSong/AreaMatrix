@@ -16,15 +16,15 @@ struct StartupRecoveryErrorRecoveryView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(title, systemImage: iconName)
-                .font(.headline)
-                .foregroundStyle(tint)
-            statusContent
+        TintedStatusBanner(tint: tint, contentPadding: 14) {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(title, systemImage: iconName)
+                    .font(.headline)
+                    .foregroundStyle(tint)
+                statusContent
+            }
         }
-        .padding(14)
         .frame(maxWidth: 640, alignment: .leading)
-        .background(tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("startup-recovery-startup-recovery-core-startup-recovery")
     }

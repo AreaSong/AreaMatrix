@@ -363,18 +363,24 @@ extension MainRepositoryDetailPane {
     }
 
     private func detailInlineError(_ error: CoreErrorMappingSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("无法加载文件详情", systemImage: "exclamationmark.triangle")
-                .font(.callout.weight(.semibold))
-            Text(error.userMessage)
-                .foregroundStyle(.secondary)
-            HStack(spacing: 10) {
-                Button("Retry", action: onRetrySelectedFileDetail)
-                removeFromIndexButton(for: selectedFileDetail, style: .secondary)
+        TintedStatusBanner(
+            tint: .yellow,
+            cornerRadius: 0,
+            fillsWidth: false,
+            contentPadding: 10,
+            backgroundOpacity: 0.12
+        ) {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("无法加载文件详情", systemImage: "exclamationmark.triangle")
+                    .font(.callout.weight(.semibold))
+                Text(error.userMessage)
+                    .foregroundStyle(.secondary)
+                HStack(spacing: 10) {
+                    Button("Retry", action: onRetrySelectedFileDetail)
+                    removeFromIndexButton(for: selectedFileDetail, style: .secondary)
+                }
             }
         }
-        .padding(10)
-        .background(Color.yellow.opacity(0.12))
         .accessibilityElement(children: .contain)
     }
 

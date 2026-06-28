@@ -139,12 +139,12 @@ struct ConfirmInitStepView: View {
     @ViewBuilder
     private var confirmationIssueSection: some View {
         if let issue = ConfirmInitStepRules.blockingMessage(for: draft) {
-            Label(issue, systemImage: "exclamationmark.triangle")
-                .font(.callout)
-                .foregroundStyle(.red)
-                .padding(12)
-                .frame(maxWidth: 680, alignment: .leading)
-                .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            TintedStatusBanner(tint: .red) {
+                Label(issue, systemImage: "exclamationmark.triangle")
+                    .font(.callout)
+                    .foregroundStyle(.red)
+            }
+            .frame(maxWidth: 680, alignment: .leading)
         }
     }
 

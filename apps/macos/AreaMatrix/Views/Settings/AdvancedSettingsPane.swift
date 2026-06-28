@@ -93,23 +93,11 @@ extension AdvancedSettingsPane {
     }
 
     private var header: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("高级")
-                    .font(.title2.weight(.semibold))
-                    .accessibilityAddTraits(.isHeader)
-                Text(model.repoPath)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .textSelection(.enabled)
-            }
-            Spacer()
+        SettingsPageHeader(title: "高级", subtitle: model.repoPath) {
             if model.isSaving || model.loadState == .loading {
-                ProgressView()
-                    .controlSize(.small)
-                    .accessibilityLabel(model.isSaving ? "Saving advanced settings" : "Loading advanced settings")
+                SettingsHeaderProgressIndicator(
+                    label: model.isSaving ? "Saving advanced settings" : "Loading advanced settings"
+                )
             } else {
                 Button {
                     Task {
@@ -120,11 +108,6 @@ extension AdvancedSettingsPane {
                 }
                 .accessibilityIdentifier("advanced-settings-retry-status")
             }
-        }
-        .padding(.horizontal, 34)
-        .padding(.vertical, 18)
-        .overlay(alignment: .bottom) {
-            Divider()
         }
     }
 
@@ -141,21 +124,15 @@ extension AdvancedSettingsPane {
     }
 
     private var loadingContent: some View {
-        VStack(spacing: 12) {
-            ProgressView()
-            Text("Loading advanced settings...")
-                .font(.headline)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        SettingsPageLoadingContent(title: "Loading advanced settings...")
     }
 
     private func loadErrorContent(_ error: AdvancedSettingsError) -> some View {
-        ContentUnavailableView {
-            Label("Unable to load advanced settings", systemImage: "exclamationmark.triangle")
-        } description: {
-            Text(error.message)
-            Text(error.recovery)
-        } actions: {
+        SettingsPageErrorContent(
+            title: "Unable to load advanced settings",
+            message: error.message,
+            recovery: error.recovery
+        ) {
             Button("Retry status") {
                 Task {
                     await model.load()
@@ -172,19 +149,14 @@ extension AdvancedSettingsPane {
     }
 
     private var loadedContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                saveErrorBanner
-                versionErrorBanner
-                diagnosticsStatusBanner
-                actionFeedbackBanner
-                diagnosticsSection
-                logsSection
-                dangerZoneSection
-            }
-            .frame(maxWidth: 700, alignment: .leading)
-            .padding(.horizontal, 34)
-            .padding(.vertical, 28)
+        SettingsPageScrollContent {
+            saveErrorBanner
+            versionErrorBanner
+            diagnosticsStatusBanner
+            actionFeedbackBanner
+            diagnosticsSection
+            logsSection
+            dangerZoneSection
         }
     }
 
@@ -201,18 +173,9 @@ extension AdvancedSettingsPane {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case .collecting:
-            HStack(spacing: 10) {
-                ProgressView()
-                    .controlSize(.small)
-                Text("Preparing redacted diagnostics...")
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            SettingsProgressBanner(title: "Preparing redacted diagnostics...")
         case let .collected(snapshot):
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Diagnostics exported", systemImage: "checkmark.circle")
-                    .foregroundStyle(.green)
+            SettingsStatusBanner(title: "Diagnostics exported", systemImage: "checkmark.circle", tint: .green) {
                 Text(snapshot.snapshotPath)
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -223,10 +186,6 @@ extension AdvancedSettingsPane {
                         .foregroundStyle(.orange)
                 }
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-            .accessibilityElement(children: .combine)
         case let .failed(error):
             AdvancedSettingsInlineBanner(error: error, tint: .red)
         }
@@ -237,12 +196,7 @@ extension AdvancedSettingsPane {
         if let feedback = model.actionFeedback {
             switch feedback {
             case let .success(message):
-                Label(message, systemImage: "checkmark.circle")
-                    .foregroundStyle(.green)
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-                    .accessibilityElement(children: .combine)
+                SettingsStatusBanner(title: message, systemImage: "checkmark.circle", tint: .green)
             case let .failed(error):
                 AdvancedSettingsInlineBanner(error: error, tint: .red)
             }
@@ -304,9 +258,7 @@ extension AdvancedSettingsPane {
     @ViewBuilder
     private var saveErrorBanner: some View {
         if let error = model.saveError {
-            VStack(alignment: .leading, spacing: 8) {
-                Label(error.message, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.red)
+            SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
                 Text(error.recovery)
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -322,10 +274,6 @@ extension AdvancedSettingsPane {
                     .accessibilityIdentifier(model.retrySaveAccessibilityIdentifier)
                 }
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-            .accessibilityElement(children: .combine)
         }
     }
 

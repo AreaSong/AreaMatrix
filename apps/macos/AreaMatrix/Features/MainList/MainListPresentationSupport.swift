@@ -55,21 +55,27 @@ extension MainRepositoryContentView {
         if fileListModel.searchState.isActive {
             searchStatusBanner
         } else if let banner = fileListModel.statusBanner {
-            HStack(spacing: 10) {
-                Label(banner.message, systemImage: banner.systemImage)
-                    .font(.callout)
-                Spacer()
-                Button("Retry") {
-                    Task {
-                        await fileListModel.retryCurrentCategory()
+            TintedStatusBanner(
+                tint: .yellow,
+                cornerRadius: 0,
+                fillsWidth: false,
+                contentPadding: 10,
+                backgroundOpacity: 0.12
+            ) {
+                HStack(spacing: 10) {
+                    Label(banner.message, systemImage: banner.systemImage)
+                        .font(.callout)
+                    Spacer()
+                    Button("Retry") {
+                        Task {
+                            await fileListModel.retryCurrentCategory()
+                        }
+                    }
+                    Button("Dismiss") {
+                        fileListModel.clearStatusBanner()
                     }
                 }
-                Button("Dismiss") {
-                    fileListModel.clearStatusBanner()
-                }
             }
-            .padding(10)
-            .background(Color.yellow.opacity(0.12))
         } else if state == .list {
             SyncConflictEntryPanel(model: syncConflictEntryModel) { route in
                 pendingSyncConflictReviewRoute = route

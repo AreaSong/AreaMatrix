@@ -40,24 +40,19 @@ struct AboutSettingsPane: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    versionErrorBanner
-                    actionFeedbackBanner
-                    versionsSection
-                    PlatformDifferencesView(
-                        repositoryText: model.repoPath,
-                        onOpenRepositorySettings: onOpenRepositorySettings,
-                        onClose: onClose
-                    )
-                    licenseSection
-                    linksSection
-                    diagnosticsSection
-                    logsSection
-                }
-                .frame(maxWidth: 700, alignment: .leading)
-                .padding(.horizontal, 34)
-                .padding(.vertical, 28)
+            SettingsPageScrollContent {
+                versionErrorBanner
+                actionFeedbackBanner
+                versionsSection
+                PlatformDifferencesView(
+                    repositoryText: model.repoPath,
+                    onOpenRepositorySettings: onOpenRepositorySettings,
+                    onClose: onClose
+                )
+                licenseSection
+                linksSection
+                diagnosticsSection
+                logsSection
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -101,9 +96,7 @@ struct AboutSettingsPane: View {
             }
             Spacer()
             if model.isLoadingVersionInfo {
-                ProgressView()
-                    .controlSize(.small)
-                    .accessibilityLabel("Loading version information")
+                SettingsHeaderProgressIndicator(label: "Loading version information")
             } else {
                 Button {
                     Task {
@@ -138,12 +131,7 @@ struct AboutSettingsPane: View {
         if let feedback = model.actionFeedback {
             switch feedback {
             case let .success(message):
-                Label(message, systemImage: "checkmark.circle")
-                    .foregroundStyle(.green)
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-                    .accessibilityElement(children: .combine)
+                SettingsStatusBanner(title: message, systemImage: "checkmark.circle", tint: .green)
             case let .failed(error):
                 AboutSettingsBanner(error: error, tint: .red) {
                     Button("Copy detail") {
@@ -233,19 +221,9 @@ struct AboutSettingsPane: View {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case .collecting:
-            HStack(spacing: 10) {
-                ProgressView()
-                    .controlSize(.small)
-                Text("Collecting redacted diagnostics...")
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-            .accessibilityElement(children: .combine)
+            SettingsProgressBanner(title: "Collecting redacted diagnostics...")
         case let .collected(snapshot):
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Diagnostics exported", systemImage: "checkmark.circle")
-                    .foregroundStyle(.green)
+            SettingsStatusBanner(title: "Diagnostics exported", systemImage: "checkmark.circle", tint: .green) {
                 Text(snapshot.exportPath)
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -261,9 +239,6 @@ struct AboutSettingsPane: View {
                     }
                 }
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
         case let .failed(error):
             AboutSettingsBanner(error: error, tint: .red) {
                 Button("Copy error") {
@@ -337,9 +312,7 @@ private struct AboutSettingsBanner<Actions: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(error.message, systemImage: "exclamationmark.triangle")
-                .foregroundStyle(tint)
+        SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: tint) {
             Text(error.recovery)
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -353,9 +326,5 @@ private struct AboutSettingsBanner<Actions: View>: View {
                 actions
             }
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityElement(children: .combine)
     }
 }

@@ -66,21 +66,27 @@ struct DeleteFileConfirmSheet: View {
         _ failure: CoreErrorMappingSnapshot,
         operation: MainFileDeleteOperation
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(operation.failureTitle, systemImage: "exclamationmark.triangle")
-                .font(.caption.weight(.semibold))
-            Text(failure.userMessage)
-                .font(.caption)
-            Text(failure.suggestedAction)
-                .font(.caption)
-            Text(failure.rawContext)
-                .font(.system(.caption, design: .monospaced))
-                .textSelection(.enabled)
-            Button("Collect Diagnostics...", action: onCollectDiagnostics)
+        TintedStatusBanner(
+            tint: .yellow,
+            cornerRadius: 0,
+            fillsWidth: false,
+            contentPadding: 10,
+            backgroundOpacity: 0.12
+        ) {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(operation.failureTitle, systemImage: "exclamationmark.triangle")
+                    .font(.caption.weight(.semibold))
+                Text(failure.userMessage)
+                    .font(.caption)
+                Text(failure.suggestedAction)
+                    .font(.caption)
+                Text(failure.rawContext)
+                    .font(.system(.caption, design: .monospaced))
+                    .textSelection(.enabled)
+                Button("Collect Diagnostics...", action: onCollectDiagnostics)
+            }
+            .foregroundStyle(.secondary)
         }
-        .foregroundStyle(.secondary)
-        .padding(10)
-        .background(Color.yellow.opacity(0.12))
     }
 
     private func actionButtons(file: FileEntrySnapshot, operation: MainFileDeleteOperation) -> some View {

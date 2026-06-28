@@ -346,22 +346,20 @@ private struct ValidatePathICloudNotice: View {
     let onAcceptedChanged: (Bool) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("iCloud Drive 路径", systemImage: "icloud")
-                .font(.headline)
-                .foregroundStyle(.blue)
-            Text("iCloud 同步可能带来延迟、占位内容与冲突风险。")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            Toggle(
-                "我理解 iCloud 同步可能带来延迟与冲突风险",
-                isOn: Binding(get: { isAccepted }, set: onAcceptedChanged)
-            )
+        TintedOutlinedStatusBanner(tint: .blue) {
+            VStack(alignment: .leading, spacing: 10) {
+                Label("iCloud Drive 路径", systemImage: "icloud")
+                    .font(.headline)
+                    .foregroundStyle(.blue)
+                Text("iCloud 同步可能带来延迟、占位内容与冲突风险。")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Toggle(
+                    "我理解 iCloud 同步可能带来延迟与冲突风险",
+                    isOn: Binding(get: { isAccepted }, set: onAcceptedChanged)
+                )
+            }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.blue.opacity(0.15), lineWidth: 1))
     }
 }
 
@@ -372,20 +370,18 @@ private struct ValidatePathNoticeCard: View {
     let lines: [String]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(title, systemImage: image)
-                .font(.headline)
-                .foregroundStyle(tint)
-            ForEach(lines, id: \.self) { line in
-                Text(line)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+        TintedOutlinedStatusBanner(tint: tint) {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(title, systemImage: image)
+                    .font(.headline)
+                    .foregroundStyle(tint)
+                ForEach(lines, id: \.self) { line in
+                    Text(line)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint.opacity(0.15), lineWidth: 1))
     }
 }
 

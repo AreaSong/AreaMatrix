@@ -53,6 +53,8 @@
 		0A0000000000000000000D0C /* AreaMatrixProtectionDiorama.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D1D /* AreaMatrixProtectionDiorama.swift */; };
 		0A0000000000000000000D0D /* AreaMatrixTimelineDiorama.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D1E /* AreaMatrixTimelineDiorama.swift */; };
 		0A0000000000000000000D0E /* AreaMatrixWorkflowDiorama.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D1F /* AreaMatrixWorkflowDiorama.swift */; };
+		0A0000000000000000000D20 /* ReasonStatusCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D21 /* ReasonStatusCard.swift */; };
+		0A0000000000000000000D22 /* TintedStatusBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D23 /* TintedStatusBanner.swift */; };
 		0A00000000000000000000F2 /* WindowCloseConfirmationObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F3 /* WindowCloseConfirmationObserver.swift */; };
 		0A00000000000000000000F4 /* InitFailedStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F5 /* InitFailedStepView.swift */; };
 		0A00000000000000000000F6 /* DiagnosticsSnapshotState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F7 /* DiagnosticsSnapshotState.swift */; };
@@ -309,6 +311,8 @@
 		0A0000000000000000000846 /* AITagBatchSuggestionAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000847 /* AITagBatchSuggestionAction.swift */; };
 		0A000000000000000000086E /* AITagSuggestionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000086F /* AITagSuggestionState.swift */; };
 		0A000000000000000000088A /* AITagSuggestionsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000088B /* AITagSuggestionsPanel.swift */; };
+		0A0000000000000000000932 /* AITagSuggestionsPanel+Report.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000933 /* AITagSuggestionsPanel+Report.swift */; };
+		0A0000000000000000000950 /* AISettingsInlineBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000951 /* AISettingsInlineBanner.swift */; };
 		0A0000000000000000000848 /* MainICloudConflictRoutingActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000849 /* MainICloudConflictRoutingActions.swift */; };
 		0A0000000000000000000850 /* SavedSearchSheetRouteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000851 /* SavedSearchSheetRouteView.swift */; };
 		0A0000000000000000000852 /* SmartListManagementSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000853 /* SmartListManagementSheet.swift */; };
@@ -326,11 +330,14 @@
 		0A0000000000000000000754 /* AIPrivacyRulesRegistryReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000755 /* AIPrivacyRulesRegistryReader.swift */; };
 		0A0000000000000000000756 /* AIPrivacyRemoteProviderStateModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000757 /* AIPrivacyRemoteProviderStateModel.swift */; };
 		0A0000000000000000000758 /* AIPrivacyRulesRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000759 /* AIPrivacyRulesRoute.swift */; };
+		0A0000000000000000000936 /* AIPrivacyRulesModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000937 /* AIPrivacyRulesModel.swift */; };
 		0A000000000000000000086A /* AISettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000086B /* AISettingsPane.swift */; };
 		0A0000000000000000000728 /* AIClassificationSuggestionPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */; };
 		0A0000000000000000000870 /* AIClassificationSuggestionPanelModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000871 /* AIClassificationSuggestionPanelModel.swift */; };
+		0A0000000000000000000930 /* AIClassificationFallbackStatusRegion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000931 /* AIClassificationFallbackStatusRegion.swift */; };
 		0A000000000000000000072A /* AIClassificationPrivacyRuleReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000072B /* AIClassificationPrivacyRuleReference.swift */; };
 		0A0000000000000000000730 /* AIClassificationCallLogDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000731 /* AIClassificationCallLogDetail.swift */; };
+		0A0000000000000000000934 /* AIClassificationCallLogDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000935 /* AIClassificationCallLogDetailSheet.swift */; };
 		0A0000000000000000000734 /* AIClassificationSuggestionPanel+Apply.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000735 /* AIClassificationSuggestionPanel+Apply.swift */; };
 		0A0000000000000000000724 /* RemoteProviderProbeRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000725 /* RemoteProviderProbeRuntime.swift */; };
 		0A0000000000000000000872 /* AISummaryPrivacySupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000873 /* AISummaryPrivacySupport.swift */; };
@@ -353,7 +360,13 @@
 		0A0000000000000000000744 /* SemanticIndexBuildControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000745 /* SemanticIndexBuildControls.swift */; };
 		0A0000000000000000000746 /* SemanticSearchResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000747 /* SemanticSearchResultsView.swift */; };
 		0A0000000000000000000748 /* SemanticSearchPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000749 /* SemanticSearchPageIntegrationVerifyTests.swift */; };
+		0A0000000000000000000926 /* SearchQueryDiagnosticPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000927 /* SearchQueryDiagnosticPageFeatureTests.swift */; };
+		0A0000000000000000000928 /* SearchQueryDiagnosticTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000929 /* SearchQueryDiagnosticTestSupport.swift */; };
+		0A000000000000000000093A /* SemanticSearchFallbackStatusRegion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000093B /* SemanticSearchFallbackStatusRegion.swift */; };
+		0A000000000000000000093C /* SearchFilterEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000093D /* SearchFilterEditing.swift */; };
+		0A000000000000000000093E /* SearchFilterControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000093F /* SearchFilterControls.swift */; };
 		0A00000000000000000001A0 /* ImportBatchNamingOptionsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001A1 /* ImportBatchNamingOptionsSection.swift */; };
+		0A0000000000000000000938 /* SemanticSearchFallbackStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000939 /* SemanticSearchFallbackStatus.swift */; };
 		0A00000000000000000001B2 /* ImportFolderPreviewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001B3 /* ImportFolderPreviewModel.swift */; };
 		0A00000000000000000001B4 /* ImportFolderScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001B5 /* ImportFolderScanner.swift */; };
 		0A00000000000000000001B6 /* ImportFolderPreviewSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001B7 /* ImportFolderPreviewSections.swift */; };
@@ -404,6 +417,7 @@
 		0A00000000000000000008B8 /* ImportBatchICloudPageIntegrationTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008B9 /* ImportBatchICloudPageIntegrationTestSupport.swift */; };
 		0A0000000000000000000270 /* GeneralSettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000271 /* GeneralSettingsModel.swift */; };
 		0A0000000000000000000272 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000273 /* GeneralSettingsView.swift */; };
+		0A0000000000000000000948 /* SettingsPageScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000949 /* SettingsPageScaffold.swift */; };
 		0A000000000000000000089A /* SettingsFormSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000089B /* SettingsFormSection.swift */; };
 		0A000000000000000000089C /* SettingsKeyValueRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000089D /* SettingsKeyValueRow.swift */; };
 		0A000000000000000000089E /* TagSuggestionsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000089F /* TagSuggestionsPanel.swift */; };
@@ -423,12 +437,14 @@
 		0A000000000000000000028A /* RepositorySettingsPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000028B /* RepositorySettingsPageIntegrationVerifyTests.swift */; };
 		0A0000000000000000000290 /* ClassifierSettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000291 /* ClassifierSettingsModel.swift */; };
 		0A0000000000000000000292 /* ClassifierSettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000293 /* ClassifierSettingsPane.swift */; };
+		0A0000000000000000000944 /* ClassifierSettingsContentViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000945 /* ClassifierSettingsContentViews.swift */; };
 		0A0000000000000000000294 /* ClassifierSettingsPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000295 /* ClassifierSettingsPageFeatureTests.swift */; };
 		0A0000000000000000000296 /* ClassifierSettingsRecovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000297 /* ClassifierSettingsRecovery.swift */; };
 		0A0000000000000000000298 /* ClassifierSettingsRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000299 /* ClassifierSettingsRecoveryTests.swift */; };
 		0A00000000000000000008F8 /* ClassifierRuleEditorRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008F9 /* ClassifierRuleEditorRecoveryTests.swift */; };
 		0A00000000000000000008FA /* ClassifierSettingsTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008FB /* ClassifierSettingsTestSupport.swift */; };
 		0A0000000000000000000520 /* ClassifierRuleEditorSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000521 /* ClassifierRuleEditorSection.swift */; };
+		0A0000000000000000000946 /* ClassifierRuleEditorComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000947 /* ClassifierRuleEditorComponents.swift */; };
 		0A0000000000000000000522 /* ClassifierRuleEditorValidation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000523 /* ClassifierRuleEditorValidation.swift */; };
 		0A0000000000000000000524 /* ClassifierRuleEditorCoreBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000525 /* ClassifierRuleEditorCoreBridgeTests.swift */; };
 		0A000000000000000000029A /* IntegrationsSettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000029B /* IntegrationsSettingsModel.swift */; };
@@ -443,6 +459,8 @@
 		0A00000000000000000002AC /* AboutSettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002AD /* AboutSettingsModel.swift */; };
 		0A00000000000000000002AE /* AboutSettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002AF /* AboutSettingsPane.swift */; };
 		0A00000000000000000002B0 /* AboutSettingsPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002B1 /* AboutSettingsPageFeatureTests.swift */; };
+		0A0000000000000000000942 /* GeneralSettingsContentViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000943 /* GeneralSettingsContentViews.swift */; };
+		0A0000000000000000000940 /* AboutSettingsPlatformServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000941 /* AboutSettingsPlatformServices.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -508,6 +526,8 @@
 		0A0000000000000000000D1D /* AreaMatrixProtectionDiorama.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixProtectionDiorama.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D1E /* AreaMatrixTimelineDiorama.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixTimelineDiorama.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D1F /* AreaMatrixWorkflowDiorama.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixWorkflowDiorama.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000D21 /* ReasonStatusCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/ReasonStatusCard.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000D23 /* TintedStatusBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/TintedStatusBanner.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000F3 /* WindowCloseConfirmationObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/WindowCloseConfirmationObserver.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000F5 /* InitFailedStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Onboarding/InitFailedStepView.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000F7 /* DiagnosticsSnapshotState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/DiagnosticsSnapshotState.swift; sourceTree = SOURCE_ROOT; };
@@ -591,6 +611,8 @@
 		0A0000000000000000000847 /* AITagBatchSuggestionAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AITagBatchSuggestionAction.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000086F /* AITagSuggestionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AITagSuggestionState.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000088B /* AITagSuggestionsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AITagSuggestionsPanel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000933 /* AITagSuggestionsPanel+Report.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AreaMatrix/Features/AI/AITagSuggestionsPanel+Report.swift"; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000951 /* AISettingsInlineBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AISettingsInlineBanner.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000849 /* MainICloudConflictRoutingActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/MainICloudConflictRoutingActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000851 /* SavedSearchSheetRouteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/SavedSearchSheetRouteView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000853 /* SmartListManagementSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/SmartListManagementSheet.swift; sourceTree = SOURCE_ROOT; };
@@ -608,11 +630,14 @@
 		0A0000000000000000000755 /* AIPrivacyRulesRegistryReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesRegistryReader.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000757 /* AIPrivacyRemoteProviderStateModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRemoteProviderStateModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000759 /* AIPrivacyRulesRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesRoute.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000937 /* AIPrivacyRulesModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesModel.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000086B /* AISettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AISettingsPane.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000871 /* AIClassificationSuggestionPanelModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationSuggestionPanelModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000931 /* AIClassificationFallbackStatusRegion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationFallbackStatusRegion.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000072B /* AIClassificationPrivacyRuleReference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationPrivacyRuleReference.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000731 /* AIClassificationCallLogDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationCallLogDetail.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000935 /* AIClassificationCallLogDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationCallLogDetailSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000735 /* AIClassificationSuggestionPanel+Apply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AreaMatrix/Features/AI/AIClassificationSuggestionPanel+Apply.swift"; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000725 /* RemoteProviderProbeRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteProviderProbeRuntime.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000873 /* AISummaryPrivacySupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AISummaryPrivacySupport.swift; sourceTree = SOURCE_ROOT; };
@@ -638,7 +663,13 @@
 		0A00000000000000000008A7 /* SemanticSearchPageTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SemanticSearchPageTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008DF /* SemanticSearchCoreRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SemanticSearchCoreRoutingTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008E1 /* SemanticSearchCoreRoutingTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SemanticSearchCoreRoutingTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000927 /* SearchQueryDiagnosticPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SearchQueryDiagnosticPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000929 /* SearchQueryDiagnosticTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SearchQueryDiagnosticTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002DD /* ICloudConflictMinimalValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalValidationTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000939 /* SemanticSearchFallbackStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/SemanticSearchFallbackStatus.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000093B /* SemanticSearchFallbackStatusRegion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/SemanticSearchFallbackStatusRegion.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000093D /* SearchFilterEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/SearchFilterEditing.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000093F /* SearchFilterControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/SearchFilterControls.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002DF /* ICloudConflictMinimalPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/ICloudConflictMinimalResolution.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002E3 /* ICloudConflictMinimalPageIntegrationTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalPageIntegrationTestSupport.swift; sourceTree = SOURCE_ROOT; };
@@ -711,11 +742,13 @@
 		0A00000000000000000002D3 /* MainRepositoryContentActionRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000271 /* GeneralSettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/GeneralSettingsModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000273 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/GeneralSettingsView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000949 /* SettingsPageScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/SettingsPageScaffold.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000089B /* SettingsFormSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/SettingsFormSection.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000089D /* SettingsKeyValueRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/SettingsKeyValueRow.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000089F /* TagSuggestionsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/TagSuggestionsPanel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000275 /* RootOverviewFileInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/RootOverviewFileInspector.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000277 /* GeneralSettingsActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/GeneralSettingsActions.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000943 /* GeneralSettingsContentViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/GeneralSettingsContentViews.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000279 /* GeneralSettingsPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/GeneralSettingsPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000027B /* GeneralSettingsImportDefaultModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/GeneralSettingsImportDefaultModeTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000721 /* RemoteProviderConfigModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RemoteProviderConfigModelTests.swift; sourceTree = SOURCE_ROOT; };
@@ -730,12 +763,14 @@
 		0A000000000000000000028B /* RepositorySettingsPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RepositorySettingsPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000291 /* ClassifierSettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ClassifierSettingsModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000293 /* ClassifierSettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/ClassifierSettingsPane.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000945 /* ClassifierSettingsContentViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/ClassifierSettingsContentViews.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000295 /* ClassifierSettingsPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ClassifierSettingsPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000297 /* ClassifierSettingsRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ClassifierSettingsRecovery.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000299 /* ClassifierSettingsRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ClassifierSettingsRecoveryTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008F9 /* ClassifierRuleEditorRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ClassifierRuleEditorRecoveryTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008FB /* ClassifierSettingsTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ClassifierSettingsTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000521 /* ClassifierRuleEditorSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/ClassifierRuleEditorSection.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000947 /* ClassifierRuleEditorComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/ClassifierRuleEditorComponents.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000523 /* ClassifierRuleEditorValidation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/ClassifierRuleEditorValidation.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000525 /* ClassifierRuleEditorCoreBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ClassifierRuleEditorCoreBridgeTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000029B /* IntegrationsSettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/IntegrationsSettingsModel.swift; sourceTree = SOURCE_ROOT; };
@@ -750,6 +785,7 @@
 		0A00000000000000000002AD /* AboutSettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/AboutSettingsModel.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002AF /* AboutSettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/AboutSettingsPane.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002B1 /* AboutSettingsPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AboutSettingsPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000941 /* AboutSettingsPlatformServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/AboutSettingsPlatformServices.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000013F /* MainFileActionRoutingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainFileActionRoutingSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000141 /* RenameFileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/RenameFileSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000143 /* ChangeCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ChangeCategorySheet.swift; sourceTree = SOURCE_ROOT; };
@@ -974,6 +1010,7 @@
 			0A0000000000000000000832 /* PlatformServices */ = {
 				isa = PBXGroup;
 				children = (
+					0A0000000000000000000941 /* AboutSettingsPlatformServices.swift */,
 					0A0000000000000000000229 /* MainExternalCreatedFileWatcher.swift */,
 					0A0000000000000000000243 /* InFlightFileChangeTracker.swift */,
 				);
@@ -987,10 +1024,14 @@
 				0A0000000000000000000014 /* MainWindow.swift */,
 				0A0000000000000000000869 /* MainWindowRouteContent.swift */,
 				0A0000000000000000000273 /* GeneralSettingsView.swift */,
+				0A0000000000000000000943 /* GeneralSettingsContentViews.swift */,
+				0A0000000000000000000949 /* SettingsPageScaffold.swift */,
 				0A000000000000000000089B /* SettingsFormSection.swift */,
 				0A000000000000000000089D /* SettingsKeyValueRow.swift */,
 				0A0000000000000000000293 /* ClassifierSettingsPane.swift */,
+				0A0000000000000000000945 /* ClassifierSettingsContentViews.swift */,
 				0A0000000000000000000521 /* ClassifierRuleEditorSection.swift */,
+				0A0000000000000000000947 /* ClassifierRuleEditorComponents.swift */,
 				0A0000000000000000000283 /* RepositorySettingsPane.swift */,
 				0A0000000000000000000803 /* RepositorySettingsPlatformCapabilitySection.swift */,
 				0A0000000000000000000813 /* RepositorySettingsConfigSection.swift */,
@@ -1057,6 +1098,8 @@
 					0A0000000000000000000D1D /* AreaMatrixProtectionDiorama.swift */,
 					0A0000000000000000000D1E /* AreaMatrixTimelineDiorama.swift */,
 					0A0000000000000000000D1F /* AreaMatrixWorkflowDiorama.swift */,
+					0A0000000000000000000D21 /* ReasonStatusCard.swift */,
+					0A0000000000000000000D23 /* TintedStatusBanner.swift */,
 					0A0000000000000000000D18 /* Effects */,
 			);
 			name = DesignSystem;
@@ -1188,10 +1231,14 @@
 					0A0000000000000000000853 /* SmartListManagementSheet.swift */,
 					0A0000000000000000000609 /* SmartListManagementSheet+Sections.swift */,
 					0A0000000000000000000313 /* SearchFiltersPopover.swift */,
+					0A000000000000000000093D /* SearchFilterEditing.swift */,
+					0A000000000000000000093F /* SearchFilterControls.swift */,
 					0A0000000000000000000835 /* SearchFilterChips.swift */,
 					0A0000000000000000000615 /* SearchFilterChipsBar.swift */,
 					0A0000000000000000000747 /* SemanticSearchResultsView.swift */,
 					0A0000000000000000000743 /* SemanticSearchPresentation.swift */,
+					0A0000000000000000000939 /* SemanticSearchFallbackStatus.swift */,
+					0A000000000000000000093B /* SemanticSearchFallbackStatusRegion.swift */,
 					0A0000000000000000000745 /* SemanticIndexBuildControls.swift */,
 					0A0000000000000000000855 /* SemanticSearchMainContentSupport.swift */,
 				);
@@ -1244,12 +1291,16 @@
 				0A0000000000000000000755 /* AIPrivacyRulesRegistryReader.swift */,
 				0A0000000000000000000757 /* AIPrivacyRemoteProviderStateModel.swift */,
 				0A0000000000000000000759 /* AIPrivacyRulesRoute.swift */,
+				0A0000000000000000000937 /* AIPrivacyRulesModel.swift */,
 				0A000000000000000000086B /* AISettingsPane.swift */,
+				0A0000000000000000000951 /* AISettingsInlineBanner.swift */,
 				0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */,
 				0A0000000000000000000871 /* AIClassificationSuggestionPanelModel.swift */,
+				0A0000000000000000000931 /* AIClassificationFallbackStatusRegion.swift */,
 				0A0000000000000000000735 /* AIClassificationSuggestionPanel+Apply.swift */,
 				0A000000000000000000072B /* AIClassificationPrivacyRuleReference.swift */,
 				0A0000000000000000000731 /* AIClassificationCallLogDetail.swift */,
+				0A0000000000000000000935 /* AIClassificationCallLogDetailSheet.swift */,
 				0A0000000000000000000739 /* AISummaryEditorState.swift */,
 				0A0000000000000000000879 /* AISummaryEditorView.swift */,
 				0A000000000000000000087B /* AISummarySelectionExitSupport.swift */,
@@ -1259,6 +1310,7 @@
 				0A0000000000000000000741 /* AISummaryMetadataReader.swift */,
 				0A000000000000000000086F /* AITagSuggestionState.swift */,
 				0A000000000000000000088B /* AITagSuggestionsPanel.swift */,
+				0A0000000000000000000933 /* AITagSuggestionsPanel+Report.swift */,
 				0A0000000000000000000847 /* AITagBatchSuggestionAction.swift */,
 			);
 			name = AI;
@@ -1486,6 +1538,8 @@
 				0A00000000000000000008A7 /* SemanticSearchPageTestSupport.swift */,
 				0A00000000000000000008DF /* SemanticSearchCoreRoutingTests.swift */,
 				0A00000000000000000008E1 /* SemanticSearchCoreRoutingTestSupport.swift */,
+				0A0000000000000000000927 /* SearchQueryDiagnosticPageFeatureTests.swift */,
+				0A0000000000000000000929 /* SearchQueryDiagnosticTestSupport.swift */,
 				0A000000000000000000074D /* RemoteProviderConfigPageFeatureTests.swift */,
 				0A0000000000000000000753 /* AIPrivacyRulesPageIntegrationVerifyTests.swift */,
 				0A0000000000000000000915 /* AIPrivacyRulesRouteFocusTests.swift */,
@@ -1663,6 +1717,7 @@
 				0A000000000000000000014E /* OnboardingRoute.swift in Sources */,
 				0A0000000000000000000007 /* CoreBridgeUnavailableState.swift in Sources */,
 				0A0000000000000000000124 /* AppPlatformServices.swift in Sources */,
+				0A0000000000000000000940 /* AboutSettingsPlatformServices.swift in Sources */,
 				0A0000000000000000000274 /* RootOverviewFileInspector.swift in Sources */,
 				0A000000000000000000027C /* RepositoryIgnoreRulesManager.swift in Sources */,
 				0A0000000000000000000120 /* ImportEntryRequest.swift in Sources */,
@@ -1779,10 +1834,14 @@
 				0A0000000000000000000616 /* CommandPaletteView.swift in Sources */,
 				0A0000000000000000000866 /* CommandPaletteRoutingSupport.swift in Sources */,
 				0A0000000000000000000272 /* GeneralSettingsView.swift in Sources */,
+				0A0000000000000000000942 /* GeneralSettingsContentViews.swift in Sources */,
+				0A0000000000000000000948 /* SettingsPageScaffold.swift in Sources */,
 				0A000000000000000000089A /* SettingsFormSection.swift in Sources */,
 				0A000000000000000000089C /* SettingsKeyValueRow.swift in Sources */,
 				0A0000000000000000000292 /* ClassifierSettingsPane.swift in Sources */,
+				0A0000000000000000000944 /* ClassifierSettingsContentViews.swift in Sources */,
 				0A0000000000000000000520 /* ClassifierRuleEditorSection.swift in Sources */,
+				0A0000000000000000000946 /* ClassifierRuleEditorComponents.swift in Sources */,
 				0A0000000000000000000282 /* RepositorySettingsPane.swift in Sources */,
 				0A0000000000000000000802 /* RepositorySettingsPlatformCapabilitySection.swift in Sources */,
 				0A0000000000000000000812 /* RepositorySettingsConfigSection.swift in Sources */,
@@ -1799,11 +1858,15 @@
 				0A0000000000000000000754 /* AIPrivacyRulesRegistryReader.swift in Sources */,
 				0A0000000000000000000756 /* AIPrivacyRemoteProviderStateModel.swift in Sources */,
 				0A0000000000000000000758 /* AIPrivacyRulesRoute.swift in Sources */,
+				0A0000000000000000000936 /* AIPrivacyRulesModel.swift in Sources */,
 				0A000000000000000000086A /* AISettingsPane.swift in Sources */,
+				0A0000000000000000000950 /* AISettingsInlineBanner.swift in Sources */,
 				0A0000000000000000000728 /* AIClassificationSuggestionPanel.swift in Sources */,
 				0A0000000000000000000870 /* AIClassificationSuggestionPanelModel.swift in Sources */,
+				0A0000000000000000000930 /* AIClassificationFallbackStatusRegion.swift in Sources */,
 				0A000000000000000000072A /* AIClassificationPrivacyRuleReference.swift in Sources */,
 				0A0000000000000000000730 /* AIClassificationCallLogDetail.swift in Sources */,
+				0A0000000000000000000934 /* AIClassificationCallLogDetailSheet.swift in Sources */,
 				0A0000000000000000000734 /* AIClassificationSuggestionPanel+Apply.swift in Sources */,
 				0A0000000000000000000738 /* AISummaryEditorState.swift in Sources */,
 				0A0000000000000000000878 /* AISummaryEditorView.swift in Sources */,
@@ -1814,15 +1877,19 @@
 				0A0000000000000000000740 /* AISummaryMetadataReader.swift in Sources */,
 				0A000000000000000000086E /* AITagSuggestionState.swift in Sources */,
 				0A000000000000000000088A /* AITagSuggestionsPanel.swift in Sources */,
+				0A0000000000000000000932 /* AITagSuggestionsPanel+Report.swift in Sources */,
 				0A0000000000000000000732 /* AIClassificationSuggestionApplyState.swift in Sources */,
 				0A000000000000000000013C /* MainRepositoryDetailPane.swift in Sources */,
 				0A0000000000000000000210 /* DetailLogTabView.swift in Sources */,
 				0A0000000000000000000224 /* DetailExternalCreateSyncStatusView.swift in Sources */,
 				0A0000000000000000000248 /* DetailNoteTabView.swift in Sources */,
 				0A0000000000000000000746 /* SemanticSearchResultsView.swift in Sources */,
+				0A000000000000000000093A /* SemanticSearchFallbackStatusRegion.swift in Sources */,
 				0A0000000000000000000320 /* DetailTagSection.swift in Sources */,
 				0A000000000000000000024E /* MainRepositoryContentNoteDrafts.swift in Sources */,
 				0A0000000000000000000312 /* SearchFiltersPopover.swift in Sources */,
+				0A000000000000000000093C /* SearchFilterEditing.swift in Sources */,
+				0A000000000000000000093E /* SearchFilterControls.swift in Sources */,
 				0A0000000000000000000614 /* SearchFilterChipsBar.swift in Sources */,
 				0A0000000000000000000850 /* SavedSearchSheetRouteView.swift in Sources */,
 				0A0000000000000000000852 /* SmartListManagementSheet.swift in Sources */,
@@ -1884,6 +1951,8 @@
 					0A0000000000000000000D0C /* AreaMatrixProtectionDiorama.swift in Sources */,
 					0A0000000000000000000D0D /* AreaMatrixTimelineDiorama.swift in Sources */,
 					0A0000000000000000000D0E /* AreaMatrixWorkflowDiorama.swift in Sources */,
+					0A0000000000000000000D20 /* ReasonStatusCard.swift in Sources */,
+					0A0000000000000000000D22 /* TintedStatusBanner.swift in Sources */,
 					0A00000000000000000000F2 /* WindowCloseConfirmationObserver.swift in Sources */,
 				0A000000000000000000000E /* OnboardingInitializationProgress.swift in Sources */,
 				0A000000000000000000000F /* InitializingStepRow.swift in Sources */,
@@ -1920,6 +1989,7 @@
 				0A0000000000000000000332 /* BatchChangeCategoryState.swift in Sources */,
 				0A0000000000000000000412 /* BatchDeleteState.swift in Sources */,
 				0A0000000000000000000310 /* MainFileListDiagnosticsActions.swift in Sources */,
+				0A0000000000000000000938 /* SemanticSearchFallbackStatus.swift in Sources */,
 				0A0000000000000000000220 /* MainDetailExternalCreateSyncState.swift in Sources */,
 				0A0000000000000000000226 /* MainExternalCreatedFileActions.swift in Sources */,
 				0A0000000000000000000742 /* SemanticSearchPresentation.swift in Sources */,
@@ -2066,6 +2136,8 @@
 				0A00000000000000000008A6 /* SemanticSearchPageTestSupport.swift in Sources */,
 				0A00000000000000000008DE /* SemanticSearchCoreRoutingTests.swift in Sources */,
 				0A00000000000000000008E0 /* SemanticSearchCoreRoutingTestSupport.swift in Sources */,
+				0A0000000000000000000926 /* SearchQueryDiagnosticPageFeatureTests.swift in Sources */,
+				0A0000000000000000000928 /* SearchQueryDiagnosticTestSupport.swift in Sources */,
 				0A000000000000000000074C /* RemoteProviderConfigPageFeatureTests.swift in Sources */,
 				0A0000000000000000000752 /* AIPrivacyRulesPageIntegrationVerifyTests.swift in Sources */,
 				0A0000000000000000000914 /* AIPrivacyRulesRouteFocusTests.swift in Sources */,

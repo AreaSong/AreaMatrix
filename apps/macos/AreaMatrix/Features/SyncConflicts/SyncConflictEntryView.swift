@@ -113,30 +113,36 @@ private extension SyncConflictEntryPanel {
     }
 
     private func banner(_ snapshot: SyncConflictEntrySnapshot) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
-            VStack(alignment: .leading, spacing: 5) {
-                Text(SyncConflictEntryCopy.bannerTitle)
-                    .font(.callout.weight(.semibold))
-                Text(SyncConflictEntryCopy.bannerMessage)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            if let conflict = snapshot.firstReviewableConflict {
-                Button(SyncConflictEntryCopy.reviewAction) {
-                    onReview(model.reviewRoute(for: conflict))
+        TintedStatusBanner(
+            tint: .yellow,
+            cornerRadius: 0,
+            fillsWidth: false,
+            contentPadding: 10,
+            backgroundOpacity: 0.12
+        ) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(SyncConflictEntryCopy.bannerTitle)
+                        .font(.callout.weight(.semibold))
+                    Text(SyncConflictEntryCopy.bannerMessage)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
                 }
-                .accessibilityIdentifier(SyncConflictEntryAccessibilityID.review)
+                Spacer()
+                if let conflict = snapshot.firstReviewableConflict {
+                    Button(SyncConflictEntryCopy.reviewAction) {
+                        onReview(model.reviewRoute(for: conflict))
+                    }
+                    .accessibilityIdentifier(SyncConflictEntryAccessibilityID.review)
+                }
+                Button(SyncConflictEntryCopy.laterAction) {
+                    model.dismissBanner()
+                }
+                .accessibilityIdentifier(SyncConflictEntryAccessibilityID.later)
             }
-            Button(SyncConflictEntryCopy.laterAction) {
-                model.dismissBanner()
-            }
-            .accessibilityIdentifier(SyncConflictEntryAccessibilityID.later)
         }
-        .padding(10)
-        .background(Color.yellow.opacity(0.12))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(snapshot.count) sync conflicts need review. \(SyncConflictEntryCopy.reviewAction).")
         .accessibilityIdentifier(SyncConflictEntryAccessibilityID.banner)
@@ -249,24 +255,30 @@ struct SyncConflictDetailBanner: View {
 
     var body: some View {
         if let conflict {
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(SyncConflictEntryCopy.detailTitle)
-                        .font(.callout.weight(.semibold))
-                    Text(conflict.summaryDisplay)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+            TintedStatusBanner(
+                tint: .yellow,
+                cornerRadius: 0,
+                fillsWidth: false,
+                contentPadding: 10,
+                backgroundOpacity: 0.12
+            ) {
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(SyncConflictEntryCopy.detailTitle)
+                            .font(.callout.weight(.semibold))
+                        Text(conflict.summaryDisplay)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button(SyncConflictEntryCopy.reviewAction) {
+                        onReview(conflict)
+                    }
+                    .disabled(conflict.normalizedConflictID == nil)
                 }
-                Spacer()
-                Button(SyncConflictEntryCopy.reviewAction) {
-                    onReview(conflict)
-                }
-                .disabled(conflict.normalizedConflictID == nil)
             }
-            .padding(10)
-            .background(Color.yellow.opacity(0.12))
             .accessibilityElement(children: .combine)
             .accessibilityLabel("\(SyncConflictEntryCopy.detailTitle). \(conflict.fileDisplayName). Review.")
             .accessibilityIdentifier(SyncConflictEntryAccessibilityID.detailBanner)

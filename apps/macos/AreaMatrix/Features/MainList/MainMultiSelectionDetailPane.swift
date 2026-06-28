@@ -40,14 +40,20 @@ extension MainRepositoryDetailPane {
     @ViewBuilder
     private var multiSelectionWarnings: some View {
         if !multiSelectionSummary.warningMessages.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(multiSelectionSummary.warningMessages, id: \.self) { warning in
-                    Label(warning, systemImage: "exclamationmark.triangle")
-                        .font(.callout)
+            TintedStatusBanner(
+                tint: .yellow,
+                cornerRadius: 0,
+                fillsWidth: false,
+                contentPadding: 10,
+                backgroundOpacity: 0.12
+            ) {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(multiSelectionSummary.warningMessages, id: \.self) { warning in
+                        Label(warning, systemImage: "exclamationmark.triangle")
+                            .font(.callout)
+                    }
                 }
             }
-            .padding(10)
-            .background(Color.yellow.opacity(0.12))
         }
     }
 

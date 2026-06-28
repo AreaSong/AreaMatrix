@@ -134,18 +134,16 @@ struct InitFailedStepView: View {
     }
 
     private func failedDiagnostics(_ mapping: CoreErrorMappingSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label("Diagnostics could not be collected", systemImage: "exclamationmark.triangle")
-                .font(.headline)
-            Text(mapping.userMessage)
-            Text(mapping.suggestedAction)
-                .foregroundStyle(.secondary)
+        TintedOutlinedStatusBanner(tint: .red) {
+            VStack(alignment: .leading, spacing: 6) {
+                Label("Diagnostics could not be collected", systemImage: "exclamationmark.triangle")
+                    .font(.headline)
+                Text(mapping.userMessage)
+                Text(mapping.suggestedAction)
+                    .foregroundStyle(.secondary)
+            }
+            .font(.callout)
         }
-        .font(.callout)
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.red.opacity(0.15), lineWidth: 1))
     }
 
     private var footer: some View {

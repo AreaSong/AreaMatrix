@@ -111,18 +111,24 @@ struct RenameFileSheet: View {
     }
 
     private func renameFailure(_ failure: CoreErrorMappingSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(failure.userMessage, systemImage: "exclamationmark.triangle")
-                .font(.caption.weight(.semibold))
-            Text(failure.suggestedAction)
-                .font(.caption)
-            Text(failure.rawContext)
-                .font(.system(.caption, design: .monospaced))
-                .textSelection(.enabled)
+        TintedStatusBanner(
+            tint: .yellow,
+            cornerRadius: 0,
+            fillsWidth: false,
+            contentPadding: 10,
+            backgroundOpacity: 0.12
+        ) {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(failure.userMessage, systemImage: "exclamationmark.triangle")
+                    .font(.caption.weight(.semibold))
+                Text(failure.suggestedAction)
+                    .font(.caption)
+                Text(failure.rawContext)
+                    .font(.system(.caption, design: .monospaced))
+                    .textSelection(.enabled)
+            }
+            .foregroundStyle(.secondary)
         }
-        .foregroundStyle(.secondary)
-        .padding(10)
-        .background(Color.yellow.opacity(0.12))
     }
 
     private var renameDisabled: Bool {
