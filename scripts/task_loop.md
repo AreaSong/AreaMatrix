@@ -14,7 +14,7 @@
 - copy / verify 都会读取工程质量规则和编码规范，验收不只看能否运行，也看代码是否可维护、可测试、可长期演进。
 - 验收必须通过（日志里出现 `VERIFY_RESULT: PASS`）才会继续下一任务。
 - 失败则会把功能、验证和工程质量失败摘要注入下一次 copy 提示，继续重试修复。
-- 进度统一写入 `workflow/versions/v1-mvp/execution/_shared/progress.json`，可直接被 `prompt_pipeline.py status/next` 读取。
+- v1 历史队列的进度写入 `workflow/versions/v1-mvp/execution/_shared/progress.json`，可直接被该版本的 `prompt_pipeline.py status/next` 读取。
 - 每次执行会持有 `.codex/runtime/task-loop/lock/` 运行锁，避免两个 runner 同时写 progress/logs。
 - 每次执行会写 `workflow/versions/v1-mvp/evidence/task-loop-runs/<run_id>/summary.json`，作为可上传、可续工的运行摘要。
 - 每次执行结束会更新 `workflow/versions/v1-mvp/evidence/task-loop-runs/index.json`，用于快速查看最近 run 的状态。
@@ -304,7 +304,7 @@ Git checkpoint 证据会写入 progress 和 summary：
 
 因为最终 commit hash 不能写入定义它自己的同一个 commit，runner 会在 task completion commit 后创建一个小的 evidence commit 来记录该 hash。成功 run 结束时还会提交最终 summary/index 状态。
 
-通过任务的进度会记录到：
+v1 历史队列通过任务的进度会记录到：
 
 ```
 workflow/versions/v1-mvp/execution/_shared/progress.json
@@ -374,7 +374,7 @@ workflow/versions/v1-mvp/execution/_shared/progress.json
 这个 Python runner 是“自动执行器”，不是 prompt 体系本体。
 你仍然需要先确保：
 
-- `copy-ready` / `verify-ready` 已经用 `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py export --all` 生成；
+- v1 历史队列的 `copy-ready` / `verify-ready` 已经用 `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py export --all` 生成；
 - 对应任务本身在文档与 manifest 上自洽；
 - 当前执行分组通过后再进入下一个执行分组。
 

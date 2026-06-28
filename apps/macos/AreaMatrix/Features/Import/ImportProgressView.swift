@@ -174,7 +174,7 @@ private struct ImportingListRow: View {
                 }
             }
             Spacer()
-            Text(item.phase.rawValue)
+            Text(item.phase.displayText)
                 .font(.caption.monospaced())
                 .foregroundStyle(phaseColor)
         }

@@ -224,7 +224,8 @@ fn release_checklist_records_local_qa_artifact_without_alpha_claim() {
     assert_contains(RELEASE_NOTES_010, "Internal QA date: 2026-05-11");
     assert_contains(RELEASE_NOTES_010, "internal local QA artifact");
     assert_contains(RELEASE_NOTES_010, "同机 local QA 首启交互 smoke 已通过");
-    assert_contains(CHANGELOG, "0.1.0-local-qa");
+    assert_contains(CHANGELOG, "v1 分发证据归档中的内部验证产物");
+    assert_contains(CHANGELOG, "内部验证说明，不再暗示正式分发");
 }
 
 #[test]
@@ -256,7 +257,8 @@ fn release_checklist_records_unnotarized_preview_without_alpha_claim() {
         RELEASE_NOTES_PREVIEW_010,
         "This prerelease does not close P1-RL-003",
     );
-    assert_contains(CHANGELOG, "v0.1.0-unnotarized-preview.2");
+    assert_contains(CHANGELOG, "未公证测试者预览产物");
+    assert_contains(CHANGELOG, "不是正式分发");
 }
 
 #[test]

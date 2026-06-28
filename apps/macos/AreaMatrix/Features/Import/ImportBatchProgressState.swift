@@ -36,6 +36,29 @@ struct ImportBatchProgressSnapshot: Equatable {
     var items: [Item] = []
 }
 
+extension ImportBatchProgressSnapshot.Phase {
+    var displayText: String {
+        switch self {
+        case .pending:
+            "Queued"
+        case .copying:
+            "Copying file"
+        case .moving:
+            "Moving file"
+        case .hashing:
+            "Checking file"
+        case .classifying:
+            "Choosing category"
+        case .writingIndex:
+            "Saving index"
+        case .done:
+            "Imported"
+        case .failed:
+            "Failed"
+        }
+    }
+}
+
 struct ImportBatchImportResult: Equatable {
     var succeededEntries: [FileEntrySnapshot]
     var failedCount: Int

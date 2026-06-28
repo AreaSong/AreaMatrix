@@ -12,7 +12,7 @@ final class InitFailedErrorMappingTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            pathValidator: StaticPathValidator(validation: validation),
+            pathValidator: StaticRepositoryPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: StaticScanSessionReader(),
@@ -250,18 +250,6 @@ private actor InitFailedRecordingDiagnosticsCollector: CoreDiagnosticsCollecting
 
     func requestedRepoPaths() -> [String] {
         repoPaths
-    }
-}
-
-private actor StaticPathValidator: CoreRepositoryPathValidating {
-    private let validation: RepoPathValidationSnapshot
-
-    init(validation: RepoPathValidationSnapshot) {
-        self.validation = validation
-    }
-
-    func validateRepoPath(repoPath _: String) async throws -> RepoPathValidationSnapshot {
-        validation
     }
 }
 

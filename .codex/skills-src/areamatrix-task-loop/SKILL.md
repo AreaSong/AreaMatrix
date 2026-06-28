@@ -30,9 +30,9 @@ Trigger it for questions about `./task-loop`, `./dev` runner actions, copy-ready
 
 ## Workflow
 
-1. Check health with `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor`.
+1. Check prompt health with `./dev check prompts`.
 2. Check task-loop health with `./task-loop check` when runner behavior changed.
-3. Check current queue state with `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py status`.
+3. For v1 historical audit/recovery only, check archived queue state with `python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py status`.
 4. Check task-loop state with `./task-loop status`.
 5. Load the Git checkpoint skill before changing commit or push behavior.
 6. Load the runbook before recommending a live command.

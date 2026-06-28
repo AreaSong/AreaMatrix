@@ -14,7 +14,7 @@ This file reviews whether a workflow feature is ready to become executable tasks
 ## Promotion Notes
 
 Do not write `workflow/versions/<version>/execution/**` until promotion is explicitly requested and gates pass.
-Do not write `workflow/versions/v1-mvp/execution/_shared/progress.json`, checkpoints, run summaries,
+Do not write `workflow/versions/<version>/execution/_shared/progress.json`, checkpoints, run summaries,
 or runner locks from queue candidate review.
 
 Queue candidates must reference separate copy-ready and verify-ready drafts,

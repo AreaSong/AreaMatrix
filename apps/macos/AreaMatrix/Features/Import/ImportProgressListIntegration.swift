@@ -25,8 +25,8 @@ struct ImportProgressListRow: Identifiable, Equatable {
         item.targetPath
     }
 
-    var phaseText: String {
-        item.phase.rawValue
+    var statusText: String {
+        item.phase.displayText
     }
 
     var errorMessage: String? {
@@ -51,7 +51,7 @@ struct ImportProgressTableView: View {
                         .foregroundStyle(.secondary)
                 }
                 TableColumn("Status") { row in
-                    Text(row.phaseText)
+                    Text(row.statusText)
                         .monospacedDigit()
                 }
             }
@@ -81,7 +81,7 @@ struct ImportProgressDetailPane: View {
 
     private var metadataRows: some View {
         VStack(alignment: .leading, spacing: 10) {
-            metadataRow("Status", row.phaseText)
+            metadataRow("Status", row.statusText)
             metadataRow("Target", row.targetPath)
             metadataRow("Source", row.sourcePath)
             if let errorMessage = row.errorMessage {

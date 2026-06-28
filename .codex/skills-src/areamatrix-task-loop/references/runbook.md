@@ -8,19 +8,18 @@ Run these before live execution:
 
 ```bash
 ./task-loop check
-python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
-python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py status
+./dev check prompts
 ./task-loop status
 ```
 
 Check that:
 
-- `doctor` is `OK`.
+- `./dev check prompts` is `OK`.
 - `./task-loop check` is `OK`; it uses temporary state and must not change real progress.
-- `status` shows the expected first pending task.
+- For v1 historical audit/recovery, archived queue status shows the expected first pending task.
 - live Git checkpoint mode has a clean worktree before execution.
 - copy-ready / verify-ready prompts have been regenerated after shared rule changes.
-- `progress_file` is `workflow/versions/v1-mvp/execution/_shared/progress.json`.
+- For v1 historical audit/recovery, `progress_file` is `workflow/versions/v1-mvp/execution/_shared/progress.json`.
 - `lock_alive` is not `yes` unless the operator intentionally has a runner active.
 - `latest_log_dir` is understood; `None` is fine before the first run.
 
@@ -147,7 +146,7 @@ The runner validates explicit `START_FROM` / `--start-from` and `STOP_AFTER` / `
 
 ## Progress State
 
-Primary progress:
+Primary progress for v1 historical audit/recovery:
 
 ```text
 workflow/versions/v1-mvp/execution/_shared/progress.json

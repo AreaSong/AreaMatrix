@@ -245,16 +245,11 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
             predictor: predictor,
             ruleEditor: editor,
             errorMapper: ClassifierSettingsRecoveryErrorMapper(),
-            accessibilityAnnouncer: ClassifierSettingsRecoveryNoopAnnouncer()
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
         await model.load()
         return model
     }
-}
-
-private struct ClassifierSettingsRecoveryNoopAnnouncer: AccessibilityAnnouncing {
-    @MainActor
-    func announce(_: String) {}
 }
 
 private enum ClassifierSequencePredictorResult {

@@ -17,7 +17,7 @@
 ## Non-goals
 
 - Do not write `workflow/versions/<version>/execution/**`.
-- Do not write `workflow/versions/v1-mvp/execution/_shared/progress.json`.
+- Do not write `workflow/versions/<version>/execution/_shared/progress.json`.
 - Do not claim live task-loop execution or checkpoint evidence.
 
 ## Source of Truth
@@ -64,7 +64,7 @@
 
 ```bash
 ./dev workflow doctor
-python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
+./dev check prompts
 ```
 
 ## Rollback / Blocked

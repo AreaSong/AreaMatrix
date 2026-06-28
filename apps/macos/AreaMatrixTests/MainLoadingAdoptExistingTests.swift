@@ -17,7 +17,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
             startupRecoverer: startupRecoverer,
-            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
+            scanSessionReader: StaticScanSessionReader(),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -65,7 +65,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             settingsWriter: writer,
             emptyRepositoryOpener: opener,
             startupRecoverer: startupRecoverer,
-            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
+            scanSessionReader: StaticScanSessionReader(),
             errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
@@ -97,7 +97,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             settingsWriter: writer,
             emptyRepositoryOpener: opener,
             startupRecoverer: StaticStartupRecoverer(),
-            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
+            scanSessionReader: StaticScanSessionReader(),
             errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
@@ -127,7 +127,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             emptyRepositoryOpener: opener,
             mainLoadingTreeLister: MainLoadingRecordingTreeLister(result: .success(tree)),
             startupRecoverer: StaticStartupRecoverer(),
-            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
+            scanSessionReader: StaticScanSessionReader(),
             errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
@@ -159,7 +159,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             emptyRepositoryOpener: opener,
             mainLoadingTreeLister: treeLister,
             startupRecoverer: StaticStartupRecoverer(),
-            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
+            scanSessionReader: StaticScanSessionReader(),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -199,7 +199,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             emptyRepositoryOpener: opener,
             mainLoadingTreeLister: treeLister,
             startupRecoverer: StaticStartupRecoverer(),
-            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
+            scanSessionReader: StaticScanSessionReader(),
             errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
@@ -265,7 +265,7 @@ final class MainLoadingScanSessionTests: XCTestCase {
             settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
             startupRecoverer: StaticStartupRecoverer(),
-            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(scanSession)),
+            scanSessionReader: StaticScanSessionReader(session: scanSession),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -308,8 +308,7 @@ final class MainLoadingScanSessionTests: XCTestCase {
             settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
             startupRecoverer: StaticStartupRecoverer(),
-            scanSessionReader: MainLoadingStaticScanSessionReader(result: .failure(CoreError
-                    .Db(message: "scan db locked"))),
+            scanSessionReader: StaticScanSessionReader(result: .failure(CoreError.Db(message: "scan db locked"))),
             errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
@@ -351,7 +350,7 @@ final class MainLoadingScanSessionTests: XCTestCase {
             emptyRepositoryOpener: opener,
             mainLoadingTreeLister: treeLister,
             startupRecoverer: StaticStartupRecoverer(),
-            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(scanSession)),
+            scanSessionReader: StaticScanSessionReader(session: scanSession),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -406,7 +405,7 @@ final class MainLoadingScanSessionTests: XCTestCase {
             settingsWriter: writer,
             emptyRepositoryOpener: opener,
             startupRecoverer: StaticStartupRecoverer(),
-            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
+            scanSessionReader: StaticScanSessionReader(),
             helpOpener: NoopWelcomeHelpOpener()
         )
 

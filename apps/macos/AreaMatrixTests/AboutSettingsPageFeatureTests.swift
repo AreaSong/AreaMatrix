@@ -4,8 +4,8 @@ import XCTest
 final class AboutSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testLoadShowsAppCoreAndSchemaVersionsThroughDeclaredReaders() async {
-        let coreReader = AboutSettingsStaticCoreVersionReader(result: .success("0.1.0"))
-        let metadataReader = AboutSettingsStaticMetadataReader(result: .success(ExistingRepositoryMetadataSnapshot(
+        let coreReader = StaticCoreVersionReader(result: .success("0.1.0"))
+        let metadataReader = StaticExistingRepositoryMetadataReader(result: .success(ExistingRepositoryMetadataSnapshot(
             schemaVersion: 1,
             lastOpenedAt: nil
         )))
@@ -42,8 +42,8 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
         let model = AboutSettingsModel(
             repoPath: "/tmp/repo",
             appVersionReader: StaticAppVersionReader(version: "1.0"),
-            coreVersionReader: AboutSettingsStaticCoreVersionReader(result: .success("0.1.0")),
-            metadataReader: AboutSettingsStaticMetadataReader(result: .failure(CoreError.Db(message: "missing"))),
+            coreVersionReader: StaticCoreVersionReader(result: .success("0.1.0")),
+            metadataReader: StaticExistingRepositoryMetadataReader(result: .failure(CoreError.Db(message: "missing"))),
             diagnosticsExporter: AboutDiagnosticsExporter(result: .success(.fixture())),
             externalLinkOpener: AboutSettingsRecordingExternalLinkOpener(result: .success),
             logsOpener: AboutSettingsRecordingLogsOpener(result: .success),
@@ -162,8 +162,8 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
         AboutSettingsModel(
             repoPath: "/tmp/repo",
             appVersionReader: StaticAppVersionReader(version: "1.0"),
-            coreVersionReader: AboutSettingsStaticCoreVersionReader(result: .success("0.1.0")),
-            metadataReader: AboutSettingsStaticMetadataReader(result: .success(ExistingRepositoryMetadataSnapshot(
+            coreVersionReader: StaticCoreVersionReader(result: .success("0.1.0")),
+            metadataReader: StaticExistingRepositoryMetadataReader(result: .success(ExistingRepositoryMetadataSnapshot(
                 schemaVersion: 1,
                 lastOpenedAt: nil
             ))),
@@ -175,42 +175,6 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
             errorMapper: AboutSettingsStaticErrorMapper(),
             accessibilityAnnouncer: accessibilityAnnouncer
         )
-    }
-}
-
-private actor AboutSettingsStaticCoreVersionReader: CoreVersionReading {
-    private let result: Result<String, Error>
-    private var count = 0
-
-    init(result: Result<String, Error>) {
-        self.result = result
-    }
-
-    func coreVersion() async throws -> String {
-        count += 1
-        return try result.get()
-    }
-
-    func requestCount() -> Int {
-        count
-    }
-}
-
-private actor AboutSettingsStaticMetadataReader: ExistingRepositoryMetadataReading {
-    private let result: Result<ExistingRepositoryMetadataSnapshot, Error>
-    private var paths: [String] = []
-
-    init(result: Result<ExistingRepositoryMetadataSnapshot, Error>) {
-        self.result = result
-    }
-
-    func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
-        paths.append(repoPath)
-        return try result.get()
-    }
-
-    func requestedPaths() -> [String] {
-        paths
     }
 }
 

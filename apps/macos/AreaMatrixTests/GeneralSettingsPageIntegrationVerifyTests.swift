@@ -51,7 +51,7 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
         let ignoreRulesManager = RecordingIgnoreRulesManager(openResult: .missingThenSuccess)
         let model = GeneralSettingsModel(
             repoPath: repoURL.path,
-            loader: GeneralSettingsStaticConfigLoader(config: RepoConfigSnapshot
+            loader: StaticConfigurationLoader(config: RepoConfigSnapshot
                 .generalSettingsIntegrationFixture(repoPath: repoURL.path)),
             updater: updater,
             rootOverviewInspector: LocalRootOverviewFileInspector(),
@@ -278,18 +278,6 @@ private final class RecordingIgnoreRulesManager: RepositoryIgnoreRulesManaging {
 
     func createDefaultIgnoreRules(repoPath: String) throws {
         createdPaths.append(repoPath)
-    }
-}
-
-private actor GeneralSettingsStaticConfigLoader: CoreConfigurationLoading {
-    let config: RepoConfigSnapshot
-
-    init(config: RepoConfigSnapshot) {
-        self.config = config
-    }
-
-    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
-        config
     }
 }
 

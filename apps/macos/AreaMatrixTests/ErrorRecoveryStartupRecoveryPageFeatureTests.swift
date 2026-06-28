@@ -121,11 +121,11 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: ShellRecordingSettingsWriter(),
-            pathValidator: MainLoadingStaticPathValidator(),
-            initializedPathValidator: StaticInitializedPathValidator(),
+            pathValidator: MainLoadingInitializedPathValidator(),
+            initializedPathValidator: MainLoadingInitializedPathValidator(),
             emptyRepositoryOpener: opener,
             startupRecoverer: recoverer,
-            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
+            scanSessionReader: StaticScanSessionReader(),
             errorMapper: StartupRecoveryErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
@@ -428,18 +428,6 @@ private actor StartupRecoveryErrorMapper: CoreErrorMapping {
 
     func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
         mapping
-    }
-}
-
-private actor StaticInitializedPathValidator: CoreInitializedRepositoryPathValidating {
-    func validateInitializedRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
-        .mainLoadingInitializedFixture(repoPath: repoPath)
-    }
-}
-
-private actor MainLoadingStaticPathValidator: CoreRepositoryPathValidating {
-    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
-        .mainLoadingInitializedFixture(repoPath: repoPath)
     }
 }
 

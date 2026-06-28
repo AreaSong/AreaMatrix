@@ -83,7 +83,7 @@ final class MainRepoErrorMappingTests: XCTestCase {
             settingsReader: ShellStaticSettingsReader(repoPath: "/tmp/repo"),
             emptyRepositoryOpener: ShellRecordingRepositoryOpener(result: .failure(error)),
             startupRecoverer: StaticStartupRecoverer(),
-            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
+            scanSessionReader: StaticScanSessionReader(),
             errorMapper: errorMapper,
             helpOpener: NoopWelcomeHelpOpener()
         )

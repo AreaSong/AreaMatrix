@@ -7,7 +7,7 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
         let rows = Self.runningProgress.items.map(ImportProgressListRow.init)
 
         XCTAssertEqual(rows.map(\.displayName), ["invoice.pdf", "contract.pdf", "later.pdf"])
-        XCTAssertEqual(rows.map(\.phaseText), ["Done", "Copying", "Pending"])
+        XCTAssertEqual(rows.map(\.statusText), ["Imported", "Copying file", "Queued"])
         XCTAssertEqual(rows[1].sourcePath, "/tmp/contract.pdf")
         XCTAssertEqual(rows[1].targetPath, "docs/contract.pdf")
     }

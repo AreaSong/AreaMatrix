@@ -10,19 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- 生成 `0.1.0-local-qa` 内部测试产物：ad-hoc signed `AreaMatrix.app`、
-  `workflow/versions/v1-mvp/evidence/artifacts/AreaMatrix-0.1.0-local-qa.dmg` 和 SHA-256 checksum。
-- 补充 iCloud placeholder、Developer ID / notarization 后续补证模板，并记录同机 local QA
-  首启交互 smoke。
-- 准备 `v0.1.0-unnotarized-preview.2` GitHub prerelease 轨道，生成未公证预览 DMG
-  `workflow/versions/v1-mvp/evidence/artifacts/AreaMatrix-v0.1.0-unnotarized-preview.2.dmg`，SHA-256 为
-  `d01d44c82e2287c0f1cd12aea4e78ece46301fe2f4709b2598c5710ba89864b2`。
-  `.1` 未发布，因 GitHub immutable release / tag 规则阻止同一预览号复用。
+- 记录 v1 分发证据归档中的内部验证产物与未公证测试者预览产物，并保存 checksum。
+- 补充 iCloud placeholder、Developer ID / notarization 后续补证模板，并记录同机首启交互 smoke。
+- 记录 GitHub immutable release / tag 规则对测试者预览产物编号复用的限制。
 
 ### Changed
-- `workflow/versions/v1-mvp/evidence/release-notes/release-notes-0.1.0.md` 调整为 `0.1.0-local-qa` 内部测试说明，不再暗示正式 alpha 发布。
-- `./dev release local-qa` 改为显式 ad-hoc bundle signing、静态链接 Rust core，并在构建后验证
-  bundle 签名和自包含链接状态，避免 preview/local QA 包依赖开发机 dylib。
+- v1 release notes 调整为内部验证说明，不再暗示正式分发。
+- 本地验证打包命令改为显式 ad-hoc bundle signing、静态链接 Rust core，并在构建后验证
+  bundle 签名和自包含链接状态，避免测试包依赖开发机 dylib。
 
 ### Deprecated
 - N/A
@@ -49,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - 顶层 README.md 由占位说明改为正式项目门面（中英双语）
-- Stage 1 产品口径调整为支持非空目录接管；自动概览默认写入 `.areamatrix/generated/`，不覆盖 `README.md`
+- v1 产品口径调整为支持非空目录接管；自动概览默认写入 `.areamatrix/generated/`，不覆盖 `README.md`
 - Core API / 数据模型 / tree / overview 文档同步 `origin`、`scan_sessions`、`ignore.yaml` 与顶层节点概览规则
 
 ### Deprecated
@@ -65,15 +60,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - N/A
 
 ### Known Issues
-- Stage 1 alpha 分发仍需补齐 M-02 iCloud placeholder 真实环境手工冒烟；M-01 Copy
-  中断恢复、M-03 权限恢复和 M-04 DB repair 已在 local QA Release build 手工通过。
-- M-03 本轮使用 local QA repo 的可逆 POSIX 权限阻断模拟失去访问权限，未修改系统
+- v1 分发证据仍需补齐 M-02 iCloud placeholder 真实环境手工冒烟；M-01 Copy
+  中断恢复、M-03 权限恢复和 M-04 DB repair 已在内部 Release build 手工通过。
+- M-03 使用可逆 POSIX 权限阻断模拟失去访问权限，未修改系统
   TCC 数据库；如需发布机 TCC 数据库级证据，应在后续真实分发环境补测。
-- 当前未加入付费 Apple Developer Program；自签名、ad-hoc signed `.app` 或 local QA DMG
+- 当前未加入付费 Apple Developer Program；自签名、ad-hoc signed `.app` 或内部测试 DMG
   不能替代 Developer ID 签名、公证、DMG、干净 Mac 首启和 `v0.1.0` tag。
-- `v0.1.0-unnotarized-preview.2` 只是可信测试者 prerelease，不是正式 Stage 1 alpha；
-  它未使用 Developer ID 签名，未公证，也未 stapled。
-- 同机 local QA 首启交互 smoke 不能替代干净 Mac 首启、Gatekeeper 或 notarized app 验证。
+- 未公证测试者预览产物只是可信测试者验证材料，不是正式分发；它未使用 Developer ID
+  签名，未公证，也未 stapled。
+- 同机首启交互 smoke 不能替代干净 Mac 首启、Gatekeeper 或已公证 app 验证。
 
 ---
 

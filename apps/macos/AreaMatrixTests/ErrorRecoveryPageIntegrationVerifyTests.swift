@@ -83,12 +83,12 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: MainLoadingRecordingSettingsWriter(),
-            pathValidator: StartupRecoveryIntegrationPathValidator(),
-            initializedPathValidator: InitializedPathValidator(),
+            pathValidator: MainLoadingInitializedPathValidator(),
+            initializedPathValidator: MainLoadingInitializedPathValidator(),
             emptyRepositoryOpener: opener,
             mainLoadingTreeLister: treeLister,
             startupRecoverer: recoverer,
-            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
+            scanSessionReader: StaticScanSessionReader(),
             errorMapper: StartupRecoveryIntegrationErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
@@ -130,13 +130,13 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
         )
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
-            pathValidator: StartupRecoveryIntegrationPathValidator(),
-            initializedPathValidator: InitializedPathValidator(),
+            pathValidator: MainLoadingInitializedPathValidator(),
+            initializedPathValidator: MainLoadingInitializedPathValidator(),
             emptyRepositoryOpener: MainLoadingFailingRepositoryOpener(
                 error: CoreError.Internal(message: "should not open")
             ),
             startupRecoverer: recoverer,
-            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
+            scanSessionReader: StaticScanSessionReader(),
             errorMapper: StartupRecoveryIntegrationErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
@@ -235,18 +235,6 @@ private func assertStartupRecoveryStartupRecoveryFailureState(
         onRetryOpening: {}
     ).body, contains: "Cancel opening")
     XCTAssertFalse(RepositoryErrorPresentation.mainRepo(mapping: mapping).primaryAction == .openRepair)
-}
-
-private actor StartupRecoveryIntegrationPathValidator: CoreRepositoryPathValidating {
-    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
-        .mainLoadingInitializedFixture(repoPath: repoPath)
-    }
-}
-
-private actor InitializedPathValidator: CoreInitializedRepositoryPathValidating {
-    func validateInitializedRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
-        .mainLoadingInitializedFixture(repoPath: repoPath)
-    }
 }
 
 private actor StartupRecoveryIntegrationErrorMapper: CoreErrorMapping {

@@ -2,11 +2,6 @@
 import Foundation
 import XCTest
 
-enum MainLoadingScanSessionResult {
-    case success(ScanSessionSnapshot?)
-    case failure(Error)
-}
-
 enum MainLoadingTreeResult {
     case success(RepositoryTreeNodeSnapshot)
     case failure(Error)
@@ -129,23 +124,6 @@ actor MainLoadingPausingStartupRecoverer: CoreStartupRecovering {
     }
 }
 
-actor MainLoadingStaticScanSessionReader: CoreScanSessionReading {
-    private let result: MainLoadingScanSessionResult
-
-    init(result: MainLoadingScanSessionResult) {
-        self.result = result
-    }
-
-    func latestScanSession(repoPath _: String) async throws -> ScanSessionSnapshot? {
-        switch result {
-        case let .success(session):
-            return session
-        case let .failure(error):
-            throw error
-        }
-    }
-}
-
 actor MainLoadingRecordingTreeLister: CoreRepositoryTreeListing {
     private var results: [MainLoadingTreeResult]
     private var requests: [String] = []
@@ -172,6 +150,16 @@ actor MainLoadingRecordingTreeLister: CoreRepositoryTreeListing {
 
     func requestedRepoPaths() -> [String] {
         requests
+    }
+}
+
+actor MainLoadingInitializedPathValidator: CoreRepositoryPathValidating, CoreInitializedRepositoryPathValidating {
+    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
+        .mainLoadingInitializedFixture(repoPath: repoPath)
+    }
+
+    func validateInitializedRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
+        .mainLoadingInitializedFixture(repoPath: repoPath)
     }
 }
 

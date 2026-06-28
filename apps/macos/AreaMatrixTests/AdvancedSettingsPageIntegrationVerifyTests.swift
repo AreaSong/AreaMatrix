@@ -266,7 +266,7 @@ private func advancedSettingsIntegrationModel(
         rootOverviewInspector: LocalRootOverviewFileInspector(),
         diagnosticsCollector: diagnosticsCollector,
         appVersionReader: StaticAppVersionReader(version: "9.8.7 (654)"),
-        coreVersionReader: AdvancedSettingsStaticCoreVersionReader(version: "0.1.0-test"),
+        coreVersionReader: StaticCoreVersionReader(version: "0.1.0-test"),
         metadataReader: SQLiteExistingRepositoryMetadataReader(),
         logsOpener: logsOpener,
         summaryCopier: summaryCopier,
@@ -303,31 +303,19 @@ private func loadedAdvancedSettingsModel(
     ))
     let model = AdvancedSettingsModel(
         repoPath: "/tmp/repo",
-        loader: AdvancedSettingsStaticConfigLoader(config: .advancedSettingsFixture(repoPath: "/tmp/repo")),
+        loader: StaticConfigurationLoader(config: .advancedSettingsFixture(repoPath: "/tmp/repo")),
         updater: NoopConfigurationUpdater(),
         rootOverviewInspector: StaticRootOverviewInspector(status: .missing),
         diagnosticsCollector: diagnosticsCollector,
         appVersionReader: StaticAppVersionReader(version: "1.0.0"),
-        coreVersionReader: AdvancedSettingsStaticCoreVersionReader(version: "0.1.0"),
-        metadataReader: AdvancedSettingsStaticMetadataReader(schemaVersion: 1),
+        coreVersionReader: StaticCoreVersionReader(version: "0.1.0"),
+        metadataReader: StaticExistingRepositoryMetadataReader(schemaVersion: 1),
         logsOpener: resolvedLogsOpener,
         summaryCopier: RecordingDiagnosticSummaryCopier(),
         errorMapper: CoreBridge()
     )
     await model.load()
     return model
-}
-
-private actor AdvancedSettingsStaticConfigLoader: CoreConfigurationLoading {
-    private let config: RepoConfigSnapshot
-
-    init(config: RepoConfigSnapshot) {
-        self.config = config
-    }
-
-    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
-        config
-    }
 }
 
 private actor AdvancedSettingsFailingConfigLoader: CoreConfigurationLoading {
@@ -347,30 +335,6 @@ private struct StaticRootOverviewInspector: RootOverviewFileInspecting {
 
     func status(repoPath _: String) -> RootOverviewFileStatus {
         status
-    }
-}
-
-private actor AdvancedSettingsStaticCoreVersionReader: CoreVersionReading {
-    let version: String
-
-    init(version: String) {
-        self.version = version
-    }
-
-    func coreVersion() async throws -> String {
-        version
-    }
-}
-
-private actor AdvancedSettingsStaticMetadataReader: ExistingRepositoryMetadataReading {
-    let schemaVersion: Int64
-
-    init(schemaVersion: Int64) {
-        self.schemaVersion = schemaVersion
-    }
-
-    func metadata(repoPath _: String) async throws -> ExistingRepositoryMetadataSnapshot {
-        ExistingRepositoryMetadataSnapshot(schemaVersion: schemaVersion, lastOpenedAt: nil)
     }
 }
 

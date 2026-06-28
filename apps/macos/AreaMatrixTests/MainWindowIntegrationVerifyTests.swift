@@ -281,7 +281,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
             emptyRepositoryOpener: opener,
             mainLoadingTreeLister: treeLister,
             startupRecoverer: StaticStartupRecoverer(),
-            scanSessionReader: MainLoadingStaticScanSessionReader(result: .success(nil)),
+            scanSessionReader: StaticScanSessionReader(),
             errorMapper: errorMapper,
             helpOpener: NoopWelcomeHelpOpener()
         )

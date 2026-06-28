@@ -61,7 +61,7 @@ const scanLogic = `function startScanningSequence(filename = null) {
 
 content = content.replace(/function startScanningSequence\(\) \{[\s\S]*?\}\s*<\/script>/, scanLogic + '\n    </script>');
 
-// 3. Simulated Code Typing (Stage 3 & 4)
+// 3. Simulated Code Typing for tracking and help views
 // Let's add JS for typing simulation
 const typingScript = `
 

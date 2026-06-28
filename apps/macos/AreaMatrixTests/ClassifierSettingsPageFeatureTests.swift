@@ -1,11 +1,6 @@
 @testable import AreaMatrix
 import XCTest
 
-private struct ClassifierNoopAnnouncer: AccessibilityAnnouncing {
-    @MainActor
-    func announce(_: String) {}
-}
-
 final class ClassifierSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testLoadUsesRepositoryConfigCoreConfigSnapshotForVisibleClassifierSettings() async {
@@ -194,7 +189,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             updater: ClassifierSettingsRecordingUpdater(result: .success),
             predictor: predictor,
             errorMapper: ClassifierSettingsStaticErrorMapper(),
-            accessibilityAnnouncer: ClassifierNoopAnnouncer()
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
         await model.load()
@@ -277,7 +272,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         predictor: any CoreCategoryPredicting = CoreBridge(),
         config: RepoConfigSnapshot = .classifierSettingsFixture(repoPath: "/tmp/repo"),
         fileOpener: any RepositoryFileOpening = NSWorkspaceRepositoryFileOpener(),
-        accessibilityAnnouncer: any AccessibilityAnnouncing = ClassifierNoopAnnouncer()
+        accessibilityAnnouncer: any AccessibilityAnnouncing = NoopAccessibilityAnnouncer()
     ) async -> ClassifierSettingsModel {
         let model = ClassifierSettingsModel(
             repoPath: config.repoPath,

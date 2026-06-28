@@ -18,6 +18,74 @@ struct NoopConfigurationUpdater: CoreConfigurationUpdating {
     func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
 }
 
+actor StaticConfigurationLoader: CoreConfigurationLoading {
+    private let config: RepoConfigSnapshot
+
+    init(config: RepoConfigSnapshot) {
+        self.config = config
+    }
+
+    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
+        config
+    }
+}
+
+actor StaticCoreVersionReader: CoreVersionReading {
+    private let result: Result<String, Error>
+    private var count = 0
+
+    init(version: String) {
+        result = .success(version)
+    }
+
+    init(result: Result<String, Error>) {
+        self.result = result
+    }
+
+    func coreVersion() async throws -> String {
+        count += 1
+        return try result.get()
+    }
+
+    func requestCount() -> Int {
+        count
+    }
+}
+
+actor StaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
+    private let result: Result<ExistingRepositoryMetadataSnapshot, Error>
+    private var paths: [String] = []
+
+    init(schemaVersion: Int64) {
+        result = .success(ExistingRepositoryMetadataSnapshot(schemaVersion: schemaVersion, lastOpenedAt: nil))
+    }
+
+    init(result: Result<ExistingRepositoryMetadataSnapshot, Error>) {
+        self.result = result
+    }
+
+    func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
+        paths.append(repoPath)
+        return try result.get()
+    }
+
+    func requestedPaths() -> [String] {
+        paths
+    }
+}
+
+actor StaticRepositoryPathValidator: CoreRepositoryPathValidating {
+    private let validation: RepoPathValidationSnapshot
+
+    init(validation: RepoPathValidationSnapshot) {
+        self.validation = validation
+    }
+
+    func validateRepoPath(repoPath _: String) async throws -> RepoPathValidationSnapshot {
+        validation
+    }
+}
+
 actor StaticStartupRecoverer: CoreStartupRecovering {
     private let report: RecoveryReportSnapshot
 
@@ -35,13 +103,17 @@ actor StaticStartupRecoverer: CoreStartupRecovering {
 }
 
 actor StaticScanSessionReader: CoreScanSessionReading {
-    private let session: ScanSessionSnapshot?
+    private let result: Result<ScanSessionSnapshot?, Error>
 
     init(session: ScanSessionSnapshot? = nil) {
-        self.session = session
+        result = .success(session)
+    }
+
+    init(result: Result<ScanSessionSnapshot?, Error>) {
+        self.result = result
     }
 
     func latestScanSession(repoPath _: String) async throws -> ScanSessionSnapshot? {
-        session
+        try result.get()
     }
 }

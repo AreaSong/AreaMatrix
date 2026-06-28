@@ -92,7 +92,7 @@ Automations 是无人值守后台运行能力，必须按默认 sandbox 和当�
 ```bash
 ./dev check governance
 ./dev check skills
-python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
+./dev check prompts
 git diff --check -- .ai-governance .codex/references tasks/backlog
 ```
 

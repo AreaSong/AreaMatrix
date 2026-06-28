@@ -10,8 +10,8 @@
 
 | 版本 | 是否接受安全修复 |
 |---|---|
-| 0.x（pre-alpha） | 是 |
-| < 0.1（pre-release） | 否 |
+| 0.x（当前开发线） | 是 |
+| < 0.1（历史构建） | 否 |
 
 ### 报告安全漏洞
 
@@ -93,8 +93,8 @@
 
 | Version | Security Fixes |
 |---|---|
-| 0.x (pre-alpha) | Yes |
-| < 0.1 (pre-release) | No |
+| 0.x (current development line) | Yes |
+| < 0.1 (historical builds) | No |
 
 ### Reporting a Vulnerability
 
