@@ -143,12 +143,12 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         model.route = .mainList(opening)
         model.beginImportEntryProgress(
             currentPath: "docs/moved.pdf",
-            retryContext: Self.moveRetryContext(sourcePath: "/tmp/source.pdf")
+            retryContext: ImportProgressTestFixtures.moveRetryContext(sourcePath: "/tmp/source.pdf")
         )
         model.failImportEntry(
-            progress: Self.moveFailedProgress,
+            progress: ImportProgressTestFixtures.moveFailedProgress,
             mapping: CoreErrorMappingSnapshot.importProgressFatalCopyError,
-            retryContext: Self.moveRetryContext(sourcePath: "/tmp/source.pdf"),
+            retryContext: ImportProgressTestFixtures.moveRetryContext(sourcePath: "/tmp/source.pdf"),
             recoveryCheck: .retryAllowed(nil)
         )
         model.requestImportProgressDiagnosticsPrivacyConfirmation()
@@ -223,8 +223,8 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         )
 
         model.route = .mainList(opening)
-        model.updateImportEntryProgress(Self.partialResultProgress)
-        model.showImportEntryResults(Self.partialResultProgress)
+        model.updateImportEntryProgress(ImportProgressTestFixtures.partialResultProgress)
+        model.showImportEntryResults(ImportProgressTestFixtures.partialResultProgress)
 
         guard case let .importResult(result) = model.route else {
             return XCTFail("Expected import-result import result route")
@@ -250,7 +250,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         }
         XCTAssertEqual(
             outcome?.fatalRetryContext,
-            Self.copyRetryContext(sourcePath: "/tmp/second.pdf", overrideFilename: "second.pdf")
+            ImportProgressTestFixtures.copyRetryContext(sourcePath: "/tmp/second.pdf", overrideFilename: "second.pdf")
         )
         XCTAssertFalse(progress.canRetryCurrentItem)
 
@@ -380,44 +380,6 @@ extension ImportProgressCopyQueueRecoveryTests {
         XCTAssertEqual(scenario.model.toastMessage, "已导入：third.pdf")
     }
 
-    static let moveFailedProgress = ImportBatchProgressSnapshot(
-        completed: 0,
-        failed: 1,
-        total: 1,
-        remaining: 0,
-        currentPath: "docs/moved.pdf",
-        items: [.init(
-            sourcePath: "/tmp/source.pdf",
-            targetPath: "docs/moved.pdf",
-            phase: .failed,
-            errorMessage: "文件读写失败"
-        )]
-    )
-
-    static func moveRetryContext(sourcePath: String) -> ImportProgressRetryContext {
-        retryContext(sourcePath: sourcePath, storageMode: .move, overrideFilename: "moved.pdf")
-    }
-
-    static func copyRetryContext(sourcePath: String,
-                                 overrideFilename: String = "copied.pdf") -> ImportProgressRetryContext {
-        retryContext(sourcePath: sourcePath, storageMode: .copy, overrideFilename: overrideFilename)
-    }
-
-    private static func retryContext(
-        sourcePath: String,
-        storageMode: ImportSingleFileStorageMode,
-        overrideFilename: String
-    ) -> ImportProgressRetryContext {
-        ImportProgressRetryContext(
-            repoPath: "/tmp/repo",
-            sourcePath: sourcePath,
-            storageMode: storageMode,
-            overrideCategory: "docs",
-            overrideFilename: overrideFilename,
-            duplicateStrategy: .ask
-        )
-    }
-
     static func readyRow(_ url: URL, _ suggestedName: String) -> ImportBatchPreviewRow {
         ImportBatchPreviewRow.ready(url: url, prediction: .init(
             category: "docs",
@@ -437,16 +399,4 @@ extension ImportProgressCopyQueueRecoveryTests {
             availableCategories: ["inbox", "docs"]
         )
     }
-
-    static let partialResultProgress = ImportBatchProgressSnapshot(
-        completed: 1,
-        failed: 1,
-        total: 2,
-        remaining: 0,
-        currentPath: "finance/合同.pdf",
-        items: [
-            .init(sourcePath: "/tmp/invoice.pdf", targetPath: "finance/invoice.pdf", phase: .done, errorMessage: nil),
-            .init(sourcePath: "/tmp/合同.pdf", targetPath: "finance/合同.pdf", phase: .failed, errorMessage: "无访问权限")
-        ]
-    )
 }
