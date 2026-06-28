@@ -5,7 +5,7 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
     @MainActor
     func testRepositorySettingsCrossPlatformRepositorySettingsCoreSavesRepositoryConfigThroughUpdateConfig() async {
         let current = RepoConfigSnapshot.repositorySettingsRepositorySettingsCoreFixture(repoPath: "/tmp/repo")
-        let updater = RepositorySettingsRecordingUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success)
         let announcer = RecordingAccessibilityAnnouncer()
         let model = RepositorySettingsConfigModel(
             repoPath: "/tmp/repo",
@@ -23,7 +23,7 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
         let requests = await updater.requests()
 
         XCTAssertTrue(didSave)
-        XCTAssertEqual(requests, [RepositorySettingsRecordingUpdater.Request(
+        XCTAssertEqual(requests, [RecordingConfigurationUpdater.Request(
             repoPath: "/tmp/repo",
             config: current
                 .withRepositorySettingsRepositorySettingsCoreOverviewOutput("RootAreaMatrixFile")
@@ -40,7 +40,7 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
     ) async {
         let current = RepoConfigSnapshot.repositorySettingsRepositorySettingsCoreFixture(repoPath: "/tmp/repo")
         let updater =
-            RepositorySettingsRecordingUpdater(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
+            RecordingConfigurationUpdater(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
         let mapper = RepositorySettingsStaticErrorMapper()
         let announcer = RecordingAccessibilityAnnouncer()
         let model = RepositorySettingsConfigModel(

@@ -67,7 +67,7 @@
 
 ## Current Product Blocker Scan
 
-本任务读取的 AreaMatrix 源事实和 backlog 中没有发现某个 Vibe 专业领域已经成为当前产品任务 blocker。若后续出现真实 blocker，只记录为 trigger candidate，并在独立任务中走 external capability admission gate；本矩阵本身不授权接入。
+当前 AreaMatrix 源事实和 backlog 中没有记录某个 Vibe 专业领域已经成为当前产品任务 blocker。若后续出现真实 blocker，只记录为 trigger candidate，并在独立任务中走 external capability admission gate；本矩阵本身不授权接入。
 
 ## Rollback
 

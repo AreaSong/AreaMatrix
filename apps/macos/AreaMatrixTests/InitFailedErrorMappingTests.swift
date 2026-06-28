@@ -61,10 +61,10 @@ final class InitFailedErrorMappingTests: XCTestCase {
 
     @MainActor
     func testAIPrivacyRulesBlocksRemoteAIWithAISettingsConfigCorePrivacyGateOnly() async {
-        let updater = AIPrivacyRulesRecordingAISettingsUpdater(result: .success)
+        let updater = RecordingAISettingsUpdater(result: .success)
         let model = AISettingsModel(
             repoPath: "/tmp/aiPrivacyRules",
-            loader: AIPrivacyRulesStaticAISettingsLoader(
+            loader: StaticAISettingsLoader(
                 snapshot: .aiPrivacyRulesRemoteReady(repoPath: "/tmp/aiPrivacyRules")
             ),
             updater: updater,
@@ -85,10 +85,10 @@ final class InitFailedErrorMappingTests: XCTestCase {
 
     @MainActor
     func testAIPrivacyRulesAllowRemoteGateRequiresRemoteProviderConfigProviderConsentBeforeSaving() async {
-        let updater = AIPrivacyRulesRecordingAISettingsUpdater(result: .success)
+        let updater = RecordingAISettingsUpdater(result: .success)
         let model = AISettingsModel(
             repoPath: "/tmp/aiPrivacyRules",
-            loader: AIPrivacyRulesStaticAISettingsLoader(snapshot: .aiPrivacyRulesDefault(
+            loader: StaticAISettingsLoader(snapshot: .aiPrivacyRulesDefault(
                 repoPath: "/tmp/aiPrivacyRules",
                 privacyGateEnabled: false
             )),
@@ -106,19 +106,19 @@ final class InitFailedErrorMappingTests: XCTestCase {
         XCTAssertEqual(model.actionFeedback, .failed(AISettingsError(
             message: "Remote AI requires provider consent.",
             recovery: "Configure remote AI before allowing the privacy gate.",
-            detail: "remote-provider-config owns provider setup, API key storage, "
+            detail: "Remote AI configuration manages provider setup, API key storage, "
                 + "connection verification, and remote scope."
         )))
     }
 
     @MainActor
     func testAIPrivacyRulesPrivacyGateSaveFailureKeepsLastSuccessfulStateAndRetriesSameConfig() async {
-        let updater = AIPrivacyRulesRecordingAISettingsUpdater(result: .failureThenSuccess(CoreError.Io(
+        let updater = RecordingAISettingsUpdater(failureThenSuccess: CoreError.Io(
             message: "metadata locked"
-        )))
+        ))
         let model = AISettingsModel(
             repoPath: "/tmp/aiPrivacyRules",
-            loader: AIPrivacyRulesStaticAISettingsLoader(
+            loader: StaticAISettingsLoader(
                 snapshot: .aiPrivacyRulesRemoteReady(repoPath: "/tmp/aiPrivacyRules")
             ),
             updater: updater,
@@ -264,54 +264,6 @@ private final class InitFailedRecordingErrorMapper: CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
         mappedErrors.append(error)
         return mapping
-    }
-}
-
-private actor AIPrivacyRulesStaticAISettingsLoader: CoreAISettingsLoading {
-    let snapshot: AISettingsSnapshot
-
-    init(snapshot: AISettingsSnapshot) {
-        self.snapshot = snapshot
-    }
-
-    func loadAISettings(repoPath _: String) async throws -> AISettingsSnapshot {
-        snapshot
-    }
-}
-
-private enum AIPrivacyRulesUpdateResult {
-    case success
-    case failureThenSuccess(Error)
-}
-
-private actor AIPrivacyRulesRecordingAISettingsUpdater: CoreAISettingsUpdating {
-    struct Request: Equatable {
-        var repoPath: String
-        var config: AISettingsConfigSnapshot
-    }
-
-    private let result: AIPrivacyRulesUpdateResult
-    private var recordedRequests: [Request] = []
-
-    init(result: AIPrivacyRulesUpdateResult) {
-        self.result = result
-    }
-
-    func updateAISettings(repoPath: String, newConfig: AISettingsConfigSnapshot) async throws -> AISettingsSnapshot {
-        let normalized = newConfig.normalized()
-        recordedRequests.append(Request(repoPath: repoPath, config: normalized))
-        switch result {
-        case .success:
-            return AISettingsSnapshot.aiPrivacyRulesSnapshot(config: normalized)
-        case let .failureThenSuccess(error) where recordedRequests.count == 1:
-            throw error
-        case .failureThenSuccess:
-            return AISettingsSnapshot.aiPrivacyRulesSnapshot(config: normalized)
-        }
-    }
-
-    func requests() -> [Request] {
-        recordedRequests
     }
 }
 

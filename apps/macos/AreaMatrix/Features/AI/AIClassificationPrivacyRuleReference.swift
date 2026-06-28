@@ -180,7 +180,7 @@ struct AIClassificationPrivacyRuleReferenceSheet: View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Privacy rule could not be found.", systemImage: "exclamationmark.triangle")
                 .foregroundStyle(.orange)
-            Text("Rule \(ruleID) is not present in the current ai-privacy-rules-core privacy rules snapshot.")
+            Text("Rule \(ruleID) is not present in the current privacy rules snapshot.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Button("Retry") { Task { await model.load() } }

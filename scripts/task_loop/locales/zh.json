@@ -280,7 +280,7 @@
   "lifecycle.new_version": "新版本预览",
   "lifecycle.noninteractive_hint": "交互模式输入版本编号查看节点详情；新版本用 ./dev workflow init --version v2 预览。",
   "lifecycle.safe_actions": "安全动作（预览/检查/状态/写入既有 artifact，不写执行队列）：",
-  "lifecycle.safe_note": "promotion 默认 preview；本轮不实现写入 workflow/versions/<version>/execution/**。",
+  "lifecycle.safe_note": "promotion 默认 preview；当前命令不会写入 workflow/versions/<version>/execution/**。",
   "lifecycle.nodes": "节点：",
   "lifecycle.summary": "版本数={count} | live={live} | active={active} | planning={planning}",
   "lifecycle.title": "生命周期向导",

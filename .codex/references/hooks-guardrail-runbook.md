@@ -17,7 +17,7 @@
 
 ## 设计结论
 
-本轮不新增 `.codex/hooks.json`，只收敛 runbook / backlog。原因：
+默认不新增 `.codex/hooks.json`，只保留 runbook / backlog 中的启用预案。原因：
 
 - 当前任务目标是把 hooks 从 deferred 推进为可按需启用预案，不默认启用会改变行为的 hook。
 - AreaMatrix 已有 live runner / dirty worktree 场景，贸然加载 project-local hook 会引入新的运行变量。
@@ -144,7 +144,7 @@ git diff --name-only
 
 ## 建议 `.codex/hooks.json` 草案
 
-以下只是未来启用方向，不在本轮落盘，也不要直接复制落盘。真正启用前还需要新增只读脚本、人工 `/hooks` review / trust，并跑验证。所有脚本必须以 exit `0` 返回 warning / context；不得返回 block / deny / continue。
+以下只是未来启用方向，不默认落盘，也不要直接复制落盘。真正启用前还需要新增只读脚本、人工 `/hooks` review / trust，并跑验证。所有脚本必须以 exit `0` 返回 warning / context；不得返回 block / deny / continue。
 
 ```json
 {

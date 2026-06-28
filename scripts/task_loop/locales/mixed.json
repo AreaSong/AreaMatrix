@@ -280,7 +280,7 @@
   "lifecycle.new_version": "new version preview",
   "lifecycle.noninteractive_hint": "交互模式输入版本编号查看节点详情；新版本用 ./dev workflow init --version v2 预览。",
   "lifecycle.safe_actions": "安全动作（preview/doctor/status/write-existing-artifact，不写 live queue）:",
-  "lifecycle.safe_note": "promotion 默认 preview；本轮不实现写入 workflow/versions/<version>/execution/**。",
+  "lifecycle.safe_note": "promotion 默认 preview；当前命令不会写入 workflow/versions/<version>/execution/**。",
   "lifecycle.nodes": "nodes:",
   "lifecycle.summary": "versions={count} | live={live} | active={active} | planning={planning}",
   "lifecycle.title": "Lifecycle Wizard",

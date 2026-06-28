@@ -16,7 +16,7 @@ struct ClassifierRuleHandoffRouteView: View {
         var intro: String {
             self == .saveRule
                 ? "Review the rule draft before saving it for future imports."
-                : "Preview impact will be calculated by the classifier-impact-preview rule impact flow."
+                : "Preview how this rule would affect existing files before applying it."
         }
 
         var note: String {
@@ -415,11 +415,11 @@ struct ClassifierImpactPreviewSheet: View {
             Button("Cancel", action: onCancel).keyboardShortcut(.cancelAction)
             Button("Save rule only") {}
                 .disabled(true)
-                .help("Rule saving is handled by classifier-rule-save.")
+                .help("Save the rule before applying it to existing files.")
             Button("Save and apply to existing files") {}
                 .keyboardShortcut(.defaultAction)
                 .disabled(true)
-                .help(model.primaryApplyDisabledReason ?? "Apply is handled by a later task.")
+                .help(model.primaryApplyDisabledReason ?? "Review the impact preview before applying this rule.")
         }
     }
 

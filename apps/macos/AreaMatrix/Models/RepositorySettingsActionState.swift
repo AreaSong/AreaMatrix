@@ -147,8 +147,7 @@ final class LocalModelStatusModel: ObservableObject {
         guard snapshot?.recommendedAction == .repairMetadata || snapshot?.availability == .corrupted else {
             return nil
         }
-        return "Repair metadata requires a separate repair capability; " +
-            "this page only reads local-model-status-core status."
+        return "Repair metadata from the diagnostics screen before running another local model check."
     }
 
     nonisolated static func defaultStorageLocation() -> String {

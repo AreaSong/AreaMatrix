@@ -139,7 +139,7 @@ final class AreaMatrixShellTests: XCTestCase {
     func testOnboardingMapsConfigLoadFailureWithoutShowingWelcomeAsSuccess() async {
         let opener = ShellRecordingRepositoryOpener(result: .failure(CoreBridgeError.generatedBindingsUnavailable(
             boundary: .loadConfig,
-            state: .phase0
+            state: .generatedBindingsUnavailable
         )))
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: "/tmp/repo"),

@@ -141,7 +141,7 @@ final class BatchChangeCategoryVerifyTests: XCTestCase {
         try manager.writeClassifier(repoURL: repoURL, slugs: ["docs", "inbox"])
         let model = ClassifierSettingsModel(
             repoPath: repoURL.path,
-            loader: BatchCategorySettingsLoader(repoPath: repoURL.path),
+            loader: StaticConfigurationLoader(config: .batchChangeCategoryClassifierFixture(repoPath: repoURL.path)),
             updater: NoopConfigurationUpdater(),
             predictor: BatchCategorySettingsPredictor(),
             errorMapper: BatchCategorySettingsErrorMapper(),
@@ -237,18 +237,6 @@ private func makeBatchChangeCategoryOpening(repoURL: URL, bridge: CoreBridge) as
     let config = try await bridge.loadConfig(repoPath: repoURL.path)
     let tree = try await bridge.listTree(repoPath: repoURL.path, locale: "zh-Hans")
     return RepositoryOpeningResult(config: config, tree: tree, currentCategoryFiles: [])
-}
-
-private actor BatchCategorySettingsLoader: CoreConfigurationLoading {
-    private let repoPath: String
-
-    init(repoPath: String) {
-        self.repoPath = repoPath
-    }
-
-    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
-        RepoConfigSnapshot.batchChangeCategoryClassifierFixture(repoPath: repoPath)
-    }
 }
 
 private actor BatchCategorySettingsPredictor: CoreCategoryPredicting {

@@ -15,7 +15,7 @@
 		0A0000000000000000000004 /* AreaMatrixAppSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000015 /* AreaMatrixAppSmokeTests.swift */; };
 		0A0000000000000000000005 /* CoreBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000017 /* CoreBridge.swift */; };
 		0A0000000000000000000006 /* AppShellModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000018 /* AppShellModel.swift */; };
-		0A0000000000000000000007 /* CoreBridgePlaceholderState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */; };
+		0A0000000000000000000007 /* CoreBridgeUnavailableState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000019 /* CoreBridgeUnavailableState.swift */; };
 		0A0000000000000000000008 /* AreaMatrixShellTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000001A /* AreaMatrixShellTests.swift */; };
 		0A0000000000000000000009 /* area_matrix.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000001C /* area_matrix.swift */; };
 		0A000000000000000000000A /* ValidatePathStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000001F /* ValidatePathStepView.swift */; };
@@ -58,6 +58,7 @@
 		0A00000000000000000000F8 /* CoreBridgeSnapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F9 /* CoreBridgeSnapshots.swift */; };
 		0A00000000000000000000FA /* ValidatePathErrorMappingSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000FB /* ValidatePathErrorMappingSmokeTests.swift */; };
 		0A00000000000000000000FC /* AreaMatrixShellTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000FD /* AreaMatrixShellTestSupport.swift */; };
+		0A00000000000000000008DC /* AreaMatrixShellFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008DD /* AreaMatrixShellFixtures.swift */; };
 		0A00000000000000000000FE /* ValidatePathRepairTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000FF /* ValidatePathRepairTestSupport.swift */; };
 		0A0000000000000000000100 /* CoreFileListing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000101 /* CoreFileListing.swift */; };
 		0A0000000000000000000110 /* MainEmptyBuildTreeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000111 /* MainEmptyBuildTreeTests.swift */; };
@@ -79,10 +80,14 @@
 		0A00000000000000000002BE /* RenameFilePageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002BF /* RenameFilePageFeatureTests.swift */; };
 		0A00000000000000000008A4 /* RenameFilePageTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008A5 /* RenameFilePageTestSupport.swift */; };
 		0A00000000000000000008A6 /* SemanticSearchPageTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008A7 /* SemanticSearchPageTestSupport.swift */; };
+		0A00000000000000000008DE /* SemanticSearchCoreRoutingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008DF /* SemanticSearchCoreRoutingTests.swift */; };
+		0A00000000000000000008E0 /* SemanticSearchCoreRoutingTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008E1 /* SemanticSearchCoreRoutingTestSupport.swift */; };
 		0A00000000000000000008A8 /* MainListIntegrationClosureTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008A9 /* MainListIntegrationClosureTestSupport.swift */; };
 		0A00000000000000000008AA /* MainListIntegrationFilterTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008AB /* MainListIntegrationFilterTestSupport.swift */; };
 		0A00000000000000000008AC /* ImportBatchResultSummaryTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008AD /* ImportBatchResultSummaryTestSupport.swift */; };
 		0A00000000000000000008AE /* MainEmptyImportEntryTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008AF /* MainEmptyImportEntryTestSupport.swift */; };
+		0A00000000000000000008D8 /* CommandPaletteCommandFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008D9 /* CommandPaletteCommandFixtures.swift */; };
+		0A00000000000000000008DA /* CommandPaletteCommandTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008DB /* CommandPaletteCommandTestSupport.swift */; };
 		0A000000000000000000041A /* BatchRenameUndoAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000041B /* BatchRenameUndoAction.swift */; };
 		0A000000000000000000041C /* BatchRenameUndoPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000041D /* BatchRenameUndoPageFeatureTests.swift */; };
 		0A000000000000000000041E /* BatchRenameTrigger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000041F /* BatchRenameTrigger.swift */; };
@@ -112,6 +117,7 @@
 		0A00000000000000000002DE /* ICloudConflictMinimalPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002DF /* ICloudConflictMinimalPageIntegrationVerifyTests.swift */; };
 		0A00000000000000000002E0 /* ICloudConflictMinimalResolution.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */; };
 		0A00000000000000000002E2 /* ICloudConflictMinimalPageIntegrationTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002E3 /* ICloudConflictMinimalPageIntegrationTestSupport.swift */; };
+		0A00000000000000000008D6 /* ICloudConflictMinimalFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008D7 /* ICloudConflictMinimalFixtures.swift */; };
 		0A00000000000000000002E4 /* CoreICloudConflictListing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002E5 /* CoreICloudConflictListing.swift */; };
 		0A00000000000000000002E6 /* ICloudConflictListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002E7 /* ICloudConflictListModel.swift */; };
 		0A00000000000000000002E8 /* ICloudConflictListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002E9 /* ICloudConflictListView.swift */; };
@@ -148,12 +154,22 @@
 		0A00000000000000000008C0 /* CoreErrorKindTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008C1 /* CoreErrorKindTestSupport.swift */; };
 		0A00000000000000000008C2 /* PlatformActionRecordingTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008C3 /* PlatformActionRecordingTestSupport.swift */; };
 		0A00000000000000000008C4 /* CoreTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008C5 /* CoreTestDoubleSupport.swift */; };
+		0A00000000000000000008C6 /* ConfigurationTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008C7 /* ConfigurationTestDoubleSupport.swift */; };
+		0A00000000000000000008C8 /* AISettingsTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008C9 /* AISettingsTestDoubleSupport.swift */; };
+		0A00000000000000000008CA /* DetailTagTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008CB /* DetailTagTestSupport.swift */; };
+		0A00000000000000000008CC /* AITagSuggestionTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008CD /* AITagSuggestionTestSupport.swift */; };
+		0A00000000000000000008CE /* RemotePrivacyRulesTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008CF /* RemotePrivacyRulesTestSupport.swift */; };
+		0A00000000000000000008D0 /* RemoteProviderCredentialTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008D1 /* RemoteProviderCredentialTestSupport.swift */; };
+		0A00000000000000000008D2 /* CoreTagSuggestionTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008D3 /* CoreTagSuggestionTestSupport.swift */; };
+		0A00000000000000000008D4 /* ImportBatchImportTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008D5 /* ImportBatchImportTestSupport.swift */; };
 		0A0000000000000000000260 /* MainFileListDetailSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000261 /* MainFileListDetailSupport.swift */; };
 		0A0000000000000000000874 /* BatchTagUndoSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000875 /* BatchTagUndoSupport.swift */; };
 		0A0000000000000000000222 /* MainFileListState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000223 /* MainFileListState.swift */; };
 		0A0000000000000000000132 /* MainListFilesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000133 /* MainListFilesTests.swift */; };
 		0A0000000000000000000200 /* DetailMetaPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000201 /* DetailMetaPageFeatureTests.swift */; };
 		0A0000000000000000000250 /* DetailMultiListFilesPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000251 /* DetailMultiListFilesPageFeatureTests.swift */; };
+		0A00000000000000000008EA /* DetailBatchAddTagsPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008EB /* DetailBatchAddTagsPageFeatureTests.swift */; };
+		0A00000000000000000008EC /* BatchAddTagsTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008ED /* BatchAddTagsTestSupport.swift */; };
 		0A0000000000000000000252 /* DetailMultiPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000253 /* DetailMultiPageIntegrationVerifyTests.swift */; };
 		0A0000000000000000000262 /* DetailIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000263 /* DetailIntegrationVerifyTests.swift */; };
 		0A0000000000000000000202 /* DetailLogExternalCreatedPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */; };
@@ -199,6 +215,8 @@
 		0A00000000000000000002B2 /* StartupRecoveryErrorRecoveryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002B4 /* StartupRecoveryErrorRecoveryView.swift */; };
 		0A00000000000000000002B3 /* ErrorRecoveryStartupRecoveryPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002B5 /* ErrorRecoveryStartupRecoveryPageFeatureTests.swift */; };
 		0A00000000000000000002B6 /* ErrorRecoveryPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002B7 /* ErrorRecoveryPageIntegrationVerifyTests.swift */; };
+		0A00000000000000000008E2 /* SemanticSearchPrivacyRulesCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008E3 /* SemanticSearchPrivacyRulesCoreTests.swift */; };
+		0A00000000000000000008E4 /* SemanticSearchPrivacyRulesTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008E5 /* SemanticSearchPrivacyRulesTestSupport.swift */; };
 		0A00000000000000000002B8 /* SettingsErrorRecoveryIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002B9 /* SettingsErrorRecoveryIntegrationVerifyTests.swift */; };
 		0A000000000000000000014E /* OnboardingRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000014F /* OnboardingRoute.swift */; };
 		0A00000000000000000002F5 /* OnboardingDatabaseRepairRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F6 /* OnboardingDatabaseRepairRouting.swift */; };
@@ -240,6 +258,7 @@
 		0A0000000000000000000186 /* ImportSingleFilePreviewModelState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000187 /* ImportSingleFilePreviewModelState.swift */; };
 		0A00000000000000000001E4 /* ImportSingleFileDuplicateResolution.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E5 /* ImportSingleFileDuplicateResolution.swift */; };
 		0A00000000000000000001E6 /* ImportSingleFileDuplicateResolutionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E7 /* ImportSingleFileDuplicateResolutionTests.swift */; };
+		0A00000000000000000008E6 /* ImportSingleFileNameConflictTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008E7 /* ImportSingleFileNameConflictTests.swift */; };
 		0A00000000000000000001F0 /* ReplaceConfirmPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001F1 /* ReplaceConfirmPageIntegrationVerifyTests.swift */; };
 		0A00000000000000000001F4 /* ImportConflictIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001F5 /* ImportConflictIntegrationVerifyTests.swift */; };
 		0A00000000000000000008B6 /* ImportConflictIntegrationTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008B7 /* ImportConflictIntegrationTestSupport.swift */; };
@@ -333,6 +352,7 @@
 		0A00000000000000000001D8 /* ImportFolderImportContinuation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001D9 /* ImportFolderImportContinuation.swift */; };
 		0A00000000000000000001BE /* ImportFolderTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001BF /* ImportFolderTestSupport.swift */; };
 		0A00000000000000000001C0 /* ImportFolderPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001C1 /* ImportFolderPageIntegrationVerifyTests.swift */; };
+		0A00000000000000000008E8 /* ImportFolderConflictIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008E9 /* ImportFolderConflictIntegrationTests.swift */; };
 		0A00000000000000000001C2 /* ImportFolderPreviewState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001C3 /* ImportFolderPreviewState.swift */; };
 		0A00000000000000000001C4 /* ImportFolderConflictActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001C5 /* ImportFolderConflictActions.swift */; };
 		0A00000000000000000001C6 /* ImportFolderConflictSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001C7 /* ImportFolderConflictSection.swift */; };
@@ -431,7 +451,7 @@
 		0A0000000000000000000016 /* AreaMatrixTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AreaMatrixTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A0000000000000000000017 /* CoreBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBridge.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000018 /* AppShellModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/AppShellModel.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/CoreBridgePlaceholderState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000019 /* CoreBridgeUnavailableState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/CoreBridgeUnavailableState.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000001A /* AreaMatrixShellTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixShellTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000001B /* AreaMatrix-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "AreaMatrix/AreaMatrix-Bridging-Header.h"; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000001C /* area_matrix.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/UniFFI/area_matrix.swift; sourceTree = SOURCE_ROOT; };
@@ -477,6 +497,7 @@
 		0A00000000000000000000F9 /* CoreBridgeSnapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBridgeSnapshots.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000FB /* ValidatePathErrorMappingSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ValidatePathErrorMappingSmokeTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000FD /* AreaMatrixShellTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixShellTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008DD /* AreaMatrixShellFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixShellFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000FF /* ValidatePathRepairTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ValidatePathRepairTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000101 /* CoreFileListing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreFileListing.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000060D /* CoreFileListing+DisplayNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AreaMatrix/Bridge/CoreFileListing+DisplayNames.swift"; sourceTree = SOURCE_ROOT; };
@@ -501,6 +522,8 @@
 		0A00000000000000000008A5 /* RenameFilePageTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RenameFilePageTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008AB /* MainListIntegrationFilterTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainListIntegrationFilterTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008AF /* MainEmptyImportEntryTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainEmptyImportEntryTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008D9 /* CommandPaletteCommandFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/CommandPaletteCommandFixtures.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008DB /* CommandPaletteCommandTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/CommandPaletteCommandTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000041B /* BatchRenameUndoAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/BatchRenameUndoAction.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000041D /* BatchRenameUndoPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/BatchRenameUndoPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000041F /* BatchRenameTrigger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/BatchRenameTrigger.swift; sourceTree = SOURCE_ROOT; };
@@ -593,10 +616,13 @@
 		0A0000000000000000000747 /* SemanticSearchResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/SemanticSearchResultsView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000749 /* SemanticSearchPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SemanticSearchPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008A7 /* SemanticSearchPageTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SemanticSearchPageTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008DF /* SemanticSearchCoreRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SemanticSearchCoreRoutingTests.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008E1 /* SemanticSearchCoreRoutingTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SemanticSearchCoreRoutingTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002DD /* ICloudConflictMinimalValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalValidationTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002DF /* ICloudConflictMinimalPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002E1 /* ICloudConflictMinimalResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/ICloudConflictMinimalResolution.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002E3 /* ICloudConflictMinimalPageIntegrationTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalPageIntegrationTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008D7 /* ICloudConflictMinimalFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ICloudConflictMinimalFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002E5 /* CoreICloudConflictListing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreICloudConflictListing.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002E7 /* ICloudConflictListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/ICloudConflictListModel.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002E9 /* ICloudConflictListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/ICloudConflictListView.swift; sourceTree = SOURCE_ROOT; };
@@ -628,6 +654,8 @@
 		0A0000000000000000000133 /* MainListFilesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainListFilesTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000201 /* DetailMetaPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailMetaPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000251 /* DetailMultiListFilesPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailMultiListFilesPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008EB /* DetailBatchAddTagsPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailBatchAddTagsPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008ED /* BatchAddTagsTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/BatchAddTagsTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000253 /* DetailMultiPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailMultiPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000263 /* DetailIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogExternalCreatedPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
@@ -714,6 +742,8 @@
 		0A00000000000000000002B4 /* StartupRecoveryErrorRecoveryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/StartupRecoveryErrorRecoveryView.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002B5 /* ErrorRecoveryStartupRecoveryPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ErrorRecoveryStartupRecoveryPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002B7 /* ErrorRecoveryPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ErrorRecoveryPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008E3 /* SemanticSearchPrivacyRulesCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SemanticSearchPrivacyRulesCoreTests.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008E5 /* SemanticSearchPrivacyRulesTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SemanticSearchPrivacyRulesTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002B9 /* SettingsErrorRecoveryIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SettingsErrorRecoveryIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002ED /* CoreMetadataRepairing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreMetadataRepairing.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002F0 /* DatabaseRepairConfirmModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Models/DatabaseRepairConfirmModel.swift; sourceTree = SOURCE_ROOT; };
@@ -761,6 +791,7 @@
 		0A0000000000000000000187 /* ImportSingleFilePreviewModelState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportSingleFilePreviewModelState.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001E5 /* ImportSingleFileDuplicateResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportSingleFileDuplicateResolution.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001E7 /* ImportSingleFileDuplicateResolutionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileDuplicateResolutionTests.swift; sourceTree = SOURCE_ROOT; };
+			0A00000000000000000008E7 /* ImportSingleFileNameConflictTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileNameConflictTests.swift; sourceTree = SOURCE_ROOT; };
 				0A00000000000000000001F1 /* ReplaceConfirmPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ReplaceConfirmPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 				0A00000000000000000001F5 /* ImportConflictIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportConflictIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 				0A00000000000000000008B7 /* ImportConflictIntegrationTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportConflictIntegrationTestSupport.swift; sourceTree = SOURCE_ROOT; };
@@ -787,6 +818,7 @@
 		0A00000000000000000001DD /* ImportProgressPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportProgressPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001BF /* ImportFolderTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportFolderTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001C1 /* ImportFolderPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportFolderPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008E9 /* ImportFolderConflictIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportFolderConflictIntegrationTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001C3 /* ImportFolderPreviewState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportFolderPreviewState.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001C5 /* ImportFolderConflictActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportFolderConflictActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001C7 /* ImportFolderConflictSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportFolderConflictSection.swift; sourceTree = SOURCE_ROOT; };
@@ -802,6 +834,14 @@
 		0A00000000000000000008C1 /* CoreErrorKindTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/CoreErrorKindTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008C3 /* PlatformActionRecordingTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/PlatformActionRecordingTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008C5 /* CoreTestDoubleSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/CoreTestDoubleSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008C7 /* ConfigurationTestDoubleSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ConfigurationTestDoubleSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008C9 /* AISettingsTestDoubleSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AISettingsTestDoubleSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008CB /* DetailTagTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailTagTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008CD /* AITagSuggestionTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AITagSuggestionTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008CF /* RemotePrivacyRulesTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RemotePrivacyRulesTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008D1 /* RemoteProviderCredentialTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RemoteProviderCredentialTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008D3 /* CoreTagSuggestionTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/CoreTagSuggestionTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000008D5 /* ImportBatchImportTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportBatchImportTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000018D /* ImportBatchCopyImportModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchCopyImportModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000301 /* ImportBatchCopyImportExecution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchCopyImportExecution.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000019B /* ImportBatchCopyImportState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportBatchCopyImportState.swift; sourceTree = SOURCE_ROOT; };
@@ -1254,7 +1294,7 @@
 				0A0000000000000000000289 /* RepositorySettingsActionState.swift */,
 				0A0000000000000000000859 /* LocalModelStatusState.swift */,
 				0A000000000000000000014F /* OnboardingRoute.swift */,
-				0A0000000000000000000019 /* CoreBridgePlaceholderState.swift */,
+				0A0000000000000000000019 /* CoreBridgeUnavailableState.swift */,
 				0A0000000000000000000123 /* OnboardingModelInputs.swift */,
 				0A0000000000000000000131 /* MainFileListModel.swift */,
 				0A0000000000000000000611 /* MainFileListExternalSyncActions.swift */,
@@ -1303,6 +1343,8 @@
 				0A0000000000000000000165 /* MainWindowIntegrationVerifyTests.swift */,
 				0A00000000000000000002B5 /* ErrorRecoveryStartupRecoveryPageFeatureTests.swift */,
 				0A00000000000000000002B7 /* ErrorRecoveryPageIntegrationVerifyTests.swift */,
+				0A00000000000000000008E3 /* SemanticSearchPrivacyRulesCoreTests.swift */,
+				0A00000000000000000008E5 /* SemanticSearchPrivacyRulesTestSupport.swift */,
 				0A00000000000000000002F4 /* DatabaseRepairConfirmPageFeatureTests.swift */,
 				0A00000000000000000002F8 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift */,
 				0A0000000000000000000020 /* ValidatePathIntegrationTests.swift */,
@@ -1313,6 +1355,8 @@
 					0A0000000000000000000111 /* MainEmptyBuildTreeTests.swift */,
 					0A000000000000000000012B /* MainEmptyImportEntryTests.swift */,
 					0A00000000000000000008AF /* MainEmptyImportEntryTestSupport.swift */,
+					0A00000000000000000008D9 /* CommandPaletteCommandFixtures.swift */,
+					0A00000000000000000008DB /* CommandPaletteCommandTestSupport.swift */,
 					0A00000000000000000008BB /* MainRepoExternalRemovalTestSupport.swift */,
 					0A000000000000000000016B /* ImportDropPreviewModelTests.swift */,
 				0A0000000000000000000193 /* ImportBatchCopyPageIntegrationTests.swift */,
@@ -1326,6 +1370,14 @@
 					0A00000000000000000008C1 /* CoreErrorKindTestSupport.swift */,
 					0A00000000000000000008C3 /* PlatformActionRecordingTestSupport.swift */,
 					0A00000000000000000008C5 /* CoreTestDoubleSupport.swift */,
+					0A00000000000000000008C7 /* ConfigurationTestDoubleSupport.swift */,
+					0A00000000000000000008C9 /* AISettingsTestDoubleSupport.swift */,
+					0A00000000000000000008CB /* DetailTagTestSupport.swift */,
+					0A00000000000000000008CD /* AITagSuggestionTestSupport.swift */,
+					0A00000000000000000008CF /* RemotePrivacyRulesTestSupport.swift */,
+					0A00000000000000000008D1 /* RemoteProviderCredentialTestSupport.swift */,
+					0A00000000000000000008D3 /* CoreTagSuggestionTestSupport.swift */,
+					0A00000000000000000008D5 /* ImportBatchImportTestSupport.swift */,
 					0A000000000000000000018F /* ImportBatchCopyImportModelTests.swift */,
 					0A000000000000000000019D /* ImportBatchDuplicateResolutionTests.swift */,
 					0A00000000000000000001A7 /* ImportBatchResultSummaryTests.swift */,
@@ -1341,9 +1393,11 @@
 					0A00000000000000000001B9 /* ImportFolderPreviewModelTests.swift */,
 				0A00000000000000000001C9 /* ImportFolderConflictResolutionTests.swift */,
 				0A00000000000000000001C1 /* ImportFolderPageIntegrationVerifyTests.swift */,
+				0A00000000000000000008E9 /* ImportFolderConflictIntegrationTests.swift */,
 				0A00000000000000000001BF /* ImportFolderTestSupport.swift */,
 				0A000000000000000000016F /* ImportSingleFilePreviewModelTests.swift */,
 					0A00000000000000000001E7 /* ImportSingleFileDuplicateResolutionTests.swift */,
+					0A00000000000000000008E7 /* ImportSingleFileNameConflictTests.swift */,
 					0A00000000000000000001F1 /* ReplaceConfirmPageIntegrationVerifyTests.swift */,
 					0A00000000000000000001F5 /* ImportConflictIntegrationVerifyTests.swift */,
 					0A00000000000000000008B7 /* ImportConflictIntegrationTestSupport.swift */,
@@ -1365,6 +1419,8 @@
 					0A0000000000000000000201 /* DetailMetaPageFeatureTests.swift */,
 					0A0000000000000000000323 /* DetailTagPageFeatureTests.swift */,
 					0A0000000000000000000251 /* DetailMultiListFilesPageFeatureTests.swift */,
+					0A00000000000000000008EB /* DetailBatchAddTagsPageFeatureTests.swift */,
+					0A00000000000000000008ED /* BatchAddTagsTestSupport.swift */,
 					0A0000000000000000000253 /* DetailMultiPageIntegrationVerifyTests.swift */,
 					0A0000000000000000000263 /* DetailIntegrationVerifyTests.swift */,
 					0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */,
@@ -1383,6 +1439,8 @@
 				0A000000000000000000073F /* AISummaryPrivacyRuleTests.swift */,
 				0A0000000000000000000749 /* SemanticSearchPageIntegrationVerifyTests.swift */,
 				0A00000000000000000008A7 /* SemanticSearchPageTestSupport.swift */,
+				0A00000000000000000008DF /* SemanticSearchCoreRoutingTests.swift */,
+				0A00000000000000000008E1 /* SemanticSearchCoreRoutingTestSupport.swift */,
 				0A000000000000000000074D /* RemoteProviderConfigPageFeatureTests.swift */,
 				0A0000000000000000000753 /* AIPrivacyRulesPageIntegrationVerifyTests.swift */,
 				0A0000000000000000000295 /* ClassifierSettingsPageFeatureTests.swift */,
@@ -1408,6 +1466,7 @@
 				0A00000000000000000002DD /* ICloudConflictMinimalValidationTests.swift */,
 				0A00000000000000000002DF /* ICloudConflictMinimalPageIntegrationVerifyTests.swift */,
 				0A00000000000000000002E3 /* ICloudConflictMinimalPageIntegrationTestSupport.swift */,
+				0A00000000000000000008D7 /* ICloudConflictMinimalFixtures.swift */,
 				0A00000000000000000002EB /* ICloudConflictListPageFeatureTests.swift */,
 				0A0000000000000000000767 /* SyncConflictReviewPageFeatureTests.swift */,
 				0A0000000000000000000769 /* SyncConflictReviewResolutionTestSupport.swift */,
@@ -1420,6 +1479,7 @@
 				0A00000000000000000000E3 /* AreaMatrixPerfTests.swift */,
 				0A00000000000000000000FB /* ValidatePathErrorMappingSmokeTests.swift */,
 				0A00000000000000000000FD /* AreaMatrixShellTestSupport.swift */,
+				0A00000000000000000008DD /* AreaMatrixShellFixtures.swift */,
 				0A00000000000000000000FF /* ValidatePathRepairTestSupport.swift */,
 			);
 			name = Tests;
@@ -1553,7 +1613,7 @@
 				0A0000000000000000000005 /* CoreBridge.swift in Sources */,
 				0A0000000000000000000006 /* AppShellModel.swift in Sources */,
 				0A000000000000000000014E /* OnboardingRoute.swift in Sources */,
-				0A0000000000000000000007 /* CoreBridgePlaceholderState.swift in Sources */,
+				0A0000000000000000000007 /* CoreBridgeUnavailableState.swift in Sources */,
 				0A0000000000000000000124 /* AppPlatformServices.swift in Sources */,
 				0A0000000000000000000274 /* RootOverviewFileInspector.swift in Sources */,
 				0A000000000000000000027C /* RepositoryIgnoreRulesManager.swift in Sources */,
@@ -1833,6 +1893,8 @@
 				0A0000000000000000000164 /* MainWindowIntegrationVerifyTests.swift in Sources */,
 				0A00000000000000000002B3 /* ErrorRecoveryStartupRecoveryPageFeatureTests.swift in Sources */,
 				0A00000000000000000002B6 /* ErrorRecoveryPageIntegrationVerifyTests.swift in Sources */,
+				0A00000000000000000008E2 /* SemanticSearchPrivacyRulesCoreTests.swift in Sources */,
+				0A00000000000000000008E4 /* SemanticSearchPrivacyRulesTestSupport.swift in Sources */,
 				0A00000000000000000002B8 /* SettingsErrorRecoveryIntegrationVerifyTests.swift in Sources */,
 				0A000000000000000000000B /* ValidatePathIntegrationTests.swift in Sources */,
 				0A000000000000000000000D /* InitializingStepIntegrationTests.swift in Sources */,
@@ -1842,6 +1904,8 @@
 				0A0000000000000000000110 /* MainEmptyBuildTreeTests.swift in Sources */,
 				0A000000000000000000012A /* MainEmptyImportEntryTests.swift in Sources */,
 				0A00000000000000000008AE /* MainEmptyImportEntryTestSupport.swift in Sources */,
+				0A00000000000000000008D8 /* CommandPaletteCommandFixtures.swift in Sources */,
+				0A00000000000000000008DA /* CommandPaletteCommandTestSupport.swift in Sources */,
 				0A000000000000000000016A /* ImportDropPreviewModelTests.swift in Sources */,
 				0A0000000000000000000192 /* ImportBatchCopyPageIntegrationTests.swift in Sources */,
 				0A00000000000000000001CC /* ImportProgressCopyPageFeatureTests.swift in Sources */,
@@ -1854,6 +1918,14 @@
 				0A00000000000000000008C0 /* CoreErrorKindTestSupport.swift in Sources */,
 				0A00000000000000000008C2 /* PlatformActionRecordingTestSupport.swift in Sources */,
 				0A00000000000000000008C4 /* CoreTestDoubleSupport.swift in Sources */,
+				0A00000000000000000008C6 /* ConfigurationTestDoubleSupport.swift in Sources */,
+				0A00000000000000000008C8 /* AISettingsTestDoubleSupport.swift in Sources */,
+				0A00000000000000000008CA /* DetailTagTestSupport.swift in Sources */,
+				0A00000000000000000008CC /* AITagSuggestionTestSupport.swift in Sources */,
+				0A00000000000000000008CE /* RemotePrivacyRulesTestSupport.swift in Sources */,
+				0A00000000000000000008D0 /* RemoteProviderCredentialTestSupport.swift in Sources */,
+				0A00000000000000000008D2 /* CoreTagSuggestionTestSupport.swift in Sources */,
+				0A00000000000000000008D4 /* ImportBatchImportTestSupport.swift in Sources */,
 				0A000000000000000000018E /* ImportBatchCopyImportModelTests.swift in Sources */,
 				0A000000000000000000019C /* ImportBatchDuplicateResolutionTests.swift in Sources */,
 				0A00000000000000000001A6 /* ImportBatchResultSummaryTests.swift in Sources */,
@@ -1869,9 +1941,11 @@
 					0A00000000000000000001B8 /* ImportFolderPreviewModelTests.swift in Sources */,
 				0A00000000000000000001C8 /* ImportFolderConflictResolutionTests.swift in Sources */,
 				0A00000000000000000001C0 /* ImportFolderPageIntegrationVerifyTests.swift in Sources */,
+				0A00000000000000000008E8 /* ImportFolderConflictIntegrationTests.swift in Sources */,
 				0A00000000000000000001BE /* ImportFolderTestSupport.swift in Sources */,
 				0A000000000000000000016E /* ImportSingleFilePreviewModelTests.swift in Sources */,
 					0A00000000000000000001E6 /* ImportSingleFileDuplicateResolutionTests.swift in Sources */,
+					0A00000000000000000008E6 /* ImportSingleFileNameConflictTests.swift in Sources */,
 					0A00000000000000000001F0 /* ReplaceConfirmPageIntegrationVerifyTests.swift in Sources */,
 					0A00000000000000000001F4 /* ImportConflictIntegrationVerifyTests.swift in Sources */,
 					0A00000000000000000008B6 /* ImportConflictIntegrationTestSupport.swift in Sources */,
@@ -1898,6 +1972,7 @@
 					0A00000000000000000002DC /* ICloudConflictMinimalValidationTests.swift in Sources */,
 					0A00000000000000000002DE /* ICloudConflictMinimalPageIntegrationVerifyTests.swift in Sources */,
 					0A00000000000000000002E2 /* ICloudConflictMinimalPageIntegrationTestSupport.swift in Sources */,
+					0A00000000000000000008D6 /* ICloudConflictMinimalFixtures.swift in Sources */,
 					0A00000000000000000002EA /* ICloudConflictListPageFeatureTests.swift in Sources */,
 					0A0000000000000000000766 /* SyncConflictReviewPageFeatureTests.swift in Sources */,
 					0A0000000000000000000768 /* SyncConflictReviewResolutionTestSupport.swift in Sources */,
@@ -1908,6 +1983,8 @@
 					0A0000000000000000000200 /* DetailMetaPageFeatureTests.swift in Sources */,
 					0A0000000000000000000322 /* DetailTagPageFeatureTests.swift in Sources */,
 					0A0000000000000000000250 /* DetailMultiListFilesPageFeatureTests.swift in Sources */,
+					0A00000000000000000008EA /* DetailBatchAddTagsPageFeatureTests.swift in Sources */,
+					0A00000000000000000008EC /* BatchAddTagsTestSupport.swift in Sources */,
 					0A0000000000000000000252 /* DetailMultiPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000262 /* DetailIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000202 /* DetailLogExternalCreatedPageFeatureTests.swift in Sources */,
@@ -1926,6 +2003,8 @@
 				0A000000000000000000073E /* AISummaryPrivacyRuleTests.swift in Sources */,
 				0A0000000000000000000748 /* SemanticSearchPageIntegrationVerifyTests.swift in Sources */,
 				0A00000000000000000008A6 /* SemanticSearchPageTestSupport.swift in Sources */,
+				0A00000000000000000008DE /* SemanticSearchCoreRoutingTests.swift in Sources */,
+				0A00000000000000000008E0 /* SemanticSearchCoreRoutingTestSupport.swift in Sources */,
 				0A000000000000000000074C /* RemoteProviderConfigPageFeatureTests.swift in Sources */,
 				0A0000000000000000000752 /* AIPrivacyRulesPageIntegrationVerifyTests.swift in Sources */,
 				0A0000000000000000000294 /* ClassifierSettingsPageFeatureTests.swift in Sources */,
@@ -1950,6 +2029,7 @@
 				0A00000000000000000000E2 /* AreaMatrixPerfTests.swift in Sources */,
 				0A00000000000000000000FA /* ValidatePathErrorMappingSmokeTests.swift in Sources */,
 				0A00000000000000000000FC /* AreaMatrixShellTestSupport.swift in Sources */,
+				0A00000000000000000008DC /* AreaMatrixShellFixtures.swift in Sources */,
 				0A00000000000000000000FE /* ValidatePathRepairTestSupport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

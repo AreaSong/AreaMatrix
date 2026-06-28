@@ -4,13 +4,13 @@ import XCTest
 final class IntegrationsSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testLoadUsesRepositoryConfigCoreConfigForVisibleICloudIntegrationState() async {
-        let loader = IntegrationsSettingsRecordingLoader(results: [
+        let loader = RecordingConfigurationLoader(results: [
             .success(.integrationsFixture(repoPath: "/tmp/repo", iCloudWarn: false))
         ])
         let model = IntegrationsSettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
-            updater: IntegrationsSettingsRecordingUpdater(results: [.success]),
+            updater: RecordingConfigurationUpdater(results: [.success]),
             errorMapper: IntegrationsSettingsStaticErrorMapper(),
             statusDetector: StaticICloudStatusDetector(
                 snapshot: IntegrationsICloudSnapshot(repositoryLocation: .iCloudDrive, iCloudStatus: .available)
@@ -30,7 +30,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testICloudWarningsSaveThroughUpdateConfigWithoutStaticState() async {
-        let updater = IntegrationsSettingsRecordingUpdater(results: [.success])
+        let updater = RecordingConfigurationUpdater(results: [.success])
         let model = await loadedModel(updater: updater, iCloudWarn: true)
 
         await model.setICloudWarningsEnabled(false)
@@ -45,7 +45,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testSaveFailureRollsBackAndRetryUsesSameCoreConfig() async {
-        let updater = IntegrationsSettingsRecordingUpdater(results: [
+        let updater = RecordingConfigurationUpdater(results: [
             .failure(CoreError.Db(message: "locked")),
             .success
         ])
@@ -70,14 +70,14 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testLoadFailureUsesCoreErrorMappingAndKeepsRetryAvailable() async {
-        let loader = IntegrationsSettingsRecordingLoader(results: [
+        let loader = RecordingConfigurationLoader(results: [
             .failure(CoreError.Config(reason: "invalid repo_config"))
         ])
         let mapper = IntegrationsSettingsStaticErrorMapper()
         let model = IntegrationsSettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
-            updater: IntegrationsSettingsRecordingUpdater(results: [.success]),
+            updater: RecordingConfigurationUpdater(results: [.success]),
             errorMapper: mapper,
             statusDetector: StaticICloudStatusDetector(
                 snapshot: IntegrationsICloudSnapshot(repositoryLocation: .unknown, iCloudStatus: .unknown)
@@ -99,7 +99,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
     func testPlatformActionsStayInMacLayerWithoutConfigWrites() async {
         let finderOpener = RecordingRepositoryFinderOpener()
         let helpOpener = IntegrationsSettingsRecordingHelpOpener()
-        let updater = IntegrationsSettingsRecordingUpdater(results: [.success])
+        let updater = RecordingConfigurationUpdater(results: [.success])
         let model = await loadedModel(
             updater: updater,
             finderOpener: finderOpener,
@@ -148,7 +148,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     private func loadedModel(
-        updater: IntegrationsSettingsRecordingUpdater,
+        updater: RecordingConfigurationUpdater,
         errorMapper: any CoreErrorMapping = IntegrationsSettingsStaticErrorMapper(),
         finderOpener: (any RepositoryFinderOpening)? = nil,
         helpOpener: (any ICloudHelpOpening)? = nil,
@@ -156,7 +156,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
     ) async -> IntegrationsSettingsModel {
         let model = IntegrationsSettingsModel(
             repoPath: "/tmp/repo",
-            loader: IntegrationsSettingsRecordingLoader(results: [
+            loader: RecordingConfigurationLoader(results: [
                 .success(.integrationsFixture(repoPath: "/tmp/stale-repo", iCloudWarn: iCloudWarn))
             ]),
             updater: updater,
@@ -300,66 +300,6 @@ actor AICategorySuggestionFallbackBridge: CoreAIClassificationFallbackStatusRead
 
     func recordedRequests() -> [AiFallbackStatusRequest] {
         requests
-    }
-}
-
-private enum IntegrationsSettingsLoaderResult {
-    case success(RepoConfigSnapshot)
-    case failure(Error)
-}
-
-private actor IntegrationsSettingsRecordingLoader: CoreConfigurationLoading {
-    private var results: [IntegrationsSettingsLoaderResult]
-    private var paths: [String] = []
-
-    init(results: [IntegrationsSettingsLoaderResult]) {
-        self.results = results
-    }
-
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
-        paths.append(repoPath)
-        let result = results.isEmpty ? .failure(CoreError.Internal(message: "missing config")) : results.removeFirst()
-        switch result {
-        case let .success(config):
-            return config
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func requestedPaths() -> [String] {
-        paths
-    }
-}
-
-private enum IntegrationsSettingsUpdateResult {
-    case success
-    case failure(Error)
-}
-
-private actor IntegrationsSettingsRecordingUpdater: CoreConfigurationUpdating {
-    struct Request: Equatable {
-        var repoPath: String
-        var config: RepoConfigSnapshot
-    }
-
-    private var results: [IntegrationsSettingsUpdateResult]
-    private var recordedRequests: [Request] = []
-
-    init(results: [IntegrationsSettingsUpdateResult]) {
-        self.results = results
-    }
-
-    func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {
-        recordedRequests.append(Request(repoPath: repoPath, config: newConfig))
-        let result = results.isEmpty ? .success : results.removeFirst()
-        if case let .failure(error) = result {
-            throw error
-        }
-    }
-
-    func requests() -> [Request] {
-        recordedRequests
     }
 }
 

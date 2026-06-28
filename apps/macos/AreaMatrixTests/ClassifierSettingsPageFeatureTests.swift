@@ -4,13 +4,13 @@ import XCTest
 final class ClassifierSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testLoadUsesRepositoryConfigCoreConfigSnapshotForVisibleClassifierSettings() async {
-        let loader = ClassifierSettingsRecordingLoader(result: .success(.classifierSettingsFixture(
+        let loader = RecordingConfigurationLoader(result: .success(.classifierSettingsFixture(
             repoPath: "/tmp/repo",
             enableExtensionRules: false,
             enableKeywordRules: true,
             fallbackToInbox: false
         )))
-        let updater = ClassifierSettingsRecordingUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success)
         let model = ClassifierSettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
@@ -31,7 +31,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testToggleSaveThroughUpdateConfigWithoutMockState() async {
-        let updater = ClassifierSettingsRecordingUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success)
         let model = await loadedModel(updater: updater)
 
         await model.requestEnableExtensionRules(false)
@@ -50,7 +50,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testSaveFailureRollsBackToLastSavedValueAndRetryUsesSameCoreConfig() async {
-        let updater = ClassifierSettingsRecordingUpdater(result: .failureThenSuccess(CoreError.Db(message: "locked")))
+        let updater = RecordingConfigurationUpdater(failureThenSuccess: CoreError.Db(message: "locked"))
         let model = await loadedModel(updater: updater)
 
         await model.requestFallbackToInbox(false)
@@ -78,7 +78,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             confidence: 0.9
         )))
         let model = await loadedModel(
-            updater: ClassifierSettingsRecordingUpdater(result: .success),
+            updater: RecordingConfigurationUpdater(result: .success),
             predictor: predictor
         )
 
@@ -109,7 +109,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             result: .failure(CoreError.Classify(reason: "classifier unavailable"))
         )
         let model = await loadedModel(
-            updater: ClassifierSettingsRecordingUpdater(result: .success),
+            updater: RecordingConfigurationUpdater(result: .success),
             predictor: predictor
         )
 
@@ -130,7 +130,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
     func testOpenClassifierYamlUsesRepositoryFileOpener() async {
         let opener = RecordingRepositoryFileOpener()
         let model = await loadedModel(
-            updater: ClassifierSettingsRecordingUpdater(result: .success),
+            updater: RecordingConfigurationUpdater(result: .success),
             fileOpener: opener
         )
 
@@ -152,7 +152,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             result: .success(classifierSettingsValidationProbeResult())
         )
         let model = await loadedModel(
-            updater: ClassifierSettingsRecordingUpdater(result: .success),
+            updater: RecordingConfigurationUpdater(result: .success),
             predictor: predictor,
             config: .classifierSettingsFixture(repoPath: repoURL.path)
         )
@@ -177,7 +177,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             atomically: true,
             encoding: .utf8
         )
-        let loader = ClassifierSettingsRecordingLoader(
+        let loader = RecordingConfigurationLoader(
             result: .success(.classifierSettingsFixture(repoPath: repoURL.path))
         )
         let predictor = ClassifierSettingsRecordingPredictor(
@@ -186,7 +186,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         let model = ClassifierSettingsModel(
             repoPath: repoURL.path,
             loader: loader,
-            updater: ClassifierSettingsRecordingUpdater(result: .success),
+            updater: RecordingConfigurationUpdater(result: .success),
             predictor: predictor,
             errorMapper: ClassifierSettingsStaticErrorMapper(),
             accessibilityAnnouncer: NoopAccessibilityAnnouncer()
@@ -268,7 +268,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     private func loadedModel(
-        updater: ClassifierSettingsRecordingUpdater,
+        updater: RecordingConfigurationUpdater,
         predictor: any CoreCategoryPredicting = CoreBridge(),
         config: RepoConfigSnapshot = .classifierSettingsFixture(repoPath: "/tmp/repo"),
         fileOpener: any RepositoryFileOpening = NSWorkspaceRepositoryFileOpener(),
@@ -276,7 +276,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
     ) async -> ClassifierSettingsModel {
         let model = ClassifierSettingsModel(
             repoPath: config.repoPath,
-            loader: ClassifierSettingsRecordingLoader(result: .success(config)),
+            loader: RecordingConfigurationLoader(result: .success(config)),
             updater: updater,
             predictor: predictor,
             errorMapper: ClassifierSettingsStaticErrorMapper(),
@@ -286,11 +286,6 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         await model.load()
         return model
     }
-}
-
-private enum ClassifierSettingsLoaderResult {
-    case success(RepoConfigSnapshot)
-    case failure(Error)
 }
 
 private enum ClassifierSettingsPreviewResult {
@@ -318,64 +313,6 @@ private actor ClassifierSettingsRecordingPredictor: CoreCategoryPredicting {
             return preview
         case let .failure(error):
             throw error
-        }
-    }
-
-    func requests() -> [Request] {
-        requestsStorage
-    }
-}
-
-private actor ClassifierSettingsRecordingLoader: CoreConfigurationLoading {
-    private let result: ClassifierSettingsLoaderResult
-    private var paths: [String] = []
-
-    init(result: ClassifierSettingsLoaderResult) {
-        self.result = result
-    }
-
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
-        paths.append(repoPath)
-        switch result {
-        case let .success(config):
-            return config
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func requestedPaths() -> [String] {
-        paths
-    }
-}
-
-private enum ClassifierSettingsUpdateResult {
-    case success
-    case failureThenSuccess(Error)
-}
-
-private actor ClassifierSettingsRecordingUpdater: CoreConfigurationUpdating {
-    struct Request: Equatable {
-        var repoPath: String
-        var config: RepoConfigSnapshot
-    }
-
-    private let result: ClassifierSettingsUpdateResult
-    private var requestsStorage: [Request] = []
-
-    init(result: ClassifierSettingsUpdateResult) {
-        self.result = result
-    }
-
-    func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {
-        requestsStorage.append(Request(repoPath: repoPath, config: newConfig))
-        switch result {
-        case .success:
-            return
-        case let .failureThenSuccess(error) where requestsStorage.count == 1:
-            throw error
-        case .failureThenSuccess:
-            return
         }
     }
 

@@ -76,7 +76,7 @@ extension MainRepositoryContentView {
         [
             "AreaMatrix will stop processing remaining files.",
             "Already committed local index fragments can still be used.",
-            "Uncommitted temporary index data will be cleaned up.",
+            "Uncommitted index writes will be cleaned up.",
             "Remote queues will stop and no more content will be sent."
         ].joined(separator: " ")
     }

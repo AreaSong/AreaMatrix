@@ -150,7 +150,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         let opener = RecordingRepositoryFinderOpener()
         let model = IntegrationsSettingsModel(
             repoPath: "/tmp/iCloudConflictList-repo",
-            loader: ICloudConflictListIntegrationsLoader(
+            loader: StaticConfigurationLoader(
                 config: .iCloudConflictListIntegrationsFixture(repoPath: "/tmp/stale")
             ),
             updater: NoopConfigurationUpdater(),
@@ -349,18 +349,6 @@ private actor ICloudConflictListRecordingPathValidator: CoreRepositoryPathValida
 
     func recordedRequests() -> [String] {
         requests
-    }
-}
-
-private actor ICloudConflictListIntegrationsLoader: CoreConfigurationLoading {
-    private let config: RepoConfigSnapshot
-
-    init(config: RepoConfigSnapshot) {
-        self.config = config
-    }
-
-    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
-        config
     }
 }
 

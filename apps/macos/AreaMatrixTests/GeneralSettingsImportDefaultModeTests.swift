@@ -160,7 +160,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
         await model.load()
 
         guard case let .failed(error) = model.state else {
-            return XCTFail("Expected failed ai-call-log-core state.")
+            return XCTFail("Expected failed AI call log state.")
         }
         XCTAssertEqual(error.message, "AI call log could not be loaded.")
         XCTAssertEqual(model.records, [])

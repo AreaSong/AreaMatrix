@@ -4,7 +4,7 @@ import XCTest
 final class AdvancedSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testLoadUsesRepositoryConfigCoreConfigSnapshotForVisibleAdvancedSettings() async {
-        let loader = AdvancedSettingsRecordingLoader(result: .success(.advancedSettingsFixture(
+        let loader = RecordingConfigurationLoader(result: .success(.advancedSettingsFixture(
             repoPath: "/tmp/repo",
             overviewOutput: "RootAreaMatrixFile",
             allowReplaceDuringImport: true
@@ -12,7 +12,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         let model = AdvancedSettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
-            updater: AdvancedSettingsRecordingUpdater(result: .success),
+            updater: RecordingConfigurationUpdater(result: .success),
             errorMapper: AdvancedSettingsStaticErrorMapper()
         )
 
@@ -103,7 +103,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
             atomically: true,
             encoding: .utf8
         )
-        let updater = AdvancedSettingsRecordingUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success)
         let model = await loadedAdvancedModel(
             updater: updater,
             config: .advancedSettingsFixture(repoPath: repoURL.path),
@@ -126,7 +126,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testOverviewSaveFailureUsesOverviewGeneratedCoreRetryIdentifierAndRollsBack() async {
-        let updater = AdvancedSettingsRecordingUpdater(result: .failureThenSuccess(CoreError.Db(message: "locked")))
+        let updater = RecordingConfigurationUpdater(failureThenSuccess: CoreError.Db(message: "locked"))
         let model = await loadedAdvancedModel(updater: updater)
 
         await model.requestOverviewOutput(.rootAreaMatrixFile)
@@ -157,7 +157,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testAllowReplaceRequiresConfirmationAndDisableSavesDirectly() async {
-        let updater = AdvancedSettingsRecordingUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success)
         let model = await loadedAdvancedModel(updater: updater)
 
         await model.requestAllowReplaceDuringImport(true)
@@ -182,7 +182,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testSaveFailureRollsBackAdvancedDraftAndRetryUsesSameCoreConfig() async {
-        let updater = AdvancedSettingsRecordingUpdater(result: .failureThenSuccess(CoreError.Db(message: "locked")))
+        let updater = RecordingConfigurationUpdater(failureThenSuccess: CoreError.Db(message: "locked"))
         let model = await loadedAdvancedModel(updater: updater)
 
         await model.requestAllowReplaceDuringImport(true)
@@ -261,82 +261,19 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     private func loadedAdvancedModel(
-        updater: AdvancedSettingsRecordingUpdater,
+        updater: RecordingConfigurationUpdater,
         config: RepoConfigSnapshot = .advancedSettingsFixture(repoPath: "/tmp/repo"),
         inspector: any RootOverviewFileInspecting = AdvancedSettingsRootInspector(status: .missing)
     ) async -> AdvancedSettingsModel {
         let model = AdvancedSettingsModel(
             repoPath: config.repoPath,
-            loader: AdvancedSettingsRecordingLoader(result: .success(config)),
+            loader: RecordingConfigurationLoader(result: .success(config)),
             updater: updater,
             rootOverviewInspector: inspector,
             errorMapper: AdvancedSettingsStaticErrorMapper()
         )
         await model.load()
         return model
-    }
-}
-
-private enum AdvancedSettingsLoaderResult {
-    case success(RepoConfigSnapshot)
-    case failure(Error)
-}
-
-private actor AdvancedSettingsRecordingLoader: CoreConfigurationLoading {
-    private let result: AdvancedSettingsLoaderResult
-    private var paths: [String] = []
-
-    init(result: AdvancedSettingsLoaderResult) {
-        self.result = result
-    }
-
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
-        paths.append(repoPath)
-        switch result {
-        case let .success(config):
-            return config
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func requestedPaths() -> [String] {
-        paths
-    }
-}
-
-private enum AdvancedSettingsUpdateResult {
-    case success
-    case failureThenSuccess(Error)
-}
-
-private actor AdvancedSettingsRecordingUpdater: CoreConfigurationUpdating {
-    struct Request: Equatable {
-        var repoPath: String
-        var config: RepoConfigSnapshot
-    }
-
-    private let result: AdvancedSettingsUpdateResult
-    private var recordedRequests: [Request] = []
-
-    init(result: AdvancedSettingsUpdateResult) {
-        self.result = result
-    }
-
-    func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {
-        recordedRequests.append(Request(repoPath: repoPath, config: newConfig))
-        switch result {
-        case .success:
-            return
-        case let .failureThenSuccess(error) where recordedRequests.count == 1:
-            throw error
-        case .failureThenSuccess:
-            return
-        }
-    }
-
-    func requests() -> [Request] {
-        recordedRequests
     }
 }
 

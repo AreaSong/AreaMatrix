@@ -4,7 +4,7 @@ import XCTest
 final class GeneralSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testLoadUsesRepositoryConfigCoreConfigSnapshotForVisibleGeneralSettings() async {
-        let loader = GeneralSettingsRecordingLoader(result: .success(.generalSettingsFixture(
+        let loader = RecordingConfigurationLoader(result: .success(.generalSettingsFixture(
             repoPath: "/tmp/repo",
             defaultMode: "Indexed",
             overviewOutput: "RootAreaMatrixFile",
@@ -13,7 +13,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
         let model = GeneralSettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
-            updater: GeneralSettingsRecordingUpdater(result: .success),
+            updater: RecordingConfigurationUpdater(result: .success),
             rootOverviewInspector: GeneralRootOverviewInspector(status: .missing),
             errorMapper: GeneralSettingsStaticErrorMapper()
         )
@@ -30,7 +30,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testCopyAndLocaleSaveThroughUpdateConfigWithoutMockState() async {
-        let updater = GeneralSettingsRecordingUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success)
         let model = await loadedModel(updater: updater, config: .generalSettingsFixture(
             repoPath: "/tmp/repo",
             defaultMode: "Indexed",
@@ -64,7 +64,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testDangerousStorageModeRequiresConfirmationBeforeUpdateConfig() async {
-        let updater = GeneralSettingsRecordingUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success)
         let model = await loadedModel(updater: updater)
 
         await model.requestStorageMode(.move)
@@ -88,7 +88,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testImportMoveFileCoreMoveDefaultPersistsOnlyAfterRiskConfirmation() async {
-        let updater = GeneralSettingsRecordingUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success)
         let model = await loadedModel(updater: updater)
 
         await model.requestStorageMode(.move)
@@ -119,7 +119,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
             atomically: true,
             encoding: .utf8
         )
-        let updater = GeneralSettingsRecordingUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success)
         let model = await loadedModel(
             updater: updater,
             config: .generalSettingsFixture(repoPath: repoURL.path),
@@ -142,7 +142,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testUnsafeRootOverviewOffersFinderRecoveryWithoutUpdatingConfig() async {
         let unsafeReason = "Cannot safely update AREAMATRIX.md"
-        let updater = GeneralSettingsRecordingUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success)
         let revealer = RecordingRepositoryFileRevealer()
         let model = await loadedModel(
             updater: updater,
@@ -168,7 +168,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testSaveFailureRollsBackToLastSavedValueAndRetryUsesSameCoreConfig() async {
-        let updater = GeneralSettingsRecordingUpdater(result: .failureThenSuccess(CoreError.Db(message: "locked")))
+        let updater = RecordingConfigurationUpdater(failureThenSuccess: CoreError.Db(message: "locked"))
         let model = await loadedModel(updater: updater)
 
         await model.updateLocale(.en)
@@ -249,14 +249,14 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     private func loadedModel(
-        updater: GeneralSettingsRecordingUpdater,
+        updater: RecordingConfigurationUpdater,
         config: RepoConfigSnapshot = .generalSettingsFixture(repoPath: "/tmp/repo"),
         inspector: any RootOverviewFileInspecting = GeneralRootOverviewInspector(status: .missing),
         revealer: (any RepositoryFileRevealing)? = nil
     ) async -> GeneralSettingsModel {
         let model = GeneralSettingsModel(
             repoPath: config.repoPath,
-            loader: GeneralSettingsRecordingLoader(result: .success(config)),
+            loader: RecordingConfigurationLoader(result: .success(config)),
             updater: updater,
             rootOverviewInspector: inspector,
             rootOverviewRevealer: revealer ?? RecordingRepositoryFileRevealer(),
@@ -317,69 +317,6 @@ extension AIClassificationSuggestionState {
             callLogID: 306,
             requiresUserConfirmation: true
         )
-    }
-}
-
-private enum GeneralSettingsLoaderResult {
-    case success(RepoConfigSnapshot)
-    case failure(Error)
-}
-
-private actor GeneralSettingsRecordingLoader: CoreConfigurationLoading {
-    private let result: GeneralSettingsLoaderResult
-    private var paths: [String] = []
-
-    init(result: GeneralSettingsLoaderResult) {
-        self.result = result
-    }
-
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
-        paths.append(repoPath)
-        switch result {
-        case let .success(config):
-            return config
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func requestedPaths() -> [String] {
-        paths
-    }
-}
-
-private enum GeneralSettingsUpdateResult {
-    case success
-    case failureThenSuccess(Error)
-}
-
-private actor GeneralSettingsRecordingUpdater: CoreConfigurationUpdating {
-    struct Request: Equatable {
-        var repoPath: String
-        var config: RepoConfigSnapshot
-    }
-
-    private let result: GeneralSettingsUpdateResult
-    private var recordedRequests: [Request] = []
-
-    init(result: GeneralSettingsUpdateResult) {
-        self.result = result
-    }
-
-    func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {
-        recordedRequests.append(Request(repoPath: repoPath, config: newConfig))
-        switch result {
-        case .success:
-            return
-        case let .failureThenSuccess(error) where recordedRequests.count == 1:
-            throw error
-        case .failureThenSuccess:
-            return
-        }
-    }
-
-    func requests() -> [Request] {
-        recordedRequests
     }
 }
 

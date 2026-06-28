@@ -16,7 +16,7 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
 
         XCTAssertEqual(requests.loadCount, 1)
         XCTAssertEqual(model.loadState, .loaded)
-        XCTAssertEqual(model.providerStatusText, "Configured by remote-provider-config")
+        XCTAssertEqual(model.providerStatusText, "Configured")
         XCTAssertEqual(model.verifiedStatusText, "Connection tested")
         XCTAssertEqual(model.enabledStatusText, "Remote provider enabled")
         XCTAssertEqual(model.featureScopeText, "Auto summaries, Semantic search")
@@ -75,10 +75,10 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
 
     @MainActor
     func testAIPrivacyRulesBlocksPrivacyGateWithoutTouchingRemoteProviderConfigCoreProviderConfig() async {
-        let updater = RemoteAISettingsUpdater()
+        let updater = RecordingAISettingsUpdater()
         let model = AISettingsModel(
             repoPath: "/tmp/aiPrivacyRules",
-            loader: RemoteAISettingsLoader(
+            loader: StaticAISettingsLoader(
                 snapshot: .aiPrivacyRulesRemoteReady(repoPath: "/tmp/aiPrivacyRules")
             ),
             updater: updater,
@@ -94,7 +94,7 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
         await model.load()
         await providerModel.load()
         let result = await model.blockRemoteAIWithPrivacyGate()
-        let settingsRequests = await updater.requests()
+        let settingsRequests = await updater.requestedConfigs()
         let providerRequests = await providerBridge.requests()
 
         XCTAssertEqual(result, .saved)
@@ -231,35 +231,6 @@ private actor FailingRemoteProviderReader: CoreRemoteProviderConfiguring {
         request _: RemoteProviderDisableRequestState
     ) async throws -> RemoteProviderConfigState {
         throw error
-    }
-}
-
-private actor RemoteAISettingsLoader: CoreAISettingsLoading {
-    let snapshot: AISettingsSnapshot
-
-    init(snapshot: AISettingsSnapshot) {
-        self.snapshot = snapshot
-    }
-
-    func loadAISettings(repoPath _: String) async throws -> AISettingsSnapshot {
-        snapshot
-    }
-}
-
-private actor RemoteAISettingsUpdater: CoreAISettingsUpdating {
-    private var recorded: [AISettingsConfigSnapshot] = []
-
-    func updateAISettings(
-        repoPath _: String,
-        newConfig: AISettingsConfigSnapshot
-    ) async throws -> AISettingsSnapshot {
-        let normalized = newConfig.normalized()
-        recorded.append(normalized)
-        return AISettingsSnapshot.aiPrivacyRulesSnapshot(config: normalized)
-    }
-
-    func requests() -> [AISettingsConfigSnapshot] {
-        recorded
     }
 }
 

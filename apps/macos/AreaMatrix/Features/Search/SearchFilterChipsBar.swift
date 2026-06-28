@@ -195,7 +195,7 @@ struct LocalModelStatusView: View {
                     .accessibilityIdentifier("local-model-status-local-model-status-core-open-diagnostics")
             }
             Text(
-                "Status checks and diagnostics use only local-model-status-core local model metadata " +
+                "Status checks and diagnostics use only local model metadata " +
                     "and do not enable remote AI."
             )
             .font(.callout)

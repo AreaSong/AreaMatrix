@@ -75,7 +75,7 @@ final class AIPrivacyRemoteProviderStateModel: ObservableObject {
         if !snapshot.providerVerified { return "Remote provider needs connection test." }
         if !snapshot.remoteProviderEnabled { return "Remote provider is disabled in AI settings." }
         if snapshot.featureScope.isEmpty { return "Remote scope is not selected." }
-        return "Configured by remote-provider-config"
+        return "Configured"
     }
 
     private func providerError(for error: Error) async -> AISettingsError {

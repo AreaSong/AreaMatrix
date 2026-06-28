@@ -14,22 +14,6 @@ struct NoopNoteStore: CoreNoteReadingWriting {
     func writeNote(repoPath _: String, fileID _: Int64, contentMarkdown _: String) async throws {}
 }
 
-struct NoopConfigurationUpdater: CoreConfigurationUpdating {
-    func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
-}
-
-actor StaticConfigurationLoader: CoreConfigurationLoading {
-    private let config: RepoConfigSnapshot
-
-    init(config: RepoConfigSnapshot) {
-        self.config = config
-    }
-
-    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
-        config
-    }
-}
-
 actor StaticCoreVersionReader: CoreVersionReading {
     private let result: Result<String, Error>
     private var count = 0

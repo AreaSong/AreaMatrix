@@ -35,6 +35,34 @@ func importConflictBatchRequest(urls: [URL]) -> ImportEntryRequest {
     )
 }
 
+func importConflictBatchIntegrationRequest(urls: [URL], conflictIDs: [String]) -> ImportEntryRequest {
+    ImportEntryRequest(
+        repoPath: "/tmp/repo",
+        source: .importConflictBatch(.importConflictBatch),
+        destination: .autoClassify,
+        urls: urls,
+        kind: .multipleItems(urls.count),
+        availableCategories: ["inbox", "docs", "finance"],
+        allowReplaceDuringImport: true,
+        isTrashAvailable: true,
+        importSessionID: "session-221",
+        importConflictIDs: conflictIDs
+    )
+}
+
+@MainActor
+func importConflictBatchIntegrationModel(
+    conflictBatcher: any CoreImportConflictBatching,
+    undoStore: any CoreUndoActionLogging
+) -> ImportBatchCopyImportModel {
+    ImportBatchCopyImportModel(
+        importer: ImportBatchRecordingBatchImporter(),
+        errorMapper: ImportSingleFileRecordingErrorMapper(),
+        conflictBatcher: conflictBatcher,
+        undoActionStore: undoStore
+    )
+}
+
 func importConflictExpectedBatchRequests() -> [ImportBatchBatchImportRequest] {
     [
         ImportBatchBatchImportRequest(

@@ -170,7 +170,7 @@ final class AISettingsModel: ObservableObject {
             actionFeedback = .failed(AISettingsError(
                 message: "Remote AI requires explicit setup.",
                 recovery: "Use Configure remote AI before selecting Remote first.",
-                detail: "remote-provider-config owns provider setup, API key storage, and connection verification."
+                detail: "Remote AI configuration manages provider setup, API key storage, and connection verification."
             ))
             return
         }
@@ -224,19 +224,19 @@ final class AISettingsModel: ObservableObject {
     }
 
     func openRemoteConfigurationEntry() {
-        actionFeedback = .success("Remote AI configuration is handled by remote-provider-config.")
+        actionFeedback = .success("Open Remote AI configuration to manage providers and API keys.")
     }
 
     func openLocalModelStatusEntry() {
-        actionFeedback = .success("Local model status is handled by local-model-status.")
+        actionFeedback = .success("Open Local model status to check installation and diagnostics.")
     }
 
     func openPrivacyRulesEntry() {
-        actionFeedback = .success("Privacy rules are handled by ai-privacy-rules.")
+        actionFeedback = .success("Open Privacy rules to manage AI data boundaries.")
     }
 
     func openCallLogEntry() {
-        actionFeedback = .success("AI call log is handled by ai-call-log.")
+        actionFeedback = .success("Open AI call log to review recent AI activity.")
     }
 
     func allowRemoteAIAfterProviderConsent() async -> AISettingsPrivacyGateUpdateResult {
@@ -245,7 +245,7 @@ final class AISettingsModel: ObservableObject {
             actionFeedback = .failed(AISettingsError(
                 message: "Remote AI requires provider consent.",
                 recovery: "Configure remote AI before allowing the privacy gate.",
-                detail: "remote-provider-config owns provider setup, API key storage, " +
+                detail: "Remote AI configuration manages provider setup, API key storage, " +
                     "connection verification, and remote scope."
             ))
             return .needsRemoteConfiguration
@@ -272,8 +272,8 @@ final class AISettingsModel: ObservableObject {
             return saveError ?? AISettingsError(
                 message: "AI settings privacy summary could not be refreshed.",
                 recovery: "Retry save before returning to AI settings.",
-                detail: "ai-settings-config privacy gate state did not sync after the " +
-                    "ai-privacy-rules privacy rules save."
+                detail: "AI settings privacy gate state did not sync after the " +
+                    "privacy rules save."
             )
         }
     }

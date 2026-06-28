@@ -63,10 +63,10 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
 
     @MainActor
     func testAISettingsAISettingsModelPersistsAISettingsConfigCoreConfigThroughInjectedCoreBridge() async {
-        let updater = AISettingsRecordingAISettingsUpdater(result: .success)
+        let updater = RecordingAISettingsUpdater(result: .success)
         let model = AISettingsModel(
             repoPath: "/tmp/aiSettings",
-            loader: AISettingsStaticAISettingsLoader(snapshot: .aiSettingsDefault(repoPath: "/tmp/aiSettings")),
+            loader: StaticAISettingsLoader(snapshot: .aiSettingsDefault(repoPath: "/tmp/aiSettings")),
             updater: updater,
             errorMapper: AISettingsStaticAIErrorMapper()
         )
@@ -85,10 +85,10 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
 
     @MainActor
     func testAISettingsRemoteFirstRequiresRemoteProviderConfigRemoteSetupBeforeSaving() async {
-        let updater = AISettingsRecordingAISettingsUpdater(result: .success)
+        let updater = RecordingAISettingsUpdater(result: .success)
         let model = AISettingsModel(
             repoPath: "/tmp/aiSettings",
-            loader: AISettingsStaticAISettingsLoader(snapshot: .aiSettingsDefault(repoPath: "/tmp/aiSettings")),
+            loader: StaticAISettingsLoader(snapshot: .aiSettingsDefault(repoPath: "/tmp/aiSettings")),
             updater: updater,
             errorMapper: AISettingsStaticAIErrorMapper()
         )
@@ -102,19 +102,19 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
         XCTAssertEqual(model.actionFeedback, .failed(AISettingsError(
             message: "Remote AI requires explicit setup.",
             recovery: "Use Configure remote AI before selecting Remote first.",
-            detail: "remote-provider-config owns provider setup, API key storage, and connection verification."
+            detail: "Remote AI configuration manages provider setup, API key storage, and connection verification."
         )))
     }
 
     @MainActor
     func testAISettingsPauseFailureRestoresSavedSnapshotAndKeepsRetry() async {
-        let updater = AISettingsRecordingAISettingsUpdater(result: .failureThenSuccess(CoreError.Io(
+        let updater = RecordingAISettingsUpdater(failureThenSuccess: CoreError.Io(
             message: "metadata locked"
-        )))
+        ))
         let enabled = AISettingsSnapshot.aiSettingsDefault(repoPath: "/tmp/aiSettings", aiEnabled: true)
         let model = AISettingsModel(
             repoPath: "/tmp/aiSettings",
-            loader: AISettingsStaticAISettingsLoader(snapshot: enabled),
+            loader: StaticAISettingsLoader(snapshot: enabled),
             updater: updater,
             errorMapper: AISettingsStaticAIErrorMapper()
         )
@@ -252,54 +252,6 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
         XCTAssertFalse(location.exists)
         XCTAssertFalse(location.openable)
         XCTAssertFalse(FileManager.default.fileExists(atPath: modelURL.path))
-    }
-}
-
-private actor AISettingsStaticAISettingsLoader: CoreAISettingsLoading {
-    let snapshot: AISettingsSnapshot
-
-    init(snapshot: AISettingsSnapshot) {
-        self.snapshot = snapshot
-    }
-
-    func loadAISettings(repoPath _: String) async throws -> AISettingsSnapshot {
-        snapshot
-    }
-}
-
-private enum AISettingsUpdateResult {
-    case success
-    case failureThenSuccess(Error)
-}
-
-private actor AISettingsRecordingAISettingsUpdater: CoreAISettingsUpdating {
-    struct Request: Equatable {
-        var repoPath: String
-        var config: AISettingsConfigSnapshot
-    }
-
-    private let result: AISettingsUpdateResult
-    private var recordedRequests: [Request] = []
-
-    init(result: AISettingsUpdateResult) {
-        self.result = result
-    }
-
-    func updateAISettings(repoPath: String, newConfig: AISettingsConfigSnapshot) async throws -> AISettingsSnapshot {
-        let normalized = newConfig.normalized()
-        recordedRequests.append(Request(repoPath: repoPath, config: normalized))
-        switch result {
-        case .success:
-            return AISettingsSnapshot.aiSettingsSnapshot(config: normalized)
-        case let .failureThenSuccess(error) where recordedRequests.count == 1:
-            throw error
-        case .failureThenSuccess:
-            return AISettingsSnapshot.aiSettingsSnapshot(config: normalized)
-        }
-    }
-
-    func requests() -> [Request] {
-        recordedRequests
     }
 }
 

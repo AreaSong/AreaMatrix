@@ -199,7 +199,7 @@ private extension AISettingsPane {
                 .disabled(writesDisabled || !(model.snapshot?.config.aiEnabled ?? false))
             Button("Clear AI generated suggestions...", action: model.openCallLogEntry)
                 .disabled(true)
-            Text("Clearing generated suggestions belongs to a later AI cleanup capability, not ai-settings-config.")
+            Text("Clear generated suggestions from the AI call log after reviewing recent activity.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -226,12 +226,12 @@ private extension AISettingsPane {
 
     var localModelLabel: String {
         guard let config = model.snapshot?.config else { return "Loading" }
-        return config.localAIEnabled ? "Ready for ai-settings-config route" : "Not installed"
+        return config.localAIEnabled ? "Ready" : "Not installed"
     }
 
     var remoteModelLabel: String {
         guard let config = model.snapshot?.config else { return "Loading" }
-        return config.remoteAIAllowed ? "Configured by remote-provider-config" : "Off"
+        return config.remoteAIAllowed ? "Configured" : "Off"
     }
 
     var privacyRulesLabel: String {
@@ -375,7 +375,7 @@ private struct AISettingsLoadingView: View {
     var body: some View {
         AdvancedSettingsSection(title: "AI features") {
             ProgressView("Loading AI settings...")
-            Text("AI controls are disabled until ai-settings-config configuration is loaded.")
+            Text("AI controls are disabled until settings finish loading.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }

@@ -277,20 +277,20 @@ private extension CoreErrorRecoverabilitySnapshot {
     }
 }
 
-struct CoreBridgePlaceholderState: Equatable {
+struct CoreBridgeUnavailableState: Equatable {
     let statusLabel: String
     let generatedBindingsPath: String
     let coreLibraryStatus: String
     let declaredBoundaryCount: Int
 
-    var isPlaceholder: Bool {
+    var isUnavailable: Bool {
         true
     }
 
-    static let phase0 = CoreBridgePlaceholderState(
-        statusLabel: "CoreBridge placeholder",
+    static let generatedBindingsUnavailable = CoreBridgeUnavailableState(
+        statusLabel: "Core bridge unavailable",
         generatedBindingsPath: "apps/macos/AreaMatrix/Bridge/Generated/area_matrix.swift",
-        coreLibraryStatus: "UniFFI bindings and static library are not linked in the placeholder configuration",
+        coreLibraryStatus: "UniFFI bindings and static library are unavailable for this build",
         declaredBoundaryCount: CoreBridgeBoundary.allCases.count
     )
 }
@@ -298,7 +298,7 @@ struct CoreBridgePlaceholderState: Equatable {
 enum CoreBridgeError: Error, Equatable, LocalizedError {
     case generatedBindingsUnavailable(
         boundary: CoreBridgeBoundary,
-        state: CoreBridgePlaceholderState
+        state: CoreBridgeUnavailableState
     )
 
     var errorDescription: String? {

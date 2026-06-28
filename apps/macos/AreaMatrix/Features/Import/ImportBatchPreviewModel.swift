@@ -70,7 +70,7 @@ final class ImportBatchPreviewModel: ObservableObject {
         case .autoClassify:
             nil
         case .category:
-            "已覆盖自动分类结果；当前任务仍保留每个文件的分类建议作为参考。"
+            "已覆盖自动分类结果；本次导入仍保留每个文件的分类建议作为参考。"
         case .repositoryRoot:
             "当前入口保留在资料库根目录；分类建议只作为预览，不会自动写入。"
         }

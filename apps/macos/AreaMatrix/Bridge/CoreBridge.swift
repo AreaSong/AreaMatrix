@@ -152,21 +152,21 @@ extension RepoConfigSnapshot {
 
 actor CoreBridge {
     enum BridgeState: Equatable {
-        case placeholder
+        case unavailable
         case generatedBindings
     }
 
     private let repoURL: URL?
-    private let placeholderState: CoreBridgePlaceholderState
+    private let unavailableState: CoreBridgeUnavailableState
     private let availabilityChecker: any FileAvailabilityChecking
 
     init(
         repoURL: URL? = nil,
-        placeholderState: CoreBridgePlaceholderState = .phase0,
+        unavailableState: CoreBridgeUnavailableState = .generatedBindingsUnavailable,
         availabilityChecker: any FileAvailabilityChecking = LocalFileAvailabilityChecker()
     ) {
         self.repoURL = repoURL
-        self.placeholderState = placeholderState
+        self.unavailableState = unavailableState
         self.availabilityChecker = availabilityChecker
     }
 
@@ -174,8 +174,8 @@ actor CoreBridge {
         .generatedBindings
     }
 
-    func currentState() -> CoreBridgePlaceholderState {
-        placeholderState
+    func currentState() -> CoreBridgeUnavailableState {
+        unavailableState
     }
 
     nonisolated func coreAvailability() -> String {
@@ -187,7 +187,7 @@ actor CoreBridge {
     }
 
     func requireGeneratedBindings(for boundary: CoreBridgeBoundary) throws -> Never {
-        throw CoreBridgeError.generatedBindingsUnavailable(boundary: boundary, state: placeholderState)
+        throw CoreBridgeError.generatedBindingsUnavailable(boundary: boundary, state: unavailableState)
     }
 
     func getVersion() async throws -> String {

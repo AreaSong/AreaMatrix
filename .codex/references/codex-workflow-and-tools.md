@@ -113,7 +113,7 @@ codex exec -m gpt-5.5 \
 - OpenAI model docs: https://developers.openai.com/api/docs/models
 - GPT-5.5 model docs: https://developers.openai.com/api/docs/models/gpt-5.5
 
-截至 2026-05-15 本轮核对，Codex 官方文档目录还包含以下工作层面。它们不一定都是 AreaMatrix 当前执行路径，但属于最新官网公开的 Codex 工作面：
+截至 2026-05-15 的核对结果显示，Codex 官方文档目录还包含以下工作层面。它们不一定都是 AreaMatrix 当前执行路径，但属于最新官网公开的 Codex 工作面：
 
 - Getting Started：Overview、Quickstart、Explore use cases、Migrate、Pricing。
 - Concepts：Prompting、Customization、Memories / Chronicle、Sandboxing / Auto-review、Subagents、Workflows、Models、Cyber Safety。

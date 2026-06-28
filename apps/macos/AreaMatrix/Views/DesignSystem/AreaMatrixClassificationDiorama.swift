@@ -12,7 +12,7 @@ struct AreaMatrixClassificationDiorama: View {
 
     var body: some View {
         ZStack {
-            mockAppWindow
+            miniAppWindow
                 .offset(x: 70 + parallax.horizontal * -15, y: parallax.vertical * -10)
             floatingFileView
                 .offset(x: phase >= 1 ? 80 : -150, y: phase >= 1 ? -20 : 0)
@@ -112,7 +112,7 @@ struct AreaMatrixClassificationDiorama: View {
         }
     }
 
-    private var mockAppWindow: some View {
+    private var miniAppWindow: some View {
         AreaMatrixMiniWindow(title: "AreaMatrix", width: 340, height: 180) {
             VStack(alignment: .leading, spacing: 12) {
                 dropZone
