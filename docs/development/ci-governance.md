@@ -16,7 +16,7 @@ CI 是合并前的最低共同质量线。它不能替代 review，但可以阻�
 |---|---|---|
 | `core-ci.yml` | Rust fmt、clippy、test、universal build、coverage | 所有 PR、main push |
 | `macos-ci.yml` | Xcode build/test、SwiftLint、SwiftFormat | 所有 PR、main push |
-| `governance-ci.yml` | governance files、skills、quality smoke、task-loop、prompt doctor、diff check、secret scan | 所有 PR、main push |
+| `governance-ci.yml` | governance files、skills、quality smoke、Codex OS、task-loop、prompt doctor、diff check、secret scan | 所有 PR、main push |
 
 macOS app 工程尚未存在时，`macos-ci.yml` 可以按现有保护逻辑跳过 app build/test，但 workflow 本身必须运行。
 
@@ -28,6 +28,7 @@ macOS app 工程尚未存在时，`macos-ci.yml` 可以按现有保护逻辑跳�
 ./dev check governance
 ./dev check skills
 ./dev check quality
+./dev check codex-os
 ./dev check wording
 ./dev check task-loop
 ./dev check prompts
@@ -100,7 +101,7 @@ Task-loop 的 `VERIFY_RESULT: PASS` 是单任务验收证据。合并前仍需 C
 
 - Rust / Swift / Markdown 编码规范、注释策略和函数 / 文件长度规则是否可发现。
 - Core、macOS、DB / migration、CI、release、Git checkpoint 和 residual ledger 是否仍有明确 owner。
-- repo-local skill 数量和导航是否与当前 8 个 AreaMatrix skills 一致。
+- repo-local skill 数量和导航是否与当前 9 个 AreaMatrix skills 一致。
 - governance CI 是否继续运行这条 smoke gate。
 
 它不替代 `cargo fmt`、`cargo clippy`、SwiftLint、SwiftFormat、XCTest、review 或 release evidence，只负责把“该读哪个规则、该触发哪个 owner”固定成可执行检查。

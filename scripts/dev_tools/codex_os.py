@@ -9,6 +9,24 @@ import subprocess
 import sys
 from typing import Any
 
+from .codex_os_automation import (
+    registry_audit as _registry_audit,
+    relative_to_root as _relative_to_root,
+    render_registry_audit as _render_registry_audit,
+    run_archive_review,
+    run_context,
+    run_diagnose,
+    run_health_score,
+    run_lifecycle,
+    run_new,
+    run_recommend_validation,
+    run_resume,
+    run_runbook,
+    run_title_suggestions,
+    run_weekly,
+    template_output_path as _template_output_path,
+    update_task_reference as _update_task_reference,
+)
 from .codex_os_registry import (
     apply_task_updates,
     default_registry,
@@ -51,6 +69,8 @@ TEMPLATE_FILES = {
     "evidence": "codex-evidence-template.md",
     "closeout": "codex-closeout-template.md",
 }
+
+WRITEABLE_TEMPLATE_COMMANDS = {"intake", "handoff", "evidence", "closeout"}
 
 
 def _write_text(path: Path, text: str) -> None:
@@ -175,6 +195,7 @@ def _write_task_registry(runtime_dir: Path, registry: dict[str, Any]) -> Path:
     return path
 
 
+
 def run_status(root: Path, args: Namespace) -> int:
     snapshot = build_snapshot(_state_db_from_args(args), project=args.project)
     print(render_thread_health(snapshot, limit=args.limit))
@@ -221,11 +242,13 @@ def run_registry(root: Path, args: Namespace) -> int:
     if args.registry_command == "init":
         return _run_registry_init(path, args)
     if args.registry_command == "status":
-        registry = load_registry(runtime_dir)
-        if registry is None:
-            print(f"task registry: missing ({path})")
+        audit = _registry_audit(root, runtime_dir)
+        if getattr(args, "json", False):
+            print(json.dumps(audit, ensure_ascii=False, indent=2))
+        else:
+            print(_render_registry_audit(audit))
+        if getattr(args, "strict", False) and audit["result"] in {"FAIL", "WARN"}:
             return 1
-        print(f"task registry: OK ({len(registry.get('tasks', []))} task(s))")
         return 0
     if args.registry_command == "list":
         registry = require_registry(runtime_dir)
@@ -398,7 +421,8 @@ def _append_task_preflight_checks(
     state_status, state_detail = _thread_health_for_task(_state_db_from_args(args), args.project, task)
     checks.append(_preflight_check("owner thread", state_status, state_detail))
     if _task_needs_confirmation(task) and task.get("confirmation_status") != "Granted":
-        checks.append(_preflight_check("manual confirmation", "WARN", "high-risk task requires explicit confirmation"))
+        status = "FAIL" if args.strict else "WARN"
+        checks.append(_preflight_check("manual confirmation", status, "high-risk task requires explicit confirmation"))
         manual_confirmations.append("High or Mission-Critical task: confirm impact, risk, validation, and rollback before writes.")
     if task.get("archive_recommendation") == "archive":
         manual_confirmations.append("Archive recommendation is advisory only; thread archive still requires manual confirmation.")
@@ -453,13 +477,31 @@ def _next_registry_task(tasks: list[dict[str, Any]], lane: str | None) -> dict[s
 def _run_task_transition(root: Path, runtime_dir: Path, args: Namespace) -> int:
     registry, task = _load_registry_and_task(runtime_dir, args.task_id)
     if args.task_command == "start":
-        updates = {"status": "Running", "next_action": args.next_action, "automation_scope": args.automation_scope}
+        updates = {
+            "status": "Running",
+            "next_action": args.next_action,
+            "validation": args.validation,
+            "validation_status": args.validation_status,
+            "automation_scope": args.automation_scope,
+        }
     elif args.task_command == "verify":
-        updates = {"status": "Verifying", "validation": args.validation, "validation_status": "Running"}
+        updates = {
+            "status": "Verifying",
+            "next_action": args.next_action,
+            "validation": args.validation,
+            "validation_status": args.validation_status or "Running",
+            "automation_scope": args.automation_scope,
+        }
     else:
         if not args.next_action:
             raise ToolError("blocking a task requires --next-action", code=1)
-        updates = {"status": "Blocked", "next_action": args.next_action, "validation_status": args.validation_status or "Blocked"}
+        updates = {
+            "status": "Blocked",
+            "next_action": args.next_action,
+            "validation": args.validation,
+            "validation_status": args.validation_status or "Blocked",
+            "automation_scope": args.automation_scope,
+        }
     preview = dict(task)
     preview.update({key: value for key, value in updates.items() if value is not None})
     preview["updated_at"] = iso_now()
@@ -533,6 +575,9 @@ def _finish_updates(task: dict[str, Any], args: Namespace) -> dict[str, Any]:
         "closeout_note": args.closeout_note,
         "next_action": args.next_action,
         "archive_recommendation": args.archive_recommendation,
+        "risk_level": getattr(args, "risk_level", None),
+        "confirmation_status": getattr(args, "confirmation_status", None),
+        "automation_scope": getattr(args, "automation_scope", None),
         "finished_at": iso_now(),
     }
 
@@ -548,7 +593,18 @@ def _finish_warnings(args: Namespace) -> list[str]:
 
 def run_template(root: Path, args: Namespace, key: str) -> int:
     text = _template_text(root, TEMPLATE_FILES[key])
-    sys.stdout.write(_fill_common_template(text, args))
+    text = _fill_common_template(text, args)
+    if getattr(args, "write", False):
+        path = _template_output_path(root, args, key)
+        _write_text(path, text)
+        runtime_dir = _runtime_dir_from_args(root, args)
+        field = f"{key}_file"
+        updated = _update_task_reference(runtime_dir, getattr(args, "task_id", None), {field: _relative_to_root(root, path)})
+        print(f"wrote {path}")
+        if updated:
+            print(f"updated {updated}")
+        return 0
+    sys.stdout.write(text)
     return 0
 
 
@@ -568,9 +624,12 @@ def run_archive_candidates(root: Path, args: Namespace) -> int:
     return 0
 
 
+
 def run_doctor(root: Path, args: Namespace) -> int:
     required = [
         root / ".codex" / "references" / "codex-operating-system.md",
+        root / ".codex" / "references" / "index.md",
+        root / ".codex" / "README.md",
         root / ".codex" / "templates" / "codex-intake-template.md",
         root / ".codex" / "templates" / "codex-handoff-template.md",
         root / ".codex" / "templates" / "codex-evidence-template.md",
@@ -582,15 +641,22 @@ def run_doctor(root: Path, args: Namespace) -> int:
         for path in missing:
             print(f"missing: {path}")
         return 1
+    try:
+        json.loads((root / ".codex" / "templates" / "task-registry.example.json").read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        print(f"invalid JSON: .codex/templates/task-registry.example.json: {exc}")
+        return 1
     runtime_dir = _runtime_dir_from_args(root, args)
     registry = load_registry(runtime_dir)
+    audit = _registry_audit(root, runtime_dir)
     state_db = _state_db_from_args(args)
     if state_db.is_file():
         snapshot = build_snapshot(state_db, project=args.project)
         print(f"codex-os doctor: state OK ({snapshot['total_threads']} thread(s) in scope)")
     else:
         print(f"codex-os doctor: state WARN (missing {state_db})")
-    print(f"codex-os doctor: registry {'OK' if registry is not None else 'WARN (missing)'}")
+    registry_text = "OK" if registry is not None and audit["result"] == "OK" else f"WARN ({audit['result']})"
+    print(f"codex-os doctor: registry {registry_text}")
     print("codex-os doctor: docs/templates OK")
     return 0
 
@@ -602,6 +668,28 @@ def run_codex_os_command(root: Path, args: Namespace) -> int:
         return run_thread_health(root, args)
     if args.codex_os_command == "dashboard":
         return run_dashboard(root, args)
+    if args.codex_os_command == "new":
+        return run_new(root, args)
+    if args.codex_os_command == "context":
+        return run_context(root, args)
+    if args.codex_os_command == "resume":
+        return run_resume(root, args)
+    if args.codex_os_command == "recommend-validation":
+        return run_recommend_validation(root, args)
+    if args.codex_os_command == "archive-review":
+        return run_archive_review(root, args)
+    if args.codex_os_command == "title-suggestions":
+        return run_title_suggestions(root, args)
+    if args.codex_os_command == "weekly":
+        return run_weekly(root, args)
+    if args.codex_os_command == "diagnose":
+        return run_diagnose(root, args)
+    if args.codex_os_command == "health-score":
+        return run_health_score(root, args)
+    if args.codex_os_command == "runbook":
+        return run_runbook(root, args)
+    if args.codex_os_command == "lifecycle":
+        return run_lifecycle(root, args)
     if args.codex_os_command == "registry":
         return run_registry(root, args)
     if args.codex_os_command in TEMPLATE_FILES:

@@ -29,7 +29,7 @@
   - `runtime/task-loop/tmp/`：本地临时保留目录。
   - `runtime/task-loop/progress-backups/`：本地 progress 恢复快照（reset/clear-stale 时写入），默认不进 Git；仓库仅跟踪脱敏 example fixture。
   - `runtime/dev-console/`：本地 Dev Console 偏好。
-  - `runtime/codex-os/`：Codex Operating System v1 的本地 dashboard、thread-health、task-registry 和 health report；只作操作面恢复索引，不是 live queue 或产品完成证据，默认 gitignored。
+  - `runtime/codex-os/`：Codex Operating System 的本地 dashboard、thread-health、task-registry、context、evidence、closeout、weekly review 和 health report；只作操作面恢复索引，不是 live queue 或产品完成证据，默认 gitignored。
 - `workflow/versions/v1-mvp/evidence/task-loop-runs/`：可追溯、可提交的 run summary / index 证据，不属于 `.codex/` 的业务源事实。
 - Task loop 的状态 helper 位于 `scripts/task_loop/state.py`，Git checkpoint helper 位于 `scripts/task_loop/git.py`，完整自检入口是 `./task-loop check`。
 - Prompt 工程质量门禁位于 `workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md`；编码规范源事实仍在 `docs/development/coding-standards.md`。
@@ -54,7 +54,11 @@
 
 ```bash
 ./dev codex-os preflight --task-id <task-id> --strict
+./dev codex-os context --task-id <task-id>
+./dev codex-os recommend-validation
 ./dev codex-os task start --task-id <task-id> --write
+./dev codex-os evidence --task-id <task-id> --write
+./dev codex-os closeout --task-id <task-id> --write
 ./dev codex-os finish --task-id <task-id> --status Done --validation "<fresh result>" --evidence-note "<summary>" --write
 ```
 

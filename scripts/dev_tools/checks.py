@@ -238,6 +238,7 @@ def run_governance_check(root: Path | None = None) -> int:
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check governance", "governance check")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check skills", "skill health")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check quality", "quality smoke")
+    _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check codex-os", "Codex OS health")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check wording", "wording audit")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check task-loop", "task-loop health")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check prompts", "prompt doctor")
@@ -245,6 +246,7 @@ def run_governance_check(root: Path | None = None) -> int:
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"gitleaks/gitleaks-action", "secret scan action")
     _require_text(root, failures, "scripts/check-secrets.sh", r"AREAMATRIX_GITLEAKS_MODE", "local secret scan diff/history modes")
     _require_text(root, failures, "docs/development/ci-governance.md", "./dev check secrets", "local secret scan docs")
+    _require_text(root, failures, "docs/development/ci-governance.md", "./dev check codex-os", "Codex OS local check docs")
 
     if failures.count:
         print(f"governance health: FAILED ({failures.count} issue(s))", file=os.sys.stderr)
@@ -467,9 +469,23 @@ def run_quality_check(root: Path | None = None) -> int:
     _require_text(
         root,
         failures,
+        ".codex/skills-src/areamatrix-codex-os/SKILL.md",
+        "Codex Operating System",
+        "Codex OS skill owner",
+    )
+    _require_text(
+        root,
+        failures,
         ".codex/skills-src/README.md",
         "areamatrix-residual-ledger",
         "8th residual-ledger skill navigation",
+    )
+    _require_text(
+        root,
+        failures,
+        ".codex/skills-src/README.md",
+        "areamatrix-codex-os",
+        "Codex OS skill navigation",
     )
     _require_text(root, failures, ".codex/references/index.md", "./dev check quality", "quality smoke reference")
     _require_text(root, failures, ".codex/references/index.md", "./dev check wording", "wording audit reference")
@@ -481,8 +497,12 @@ def run_quality_check(root: Path | None = None) -> int:
     stale_skill_count_patterns = (
         r"现有 " + r"7 个",
         r"已有 " + r"7 个",
+        r"现有 " + r"8 个",
+        r"已有 " + r"8 个",
         r"7 个 " + r"AreaMatrix skills",
+        r"8 个 " + r"AreaMatrix skills",
         r"强化现有 " + r"7",
+        r"强化现有 " + r"8",
     )
     stale_count_pattern = "|".join(stale_skill_count_patterns)
     for rel_path in [
@@ -514,8 +534,21 @@ def run_task_loop_check(root: Path | None = None) -> int:
 def run_codex_os_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     checks = [
+        ["python3", "-m", "py_compile", *sorted(str(path.relative_to(root)) for path in (root / "scripts/dev_tools").glob("*.py"))],
         [root / "dev", "codex-os", "doctor"],
         [root / "dev", "codex-os", "preflight"],
+        [root / "dev", "codex-os", "new", "--help"],
+        [root / "dev", "codex-os", "context", "--help"],
+        [root / "dev", "codex-os", "resume", "--help"],
+        [root / "dev", "codex-os", "recommend-validation", "--help"],
+        [root / "dev", "codex-os", "archive-review", "--help"],
+        [root / "dev", "codex-os", "title-suggestions", "--help"],
+        [root / "dev", "codex-os", "weekly", "--help"],
+        [root / "dev", "codex-os", "diagnose", "--help"],
+        [root / "dev", "codex-os", "health-score", "--help"],
+        [root / "dev", "codex-os", "runbook", "--help"],
+        [root / "dev", "codex-os", "lifecycle", "--help"],
+        [root / "dev", "codex-os", "registry", "status", "--json"],
         [root / "dev", "codex-os", "task", "--help"],
         [root / "dev", "codex-os", "finish", "--help"],
         ["python3", "-m", "unittest", "scripts.dev_tools.test_codex_os"],

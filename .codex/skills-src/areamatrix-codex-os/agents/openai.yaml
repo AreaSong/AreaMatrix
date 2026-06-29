@@ -1,0 +1,6 @@
+interface:
+  display_name: "AreaMatrix Codex OS"
+  short_description: "Run and recover Codex OS tasks"
+  default_prompt: "Use $areamatrix-codex-os to preflight, continue, validate, and finish this AreaMatrix Codex OS task safely."
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-29T02:36:33Z",
+  "project": "areamatrix",
+  "source": "areaflow-import-snapshot",
+  "source_hash": "41f8b2410446939026b8de6025e8c3b267c75f8a32dd5602c5562def7f79b3bb",
+  "summary": {
+    "project": "areamatrix",
+    "residual_count": 10,
+    "tasks": {
+      "active": 0,
+      "backlog_closed": 5,
+      "backlog_open": 0,
+      "backlog_packages": 5,
+      "done": 1
+    },
+    "v1_execution": {
+      "done": 637,
+      "status": {
+        "completed": 637
+      },
+      "total": 637
+    },
+    "version_count": 2
+  }
+}

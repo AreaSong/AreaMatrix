@@ -24,6 +24,9 @@ jobs:
       - name: Quality smoke
         run: ./dev check quality
 
+      - name: Codex OS health
+        run: ./dev check codex-os
+
       - name: Long-term wording audit
         run: ./dev check wording
 

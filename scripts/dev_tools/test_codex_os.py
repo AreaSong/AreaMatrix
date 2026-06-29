@@ -108,6 +108,11 @@ def args(command: str, state_db: Path, runtime_dir: Path, **extra: object) -> Na
         "strict": False,
         "write_dashboard": False,
         "task_command": None,
+        "title": None,
+        "path": [],
+        "changed": False,
+        "output": None,
+        "recommend_validation": False,
     }
     values.update(extra)
     return Namespace(**values)
@@ -162,6 +167,8 @@ class CodexOsToolsTest(unittest.TestCase):
             (root / ".codex/references").mkdir(parents=True)
             (root / ".codex/templates").mkdir(parents=True)
             for relative in [
+                ".codex/README.md",
+                ".codex/references/index.md",
                 ".codex/references/codex-operating-system.md",
                 ".codex/templates/codex-intake-template.md",
                 ".codex/templates/codex-handoff-template.md",
@@ -169,7 +176,8 @@ class CodexOsToolsTest(unittest.TestCase):
                 ".codex/templates/codex-closeout-template.md",
                 ".codex/templates/task-registry.example.json",
             ]:
-                (root / relative).write_text("fixture\n", encoding="utf-8")
+                text = "{}\n" if relative.endswith(".json") else "fixture\n"
+                (root / relative).write_text(text, encoding="utf-8")
 
             self.assertEqual(
                 run_codex_os_command(root, args("registry", state_db, runtime, registry_command="init", write=True)),
@@ -491,6 +499,172 @@ class CodexOsToolsTest(unittest.TestCase):
             registry = json.loads((runtime / "task-registry.json").read_text(encoding="utf-8"))
             self.assertEqual(registry["tasks"][0]["status"], "Blocked")
             self.assertEqual(registry["tasks"][0]["validation_status"], "Blocked")
+
+    def test_recommend_validation_uses_changed_paths_without_running_commands(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            runtime = root / ".codex/runtime/codex-os"
+            (root / ".git").mkdir()
+            (root / "scripts/dev_tools").mkdir(parents=True)
+            (root / "scripts/dev_tools/codex_os.py").write_text("fixture\n", encoding="utf-8")
+            subprocess_args = args(
+                "recommend-validation",
+                root / "missing.sqlite",
+                runtime,
+                path=["scripts/dev_tools/codex_os.py"],
+            )
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(run_codex_os_command(root, subprocess_args), 0)
+
+            output = stdout.getvalue()
+            self.assertIn("recommendation only", output)
+            self.assertIn("python3 -m unittest scripts.dev_tools.test_codex_os", output)
+            self.assertIn("./dev check diff", output)
+
+    def test_template_write_backfills_task_reference(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            template = root / ".codex/templates/codex-evidence-template.md"
+            template.parent.mkdir(parents=True)
+            template.write_text("任务 ID: <task-id>\n", encoding="utf-8")
+            self.assertEqual(
+                run_codex_os_command(root, args("registry", state_db, runtime, registry_command="init", write=True)),
+                0,
+            )
+            self.assertEqual(
+                run_codex_os_command(
+                    root,
+                    args(
+                        "registry",
+                        state_db,
+                        runtime,
+                        registry_command="add",
+                        task_id="AM-6",
+                        project_name="AreaMatrix",
+                        lane="Change",
+                        status="Running",
+                        write=True,
+                    ),
+                ),
+                0,
+            )
+
+            output = root / ".codex/runtime/codex-os/evidence/AM-6.md"
+            self.assertEqual(
+                run_codex_os_command(
+                    root,
+                    args("evidence", state_db, runtime, task_id="AM-6", output=str(output), write=True),
+                ),
+                0,
+            )
+            registry = json.loads((runtime / "task-registry.json").read_text(encoding="utf-8"))
+            self.assertEqual(registry["tasks"][0]["evidence_file"], ".codex/runtime/codex-os/evidence/AM-6.md")
+            self.assertEqual(output.read_text(encoding="utf-8"), "任务 ID: AM-6\n")
+
+    def test_preflight_strict_blocks_high_risk_without_confirmation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            self.assertEqual(
+                run_codex_os_command(root, args("registry", state_db, runtime, registry_command="init", write=True)),
+                0,
+            )
+            self.assertEqual(
+                run_codex_os_command(
+                    root,
+                    args(
+                        "registry",
+                        state_db,
+                        runtime,
+                        registry_command="add",
+                        task_id="AM-7",
+                        project_name="AreaMatrix",
+                        lane="Mission-Critical",
+                        status="Ready",
+                        validation="./dev check codex-os",
+                        risk_level="High",
+                        confirmation_status="Required",
+                        write=True,
+                    ),
+                ),
+                0,
+            )
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                code = run_codex_os_command(root, args("preflight", state_db, runtime, task_id="AM-7", strict=True))
+
+            self.assertEqual(code, 1)
+            self.assertIn("manual confirmation", stdout.getvalue())
+
+    def test_new_resume_lifecycle_and_registry_strict_audit(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            self.assertEqual(
+                run_codex_os_command(root, args("registry", state_db, runtime, registry_command="init", write=True)),
+                0,
+            )
+
+            self.assertEqual(
+                run_codex_os_command(
+                    root,
+                    args(
+                        "new",
+                        state_db,
+                        runtime,
+                        task_id="AM-8",
+                        title="Codex OS v2",
+                        lane="Change",
+                        status="Ready",
+                        path=["scripts/dev_tools/codex_os.py"],
+                        recommend_validation=True,
+                        write=True,
+                    ),
+                ),
+                0,
+            )
+            registry = json.loads((runtime / "task-registry.json").read_text(encoding="utf-8"))
+            self.assertIn("test_codex_os", registry["tasks"][0]["validation"])
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(run_codex_os_command(root, args("resume", state_db, runtime, task_id="AM-8")), 0)
+            self.assertIn("Codex OS resume", stdout.getvalue())
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(run_codex_os_command(root, args("lifecycle", state_db, runtime, task_id="AM-8")), 0)
+            self.assertIn("task start", stdout.getvalue())
+
+            self.assertEqual(
+                run_codex_os_command(
+                    root,
+                    args(
+                        "registry",
+                        state_db,
+                        runtime,
+                        registry_command="update",
+                        task_id="AM-8",
+                        status="Done",
+                        write=True,
+                    ),
+                ),
+                0,
+            )
+            self.assertEqual(
+                run_codex_os_command(root, args("registry", state_db, runtime, registry_command="status", strict=True)),
+                1,
+            )
 
 
 if __name__ == "__main__":

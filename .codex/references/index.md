@@ -14,7 +14,7 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 ## 日常入口
 
 - Codex operating layer playbook：`.codex/references/codex-operating-layer-playbook.md`
-- Codex Operating System v1：`.codex/references/codex-operating-system.md`
+- Codex Operating System：`.codex/references/codex-operating-system.md`
 - Completion evidence checklist：`.codex/references/completion-evidence-checklist.md`
 - Debugging / failure attribution runbook：`.codex/references/debugging-failure-attribution-runbook.md`
 - Planning handoff runbook：`.codex/references/planning-handoff-runbook.md`
@@ -65,10 +65,12 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 - `areamatrix-file-safety`：用户文件、`.areamatrix/` 元数据与恢复边界。
 - `areamatrix-workflow-planning`：v* 版本 planning gate、middle-layer handoff 和 prompt 生成前门禁。
 - `areamatrix-residual-ledger`：release blocker、accepted exception、historical reference、template-only 与 task-facing residual 索引。
+- `areamatrix-codex-os`：Codex OS intake、registry、preflight、context、resume、validation recommendation、evidence、closeout、finish、dashboard、weekly review、health score 与归档建议。
 
 ## Health Checks
 
 - Skills：`./dev check skills`
+- Codex OS：`./dev check codex-os`
 - Quality smoke：`./dev check quality`
 - Long-term wording audit：`./dev check wording`
 - Governance：`./dev check governance`

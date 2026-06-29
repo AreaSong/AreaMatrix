@@ -1,4 +1,4 @@
-# Codex Operating System v1
+# Codex Operating System
 
 > 本文件是 AreaMatrix 的 Codex 操作层投影，不是产品、治理或 live execution 的 source of truth。
 > 产品语义仍看 `docs/**`，治理边界仍看 `.ai-governance/**`，live 执行仍只从
@@ -6,49 +6,45 @@
 
 ## 目标
 
-Codex Operating System v1 的目标是把“聊天线程”变成可观测、可恢复、可验证、可归档的工作系统。
+Codex Operating System 的目标是把“聊天线程”变成可观测、可恢复、可验证、可收口、可归档建议化的工作系统。
 
 核心闭环：
 
 ```text
-Intake -> Register -> Explore -> Plan -> Execute -> Verify -> Evidence -> Handoff -> Closeout -> Health Check
+Intake -> Register -> Context -> Preflight -> Explore -> Execute -> Recommend Validation -> Evidence -> Closeout -> Finish -> Operate
 ```
 
 ## 0-100% 日常流程
 
-Codex OS 的目标不是让操作者记住更多命令，而是把任务生命周期固定成三个入口：
+Codex OS 的目标不是让操作者记住更多命令，而是让任务生命周期能从固定入口自动串起来：
 
 ```bash
+./dev codex-os context --task-id AM-20260629-001
 ./dev codex-os preflight --task-id AM-20260629-001 --strict
 ./dev codex-os task start --task-id AM-20260629-001 --write
-./dev codex-os finish --task-id AM-20260629-001 --status Done --validation "<fresh result>" --evidence-note "<summary>" --write
-```
-
-推荐自然语言入口：
-
-```text
-Change：按 Codex OS 处理这个任务。先 preflight，必要时登记 task；完成后运行最小充分验证，finish 收尾，并只给归档建议。
+./dev codex-os recommend-validation
+./dev codex-os evidence --task-id AM-20260629-001 --write
+./dev codex-os closeout --task-id AM-20260629-001 --write
+./dev codex-os finish --task-id AM-20260629-001 --status Done --validation "<fresh result>" --evidence-file "<path>" --closeout-file "<path>" --write
 ```
 
 完整生命周期：
 
-1. Intake：确认 lane、risk、source of truth、允许路径、禁止路径和人工确认边界。
-2. Register：把恢复入口写入 `.codex/runtime/codex-os/task-registry.json`。
-3. Preflight：检查 registry、task、handoff、验证计划、owner thread、dirty worktree 和 task-loop lock。
+1. Intake / New：确认 lane、risk、source of truth、允许路径、禁止路径和人工确认边界；必要时用 `new --write` 登记本机恢复入口。
+2. Context / Resume：用 `context` 或 `resume` 聚合当前任务、registry、工作区 diff、推荐验证和 guardrails。
+3. Preflight：检查 registry、task、handoff、验证计划、owner thread、dirty worktree、task-loop lock 和高风险确认。
 4. Explore：用户已授权 subagents 时，用只读 subagents 分别审计代码、文档治理、验证和风险。
 5. Plan / Execute：Quick 可直接执行；Change 先计划；Mission-Critical 先说明影响、风险、验证和回滚并等待确认。
-6. Verify：按改动范围选择最小充分验证，不默认跑 `./dev check all`。
-7. Evidence：记录新鲜验证命令、结果、未验证项、剩余风险和 drift 检查。
-8. Finish / Closeout：`Done` 必须有 validation 与 evidence / closeout 引用；`Blocked` 必须有 next action 或 handoff。
-9. Health Check：刷新 dashboard，复核 archive candidates；归档仍只由人工确认。
-
-`codex-os doctor` 只验证 Codex 操作层材料、模板、registry 和只读 state 可读性，不能替代 Rust、Swift、docs、workflow、review、CI 或安全验证。
+6. Recommend Validation：按改动范围推荐最小充分验证；该命令只推荐，不自动执行。
+7. Evidence / Closeout：写入本地 evidence / closeout 文件，并回填 registry 引用。
+8. Finish：`Done` 必须有 validation 与 evidence / closeout 引用；`Blocked` 必须有 next action 或 handoff。
+9. Operate：用 `archive-review`、`title-suggestions`、`weekly`、`diagnose`、`health-score` 做运营复盘；归档和改标题仍只由人工确认。
 
 ## 非目标
 
 - 不创建第二套 runner、progress、queue、promotion 或 checkpoint。
 - 不直接写 Codex 内部 SQLite。
-- 不自动归档线程，只生成候选和健康分级。
+- 不自动归档线程，只生成候选、建议和健康分级。
 - 不覆盖 `docs/**`、`.ai-governance/**`、workflow gates 或 repo-local skills 的权威地位。
 - 不把 subagent 输出当作 PASS、Done、merge-ready 或 closeout 证据。
 
@@ -63,14 +59,6 @@ Change：按 Codex OS 处理这个任务。先 preflight，必要时登记 task�
 | Review | 只读评审 | findings -> 严重级排序 -> 测试缺口 |
 | Ops | 工作流维护、线程清理、状态同步 | 扫描 -> 分类 -> 候选清单 -> 确认 -> 操作 |
 
-新任务推荐使用 `.codex/templates/codex-intake-template.md`。
-
-打印 intake 模板：
-
-```bash
-./dev codex-os intake --lane Change --task-id AM-20260629-001
-```
-
 ## 任务注册表
 
 本地注册表位于：
@@ -81,83 +69,50 @@ Change：按 Codex OS 处理这个任务。先 preflight，必要时登记 task�
 
 它是 Codex 操作面的本地恢复索引，不是产品源事实，也不是 live queue。默认 gitignored。
 
-初始化：
-
 ```bash
 ./dev codex-os registry init --write
-```
-
-新增任务：
-
-```bash
-./dev codex-os registry add \
-  --task-id AM-20260629-001 \
-  --lane Change \
-  --status Ready \
-  --handoff-file tasks/active/example/HANDOFF.md \
-  --next-action "Read handoff and continue." \
-  --validation "./dev codex-os doctor" \
-  --write
-```
-
-更新任务：
-
-```bash
-./dev codex-os registry update --task-id AM-20260629-001 --status Verifying --write
-```
-
-检查：
-
-```bash
-./dev codex-os registry status
+./dev codex-os new --task-id AM-20260629-001 --title "Codex OS workflow automation" --lane Change --recommend-validation --path scripts/dev_tools/codex_os.py --write
+./dev codex-os registry status --strict
 ./dev codex-os registry list
 ```
 
-兼容的可选字段：
+兼容字段包括 `risk_level`、`confirmation_status`、`evidence_file`、`closeout_file`、`validation_status`、`automation_scope` 和 `finished_at`。这些字段仍属于本机操作层恢复索引，不是 live queue 或产品源事实。
 
-```text
-risk_level
-confirmation_status
-evidence_file
-closeout_file
-evidence_note
-closeout_note
-validation_status
-automation_scope
-finished_at
+## Context / Resume / Validation
+
+```bash
+./dev codex-os context --task-id AM-20260629-001 --write
+./dev codex-os resume --task-id AM-20260629-001
+./dev codex-os recommend-validation --changed
+./dev codex-os recommend-validation --path scripts/dev_tools/codex_os.py --path .codex/skills-src/areamatrix-codex-os/SKILL.md
 ```
 
-这些字段仍属于本机操作层恢复索引，不是 live queue 或产品源事实。
+`recommend-validation` 只输出建议，不执行 registry 中的命令字符串。
 
-## Task Lifecycle 命令
-
-开始前预检：
+## Task Lifecycle
 
 ```bash
 ./dev codex-os preflight --task-id AM-20260629-001 --strict
-./dev codex-os preflight --task-id AM-20260629-001 --write-dashboard
-```
-
-任务查看和状态流转：
-
-```bash
 ./dev codex-os task list
 ./dev codex-os task next --lane Change
 ./dev codex-os task show --task-id AM-20260629-001
 ./dev codex-os task start --task-id AM-20260629-001 --write
 ./dev codex-os task verify --task-id AM-20260629-001 --validation "./dev check codex-os" --write
 ./dev codex-os task block --task-id AM-20260629-001 --next-action "Wait for confirmation." --write
+./dev codex-os lifecycle --task-id AM-20260629-001
 ```
 
 收尾：
 
 ```bash
+./dev codex-os evidence --task-id AM-20260629-001 --write
+./dev codex-os closeout --task-id AM-20260629-001 --write
 ./dev codex-os finish \
   --task-id AM-20260629-001 \
   --status Done \
   --validation "./dev check codex-os: PASS" \
-  --evidence-note "Fresh validation passed after final change." \
-  --closeout-note "No remaining required work." \
+  --evidence-file ".codex/runtime/codex-os/evidence/AM-20260629-001.md" \
+  --closeout-file ".codex/runtime/codex-os/closeout/AM-20260629-001.md" \
   --archive-recommendation review \
   --write
 ```
@@ -165,41 +120,7 @@ finished_at
 `finish --status Done` 必须能指向新鲜 validation 和 evidence / closeout；`finish --status Blocked`
 必须能指向 next action 或 handoff。`--archive-recommendation archive` 只写建议，不执行归档。
 
-## 状态机
-
-任务状态只能使用：
-
-```text
-Backlog
-Ready
-Running
-Waiting Confirmation
-Blocked
-Verifying
-Done
-Archived
-Abandoned
-```
-
-`Done` 需要新鲜验证证据或明确未验证项；没有证据时只能是 `Blocked`、`Running` 或 `Waiting Confirmation`。
-
-## Handoff / Evidence
-
-恢复交接模板：
-
-```bash
-./dev codex-os handoff --task-id AM-20260629-001
-```
-
-证据记录模板：
-
-```bash
-./dev codex-os evidence --task-id AM-20260629-001
-```
-
-建议所有 Change / Mission-Critical 任务至少有 handoff；所有 Done 任务必须能指向 evidence 或 closeout 中的新鲜验证结果。
-
-## 线程健康分级
+## 线程健康与运营
 
 工具只读 `~/.codex/state_5.sqlite`，生成派生健康分：
 
@@ -212,38 +133,22 @@ Risk Review
 Archived
 ```
 
-健康分是 triage 提示，不是官方运行状态。尤其是：
-
-- `Archive Candidate` 只表示“可以人工复核归档”，不是自动归档许可。
-- `Risk Review` 必须人工看标题、handoff 和相关任务状态。
-- `thread_spawn_edges.status = open` 只表示有打开的派生关系，不等价于仍在执行。
-
-命令：
+健康分是 triage 提示，不是官方运行状态。
 
 ```bash
 ./dev codex-os status
 ./dev codex-os thread-health --limit 50
 ./dev codex-os thread-health --json --write
 ./dev codex-os archive-candidates --limit 50
-```
-
-## Dashboard
-
-生成本地 dashboard 和 health report：
-
-```bash
+./dev codex-os archive-review --write
+./dev codex-os title-suggestions --write
 ./dev codex-os dashboard --write
+./dev codex-os weekly --write
+./dev codex-os health-score --write
+./dev codex-os diagnose --task-id AM-20260629-001
 ```
 
-输出：
-
-```text
-.codex/runtime/codex-os/dashboard.md
-.codex/runtime/codex-os/health-report.md
-.codex/runtime/codex-os/thread-health.json
-```
-
-这些文件用于本机观测，不作为完成证据提交。
+`Archive Candidate` 只表示“可以人工复核归档”，不是自动归档许可。`Risk Review` 必须人工看标题、handoff 和相关任务状态。
 
 ## Subagents
 
@@ -261,65 +166,39 @@ Archived
 
 Subagent 输出只能作为主 agent 的输入。PASS、Done、merge-ready、closeout 仍以主 agent 复核后的新鲜验证证据为准。
 
-## Closeout
+## 本地输出
 
-每个线程结束前使用：
-
-```bash
-./dev codex-os closeout --task-id <task-id>
-```
-
-最小 closeout 字段：
+常见输出位于：
 
 ```text
-状态
-任务 ID
-完成内容
-验证
-未验证项
-剩余风险
-下一步入口
-是否建议归档
+.codex/runtime/codex-os/dashboard.md
+.codex/runtime/codex-os/health-report.md
+.codex/runtime/codex-os/thread-health.json
+.codex/runtime/codex-os/context.md
+.codex/runtime/codex-os/recommend-validation.json
+.codex/runtime/codex-os/archive-review.md
+.codex/runtime/codex-os/weekly.md
+.codex/runtime/codex-os/health-score.json
 ```
 
-没有 closeout 的线程默认不能批量归档，只能进入人工 triage。
+这些文件用于本机观测，不作为产品完成证据提交。
 
 ## Health Check
 
-本地健康检查：
-
 ```bash
 ./dev codex-os doctor
+./dev codex-os registry status --strict
 ./dev check codex-os
 ```
-
-推荐周期：
-
-- 每天：`./dev codex-os dashboard --write`
-- 每周：复核 `Archive Candidate` 和 `Risk Review`
-- 每个 Change / Mission-Critical 结束：closeout + registry 更新 + 项目验证
-
-## 自然语言入口
-
-可以直接对 Codex 说：
-
-```text
-Ops：做一次 Codex 工作区体检，只读生成 dashboard，不归档。
-Ops：列出 AreaMatrix 可归档候选，但不要执行归档。
-Change：读取 task registry，从 next_action 继续。
-Review：检查 Done 但没有验证证据的任务。
-```
-
-## 验证
 
 改动本操作层后，至少运行：
 
 ```bash
-./dev codex-os doctor
-./dev check codex-os
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest scripts.dev_tools.test_codex_os
+PYTHONDONTWRITEBYTECODE=1 ./dev check codex-os
 ./dev check skills
 ./dev check quality
-git diff --check -- .codex/references .codex/templates scripts/dev_tools
+git diff --check -- .codex/references .codex/templates .codex/skills-src .agents/skills scripts/dev_tools
 ```
 
 若改到 workflow、Rust、Swift 或治理源事实，再追加对应验证。
