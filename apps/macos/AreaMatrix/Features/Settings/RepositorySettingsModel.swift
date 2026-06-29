@@ -26,6 +26,7 @@ final class RepositorySettingsModel: ObservableObject {
     private let fileLister: (any CoreFileListing)?
     private let scanSessionReader: any CoreScanSessionReading
     private let existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading
+    private let metadataPresenceChecker: any RepoMetadataPresenceChecking
     private let finderOpener: any RepositoryFinderOpening
     private let pathCopier: any RepositoryPathCopying
     private let generatedOverviewRevealer: any RepositoryFileRevealing
@@ -43,6 +44,7 @@ final class RepositorySettingsModel: ObservableObject {
         scanSessionReader: any CoreScanSessionReading = CoreBridge(),
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
             SQLiteExistingRepositoryMetadataReader(),
+        metadataPresenceChecker: any RepoMetadataPresenceChecking = FileSystemRepoMetadataPresenceChecker(),
         finderOpener: any RepositoryFinderOpening = NSWorkspaceRepositoryFinderOpener(),
         pathCopier: any RepositoryPathCopying = NSPasteboardRepositoryPathCopier(),
         generatedOverviewRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
@@ -58,6 +60,7 @@ final class RepositorySettingsModel: ObservableObject {
         self.fileLister = fileLister ?? (repositoryOpener as? any CoreFileListing)
         self.scanSessionReader = scanSessionReader
         self.existingRepositoryMetadataReader = existingRepositoryMetadataReader
+        self.metadataPresenceChecker = metadataPresenceChecker
         self.finderOpener = finderOpener
         self.pathCopier = pathCopier
         self.generatedOverviewRevealer = generatedOverviewRevealer
@@ -108,10 +111,11 @@ extension RepositorySettingsModel {
         do {
             let config = try await loader.loadConfig(repoPath: repoPath)
             let effectiveConfig = config.withRepositoryPath(repoPath)
+            let metadataPresence = metadataPresenceChecker.metadataPresence(repoPath: repoPath)
             let coreVersion = await currentCoreVersion()
             loadedConfig = effectiveConfig
 
-            if shouldSyncRepositoryPath(from: config) {
+            if shouldSyncRepositoryPath(from: config, metadataPresence: metadataPresence) {
                 do {
                     try await updater.updateConfig(repoPath: repoPath, newConfig: effectiveConfig)
                 } catch {
@@ -122,7 +126,8 @@ extension RepositorySettingsModel {
             loadState = .loaded(RepositorySettingsSummary(
                 config: effectiveConfig,
                 fallbackRepoPath: repoPath,
-                coreVersion: coreVersion
+                coreVersion: coreVersion,
+                metadataPresence: metadataPresence
             ))
             await refreshHealth()
         } catch {
@@ -312,8 +317,11 @@ extension RepositorySettingsModel {
         }
     }
 
-    private func shouldSyncRepositoryPath(from config: RepoConfigSnapshot) -> Bool {
-        repositoryMetadataDatabaseExists && config.repoPath != repoPath
+    private func shouldSyncRepositoryPath(
+        from config: RepoConfigSnapshot,
+        metadataPresence: RepoMetadataPresence
+    ) -> Bool {
+        metadataPresence.hasMetadataDatabase && config.repoPath != repoPath
     }
 
     private func currentCoreVersion() async -> String {
@@ -322,12 +330,6 @@ extension RepositorySettingsModel {
         } catch {
             return "Unknown"
         }
-    }
-
-    private var repositoryMetadataDatabaseExists: Bool {
-        let databaseURL = URL(fileURLWithPath: repoPath, isDirectory: true)
-            .appendingPathComponent(".areamatrix/index.db", isDirectory: false)
-        return FileManager.default.fileExists(atPath: databaseURL.path)
     }
 
     private func loadError(for error: Error) async -> RepositorySettingsLoadError {

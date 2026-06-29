@@ -116,7 +116,7 @@ extension OnboardingModel {
             availableCategories: resolvedImportCategories(opening: opening, destination: destination),
             defaultStorageMode: ImportSingleFileStorageMode(coreSnapshotValue: opening.config.defaultMode),
             allowReplaceDuringImport: opening.config.allowReplaceDuringImport,
-            isTrashAvailable: Self.isSystemTrashAvailable()
+            isTrashAvailable: systemCapabilityChecker.isTrashAvailable()
         )
         toastMessage = nil
     }
@@ -142,7 +142,7 @@ extension OnboardingModel {
             availableCategories: opening.availableImportCategories,
             defaultStorageMode: ImportSingleFileStorageMode(coreSnapshotValue: opening.config.defaultMode),
             allowReplaceDuringImport: opening.config.allowReplaceDuringImport,
-            isTrashAvailable: Self.isSystemTrashAvailable(),
+            isTrashAvailable: systemCapabilityChecker.isTrashAvailable(),
             importSessionID: route.importSessionID,
             importConflictIDs: conflictIDs
         )
@@ -191,7 +191,9 @@ extension OnboardingModel {
             currentPath: currentPath,
             storageMode: retryContext.storageMode,
             retryContext: retryContext,
-            isRepositoryFinderAvailable: FileManager.default.fileExists(atPath: opening.config.repoPath)
+            isRepositoryFinderAvailable: systemCapabilityChecker.repositoryFinderAvailability(
+                repoPath: opening.config.repoPath
+            )
         ))
     }
 
@@ -455,9 +457,5 @@ extension OnboardingModel {
         urls.filter { url in
             url.isFileURL && !url.path.isEmpty
         }
-    }
-
-    static func isSystemTrashAvailable() -> Bool {
-        FileManager.default.urls(for: .trashDirectory, in: .userDomainMask).isEmpty == false
     }
 }

@@ -32,12 +32,13 @@ final class RepoPlatformCapabilitiesModel: ObservableObject {
 
     init(
         hostPlatform: PlatformIdSnapshot = .macos,
-        appVersion: String = RepoPlatformCapabilitiesModel.defaultAppVersion(),
+        appVersion: String? = nil,
+        appVersionReader: any AppVersionReading = BundleAppVersionReader(),
         capabilityLoader: any CorePlatformCapabilitiesLoading = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         self.hostPlatform = hostPlatform
-        self.appVersion = appVersion
+        self.appVersion = appVersion ?? appVersionReader.appVersion()
         self.capabilityLoader = capabilityLoader
         self.errorMapper = errorMapper
     }
@@ -83,10 +84,6 @@ final class RepoPlatformCapabilitiesModel: ObservableObject {
                 reason: mappedError.detail
             ), mappedError)
         }
-    }
-
-    nonisolated static func defaultAppVersion() -> String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1"
     }
 
     private func capabilityError(for error: Error) async -> RepositorySettingsCapabilityError {

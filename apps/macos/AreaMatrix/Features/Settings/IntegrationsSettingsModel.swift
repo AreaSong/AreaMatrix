@@ -1,4 +1,3 @@
-import AppKit
 import Combine
 import Foundation
 
@@ -89,59 +88,6 @@ protocol ICloudStatusDetecting: Sendable {
 protocol ICloudHelpOpening: Sendable {
     @MainActor
     func openICloudHelp() throws
-}
-
-struct LocalICloudStatusDetector: ICloudStatusDetecting {
-    func snapshot(repoPath: String, config: RepoConfigSnapshot) async -> IntegrationsICloudSnapshot {
-        let effectivePath = config.repoPath.isEmpty ? repoPath : config.repoPath
-        let url = URL(fileURLWithPath: effectivePath, isDirectory: true)
-
-        do {
-            let values = try url.resourceValues(forKeys: [.isUbiquitousItemKey])
-            guard let isUbiquitous = values.isUbiquitousItem else {
-                return IntegrationsICloudSnapshot(repositoryLocation: .unknown, iCloudStatus: .unknown)
-            }
-
-            if !isUbiquitous {
-                return IntegrationsICloudSnapshot(repositoryLocation: .localFolder, iCloudStatus: .unavailable)
-            }
-
-            let status: IntegrationsICloudStatus = FileManager.default.ubiquityIdentityToken == nil
-                ? .unavailable
-                : .available
-            return IntegrationsICloudSnapshot(repositoryLocation: .iCloudDrive, iCloudStatus: status)
-        } catch {
-            return IntegrationsICloudSnapshot(repositoryLocation: .unknown, iCloudStatus: .unknown)
-        }
-    }
-}
-
-enum ICloudHelpOpenError: Error, Equatable, LocalizedError {
-    case helpURLUnavailable
-    case openRejected
-
-    var errorDescription: String? {
-        switch self {
-        case .helpURLUnavailable:
-            "iCloud help URL is unavailable."
-        case .openRejected:
-            "iCloud help could not be opened."
-        }
-    }
-}
-
-struct NSWorkspaceICloudHelpOpener: ICloudHelpOpening {
-    @MainActor
-    func openICloudHelp() throws {
-        guard let url = URL(string: "https://support.apple.com/guide/mac-help/use-icloud-drive-mchl1a02d711/mac")
-        else {
-            throw ICloudHelpOpenError.helpURLUnavailable
-        }
-
-        guard NSWorkspace.shared.open(url) else {
-            throw ICloudHelpOpenError.openRejected
-        }
-    }
 }
 
 @MainActor

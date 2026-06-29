@@ -21,10 +21,7 @@ final class ClassifierSettingsModel: ObservableObject {
     @Published private(set) var savedConfig: RepoConfigSnapshot?
     @Published private(set) var saveError: ClassifierSettingsSaveError?
     @Published private(set) var fileActionError: ClassifierSettingsFileActionError?
-    @Published private(set) var previewFilename = ""
-    @Published private(set) var previewResult: ClassifyResultSnapshot?
-    @Published private(set) var previewError: ClassifierSettingsPreviewError?
-    @Published private(set) var isPreviewing = false
+    @Published private var previewState = ClassifierSettingsPreviewState()
     @Published private(set) var isSaving = false
     @Published private(set) var validationState: ValidationState = .idle
     @Published private(set) var hasLastValidBackup = false
@@ -44,7 +41,6 @@ final class ClassifierSettingsModel: ObservableObject {
     private let accessibilityAnnouncer: any AccessibilityAnnouncing
     private let onSavedCategory: ((String) -> Void)?
     private var pendingRetry: ClassifierSettingsPendingSave?
-    private var previewGeneration = 0
     private var loadedClassifierSlugs: Set<String> = []
 
     private static let classifierRelativePath = ".areamatrix/classifier.yaml"
@@ -110,6 +106,22 @@ extension ClassifierSettingsModel {
         }
 
         return nil
+    }
+
+    var previewFilename: String {
+        previewState.filename
+    }
+
+    var previewResult: ClassifyResultSnapshot? {
+        previewState.result
+    }
+
+    var previewError: ClassifierSettingsPreviewError? {
+        previewState.error
+    }
+
+    var isPreviewing: Bool {
+        previewState.isPreviewing
     }
 
     var validationStatusLabel: String {
@@ -238,12 +250,7 @@ extension ClassifierSettingsModel {
     }
 
     func updatePreviewFilename(_ value: String) {
-        guard previewFilename != value else {
-            return
-        }
-
-        previewFilename = value
-        clearPreviewState()
+        previewState.updateFilename(value)
     }
 
     func previewClassification() async {
@@ -251,40 +258,34 @@ extension ClassifierSettingsModel {
             return
         }
 
-        let filename = previewFilename
+        let filename = previewState.filename
         guard !filename.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return
         }
 
-        previewGeneration += 1
-        let currentGeneration = previewGeneration
-        isPreviewing = true
-        previewResult = nil
-        previewError = nil
+        let currentGeneration = previewState.beginPreview()
 
         do {
             let result = try await predictor.predictCategory(repoPath: repoPath, filename: filename)
-            guard previewGeneration == currentGeneration else {
+            guard previewState.isCurrentGeneration(currentGeneration) else {
                 return
             }
-            previewResult = result
+            previewState.acceptResult(result, generation: currentGeneration)
         } catch {
-            guard previewGeneration == currentGeneration else {
+            guard previewState.isCurrentGeneration(currentGeneration) else {
                 return
             }
             let mappedError = await ClassifierSettingsErrorFactory.previewError(
                 for: error,
                 mapper: errorMapper
             )
-            guard previewGeneration == currentGeneration else {
+            guard previewState.isCurrentGeneration(currentGeneration) else {
                 return
             }
-            previewError = mappedError
+            previewState.acceptError(mappedError, generation: currentGeneration)
         }
 
-        if previewGeneration == currentGeneration {
-            isPreviewing = false
-        }
+        previewState.finishPreview(generation: currentGeneration)
     }
 
     func validateClassifierRules() async -> Bool {
@@ -430,9 +431,6 @@ extension ClassifierSettingsModel {
     }
 
     private func clearPreviewState() {
-        previewGeneration += 1
-        previewResult = nil
-        previewError = nil
-        isPreviewing = false
+        previewState.clear()
     }
 }

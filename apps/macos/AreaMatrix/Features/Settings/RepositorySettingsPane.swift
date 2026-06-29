@@ -24,7 +24,8 @@ extension RepositorySettingsPane {
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
         coreVersionLoader: any CoreVersionLoading = CoreBridge(),
         capabilityLoader: any CorePlatformCapabilitiesLoading = CoreBridge(),
-        appVersion: String = RepoPlatformCapabilitiesModel.defaultAppVersion(),
+        appVersion: String? = nil,
+        appVersionReader: any AppVersionReading = BundleAppVersionReader(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
         accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer(),
         onChangeRepository: @escaping () -> Void = {},
@@ -48,6 +49,7 @@ extension RepositorySettingsPane {
         ))
         _capabilityModel = StateObject(wrappedValue: RepoPlatformCapabilitiesModel(
             appVersion: appVersion,
+            appVersionReader: appVersionReader,
             capabilityLoader: capabilityLoader,
             errorMapper: errorMapper
         ))

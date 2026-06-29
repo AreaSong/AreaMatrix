@@ -53,15 +53,32 @@
 日常任务优先由 Codex 自动使用：
 
 ```bash
+./dev codex-os go --title "<title>" --apply
+./dev codex-os now --task-id <task-id>
+./dev codex-os done --task-id <task-id>
+./dev codex-os todo
+./dev codex-os flow --task-id <task-id> --changed --profile standard --execute --write
 ./dev codex-os start-flow --task-id <task-id> --changed --write
-./dev codex-os run-validation --task-id <task-id> --changed --execute --write
+./dev codex-os run-validation --task-id <task-id> --changed --profile standard --execute --write
 ./dev codex-os repair-plan --task-id <task-id> --changed
-./dev codex-os close-flow --task-id <task-id> --status Done --validation "<fresh PASS/OK result>" --write
-./dev codex-os ops-flow --write
+./dev codex-os close-flow --task-id <task-id> --status Done --from-latest-validation --write
+./dev codex-os ops-flow --action-items --write
 ```
 
 这些命令只管理 `.codex/runtime/codex-os/` 的本机操作层状态。它们不会写 Codex 内部 SQLite，
 不会归档线程，不会启动或替代 `./task-loop`，也不会写入 `workflow/versions/<version>/execution/**`。
+
+`go`、`done`、`todo` 和 `now` 是低摩擦安全入口，分别包装现有 `flow`、`close-flow`、`ops-flow --action-items`
+和只读状态摘要；它们不会创建第二套 runner，也不会绕过验证和证据门禁。`flow` 是日常聚合入口，会串起
+start、validation、失败 repair-plan、可选 close 和可选 ops。默认不会把任务标记为 `Done`；只有显式传
+`--close-when-pass`，并且本次执行验证为 PASS，才会继续收尾。`run-validation --profile` 支持 `auto`、`minimal`、
+`standard` 和 `full`，其中 `auto` 会按改动路径解析为具体档位。`run-validation` 报告会记录 validation fingerprint；
+`close-flow --from-latest-validation` 只接受同一 task 的最新已执行 PASS 报告，并在 fingerprint 变化时拒绝收尾。
+它会拒绝 dry-run、FAIL、BLOCKED、NOT-READY、其他 task 的报告或已过期验证。`now` / `close-flow` 会输出
+`completion_confidence`，说明验证、证据、registry 和确认状态是否足以支撑 Done。失败或 BLOCKED validation
+会沉淀到 `.codex/runtime/codex-os/failure-knowledge.json` 供 `repair-plan` 参考。`close-flow --write` 会生成本机
+`handoff-summary/` 短交接。`ops-flow --compact` / `--action-items` 只改变展示方式；JSON 中还会包含按 target
+聚合的 `review_cards` 和 weekly `manual_review_queue`，不会执行归档、改标题或写 Codex SQLite。
 
 底层展开命令仍可用于诊断或精细控制：`context`、`resume`、`preflight`、`subagent-plan`、
 `recommend-validation`、`evidence`、`closeout`、`finish`、`archive-review`、`title-suggestions`、

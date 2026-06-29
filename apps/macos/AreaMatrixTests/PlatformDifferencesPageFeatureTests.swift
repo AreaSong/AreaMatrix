@@ -105,6 +105,25 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
         )))
     }
 
+    @MainActor
+    func testPlatformDifferencesUsesInjectedAppVersionReaderWhenNoOverrideIsPassed() async {
+        let capabilityLoader = PlatformDiffCapabilityLoader(result: .success(.fixture()))
+        let model = PlatformDifferencesModel(
+            appVersionReader: StaticAppVersionReader(version: "7.8.9 (10)"),
+            contractInspector: PlatformDifferencesRecordingInspector(result: .success(.fixture())),
+            capabilityLoader: capabilityLoader,
+            errorMapper: PlatformDifferencesStaticErrorMapper()
+        )
+
+        await model.loadCapabilities()
+
+        let requests = await capabilityLoader.requests()
+        XCTAssertEqual(requests, [PlatformDifferencesCapabilityRequest(
+            platform: .macos,
+            appVersion: "7.8.9 (10)"
+        )])
+    }
+
     func testCapabilityRowsCoverPlatformDifferencesPageSpecMatrix() {
         let rowNames = PlatformCapabilitiesSnapshot.fixture().pageSpecRows.map(\.name)
 

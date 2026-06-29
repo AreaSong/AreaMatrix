@@ -116,6 +116,47 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.actionFeedback, .success("Repository folder revealed in Finder."))
     }
 
+    func testLocalICloudStatusDetectorReportsLocalFolderWithoutReadingRealTokenState() async {
+        let detector = LocalICloudStatusDetector(identityTokenReader: StaticICloudIdentityTokenReader(
+            hasICloudIdentityToken: true
+        ), resourceValueReader: StaticICloudResourceValueReader(
+            isUbiquitousItem: false
+        ))
+
+        let snapshot = await detector.snapshot(
+            repoPath: "/tmp/repo",
+            config: .integrationsFixture(repoPath: "/tmp/repo")
+        )
+
+        XCTAssertEqual(snapshot.repositoryLocation, .localFolder)
+        XCTAssertEqual(snapshot.iCloudStatus, .unavailable)
+    }
+
+    func testLocalICloudStatusDetectorUsesInjectedIdentityTokenForICloudDriveStatus() async {
+        let unavailableDetector = LocalICloudStatusDetector(
+            identityTokenReader: StaticICloudIdentityTokenReader(hasICloudIdentityToken: false),
+            resourceValueReader: StaticICloudResourceValueReader(isUbiquitousItem: true)
+        )
+        let availableDetector = LocalICloudStatusDetector(
+            identityTokenReader: StaticICloudIdentityTokenReader(hasICloudIdentityToken: true),
+            resourceValueReader: StaticICloudResourceValueReader(isUbiquitousItem: true)
+        )
+
+        let unavailableSnapshot = await unavailableDetector.snapshot(
+            repoPath: "/tmp/repo",
+            config: .integrationsFixture(repoPath: "/tmp/repo")
+        )
+        let availableSnapshot = await availableDetector.snapshot(
+            repoPath: "/tmp/repo",
+            config: .integrationsFixture(repoPath: "/tmp/repo")
+        )
+
+        XCTAssertEqual(unavailableSnapshot.repositoryLocation, .iCloudDrive)
+        XCTAssertEqual(unavailableSnapshot.iCloudStatus, .unavailable)
+        XCTAssertEqual(availableSnapshot.repositoryLocation, .iCloudDrive)
+        XCTAssertEqual(availableSnapshot.iCloudStatus, .available)
+    }
+
     @MainActor
     func testDefaultCoreBridgePersistsICloudWarningsWithoutCreatingUserRootFiles() async throws {
         let repoURL = try temporaryIntegrationsSettingsRepo()
@@ -343,6 +384,18 @@ private final class IntegrationsSettingsRecordingHelpOpener: ICloudHelpOpening {
 
     func openICloudHelp() throws {
         openCount += 1
+    }
+}
+
+private struct StaticICloudIdentityTokenReader: ICloudIdentityTokenReading {
+    var hasICloudIdentityToken: Bool
+}
+
+private struct StaticICloudResourceValueReader: ICloudResourceValueReading {
+    var isUbiquitousItem: Bool?
+
+    func isUbiquitousItem(at _: URL) throws -> Bool? {
+        isUbiquitousItem
     }
 }
 

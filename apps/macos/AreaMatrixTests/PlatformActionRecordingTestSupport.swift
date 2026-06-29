@@ -121,6 +121,19 @@ struct NoopICloudHelpOpener: ICloudHelpOpening {
     func openICloudHelp() throws {}
 }
 
+struct StaticOnboardingSystemCapabilityChecker: OnboardingSystemCapabilityChecking {
+    var isTrashAvailableValue = true
+    var repositoryFinderAvailabilityByPath: [String: Bool] = [:]
+
+    func isTrashAvailable() -> Bool {
+        isTrashAvailableValue
+    }
+
+    func repositoryFinderAvailability(repoPath: String) -> Bool {
+        repositoryFinderAvailabilityByPath[repoPath] ?? true
+    }
+}
+
 struct NoopAboutExternalLinkOpener: AboutExternalLinkOpening {
     @MainActor
     func open(link: AboutExternalLink) throws -> String {

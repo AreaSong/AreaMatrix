@@ -25,7 +25,7 @@ extension MainRepositoryContentView {
             iCloudConflictResolutionState: fileListModel.iCloudConflictResolutionState,
             iCloudConflictResolutionCapability: fileListModel.iCloudConflictResolver.iCloudConflictResolutionCapability,
             repoPath: opening.config.repoPath,
-            isTrashAvailable: OnboardingModel.isSystemTrashAvailable(),
+            isTrashAvailable: systemCapabilityChecker.isTrashAvailable(),
             iCloudConflictPathValidator: CoreBridge(),
             iCloudConflictReviewer: CoreBridge(),
             iCloudConflictErrorMapper: fileListModel.errorMapper,

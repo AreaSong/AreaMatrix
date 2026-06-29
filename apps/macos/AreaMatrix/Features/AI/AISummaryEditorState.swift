@@ -4,12 +4,10 @@ import Foundation
 @MainActor
 // swiftlint:disable:next type_body_length
 final class AISummaryEditorModel: ObservableObject {
-    @Published private(set) var status: AISummaryEditorStatus = .empty
+    @Published private var contentState = AISummaryEditorContentState()
     @Published private(set) var operation: AISummaryEditorOperation = .idle
     @Published private(set) var failedAction: AISummaryEditorFailedAction?
-    @Published private(set) var provenance: AISummaryProvenance?
     @Published private(set) var gateState: AISummaryEditorGateState = .unknown
-    @Published var draftText = ""
 
     let repoPath: String
     private(set) var fileID: Int64
@@ -18,9 +16,6 @@ final class AISummaryEditorModel: ObservableObject {
     private let errorMapper: any CoreErrorMapping
     private let summaryProviderScope: AiSummaryProviderScope
     private var privacyContext: AISummaryPrivacyContext
-    private var savedText: String?
-    private var savedProvenance: AISummaryProvenance?
-    private var baselineText: String?
     private var generationToken = UUID()
     private var entryLoadToken = UUID()
     private var generationSnapshot: AISummaryEditorSnapshot?
@@ -45,7 +40,19 @@ final class AISummaryEditorModel: ObservableObject {
     }
 
     var characterCountText: String {
-        "\(draftText.count) characters"
+        contentState.characterCountText
+    }
+
+    var status: AISummaryEditorStatus {
+        contentState.status
+    }
+
+    var provenance: AISummaryProvenance? {
+        contentState.provenance
+    }
+
+    var draftText: String {
+        contentState.draftText
     }
 
     var canGenerate: Bool {
@@ -57,24 +64,23 @@ final class AISummaryEditorModel: ObservableObject {
     }
 
     var canRegenerate: Bool {
-        canGenerate && (!draftText.isEmpty || savedText != nil || provenance != nil)
+        canGenerate && contentState.hasSummaryContent
     }
 
     var canDiscard: Bool {
-        canEdit && (status == .dirty || status == .draft)
+        canEdit && contentState.canDiscard
     }
 
     var canClear: Bool {
-        canEdit && privacySkip == nil && (!draftText.isEmpty || savedText != nil || provenance != nil)
+        canEdit && privacySkip == nil && contentState.hasSummaryContent
     }
 
     var canSave: Bool {
-        canEdit && !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-            (status == .dirty || status == .draft)
+        canEdit && contentState.canSave
     }
 
     var needsExitConfirmation: Bool {
-        status == .dirty || status == .draft
+        contentState.needsExitConfirmation
     }
 
     private var canEdit: Bool {
@@ -107,15 +113,10 @@ final class AISummaryEditorModel: ObservableObject {
     func reset(fileID: Int64) {
         guard self.fileID != fileID else { return }
         self.fileID = fileID
-        draftText = ""
-        savedText = nil
-        baselineText = nil
-        provenance = nil
-        savedProvenance = nil
+        contentState.reset()
         privacySkip = nil
         gateState = .unknown
         failedAction = nil
-        status = .empty
         operation = .idle
         generationToken = UUID()
         entryLoadToken = UUID()
@@ -128,18 +129,9 @@ final class AISummaryEditorModel: ObservableObject {
     }
 
     func updateDraft(_ text: String) {
-        guard draftText != text else { return }
-        draftText = text
+        guard contentState.draftText != text else { return }
+        contentState.updateDraft(text)
         privacySkip = nil
-        if text.isEmpty, savedText == nil, provenance == nil {
-            status = .empty
-        } else if text == baselineText, savedText != nil {
-            status = .saved
-        } else if text == baselineText {
-            status = .draft
-        } else {
-            status = .dirty
-        }
     }
 
     func generate(regenerate: Bool) async {
@@ -187,13 +179,7 @@ final class AISummaryEditorModel: ObservableObject {
         failedAction = nil
         do {
             let report = try await summaryStore.saveAISummary(repoPath: repoPath, request: saveRequest())
-            let saved = AISummaryProvenance(report: report)
-            savedText = report.savedSummary
-            draftText = report.savedSummary
-            baselineText = report.savedSummary
-            savedProvenance = saved
-            provenance = saved
-            status = .saved
+            contentState.acceptSaveReport(report)
             operation = .idle
             return true
         } catch {
@@ -207,10 +193,7 @@ final class AISummaryEditorModel: ObservableObject {
 
     func discardChanges() {
         guard canDiscard else { return }
-        draftText = savedText ?? ""
-        baselineText = savedText
-        status = savedText == nil ? .empty : .saved
-        provenance = savedProvenance
+        contentState.discardChanges()
         privacySkip = nil
         failedAction = nil
         operation = .idle
@@ -225,13 +208,8 @@ final class AISummaryEditorModel: ObservableObject {
                 repoPath: repoPath,
                 request: AiSummaryClearRequest(fileId: fileID, confirmed: true)
             )
-            draftText = ""
-            savedText = nil
-            savedProvenance = nil
-            baselineText = nil
-            provenance = nil
+            contentState.clear()
             privacySkip = nil
-            status = .empty
             operation = .idle
         } catch {
             failedAction = .clear
@@ -353,47 +331,25 @@ final class AISummaryEditorModel: ObservableObject {
 
     private func apply(_ draft: AiSummaryDraft) {
         privacySkip = nil
-        provenance = AISummaryProvenance(draft: draft)
+        contentState.apply(draft)
         switch draft.status {
         case .draft:
-            let text = draft.summaryText ?? ""
-            draftText = text
-            baselineText = text
-            status = .draft
+            break
         case .skipped:
-            status = .skipped(draft.skippedReason)
             updateGateState(for: draft.skippedReason)
         case .unavailable:
-            status = .unavailable(draft.skippedReason)
             updateGateState(for: draft.skippedReason)
         }
     }
 
     private func apply(_ skip: AISummaryPrivacySkip, draft: AiSummaryDraft) {
         privacySkip = skip
-        provenance = AISummaryProvenance(draft: draft)
-        status = skip.editorStatus
+        contentState.apply(skip, draft: draft)
     }
 
     private func apply(_ saved: AISummarySavedSnapshot?) {
-        guard let saved else {
-            draftText = ""
-            savedText = nil
-            savedProvenance = nil
-            baselineText = nil
-            provenance = nil
-            privacySkip = nil
-            status = .empty
-            return
-        }
-        let savedProvenance = AISummaryProvenance(saved: saved)
-        draftText = saved.summaryText
-        savedText = saved.summaryText
-        baselineText = saved.summaryText
-        self.savedProvenance = savedProvenance
-        provenance = savedProvenance
+        contentState.apply(saved)
         privacySkip = nil
-        status = .saved
     }
 
     private func updateGateState(for reason: AiSummarySkipReason?) {
@@ -402,38 +358,15 @@ final class AISummaryEditorModel: ObservableObject {
     }
 
     private func saveRequest() -> AiSummarySaveRequest {
-        AiSummarySaveRequest(
-            fileId: fileID,
-            summaryText: draftText,
-            draftId: provenance?.draftID,
-            route: provenance?.route,
-            modelName: provenance?.modelName,
-            generatedAt: provenance?.generatedAt,
-            usedContext: provenance?.usedContext ?? [],
-            privacyRuleId: provenance?.privacyRuleID,
-            callLogId: provenance?.callLogID,
-            editedByUser: status == .dirty
-        )
+        contentState.saveRequest(fileID: fileID)
     }
 
     private func snapshot() -> AISummaryEditorSnapshot {
-        AISummaryEditorSnapshot(
-            draftText: draftText,
-            savedText: savedText,
-            savedProvenance: savedProvenance,
-            baselineText: baselineText,
-            provenance: provenance,
-            status: status
-        )
+        contentState.snapshot
     }
 
     private func restore(_ snapshot: AISummaryEditorSnapshot) {
-        draftText = snapshot.draftText
-        savedText = snapshot.savedText
-        baselineText = snapshot.baselineText
-        savedProvenance = snapshot.savedProvenance
-        provenance = snapshot.provenance
-        status = snapshot.status
+        contentState.restore(snapshot)
     }
 
     private func summaryError(for error: Error, message: String) async -> AISettingsError {

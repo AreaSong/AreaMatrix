@@ -78,13 +78,18 @@ struct RepositorySettingsSummary: Equatable {
     var rootFile: String
     var readmePolicy: String
 
-    init(config: RepoConfigSnapshot, fallbackRepoPath: String, coreVersion: String) {
+    init(
+        config: RepoConfigSnapshot,
+        fallbackRepoPath: String,
+        coreVersion: String,
+        metadataPresence: RepoMetadataPresence
+    ) {
         let resolvedPath = config.repoPath.isEmpty || config.repoPath != fallbackRepoPath
             ? fallbackRepoPath
             : config.repoPath
         repositoryName = Self.repositoryName(for: resolvedPath)
         location = resolvedPath
-        metadataStatus = Self.metadataStatus(for: resolvedPath)
+        metadataStatus = metadataPresence.directoryStatusLabel
         locationType = Self.locationType(for: resolvedPath)
         self.coreVersion = coreVersion
         overviewMode = Self.overviewModeLabel(for: config.overviewOutput)
@@ -96,14 +101,6 @@ struct RepositorySettingsSummary: Equatable {
     private static func repositoryName(for path: String) -> String {
         let name = URL(fileURLWithPath: path).lastPathComponent
         return name.isEmpty ? "AreaMatrix" : name
-    }
-
-    private static func metadataStatus(for path: String) -> String {
-        let metadataURL = URL(fileURLWithPath: path, isDirectory: true)
-            .appendingPathComponent(".areamatrix", isDirectory: true)
-        return FileManager.default.fileExists(atPath: metadataURL.path)
-            ? ".areamatrix/ found"
-            : ".areamatrix/ missing"
     }
 
     private static func locationType(for path: String) -> String {

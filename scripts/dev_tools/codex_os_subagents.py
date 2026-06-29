@@ -131,6 +131,22 @@ def _has_path_hint(paths: list[str], hints: tuple[str, ...]) -> bool:
 
 def _role(name: str, mission: str, paths: list[str]) -> dict[str, Any]:
     path_text = ", ".join(paths[:12]) if paths else "current registered task and related files"
+    prompt = (
+        f"You are the {name} for an AreaMatrix Codex OS task. "
+        f"Work read-only. Focus on: {mission} Scope paths: {path_text}. "
+        "Return concise findings, evidence, risks, and recommended next actions."
+    )
+    copy_ready_prompt = "\n".join(
+        [
+            f"你是 AreaMatrix Codex OS 的只读 {name}。",
+            "只阅读和归纳，不修改文件，不运行写入命令，不启动/停止 runner，不 stage/commit/push。",
+            f"问题: {mission}",
+            f"读取范围: {path_text}",
+            "禁止范围: Codex internal SQLite；workflow/versions/<version>/execution/** runtime state；线程归档/改标题；unrelated dirty files。",
+            "停止条件: 发现需要写入、破坏性操作、高风险确认或 owner 外路径时，停止并报告主 agent。",
+            "返回格式: 结论、证据文件路径、风险、未确认项、推荐下一步。",
+        ]
+    )
     return {
         "role": name,
         "agent_type": "explorer",
@@ -146,11 +162,9 @@ def _role(name: str, mission: str, paths: list[str]) -> dict[str, Any]:
             "Stage, commit, push, archive, or rename threads",
             "Write runtime state or workflow execution state",
         ],
-        "prompt": (
-            f"You are the {name} for an AreaMatrix Codex OS task. "
-            f"Work read-only. Focus on: {mission} Scope paths: {path_text}. "
-            "Return concise findings, evidence, risks, and recommended next actions."
-        ),
+        "prompt": prompt,
+        "copy_ready_prompt": copy_ready_prompt,
+        "expected_output": ["conclusion", "evidence paths", "risks", "unknowns", "recommended next actions"],
     }
 
 
@@ -179,4 +193,14 @@ def render_subagent_plan(data: dict[str, Any]) -> str:
     lines.append("Main Agent Checklist")
     lines.append("")
     lines.extend(f"- {item}" for item in data["main_agent_checklist"])
+    if data["roles"]:
+        lines.append("")
+        lines.append("Copy-ready Prompt Blocks")
+        lines.append("")
+        for role in data["roles"]:
+            lines.append(f"### {role['role']}")
+            lines.append("")
+            lines.append("```text")
+            lines.append(role["copy_ready_prompt"])
+            lines.append("```")
     return "\n".join(lines).rstrip() + "\n"

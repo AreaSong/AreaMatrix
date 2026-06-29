@@ -68,6 +68,22 @@ final class MainEmptyImportEntryTests: XCTestCase {
     }
 
     @MainActor
+    func testMainEmptyImportEntryUsesInjectedTrashAvailability() {
+        let importURL = URL(fileURLWithPath: "/tmp/source.pdf")
+        let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            systemCapabilityChecker: StaticOnboardingSystemCapabilityChecker(isTrashAvailableValue: false),
+            accessibilityAnnouncer: MainEmptyImportAnnouncer(),
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.startImportEntry(opening: opening, source: .dropZone, urls: [importURL])
+
+        XCTAssertEqual(model.pendingImportEntry?.isTrashAvailable, false)
+    }
+
+    @MainActor
     func testMainEmptyDropEntryRejectsInvalidItemsWithAccessibleToast() throws {
         let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
         let accessibilityAnnouncer = MainEmptyImportAnnouncer()

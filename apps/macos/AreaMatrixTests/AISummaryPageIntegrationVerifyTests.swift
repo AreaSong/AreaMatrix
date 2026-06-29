@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import Combine
 import XCTest
 
 final class AISummaryPageIntegrationVerifyTests: XCTestCase {
@@ -136,6 +137,39 @@ final class AISummaryPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(events, [.generate(regenerate: false, privacyPolicyRef: nil)])
     }
 
+    func testDefaultCoreBridgeLoadsSavedAISummaryFromSQLiteMetadata() async throws {
+        let repoURL = try makeTestTemporaryDirectory(named: "AISummaryMetadataReaderTests")
+        defer { removeTestTemporaryItems(repoURL) }
+        try createAISummaryMetadataDatabase(in: repoURL)
+
+        let saved = try await CoreBridge().loadSavedAISummary(repoPath: repoURL.path, fileID: 714)
+
+        XCTAssertEqual(saved?.fileID, 714)
+        XCTAssertEqual(saved?.summaryText, "Saved SQLite AI summary.")
+        XCTAssertEqual(saved?.route, .remote)
+        XCTAssertEqual(saved?.modelName, "summary-model")
+        XCTAssertEqual(saved?.usedContext, [.fileName, .repoRelativePath])
+        XCTAssertEqual(saved?.privacyRuleID, "rule-1")
+        XCTAssertEqual(saved?.callLogID, 42)
+        XCTAssertTrue(saved?.editedByUser == true)
+        XCTAssertEqual(saved?.characterCount, Int64("Saved SQLite AI summary.".count))
+    }
+
+    @MainActor
+    func testAISummaryDraftUpdatePublishesEditorViewChange() {
+        let model = aiSummaryIntegrationModel(fileID: 714)
+        var publishCount = 0
+        let cancellable = model.objectWillChange.sink {
+            publishCount += 1
+        }
+        defer { cancellable.cancel() }
+
+        model.updateDraft("Local draft update.")
+
+        XCTAssertEqual(model.draftText, "Local draft update.")
+        XCTAssertGreaterThanOrEqual(publishCount, 1)
+    }
+
     @MainActor
     func testAISummaryExitConfirmationSavesDiscardsOrKeepsDraftUntilUserChooses() async {
         let summary = AISummaryIntegrationSummaryBridge(drafts: [
@@ -211,5 +245,58 @@ final class AISummaryPageIntegrationVerifyTests: XCTestCase {
             .apply(previousIDs: [707], requestedIDs: [708])
         )
         XCTAssertNil(applyState.pendingRequest)
+    }
+}
+
+private func createAISummaryMetadataDatabase(in repoURL: URL) throws {
+    let metadataURL = repoURL.appendingPathComponent(".areamatrix", isDirectory: true)
+    try FileManager.default.createDirectory(at: metadataURL, withIntermediateDirectories: true)
+    let dbURL = metadataURL.appendingPathComponent("index.db", isDirectory: false)
+
+    var database: OpaquePointer?
+    guard sqlite3_open_v2(dbURL.path, &database, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nil) == SQLITE_OK,
+          let openedDatabase = database
+    else {
+        let message = database.flatMap { sqlite3_errmsg($0).map { String(cString: $0) } } ?? "sqlite open failed"
+        if let database {
+            sqlite3_close(database)
+        }
+        throw CoreError.Db(message: message)
+    }
+    defer { sqlite3_close(openedDatabase) }
+
+    try execAISummarySQL(
+        database: openedDatabase,
+        sql: """
+        CREATE TABLE ai_summaries (
+            file_id INTEGER PRIMARY KEY,
+            summary_text TEXT NOT NULL,
+            draft_id TEXT,
+            route TEXT,
+            model_name TEXT,
+            generated_at INTEGER,
+            used_context_json TEXT NOT NULL,
+            privacy_rule_id TEXT,
+            call_log_id INTEGER,
+            edited_by_user INTEGER NOT NULL DEFAULT 0,
+            saved_at INTEGER NOT NULL
+        );
+        INSERT INTO ai_summaries (
+            file_id, summary_text, draft_id, route, model_name, generated_at,
+            used_context_json, privacy_rule_id, call_log_id, edited_by_user, saved_at
+        ) VALUES (
+            714, 'Saved SQLite AI summary.', 'draft-714', 'remote', 'summary-model', 1700000714,
+            '["filename","repo_relative_path"]', 'rule-1', 42, 1, 1700000814
+        );
+        """
+    )
+}
+
+private func execAISummarySQL(database: OpaquePointer, sql: String) throws {
+    var errorMessage: UnsafeMutablePointer<CChar>?
+    guard sqlite3_exec(database, sql, nil, nil, &errorMessage) == SQLITE_OK else {
+        let message = errorMessage.map { String(cString: $0) } ?? "sqlite exec failed"
+        sqlite3_free(errorMessage)
+        throw CoreError.Db(message: message)
     }
 }

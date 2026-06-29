@@ -105,11 +105,13 @@ struct ICloudConflictListView: View {
     let pageContext: ICloudConflictListPageContext
     let onClose: () -> Void
     let onResolve: (ICloudConflictPairSnapshot) -> Void
+    let systemCapabilityChecker: any OnboardingSystemCapabilityChecking
     let onCollectDiagnostics: () -> Void
 
     init(
         model: ICloudConflictListModel,
         pageContext: ICloudConflictListPageContext = .iCloudConflictListList,
+        systemCapabilityChecker: any OnboardingSystemCapabilityChecking = LocalOnboardingCapabilities(),
         onClose: @escaping () -> Void,
         onResolve: @escaping (ICloudConflictPairSnapshot) -> Void,
         onCollectDiagnostics: @escaping () -> Void = {}
@@ -118,6 +120,7 @@ struct ICloudConflictListView: View {
         self.pageContext = pageContext
         self.onClose = onClose
         self.onResolve = onResolve
+        self.systemCapabilityChecker = systemCapabilityChecker
         self.onCollectDiagnostics = onCollectDiagnostics
     }
 
@@ -144,7 +147,7 @@ struct ICloudConflictListView: View {
                     conflictedCopyVersion: route.conflictedCopyVersion
                 ),
                 resolutionCapability: route.resolutionCapability,
-                isTrashAvailable: OnboardingModel.isSystemTrashAvailable(),
+                isTrashAvailable: systemCapabilityChecker.isTrashAvailable(),
                 onCancel: model.closeResolvingConflict,
                 onApply: { result in
                     guard result.report?.status == .resolved else { return }

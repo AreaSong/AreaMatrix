@@ -83,6 +83,20 @@ actor RepoSettingsScanSessionReader: CoreScanSessionReading {
     }
 }
 
+final class RecordingRepoMetadataPresenceChecker: RepoMetadataPresenceChecking {
+    private(set) var repoPaths: [String] = []
+    private let presence: RepoMetadataPresence
+
+    init(presence: RepoMetadataPresence) {
+        self.presence = presence
+    }
+
+    func metadataPresence(repoPath: String) -> RepoMetadataPresence {
+        repoPaths.append(repoPath)
+        return presence
+    }
+}
+
 actor RepositorySettingsStaticErrorMapper: CoreErrorMapping {
     private var errors: [CoreError] = []
 

@@ -83,6 +83,7 @@ final class OnboardingModel: ObservableObject {
     let pathCopier: any RepositoryPathCopying
     let importResultExporter: any ImportResultDetailsExporting
     let importBatchSessionStore: any ImportBatchSessionPersisting
+    let systemCapabilityChecker: any OnboardingSystemCapabilityChecking
     let importProgressControlState: ImportProgressControlState
     let accessibilityAnnouncer: any AccessibilityAnnouncing
     let helpOpener: any WelcomeHelpOpening
@@ -116,6 +117,7 @@ final class OnboardingModel: ObservableObject {
         pathCopier: any RepositoryPathCopying = NSPasteboardRepositoryPathCopier(),
         importResultExporter: any ImportResultDetailsExporting = NSSavePanelImportResultDetailsExporter(),
         importBatchSessionStore: any ImportBatchSessionPersisting = FileImportBatchSessionStore(),
+        systemCapabilityChecker: any OnboardingSystemCapabilityChecking = LocalOnboardingCapabilities(),
         importProgressControlState: ImportProgressControlState = ImportProgressControlState(),
         accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer(),
         helpOpener: any WelcomeHelpOpening = LocalWelcomeHelpOpener(),
@@ -143,6 +145,7 @@ final class OnboardingModel: ObservableObject {
         self.pathCopier = pathCopier
         self.importResultExporter = importResultExporter
         self.importBatchSessionStore = importBatchSessionStore
+        self.systemCapabilityChecker = systemCapabilityChecker
         self.importProgressControlState = importProgressControlState
         self.accessibilityAnnouncer = accessibilityAnnouncer
         self.helpOpener = helpOpener

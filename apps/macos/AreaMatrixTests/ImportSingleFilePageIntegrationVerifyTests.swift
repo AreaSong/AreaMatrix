@@ -66,6 +66,34 @@ final class SingleFileImportIntegrationTests: XCTestCase {
     }
 
     @MainActor
+    func testImportSingleFileRetryProgressUsesInjectedRepositoryFinderAvailability() {
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            systemCapabilityChecker: StaticOnboardingSystemCapabilityChecker(
+                repositoryFinderAvailabilityByPath: ["/tmp/repo": false]
+            ),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+
+        model.route = .mainList(opening)
+        model.beginImportEntryProgress(
+            currentPath: "docs/source.pdf",
+            retryContext: ImportProgressRetryContext(
+                repoPath: "/tmp/repo",
+                sourcePath: "/tmp/source.pdf",
+                storageMode: .copy,
+                overrideCategory: "docs",
+                overrideFilename: "source.pdf",
+                duplicateStrategy: .ask
+            )
+        )
+
+        XCTAssertEqual(model.currentImportProgressState?.isRepositoryFinderAvailable, false)
+    }
+
+    @MainActor
     func testImportSingleFileDockOpenFileQueuesSingleFileImportWhenRepositoryIsOpen() {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let sourceURL = URL(fileURLWithPath: "/tmp/source.pdf")

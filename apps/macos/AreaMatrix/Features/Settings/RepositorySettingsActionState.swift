@@ -78,7 +78,8 @@ final class LocalModelStatusModel: ObservableObject {
     init(
         repoPath: String,
         modelID: String = LocalModelStatusModel.defaultModelID,
-        storageLocation: String = LocalModelStatusModel.defaultStorageLocation(),
+        storageLocation: String? = nil,
+        storageLocationProvider: any LocalModelStorageLocationProviding = LocalModelStorageProvider(),
         statusReader: any CoreLocalModelStatusReading = CoreBridge(),
         installHelpOpener: any LocalModelInstallHelpOpening = NSWorkspaceLocalModelInstallHelpOpener(),
         folderOpener: any LocalModelFolderOpening = NSWorkspaceLocalModelFolderOpener(),
@@ -87,7 +88,7 @@ final class LocalModelStatusModel: ObservableObject {
     ) {
         self.repoPath = repoPath
         self.modelID = modelID
-        self.storageLocation = storageLocation
+        self.storageLocation = storageLocation ?? storageLocationProvider.defaultStorageLocation()
         self.statusReader = statusReader
         self.installHelpOpener = installHelpOpener
         self.folderOpener = folderOpener
@@ -148,16 +149,6 @@ final class LocalModelStatusModel: ObservableObject {
             return nil
         }
         return "Repair metadata from the diagnostics screen before running another local model check."
-    }
-
-    nonisolated static func defaultStorageLocation() -> String {
-        if let supportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
-            return supportURL
-                .appendingPathComponent("AreaMatrix", isDirectory: true)
-                .appendingPathComponent("Models", isDirectory: true)
-                .path
-        }
-        return NSHomeDirectory() + "/Library/Application Support/AreaMatrix/Models"
     }
 
     func checkStatus() async {

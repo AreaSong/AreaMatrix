@@ -37,7 +37,9 @@ macOS app 工程尚未存在时，`macos-ci.yml` 可以按现有保护逻辑跳�
 ```
 
 `./dev check codex-os` 会覆盖 Codex OS flow 编排入口的 CLI smoke，包括
-`start-flow`、`run-validation`、`repair-plan`、`close-flow` 和 `ops-flow`。
+`go`、`flow`、`start-flow`、`now`、`run-validation --profile auto/full`、`repair-plan`、
+`done`、`close-flow --from-latest-validation`、`todo` 和 `ops-flow --compact / --action-items`，
+并运行 `scripts.dev_tools.test_codex_os` 回归测试。
 
 维护者全历史审计：
 

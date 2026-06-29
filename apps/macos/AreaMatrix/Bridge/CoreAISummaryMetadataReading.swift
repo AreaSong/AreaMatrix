@@ -1,20 +1,5 @@
 import Foundation
 
-struct AISummarySavedSnapshot: Equatable {
-    var fileID: Int64
-    var summaryText: String
-    var savedAt: Int64
-    var draftID: String?
-    var route: AiSummaryRoute?
-    var modelName: String?
-    var generatedAt: Int64?
-    var usedContext: [AiSummaryInputField]
-    var privacyRuleID: String?
-    var callLogID: Int64?
-    var editedByUser: Bool
-    var characterCount: Int64
-}
-
 struct SQLiteAISummaryMetadataReader {
     func savedSummary(repoPath: String, fileID: Int64) async throws -> AISummarySavedSnapshot? {
         try await Task.detached(priority: .userInitiated) {

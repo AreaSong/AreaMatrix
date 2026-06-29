@@ -22,6 +22,7 @@ struct MainRepositoryContentView: View {
     let treeLister: any CoreRepositoryTreeListing
     let savedSearchStore: any CoreSavedSearchCRUD
     let batchRenamer: any CoreBatchRenaming
+    let systemCapabilityChecker: any OnboardingSystemCapabilityChecking
     let errorMapper: any CoreErrorMapping
     let externalCreatedEvent: MainExternalCreatedFileEvent?
     let onExternalCreatedEventHandled: (MainExternalCreatedFileEvent) -> Void
@@ -102,6 +103,7 @@ struct MainRepositoryContentView: View {
         batchDeleter: any CoreBatchDeleting = CoreBridge(),
         batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
         batchRenamer: any CoreBatchRenaming = CoreBridge(),
+        systemCapabilityChecker: any OnboardingSystemCapabilityChecking = LocalOnboardingCapabilities(),
         syncConflictDetector: any CoreSyncConflictDetecting = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         tagStore: any CoreTagCRUD = CoreBridge(),
@@ -125,6 +127,7 @@ struct MainRepositoryContentView: View {
         self.onOpenNoteFile = onOpenNoteFile
         self.onOpenChangeCategoryPermissionRecovery = onOpenChangeCategoryPermissionRecovery
         self.treeLister = treeLister; self.savedSearchStore = savedSearchStore; self.batchRenamer = batchRenamer
+        self.systemCapabilityChecker = systemCapabilityChecker
         self.errorMapper = errorMapper; self.externalCreatedEvent = externalCreatedEvent
         self.onExternalCreatedEventHandled = onExternalCreatedEventHandled
         self.pendingTagSuggestionFocus = pendingTagSuggestionFocus

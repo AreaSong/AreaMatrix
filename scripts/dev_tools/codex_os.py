@@ -17,9 +17,11 @@ from .codex_os_automation import (
     run_close_flow,
     run_context,
     run_diagnose,
+    run_flow,
     run_health_score,
     run_lifecycle,
     run_new,
+    run_now,
     run_ops_flow,
     run_repair_plan_flow,
     run_recommend_validation,
@@ -587,6 +589,8 @@ def _validate_finish_args(root: Path, task: dict[str, Any], args: Namespace) -> 
     evidence = evidence or task.get("evidence_file") or task.get("closeout_file") or task.get("evidence_note") or task.get("closeout_note")
     if args.status == "Done" and not validation:
         raise ToolError("finish --status Done requires --validation or an existing validation summary", code=1)
+    if args.status == "Done" and not _looks_like_fresh_pass_validation(validation):
+        raise ToolError("finish --status Done requires a fresh PASS/OK validation summary, not dry-run or failed validation", code=1)
     if args.status == "Done" and not evidence:
         raise ToolError("finish --status Done requires evidence or closeout reference", code=1)
     if args.status == "Blocked" and not (args.next_action or task.get("next_action") or args.handoff_file or task.get("handoff_file")):
@@ -595,6 +599,16 @@ def _validate_finish_args(root: Path, task: dict[str, Any], args: Namespace) -> 
         value = getattr(args, key, None)
         if value and not _relative_path_exists(root, value):
             raise ToolError(f"{key.replace('_', '-')} does not exist: {value}", code=1)
+
+
+def _looks_like_fresh_pass_validation(value: str | None) -> bool:
+    if not value:
+        return False
+    upper = value.upper()
+    blocked_markers = ("SKIPPED", "NOT-READY", "NOT READY", "RECOMMENDED", "DRY-RUN", "DRY RUN", "FAIL", "BLOCKED")
+    if any(marker in upper for marker in blocked_markers):
+        return False
+    return "PASS" in upper or "OK" in upper
 
 
 def _finish_updates(task: dict[str, Any], args: Namespace) -> dict[str, Any]:
@@ -722,14 +736,24 @@ def run_codex_os_command(root: Path, args: Namespace) -> int:
         return run_recommend_validation(root, args)
     if args.codex_os_command == "start-flow":
         return run_start_flow(root, args)
+    if args.codex_os_command == "flow":
+        return run_flow(root, args)
+    if args.codex_os_command == "go":
+        return run_flow(root, _go_args(args))
     if args.codex_os_command == "run-validation":
         return run_validation_flow(root, args)
     if args.codex_os_command == "repair-plan":
         return run_repair_plan_flow(root, args)
     if args.codex_os_command == "close-flow":
         return run_close_flow(root, args)
+    if args.codex_os_command == "done":
+        return run_close_flow(root, _done_args(args))
     if args.codex_os_command == "ops-flow":
         return run_ops_flow(root, args)
+    if args.codex_os_command == "todo":
+        return run_ops_flow(root, _todo_args(args))
+    if args.codex_os_command == "now":
+        return run_now(root, args)
     if args.codex_os_command == "archive-review":
         return run_archive_review(root, args)
     if args.codex_os_command == "title-suggestions":
@@ -761,6 +785,45 @@ def run_codex_os_command(root: Path, args: Namespace) -> int:
     if args.codex_os_command == "finish":
         return run_finish(root, args)
     raise ToolError(f"unsupported codex-os command: {args.codex_os_command}", code=2)
+
+
+def _go_args(args: Namespace) -> Namespace:
+    values = dict(vars(args))
+    values.update(
+        {
+            "codex_os_command": "flow",
+            "execute": bool(getattr(args, "apply", False)),
+            "write": bool(getattr(args, "apply", False)),
+            "changed": bool(getattr(args, "changed", False) or not getattr(args, "path", [])),
+        }
+    )
+    return Namespace(**values)
+
+
+def _done_args(args: Namespace) -> Namespace:
+    values = dict(vars(args))
+    values.update(
+        {
+            "codex_os_command": "close-flow",
+            "status": "Done",
+            "from_latest_validation": True,
+            "validation": None,
+            "write": not bool(getattr(args, "preview", False)),
+        }
+    )
+    return Namespace(**values)
+
+
+def _todo_args(args: Namespace) -> Namespace:
+    values = dict(vars(args))
+    values.update(
+        {
+            "codex_os_command": "ops-flow",
+            "action_items": True,
+            "compact": False,
+        }
+    )
+    return Namespace(**values)
 
 
 __all__ = ["ThreadRecord", "classify_thread", "run_codex_os_command"]

@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import Combine
 import XCTest
 
 final class ClassifierSettingsPageFeatureTests: XCTestCase {
@@ -124,6 +125,21 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.previewError?.message, "无法预览分类：classifier unavailable")
         XCTAssertEqual(model.previewError?.recovery, "Retry preview")
         XCTAssertFalse(model.isPreviewing)
+    }
+
+    @MainActor
+    func testPreviewFilenameUpdatePublishesSettingsViewChange() async {
+        let model = await loadedModel(updater: RecordingConfigurationUpdater(result: .success))
+        var publishCount = 0
+        let cancellable = model.objectWillChange.sink {
+            publishCount += 1
+        }
+        defer { cancellable.cancel() }
+
+        model.updatePreviewFilename("Invoice_2026Q1.pdf")
+
+        XCTAssertEqual(model.previewFilename, "Invoice_2026Q1.pdf")
+        XCTAssertGreaterThanOrEqual(publishCount, 1)
     }
 
     @MainActor

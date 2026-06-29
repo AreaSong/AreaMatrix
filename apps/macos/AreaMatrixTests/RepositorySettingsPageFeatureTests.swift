@@ -115,7 +115,12 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
     func testLoadSynchronizesStaleRepoPathThroughUpdateConfig() async throws {
         let repoURL = try temporaryRepositorySettingsRepo()
         defer { removeTestTemporaryItems(repoURL) }
-        try createRepositorySettingsMetadataDatabaseMarker(in: repoURL)
+        let metadataPresenceChecker = RecordingRepoMetadataPresenceChecker(
+            presence: RepoMetadataPresence(
+                hasMetadataDirectory: true,
+                hasMetadataDatabase: true
+            )
+        )
 
         var config = RepoConfigSnapshot.shellFixture(repoPath: "/tmp/stale-repo")
         config.overviewOutput = "RootAreaMatrixFile"
@@ -140,6 +145,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             repositoryOpener: opener,
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
+            metadataPresenceChecker: metadataPresenceChecker,
             errorMapper: RepositorySettingsStaticErrorMapper()
         )
 
@@ -150,6 +156,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             repoPath: repoURL.path,
             config: expected
         )])
+        XCTAssertEqual(metadataPresenceChecker.repoPaths, [repoURL.path])
         XCTAssertEqual(model.loadedConfig, expected)
         XCTAssertEqual(model.summary?.location, repoURL.path)
         XCTAssertEqual(model.summary?.repositoryName, repoURL.lastPathComponent)
@@ -456,5 +463,23 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         ])
         XCTAssertFalse(model.allowsDiagnosticsExport)
         XCTAssertEqual(model.diagnosticsDisabledReason, "Grant repository access.")
+    }
+
+    @MainActor
+    func testRepositorySettingsPlatformCapabilitiesUsesInjectedAppVersionReaderWhenNoOverrideIsPassed() async {
+        let loader = RepoSettingsCapabilityLoader(result: .success(repositorySettingsCapabilitiesFixture()))
+        let model = RepoPlatformCapabilitiesModel(
+            appVersionReader: StaticAppVersionReader(version: "5.6.7 (89)"),
+            capabilityLoader: loader,
+            errorMapper: RepositorySettingsStaticErrorMapper()
+        )
+
+        await model.load()
+
+        let requests = await loader.requests()
+        XCTAssertEqual(requests, [RepositorySettingsCapabilityRequest(
+            platform: .macos,
+            appVersion: "5.6.7 (89)"
+        )])
     }
 }

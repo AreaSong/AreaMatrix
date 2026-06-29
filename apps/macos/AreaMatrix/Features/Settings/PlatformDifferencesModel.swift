@@ -43,7 +43,8 @@ final class PlatformDifferencesModel: ObservableObject {
 
     init(
         hostPlatform: PlatformIdSnapshot = .macos,
-        appVersion: String = PlatformDifferencesModel.defaultAppVersion(),
+        appVersion: String? = nil,
+        appVersionReader: any AppVersionReading = BundleAppVersionReader(),
         repositoryText: String = "Not connected",
         selectedTargetPlatform: BindingTargetPlatformSnapshot = .swift,
         bindingVersion: Int64 = 1,
@@ -52,7 +53,7 @@ final class PlatformDifferencesModel: ObservableObject {
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         self.hostPlatform = hostPlatform
-        self.appVersion = appVersion
+        self.appVersion = appVersion ?? appVersionReader.appVersion()
         self.repositoryText = repositoryText
         self.selectedTargetPlatform = selectedTargetPlatform
         self.bindingVersion = bindingVersion
@@ -163,9 +164,5 @@ final class PlatformDifferencesModel: ObservableObject {
             recovery: "Retry the platform capability check.",
             detail: error.localizedDescription
         )
-    }
-
-    private nonisolated static func defaultAppVersion() -> String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1"
     }
 }

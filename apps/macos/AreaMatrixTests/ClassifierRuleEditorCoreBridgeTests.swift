@@ -224,6 +224,48 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
     }
 
     @MainActor
+    func testLocalModelStatusUsesInjectedStorageLocationProviderWhenNoOverrideIsPassed() {
+        let provider = RecordingLocalModelStorageProvider(defaultLocation: "/tmp/localModelStatus-provider")
+        let explicitModel = LocalModelStatusModel(
+            repoPath: "/tmp/localModelStatus",
+            storageLocation: "/tmp/localModelStatus-explicit",
+            storageLocationProvider: provider,
+            statusReader: RecordingLocalModelReader(
+                status: .localModelStatusSnapshot(
+                    storageLocation: "/tmp/localModelStatus-explicit",
+                    availability: .ready,
+                    recommendedAction: .none
+                ),
+                location: .localModelStatusLocation(folderPath: "/tmp/localModelStatus-explicit", openable: true)
+            ),
+            installHelpOpener: RecordingInstallHelpOpener(),
+            folderOpener: LocalModelStatusRecordingFolderOpener(),
+            diagnosticsCopier: RecordingDiagnosticsCopier(),
+            errorMapper: LocalModelStatusStaticErrorMapper()
+        )
+        let defaultedModel = LocalModelStatusModel(
+            repoPath: "/tmp/localModelStatus",
+            storageLocationProvider: provider,
+            statusReader: RecordingLocalModelReader(
+                status: .localModelStatusSnapshot(
+                    storageLocation: "/tmp/localModelStatus-provider",
+                    availability: .ready,
+                    recommendedAction: .none
+                ),
+                location: .localModelStatusLocation(folderPath: "/tmp/localModelStatus-provider", openable: true)
+            ),
+            installHelpOpener: RecordingInstallHelpOpener(),
+            folderOpener: LocalModelStatusRecordingFolderOpener(),
+            diagnosticsCopier: RecordingDiagnosticsCopier(),
+            errorMapper: LocalModelStatusStaticErrorMapper()
+        )
+
+        XCTAssertEqual(explicitModel.storageLocation, "/tmp/localModelStatus-explicit")
+        XCTAssertEqual(defaultedModel.storageLocation, "/tmp/localModelStatus-provider")
+        XCTAssertEqual(provider.requestCount, 1)
+    }
+
+    @MainActor
     func testLocalModelStatusDefaultCoreBridgeReadsLocalModelStatusWithoutCreatingModelFolder() async throws {
         let repoURL = try temporaryClassifierRuleEditorRepo()
         defer { removeTestTemporaryItems(repoURL) }
@@ -324,6 +366,20 @@ private struct LocalModelStatusStaticErrorMapper: CoreErrorMapping {
             recoverability: .retryable,
             rawContext: "local-model-status"
         )
+    }
+}
+
+private final class RecordingLocalModelStorageProvider: LocalModelStorageLocationProviding, @unchecked Sendable {
+    private(set) var requestCount = 0
+    private let defaultLocation: String
+
+    init(defaultLocation: String) {
+        self.defaultLocation = defaultLocation
+    }
+
+    func defaultStorageLocation() -> String {
+        requestCount += 1
+        return defaultLocation
     }
 }
 

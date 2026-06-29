@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-29T03:52:32Z",
+  "generated_at": "2026-06-29T07:07:04Z",
   "project": "areamatrix",
   "source": "areaflow-import-snapshot",
   "source_hash": "41f8b2410446939026b8de6025e8c3b267c75f8a32dd5602c5562def7f79b3bb",
@@ -22,5 +22,14 @@
       "total": 637
     },
     "version_count": 2
+  },
+  "compatibility": {
+    "status": "fallback_status",
+    "offline_source": ".areaflow/status.json",
+    "blocked": [
+      "./task-loop run",
+      "promotion apply",
+      "write execution"
+    ]
   }
 }

@@ -7,8 +7,10 @@ from datetime import datetime, timezone
 import contextlib
 import io
 import json
+import os
 import sqlite3
 import stat
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -113,6 +115,14 @@ def args(command: str, state_db: Path, runtime_dir: Path, **extra: object) -> Na
         "title": None,
         "path": [],
         "changed": False,
+        "profile": "standard",
+        "execute": False,
+        "timeout": 600,
+        "from_latest_validation": False,
+        "close_when_pass": False,
+        "ops": False,
+        "compact": False,
+        "action_items": False,
         "output": None,
         "recommend_validation": False,
     }
@@ -154,6 +164,53 @@ class CodexOsToolsTest(unittest.TestCase):
         _normalize_codex_os_common_args(child_args)
         self.assertEqual(child_args.state_db, "child.sqlite")
         self.assertEqual(child_args.runtime_dir, "child-runtime")
+
+    def test_codex_os_parser_recognizes_aggregate_flow_and_new_modes(self) -> None:
+        parser = _build_parser()
+        flow = parser.parse_args(
+            [
+                "codex-os",
+                "flow",
+                "--task-id",
+                "AM-PARSER",
+                "--changed",
+                "--profile",
+                "full",
+                "--execute",
+                "--close-when-pass",
+                "--ops",
+            ]
+        )
+        _normalize_codex_os_common_args(flow)
+        self.assertEqual(flow.codex_os_command, "flow")
+        self.assertEqual(flow.profile, "full")
+        self.assertTrue(flow.execute)
+        self.assertTrue(flow.close_when_pass)
+        self.assertTrue(flow.ops)
+
+        latest = parser.parse_args(["codex-os", "close-flow", "--task-id", "AM-PARSER", "--status", "Done", "--from-latest-validation"])
+        _normalize_codex_os_common_args(latest)
+        self.assertTrue(latest.from_latest_validation)
+
+        ops = parser.parse_args(["codex-os", "ops-flow", "--action-items", "--json"])
+        _normalize_codex_os_common_args(ops)
+        self.assertTrue(ops.action_items)
+        self.assertTrue(ops.json)
+
+        go = parser.parse_args(["codex-os", "go", "--title", "Parser go", "--apply", "--profile", "auto"])
+        _normalize_codex_os_common_args(go)
+        self.assertEqual(go.codex_os_command, "go")
+        self.assertTrue(go.apply)
+        self.assertEqual(go.profile, "auto")
+
+        done = parser.parse_args(["codex-os", "done", "--task-id", "AM-PARSER"])
+        _normalize_codex_os_common_args(done)
+        self.assertEqual(done.codex_os_command, "done")
+
+        now = parser.parse_args(["codex-os", "now", "--task-id", "AM-PARSER", "--json"])
+        _normalize_codex_os_common_args(now)
+        self.assertEqual(now.codex_os_command, "now")
+        self.assertTrue(now.json)
 
     def test_classify_thread_marks_archive_candidate_and_risk_review(self) -> None:
         now = datetime(2026, 6, 29, tzinfo=timezone.utc)
@@ -466,6 +523,21 @@ class CodexOsToolsTest(unittest.TestCase):
                         validation="./dev check codex-os: PASS",
                     ),
                 )
+
+            with self.assertRaises(Exception) as dry_finish:
+                run_codex_os_command(
+                    root,
+                    args(
+                        "finish",
+                        state_db,
+                        runtime,
+                        task_id="AM-4",
+                        status="Done",
+                        validation="./dev check codex-os: SKIPPED; result: NOT-READY",
+                        evidence_note="unit-test evidence",
+                    ),
+                )
+            self.assertIn("fresh PASS/OK", str(dry_finish.exception))
 
             self.assertEqual(
                 run_codex_os_command(
@@ -786,6 +858,8 @@ class CodexOsToolsTest(unittest.TestCase):
             for role in data["roles"]:
                 self.assertEqual(role["mode"], "read-only")
                 self.assertIn("Modify files", role["forbidden_actions"])
+                self.assertIn("copy_ready_prompt", role)
+                self.assertIn("只阅读和归纳", role["copy_ready_prompt"])
 
     def test_start_flow_creates_and_starts_task_with_flow_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -857,6 +931,35 @@ class CodexOsToolsTest(unittest.TestCase):
             self.assertEqual(data["action"], "blocked_by_preflight")
             self.assertIn("manual confirmation", json.dumps(data["preflight"], ensure_ascii=False))
 
+    def test_start_flow_infers_lane_and_risk_from_natural_language_title(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(
+                    run_codex_os_command(
+                        root,
+                        args(
+                            "start-flow",
+                            state_db,
+                            runtime,
+                            task_id="AM-NL",
+                            title="Mission-Critical migration safety review",
+                            write=False,
+                            json=True,
+                        ),
+                    ),
+                    0,
+                )
+            data = json.loads(stdout.getvalue())
+            self.assertEqual(data["task"]["lane"], "Mission-Critical")
+            self.assertEqual(data["task"]["risk_level"], "Mission-Critical")
+            self.assertEqual(data["task"]["confirmation_status"], "Required")
+
     def test_run_validation_defaults_to_dry_run_and_can_write_report(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -909,6 +1012,10 @@ class CodexOsToolsTest(unittest.TestCase):
             self.assertEqual(data["result"], "NOT-READY")
             self.assertFalse(data["execute"])
             self.assertTrue(all(item["result"] == "SKIPPED" for item in data["results"]))
+            self.assertTrue(data["not_run"])
+            self.assertIn("residual_prompt", data)
+            self.assertIn("dirty_worktree_scope", data)
+            self.assertIn("--execute --write", data["next_commands"][0])
             self.assertIn("report_path", data)
             registry = json.loads((runtime / "task-registry.json").read_text(encoding="utf-8"))
             task = registry["tasks"][0]
@@ -971,9 +1078,80 @@ class CodexOsToolsTest(unittest.TestCase):
 
             data = json.loads(stdout.getvalue())
             self.assertEqual(data["result"], "PASS")
+            self.assertIn("fingerprint", data)
+            self.assertIn("digest", data["fingerprint"])
             compileall_results = [item for item in data["results"] if "python3 -m compileall" in item["command"]]
             self.assertEqual(len(compileall_results), 1)
             self.assertEqual(compileall_results[0]["result"], "PASS")
+
+    def test_run_validation_reports_unrelated_dirty_paths_when_explicit_paths_are_supplied(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            subprocess.run(["git", "init"], cwd=root, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.name", "Test"], cwd=root, check=True)
+            (root / "owned.txt").write_text("owned\n", encoding="utf-8")
+            (root / "other.txt").write_text("other\n", encoding="utf-8")
+            subprocess.run(["git", "add", "owned.txt", "other.txt"], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-m", "init"], cwd=root, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            (root / "owned.txt").write_text("owned changed\n", encoding="utf-8")
+            (root / "other.txt").write_text("other changed\n", encoding="utf-8")
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(
+                    run_codex_os_command(
+                        root,
+                        args("run-validation", state_db, runtime, path=["owned.txt"], json=True),
+                    ),
+                    0,
+                )
+            data = json.loads(stdout.getvalue())
+            self.assertIn("owned.txt", data["dirty_worktree_scope"]["covered_dirty_paths"])
+            self.assertIn("other.txt", data["dirty_worktree_scope"]["unrelated_dirty_paths"])
+
+    def test_run_validation_profiles_select_minimal_standard_and_full(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+
+            outputs: dict[str, dict[str, object]] = {}
+            for profile in ("minimal", "standard", "full", "auto"):
+                stdout = io.StringIO()
+                with contextlib.redirect_stdout(stdout):
+                    self.assertEqual(
+                        run_codex_os_command(
+                            root,
+                            args(
+                                "run-validation",
+                                state_db,
+                                runtime,
+                                task_id="AM-PROFILE",
+                                path=["scripts/dev_tools/codex_os_automation.py"],
+                                profile=profile,
+                                json=True,
+                            ),
+                        ),
+                        0,
+                    )
+                outputs[profile] = json.loads(stdout.getvalue())
+
+            self.assertEqual(outputs["minimal"]["profile"], "minimal")
+            self.assertEqual(outputs["standard"]["profile"], "standard")
+            self.assertEqual(outputs["full"]["profile"], "full")
+            self.assertEqual(outputs["auto"]["requested_profile"], "auto")
+            self.assertEqual(outputs["auto"]["resolved_profile"], "full")
+            self.assertEqual(outputs["auto"]["profile"], "full")
+            self.assertLessEqual(len(outputs["minimal"]["selected_commands"]), len(outputs["standard"]["selected_commands"]))
+            self.assertGreaterEqual(len(outputs["full"]["selected_commands"]), len(outputs["standard"]["selected_commands"]))
+            self.assertIn("./dev check secrets", outputs["full"]["selected_commands"])
+            self.assertIn("./dev check task-loop", outputs["full"]["selected_commands"])
+            self.assertIn("./dev check task-loop", outputs["auto"]["selected_commands"])
 
     def test_run_validation_blocks_write_style_dev_commands(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1022,6 +1200,172 @@ class CodexOsToolsTest(unittest.TestCase):
             data = json.loads(stdout.getvalue())
             self.assertEqual(data["result"], "BLOCKED")
             self.assertIn("read-only ./dev validation", data["results"][0]["note"])
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(
+                    run_codex_os_command(
+                        root,
+                        args(
+                            "run-validation",
+                            state_db,
+                            runtime,
+                            task_id="AM-FLOW-3B",
+                            execute=True,
+                            write=True,
+                            json=True,
+                        ),
+                    ),
+                    1,
+                )
+            knowledge = json.loads((runtime / "failure-knowledge.json").read_text(encoding="utf-8"))
+            self.assertTrue(knowledge["records"])
+            self.assertEqual(knowledge["records"][-1]["result"], "BLOCKED")
+
+    def test_flow_aggregates_start_and_validation_without_closing_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            dev = root / "dev"
+            dev.write_text("#!/bin/sh\n[ \"$1\" = \"check\" ] && exit 0\nexit 1\n", encoding="utf-8")
+            dev.chmod(dev.stat().st_mode | stat.S_IXUSR)
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(
+                    run_codex_os_command(
+                        root,
+                        args(
+                            "flow",
+                            state_db,
+                            runtime,
+                            task_id="AM-AGG",
+                            title="Aggregate flow",
+                            lane="Change",
+                            path=[".codex/README.md"],
+                            profile="minimal",
+                            execute=True,
+                            write=True,
+                            json=True,
+                        ),
+                    ),
+                    0,
+                )
+
+            data = json.loads(stdout.getvalue())
+            self.assertEqual(data["flow"], "flow")
+            self.assertEqual(data["validation"]["result"], "PASS")
+            self.assertEqual(data["action"], "ready-to-close")
+            self.assertIn("--from-latest-validation", data["next_commands"][0])
+            registry = json.loads((runtime / "task-registry.json").read_text(encoding="utf-8"))
+            self.assertEqual(registry["tasks"][0]["status"], "Running")
+            self.assertFalse((runtime / "close-flow.json").exists())
+
+    def test_flow_close_when_pass_uses_latest_validation_and_finishes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            (root / ".codex/templates").mkdir(parents=True)
+            (root / ".codex/templates/codex-evidence-template.md").write_text("Evidence <task-id>\n", encoding="utf-8")
+            (root / ".codex/templates/codex-closeout-template.md").write_text("Closeout <task-id>\n", encoding="utf-8")
+            dev = root / "dev"
+            dev.write_text("#!/bin/sh\n[ \"$1\" = \"check\" ] && exit 0\nexit 1\n", encoding="utf-8")
+            dev.chmod(dev.stat().st_mode | stat.S_IXUSR)
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(
+                    run_codex_os_command(
+                        root,
+                        args(
+                            "flow",
+                            state_db,
+                            runtime,
+                            task_id="AM-AGG-DONE",
+                            title="Aggregate close flow",
+                            lane="Change",
+                            path=[".codex/README.md"],
+                            profile="minimal",
+                            execute=True,
+                            close_when_pass=True,
+                            write=True,
+                            json=True,
+                        ),
+                    ),
+                    0,
+                )
+
+            data = json.loads(stdout.getvalue())
+            self.assertEqual(data["action"], "closed")
+            self.assertEqual(data["close_flow"]["result"], "UPDATED")
+            self.assertTrue(data["close_flow"]["from_latest_validation"])
+            registry = json.loads((runtime / "task-registry.json").read_text(encoding="utf-8"))
+            self.assertEqual(registry["tasks"][0]["status"], "Done")
+            self.assertTrue((runtime / "close-flow.json").is_file())
+
+    def test_go_done_todo_and_now_wrappers_use_safe_existing_flows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            subprocess.run(["git", "init"], cwd=root, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.name", "Test"], cwd=root, check=True)
+            (root / "dev").write_text("#!/bin/sh\n[ \"$1\" = \"check\" ] && exit 0\nexit 1\n", encoding="utf-8")
+            (root / "dev").chmod((root / "dev").stat().st_mode | stat.S_IXUSR)
+            subprocess.run(["git", "add", "dev"], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-m", "init"], cwd=root, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(
+                    run_codex_os_command(
+                        root,
+                        args(
+                            "go",
+                            state_db,
+                            runtime,
+                            task_id="AM-GO",
+                            title="Go wrapper",
+                            lane="Change",
+                            path=[".codex/README.md"],
+                            apply=True,
+                            json=True,
+                        ),
+                    ),
+                    0,
+                )
+            data = json.loads(stdout.getvalue())
+            self.assertEqual(data["flow"], "flow")
+            self.assertEqual(data["validation"]["result"], "PASS")
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(run_codex_os_command(root, args("now", state_db, runtime, task_id="AM-GO", json=True)), 0)
+            now = json.loads(stdout.getvalue())
+            self.assertIn("can_close", now)
+            self.assertTrue(now["validation_ready"])
+            self.assertIn("completion_confidence", now)
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(run_codex_os_command(root, args("done", state_db, runtime, task_id="AM-GO", json=True)), 0)
+            done = json.loads(stdout.getvalue())
+            self.assertEqual(done["flow"], "close-flow")
+            self.assertEqual(done["result"], "UPDATED")
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(run_codex_os_command(root, args("todo", state_db, runtime, action_items=True, json=True, limit=10)), 0)
+            todo = json.loads(stdout.getvalue())
+            self.assertEqual(todo["flow"], "ops-flow")
+            self.assertIn("review_cards", todo)
+            self.assertIn("manual_review_queue", todo["weekly"])
 
     def test_codex_os_refuses_workflow_execution_runtime_dir(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1141,6 +1485,86 @@ class CodexOsToolsTest(unittest.TestCase):
             categories = [step["category"] for step in data["steps"]]
             self.assertIn("manual-confirmation", categories)
             self.assertIn("validation", categories)
+            self.assertIn("failure_knowledge", data)
+
+    def test_repair_plan_flags_dry_run_coverage_and_failure_knowledge(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            self.assertEqual(run_codex_os_command(root, args("registry", state_db, runtime, registry_command="init", write=True)), 0)
+            self.assertEqual(
+                run_codex_os_command(
+                    root,
+                    args(
+                        "registry",
+                        state_db,
+                        runtime,
+                        registry_command="add",
+                        task_id="AM-REPAIR-COVERAGE",
+                        project_name="AreaMatrix",
+                        lane="Change",
+                        status="Running",
+                        validation="./dev check codex-os",
+                        write=True,
+                    ),
+                ),
+                0,
+            )
+            report_path = runtime / "validation/dry.json"
+            report_path.parent.mkdir(parents=True)
+            report_path.write_text(
+                json.dumps(
+                    {
+                        "flow": "run-validation",
+                        "task_id": "AM-REPAIR-COVERAGE",
+                        "execute": False,
+                        "result": "NOT-READY",
+                        "results": [{"command": "./dev check codex-os", "result": "SKIPPED", "exit_code": None}],
+                        "not_run": [{"command": "./dev check codex-os", "reason": "dry-run", "blocks_done": True}],
+                        "validation_summary": "./dev check codex-os: SKIPPED",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (runtime / "failure-knowledge.json").write_text(
+                json.dumps(
+                    {
+                        "records": [
+                            {
+                                "recorded_at": "2026-06-29T00:00:00Z",
+                                "task_id": "AM-OLD",
+                                "command": "./dev check codex-os",
+                                "result": "FAIL",
+                                "note": "old failure",
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(
+                    run_codex_os_command(
+                        root,
+                        args(
+                            "repair-plan",
+                            state_db,
+                            runtime,
+                            task_id="AM-REPAIR-COVERAGE",
+                            validation_report=str(report_path),
+                            json=True,
+                        ),
+                    ),
+                    0,
+                )
+            data = json.loads(stdout.getvalue())
+            categories = [step["category"] for step in data["steps"]]
+            self.assertIn("unrun-checks", categories)
+            self.assertTrue(data["failure_knowledge"])
 
     def test_close_flow_writes_evidence_closeout_and_finishes_task(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1202,6 +1626,9 @@ class CodexOsToolsTest(unittest.TestCase):
             self.assertEqual(task["validation_status"], "Pass")
             self.assertTrue((root / task["evidence_file"]).is_file())
             self.assertTrue((root / task["closeout_file"]).is_file())
+            self.assertTrue((root / task["handoff_file"]).is_file())
+            self.assertIn("completion_confidence", data)
+            self.assertIn("handoff_summary_file", data)
 
     def test_close_flow_done_rejects_recommended_or_dry_run_validation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1254,6 +1681,296 @@ class CodexOsToolsTest(unittest.TestCase):
                 )
             self.assertIn("fresh PASS/OK", str(dry_run.exception))
 
+    def test_close_flow_can_use_latest_executed_pass_validation_for_same_task(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            (root / ".codex/templates").mkdir(parents=True)
+            (root / ".codex/templates/codex-evidence-template.md").write_text("Evidence <task-id>\n", encoding="utf-8")
+            (root / ".codex/templates/codex-closeout-template.md").write_text("Closeout <task-id>\n", encoding="utf-8")
+            self.assertEqual(run_codex_os_command(root, args("registry", state_db, runtime, registry_command="init", write=True)), 0)
+            self.assertEqual(
+                run_codex_os_command(
+                    root,
+                    args(
+                        "registry",
+                        state_db,
+                        runtime,
+                        registry_command="add",
+                        task_id="AM-LATEST",
+                        project_name="AreaMatrix",
+                        lane="Change",
+                        status="Verifying",
+                        write=True,
+                    ),
+                ),
+                0,
+            )
+            report_path = runtime / "validation/latest-pass.json"
+            report_path.parent.mkdir(parents=True)
+            report_path.write_text(
+                json.dumps(
+                    {
+                        "generated_at": "2026-06-29T00:00:00Z",
+                        "flow": "run-validation",
+                        "task_id": "AM-LATEST",
+                        "profile": "standard",
+                        "execute": True,
+                        "result": "PASS",
+                        "results": [{"command": "./dev check codex-os", "result": "PASS", "exit_code": 0}],
+                        "validation_summary": "./dev check codex-os: PASS",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(
+                    run_codex_os_command(
+                        root,
+                        args(
+                            "close-flow",
+                            state_db,
+                            runtime,
+                            task_id="AM-LATEST",
+                            status="Done",
+                            from_latest_validation=True,
+                            write=True,
+                            json=True,
+                        ),
+                    ),
+                    0,
+                )
+
+            data = json.loads(stdout.getvalue())
+            self.assertTrue(data["from_latest_validation"])
+            self.assertEqual(data["latest_validation_report"]["result"], "PASS")
+            registry = json.loads((runtime / "task-registry.json").read_text(encoding="utf-8"))
+            task = registry["tasks"][0]
+            self.assertEqual(task["status"], "Done")
+            self.assertEqual(task["validation"], "./dev check codex-os: PASS")
+
+    def test_close_flow_latest_validation_rejects_dry_run_fail_and_wrong_task(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            self.assertEqual(run_codex_os_command(root, args("registry", state_db, runtime, registry_command="init", write=True)), 0)
+            self.assertEqual(
+                run_codex_os_command(
+                    root,
+                    args(
+                        "registry",
+                        state_db,
+                        runtime,
+                        registry_command="add",
+                        task_id="AM-STRICT",
+                        project_name="AreaMatrix",
+                        lane="Change",
+                        status="Verifying",
+                        write=True,
+                    ),
+                ),
+                0,
+            )
+            validation_dir = runtime / "validation"
+            validation_dir.mkdir(parents=True)
+            fixtures = [
+                ("wrong.json", "AM-OTHER", True, "PASS", [{"command": "./dev check codex-os", "result": "PASS", "exit_code": 0}], "./dev check codex-os: PASS"),
+                ("dry.json", "AM-STRICT", False, "NOT-READY", [{"command": "./dev check codex-os", "result": "SKIPPED", "exit_code": None}], "./dev check codex-os: SKIPPED"),
+                ("fail.json", "AM-STRICT", True, "FAIL", [{"command": "./dev check codex-os", "result": "FAIL", "exit_code": 1}], "./dev check codex-os: FAIL"),
+            ]
+            for name, task_id, execute, result, results, summary in fixtures:
+                (validation_dir / name).write_text(
+                    json.dumps(
+                        {
+                            "flow": "run-validation",
+                            "task_id": task_id,
+                            "execute": execute,
+                            "result": result,
+                            "results": results,
+                            "validation_summary": summary,
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+            with self.assertRaises(Exception) as caught:
+                run_codex_os_command(
+                    root,
+                    args("close-flow", state_db, runtime, task_id="AM-STRICT", status="Done", from_latest_validation=True, write=True),
+                )
+            self.assertIn("latest validation report", str(caught.exception))
+            self.assertIn("FAIL", str(caught.exception))
+
+    def test_close_flow_latest_validation_rejects_older_pass_after_new_fail(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            self.assertEqual(run_codex_os_command(root, args("registry", state_db, runtime, registry_command="init", write=True)), 0)
+            self.assertEqual(
+                run_codex_os_command(
+                    root,
+                    args(
+                        "registry",
+                        state_db,
+                        runtime,
+                        registry_command="add",
+                        task_id="AM-REGRESSED",
+                        project_name="AreaMatrix",
+                        lane="Change",
+                        status="Verifying",
+                        write=True,
+                    ),
+                ),
+                0,
+            )
+            validation_dir = runtime / "validation"
+            validation_dir.mkdir(parents=True)
+            pass_path = validation_dir / "a-pass.json"
+            pass_path.write_text(
+                json.dumps(
+                    {
+                        "flow": "run-validation",
+                        "task_id": "AM-REGRESSED",
+                        "execute": True,
+                        "result": "PASS",
+                        "results": [{"command": "./dev check codex-os", "result": "PASS", "exit_code": 0}],
+                        "validation_summary": "./dev check codex-os: PASS",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            fail_path = validation_dir / "z-fail.json"
+            fail_path.write_text(
+                json.dumps(
+                    {
+                        "flow": "run-validation",
+                        "task_id": "AM-REGRESSED",
+                        "execute": True,
+                        "result": "FAIL",
+                        "results": [{"command": "./dev check codex-os", "result": "FAIL", "exit_code": 1}],
+                        "validation_summary": "./dev check codex-os: FAIL",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            pass_path.touch()
+            os.utime(pass_path, (1_000_000, 1_000_000))
+            os.utime(fail_path, (1_000_010, 1_000_010))
+
+            with self.assertRaises(Exception) as caught:
+                run_codex_os_command(
+                    root,
+                    args("close-flow", state_db, runtime, task_id="AM-REGRESSED", status="Done", from_latest_validation=True, write=True),
+                )
+            self.assertIn("latest validation report", str(caught.exception))
+            self.assertIn("FAIL", str(caught.exception))
+
+    def test_close_flow_latest_validation_rejects_stale_fingerprint(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            subprocess.run(["git", "init"], cwd=root, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.name", "Test"], cwd=root, check=True)
+            (root / "dev").write_text("#!/bin/sh\n[ \"$1\" = \"check\" ] && exit 0\nexit 1\n", encoding="utf-8")
+            (root / "dev").chmod((root / "dev").stat().st_mode | stat.S_IXUSR)
+            (root / "tracked.txt").write_text("before\n", encoding="utf-8")
+            subprocess.run(["git", "add", "tracked.txt", "dev"], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-m", "init"], cwd=root, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            self.assertEqual(run_codex_os_command(root, args("registry", state_db, runtime, registry_command="init", write=True)), 0)
+            self.assertEqual(
+                run_codex_os_command(
+                    root,
+                    args(
+                        "registry",
+                        state_db,
+                        runtime,
+                        registry_command="add",
+                        task_id="AM-STALE",
+                        project_name="AreaMatrix",
+                        lane="Change",
+                        status="Verifying",
+                        validation="./dev check codex-os",
+                        write=True,
+                    ),
+                ),
+                0,
+            )
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(
+                    run_codex_os_command(
+                        root,
+                        args("run-validation", state_db, runtime, task_id="AM-STALE", path=["tracked.txt"], execute=True, write=True, json=True),
+                    ),
+                    0,
+                )
+            (root / "tracked.txt").write_text("after\n", encoding="utf-8")
+
+            with self.assertRaises(Exception) as caught:
+                run_codex_os_command(
+                    root,
+                    args("close-flow", state_db, runtime, task_id="AM-STALE", status="Done", from_latest_validation=True, write=True),
+                )
+            self.assertIn("stale", str(caught.exception))
+
+    def test_close_flow_latest_validation_rejects_empty_results(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            self.assertEqual(run_codex_os_command(root, args("registry", state_db, runtime, registry_command="init", write=True)), 0)
+            self.assertEqual(
+                run_codex_os_command(
+                    root,
+                    args(
+                        "registry",
+                        state_db,
+                        runtime,
+                        registry_command="add",
+                        task_id="AM-EMPTY",
+                        project_name="AreaMatrix",
+                        lane="Change",
+                        status="Verifying",
+                        write=True,
+                    ),
+                ),
+                0,
+            )
+            validation_dir = runtime / "validation"
+            validation_dir.mkdir(parents=True)
+            (validation_dir / "empty.json").write_text(
+                json.dumps(
+                    {
+                        "flow": "run-validation",
+                        "task_id": "AM-EMPTY",
+                        "execute": True,
+                        "result": "PASS",
+                        "results": [],
+                        "validation_summary": "./dev check codex-os: PASS",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(Exception) as caught:
+                run_codex_os_command(
+                    root,
+                    args("close-flow", state_db, runtime, task_id="AM-EMPTY", status="Done", from_latest_validation=True, write=True),
+                )
+            self.assertIn("no command results", str(caught.exception))
+
     def test_ops_flow_is_advisory_and_does_not_archive_threads(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -1275,6 +1992,58 @@ class CodexOsToolsTest(unittest.TestCase):
             self.assertEqual(data["flow"], "ops-flow")
             self.assertIn("advisory", data["policy"])
             self.assertTrue((runtime / "ops-flow.json").is_file())
+            conn = sqlite3.connect(state_db)
+            archived_count = conn.execute("SELECT COUNT(*) FROM threads WHERE archived = 1").fetchone()[0]
+            titles_after = conn.execute("SELECT id, title FROM threads ORDER BY id").fetchall()
+            conn.close()
+            self.assertEqual(archived_count, 1)
+            self.assertEqual(titles_after, titles_before)
+
+    def test_ops_flow_action_items_are_advisory_and_persist_full_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            self.assertEqual(run_codex_os_command(root, args("registry", state_db, runtime, registry_command="init", write=True)), 0)
+            self.assertEqual(
+                run_codex_os_command(
+                    root,
+                    args(
+                        "registry",
+                        state_db,
+                        runtime,
+                        registry_command="add",
+                        task_id="AM-OPS",
+                        project_name="AreaMatrix",
+                        lane="Change",
+                        status="Done",
+                        write=True,
+                    ),
+                ),
+                0,
+            )
+            conn = sqlite3.connect(state_db)
+            titles_before = conn.execute("SELECT id, title FROM threads ORDER BY id").fetchall()
+            conn.close()
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(
+                    run_codex_os_command(root, args("ops-flow", state_db, runtime, write=True, json=False, action_items=True, limit=10)),
+                    0,
+                )
+
+            self.assertIn("Action Items", stdout.getvalue())
+            data = json.loads((runtime / "ops-flow.json").read_text(encoding="utf-8"))
+            self.assertIn("archive_review", data)
+            self.assertIn("weekly", data)
+            self.assertTrue(data["action_items"])
+            self.assertTrue(all("recommended_command" in item for item in data["action_items"]))
+            self.assertTrue(all("preview_command" in item for item in data["action_items"]))
+            self.assertTrue(all("decision_options" in item for item in data["action_items"]))
+            self.assertTrue(data["review_cards"])
+            self.assertTrue(all("review_checklist" in card for card in data["review_cards"]))
             conn = sqlite3.connect(state_db)
             archived_count = conn.execute("SELECT COUNT(*) FROM threads WHERE archived = 1").fetchone()[0]
             titles_after = conn.execute("SELECT id, title FROM threads ORDER BY id").fetchall()
