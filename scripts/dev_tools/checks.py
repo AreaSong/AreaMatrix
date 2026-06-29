@@ -511,6 +511,22 @@ def run_task_loop_check(root: Path | None = None) -> int:
     return run_step([task_loop if task_loop.exists() else "./task-loop", "check"], cwd=root, check=False).returncode
 
 
+def run_codex_os_check(root: Path | None = None) -> int:
+    root = (root or project_root()).resolve()
+    checks = [
+        [root / "dev", "codex-os", "doctor"],
+        [root / "dev", "codex-os", "preflight"],
+        [root / "dev", "codex-os", "task", "--help"],
+        [root / "dev", "codex-os", "finish", "--help"],
+        ["python3", "-m", "unittest", "scripts.dev_tools.test_codex_os"],
+    ]
+    for argv in checks:
+        proc = run_step(argv, cwd=root, check=False)
+        if proc.returncode != 0:
+            return proc.returncode
+    return 0
+
+
 def run_diff_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     return run_step(["git", "diff", "--check"], cwd=root, check=False).returncode
@@ -968,6 +984,7 @@ def run_all_check(root: Path | None = None) -> int:
         ("governance", lambda: run_governance_check(root)),
         ("skills", lambda: run_skills_check(root)),
         ("quality smoke", lambda: run_quality_check(root)),
+        ("codex-os", lambda: run_codex_os_check(root)),
         ("wording audit", lambda: run_wording_audit(root)),
         ("task-loop", lambda: run_task_loop_check(root)),
         ("prompt doctor", lambda: run_prompts_check(root)),

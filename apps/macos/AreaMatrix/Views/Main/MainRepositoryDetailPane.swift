@@ -63,7 +63,7 @@ extension MainRepositoryDetailPane {
             } else if selection.isMultiple {
                 multiSelectionDetailPane
             } else if let detail = selectedFileDetail {
-                detailMetadataPane(detail)
+                selectedFileDetailPane(detail)
             } else if let error = detailErrorMapping {
                 MainRepositoryDetailErrorPane(
                     error: error,
@@ -107,114 +107,44 @@ extension MainRepositoryDetailPane {
         } message: { Text("Save or discard the AI summary draft before leaving this file summary.") }
     }
 
-    private func detailMetadataPane(_ detail: FileEntrySnapshot) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                Text(detail.currentName)
-                    .font(.headline)
-                    .textSelection(.enabled)
-                SyncConflictDetailBanner(conflict: syncConflict) { _ in
-                    onBeginSyncConflictReview(detail)
-                }
-                semanticSearchDetailBanner
-                Picker("Detail tab", selection: Binding(get: { selectedTab }, set: requestDetailTabChange)) {
-                    ForEach(DetailPaneTab.allCases) { tab in
-                        Text(tab.title).tag(tab)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                detailTabContent(for: detail)
-                MainRepositoryDetailFileActionMenu(
-                    detail: detail,
-                    disabledReason: writeActionDisabledReason(detail.id),
-                    onBeginRenameFile: onBeginRenameFile,
-                    onBeginChangeCategoryFile: onBeginChangeCategoryFile,
-                    onBeginClassifierCorrectionFile: onBeginClassifierCorrectionFile,
-                    onBeginAIClassificationSuggestionFile: onBeginAIClassificationSuggestionFile,
-                    onBeginDeleteFile: onBeginDeleteFile,
-                    onBeginICloudConflictResolution: onBeginICloudConflictResolution,
-                    onBeginSyncConflictReview: onBeginSyncConflictReview
-                )
-            }
-            .padding(18)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-        }
-    }
-
-    @ViewBuilder
-    private func detailTabContent(for detail: FileEntrySnapshot) -> some View {
-        switch selectedTab {
-        case .meta:
-            detailMetaTabContent(for: detail)
-        case .summary:
-            AISummaryEditor(
-                repoPath: repoPath,
-                fileID: detail.id,
-                privacyContext: summaryPrivacyContext(for: detail),
-                exitController: summaryExitController,
-                onOpenAISettings: onOpenAISettings,
-                onBackToDetail: { requestDetailTabChange(.meta) }
-            )
-        case .log:
-            DetailLogTabView(
-                selection: selection,
-                detailLogState: detailLogState,
-                diagnosticsState: detailLogDiagnosticsState,
-                externalCreateSyncState: detailExternalCreateSyncState,
-                onRefreshChangeLog: onRefreshChangeLog,
-                onRequestDiagnostics: onRequestDetailLogDiagnostics,
-                onConfirmDiagnostics: onConfirmDetailLogDiagnostics,
-                onCancelDiagnostics: onCancelDetailLogDiagnostics
-            )
-        case .note:
-            DetailNoteTabView(
-                model: noteModel,
-                file: detail,
-                writeBlock: noteWriteBlock,
-                onOpenNoteFile: onOpenNoteFile
-            )
-        }
-    }
-
-    private func summaryPrivacyContext(for detail: FileEntrySnapshot) -> AISummaryPrivacyContext {
-        AISummaryPrivacyContext(file: detail, tags: summaryPrivacyTags(for: detail))
-    }
-
-    private func summaryPrivacyTags(for detail: FileEntrySnapshot) -> [String] {
-        switch detailTagEditorState {
-        case let .loaded(fileID, tagSet) where fileID == detail.id:
-            tagSet.fileTags.map(\.value)
-        case let .loading(fileID, tagSet?) where fileID == detail.id:
-            tagSet.fileTags.map(\.value)
-        case let .failed(fileID, _, _, tagSet?) where fileID == detail.id:
-            tagSet.fileTags.map(\.value)
-        case .notLoaded, .loading, .loaded, .failed:
-            []
-        }
-    }
-
-    @ViewBuilder
-    private func detailMetaTabContent(for detail: FileEntrySnapshot) -> some View {
-        detailStatusSection
-        DetailTagSection(
-            file: detail,
+    private func selectedFileDetailPane(_ detail: FileEntrySnapshot) -> some View {
+        MainRepositorySelectedFileDetailPane(
+            selection: selection,
+            detail: detail,
+            syncConflict: syncConflict,
+            semanticDetail: semanticDetail,
+            selectedTab: selectedTab,
+            detailErrorMapping: detailErrorMapping,
+            isDetailLoading: isDetailLoading,
+            noteWriteBlock: noteWriteBlock,
+            detailLogState: detailLogState,
+            detailLogDiagnosticsState: detailLogDiagnosticsState,
+            detailExternalCreateSyncState: detailExternalCreateSyncState,
+            detailTagEditorState: detailTagEditorState,
+            detailTagSuggestionState: detailTagSuggestionState,
+            tagSuggestionPresentationRequest: tagSuggestionPresentationRequest,
+            detailTagUndoToast: detailTagUndoToast,
             repoPath: repoPath,
-            state: detailTagEditorState,
-            suggestionState: detailTagSuggestionState,
-            suggestionPresentationRequest: tagSuggestionPresentationRequest,
-            undoToast: detailTagUndoToast,
-            disabledReason: writeActionDisabledReason(detail.id),
-            tagActions: tagActions
+            tagActions: tagActions,
+            onRequestTabChange: requestDetailTabChange,
+            onRetrySelectedFileDetail: onRetrySelectedFileDetail,
+            onRefreshChangeLog: onRefreshChangeLog,
+            onRequestDetailLogDiagnostics: onRequestDetailLogDiagnostics,
+            onConfirmDetailLogDiagnostics: onConfirmDetailLogDiagnostics,
+            onCancelDetailLogDiagnostics: onCancelDetailLogDiagnostics,
+            onOpenNoteFile: onOpenNoteFile,
+            onBeginRenameFile: onBeginRenameFile,
+            onBeginChangeCategoryFile: onBeginChangeCategoryFile,
+            onBeginClassifierCorrectionFile: onBeginClassifierCorrectionFile,
+            onBeginAIClassificationSuggestionFile: onBeginAIClassificationSuggestionFile,
+            onBeginDeleteFile: onBeginDeleteFile,
+            onBeginICloudConflictResolution: onBeginICloudConflictResolution,
+            onBeginSyncConflictReview: onBeginSyncConflictReview,
+            onOpenAISettings: onOpenAISettings,
+            writeActionDisabledReason: writeActionDisabledReason,
+            summaryExitController: summaryExitController,
+            noteModel: noteModel
         )
-        DetailMetadataRows(detail: detail)
-    }
-
-    @ViewBuilder
-    private var semanticSearchDetailBanner: some View {
-        if let semanticDetail {
-            SemanticSearchDetailBanner(detail: semanticDetail)
-        }
     }
 
     private func applyDetailTabRequest(_ request: MainDetailTabRequest) {
@@ -242,17 +172,6 @@ extension MainRepositoryDetailPane {
         guard let tab = pendingSummaryExitTab else { return }
         pendingSummaryExitTab = nil
         selectedTab = tab
-    }
-
-    private var detailStatusSection: some View {
-        MainRepositoryDetailStatusSection(
-            error: detailErrorMapping,
-            isLoading: isDetailLoading,
-            selectedFile: selectedFileDetail,
-            onRetry: onRetrySelectedFileDetail,
-            onBeginDeleteFile: onBeginDeleteFile,
-            writeActionDisabledReason: writeActionDisabledReason
-        )
     }
 
     private func missingErrorFile() -> FileEntrySnapshot? {

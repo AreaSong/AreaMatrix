@@ -93,7 +93,7 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
         )
         let route = SyncConflictReviewRoute.fileDetail(repoPath: opening.config.repoPath, file: file)
 
-        assertTestMirrorDescription(of: detailPane.body, contains: "MainRepositoryDetailFileActionMenu")
+        assertTestMirrorDescription(of: detailPane.body, contains: "MainRepositorySelectedFileDetailPane")
         assertMainRepositoryDetailFileActionMenu(for: file, contains: [
             "Review Sync Conflict..."
         ])

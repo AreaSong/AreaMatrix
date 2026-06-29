@@ -8,6 +8,7 @@ description = "Tracked fixtures and docs that intentionally contain benign examp
 paths = [
   '''.codex/runtime/task-loop/progress-backups/progress-before-reset-example.json''',
   '''.codex/task-loop-progress-backups/progress-before-reset-example.json''',
+  '''apps/macos/AreaMatrixTests/AreaMatrixShellValidatePathTests.swift''',
 ]
 
 [[rules]]

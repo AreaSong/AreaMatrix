@@ -232,7 +232,7 @@ private func assertChangeCategoryDetailActions(
 ) {
     assertTestMirrorDescription(
         of: value,
-        contains: "MainRepositoryDetailFileActionMenu",
+        contains: "MainRepositorySelectedFileDetailPane",
         maxDepth: 8,
         file: file,
         line: line

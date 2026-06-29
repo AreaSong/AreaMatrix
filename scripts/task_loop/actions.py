@@ -128,6 +128,7 @@ _ACTION_SPECS = (
     ActionSpec("test", command="test", group="tool", label_key="action.test.label", note_key="action.test.note", passthrough=True),
     ActionSpec("bindings", command="bindings", group="tool", label_key="action.bindings.label", note_key="action.bindings.note", passthrough=True),
     ActionSpec("release", command="release", group="tool", label_key="action.release.label", note_key="action.release.note", passthrough=True),
+    ActionSpec("codex-os", command="codex-os", group="tool", label_key="action.codex-os.label", note_key="action.codex-os.note", passthrough=True),
     ActionSpec("changes", command="changes", group="workflow", label_key="action.changes.label", note_key="action.changes.note", passthrough=True),
     ActionSpec("workflow", command="workflow", group="workflow", label_key="action.workflow.label", note_key="action.workflow.note", passthrough=True),
     ActionSpec("tasks", command="tasks", group="workflow", label_key="action.tasks.label", note_key="action.tasks.note", passthrough=True),
@@ -164,7 +165,19 @@ MENUS = {
     "tools": MenuSpec(
         "tools",
         "submenu.tools.title",
-        ("check", "wording", "release", "processes", "workflow-status", "tasks-status", "workflow-doctor", "changes-preview", "language-menu", "help"),
+        (
+            "check",
+            "wording",
+            "release",
+            "codex-os",
+            "processes",
+            "workflow-status",
+            "tasks-status",
+            "workflow-doctor",
+            "changes-preview",
+            "language-menu",
+            "help",
+        ),
     ),
 }
 
@@ -213,6 +226,7 @@ REQUIRED_COMMANDS = (
     "test",
     "bindings",
     "release",
+    "codex-os",
     "changes",
     "workflow",
     "tasks",

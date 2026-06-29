@@ -35,7 +35,7 @@ struct SyncConflictReplaceConfirmationPanel: View {
 
     private func replacePlanSummary(_ plan: SyncConflictReplacePlanSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            metadataGrid(rows: [
+            SyncConflictReviewMetadataGrid(rows: [
                 ("Conflict item", preview.conflictID),
                 ("Old file path", plan.oldPath),
                 ("New file path", plan.newPath),
@@ -74,22 +74,6 @@ struct SyncConflictReplaceConfirmationPanel: View {
 
     private var canConfirm: Bool {
         disabledReason == nil && understandsReplace && !isConfirmed
-    }
-
-    private func metadataGrid(rows: [(String, String)]) -> some View {
-        Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 8) {
-            ForEach(rows, id: \.0) { row in
-                GridRow {
-                    Text(row.0)
-                        .foregroundStyle(.secondary)
-                    Text(row.1)
-                        .textSelection(.enabled)
-                        .lineLimit(2)
-                        .truncationMode(.middle)
-                }
-            }
-        }
-        .font(.callout)
     }
 
     private func hashDisplay(_ value: String?) -> String {

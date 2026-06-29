@@ -14,6 +14,7 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 ## 日常入口
 
 - Codex operating layer playbook：`.codex/references/codex-operating-layer-playbook.md`
+- Codex Operating System v1：`.codex/references/codex-operating-system.md`
 - Completion evidence checklist：`.codex/references/completion-evidence-checklist.md`
 - Debugging / failure attribution runbook：`.codex/references/debugging-failure-attribution-runbook.md`
 - Planning handoff runbook：`.codex/references/planning-handoff-runbook.md`

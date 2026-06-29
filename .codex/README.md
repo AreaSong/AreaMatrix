@@ -16,6 +16,11 @@
 - `../.agents/skills/`：Codex 官方 repo-local skill 发现入口；当前以 symlink 方式指向本目录下的 `skills-src/`。
 - `templates/prompt-task-template.md`：新建 prompt 任务的模板。
 - `templates/prompt-verify-template.md`：验收 prompt 的格式参考；实际优先由 runner 生成。
+- `templates/codex-intake-template.md`：Codex OS 任务进入模板，记录 lane、risk、source of truth、允许路径、自动化范围和验证计划。
+- `templates/codex-handoff-template.md`：Codex OS 恢复交接模板，记录当前状态、关键文件、验证、阻塞点和下一步。
+- `templates/codex-evidence-template.md`：Codex OS 验证证据模板，记录新鲜命令、结果、未验证项、drift 检查和剩余风险。
+- `templates/codex-closeout-template.md`：Codex OS 线程收尾模板，记录完成内容、验证、下一步入口和归档建议。
+- `templates/task-registry.example.json`：Codex OS 本机 task registry 示例，不是 live queue。
 - `runtime/`：本机运行态统一目录；只放日志、锁、控制请求、本地偏好和恢复快照，不作为业务源事实。
   - `runtime/task-loop/logs/`：自动任务循环的本地原始日志；`*.exec.log` 只作本机排障，不作为完成证据。
   - `runtime/task-loop/console/`：后台 Dev Console 输出。
@@ -24,6 +29,7 @@
   - `runtime/task-loop/tmp/`：本地临时保留目录。
   - `runtime/task-loop/progress-backups/`：本地 progress 恢复快照（reset/clear-stale 时写入），默认不进 Git；仓库仅跟踪脱敏 example fixture。
   - `runtime/dev-console/`：本地 Dev Console 偏好。
+  - `runtime/codex-os/`：Codex Operating System v1 的本地 dashboard、thread-health、task-registry 和 health report；只作操作面恢复索引，不是 live queue 或产品完成证据，默认 gitignored。
 - `workflow/versions/v1-mvp/evidence/task-loop-runs/`：可追溯、可提交的 run summary / index 证据，不属于 `.codex/` 的业务源事实。
 - Task loop 的状态 helper 位于 `scripts/task_loop/state.py`，Git checkpoint helper 位于 `scripts/task_loop/git.py`，完整自检入口是 `./task-loop check`。
 - Prompt 工程质量门禁位于 `workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md`；编码规范源事实仍在 `docs/development/coding-standards.md`。
@@ -41,3 +47,16 @@
 - Git checkpoint 策略见 `skills-src/areamatrix-git-checkpoint/`；默认 PASS task 本地 commit，push 需要显式 `GIT_CHECKPOINT=push`。
 - Task loop 的运行锁 `.codex/runtime/task-loop/lock/` 是本地协调缓存，不作为证据提交。
 - 旧路径 `.codex/task-loop-logs/`、`.codex/task-loop-progress-backups/`、`.codex/task-loop-lock/`、`.codex/task-loop-control/`、`.codex/task-loop-console/`、`.codex/dev-console/` 只作历史兼容读取；新运行态写入 `runtime/`。
+
+## Codex OS 任务入口
+
+日常任务优先由 Codex 自动使用：
+
+```bash
+./dev codex-os preflight --task-id <task-id> --strict
+./dev codex-os task start --task-id <task-id> --write
+./dev codex-os finish --task-id <task-id> --status Done --validation "<fresh result>" --evidence-note "<summary>" --write
+```
+
+这些命令只管理 `.codex/runtime/codex-os/` 的本机操作层状态。它们不会写 Codex 内部 SQLite，
+不会归档线程，不会启动或替代 `./task-loop`，也不会写入 `workflow/versions/<version>/execution/**`。

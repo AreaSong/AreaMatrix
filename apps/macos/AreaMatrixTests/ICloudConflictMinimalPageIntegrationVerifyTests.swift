@@ -21,7 +21,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
 
         await model.selectFiles([conflictFile.id])
         let detailPaneBody = makeDetailPaneBody(model: model)
-        assertTestMirrorDescription(of: detailPaneBody, contains: "MainRepositoryDetailFileActionMenu")
+        assertTestMirrorDescription(of: detailPaneBody, contains: "MainRepositorySelectedFileDetailPane")
         assertMainRepositoryDetailFileActionMenu(for: conflictFile, contains: [
             "Resolve iCloud Conflict..."
         ])

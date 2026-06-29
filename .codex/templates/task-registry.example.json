@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "generated_by": "./dev codex-os registry init",
+  "updated_at": "2026-06-29T00:00:00Z",
+  "tasks": [
+    {
+      "task_id": "AM-20260629-001",
+      "project": "AreaMatrix",
+      "lane": "Change",
+      "status": "Ready",
+      "risk_level": "Medium",
+      "confirmation_status": "Not Required",
+      "owner_thread": "",
+      "handoff_file": "tasks/active/<task>/HANDOFF.md",
+      "evidence_file": "",
+      "closeout_file": "",
+      "next_action": "Read handoff and continue from Next Action.",
+      "validation": "./dev codex-os doctor",
+      "validation_status": "Recommended",
+      "automation_scope": "registry-write",
+      "archive_recommendation": "keep",
+      "updated_at": "2026-06-29T00:00:00Z"
+    }
+  ]
+}

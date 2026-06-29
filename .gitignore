@@ -63,6 +63,7 @@ AreaMatrix-dev/
 .codex/runtime/task-loop/tmp/
 .codex/runtime/task-loop/console/
 .codex/runtime/dev-console/
+.codex/runtime/codex-os/
 .codex/runtime/local-state-backups/
 .codex/task-loop-progress-backups/*
 !.codex/task-loop-progress-backups/progress-before-reset-example.json

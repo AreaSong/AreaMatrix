@@ -170,62 +170,13 @@ private extension SyncConflictReviewView {
     private func conflictContent(_ conflict: SyncConflictSnapshot) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                summarySection(conflict)
-                versionSection(conflict.affectedFiles)
+                SyncConflictReviewSummarySection(conflict: conflict)
+                SyncConflictReviewVersionsSection(files: conflict.affectedFiles)
                 resolutionSection(conflict)
             }
             .padding(24)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-    }
-
-    private func summarySection(_ conflict: SyncConflictSnapshot) -> some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(conflict.summaryDisplay)
-                    .font(.headline)
-                metadataGrid(rows: [
-                    ("Conflict type", conflict.conflictType.displayName),
-                    ("File", conflict.primaryPath),
-                    ("Status", conflict.status.displayName),
-                    ("Severity", conflict.severity.displayName),
-                    ("Versions", "\(conflict.versionCount)"),
-                    ("Source", conflict.sourceDisplay),
-                    ("Detected", conflict.detectedDisplay),
-                    ("Conflict ID", conflict.conflictID)
-                ])
-            }
-        }
-        .accessibilityIdentifier(SyncConflictReviewAccessibilityID.summary)
-    }
-
-    private func versionSection(_ files: [SyncConflictAffectedFileSnapshot]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Versions")
-                .font(.headline)
-            ForEach(files) { file in
-                versionCard(file)
-            }
-        }
-        .accessibilityIdentifier(SyncConflictReviewAccessibilityID.versions)
-    }
-
-    private func versionCard(_ file: SyncConflictAffectedFileSnapshot) -> some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(file.role.displayName)
-                    .font(.headline)
-                metadataGrid(rows: [
-                    ("Path", file.path),
-                    ("Size", file.sizeDisplay),
-                    ("Modified", file.modifiedDisplay),
-                    ("Hash", file.hashDisplay),
-                    ("Source platform", file.sourceDisplay),
-                    ("File ID", file.fileID.map(String.init) ?? "Unknown")
-                ])
-            }
-        }
-        .accessibilityIdentifier(SyncConflictReviewAccessibilityID.versionCard(fileID: file.id))
     }
 
     private func resolutionSection(_: SyncConflictSnapshot) -> some View {
@@ -274,21 +225,21 @@ private extension SyncConflictReviewView {
         case let .loaded(preview):
             previewSummary(preview)
         case let .failed(strategy, mapping):
-            mappedFailure("Could not build \(strategy.title) impact.", mapping: mapping)
+            SyncConflictReviewMappedFailure(title: "Could not build \(strategy.title) impact.", mapping: mapping)
         }
     }
 
     private func previewSummary(_ preview: SyncConflictResolutionPreviewSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            metadataGrid(rows: [
+            SyncConflictReviewMetadataGrid(rows: [
                 ("Strategy", preview.resolution.title),
                 ("Status after apply", preview.statusAfter.displayName),
                 ("Canonical path", preview.canonicalPath ?? "Unchanged"),
                 ("Change log", preview.changeLogAction),
-                ("Affected records", listDisplay(preview.affectedFileIDs.map(String.init))),
-                ("Kept paths", listDisplay(preview.keptPaths)),
-                ("Retained paths", listDisplay(preview.retainedPaths)),
-                ("Trash paths", listDisplay(preview.plannedTrashPaths))
+                ("Affected records", SyncConflictReviewDisplayValue.list(preview.affectedFileIDs.map(String.init))),
+                ("Kept paths", SyncConflictReviewDisplayValue.list(preview.keptPaths)),
+                ("Retained paths", SyncConflictReviewDisplayValue.list(preview.retainedPaths)),
+                ("Trash paths", SyncConflictReviewDisplayValue.list(preview.plannedTrashPaths))
             ])
             if preview.requiresReplaceConfirmation {
                 Label(
@@ -302,7 +253,7 @@ private extension SyncConflictReviewView {
                 Label(blockedReason, systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.orange)
             }
-            versionImpactList(preview.versionImpacts)
+            SyncConflictReviewVersionImpactList(impacts: preview.versionImpacts)
         }
         .accessibilityIdentifier(SyncConflictReviewAccessibilityID.impact)
     }
@@ -320,100 +271,17 @@ private extension SyncConflictReviewView {
         }
     }
 
-    private func versionImpactList(_ impacts: [SyncConflictVersionImpactSnapshot]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(SyncConflictReviewCopy.impactTitle)
-                .font(.headline)
-            ForEach(impacts) { impact in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(impact.path)
-                        .font(.callout.weight(.semibold))
-                        .lineLimit(2)
-                        .truncationMode(.middle)
-                    metadataGrid(rows: [
-                        ("Role", impact.role.displayName),
-                        ("File ID", impact.fileIDDisplay),
-                        ("Keep", yesNo(impact.willKeep)),
-                        ("Canonical", yesNo(impact.willBeCanonical)),
-                        ("User visible", yesNo(impact.willRemainUserVisible)),
-                        ("Move to Trash", yesNo(impact.willMoveToTrash)),
-                        ("Recovery target", impact.recoveryDisplay),
-                        ("Reason", impact.reasonDisplay)
-                    ])
-                }
-                Divider()
-            }
-        }
-    }
-
     @ViewBuilder
     private var applyResultContent: some View {
         switch model.applyState {
         case .idle, .applying:
             EmptyView()
         case let .succeeded(report):
-            applySuccess(report)
+            SyncConflictReviewApplySuccess(report: report)
         case let .failed(strategy, mapping):
-            mappedFailure("Apply failed for \(strategy.title).", mapping: mapping)
+            SyncConflictReviewMappedFailure(title: "Apply failed for \(strategy.title).", mapping: mapping)
                 .accessibilityIdentifier(SyncConflictReviewAccessibilityID.applyFailure)
         }
-    }
-
-    private func applySuccess(_ report: SyncConflictResolveReportSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Resolution applied.", systemImage: "checkmark.circle")
-                .foregroundStyle(.green)
-            metadataGrid(rows: [
-                ("Conflict ID", report.conflictID),
-                ("Status", report.status.displayName),
-                ("Change log", report.changeLogAction),
-                ("Kept paths", listDisplay(report.keptPaths)),
-                ("Retained paths", listDisplay(report.retainedPaths)),
-                ("Trashed paths", listDisplay(report.trashedPaths)),
-                ("Undo token", report.undoToken ?? "None")
-            ])
-        }
-        .accessibilityIdentifier(SyncConflictReviewAccessibilityID.applySuccess)
-    }
-
-    private func mappedFailure(_ title: String, mapping: CoreErrorMappingSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(title, systemImage: "exclamationmark.triangle")
-                .foregroundStyle(.red)
-            Text(mapping.userMessage)
-            Text(mapping.suggestedAction)
-                .foregroundStyle(.secondary)
-            if !mapping.rawContext.isEmpty {
-                Text(mapping.rawContext)
-                    .font(.system(.caption, design: .monospaced))
-                    .textSelection(.enabled)
-            }
-        }
-        .font(.callout)
-    }
-
-    private func listDisplay(_ values: [String]) -> String {
-        values.isEmpty ? "None" : values.joined(separator: ", ")
-    }
-
-    private func yesNo(_ value: Bool) -> String {
-        value ? "Yes" : "No"
-    }
-
-    private func metadataGrid(rows: [(String, String)]) -> some View {
-        Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 8) {
-            ForEach(rows, id: \.0) { row in
-                GridRow {
-                    Text(row.0)
-                        .foregroundStyle(.secondary)
-                    Text(row.1)
-                        .textSelection(.enabled)
-                        .lineLimit(2)
-                        .truncationMode(.middle)
-                }
-            }
-        }
-        .font(.callout)
     }
 
     private var footer: some View {

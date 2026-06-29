@@ -11,6 +11,7 @@ from .build import run_bindings_update, run_core_build
 from .changes import run_changes_doctor, run_changes_generate, run_changes_preview
 from .checks import (
     run_all_check,
+    run_codex_os_check,
     run_diff_check,
     run_governance_check,
     run_prompts_check,
@@ -22,6 +23,7 @@ from .checks import (
     run_task_loop_check,
 )
 from .common import ToolError, print_error, project_root
+from .codex_os import run_codex_os_command
 from .discussion import run_workflow_discuss
 from .macos import run_macos_tests
 from .middle_layer import run_workflow_middle
@@ -47,16 +49,39 @@ from .workflow import (
 )
 from .wording import run_wording_audit
 
+CODEX_OS_LANES = sorted(["Quick", "Change", "Mission-Critical", "Explore", "Review", "Ops"])
+CODEX_OS_STATUSES = sorted(["Backlog", "Ready", "Running", "Waiting Confirmation", "Blocked", "Verifying", "Done", "Archived", "Abandoned"])
+CODEX_OS_RISK_LEVELS = sorted(["Low", "Medium", "High", "Mission-Critical"])
+CODEX_OS_CONFIRMATION_STATUSES = sorted(["Not Required", "Required", "Granted", "Blocked"])
+CODEX_OS_VALIDATION_STATUSES = sorted(["Not Started", "Recommended", "Running", "Pass", "Fail", "Blocked", "Not-Ready", "Skipped"])
+CODEX_OS_AUTOMATION_SCOPES = sorted(["observe-only", "registry-write", "validation-run", "manual-confirmation-required"])
+CODEX_OS_ARCHIVE_RECOMMENDATIONS = sorted(["keep", "archive", "review"])
+
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="./dev", description="AreaMatrix developer tools")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    def add_codex_os_common(target: argparse.ArgumentParser) -> None:
+        target.add_argument("--state-db", help="Codex state SQLite path; defaults to ~/.codex/state_5.sqlite")
+        target.add_argument("--runtime-dir", help="Output directory; defaults to .codex/runtime/codex-os")
+        target.add_argument("--project", help="Limit thread health to an exact cwd/project path")
+
+    def add_codex_os_task_fields(target: argparse.ArgumentParser) -> None:
+        target.add_argument("--risk-level", choices=CODEX_OS_RISK_LEVELS)
+        target.add_argument("--confirmation-status", choices=CODEX_OS_CONFIRMATION_STATUSES)
+        target.add_argument("--evidence-file", help="Evidence file path or local reference")
+        target.add_argument("--closeout-file", help="Closeout file path or local reference")
+        target.add_argument("--evidence-note", help="Short evidence note when no evidence file exists")
+        target.add_argument("--closeout-note", help="Short closeout note when no closeout file exists")
+        target.add_argument("--validation-status", choices=CODEX_OS_VALIDATION_STATUSES)
+        target.add_argument("--automation-scope", choices=CODEX_OS_AUTOMATION_SCOPES)
+
     check = subparsers.add_parser("check", help="Run repo health checks")
     check.add_argument(
         "target",
         nargs="?",
-        choices=["governance", "skills", "quality", "wording", "task-loop", "prompts", "diff", "secrets", "all", "task"],
+        choices=["governance", "skills", "quality", "wording", "task-loop", "prompts", "diff", "secrets", "codex-os", "all", "task"],
     )
     check.add_argument("task_label", nargs="?", help="Task label for './dev check task', for example 4-1/task-15")
 
@@ -198,6 +223,128 @@ def _build_parser() -> argparse.ArgumentParser:
     tasks_show.add_argument("--verify", action="store_true", help="Print only verify.md")
     tasks_show.add_argument("--evidence", action="store_true", help="Print only evidence.md")
 
+    codex_os = subparsers.add_parser("codex-os", help="Inspect Codex workspace state without mutating Codex internals")
+    add_codex_os_common(codex_os)
+    codex_os_sub = codex_os.add_subparsers(dest="codex_os_command", required=True)
+    codex_os_status = codex_os_sub.add_parser("status", help="Print a read-only thread health summary")
+    add_codex_os_common(codex_os_status)
+    codex_os_status.add_argument("--limit", type=int, default=20, help="Rows to print per health bucket")
+    codex_os_health = codex_os_sub.add_parser("thread-health", help="Generate thread health and archive candidate data")
+    add_codex_os_common(codex_os_health)
+    codex_os_health.add_argument("--limit", type=int, default=50, help="Rows to include per health bucket")
+    codex_os_health.add_argument("--json", action="store_true", help="Print JSON instead of the human summary")
+    codex_os_health.add_argument("--write", action="store_true", help="Write .codex/runtime/codex-os/thread-health.json")
+    codex_os_archive = codex_os_sub.add_parser("archive-candidates", help="List archive candidates without archiving")
+    add_codex_os_common(codex_os_archive)
+    codex_os_archive.add_argument("--limit", type=int, default=50, help="Candidate rows to print")
+    codex_os_archive.add_argument("--json", action="store_true", help="Print candidate JSON")
+    codex_os_dashboard = codex_os_sub.add_parser("dashboard", help="Render or write dashboard and health report")
+    add_codex_os_common(codex_os_dashboard)
+    codex_os_dashboard.add_argument("--limit", type=int, default=50, help="Rows to include in thread-health.json when writing")
+    codex_os_dashboard.add_argument("--write", action="store_true", help="Write dashboard.md, health-report.md, and thread-health.json")
+    codex_os_registry = codex_os_sub.add_parser("registry", help="Manage the repo-local Codex OS task registry")
+    add_codex_os_common(codex_os_registry)
+    codex_os_registry_sub = codex_os_registry.add_subparsers(dest="registry_command", required=True)
+    codex_os_registry_init = codex_os_registry_sub.add_parser("init", help="Preview or create task-registry.json")
+    add_codex_os_common(codex_os_registry_init)
+    codex_os_registry_init.add_argument("--write", action="store_true", help="Create the registry")
+    codex_os_registry_init.add_argument("--force", action="store_true", help="Overwrite an existing registry")
+    codex_os_registry_list = codex_os_registry_sub.add_parser("list", help="List registered tasks")
+    add_codex_os_common(codex_os_registry_list)
+    codex_os_registry_add = codex_os_registry_sub.add_parser("add", help="Preview or add a registered task")
+    add_codex_os_common(codex_os_registry_add)
+    codex_os_registry_add.add_argument("--task-id", required=True, help="Task id, for example AM-20260629-001")
+    codex_os_registry_add.add_argument("--project-name", default="AreaMatrix", help="Project display name")
+    codex_os_registry_add.add_argument("--lane", choices=CODEX_OS_LANES, required=True)
+    codex_os_registry_add.add_argument(
+        "--status",
+        choices=CODEX_OS_STATUSES,
+        default="Ready",
+    )
+    codex_os_registry_add.add_argument("--owner-thread", help="Owner Codex thread id")
+    codex_os_registry_add.add_argument("--handoff-file", help="Handoff file path")
+    codex_os_registry_add.add_argument("--next-action", help="Next action text")
+    codex_os_registry_add.add_argument("--validation", help="Validation command or summary")
+    codex_os_registry_add.add_argument("--archive-recommendation", choices=CODEX_OS_ARCHIVE_RECOMMENDATIONS, default="keep")
+    add_codex_os_task_fields(codex_os_registry_add)
+    codex_os_registry_add.add_argument("--write", action="store_true", help="Write the new task")
+    codex_os_registry_update = codex_os_registry_sub.add_parser("update", help="Preview or update a registered task")
+    add_codex_os_common(codex_os_registry_update)
+    codex_os_registry_update.add_argument("--task-id", required=True, help="Task id to update")
+    codex_os_registry_update.add_argument("--lane", choices=CODEX_OS_LANES)
+    codex_os_registry_update.add_argument(
+        "--status",
+        choices=CODEX_OS_STATUSES,
+    )
+    codex_os_registry_update.add_argument("--owner-thread", help="Owner Codex thread id")
+    codex_os_registry_update.add_argument("--handoff-file", help="Handoff file path")
+    codex_os_registry_update.add_argument("--next-action", help="Next action text")
+    codex_os_registry_update.add_argument("--validation", help="Validation command or summary")
+    codex_os_registry_update.add_argument("--archive-recommendation", choices=CODEX_OS_ARCHIVE_RECOMMENDATIONS)
+    add_codex_os_task_fields(codex_os_registry_update)
+    codex_os_registry_update.add_argument("--write", action="store_true", help="Write the update")
+    codex_os_registry_status = codex_os_registry_sub.add_parser("status", help="Validate the task registry")
+    add_codex_os_common(codex_os_registry_status)
+    codex_os_intake = codex_os_sub.add_parser("intake", help="Print the task intake template")
+    add_codex_os_common(codex_os_intake)
+    codex_os_intake.add_argument("--lane", choices=CODEX_OS_LANES)
+    codex_os_intake.add_argument("--task-id", help="Replace <task-id> in the intake template")
+    codex_os_handoff = codex_os_sub.add_parser("handoff", help="Print the handoff template")
+    add_codex_os_common(codex_os_handoff)
+    codex_os_handoff.add_argument("--task-id", help="Replace <task-id> in the handoff template")
+    codex_os_evidence = codex_os_sub.add_parser("evidence", help="Print the evidence template")
+    add_codex_os_common(codex_os_evidence)
+    codex_os_evidence.add_argument("--task-id", help="Replace <task-id> in the evidence template")
+    codex_os_closeout = codex_os_sub.add_parser("closeout", help="Print the thread closeout template")
+    add_codex_os_common(codex_os_closeout)
+    codex_os_closeout.add_argument("--task-id", help="Replace <task-id> in the closeout template")
+    codex_os_doctor = codex_os_sub.add_parser("doctor", help="Validate Codex OS docs, templates, registry, and readable state")
+    add_codex_os_common(codex_os_doctor)
+    codex_os_preflight = codex_os_sub.add_parser("preflight", help="Run Codex OS task preflight without touching Codex internals")
+    add_codex_os_common(codex_os_preflight)
+    codex_os_preflight.add_argument("--task-id", help="Task id to inspect")
+    codex_os_preflight.add_argument("--strict", action="store_true", help="Return non-zero when required lifecycle checks fail")
+    codex_os_preflight.add_argument("--json", action="store_true", help="Print JSON instead of the human report")
+    codex_os_preflight.add_argument("--write-dashboard", action="store_true", help="Refresh dashboard and health report")
+    codex_os_preflight.add_argument("--limit", type=int, default=50, help="Rows to include when --write-dashboard refreshes thread-health.json")
+    codex_os_task = codex_os_sub.add_parser("task", help="Manage a Codex OS task lifecycle wrapper")
+    add_codex_os_common(codex_os_task)
+    codex_os_task_sub = codex_os_task.add_subparsers(dest="task_command", required=True)
+    codex_os_task_list = codex_os_task_sub.add_parser("list", help="List registered Codex OS tasks")
+    add_codex_os_common(codex_os_task_list)
+    codex_os_task_show = codex_os_task_sub.add_parser("show", help="Show one registered Codex OS task")
+    add_codex_os_common(codex_os_task_show)
+    codex_os_task_show.add_argument("--task-id", required=True)
+    codex_os_task_show.add_argument("--json", action="store_true", help="Print JSON instead of the human report")
+    codex_os_task_next = codex_os_task_sub.add_parser("next", help="Show the first non-terminal registered task")
+    add_codex_os_common(codex_os_task_next)
+    codex_os_task_next.add_argument("--lane", choices=CODEX_OS_LANES, help="Limit next task to one lane")
+    codex_os_task_next.add_argument("--json", action="store_true", help="Print JSON instead of the human report")
+    for name, help_text in (
+        ("start", "Mark a registered task as Running"),
+        ("verify", "Mark a registered task as Verifying"),
+        ("block", "Mark a registered task as Blocked"),
+    ):
+        task_parser = codex_os_task_sub.add_parser(name, help=help_text)
+        add_codex_os_common(task_parser)
+        task_parser.add_argument("--task-id", required=True)
+        task_parser.add_argument("--next-action", help="Next action or recovery note")
+        task_parser.add_argument("--validation", help="Validation command or summary")
+        task_parser.add_argument("--validation-status", choices=CODEX_OS_VALIDATION_STATUSES)
+        task_parser.add_argument("--automation-scope", choices=CODEX_OS_AUTOMATION_SCOPES)
+        task_parser.add_argument("--write", action="store_true", help="Update the registry")
+    codex_os_finish = codex_os_sub.add_parser("finish", help="Close a Codex OS task with validation and evidence references")
+    add_codex_os_common(codex_os_finish)
+    codex_os_finish.add_argument("--task-id", required=True)
+    codex_os_finish.add_argument("--status", choices=["Done", "Blocked", "Abandoned"], required=True)
+    codex_os_finish.add_argument("--validation", help="Fresh validation command/result summary")
+    codex_os_finish.add_argument("--handoff-file", help="Handoff file path")
+    codex_os_finish.add_argument("--next-action", help="Next action when blocked or follow-up remains")
+    codex_os_finish.add_argument("--archive-recommendation", choices=CODEX_OS_ARCHIVE_RECOMMENDATIONS, default="keep")
+    add_codex_os_task_fields(codex_os_finish)
+    codex_os_finish.add_argument("--json", action="store_true", help="Print JSON instead of the human report")
+    codex_os_finish.add_argument("--write", action="store_true", help="Update the registry")
+
     workflow = subparsers.add_parser("workflow", help="Manage versioned workflow templates, plans, and queue candidates")
     workflow_sub = workflow.add_subparsers(dest="workflow_command", required=True)
     workflow_sub.add_parser("doctor", help="Validate versioned workflow structure and gates")
@@ -327,6 +474,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 return run_diff_check(root)
             if args.target == "secrets":
                 return run_secrets_check(root)
+            if args.target == "codex-os":
+                return run_codex_os_check(root)
             if args.target == "all":
                 return run_all_check(root)
             if args.target == "task":
@@ -374,6 +523,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return run_backlog_command(root, args)
         if args.command == "tasks":
             return run_tasks_command(root, args)
+        if args.command == "codex-os":
+            return run_codex_os_command(root, args)
         if args.command == "workflow" and args.workflow_command == "doctor":
             return run_workflow_doctor(root, args)
         if args.command == "workflow" and args.workflow_command == "status":

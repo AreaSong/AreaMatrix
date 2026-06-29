@@ -216,7 +216,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
         XCTAssertEqual(model.applyState, .succeeded(.syncConflictReviewResolveFixture()))
         XCTAssertEqual(model.applyDisabledReason, "Resolution has already been applied.")
         XCTAssertFalse(model.canApplyResolution)
-        assertSyncConflictReviewAppliedBody(body)
+        assertSyncConflictReviewAppliedBody(body, report: .syncConflictReviewResolveFixture())
     }
 
     @MainActor
@@ -392,11 +392,17 @@ private func assertSyncConflictReviewLoadedBody(_ body: Any) {
     ])
 }
 
-private func assertSyncConflictReviewAppliedBody(_ body: Any) {
+private func assertSyncConflictReviewAppliedBody(
+    _ body: Any,
+    report: SyncConflictResolveReportSnapshot
+) {
     assertTestMirrorDescription(of: body, contains: [
+        "SyncConflictReviewApplySuccess"
+    ])
+    assertTestMirrorDescription(of: SyncConflictReviewApplySuccess(report: report).body, contains: [
         SyncConflictReviewAccessibilityID.applySuccess,
         "Resolution applied.",
-        "conflict_resolved_keep_both"
+        report.changeLogAction
     ])
 }
 
