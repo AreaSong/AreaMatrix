@@ -65,7 +65,7 @@ Codex 在 AreaMatrix 中处理任务时，按以下顺序定位上下文：
 - `areamatrix-file-safety`：用户文件、`.areamatrix/` 元数据与恢复边界。
 - `areamatrix-workflow-planning`：v* 版本 planning gate、middle-layer handoff 和 prompt 生成前门禁。
 - `areamatrix-residual-ledger`：release blocker、accepted exception、historical reference、template-only 与 task-facing residual 索引。
-- `areamatrix-codex-os`：Codex OS intake、registry、preflight、context、resume、validation recommendation、evidence、closeout、finish、dashboard、weekly review、health score 与归档建议。
+- `areamatrix-codex-os`：Codex OS start-flow、run-validation、repair-plan、close-flow、ops-flow，以及 intake、registry、preflight、context、resume、subagent plan、evidence、finish、dashboard、weekly review、health score 与归档建议。
 
 ## Health Checks
 

@@ -14,15 +14,20 @@ from .codex_os_automation import (
     relative_to_root as _relative_to_root,
     render_registry_audit as _render_registry_audit,
     run_archive_review,
+    run_close_flow,
     run_context,
     run_diagnose,
     run_health_score,
     run_lifecycle,
     run_new,
+    run_ops_flow,
+    run_repair_plan_flow,
     run_recommend_validation,
     run_resume,
     run_runbook,
+    run_start_flow,
     run_title_suggestions,
+    run_validation_flow,
     run_weekly,
     template_output_path as _template_output_path,
     update_task_reference as _update_task_reference,
@@ -60,6 +65,7 @@ from .codex_os_state import (
     snapshot_to_json,
     thread_to_json,
 )
+from .codex_os_subagents import run_subagent_plan
 from .common import ToolError
 
 
@@ -166,8 +172,9 @@ def _recommended_commands(task: dict[str, Any]) -> list[str]:
     lane = task.get("lane") or "Change"
     commands = ["./dev codex-os doctor"]
     validation = task.get("validation")
-    if validation and _looks_like_command(str(validation)):
-        commands.append(str(validation))
+    validation_commands = _validation_commands(str(validation)) if validation else []
+    if validation_commands:
+        commands.extend(validation_commands)
     elif lane == "Quick":
         commands.append("./dev check codex-os")
     elif lane == "Mission-Critical":
@@ -179,9 +186,36 @@ def _recommended_commands(task: dict[str, Any]) -> list[str]:
     return commands
 
 
+def _validation_commands(value: str) -> list[str]:
+    commands: list[str] = []
+    for raw in value.replace("\n", ";").split(";"):
+        candidate = _strip_validation_result(raw.strip())
+        if _looks_like_command(candidate) and candidate not in commands:
+            commands.append(candidate)
+    return commands
+
+
+def _strip_validation_result(value: str) -> str:
+    for suffix in (
+        ": PASS",
+        ": FAIL",
+        ": WARN",
+        ": OK",
+        ": BLOCKED",
+        ": NOT-READY",
+        ": SKIPPED",
+        ": Pass",
+        ": Fail",
+    ):
+        if value.endswith(suffix):
+            return value[: -len(suffix)].strip()
+    return value
+
+
 def _looks_like_command(value: str) -> bool:
     text = value.strip()
-    return text.startswith("./") and ";" not in text and "\n" not in text
+    prefixes = ("./", "python3 ", "PYTHONDONTWRITEBYTECODE=1 ", "cd ", "xcodebuild ", "git ", "bash ")
+    return text.startswith(prefixes) and ";" not in text and "\n" not in text
 
 
 def _preflight_check(name: str, status: str, detail: str = "") -> dict[str, str]:
@@ -612,7 +646,14 @@ def run_archive_candidates(root: Path, args: Namespace) -> int:
     snapshot = build_snapshot(_state_db_from_args(args), project=args.project)
     candidates = [item for item in snapshot["threads"] if item.bucket == "Archive Candidate"]
     if args.json:
-        print(json.dumps([thread_to_json(item) for item in candidates[: args.limit]], ensure_ascii=False, indent=2))
+        data = {
+            "generated_at": iso_now(),
+            "project_filter": snapshot["project_filter"],
+            "policy": "recommendations only; no archive action is performed",
+            "bucket_counts": snapshot["bucket_counts"],
+            "archive_candidates": [thread_to_json(item) for item in candidates[: args.limit]],
+        }
+        print(json.dumps(data, ensure_ascii=False, indent=2))
         return 0
     print("Archive candidates")
     print()
@@ -676,6 +717,16 @@ def run_codex_os_command(root: Path, args: Namespace) -> int:
         return run_resume(root, args)
     if args.codex_os_command == "recommend-validation":
         return run_recommend_validation(root, args)
+    if args.codex_os_command == "start-flow":
+        return run_start_flow(root, args)
+    if args.codex_os_command == "run-validation":
+        return run_validation_flow(root, args)
+    if args.codex_os_command == "repair-plan":
+        return run_repair_plan_flow(root, args)
+    if args.codex_os_command == "close-flow":
+        return run_close_flow(root, args)
+    if args.codex_os_command == "ops-flow":
+        return run_ops_flow(root, args)
     if args.codex_os_command == "archive-review":
         return run_archive_review(root, args)
     if args.codex_os_command == "title-suggestions":
@@ -690,6 +741,8 @@ def run_codex_os_command(root: Path, args: Namespace) -> int:
         return run_runbook(root, args)
     if args.codex_os_command == "lifecycle":
         return run_lifecycle(root, args)
+    if args.codex_os_command == "subagent-plan":
+        return run_subagent_plan(root, args)
     if args.codex_os_command == "registry":
         return run_registry(root, args)
     if args.codex_os_command in TEMPLATE_FILES:

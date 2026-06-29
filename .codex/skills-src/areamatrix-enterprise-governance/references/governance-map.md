@@ -16,5 +16,5 @@ When policy changes:
 
 1. Update the source-of-truth document.
 2. Sync PR/issue templates and skills only as adapters.
-3. Update `scripts/check-governance.sh` if the policy should be mechanically enforced.
+3. Update `scripts/dev_tools/checks.py` if the policy should be mechanically enforced by `./dev check governance`.
 4. Run governance, skill, task-loop, and prompt checks.

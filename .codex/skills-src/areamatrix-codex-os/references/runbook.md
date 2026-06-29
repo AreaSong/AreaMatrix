@@ -3,13 +3,12 @@
 ## Start
 
 ```bash
-./dev codex-os status
-./dev codex-os context
-./dev codex-os resume
-./dev codex-os preflight --task-id <task-id> --strict
+./dev codex-os start-flow --task-id <task-id> --changed --write
+./dev codex-os start-flow --title "<title>" --lane Change --changed --write
 ```
 
 Use `./dev codex-os new --lane <lane> --title "<title>" --write` only for a local Codex OS task registry entry. This does not create a live task-loop task.
+Use lower-level `context`, `resume`, and `preflight` when start-flow needs step-by-step diagnosis.
 
 ## Work
 
@@ -20,32 +19,44 @@ Use `./dev codex-os new --lane <lane> --title "<title>" --write` only for a loca
 
 When the user asks for subagents, split read-heavy work into code paths, docs/governance, validation, and risk review. The main agent owns writes, validation interpretation, and final status.
 
+```bash
+./dev codex-os subagent-plan --task-id <task-id>
+```
+
+`subagent-plan` only recommends read-only delegation prompts and owner boundaries. It does not spawn agents or grant write access.
+
 ## Validate
 
 ```bash
-./dev codex-os recommend-validation
+./dev codex-os run-validation --task-id <task-id> --changed
+./dev codex-os run-validation --task-id <task-id> --changed --execute --write
 ```
 
-This command recommends checks only. Run chosen commands explicitly, then record fresh results in evidence or finish fields.
+The first command is dry-run preview only. `--execute` runs allowlisted validation commands and records fresh results. Dry-run output is not completion evidence.
+
+## Repair
+
+```bash
+./dev codex-os repair-plan --task-id <task-id> --changed
+```
+
+Use this after failed preflight, failed validation, missing evidence / closeout, missing confirmation, or registry drift. It is read-only.
 
 ## Finish
 
 ```bash
-./dev codex-os evidence --task-id <task-id> --write
-./dev codex-os closeout --task-id <task-id> --write
-./dev codex-os finish --task-id <task-id> --status Done --validation "<fresh result>" --evidence-file <path> --closeout-file <path> --write
+./dev codex-os close-flow --task-id <task-id> --status Done --validation "<fresh result>" --write
+./dev codex-os close-flow --task-id <task-id> --status Blocked --next-action "<next action>" --write
 ```
 
 `Done` requires validation and evidence or closeout. `Blocked` requires next action or handoff. Archive fields are recommendations only.
+Use lower-level `evidence`, `closeout`, and `finish` when manual file paths or custom closeout references are needed.
 
 ## Operate
 
 ```bash
-./dev codex-os archive-review --write
-./dev codex-os title-suggestions --write
-./dev codex-os weekly --write
-./dev codex-os health-score --write
+./dev codex-os ops-flow --write
 ./dev codex-os diagnose --task-id <task-id>
 ```
 
-These commands are advisory. They do not modify Codex thread titles, archive state, live workflow execution, or product source files.
+`ops-flow` is advisory. It does not modify Codex thread titles, archive state, live workflow execution, or product source files.

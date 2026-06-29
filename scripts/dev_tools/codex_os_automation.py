@@ -5,8 +5,11 @@ from __future__ import annotations
 from argparse import Namespace
 from collections import Counter
 import json
+import os
 from pathlib import Path
+import shlex
 import subprocess
+import time
 from typing import Any, Callable
 
 from .codex_os_registry import (
@@ -242,8 +245,9 @@ def _recommended_commands(task: dict[str, Any]) -> list[str]:
     lane = task.get("lane") or "Change"
     commands = ["./dev codex-os doctor"]
     validation = task.get("validation")
-    if validation and str(validation).strip().startswith("./") and ";" not in str(validation) and "\n" not in str(validation):
-        commands.append(str(validation))
+    validation_commands = _validation_commands(str(validation)) if validation else []
+    if validation_commands:
+        commands.extend(validation_commands)
     elif lane == "Quick":
         commands.append("./dev check codex-os")
     elif lane == "Mission-Critical":
@@ -251,6 +255,37 @@ def _recommended_commands(task: dict[str, Any]) -> list[str]:
     else:
         commands.extend(["./dev check codex-os", "./dev check quality"])
     return commands
+
+
+def _validation_commands(value: str) -> list[str]:
+    commands: list[str] = []
+    for raw in value.replace("\n", ";").split(";"):
+        candidate = _strip_validation_result(raw.strip())
+        if _looks_like_command(candidate) and candidate not in commands:
+            commands.append(candidate)
+    return commands
+
+
+def _strip_validation_result(value: str) -> str:
+    for suffix in (
+        ": PASS",
+        ": FAIL",
+        ": WARN",
+        ": OK",
+        ": BLOCKED",
+        ": NOT-READY",
+        ": SKIPPED",
+        ": Pass",
+        ": Fail",
+    ):
+        if value.endswith(suffix):
+            return value[: -len(suffix)].strip()
+    return value
+
+
+def _looks_like_command(value: str) -> bool:
+    prefixes = ("./", "python3 ", "PYTHONDONTWRITEBYTECODE=1 ", "cd ", "xcodebuild ", "git ", "bash ")
+    return value.startswith(prefixes) and ";" not in value and "\n" not in value
 
 
 def run_new(root: Path, args: Namespace) -> int:
@@ -423,6 +458,10 @@ def _render_resume(data: dict[str, Any]) -> str:
         lines.append("Manual Confirmations")
         lines.append("")
         lines.extend(f"- {item}" for item in data["manual_confirmations"])
+    lines.append("")
+    lines.append("Recommended Validation")
+    lines.append("")
+    lines.extend(f"- `{command}`" for command in data["recommended_commands"])
     lines.append("")
     lines.append("Next Commands")
     lines.append("")
@@ -851,6 +890,8 @@ def _codex_os_runbook() -> str:
 - Change: use read-only subagents for code/docs/tests/risk, then let the main agent write.
 - Mission-Critical: explain impact, risk, validation, and rollback; wait for explicit confirmation before writes.
 
+Use `./dev codex-os subagent-plan --task-id <task-id>` to generate a structured read-only delegation plan.
+
 ## Validate
 
 1. `./dev codex-os recommend-validation`
@@ -936,3 +977,779 @@ def _render_lifecycle(data: dict[str, Any]) -> str:
     lines.append("")
     lines.extend(f"- `{command}`" for command in data["allowed_next_commands"])
     return "\n".join(lines).rstrip() + "\n"
+
+
+def run_start_flow(root: Path, args: Namespace) -> int:
+    from .codex_os_subagents import build_subagent_plan
+
+    runtime_dir = _runtime_dir_from_args(root, args)
+    registry = _load_or_default_registry(args, runtime_dir)
+    task = _resolve_start_flow_task(root, args, runtime_dir, registry)
+    task_id = str(task.get("task_id", ""))
+    context_args = _namespace_for_flow(
+        args,
+        task_id=task_id,
+        path=getattr(args, "path", []) or [],
+        changed=getattr(args, "changed", False),
+    )
+    context_data = _build_context_data(root, context_args, runtime_dir)
+    preflight = _flow_preflight(root, args, runtime_dir, task)
+    validation = build_validation_recommendation(
+        root,
+        getattr(args, "path", []) or [],
+        include_changed=getattr(args, "changed", False) or not getattr(args, "path", []),
+    )
+    registered_task_id = task_id if find_task(registry, task_id) is not None else None
+    subagent_args = _namespace_for_flow(
+        args,
+        task_id=registered_task_id,
+        lane=task.get("lane"),
+        risk_level=task.get("risk_level"),
+        path=getattr(args, "path", []) or [],
+        changed=getattr(args, "changed", False),
+    )
+    subagent_plan = build_subagent_plan(root, subagent_args)
+    lifecycle = _lifecycle_data(task)
+    result = _flow_result(preflight["checks"])
+    action = "preview"
+    registry_path_value = ""
+    if args.write and result != "FAIL":
+        if find_task(registry, task_id) is None:
+            registry.setdefault("tasks", []).append(task)
+            action = "created_and_started"
+        else:
+            action = "started"
+        updates = {
+            "status": "Running",
+            "validation": "; ".join(item["command"] for item in validation["commands"]),
+            "validation_status": "Recommended",
+            "automation_scope": "registry-write",
+        }
+        apply_task_updates(task, updates)
+        registry_path_value = str(_write_task_registry(runtime_dir, registry))
+        lifecycle = _lifecycle_data(task)
+    elif args.write and result == "FAIL":
+        action = "blocked_by_preflight"
+    data = {
+        "generated_at": iso_now(),
+        "flow": "start-flow",
+        "result": result,
+        "write": args.write,
+        "action": action,
+        "registry_path": registry_path_value,
+        "task": task,
+        "context": context_data,
+        "preflight": preflight,
+        "subagent_plan": subagent_plan,
+        "validation_recommendation": validation,
+        "lifecycle": lifecycle,
+        "guardrails": _flow_guardrails(),
+        "next_commands": _start_flow_next_commands(task_id, result),
+    }
+    if args.write:
+        write_json(runtime_dir / "start-flow.json", data)
+        _write_text(runtime_dir / "start-flow.md", _render_start_flow(data))
+    _emit_flow(data, args.json, _render_start_flow)
+    return 1 if args.strict and result == "FAIL" else 0
+
+
+def _load_or_default_registry(args: Namespace, runtime_dir: Path) -> dict[str, Any]:
+    registry = load_registry(runtime_dir)
+    if registry is not None:
+        return registry
+    if getattr(args, "title", None):
+        return default_registry()
+    raise ToolError("task registry is missing; pass --title to preview a new task or run registry init", code=1)
+
+
+def _resolve_start_flow_task(
+    root: Path,
+    args: Namespace,
+    runtime_dir: Path,
+    registry: dict[str, Any],
+) -> dict[str, Any]:
+    if getattr(args, "task_id", None):
+        task = find_task(registry, args.task_id)
+        if task is not None:
+            return task
+        if not getattr(args, "title", None):
+            raise ToolError(f"task not found: {args.task_id}", code=1)
+    if not getattr(args, "title", None):
+        task = _next_registry_task(registry.get("tasks", []), getattr(args, "lane", None))
+        if task is None:
+            raise ToolError("no matching task; pass --task-id or --title", code=1)
+        return task
+    task_id = getattr(args, "task_id", None) or _generated_task_id(args.title, args.lane or "Change")
+    if find_task(registry, task_id):
+        raise ToolError(f"task already exists: {task_id}", code=1)
+    validation = build_validation_recommendation(
+        root,
+        getattr(args, "path", []) or [],
+        include_changed=getattr(args, "changed", False) or not getattr(args, "path", []),
+    )
+    return {
+        "task_id": task_id,
+        "project": getattr(args, "project_name", None) or "AreaMatrix",
+        "title": args.title,
+        "lane": args.lane or "Change",
+        "status": "Ready",
+        "owner_thread": getattr(args, "owner_thread", None) or "",
+        "handoff_file": getattr(args, "handoff_file", None) or "",
+        "next_action": getattr(args, "next_action", None) or f"Start Codex OS task: {args.title}",
+        "validation": "; ".join(item["command"] for item in validation["commands"]),
+        "archive_recommendation": "keep",
+        "risk_level": getattr(args, "risk_level", None) or _infer_task_risk(args.lane or "Change", getattr(args, "path", []) or []),
+        "confirmation_status": getattr(args, "confirmation_status", None) or "Not Required",
+        "validation_status": "Recommended",
+        "automation_scope": "registry-write",
+        "created_at": iso_now(),
+        "updated_at": iso_now(),
+    }
+
+
+def _infer_task_risk(lane: str, paths: list[str]) -> str:
+    if lane == "Mission-Critical":
+        return "Mission-Critical"
+    if any(path.startswith(hint) for path in paths for hint in HIGH_RISK_PATH_HINTS):
+        return "High"
+    return "Medium" if lane in {"Change", "Review", "Ops"} else "Low"
+
+
+def _flow_preflight(root: Path, args: Namespace, runtime_dir: Path, task: dict[str, Any]) -> dict[str, Any]:
+    registry = load_registry(runtime_dir)
+    checks: list[dict[str, str]] = []
+    manual_confirmations = _manual_confirmations(task)
+    checks.append(_flow_check("task registry", "OK" if registry is not None else "WARN", "available" if registry is not None else "missing; new task preview"))
+    checks.append(_flow_check("task", "OK", f"{task.get('task_id')} ({task.get('status')})"))
+    if task.get("handoff_file"):
+        status = "OK" if _relative_path_exists(root, str(task.get("handoff_file"))) else "WARN"
+        checks.append(_flow_check("handoff file", status, str(task.get("handoff_file"))))
+    else:
+        checks.append(_flow_check("handoff file", "WARN", "not set"))
+    checks.append(_flow_check("validation", "OK" if task.get("validation") else "WARN", task.get("validation") or "will be recommended"))
+    git_paths, git_error = read_git_status_paths(root)
+    checks.append(_flow_check("git worktree", "WARN" if git_paths or git_error else "OK", git_error or f"{len(git_paths)} changed path(s)"))
+    if _task_needs_confirmation(task) and task.get("confirmation_status") != "Granted":
+        checks.append(_flow_check("manual confirmation", "FAIL", "high-risk task requires explicit confirmation"))
+    return {
+        "result": _flow_result(checks),
+        "strict": getattr(args, "strict", False),
+        "checks": checks,
+        "manual_confirmations": manual_confirmations,
+    }
+
+
+def _flow_check(name: str, status: str, detail: str = "") -> dict[str, str]:
+    return {"name": name, "status": status, "detail": detail}
+
+
+def _flow_result(checks: list[dict[str, str]]) -> str:
+    if any(check["status"] == "FAIL" for check in checks):
+        return "FAIL"
+    if any(check["status"] == "WARN" for check in checks):
+        return "WARN"
+    return "PASS"
+
+
+def _namespace_for_flow(args: Namespace, **overrides: Any) -> Namespace:
+    values = dict(vars(args))
+    values.update(overrides)
+    return Namespace(**values)
+
+
+def _flow_guardrails() -> list[str]:
+    return [
+        "Codex OS writes only local operating-layer runtime or registry state.",
+        "No Codex thread is archived or renamed automatically.",
+        "No Codex internal SQLite writes are performed.",
+        "No workflow/versions/<version>/execution/** live state is written.",
+        "Subagent output is advisory and never replaces fresh main-agent validation.",
+    ]
+
+
+def _start_flow_next_commands(task_id: str, result: str) -> list[str]:
+    if result == "FAIL":
+        return [f"./dev codex-os repair-plan --task-id {task_id} --changed"]
+    return [
+        f"./dev codex-os run-validation --task-id {task_id} --changed --execute",
+        f"./dev codex-os close-flow --task-id {task_id} --status Done --validation '<fresh result>' --write",
+    ]
+
+
+def _emit_flow(data: dict[str, Any], as_json: bool, renderer: Callable[[dict[str, Any]], str]) -> None:
+    if as_json:
+        print(json.dumps(data, ensure_ascii=False, indent=2))
+    else:
+        print(renderer(data))
+
+
+def _render_start_flow(data: dict[str, Any]) -> str:
+    lines = _flow_header("Codex OS start flow", data)
+    task = data["task"]
+    lines.append("")
+    lines.append("Task")
+    lines.append("")
+    for key in ("task_id", "title", "lane", "status", "risk_level", "confirmation_status", "validation_status"):
+        if task.get(key):
+            lines.append(f"- {key}: {task[key]}")
+    lines.append("")
+    lines.append("Preflight")
+    lines.append("")
+    for check in data["preflight"]["checks"]:
+        detail = f" - {check['detail']}" if check.get("detail") else ""
+        lines.append(f"- {check['status']}: {check['name']}{detail}")
+    _append_named_list(lines, "Manual Confirmations", data["preflight"].get("manual_confirmations", []))
+    lines.append("")
+    lines.append("Subagent Plan")
+    lines.append("")
+    lines.append(f"- recommended: {data['subagent_plan']['subagents_recommended']}")
+    for role in data["subagent_plan"]["roles"]:
+        lines.append(f"- {role['role']} ({role['mode']})")
+    lines.append("")
+    lines.append("Recommended Validation")
+    lines.append("")
+    for item in data["validation_recommendation"]["commands"]:
+        lines.append(f"- `{item['command']}` - {item['reason']}")
+    _append_named_list(lines, "Next Commands", data["next_commands"], code=True)
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def run_validation_flow(root: Path, args: Namespace) -> int:
+    runtime_dir = _runtime_dir_from_args(root, args)
+    task = _load_task_if_present(runtime_dir, getattr(args, "task_id", None))
+    recommendation = build_validation_recommendation(
+        root,
+        getattr(args, "path", []) or [],
+        include_changed=getattr(args, "changed", False) or not getattr(args, "path", []),
+    )
+    selected_commands = _selected_validation_commands(task, recommendation)
+    execution_policy = _validation_execution_policy(args)
+    results: list[dict[str, Any]] = []
+    if args.execute:
+        for command in selected_commands:
+            result = _execute_validation_command(root, command, getattr(args, "timeout", 600))
+            results.append(result)
+            if result["result"] == "BLOCKED":
+                break
+    else:
+        results = [_dry_validation_result(command) for command in selected_commands]
+    validation_result = _aggregate_validation_results(results, executed=args.execute)
+    report = {
+        "generated_at": iso_now(),
+        "flow": "run-validation",
+        "task_id": getattr(args, "task_id", None),
+        "execute": args.execute,
+        "write": args.write,
+        "execution_policy": execution_policy,
+        "recommendation": recommendation,
+        "selected_commands": selected_commands,
+        "results": results,
+        "result": validation_result,
+        "validation_summary": _validation_summary(results),
+        "guardrails": _flow_guardrails(),
+        "next_commands": _validation_next_commands(getattr(args, "task_id", None), validation_result),
+    }
+    if args.write:
+        report_path = runtime_dir / "validation" / f"{_safe_name(getattr(args, 'task_id', None))}-{_timestamp_slug()}.json"
+        report["report_path"] = str(report_path)
+        write_json(report_path, report)
+        _write_text(report_path.with_suffix(".md"), _render_validation_flow(report))
+        _update_validation_task(runtime_dir, getattr(args, "task_id", None), report, report_path)
+    _emit_flow(report, args.json, _render_validation_flow)
+    return 1 if validation_result in {"FAIL", "BLOCKED"} else 0
+
+
+def _selected_validation_commands(task: dict[str, Any] | None, recommendation: dict[str, Any]) -> list[str]:
+    commands: list[str] = []
+    if task and task.get("validation"):
+        commands.extend(_validation_commands(str(task.get("validation"))))
+    commands.extend(item["command"] for item in recommendation["commands"])
+    return list(dict.fromkeys(command for command in commands if command))
+
+
+def _validation_execution_policy(args: Namespace) -> str:
+    if args.execute:
+        return "execute selected allowlisted validation commands and record fresh results"
+    return "dry-run preview only; commands are not executed without --execute"
+
+
+def _dry_validation_result(command: str) -> dict[str, Any]:
+    return {
+        "command": command,
+        "result": "SKIPPED",
+        "exit_code": None,
+        "duration_seconds": 0.0,
+        "stdout_tail": "",
+        "stderr_tail": "",
+        "note": "dry-run preview; pass --execute to run",
+    }
+
+
+def _execute_validation_command(root: Path, command: str, timeout_seconds: int) -> dict[str, Any]:
+    started = time.monotonic()
+    allowed, reason = _is_allowed_validation_command(command)
+    if not allowed:
+        return {
+            "command": command,
+            "result": "BLOCKED",
+            "exit_code": None,
+            "duration_seconds": 0.0,
+            "stdout_tail": "",
+            "stderr_tail": "",
+            "note": reason,
+        }
+    try:
+        proc = subprocess.run(
+            _command_argv(command),
+            cwd=root,
+            env=_command_env(command),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=timeout_seconds,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        duration = round(time.monotonic() - started, 3)
+        return {
+            "command": command,
+            "result": "BLOCKED",
+            "exit_code": None,
+            "duration_seconds": duration,
+            "stdout_tail": _tail(exc.stdout or ""),
+            "stderr_tail": _tail(exc.stderr or ""),
+            "note": f"timed out after {timeout_seconds}s",
+        }
+    duration = round(time.monotonic() - started, 3)
+    return {
+        "command": command,
+        "result": "PASS" if proc.returncode == 0 else "FAIL",
+        "exit_code": proc.returncode,
+        "duration_seconds": duration,
+        "stdout_tail": _tail(proc.stdout),
+        "stderr_tail": _tail(proc.stderr),
+        "note": "",
+    }
+
+
+def _is_allowed_validation_command(command: str) -> tuple[bool, str]:
+    blocked_chars = (";", "\n", "||", "|", ">", "<", "`", "$(", "${")
+    if any(token in command for token in blocked_chars):
+        return False, "blocked shell metacharacter in validation command"
+    if "&&" in command and not (command.startswith("cd core && cargo ") and command.count("&&") == 1):
+        return False, "blocked shell command chain in validation command"
+    allowed_prefixes = (
+        "./dev ",
+        "PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile ",
+        "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest ",
+        "python3 -m py_compile ",
+        "python3 -m unittest ",
+        "cd core && cargo ",
+        "xcodebuild -project apps/macos/AreaMatrix.xcodeproj ",
+    )
+    if not command.startswith(allowed_prefixes):
+        return False, "command is outside the Codex OS validation allowlist"
+    return True, ""
+
+
+def _command_env(command: str) -> dict[str, str]:
+    env = dict(os.environ)
+    if command.startswith("PYTHONDONTWRITEBYTECODE=1 "):
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
+    return env
+
+
+def _command_argv(command: str) -> list[str]:
+    text = command
+    if text.startswith("PYTHONDONTWRITEBYTECODE=1 "):
+        text = text[len("PYTHONDONTWRITEBYTECODE=1 ") :]
+    if text.startswith("cd core && "):
+        return ["bash", "-lc", text]
+    return shlex.split(text)
+
+
+def _tail(text: str, *, limit: int = 4000) -> str:
+    return text[-limit:] if len(text) > limit else text
+
+
+def _aggregate_validation_results(results: list[dict[str, Any]], *, executed: bool) -> str:
+    if not executed:
+        return "NOT-READY"
+    if any(item["result"] == "BLOCKED" for item in results):
+        return "BLOCKED"
+    if any(item["result"] == "FAIL" for item in results):
+        return "FAIL"
+    return "PASS"
+
+
+def _validation_summary(results: list[dict[str, Any]]) -> str:
+    parts = [f"{item['command']}: {item['result']}" for item in results]
+    return "; ".join(parts)
+
+
+def _validation_next_commands(task_id: str | None, result: str) -> list[str]:
+    if not task_id:
+        return ["./dev codex-os repair-plan --changed"]
+    if result == "PASS":
+        return [f"./dev codex-os close-flow --task-id {task_id} --status Done --validation '<fresh result>' --write"]
+    return [f"./dev codex-os repair-plan --task-id {task_id} --changed"]
+
+
+def _update_validation_task(runtime_dir: Path, task_id: str | None, report: dict[str, Any], report_path: Path) -> None:
+    if not task_id:
+        return
+    status = {
+        "PASS": "Pass",
+        "FAIL": "Fail",
+        "BLOCKED": "Blocked",
+        "NOT-READY": "Not-Ready",
+    }[report["result"]]
+    updates = {
+        "validation": report["validation_summary"],
+        "validation_status": status,
+        "automation_scope": "validation-run" if report["execute"] else "observe-only",
+        "next_action": "; ".join(report["next_commands"]),
+        "validation_report_file": relative_to_root(runtime_dir.parent.parent.parent, report_path),
+    }
+    update_task_reference(runtime_dir, task_id, updates)
+
+
+def _render_validation_flow(data: dict[str, Any]) -> str:
+    lines = _flow_header("Codex OS run validation", data)
+    lines.append(f"- execution_policy: {data['execution_policy']}")
+    if data.get("report_path"):
+        lines.append(f"- report_path: {data['report_path']}")
+    lines.append("")
+    lines.append("Selected Commands")
+    lines.append("")
+    lines.extend(f"- `{command}`" for command in data["selected_commands"]) if data["selected_commands"] else lines.append("- none")
+    lines.append("")
+    lines.append("Results")
+    lines.append("")
+    for item in data["results"]:
+        lines.append(f"- {item['result']}: `{item['command']}` ({item['exit_code']}) {item.get('note', '')}".rstrip())
+    _append_named_list(lines, "Warnings", data["recommendation"].get("warnings", []))
+    _append_named_list(lines, "Next Commands", data["next_commands"], code=True)
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def run_repair_plan_flow(root: Path, args: Namespace) -> int:
+    runtime_dir = _runtime_dir_from_args(root, args)
+    diagnose_args = _namespace_for_flow(args, changed=getattr(args, "changed", False), path=getattr(args, "path", []) or [])
+    diagnosis = _diagnose_data(root, diagnose_args, runtime_dir)
+    validation_report = _load_validation_report(root, runtime_dir, getattr(args, "validation_report", None))
+    steps = _repair_steps(diagnosis, validation_report)
+    data = {
+        "generated_at": iso_now(),
+        "flow": "repair-plan",
+        "task_id": getattr(args, "task_id", None),
+        "result": "READY" if steps else "NO-ACTION",
+        "policy": "read-only repair planning; no files are modified",
+        "diagnosis": diagnosis,
+        "validation_report": validation_report,
+        "steps": steps,
+        "guardrails": _flow_guardrails(),
+    }
+    if args.write:
+        write_json(runtime_dir / "repair-plan.json", data)
+        _write_text(runtime_dir / "repair-plan.md", _render_repair_plan_flow(data))
+    _emit_flow(data, args.json, _render_repair_plan_flow)
+    return 0
+
+
+def _load_validation_report(root: Path, runtime_dir: Path, explicit: str | None) -> dict[str, Any] | None:
+    if explicit:
+        path = Path(explicit).expanduser()
+        if not path.is_absolute():
+            path = root / path
+        if not path.is_file():
+            raise ToolError(f"validation report not found: {path}", code=1)
+        return json.loads(path.read_text(encoding="utf-8"))
+    reports = sorted((runtime_dir / "validation").glob("*.json"), key=lambda item: item.stat().st_mtime, reverse=True)
+    if not reports:
+        return None
+    return json.loads(reports[0].read_text(encoding="utf-8"))
+
+
+def _repair_steps(diagnosis: dict[str, Any], validation_report: dict[str, Any] | None) -> list[dict[str, str]]:
+    steps: list[dict[str, str]] = []
+    for item in diagnosis["registry_audit"]["issues"]:
+        message = item["message"]
+        if "missing granted confirmation" in message:
+            steps.append(_repair_step("manual-confirmation", item.get("severity", "FAIL"), "Record explicit impact, risk, validation, and rollback confirmation before writes."))
+        elif "does not exist" in message:
+            steps.append(_repair_step("missing-reference", item.get("severity", "WARN"), f"Regenerate or correct the referenced file: {message}"))
+        elif "no evidence" in message or "no closeout" in message:
+            steps.append(_repair_step("missing-evidence", item.get("severity", "WARN"), "Run close-flow with fresh validation and write evidence/closeout references."))
+        else:
+            steps.append(_repair_step("registry", item.get("severity", "WARN"), message))
+    for warning in diagnosis.get("task_warnings", []):
+        steps.append(_repair_step("task-lifecycle", "WARN", warning))
+    for item in diagnosis.get("manual_confirmations", []):
+        steps.append(_repair_step("manual-confirmation", "FAIL", item))
+    if validation_report:
+        for result in validation_report.get("results", []):
+            if result.get("result") in {"FAIL", "BLOCKED"}:
+                steps.append(_repair_step("validation", result["result"], f"Inspect `{result['command']}`: {result.get('note') or 'non-zero validation result'}"))
+    if not steps and diagnosis["result"] != "OK":
+        steps.append(_repair_step("diagnose", diagnosis["result"], "Review diagnose output and rerun start-flow after correction."))
+    return steps
+
+
+def _repair_step(category: str, severity: str, action: str) -> dict[str, str]:
+    return {"category": category, "severity": severity, "action": action}
+
+
+def _render_repair_plan_flow(data: dict[str, Any]) -> str:
+    lines = _flow_header("Codex OS repair plan", data)
+    lines.append(f"- policy: {data['policy']}")
+    lines.append("")
+    lines.append("Diagnosis")
+    lines.append("")
+    lines.append(f"- result: {data['diagnosis']['result']}")
+    lines.append(f"- registry_audit: {data['diagnosis']['registry_audit']['result']}")
+    lines.append("")
+    lines.append("Repair Steps")
+    lines.append("")
+    if data["steps"]:
+        for index, step in enumerate(data["steps"], start=1):
+            lines.append(f"{index}. {step['severity']} / {step['category']}: {step['action']}")
+    else:
+        lines.append("- none")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def run_close_flow(root: Path, args: Namespace) -> int:
+    runtime_dir = _runtime_dir_from_args(root, args)
+    registry = require_registry(runtime_dir)
+    task = find_task(registry, args.task_id)
+    if task is None:
+        raise ToolError(f"task not found: {args.task_id}", code=1)
+    validation_summary = args.validation or task.get("validation")
+    evidence_path = args.evidence_file or task.get("evidence_file")
+    closeout_path = args.closeout_file or task.get("closeout_file")
+    created_files: dict[str, str] = {}
+    preview_task = dict(task)
+    _validate_close_flow_gate(task, args, validation_summary)
+    if args.write and args.status == "Done":
+        evidence_path = evidence_path or _write_flow_template(root, runtime_dir, "evidence", args.task_id)
+        closeout_path = closeout_path or _write_flow_template(root, runtime_dir, "closeout", args.task_id)
+        created_files = {"evidence_file": evidence_path, "closeout_file": closeout_path}
+    closeout_args = _namespace_for_flow(
+        args,
+        evidence_file=evidence_path,
+        closeout_file=closeout_path,
+        validation=validation_summary,
+    )
+    _validate_close_flow(root, task, closeout_args)
+    updates = _close_flow_updates(closeout_args, validation_summary, evidence_path, closeout_path)
+    preview_task.update({key: value for key, value in updates.items() if value is not None})
+    preview_task["updated_at"] = iso_now()
+    result = "UPDATED" if args.write else "PREVIEW"
+    registry_path_value = ""
+    if args.write:
+        apply_task_updates(task, updates)
+        registry_path_value = str(_write_task_registry(runtime_dir, registry))
+    data = {
+        "generated_at": iso_now(),
+        "flow": "close-flow",
+        "task_id": args.task_id,
+        "status": args.status,
+        "write": args.write,
+        "result": result,
+        "registry_path": registry_path_value,
+        "created_files": created_files,
+        "task": preview_task,
+        "warnings": _close_flow_warnings(args),
+        "guardrails": _flow_guardrails(),
+        "next_commands": _close_flow_next_commands(args.task_id, args.status),
+    }
+    if args.write:
+        write_json(runtime_dir / "close-flow.json", data)
+        _write_text(runtime_dir / "close-flow.md", _render_close_flow(data))
+    _emit_flow(data, args.json, _render_close_flow)
+    return 0
+
+
+def _validate_close_flow_gate(task: dict[str, Any], args: Namespace, validation: str | None) -> None:
+    if args.status == "Done" and not validation:
+        raise ToolError("close-flow --status Done requires --validation or existing validation", code=1)
+    if args.status == "Blocked" and not (args.next_action or task.get("next_action") or args.handoff_file or task.get("handoff_file")):
+        raise ToolError("close-flow --status Blocked requires --next-action or handoff file", code=1)
+
+
+def _write_flow_template(root: Path, runtime_dir: Path, key: str, task_id: str) -> str:
+    template = root / ".codex/templates" / f"codex-{key}-template.md"
+    text = template.read_text(encoding="utf-8") if template.is_file() else f"Task ID: <task-id>\n"
+    text = text.replace("<task-id>", task_id)
+    path = runtime_dir / key / f"{_safe_name(task_id)}-{_timestamp_slug()}.md"
+    _write_text(path, text)
+    return relative_to_root(root, path)
+
+
+def _validate_close_flow(root: Path, task: dict[str, Any], args: Namespace) -> None:
+    validation = args.validation or task.get("validation")
+    evidence = args.evidence_file or args.closeout_file or args.evidence_note or args.closeout_note
+    evidence = evidence or task.get("evidence_file") or task.get("closeout_file") or task.get("evidence_note") or task.get("closeout_note")
+    if args.status == "Done" and not validation:
+        raise ToolError("close-flow --status Done requires --validation or existing validation", code=1)
+    if args.status == "Done" and not evidence:
+        raise ToolError("close-flow --status Done requires evidence or closeout reference", code=1)
+    if args.status == "Blocked" and not (args.next_action or task.get("next_action") or args.handoff_file or task.get("handoff_file")):
+        raise ToolError("close-flow --status Blocked requires --next-action or handoff file", code=1)
+    for key in ("evidence_file", "closeout_file", "handoff_file"):
+        value = getattr(args, key, None)
+        if value and not _relative_path_exists(root, value):
+            raise ToolError(f"{key.replace('_', '-')} does not exist: {value}", code=1)
+
+
+def _close_flow_updates(args: Namespace, validation: str | None, evidence_file: str | None, closeout_file: str | None) -> dict[str, Any]:
+    validation_status = args.validation_status
+    if validation_status is None:
+        validation_status = "Pass" if args.status == "Done" else "Blocked" if args.status == "Blocked" else None
+    return {
+        "status": args.status,
+        "validation": validation,
+        "validation_status": validation_status,
+        "handoff_file": args.handoff_file,
+        "evidence_file": evidence_file,
+        "closeout_file": closeout_file,
+        "evidence_note": args.evidence_note,
+        "closeout_note": args.closeout_note,
+        "next_action": args.next_action,
+        "archive_recommendation": args.archive_recommendation,
+        "automation_scope": "registry-write" if args.write else "observe-only",
+        "finished_at": iso_now(),
+    }
+
+
+def _close_flow_warnings(args: Namespace) -> list[str]:
+    warnings: list[str] = []
+    if args.archive_recommendation == "archive":
+        warnings.append("Archive recommendation is advisory; no Codex thread is archived.")
+    if args.status == "Done" and args.validation_status in {"Skipped", "Blocked", "Not-Ready", "Fail"}:
+        warnings.append("Done status paired with non-pass validation status; review before relying on this registry entry.")
+    return warnings
+
+
+def _close_flow_next_commands(task_id: str, status: str) -> list[str]:
+    if status == "Done":
+        return ["./dev codex-os ops-flow --write"]
+    if status == "Blocked":
+        return [f"./dev codex-os repair-plan --task-id {task_id}", f"./dev codex-os resume --task-id {task_id}"]
+    return [f"./dev codex-os lifecycle --task-id {task_id}"]
+
+
+def _render_close_flow(data: dict[str, Any]) -> str:
+    lines = _flow_header("Codex OS close flow", data)
+    if data.get("registry_path"):
+        lines.append(f"- registry: {data['registry_path']}")
+    lines.append("")
+    lines.append("Task")
+    lines.append("")
+    lines.append(render_task_detail(data["task"]).rstrip())
+    if data["created_files"]:
+        lines.append("")
+        lines.append("Created Files")
+        lines.append("")
+        for key, value in data["created_files"].items():
+            lines.append(f"- {key}: `{value}`")
+    _append_named_list(lines, "Warnings", data["warnings"])
+    _append_named_list(lines, "Next Commands", data["next_commands"], code=True)
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def run_ops_flow(root: Path, args: Namespace) -> int:
+    runtime_dir = _runtime_dir_from_args(root, args)
+    snapshot = build_snapshot(_state_db_from_args(args), project=args.project)
+    audit = registry_audit(root, runtime_dir)
+    archive = _archive_review_data(snapshot, args.limit)
+    titles = _title_suggestions_data(snapshot, args.limit)
+    weekly = {
+        "generated_at": iso_now(),
+        "thread_summary": {
+            "total_threads": snapshot["total_threads"],
+            "unarchived_threads": snapshot["unarchived_threads"],
+            "bucket_counts": snapshot["bucket_counts"],
+        },
+        "task_counts": _task_counts(load_registry(runtime_dir)),
+        "registry_audit": audit,
+        "recommended_actions": _weekly_actions(snapshot, audit),
+    }
+    health = _health_score(snapshot, audit)
+    data = {
+        "generated_at": iso_now(),
+        "flow": "ops-flow",
+        "result": health["status"] if audit["result"] != "FAIL" else "FAIL",
+        "write": args.write,
+        "policy": "advisory operations only; no archive, title, workflow, or SQLite mutation is performed",
+        "archive_review": archive,
+        "title_suggestions": titles,
+        "weekly": weekly,
+        "health_score": health,
+        "registry_audit": audit,
+        "guardrails": _flow_guardrails(),
+    }
+    if args.write:
+        write_json(runtime_dir / "ops-flow.json", data)
+        _write_text(runtime_dir / "ops-flow.md", _render_ops_flow(data))
+    _emit_flow(data, args.json, _render_ops_flow)
+    return 1 if args.strict and data["result"] == "FAIL" else 0
+
+
+def _title_suggestions_data(snapshot: dict[str, Any], limit: int) -> dict[str, Any]:
+    rows = []
+    for item in snapshot["threads"]:
+        if item.thread.archived or item.bucket not in {"Archive Candidate", "Risk Review", "Cold", "Warm"}:
+            continue
+        rows.append(_title_suggestion(item))
+        if len(rows) >= limit:
+            break
+    return {"generated_at": iso_now(), "policy": "suggestions only; no thread title is changed", "suggestions": rows}
+
+
+def _render_ops_flow(data: dict[str, Any]) -> str:
+    lines = _flow_header("Codex OS ops flow", data)
+    lines.append(f"- policy: {data['policy']}")
+    lines.append("")
+    lines.append("Health")
+    lines.append("")
+    lines.append(f"- score: {data['health_score']['score']}")
+    lines.append(f"- status: {data['health_score']['status']}")
+    lines.append(f"- registry_audit: {data['registry_audit']['result']}")
+    lines.append("")
+    lines.append("Threads")
+    lines.append("")
+    for key, value in data["weekly"]["thread_summary"]["bucket_counts"].items():
+        lines.append(f"- {key}: {value}")
+    lines.append("")
+    lines.append("Advisory Counts")
+    lines.append("")
+    lines.append(f"- archive_candidates: {len(data['archive_review']['archive_candidates'])}")
+    lines.append(f"- risk_review: {len(data['archive_review']['risk_review'])}")
+    lines.append(f"- title_suggestions: {len(data['title_suggestions']['suggestions'])}")
+    _append_named_list(lines, "Recommended Actions", data["weekly"]["recommended_actions"])
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _flow_header(title: str, data: dict[str, Any]) -> list[str]:
+    return [
+        title,
+        "",
+        f"- generated_at: {data['generated_at']}",
+        f"- flow: {data['flow']}",
+        f"- task_id: {data.get('task_id') or '(none)'}",
+        f"- result: {data['result']}",
+        f"- write: {data.get('write', False)}",
+    ]
+
+
+def _append_named_list(lines: list[str], title: str, items: list[str], *, code: bool = False) -> None:
+    if not items:
+        return
+    lines.append("")
+    lines.append(title)
+    lines.append("")
+    for item in items:
+        text = f"`{item}`" if code else item
+        lines.append(f"- {text}")

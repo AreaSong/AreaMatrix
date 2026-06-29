@@ -27,12 +27,13 @@ Use this skill for the Codex operating layer. This is not the AreaMatrix product
 ## Workflow
 
 1. Classify the lane: Quick, Change, Mission-Critical, Explore, Review, or Ops.
-2. Run `./dev codex-os context` or `./dev codex-os resume` before continuing registered work.
-3. Run `./dev codex-os preflight --task-id <task-id> --strict` before writes when a task is registered.
-4. Use read-only subagents for code, docs/governance, validation, and risk scans when the user asks for subagents or parallel agent work.
-5. Use `./dev codex-os recommend-validation` before claiming completion; run selected commands explicitly.
-6. Write evidence and closeout with `./dev codex-os evidence --write` and `./dev codex-os closeout --write`, then update registry with `finish`.
-7. Use `archive-review`, `title-suggestions`, `weekly`, and `health-score` as recommendations only.
+2. Prefer `./dev codex-os start-flow --task-id <task-id> --changed --write` before continuing registered work; use `--title` and `--lane` when creating a local registry entry.
+3. Use `./dev codex-os subagent-plan` to structure code, docs/governance, validation, and risk scans when the user asks for subagents or parallel agent work.
+4. Use `./dev codex-os run-validation --task-id <task-id> --changed` to preview validation and `--execute --write` only when fresh validation should actually run.
+5. Use `./dev codex-os repair-plan --task-id <task-id> --changed` after failed preflight, failed validation, missing evidence, or lifecycle drift.
+6. Use `./dev codex-os close-flow --task-id <task-id> --status Done --validation "<fresh result>" --write` to write evidence / closeout and update finish fields.
+7. Use `./dev codex-os ops-flow --write` for archive-review, title-suggestions, weekly review, health score, and registry audit recommendations.
+8. Fall back to the lower-level commands `context`, `resume`, `preflight`, `recommend-validation`, `evidence`, `closeout`, and `finish` when a flow needs step-by-step diagnosis.
 
 ## Guardrails
 
@@ -42,3 +43,4 @@ Use this skill for the Codex operating layer. This is not the AreaMatrix product
 - Do not archive threads automatically unless the user explicitly asks to perform an archive operation through the proper thread tool.
 - Do not treat `.codex/runtime/codex-os/**` as product source truth or submitted completion evidence.
 - Do not let subagent output replace fresh validation run and reviewed by the main agent.
+- Do not treat `run-validation` dry-run output as completion evidence; only executed fresh validation can support `Done`.

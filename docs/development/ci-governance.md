@@ -36,6 +36,9 @@ macOS app 工程尚未存在时，`macos-ci.yml` 可以按现有保护逻辑跳�
 ./dev check secrets          # 默认 diff 模式：未提交变更 + 领先 origin/main 的 commit
 ```
 
+`./dev check codex-os` 会覆盖 Codex OS 第二阶段 flow 入口的 CLI smoke，包括
+`start-flow`、`run-validation`、`repair-plan`、`close-flow` 和 `ops-flow`。
+
 维护者全历史审计：
 
 ```bash

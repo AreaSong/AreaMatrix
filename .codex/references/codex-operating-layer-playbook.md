@@ -52,6 +52,7 @@ live 执行 -> workflow/versions/<version>/execution/** + ./task-loop
 ```bash
 ./dev check skills
 ./dev check quality
+./dev check codex-os
 ./dev check governance
 python3 workflow/versions/v1-mvp/execution/_shared/prompt_pipeline.py doctor
 git diff --check -- .codex/references tasks/backlog

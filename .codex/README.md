@@ -33,7 +33,7 @@
 - `workflow/versions/v1-mvp/evidence/task-loop-runs/`：可追溯、可提交的 run summary / index 证据，不属于 `.codex/` 的业务源事实。
 - Task loop 的状态 helper 位于 `scripts/task_loop/state.py`，Git checkpoint helper 位于 `scripts/task_loop/git.py`，完整自检入口是 `./task-loop check`。
 - Prompt 工程质量门禁位于 `workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md`；编码规范源事实仍在 `docs/development/coding-standards.md`。
-- 企业治理检查入口是 `bash scripts/check-governance.sh`，源事实在 `CODE_REVIEW.md`、`SECURITY.md` 和 `docs/development/`。
+- 企业治理检查入口是 `./dev check governance`，源事实在 `CODE_REVIEW.md`、`SECURITY.md` 和 `docs/development/`。
 
 ## 约束
 
@@ -43,7 +43,7 @@
 - Skill 发现入口放在 `.agents/skills/`，源事实仍以 `.codex/skills-src/` 为准；这是官方发现路径 + repo 内源事实目录的投影关系，不是第二份 skill。
 - `codex exec` 需要读取 repo-local skill 时，使用本仓库内 `.codex/skills-src/<skill>/SKILL.md` 或 `.agents/skills/<skill>/SKILL.md`；不要使用 `~/.codex/skills-src/...` 这类全局猜测路径。
 - Skill 变更后运行 `./dev check skills`。
-- 企业治理变更后运行 `bash scripts/check-governance.sh`。
+- 企业治理变更后运行 `./dev check governance`。
 - Git checkpoint 策略见 `skills-src/areamatrix-git-checkpoint/`；默认 PASS task 本地 commit，push 需要显式 `GIT_CHECKPOINT=push`。
 - Task loop 的运行锁 `.codex/runtime/task-loop/lock/` 是本地协调缓存，不作为证据提交。
 - 旧路径 `.codex/task-loop-logs/`、`.codex/task-loop-progress-backups/`、`.codex/task-loop-lock/`、`.codex/task-loop-control/`、`.codex/task-loop-console/`、`.codex/dev-console/` 只作历史兼容读取；新运行态写入 `runtime/`。
@@ -53,14 +53,16 @@
 日常任务优先由 Codex 自动使用：
 
 ```bash
-./dev codex-os preflight --task-id <task-id> --strict
-./dev codex-os context --task-id <task-id>
-./dev codex-os recommend-validation
-./dev codex-os task start --task-id <task-id> --write
-./dev codex-os evidence --task-id <task-id> --write
-./dev codex-os closeout --task-id <task-id> --write
-./dev codex-os finish --task-id <task-id> --status Done --validation "<fresh result>" --evidence-note "<summary>" --write
+./dev codex-os start-flow --task-id <task-id> --changed --write
+./dev codex-os run-validation --task-id <task-id> --changed --execute --write
+./dev codex-os repair-plan --task-id <task-id> --changed
+./dev codex-os close-flow --task-id <task-id> --status Done --validation "<fresh result>" --write
+./dev codex-os ops-flow --write
 ```
 
 这些命令只管理 `.codex/runtime/codex-os/` 的本机操作层状态。它们不会写 Codex 内部 SQLite，
 不会归档线程，不会启动或替代 `./task-loop`，也不会写入 `workflow/versions/<version>/execution/**`。
+
+底层展开命令仍可用于诊断或精细控制：`context`、`resume`、`preflight`、`subagent-plan`、
+`recommend-validation`、`evidence`、`closeout`、`finish`、`archive-review`、`title-suggestions`、
+`weekly` 和 `health-score`。

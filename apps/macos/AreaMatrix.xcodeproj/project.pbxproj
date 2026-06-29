@@ -85,6 +85,9 @@
 		0A0000000000000000000D42 /* MainDetailExternalCreateSyncState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D43 /* MainDetailExternalCreateSyncState.swift */; };
 		0A0000000000000000000D45 /* MainRepoDiagnosticsState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D46 /* MainRepoDiagnosticsState.swift */; };
 		0A0000000000000000000D47 /* CommandPaletteFallbacks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D48 /* CommandPaletteFallbacks.swift */; };
+		0A0000000000000000000FAD /* MainRepositoryContentCommandPaletteActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FAE /* MainRepositoryContentCommandPaletteActions.swift */; };
+		0A0000000000000000000FAF /* MainRepositoryContentSearchRouteStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FB0 /* MainRepositoryContentSearchRouteStatus.swift */; };
+		0A0000000000000000000FB1 /* MainRepositoryContentDropOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FB2 /* MainRepositoryContentDropOverlay.swift */; };
 		0A0000000000000000000D49 /* CoreRemoteProviderMappings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D4A /* CoreRemoteProviderMappings.swift */; };
 		0A0000000000000000000D4B /* AIClassificationSuggestionSnapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D4C /* AIClassificationSuggestionSnapshots.swift */; };
 		0A00000000000000000000F2 /* WindowCloseConfirmationObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F3 /* WindowCloseConfirmationObserver.swift */; };
@@ -101,8 +104,9 @@
 		0A0000000000000000000120 /* ImportEntryRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000121 /* ImportEntryRequest.swift */; };
 		0A0000000000000000000122 /* OnboardingModelInputs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000123 /* OnboardingModelInputs.swift */; };
 		0A0000000000000000000124 /* AppPlatformServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000125 /* AppPlatformServices.swift */; };
-		0A0000000000000000000126 /* FileDropAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000127 /* FileDropAdapter.swift */; };
+		0A0000000000000000000126 /* MainRepositoryContentFileTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000127 /* MainRepositoryContentFileTable.swift */; };
 		0A0000000000000000000128 /* ImportEntrySheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000129 /* ImportEntrySheetView.swift */; };
+		0A0000000000000000000F64 /* FileDropAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F65 /* FileDropAdapter.swift */; };
 		0A0000000000000000000F52 /* ImportEntrySingleFilePreviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F53 /* ImportEntrySingleFilePreviewSection.swift */; };
 		0A00000000000000000001A4 /* ImportEntrySheetHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001A5 /* ImportEntrySheetHelpers.swift */; };
 		0A00000000000000000001AE /* BatchAddTagsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001AF /* BatchAddTagsSheet.swift */; };
@@ -254,7 +258,8 @@
 		0A0000000000000000000310 /* MainFileListDiagnosticsActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000311 /* MainFileListDiagnosticsActions.swift */; };
 		0A0000000000000000000312 /* SearchFiltersPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000313 /* SearchFiltersPopover.swift */; };
 		0A00000000000000000002D0 /* MainRepositoryContentCategoryMoveRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002D1 /* MainRepositoryContentCategoryMoveRefresh.swift */; };
-		0A00000000000000000002D2 /* MainRepositoryContentActionRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002D3 /* MainRepositoryContentActionRouting.swift */; };
+		0A0000000000000000000FAB /* MainRepositoryContentDetailTagActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FAC /* MainRepositoryContentDetailTagActions.swift */; };
+		0A00000000000000000002D2 /* MainRepositoryContentSearchRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002D3 /* MainRepositoryContentSearchRouting.swift */; };
 		0A000000000000000000013E /* MainFileActionRoutingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000013F /* MainFileActionRoutingSheet.swift */; };
 		0A0000000000000000000140 /* RenameFileSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000141 /* RenameFileSheet.swift */; };
 		0A0000000000000000000142 /* ChangeCategorySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000143 /* ChangeCategorySheet.swift */; };
@@ -566,11 +571,11 @@
 		0A00000000000000000000D1 /* MainRepositoryContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000F9B /* MainRepositoryContentLifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentLifecycle.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000F41 /* MainRepositoryContentToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentToolbar.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000F9D /* MainRepositoryContentSearchBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentSearchBanner.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000F43 /* MainRepositoryContentSearchSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentSearchSupport.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000F9F /* MainRepositoryContentSmartLists.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentSmartLists.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000F9D /* MainRepositoryContentSearchBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/MainRepositoryContentSearchBanner.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000F43 /* MainRepositoryContentSearchSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/MainRepositoryContentSearchSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000F9F /* MainRepositoryContentSmartLists.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/MainRepositoryContentSmartLists.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000FA1 /* MainRepositoryContentSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentSidebar.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000F45 /* MainRepositoryContentDetailSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentDetailSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000F45 /* MainRepositoryContentDetailSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Detail/MainRepositoryContentDetailSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000FA7 /* MainRepositorySelectedFileDetailPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Detail/MainRepositorySelectedFileDetailPane.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000FA3 /* DetailLogTimelineRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Detail/DetailLogTimelineRow.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000FA5 /* MultiSelectionDetailSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Detail/MultiSelectionDetailSummary.swift; sourceTree = SOURCE_ROOT; };
@@ -629,8 +634,9 @@
 		0A0000000000000000000121 /* ImportEntryRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportEntryRequest.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000123 /* OnboardingModelInputs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Onboarding/OnboardingModelInputs.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000125 /* AppPlatformServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AppPlatformServices.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000127 /* FileDropAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/FileDropAdapter.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000127 /* MainRepositoryContentFileTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainRepositoryContentFileTable.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000129 /* ImportEntrySheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportEntrySheetView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000F65 /* FileDropAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/FileDropAdapter.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000F53 /* ImportEntrySingleFilePreviewSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportEntrySingleFilePreviewSection.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001A5 /* ImportEntrySheetHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportEntrySheetHelpers.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000001AF /* BatchAddTagsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/BatchAddTagsSheet.swift; sourceTree = SOURCE_ROOT; };
@@ -696,6 +702,9 @@
 		0A0000000000000000000615 /* SearchFilterChipsBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/SearchFilterChipsBar.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000617 /* CommandPaletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/CommandPalette/CommandPaletteView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000867 /* CommandPaletteRoutingSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/CommandPalette/CommandPaletteRoutingSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000FAE /* MainRepositoryContentCommandPaletteActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/CommandPalette/MainRepositoryContentCommandPaletteActions.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000FB0 /* MainRepositoryContentSearchRouteStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/MainRepositoryContentSearchRouteStatus.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000FB2 /* MainRepositoryContentDropOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/MainRepositoryContentDropOverlay.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000619 /* ICloudConflictApplyResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/ICloudConflictApplyResult.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000061B /* ICloudConflictApplyContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/SyncConflicts/ICloudConflictApplyContext.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000847 /* AITagBatchSuggestionAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AITagBatchSuggestionAction.swift; sourceTree = SOURCE_ROOT; };
@@ -837,11 +846,12 @@
 		0A0000000000000000000F47 /* DetailTagEditorPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Detail/DetailTagEditorPopover.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000323 /* DetailTagPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailTagPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000024D /* MainListSystemActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainListSystemActions.swift; sourceTree = SOURCE_ROOT; };
-		0A000000000000000000024F /* MainRepositoryContentNoteDrafts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentNoteDrafts.swift; sourceTree = SOURCE_ROOT; };
+			0A000000000000000000024F /* MainRepositoryContentNoteDrafts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Detail/MainRepositoryContentNoteDrafts.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000311 /* MainFileListDiagnosticsActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainFileListDiagnosticsActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000313 /* SearchFiltersPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/SearchFiltersPopover.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000002D1 /* MainRepositoryContentCategoryMoveRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentCategoryMoveRefresh.swift; sourceTree = SOURCE_ROOT; };
-		0A00000000000000000002D3 /* MainRepositoryContentActionRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryContentActionRouting.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002D1 /* MainRepositoryContentCategoryMoveRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainRepositoryContentCategoryMoveRefresh.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000FAC /* MainRepositoryContentDetailTagActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Detail/MainRepositoryContentDetailTagActions.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002D3 /* MainRepositoryContentSearchRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/MainRepositoryContentSearchRouting.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000271 /* GeneralSettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Settings/GeneralSettingsModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000273 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Settings/GeneralSettingsView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000949 /* SettingsPageScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/SettingsPageScaffold.swift; sourceTree = SOURCE_ROOT; };
@@ -895,13 +905,13 @@
 		0A0000000000000000000141 /* RenameFileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/RenameFileSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000F31 /* BatchRenameSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/BatchRenameSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000143 /* ChangeCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/ChangeCategorySheet.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000501 /* ClassifierRuleHandoffRouteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ClassifierRuleHandoffRouteView.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000F33 /* ClassifierImpactPreviewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ClassifierImpactPreviewSheet.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000501 /* ClassifierRuleHandoffRouteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/ClassifierRuleHandoffRouteView.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000F33 /* ClassifierImpactPreviewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/ClassifierImpactPreviewSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000335 /* BatchChangeCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/BatchChangeCategorySheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000505 /* ClassifierCorrectionHandoffTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ClassifierCorrectionHandoffTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000415 /* BatchDeleteConfirmSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/BatchDeleteConfirmSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000417 /* BatchDeleteConfirmSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/BatchDeleteConfirmSections.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000337 /* MainRepositoryMultiSelectionActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/MainRepositoryMultiSelectionActions.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000337 /* MainRepositoryMultiSelectionActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainRepositoryMultiSelectionActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000145 /* DeleteFileConfirmSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/DeleteFileConfirmSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000147 /* MainLoadingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Onboarding/MainLoadingState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000149 /* MainLoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Onboarding/MainLoadingView.swift; sourceTree = SOURCE_ROOT; };
@@ -971,7 +981,7 @@
 				0A00000000000000000001F7 /* ImportFolderCoreBridgeModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportFolderCoreBridgeModeTests.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001E9 /* ImportSingleFilePreviewPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportSingleFilePreviewPresentation.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001EB /* ImportEntrySingleFileFooter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportEntrySingleFileFooter.swift; sourceTree = SOURCE_ROOT; };
-			0A00000000000000000001EF /* ReplaceConfirmSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Main/ReplaceConfirmSheet.swift; sourceTree = SOURCE_ROOT; };
+			0A00000000000000000001EF /* ReplaceConfirmSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/ReplaceConfirmSheet.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001F3 /* ImportEntryReplaceConfirmationSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportEntryReplaceConfirmationSheets.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001ED /* ImportSingleFileNameConflictCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileNameConflictCoreTests.swift; sourceTree = SOURCE_ROOT; };
 			0A0000000000000000000189 /* ImportSingleFileTestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileTestFixtures.swift; sourceTree = SOURCE_ROOT; };
@@ -1138,20 +1148,8 @@
 				0A000000000000000000089D /* SettingsKeyValueRow.swift */,
 				0A00000000000000000000D1 /* MainRepositoryContentView.swift */,
 				0A0000000000000000000F9B /* MainRepositoryContentLifecycle.swift */,
-				0A000000000000000000024F /* MainRepositoryContentNoteDrafts.swift */,
 				0A0000000000000000000F41 /* MainRepositoryContentToolbar.swift */,
-				0A0000000000000000000F9D /* MainRepositoryContentSearchBanner.swift */,
-				0A0000000000000000000F43 /* MainRepositoryContentSearchSupport.swift */,
-				0A0000000000000000000F9F /* MainRepositoryContentSmartLists.swift */,
 				0A0000000000000000000FA1 /* MainRepositoryContentSidebar.swift */,
-				0A0000000000000000000F45 /* MainRepositoryContentDetailSupport.swift */,
-				0A00000000000000000002D1 /* MainRepositoryContentCategoryMoveRefresh.swift */,
-				0A00000000000000000002D3 /* MainRepositoryContentActionRouting.swift */,
-				0A0000000000000000000337 /* MainRepositoryMultiSelectionActions.swift */,
-				0A0000000000000000000501 /* ClassifierRuleHandoffRouteView.swift */,
-				0A0000000000000000000F33 /* ClassifierImpactPreviewSheet.swift */,
-				0A0000000000000000000127 /* FileDropAdapter.swift */,
-				0A00000000000000000001EF /* ReplaceConfirmSheet.swift */,
 			);
 			name = Views;
 			sourceTree = "<group>";
@@ -1240,10 +1238,13 @@
 					0A0000000000000000000F4D /* MainDetailAITagSuggestionActions.swift */,
 					0A0000000000000000000F4F /* MainDetailTagFilterRegistryActions.swift */,
 					0A0000000000000000000F51 /* MainDetailTagSuggestionActions.swift */,
-					0A000000000000000000013D /* MainRepositoryDetailPane.swift */,
-					0A0000000000000000000F49 /* MainRepositoryDetailFileActions.swift */,
-					0A0000000000000000000F97 /* MainRepositoryDetailStatusViews.swift */,
-					0A0000000000000000000FA7 /* MainRepositorySelectedFileDetailPane.swift */,
+						0A000000000000000000024F /* MainRepositoryContentNoteDrafts.swift */,
+						0A0000000000000000000FAC /* MainRepositoryContentDetailTagActions.swift */,
+						0A000000000000000000013D /* MainRepositoryDetailPane.swift */,
+						0A0000000000000000000F49 /* MainRepositoryDetailFileActions.swift */,
+						0A0000000000000000000F97 /* MainRepositoryDetailStatusViews.swift */,
+						0A0000000000000000000F45 /* MainRepositoryContentDetailSupport.swift */,
+						0A0000000000000000000FA7 /* MainRepositorySelectedFileDetailPane.swift */,
 					0A0000000000000000000FA5 /* MultiSelectionDetailSummary.swift */,
 				);
 				name = Detail;
@@ -1342,6 +1343,9 @@
 					0A00000000000000000002CD /* MainFileActionRoutingActions.swift */,
 					0A000000000000000000013F /* MainFileActionRoutingSheet.swift */,
 					0A0000000000000000000503 /* MainFileClassifierCorrectionRoutingActions.swift */,
+					0A00000000000000000002D1 /* MainRepositoryContentCategoryMoveRefresh.swift */,
+					0A0000000000000000000501 /* ClassifierRuleHandoffRouteView.swift */,
+					0A0000000000000000000F33 /* ClassifierImpactPreviewSheet.swift */,
 					0A0000000000000000000863 /* MainFileActionRoutingSupport.swift */,
 					0A0000000000000000000865 /* MainBatchFileActionRoutingSupport.swift */,
 					0A0000000000000000000875 /* BatchTagUndoSupport.swift */,
@@ -1355,11 +1359,13 @@
 					0A0000000000000000000335 /* BatchChangeCategorySheet.swift */,
 					0A0000000000000000000605 /* BatchChangeCategorySheet+Sections.swift */,
 					0A0000000000000000000413 /* BatchDeleteState.swift */,
-					0A0000000000000000000415 /* BatchDeleteConfirmSheet.swift */,
-					0A0000000000000000000417 /* BatchDeleteConfirmSections.swift */,
-					0A0000000000000000000143 /* ChangeCategorySheet.swift */,
+				0A0000000000000000000415 /* BatchDeleteConfirmSheet.swift */,
+				0A0000000000000000000417 /* BatchDeleteConfirmSections.swift */,
+				0A0000000000000000000337 /* MainRepositoryMultiSelectionActions.swift */,
+				0A0000000000000000000143 /* ChangeCategorySheet.swift */,
 					0A0000000000000000000603 /* ChangeCategorySheet+Sections.swift */,
 					0A0000000000000000000141 /* RenameFileSheet.swift */,
+					0A00000000000000000001EF /* ReplaceConfirmSheet.swift */,
 				);
 				name = FileActions;
 				sourceTree = "<group>";
@@ -1369,7 +1375,9 @@
 				children = (
 					0A0000000000000000000121 /* ImportEntryRequest.swift */,
 					0A0000000000000000000167 /* ImportDropPreviewModel.swift */,
+					0A0000000000000000000F65 /* FileDropAdapter.swift */,
 					0A0000000000000000000169 /* ImportDropTargetView.swift */,
+					0A0000000000000000000FB2 /* MainRepositoryContentDropOverlay.swift */,
 					0A0000000000000000000129 /* ImportEntrySheetView.swift */,
 					0A0000000000000000000F53 /* ImportEntrySingleFilePreviewSection.swift */,
 					0A00000000000000000001A5 /* ImportEntrySheetHelpers.swift */,
@@ -1433,6 +1441,7 @@
 					0A0000000000000000000135 /* MainListVisibleFileFiltering.swift */,
 					0A00000000000000000001DB /* MainCurrentListErrorPane.swift */,
 					0A0000000000000000000840 /* MainListPane.swift */,
+					0A0000000000000000000127 /* MainRepositoryContentFileTable.swift */,
 					0A0000000000000000000842 /* MainMultiSelectionDetailPane.swift */,
 					0A000000000000000000083A /* MainListSelectionState.swift */,
 					0A000000000000000000083C /* MainListStatusBanner.swift */,
@@ -1448,6 +1457,11 @@
 					0A0000000000000000000837 /* MainSearchModelSupport.swift */,
 					0A0000000000000000000D35 /* SmartListActions.swift */,
 					0A0000000000000000000D33 /* SmartListModels.swift */,
+					0A0000000000000000000F9F /* MainRepositoryContentSmartLists.swift */,
+					0A0000000000000000000F9D /* MainRepositoryContentSearchBanner.swift */,
+					0A0000000000000000000F43 /* MainRepositoryContentSearchSupport.swift */,
+					0A00000000000000000002D3 /* MainRepositoryContentSearchRouting.swift */,
+					0A0000000000000000000FB0 /* MainRepositoryContentSearchRouteStatus.swift */,
 					0A000000000000000000083E /* QueryErrorRouteView.swift */,
 					0A000000000000000000060B /* SearchRouteViews.swift */,
 					0A0000000000000000000F99 /* SearchEmptyRouteView.swift */,
@@ -1477,6 +1491,7 @@
 					0A000000000000000000060F /* CommandPaletteState.swift */,
 					0A0000000000000000000617 /* CommandPaletteView.swift */,
 					0A0000000000000000000867 /* CommandPaletteRoutingSupport.swift */,
+					0A0000000000000000000FAE /* MainRepositoryContentCommandPaletteActions.swift */,
 					0A0000000000000000000D48 /* CommandPaletteFallbacks.swift */,
 				);
 				name = CommandPalette;
@@ -1941,8 +1956,10 @@
 				0A0000000000000000000860 /* MainListPresentationSupport.swift in Sources */,
 				0A0000000000000000000122 /* OnboardingModelInputs.swift in Sources */,
 				0A0000000000000000000F70 /* OnboardingSettingsRouting.swift in Sources */,
-				0A0000000000000000000126 /* FileDropAdapter.swift in Sources */,
+				0A0000000000000000000126 /* MainRepositoryContentFileTable.swift in Sources */,
+				0A0000000000000000000F64 /* FileDropAdapter.swift in Sources */,
 				0A0000000000000000000168 /* ImportDropTargetView.swift in Sources */,
+				0A0000000000000000000FB1 /* MainRepositoryContentDropOverlay.swift in Sources */,
 				0A0000000000000000000128 /* ImportEntrySheetView.swift in Sources */,
 				0A0000000000000000000F52 /* ImportEntrySingleFilePreviewSection.swift in Sources */,
 				0A00000000000000000001A4 /* ImportEntrySheetHelpers.swift in Sources */,
@@ -2025,8 +2042,10 @@
 				0A0000000000000000000F98 /* SearchEmptyRouteView.swift in Sources */,
 				0A0000000000000000000834 /* SearchFilterChips.swift in Sources */,
 				0A000000000000000000083D /* QueryErrorRouteView.swift in Sources */,
+				0A0000000000000000000FAF /* MainRepositoryContentSearchRouteStatus.swift in Sources */,
 				0A0000000000000000000616 /* CommandPaletteView.swift in Sources */,
 				0A0000000000000000000866 /* CommandPaletteRoutingSupport.swift in Sources */,
+				0A0000000000000000000FAD /* MainRepositoryContentCommandPaletteActions.swift in Sources */,
 				0A0000000000000000000D47 /* CommandPaletteFallbacks.swift in Sources */,
 				0A0000000000000000000272 /* GeneralSettingsView.swift in Sources */,
 				0A0000000000000000000942 /* GeneralSettingsContentViews.swift in Sources */,
@@ -2097,6 +2116,7 @@
 				0A0000000000000000000320 /* DetailTagSection.swift in Sources */,
 				0A0000000000000000000F46 /* DetailTagEditorPopover.swift in Sources */,
 				0A000000000000000000024E /* MainRepositoryContentNoteDrafts.swift in Sources */,
+				0A0000000000000000000FAB /* MainRepositoryContentDetailTagActions.swift in Sources */,
 				0A0000000000000000000312 /* SearchFiltersPopover.swift in Sources */,
 				0A000000000000000000093C /* SearchFilterEditing.swift in Sources */,
 				0A000000000000000000093E /* SearchFilterControls.swift in Sources */,
@@ -2105,7 +2125,7 @@
 				0A0000000000000000000852 /* SmartListManagementSheet.swift in Sources */,
 				0A0000000000000000000854 /* SemanticSearchMainContentSupport.swift in Sources */,
 				0A00000000000000000002D0 /* MainRepositoryContentCategoryMoveRefresh.swift in Sources */,
-				0A00000000000000000002D2 /* MainRepositoryContentActionRouting.swift in Sources */,
+				0A00000000000000000002D2 /* MainRepositoryContentSearchRouting.swift in Sources */,
 				0A0000000000000000000336 /* MainRepositoryMultiSelectionActions.swift in Sources */,
 				0A000000000000000000013E /* MainFileActionRoutingSheet.swift in Sources */,
 				0A0000000000000000000140 /* RenameFileSheet.swift in Sources */,
