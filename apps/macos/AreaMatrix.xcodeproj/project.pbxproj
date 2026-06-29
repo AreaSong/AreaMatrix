@@ -120,6 +120,8 @@
 		0A0000000000000000000130 /* MainFileListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000131 /* MainFileListModel.swift */; };
 		0A00000000000000000002BA /* CoreFileRenaming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002BB /* CoreFileRenaming.swift */; };
 		0A00000000000000000002BC /* MainFileRenameActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002BD /* MainFileRenameActions.swift */; };
+		0A0000000000000000000FB3 /* BatchRenameSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FB4 /* BatchRenameSupport.swift */; };
+		0A0000000000000000000FB5 /* AISettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FB6 /* AISettingsModel.swift */; };
 		0A00000000000000000002BE /* RenameFilePageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002BF /* RenameFilePageFeatureTests.swift */; };
 		0A00000000000000000008A4 /* RenameFilePageTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008A5 /* RenameFilePageTestSupport.swift */; };
 		0A0000000000000000000F30 /* BatchRenameSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F31 /* BatchRenameSheet.swift */; };
@@ -144,6 +146,7 @@
 		0A0000000000000000000410 /* CoreBatchDelete.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000411 /* CoreBatchDelete.swift */; };
 		0A00000000000000000002C8 /* MainFileCategoryMoveActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */; };
 		0A00000000000000000002CA /* MainFileCategoryMoveState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002CB /* MainFileCategoryMoveState.swift */; };
+		0A0000000000000000000FB9 /* ClassifierCorrectionRuleState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FBA /* ClassifierCorrectionRuleState.swift */; };
 		0A0000000000000000000732 /* AIClassificationSuggestionApplyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000733 /* AIClassificationSuggestionApplyState.swift */; };
 		0A0000000000000000000332 /* BatchChangeCategoryState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000333 /* BatchChangeCategoryState.swift */; };
 		0A0000000000000000000412 /* BatchDeleteState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000413 /* BatchDeleteState.swift */; };
@@ -241,6 +244,7 @@
 		0A0000000000000000000240 /* CoreNoteReadingWriting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000241 /* CoreNoteReadingWriting.swift */; };
 		0A0000000000000000000242 /* InFlightFileChangeTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000243 /* InFlightFileChangeTracker.swift */; };
 		0A0000000000000000000244 /* MainDetailNoteState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000245 /* MainDetailNoteState.swift */; };
+		0A0000000000000000000FB7 /* AITagBatchSuggestionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FB8 /* AITagBatchSuggestionState.swift */; };
 		0A0000000000000000000246 /* MainDetailNoteActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000247 /* MainDetailNoteActions.swift */; };
 		0A0000000000000000000316 /* MainDetailTagState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000317 /* MainDetailTagState.swift */; };
 		0A0000000000000000000F4A /* MainDetailTagSuggestionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F4B /* MainDetailTagSuggestionState.swift */; };
@@ -377,6 +381,7 @@
 		0A0000000000000000000712 /* RemoteProviderConfigState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000713 /* RemoteProviderConfigState.swift */; };
 		0A0000000000000000000714 /* RemoteProviderCredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000715 /* RemoteProviderCredentialStore.swift */; };
 		0A0000000000000000000716 /* RemoteProviderConfigModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000717 /* RemoteProviderConfigModel.swift */; };
+		0A0000000000000000000FBB /* RemoteProviderConfigDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FBC /* RemoteProviderConfigDraft.swift */; };
 		0A0000000000000000000718 /* RemoteModelConfigSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000719 /* RemoteModelConfigSheet.swift */; };
 		0A000000000000000000074A /* AIPrivacyRulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000074B /* AIPrivacyRulesView.swift */; };
 		0A0000000000000000000952 /* AIPrivacyRulesChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000953 /* AIPrivacyRulesChrome.swift */; };
@@ -651,6 +656,8 @@
 		0A0000000000000000000611 /* MainFileListExternalSyncActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainFileListExternalSyncActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002BB /* CoreFileRenaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreFileRenaming.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002BD /* MainFileRenameActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileRenameActions.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000FB4 /* BatchRenameSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/BatchRenameSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000FB6 /* AISettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AISettingsModel.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002BF /* RenameFilePageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RenameFilePageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008A5 /* RenameFilePageTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RenameFilePageTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008AB /* MainListIntegrationFilterTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainListIntegrationFilterTestSupport.swift; sourceTree = SOURCE_ROOT; };
@@ -669,6 +676,7 @@
 		0A0000000000000000000411 /* CoreBatchDelete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBatchDelete.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileCategoryMoveActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002CB /* MainFileCategoryMoveState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileCategoryMoveState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000FBA /* ClassifierCorrectionRuleState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/ClassifierCorrectionRuleState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000733 /* AIClassificationSuggestionApplyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationSuggestionApplyState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000333 /* BatchChangeCategoryState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/BatchChangeCategoryState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000413 /* BatchDeleteState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/BatchDeleteState.swift; sourceTree = SOURCE_ROOT; };
@@ -721,6 +729,7 @@
 		0A0000000000000000000713 /* RemoteProviderConfigState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteProviderConfigState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000715 /* RemoteProviderCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteProviderCredentialStore.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000717 /* RemoteProviderConfigModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteProviderConfigModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000FBC /* RemoteProviderConfigDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteProviderConfigDraft.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000719 /* RemoteModelConfigSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/RemoteModelConfigSheet.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000074B /* AIPrivacyRulesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000953 /* AIPrivacyRulesChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesChrome.swift; sourceTree = SOURCE_ROOT; };
@@ -833,6 +842,7 @@
 		0A0000000000000000000241 /* CoreNoteReadingWriting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreNoteReadingWriting.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000243 /* InFlightFileChangeTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/InFlightFileChangeTracker.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000245 /* MainDetailNoteState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Detail/MainDetailNoteState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000FB8 /* AITagBatchSuggestionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AITagBatchSuggestionState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000247 /* MainDetailNoteActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Detail/MainDetailNoteActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000317 /* MainDetailTagState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Detail/MainDetailTagState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000F4B /* MainDetailTagSuggestionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Detail/MainDetailTagSuggestionState.swift; sourceTree = SOURCE_ROOT; };
@@ -1333,6 +1343,7 @@
 				isa = PBXGroup;
 				children = (
 					0A00000000000000000002BD /* MainFileRenameActions.swift */,
+					0A0000000000000000000FB4 /* BatchRenameSupport.swift */,
 					0A000000000000000000041B /* BatchRenameUndoAction.swift */,
 					0A0000000000000000000F31 /* BatchRenameSheet.swift */,
 					0A000000000000000000041F /* BatchRenameTrigger.swift */,
@@ -1340,6 +1351,7 @@
 					0A0000000000000000000145 /* DeleteFileConfirmSheet.swift */,
 					0A00000000000000000002C9 /* MainFileCategoryMoveActions.swift */,
 					0A00000000000000000002CB /* MainFileCategoryMoveState.swift */,
+					0A0000000000000000000FBA /* ClassifierCorrectionRuleState.swift */,
 					0A00000000000000000002CD /* MainFileActionRoutingActions.swift */,
 					0A000000000000000000013F /* MainFileActionRoutingSheet.swift */,
 					0A0000000000000000000503 /* MainFileClassifierCorrectionRoutingActions.swift */,
@@ -1525,6 +1537,7 @@
 				0A0000000000000000000713 /* RemoteProviderConfigState.swift */,
 				0A0000000000000000000715 /* RemoteProviderCredentialStore.swift */,
 				0A0000000000000000000717 /* RemoteProviderConfigModel.swift */,
+				0A0000000000000000000FBC /* RemoteProviderConfigDraft.swift */,
 				0A0000000000000000000725 /* RemoteProviderProbeRuntime.swift */,
 				0A0000000000000000000719 /* RemoteModelConfigSheet.swift */,
 				0A000000000000000000074B /* AIPrivacyRulesView.swift */,
@@ -1536,10 +1549,12 @@
 				0A0000000000000000000757 /* AIPrivacyRemoteProviderStateModel.swift */,
 				0A0000000000000000000759 /* AIPrivacyRulesRoute.swift */,
 				0A0000000000000000000937 /* AIPrivacyRulesModel.swift */,
+				0A0000000000000000000FB6 /* AISettingsModel.swift */,
 				0A000000000000000000086B /* AISettingsPane.swift */,
 				0A0000000000000000000951 /* AISettingsInlineBanner.swift */,
 				0A0000000000000000000D2B /* LocalModelStatusView.swift */,
 				0A0000000000000000000859 /* LocalModelStatusState.swift */,
+				0A0000000000000000000FB8 /* AITagBatchSuggestionState.swift */,
 				0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */,
 				0A0000000000000000000871 /* AIClassificationSuggestionPanelModel.swift */,
 				0A0000000000000000000931 /* AIClassificationFallbackStatusRegion.swift */,
@@ -1927,10 +1942,12 @@
 				0A0000000000000000000130 /* MainFileListModel.swift in Sources */,
 				0A0000000000000000000610 /* MainFileListExternalSyncActions.swift in Sources */,
 				0A00000000000000000002BC /* MainFileRenameActions.swift in Sources */,
+				0A0000000000000000000FB3 /* BatchRenameSupport.swift in Sources */,
 				0A000000000000000000041A /* BatchRenameUndoAction.swift in Sources */,
 				0A00000000000000000002C2 /* MainFileDeleteActions.swift in Sources */,
 				0A00000000000000000002C8 /* MainFileCategoryMoveActions.swift in Sources */,
 				0A00000000000000000002CA /* MainFileCategoryMoveState.swift in Sources */,
+				0A0000000000000000000FB9 /* ClassifierCorrectionRuleState.swift in Sources */,
 				0A00000000000000000002CC /* MainFileActionRoutingActions.swift in Sources */,
 				0A0000000000000000000862 /* MainFileActionRoutingSupport.swift in Sources */,
 				0A0000000000000000000864 /* MainBatchFileActionRoutingSupport.swift in Sources */,
@@ -1946,6 +1963,8 @@
 				0A0000000000000000000712 /* RemoteProviderConfigState.swift in Sources */,
 				0A0000000000000000000714 /* RemoteProviderCredentialStore.swift in Sources */,
 				0A0000000000000000000716 /* RemoteProviderConfigModel.swift in Sources */,
+				0A0000000000000000000FBB /* RemoteProviderConfigDraft.swift in Sources */,
+				0A0000000000000000000FB5 /* AISettingsModel.swift in Sources */,
 				0A0000000000000000000724 /* RemoteProviderProbeRuntime.swift in Sources */,
 				0A0000000000000000000846 /* AITagBatchSuggestionAction.swift in Sources */,
 				0A0000000000000000000134 /* MainListVisibleFileFiltering.swift in Sources */,
@@ -2236,6 +2255,7 @@
 				0A0000000000000000000240 /* CoreNoteReadingWriting.swift in Sources */,
 				0A0000000000000000000222 /* MainFileListState.swift in Sources */,
 				0A0000000000000000000244 /* MainDetailNoteState.swift in Sources */,
+				0A0000000000000000000FB7 /* AITagBatchSuggestionState.swift in Sources */,
 				0A0000000000000000000246 /* MainDetailNoteActions.swift in Sources */,
 				0A0000000000000000000316 /* MainDetailTagState.swift in Sources */,
 				0A0000000000000000000F4A /* MainDetailTagSuggestionState.swift in Sources */,

@@ -8,10 +8,12 @@ import contextlib
 import io
 import json
 import sqlite3
+import stat
 import tempfile
 import unittest
 from pathlib import Path
 
+from scripts.dev_tools.cli import _build_parser, _normalize_codex_os_common_args
 from scripts.dev_tools.codex_os import (
     ThreadRecord,
     classify_thread,
@@ -119,6 +121,40 @@ def args(command: str, state_db: Path, runtime_dir: Path, **extra: object) -> Na
 
 
 class CodexOsToolsTest(unittest.TestCase):
+    def test_codex_os_common_args_work_before_or_after_subcommand(self) -> None:
+        parser = _build_parser()
+        parent_args = parser.parse_args(
+            [
+                "codex-os",
+                "--state-db",
+                "parent.sqlite",
+                "--runtime-dir",
+                "parent-runtime",
+                "start-flow",
+                "--task-id",
+                "AM-ARGS",
+            ]
+        )
+        _normalize_codex_os_common_args(parent_args)
+        self.assertEqual(parent_args.state_db, "parent.sqlite")
+        self.assertEqual(parent_args.runtime_dir, "parent-runtime")
+
+        child_args = parser.parse_args(
+            [
+                "codex-os",
+                "start-flow",
+                "--state-db",
+                "child.sqlite",
+                "--runtime-dir",
+                "child-runtime",
+                "--task-id",
+                "AM-ARGS",
+            ]
+        )
+        _normalize_codex_os_common_args(child_args)
+        self.assertEqual(child_args.state_db, "child.sqlite")
+        self.assertEqual(child_args.runtime_dir, "child-runtime")
+
     def test_classify_thread_marks_archive_candidate_and_risk_review(self) -> None:
         now = datetime(2026, 6, 29, tzinfo=timezone.utc)
         old = int(datetime(2026, 3, 1, tzinfo=timezone.utc).timestamp())
@@ -531,6 +567,7 @@ class CodexOsToolsTest(unittest.TestCase):
 
             output = stdout.getvalue()
             self.assertIn("recommendation only", output)
+            self.assertIn("python3 -m compileall -q scripts/dev_tools scripts/task_loop", output)
             self.assertIn("python3 -m unittest scripts.dev_tools.test_codex_os", output)
             self.assertIn("./dev check diff", output)
 
@@ -576,6 +613,30 @@ class CodexOsToolsTest(unittest.TestCase):
             registry = json.loads((runtime / "task-registry.json").read_text(encoding="utf-8"))
             self.assertEqual(registry["tasks"][0]["evidence_file"], ".codex/runtime/codex-os/evidence/AM-6.md")
             self.assertEqual(output.read_text(encoding="utf-8"), "任务 ID: AM-6\n")
+
+    def test_template_output_refuses_workflow_execution_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            template = root / ".codex/templates/codex-evidence-template.md"
+            template.parent.mkdir(parents=True)
+            template.write_text("任务 ID: <task-id>\n", encoding="utf-8")
+
+            blocked_outputs = (
+                Path("workflow/versions/v9/execution/evidence.md"),
+                Path("workflow/versions/v9/discussion/../execution/evidence.md"),
+                root / "workflow/versions/v9/execution/evidence.md",
+                Path(tmp).parent / "outside/workflow/versions/v9/execution/evidence.md",
+            )
+            for output in blocked_outputs:
+                with self.assertRaises(Exception) as caught:
+                    run_codex_os_command(
+                        root,
+                        args("evidence", state_db, runtime, task_id="AM-6", output=str(output), write=True),
+                    )
+                self.assertIn("must not write workflow/versions", str(caught.exception))
 
     def test_preflight_strict_blocks_high_risk_without_confirmation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -634,7 +695,7 @@ class CodexOsToolsTest(unittest.TestCase):
                         state_db,
                         runtime,
                         task_id="AM-8",
-                        title="Codex OS v2",
+                        title="Codex OS flow",
                         lane="Change",
                         status="Ready",
                         path=["scripts/dev_tools/codex_os.py"],
@@ -854,6 +915,169 @@ class CodexOsToolsTest(unittest.TestCase):
             self.assertEqual(task["validation_status"], "Not-Ready")
             self.assertIn("validation_report_file", task)
 
+    def test_run_validation_executes_compileall_recommendation_without_shell_globs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            (root / "scripts/dev_tools").mkdir(parents=True)
+            (root / "scripts/task_loop").mkdir(parents=True)
+            (root / "scripts/dev_tools/example.py").write_text("VALUE = 1\n", encoding="utf-8")
+            (root / "scripts/task_loop/example.py").write_text("VALUE = 2\n", encoding="utf-8")
+            dev = root / "dev"
+            dev.write_text("#!/bin/sh\n[ \"$1 $2\" = \"check diff\" ] && exit 0\nexit 1\n", encoding="utf-8")
+            dev.chmod(dev.stat().st_mode | stat.S_IXUSR)
+            self.assertEqual(
+                run_codex_os_command(root, args("registry", state_db, runtime, registry_command="init", write=True)),
+                0,
+            )
+            self.assertEqual(
+                run_codex_os_command(
+                    root,
+                    args(
+                        "registry",
+                        state_db,
+                        runtime,
+                        registry_command="add",
+                        task_id="AM-FLOW-3C",
+                        project_name="AreaMatrix",
+                        lane="Change",
+                        status="Running",
+                        validation="PYTHONDONTWRITEBYTECODE=1 python3 -m compileall -q scripts/dev_tools scripts/task_loop",
+                        write=True,
+                    ),
+                ),
+                0,
+            )
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                self.assertEqual(
+                    run_codex_os_command(
+                        root,
+                        args(
+                            "run-validation",
+                            state_db,
+                            runtime,
+                            task_id="AM-FLOW-3C",
+                            path=["notes/example.txt"],
+                            execute=True,
+                            json=True,
+                        ),
+                    ),
+                    0,
+                )
+
+            data = json.loads(stdout.getvalue())
+            self.assertEqual(data["result"], "PASS")
+            compileall_results = [item for item in data["results"] if "python3 -m compileall" in item["command"]]
+            self.assertEqual(len(compileall_results), 1)
+            self.assertEqual(compileall_results[0]["result"], "PASS")
+
+    def test_run_validation_blocks_write_style_dev_commands(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            self.assertEqual(
+                run_codex_os_command(root, args("registry", state_db, runtime, registry_command="init", write=True)),
+                0,
+            )
+            self.assertEqual(
+                run_codex_os_command(
+                    root,
+                    args(
+                        "registry",
+                        state_db,
+                        runtime,
+                        registry_command="add",
+                        task_id="AM-FLOW-3B",
+                        project_name="AreaMatrix",
+                        lane="Change",
+                        status="Running",
+                        validation="./dev workflow init --version v9 --write",
+                        write=True,
+                    ),
+                ),
+                0,
+            )
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                code = run_codex_os_command(
+                    root,
+                    args(
+                        "run-validation",
+                        state_db,
+                        runtime,
+                        task_id="AM-FLOW-3B",
+                        execute=True,
+                        json=True,
+                    ),
+                )
+
+            self.assertEqual(code, 1)
+            data = json.loads(stdout.getvalue())
+            self.assertEqual(data["result"], "BLOCKED")
+            self.assertIn("read-only ./dev validation", data["results"][0]["note"])
+
+    def test_codex_os_refuses_workflow_execution_runtime_dir(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            create_state_db(state_db)
+            runtime = root / "workflow/versions/v9/execution"
+
+            with self.assertRaises(Exception) as caught:
+                run_codex_os_command(
+                    root,
+                    args(
+                        "start-flow",
+                        state_db,
+                        runtime,
+                        task_id="AM-FLOW-BLOCK",
+                        title="Blocked runtime",
+                        lane="Change",
+                        write=True,
+                    ),
+                )
+
+            self.assertIn("must not write workflow/versions", str(caught.exception))
+
+            relative_runtimes = (
+                Path("workflow/versions/v9/execution"),
+                Path("workflow/versions/v9/execution/runtime"),
+                Path("workflow/versions/v9/discussion/../execution/runtime"),
+                Path(tmp).parent / "outside/workflow/versions/v9/execution/runtime",
+            )
+            for relative_runtime in relative_runtimes:
+                with self.assertRaises(Exception) as relative:
+                    run_codex_os_command(
+                        root,
+                        args(
+                            "ops-flow",
+                            state_db,
+                            relative_runtime,
+                            write=True,
+                        ),
+                    )
+                self.assertIn("must not write workflow/versions", str(relative.exception))
+
+            normalized_runtime = root / "workflow/versions/v9/discussion/../execution/runtime"
+            with self.assertRaises(Exception) as normalized:
+                run_codex_os_command(
+                    root,
+                    args(
+                        "ops-flow",
+                        state_db,
+                        normalized_runtime,
+                        write=True,
+                    ),
+                )
+            self.assertIn("must not write workflow/versions", str(normalized.exception))
+
     def test_repair_plan_uses_diagnose_and_validation_report(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -979,12 +1203,66 @@ class CodexOsToolsTest(unittest.TestCase):
             self.assertTrue((root / task["evidence_file"]).is_file())
             self.assertTrue((root / task["closeout_file"]).is_file())
 
+    def test_close_flow_done_rejects_recommended_or_dry_run_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            self.assertEqual(
+                run_codex_os_command(root, args("registry", state_db, runtime, registry_command="init", write=True)),
+                0,
+            )
+            self.assertEqual(
+                run_codex_os_command(
+                    root,
+                    args(
+                        "registry",
+                        state_db,
+                        runtime,
+                        registry_command="add",
+                        task_id="AM-FLOW-6",
+                        project_name="AreaMatrix",
+                        lane="Change",
+                        status="Verifying",
+                        validation="./dev check codex-os",
+                        write=True,
+                    ),
+                ),
+                0,
+            )
+
+            with self.assertRaises(Exception) as missing:
+                run_codex_os_command(
+                    root,
+                    args("close-flow", state_db, runtime, task_id="AM-FLOW-6", status="Done", write=True),
+                )
+            self.assertIn("explicit fresh --validation", str(missing.exception))
+
+            with self.assertRaises(Exception) as dry_run:
+                run_codex_os_command(
+                    root,
+                    args(
+                        "close-flow",
+                        state_db,
+                        runtime,
+                        task_id="AM-FLOW-6",
+                        status="Done",
+                        validation="./dev check codex-os: SKIPPED; result: NOT-READY",
+                        write=True,
+                    ),
+                )
+            self.assertIn("fresh PASS/OK", str(dry_run.exception))
+
     def test_ops_flow_is_advisory_and_does_not_archive_threads(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             state_db = root / "state.sqlite"
             runtime = root / ".codex/runtime/codex-os"
             create_state_db(state_db)
+            conn = sqlite3.connect(state_db)
+            titles_before = conn.execute("SELECT id, title FROM threads ORDER BY id").fetchall()
+            conn.close()
 
             stdout = io.StringIO()
             with contextlib.redirect_stdout(stdout):
@@ -999,8 +1277,10 @@ class CodexOsToolsTest(unittest.TestCase):
             self.assertTrue((runtime / "ops-flow.json").is_file())
             conn = sqlite3.connect(state_db)
             archived_count = conn.execute("SELECT COUNT(*) FROM threads WHERE archived = 1").fetchone()[0]
+            titles_after = conn.execute("SELECT id, title FROM threads ORDER BY id").fetchall()
             conn.close()
             self.assertEqual(archived_count, 1)
+            self.assertEqual(titles_after, titles_before)
 
 
 if __name__ == "__main__":

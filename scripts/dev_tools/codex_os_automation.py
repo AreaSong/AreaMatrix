@@ -73,7 +73,37 @@ def _state_db_from_args(args: Namespace) -> Path:
 
 
 def _runtime_dir_from_args(root: Path, args: Namespace) -> Path:
-    return Path(args.runtime_dir) if args.runtime_dir else default_runtime_dir(root)
+    runtime_dir = Path(args.runtime_dir).expanduser() if args.runtime_dir else default_runtime_dir(root)
+    _validate_runtime_dir(root, runtime_dir)
+    return runtime_dir
+
+
+def _validate_runtime_dir(root: Path, runtime_dir: Path) -> None:
+    path = runtime_dir if runtime_dir.is_absolute() else root / runtime_dir
+    _validate_no_workflow_execution_path(root, path, "runtime-dir")
+
+
+def _validate_no_workflow_execution_path(root: Path, path: Path, label: str) -> None:
+    if _is_workflow_execution_path(root, path):
+        raise ToolError(f"Codex OS {label} must not write workflow/versions/<version>/execution/**", code=1)
+
+
+def _is_workflow_execution_path(root: Path, path: Path) -> bool:
+    resolved_root = root.resolve(strict=False)
+    resolved_path = path.resolve(strict=False)
+    candidates: list[tuple[str, ...]] = [resolved_path.parts]
+    try:
+        candidates.insert(0, resolved_path.relative_to(resolved_root).parts)
+    except ValueError:
+        pass
+    return any(_parts_are_workflow_execution(candidate) for candidate in candidates)
+
+
+def _parts_are_workflow_execution(parts: tuple[str, ...]) -> bool:
+    for index in range(0, max(0, len(parts) - 3)):
+        if parts[index] == "workflow" and parts[index + 1] == "versions" and parts[index + 3] == "execution":
+            return True
+    return False
 
 
 def _write_task_registry(runtime_dir: Path, registry: dict[str, Any]) -> Path:
@@ -136,7 +166,9 @@ def template_output_path(root: Path, args: Namespace, key: str) -> Path:
     output = getattr(args, "output", None)
     if output:
         path = Path(output).expanduser()
-        return path if path.is_absolute() else root / path
+        resolved_path = path if path.is_absolute() else root / path
+        _validate_no_workflow_execution_path(root, resolved_path, "--output")
+        return resolved_path
     task_name = _safe_name(getattr(args, "task_id", None))
     return _runtime_dir_from_args(root, args) / key / f"{task_name}-{_timestamp_slug()}.md"
 
@@ -519,7 +551,7 @@ def build_validation_recommendation(root: Path, paths: list[str], *, include_cha
 
 def _append_validation_for_path(path: str, add: Callable[[str, str], None]) -> None:
     if path == "dev" or path == "task-loop" or path.startswith("scripts/dev_tools/") or path.startswith("scripts/task_loop/"):
-        add("PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile scripts/dev_tools/*.py scripts/task_loop/*.py", "Python developer-tool syntax gate.")
+        add("PYTHONDONTWRITEBYTECODE=1 python3 -m compileall -q scripts/dev_tools scripts/task_loop", "Python developer-tool syntax gate.")
         add("PYTHONDONTWRITEBYTECODE=1 python3 -m unittest scripts.dev_tools.test_codex_os", "Codex OS regression tests.")
         add("./dev check codex-os", "Codex OS integrated health check.")
     if path.startswith(".codex/skills-src/") or path.startswith(".agents/skills/"):
@@ -1171,8 +1203,8 @@ def _start_flow_next_commands(task_id: str, result: str) -> list[str]:
     if result == "FAIL":
         return [f"./dev codex-os repair-plan --task-id {task_id} --changed"]
     return [
-        f"./dev codex-os run-validation --task-id {task_id} --changed --execute",
-        f"./dev codex-os close-flow --task-id {task_id} --status Done --validation '<fresh result>' --write",
+        f"./dev codex-os run-validation --task-id {task_id} --changed --execute --write",
+        f"./dev codex-os close-flow --task-id {task_id} --status Done --validation '<fresh PASS/OK result>' --write",
     ]
 
 
@@ -1309,6 +1341,17 @@ def _execute_validation_command(root: Path, command: str, timeout_seconds: int) 
             timeout=timeout_seconds,
             check=False,
         )
+    except FileNotFoundError as exc:
+        duration = round(time.monotonic() - started, 3)
+        return {
+            "command": command,
+            "result": "BLOCKED",
+            "exit_code": None,
+            "duration_seconds": duration,
+            "stdout_tail": "",
+            "stderr_tail": str(exc),
+            "note": "validation executable not found",
+        }
     except subprocess.TimeoutExpired as exc:
         duration = round(time.monotonic() - started, 3)
         return {
@@ -1339,17 +1382,34 @@ def _is_allowed_validation_command(command: str) -> tuple[bool, str]:
     if "&&" in command and not (command.startswith("cd core && cargo ") and command.count("&&") == 1):
         return False, "blocked shell command chain in validation command"
     allowed_prefixes = (
-        "./dev ",
+        "PYTHONDONTWRITEBYTECODE=1 python3 -m compileall ",
         "PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile ",
         "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest ",
+        "python3 -m compileall ",
         "python3 -m py_compile ",
         "python3 -m unittest ",
         "cd core && cargo ",
         "xcodebuild -project apps/macos/AreaMatrix.xcodeproj ",
     )
+    if command.startswith("./dev "):
+        return _is_allowed_dev_validation_command(command)
     if not command.startswith(allowed_prefixes):
         return False, "command is outside the Codex OS validation allowlist"
     return True, ""
+
+
+def _is_allowed_dev_validation_command(command: str) -> tuple[bool, str]:
+    argv = shlex.split(command)
+    allowed = False
+    if len(argv) >= 3 and argv[:2] == ["./dev", "check"]:
+        allowed = True
+    elif argv == ["./dev", "test", "macos"] or (len(argv) > 3 and argv[:3] == ["./dev", "test", "macos"]):
+        allowed = True
+    elif argv == ["./dev", "workflow", "doctor"]:
+        allowed = True
+    elif len(argv) >= 5 and argv[:3] == ["./dev", "workflow", "discuss"] and argv[-1] == "doctor":
+        allowed = True
+    return (True, "") if allowed else (False, "only read-only ./dev validation commands are allowed")
 
 
 def _command_env(command: str) -> dict[str, str]:
@@ -1572,10 +1632,22 @@ def run_close_flow(root: Path, args: Namespace) -> int:
 
 
 def _validate_close_flow_gate(task: dict[str, Any], args: Namespace, validation: str | None) -> None:
-    if args.status == "Done" and not validation:
-        raise ToolError("close-flow --status Done requires --validation or existing validation", code=1)
+    if args.status == "Done" and not args.validation:
+        raise ToolError("close-flow --status Done requires explicit fresh --validation", code=1)
+    if args.status == "Done" and not _looks_like_fresh_pass_validation(args.validation):
+        raise ToolError("close-flow --status Done requires a fresh PASS/OK validation summary, not dry-run or recommendation output", code=1)
     if args.status == "Blocked" and not (args.next_action or task.get("next_action") or args.handoff_file or task.get("handoff_file")):
         raise ToolError("close-flow --status Blocked requires --next-action or handoff file", code=1)
+
+
+def _looks_like_fresh_pass_validation(value: str | None) -> bool:
+    if not value:
+        return False
+    upper = value.upper()
+    blocked_markers = ("SKIPPED", "NOT-READY", "NOT READY", "RECOMMENDED", "DRY-RUN", "DRY RUN", "FAIL", "BLOCKED")
+    if any(marker in upper for marker in blocked_markers):
+        return False
+    return "PASS" in upper or "OK" in upper
 
 
 def _write_flow_template(root: Path, runtime_dir: Path, key: str, task_id: str) -> str:

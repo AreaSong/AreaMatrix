@@ -56,7 +56,7 @@
 ./dev codex-os start-flow --task-id <task-id> --changed --write
 ./dev codex-os run-validation --task-id <task-id> --changed --execute --write
 ./dev codex-os repair-plan --task-id <task-id> --changed
-./dev codex-os close-flow --task-id <task-id> --status Done --validation "<fresh result>" --write
+./dev codex-os close-flow --task-id <task-id> --status Done --validation "<fresh PASS/OK result>" --write
 ./dev codex-os ops-flow --write
 ```
 

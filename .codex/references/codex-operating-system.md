@@ -14,7 +14,7 @@ Codex Operating System 的目标是把“聊天线程”变成可观测、可恢
 Intake -> Register -> Context -> Preflight -> Explore -> Execute -> Recommend Validation -> Evidence -> Closeout -> Finish -> Operate
 ```
 
-第二阶段推荐入口：
+Flow 编排入口：
 
 ```text
 start-flow -> run-validation -> repair-plan on failure -> close-flow -> ops-flow
@@ -27,7 +27,7 @@ Codex OS 的目标不是让操作者记住更多命令，而是让任务生命�
 ```bash
 ./dev codex-os start-flow --task-id AM-20260629-001 --changed --write
 ./dev codex-os run-validation --task-id AM-20260629-001 --changed --execute --write
-./dev codex-os close-flow --task-id AM-20260629-001 --status Done --validation "<fresh result>" --write
+./dev codex-os close-flow --task-id AM-20260629-001 --status Done --validation "<fresh PASS/OK result>" --write
 ./dev codex-os ops-flow --write
 ```
 
@@ -45,7 +45,7 @@ Codex OS 的目标不是让操作者记住更多命令，而是让任务生命�
 5. Plan / Execute：Quick 可直接执行；Change 先计划；Mission-Critical 先说明影响、风险、验证和回滚并等待确认。
 6. Run Validation：用 `run-validation` 推荐或执行 allowlisted 验证命令；默认 dry-run，只有 `--execute` 才运行命令。
 7. Repair Plan：失败时用 `repair-plan` 基于 diagnose、registry audit 和 validation report 生成只读修复路线。
-8. Close Flow：用 `close-flow` 写 evidence / closeout 并更新 finish 字段；`Done` 必须有 fresh validation 与 evidence / closeout 引用，`Blocked` 必须有 next action 或 handoff。
+8. Close Flow：用 `close-flow` 写 evidence / closeout 并更新 finish 字段；`Done` 必须显式传入 fresh PASS / OK validation，`Blocked` 必须有 next action 或 handoff。
 9. Ops Flow：用 `ops-flow` 聚合 archive review、title suggestions、weekly review、health score 和 registry audit；归档和改标题仍只由人工确认。
 
 ## 非目标
@@ -151,7 +151,7 @@ Codex OS 的目标不是让操作者记住更多命令，而是让任务生命�
 `finish --status Done` 必须能指向新鲜 validation 和 evidence / closeout；`finish --status Blocked`
 必须能指向 next action 或 handoff。`--archive-recommendation archive` 只写建议，不执行归档。
 
-`close-flow` 是收尾推荐入口；它会复用 evidence / closeout / finish 的门禁，但不会伪造 fresh validation。
+`close-flow` 是收尾推荐入口；它会复用 evidence / closeout / finish 的门禁，但不会伪造 fresh validation，也不会用 registry 里的推荐命令或 dry-run 摘要支撑 `Done`。
 
 ## 线程健康与运营
 

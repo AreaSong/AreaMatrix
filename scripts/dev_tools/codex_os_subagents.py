@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .codex_os_automation import read_git_status_paths
+from .codex_os_automation import read_git_status_paths, _validate_runtime_dir
 from .codex_os_registry import find_task, load_registry, write_json
 from .codex_os_state import default_runtime_dir, iso_now
 from .common import ToolError
@@ -76,7 +76,9 @@ def build_subagent_plan(root: Path, args: Namespace) -> dict[str, Any]:
 
 
 def _runtime_dir_from_args(root: Path, args: Namespace) -> Path:
-    return Path(args.runtime_dir) if getattr(args, "runtime_dir", None) else default_runtime_dir(root)
+    runtime_dir = Path(args.runtime_dir) if getattr(args, "runtime_dir", None) else default_runtime_dir(root)
+    _validate_runtime_dir(root, runtime_dir)
+    return runtime_dir
 
 
 def _load_task(runtime_dir: Path, task_id: str | None) -> dict[str, Any] | None:

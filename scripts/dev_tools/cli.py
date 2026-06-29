@@ -56,6 +56,7 @@ CODEX_OS_CONFIRMATION_STATUSES = sorted(["Not Required", "Required", "Granted", 
 CODEX_OS_VALIDATION_STATUSES = sorted(["Not Started", "Recommended", "Running", "Pass", "Fail", "Blocked", "Not-Ready", "Skipped"])
 CODEX_OS_AUTOMATION_SCOPES = sorted(["observe-only", "registry-write", "validation-run", "manual-confirmation-required"])
 CODEX_OS_ARCHIVE_RECOMMENDATIONS = sorted(["keep", "archive", "review"])
+CODEX_OS_COMMON_FIELDS = ("state_db", "runtime_dir", "project")
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -63,9 +64,21 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     def add_codex_os_common(target: argparse.ArgumentParser) -> None:
-        target.add_argument("--state-db", help="Codex state SQLite path; defaults to ~/.codex/state_5.sqlite")
-        target.add_argument("--runtime-dir", help="Output directory; defaults to .codex/runtime/codex-os")
-        target.add_argument("--project", help="Limit thread health to an exact cwd/project path")
+        target.add_argument(
+            "--state-db",
+            default=argparse.SUPPRESS,
+            help="Codex state SQLite path; defaults to ~/.codex/state_5.sqlite",
+        )
+        target.add_argument(
+            "--runtime-dir",
+            default=argparse.SUPPRESS,
+            help="Output directory; defaults to .codex/runtime/codex-os",
+        )
+        target.add_argument(
+            "--project",
+            default=argparse.SUPPRESS,
+            help="Limit thread health to an exact cwd/project path",
+        )
 
     def add_codex_os_task_fields(target: argparse.ArgumentParser) -> None:
         target.add_argument("--risk-level", choices=CODEX_OS_RISK_LEVELS)
@@ -579,9 +592,18 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _normalize_codex_os_common_args(args: argparse.Namespace) -> None:
+    if getattr(args, "command", None) != "codex-os":
+        return
+    for field in CODEX_OS_COMMON_FIELDS:
+        if not hasattr(args, field):
+            setattr(args, field, None)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
+    _normalize_codex_os_common_args(args)
     root = project_root()
     try:
         if args.command == "check":

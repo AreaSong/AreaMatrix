@@ -69,11 +69,11 @@ final class RemoteProviderConfigModel: ObservableObject {
     }
 
     var canTestConnection: Bool {
-        !loadState.isBusy && !trimmedModelID.isEmpty && !trimmedAPIKey.isEmpty && isEndpointValid
+        !loadState.isBusy && currentDraft.canTestConnection
     }
 
     var canEnable: Bool {
-        canTestConnection && verifiedToken != nil && !selectedScopes.isEmpty && dataFlowConfirmed
+        !loadState.isBusy && currentDraft.canEnable(verifiedToken: verifiedToken)
     }
 
     var canRetryEnable: Bool {
@@ -81,11 +81,7 @@ final class RemoteProviderConfigModel: ObservableObject {
     }
 
     var enableDisabledReason: String {
-        if trimmedAPIKey.isEmpty { return "API key is required." }
-        if selectedScopes.isEmpty { return "Select at least one usage scope." }
-        if !dataFlowConfirmed { return "Confirm the remote data flow." }
-        if verifiedToken == nil { return "Verify the connection before enabling remote AI." }
-        return ""
+        currentDraft.enableDisabledReason(verifiedToken: verifiedToken)
     }
 
     func load() async {
@@ -124,8 +120,8 @@ final class RemoteProviderConfigModel: ObservableObject {
         do {
             let draft = try credentialStore.storeCredential(
                 provider: provider,
-                endpointURL: normalizedEndpointURL,
-                apiKey: trimmedAPIKey
+                endpointURL: currentDraft.normalizedEndpointURL,
+                apiKey: currentDraft.trimmedAPIKey
             )
             if let failure = await runProviderTest(draft: draft) {
                 outcome = .failed(failure)
@@ -148,7 +144,7 @@ final class RemoteProviderConfigModel: ObservableObject {
         do {
             let enabled = try await bridge.enableRemoteProvider(
                 repoPath: repoPath,
-                request: enableRequest(token: token, keyReference: draft.reference)
+                request: currentDraft.enableRequest(token: token, keyReference: draft.reference)
             )
             credentialStore.commitCredentialDraft(draft)
             applySnapshot(enabled)
@@ -252,26 +248,12 @@ final class RemoteProviderConfigModel: ObservableObject {
 }
 
 private extension RemoteProviderConfigModel {
-    private var trimmedAPIKey: String {
-        apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var trimmedModelID: String {
-        modelID.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var normalizedEndpointURL: String? {
-        let trimmed = endpointURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
-    }
-
-    private var isEndpointValid: Bool {
-        provider != .other || normalizedEndpointURL != nil
-    }
-
     private func runProviderTest(draft: RemoteProviderCredentialDraft) async -> AISettingsError? {
         do {
-            let result = try await bridge.testRemoteProvider(repoPath: repoPath, request: testRequest(draft.reference))
+            let result = try await bridge.testRemoteProvider(
+                repoPath: repoPath,
+                request: currentDraft.testRequest(keyReference: draft.reference)
+            )
             handleTestResult(result, draft: draft)
             return nil
         } catch {
@@ -294,32 +276,11 @@ private extension RemoteProviderConfigModel {
         }
     }
 
-    private func testRequest(_ keyReference: String) -> RemoteProviderTestRequestState {
-        RemoteProviderTestRequestState(
-            provider: provider,
-            modelID: trimmedModelID,
-            endpointURL: provider == .other ? normalizedEndpointURL : nil,
-            keyReference: keyReference
-        )
-    }
-
-    private func enableRequest(token: String, keyReference: String) -> RemoteProviderEnableRequestState {
-        RemoteProviderEnableRequestState(
-            provider: provider,
-            modelID: trimmedModelID,
-            endpointURL: provider == .other ? normalizedEndpointURL : nil,
-            keyReference: keyReference,
-            featureScope: AISettingsFeatureKind.allCases.filter { selectedScopes.contains($0) },
-            verificationToken: token,
-            dataFlowConfirmed: dataFlowConfirmed
-        )
-    }
-
     private func applySnapshot(_ newSnapshot: RemoteProviderConfigState) {
         isApplyingSnapshot = true
         defer {
             isApplyingSnapshot = false
-            lastFingerprint = currentFingerprint
+            lastFingerprint = currentDraft.fingerprint
         }
         snapshot = newSnapshot
         provider = newSnapshot.provider ?? provider
@@ -338,7 +299,7 @@ private extension RemoteProviderConfigModel {
         if result.providerVerified, let token = result.verificationToken {
             verifiedToken = token
             verifiedCredentialDraft = draft
-            lastFingerprint = currentFingerprint
+            lastFingerprint = currentDraft.fingerprint
             unusedCredentialReference = nil
             outcome = .success("Connection verified.")
             return
@@ -365,7 +326,7 @@ private extension RemoteProviderConfigModel {
     }
 
     private func resetVerificationIfChanged() {
-        guard !isApplyingSnapshot, lastFingerprint != nil, currentFingerprint != lastFingerprint else { return }
+        guard !isApplyingSnapshot, lastFingerprint != nil, currentDraft.fingerprint != lastFingerprint else { return }
         discardVerifiedDraftCredential()
         verifiedToken = nil
         testResult = nil
@@ -380,12 +341,14 @@ private extension RemoteProviderConfigModel {
         )
     }
 
-    private var currentFingerprint: RemoteProviderDraftFingerprint {
-        RemoteProviderDraftFingerprint(
+    private var currentDraft: RemoteProviderConfigDraft {
+        RemoteProviderConfigDraft(
             provider: provider,
-            modelID: trimmedModelID,
-            endpointURL: provider == .other ? normalizedEndpointURL : nil,
-            apiKey: trimmedAPIKey
+            modelID: modelID,
+            endpointURL: endpointURL,
+            apiKey: apiKey,
+            selectedScopes: selectedScopes,
+            dataFlowConfirmed: dataFlowConfirmed
         )
     }
 
@@ -482,11 +445,4 @@ private extension RemoteProviderConfigModel {
         verifiedToken = nil
         testResult = nil
     }
-}
-
-private struct RemoteProviderDraftFingerprint: Equatable {
-    var provider: RemoteProviderKindState
-    var modelID: String
-    var endpointURL: String?
-    var apiKey: String
 }

@@ -31,6 +31,7 @@ from .codex_os_automation import (
     run_weekly,
     template_output_path as _template_output_path,
     update_task_reference as _update_task_reference,
+    _validate_runtime_dir as _validate_runtime_dir,
 )
 from .codex_os_registry import (
     apply_task_updates,
@@ -89,7 +90,9 @@ def _state_db_from_args(args: Namespace) -> Path:
 
 
 def _runtime_dir_from_args(root: Path, args: Namespace) -> Path:
-    return Path(args.runtime_dir) if args.runtime_dir else default_runtime_dir(root)
+    runtime_dir = Path(args.runtime_dir) if args.runtime_dir else default_runtime_dir(root)
+    _validate_runtime_dir(root, runtime_dir)
+    return runtime_dir
 
 
 def _template_text(root: Path, template_name: str) -> str:

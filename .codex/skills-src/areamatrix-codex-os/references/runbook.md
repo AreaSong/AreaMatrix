@@ -45,11 +45,11 @@ Use this after failed preflight, failed validation, missing evidence / closeout,
 ## Finish
 
 ```bash
-./dev codex-os close-flow --task-id <task-id> --status Done --validation "<fresh result>" --write
+./dev codex-os close-flow --task-id <task-id> --status Done --validation "<fresh PASS/OK result>" --write
 ./dev codex-os close-flow --task-id <task-id> --status Blocked --next-action "<next action>" --write
 ```
 
-`Done` requires validation and evidence or closeout. `Blocked` requires next action or handoff. Archive fields are recommendations only.
+`Done` requires an explicit fresh PASS / OK validation string; registry recommendations and dry-run validation summaries are rejected. `Blocked` requires next action or handoff. Archive fields are recommendations only.
 Use lower-level `evidence`, `closeout`, and `finish` when manual file paths or custom closeout references are needed.
 
 ## Operate

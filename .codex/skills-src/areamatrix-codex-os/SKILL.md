@@ -31,7 +31,7 @@ Use this skill for the Codex operating layer. This is not the AreaMatrix product
 3. Use `./dev codex-os subagent-plan` to structure code, docs/governance, validation, and risk scans when the user asks for subagents or parallel agent work.
 4. Use `./dev codex-os run-validation --task-id <task-id> --changed` to preview validation and `--execute --write` only when fresh validation should actually run.
 5. Use `./dev codex-os repair-plan --task-id <task-id> --changed` after failed preflight, failed validation, missing evidence, or lifecycle drift.
-6. Use `./dev codex-os close-flow --task-id <task-id> --status Done --validation "<fresh result>" --write` to write evidence / closeout and update finish fields.
+6. Use `./dev codex-os close-flow --task-id <task-id> --status Done --validation "<fresh PASS/OK result>" --write` to write evidence / closeout and update finish fields.
 7. Use `./dev codex-os ops-flow --write` for archive-review, title-suggestions, weekly review, health score, and registry audit recommendations.
 8. Fall back to the lower-level commands `context`, `resume`, `preflight`, `recommend-validation`, `evidence`, `closeout`, and `finish` when a flow needs step-by-step diagnosis.
 
@@ -44,3 +44,4 @@ Use this skill for the Codex operating layer. This is not the AreaMatrix product
 - Do not treat `.codex/runtime/codex-os/**` as product source truth or submitted completion evidence.
 - Do not let subagent output replace fresh validation run and reviewed by the main agent.
 - Do not treat `run-validation` dry-run output as completion evidence; only executed fresh validation can support `Done`.
+- Do not use registry recommendations as `close-flow --status Done` validation; pass an explicit fresh PASS / OK result.

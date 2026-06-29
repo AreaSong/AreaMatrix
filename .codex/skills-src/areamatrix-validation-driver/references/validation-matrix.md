@@ -27,7 +27,7 @@ If required validation cannot run, or any review, security, dependency, CI, or G
 | `workflow/versions/<version>/execution/**` | `./dev check prompts` |
 | prompt manifests or shared rules | add `./dev check prompts` and render one affected task when the version tooling exposes rendering |
 | prompt coverage or control maps | add the version-specific page or prompt audit command when available |
-| `task-loop`, `dev`, `scripts/task_loop/**`, `scripts/dev_tools/**` | `python3 -m py_compile scripts/task_loop/*.py scripts/dev_tools/*.py`; `./task-loop status`; `./dev preflight`; `./task-loop check` |
+| `task-loop`, `dev`, `scripts/task_loop/**`, `scripts/dev_tools/**` | `PYTHONDONTWRITEBYTECODE=1 python3 -m compileall -q scripts/dev_tools scripts/task_loop`; `./task-loop status`; `./dev preflight`; `./task-loop check` |
 | `.codex/skills-src/**` or `.agents/skills/**` | `./dev check skills`; `./dev check quality`; `./dev check wording`; `./dev check prompts` |
 | governance docs, PR/issue templates, CODEOWNERS, CI workflows | `./dev check governance`; `./dev check skills`; `./dev check quality`; `./dev check wording`; `./dev check prompts`; YAML parse workflows |
 
