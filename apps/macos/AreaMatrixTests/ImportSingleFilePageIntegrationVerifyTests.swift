@@ -156,7 +156,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
             predictor: predictor,
             importer: importer,
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: request)
@@ -209,7 +209,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: request)
@@ -236,7 +236,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
             urls: [URL(fileURLWithPath: "/tmp/source.pdf")],
             kind: .singleFile
         )
-        let errorMapper = ImportSingleFileRecordingErrorMapper()
+        let errorMapper = RecordingCoreErrorMapper.importSingleFile()
         let model = ImportSingleFilePreviewModel(
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: ImportSingleFileFailingImporter(error: CoreError.DuplicateFile(existingPath: "docs/source.pdf")),
@@ -272,7 +272,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: hidden),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await hiddenModel.load(request: .importSingleFileImportRequest())
@@ -303,7 +303,7 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: result),
             placeholderDownloader: ImportSingleFileStaticICloudDownloader(),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: .importSingleFileImportRequest())
@@ -332,7 +332,7 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
             placeholderDownloader: ImportSingleFileStaticICloudDownloader(
                 error: ImportSingleFileStaticLocalizedError(message: "download timed out")
             ),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: .importSingleFileImportRequest())
@@ -370,7 +370,7 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: bridge,
             preflight: CoreImportSingleFilePreflight(),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: ImportEntryRequest(
@@ -422,7 +422,7 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: bridge,
             preflight: CoreImportSingleFilePreflight(),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         await model.load(request: ImportEntryRequest(
             repoPath: repoURL.path,
@@ -453,7 +453,7 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: ImportSingleFileRecordingImporter(),
             preflight: ImportSingleFileStaticPreflight.ready(targetRelativePath: "docs/合同.pdf"),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: ImportEntryRequest(

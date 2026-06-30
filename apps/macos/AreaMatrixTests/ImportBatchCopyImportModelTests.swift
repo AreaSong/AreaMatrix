@@ -116,7 +116,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         let importer = ImportBatchRecordingBatchImporter()
         let importModel = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         var progressSnapshots: [ImportBatchProgressSnapshot] = []
 
@@ -165,7 +165,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
             .failure(CoreError.PermissionDenied(path: "/tmp/Invoice_2026Q1.pdf")),
             .success(.importSingleFileFixture(currentName: "2026Q1_合同.pdf", category: "docs"))
         ])
-        let errorMapper = ImportSingleFileRecordingErrorMapper()
+        let errorMapper = RecordingCoreErrorMapper.importSingleFile()
         let model = ImportBatchCopyImportModel(
             importer: importer,
             errorMapper: errorMapper
@@ -216,7 +216,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         let importer = ImportBatchRecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             sessionStore: store
         )
 
@@ -300,7 +300,10 @@ final class ImportBatchStorageModeTests: XCTestCase {
         let rows = [importBatchReadyBatchRow(url: sourceURL)]
         let request = importBatchBatchRequest(urls: [sourceURL])
         let importer = ImportBatchRecordingBatchImporter()
-        let model = ImportBatchCopyImportModel(importer: importer, errorMapper: ImportSingleFileRecordingErrorMapper())
+        let model = ImportBatchCopyImportModel(
+            importer: importer,
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+        )
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
         model.selectedStorageMode = .move
@@ -341,7 +344,10 @@ final class ImportBatchStorageModeTests: XCTestCase {
         let rows = importBatchReadyBatchRows(invoiceURL: invoiceURL, contractURL: contractURL)
         let request = importBatchBatchRequest(urls: [invoiceURL, contractURL])
         let importer = ImportBatchRecordingBatchImporter()
-        let model = ImportBatchCopyImportModel(importer: importer, errorMapper: ImportSingleFileRecordingErrorMapper())
+        let model = ImportBatchCopyImportModel(
+            importer: importer,
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+        )
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
         model.updateCategoryOverride(for: rows[1].id, category: "media")
@@ -390,7 +396,10 @@ final class ImportBatchStorageModeTests: XCTestCase {
             availableCategories: ["inbox", "finance", "docs"]
         )
         let importer = ImportBatchRecordingBatchImporter()
-        let model = ImportBatchCopyImportModel(importer: importer, errorMapper: ImportSingleFileRecordingErrorMapper())
+        let model = ImportBatchCopyImportModel(
+            importer: importer,
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+        )
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
         model.updateCategoryOverride(for: rows[0].id, category: "docs")

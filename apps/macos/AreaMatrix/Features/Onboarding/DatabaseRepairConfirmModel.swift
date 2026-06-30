@@ -117,7 +117,7 @@ final class DatabaseRepairConfirmModel: ObservableObject {
             )
             repairState = .succeeded(report)
         } catch {
-            repairState = await .failed(mapError(error))
+            repairState = await .failed(errorMapper.mapError(error))
         }
     }
 
@@ -139,7 +139,7 @@ final class DatabaseRepairConfirmModel: ObservableObject {
             let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
             diagnosticsState = .collected(snapshot)
         } catch {
-            diagnosticsState = await .failed(mapError(error))
+            diagnosticsState = await .failed(errorMapper.mapError(error))
         }
     }
 
@@ -150,7 +150,7 @@ final class DatabaseRepairConfirmModel: ObservableObject {
             let report = try await startupRecoverer.recoverOnStartup(repoPath: repoPath)
             startupRecoveryState = .completed(report.hasVisibleDetails ? report : nil)
         } catch {
-            startupRecoveryState = await .failed(mapError(error))
+            startupRecoveryState = await .failed(errorMapper.mapError(error))
         }
     }
 
@@ -162,13 +162,5 @@ final class DatabaseRepairConfirmModel: ObservableObject {
     private var diagnosticsFailed: Bool {
         if case .failed = diagnosticsState { return true }
         return false
-    }
-
-    private func mapError(_ error: Error) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError {
-            return await errorMapper.mapCoreError(coreError)
-        }
-
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }

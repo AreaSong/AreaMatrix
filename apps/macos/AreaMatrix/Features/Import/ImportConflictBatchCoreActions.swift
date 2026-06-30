@@ -12,7 +12,7 @@ enum ImportConflictBatchAction {
             let report = try await batcher.previewImportConflictBatch(repoPath: repoPath, request: request)
             return .loaded(report)
         } catch {
-            return await .failed(mapError(error, errorMapper: errorMapper), previous: previous)
+            return await .failed(errorMapper.mapError(error), previous: previous)
         }
     }
 
@@ -31,7 +31,7 @@ enum ImportConflictBatchAction {
             let failure = CoreError.Conflict(path: preview.applyBlockedReason ?? "Import conflict batch")
             return await ImportConflictBatchApplyResult(
                 report: nil,
-                failure: mapError(failure, errorMapper: errorMapper)
+                failure: errorMapper.mapError(failure)
             )
         }
         do {
@@ -44,14 +44,9 @@ enum ImportConflictBatchAction {
         } catch {
             return await ImportConflictBatchApplyResult(
                 report: nil,
-                failure: mapError(error, errorMapper: errorMapper)
+                failure: errorMapper.mapError(error)
             )
         }
-    }
-
-    private static func mapError(_ error: Error, errorMapper: any CoreErrorMapping) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError { return await errorMapper.mapCoreError(coreError) }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }
 

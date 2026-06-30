@@ -66,15 +66,7 @@ extension OnboardingModel {
         } catch {
             guard case let .initializationFailed(currentRepoPath, _, _) = route,
                   currentRepoPath == repoPath else { return }
-            initializationDiagnostics = await .failed(diagnosticsFailureMapping(for: error))
+            initializationDiagnostics = await .failed(errorMapper.mapError(error))
         }
-    }
-
-    private func diagnosticsFailureMapping(for error: Error) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError {
-            return await errorMapper.mapCoreError(coreError)
-        }
-
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }

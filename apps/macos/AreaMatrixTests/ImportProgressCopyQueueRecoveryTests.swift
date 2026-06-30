@@ -182,7 +182,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         let importer = ImportBatchRecordingBatchImporter()
         let importModel = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         let firstURL = URL(fileURLWithPath: "/tmp/first.pdf")
         let secondURL = URL(fileURLWithPath: "/tmp/second.pdf")

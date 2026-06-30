@@ -22,7 +22,7 @@ final class DetailLogPageIntegrationVerifyTests: XCTestCase {
             fileDetailer: DetailLogIntegrationDetailer(results: [.success(first), .success(second)]),
             changeLogLister: lister,
             externalChangesSyncer: DetailLogIntegrationSyncer(result: .created),
-            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
         )
 
         await model.selectFiles([first.id])
@@ -59,7 +59,7 @@ final class DetailLogPageIntegrationVerifyTests: XCTestCase {
             fileDetailer: DetailLogIntegrationDetailer(results: [.success(selected)]),
             changeLogLister: DetailLogRecordingLister(results: [.success([])]),
             externalChangesSyncer: DetailLogIntegrationSyncer(error: CoreError.Db(message: "sync failed")),
-            errorMapper: DetailMetaErrorMapper(mapping: mapping)
+            errorMapper: StaticCoreErrorMapper(mapping: mapping)
         )
 
         await model.selectFiles([selected.id])
@@ -97,7 +97,7 @@ final class DetailLogPageIntegrationVerifyTests: XCTestCase {
             fileDetailer: DetailLogIntegrationDetailer(results: [.success(selected), .success(synced)]),
             changeLogLister: lister,
             externalChangesSyncer: syncer,
-            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
         )
 
         await model.selectFiles([selected.id])

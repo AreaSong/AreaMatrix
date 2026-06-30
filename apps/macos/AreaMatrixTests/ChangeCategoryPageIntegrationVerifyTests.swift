@@ -74,7 +74,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
-            errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryConflict())
+            errorMapper: StaticCoreErrorMapper(mapping: .changeCategoryConflict())
         )
 
         await model.selectFiles([file.id])
@@ -123,7 +123,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             noteModel: DetailNoteModel(
                 repoPath: "/tmp/repo",
                 noteStore: NoopNoteStore(),
-                errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryConflict())
+                errorMapper: StaticCoreErrorMapper(mapping: .changeCategoryConflict())
             )
         )
         assertChangeCategoryDetailActions(of: pane.body, detail: file)
@@ -151,7 +151,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             updatedAt: 1_700_000_700
         )
         let mapping = CoreErrorMappingSnapshot.changeCategoryConflict()
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let mover = ChangeCategoryRecordingMover(
             previewResult: .failure(CoreError.Conflict(path: "finance/contract.pdf"))
         )

@@ -8,7 +8,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         let conflictBatcher = RecordingConflictBatcher()
         let model = ImportBatchCopyImportModel(
             importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictBatcher: conflictBatcher
         )
 
@@ -43,7 +43,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         let conflictBatcher = RecordingConflictBatcher(preview: .importConflictBatchReplacePreview)
         let model = ImportBatchCopyImportModel(
             importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictBatcher: conflictBatcher
         )
 
@@ -85,7 +85,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         let conflictBatcher = RecordingConflictBatcher(preview: blockedPreview)
         let model = ImportBatchCopyImportModel(
             importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictBatcher: conflictBatcher
         )
 
@@ -182,7 +182,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: bridge,
             preflight: CoreImportSingleFilePreflight(),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         await model.load(request: ImportEntryRequest(
             repoPath: repoURL.path,

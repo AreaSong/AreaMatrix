@@ -111,6 +111,7 @@
 		0A0000000000000000001022 /* MainFileListDetailActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001023 /* MainFileListDetailActions.swift */; };
 		0A0000000000000000001024 /* MainFileListInteractionActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001025 /* MainFileListInteractionActions.swift */; };
 		0A0000000000000000001026 /* MainFileActionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001027 /* MainFileActionState.swift */; };
+		0A0000000000000000001040 /* MainFileBatchActionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001041 /* MainFileBatchActionState.swift */; };
 		0A0000000000000000001030 /* BatchFileActionEligibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001031 /* BatchFileActionEligibilityTests.swift */; };
 		0A00000000000000000000FA /* ValidatePathErrorMappingSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000FB /* ValidatePathErrorMappingSmokeTests.swift */; };
 		0A00000000000000000000FC /* AreaMatrixShellTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000FD /* AreaMatrixShellTestSupport.swift */; };
@@ -717,6 +718,7 @@
 		0A0000000000000000001023 /* MainFileListDetailActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainFileListDetailActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001025 /* MainFileListInteractionActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainFileListInteractionActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001027 /* MainFileActionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileActionState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000001041 /* MainFileBatchActionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileBatchActionState.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002BB /* CoreFileRenaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreFileRenaming.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002BD /* MainFileRenameActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileRenameActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000FB4 /* BatchRenameSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/BatchRenameSupport.swift; sourceTree = SOURCE_ROOT; };
@@ -1452,6 +1454,7 @@
 				children = (
 					0A00000000000000000002BD /* MainFileRenameActions.swift */,
 					0A0000000000000000001027 /* MainFileActionState.swift */,
+					0A0000000000000000001041 /* MainFileBatchActionState.swift */,
 					0A0000000000000000001009 /* BatchRenameSnapshots.swift */,
 					0A0000000000000000000FB4 /* BatchRenameSupport.swift */,
 					0A000000000000000000041B /* BatchRenameUndoAction.swift */,
@@ -2085,6 +2088,7 @@
 				0A0000000000000000001022 /* MainFileListDetailActions.swift in Sources */,
 				0A0000000000000000001024 /* MainFileListInteractionActions.swift in Sources */,
 				0A0000000000000000001026 /* MainFileActionState.swift in Sources */,
+				0A0000000000000000001040 /* MainFileBatchActionState.swift in Sources */,
 				0A00000000000000000002BC /* MainFileRenameActions.swift in Sources */,
 				0A0000000000000000001008 /* BatchRenameSnapshots.swift in Sources */,
 				0A0000000000000000000FB3 /* BatchRenameSupport.swift in Sources */,

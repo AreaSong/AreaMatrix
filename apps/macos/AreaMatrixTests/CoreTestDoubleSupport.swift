@@ -101,3 +101,39 @@ actor StaticScanSessionReader: CoreScanSessionReading {
         try result.get()
     }
 }
+
+actor StaticCoreErrorMapper: CoreErrorMapping {
+    private let mapping: CoreErrorMappingSnapshot
+    private var errors: [CoreError] = []
+
+    init(mapping: CoreErrorMappingSnapshot) {
+        self.mapping = mapping
+    }
+
+    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+        errors.append(error)
+        return mapping
+    }
+
+    func recordedErrors() -> [CoreError] {
+        errors
+    }
+}
+
+actor RecordingCoreErrorMapper: CoreErrorMapping {
+    private let mapping: @Sendable (CoreError) -> CoreErrorMappingSnapshot
+    private var errors: [CoreError] = []
+
+    init(mapping: @escaping @Sendable (CoreError) -> CoreErrorMappingSnapshot) {
+        self.mapping = mapping
+    }
+
+    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+        errors.append(error)
+        return mapping(error)
+    }
+
+    func recordedErrors() -> [CoreError] {
+        errors
+    }
+}

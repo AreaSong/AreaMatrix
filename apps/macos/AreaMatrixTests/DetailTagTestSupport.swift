@@ -82,7 +82,7 @@ extension MainFileListModel {
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             tagStore: tagStore,
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
     }
 }

@@ -283,8 +283,7 @@ final class AdvancedSettingsModel: ObservableObject {
     }
 
     private func mappedError(for error: Error, fallbackMessage: String) async -> AdvancedSettingsError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
+        if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AdvancedSettingsError(
                 message: fallbackMessage,
                 recovery: mapping.suggestedAction.isEmpty ? mapping.userMessage : mapping.suggestedAction

@@ -28,7 +28,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: searcher,
             commandIndexer: indexer,
-            errorMapper: CommandPaletteCommandErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
+            errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
         )
 
         await model.loadCommandIndex(query: " delete ", selectedFileIDs: [20, 10], currentPath: "docs")
@@ -44,7 +44,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
     @MainActor
     func testCommandPaletteCommandIndexCoreMapsCommandIndexFailureForInlineError() async {
         let mapping = CoreErrorMappingSnapshot.commandPaletteCommandDb(rawContext: "command db locked")
-        let mapper = CommandPaletteCommandErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let model = MainFileListModel(
             opening: .mainEmptyImportFixture(repoPath: "/tmp/repo"),
             fileLister: MainListRecordingFileLister(results: []),
@@ -118,7 +118,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
             isLoading: false,
             writeLockedFileIDs: []
         )
-        let route = CommandPaletteBatchRouteBuilder.batchDeleteRoute(context: context)
+        let route = BatchFileActionRouteBuilder.commandPaletteBatchDeleteRoute(context: context)
 
         XCTAssertEqual(target.executionRoute, .batchDelete)
         XCTAssertTrue(target.requiresConfirmation)
@@ -198,7 +198,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: smartListRunner,
             commandIndexer: indexer,
-            errorMapper: CommandPaletteCommandErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
+            errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
         )
 
         model.openCommandPaletteForSearch()
@@ -234,7 +234,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
             opening: .commandPaletteCommandFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
-            errorMapper: CommandPaletteCommandErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
+            errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
         )
         let target = CommandTargetSnapshot.commandPaletteRouteFixture(
             id: "selection.delete",
@@ -249,7 +249,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
             isLoading: model.isLoading,
             writeLockedFileIDs: model.writeLockedFileIDs
         )
-        let route = CommandPaletteBatchRouteBuilder.batchDeleteRoute(context: context)
+        let route = BatchFileActionRouteBuilder.commandPaletteBatchDeleteRoute(context: context)
 
         model.commandPaletteState = .loaded(CommandPaletteSnapshot(coreIndex: .commandPaletteFixture()))
         model.commandPaletteQuery = "delete"
@@ -275,7 +275,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
             opening: .commandPaletteCommandFixture(repoPath: "/tmp/repo", files: []),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
-            errorMapper: CommandPaletteCommandErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
+            errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
         )
 
         model.openCommandPaletteForSearch()
@@ -313,7 +313,7 @@ final class MainEmptyCommandPaletteRedoTests: XCTestCase {
             .list(.success([.redoActionLogExecutedMoveRedo()]))
         ])
         let undoStore = CommandPaletteNoopUndoStore()
-        let errorMapper = CommandPaletteCommandErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
+        let errorMapper = StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
 
         let loaded = await UndoHistoryActionLog.load(
             repoPath: "/tmp/repo",
@@ -348,7 +348,7 @@ final class MainEmptyCommandPaletteRedoTests: XCTestCase {
             .list(.success([.redoActionLogExecutedMoveRedo()]))
         ])
         let undoStore = CommandPaletteNoopUndoStore()
-        let errorMapper = CommandPaletteCommandErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
+        let errorMapper = StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
 
         let loaded = await UndoHistoryActionLog.load(
             repoPath: "/tmp/repo",
@@ -375,7 +375,7 @@ final class MainEmptyCommandPaletteRedoTests: XCTestCase {
     func testRedoActionLogShortcutKeepsUndoHistoryFailureEvidenceWhenRedoIsUnavailable() async {
         let redoStore = RedoActionLogRecordingRedoStore(results: [.list(.success([]))])
         let undoStore = CommandPaletteNoopUndoStore()
-        let errorMapper = CommandPaletteCommandErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
+        let errorMapper = StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
 
         let loaded = await UndoHistoryActionLog.load(
             repoPath: "/tmp/repo",

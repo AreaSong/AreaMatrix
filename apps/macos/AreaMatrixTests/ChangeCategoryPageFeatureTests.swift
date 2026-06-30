@@ -17,7 +17,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             fileCategoryMover: mover,
-            errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryClassify())
+            errorMapper: StaticCoreErrorMapper(mapping: .changeCategoryClassify())
         )
 
         await model.selectFiles([original.id])
@@ -59,7 +59,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             fileCategoryMover: mover,
             changeLogLister: logLister,
-            errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryClassify())
+            errorMapper: StaticCoreErrorMapper(mapping: .changeCategoryClassify())
         )
 
         await model.selectFiles([original.id])
@@ -105,7 +105,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             fileLister: lister,
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             fileCategoryMover: mover,
-            errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryClassify())
+            errorMapper: StaticCoreErrorMapper(mapping: .changeCategoryClassify())
         )
         var movedCallback: FileEntrySnapshot?
 
@@ -157,7 +157,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     func testChangeCategoryMoveToCategoryCoreFailureKeepsSheetOpenAndMapsCoreError() async {
         let original = FileEntrySnapshot.changeCategoryFixture(id: 242, name: "blocked.pdf")
         let mapping = CoreErrorMappingSnapshot.changeCategoryClassify()
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let mover = ChangeCategoryRecordingMover(
             previewResult: .failure(CoreError.Classify(reason: "unknown category"))
         )
@@ -199,7 +199,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             fileCategoryMover: mover,
-            errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryClassify())
+            errorMapper: StaticCoreErrorMapper(mapping: .changeCategoryClassify())
         )
 
         await model.selectFiles([original.id])
@@ -240,7 +240,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             fileCategoryMover: mover,
             categoryPredictor: predictor,
-            errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryClassify())
+            errorMapper: StaticCoreErrorMapper(mapping: .changeCategoryClassify())
         )
 
         await model.selectFiles([original.id])
@@ -304,7 +304,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             fileCategoryMover: mover,
             changeLogLister: DetailLogRecordingLister(results: [.success([])]),
-            errorMapper: DetailMetaErrorMapper(mapping: .changeCategoryClassify())
+            errorMapper: StaticCoreErrorMapper(mapping: .changeCategoryClassify())
         )
 
         await model.selectFiles([original.id])

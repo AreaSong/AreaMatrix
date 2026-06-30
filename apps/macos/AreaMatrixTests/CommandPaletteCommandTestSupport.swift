@@ -31,24 +31,6 @@ actor CommandPaletteCommandIndexStore: CoreCommandIndexing {
     }
 }
 
-actor CommandPaletteCommandErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-    private var errors: [CoreError] = []
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        errors.append(error)
-        return mapping
-    }
-
-    func recordedErrors() -> [CoreError] {
-        errors
-    }
-}
-
 struct CommandPaletteSmartListRunRequest: Equatable {
     var repoPath: String
     var savedSearchID: Int64

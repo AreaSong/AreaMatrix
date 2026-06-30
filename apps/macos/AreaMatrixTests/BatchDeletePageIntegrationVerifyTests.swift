@@ -13,7 +13,7 @@ final class BatchDeleteBatchDeleteVerifyTests: XCTestCase {
             fileIDs: [context.repoOwned.id],
             selectedFiles: [context.repoOwned],
             selectedCount: 1,
-            disabledReason: BatchDeleteEntryPolicy.disabledReason(
+            disabledReason: MainFileBatchEntryPolicy.disabledReason(
                 selectedFiles: [context.repoOwned],
                 isReadOnly: false,
                 isLoading: false,

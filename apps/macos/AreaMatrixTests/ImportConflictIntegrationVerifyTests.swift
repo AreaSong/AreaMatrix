@@ -69,7 +69,7 @@ private extension ImportConflictIntegrationVerifyTests {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         let runner = ImportEntrySingleFileImportRunner(
             request: .importSingleFileFixture(),
@@ -112,7 +112,7 @@ private extension ImportConflictIntegrationVerifyTests {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: importConflictDuplicatePreflight()),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await duplicateModel.load(request: .importSingleFileFixture())
@@ -145,7 +145,7 @@ private extension ImportConflictIntegrationVerifyTests {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: ImportSingleFileRecordingImporter(),
             preflight: ImportSingleFileStaticPreflight(result: importConflictNamePreflight()),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         await nameModel.load(request: .importSingleFileFixture())
         nameModel.updateNameConflictResolution(.renameIncoming("renamed.pdf"))
@@ -168,7 +168,7 @@ private extension ImportConflictIntegrationVerifyTests {
         let importer = ImportBatchRecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         let rows = [
             ImportBatchPreviewRow.duplicate(
@@ -225,7 +225,7 @@ private extension ImportConflictIntegrationVerifyTests {
                 results: [.success(.importFolderPrediction(suggestedName: "dup.pdf"))]
             ),
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: prechecker,
             scanner: scanner
         )

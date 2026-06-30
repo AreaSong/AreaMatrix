@@ -4,6 +4,41 @@ protocol CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot
 }
 
+extension CoreErrorMapping {
+    func mapError(_ error: Error) async -> CoreErrorMappingSnapshot {
+        if let coreError = error as? CoreError {
+            return await mapCoreError(coreError)
+        }
+        return await mapCoreError(CoreError.Internal(message: error.localizedDescription))
+    }
+
+    func mapCoreErrorIfPresent(_ error: Error) async -> CoreErrorMappingSnapshot? {
+        guard let coreError = error as? CoreError else { return nil }
+        return await mapCoreError(coreError)
+    }
+
+    func mapCoreErrorDisplayIfPresent(_ error: Error) async -> CoreErrorDisplaySnapshot? {
+        guard let coreError = error as? CoreError else { return nil }
+        let mapping = await mapCoreError(coreError)
+        return CoreErrorDisplaySnapshot(
+            mapping: mapping,
+            fallbackDetail: coreError.localizedDescription
+        )
+    }
+}
+
+struct CoreErrorDisplaySnapshot: Equatable {
+    var mapping: CoreErrorMappingSnapshot
+    var recovery: String
+    var detail: String
+
+    init(mapping: CoreErrorMappingSnapshot, fallbackDetail: String) {
+        self.mapping = mapping
+        recovery = mapping.suggestedAction.isEmpty ? mapping.userMessage : mapping.suggestedAction
+        detail = mapping.rawContext.isEmpty ? fallbackDetail : mapping.rawContext
+    }
+}
+
 enum CoreErrorKindSnapshot: String, Equatable {
     case io = "Io"
     case db = "Db"

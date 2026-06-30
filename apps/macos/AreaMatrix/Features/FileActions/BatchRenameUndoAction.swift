@@ -119,7 +119,7 @@ enum RedoActionFeedback {
             return await RedoActionLoadResult(
                 action: nil,
                 unavailableReason: nil,
-                failure: mapError(error, errorMapper)
+                failure: errorMapper.mapError(error)
             )
         }
     }
@@ -134,7 +134,10 @@ enum RedoActionFeedback {
             let result = try await redoStore.redoAction(repoPath: repoPath, actionID: action.actionID)
             return RedoActionApplyResult(result: result, failure: nil)
         } catch {
-            return await RedoActionApplyResult(result: nil, failure: mapError(error, errorMapper))
+            return await RedoActionApplyResult(
+                result: nil,
+                failure: errorMapper.mapError(error)
+            )
         }
     }
 
@@ -152,11 +155,6 @@ enum RedoActionFeedback {
         case .executed:
             return "This action has already been redone."
         }
-    }
-
-    static func mapError(_ error: Error, _ errorMapper: any CoreErrorMapping) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError { return await errorMapper.mapCoreError(coreError) }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 
     private static func latestFeedbackAction(from actions: [RedoActionRecordSnapshot]) -> RedoActionRecordSnapshot? {

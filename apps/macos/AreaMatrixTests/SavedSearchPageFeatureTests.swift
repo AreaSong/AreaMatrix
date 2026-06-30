@@ -42,7 +42,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: searcher,
-            errorMapper: MainListRecordingErrorMapper(mapping: .savedSearchSavedSearchDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .savedSearchSavedSearchDbFixture())
         )
         let updatedTree = RepositoryTreeNodeSnapshot.savedSearchSavedSearchFixtureTree().insertingSavedSearch(saved)
 
@@ -89,7 +89,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: searcher,
-            errorMapper: MainListRecordingErrorMapper(mapping: .savedSearchSavedSearchDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .savedSearchSavedSearchDbFixture())
         )
 
         await model.restoreSavedSearch(saved)
@@ -175,7 +175,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
     @MainActor
     func testSmartListLoadSmartListsFailureKeepsNormalSidebarRecoverable() async {
         let mapping = CoreErrorMappingSnapshot.savedSearchSavedSearchDbFixture()
-        let mapper = MainListRecordingErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let store = SmartListRecordingSavedSearchStore(results: [.listFailure(CoreError.Db(message: "db locked"))])
         let tree = RepositoryTreeNodeSnapshot.savedSearchSavedSearchFixtureTree()
         do {

@@ -76,7 +76,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
             fileDetailer: DetailMetaImmediateDetailer(result: .success(removed)),
             changeLogLister: lister,
             externalChangesSyncer: syncer,
-            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
         )
 
         await model.selectFiles([removed.id])
@@ -116,7 +116,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
             fsEventID: 10002
         ))
         let mapping = CoreErrorMappingSnapshot.detailLogExternalRemoved(kind: .db)
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let lister = DetailLogRecordingLister(results: [.success([])])
         let syncer = DetailLogExternalRemovedSyncer(result: .failure(CoreError.Db(message: "delete log failed")))
         let model = MainFileListModel(
@@ -148,7 +148,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
             fsEventID: 10003
         ))
         let mapping = CoreErrorMappingSnapshot.detailLogExternalRemoved(kind: .internal)
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let lister = DetailLogRecordingLister(results: [.success([])])
         let syncer = DetailLogExternalRemovedSyncer(result: .success(.detailRemovedMissingDeleteFixture()))
         let model = MainFileListModel(

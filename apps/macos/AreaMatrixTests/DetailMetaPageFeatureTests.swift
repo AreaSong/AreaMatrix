@@ -11,7 +11,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [cached]),
             fileLister: NoopFileLister(),
             fileDetailer: detailer,
-            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
         )
 
         let selectionTask = Task { await model.selectFiles([cached.id]) }
@@ -34,7 +34,7 @@ final class DetailMetaPageFeatureTests: XCTestCase {
     func testDetailViewKeepsCachedSummaryWhenGetFileDetailCoreGetFileFails() async {
         let cached = FileEntrySnapshot.detailMetaFixture(id: 13, currentName: "missing.pdf")
         let mapping = CoreErrorMappingSnapshot.detailMetaFileNotFound()
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [cached]),
             fileLister: NoopFileLister(),

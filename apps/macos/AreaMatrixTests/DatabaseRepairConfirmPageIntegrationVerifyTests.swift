@@ -48,7 +48,7 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairIntegrationDiagnostics)
             ),
-            errorMapper: StaticRepairErrorMapper(mapping: mapping)
+            errorMapper: StaticCoreErrorMapper(mapping: mapping)
         )
 
         repairModel.isMetadataSafetyConfirmed = true
@@ -93,18 +93,6 @@ private actor RecordingMetadataRepairer: CoreMetadataRepairing {
 
     func requests() -> [DatabaseRepairIntegrationRepairRequest] {
         recordedRequests
-    }
-}
-
-private actor StaticRepairErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        mapping
     }
 }
 

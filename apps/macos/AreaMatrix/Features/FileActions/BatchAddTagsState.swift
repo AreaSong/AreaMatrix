@@ -1,5 +1,57 @@
 import Foundation
 
+struct BatchAddTagsRoute: Identifiable, Equatable {
+    let source: MainFileBatchActionRouteSource
+    private let payload: MainFileBatchActionRoutePayload
+
+    var fileIDs: [Int64] {
+        payload.fileIDs
+    }
+
+    var selectedFiles: [FileEntrySnapshot] {
+        payload.selectedFiles
+    }
+
+    var selectedCount: Int {
+        payload.selectedCount
+    }
+
+    var disabledReason: String? {
+        payload.disabledReason
+    }
+
+    var id: String {
+        ([source.rawValue] + payload.identityParts).joined(separator: ":")
+    }
+
+    init(
+        source: MainFileBatchActionRouteSource,
+        fileIDs: [Int64],
+        selectedFiles: [FileEntrySnapshot] = [],
+        selectedCount: Int,
+        disabledReason: String?
+    ) {
+        self.source = source
+        payload = MainFileBatchActionRoutePayload(
+            fileIDs: fileIDs,
+            selectedFiles: selectedFiles,
+            selectedCount: selectedCount,
+            disabledReason: disabledReason
+        )
+    }
+}
+
+extension BatchAddTagsRoute {
+    init(source: MainFileBatchActionRouteSource, context: MainFileBatchActionRouteContext) {
+        self.init(source: source, payload: MainFileBatchActionRoutePayload(context: context))
+    }
+
+    private init(source: MainFileBatchActionRouteSource, payload: MainFileBatchActionRoutePayload) {
+        self.source = source
+        self.payload = payload
+    }
+}
+
 extension CoreErrorMappingSnapshot {
     static func batchTagFileSelectionMissing() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
@@ -46,21 +98,10 @@ enum BatchPendingTagStatus: String, Equatable {
 
 enum BatchAddTagsEntryPolicy {
     static func openHelp(disabledReason: String?) -> String {
-        disabledReason.map { "\($0). You can still review selected files and tag candidates." } ??
-            "Add tags to the selected files"
-    }
-
-    static func disabledReason(
-        selectedFiles: [FileEntrySnapshot],
-        isReadOnly: Bool,
-        isLoading: Bool,
-        writeLockedFileIDs: Set<Int64>
-    ) -> String? {
-        MainFileBatchActionEligibility.disabledReason(
-            selectedFiles: selectedFiles,
-            isReadOnly: isReadOnly,
-            isLoading: isLoading,
-            writeLockedFileIDs: writeLockedFileIDs
+        MainFileBatchEntryPolicy.openHelp(
+            disabledReason: disabledReason,
+            defaultHelp: "Add tags to the selected files",
+            blockedHelpSuffix: "You can still review selected files and tag candidates."
         )
     }
 }
@@ -115,13 +156,8 @@ enum BatchTagCatalogAction {
         do {
             return try await .loaded(tagStore.listTags(repoPath: repoPath, fileID: anchorFileID))
         } catch {
-            return await .failed(mapError(error, errorMapper: errorMapper), previous: nil)
+            return await .failed(errorMapper.mapError(error), previous: nil)
         }
-    }
-
-    private static func mapError(_ error: Error, errorMapper: any CoreErrorMapping) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError { return await errorMapper.mapCoreError(coreError) }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }
 
@@ -238,12 +274,10 @@ enum BatchAddTagsAction {
             let report = try await tagStore.batchAddTags(repoPath: repoPath, fileIDs: fileIDs, tags: tags)
             return BatchAddTagsApplyResult(report: report, failure: nil)
         } catch {
-            return await BatchAddTagsApplyResult(report: nil, failure: mapError(error, errorMapper: errorMapper))
+            return await BatchAddTagsApplyResult(
+                report: nil,
+                failure: errorMapper.mapError(error)
+            )
         }
-    }
-
-    private static func mapError(_ error: Error, errorMapper: any CoreErrorMapping) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError { return await errorMapper.mapCoreError(coreError) }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }

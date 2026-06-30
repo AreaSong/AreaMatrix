@@ -143,7 +143,7 @@ final class ImportBatchResultSummaryTests: XCTestCase {
         let importer = ImportBatchRecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         model.applyPreviewRows(
@@ -208,7 +208,7 @@ final class ImportBatchResultSummaryTests: XCTestCase {
         ]
         let model = ImportBatchCopyImportModel(
             importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         model.applyPreviewRows(

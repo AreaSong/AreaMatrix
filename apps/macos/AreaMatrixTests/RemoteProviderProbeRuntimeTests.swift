@@ -293,7 +293,7 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
-            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
         )
         let request = AIClassificationSuggestionRequestState(
             fileID: file.id,

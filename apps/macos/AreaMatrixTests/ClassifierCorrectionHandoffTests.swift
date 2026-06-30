@@ -11,7 +11,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             fileCategoryMover: mover,
-            errorMapper: DetailMetaErrorMapper(mapping: classifierCorrectionClassifierCorrectionClassifyMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: classifierCorrectionClassifierCorrectionClassifyMapping())
         )
 
         await model.selectFiles([file.id])
@@ -108,7 +108,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
-            errorMapper: DetailMetaErrorMapper(mapping: classifierCorrectionClassifierCorrectionClassifyMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: classifierCorrectionClassifierCorrectionClassifyMapping())
         )
 
         await model.selectFiles([file.id])

@@ -69,18 +69,6 @@ actor MainListIntegrationDetailer: CoreFileDetailing {
     }
 }
 
-actor MainListIntegrationErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        mapping
-    }
-}
-
 actor MainListIntegrationDiagnosticsCollector: CoreDiagnosticsCollecting {
     enum Result {
         case success(DiagnosticsSnapshotSnapshot)

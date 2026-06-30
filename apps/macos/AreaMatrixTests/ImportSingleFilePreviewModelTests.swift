@@ -24,7 +24,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
             predictor: predictor,
             importer: ImportSingleFilePreviewRecordingImporter(results: []),
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: RecordingPreviewErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importCopy()
         )
 
         await model.load(request: request)
@@ -62,7 +62,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
             predictor: predictor,
             importer: ImportSingleFilePreviewRecordingImporter(results: []),
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: RecordingPreviewErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importCopy()
         )
 
         await model.load(request: request)
@@ -89,7 +89,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
             predictor: predictor,
             importer: ImportSingleFilePreviewRecordingImporter(results: []),
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: RecordingPreviewErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importCopy()
         )
 
         await model.load(request: request)
@@ -117,7 +117,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
             predictor: predictor,
             importer: ImportSingleFilePreviewRecordingImporter(results: []),
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: RecordingPreviewErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importCopy()
         )
 
         await model.load(request: request)
@@ -148,7 +148,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
             predictor: predictor,
             importer: importer,
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: RecordingPreviewErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importCopy()
         )
         let request = ImportEntryRequest(
             repoPath: "/tmp/repo",
@@ -191,7 +191,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         let importer = ImportSingleFilePreviewRecordingImporter(results: [
             .failure(CoreError.PermissionDenied(path: "/tmp/source.pdf"))
         ])
-        let errorMapper = RecordingPreviewErrorMapper()
+        let errorMapper = RecordingCoreErrorMapper.importCopy()
         let model = ImportSingleFilePreviewModel(
             predictor: predictor,
             importer: importer,
@@ -224,7 +224,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
             predictor: RecordingPreviewPredictor(results: []),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: RecordingPreviewErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importCopy()
         )
 
         await model.importSelectedFile()
@@ -240,7 +240,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
             predictor: RecordingPreviewPredictor(results: [.success(.importSingleFileFixture())]),
             importer: ImportSingleFilePreviewRecordingImporter(results: []),
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: RecordingPreviewErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importCopy()
         )
 
         await model.load(request: .importSingleFileFixture())
@@ -265,7 +265,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: result),
             placeholderDownloader: ImportSingleFileStaticICloudDownloader(),
-            errorMapper: RecordingPreviewErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importCopy()
         )
 
         await model.load(request: .importSingleFileFixture())
@@ -293,7 +293,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
             placeholderDownloader: ImportSingleFileStaticICloudDownloader(
                 error: ImportSingleFileStaticLocalizedError(message: "network offline")
             ),
-            errorMapper: RecordingPreviewErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importCopy()
         )
 
         await model.load(request: .importSingleFileFixture())
@@ -426,18 +426,5 @@ private actor ImportSingleFilePreviewRecordingImporter: CoreFileImporting {
 
     func recordedRequests() -> [ImportSingleFilePreviewImportRequest] {
         requests
-    }
-}
-
-private actor RecordingPreviewErrorMapper: CoreErrorMapping {
-    private var errors: [CoreError] = []
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        errors.append(error)
-        return CoreErrorMappingSnapshot.importCopyFixture(kind: CoreErrorKindTestMapper.kind(for: error))
-    }
-
-    func recordedErrors() -> [CoreError] {
-        errors
     }
 }

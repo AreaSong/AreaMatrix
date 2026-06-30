@@ -128,7 +128,7 @@ final class ICloudConflictMinimalModel: ObservableObject {
             repositoryValidationState = Self.state(for: validation)
         } catch {
             guard validationGeneration == currentGeneration else { return }
-            repositoryValidationState = await .failed(mapValidationError(error))
+            repositoryValidationState = await .failed(errorMapper.mapError(error))
         }
     }
 
@@ -157,7 +157,7 @@ final class ICloudConflictMinimalModel: ObservableObject {
             previewState = preview.versions.isEmpty ? .empty : .loaded(preview)
         } catch {
             guard previewGeneration == currentGeneration else { return }
-            previewState = await .failed(mapValidationError(error))
+            previewState = await .failed(errorMapper.mapError(error))
         }
     }
 
@@ -188,7 +188,7 @@ final class ICloudConflictMinimalModel: ObservableObject {
         guard let reviewer = conflictReviewer,
               let conflictID,
               !conflictID.isEmpty else {
-            let mapping = await mapValidationError(CoreError.Conflict(path: "missing iCloud conflict id"))
+            let mapping = await errorMapper.mapError(CoreError.Conflict(path: "missing iCloud conflict id"))
             return .failed(mapping)
         }
 
@@ -204,21 +204,13 @@ final class ICloudConflictMinimalModel: ObservableObject {
             try validateResolutionResult(result)
             return .resolved(result)
         } catch {
-            let mapping = await mapValidationError(error)
+            let mapping = await errorMapper.mapError(error)
             return .failed(mapping)
         }
     }
 
-    private func mapValidationError(_ error: Error) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError {
-            return await errorMapper.mapCoreError(coreError)
-        }
-
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
-    }
-
     func mapCoreError(_ error: Error) async -> CoreErrorMappingSnapshot {
-        await mapValidationError(error)
+        await errorMapper.mapError(error)
     }
 
     private static func state(for validation: RepoPathValidationSnapshot) -> ICloudConflictRepositoryValidationState {

@@ -12,7 +12,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
             fileDeleter: deleter,
             changeLogLister: DetailLogRecordingLister(results: [.success([])]),
-            errorMapper: DetailMetaErrorMapper(mapping: .deleteIo())
+            errorMapper: StaticCoreErrorMapper(mapping: .deleteIo())
         )
 
         await model.selectFiles([file.id])
@@ -47,7 +47,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(indexed)),
             fileDeleter: deleter,
-            errorMapper: DetailMetaErrorMapper(mapping: .deleteIo())
+            errorMapper: StaticCoreErrorMapper(mapping: .deleteIo())
         )
 
         XCTAssertEqual(MainFileDeleteOperation.recommended(for: indexed), .removeFromIndex)
@@ -69,7 +69,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
     func testDeleteFileDeleteRemoveIndexCoreFailureKeepsSheetOpenAndMapsCoreError() async {
         let file = FileEntrySnapshot.deleteFixture(id: 233, name: "locked.pdf", storageMode: "Copied")
         let mapping = CoreErrorMappingSnapshot.deletePermissionDenied()
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let deleter = DeleteRecordingDeleter(deleteResult: .failure(CoreError.PermissionDenied(path: file.path)))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
@@ -100,7 +100,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [missing]),
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .failure(CoreError.FileNotFound(path: missing.path))),
-            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
         )
 
         await model.selectFiles([missing.id])

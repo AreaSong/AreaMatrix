@@ -125,7 +125,7 @@ final class SyncConflictEntryModel: ObservableObject {
             state = snapshot.conflicts.isEmpty ? .empty : .loaded(snapshot)
         } catch {
             guard generation == loadGeneration else { return }
-            state = await .failed(mapError(error))
+            state = await .failed(errorMapper.mapError(error))
         }
     }
 
@@ -136,13 +136,6 @@ final class SyncConflictEntryModel: ObservableObject {
             }
             return (lhs.detectedAt ?? 0) > (rhs.detectedAt ?? 0)
         }
-    }
-
-    private func mapError(_ error: Error) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError {
-            return await errorMapper.mapCoreError(coreError)
-        }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }
 

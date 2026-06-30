@@ -86,7 +86,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: searcher,
-            errorMapper: MainListRecordingErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
         )
 
         await model.runSearch(
@@ -129,7 +129,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: searcher,
-            errorMapper: MainListRecordingErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
         )
 
         await model.runSearch(
@@ -150,7 +150,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
     @MainActor
     func testMainListSearchFailureMapsErrorAndPreservesRequestForRetry() async {
         let mapping = CoreErrorMappingSnapshot.integrationFilterDbFixture(rawContext: "search db locked")
-        let mapper = MainListRecordingErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let searcher = MainListRecordingSearchQuerying(results: [
             .failure(CoreError.Db(message: "search db locked"))
         ])
@@ -193,7 +193,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: searcher,
-            errorMapper: MainListRecordingErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
         )
 
         await model.runSearch(
@@ -223,7 +223,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
             fileDetailer: MainListRecordingFileDetailer(results: []),
             semanticSearching: MainListRecordingSemanticSearcher(page: .semanticSearchSemanticFallbackFixture()),
             semanticFallbackReader: fallback,
-            errorMapper: MainListRecordingErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
         )
 
         await model.runSearch(

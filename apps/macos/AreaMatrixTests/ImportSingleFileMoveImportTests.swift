@@ -22,7 +22,7 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
             predictor: predictor,
             importer: importer,
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: MoveImportRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.moveImport()
         )
         let request = ImportEntryRequest(
             repoPath: "/tmp/repo",
@@ -65,7 +65,7 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
         let importer = MoveImportRecordingImporter(results: [
             .failure(CoreError.PermissionDenied(path: "/tmp/source.pdf"))
         ])
-        let errorMapper = MoveImportRecordingErrorMapper()
+        let errorMapper = RecordingCoreErrorMapper.moveImport()
         let model = ImportSingleFilePreviewModel(
             predictor: predictor,
             importer: importer,
@@ -224,19 +224,6 @@ private actor MoveImportRecordingImporter: CoreFileImporting {
     }
 }
 
-private actor MoveImportRecordingErrorMapper: CoreErrorMapping {
-    private var errors: [CoreError] = []
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        errors.append(error)
-        return CoreErrorMappingSnapshot.moveImportFixture(kind: CoreErrorKindTestMapper.kind(for: error))
-    }
-
-    func recordedErrors() -> [CoreError] {
-        errors
-    }
-}
-
 private extension FileEntrySnapshot {
     static func moveImportFixture(currentName: String, category: String) -> FileEntrySnapshot {
         FileEntrySnapshot(
@@ -266,6 +253,16 @@ private extension CoreErrorMappingSnapshot {
             recoverability: .userActionRequired,
             rawContext: "move import"
         )
+    }
+}
+
+private extension RecordingCoreErrorMapper {
+    static func moveImport() -> RecordingCoreErrorMapper {
+        RecordingCoreErrorMapper { error in
+            CoreErrorMappingSnapshot.moveImportFixture(
+                kind: CoreErrorKindTestMapper.kind(for: error)
+            )
+        }
     }
 }
 

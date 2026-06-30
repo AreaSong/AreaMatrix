@@ -80,7 +80,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
             .failure(CoreError.DuplicateFile(existingPath: "finance/existing-invoice.pdf")),
             .success(.importSingleFileFixture(currentName: "2026Q1_合同.pdf", category: "docs"))
         ])
-        let errorMapper = ImportSingleFileRecordingErrorMapper()
+        let errorMapper = RecordingCoreErrorMapper.importSingleFile()
         let model = ImportBatchCopyImportModel(
             importer: importer,
             errorMapper: errorMapper
@@ -133,7 +133,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         ])
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         let rows = [importBatchPreviewRow(url: invoiceURL, category: "finance", suggestedName: "Invoice_2026Q1.pdf")]
         let request = importBatchBatchRequest(urls: [invoiceURL])
@@ -174,7 +174,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         ])
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         let rows = [
             importBatchPreviewRow(url: invoiceURL, category: "finance", suggestedName: "Invoice_2026Q1.pdf"),
@@ -219,7 +219,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         ])
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         let rows = [importBatchPreviewRow(url: invoiceURL, category: "finance", suggestedName: "Invoice_2026Q1.pdf")]
         let request = importBatchBatchRequest(urls: [invoiceURL])
@@ -310,7 +310,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         ])
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         let rows = [importBatchPreviewRow(url: invoiceURL, category: "finance", suggestedName: "Invoice_2026Q1.pdf")]
         let request = importBatchBatchRequest(urls: [invoiceURL])

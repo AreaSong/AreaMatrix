@@ -67,34 +67,47 @@ extension MainRepositoryContentView {
         )
     }
 
-    func openBatchAddTagsRoute(_ ids: Set<Int64>, source: BatchAddTagsRouteSource) {
+    func openBatchAddTagsRoute(_ ids: Set<Int64>, source: MainFileBatchActionRouteSource) {
         let context = batchActionRouteContext(ids)
-        pendingBatchAddTagsRoute = BatchAddTagsRoute(source: source, context: context)
+        pendingBatchAddTagsRoute = BatchFileActionRouteBuilder.batchAddTagsRoute(source: source, context: context)
     }
 
-    func openBatchChangeCategoryRoute(_ ids: Set<Int64>, source: BatchChangeCategoryRouteSource) {
+    func openBatchChangeCategoryRoute(_ ids: Set<Int64>, source: MainFileBatchActionRouteSource) {
         let context = batchActionRouteContext(ids)
-        pendingBatchChangeCategoryRoute = BatchChangeCategoryRoute(source: source, context: context)
+        pendingBatchChangeCategoryRoute = BatchFileActionRouteBuilder.batchChangeCategoryRoute(
+            source: source,
+            context: context
+        )
     }
 
-    func openBatchDeleteRoute(_ ids: Set<Int64>, source: BatchDeleteRouteSource) {
+    func openBatchDeleteRoute(_ ids: Set<Int64>, source: MainFileBatchActionRouteSource) {
         let context = batchActionRouteContext(ids)
-        pendingBatchDeleteRoute = BatchDeleteRoute(source: source, context: context)
+        pendingBatchDeleteRoute = BatchFileActionRouteBuilder.batchDeleteRoute(source: source, context: context)
     }
 
-    func openBatchRenameRoute(_ ids: Set<Int64>, source: BatchRenameRouteSource) {
+    func openBatchRenameRoute(_ ids: Set<Int64>, source: MainFileBatchActionRouteSource) {
         let context = batchActionRouteContext(ids)
-        pendingBatchRenameRoute = BatchRenameRoute(source: source, context: context)
+        pendingBatchRenameRoute = BatchFileActionRouteBuilder.batchRenameRoute(source: source, context: context)
     }
 
     func commandPaletteBatchAddTagsRoute() -> BatchAddTagsRoute {
         let context = batchActionRouteContext(selectedFileIDs)
-        return BatchAddTagsRoute(source: .commandPalette, context: context)
+        return BatchFileActionRouteBuilder.commandPaletteBatchAddTagsRoute(context: context)
     }
 
     func commandPaletteBatchChangeCategoryRoute() -> BatchChangeCategoryRoute {
         let context = batchActionRouteContext(selectedFileIDs)
-        return BatchChangeCategoryRoute(source: .commandPalette, context: context)
+        return BatchFileActionRouteBuilder.commandPaletteBatchChangeCategoryRoute(context: context)
+    }
+
+    func commandPaletteBatchDeleteRoute() -> BatchDeleteRoute {
+        let context = batchActionRouteContext(selectedFileIDs)
+        return BatchFileActionRouteBuilder.commandPaletteBatchDeleteRoute(context: context)
+    }
+
+    func commandPaletteBatchRenameRoute() -> BatchRenameRoute {
+        let context = batchActionRouteContext(selectedFileIDs)
+        return BatchFileActionRouteBuilder.commandPaletteBatchRenameRoute(context: context)
     }
 
     func applyBatchCategoryChangeResult(_ report: BatchCategoryChangeReportSnapshot) {
@@ -168,15 +181,5 @@ extension MainRepositoryContentView {
             isLoading: fileListModel.isLoading,
             writeLockedFileIDs: fileListModel.writeLockedFileIDs
         )
-    }
-}
-
-enum CommandPaletteBatchRouteBuilder {
-    static func batchDeleteRoute(context: MainFileBatchActionRouteContext) -> BatchDeleteRoute {
-        BatchDeleteRoute(source: .commandPalette, context: context)
-    }
-
-    static func batchRenameRoute(context: MainFileBatchActionRouteContext) -> BatchRenameRoute {
-        BatchRenameRoute(source: .commandPalette, context: context)
     }
 }

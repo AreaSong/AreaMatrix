@@ -84,8 +84,7 @@ extension RepositorySettingsModel {
         summary: RepositorySettingsHealthSummary
     ) async -> RepositorySettingsHealthSummary {
         var updatedSummary = summary
-        if let coreError = error as? CoreError {
-            let mappingResult = await errorMapper.mapCoreError(coreError)
+        if let mappingResult = await errorMapper.mapCoreErrorIfPresent(error) {
             let status = databaseStatus(for: mappingResult)
             updatedSummary.databaseStatus = status
             healthError = RepositorySettingsHealthError(

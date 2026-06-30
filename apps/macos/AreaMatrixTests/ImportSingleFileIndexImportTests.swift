@@ -22,7 +22,7 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
             predictor: predictor,
             importer: importer,
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: IndexImportRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.indexImport()
         )
         let request = ImportEntryRequest(
             repoPath: "/tmp/repo",
@@ -65,7 +65,7 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
         let importer = IndexImportRecordingImporter(results: [
             .failure(CoreError.ICloudPlaceholder(path: "/tmp/source.pdf"))
         ])
-        let errorMapper = IndexImportRecordingErrorMapper()
+        let errorMapper = RecordingCoreErrorMapper.indexImport()
         let model = ImportSingleFilePreviewModel(
             predictor: predictor,
             importer: importer,
@@ -225,19 +225,6 @@ private actor IndexImportRecordingImporter: CoreFileImporting {
     }
 }
 
-private actor IndexImportRecordingErrorMapper: CoreErrorMapping {
-    private var errors: [CoreError] = []
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        errors.append(error)
-        return CoreErrorMappingSnapshot.indexImportFixture(kind: CoreErrorKindTestMapper.kind(for: error))
-    }
-
-    func recordedErrors() -> [CoreError] {
-        errors
-    }
-}
-
 private extension FileEntrySnapshot {
     static func indexImportFixture(currentName: String, category: String) -> FileEntrySnapshot {
         FileEntrySnapshot(
@@ -267,6 +254,16 @@ private extension CoreErrorMappingSnapshot {
             recoverability: .userActionRequired,
             rawContext: "index import"
         )
+    }
+}
+
+private extension RecordingCoreErrorMapper {
+    static func indexImport() -> RecordingCoreErrorMapper {
+        RecordingCoreErrorMapper { error in
+            CoreErrorMappingSnapshot.indexImportFixture(
+                kind: CoreErrorKindTestMapper.kind(for: error)
+            )
+        }
     }
 }
 

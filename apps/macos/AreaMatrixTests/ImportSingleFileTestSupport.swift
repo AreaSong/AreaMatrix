@@ -257,19 +257,6 @@ actor ImportSingleFileFailingImporter: CoreFileImporting {
     }
 }
 
-actor ImportSingleFileRecordingErrorMapper: CoreErrorMapping {
-    private var errors: [CoreError] = []
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        errors.append(error)
-        return .importSingleFileError(kind: CoreErrorKindTestMapper.kind(for: error))
-    }
-
-    func recordedErrors() -> [CoreError] {
-        errors
-    }
-}
-
 actor ImportSingleFileStaticRepositoryOpener: CoreEmptyRepositoryOpening {
     let opening: RepositoryOpeningResult
 

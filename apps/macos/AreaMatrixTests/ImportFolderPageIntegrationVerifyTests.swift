@@ -71,7 +71,7 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
@@ -106,7 +106,7 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
@@ -122,7 +122,7 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         let cleanModel = ImportFolderPreviewModel(
             predictor: ImportFolderRecordingPredictor(results: [.success(.importFolderPrediction())]),
             importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: cleanScanner
         )

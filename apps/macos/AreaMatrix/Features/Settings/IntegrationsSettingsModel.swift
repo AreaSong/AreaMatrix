@@ -240,8 +240,7 @@ final class IntegrationsSettingsModel: ObservableObject {
     }
 
     private func settingsError(for error: Error, fallbackRecovery: String) async -> IntegrationsSettingsError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
+        if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return IntegrationsSettingsError(
                 message: mapping.userMessage,
                 recovery: mapping.suggestedAction.isEmpty ? fallbackRecovery : mapping.suggestedAction

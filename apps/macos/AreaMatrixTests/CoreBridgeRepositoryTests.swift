@@ -107,7 +107,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: searcher,
             searchFiltering: facetLoader,
-            errorMapper: MainListRecordingErrorMapper(mapping: .searchFiltersDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .searchFiltersDbFixture())
         )
 
         await model.runSearch(
@@ -177,7 +177,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: searcher,
             searchFiltering: MainListRecordingSearchFiltering(results: []),
-            errorMapper: MainListRecordingErrorMapper(mapping: .searchFiltersDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .searchFiltersDbFixture())
         )
 
         await model.runSearch(
@@ -201,7 +201,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
     @MainActor
     func testSearchFiltersSearchFiltersFailureMapsSearchFiltersCoreErrorAndCanRetryWithoutClearingSearch() async {
         let mapping = CoreErrorMappingSnapshot.searchFiltersDbFixture()
-        let mapper = MainListRecordingErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let facetLoader = MainListRecordingSearchFiltering(results: [
             .failure(CoreError.Db(message: "facet db locked")),
             .success(.searchFiltersFixture(active: 1))
@@ -237,7 +237,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: MainListRecordingSearchQuerying(results: []),
             searchFiltering: MainListRecordingSearchFiltering(results: [.success(.searchFiltersFixture(active: 2))]),
-            errorMapper: MainListRecordingErrorMapper(mapping: .searchFiltersDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .searchFiltersDbFixture())
         )
 
         await model.loadSearchFacets(

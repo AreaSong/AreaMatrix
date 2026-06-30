@@ -126,7 +126,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
             emptyRepositoryOpener: opener,
             startupRecoverer: recoverer,
             scanSessionReader: StaticScanSessionReader(),
-            errorMapper: StartupRecoveryErrorMapper(mapping: mapping),
+            errorMapper: StaticCoreErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -193,7 +193,7 @@ final class AITagBatchPageFeatureTests: XCTestCase {
                 snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])
             ),
             changeLogLister: DetailLogRecordingChangeLister(entries: [.tagSuggestionsApplied()]),
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles(Set(files.map(\.id)))
@@ -246,7 +246,7 @@ final class AITagBatchPageFeatureTests: XCTestCase {
             aiPrivacyRules: RemotePrivacyRulesBridge(
                 snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])
             ),
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([first.id, second.id])
@@ -321,7 +321,7 @@ final class AITagBatchPageFeatureTests: XCTestCase {
             aiPrivacyRules: RemotePrivacyRulesBridge(
                 snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])
             ),
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles(Set(files.map(\.id)))
@@ -367,7 +367,7 @@ final class AITagBatchPageFeatureTests: XCTestCase {
                 aiSettingsLoader: AITagSuggestionAISettingsLoader(),
                 aiTagSuggestionStore: bridge,
                 aiPrivacyRules: privacy,
-                errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+                errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
             )
 
             await model.selectFiles([file.id])
@@ -416,18 +416,6 @@ final class AITagBatchPageFeatureTests: XCTestCase {
         XCTAssertEqual(requests.apply.first?.suggestions.first?.slug, "finance-review")
         XCTAssertEqual(requests.apply.first?.suggestions.first?.editedByUser, true)
         XCTAssertEqual(requests.apply.first?.suggestions.first?.mergeTargetSlug, "finance")
-    }
-}
-
-private actor StartupRecoveryErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        mapping
     }
 }
 

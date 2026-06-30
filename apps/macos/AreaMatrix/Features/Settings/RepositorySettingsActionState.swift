@@ -246,8 +246,7 @@ final class LocalModelStatusModel: ObservableObject {
         message: String,
         fallbackRecovery: String
     ) async -> LocalModelStatusError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
+        if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return LocalModelStatusError(
                 message: message,
                 recovery: mapping.suggestedAction.isEmpty ? fallbackRecovery : mapping.suggestedAction,

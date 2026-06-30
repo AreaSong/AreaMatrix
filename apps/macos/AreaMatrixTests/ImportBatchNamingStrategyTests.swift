@@ -8,7 +8,7 @@ final class ImportBatchNamingStrategyTests: XCTestCase {
         let importer = ImportBatchRecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         let rows = [
             ImportBatchPreviewRow.ready(

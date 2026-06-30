@@ -153,6 +153,24 @@ extension CoreErrorMappingSnapshot {
     }
 }
 
+extension RecordingCoreErrorMapper {
+    static func importSingleFile() -> RecordingCoreErrorMapper {
+        RecordingCoreErrorMapper { error in
+            CoreErrorMappingSnapshot.importSingleFileError(
+                kind: CoreErrorKindTestMapper.kind(for: error)
+            )
+        }
+    }
+
+    static func importCopy() -> RecordingCoreErrorMapper {
+        RecordingCoreErrorMapper { error in
+            CoreErrorMappingSnapshot.importCopyFixture(
+                kind: CoreErrorKindTestMapper.kind(for: error)
+            )
+        }
+    }
+}
+
 extension ImportSingleFileStorageMode {
     var coreStorageMode: String {
         switch self {

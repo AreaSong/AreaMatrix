@@ -28,7 +28,7 @@ final class SearchResultsPageIntegrationVerifyTests: XCTestCase {
             fileDetailer: detailer,
             searchQuerying: searcher,
             searchFiltering: facetLoader,
-            errorMapper: SearchResultsPageIntegrationErrorMapper(mapping: .task98Mapping(kind: .db))
+            errorMapper: StaticCoreErrorMapper(mapping: .task98Mapping(kind: .db))
         )
 
         await model.runSearch(query: " 合同 ", scope: .current, sort: .relevance, sidebarRow: row, filters: filters)
@@ -70,7 +70,7 @@ final class SearchResultsPageIntegrationVerifyTests: XCTestCase {
             fileLister: MainListRecordingFileLister(results: [.success([])]),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: searcher,
-            errorMapper: SearchResultsPageIntegrationErrorMapper(mapping: .task98Mapping(kind: .db))
+            errorMapper: StaticCoreErrorMapper(mapping: .task98Mapping(kind: .db))
         )
 
         await model.runSearch(
@@ -130,7 +130,7 @@ final class SearchResultsPageIntegrationVerifyTests: XCTestCase {
             fileLister: MainListRecordingFileLister(results: [.success([])]),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: searcher,
-            errorMapper: SearchResultsPageIntegrationErrorMapper(mapping: .task98Mapping(kind: .db))
+            errorMapper: StaticCoreErrorMapper(mapping: .task98Mapping(kind: .db))
         )
         let smartListContext = MainSearchEntryContext.smartList(id: 42, name: "最近合同")
 
@@ -147,18 +147,6 @@ final class SearchResultsPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(model.lastSearchExitContext, .smartList(id: 42, name: "最近合同"))
         XCTAssertEqual(model.searchState, .idle)
         XCTAssertNil(model.pendingSearchDestination)
-    }
-}
-
-private actor SearchResultsPageIntegrationErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        mapping
     }
 }
 

@@ -28,7 +28,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: ImportFolderNoopConflictPrechecker()
         )
 
@@ -72,7 +72,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: ImportFolderNoopConflictPrechecker()
         )
 
@@ -96,7 +96,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: ImportFolderNoopConflictPrechecker()
         )
 
@@ -124,7 +124,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
@@ -170,7 +170,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
@@ -222,7 +222,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
@@ -280,7 +280,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         let importer = ImportBatchSequenceBatchImporter(results: [
             .failure(CoreError.PermissionDenied(path: invoiceURL.path))
         ])
-        let errorMapper = ImportSingleFileRecordingErrorMapper()
+        let errorMapper = RecordingCoreErrorMapper.importSingleFile()
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
@@ -325,7 +325,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
@@ -372,7 +372,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
@@ -419,7 +419,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )

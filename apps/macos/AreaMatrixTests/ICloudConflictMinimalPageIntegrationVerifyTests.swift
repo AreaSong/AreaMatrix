@@ -58,7 +58,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
     func testICloudConflictMinimalApplyMapsCapabilityBlockerWithoutCallingOutOfScopeCoreActions() async {
         let conflictFile = FileEntrySnapshot.iCloudConflictMinimalConflictFixture(id: 126)
         let core = ICloudConflictMinimalRecordingMainCore(files: [conflictFile])
-        let mapper = ICloudErrorMapper(mapping: .iCloudConflictMinimalMapping(
+        let mapper = StaticCoreErrorMapper(mapping: .iCloudConflictMinimalMapping(
             kind: .internal,
             rawContext: ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.rawContext
         ))
@@ -142,7 +142,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         let failedValidator = ICloudPathValidator(
             result: .failure(CoreError.PermissionDenied(path: "/tmp/iCloudConflictMinimal-repo"))
         )
-        let mapper = ICloudErrorMapper(mapping: .iCloudConflictMinimalMapping(
+        let mapper = StaticCoreErrorMapper(mapping: .iCloudConflictMinimalMapping(
             kind: .permissionDenied,
             rawContext: "/tmp/iCloudConflictMinimal-repo"
         ))
@@ -184,7 +184,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             iCloudConflictResolver: resolver,
             changeLogLister: core,
             externalChangesSyncer: core,
-            errorMapper: ICloudErrorMapper(mapping: .iCloudConflictMinimalMapping()),
+            errorMapper: StaticCoreErrorMapper(mapping: .iCloudConflictMinimalMapping()),
             diagnosticsCollector: core
         )
 
@@ -206,8 +206,8 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
     private func makeMainFileListModel(
         conflictFile: FileEntrySnapshot,
         core: ICloudConflictMinimalRecordingMainCore,
-        errorMapper: ICloudErrorMapper =
-            ICloudErrorMapper(mapping: .iCloudConflictMinimalMapping())
+        errorMapper: any CoreErrorMapping =
+            StaticCoreErrorMapper(mapping: .iCloudConflictMinimalMapping())
     ) -> MainFileListModel {
         MainFileListModel(
             opening: .iCloudConflictMinimalFixture(repoPath: "/tmp/iCloudConflictMinimal-repo", files: [conflictFile]),
@@ -279,7 +279,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             noteModel: DetailNoteModel(
                 repoPath: "/tmp/iCloudConflictMinimal-repo",
                 noteStore: NoopNoteStore(),
-                errorMapper: ICloudErrorMapper(mapping: .iCloudConflictMinimalMapping())
+                errorMapper: StaticCoreErrorMapper(mapping: .iCloudConflictMinimalMapping())
             )
         )
 
@@ -299,7 +299,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
     private func makeICloudConflictModel(
         pathValidator: CoreRepositoryPathValidating,
         errorMapper: CoreErrorMapping =
-            ICloudErrorMapper(mapping: .iCloudConflictMinimalMapping())
+            StaticCoreErrorMapper(mapping: .iCloudConflictMinimalMapping())
     ) -> ICloudConflictMinimalModel {
         ICloudConflictMinimalModel(
             repoPath: "/tmp/iCloudConflictMinimal-repo",

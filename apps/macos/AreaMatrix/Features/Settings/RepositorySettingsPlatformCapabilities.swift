@@ -87,12 +87,11 @@ final class RepoPlatformCapabilitiesModel: ObservableObject {
     }
 
     private func capabilityError(for error: Error) async -> RepositorySettingsCapabilityError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
+        if let display = await errorMapper.mapCoreErrorDisplayIfPresent(error) {
             return RepositorySettingsCapabilityError(
                 message: "Platform capabilities unavailable",
-                recovery: mapping.suggestedAction.isEmpty ? mapping.userMessage : mapping.suggestedAction,
-                detail: mapping.rawContext.isEmpty ? coreError.localizedDescription : mapping.rawContext
+                recovery: display.recovery,
+                detail: display.detail
             )
         }
 

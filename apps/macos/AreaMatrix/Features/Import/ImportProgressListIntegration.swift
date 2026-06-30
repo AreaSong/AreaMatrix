@@ -167,16 +167,6 @@ struct SearchCommandPaletteRouteView: View {
     }
 }
 
-extension MainRepositoryContentView {
-    func commandPaletteBatchDeleteRoute() -> BatchDeleteRoute {
-        CommandPaletteBatchRouteBuilder.batchDeleteRoute(context: batchActionRouteContext(selectedFileIDs))
-    }
-
-    func commandPaletteBatchRenameRoute() -> BatchRenameRoute {
-        CommandPaletteBatchRouteBuilder.batchRenameRoute(context: batchActionRouteContext(selectedFileIDs))
-    }
-}
-
 private extension ImportProgressListRow {
     var systemImage: String {
         switch item.phase {

@@ -145,7 +145,7 @@ extension AITagBatchPageFeatureTests {
             aiPrivacyRules: RemotePrivacyRulesBridge(
                 snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])
             ),
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
     }
 }

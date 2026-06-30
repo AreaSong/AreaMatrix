@@ -11,7 +11,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [docsFile, financeFile]),
             fileLister: NoopFileLister(),
             fileDetailer: detailer,
-            errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
         )
 
         await model.selectFiles([docsFile.id, financeFile.id])
@@ -30,7 +30,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [docsFile]),
             fileLister: NoopFileLister(),
             fileDetailer: MainListIntegrationDetailer(results: [.success(docsFile)]),
-            errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
         )
 
         await model.selectFiles([docsFile.id])
@@ -95,7 +95,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [first, second]),
             fileLister: NoopFileLister(),
             fileDetailer: MainListIntegrationDetailer(results: [.success(first)]),
-            errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
         )
 
         XCTAssertEqual(
@@ -115,7 +115,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [first], isReadOnly: true),
             fileLister: NoopFileLister(),
             fileDetailer: MainListIntegrationDetailer(results: [.success(first)]),
-            errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
         )
 
         await readOnlyModel.selectFiles([first.id])
@@ -140,7 +140,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [first, second]),
             fileLister: NoopFileLister(),
             fileDetailer: MainListIntegrationNoopDetailer(),
-            errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
         )
 
         await model.selectFiles([first.id, second.id])
@@ -158,7 +158,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [file], isReadOnly: true),
             fileLister: NoopFileLister(),
             fileDetailer: MainListIntegrationDetailer(results: [.success(file)]),
-            errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
         )
 
         await model.selectFiles([file.id])
@@ -180,7 +180,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: lister,
             fileDetailer: MainListIntegrationNoopDetailer(),
-            errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
         )
 
         let loadingTask = Task {
@@ -205,7 +205,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
             ),
             fileLister: NoopFileLister(),
             fileDetailer: MainListIntegrationDetailer(results: [.success(file)]),
-            errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
         )
 
         await model.selectFiles([file.id])
@@ -232,7 +232,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: []),
             fileLister: NoopFileLister(),
             fileDetailer: MainListIntegrationNoopDetailer(),
-            errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture()),
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture()),
             diagnosticsCollector: collector
         )
 
@@ -251,7 +251,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [original]),
             fileLister: NoopFileLister(),
             fileDetailer: MainListIntegrationDetailer(results: [.success(original)]),
-            errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
         )
 
         await model.selectFiles([original.id])
@@ -270,7 +270,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [selected]),
             fileLister: NoopFileLister(),
             fileDetailer: MainListIntegrationDetailer(results: [.success(selected)]),
-            errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
         )
 
         await model.selectFiles([selected.id])
@@ -328,7 +328,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
             opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: lister,
             fileDetailer: MainListIntegrationNoopDetailer(),
-            errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
         )
 
         let loadingTask = Task { await model.loadCurrentCategory("docs") }

@@ -73,7 +73,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
     func testImportResultImportCopyFileCoreRetryFailedCopyItemMapsErrorAndKeepsRetryableRow() async {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let importer = ImportSingleFileFailingImporter(error: CoreError.PermissionDenied(path: "/tmp/failed.pdf"))
-        let errorMapper = ImportSingleFileRecordingErrorMapper()
+        let errorMapper = RecordingCoreErrorMapper.importSingleFile()
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             importProgressImporter: importer,
@@ -130,7 +130,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let lister =
             ImportResultRecordingChangeLogLister(results: [.failure(CoreError.Db(message: "change log locked"))])
-        let errorMapper = ImportSingleFileRecordingErrorMapper()
+        let errorMapper = RecordingCoreErrorMapper.importSingleFile()
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             importResultChangeLister: lister,

@@ -80,7 +80,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
             opening: .detailMultiFixture(repoPath: "/tmp/repo", files: [first, second]),
             fileLister: NoopFileLister(),
             fileDetailer: detailer,
-            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
         )
 
         await model.selectFiles([first.id, second.id])
@@ -106,7 +106,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         let first = FileEntrySnapshot.detailMultiFixture(id: 43, currentName: "first.pdf")
         let second = FileEntrySnapshot.detailMultiFixture(id: 44, currentName: "missing.pdf")
         let mapping = CoreErrorMappingSnapshot.detailMultiFileNotFound()
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let detailer = DetailMultiRecordingDetailer(results: [
             .success(first),
             .failure(CoreError.FileNotFound(path: second.path))

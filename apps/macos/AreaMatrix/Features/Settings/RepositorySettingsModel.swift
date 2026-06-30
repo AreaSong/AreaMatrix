@@ -217,8 +217,7 @@ extension RepositorySettingsModel {
     }
 
     private func loadError(for error: Error) async -> RepositorySettingsLoadError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
+        if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return RepositorySettingsLoadError(message: mapping.userMessage, recovery: mapping.suggestedAction)
         }
 
@@ -229,8 +228,7 @@ extension RepositorySettingsModel {
     }
 
     private func syncError(for error: Error) async -> RepositorySettingsSyncError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
+        if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return RepositorySettingsSyncError(message: mapping.userMessage, recovery: mapping.suggestedAction)
         }
 
@@ -278,8 +276,7 @@ extension RepositorySettingsModel {
     }
 
     private func diagnosticsError(for error: Error) async -> RepositorySettingsDiagnosticsError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
+        if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return RepositorySettingsDiagnosticsError(
                 message: mapping.userMessage,
                 recovery: mapping.suggestedAction

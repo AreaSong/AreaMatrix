@@ -55,7 +55,7 @@ final class ImportFolderConflictIntegrationTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: ImportFolderRecordingPredictor(results: [.success(.importFolderPrediction())]),
             importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner,
             placeholderDownloader: downloader
@@ -164,7 +164,7 @@ private func makeImportFolderConflictReviewFixture() -> ImportFolderConflictRevi
     let model = ImportFolderPreviewModel(
         predictor: importFolderConflictReviewPredictor(),
         importer: importer,
-        errorMapper: ImportSingleFileRecordingErrorMapper(),
+        errorMapper: RecordingCoreErrorMapper.importSingleFile(),
         conflictPrechecker: prechecker,
         scanner: scanner
     )

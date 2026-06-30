@@ -192,7 +192,7 @@ enum BatchTagUndoAction {
             return await BatchTagUndoLoadResult(
                 action: nil,
                 unavailableReason: nil,
-                failure: mapError(error, errorMapper: errorMapper)
+                failure: errorMapper.mapError(error)
             )
         }
     }
@@ -212,7 +212,7 @@ enum BatchTagUndoAction {
             return await BatchTagUndoLoadResult(
                 action: nil,
                 unavailableReason: nil,
-                failure: mapError(error, errorMapper: errorMapper)
+                failure: errorMapper.mapError(error)
             )
         }
     }
@@ -227,7 +227,10 @@ enum BatchTagUndoAction {
             let result = try await undoStore.undoAction(repoPath: repoPath, actionID: action.actionID)
             return BatchTagUndoApplyResult(result: result, failure: nil)
         } catch {
-            return await BatchTagUndoApplyResult(result: nil, failure: mapError(error, errorMapper: errorMapper))
+            return await BatchTagUndoApplyResult(
+                result: nil,
+                failure: errorMapper.mapError(error)
+            )
         }
     }
 
@@ -246,7 +249,7 @@ enum BatchTagUndoAction {
         } catch {
             return await BatchTagUndoActionLogRefreshResult(
                 action: nil,
-                failure: mapError(error, errorMapper: errorMapper)
+                failure: errorMapper.mapError(error)
             )
         }
     }
@@ -285,11 +288,6 @@ enum BatchTagUndoAction {
         case .pending:
             return "Undo action is currently unavailable."
         }
-    }
-
-    private static func mapError(_ error: Error, errorMapper: any CoreErrorMapping) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError { return await errorMapper.mapCoreError(coreError) }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }
 

@@ -61,7 +61,7 @@ final class DetailBatchAddTagsPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             fileIDs: [31, 32],
             tagStore: store,
-            errorMapper: DetailMetaErrorMapper(mapping: .batchAddTagsTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .batchAddTagsTagDb())
         )
         let candidates = BatchTagValidation.visibleCandidates(
             input: "",
@@ -73,7 +73,7 @@ final class DetailBatchAddTagsPageFeatureTests: XCTestCase {
             fileIDs: [32, 31],
             tags: ["urgent", "clienta"],
             tagStore: store,
-            errorMapper: DetailMetaErrorMapper(mapping: .batchAddTagsTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .batchAddTagsTagDb())
         )
         let requests = await store.batchRequests()
         let listRequests = await store.listRequests()
@@ -120,7 +120,7 @@ final class DetailBatchAddTagsPageFeatureTests: XCTestCase {
     @MainActor
     func testBatchAddTagsBatchAddTagsMapsBatchAddTagsCoreFailureWithoutMockingSuccess() async {
         let mapping = CoreErrorMappingSnapshot.batchAddTagsTagDb()
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let store = BatchAddTagsRecordingBatchTagStore(results: [
             .failure(CoreError.Db(message: "tag metadata locked"))
         ])

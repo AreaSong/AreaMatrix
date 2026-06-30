@@ -85,13 +85,13 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         let nameModel = ImportSingleFilePreviewModel(
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await duplicateModel.load(request: .importSingleFileFixture())
@@ -138,7 +138,7 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
         let importer = ImportBatchRecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         model.applyPreviewRows(
@@ -336,7 +336,7 @@ private func makeFolderReplaceConfirmationModel(
             results: [.success(.importFolderPrediction(suggestedName: "name.pdf"))]
         ),
         importer: importer,
-        errorMapper: ImportSingleFileRecordingErrorMapper(),
+        errorMapper: RecordingCoreErrorMapper.importSingleFile(),
         conflictPrechecker: prechecker,
         scanner: scanner
     )

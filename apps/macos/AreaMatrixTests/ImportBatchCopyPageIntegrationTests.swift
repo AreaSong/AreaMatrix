@@ -37,7 +37,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
         let importer = ImportBatchRecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
@@ -62,7 +62,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
             .success(.importSingleFileFixture(currentName: "Invoice_2026Q1.pdf", category: "finance")),
             .failure(CoreError.PermissionDenied(path: contractURL.path))
         ])
-        let errorMapper = ImportSingleFileRecordingErrorMapper()
+        let errorMapper = RecordingCoreErrorMapper.importSingleFile()
         let model = ImportBatchCopyImportModel(
             importer: importer,
             errorMapper: errorMapper
@@ -203,7 +203,7 @@ final class ImportBatchCopyProgressIntegrationTests: XCTestCase {
         ])
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         var progressSnapshots: [ImportBatchProgressSnapshot] = []
 
@@ -272,7 +272,7 @@ final class ImportBatchCopyProgressIntegrationTests: XCTestCase {
         ])
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
@@ -323,7 +323,7 @@ final class ImportBatchCopyProgressIntegrationTests: XCTestCase {
         ])
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
@@ -377,7 +377,7 @@ final class ImportBatchCopyProgressIntegrationTests: XCTestCase {
         let importer = ImportBatchRecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
@@ -427,7 +427,7 @@ final class ImportBatchCopyProgressIntegrationTests: XCTestCase {
         let importer = ImportBatchRecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)

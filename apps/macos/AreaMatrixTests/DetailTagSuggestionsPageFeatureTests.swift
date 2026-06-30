@@ -12,7 +12,7 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             tagStore: tagStore,
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([detail.id])
@@ -95,7 +95,7 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
             tagStore: tagStore,
             undoActionStore: undoStore,
             changeLogLister: DetailLogRecordingChangeLister(entries: [.tagSuggestionsApplied()]),
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([detail.id])

@@ -117,7 +117,7 @@ final class ImportDropBatchPreviewTests: XCTestCase {
         )
         let importModel = ImportBatchCopyImportModel(
             importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         let request = ImportEntryRequest(
             repoPath: "/tmp/repo",

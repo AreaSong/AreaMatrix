@@ -22,24 +22,6 @@ actor DetailMetaImmediateDetailer: CoreFileDetailing {
     }
 }
 
-actor DetailMetaErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-    private var errors: [CoreError] = []
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        errors.append(error)
-        return mapping
-    }
-
-    func recordedErrors() -> [CoreError] {
-        errors
-    }
-}
-
 struct DetailLogRequest: Equatable {
     var repoPath: String
     var filter: ChangeFilterSnapshot

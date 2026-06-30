@@ -20,7 +20,7 @@ final class BatchChangeCategoryVerifyTests: XCTestCase {
             fileIDs: selected.map(\.id),
             selectedFiles: selected,
             selectedCount: selected.count,
-            disabledReason: BatchChangeCategoryEntryPolicy.disabledReason(
+            disabledReason: MainFileBatchEntryPolicy.disabledReason(
                 selectedFiles: selected,
                 isReadOnly: context.model.isReadOnly,
                 isLoading: context.model.isLoading,

@@ -9,7 +9,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: .importSingleFileFixture())
@@ -31,7 +31,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: .importSingleFileFixture())
@@ -56,7 +56,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -90,7 +90,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: nameConflictReplaceResult(existingFile: existingFile)),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -137,7 +137,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: nameConflictReplaceResult(existingFile: existingFile)),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -175,7 +175,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
             preflight: ImportSingleFileStaticPreflight(result: nameConflictReplaceResult(
                 existingFile: nameConflictReplaceExistingFile()
             )),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -198,7 +198,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: ImportSingleFileRecordingImporter(),
             preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         await trashUnavailableModel.load(request: .importSingleFileFixture(
             allowReplaceDuringImport: true,
@@ -213,7 +213,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: ImportSingleFileRecordingImporter(),
             preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         await hiddenModel.load(request: .importSingleFileFixture(
             allowReplaceDuringImport: false,

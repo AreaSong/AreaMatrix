@@ -77,7 +77,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
             fileDetailer: DetailMetaImmediateDetailer(result: .success(renamed)),
             changeLogLister: lister,
             externalChangesSyncer: syncer,
-            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
         )
 
         await model.selectFiles([original.id])
@@ -114,7 +114,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
             fsEventID: 9002
         ))
         let mapping = CoreErrorMappingSnapshot.detailLogExternalRenamed(kind: .conflict)
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let lister = DetailLogRecordingLister(results: [.success([])])
         let syncer = DetailLogExternalRenamedSyncer(
             result: .failure(CoreError.Conflict(path: event.relativePath))
@@ -148,7 +148,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
             fsEventID: 9003
         ))
         let mapping = CoreErrorMappingSnapshot.detailLogExternalRenamed(kind: .internal)
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let lister = DetailLogRecordingLister(results: [.success([])])
         let syncer = DetailLogExternalRenamedSyncer(result: .success(.detailRenamedWithErrorsFixture()))
         let model = MainFileListModel(

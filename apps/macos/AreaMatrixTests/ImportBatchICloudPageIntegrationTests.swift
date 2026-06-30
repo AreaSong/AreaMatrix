@@ -35,7 +35,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
             source: .listContextMenu,
             fileIDs: [first.id, second.id],
             selectedCount: 2,
-            disabledReason: BatchAddTagsEntryPolicy.disabledReason(
+            disabledReason: MainFileBatchEntryPolicy.disabledReason(
                 selectedFiles: [first, second],
                 isReadOnly: false,
                 isLoading: false,
@@ -195,7 +195,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
         let importer = ImportBatchRecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
@@ -261,7 +261,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
         }
         let model = ImportBatchCopyImportModel(
             importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)

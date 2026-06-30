@@ -5,8 +5,7 @@ enum ClassifierSettingsErrorFactory {
         for error: Error,
         mapper: any CoreErrorMapping
     ) async -> ClassifierSettingsLoadError {
-        if let coreError = error as? CoreError {
-            let mapping = await mapper.mapCoreError(coreError)
+        if let mapping = await mapper.mapCoreErrorIfPresent(error) {
             return ClassifierSettingsLoadError(
                 message: mapping.userMessage,
                 recovery: "Retry status"
@@ -23,8 +22,7 @@ enum ClassifierSettingsErrorFactory {
         for error: Error,
         mapper: any CoreErrorMapping
     ) async -> ClassifierSettingsSaveError {
-        if let coreError = error as? CoreError {
-            let mapping = await mapper.mapCoreError(coreError)
+        if let mapping = await mapper.mapCoreErrorIfPresent(error) {
             return ClassifierSettingsSaveError(
                 message: mapping.userMessage,
                 recovery: "Retry save"
@@ -41,8 +39,7 @@ enum ClassifierSettingsErrorFactory {
         for error: Error,
         mapper: any CoreErrorMapping
     ) async -> ClassifierSettingsPreviewError {
-        if let coreError = error as? CoreError {
-            let mapping = await mapper.mapCoreError(coreError)
+        if let mapping = await mapper.mapCoreErrorIfPresent(error) {
             return ClassifierSettingsPreviewError(
                 message: mapping.userMessage,
                 recovery: "Retry preview"

@@ -366,7 +366,7 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
             onDropImport: { _, _ in },
             fileLister: lister,
             fileDetailer: MainListRecordingFileDetailer(results: [.success(docsFile)]),
-            errorMapper: MainListRecordingErrorMapper(mapping: .syncConflictReviewMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await content.fileListModel.loadCurrentCategory("docs")

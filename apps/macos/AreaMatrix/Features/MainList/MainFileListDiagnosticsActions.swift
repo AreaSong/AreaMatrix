@@ -117,7 +117,7 @@ enum UndoHistoryActionLog {
         do {
             return try await .loaded(loadSnapshot(repoPath: repoPath, undoStore: undoStore, redoStore: redoStore))
         } catch {
-            return await .failed(mapError(error, errorMapper: errorMapper))
+            return await .failed(errorMapper.mapError(error))
         }
     }
 
@@ -143,12 +143,16 @@ enum UndoHistoryActionLog {
                 return .undone(result, refreshed: refreshed.markingUndoBlockedIfNeeded(result))
             } catch {
                 return await .refreshFailed(
-                    mapError(error, errorMapper: errorMapper),
+                    errorMapper.mapError(error),
                     previous: snapshot.markingUndoBlockedIfNeeded(result)
                 )
             }
         } catch {
-            return await .undoFailed(mapError(error, errorMapper: errorMapper), previous: snapshot, attempted: latest)
+            return await .undoFailed(
+                errorMapper.mapError(error),
+                previous: snapshot,
+                attempted: latest
+            )
         }
     }
 
@@ -172,10 +176,17 @@ enum UndoHistoryActionLog {
                     redoStore: redoStore
                 ))
             } catch {
-                return await .refreshFailed(mapError(error, errorMapper: errorMapper), previous: snapshot)
+                return await .refreshFailed(
+                    errorMapper.mapError(error),
+                    previous: snapshot
+                )
             }
         } catch {
-            return await .redoFailed(mapError(error, errorMapper: errorMapper), previous: snapshot, attempted: latest)
+            return await .redoFailed(
+                errorMapper.mapError(error),
+                previous: snapshot,
+                attempted: latest
+            )
         }
     }
 
@@ -249,11 +260,6 @@ enum UndoHistoryActionLog {
             recoverability: .refreshRequired,
             rawContext: "redo-action-log redo-action-log-core redo-action-log"
         )
-    }
-
-    private static func mapError(_ error: Error, errorMapper: any CoreErrorMapping) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError { return await errorMapper.mapCoreError(coreError) }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }
 

@@ -1,35 +1,54 @@
 import Foundation
 
-enum BatchDeleteRouteSource: String, Equatable {
-    case detailMulti
-    case listContextMenu
-    case commandPalette
-}
-
 struct BatchDeleteRoute: Identifiable, Equatable {
-    let source: BatchDeleteRouteSource
-    let fileIDs: [Int64]
-    let selectedFiles: [FileEntrySnapshot]
-    let selectedCount: Int
-    let disabledReason: String?
+    let source: MainFileBatchActionRouteSource
+    private let payload: MainFileBatchActionRoutePayload
+
+    var fileIDs: [Int64] {
+        payload.fileIDs
+    }
+
+    var selectedFiles: [FileEntrySnapshot] {
+        payload.selectedFiles
+    }
+
+    var selectedCount: Int {
+        payload.selectedCount
+    }
+
+    var disabledReason: String? {
+        payload.disabledReason
+    }
 
     var id: String {
-        [
-            source.rawValue,
-            fileIDs.map(String.init).joined(separator: ","),
-            "\(selectedCount)",
-            disabledReason ?? ""
-        ].joined(separator: ":")
+        ([source.rawValue] + payload.identityParts).joined(separator: ":")
+    }
+
+    init(
+        source: MainFileBatchActionRouteSource,
+        fileIDs: [Int64],
+        selectedFiles: [FileEntrySnapshot],
+        selectedCount: Int,
+        disabledReason: String?
+    ) {
+        self.source = source
+        payload = MainFileBatchActionRoutePayload(
+            fileIDs: fileIDs,
+            selectedFiles: selectedFiles,
+            selectedCount: selectedCount,
+            disabledReason: disabledReason
+        )
     }
 }
 
 extension BatchDeleteRoute {
-    init(source: BatchDeleteRouteSource, context: MainFileBatchActionRouteContext) {
+    init(source: MainFileBatchActionRouteSource, context: MainFileBatchActionRouteContext) {
+        self.init(source: source, payload: MainFileBatchActionRoutePayload(context: context))
+    }
+
+    private init(source: MainFileBatchActionRouteSource, payload: MainFileBatchActionRoutePayload) {
         self.source = source
-        fileIDs = context.fileIDs
-        selectedFiles = context.selectedFiles
-        selectedCount = context.selectedCount
-        disabledReason = context.disabledReason
+        self.payload = payload
     }
 }
 
@@ -75,21 +94,10 @@ enum BatchDeletePreviewState: Equatable {
 
 enum BatchDeleteEntryPolicy {
     static func openHelp(disabledReason: String?) -> String {
-        disabledReason.map { "\($0). Review deletion impact before any files move to Trash." } ??
-            "Review deletion impact for the selected files"
-    }
-
-    static func disabledReason(
-        selectedFiles: [FileEntrySnapshot],
-        isReadOnly: Bool,
-        isLoading: Bool,
-        writeLockedFileIDs: Set<Int64>
-    ) -> String? {
-        MainFileBatchActionEligibility.disabledReason(
-            selectedFiles: selectedFiles,
-            isReadOnly: isReadOnly,
-            isLoading: isLoading,
-            writeLockedFileIDs: writeLockedFileIDs
+        MainFileBatchEntryPolicy.openHelp(
+            disabledReason: disabledReason,
+            defaultHelp: "Review deletion impact for the selected files",
+            blockedHelpSuffix: "Review deletion impact before any files move to Trash."
         )
     }
 }
@@ -110,7 +118,7 @@ enum BatchDeleteAction {
             )
             return .loaded(report)
         } catch {
-            return await .failed(mapError(error, errorMapper: errorMapper), previous: nil)
+            return await .failed(errorMapper.mapError(error), previous: nil)
         }
     }
 
@@ -132,14 +140,9 @@ enum BatchDeleteAction {
         } catch {
             return await BatchDeleteApplyResult(
                 report: nil,
-                failure: mapError(error, errorMapper: errorMapper)
+                failure: errorMapper.mapError(error)
             )
         }
-    }
-
-    private static func mapError(_ error: Error, errorMapper: any CoreErrorMapping) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError { return await errorMapper.mapCoreError(coreError) }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }
 

@@ -334,13 +334,11 @@ final class AboutSettingsModel: ObservableObject {
     }
 
     private func mappedError(for error: Error, fallbackMessage: String) async -> AboutSettingsError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
-            let recovery = mapping.suggestedAction.isEmpty ? mapping.userMessage : mapping.suggestedAction
+        if let display = await errorMapper.mapCoreErrorDisplayIfPresent(error) {
             return AboutSettingsError(
                 message: fallbackMessage,
-                recovery: recovery,
-                copyableDetail: mapping.rawContext.isEmpty ? coreError.localizedDescription : mapping.rawContext
+                recovery: display.recovery,
+                copyableDetail: display.detail
             )
         }
 

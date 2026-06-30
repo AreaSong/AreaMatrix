@@ -110,7 +110,7 @@ final class ICloudConflictListModel: ObservableObject {
             state = .loaded(conflicts)
         } catch {
             guard generation == loadGeneration else { return }
-            state = await .failed(mapError(error))
+            state = await .failed(errorMapper.mapError(error))
         }
     }
 
@@ -148,12 +148,5 @@ final class ICloudConflictListModel: ObservableObject {
 
     func isResolving(_ conflict: ICloudConflictPairSnapshot) -> Bool {
         resolvingRoute?.id == conflict.id
-    }
-
-    private func mapError(_ error: Error) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError {
-            return await errorMapper.mapCoreError(coreError)
-        }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }

@@ -15,7 +15,7 @@ final class MainListFilesTests: XCTestCase {
             opening: .mainListFixture(repoPath: "/tmp/repo", currentCategoryFiles: []),
             fileLister: lister,
             fileDetailer: MainListRecordingFileDetailer(results: []),
-            errorMapper: MainListRecordingErrorMapper(mapping: .mainListDbFixture(rawContext: "unused"))
+            errorMapper: StaticCoreErrorMapper(mapping: .mainListDbFixture(rawContext: "unused"))
         )
 
         await model.loadCurrentCategory("docs")
@@ -39,7 +39,7 @@ final class MainListFilesTests: XCTestCase {
             .failure(CoreError.Db(message: "locked")),
             .success([docsFile])
         ])
-        let mapper = MainListRecordingErrorMapper(mapping: .mainListDbFixture(rawContext: "locked"))
+        let mapper = StaticCoreErrorMapper(mapping: .mainListDbFixture(rawContext: "locked"))
         let model = MainFileListModel(
             opening: .mainListFixture(repoPath: "/tmp/repo", currentCategoryFiles: []),
             fileLister: lister,
@@ -62,7 +62,7 @@ final class MainListFilesTests: XCTestCase {
     @MainActor
     func testMainListKeepsListFailureInline() async {
         let mapping = CoreErrorMappingSnapshot.mainListDbFixture(rawContext: "list db locked")
-        let mapper = MainListRecordingErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let model = MainFileListModel(
             opening: .mainListFixture(
                 repoPath: "/tmp/repo",
@@ -100,7 +100,7 @@ final class MainListFilesTests: XCTestCase {
             opening: .mainListFixture(repoPath: "/tmp/repo", currentCategoryFiles: [detail]),
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: detailer,
-            errorMapper: MainListRecordingErrorMapper(mapping: .mainListDbFixture(rawContext: "unused"))
+            errorMapper: StaticCoreErrorMapper(mapping: .mainListDbFixture(rawContext: "unused"))
         )
 
         await model.selectFile(id: detail.id)
@@ -122,7 +122,7 @@ final class MainListFilesTests: XCTestCase {
             currentName: "missing.pdf"
         )
         let mapping = CoreErrorMappingSnapshot.mainListFileNotFoundFixture(rawContext: "missing")
-        let mapper = MainListRecordingErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let model = MainFileListModel(
             opening: .mainListFixture(repoPath: "/tmp/repo", currentCategoryFiles: [cached]),
             fileLister: MainListRecordingFileLister(results: []),
@@ -155,7 +155,7 @@ final class MainListFilesTests: XCTestCase {
             opening: .mainListFixture(repoPath: "/tmp/repo", currentCategoryFiles: [detail]),
             fileLister: MainListRecordingFileLister(results: [.success([])]),
             fileDetailer: MainListRecordingFileDetailer(results: [.success(detail)]),
-            errorMapper: MainListRecordingErrorMapper(mapping: .mainListDbFixture(rawContext: "unused"))
+            errorMapper: StaticCoreErrorMapper(mapping: .mainListDbFixture(rawContext: "unused"))
         )
 
         await model.selectFile(id: detail.id)

@@ -14,7 +14,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
             .undo(.success(.batchAddTagsExecutedBatchAddTags())),
             .list(.success([blockedAction]))
         ])
-        let mapper = DetailMultiSelectErrorMapper(mapping: .batchAddTagsUndoFailure())
+        let mapper = StaticCoreErrorMapper(mapping: .batchAddTagsUndoFailure())
         let load = await BatchTagUndoAction.loadAction(
             repoPath: "/tmp/repo",
             undoToken: action.actionID,
@@ -52,7 +52,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
             repoPath: "/tmp/repo",
             action: action,
             undoStore: undoStore,
-            errorMapper: DetailMultiSelectErrorMapper(mapping: .batchAddTagsUndoFailure())
+            errorMapper: StaticCoreErrorMapper(mapping: .batchAddTagsUndoFailure())
         )
 
         XCTAssertNil(applied.result)
@@ -70,7 +70,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
             report: .batchAddTagsBatchAddTagsReport(),
             failure: nil,
             undoStore: undoStore,
-            errorMapper: DetailMultiSelectErrorMapper(mapping: .batchAddTagsUndoFailure())
+            errorMapper: StaticCoreErrorMapper(mapping: .batchAddTagsUndoFailure())
         )
 
         XCTAssertEqual(completion.undoState, .ready(action))
@@ -90,7 +90,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
             repoPath: "/tmp/repo",
             action: action,
             undoStore: undoStore,
-            errorMapper: DetailMultiSelectErrorMapper(mapping: .batchAddTagsUndoFailure())
+            errorMapper: StaticCoreErrorMapper(mapping: .batchAddTagsUndoFailure())
         )
         guard let result = applied.result else {
             return XCTFail("expected undo_action to return refresh_targets")
@@ -100,7 +100,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
             repoPath: "/tmp/repo",
             actionID: result.actionID,
             undoStore: undoStore,
-            errorMapper: DetailMultiSelectErrorMapper(mapping: .batchAddTagsUndoFailure())
+            errorMapper: StaticCoreErrorMapper(mapping: .batchAddTagsUndoFailure())
         )
 
         XCTAssertTrue(plan.refreshesSelectionDetails)
@@ -165,7 +165,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
             opening: .detailMultiSelectFixture(repoPath: "/tmp/repo", files: [first, second]),
             fileLister: NoopFileLister(),
             fileDetailer: detailer,
-            errorMapper: DetailMultiSelectErrorMapper(mapping: .detailMultiSelectDbMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMultiSelectDbMapping())
         )
 
         await model.selectFiles([first.id, second.id])
@@ -202,7 +202,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
                 .success(available),
                 .failure(CoreError.FileNotFound(path: stale.path))
             ]),
-            errorMapper: DetailMultiSelectErrorMapper(mapping: mapping)
+            errorMapper: StaticCoreErrorMapper(mapping: mapping)
         )
 
         await model.selectFiles([available.id, stale.id])
@@ -250,18 +250,6 @@ private actor DetailMultiSelectSequenceDetailer: CoreFileDetailing {
         case let .failure(error):
             throw error
         }
-    }
-}
-
-private actor DetailMultiSelectErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        mapping
     }
 }
 

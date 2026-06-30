@@ -65,7 +65,7 @@ final class QueryErrorPageFeatureTests: XCTestCase {
             fileLister: MainListRecordingFileLister(results: [.success([])]),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: searcher,
-            errorMapper: MainListRecordingErrorMapper(mapping: .queryErrorConfigMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .queryErrorConfigMapping())
         )
 
         await model.runSearch(
@@ -194,7 +194,7 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: MainListRecordingSearchQuerying(results: []),
-            errorMapper: MainListRecordingErrorMapper(mapping: .queryErrorConfigMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .queryErrorConfigMapping())
         )
         model.activeSmartListSearch = saved
 
@@ -239,7 +239,7 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
     func testSmartListSmartListOpenAndRetryUseSmartListsCoreRunSmartList() async {
         let saved = SavedSearchSnapshot.smartListFixture(query: "Finance")
         let mapping = CoreErrorMappingSnapshot.queryErrorConfigMapping()
-        let mapper = MainListRecordingErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let runner = SmartListRecordingSmartListRunner(results: [
             .failure(CoreError.FileNotFound(path: "\(saved.id)")),
             .success(.smartListValidQueryPage(query: "Finance", totalCount: 4))

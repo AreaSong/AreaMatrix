@@ -64,7 +64,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         let validator = ICloudConflictRecordingPathValidator(
             result: .failure(CoreError.ICloudPlaceholder(path: "/tmp/repo/docs/report.pdf.icloud"))
         )
-        let errorMapper = ICloudConflictRecordingErrorMapper(mapping: mapping)
+        let errorMapper = StaticCoreErrorMapper(mapping: mapping)
         let model = ICloudConflictMinimalModel.fixture(
             repoPath: "/tmp/repo",
             validator: validator,
@@ -88,7 +88,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         let validator = ICloudConflictRecordingPathValidator(
             result: .failure(ICloudConflictTestError.staleConflictContext)
         )
-        let errorMapper = ICloudConflictRecordingErrorMapper(
+        let errorMapper = StaticCoreErrorMapper(
             mapping: .icloudConflictFixture(kind: .internal, rawContext: "stale conflict context")
         )
         let model = ICloudConflictMinimalModel.fixture(
@@ -117,7 +117,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         let validator = ICloudConflictRecordingPathValidator(
             result: .failure(CoreError.PermissionDenied(path: "/tmp/repo"))
         )
-        let errorMapper = ICloudConflictRecordingErrorMapper(mapping: mapping)
+        let errorMapper = StaticCoreErrorMapper(mapping: mapping)
         let model = ICloudConflictMinimalModel.fixture(
             repoPath: "/tmp/repo",
             validator: validator,
@@ -176,7 +176,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
 
     @MainActor
     func testICloudConflictVisualICloudConflictVisualCorePreviewFailureMapsErrorAndKeepsResolutionDisabled() async {
-        let mapper = ICloudConflictRecordingErrorMapper(mapping: .icloudConflictFixture(
+        let mapper = StaticCoreErrorMapper(mapping: .icloudConflictFixture(
             kind: .conflict,
             rawContext: "stale conflict id"
         ))
@@ -238,7 +238,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
                 .iCloudConflictMinimalICloudConflictFixture().with(repoPath: "/tmp/repo")
             )),
             conflictReviewer: reviewer,
-            errorMapper: ICloudConflictRecordingErrorMapper(mapping: .icloudConflictFixture(kind: .internal))
+            errorMapper: StaticCoreErrorMapper(mapping: .icloudConflictFixture(kind: .internal))
         )
 
         await model.validateRepositoryPath()
@@ -336,7 +336,7 @@ private extension ICloudConflictMinimalModel {
     static func fixture(
         repoPath: String,
         validator: any CoreRepositoryPathValidating,
-        errorMapper: any CoreErrorMapping = ICloudConflictRecordingErrorMapper(mapping: .icloudConflictFixture())
+        errorMapper: any CoreErrorMapping = StaticCoreErrorMapper(mapping: .icloudConflictFixture())
     ) -> ICloudConflictMinimalModel {
         ICloudConflictMinimalModel(
             repoPath: repoPath,
@@ -399,24 +399,6 @@ private enum ICloudConflictTestError: LocalizedError {
 
     var errorDescription: String? {
         "stale conflict context"
-    }
-}
-
-private actor ICloudConflictRecordingErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-    private var errors: [CoreError] = []
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        errors.append(error)
-        return mapping
-    }
-
-    func recordedErrors() -> [CoreError] {
-        errors
     }
 }
 

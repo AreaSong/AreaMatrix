@@ -177,7 +177,7 @@ final class SyncConflictReviewModel: ObservableObject {
             await previewResolution(.keepBoth, conflict: conflict)
         } catch {
             guard generation == loadGeneration else { return }
-            state = await .failed(mapError(error))
+            state = await .failed(errorMapper.mapError(error))
         }
     }
 
@@ -236,7 +236,7 @@ final class SyncConflictReviewModel: ObservableObject {
             applyState = .succeeded(report)
             return report
         } catch {
-            applyState = await .failed(selectedResolution, mapError(error))
+            applyState = await .failed(selectedResolution, errorMapper.mapError(error))
             return nil
         }
     }
@@ -260,7 +260,7 @@ final class SyncConflictReviewModel: ObservableObject {
         } catch {
             guard generation == previewGeneration else { return }
             replaceConfirmation = nil
-            previewState = await .failed(resolution, mapError(error))
+            previewState = await .failed(resolution, errorMapper.mapError(error))
         }
     }
 
@@ -278,13 +278,6 @@ final class SyncConflictReviewModel: ObservableObject {
     private var normalizedPrimaryPath: String? {
         let trimmed = primaryPath?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return trimmed.isEmpty ? nil : trimmed
-    }
-
-    private func mapError(_ error: Error) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError {
-            return await errorMapper.mapCoreError(coreError)
-        }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 
     private func requiresReplaceConfirmation(_ preview: SyncConflictResolutionPreviewSnapshot) -> Bool {

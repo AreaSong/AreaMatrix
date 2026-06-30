@@ -28,7 +28,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             repoPath: "/tmp/repo",
             resultCountState: .loaded(3),
             savedSearchStore: savedSearchStore,
-            errorMapper: MainListRecordingErrorMapper(mapping: .mainRepoSearchFiltersDbFixture()),
+            errorMapper: StaticCoreErrorMapper(mapping: .mainRepoSearchFiltersDbFixture()),
             onCancel: {}
         ).body
         let indexingBody = SearchIndexingStatusRouteView(
@@ -97,7 +97,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         let request = SearchQueryRequestSnapshot.mainRepoSearchResultsRouteFixture(query: "Finance")
         var model = SavedSearchSheetModel(request: request, resultCount: nil)
         let mapping = CoreErrorMappingSnapshot.mainRepoSearchFiltersDbFixture()
-        let mapper = MainListRecordingErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let store = MainRepoSavedSearchRecordingStore(results: [.createFailure(CoreError.Db(message: "db locked"))])
 
         do {
@@ -193,7 +193,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: MainListRecordingSearchQuerying(results: []),
             searchFiltering: MainListRecordingSearchFiltering(results: []),
-            errorMapper: MainListRecordingErrorMapper(mapping: .mainRepoSearchFiltersDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .mainRepoSearchFiltersDbFixture())
         )
         let baseFilters = SearchFilterStateSnapshot.empty
         let draftFilters = SearchFilterEditing.settingTagMatchMode(
@@ -223,7 +223,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             fileDetailer: MainListRecordingFileDetailer(results: []),
             searchQuerying: MainListRecordingSearchQuerying(results: []),
             searchFiltering: MainListRecordingSearchFiltering(results: []),
-            errorMapper: MainListRecordingErrorMapper(mapping: .mainRepoSearchFiltersDbFixture())
+            errorMapper: StaticCoreErrorMapper(mapping: .mainRepoSearchFiltersDbFixture())
         )
         var searchFilters = SearchFilterStateSnapshot(
             category: "docs",

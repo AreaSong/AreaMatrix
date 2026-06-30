@@ -273,7 +273,7 @@ private func makeBatchRenameUndoRoute(context: BatchRenameUndoIntegrationContext
         fileIDs: BatchRenameEntryPolicy.fileIDsForPreview(summary: summary),
         selectedFiles: summary.files,
         selectedCount: summary.selectedCount,
-        disabledReason: BatchRenameEntryPolicy.disabledReason(
+        disabledReason: MainFileBatchEntryPolicy.disabledReason(
             selectedFiles: summary.files,
             isReadOnly: false,
             isLoading: false,

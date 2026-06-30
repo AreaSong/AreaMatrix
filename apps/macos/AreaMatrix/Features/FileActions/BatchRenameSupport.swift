@@ -1,35 +1,54 @@
 import Foundation
 
-enum BatchRenameRouteSource: String, Equatable {
-    case detailMulti
-    case listContextMenu
-    case commandPalette
-}
-
 struct BatchRenameRoute: Identifiable, Equatable {
-    let source: BatchRenameRouteSource
-    let fileIDs: [Int64]
-    let selectedFiles: [FileEntrySnapshot]
-    let selectedCount: Int
-    let disabledReason: String?
+    let source: MainFileBatchActionRouteSource
+    private let payload: MainFileBatchActionRoutePayload
+
+    var fileIDs: [Int64] {
+        payload.fileIDs
+    }
+
+    var selectedFiles: [FileEntrySnapshot] {
+        payload.selectedFiles
+    }
+
+    var selectedCount: Int {
+        payload.selectedCount
+    }
+
+    var disabledReason: String? {
+        payload.disabledReason
+    }
 
     var id: String {
-        [
-            source.rawValue,
-            fileIDs.map(String.init).joined(separator: ","),
-            "\(selectedCount)",
-            disabledReason ?? ""
-        ].joined(separator: ":")
+        ([source.rawValue] + payload.identityParts).joined(separator: ":")
+    }
+
+    init(
+        source: MainFileBatchActionRouteSource,
+        fileIDs: [Int64],
+        selectedFiles: [FileEntrySnapshot],
+        selectedCount: Int,
+        disabledReason: String?
+    ) {
+        self.source = source
+        payload = MainFileBatchActionRoutePayload(
+            fileIDs: fileIDs,
+            selectedFiles: selectedFiles,
+            selectedCount: selectedCount,
+            disabledReason: disabledReason
+        )
     }
 }
 
 extension BatchRenameRoute {
-    init(source: BatchRenameRouteSource, context: MainFileBatchActionRouteContext) {
+    init(source: MainFileBatchActionRouteSource, context: MainFileBatchActionRouteContext) {
+        self.init(source: source, payload: MainFileBatchActionRoutePayload(context: context))
+    }
+
+    private init(source: MainFileBatchActionRouteSource, payload: MainFileBatchActionRoutePayload) {
         self.source = source
-        fileIDs = context.fileIDs
-        selectedFiles = context.selectedFiles
-        selectedCount = context.selectedCount
-        disabledReason = context.disabledReason
+        self.payload = payload
     }
 }
 
@@ -39,21 +58,10 @@ enum BatchRenameEntryPolicy {
     }
 
     static func openHelp(disabledReason: String?) -> String {
-        disabledReason.map { "\($0). Preview new file names before renaming." } ??
-            "Preview batch rename for the selected files"
-    }
-
-    static func disabledReason(
-        selectedFiles: [FileEntrySnapshot],
-        isReadOnly: Bool,
-        isLoading: Bool,
-        writeLockedFileIDs: Set<Int64>
-    ) -> String? {
-        MainFileBatchActionEligibility.disabledReason(
-            selectedFiles: selectedFiles,
-            isReadOnly: isReadOnly,
-            isLoading: isLoading,
-            writeLockedFileIDs: writeLockedFileIDs
+        MainFileBatchEntryPolicy.openHelp(
+            disabledReason: disabledReason,
+            defaultHelp: "Preview batch rename for the selected files",
+            blockedHelpSuffix: "Preview new file names before renaming."
         )
     }
 }
@@ -169,7 +177,7 @@ enum BatchRenameAction {
             let report = try await renamer.previewBatchRename(repoPath: repoPath, fileIDs: fileIDs, rule: rule)
             return .loaded(report)
         } catch {
-            return await .failed(mapError(error, errorMapper: errorMapper), previous: nil)
+            return await .failed(errorMapper.mapError(error), previous: nil)
         }
     }
 
@@ -189,13 +197,11 @@ enum BatchRenameAction {
             )
             return BatchRenameApplyResult(report: report, failure: nil)
         } catch {
-            return await BatchRenameApplyResult(report: nil, failure: mapError(error, errorMapper: errorMapper))
+            return await BatchRenameApplyResult(
+                report: nil,
+                failure: errorMapper.mapError(error)
+            )
         }
-    }
-
-    private static func mapError(_ error: Error, errorMapper: any CoreErrorMapping) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError { return await errorMapper.mapCoreError(coreError) }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }
 

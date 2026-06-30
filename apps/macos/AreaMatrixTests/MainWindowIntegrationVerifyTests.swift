@@ -35,7 +35,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
             writer: writer,
             opener: opener,
             treeLister: MainLoadingRecordingTreeLister(result: .success(.mainLoadingTreeFixture())),
-            errorMapper: MainWindowIntegrationErrorMapper(mapping: mapping)
+            errorMapper: StaticCoreErrorMapper(mapping: mapping)
         )
 
         await model.bootstrapIfNeeded()
@@ -58,7 +58,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
             kind: .permissionDenied,
             rawContext: "/tmp/repo"
         )
-        let mapper = MainWindowIntegrationErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let opener = ShellRecordingRepositoryOpener(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
         let writer = ShellRecordingSettingsWriter()
         let model = task34Model(
@@ -126,7 +126,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         writer: ShellRecordingSettingsWriter,
         opener: ShellRecordingRepositoryOpener,
         treeLister: (any CoreRepositoryTreeListing)? = nil,
-        errorMapper: any CoreErrorMapping = MainWindowIntegrationErrorMapper(mapping: .task34Mapping(kind: .db))
+        errorMapper: any CoreErrorMapping = StaticCoreErrorMapper(mapping: .task34Mapping(kind: .db))
     ) -> OnboardingModel {
         OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: repoPath),
@@ -146,24 +146,6 @@ private struct MainWindowIntegrationOpenResult {
     var openedRepoPaths: [String]
     var savedRepoPaths: [String]
     var successfulRepoOpenPaths: [String]
-}
-
-private actor MainWindowIntegrationErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-    private var errors: [CoreError] = []
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        errors.append(error)
-        return mapping
-    }
-
-    func recordedErrors() -> [CoreError] {
-        errors
-    }
 }
 
 private extension RepositoryOpeningResult {

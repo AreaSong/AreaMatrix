@@ -277,10 +277,7 @@ private extension ImportSingleFilePreviewModel {
     }
 
     private func mapImportError(_ error: Error) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError {
-            return await errorMapper.mapCoreError(coreError)
-        }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
+        await errorMapper.mapError(error)
     }
 
     private static func classifyMessage(for error: Error) -> String {

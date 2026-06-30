@@ -66,7 +66,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             emptyRepositoryOpener: opener,
             startupRecoverer: startupRecoverer,
             scanSessionReader: StaticScanSessionReader(),
-            errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
+            errorMapper: StaticCoreErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -98,7 +98,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             emptyRepositoryOpener: opener,
             startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: StaticScanSessionReader(),
-            errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
+            errorMapper: StaticCoreErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -128,7 +128,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             mainLoadingTreeLister: MainLoadingRecordingTreeLister(result: .success(tree)),
             startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: StaticScanSessionReader(),
-            errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
+            errorMapper: StaticCoreErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -200,7 +200,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             mainLoadingTreeLister: treeLister,
             startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: StaticScanSessionReader(),
-            errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
+            errorMapper: StaticCoreErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -309,7 +309,7 @@ final class MainLoadingScanSessionTests: XCTestCase {
             emptyRepositoryOpener: opener,
             startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: StaticScanSessionReader(result: .failure(CoreError.Db(message: "scan db locked"))),
-            errorMapper: MainLoadingRecordingErrorMapper(mapping: mapping),
+            errorMapper: StaticCoreErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
 

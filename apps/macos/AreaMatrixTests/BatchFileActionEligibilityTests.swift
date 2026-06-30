@@ -23,14 +23,36 @@ final class BatchFileActionEligibilityTests: XCTestCase {
         )
     }
 
-    func testBatchActionEntryPoliciesShareEligibilityRules() {
+    func testBatchActionEntryPolicyUsesSharedEligibilityRules() {
         let first = FileEntrySnapshot.batchActionEligibilityFixture(id: 410, name: "first.pdf")
         let second = FileEntrySnapshot.batchActionEligibilityFixture(id: 411, name: "second.pdf")
         let scenarios = BatchActionEligibilityScenario.defaults(first: first, second: second)
 
         for scenario in scenarios {
-            assertSharedEligibility(scenario)
+            assertSharedEligibilityReason(scenario)
         }
+    }
+
+    func testBatchActionEntryPoliciesShareOpenHelpFormatting() {
+        let reason = MainFileWriteActionDisabledReason.repoReadOnly.message
+
+        XCTAssertEqual(BatchAddTagsEntryPolicy.openHelp(disabledReason: nil), "Add tags to the selected files")
+        XCTAssertEqual(
+            BatchAddTagsEntryPolicy.openHelp(disabledReason: reason),
+            "Repository is read-only. You can still review selected files and tag candidates."
+        )
+        XCTAssertEqual(
+            BatchChangeCategoryEntryPolicy.openHelp(disabledReason: reason),
+            "Repository is read-only. You can still preview selected files and category impact."
+        )
+        XCTAssertEqual(
+            BatchDeleteEntryPolicy.openHelp(disabledReason: reason),
+            "Repository is read-only. Review deletion impact before any files move to Trash."
+        )
+        XCTAssertEqual(
+            BatchRenameEntryPolicy.openHelp(disabledReason: reason),
+            "Repository is read-only. Preview new file names before renaming."
+        )
     }
 
     func testMultiSelectionEligibilityKeepsUpdatingBehaviorExplicit() {
@@ -41,13 +63,13 @@ final class BatchFileActionEligibilityTests: XCTestCase {
             files: [first, second],
             isUpdating: true
         )
-        XCTAssertNil(MainFileBatchActionEligibility.disabledReason(
+        XCTAssertNil(MainFileBatchEntryPolicy.disabledReason(
             summary: summary,
             blocksWhileUpdating: false,
             writeActionDisabledReason: { _ in nil }
         ))
         XCTAssertEqual(
-            MainFileBatchActionEligibility.disabledReason(
+            MainFileBatchEntryPolicy.disabledReason(
                 summary: summary,
                 blocksWhileUpdating: true,
                 writeActionDisabledReason: { _ in nil }
@@ -62,7 +84,7 @@ final class BatchFileActionEligibilityTests: XCTestCase {
         let locked = MultiSelectionDetailSummary(selection: .multiple([selected.id]), files: [selected])
 
         XCTAssertEqual(
-            MainFileBatchActionEligibility.disabledReason(
+            MainFileBatchEntryPolicy.disabledReason(
                 summary: empty,
                 blocksWhileUpdating: false,
                 writeActionDisabledReason: { _ in nil }
@@ -70,7 +92,7 @@ final class BatchFileActionEligibilityTests: XCTestCase {
             "No files selected"
         )
         XCTAssertEqual(
-            MainFileBatchActionEligibility.disabledReason(
+            MainFileBatchEntryPolicy.disabledReason(
                 summary: locked,
                 blocksWhileUpdating: false,
                 writeActionDisabledReason: { fileID in
@@ -163,25 +185,46 @@ final class BatchFileActionEligibilityTests: XCTestCase {
         let changeCategory = BatchChangeCategoryRoute(source: .commandPalette, context: context)
         let delete = BatchDeleteRoute(source: .commandPalette, context: context)
         let rename = BatchRenameRoute(source: .commandPalette, context: context)
-        let commandDelete = CommandPaletteBatchRouteBuilder.batchDeleteRoute(context: context)
-        let commandRename = CommandPaletteBatchRouteBuilder.batchRenameRoute(context: context)
+        let builtAddTags = BatchFileActionRouteBuilder.batchAddTagsRoute(source: .detailMulti, context: context)
+        let builtChangeCategory = BatchFileActionRouteBuilder.batchChangeCategoryRoute(
+            source: .detailMulti,
+            context: context
+        )
+        let builtDelete = BatchFileActionRouteBuilder.batchDeleteRoute(source: .detailMulti, context: context)
+        let builtRename = BatchFileActionRouteBuilder.batchRenameRoute(source: .detailMulti, context: context)
+        let commandAddTags = BatchFileActionRouteBuilder.commandPaletteBatchAddTagsRoute(context: context)
+        let commandChangeCategory = BatchFileActionRouteBuilder.commandPaletteBatchChangeCategoryRoute(context: context)
+        let commandDelete = BatchFileActionRouteBuilder.commandPaletteBatchDeleteRoute(context: context)
+        let commandRename = BatchFileActionRouteBuilder.commandPaletteBatchRenameRoute(context: context)
 
-        XCTAssertEqual(addTags.fileIDs, context.fileIDs)
-        XCTAssertEqual(addTags.selectedCount, context.selectedCount)
-        XCTAssertEqual(addTags.disabledReason, context.disabledReason)
+        assertBatchRoute(addTags, matches: context)
         assertBatchRoute(changeCategory, matches: context)
         assertBatchRoute(delete, matches: context)
         assertBatchRoute(rename, matches: context)
+        assertBatchRoute(builtAddTags, matches: context)
+        assertBatchRoute(builtChangeCategory, matches: context)
+        assertBatchRoute(builtDelete, matches: context)
+        assertBatchRoute(builtRename, matches: context)
+        assertBatchRoute(commandAddTags, matches: context)
+        assertBatchRoute(commandChangeCategory, matches: context)
         assertBatchRoute(commandDelete, matches: context)
         assertBatchRoute(commandRename, matches: context)
+        XCTAssertEqual(builtAddTags.source, .detailMulti)
+        XCTAssertEqual(builtChangeCategory.source, .detailMulti)
+        XCTAssertEqual(builtDelete.source, .detailMulti)
+        XCTAssertEqual(builtRename.source, .detailMulti)
+        XCTAssertEqual(commandAddTags.source, .commandPalette)
+        XCTAssertEqual(commandChangeCategory.source, .commandPalette)
+        XCTAssertEqual(commandDelete.source, .commandPalette)
+        XCTAssertEqual(commandRename.source, .commandPalette)
     }
 
-    private func assertSharedEligibility(
+    private func assertSharedEligibilityReason(
         _ scenario: BatchActionEligibilityScenario,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        let sharedReason = MainFileBatchActionEligibility.disabledReason(
+        let sharedReason = MainFileBatchEntryPolicy.disabledReason(
             selectedFiles: scenario.selectedFiles,
             isReadOnly: scenario.isReadOnly,
             isLoading: scenario.isLoading,
@@ -189,39 +232,17 @@ final class BatchFileActionEligibilityTests: XCTestCase {
         )
 
         XCTAssertEqual(sharedReason, scenario.expectedReason, scenario.name, file: file, line: line)
-        assertEntryPolicyReasons(match: sharedReason, scenario, file: file, line: line)
     }
 
-    private func assertEntryPolicyReasons(
-        match sharedReason: String?,
-        _ scenario: BatchActionEligibilityScenario,
-        file: StaticString,
-        line: UInt
+    private func assertBatchRoute(
+        _ route: BatchAddTagsRoute,
+        matches context: MainFileBatchActionRouteContext,
+        file: StaticString = #filePath,
+        line: UInt = #line
     ) {
-        XCTAssertEqual(
-            BatchAddTagsEntryPolicy.disabledReason(for: scenario),
-            sharedReason,
-            file: file,
-            line: line
-        )
-        XCTAssertEqual(
-            BatchChangeCategoryEntryPolicy.disabledReason(for: scenario),
-            sharedReason,
-            file: file,
-            line: line
-        )
-        XCTAssertEqual(
-            BatchDeleteEntryPolicy.disabledReason(for: scenario),
-            sharedReason,
-            file: file,
-            line: line
-        )
-        XCTAssertEqual(
-            BatchRenameEntryPolicy.disabledReason(for: scenario),
-            sharedReason,
-            file: file,
-            line: line
-        )
+        XCTAssertEqual(route.fileIDs, context.fileIDs, file: file, line: line)
+        XCTAssertEqual(route.selectedCount, context.selectedCount, file: file, line: line)
+        XCTAssertEqual(route.disabledReason, context.disabledReason, file: file, line: line)
     }
 
     private func assertBatchRoute(
@@ -311,50 +332,6 @@ private struct BatchActionEligibilityScenario {
         self.isLoading = isLoading
         self.writeLockedFileIDs = writeLockedFileIDs
         self.expectedReason = expectedReason
-    }
-}
-
-private extension BatchAddTagsEntryPolicy {
-    static func disabledReason(for scenario: BatchActionEligibilityScenario) -> String? {
-        disabledReason(
-            selectedFiles: scenario.selectedFiles,
-            isReadOnly: scenario.isReadOnly,
-            isLoading: scenario.isLoading,
-            writeLockedFileIDs: scenario.writeLockedFileIDs
-        )
-    }
-}
-
-private extension BatchChangeCategoryEntryPolicy {
-    static func disabledReason(for scenario: BatchActionEligibilityScenario) -> String? {
-        disabledReason(
-            selectedFiles: scenario.selectedFiles,
-            isReadOnly: scenario.isReadOnly,
-            isLoading: scenario.isLoading,
-            writeLockedFileIDs: scenario.writeLockedFileIDs
-        )
-    }
-}
-
-private extension BatchDeleteEntryPolicy {
-    static func disabledReason(for scenario: BatchActionEligibilityScenario) -> String? {
-        disabledReason(
-            selectedFiles: scenario.selectedFiles,
-            isReadOnly: scenario.isReadOnly,
-            isLoading: scenario.isLoading,
-            writeLockedFileIDs: scenario.writeLockedFileIDs
-        )
-    }
-}
-
-private extension BatchRenameEntryPolicy {
-    static func disabledReason(for scenario: BatchActionEligibilityScenario) -> String? {
-        disabledReason(
-            selectedFiles: scenario.selectedFiles,
-            isReadOnly: scenario.isReadOnly,
-            isLoading: scenario.isLoading,
-            writeLockedFileIDs: scenario.writeLockedFileIDs
-        )
     }
 }
 

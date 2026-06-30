@@ -11,7 +11,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
         let model = DetailNoteModel(
             repoPath: "/tmp/repo",
             noteStore: noteStore,
-            errorMapper: DetailMetaErrorMapper(mapping: .detailNoteIo()),
+            errorMapper: StaticCoreErrorMapper(mapping: .detailNoteIo()),
             inFlightTracker: tracker,
             debounceNanoseconds: 1
         )
@@ -50,7 +50,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
         let model = DetailNoteModel(
             repoPath: "/tmp/repo",
             noteStore: noteStore,
-            errorMapper: DetailMetaErrorMapper(mapping: mapping),
+            errorMapper: StaticCoreErrorMapper(mapping: mapping),
             debounceNanoseconds: 1
         )
 
@@ -81,7 +81,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
         let model = DetailNoteModel(
             repoPath: "/tmp/repo",
             noteStore: DetailNoteRecordingStore(readResults: [.success(nil)]),
-            errorMapper: DetailMetaErrorMapper(mapping: .detailNoteIo()),
+            errorMapper: StaticCoreErrorMapper(mapping: .detailNoteIo()),
             debounceNanoseconds: 1
         )
 
@@ -106,14 +106,14 @@ final class DetailNotePageFeatureTests: XCTestCase {
         let noteModel = DetailNoteModel(
             repoPath: "/tmp/repo",
             noteStore: noteStore,
-            errorMapper: DetailMetaErrorMapper(mapping: mapping),
+            errorMapper: StaticCoreErrorMapper(mapping: mapping),
             debounceNanoseconds: 1
         )
         let listModel = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
-            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
         )
 
         await noteModel.load(file: file, writeBlock: nil)
@@ -137,7 +137,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
         let model = DetailNoteModel(
             repoPath: "/tmp/repo",
             noteStore: noteStore,
-            errorMapper: DetailMetaErrorMapper(mapping: .detailNoteIo()),
+            errorMapper: StaticCoreErrorMapper(mapping: .detailNoteIo()),
             debounceNanoseconds: 1
         )
 
@@ -162,7 +162,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [available, missing], isReadOnly: true),
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(available)),
-            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
         )
 
         XCTAssertEqual(model.noteWriteBlock(for: available), .repoReadOnly)
@@ -171,7 +171,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [missing]),
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(missing)),
-            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
         )
 
         XCTAssertEqual(writableModel.noteWriteBlock(for: missing), .fileMissing)

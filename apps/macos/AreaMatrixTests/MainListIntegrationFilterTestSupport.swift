@@ -364,21 +364,3 @@ actor MainListRecordingFileDetailer: CoreFileDetailing {
         requests
     }
 }
-
-actor MainListRecordingErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-    private var errors: [CoreError] = []
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        errors.append(error)
-        return mapping
-    }
-
-    func recordedErrors() -> [CoreError] {
-        errors
-    }
-}

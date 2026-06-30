@@ -252,18 +252,6 @@ final class MainLoadingRecordingSettingsWriter: AppSettingsWriting {
     }
 }
 
-final class MainLoadingRecordingErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        mapping
-    }
-}
-
 @MainActor
 func waitForMainLoadingState(
     _ model: OnboardingModel,

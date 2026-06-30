@@ -170,13 +170,8 @@ struct ClassifierRuleHandoffRouteView: View {
             model.markSaved(saved)
             onSaved(saved)
         } catch {
-            await model.markFailed(mapError(error))
+            await model.markFailed(errorMapper.mapError(error))
         }
-    }
-
-    private func mapError(_ error: Error) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError { return await errorMapper.mapCoreError(coreError) }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }
 

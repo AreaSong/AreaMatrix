@@ -11,7 +11,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
             addResults: [.failure(CoreError.InvalidPath(path: "bad/tag"))]
         )
         let mapping = CoreErrorMappingSnapshot.tagAddTagDb()
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
             fileLister: NoopFileLister(),
@@ -58,7 +58,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             tagStore: tagStore,
-            errorMapper: DetailMetaErrorMapper(mapping: mapping)
+            errorMapper: StaticCoreErrorMapper(mapping: mapping)
         )
 
         await model.selectFiles([detail.id])
@@ -94,7 +94,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
             fileLister: NoopFileLister(),
             fileDetailer: DetailTagFileDetailer(files: [first, second]),
             tagStore: tagStore,
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([first.id])
@@ -121,7 +121,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             tagStore: tagStore,
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([detail.id])
@@ -178,7 +178,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
             ),
             searchFiltering: MainListRecordingSearchFiltering(results: [.success(.tagFilterFacets())]),
             tagStore: tagStore,
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.runSearch(
@@ -213,7 +213,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
             searchQuerying: MainListRecordingSearchQuerying(results: [.success(.tagFilterSearchPage(filters: .empty))]),
             searchFiltering: MainListRecordingSearchFiltering(results: [.success(.tagFilterFacets())]),
             tagStore: tagStore,
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([detail.id])
@@ -243,7 +243,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         let tagStore = DetailTagRecordingStore(
             listResults: [.success(registry), .failure(CoreError.Db(message: "tag registry locked"))]
         )
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
             fileLister: NoopFileLister(),
@@ -271,7 +271,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             tagStore: tagStore,
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.loadTagFilterRegistry(activeFileID: detail.id)

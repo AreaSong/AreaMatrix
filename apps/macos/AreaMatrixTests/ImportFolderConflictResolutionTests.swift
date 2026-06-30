@@ -85,7 +85,7 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: fixture.predictor,
             importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: fixture.prechecker,
             scanner: fixture.scanner
         )
@@ -110,7 +110,7 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: fixture.predictor,
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: fixture.prechecker,
             scanner: fixture.scanner
         )
@@ -145,7 +145,7 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         let model = ImportFolderPreviewModel(
             predictor: ImportFolderRecordingPredictor(results: [.success(.importFolderPrediction())]),
             importer: importer,
-            errorMapper: ImportSingleFileRecordingErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: prechecker,
             scanner: scanner
         )
@@ -244,7 +244,7 @@ private func importConflictBatchUndoModel(
 ) -> ImportBatchCopyImportModel {
     ImportBatchCopyImportModel(
         importer: ImportBatchRecordingBatchImporter(),
-        errorMapper: ImportSingleFileRecordingErrorMapper(),
+        errorMapper: RecordingCoreErrorMapper.importSingleFile(),
         conflictBatcher: conflictBatcher,
         undoActionStore: undoStore
     )

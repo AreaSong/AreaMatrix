@@ -12,7 +12,7 @@ final class DetailLogPageFeatureTests: XCTestCase {
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             changeLogLister: lister,
-            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
         )
 
         await model.selectFiles([detail.id])
@@ -29,7 +29,7 @@ final class DetailLogPageFeatureTests: XCTestCase {
     func testDetailLogMapsListChangesFailureInline() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 17, currentName: "locked.pdf")
         let mapping = CoreErrorMappingSnapshot.detailLogDb()
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
             fileLister: NoopFileLister(),
@@ -58,7 +58,7 @@ final class DetailLogPageFeatureTests: XCTestCase {
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaSequenceDetailer(results: [.success(oldFile), .success(newFile)]),
             changeLogLister: lister,
-            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
         )
 
         await model.selectFiles([oldFile.id])
@@ -87,7 +87,7 @@ final class DetailLogPageFeatureTests: XCTestCase {
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
             changeLogLister: DetailLogRecordingLister(results: [.failure(CoreError.Db(message: "change log locked"))]),
-            errorMapper: DetailMetaErrorMapper(mapping: mapping),
+            errorMapper: StaticCoreErrorMapper(mapping: mapping),
             diagnosticsCollector: diagnosticsCollector
         )
 
@@ -111,7 +111,7 @@ final class DetailLogPageFeatureTests: XCTestCase {
     func testDetailLogDetailLogDiagnosticsFailureMapsCoreErrorInline() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 21, currentName: "diagnostics-fail.pdf")
         let mapping = CoreErrorMappingSnapshot.detailLogDb()
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let diagnosticsCollector = ShellRecordingDiagnosticsCollector(
             result: .failure(CoreError.PermissionDenied(path: "/tmp/repo"))
         )

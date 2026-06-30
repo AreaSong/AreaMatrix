@@ -163,7 +163,7 @@ final class DetailNoteModel: ObservableObject {
                 state = .empty(fileID: file.id, writeBlock: writeBlock)
             }
         } catch {
-            let mappedError = await mapCoreError(error)
+            let mappedError = await errorMapper.mapError(error)
             guard generation == loadGeneration, currentFile?.id == file.id else { return }
             state = .failed(fileID: file.id, mappedError, writeBlock: writeBlock)
         }
@@ -250,18 +250,11 @@ final class DetailNoteModel: ObservableObject {
             state = .editing(fileID: file.id, content: content, saveStatus: .saved, writeBlock: nil)
         } catch {
             await inFlightTracker.unmark(repoPath: repoPath, relativePath: notePath)
-            let mappedError = await mapCoreError(error)
+            let mappedError = await errorMapper.mapError(error)
             cachedDrafts[file.id] = DetailNoteCachedDraft(content: content, saveStatus: .failed(mappedError))
             guard currentFile?.id == file.id else { return }
             state = .editing(fileID: file.id, content: content, saveStatus: .failed(mappedError), writeBlock: nil)
         }
-    }
-
-    private func mapCoreError(_ error: Error) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError {
-            return await errorMapper.mapCoreError(coreError)
-        }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 
     private func requestEditorFocus() {

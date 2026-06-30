@@ -79,13 +79,8 @@ struct SmartListManagementSheet: View {
             }
         } catch {
             model.isSaving = false
-            model.failure = await mapError(error)
+            model.failure = await errorMapper.mapError(error)
         }
-    }
-
-    private func mapError(_ error: Error) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError { return await errorMapper.mapCoreError(coreError) }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 
     @MainActor

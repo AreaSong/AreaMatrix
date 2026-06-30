@@ -135,7 +135,7 @@ struct SavedSearchSheetRouteView: View {
                 model.existingNames = Set(saved.map { $0.name.lowercased() })
             }
         } catch {
-            let mapped = await mapError(error)
+            let mapped = await errorMapper.mapError(error)
             await MainActor.run {
                 model.saveFailure = mapped
             }
@@ -156,12 +156,7 @@ struct SavedSearchSheetRouteView: View {
             onSaved(saved)
         } catch {
             model.isSaving = false
-            model.saveFailure = await mapError(error)
+            model.saveFailure = await errorMapper.mapError(error)
         }
-    }
-
-    private func mapError(_ error: Error) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError { return await errorMapper.mapCoreError(coreError) }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }

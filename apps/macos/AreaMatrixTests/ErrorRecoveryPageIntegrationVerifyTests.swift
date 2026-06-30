@@ -27,7 +27,7 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
             mainLoadingTreeLister: treeLister,
             startupRecoverer: recoverer,
             scanSessionReader: StaticScanSessionReader(),
-            errorMapper: StartupRecoveryIntegrationErrorMapper(mapping: mapping),
+            errorMapper: StaticCoreErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -75,7 +75,7 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
             ),
             startupRecoverer: recoverer,
             scanSessionReader: StaticScanSessionReader(),
-            errorMapper: StartupRecoveryIntegrationErrorMapper(mapping: mapping),
+            errorMapper: StaticCoreErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -173,18 +173,6 @@ private func assertStartupRecoveryStartupRecoveryFailureState(
         onRetryOpening: {}
     ).body, contains: "Cancel opening")
     XCTAssertFalse(RepositoryErrorPresentation.mainRepo(mapping: mapping).primaryAction == .openRepair)
-}
-
-private actor StartupRecoveryIntegrationErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        mapping
-    }
 }
 
 private extension CoreErrorMappingSnapshot {

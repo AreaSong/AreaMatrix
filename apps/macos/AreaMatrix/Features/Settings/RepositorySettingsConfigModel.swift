@@ -184,8 +184,7 @@ final class RepositorySettingsConfigModel: ObservableObject {
     }
 
     private func configError(for error: Error) async -> RepositorySettingsConfigError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
+        if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return RepositorySettingsConfigError(message: mapping.userMessage, recovery: mapping.suggestedAction)
         }
 

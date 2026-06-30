@@ -30,7 +30,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         let model = ICloudConflictListModel(
             repoPath: "/tmp/iCloudConflictList-repo",
             conflictLister: lister,
-            errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .iCloudConflictListMapping())
         )
 
         await model.load()
@@ -44,7 +44,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
 
     @MainActor
     func testICloudConflictListICloudConflictCoreErrorStateMapsCoreErrorAndKeepsRetryDiagnosticsVisible() async {
-        let mapper = ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping(
+        let mapper = StaticCoreErrorMapper(mapping: .iCloudConflictListMapping(
             kind: .iCloudPlaceholder,
             rawContext: "/tmp/iCloudConflictList-repo/docs/report.pdf.icloud"
         ))
@@ -81,7 +81,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         let emptyModel = ICloudConflictListModel(
             repoPath: "/tmp/iCloudConflictList-repo",
             conflictLister: ICloudConflictLister(result: .success([])),
-            errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .iCloudConflictListMapping())
         )
         await emptyModel.load()
 
@@ -98,7 +98,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         let loadedModel = ICloudConflictListModel(
             repoPath: "/tmp/iCloudConflictList-repo",
             conflictLister: ICloudConflictLister(result: .success([conflict])),
-            errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .iCloudConflictListMapping())
         )
         await loadedModel.load()
 
@@ -129,7 +129,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         let model = ICloudConflictListModel(
             repoPath: "/tmp/iCloudConflictList-repo",
             conflictLister: ICloudConflictLister(result: .success([conflict])),
-            errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping()),
+            errorMapper: StaticCoreErrorMapper(mapping: .iCloudConflictListMapping()),
             repositoryFinderOpener: finder,
             fileRevealer: revealer
         )
@@ -154,7 +154,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
                 config: .iCloudConflictListIntegrationsFixture(repoPath: "/tmp/stale")
             ),
             updater: NoopConfigurationUpdater(),
-            errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping()),
+            errorMapper: StaticCoreErrorMapper(mapping: .iCloudConflictListMapping()),
             statusDetector: StaticICloudStatusDetector(
                 snapshot: IntegrationsICloudSnapshot(repositoryLocation: .iCloudDrive, iCloudStatus: .available)
             ),
@@ -183,7 +183,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         let listModel = ICloudConflictListModel(
             repoPath: "/tmp/iCloudConflictList-repo",
             conflictLister: ICloudConflictLister(result: .success([conflict])),
-            errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .iCloudConflictListMapping())
         )
 
         await listModel.load()
@@ -217,7 +217,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
                 previewResult: .success(.iCloudConflictVisualPreview(conflictID: route.conflict.conflictID)),
                 resolveResult: .success(.iCloudConflictVisualResolvedReport(conflictID: route.conflict.conflictID))
             ),
-            errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping(kind: .internal))
+            errorMapper: StaticCoreErrorMapper(mapping: .iCloudConflictListMapping(kind: .internal))
         )
         await sheetModel.validateRepositoryPath()
         await sheetModel.loadPreview()
@@ -254,7 +254,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         let model = ICloudConflictListModel(
             repoPath: "/tmp/iCloudConflictVisual-repo",
             conflictLister: lister,
-            errorMapper: ICloudConflictListRecordingErrorMapper(mapping: .iCloudConflictListMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .iCloudConflictListMapping())
         )
 
         await model.load()
@@ -313,24 +313,6 @@ private actor ICloudConflictLister: CoreICloudConflictListing {
 
     func recordedRequests() -> [String] {
         requests
-    }
-}
-
-private actor ICloudConflictListRecordingErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-    private var errors: [CoreError] = []
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        errors.append(error)
-        return mapping
-    }
-
-    func recordedErrors() -> [CoreError] {
-        errors
     }
 }
 

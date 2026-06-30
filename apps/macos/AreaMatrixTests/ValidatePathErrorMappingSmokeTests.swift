@@ -163,7 +163,7 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
             aiTagSuggestionStore: bridge,
             aiPrivacyRules: privacy,
             changeLogLister: DetailLogRecordingChangeLister(entries: [.tagSuggestionsApplied()]),
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([file.id])
@@ -208,7 +208,7 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
                 snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])
             ),
             changeLogLister: DetailLogRecordingChangeLister(entries: [.tagSuggestionsApplied()]),
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([file.id])
@@ -243,7 +243,7 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
             aiPrivacyRules: RemotePrivacyRulesBridge(
                 snapshot: .remoteProviderConfigPrivacyRules(featureScope: [.autoTags])
             ),
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([file.id])
@@ -276,7 +276,7 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
             aiSettingsLoader: settings,
             aiTagSuggestionStore: bridge,
             aiPrivacyRules: privacy,
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([file.id])
@@ -309,7 +309,7 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
             aiSettingsLoader: AITagSuggestionAISettingsLoader(autoTagsEnabled: false),
             aiTagSuggestionStore: bridge,
             aiPrivacyRules: privacy,
-            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
         await model.selectFiles([file.id])

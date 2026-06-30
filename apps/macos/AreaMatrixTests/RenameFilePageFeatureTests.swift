@@ -16,7 +16,7 @@ final class RenameFilePageFeatureTests: XCTestCase {
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
             fileRenamer: renamer,
             changeLogLister: logLister,
-            errorMapper: DetailMetaErrorMapper(mapping: .renameConflict())
+            errorMapper: StaticCoreErrorMapper(mapping: .renameConflict())
         )
 
         await model.selectFiles([original.id])
@@ -41,7 +41,7 @@ final class RenameFilePageFeatureTests: XCTestCase {
     func testRenameFileRenameFileCoreFailureKeepsSheetOpenInputAndMapsCoreError() async {
         let original = FileEntrySnapshot.renameFixture(id: 123, name: "old.pdf")
         let mapping = CoreErrorMappingSnapshot.renameConflict()
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let renamer = RenameRecordingRenamer(result: .failure(CoreError.Conflict(path: "docs/contracts/new.pdf")))
         let model = MainFileListModel(
             opening: .renameFixture(repoPath: "/tmp/repo", files: [original]),
@@ -71,7 +71,7 @@ final class RenameFilePageFeatureTests: XCTestCase {
             opening: .renameFixture(repoPath: "/tmp/repo", files: [original]),
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
-            errorMapper: DetailMetaErrorMapper(mapping: .renameConflict())
+            errorMapper: StaticCoreErrorMapper(mapping: .renameConflict())
         )
 
         await model.selectFiles([original.id])
@@ -93,7 +93,7 @@ final class RenameFilePageFeatureTests: XCTestCase {
             ),
             fileLister: NoopFileLister(),
             fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
-            errorMapper: DetailMetaErrorMapper(mapping: .renameConflict())
+            errorMapper: StaticCoreErrorMapper(mapping: .renameConflict())
         )
 
         await model.selectFiles([original.id])

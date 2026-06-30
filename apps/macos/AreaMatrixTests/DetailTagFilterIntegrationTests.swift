@@ -26,7 +26,7 @@ final class DetailTagFilterIntegrationTests: XCTestCase {
             .success(.tagFilterIntegrationFacets())
         ])
         let searcher = MainListRecordingSearchQuerying(results: [.success(.tagFilterIntegrationSearchPage(filters))])
-        let mapper = DetailMetaErrorMapper(mapping: .tagFilterFilterFailure())
+        let mapper = StaticCoreErrorMapper(mapping: .tagFilterFilterFailure())
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
             fileLister: NoopFileLister(),
@@ -87,7 +87,7 @@ final class DetailTagFilterIntegrationTests: XCTestCase {
             ),
             searchFiltering: MainListRecordingSearchFiltering(results: [.success(.tagFilterIntegrationFacets())]),
             tagStore: tagStore,
-            errorMapper: DetailMetaErrorMapper(mapping: .tagFilterFilterFailure())
+            errorMapper: StaticCoreErrorMapper(mapping: .tagFilterFilterFailure())
         )
 
         model.enterSearch(context: .sidebar("tag-filters-sidebar-tags-filter"))

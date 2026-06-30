@@ -70,7 +70,7 @@ final class MainEmptyBuildTreeTests: XCTestCase {
             onOpenSettings: {},
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
-            errorMapper: CommandPaletteCommandErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
+            errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
         )
 
         XCTAssertEqual(content.visibleCommandPaletteState.snapshot?.targetTitles, [
@@ -90,7 +90,7 @@ final class MainEmptyBuildTreeTests: XCTestCase {
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: MainListRecordingFileDetailer(results: []),
             commandIndexer: CommandPaletteCommandIndexStore(results: [.failure(CoreError.Db(message: "locked"))]),
-            errorMapper: CommandPaletteCommandErrorMapper(mapping: mapping)
+            errorMapper: StaticCoreErrorMapper(mapping: mapping)
         )
 
         model.commandPaletteState = .loaded(previous)

@@ -57,7 +57,7 @@ func importConflictBatchIntegrationModel(
 ) -> ImportBatchCopyImportModel {
     ImportBatchCopyImportModel(
         importer: ImportBatchRecordingBatchImporter(),
-        errorMapper: ImportSingleFileRecordingErrorMapper(),
+        errorMapper: RecordingCoreErrorMapper.importSingleFile(),
         conflictBatcher: conflictBatcher,
         undoActionStore: undoStore
     )

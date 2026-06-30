@@ -102,7 +102,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
             fileDetailer: DetailMetaImmediateDetailer(result: .success(created)),
             changeLogLister: lister,
             externalChangesSyncer: syncer,
-            errorMapper: DetailMetaErrorMapper(mapping: .detailMetaFileNotFound())
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
         )
 
         await model.selectFiles([existing.id])
@@ -136,7 +136,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
             fsEventID: 7002
         ))
         let mapping = CoreErrorMappingSnapshot.detailLogExternalCreated(kind: .iCloudPlaceholder)
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let lister = DetailLogRecordingLister(results: [.success([])])
         let syncer = DetailLogExternalCreatedSyncer(
             result: .failure(CoreError.ICloudPlaceholder(path: event.relativePath))
@@ -166,7 +166,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         let created = FileEntrySnapshot.detailMetaFixture(id: 25, currentName: "partial.pdf", origin: "External")
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(relativePath: created.path, fsEventID: 7003))
         let mapping = CoreErrorMappingSnapshot.detailLogExternalCreated(kind: .internal)
-        let mapper = DetailMetaErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
         let lister = DetailLogRecordingLister(results: [.success([])])
         let syncer = DetailLogExternalCreatedSyncer(result: .success(.detailCreatedWithErrorsFixture()))
         let model = MainFileListModel(

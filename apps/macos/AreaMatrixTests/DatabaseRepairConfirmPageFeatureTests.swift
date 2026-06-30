@@ -21,7 +21,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
             ),
-            errorMapper: DatabaseRepairRepairErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db))
+            errorMapper: StaticCoreErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db))
         )
 
         await model.runStartupRecoveryCheckIfNeeded()
@@ -52,7 +52,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
             ),
-            errorMapper: DatabaseRepairRepairErrorMapper(mapping: mapping)
+            errorMapper: StaticCoreErrorMapper(mapping: mapping)
         )
 
         await model.runStartupRecoveryCheckIfNeeded()
@@ -88,7 +88,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
             ),
-            errorMapper: DatabaseRepairRepairErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db))
+            errorMapper: StaticCoreErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db))
         )
 
         await model.runFullRescan()
@@ -127,7 +127,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
             ),
-            errorMapper: DatabaseRepairRepairErrorMapper(mapping: mapping)
+            errorMapper: StaticCoreErrorMapper(mapping: mapping)
         )
 
         model.isMetadataSafetyConfirmed = true
@@ -152,7 +152,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
                 result: .success(.databaseRepairRepairReportFixture())
             ),
             diagnosticsCollector: diagnosticsCollector,
-            errorMapper: DatabaseRepairRepairErrorMapper(mapping: .databaseRepairRepairMapping(kind: .permissionDenied))
+            errorMapper: StaticCoreErrorMapper(mapping: .databaseRepairRepairMapping(kind: .permissionDenied))
         )
 
         model.isMetadataSafetyConfirmed = true
@@ -185,7 +185,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
             ),
-            errorMapper: DatabaseRepairRepairErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db)),
+            errorMapper: StaticCoreErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db)),
             onCancel: {},
             onRepairSucceeded: {},
             onOpenRepositoryInFinder: {}
@@ -251,7 +251,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
             ),
-            errorMapper: DatabaseRepairRepairErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db)),
+            errorMapper: StaticCoreErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db)),
             onCancel: {},
             onRepairSucceeded: {},
             onOpenRepositoryInFinder: {}
@@ -338,18 +338,6 @@ private actor DatabaseRepairRecordingStartupRecoverer: CoreStartupRecovering {
 
     func requestedRepoPaths() -> [String] {
         repoPaths
-    }
-}
-
-private actor DatabaseRepairRepairErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        mapping
     }
 }
 

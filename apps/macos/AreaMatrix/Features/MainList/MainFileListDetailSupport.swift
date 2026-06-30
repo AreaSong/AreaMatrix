@@ -1,31 +1,5 @@
 import Foundation
 
-enum BatchAddTagsRouteSource: String, Equatable {
-    case detailMulti
-    case listContextMenu
-    case commandPalette
-}
-
-struct BatchAddTagsRoute: Identifiable, Equatable {
-    let source: BatchAddTagsRouteSource
-    let fileIDs: [Int64]
-    let selectedCount: Int
-    let disabledReason: String?
-
-    var id: String {
-        "\(source.rawValue):\(fileIDs.map(String.init).joined(separator: ",")):\(selectedCount):\(disabledReason ?? "")"
-    }
-}
-
-extension BatchAddTagsRoute {
-    init(source: BatchAddTagsRouteSource, context: MainFileBatchActionRouteContext) {
-        self.source = source
-        fileIDs = context.fileIDs
-        selectedCount = context.selectedCount
-        disabledReason = context.disabledReason
-    }
-}
-
 struct MainRepositoryDetailPaneTagActions {
     let aiSuggestionState: AITagSuggestionState
     let aiBatchSuggestionState: AITagBatchSuggestionState
@@ -82,7 +56,7 @@ enum MultiSelectionDetailLoader {
                     refreshedFiles.append(loadedFile)
                 }
             } catch {
-                let mappedError = await mapCoreError(error, errorMapper: request.errorMapper)
+                let mappedError = await request.errorMapper.mapError(error)
                 guard await shouldContinue() else { return nil }
                 firstFailure = firstFailure ?? mappedError
             }
@@ -103,16 +77,6 @@ enum MultiSelectionDetailLoader {
             refreshedByID.removeValue(forKey: file.id) ?? file
         }
         return existingFiles + refreshedByID.values.sorted { $0.currentName < $1.currentName }
-    }
-
-    private static func mapCoreError(
-        _ error: Error,
-        errorMapper: any CoreErrorMapping
-    ) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError {
-            return await errorMapper.mapCoreError(coreError)
-        }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
     }
 }
 
@@ -154,10 +118,7 @@ extension MainFileListModel {
     }
 
     func mapCoreError(_ error: Error) async -> CoreErrorMappingSnapshot {
-        if let coreError = error as? CoreError {
-            return await errorMapper.mapCoreError(coreError)
-        }
-        return await errorMapper.mapCoreError(CoreError.Internal(message: error.localizedDescription))
+        await errorMapper.mapError(error)
     }
 
     func validateExternalSyncResult(

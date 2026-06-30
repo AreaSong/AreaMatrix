@@ -10,7 +10,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: result),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: .importSingleFileFixture())
@@ -31,7 +31,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: .importSingleFileFixture())
@@ -56,7 +56,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -93,7 +93,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -163,7 +163,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
                 keepBothTargetRelativePath: "docs/reports/报告_1.pdf",
                 existingFile: existingFile
             )),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -192,7 +192,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: ImportSingleFileRecordingImporter(),
             preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         await trashUnavailableModel.load(request: .importSingleFileFixture(
             allowReplaceDuringImport: true,
@@ -207,7 +207,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: ImportSingleFileRecordingImporter(),
             preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: ImportSingleFileRecordingErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
         await hiddenModel.load(request: .importSingleFileFixture(
             allowReplaceDuringImport: false,
