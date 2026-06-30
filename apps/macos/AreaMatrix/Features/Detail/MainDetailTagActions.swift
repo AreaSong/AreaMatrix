@@ -12,16 +12,14 @@ extension MainFileListModel {
     }
 
     func addSelectedFileTag(_ tag: String) async {
-        guard let fileID = selection.singleFileID,
-              writeActionDisabledReason(fileID: fileID) == nil else { return }
+        guard let fileID = writableActionFileID() else { return }
         await mutateTags(fileID: fileID, operation: .add(tag)) {
             try await tagStore.addTag(repoPath: repoPath, fileID: fileID, tag: tag)
         }
     }
 
     func removeSelectedFileTag(_ tag: String) async {
-        guard let fileID = selection.singleFileID,
-              writeActionDisabledReason(fileID: fileID) == nil else { return }
+        guard let fileID = writableActionFileID() else { return }
         await mutateTags(fileID: fileID, operation: .remove(tag)) {
             try await tagStore.removeTag(repoPath: repoPath, fileID: fileID, tag: tag)
         }
@@ -33,7 +31,7 @@ extension MainFileListModel {
             detailTagUndoToast = nil
             return
         }
-        guard writeActionDisabledReason(fileID: toast.fileID) == nil else { return }
+        guard canPerformWriteAction(fileID: toast.fileID) else { return }
 
         detailTagUndoToast = nil
         await mutateTags(fileID: toast.fileID, operation: toast.undoOperation, shouldOfferUndo: false) {

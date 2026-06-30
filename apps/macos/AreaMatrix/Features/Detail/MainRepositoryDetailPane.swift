@@ -48,6 +48,7 @@ struct MainRepositoryDetailPane: View {
     let onBeginSyncConflictReview: (FileEntrySnapshot) -> Void
     let onOpenAISettings: () -> Void
     let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
+    let canPerformWriteAction: (Int64) -> Bool
 
     @State private var selectedTab: DetailPaneTab = .meta
     @State private var pendingSummaryExitTab: DetailPaneTab?
@@ -78,7 +79,7 @@ extension MainRepositoryDetailPane {
                     onConfirmDetailLogDiagnostics: onConfirmDetailLogDiagnostics,
                     onCancelDetailLogDiagnostics: onCancelDetailLogDiagnostics,
                     onBeginDeleteFile: onBeginDeleteFile,
-                    writeActionDisabledReason: writeActionDisabledReason
+                    canPerformWriteAction: canPerformWriteAction
                 )
             } else if isDetailLoading {
                 MainRepositoryDetailLoadingPane()
@@ -142,6 +143,7 @@ extension MainRepositoryDetailPane {
             onBeginSyncConflictReview: onBeginSyncConflictReview,
             onOpenAISettings: onOpenAISettings,
             writeActionDisabledReason: writeActionDisabledReason,
+            canPerformWriteAction: canPerformWriteAction,
             summaryExitController: summaryExitController,
             noteModel: noteModel
         )

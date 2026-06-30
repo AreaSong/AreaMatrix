@@ -5,7 +5,7 @@ extension MainFileListModel {
     func submitDelete(fileID: Int64, operation: MainFileDeleteOperation) async -> Bool {
         guard pendingActionDestination == .delete(fileID: fileID),
               !deleteState.isDeleting,
-              writeActionDisabledReason(fileID: fileID) == nil else { return false }
+              canPerformWriteAction(fileID: fileID) else { return false }
 
         deleteState = .deleting(fileID: fileID, operation: operation)
         clearDiagnosticsState()

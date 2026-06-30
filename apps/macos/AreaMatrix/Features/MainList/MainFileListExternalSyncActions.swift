@@ -221,7 +221,7 @@ extension MainFileListModel {
             fileID: fileID,
             suggestionID: suggestionID,
             in: aiTagBatchSuggestionState,
-            disabledReason: writeActionDisabledReason(fileID: fileID)?.rawValue
+            disabledReason: writeActionDisabledMessage(fileID: fileID)
         )
     }
 
@@ -238,7 +238,7 @@ extension MainFileListModel {
             suggestionID: suggestionID,
             displayName: displayName,
             in: aiTagBatchSuggestionState,
-            disabledReason: writeActionDisabledReason(fileID: fileID)?.rawValue
+            disabledReason: writeActionDisabledMessage(fileID: fileID)
         )
     }
 
@@ -248,7 +248,7 @@ extension MainFileListModel {
             suggestionID: suggestionID,
             slug: slug,
             in: aiTagBatchSuggestionState,
-            disabledReason: writeActionDisabledReason(fileID: fileID)?.rawValue
+            disabledReason: writeActionDisabledMessage(fileID: fileID)
         )
     }
 
@@ -257,7 +257,7 @@ extension MainFileListModel {
             fileID: fileID,
             suggestionID: suggestionID,
             in: aiTagBatchSuggestionState,
-            disabledReason: writeActionDisabledReason(fileID: fileID)?.rawValue
+            disabledReason: writeActionDisabledMessage(fileID: fileID)
         )
     }
 
@@ -332,7 +332,7 @@ extension MainFileListModel {
     ) async -> (applyReport: AiTagSuggestionApplyReport?, failure: CoreErrorMappingSnapshot?) {
         guard let report = review.reports[fileID] else { return (nil, nil) }
         let items = review.applyItems(fileID: fileID)
-        guard !items.isEmpty, writeActionDisabledReason(fileID: fileID) == nil else { return (nil, nil) }
+        guard !items.isEmpty, canPerformWriteAction(fileID: fileID) else { return (nil, nil) }
 
         do {
             let applyReport = try await aiTagSuggestionStore.applyAITagSuggestions(

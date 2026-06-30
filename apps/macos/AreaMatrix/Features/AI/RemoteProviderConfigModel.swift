@@ -1,29 +1,13 @@
 import Combine
 import Foundation
 
-enum RemoteProviderLoadState: Equatable {
-    case idle, loading, loaded, testing, enabling, disabling, failed(AISettingsError)
-
-    var isBusy: Bool {
-        switch self {
-        case .loading, .testing, .enabling, .disabling: true
-        default: false
-        }
-    }
-}
-
-enum RemoteProviderOutcome: Equatable {
-    case success(String)
-    case failed(AISettingsError)
-}
-
 @MainActor
 final class RemoteProviderConfigModel: ObservableObject {
     @Published private(set) var loadState: RemoteProviderLoadState = .idle
-    @Published private(set) var snapshot: RemoteProviderConfigState?
-    @Published private(set) var testResult: RemoteProviderTestResultState?
-    @Published private(set) var outcome: RemoteProviderOutcome?
-    @Published private(set) var unusedCredentialReference: String?
+    @Published var snapshot: RemoteProviderConfigState?
+    @Published var testResult: RemoteProviderTestResultState?
+    @Published var outcome: RemoteProviderOutcome?
+    @Published var unusedCredentialReference: String?
 
     @Published var provider: RemoteProviderKindState = .openAi {
         didSet { resetVerificationIfChanged() }
@@ -48,13 +32,13 @@ final class RemoteProviderConfigModel: ObservableObject {
     @Published var dataFlowConfirmed = false
 
     let repoPath: String
-    private let bridge: any CoreRemoteProviderConfiguring
-    private let credentialStore: any RemoteProviderCredentialStoring
-    private let errorMapper: any CoreErrorMapping
-    private var verifiedCredentialDraft: RemoteProviderCredentialDraft?
-    private var verifiedToken: String?
-    private var lastFingerprint: RemoteProviderDraftFingerprint?
-    private var isApplyingSnapshot = false
+    let bridge: any CoreRemoteProviderConfiguring
+    let credentialStore: any RemoteProviderCredentialStoring
+    let errorMapper: any CoreErrorMapping
+    var verifiedCredentialDraft: RemoteProviderCredentialDraft?
+    var verifiedToken: String?
+    var lastFingerprint: RemoteProviderDraftFingerprint?
+    var isApplyingSnapshot = false
 
     init(
         repoPath: String,
@@ -244,205 +228,5 @@ final class RemoteProviderConfigModel: ObservableObject {
 
     func retryEnable() async {
         await enableRemoteAI()
-    }
-}
-
-private extension RemoteProviderConfigModel {
-    private func runProviderTest(draft: RemoteProviderCredentialDraft) async -> AISettingsError? {
-        do {
-            let result = try await bridge.testRemoteProvider(
-                repoPath: repoPath,
-                request: currentDraft.testRequest(keyReference: draft.reference)
-            )
-            handleTestResult(result, draft: draft)
-            return nil
-        } catch {
-            do {
-                try credentialStore.discardCredentialDraft(draft)
-                clearVerifiedDraftState()
-            } catch {
-                retainCredentialDraftAfterCleanupFailure(draft)
-                return credentialCleanupError(
-                    for: error,
-                    message: "API key draft could not be discarded after the connection test failed.",
-                    recovery: "Retry Remove unused key or cancel after cleanup succeeds."
-                )
-            }
-            return await remoteError(
-                for: error,
-                message: "Remote provider could not be tested.",
-                fallbackRecovery: "Check the key, model, endpoint, and network."
-            )
-        }
-    }
-
-    private func applySnapshot(_ newSnapshot: RemoteProviderConfigState) {
-        isApplyingSnapshot = true
-        defer {
-            isApplyingSnapshot = false
-            lastFingerprint = currentDraft.fingerprint
-        }
-        snapshot = newSnapshot
-        provider = newSnapshot.provider ?? provider
-        modelID = newSnapshot.modelID ?? modelID
-        endpointURL = newSnapshot.endpointURL ?? ""
-        selectedScopes = Set(newSnapshot.featureScope)
-        apiKey = ""
-        verifiedCredentialDraft = nil
-        verifiedToken = nil
-        testResult = nil
-        unusedCredentialReference = nil
-    }
-
-    private func handleTestResult(_ result: RemoteProviderTestResultState, draft: RemoteProviderCredentialDraft) {
-        testResult = result
-        if result.providerVerified, let token = result.verificationToken {
-            verifiedToken = token
-            verifiedCredentialDraft = draft
-            lastFingerprint = currentDraft.fingerprint
-            unusedCredentialReference = nil
-            outcome = .success("Connection verified.")
-            return
-        }
-
-        do {
-            try credentialStore.discardCredentialDraft(draft)
-        } catch {
-            retainCredentialDraftAfterCleanupFailure(draft)
-            outcome = .failed(credentialCleanupError(
-                for: error,
-                message: "API key draft could not be discarded after the connection test failed.",
-                recovery: "Retry Remove unused key or cancel after cleanup succeeds."
-            ))
-            return
-        }
-        verifiedToken = nil
-        verifiedCredentialDraft = nil
-        outcome = .failed(AISettingsError(
-            message: testFailureTitle(result.status),
-            recovery: "Edit the provider details and test again.",
-            detail: result.sanitizedMessage
-        ))
-    }
-
-    private func resetVerificationIfChanged() {
-        guard !isApplyingSnapshot, lastFingerprint != nil, currentDraft.fingerprint != lastFingerprint else { return }
-        discardVerifiedDraftCredential()
-        verifiedToken = nil
-        testResult = nil
-    }
-
-    private func storedCredentialReferenceForDisable() -> String? {
-        guard let snapshot, snapshot.credentialConfigured else { return verifiedCredentialDraft?.reference }
-        guard let snapshotProvider = snapshot.provider else { return verifiedCredentialDraft?.reference }
-        return credentialStore.storedCredentialReference(
-            provider: snapshotProvider,
-            endpointURL: snapshot.endpointURL
-        )
-    }
-
-    private var currentDraft: RemoteProviderConfigDraft {
-        RemoteProviderConfigDraft(
-            provider: provider,
-            modelID: modelID,
-            endpointURL: endpointURL,
-            apiKey: apiKey,
-            selectedScopes: selectedScopes,
-            dataFlowConfirmed: dataFlowConfirmed
-        )
-    }
-
-    private func normalizeScope() {
-        if selectedScopes.isEmpty { verifiedToken = nil }
-    }
-
-    private func clearUnusedCredential() throws {
-        if let draft = verifiedCredentialDraft, draft.reference == unusedCredentialReference {
-            try clearDraftCredential()
-        } else if let reference = unusedCredentialReference {
-            try credentialStore.removeCredential(reference: reference)
-        } else {
-            try clearDraftCredential()
-        }
-        unusedCredentialReference = nil
-    }
-
-    private func discardVerifiedDraftCredential() {
-        guard let draft = verifiedCredentialDraft else {
-            unusedCredentialReference = nil
-            return
-        }
-        do {
-            try clearDraftCredential()
-            unusedCredentialReference = nil
-        } catch {
-            retainCredentialDraftAfterCleanupFailure(draft)
-            outcome = .failed(credentialCleanupError(
-                for: error,
-                message: "API key draft could not be discarded after provider details changed.",
-                recovery: "Retry Cancel or remove the unused key."
-            ))
-        }
-    }
-
-    private func discardExistingDraftBeforeTest() throws {
-        guard let draft = verifiedCredentialDraft else { return }
-        do {
-            try clearDraftCredential()
-            unusedCredentialReference = nil
-        } catch {
-            retainCredentialDraftAfterCleanupFailure(draft)
-            throw error
-        }
-    }
-
-    private func clearDraftCredential() throws {
-        guard let draft = verifiedCredentialDraft else {
-            verifiedToken = nil
-            testResult = nil
-            return
-        }
-        try credentialStore.discardCredentialDraft(draft)
-        clearVerifiedDraftState()
-    }
-
-    private func testFailureTitle(_ status: RemoteProviderTestStatusState) -> String {
-        switch status {
-        case .providerRejected: "The API key was rejected by the provider."
-        case .connectionFailed: "Connection failed. Check your network or endpoint URL."
-        case .unsupportedProvider: "This provider is not supported yet."
-        case .succeeded: "Remote provider could not be verified."
-        }
-    }
-
-    private func remoteError(for error: Error, message: String, fallbackRecovery: String) async -> AISettingsError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
-            return AISettingsError(
-                message: message,
-                recovery: mapping.suggestedAction.isEmpty ? fallbackRecovery : mapping.suggestedAction,
-                detail: mapping.userMessage
-            )
-        }
-        return AISettingsError(message: message, recovery: fallbackRecovery, detail: error.localizedDescription)
-    }
-
-    private func credentialCleanupError(for error: Error, message: String, recovery: String) -> AISettingsError {
-        AISettingsError(message: message, recovery: recovery, detail: error.localizedDescription)
-    }
-
-    private func retainCredentialDraftAfterCleanupFailure(_ draft: RemoteProviderCredentialDraft) {
-        verifiedCredentialDraft = draft
-        verifiedToken = nil
-        testResult = nil
-        if !draft.replacesExistingCredential {
-            unusedCredentialReference = draft.reference
-        }
-    }
-
-    private func clearVerifiedDraftState() {
-        verifiedCredentialDraft = nil
-        verifiedToken = nil
-        testResult = nil
     }
 }

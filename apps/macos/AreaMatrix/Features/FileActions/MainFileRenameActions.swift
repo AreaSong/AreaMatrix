@@ -5,7 +5,7 @@ extension MainFileListModel {
     func submitRename(fileID: Int64, newName: String) async -> Bool {
         guard pendingActionDestination == .rename(fileID: fileID),
               !renameState.isRenaming,
-              writeActionDisabledReason(fileID: fileID) == nil else { return false }
+              canPerformWriteAction(fileID: fileID) else { return false }
 
         let returnTargetCategory = renameState.changeCategoryReturnTarget(for: fileID)
         renameState = renameState.renamingState(fileID: fileID, targetCategory: returnTargetCategory)

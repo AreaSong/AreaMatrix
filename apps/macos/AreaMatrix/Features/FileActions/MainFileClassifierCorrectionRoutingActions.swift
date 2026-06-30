@@ -69,7 +69,7 @@ extension MainFileListModel {
     ) {
         guard pendingActionDestination?.isChangeCategory(fileID: handoff.fileID) == true ||
             pendingActionDestination?.isAIClassificationSuggestion(fileID: handoff.fileID) == true,
-            writeActionDisabledReason(fileID: handoff.fileID) == nil else { return }
+            canPerformWriteAction(fileID: handoff.fileID) else { return }
         pendingActionDestination = .changeCategory(
             fileID: handoff.fileID,
             initialTargetCategory: handoff.targetCategory,

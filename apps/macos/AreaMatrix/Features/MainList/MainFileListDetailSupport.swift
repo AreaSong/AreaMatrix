@@ -17,6 +17,15 @@ struct BatchAddTagsRoute: Identifiable, Equatable {
     }
 }
 
+extension BatchAddTagsRoute {
+    init(source: BatchAddTagsRouteSource, context: MainFileBatchActionRouteContext) {
+        self.source = source
+        fileIDs = context.fileIDs
+        selectedCount = context.selectedCount
+        disabledReason = context.disabledReason
+    }
+}
+
 struct MainRepositoryDetailPaneTagActions {
     let aiSuggestionState: AITagSuggestionState
     let aiBatchSuggestionState: AITagBatchSuggestionState

@@ -6,7 +6,7 @@ extension MainFileListModel {
     func loadClassifierCorrectionContext(fileID: Int64, filename: String) async {
         guard pendingActionDestination?.isChangeCategory(fileID: fileID) == true,
               pendingActionDestination?.changeCategoryMode == .classifierCorrection,
-              writeActionDisabledReason(fileID: fileID) == nil else { return }
+              canPerformWriteAction(fileID: fileID) else { return }
 
         let request = ClassifierCorrectionContextRequest(fileID: fileID, filename: filename)
         guard classifierCorrectionContextState.needsLoad(request) else { return }
@@ -27,7 +27,7 @@ extension MainFileListModel {
 
     func loadMoveToCategoryPreview(fileID: Int64, targetCategory: String) async {
         guard pendingActionDestination?.supportsCategoryPreview(fileID: fileID) == true,
-              writeActionDisabledReason(fileID: fileID) == nil else { return }
+              canPerformWriteAction(fileID: fileID) else { return }
 
         let request = MainFileCategoryMovePreviewRequest(fileID: fileID, targetCategory: targetCategory)
         changeCategoryState = .checking(request)
@@ -58,7 +58,7 @@ extension MainFileListModel {
     ) async -> Bool {
         guard pendingActionDestination?.isChangeCategory(fileID: fileID) == true,
               !changeCategoryState.isMoving(fileID: fileID),
-              writeActionDisabledReason(fileID: fileID) == nil else { return false }
+              canPerformWriteAction(fileID: fileID) else { return false }
 
         let request = MainFileCategoryMovePreviewRequest(fileID: fileID, targetCategory: targetCategory)
         changeCategoryState = .moving(request, preview: changeCategoryState.preview(for: request))
@@ -85,7 +85,7 @@ extension MainFileListModel {
     func submitAIClassificationSuggestion(_ request: AIClassificationSuggestionApplyRequest) async -> Bool {
         guard pendingActionDestination?.isAIClassificationSuggestion(fileID: request.fileID) == true,
               !changeCategoryState.isMoving(fileID: request.fileID),
-              writeActionDisabledReason(fileID: request.fileID) == nil else { return false }
+              canPerformWriteAction(fileID: request.fileID) else { return false }
 
         let previewRequest = MainFileCategoryMovePreviewRequest(
             fileID: request.fileID,

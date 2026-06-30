@@ -118,6 +118,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             onBeginSyncConflictReview: { _ in },
             onOpenAISettings: {},
             writeActionDisabledReason: model.writeActionDisabledReason,
+            canPerformWriteAction: model.canPerformWriteAction,
             summaryExitController: AISummaryEditorExitController(),
             noteModel: DetailNoteModel(
                 repoPath: "/tmp/repo",

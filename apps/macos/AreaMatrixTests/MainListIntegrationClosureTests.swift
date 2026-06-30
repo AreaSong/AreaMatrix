@@ -88,6 +88,51 @@ final class MainListIntegrationClosureTests: XCTestCase {
     }
 
     @MainActor
+    func testWritableActionFileIDUsesSelectionExplicitFileIDAndWriteBlocks() async {
+        let first = FileEntrySnapshot.integrationClosureFixture(id: 11, currentName: "first.pdf")
+        let second = FileEntrySnapshot.integrationClosureFixture(id: 12, currentName: "second.pdf")
+        let model = MainFileListModel(
+            opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [first, second]),
+            fileLister: NoopFileLister(),
+            fileDetailer: MainListIntegrationDetailer(results: [.success(first)]),
+            errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
+        )
+
+        XCTAssertEqual(
+            model.selectedWriteActionDisabledMessage(noSelectionMessage: "Select a file first."),
+            "Select a file first."
+        )
+
+        await model.selectFiles([first.id])
+
+        XCTAssertTrue(model.canPerformWriteAction(fileID: first.id))
+        XCTAssertNil(model.writeActionDisabledMessage(fileID: first.id))
+        XCTAssertNil(model.selectedWriteActionDisabledMessage(noSelectionMessage: "Select a file first."))
+        XCTAssertEqual(model.writableActionFileID(), first.id)
+        XCTAssertEqual(model.writableActionFileID(second.id), second.id)
+
+        let readOnlyModel = MainFileListModel(
+            opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [first], isReadOnly: true),
+            fileLister: NoopFileLister(),
+            fileDetailer: MainListIntegrationDetailer(results: [.success(first)]),
+            errorMapper: MainListIntegrationErrorMapper(mapping: .integrationClosureDbFixture())
+        )
+
+        await readOnlyModel.selectFiles([first.id])
+
+        XCTAssertFalse(readOnlyModel.canPerformWriteAction(fileID: first.id))
+        XCTAssertEqual(
+            readOnlyModel.writeActionDisabledMessage(fileID: first.id),
+            MainFileWriteActionDisabledReason.repoReadOnly.message
+        )
+        XCTAssertEqual(
+            readOnlyModel.selectedWriteActionDisabledMessage(noSelectionMessage: "Select a file first."),
+            MainFileWriteActionDisabledReason.repoReadOnly.message
+        )
+        XCTAssertNil(readOnlyModel.writableActionFileID(first.id))
+    }
+
+    @MainActor
     func testMultiSelectionHidesSingleFileActionDestinations() async {
         let first = FileEntrySnapshot.integrationClosureFixture(id: 1, currentName: "a.pdf")
         let second = FileEntrySnapshot.integrationClosureFixture(id: 2, currentName: "b.pdf")
@@ -168,6 +213,10 @@ final class MainListIntegrationClosureTests: XCTestCase {
         model.beginDelete()
 
         XCTAssertEqual(model.writeActionDisabledReason(fileID: file.id), .importLocked)
+        XCTAssertEqual(
+            model.writeActionDisabledMessage(fileID: file.id),
+            MainFileWriteActionDisabledReason.importLocked.message
+        )
         XCTAssertNil(model.pendingActionDestination)
     }
 

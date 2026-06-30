@@ -132,8 +132,7 @@ extension MainFileListModel {
         _ suggestions: [ApplyAiTagSuggestionItem],
         editedSession: AITagSuggestionEditSession? = nil
     ) async -> BatchTagUndoState? {
-        guard let fileID = selection.singleFileID,
-              writeActionDisabledReason(fileID: fileID) == nil,
+        guard let fileID = writableActionFileID(),
               let report = aiTagSuggestionState.report,
               !suggestions.isEmpty else { return nil }
 
@@ -179,8 +178,7 @@ extension MainFileListModel {
     }
 
     func selectedAITagSuggestionDisabledReason() -> String? {
-        guard let fileID = selection.singleFileID else { return "Select a file before reviewing AI tag suggestions." }
-        return writeActionDisabledReason(fileID: fileID)?.rawValue
+        selectedWriteActionDisabledMessage(noSelectionMessage: "Select a file before reviewing AI tag suggestions.")
     }
 
     private func aiTagSettingsBlockedReport(fileID: Int64) async throws -> AiTagSuggestionReport? {

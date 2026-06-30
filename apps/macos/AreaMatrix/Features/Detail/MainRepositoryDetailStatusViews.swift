@@ -37,7 +37,7 @@ struct MainRepositoryDetailErrorPane: View {
     let onConfirmDetailLogDiagnostics: () -> Void
     let onCancelDetailLogDiagnostics: () -> Void
     let onBeginDeleteFile: (Int64) -> Void
-    let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
+    let canPerformWriteAction: (Int64) -> Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -54,7 +54,7 @@ struct MainRepositoryDetailErrorPane: View {
                     file: missingFile,
                     style: .primary,
                     onBeginDeleteFile: onBeginDeleteFile,
-                    writeActionDisabledReason: writeActionDisabledReason
+                    canPerformWriteAction: canPerformWriteAction
                 )
             }
             DisclosureGroup("Technical Details") {
@@ -85,7 +85,7 @@ struct MainRepositoryDetailStatusSection: View {
     let selectedFile: FileEntrySnapshot?
     let onRetry: () -> Void
     let onBeginDeleteFile: (Int64) -> Void
-    let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
+    let canPerformWriteAction: (Int64) -> Bool
 
     var body: some View {
         if let error {
@@ -94,7 +94,7 @@ struct MainRepositoryDetailStatusSection: View {
                 selectedFile: selectedFile,
                 onRetry: onRetry,
                 onBeginDeleteFile: onBeginDeleteFile,
-                writeActionDisabledReason: writeActionDisabledReason
+                canPerformWriteAction: canPerformWriteAction
             )
         } else if isLoading {
             HStack(spacing: 8) {
@@ -114,7 +114,7 @@ struct MainRepositoryDetailInlineErrorBanner: View {
     let selectedFile: FileEntrySnapshot?
     let onRetry: () -> Void
     let onBeginDeleteFile: (Int64) -> Void
-    let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
+    let canPerformWriteAction: (Int64) -> Bool
 
     var body: some View {
         TintedStatusBanner(
@@ -135,7 +135,7 @@ struct MainRepositoryDetailInlineErrorBanner: View {
                         file: selectedFile,
                         style: .secondary,
                         onBeginDeleteFile: onBeginDeleteFile,
-                        writeActionDisabledReason: writeActionDisabledReason
+                        canPerformWriteAction: canPerformWriteAction
                     )
                 }
             }
@@ -148,14 +148,14 @@ struct MainRepositoryDetailIndexRemovalButton: View {
     let file: FileEntrySnapshot?
     let style: DetailIndexRemovalButtonStyle
     let onBeginDeleteFile: (Int64) -> Void
-    let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
+    let canPerformWriteAction: (Int64) -> Bool
 
     var body: some View {
         if let file, MainRepositoryDetailFileActionPolicy.shouldShowRemoveFromIndex(for: file) {
             Button("Remove from Index", role: .destructive) {
                 onBeginDeleteFile(file.id)
             }
-            .disabled(writeActionDisabledReason(file.id) != nil)
+            .disabled(!canPerformWriteAction(file.id))
             .accessibilityIdentifier(style.accessibilityIdentifier)
         }
     }

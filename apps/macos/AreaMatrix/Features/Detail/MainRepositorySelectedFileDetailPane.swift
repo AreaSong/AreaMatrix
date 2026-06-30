@@ -34,6 +34,7 @@ struct MainRepositorySelectedFileDetailPane: View {
     let onBeginSyncConflictReview: (FileEntrySnapshot) -> Void
     let onOpenAISettings: () -> Void
     let writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
+    let canPerformWriteAction: (Int64) -> Bool
     @ObservedObject var summaryExitController: AISummaryEditorExitController
     @ObservedObject var noteModel: DetailNoteModel
 
@@ -154,7 +155,7 @@ struct MainRepositorySelectedFileDetailPane: View {
             selectedFile: detail,
             onRetry: onRetrySelectedFileDetail,
             onBeginDeleteFile: onBeginDeleteFile,
-            writeActionDisabledReason: writeActionDisabledReason
+            canPerformWriteAction: canPerformWriteAction
         )
     }
 }

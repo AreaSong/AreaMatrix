@@ -13,25 +13,27 @@ extension MainRepositoryContentView {
 
     @ViewBuilder
     private func singleFileContextMenu(for file: FileEntrySnapshot) -> some View {
+        let isWriteActionDisabled = !fileListModel.canPerformWriteAction(fileID: file.id)
+
         Button("Show in Finder") {
             onShowInFinder(file.path)
         }
         Button("Rename...") {
             fileListModel.beginRename(fileID: file.id)
         }
-        .disabled(fileListModel.writeActionDisabledReason(fileID: file.id) != nil)
+        .disabled(isWriteActionDisabled)
         Button("Change Category...") {
             fileListModel.beginChangeCategory(fileID: file.id)
         }
-        .disabled(fileListModel.writeActionDisabledReason(fileID: file.id) != nil)
+        .disabled(isWriteActionDisabled)
         Button("Correct Classification...") {
             fileListModel.beginClassifierCorrection(fileID: file.id)
         }
-        .disabled(fileListModel.writeActionDisabledReason(fileID: file.id) != nil)
+        .disabled(isWriteActionDisabled)
         Button("Delete...", role: .destructive) {
             fileListModel.beginDelete(fileID: file.id)
         }
-        .disabled(fileListModel.writeActionDisabledReason(fileID: file.id) != nil)
+        .disabled(isWriteActionDisabled)
         Divider()
         Button("Copy Path") {
             onCopyPath(file.path)

@@ -5,7 +5,7 @@ extension MainFileListModel {
         guard let fileID = fileID ?? selection.singleFileID,
               let file = actionRoutingFile(for: fileID),
               file.hasICloudConflictCopySignal,
-              writeActionDisabledReason(fileID: fileID) == nil else { return }
+              canPerformWriteAction(fileID: fileID) else { return }
         iCloudConflictResolutionState = .idle
         pendingActionDestination = .iCloudConflict(fileID: fileID)
     }
@@ -18,7 +18,7 @@ extension MainFileListModel {
     ) async {
         guard pendingActionDestination == .iCloudConflict(fileID: fileID) else { return }
         guard !iCloudConflictResolutionState.isApplying,
-              writeActionDisabledReason(fileID: fileID) == nil else { return }
+              canPerformWriteAction(fileID: fileID) else { return }
 
         if let blocker = iCloudConflictResolver.iCloudConflictResolutionCapability.blocker {
             let mapping = await mapCoreError(blocker.coreError)

@@ -11,8 +11,8 @@ final class RepositorySettingsModel: ObservableObject {
 
     @Published private(set) var loadState: LoadState = .loading
     @Published private(set) var loadedConfig: RepoConfigSnapshot?
-    @Published private(set) var healthSummary: RepositorySettingsHealthSummary?
-    @Published private(set) var healthError: RepositorySettingsHealthError?
+    @Published var healthSummary: RepositorySettingsHealthSummary?
+    @Published var healthError: RepositorySettingsHealthError?
     @Published private(set) var syncError: RepositorySettingsSyncError?
     @Published private(set) var repositoryActionMessage: String?
     @Published private(set) var repositoryActionError: RepositorySettingsPathActionError?
@@ -22,17 +22,17 @@ final class RepositorySettingsModel: ObservableObject {
     let repoPath: String
     private let loader: any CoreConfigurationLoading
     private let updater: any CoreConfigurationUpdating
-    private let repositoryOpener: any CoreEmptyRepositoryOpening
-    private let fileLister: (any CoreFileListing)?
-    private let scanSessionReader: any CoreScanSessionReading
-    private let existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading
+    let repositoryOpener: any CoreEmptyRepositoryOpening
+    let fileLister: (any CoreFileListing)?
+    let scanSessionReader: any CoreScanSessionReading
+    let existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading
     private let metadataPresenceChecker: any RepoMetadataPresenceChecking
     private let finderOpener: any RepositoryFinderOpening
     private let pathCopier: any RepositoryPathCopying
     private let generatedOverviewRevealer: any RepositoryFileRevealing
     private let diagnosticsCollector: any CoreDiagnosticsCollecting
     private let coreVersionLoader: any CoreVersionLoading
-    private let errorMapper: any CoreErrorMapping
+    let errorMapper: any CoreErrorMapping
     private let accessibilityAnnouncer: any AccessibilityAnnouncing
 
     init(
@@ -198,122 +198,6 @@ extension RepositorySettingsModel {
             repositoryActionMessage = "Generated overview revealed in Finder."
         } catch {
             overviewActionError = overviewError(for: error)
-        }
-    }
-
-    private func refreshHealth() async {
-        var summary = RepositorySettingsHealthSummary(
-            databaseStatus: .ok,
-            schemaVersion: nil,
-            filesIndexed: nil,
-            lastOpenedAt: nil,
-            lastScanAt: nil,
-            watcherStatus: .paused
-        )
-
-        do {
-            let metadata = try await existingRepositoryMetadataReader.metadata(repoPath: repoPath)
-            summary.schemaVersion = metadata.schemaVersion
-            summary.lastOpenedAt = metadata.lastOpenedAt
-        } catch {
-            summary = await applyHealthError(error, summary: summary)
-            healthSummary = summary
-            return
-        }
-
-        do {
-            summary.filesIndexed = try await indexedFileCount()
-        } catch {
-            summary = await applyHealthError(error, summary: summary)
-            healthSummary = summary
-            return
-        }
-
-        do {
-            let scanSession = try await scanSessionReader.latestScanSession(repoPath: repoPath)
-            if let scanSession {
-                summary.lastScanAt = scanSession.finishedAt ?? scanSession.updatedAt
-                summary.watcherStatus = scanSession.status == .running ? .running : .paused
-            }
-        } catch {
-            summary = await applyHealthError(error, summary: summary)
-        }
-
-        healthSummary = summary
-    }
-
-    private func indexedFileCount() async throws -> Int64 {
-        guard let fileLister else {
-            let opening = try await repositoryOpener.openConfiguredRepository(repoPath: repoPath)
-            return opening.tree.totalFileCount
-        }
-
-        return try await Self.countIndexedFiles(repoPath: repoPath, fileLister: fileLister)
-    }
-
-    private static func countIndexedFiles(
-        repoPath: String,
-        fileLister: any CoreFileListing
-    ) async throws -> Int64 {
-        let pageSize: Int64 = 1000
-        var offset: Int64 = 0
-        var total: Int64 = 0
-
-        while true {
-            let files = try await fileLister.listFiles(
-                repoPath: repoPath,
-                filter: FileFilterSnapshot(
-                    category: nil,
-                    includeDeleted: false,
-                    importedAfter: nil,
-                    importedBefore: nil,
-                    limit: pageSize,
-                    offset: offset
-                )
-            )
-            total += Int64(files.count)
-            guard Int64(files.count) == pageSize else {
-                return total
-            }
-            offset += pageSize
-        }
-    }
-
-    private func applyHealthError(
-        _ error: Error,
-        summary: RepositorySettingsHealthSummary
-    ) async -> RepositorySettingsHealthSummary {
-        var updatedSummary = summary
-        if let coreError = error as? CoreError {
-            let mappingResult = await errorMapper.mapCoreError(coreError)
-            let status = databaseStatus(for: mappingResult)
-            updatedSummary.databaseStatus = status
-            healthError = RepositorySettingsHealthError(
-                databaseStatus: status,
-                message: mappingResult.userMessage,
-                recovery: mappingResult.suggestedAction
-            )
-        } else {
-            updatedSummary.databaseStatus = .needsRecovery
-            healthError = RepositorySettingsHealthError(
-                databaseStatus: .needsRecovery,
-                message: error.localizedDescription,
-                recovery: "Retry status after the repository is available."
-            )
-        }
-        return updatedSummary
-    }
-
-    private func databaseStatus(for mapping: CoreErrorMappingSnapshot) -> RepositorySettingsDatabaseStatus {
-        switch mapping.kind {
-        case .permissionDenied:
-            .locked
-        case .db:
-            mapping.recoverability == .retryable ? .locked : .needsRecovery
-        case .config, .repoNotInitialized, .internal:
-            .needsRecovery
-        default:
-            mapping.recoverability == .retryable ? .locked : .needsRecovery
         }
     }
 

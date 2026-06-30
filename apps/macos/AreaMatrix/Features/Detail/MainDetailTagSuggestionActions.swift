@@ -81,8 +81,7 @@ extension MainFileListModel {
     }
 
     func applySelectedFileTagSuggestions() async -> BatchTagUndoState? {
-        guard let fileID = selection.singleFileID,
-              writeActionDisabledReason(fileID: fileID) == nil,
+        guard let fileID = writableActionFileID(),
               let report = detailTagSuggestionState.report else { return nil }
         let suggestions = DetailTagSuggestionAction.selectedApplyItems(in: detailTagSuggestionState)
         guard !suggestions.isEmpty else { return nil }
@@ -116,8 +115,7 @@ extension MainFileListModel {
     }
 
     func applyEditedSelectedFileTagSuggestions() async -> BatchTagUndoState? {
-        guard let fileID = selection.singleFileID,
-              writeActionDisabledReason(fileID: fileID) == nil,
+        guard let fileID = writableActionFileID(),
               let report = detailTagSuggestionState.report,
               let session = detailTagSuggestionState.editSession,
               session.canApply else { return nil }
@@ -153,8 +151,7 @@ extension MainFileListModel {
     }
 
     func retryFailedSelectedFileTagSuggestions() async -> BatchTagUndoState? {
-        guard let fileID = selection.singleFileID,
-              writeActionDisabledReason(fileID: fileID) == nil,
+        guard let fileID = writableActionFileID(),
               let report = detailTagSuggestionState.report,
               let session = detailTagSuggestionState.editSession else { return nil }
         let suggestions = DetailTagSuggestionAction.retryFailedItems(in: detailTagSuggestionState)
@@ -230,8 +227,7 @@ extension MainFileListModel {
     }
 
     private func selectedTagSuggestionDisabledReason() -> String? {
-        guard let fileID = selection.singleFileID else { return "Select a file before reviewing tag suggestions." }
-        return writeActionDisabledReason(fileID: fileID)?.rawValue
+        selectedWriteActionDisabledMessage(noSelectionMessage: "Select a file before reviewing tag suggestions.")
     }
 
     private func editedSessionAfterApply(

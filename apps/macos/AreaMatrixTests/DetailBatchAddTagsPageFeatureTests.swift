@@ -100,7 +100,7 @@ final class DetailBatchAddTagsPageFeatureTests: XCTestCase {
             input: "urgent",
             pendingTags: [],
             catalog: .batchAddTagsTagCatalogFixture(fileID: 31),
-            disabledReason: MainFileWriteActionDisabledReason.repoReadOnly.rawValue
+            disabledReason: MainFileWriteActionDisabledReason.repoReadOnly.message
         )
         let chips = BatchTagValidation.pendingChips(
             pendingTags: ["urgent", "urgent"],
@@ -110,7 +110,7 @@ final class DetailBatchAddTagsPageFeatureTests: XCTestCase {
         XCTAssertEqual(readOnly.fieldError, "Tag store is read-only.")
         XCTAssertEqual(chips.map(\.status), [.ready, .alreadySelected])
         XCTAssertFalse(BatchTagValidation.canApply(BatchTagApplyEligibility(
-            isApplying: false, disabledReason: MainFileWriteActionDisabledReason.repoReadOnly.rawValue,
+            isApplying: false, disabledReason: MainFileWriteActionDisabledReason.repoReadOnly.message,
             input: "", pendingTags: ["urgent"], fieldError: nil, selectedCount: 2
         )))
         let duplicateApply = BatchTagValidation.normalizedTagsForApply(["urgent", "urgent"])

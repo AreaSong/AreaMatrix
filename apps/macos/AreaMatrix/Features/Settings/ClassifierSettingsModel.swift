@@ -3,27 +3,14 @@ import Foundation
 
 @MainActor
 final class ClassifierSettingsModel: ObservableObject {
-    enum LoadState: Equatable {
-        case loading
-        case loaded
-        case failed(ClassifierSettingsLoadError)
-    }
-
-    enum ValidationState: Equatable {
-        case idle
-        case validating
-        case passed
-        case failed(ClassifierSettingsValidationError)
-    }
-
-    @Published private(set) var loadState: LoadState = .loading
+    @Published private(set) var loadState: ClassifierSettingsLoadState = .loading
     @Published private(set) var draft: ClassifierSettingsDraft?
     @Published private(set) var savedConfig: RepoConfigSnapshot?
     @Published private(set) var saveError: ClassifierSettingsSaveError?
     @Published private(set) var fileActionError: ClassifierSettingsFileActionError?
-    @Published private var previewState = ClassifierSettingsPreviewState()
+    @Published var previewState = ClassifierSettingsPreviewState()
     @Published private(set) var isSaving = false
-    @Published private(set) var validationState: ValidationState = .idle
+    @Published private(set) var validationState: ClassifierSettingsValidationState = .idle
     @Published private(set) var hasLastValidBackup = false
     @Published var classifierRuleEditor = ClassifierRuleEditorModelState()
 
@@ -32,7 +19,7 @@ final class ClassifierSettingsModel: ObservableObject {
 
     private let loader: any CoreConfigurationLoading
     private let updater: any CoreConfigurationUpdating
-    private let predictor: any CoreCategoryPredicting
+    let predictor: any CoreCategoryPredicting
     let errorMapper: any CoreErrorMapping
     private let classifierRulesManager: any ClassifierRulesManaging
     private let fileOpener: any RepositoryFileOpening
@@ -42,9 +29,6 @@ final class ClassifierSettingsModel: ObservableObject {
     private let onSavedCategory: ((String) -> Void)?
     private var pendingRetry: ClassifierSettingsPendingSave?
     private var loadedClassifierSlugs: Set<String> = []
-
-    private static let classifierRelativePath = ".areamatrix/classifier.yaml"
-    private static let validationProbeFilename = "AreaMatrixValidationProbe.txt"
 
     init(
         repoPath: String,
@@ -173,7 +157,10 @@ extension ClassifierSettingsModel {
 
         clearFileActionState()
         do {
-            try fileOpener.openFile(repoPath: repoPath, relativePath: Self.classifierRelativePath)
+            try fileOpener.openFile(
+                repoPath: repoPath,
+                relativePath: ClassifierSettingsPaths.classifierRelativePath
+            )
             accessibilityAnnouncer.announce("classifier.yaml opened.")
         } catch {
             fileActionError = ClassifierSettingsFileActionError(
@@ -192,7 +179,10 @@ extension ClassifierSettingsModel {
         clearFileActionState()
         do {
             if classifierFileExists {
-                try fileRevealer.revealFile(repoPath: repoPath, relativePath: Self.classifierRelativePath)
+                try fileRevealer.revealFile(
+                    repoPath: repoPath,
+                    relativePath: ClassifierSettingsPaths.classifierRelativePath
+                )
             } else {
                 try finderOpener.openRepositoryInFinder(repoPath: repoPath)
             }
@@ -249,45 +239,6 @@ extension ClassifierSettingsModel {
         await persist(updating: savedConfig.withClassifierFallbackToInbox(isEnabled))
     }
 
-    func updatePreviewFilename(_ value: String) {
-        previewState.updateFilename(value)
-    }
-
-    func previewClassification() async {
-        guard isLoaded, !isSaving, !isPreviewing else {
-            return
-        }
-
-        let filename = previewState.filename
-        guard !filename.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return
-        }
-
-        let currentGeneration = previewState.beginPreview()
-
-        do {
-            let result = try await predictor.predictCategory(repoPath: repoPath, filename: filename)
-            guard previewState.isCurrentGeneration(currentGeneration) else {
-                return
-            }
-            previewState.acceptResult(result, generation: currentGeneration)
-        } catch {
-            guard previewState.isCurrentGeneration(currentGeneration) else {
-                return
-            }
-            let mappedError = await ClassifierSettingsErrorFactory.previewError(
-                for: error,
-                mapper: errorMapper
-            )
-            guard previewState.isCurrentGeneration(currentGeneration) else {
-                return
-            }
-            previewState.acceptError(mappedError, generation: currentGeneration)
-        }
-
-        previewState.finishPreview(generation: currentGeneration)
-    }
-
     func validateClassifierRules() async -> Bool {
         guard isLoaded, !isSaving, !isValidating else {
             return false
@@ -306,7 +257,7 @@ extension ClassifierSettingsModel {
         do {
             _ = try await predictor.predictCategory(
                 repoPath: repoPath,
-                filename: Self.validationProbeFilename
+                filename: ClassifierSettingsPaths.validationProbeFilename
             )
         } catch {
             validationState = await .failed(ClassifierSettingsErrorFactory.validationError(
@@ -387,9 +338,7 @@ extension ClassifierSettingsModel {
     }
 
     private var classifierConfigURL: URL {
-        URL(fileURLWithPath: repoPath, isDirectory: true)
-            .appendingPathComponent(".areamatrix", isDirectory: true)
-            .appendingPathComponent("classifier.yaml", isDirectory: false)
+        ClassifierSettingsPaths.classifierConfigURL(repoPath: repoPath)
     }
 
     private var classifierFileExists: Bool {

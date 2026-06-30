@@ -111,13 +111,14 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
             route: "batch-delete",
             requiresConfirmation: true
         )
-        let route = CommandPaletteBatchRouteBuilder.batchDeleteRoute(
+        let context = MainFileBatchActionRouteContext(
             selectedFileIDs: [file.id],
             visibleFiles: [file],
             isReadOnly: false,
             isLoading: false,
             writeLockedFileIDs: []
         )
+        let route = CommandPaletteBatchRouteBuilder.batchDeleteRoute(context: context)
 
         XCTAssertEqual(target.executionRoute, .batchDelete)
         XCTAssertTrue(target.requiresConfirmation)
@@ -241,13 +242,14 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
             route: "batch-delete",
             requiresConfirmation: true
         )
-        let route = CommandPaletteBatchRouteBuilder.batchDeleteRoute(
+        let context = MainFileBatchActionRouteContext(
             selectedFileIDs: [file.id],
             visibleFiles: [file],
             isReadOnly: model.isReadOnly,
             isLoading: model.isLoading,
             writeLockedFileIDs: model.writeLockedFileIDs
         )
+        let route = CommandPaletteBatchRouteBuilder.batchDeleteRoute(context: context)
 
         model.commandPaletteState = .loaded(CommandPaletteSnapshot(coreIndex: .commandPaletteFixture()))
         model.commandPaletteQuery = "delete"

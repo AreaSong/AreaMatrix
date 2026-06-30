@@ -23,6 +23,16 @@ struct BatchDeleteRoute: Identifiable, Equatable {
     }
 }
 
+extension BatchDeleteRoute {
+    init(source: BatchDeleteRouteSource, context: MainFileBatchActionRouteContext) {
+        self.source = source
+        fileIDs = context.fileIDs
+        selectedFiles = context.selectedFiles
+        selectedCount = context.selectedCount
+        disabledReason = context.disabledReason
+    }
+}
+
 struct BatchDeleteApplyResult: Equatable {
     var report: BatchDeleteReportSnapshot?
     var failure: CoreErrorMappingSnapshot?
@@ -75,13 +85,12 @@ enum BatchDeleteEntryPolicy {
         isLoading: Bool,
         writeLockedFileIDs: Set<Int64>
     ) -> String? {
-        if selectedFiles.isEmpty { return "No files selected" }
-        if isReadOnly { return MainFileWriteActionDisabledReason.repoReadOnly.rawValue }
-        if isLoading { return MainFileWriteActionDisabledReason.listLoading.rawValue }
-        if selectedFiles.contains(where: { writeLockedFileIDs.contains($0.id) }) {
-            return MainFileWriteActionDisabledReason.importLocked.rawValue
-        }
-        return nil
+        MainFileBatchActionEligibility.disabledReason(
+            selectedFiles: selectedFiles,
+            isReadOnly: isReadOnly,
+            isLoading: isLoading,
+            writeLockedFileIDs: writeLockedFileIDs
+        )
     }
 }
 

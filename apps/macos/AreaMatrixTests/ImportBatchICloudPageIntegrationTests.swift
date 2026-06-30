@@ -4,7 +4,7 @@ import XCTest
 
 final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     func testBatchAddTagsPageIntegrationAllowsReadOnlyEntryButBlocksApply() {
-        let disabledReason = MainFileWriteActionDisabledReason.repoReadOnly.rawValue
+        let disabledReason = MainFileWriteActionDisabledReason.repoReadOnly.message
         let help = BatchAddTagsEntryPolicy.openHelp(disabledReason: disabledReason)
         let pending = BatchTagValidation.pendingStateAfterAdding(
             input: "urgent",

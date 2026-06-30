@@ -185,8 +185,7 @@ private func makeSyncConflictReviewDetailPane(
         tagSuggestionPresentationRequest: model.tagSuggestionPresentationRequest,
         detailTagUndoToast: model.detailTagUndoToast,
         detailTabRequest: model.detailTabRequest,
-        selectedImportProgressRow: nil,
-        semanticDetail: nil,
+        selectedImportProgressRow: nil, semanticDetail: nil,
         repoPath: opening.config.repoPath,
         batchTagStore: CoreBridge(),
         batchTagUndoStore: CoreBridge(),
@@ -217,6 +216,7 @@ private func makeSyncConflictReviewDetailPane(
         onBeginSyncConflictReview: onBeginSyncConflictReview,
         onOpenAISettings: {},
         writeActionDisabledReason: model.writeActionDisabledReason,
+        canPerformWriteAction: model.canPerformWriteAction,
         summaryExitController: AISummaryEditorExitController(),
         noteModel: makeSyncConflictReviewDetailNoteModel(repoPath: opening.config.repoPath)
     )

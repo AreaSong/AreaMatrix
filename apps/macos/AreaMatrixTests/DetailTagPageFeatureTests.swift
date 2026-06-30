@@ -111,6 +111,31 @@ final class DetailTagPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testTagAddWriteLockedSelectionDoesNotCallTagStoreMutations() async {
+        let detail = FileEntrySnapshot.detailMetaFixture(id: 212, currentName: "locked-tag.pdf")
+        let tagStore = DetailTagRecordingStore()
+        var opening = RepositoryOpeningResult.detailMetaFixture(repoPath: "/tmp/repo", files: [detail])
+        opening.writeLockedFileIDs = [detail.id]
+        let model = MainFileListModel(
+            opening: opening,
+            fileLister: NoopFileLister(),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
+            tagStore: tagStore,
+            errorMapper: DetailMetaErrorMapper(mapping: .tagAddTagDb())
+        )
+
+        await model.selectFiles([detail.id])
+        await model.addSelectedFileTag("clienta")
+        await model.removeSelectedFileTag("clienta")
+        let addRequests = await tagStore.addRequests()
+        let removeRequests = await tagStore.removeRequests()
+
+        XCTAssertEqual(addRequests, [])
+        XCTAssertEqual(removeRequests, [])
+        XCTAssertEqual(model.writeActionDisabledReason(fileID: detail.id), .importLocked)
+    }
+
+    @MainActor
     func testTagAddInputCommitPolicyClearsOnlyAfterSuccessfulAdd() {
         let fileID: Int64 = 209
         let failedState = DetailTagEditorState.failed(

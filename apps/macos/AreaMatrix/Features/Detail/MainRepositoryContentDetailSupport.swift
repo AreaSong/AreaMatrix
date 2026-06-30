@@ -62,6 +62,7 @@ extension MainRepositoryContentView {
             onBeginSyncConflictReview: beginSyncConflictReview,
             onOpenAISettings: onOpenAISettings,
             writeActionDisabledReason: fileListModel.writeActionDisabledReason,
+            canPerformWriteAction: fileListModel.canPerformWriteAction,
             summaryExitController: summaryExitController,
             noteModel: detailNoteModel
         )

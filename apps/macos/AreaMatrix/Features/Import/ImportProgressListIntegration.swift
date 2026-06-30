@@ -169,23 +169,11 @@ struct SearchCommandPaletteRouteView: View {
 
 extension MainRepositoryContentView {
     func commandPaletteBatchDeleteRoute() -> BatchDeleteRoute {
-        CommandPaletteBatchRouteBuilder.batchDeleteRoute(
-            selectedFileIDs: selectedFileIDs,
-            visibleFiles: visibleFiles,
-            isReadOnly: fileListModel.isReadOnly,
-            isLoading: fileListModel.isLoading,
-            writeLockedFileIDs: fileListModel.writeLockedFileIDs
-        )
+        CommandPaletteBatchRouteBuilder.batchDeleteRoute(context: batchActionRouteContext(selectedFileIDs))
     }
 
     func commandPaletteBatchRenameRoute() -> BatchRenameRoute {
-        CommandPaletteBatchRouteBuilder.batchRenameRoute(
-            selectedFileIDs: selectedFileIDs,
-            visibleFiles: visibleFiles,
-            isReadOnly: fileListModel.isReadOnly,
-            isLoading: fileListModel.isLoading,
-            writeLockedFileIDs: fileListModel.writeLockedFileIDs
-        )
+        CommandPaletteBatchRouteBuilder.batchRenameRoute(context: batchActionRouteContext(selectedFileIDs))
     }
 }
 

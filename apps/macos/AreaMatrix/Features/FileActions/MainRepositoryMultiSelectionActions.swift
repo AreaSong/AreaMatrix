@@ -23,6 +23,21 @@ struct MainRepositoryMultiSelectionActions: View {
     let onBatchCategoryCreateNewCategory: (BatchChangeCategoryNewCategoryHandoff) -> Void
 
     var body: some View {
+        let defaultContext = MainFileBatchActionTriggerContext.defaultAction(
+            selection: selection,
+            summary: summary,
+            writeActionDisabledReason: writeActionDisabledReason
+        )
+        let updatingBlockedContext = MainFileBatchActionTriggerContext.updatingBlockedAction(
+            selection: selection,
+            summary: summary,
+            writeActionDisabledReason: writeActionDisabledReason
+        )
+        let renameContext = MainFileBatchActionTriggerContext.renamePreview(
+            summary: summary,
+            writeActionDisabledReason: writeActionDisabledReason
+        )
+
         VStack(alignment: .leading, spacing: 10) {
             Button("Show in Finder") {}
                 .disabled(true)
@@ -36,9 +51,9 @@ struct MainRepositoryMultiSelectionActions: View {
             .disabled(summary.paths.isEmpty)
             BatchAddTagsTrigger(
                 repoPath: repoPath,
-                fileIDs: selection.multipleFileIDs.sorted(),
-                selectedCount: summary.selectedCount,
-                disabledReason: batchAddTagsDisabledReason,
+                fileIDs: defaultContext.fileIDs,
+                selectedCount: defaultContext.selectedCount,
+                disabledReason: defaultContext.disabledReason,
                 tagStore: batchTagStore,
                 undoStore: batchTagUndoStore,
                 errorMapper: batchTagErrorMapper,
@@ -48,19 +63,19 @@ struct MainRepositoryMultiSelectionActions: View {
             )
             BatchAITagSuggestionTrigger(
                 repoPath: repoPath,
-                selectedFiles: summary.files,
-                selectedCount: summary.selectedCount,
-                disabledReason: batchAddTagsDisabledReason,
+                selectedFiles: defaultContext.selectedFiles,
+                selectedCount: defaultContext.selectedCount,
+                disabledReason: defaultContext.disabledReason,
                 state: tagActions.aiBatchSuggestionState,
                 actions: tagActions.aiBatchActions,
                 onOpenAISettings: tagActions.onOpenAISettings
             )
             BatchChangeCategoryTrigger(
                 repoPath: repoPath,
-                fileIDs: selection.multipleFileIDs.sorted(),
-                selectedFiles: summary.files,
-                selectedCount: summary.selectedCount,
-                disabledReason: batchChangeCategoryDisabledReason,
+                fileIDs: defaultContext.fileIDs,
+                selectedFiles: defaultContext.selectedFiles,
+                selectedCount: defaultContext.selectedCount,
+                disabledReason: defaultContext.disabledReason,
                 categoryRows: categoryRows,
                 changer: batchCategoryChanger,
                 undoStore: batchTagUndoStore,
@@ -71,10 +86,10 @@ struct MainRepositoryMultiSelectionActions: View {
             )
             BatchRenameTrigger(
                 repoPath: repoPath,
-                fileIDs: BatchRenameEntryPolicy.fileIDsForPreview(summary: summary),
-                selectedFiles: summary.files,
-                selectedCount: summary.selectedCount,
-                disabledReason: batchRenameDisabledReason,
+                fileIDs: renameContext.fileIDs,
+                selectedFiles: renameContext.selectedFiles,
+                selectedCount: renameContext.selectedCount,
+                disabledReason: renameContext.disabledReason,
                 renamer: batchRenamer,
                 undoStore: batchTagUndoStore,
                 errorMapper: batchTagErrorMapper,
@@ -83,10 +98,10 @@ struct MainRepositoryMultiSelectionActions: View {
             )
             BatchDeleteTrigger(
                 repoPath: repoPath,
-                fileIDs: selection.multipleFileIDs.sorted(),
-                selectedFiles: summary.files,
-                selectedCount: summary.selectedCount,
-                disabledReason: batchDeleteDisabledReason,
+                fileIDs: updatingBlockedContext.fileIDs,
+                selectedFiles: updatingBlockedContext.selectedFiles,
+                selectedCount: updatingBlockedContext.selectedCount,
+                disabledReason: updatingBlockedContext.disabledReason,
                 deleter: batchDeleter,
                 undoStore: batchTagUndoStore,
                 errorMapper: batchTagErrorMapper,
@@ -97,30 +112,5 @@ struct MainRepositoryMultiSelectionActions: View {
                 Button("Retry Metadata", action: onRetrySelectedFileDetail)
             }
         }
-    }
-
-    private var batchAddTagsDisabledReason: String? {
-        if summary.selectedCount == 0 { return "No files selected" }
-        return writeDisabledReason
-    }
-
-    private var batchChangeCategoryDisabledReason: String? {
-        batchAddTagsDisabledReason
-    }
-
-    private var batchDeleteDisabledReason: String? {
-        if summary.selectedCount == 0 { return "No files selected" }
-        if summary.isUpdating { return MainFileWriteActionDisabledReason.listLoading.rawValue }
-        return writeDisabledReason
-    }
-
-    private var batchRenameDisabledReason: String? {
-        if summary.selectedCount == 0 { return "No files selected" }
-        if summary.isUpdating { return MainFileWriteActionDisabledReason.listLoading.rawValue }
-        return writeDisabledReason
-    }
-
-    private var writeDisabledReason: String? {
-        summary.files.compactMap { writeActionDisabledReason($0.id)?.rawValue }.first
     }
 }

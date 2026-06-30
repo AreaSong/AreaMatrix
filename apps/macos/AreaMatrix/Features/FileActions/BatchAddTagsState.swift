@@ -56,13 +56,12 @@ enum BatchAddTagsEntryPolicy {
         isLoading: Bool,
         writeLockedFileIDs: Set<Int64>
     ) -> String? {
-        if selectedFiles.isEmpty { return "No files selected" }
-        if isReadOnly { return MainFileWriteActionDisabledReason.repoReadOnly.rawValue }
-        if isLoading { return MainFileWriteActionDisabledReason.listLoading.rawValue }
-        if selectedFiles.contains(where: { writeLockedFileIDs.contains($0.id) }) {
-            return MainFileWriteActionDisabledReason.importLocked.rawValue
-        }
-        return nil
+        MainFileBatchActionEligibility.disabledReason(
+            selectedFiles: selectedFiles,
+            isReadOnly: isReadOnly,
+            isLoading: isLoading,
+            writeLockedFileIDs: writeLockedFileIDs
+        )
     }
 }
 

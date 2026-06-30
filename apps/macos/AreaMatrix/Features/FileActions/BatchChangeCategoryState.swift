@@ -62,6 +62,25 @@ struct BatchChangeCategoryRoute: Identifiable, Equatable {
     }
 }
 
+extension BatchChangeCategoryRoute {
+    init(
+        source: BatchChangeCategoryRouteSource,
+        context: MainFileBatchActionRouteContext,
+        initialTargetCategory: String? = nil,
+        acceptedCreatedCategory: String? = nil
+    ) {
+        self.init(
+            source: source,
+            fileIDs: context.fileIDs,
+            selectedFiles: context.selectedFiles,
+            selectedCount: context.selectedCount,
+            disabledReason: context.disabledReason,
+            initialTargetCategory: initialTargetCategory,
+            acceptedCreatedCategory: acceptedCreatedCategory
+        )
+    }
+}
+
 struct BatchChangeCategoryApplyResult: Equatable {
     var report: BatchCategoryChangeReportSnapshot?
     var failure: CoreErrorMappingSnapshot?
@@ -225,13 +244,12 @@ enum BatchChangeCategoryEntryPolicy {
         isLoading: Bool,
         writeLockedFileIDs: Set<Int64>
     ) -> String? {
-        if selectedFiles.isEmpty { return "No files selected" }
-        if isReadOnly { return MainFileWriteActionDisabledReason.repoReadOnly.rawValue }
-        if isLoading { return MainFileWriteActionDisabledReason.listLoading.rawValue }
-        if selectedFiles.contains(where: { writeLockedFileIDs.contains($0.id) }) {
-            return MainFileWriteActionDisabledReason.importLocked.rawValue
-        }
-        return nil
+        MainFileBatchActionEligibility.disabledReason(
+            selectedFiles: selectedFiles,
+            isReadOnly: isReadOnly,
+            isLoading: isLoading,
+            writeLockedFileIDs: writeLockedFileIDs
+        )
     }
 }
 
@@ -376,40 +394,5 @@ extension BatchCategoryChangeReportSnapshot {
 
     var shouldCloseSheetAfterApply: Bool {
         failedCount == 0
-    }
-}
-
-struct BatchCategoryPreviewReportPresentation: Equatable {
-    var moveSummaryText: String
-    var metadataSummaryText: String
-    var skippedSummaryText: String
-    var blockedSummaryText: String
-
-    init(report: BatchCategoryPreviewReportSnapshot) {
-        moveSummaryText = "\(Self.fileText(report.willMoveCount)) will move"
-        metadataSummaryText = "\(Self.fileText(report.metadataOnlyCount)) will update only"
-        skippedSummaryText = "\(Self.fileText(report.skippedCount)) cannot move"
-        blockedSummaryText = "\(Self.fileText(report.blockedCount)) blocked"
-    }
-
-    private static func fileText(_ count: Int64) -> String {
-        count == 1 ? "1 file" : "\(count) files"
-    }
-}
-
-struct BatchCategoryChangeReportPresentation: Equatable {
-    var changedSummaryText: String
-    var skippedSummaryText: String
-    var failedSummaryText: String
-
-    init(report: BatchCategoryChangeReportSnapshot) {
-        let changed = report.movedCount + report.metadataOnlyCount
-        changedSummaryText = "\(Self.fileText(changed)) changed"
-        skippedSummaryText = "\(Self.fileText(report.skippedCount + report.unchangedCount)) skipped or unchanged"
-        failedSummaryText = "\(Self.fileText(report.failedCount)) failed"
-    }
-
-    private static func fileText(_ count: Int64) -> String {
-        count == 1 ? "1 file" : "\(count) files"
     }
 }

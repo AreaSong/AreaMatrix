@@ -274,6 +274,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             onBeginSyncConflictReview: { _ in },
             onOpenAISettings: {},
             writeActionDisabledReason: model.writeActionDisabledReason,
+            canPerformWriteAction: model.canPerformWriteAction,
             summaryExitController: AISummaryEditorExitController(),
             noteModel: DetailNoteModel(
                 repoPath: "/tmp/iCloudConflictMinimal-repo",

@@ -2,15 +2,13 @@ import Foundation
 
 extension MainFileListModel {
     func beginRename(fileID: Int64? = nil) {
-        guard let fileID = fileID ?? selection.singleFileID,
-              writeActionDisabledReason(fileID: fileID) == nil else { return }
+        guard let fileID = writableActionFileID(fileID) else { return }
         renameState = .idle
         pendingActionDestination = .rename(fileID: fileID)
     }
 
     func beginChangeCategory(fileID: Int64? = nil) {
-        guard let fileID = fileID ?? selection.singleFileID,
-              writeActionDisabledReason(fileID: fileID) == nil else { return }
+        guard let fileID = writableActionFileID(fileID) else { return }
         changeCategoryState = .idle
         classifierCorrectionContextState = .idle
         classifierCorrectionResult = nil
@@ -18,8 +16,7 @@ extension MainFileListModel {
     }
 
     func beginClassifierCorrection(fileID: Int64? = nil) {
-        guard let fileID = fileID ?? selection.singleFileID,
-              writeActionDisabledReason(fileID: fileID) == nil else { return }
+        guard let fileID = writableActionFileID(fileID) else { return }
         changeCategoryState = .idle
         classifierCorrectionContextState = .idle
         classifierCorrectionResult = nil
@@ -28,15 +25,14 @@ extension MainFileListModel {
 
     func beginRenameFromChangeCategory(fileID: Int64, targetCategory: String) {
         guard pendingActionDestination?.isChangeCategory(fileID: fileID) == true,
-              writeActionDisabledReason(fileID: fileID) == nil,
+              canPerformWriteAction(fileID: fileID),
               !changeCategoryState.isMoving(fileID: fileID) else { return }
         renameState = .returningToChangeCategory(fileID: fileID, targetCategory: targetCategory)
         pendingActionDestination = .rename(fileID: fileID)
     }
 
     func beginDelete(fileID: Int64? = nil) {
-        guard let fileID = fileID ?? selection.singleFileID,
-              writeActionDisabledReason(fileID: fileID) == nil else { return }
+        guard let fileID = writableActionFileID(fileID) else { return }
         pendingActionDestination = .delete(fileID: fileID)
     }
 
