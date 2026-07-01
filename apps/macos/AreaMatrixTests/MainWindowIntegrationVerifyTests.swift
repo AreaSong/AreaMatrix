@@ -4,7 +4,7 @@ import XCTest
 final class MainWindowIntegrationVerifyTests: XCTestCase {
     @MainActor
     func testMainWindowIntegrationRoutesEmptyAndPopulatedRepositoriesToMainPages() async {
-        let emptyOpening = RepositoryOpeningResult.task34Fixture(repoPath: "/tmp/empty-repo", fileCount: 0)
+        let emptyOpening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/empty-repo", fileCount: 0)
         let empty = await openConfiguredRepository(opening: emptyOpening)
 
         XCTAssertEqual(empty.route, .mainEmpty(emptyOpening))
@@ -12,7 +12,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(empty.savedRepoPaths, [])
         XCTAssertEqual(empty.successfulRepoOpenPaths, ["/tmp/empty-repo"])
 
-        let populatedOpening = RepositoryOpeningResult.task34Fixture(repoPath: "/tmp/list-repo", fileCount: 4)
+        let populatedOpening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/list-repo", fileCount: 4)
         let populated = await openConfiguredRepository(opening: populatedOpening)
 
         XCTAssertEqual(populated.route, .mainList(populatedOpening))
@@ -22,7 +22,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
 
     @MainActor
     func testMainWindowIntegrationKeepsRetryableDbFailureInMainLoading() async {
-        let mapping = CoreErrorMappingSnapshot.task34Mapping(
+        let mapping = CoreErrorMappingSnapshot.mainWindowMapping(
             kind: .db,
             severity: .medium,
             recoverability: .retryable,
@@ -30,7 +30,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         )
         let opener = ShellRecordingRepositoryOpener(result: .failure(CoreError.Db(message: "database is locked")))
         let writer = ShellRecordingSettingsWriter()
-        let model = task34Model(
+        let model = mainWindowModel(
             repoPath: "/tmp/repo",
             writer: writer,
             opener: opener,
@@ -54,14 +54,14 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
 
     @MainActor
     func testMainWindowIntegrationRoutesCriticalRepoFailureToMainRepoError() async {
-        let mapping = CoreErrorMappingSnapshot.task34Mapping(
+        let mapping = CoreErrorMappingSnapshot.mainWindowMapping(
             kind: .permissionDenied,
             rawContext: "/tmp/repo"
         )
         let mapper = StaticCoreErrorMapper(mapping: mapping)
         let opener = ShellRecordingRepositoryOpener(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
         let writer = ShellRecordingSettingsWriter()
-        let model = task34Model(
+        let model = mainWindowModel(
             repoPath: "/tmp/repo",
             writer: writer,
             opener: opener,
@@ -105,7 +105,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
     ) async -> MainWindowIntegrationOpenResult {
         let opener = ShellRecordingRepositoryOpener(result: .success(opening))
         let writer = ShellRecordingSettingsWriter()
-        let model = task34Model(
+        let model = mainWindowModel(
             repoPath: opening.config.repoPath,
             writer: writer,
             opener: opener
@@ -121,12 +121,12 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
-    private func task34Model(
+    private func mainWindowModel(
         repoPath: String,
         writer: ShellRecordingSettingsWriter,
         opener: ShellRecordingRepositoryOpener,
         treeLister: (any CoreRepositoryTreeListing)? = nil,
-        errorMapper: any CoreErrorMapping = StaticCoreErrorMapper(mapping: .task34Mapping(kind: .db))
+        errorMapper: any CoreErrorMapping = StaticCoreErrorMapper(mapping: .mainWindowMapping(kind: .db))
     ) -> OnboardingModel {
         OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: repoPath),
@@ -146,37 +146,4 @@ private struct MainWindowIntegrationOpenResult {
     var openedRepoPaths: [String]
     var savedRepoPaths: [String]
     var successfulRepoOpenPaths: [String]
-}
-
-private extension RepositoryOpeningResult {
-    static func task34Fixture(repoPath: String, fileCount: Int64) -> RepositoryOpeningResult {
-        RepositoryOpeningResult(
-            config: .shellFixture(repoPath: repoPath),
-            tree: RepositoryTreeNodeSnapshot(
-                slug: "__root__",
-                displayName: "资料库",
-                fileCount: fileCount,
-                children: []
-            ),
-            currentCategoryFiles: []
-        )
-    }
-}
-
-private extension CoreErrorMappingSnapshot {
-    static func task34Mapping(
-        kind: CoreErrorKindSnapshot,
-        severity: CoreErrorSeveritySnapshot = .high,
-        recoverability: CoreErrorRecoverabilitySnapshot = .userActionRequired,
-        rawContext: String = "task-34"
-    ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: kind,
-            userMessage: "mapped \(kind.rawValue)",
-            severity: severity,
-            suggestedAction: "mapped action",
-            recoverability: recoverability,
-            rawContext: rawContext
-        )
-    }
 }

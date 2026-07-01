@@ -4,7 +4,7 @@ import XCTest
 final class ImportProgressIndexPageFeatureTests: XCTestCase {
     @MainActor
     func testImportProgressImportIndexFileCoreSingleIndexProgressShowsWritingIndexPhase() {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
@@ -31,9 +31,9 @@ final class ImportProgressIndexPageFeatureTests: XCTestCase {
 
     @MainActor
     func testImportProgressImportIndexFileCoreIndexFailureRequiresRecoveryCheckBeforeRetry() async {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
         let context = ImportProgressTestFixtures.indexRetryContext(sourcePath: "/tmp/external.pdf")
-        let recoverer = MainLoadingRecordingStartupRecoverer(result: .success(RecoveryReportSnapshot(
+        let recoverer = RecordingCoreStartupRecoverer(result: .success(RecoveryReportSnapshot(
             cleanedStagingFiles: 0,
             revertedStagingDbRows: 0,
             warnings: []
@@ -67,7 +67,7 @@ final class ImportProgressIndexPageFeatureTests: XCTestCase {
         guard case let .importProgress(checkedState) = model.route else {
             return XCTFail("Expected checked index import progress route")
         }
-        XCTAssertEqual(recovererPaths, ["/tmp/repo"])
+        XCTAssertEqual(recovererPaths, [importProgressRepoPath()])
         XCTAssertTrue(checkedState.canRetryCurrentItem)
         XCTAssertEqual(checkedState.retryContext, context)
         XCTAssertEqual(
@@ -78,7 +78,7 @@ final class ImportProgressIndexPageFeatureTests: XCTestCase {
 
     @MainActor
     func testImportProgressImportIndexFileCoreRetryCurrentIndexItemUsesRealImporterAndReturnsToRepository() async {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
         let importer = ImportSingleFileRecordingImporter()
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),

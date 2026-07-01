@@ -190,20 +190,4 @@ actor ICloudConflictReviewer: CoreICloudConflictReviewing {
     }
 }
 
-actor ICloudPathValidator: CoreRepositoryPathValidating {
-    private let result: Result<RepoPathValidationSnapshot, Error>
-    private var repoPaths: [String] = []
-
-    init(result: Result<RepoPathValidationSnapshot, Error>) {
-        self.result = result
-    }
-
-    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
-        repoPaths.append(repoPath)
-        return try result.get()
-    }
-
-    func requestedRepoPaths() -> [String] {
-        repoPaths
-    }
-}
+typealias ICloudPathValidator = RecordingRepositoryPathValidator

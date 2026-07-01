@@ -358,40 +358,8 @@ private extension ImportResultCopyRetryTests {
     )
 }
 
-private struct ImportResultChangeLogRequest: Equatable {
-    var repoPath: String
-    var filter: ChangeFilterSnapshot
-}
-
-private actor ImportResultRecordingChangeLogLister: CoreChangeLogListing {
-    enum Result {
-        case success([ChangeLogEntrySnapshot])
-        case failure(Error)
-    }
-
-    private var results: [Result]
-    private var requests: [ImportResultChangeLogRequest] = []
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func listChanges(repoPath: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
-        requests.append(ImportResultChangeLogRequest(repoPath: repoPath, filter: filter))
-        guard !results.isEmpty else { return [] }
-
-        switch results.removeFirst() {
-        case let .success(entries):
-            return entries
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func recordedRequests() -> [ImportResultChangeLogRequest] {
-        requests
-    }
-}
+private typealias ImportResultChangeLogRequest = ChangeLogListRequest
+private typealias ImportResultRecordingChangeLogLister = RecordingChangeLogLister
 
 @MainActor
 private final class ImportResultExporter: ImportResultDetailsExporting {

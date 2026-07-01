@@ -12,7 +12,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
+            configLoader: StaticConfigurationLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
             pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
@@ -47,14 +47,16 @@ final class InitializingStepIntegrationTests: XCTestCase {
     func testAdoptExistingFatalErrorRoutesToInitFailed() async {
         let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
         let mapping = CoreErrorMappingSnapshot.initializingPermissionDeniedFixture(rawContext: "/tmp/adopt")
-        let errorMapper = InitializingRecordingErrorMapper(mapping: mapping)
+        let errorMapper = StaticCoreErrorMapper(mapping: mapping)
         let writer = InitializingRecordingSettingsWriter()
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
+            configLoader: StaticConfigurationLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
             pathValidator: InitializingRecordingPathValidator(validation: validation),
-            repositoryInitializer: FailingRepositoryInitializer(error: CoreError.PermissionDenied(path: "/tmp/adopt")),
+            repositoryInitializer: RecordingRepositoryInitializer(
+                error: CoreError.PermissionDenied(path: "/tmp/adopt")
+            ),
             startupRecoverer: StaticStartupRecoverer(),
             scanSessionReader: StaticScanSessionReader(session: nil),
             errorMapper: errorMapper,
@@ -64,7 +66,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
         await model.continueFromChoosePath()
         await model.continueFromValidatePath()
         await model.adoptExistingRepositoryFromConfirmInit()
-        let mappedErrors = await errorMapper.mappedErrors()
+        let mappedErrors = await errorMapper.recordedErrors()
         XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: "/tmp/adopt")])
         XCTAssertEqual(model.route, .initializationFailed(
             "/tmp/adopt",
@@ -82,12 +84,12 @@ final class InitializingStepIntegrationTests: XCTestCase {
             revertedStagingDbRows: 1,
             warnings: ["Kept recoverable moved staging file"]
         )
-        let startupRecoverer = RecordingStartupRecoverer(result: .success(report))
+        let startupRecoverer = RecordingCoreStartupRecoverer(result: .success(report))
         let initializer = PausingRepositoryInitializer()
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: InitializingRecordingSettingsWriter(),
-            configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
+            configLoader: StaticConfigurationLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
             pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: startupRecoverer,
@@ -116,15 +118,15 @@ final class InitializingStepIntegrationTests: XCTestCase {
     func testStartupRecoveryErrorRoutesToInitFailedBeforeRepositoryWrite() async {
         let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
         let mapping = CoreErrorMappingSnapshot.initializingDbFixture(rawContext: "recovery db")
-        let errorMapper = InitializingRecordingErrorMapper(mapping: mapping)
+        let errorMapper = StaticCoreErrorMapper(mapping: mapping)
         let writer = InitializingRecordingSettingsWriter()
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
+            configLoader: StaticConfigurationLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
             pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: PausingRepositoryInitializer(),
-            startupRecoverer: RecordingStartupRecoverer(result: .failure(CoreError.Db(message: "recovery db"))),
+            startupRecoverer: RecordingCoreStartupRecoverer(result: .failure(CoreError.Db(message: "recovery db"))),
             errorMapper: errorMapper,
             helpOpener: NoopWelcomeHelpOpener()
         )
@@ -132,7 +134,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
         await model.continueFromChoosePath()
         await model.continueFromValidatePath()
         await model.adoptExistingRepositoryFromConfirmInit()
-        let mappedErrors = await errorMapper.mappedErrors()
+        let mappedErrors = await errorMapper.recordedErrors()
         XCTAssertEqual(mappedErrors, [CoreError.Db(message: "recovery db")])
         XCTAssertEqual(model.route, .initializationFailed(
             "/tmp/adopt",
@@ -150,7 +152,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
+            configLoader: StaticConfigurationLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
             pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
@@ -182,10 +184,19 @@ final class InitializingStepIntegrationTests: XCTestCase {
     }
 
     @MainActor
+    private func waitForInitializationScanSession(on model: OnboardingModel) async {
+        for _ in 0 ..< 100 where model.initializationScanSession == nil {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+    }
+}
+
+final class InterruptedInitializationRecoveryTests: XCTestCase {
+    @MainActor
     func testResumeInterruptedInitializationUsesScanSessionResumeAndShowsDonePage() async {
         let scanSession = ScanSessionSnapshot.adoptRunningFixture()
         let writer = InitializingRecordingSettingsWriter()
-        let scanReader = RecordingResumeScanSessionReader(
+        let scanReader = RecordingScanSessionReader(
             session: scanSession,
             resumeReport: ReindexReportSnapshot(
                 scanSessionId: scanSession.id,
@@ -198,7 +209,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
+            configLoader: StaticConfigurationLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
             pathValidator: InitializingRecordingPathValidator(
                 validation: .initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
             ),
@@ -208,8 +219,8 @@ final class InitializingStepIntegrationTests: XCTestCase {
             helpOpener: NoopWelcomeHelpOpener()
         )
         await model.resumeInterruptedInitialization(repoPath: "/tmp/adopt", scanSession: scanSession)
-        let resumedRequests = await scanReader.resumedRequests()
-        XCTAssertEqual(resumedRequests, ["/tmp/adopt:42"])
+        let resumedRequests = await scanReader.recordedResumeRequests()
+        XCTAssertEqual(resumedRequests, [ScanSessionResumeRequest(repoPath: "/tmp/adopt", scanSessionId: 42)])
         XCTAssertEqual(writer.savedRepoPaths, ["/tmp/adopt"])
         XCTAssertEqual(model.route, .initializationDone(RepositoryInitializationResult(
             repoPath: "/tmp/adopt",
@@ -234,14 +245,14 @@ final class InitializingStepIntegrationTests: XCTestCase {
     @MainActor
     func testCleanUpInterruptedInitializationRunsRecoveryAndReturnsToConfirmInit() async {
         let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
-        let startupRecoverer = RecordingStartupRecoverer(result: .success(RecoveryReportSnapshot(
+        let startupRecoverer = RecordingCoreStartupRecoverer(result: .success(RecoveryReportSnapshot(
             cleanedStagingFiles: 1,
             revertedStagingDbRows: 1,
             warnings: []
         )))
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
-            configLoader: InitializingRecordingConfigLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
+            configLoader: StaticConfigurationLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
             pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: PausingRepositoryInitializer(),
             startupRecoverer: startupRecoverer,
@@ -261,145 +272,8 @@ final class InitializingStepIntegrationTests: XCTestCase {
             scanSession: nil
         )))
     }
-
-    @MainActor
-    private func waitForInitializationScanSession(on model: OnboardingModel) async {
-        for _ in 0 ..< 100 where model.initializationScanSession == nil {
-            try? await Task.sleep(nanoseconds: 10_000_000)
-        }
-    }
 }
 
-private final class InitializingRecordingSettingsWriter: AppSettingsWriting {
-    private(set) var savedRepoPaths: [String] = []
-    func saveConfiguredRepoPath(_ repoPath: String) {
-        savedRepoPaths.append(repoPath)
-    }
-}
+private typealias InitializingRecordingSettingsWriter = RecordingAppSettingsWriter
 
-private actor InitializingRecordingConfigLoader: CoreConfigurationLoading {
-    private let config: RepoConfigSnapshot
-    init(config: RepoConfigSnapshot) {
-        self.config = config
-    }
-
-    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
-        config
-    }
-}
-
-private actor InitializingRecordingPathValidator: CoreRepositoryPathValidating {
-    private let validation: RepoPathValidationSnapshot
-    init(validation: RepoPathValidationSnapshot) {
-        self.validation = validation
-    }
-
-    func validateRepoPath(repoPath _: String) async throws -> RepoPathValidationSnapshot {
-        validation
-    }
-}
-
-private actor PausingRepositoryInitializer: CoreRepositoryInitializing {
-    private var didStart = false
-    func initializeEmptyRepository(repoPath _: String) async throws {}
-    func adoptExistingRepository(repoPath _: String) async throws {
-        didStart = true
-        try await Task.sleep(nanoseconds: 500_000_000)
-    }
-
-    func waitUntilStarted() async {
-        while !didStart {
-            await Task.yield()
-        }
-    }
-}
-
-private actor FailingRepositoryInitializer: CoreRepositoryInitializing {
-    private let error: Error
-    init(error: Error) {
-        self.error = error
-    }
-
-    func initializeEmptyRepository(repoPath _: String) async throws {
-        throw error
-    }
-
-    func adoptExistingRepository(repoPath _: String) async throws {
-        throw error
-    }
-}
-
-private enum StartupRecoveryResult {
-    case success(RecoveryReportSnapshot)
-    case failure(Error)
-}
-
-private actor RecordingStartupRecoverer: CoreStartupRecovering {
-    private let result: StartupRecoveryResult
-    private var paths: [String] = []
-    private var didRecover = false
-    init(result: StartupRecoveryResult) {
-        self.result = result
-    }
-
-    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
-        paths.append(repoPath)
-        didRecover = true
-        switch result {
-        case let .success(report):
-            return report
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func waitUntilRecovered() async {
-        while !didRecover {
-            await Task.yield()
-        }
-    }
-
-    func requestedRepoPaths() -> [String] {
-        paths
-    }
-}
-
-private actor RecordingResumeScanSessionReader: CoreScanSessionReading {
-    private let session: ScanSessionSnapshot
-    private let resumeReport: ReindexReportSnapshot
-    private var requests: [String] = []
-    init(session: ScanSessionSnapshot, resumeReport: ReindexReportSnapshot) {
-        self.session = session
-        self.resumeReport = resumeReport
-    }
-
-    func latestScanSession(repoPath _: String) async throws -> ScanSessionSnapshot? {
-        session
-    }
-
-    func resumeScanSession(repoPath: String, scanSessionId: Int64) async throws -> ReindexReportSnapshot {
-        requests.append("\(repoPath):\(scanSessionId)")
-        return resumeReport
-    }
-
-    func resumedRequests() -> [String] {
-        requests
-    }
-}
-
-private actor InitializingRecordingErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-    private var errors: [CoreError] = []
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        errors.append(error)
-        return mapping
-    }
-
-    func mappedErrors() -> [CoreError] {
-        errors
-    }
-}
+private typealias InitializingRecordingPathValidator = RecordingRepositoryPathValidator

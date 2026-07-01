@@ -63,12 +63,12 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
 
     @MainActor
     func testAISettingsAISettingsModelPersistsAISettingsConfigCoreConfigThroughInjectedCoreBridge() async {
-        let updater = RecordingAISettingsUpdater(result: .success)
+        let updater = RecordingAISettingsUpdater(result: .success(()))
         let model = AISettingsModel(
             repoPath: "/tmp/aiSettings",
             loader: StaticAISettingsLoader(snapshot: .aiSettingsDefault(repoPath: "/tmp/aiSettings")),
             updater: updater,
-            errorMapper: AISettingsStaticAIErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.aiSettings()
         )
 
         await model.load()
@@ -85,12 +85,12 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
 
     @MainActor
     func testAISettingsRemoteFirstRequiresRemoteProviderConfigRemoteSetupBeforeSaving() async {
-        let updater = RecordingAISettingsUpdater(result: .success)
+        let updater = RecordingAISettingsUpdater(result: .success(()))
         let model = AISettingsModel(
             repoPath: "/tmp/aiSettings",
             loader: StaticAISettingsLoader(snapshot: .aiSettingsDefault(repoPath: "/tmp/aiSettings")),
             updater: updater,
-            errorMapper: AISettingsStaticAIErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.aiSettings()
         )
 
         await model.load()
@@ -116,7 +116,7 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
             repoPath: "/tmp/aiSettings",
             loader: StaticAISettingsLoader(snapshot: enabled),
             updater: updater,
-            errorMapper: AISettingsStaticAIErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.aiSettings()
         )
 
         await model.load()
@@ -176,7 +176,7 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
             installHelpOpener: RecordingInstallHelpOpener(),
             folderOpener: LocalModelStatusRecordingFolderOpener(),
             diagnosticsCopier: copier,
-            errorMapper: LocalModelStatusStaticErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.localModelStatus()
         )
 
         await model.checkStatus()
@@ -210,7 +210,7 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
             installHelpOpener: RecordingInstallHelpOpener(),
             folderOpener: folderOpener,
             diagnosticsCopier: RecordingDiagnosticsCopier(),
-            errorMapper: LocalModelStatusStaticErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.localModelStatus()
         )
 
         await model.checkStatus()
@@ -241,7 +241,7 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
             installHelpOpener: RecordingInstallHelpOpener(),
             folderOpener: LocalModelStatusRecordingFolderOpener(),
             diagnosticsCopier: RecordingDiagnosticsCopier(),
-            errorMapper: LocalModelStatusStaticErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.localModelStatus()
         )
         let defaultedModel = LocalModelStatusModel(
             repoPath: "/tmp/localModelStatus",
@@ -257,7 +257,7 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
             installHelpOpener: RecordingInstallHelpOpener(),
             folderOpener: LocalModelStatusRecordingFolderOpener(),
             diagnosticsCopier: RecordingDiagnosticsCopier(),
-            errorMapper: LocalModelStatusStaticErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.localModelStatus()
         )
 
         XCTAssertEqual(explicitModel.storageLocation, "/tmp/localModelStatus-explicit")

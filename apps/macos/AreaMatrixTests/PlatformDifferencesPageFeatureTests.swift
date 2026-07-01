@@ -12,7 +12,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
             bindingVersion: 1,
             contractInspector: inspector,
             capabilityLoader: capabilityLoader,
-            errorMapper: PlatformDifferencesStaticErrorMapper()
+            errorMapper: platformDifferencesStaticErrorMapper()
         )
 
         await model.load()
@@ -43,7 +43,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
             bindingVersion: 1,
             contractInspector: inspector,
             capabilityLoader: capabilityLoader,
-            errorMapper: PlatformDifferencesStaticErrorMapper()
+            errorMapper: platformDifferencesStaticErrorMapper()
         )
 
         model.selectTargetPlatform(.kotlin)
@@ -67,7 +67,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
             appVersion: PlatformDifferencesModel.defaultTestAppVersion,
             contractInspector: inspector,
             capabilityLoader: capabilityLoader,
-            errorMapper: PlatformDifferencesStaticErrorMapper()
+            errorMapper: platformDifferencesStaticErrorMapper()
         )
 
         await model.load()
@@ -89,7 +89,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
             appVersion: PlatformDifferencesModel.defaultTestAppVersion,
             contractInspector: PlatformDifferencesRecordingInspector(result: .success(.fixture())),
             capabilityLoader: capabilityLoader,
-            errorMapper: PlatformDifferencesStaticErrorMapper()
+            errorMapper: platformDifferencesStaticErrorMapper()
         )
 
         await model.loadCapabilities()
@@ -112,7 +112,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
             appVersionReader: StaticAppVersionReader(version: "7.8.9 (10)"),
             contractInspector: PlatformDifferencesRecordingInspector(result: .success(.fixture())),
             capabilityLoader: capabilityLoader,
-            errorMapper: PlatformDifferencesStaticErrorMapper()
+            errorMapper: platformDifferencesStaticErrorMapper()
         )
 
         await model.loadCapabilities()
@@ -153,10 +153,7 @@ private struct PlatformDifferencesInspectRequest: Equatable {
     var bindingVersion: Int64
 }
 
-private struct PlatformDifferencesCapabilityRequest: Equatable {
-    var platform: PlatformIdSnapshot
-    var appVersion: String
-}
+private typealias PlatformDifferencesCapabilityRequest = PlatformCapabilityRequest
 
 private actor PlatformDifferencesRecordingInspector: CoreBindingContractInspecting {
     private let result: Result<BindingContractReportSnapshot, Error>
@@ -182,49 +179,29 @@ private actor PlatformDifferencesRecordingInspector: CoreBindingContractInspecti
     }
 }
 
-private actor PlatformDiffCapabilityLoader: CorePlatformCapabilitiesLoading {
-    private let result: Result<PlatformCapabilitiesSnapshot, Error>
-    private var capturedRequests: [PlatformDifferencesCapabilityRequest] = []
+private typealias PlatformDiffCapabilityLoader = RecordingPlatformCapabilityLoader
 
-    init(result: Result<PlatformCapabilitiesSnapshot, Error>) {
-        self.result = result
-    }
+private typealias PlatformDifferencesStaticErrorMapper = RecordingCoreErrorMapper
 
-    func getPlatformCapabilities(
-        platform: PlatformIdSnapshot,
-        appVersion: String
-    ) async throws -> PlatformCapabilitiesSnapshot {
-        capturedRequests.append(PlatformDifferencesCapabilityRequest(
-            platform: platform,
-            appVersion: appVersion
-        ))
-        return try result.get()
-    }
-
-    func requests() -> [PlatformDifferencesCapabilityRequest] {
-        capturedRequests
-    }
-}
-
-private actor PlatformDifferencesStaticErrorMapper: CoreErrorMapping {
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+private func platformDifferencesStaticErrorMapper() -> PlatformDifferencesStaticErrorMapper {
+    RecordingCoreErrorMapper { error in
         CoreErrorMappingSnapshot(
             kind: .config,
             userMessage: "Binding version is unsupported.",
             severity: .medium,
             suggestedAction: "Choose a supported binding version.",
             recoverability: .userActionRequired,
-            rawContext: rawContext(for: error)
+            rawContext: platformDifferencesRawContext(for: error)
         )
     }
+}
 
-    private func rawContext(for error: CoreError) -> String {
-        switch error {
-        case let .Config(reason):
-            reason
-        default:
-            error.localizedDescription
-        }
+private func platformDifferencesRawContext(for error: CoreError) -> String {
+    switch error {
+    case let .Config(reason):
+        reason
+    default:
+        error.localizedDescription
     }
 }
 

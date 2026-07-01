@@ -100,7 +100,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         let loader = RecordingConfigurationLoader(results: [
             .success(.shellFixture(repoPath: "/tmp/repo"))
         ])
-        let updater = RecordingConfigurationUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success(()))
         let metadataReader = RepoSettingsMetadataReader(results: [
             .success(ExistingRepositoryMetadataSnapshot(
                 schemaVersion: 1,
@@ -118,7 +118,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
             repositoryOpener: opener,
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
-            errorMapper: RepositorySettingsStaticErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.repositorySettings()
         )
 
         await model.load()
@@ -145,7 +145,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         let model = RepoPlatformCapabilitiesModel(
             appVersion: "4.3.159",
             capabilityLoader: loader,
-            errorMapper: RepositorySettingsStaticErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.repositorySettings()
         )
 
         await model.load()
@@ -169,7 +169,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         let model = RepoPlatformCapabilitiesModel(
             appVersionReader: StaticAppVersionReader(version: "5.6.7 (89)"),
             capabilityLoader: loader,
-            errorMapper: RepositorySettingsStaticErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.repositorySettings()
         )
 
         await model.load()

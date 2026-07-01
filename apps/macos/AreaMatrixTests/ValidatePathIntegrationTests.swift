@@ -159,7 +159,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: RepairRecordingConfigLoader(config: .repairFixture(repoPath: "/tmp/repo")),
+            configLoader: StaticConfigurationLoader(config: .repairFixture(repoPath: "/tmp/repo")),
             pathValidator: RepairRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
@@ -227,7 +227,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: RepairRecordingConfigLoader(config: .repairFixture(repoPath: "/tmp/repo")),
+            configLoader: StaticConfigurationLoader(config: .repairFixture(repoPath: "/tmp/repo")),
             pathValidator: RepairRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
@@ -274,7 +274,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             settingsWriter: writer,
-            configLoader: RepairRecordingConfigLoader(config: .repairFixture(repoPath: "/tmp/repo")),
+            configLoader: StaticConfigurationLoader(config: .repairFixture(repoPath: "/tmp/repo")),
             pathValidator: validator,
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
@@ -360,7 +360,7 @@ extension ValidatePathRepairRegressionTests {
         return OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: settingsRepoPath),
             settingsWriter: writer,
-            configLoader: RepairRecordingConfigLoader(config: .repairFixture(repoPath: settingsRepoPath ??
+            configLoader: StaticConfigurationLoader(config: .repairFixture(repoPath: settingsRepoPath ??
                     "/tmp/repo")),
             pathValidator: RepairRecordingPathValidator(validation: validation),
             emptyRepositoryOpener: repositoryOpener,

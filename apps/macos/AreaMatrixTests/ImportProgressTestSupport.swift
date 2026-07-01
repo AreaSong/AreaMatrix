@@ -1,6 +1,14 @@
 @testable import AreaMatrix
 import XCTest
 
+func importProgressRepoPath() -> String {
+    "/tmp/repo"
+}
+
+func importProgressSourcePath() -> String {
+    "/tmp/source.pdf"
+}
+
 extension OnboardingModel {
     var currentImportProgressState: ImportProgressRouteState? {
         guard case let .importProgress(state) = route else { return nil }
@@ -60,13 +68,13 @@ enum ImportProgressTestFixtures {
     )
 
     static let copyFailedProgress = failedProgress(
-        sourcePath: "/tmp/source.pdf",
+        sourcePath: importProgressSourcePath(),
         targetPath: "docs/copied.pdf",
         errorMessage: "文件读写失败"
     )
 
     static let moveFailedProgress = failedProgress(
-        sourcePath: "/tmp/source.pdf",
+        sourcePath: importProgressSourcePath(),
         targetPath: "docs/moved.pdf",
         errorMessage: "文件读写失败"
     )
@@ -148,7 +156,7 @@ enum ImportProgressTestFixtures {
         duplicateStrategy: ImportProgressDuplicateStrategy = .ask
     ) -> ImportProgressRetryContext {
         ImportProgressRetryContext(
-            repoPath: "/tmp/repo",
+            repoPath: importProgressRepoPath(),
             sourcePath: sourcePath,
             storageMode: storageMode,
             overrideCategory: "docs",
@@ -189,6 +197,34 @@ actor StaticImportBatchSessionStore: ImportBatchSessionPersisting {
 
     func clearSession(repoPath: String) {
         cleared.append(repoPath)
+    }
+
+    func clearedRepoPaths() -> [String] {
+        cleared
+    }
+}
+
+actor RecordingImportBatchSessionStore: ImportBatchSessionPersisting {
+    private var saved: [ImportBatchSessionSnapshot] = []
+    private var cleared: [String] = []
+    private var sessionsByRepoPath: [String: ImportBatchSessionSnapshot] = [:]
+
+    func saveSession(_ session: ImportBatchSessionSnapshot) async {
+        saved.append(session)
+        sessionsByRepoPath[session.repoPath] = session
+    }
+
+    func loadSession(repoPath: String) async -> ImportBatchSessionSnapshot? {
+        sessionsByRepoPath[repoPath]
+    }
+
+    func clearSession(repoPath: String) async {
+        cleared.append(repoPath)
+        sessionsByRepoPath[repoPath] = nil
+    }
+
+    func savedSessions() -> [ImportBatchSessionSnapshot] {
+        saved
     }
 
     func clearedRepoPaths() -> [String] {

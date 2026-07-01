@@ -6,7 +6,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
     @MainActor
     func testOpenRepositoryFromInitDoneUsesInitEmptyRepoCoreCoreOpenBoundary() async {
         let opening = RepositoryOpeningResult.initDoneFixture(repoPath: "/tmp/empty-repo", fileCount: 0)
-        let opener = RecordingEmptyRepositoryOpener(result: .success(opening))
+        let opener = RecordingRepositoryOpener(result: .success(opening))
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
@@ -22,7 +22,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         ))
         await model.openInitializedRepository()
 
-        let requestedRepoPaths = await opener.requestedRepoPaths()
+        let requestedRepoPaths = await opener.requestedEmptyRepoPaths()
         XCTAssertEqual(requestedRepoPaths, ["/tmp/empty-repo"])
         XCTAssertNil(model.initializationOpenErrorMapping)
         XCTAssertEqual(model.route, .mainEmpty(opening))
@@ -32,8 +32,8 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
     func testOpenRepositoryFailureReturnsToDonePageWithInlineRetryError() async {
         let error = CoreError.Config(reason: "tree json unavailable")
         let mapping = CoreErrorMappingSnapshot.initDoneConfigFixture(rawContext: "tree json unavailable")
-        let opener = RecordingEmptyRepositoryOpener(result: .failure(error))
-        let errorMapper = InitDoneRecordingErrorMapper(mapping: mapping)
+        let opener = RecordingRepositoryOpener(result: .failure(error))
+        let errorMapper = StaticCoreErrorMapper(mapping: mapping)
         let result = RepositoryInitializationResult(
             repoPath: "/tmp/empty-repo",
             mode: .createEmpty,
@@ -53,7 +53,8 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
         XCTAssertEqual(model.route, .initializationDone(result))
         XCTAssertEqual(model.initializationOpenErrorMapping, mapping)
-        XCTAssertEqual(errorMapper.mappedErrors, [error])
+        let mappedErrors = await errorMapper.recordedErrors()
+        XCTAssertEqual(mappedErrors, [error])
     }
 
     @MainActor
@@ -110,7 +111,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
     @MainActor
     func testOpenRepositoryFromAdoptDoneUsesAdoptExistingRepoCoreCoreOpenBoundary() async {
         let opening = RepositoryOpeningResult.initDoneFixture(repoPath: "/tmp/adopted-repo", fileCount: 1)
-        let opener = RecordingEmptyRepositoryOpener(result: .success(opening))
+        let opener = RecordingRepositoryOpener(result: .success(opening))
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             emptyRepositoryOpener: opener,
@@ -136,8 +137,8 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
     func testAdoptOpenFailureReturnsToDonePageWithInlineRetryError() async {
         let error = CoreError.Db(message: "tree unavailable")
         let mapping = CoreErrorMappingSnapshot.initDoneDbFixture(rawContext: "tree unavailable")
-        let opener = RecordingEmptyRepositoryOpener(result: .failure(error))
-        let errorMapper = InitDoneRecordingErrorMapper(mapping: mapping)
+        let opener = RecordingRepositoryOpener(result: .failure(error))
+        let errorMapper = StaticCoreErrorMapper(mapping: mapping)
         let result = RepositoryInitializationResult(
             repoPath: "/tmp/adopted-repo",
             mode: .adoptExisting,
@@ -157,7 +158,8 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
         XCTAssertEqual(model.route, .initializationDone(result))
         XCTAssertEqual(model.initializationOpenErrorMapping, mapping)
-        XCTAssertEqual(errorMapper.mappedErrors, [error])
+        let mappedErrors = await errorMapper.recordedErrors()
+        XCTAssertEqual(mappedErrors, [error])
     }
 
     @MainActor
@@ -268,49 +270,6 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
     }
 }
 
-private enum EmptyRepositoryOpenResult {
-    case success(RepositoryOpeningResult)
-    case failure(Error)
-}
-
-private actor RecordingEmptyRepositoryOpener: CoreEmptyRepositoryOpening {
-    private let result: EmptyRepositoryOpenResult
-    private var paths: [String] = []
-    private var adoptedPaths: [String] = []
-
-    init(result: EmptyRepositoryOpenResult) {
-        self.result = result
-    }
-
-    func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        paths.append(repoPath)
-        switch result {
-        case let .success(opening):
-            return opening
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        adoptedPaths.append(repoPath)
-        switch result {
-        case let .success(opening):
-            return opening
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func requestedRepoPaths() -> [String] {
-        paths
-    }
-
-    func requestedAdoptedRepoPaths() -> [String] {
-        adoptedPaths
-    }
-}
-
 private actor PausingEmptyRepositoryOpener: CoreEmptyRepositoryOpening {
     private let opening: RepositoryOpeningResult
     private var didStart = false
@@ -359,19 +318,5 @@ private actor PausingEmptyRepositoryOpener: CoreEmptyRepositoryOpening {
         let continuations = startContinuations
         startContinuations.removeAll()
         continuations.forEach { $0.resume() }
-    }
-}
-
-private final class InitDoneRecordingErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-    private(set) var mappedErrors: [CoreError] = []
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        mappedErrors.append(error)
-        return mapping
     }
 }

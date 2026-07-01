@@ -13,9 +13,9 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
         let model = GeneralSettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
-            updater: RecordingConfigurationUpdater(result: .success),
-            rootOverviewInspector: GeneralRootOverviewInspector(status: .missing),
-            errorMapper: GeneralSettingsStaticErrorMapper()
+            updater: RecordingConfigurationUpdater(result: .success(())),
+            rootOverviewInspector: StaticRootOverviewFileInspector(status: .missing),
+            errorMapper: RecordingCoreErrorMapper.generalSettings()
         )
 
         await model.load()
@@ -30,7 +30,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testCopyAndLocaleSaveThroughUpdateConfigWithoutMockState() async {
-        let updater = RecordingConfigurationUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success(()))
         let model = await loadedModel(updater: updater, config: .generalSettingsFixture(
             repoPath: "/tmp/repo",
             defaultMode: "Indexed",
@@ -64,7 +64,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testDangerousStorageModeRequiresConfirmationBeforeUpdateConfig() async {
-        let updater = RecordingConfigurationUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success(()))
         let model = await loadedModel(updater: updater)
 
         await model.requestStorageMode(.move)
@@ -88,7 +88,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testImportMoveFileCoreMoveDefaultPersistsOnlyAfterRiskConfirmation() async {
-        let updater = RecordingConfigurationUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success(()))
         let model = await loadedModel(updater: updater)
 
         await model.requestStorageMode(.move)
@@ -119,7 +119,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
             atomically: true,
             encoding: .utf8
         )
-        let updater = RecordingConfigurationUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success(()))
         let model = await loadedModel(
             updater: updater,
             config: .generalSettingsFixture(repoPath: repoURL.path),
@@ -142,11 +142,11 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testUnsafeRootOverviewOffersFinderRecoveryWithoutUpdatingConfig() async {
         let unsafeReason = "Cannot safely update AREAMATRIX.md"
-        let updater = RecordingConfigurationUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success(()))
         let revealer = RecordingRepositoryFileRevealer()
         let model = await loadedModel(
             updater: updater,
-            inspector: GeneralRootOverviewInspector(
+            inspector: StaticRootOverviewFileInspector(
                 // swiftformat:disable:next spaceAroundParens
                 status: RootOverviewFileStatus.unsafe(unsafeReason)
             ),
@@ -251,7 +251,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
     private func loadedModel(
         updater: RecordingConfigurationUpdater,
         config: RepoConfigSnapshot = .generalSettingsFixture(repoPath: "/tmp/repo"),
-        inspector: any RootOverviewFileInspecting = GeneralRootOverviewInspector(status: .missing),
+        inspector: any RootOverviewFileInspecting = StaticRootOverviewFileInspector(status: .missing),
         revealer: (any RepositoryFileRevealing)? = nil
     ) async -> GeneralSettingsModel {
         let model = GeneralSettingsModel(
@@ -260,7 +260,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
             updater: updater,
             rootOverviewInspector: inspector,
             rootOverviewRevealer: revealer ?? RecordingRepositoryFileRevealer(),
-            errorMapper: GeneralSettingsStaticErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.generalSettings()
         )
         await model.load()
         return model
@@ -316,67 +316,6 @@ extension AIClassificationSuggestionState {
             privacyRuleID: nil,
             callLogID: 306,
             requiresUserConfirmation: true
-        )
-    }
-}
-
-private struct GeneralRootOverviewInspector: RootOverviewFileInspecting {
-    let status: RootOverviewFileStatus
-
-    func status(repoPath _: String) -> RootOverviewFileStatus {
-        status
-    }
-}
-
-private actor GeneralSettingsStaticErrorMapper: CoreErrorMapping {
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        switch error {
-        case .Db:
-            .generalSettingsMapping(kind: .db, userMessage: "数据库错误")
-        case .Config:
-            .generalSettingsMapping(kind: .config, userMessage: "配置错误")
-        case .PermissionDenied:
-            .generalSettingsMapping(kind: .permissionDenied, userMessage: "无访问权限")
-        default:
-            .generalSettingsMapping(kind: .internal, userMessage: "保存失败")
-        }
-    }
-}
-
-private extension RepoConfigSnapshot {
-    static func generalSettingsFixture(
-        repoPath: String,
-        defaultMode: String = "Copied",
-        overviewOutput: String = "GeneratedOnly",
-        locale: String = "system"
-    ) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: defaultMode,
-            overviewOutput: overviewOutput,
-            aiEnabled: false,
-            locale: locale,
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
-    }
-}
-
-private extension CoreErrorMappingSnapshot {
-    static func generalSettingsMapping(
-        kind: CoreErrorKindSnapshot,
-        userMessage: String
-    ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: kind,
-            userMessage: userMessage,
-            severity: .medium,
-            suggestedAction: "Retry save",
-            recoverability: .retryable,
-            rawContext: kind.rawValue
         )
     }
 }

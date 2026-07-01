@@ -84,7 +84,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
         let model = MainFileListModel(
             opening: .integrationFilterFixture(repoPath: "/tmp/repo", currentCategoryFiles: []),
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             searchQuerying: searcher,
             errorMapper: StaticCoreErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
         )
@@ -127,7 +127,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
         let model = MainFileListModel(
             opening: .integrationFilterFixture(repoPath: "/tmp/repo", currentCategoryFiles: []),
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             searchQuerying: searcher,
             errorMapper: StaticCoreErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
         )
@@ -157,7 +157,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
         let model = MainFileListModel(
             opening: .integrationFilterFixture(repoPath: "/tmp/repo", currentCategoryFiles: []),
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             searchQuerying: searcher,
             errorMapper: mapper
         )
@@ -191,7 +191,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
         let model = MainFileListModel(
             opening: .integrationFilterFixture(repoPath: "/tmp/repo", currentCategoryFiles: []),
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             searchQuerying: searcher,
             errorMapper: StaticCoreErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
         )
@@ -220,7 +220,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
         let model = MainFileListModel(
             opening: .integrationFilterFixture(repoPath: "/tmp/repo", currentCategoryFiles: []),
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             semanticSearching: MainListRecordingSemanticSearcher(page: .semanticSearchSemanticFallbackFixture()),
             semanticFallbackReader: fallback,
             errorMapper: StaticCoreErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))

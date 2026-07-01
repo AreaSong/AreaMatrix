@@ -2,16 +2,6 @@
 import Foundation
 import XCTest
 
-enum MainLoadingTreeResult {
-    case success(RepositoryTreeNodeSnapshot)
-    case failure(Error)
-}
-
-enum MainLoadingStartupRecoveryResult {
-    case success(RecoveryReportSnapshot)
-    case failure(Error)
-}
-
 func makeChangeCategoryTemporaryDirectory(prefix: String) throws -> URL {
     try makeTestTemporaryDirectory(prefix: prefix, named: "AreaMatrixChangeCategoryIntegration")
 }
@@ -40,59 +30,22 @@ extension CoreErrorMappingSnapshot {
     }
 }
 
-actor MainLoadingRecordingStartupRecoverer: CoreStartupRecovering {
-    private var results: [MainLoadingStartupRecoveryResult]
-    private var paths: [String] = []
-
-    init(result: MainLoadingStartupRecoveryResult) {
-        results = [result]
-    }
-
-    init(results: [MainLoadingStartupRecoveryResult]) {
-        self.results = results
-    }
-
-    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
-        paths.append(repoPath)
-        let result = results.isEmpty ? .success(RecoveryReportSnapshot(
-            cleanedStagingFiles: 0,
-            revertedStagingDbRows: 0,
-            warnings: []
-        )) : results.removeFirst()
-        switch result {
-        case let .success(report):
-            return report
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func requestedRepoPaths() -> [String] {
-        paths
-    }
-}
-
 actor MainLoadingPausingStartupRecoverer: CoreStartupRecovering {
-    private let result: MainLoadingStartupRecoveryResult
+    private let result: Result<RecoveryReportSnapshot, Error>
     private var paths: [String] = []
     private var didStart = false
     private var didFinish = false
     private var startContinuations: [CheckedContinuation<Void, Never>] = []
     private var finishContinuation: CheckedContinuation<Void, Never>?
 
-    init(result: MainLoadingStartupRecoveryResult) {
+    init(result: Result<RecoveryReportSnapshot, Error>) {
         self.result = result
     }
 
     func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
         paths.append(repoPath)
         await pauseUntilFinished()
-        switch result {
-        case let .success(report):
-            return report
-        case let .failure(error):
-            throw error
-        }
+        return try result.get()
     }
 
     func waitUntilStarted() async {
@@ -125,27 +78,22 @@ actor MainLoadingPausingStartupRecoverer: CoreStartupRecovering {
 }
 
 actor MainLoadingRecordingTreeLister: CoreRepositoryTreeListing {
-    private var results: [MainLoadingTreeResult]
+    private var results: [Result<RepositoryTreeNodeSnapshot, Error>]
     private var requests: [String] = []
 
-    init(result: MainLoadingTreeResult) {
+    init(result: Result<RepositoryTreeNodeSnapshot, Error>) {
         results = [result]
     }
 
-    init(results: [MainLoadingTreeResult]) {
+    init(results: [Result<RepositoryTreeNodeSnapshot, Error>]) {
         self.results = results
     }
 
     func listTree(repoPath: String, locale _: String) async throws -> RepositoryTreeNodeSnapshot {
         requests.append(repoPath)
-        let result = results.isEmpty ? .failure(CoreError.Internal(message: "missing tree result")) : results
+        let result = results.isEmpty ? Result.failure(CoreError.Internal(message: "missing tree result")) : results
             .removeFirst()
-        switch result {
-        case let .success(tree):
-            return tree
-        case let .failure(error):
-            throw error
-        }
+        return try result.get()
     }
 
     func requestedRepoPaths() -> [String] {
@@ -218,39 +166,9 @@ actor MainLoadingPausingRepositoryOpener: CoreEmptyRepositoryOpening {
     }
 }
 
-actor MainLoadingFailingRepositoryOpener: CoreEmptyRepositoryOpening {
-    private let error: Error
-    private var configuredPaths: [String] = []
+typealias MainLoadingFailingRepositoryOpener = RecordingRepositoryOpener
 
-    init(error: Error) {
-        self.error = error
-    }
-
-    func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        configuredPaths.append(repoPath)
-        throw error
-    }
-
-    func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        try await openConfiguredRepository(repoPath: repoPath)
-    }
-
-    func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        try await openConfiguredRepository(repoPath: repoPath)
-    }
-
-    func requestedConfiguredRepoPaths() -> [String] {
-        configuredPaths
-    }
-}
-
-final class MainLoadingRecordingSettingsWriter: AppSettingsWriting {
-    private(set) var savedRepoPaths: [String] = []
-
-    func saveConfiguredRepoPath(_ repoPath: String) {
-        savedRepoPaths.append(repoPath)
-    }
-}
+typealias MainLoadingRecordingSettingsWriter = RecordingAppSettingsWriter
 
 @MainActor
 func waitForMainLoadingState(

@@ -297,7 +297,7 @@ final class RenameFilePageFeatureTests: XCTestCase {
         let preview = BatchRenamePreviewReportSnapshot.preview(rule: rule, token: "preview-token", fileIDs: [11, 12])
         let report = BatchRenameReportSnapshot.report(token: "undo-token")
         let renamer = BatchRenameRecordingRenamer(preview: .success(preview), apply: .success(report))
-        let mapper = BatchRenameErrorMapper(mapping: .batchRenameConflict)
+        let mapper = StaticCoreErrorMapper(mapping: .batchRenameConflict)
 
         let loadedPreview = await BatchRenameAction.batchRenameUndoPreview(
             rule: rule,
@@ -335,7 +335,7 @@ final class RenameFilePageFeatureTests: XCTestCase {
             fileIDs: [30, 10, 20]
         )
         let renamer = BatchRenameRecordingRenamer(preview: .success(preview), apply: .success(.report()))
-        let mapper = BatchRenameErrorMapper(mapping: .batchRenameConflict)
+        let mapper = StaticCoreErrorMapper(mapping: .batchRenameConflict)
 
         let loadedPreview = await BatchRenameAction.preview(
             repoPath: "/repo",
@@ -383,7 +383,7 @@ final class RenameFilePageFeatureTests: XCTestCase {
             preview: .success(preview),
             apply: .failure(CoreError.Conflict(path: "stale"))
         )
-        let mapper = BatchRenameErrorMapper(mapping: .batchRenameConflict)
+        let mapper = StaticCoreErrorMapper(mapping: .batchRenameConflict)
 
         let previewState = await BatchRenameAction.preview(
             repoPath: "/repo",
@@ -402,7 +402,7 @@ final class RenameFilePageFeatureTests: XCTestCase {
 
         XCTAssertEqual(previewState.failure, .batchRenameConflict)
         XCTAssertEqual(applyResult.failure, .batchRenameConflict)
-        let mappedErrorCount = await mapper.errors.count
+        let mappedErrorCount = await mapper.recordedErrors().count
         XCTAssertEqual(mappedErrorCount, 2)
     }
 }

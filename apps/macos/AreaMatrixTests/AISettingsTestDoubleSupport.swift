@@ -2,46 +2,71 @@
 
 actor StaticAISettingsLoader: CoreAISettingsLoading {
     private let snapshot: AISettingsSnapshot
+    private var recordedRepoPaths: [String] = []
 
     init(snapshot: AISettingsSnapshot) {
         self.snapshot = snapshot
     }
 
-    func loadAISettings(repoPath _: String) async throws -> AISettingsSnapshot {
-        snapshot
+    init(aiEnabled: Bool = true, autoTagsEnabled: Bool = true) {
+        let config = AISettingsConfigSnapshot(
+            repoPath: "/tmp/repo",
+            aiEnabled: aiEnabled,
+            providerPreference: .localFirst,
+            localAIEnabled: true,
+            remoteAIAllowed: false,
+            privacyGateEnabled: true,
+            privacyPolicyRef: nil,
+            featureToggles: AISettingsFeatureKind.allCases.map { feature in
+                AISettingsFeatureConfigSnapshot(
+                    feature: feature,
+                    enabled: feature == .autoTags ? autoTagsEnabled : false,
+                    allowRemote: false
+                )
+            }
+        )
+        snapshot = AISettingsSnapshot(
+            config: config,
+            capabilities: AISettingsCapabilitySnapshot.derived(from: config.normalized()),
+            updatedAt: 1_700_000_410
+        )
+    }
+
+    func loadAISettings(repoPath: String) async throws -> AISettingsSnapshot {
+        recordedRepoPaths.append(repoPath)
+        return snapshot
+    }
+
+    func requests() -> [String] {
+        recordedRepoPaths
     }
 }
 
 actor RecordingAISettingsUpdater: CoreAISettingsUpdating {
-    enum UpdateResult {
-        case success
-        case failure(Error)
-    }
-
     struct Request: Equatable {
         var repoPath: String
         var config: AISettingsConfigSnapshot
     }
 
-    private var results: [UpdateResult]
+    private var results: [Swift.Result<Void, Error>]
     private let repeatsSingleResult: Bool
     private let updatedAt: Int64?
     private var recordedRequests: [Request] = []
 
-    init(result: UpdateResult = .success, updatedAt: Int64? = 1_778_000_000) {
+    init(result: Swift.Result<Void, Error> = .success(()), updatedAt: Int64? = 1_778_000_000) {
         results = [result]
         repeatsSingleResult = true
         self.updatedAt = updatedAt
     }
 
-    init(results: [UpdateResult], updatedAt: Int64? = 1_778_000_000) {
+    init(results: [Swift.Result<Void, Error>], updatedAt: Int64? = 1_778_000_000) {
         self.results = results
         repeatsSingleResult = false
         self.updatedAt = updatedAt
     }
 
     init(failureThenSuccess error: Error, updatedAt: Int64? = 1_778_000_000) {
-        results = [.failure(error), .success]
+        results = [.failure(error), .success(())]
         repeatsSingleResult = false
         self.updatedAt = updatedAt
     }
@@ -49,9 +74,7 @@ actor RecordingAISettingsUpdater: CoreAISettingsUpdating {
     func updateAISettings(repoPath: String, newConfig: AISettingsConfigSnapshot) async throws -> AISettingsSnapshot {
         let normalized = newConfig.normalized()
         recordedRequests.append(Request(repoPath: repoPath, config: normalized))
-        if case let .failure(error) = nextResult() {
-            throw error
-        }
+        try nextResult().get()
         return AISettingsSnapshot(
             config: normalized,
             capabilities: AISettingsCapabilitySnapshot.derived(from: normalized),
@@ -67,10 +90,46 @@ actor RecordingAISettingsUpdater: CoreAISettingsUpdating {
         recordedRequests.map(\.config)
     }
 
-    private func nextResult() -> UpdateResult {
+    private func nextResult() -> Swift.Result<Void, Error> {
         if repeatsSingleResult {
-            return results.first ?? .success
+            return results.first ?? .success(())
         }
-        return results.isEmpty ? .success : results.removeFirst()
+        return results.isEmpty ? .success(()) : results.removeFirst()
+    }
+}
+
+actor RecordingAISettingsStore: CoreAISettingsLoading, CoreAISettingsUpdating {
+    private var snapshot: AISettingsSnapshot
+    private let updatedAt: Int64
+    private var recordedLoadRepoPaths: [String] = []
+    private var recordedRequests: [AISettingsConfigSnapshot] = []
+
+    init(snapshot: AISettingsSnapshot, updatedAt: Int64 = 1_778_000_000) {
+        self.snapshot = snapshot
+        self.updatedAt = updatedAt
+    }
+
+    func loadAISettings(repoPath: String) async throws -> AISettingsSnapshot {
+        recordedLoadRepoPaths.append(repoPath)
+        return snapshot
+    }
+
+    func updateAISettings(repoPath _: String, newConfig: AISettingsConfigSnapshot) async throws -> AISettingsSnapshot {
+        let normalized = newConfig.normalized()
+        recordedRequests.append(normalized)
+        snapshot = AISettingsSnapshot(
+            config: normalized,
+            capabilities: AISettingsCapabilitySnapshot.derived(from: normalized),
+            updatedAt: updatedAt
+        )
+        return snapshot
+    }
+
+    func requests() -> [AISettingsConfigSnapshot] {
+        recordedRequests
+    }
+
+    func loadRequests() -> [String] {
+        recordedLoadRepoPaths
     }
 }

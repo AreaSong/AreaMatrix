@@ -29,7 +29,7 @@ final class MainRepoErrorMappingTests: XCTestCase {
     }
 
     func testDbAndConfigErrorsUseRepairCopyWithoutRetryAction() {
-        let db = RepositoryErrorPresentation.mainRepo(mapping: .mainRepoFixture(
+        let databasePresentation = RepositoryErrorPresentation.mainRepo(mapping: .mainRepoFixture(
             kind: .db,
             severity: .critical,
             recoverability: .fatal,
@@ -40,9 +40,9 @@ final class MainRepoErrorMappingTests: XCTestCase {
             rawContext: "schema mismatch"
         ))
 
-        XCTAssertEqual(db.title, "Repository metadata needs repair")
-        XCTAssertEqual(db.primaryAction, .openRepair)
-        XCTAssertEqual(db.primaryActionTitle, "Open repair")
+        XCTAssertEqual(databasePresentation.title, "Repository metadata needs repair")
+        XCTAssertEqual(databasePresentation.primaryAction, .openRepair)
+        XCTAssertEqual(databasePresentation.primaryActionTitle, "Open repair")
         XCTAssertEqual(config.primaryAction, .openRepair)
     }
 
@@ -73,12 +73,14 @@ final class MainRepoErrorMappingTests: XCTestCase {
         XCTAssertEqual(corrupted.recoverability, .fatal)
         XCTAssertEqual(RepositoryErrorPresentation.mainRepo(mapping: corrupted).primaryAction, .openRepair)
     }
+}
 
+final class MainRepoErrorRouteTests: XCTestCase {
     @MainActor
     func testConfiguredRepoOpenFailureRoutesMappedErrorMappingCoreErrorToMainRepoError() async {
         let error = CoreError.PermissionDenied(path: "/tmp/repo")
         let mapping = CoreErrorMappingSnapshot.mainRepoFixture(kind: .permissionDenied, rawContext: "/tmp/repo")
-        let errorMapper = MainRepoRecordingErrorMapper(mapping: mapping)
+        let errorMapper = StaticCoreErrorMapper(mapping: mapping)
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: "/tmp/repo"),
             emptyRepositoryOpener: ShellRecordingRepositoryOpener(result: .failure(error)),
@@ -96,8 +98,9 @@ final class MainRepoErrorMappingTests: XCTestCase {
 
         XCTAssertEqual(repoPath, "/tmp/repo")
         XCTAssertEqual(routeMapping, mapping)
-        XCTAssertEqual(errorMapper.mappedErrors.first, error)
-        XCTAssertTrue(errorMapper.mappedErrors.contains(error))
+        let mappedErrors = await errorMapper.recordedErrors()
+        XCTAssertEqual(mappedErrors.first, error)
+        XCTAssertTrue(mappedErrors.contains(error))
         XCTAssertEqual(
             RepositoryErrorPresentation.mainRepo(mapping: routeMapping).primaryAction,
             .reconnectFolder
@@ -164,7 +167,7 @@ final class MainRepoErrorMappingTests: XCTestCase {
             recoverability: .fatal,
             rawContext: "db corrupt"
         )
-        let errorMapper = MainRepoRecordingErrorMapper(mapping: mapping)
+        let errorMapper = StaticCoreErrorMapper(mapping: mapping)
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: "/tmp/repo"),
             emptyRepositoryOpener: ShellRecordingRepositoryOpener(result: .failure(CoreError
@@ -179,7 +182,9 @@ final class MainRepoErrorMappingTests: XCTestCase {
         XCTAssertEqual(model.route, .mainRepoError("/tmp/repo", mapping))
         XCTAssertEqual(model.mainRepoRecoveryErrorMapping, mapping)
     }
+}
 
+final class MainRepoErrorDiagnosticsTests: XCTestCase {
     @MainActor
     func testMainRepoErrorDiagnosticsRequirePrivacyConfirmationAndUseCoreSnapshot() async {
         let snapshot = DiagnosticsSnapshotSnapshot(
@@ -229,7 +234,9 @@ final class MainRepoErrorMappingTests: XCTestCase {
         XCTAssertEqual(mapping.kind, .permissionDenied)
         XCTAssertEqual(model.route, .mainRepoError("/tmp/repo", nil))
     }
+}
 
+final class MainRepoReconnectFolderTests: XCTestCase {
     @MainActor
     func testMainRepoErrorUsesPersistedLastSuccessfulOpenTime() {
         let model = OnboardingModel(
@@ -333,20 +340,6 @@ final class MainRepoErrorMappingTests: XCTestCase {
             OnboardingModel.Route.mainRepoError("/tmp/repo", model.mainRepoRecoveryErrorMapping)
         )
         XCTAssertFalse(model.isRetryingMainRepository)
-    }
-}
-
-private final class MainRepoRecordingErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-    private(set) var mappedErrors: [CoreError] = []
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        mappedErrors.append(error)
-        return mapping
     }
 }
 

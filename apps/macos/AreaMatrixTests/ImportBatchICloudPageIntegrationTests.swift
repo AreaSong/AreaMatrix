@@ -77,7 +77,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
         let result = await BatchTagUndoAction.loadLatestAction(
             repoPath: "/tmp/repo",
             undoStore: undoStore,
-            errorMapper: UndoToastErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.undoToast()
         )
 
         XCTAssertEqual(result.toastState, .ready(action))
@@ -100,7 +100,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
             let state = await BatchTagUndoAction.refreshLatestToastState(
                 repoPath: "/tmp/repo",
                 undoStore: undoStore,
-                errorMapper: UndoToastErrorMapper()
+                errorMapper: RecordingCoreErrorMapper.undoToast()
             )
 
             XCTAssertEqual(state, .ready(action))
@@ -121,14 +121,14 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
             repoPath: "/tmp/repo",
             action: action,
             undoStore: undoStore,
-            errorMapper: UndoToastErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.undoToast()
         )
         let plan = BatchTagUndoRefreshPlan(refreshTargets: applied.result?.refreshTargets ?? [])
         let refreshed = await BatchTagUndoAction.refreshActionLog(
             repoPath: "/tmp/repo",
             actionID: action.actionID,
             undoStore: undoStore,
-            errorMapper: UndoToastErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.undoToast()
         )
 
         XCTAssertEqual(applied.result, .undoToastUndoneTrashMove())
@@ -148,7 +148,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
         let result = await BatchTagUndoAction.loadLatestAction(
             repoPath: "/tmp/repo",
             undoStore: undoStore,
-            errorMapper: UndoToastErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.undoToast()
         )
 
         XCTAssertEqual(result.toastState, .disabled(action, reason: "External change prevents undo."))
@@ -182,7 +182,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     @MainActor
     // swiftlint:disable:next function_body_length
     func testImportBatchICloudPendingRowsDoNotSilentlyImportUnavailableRows() async {
-        let localURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let localURL = importBatchInvoiceURL()
         let cloudURL = URL(fileURLWithPath: "/tmp/iCloudOnly.pdf.icloud")
         let request = importBatchBatchRequest(urls: [localURL, cloudURL])
         let rows = [
@@ -222,7 +222,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
             items: [
                 ImportBatchProgressSnapshot.Item(
                     fileID: 42,
-                    sourcePath: "/tmp/source.pdf",
+                    sourcePath: importBatchSourcePath(),
                     targetPath: "finance/Invoice_2026Q1.pdf",
                     phase: .done,
                     errorMessage: nil
@@ -246,7 +246,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
             URL(fileURLWithPath: "/tmp/iCloudOnlyB.pdf.icloud")
         ]
         let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
+            repoPath: importBatchRepoPath(),
             source: .dropZone,
             destination: .autoClassify,
             urls: cloudURLs,

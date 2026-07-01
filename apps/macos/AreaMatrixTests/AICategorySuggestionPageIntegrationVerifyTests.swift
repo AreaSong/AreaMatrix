@@ -151,7 +151,7 @@ final class AICategorySuggestionVerifyTests: XCTestCase {
             repoPath: "/tmp/repo",
             callLogID: 304,
             lister: lister,
-            errorMapper: AICategorySuggestionPageErrorMapper()
+            errorMapper: StaticCoreErrorMapper(mapping: .aiCategorySuggestionPageFailure)
         )
 
         await model.load()
@@ -215,29 +215,7 @@ private actor AICategorySuggestionMover: CoreFileCategoryMoving {
     }
 }
 
-private actor AICategorySuggestionCallLogLister: CoreAICallLogListing {
-    typealias Request = (filter: AiCallLogFilter, pagination: AiCallLogPagination)
-
-    private let page: AiCallLogPage
-    private var recordedRequests: [Request] = []
-
-    init(page: AiCallLogPage) {
-        self.page = page
-    }
-
-    func listAICalls(
-        repoPath _: String,
-        filter: AiCallLogFilter,
-        pagination: AiCallLogPagination
-    ) async throws -> AiCallLogPage {
-        recordedRequests.append((filter, pagination))
-        return page
-    }
-
-    func requests() -> [Request] {
-        recordedRequests
-    }
-}
+private typealias AICategorySuggestionCallLogLister = RecordingAICallLogLister
 
 @MainActor
 private func aiCategorySuggestionMainModel(
@@ -249,8 +227,8 @@ private func aiCategorySuggestionMainModel(
         fileLister: NoopFileLister(),
         fileDetailer: AICategorySuggestionDetailer(file: file),
         fileCategoryMover: mover,
-        changeLogLister: AICategorySuggestionChangeLogLister(),
-        errorMapper: AICategorySuggestionPageErrorMapper()
+        changeLogLister: AICategorySuggestionChangeLogLister(entries: []),
+        errorMapper: StaticCoreErrorMapper(mapping: .aiCategorySuggestionPageFailure)
     )
 }
 
@@ -330,26 +308,12 @@ private func aiCategorySuggestionCallLogRecord(id: Int64) -> AiCallLogRecord {
     )
 }
 
-private actor AICategorySuggestionDetailer: CoreFileDetailing {
-    let file: FileEntrySnapshot
+private typealias AICategorySuggestionDetailer = DetailMetaImmediateDetailer
 
-    init(file: FileEntrySnapshot) {
-        self.file = file
-    }
+private typealias AICategorySuggestionChangeLogLister = RecordingChangeLogLister
 
-    func getFile(repoPath _: String, fileID _: Int64) async throws -> FileEntrySnapshot {
-        file
-    }
-}
-
-private actor AICategorySuggestionChangeLogLister: CoreChangeLogListing {
-    func listChanges(repoPath _: String, filter _: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
-        []
-    }
-}
-
-private struct AICategorySuggestionPageErrorMapper: CoreErrorMapping {
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
+private extension CoreErrorMappingSnapshot {
+    static var aiCategorySuggestionPageFailure: CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .classify,
             userMessage: "ai-category-suggestion apply failed",

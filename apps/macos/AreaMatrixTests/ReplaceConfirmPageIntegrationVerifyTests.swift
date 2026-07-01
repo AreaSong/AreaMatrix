@@ -4,7 +4,7 @@ import XCTest
 final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
     @MainActor
     func testReplaceResolutionSyncConflictReplaceConfirmConnectsPreviewConfirmationApplyAndExit() async throws {
-        let context = makeReplaceResolutionReplaceContext()
+        let context = makeSyncConflictReplaceContext()
 
         await context.model.load()
         await context.model.selectResolution(.useIncoming)
@@ -18,7 +18,7 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
             onConfirm: { _ in }
         ).body
 
-        assertReplaceResolutionReplacePanelBlocksUnconfirmedApply(
+        assertSyncConflictReplaceResolutionBlocksUnconfirmedApply(
             model: context.model,
             unresolvedRequests: unresolvedRequests,
             panelBody: panelBody
@@ -30,7 +30,7 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
         let previewRequests = await context.resolver.recordedPreviewRequests()
         let resolveRequests = await context.resolver.recordedResolveRequests()
 
-        assertReplaceResolutionReplaceApplyExit(
+        assertSyncConflictReplaceResolutionApplyExit(
             model: context.model,
             detectRequests: detectRequests,
             previewRequests: previewRequests,
@@ -59,7 +59,7 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
                 result: .success([.syncConflictReviewFixture()])
             ),
             conflictResolver: resolver,
-            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.load()
@@ -81,17 +81,30 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
     func testReplaceConfirmSingleFileCoversDuplicateAndNameConflictWithoutImmediateCoreImport(
     ) async throws {
         let importer = ImportSingleFileRecordingImporter()
-        let duplicateModel = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let duplicateModel = makeImportSingleFilePreviewModel(
             importer: importer,
-            preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            preflight: ImportSingleFileStaticPreflight(result: .importDuplicateReplaceFixture(
+                targetRelativePath: "docs/source.pdf",
+                existingPath: "docs/existing-duplicate.pdf",
+                keepBothTargetRelativePath: "docs/source_1.pdf",
+                existingFile: .importReplaceExistingFileFixture(
+                    path: "docs/existing-duplicate.pdf",
+                    hashSha256: "duplicate-hash"
+                )
+            ))
         )
-        let nameModel = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let nameModel = makeImportSingleFilePreviewModel(
             importer: importer,
-            preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            preflight: ImportSingleFileStaticPreflight(result: .importNameConflictReplaceFixture(
+                targetRelativePath: "docs/source.pdf",
+                existingPath: "docs/source.pdf",
+                keepBothTargetRelativePath: "docs/source_1.pdf",
+                existingPaths: ["docs/source.pdf"],
+                existingFile: .importReplaceExistingFileFixture(
+                    path: "docs/source.pdf",
+                    hashSha256: "existing-hash"
+                )
+            ))
         )
 
         await duplicateModel.load(request: .importSingleFileFixture())
@@ -124,26 +137,17 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
 
     @MainActor
     func testReplaceConfirmBatchReplaceContextFailureStaysRecoverableAndDoesNotOverwrite() async throws {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let row = ImportBatchPreviewRow.duplicate(
-            url: invoiceURL,
-            prediction: ClassifyResultSnapshot(
-                category: "finance",
-                suggestedName: "Invoice_2026Q1.pdf",
-                reason: .keyword,
-                confidence: 0.9
-            ),
-            existingPath: "finance/Invoice_2026Q1.pdf"
-        )
+        let invoiceURL = importBatchInvoiceURL()
+        let row = importBatchDuplicateInvoiceRow(url: invoiceURL)
         let importer = ImportBatchRecordingBatchImporter()
-        let model = ImportBatchCopyImportModel(
+        let model = importBatchCopyImportModel(
             importer: importer,
             errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
         model.applyPreviewRows(
             [row],
-            request: batchRequest(urls: [invoiceURL]),
+            request: importConflictBatchRequest(urls: [invoiceURL]),
             selectedDestination: .autoClassify
         )
         model.updateDuplicateStrategy(for: row.id, strategy: .replace)
@@ -186,7 +190,7 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
         let rootURL = URL(fileURLWithPath: "/tmp/client-a")
         let sourceURL = rootURL.appendingPathComponent("name.pdf")
         let importer = ImportBatchRecordingBatchImporter()
-        let model = makeFolderReplaceConfirmationModel(
+        let model = importFolderReplaceConfirmationModel(
             rootURL: rootURL,
             sourceURL: sourceURL,
             importer: importer
@@ -232,122 +236,12 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
     }
 }
 
-private struct ReplaceResolutionReplaceContext {
-    let detector: SyncConflictReviewDetector
-    let resolver: SyncConflictReviewResolver
-    let model: SyncConflictReviewModel
-    let view: SyncConflictReviewView
-    let resolvedReports: ReplaceResolutionResolvedReports
-}
-
-private final class ReplaceResolutionResolvedReports {
-    var reports: [SyncConflictResolveReportSnapshot] = []
-}
-
-@MainActor
-private func makeReplaceResolutionReplaceContext() -> ReplaceResolutionReplaceContext {
-    let detector = SyncConflictReviewDetector(result: .success([.syncConflictReviewFixture()]))
-    let resolver = SyncConflictReviewResolver(
-        previewResults: [
-            .keepBoth: .success(.syncConflictReviewPreviewFixture()),
-            .useIncoming: .success(.syncConflictReviewPreviewFixture(
-                resolution: .useIncoming,
-                canApply: false,
-                requiresReplaceConfirmation: true,
-                blockedReason: "Replace confirmation required",
-                previewToken: "preview-token-use-incoming"
-            ))
-        ],
-        resolveResult: .success(.syncConflictReviewResolveFixture(resolution: .useIncoming))
-    )
-    let model = SyncConflictReviewModel(
-        repoPath: "/tmp/syncConflictReview-repo",
-        conflictDetector: detector,
-        conflictResolver: resolver,
-        errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
-    )
-    let resolvedReports = ReplaceResolutionResolvedReports()
-    let view = SyncConflictReviewView(
-        model: model,
-        onBackToNeedsReview: {},
-        onClose: {},
-        onResolved: { resolvedReports.reports.append($0) }
-    )
-    return ReplaceResolutionReplaceContext(
-        detector: detector,
-        resolver: resolver,
-        model: model,
-        view: view,
-        resolvedReports: resolvedReports
-    )
-}
-
-@MainActor
-private func assertReplaceResolutionReplacePanelBlocksUnconfirmedApply(
-    model: SyncConflictReviewModel,
-    unresolvedRequests: [SyncConflictResolveRequest],
-    panelBody: Any
-) {
-    XCTAssertEqual(unresolvedRequests, [])
-    XCTAssertFalse(model.canApplyResolution)
-    XCTAssertTrue(model.canConfirmReplacePlan)
-    assertTestMirrorDescription(of: panelBody, contains: [
-        "Confirm Replace",
-        "Old file path",
-        "Old version will be kept at",
-        "Affected record",
-        "Change log",
-        "Recovery note"
-    ])
-}
-
-@MainActor
-private func assertReplaceResolutionReplaceApplyExit(
-    model: SyncConflictReviewModel,
-    detectRequests: [String],
-    previewRequests: [SyncConflictPreviewRequest],
-    resolveRequests: [SyncConflictResolveRequest],
-    resolvedReports: [SyncConflictResolveReportSnapshot]
-) {
-    XCTAssertEqual(detectRequests, ["/tmp/syncConflictReview-repo"])
-    XCTAssertEqual(previewRequests.map(\.resolution), [.keepBoth, .useIncoming])
-    XCTAssertEqual(resolveRequests, [.useIncomingConfirmedRequest])
-    XCTAssertEqual(resolvedReports, [.syncConflictReviewResolveFixture(resolution: .useIncoming)])
-    XCTAssertEqual(model.applyDisabledReason, "Resolution has already been applied.")
-}
-
-@MainActor
-private func makeFolderReplaceConfirmationModel(
-    rootURL: URL,
-    sourceURL: URL,
-    importer: ImportBatchRecordingBatchImporter
-) -> ImportFolderPreviewModel {
-    let scanner = ImportFolderStaticFolderScanner(result: ImportFolderScanResult(
-        rows: [ImportFolderPreviewRow.loading(fileURL: sourceURL, rootURL: rootURL)],
-        folderCount: 0,
-        skippedRules: [],
-        errors: []
-    ))
-    let prechecker = ImportFolderStaticConflictPrechecker(results: [
-        sourceURL.path: .nameConflict(existingPath: "docs/name.pdf")
-    ])
-    return ImportFolderPreviewModel(
-        predictor: ImportFolderRecordingPredictor(
-            results: [.success(.importFolderPrediction(suggestedName: "name.pdf"))]
-        ),
-        importer: importer,
-        errorMapper: RecordingCoreErrorMapper.importSingleFile(),
-        conflictPrechecker: prechecker,
-        scanner: scanner
-    )
-}
-
 @MainActor
 private func assertReplaceConfirmationFailure(
     acceptedStale: Bool,
     blockedOutcome: ImportBatchImportResult?,
     requestsAfterFailure: [ImportBatchBatchImportRequest],
-    model: ImportBatchCopyImportModel
+    model: some ReplaceConfirmationRecoverableModel
 ) {
     XCTAssertFalse(acceptedStale)
     XCTAssertNil(blockedOutcome)
@@ -366,79 +260,14 @@ private func assertReplaceConfirmationFailure(
 }
 
 @MainActor
-private func assertReplaceConfirmationFailure(
-    acceptedStale: Bool,
-    blockedOutcome: ImportBatchImportResult?,
-    requestsAfterFailure: [ImportBatchBatchImportRequest],
-    model: ImportFolderPreviewModel
-) {
-    XCTAssertFalse(acceptedStale)
-    XCTAssertNil(blockedOutcome)
-    XCTAssertEqual(requestsAfterFailure, [])
-    XCTAssertEqual(model.replaceConfirmationErrorMessage, "Replace confirmation context expired")
-    XCTAssertEqual(model.importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理")
+private protocol ReplaceConfirmationRecoverableModel: AnyObject {
+    var replaceConfirmationErrorMessage: String? { get }
+    var replaceConfirmationDiagnosticsMessage: String? { get }
+    var importDisabledReason: String? { get }
 
-    model.collectReplaceConfirmationDiagnostics()
-    XCTAssertEqual(
-        model.replaceConfirmationDiagnosticsMessage,
-        "Diagnostics collected for replace confirmation state. No user file contents included."
-    )
-    model.retryReplaceConfirmation()
-    XCTAssertNil(model.replaceConfirmationErrorMessage)
-    XCTAssertNil(model.replaceConfirmationDiagnosticsMessage)
+    func collectReplaceConfirmationDiagnostics()
+    func retryReplaceConfirmation()
 }
 
-private func duplicateResult() -> ImportSingleFilePreflightResult {
-    ImportSingleFilePreflightResult(
-        sourceSizeBytes: 912 * 1024,
-        sourceModifiedAt: 1_777_445_400,
-        hashSha256: "duplicate-hash",
-        targetRelativePath: "docs/source.pdf",
-        conflict: .duplicate(existingPath: "docs/existing-duplicate.pdf"),
-        keepBothTargetRelativePath: "docs/source_1.pdf",
-        existingFile: existingFile(path: "docs/existing-duplicate.pdf", hash: "duplicate-hash")
-    )
-}
-
-private func nameConflictResult() -> ImportSingleFilePreflightResult {
-    ImportSingleFilePreflightResult(
-        sourceSizeBytes: 912 * 1024,
-        sourceModifiedAt: 1_777_445_400,
-        hashSha256: "incoming-hash",
-        targetRelativePath: "docs/source.pdf",
-        conflict: .name(path: "docs/source.pdf"),
-        keepBothTargetRelativePath: "docs/source_1.pdf",
-        existingPaths: ["docs/source.pdf"],
-        existingFile: existingFile(path: "docs/source.pdf", hash: "existing-hash")
-    )
-}
-
-private func existingFile(path: String, hash: String) -> FileEntrySnapshot {
-    FileEntrySnapshot(
-        id: 124,
-        path: path,
-        originalName: (path as NSString).lastPathComponent,
-        currentName: (path as NSString).lastPathComponent,
-        category: (path as NSString).deletingLastPathComponent,
-        sizeBytes: 860 * 1024,
-        hashSha256: hash,
-        storageMode: "Copied",
-        origin: "Imported",
-        sourcePath: nil,
-        importedAt: 1_700_000_000,
-        updatedAt: 1_776_660_840
-    )
-}
-
-private func batchRequest(urls: [URL]) -> ImportEntryRequest {
-    ImportEntryRequest(
-        repoPath: "/tmp/repo",
-        source: .dropZone,
-        destination: .autoClassify,
-        urls: urls,
-        kind: .multipleItems(urls.count),
-        availableCategories: ["inbox", "docs", "finance"],
-        allowReplaceDuringImport: true,
-        isTrashAvailable: true
-    )
-}
+extension ImportBatchCopyImportModel: ReplaceConfirmationRecoverableModel {}
+extension ImportFolderPreviewModel: ReplaceConfirmationRecoverableModel {}

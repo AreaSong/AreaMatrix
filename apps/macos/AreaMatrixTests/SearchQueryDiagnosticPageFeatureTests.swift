@@ -63,7 +63,7 @@ final class QueryErrorPageFeatureTests: XCTestCase {
         let model = MainFileListModel(
             opening: .queryErrorOpening(repoPath: "/tmp/repo", tree: tree),
             fileLister: MainListRecordingFileLister(results: [.success([])]),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             searchQuerying: searcher,
             errorMapper: StaticCoreErrorMapper(mapping: .queryErrorConfigMapping())
         )
@@ -192,7 +192,7 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
                 tree: .queryErrorFixtureTree().insertingSavedSearch(saved)
             ),
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             searchQuerying: MainListRecordingSearchQuerying(results: []),
             errorMapper: StaticCoreErrorMapper(mapping: .queryErrorConfigMapping())
         )
@@ -247,7 +247,7 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
         let model = MainFileListModel(
             opening: .queryErrorOpening(repoPath: "/tmp/repo", tree: .queryErrorFixtureTree()),
             fileLister: MainListRecordingFileLister(results: [.success([])]),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             searchQuerying: runner,
             errorMapper: mapper
         )

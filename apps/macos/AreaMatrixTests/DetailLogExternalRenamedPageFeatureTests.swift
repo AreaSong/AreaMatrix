@@ -83,11 +83,16 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         await model.selectFiles([original.id])
         await model.syncExternalCreated(event)
         let syncRequests = await syncer.recordedRenamedRequests()
-        let listRequests = await fileLister.recordedRequests()
+        let listRequests = await fileLister.recordedListRequests()
         let logRequests = await lister.recordedRequests()
 
         XCTAssertEqual(syncRequests, [
-            DetailLogExternalRenamedRequest(repoPath: "/tmp/repo", relativePath: renamed.path, fsEventID: 9001)
+            ExternalSyncRequest(
+                kind: .renamed,
+                repoPath: "/tmp/repo",
+                relativePath: renamed.path,
+                fsEventID: 9001
+            )
         ])
         XCTAssertEqual(listRequests, [DetailLogExternalRenamedListRequest(
             repoPath: "/tmp/repo",
@@ -224,73 +229,10 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
     }
 }
 
-private struct DetailLogExternalRenamedRequest: Equatable {
-    var repoPath: String
-    var relativePath: String
-    var fsEventID: Int64
-}
+private typealias DetailLogExternalRenamedListRequest = FileListRequest
+private typealias DetailLogExternalRenamedSyncer = RecordingExternalChangesSyncer
 
-private struct DetailLogExternalRenamedListRequest: Equatable {
-    var repoPath: String
-    var filter: FileFilterSnapshot
-}
-
-private actor DetailLogExternalRenamedSyncer: CoreExternalChangesSyncing {
-    private let result: Result<SyncResultSnapshot, Error>
-    private var renamedRequests: [DetailLogExternalRenamedRequest] = []
-
-    init(result: Result<SyncResultSnapshot, Error>) {
-        self.result = result
-    }
-
-    func syncExternalCreated(repoPath _: String, relativePath _: String,
-                             fsEventID _: Int64) async throws -> SyncResultSnapshot {
-        throw CoreError.Internal(message: "external created is outside detail-change-log sync-external-renamed")
-    }
-
-    func syncExternalRenamed(repoPath: String, relativePath: String,
-                             fsEventID: Int64) async throws -> SyncResultSnapshot {
-        renamedRequests.append(DetailLogExternalRenamedRequest(
-            repoPath: repoPath,
-            relativePath: relativePath,
-            fsEventID: fsEventID
-        ))
-        return try result.get()
-    }
-
-    func syncExternalRemoved(repoPath _: String, relativePath _: String,
-                             fsEventID _: Int64) async throws -> SyncResultSnapshot {
-        throw CoreError.Internal(message: "external removed is outside detail-change-log sync-external-renamed")
-    }
-
-    func getFSEventCursor(repoPath _: String) async throws -> Int64? {
-        nil
-    }
-
-    func setFSEventCursor(repoPath _: String, lastEventID _: Int64) async throws {}
-
-    func recordedRenamedRequests() -> [DetailLogExternalRenamedRequest] {
-        renamedRequests
-    }
-}
-
-private actor DetailLogExternalRenamedLister: CoreFileListing {
-    private let files: [FileEntrySnapshot]
-    private var requests: [DetailLogExternalRenamedListRequest] = []
-
-    init(files: [FileEntrySnapshot]) {
-        self.files = files
-    }
-
-    func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
-        requests.append(DetailLogExternalRenamedListRequest(repoPath: repoPath, filter: filter))
-        return files
-    }
-
-    func recordedRequests() -> [DetailLogExternalRenamedListRequest] {
-        requests
-    }
-}
+private typealias DetailLogExternalRenamedLister = RecordingFileLister
 
 private extension SyncResultSnapshot {
     static func detailRenamedFixture() -> SyncResultSnapshot {

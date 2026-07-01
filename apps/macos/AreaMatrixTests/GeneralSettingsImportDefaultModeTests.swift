@@ -10,7 +10,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
             repoPath: "/tmp/repo",
             lister: lister,
             clearer: AICallLogCallLogClearer(),
-            errorMapper: GeneralSettingsImportDefaultErrorMapper()
+            errorMapper: generalSettingsImportDefaultErrorMapper()
         )
 
         model.routeFilter = .remote
@@ -37,7 +37,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
             repoPath: "/tmp/repo",
             lister: lister,
             clearer: AICallLogCallLogClearer(),
-            errorMapper: GeneralSettingsImportDefaultErrorMapper()
+            errorMapper: generalSettingsImportDefaultErrorMapper()
         )
         let now = Date(timeIntervalSince1970: 1_700_000_000)
         let expectedAfter = Int64(Calendar.current.date(byAdding: .day, value: -7, to: now)?.timeIntervalSince1970 ?? 0)
@@ -60,7 +60,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
             repoPath: "/tmp/repo",
             lister: AICallLogCallLogLister(pages: [aiCallLogPage(records: [])]),
             clearer: AICallLogCallLogClearer(),
-            errorMapper: GeneralSettingsImportDefaultErrorMapper()
+            errorMapper: generalSettingsImportDefaultErrorMapper()
         )
 
         model.searchQuery = "missing-provider"
@@ -83,7 +83,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
             repoPath: "/tmp/repo",
             lister: lister,
             clearer: clearer,
-            errorMapper: GeneralSettingsImportDefaultErrorMapper()
+            errorMapper: generalSettingsImportDefaultErrorMapper()
         )
 
         await model.load()
@@ -107,7 +107,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
             repoPath: "/tmp/repo",
             lister: lister,
             clearer: clearer,
-            errorMapper: GeneralSettingsImportDefaultErrorMapper()
+            errorMapper: generalSettingsImportDefaultErrorMapper()
         )
 
         await model.load()
@@ -128,7 +128,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
             repoPath: "/tmp/repo",
             lister: lister,
             clearer: AICallLogCallLogClearer(),
-            errorMapper: GeneralSettingsImportDefaultErrorMapper()
+            errorMapper: generalSettingsImportDefaultErrorMapper()
         )
 
         await model.load()
@@ -154,7 +154,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
             repoPath: "/tmp/repo",
             lister: AICallLogCallLogLister(error: CoreError.Db(message: "locked")),
             clearer: AICallLogCallLogClearer(),
-            errorMapper: GeneralSettingsImportDefaultErrorMapper()
+            errorMapper: generalSettingsImportDefaultErrorMapper()
         )
 
         await model.load()
@@ -192,7 +192,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: ImportSingleFileRecordingImporter(),
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: GeneralSettingsImportDefaultErrorMapper()
+            errorMapper: generalSettingsImportDefaultErrorMapper()
         )
 
         await singleModel.load(request: request)
@@ -204,7 +204,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
     private func assertBatchSheetUsesMove(opening: RepositoryOpeningResult, sourceURL: URL) {
         let batchModel = ImportBatchCopyImportModel(
             importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: GeneralSettingsImportDefaultErrorMapper()
+            errorMapper: generalSettingsImportDefaultErrorMapper()
         )
         batchModel.applyPreviewRows(
             [
@@ -229,7 +229,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
         let folderModel = ImportFolderPreviewModel(
             predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
             importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: GeneralSettingsImportDefaultErrorMapper(),
+            errorMapper: generalSettingsImportDefaultErrorMapper(),
             conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: ImportFolderStaticFolderScanner(result: ImportFolderScanResult(
                 rows: [],
@@ -252,66 +252,23 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
     }
 }
 
-private actor AICallLogCallLogLister: CoreAICallLogListing {
-    typealias Request = (filter: AiCallLogFilter, pagination: AiCallLogPagination)
-
-    private var pages: [AiCallLogPage]
-    private let error: Error?
-    private var recordedRequests: [Request] = []
-
-    init(pages: [AiCallLogPage] = [], error: Error? = nil) {
-        self.pages = pages
-        self.error = error
-    }
-
-    func listAICalls(
-        repoPath _: String,
-        filter: AiCallLogFilter,
-        pagination: AiCallLogPagination
-    ) async throws -> AiCallLogPage {
-        recordedRequests.append((filter, pagination))
-        if let error { throw error }
-        return pages.isEmpty ? aiCallLogPage(records: []) : pages.removeFirst()
-    }
-
-    func requests() -> [Request] {
-        recordedRequests
-    }
-}
-
-private actor AICallLogCallLogClearer: CoreAICallLogClearing {
-    private var recordedRequests: [AiCallLogClearRequest] = []
-
-    func clearAICallLog(repoPath _: String, request: AiCallLogClearRequest) async throws -> AiCallLogClearReport {
-        recordedRequests.append(request)
-        return AiCallLogClearReport(
-            deletedCount: Int64(request.entryIds.count),
-            remainingCount: 0,
-            clearedAt: 1_700_000_100
-        )
-    }
-
-    func requests() -> [AiCallLogClearRequest] {
-        recordedRequests
-    }
-}
+private typealias AICallLogCallLogLister = RecordingAICallLogLister
+private typealias AICallLogCallLogClearer = RecordingAICallLogClearer
 
 @MainActor
 private final class GeneralSettingsImportDefaultAnnouncer: AccessibilityAnnouncing {
     func announce(_: String) {}
 }
 
-private actor GeneralSettingsImportDefaultErrorMapper: CoreErrorMapping {
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .internal,
-            userMessage: "保存失败",
-            severity: .medium,
-            suggestedAction: "Retry",
-            recoverability: .retryable,
-            rawContext: "general-settings import default"
-        )
-    }
+private func generalSettingsImportDefaultErrorMapper() -> StaticCoreErrorMapper {
+    StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot(
+        kind: .internal,
+        userMessage: "保存失败",
+        severity: .medium,
+        suggestedAction: "Retry",
+        recoverability: .retryable,
+        rawContext: "general-settings import default"
+    ))
 }
 
 private func aiCallLogPage(records: [AiCallLogRecord]) -> AiCallLogPage {

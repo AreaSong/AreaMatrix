@@ -7,11 +7,8 @@ struct ImportSingleFileStaticPreflight: ImportSingleFilePreflighting {
     static func ready(
         targetRelativePath: String = "docs/source.pdf"
     ) -> ImportSingleFileStaticPreflight {
-        ImportSingleFileStaticPreflight(result: ImportSingleFilePreflightResult(
-            sourceSizeBytes: 12,
-            hashSha256: "hash",
-            targetRelativePath: targetRelativePath,
-            conflict: .none
+        ImportSingleFileStaticPreflight(result: .importSingleFileReadyFixture(
+            targetRelativePath: targetRelativePath
         ))
     }
 
@@ -22,15 +19,7 @@ struct ImportSingleFileStaticPreflight: ImportSingleFilePreflighting {
     }
 }
 
-struct ImportSingleFileStaticICloudDownloader: ICloudPlaceholderDownloading {
-    var error: Error?
-
-    func downloadPlaceholder(at _: URL) async throws {
-        if let error {
-            throw error
-        }
-    }
-}
+typealias ImportSingleFileStaticICloudDownloader = StaticICloudPlaceholderDownloader
 
 struct ImportSingleFileStaticLocalizedError: LocalizedError {
     let message: String
@@ -40,10 +29,7 @@ struct ImportSingleFileStaticLocalizedError: LocalizedError {
     }
 }
 
-struct ImportSingleFilePredictRequest: Equatable {
-    var repoPath: String
-    var filename: String
-}
+typealias ImportSingleFilePredictRequest = CategoryPredictionRequest
 
 struct ImportSingleFileImportRequest: Equatable {
     var mode: ImportSingleFileStorageMode
@@ -52,92 +38,106 @@ struct ImportSingleFileImportRequest: Equatable {
     var duplicateStrategy: DuplicateStrategy = .ask
 }
 
-actor ImportSingleFileRecordingPredictor: CoreCategoryPredicting {
-    private let result: ClassifyResultSnapshot
-    private var requests: [ImportSingleFilePredictRequest] = []
-
-    init(result: ClassifyResultSnapshot) {
-        self.result = result
-    }
-
-    func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
-        requests.append(ImportSingleFilePredictRequest(repoPath: repoPath, filename: filename))
-        return result
-    }
-
-    func recordedRequests() -> [ImportSingleFilePredictRequest] {
-        requests
-    }
+struct ImportSingleFileCoreImportRequest: Equatable {
+    var repoPath: String
+    var sourceURL: URL
+    var mode: ImportSingleFileStorageMode
+    var overrideCategory: String
+    var overrideFilename: String
+    var duplicateStrategy: DuplicateStrategy = .ask
 }
 
+typealias ImportSingleFileRecordingPredictor = RecordingCategoryPredictor
+
 actor ImportSingleFileRecordingImporter: CoreFileImporting {
+    private var queuedResults: [Result<FileEntrySnapshot, Error>]?
     private var requests: [ImportSingleFileImportRequest] = []
+    private var coreRequests: [ImportSingleFileCoreImportRequest] = []
+
+    init(results: [Result<FileEntrySnapshot, Error>]? = nil) {
+        queuedResults = results
+    }
 
     func importCopiedFile(
-        repoPath _: String,
-        sourceURL _: URL,
+        repoPath: String,
+        sourceURL: URL,
         overrideCategory: String,
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
-        record(
+        try record(ImportSingleFileCoreImportRequest(
+            repoPath: repoPath,
+            sourceURL: sourceURL,
             mode: .copy,
             overrideCategory: overrideCategory,
             overrideFilename: overrideFilename,
             duplicateStrategy: duplicateStrategy
-        )
+        ))
     }
 
     func importMovedFile(
-        repoPath _: String,
-        sourceURL _: URL,
+        repoPath: String,
+        sourceURL: URL,
         overrideCategory: String,
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
-        record(
+        try record(ImportSingleFileCoreImportRequest(
+            repoPath: repoPath,
+            sourceURL: sourceURL,
             mode: .move,
             overrideCategory: overrideCategory,
             overrideFilename: overrideFilename,
             duplicateStrategy: duplicateStrategy
-        )
+        ))
     }
 
     func importIndexedFile(
-        repoPath _: String,
-        sourceURL _: URL,
+        repoPath: String,
+        sourceURL: URL,
         overrideCategory: String,
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
-        record(
+        try record(ImportSingleFileCoreImportRequest(
+            repoPath: repoPath,
+            sourceURL: sourceURL,
             mode: .indexOnly,
             overrideCategory: overrideCategory,
             overrideFilename: overrideFilename,
             duplicateStrategy: duplicateStrategy
-        )
+        ))
     }
 
     func recordedRequests() -> [ImportSingleFileImportRequest] {
         requests
     }
 
-    private func record(
-        mode: ImportSingleFileStorageMode,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) -> FileEntrySnapshot {
+    func recordedCoreRequests() -> [ImportSingleFileCoreImportRequest] {
+        coreRequests
+    }
+
+    private func record(_ request: ImportSingleFileCoreImportRequest) throws -> FileEntrySnapshot {
         requests.append(ImportSingleFileImportRequest(
-            mode: mode,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
+            mode: request.mode,
+            overrideCategory: request.overrideCategory,
+            overrideFilename: request.overrideFilename,
+            duplicateStrategy: request.duplicateStrategy
         ))
+        coreRequests.append(request)
+        if var queuedResults {
+            guard !queuedResults.isEmpty else {
+                throw CoreError.Internal(message: "missing import test result")
+            }
+            let next = queuedResults.removeFirst()
+            self.queuedResults = queuedResults
+            return try next.get()
+        }
+
         return FileEntrySnapshot.importSingleFileFixture(
-            currentName: overrideFilename,
-            category: overrideCategory,
-            storageMode: mode.coreStorageMode
+            currentName: request.overrideFilename,
+            category: request.overrideCategory,
+            storageMode: request.mode.coreStorageMode
         )
     }
 }
@@ -257,22 +257,47 @@ actor ImportSingleFileFailingImporter: CoreFileImporting {
     }
 }
 
-actor ImportSingleFileStaticRepositoryOpener: CoreEmptyRepositoryOpening {
-    let opening: RepositoryOpeningResult
+typealias ImportSingleFileStaticRepositoryOpener = RecordingRepositoryOpener
 
-    init(opening: RepositoryOpeningResult) {
-        self.opening = opening
-    }
+@MainActor
+func makeImportSingleFilePreviewModel(
+    predictor: any CoreCategoryPredicting = ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+    importer: any CoreFileImporting = ImportSingleFileRecordingImporter(),
+    preflight: any ImportSingleFilePreflighting = ImportSingleFileStaticPreflight.ready(),
+    placeholderDownloader: any ICloudPlaceholderDownloading = ImportSingleFileStaticICloudDownloader(),
+    errorMapper: any CoreErrorMapping = RecordingCoreErrorMapper.importSingleFile()
+) -> ImportSingleFilePreviewModel {
+    ImportSingleFilePreviewModel(
+        predictor: predictor,
+        importer: importer,
+        preflight: preflight,
+        placeholderDownloader: placeholderDownloader,
+        errorMapper: errorMapper
+    )
+}
 
-    func openConfiguredRepository(repoPath _: String) async throws -> RepositoryOpeningResult {
-        opening
-    }
+@MainActor
+func makeImportSingleFileNameConflictCoreModel(
+    repoURL: URL,
+    existingURL: URL,
+    incomingURL: URL
+) async throws -> ImportSingleFilePreviewModel {
+    let bridge = CoreBridge()
+    try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+    _ = try await bridge.importCopiedFile(
+        repoPath: repoURL.path,
+        sourceURL: existingURL,
+        overrideCategory: "docs",
+        overrideFilename: "source.pdf"
+    )
 
-    func openEmptyRepository(repoPath _: String) async throws -> RepositoryOpeningResult {
-        opening
-    }
-
-    func openAdoptedRepository(repoPath _: String) async throws -> RepositoryOpeningResult {
-        opening
-    }
+    let model = makeImportSingleFilePreviewModel(
+        importer: bridge,
+        preflight: CoreImportSingleFilePreflight()
+    )
+    await model.load(request: .importSingleFileImportRequest(
+        repoPath: repoURL.path,
+        sourcePath: incomingURL.path
+    ))
+    return model
 }

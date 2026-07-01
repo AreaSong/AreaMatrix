@@ -10,7 +10,7 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
             conflictBatcher: ImportConflictBatchUndoConflictBatcher(preview: .importConflictBatchUndoReplacePreview),
             undoStore: undoStore
         )
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let invoiceURL = importBatchInvoiceURL()
 
         model.applyPreviewRows(
             [importBatchReadyBatchRow(url: invoiceURL)],
@@ -34,7 +34,7 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
             conflictBatcher: ImportConflictBatchUndoConflictBatcher(),
             undoStore: ImportConflictBatchUndoStore(results: [])
         )
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let invoiceURL = importBatchInvoiceURL()
 
         model.applyPreviewRows(
             [importBatchReadyBatchRow(url: invoiceURL)],
@@ -62,7 +62,7 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
             conflictBatcher: ImportConflictBatchUndoConflictBatcher(preview: .importConflictBatchUndoReplacePreview),
             undoStore: undoStore
         )
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let invoiceURL = importBatchInvoiceURL()
 
         model.applyPreviewRows(
             [importBatchReadyBatchRow(url: invoiceURL)],

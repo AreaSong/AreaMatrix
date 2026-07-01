@@ -22,7 +22,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             ),
             onClear: {}
         ).body
-        let savedSearchStore = MainRepoSavedSearchRecordingStore(results: [.listSuccess([])])
+        let savedSearchStore = MainRepoSavedSearchRecordingStore(results: [.list([])])
         let saveBody = SavedSearchSheetRouteView(
             request: request,
             repoPath: "/tmp/repo",
@@ -60,7 +60,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         let request = SearchQueryRequestSnapshot.mainRepoSearchResultsRouteFixture(query: "合同")
         let model = SavedSearchSheetModel(request: request, resultCount: 0)
         let saved = SavedSearchSnapshot.mainRepoSavedSearchFixture(id: 77, request: model.createRequest)
-        let store = MainRepoSavedSearchRecordingStore(results: [.listSuccess([]), .createSuccess(saved)])
+        let store = MainRepoSavedSearchRecordingStore(results: [.list([]), .create(.success(saved))])
 
         _ = try? await store.listSavedSearches(repoPath: "/tmp/repo")
         let created = try? await store.createSavedSearch(repoPath: "/tmp/repo", request: model.createRequest)
@@ -80,7 +80,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         let request = SearchQueryRequestSnapshot.mainRepoSearchResultsRouteFixture(query: "Finance")
         var model = SavedSearchSheetModel(request: request, resultCount: 12)
         model.existingNames = ["finance"]
-        let store = MainRepoSavedSearchRecordingStore(results: [.listSuccess([.mainRepoSavedSearchFixture(
+        let store = MainRepoSavedSearchRecordingStore(results: [.list([.mainRepoSavedSearchFixture(
             id: 1,
             request: model.createRequest
         )])])
@@ -98,7 +98,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         var model = SavedSearchSheetModel(request: request, resultCount: nil)
         let mapping = CoreErrorMappingSnapshot.mainRepoSearchFiltersDbFixture()
         let mapper = StaticCoreErrorMapper(mapping: mapping)
-        let store = MainRepoSavedSearchRecordingStore(results: [.createFailure(CoreError.Db(message: "db locked"))])
+        let store = MainRepoSavedSearchRecordingStore(results: [.create(.failure(CoreError.Db(message: "db locked")))])
 
         do {
             _ = try await store.createSavedSearch(repoPath: "/tmp/repo", request: model.createRequest)
@@ -190,7 +190,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         let model = MainFileListModel(
             opening: .mainRepoSearchFiltersFixture(repoPath: "/tmp/repo", tree: .mainRepoSearchFiltersFixtureTree()),
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             searchQuerying: MainListRecordingSearchQuerying(results: []),
             searchFiltering: MainListRecordingSearchFiltering(results: []),
             errorMapper: StaticCoreErrorMapper(mapping: .mainRepoSearchFiltersDbFixture())
@@ -220,7 +220,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         let model = MainFileListModel(
             opening: .mainRepoSearchFiltersFixture(repoPath: "/tmp/repo", tree: .mainRepoSearchFiltersFixtureTree()),
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             searchQuerying: MainListRecordingSearchQuerying(results: []),
             searchFiltering: MainListRecordingSearchFiltering(results: []),
             errorMapper: StaticCoreErrorMapper(mapping: .mainRepoSearchFiltersDbFixture())
@@ -280,12 +280,15 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             repoPath: "/tmp/repo"
         )
         await model.confirmMainRepositoryExternalRemoval(repoPath: "/tmp/repo")
-        let requests = await syncer.recordedRequests()
+        let requests = await syncer.recordedRemovedRequests()
         let validatedPaths = await initializedValidator.requestedRepoPaths()
         let openedPaths = await opener.requestedConfiguredRepoPaths()
 
-        XCTAssertEqual(requests.map(\.repoPath), ["/tmp/repo"])
-        XCTAssertEqual(requests.map(\.relativePath), ["docs/gone.pdf"])
+        let request = try? XCTUnwrap(requests.first)
+        XCTAssertEqual(request?.kind, .removed)
+        XCTAssertEqual(request?.repoPath, "/tmp/repo")
+        XCTAssertEqual(request?.relativePath, "docs/gone.pdf")
+        XCTAssertGreaterThan(request?.fsEventID ?? 0, 0)
         XCTAssertEqual(validatedPaths, ["/tmp/repo"])
         XCTAssertEqual(openedPaths, ["/tmp/repo"])
         XCTAssertEqual(model.mainRepoExternalRemoval, .synced(result))
@@ -308,7 +311,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             repoPath: "/tmp/repo"
         )
         await model.confirmMainRepositoryExternalRemoval(repoPath: "/tmp/repo")
-        let requests = await syncer.recordedRequests()
+        let requests = await syncer.recordedRemovedRequests()
 
         XCTAssertEqual(requests, [])
         XCTAssertEqual(model.mainRepoExternalRemoval, .unavailable)

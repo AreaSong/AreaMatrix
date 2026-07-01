@@ -11,12 +11,12 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             enableKeywordRules: true,
             fallbackToInbox: false
         )))
-        let updater = RecordingConfigurationUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success(()))
         let model = ClassifierSettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
             updater: updater,
-            errorMapper: ClassifierSettingsStaticErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.classifierSettings()
         )
 
         await model.load()
@@ -32,7 +32,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testToggleSaveThroughUpdateConfigWithoutMockState() async {
-        let updater = RecordingConfigurationUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success(()))
         let model = await loadedModel(updater: updater)
 
         await model.requestEnableExtensionRules(false)
@@ -72,14 +72,16 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testPreviewCallsInjectedCoreCategoryPredictorAndClearsStaleResultWhenFilenameChanges() async {
-        let predictor = ClassifierSettingsRecordingPredictor(result: .success(ClassifyResultSnapshot(
-            category: "finance",
-            suggestedName: "Invoice_2026Q1.pdf",
-            reason: .keyword,
-            confidence: 0.9
-        )))
+        let predictor = ClassifierSettingsSequencePredictor(results: [
+            .success(ClassifyResultSnapshot(
+                category: "finance",
+                suggestedName: "Invoice_2026Q1.pdf",
+                reason: .keyword,
+                confidence: 0.9
+            ))
+        ])
         let model = await loadedModel(
-            updater: RecordingConfigurationUpdater(result: .success),
+            updater: RecordingConfigurationUpdater(result: .success(())),
             predictor: predictor
         )
 
@@ -88,7 +90,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
 
         let requests = await predictor.requests()
         XCTAssertEqual(requests, [
-            ClassifierSettingsRecordingPredictor.Request(repoPath: "/tmp/repo", filename: "Invoice_2026Q1.pdf")
+            ClassifierSettingsSequencePredictor.Request(repoPath: "/tmp/repo", filename: "Invoice_2026Q1.pdf")
         ])
         XCTAssertEqual(model.previewResult?.category, "finance")
         XCTAssertEqual(model.previewResult?.suggestedName, "Invoice_2026Q1.pdf")
@@ -106,11 +108,11 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testPreviewFailureMapsCoreErrorWithoutStaticSuccessState() async {
-        let predictor = ClassifierSettingsRecordingPredictor(
-            result: .failure(CoreError.Classify(reason: "classifier unavailable"))
-        )
+        let predictor = ClassifierSettingsSequencePredictor(results: [
+            .failure(CoreError.Classify(reason: "classifier unavailable"))
+        ])
         let model = await loadedModel(
-            updater: RecordingConfigurationUpdater(result: .success),
+            updater: RecordingConfigurationUpdater(result: .success(())),
             predictor: predictor
         )
 
@@ -119,7 +121,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
 
         let requests = await predictor.requests()
         XCTAssertEqual(requests, [
-            ClassifierSettingsRecordingPredictor.Request(repoPath: "/tmp/repo", filename: "Bad.pdf")
+            ClassifierSettingsSequencePredictor.Request(repoPath: "/tmp/repo", filename: "Bad.pdf")
         ])
         XCTAssertNil(model.previewResult)
         XCTAssertEqual(model.previewError?.message, "无法预览分类：classifier unavailable")
@@ -129,7 +131,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testPreviewFilenameUpdatePublishesSettingsViewChange() async {
-        let model = await loadedModel(updater: RecordingConfigurationUpdater(result: .success))
+        let model = await loadedModel(updater: RecordingConfigurationUpdater(result: .success(())))
         var publishCount = 0
         let cancellable = model.objectWillChange.sink {
             publishCount += 1
@@ -146,7 +148,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
     func testOpenClassifierYamlUsesRepositoryFileOpener() async {
         let opener = RecordingRepositoryFileOpener()
         let model = await loadedModel(
-            updater: RecordingConfigurationUpdater(result: .success),
+            updater: RecordingConfigurationUpdater(result: .success(())),
             fileOpener: opener
         )
 
@@ -164,11 +166,9 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
     func testValidateClassifierRulesRequiresPhysicalClassifierYamlBeforeCorePreviewFallback() async throws {
         let repoURL = try temporaryClassifierSettingsRepo()
         defer { removeTestTemporaryItems(repoURL) }
-        let predictor = ClassifierSettingsRecordingPredictor(
-            result: .success(classifierSettingsValidationProbeResult())
-        )
+        let predictor = ClassifierSettingsSequencePredictor()
         let model = await loadedModel(
-            updater: RecordingConfigurationUpdater(result: .success),
+            updater: RecordingConfigurationUpdater(result: .success(())),
             predictor: predictor,
             config: .classifierSettingsFixture(repoPath: repoURL.path)
         )
@@ -196,15 +196,13 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         let loader = RecordingConfigurationLoader(
             result: .success(.classifierSettingsFixture(repoPath: repoURL.path))
         )
-        let predictor = ClassifierSettingsRecordingPredictor(
-            result: .success(classifierSettingsValidationProbeResult())
-        )
+        let predictor = ClassifierSettingsSequencePredictor()
         let model = ClassifierSettingsModel(
             repoPath: repoURL.path,
             loader: loader,
-            updater: RecordingConfigurationUpdater(result: .success),
+            updater: RecordingConfigurationUpdater(result: .success(())),
             predictor: predictor,
-            errorMapper: ClassifierSettingsStaticErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.classifierSettings(),
             accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
@@ -295,109 +293,12 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             loader: RecordingConfigurationLoader(result: .success(config)),
             updater: updater,
             predictor: predictor,
-            errorMapper: ClassifierSettingsStaticErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.classifierSettings(),
             fileOpener: fileOpener,
             accessibilityAnnouncer: accessibilityAnnouncer
         )
         await model.load()
         return model
-    }
-}
-
-private enum ClassifierSettingsPreviewResult {
-    case success(ClassifyResultSnapshot)
-    case failure(Error)
-}
-
-private actor ClassifierSettingsRecordingPredictor: CoreCategoryPredicting {
-    struct Request: Equatable {
-        var repoPath: String
-        var filename: String
-    }
-
-    private let result: ClassifierSettingsPreviewResult
-    private var requestsStorage: [Request] = []
-
-    init(result: ClassifierSettingsPreviewResult) {
-        self.result = result
-    }
-
-    func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
-        requestsStorage.append(Request(repoPath: repoPath, filename: filename))
-        switch result {
-        case let .success(preview):
-            return preview
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func requests() -> [Request] {
-        requestsStorage
-    }
-}
-
-private actor ClassifierSettingsStaticErrorMapper: CoreErrorMapping {
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        switch error {
-        case .Db:
-            .classifierSettingsMapping(kind: .db, userMessage: "数据库错误")
-        case let .Config(reason):
-            .classifierSettingsMapping(kind: .config, userMessage: "分类规则无效：\(reason)")
-        case let .Classify(reason):
-            .classifierSettingsMapping(kind: .classify, userMessage: "无法预览分类：\(reason)")
-        case .PermissionDenied:
-            .classifierSettingsMapping(kind: .permissionDenied, userMessage: "无访问权限")
-        default:
-            .classifierSettingsMapping(kind: .internal, userMessage: "保存失败")
-        }
-    }
-}
-
-private func classifierSettingsValidationProbeResult() -> ClassifyResultSnapshot {
-    ClassifyResultSnapshot(
-        category: "inbox",
-        suggestedName: "AreaMatrixValidationProbe.txt",
-        reason: .default,
-        confidence: 0
-    )
-}
-
-private extension CoreErrorMappingSnapshot {
-    static func classifierSettingsMapping(
-        kind: CoreErrorKindSnapshot,
-        userMessage: String
-    ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: kind,
-            userMessage: userMessage,
-            severity: .medium,
-            suggestedAction: "Retry save",
-            recoverability: .retryable,
-            rawContext: kind.rawValue
-        )
-    }
-}
-
-private extension RepoConfigSnapshot {
-    static func classifierSettingsFixture(
-        repoPath: String,
-        enableExtensionRules: Bool = true,
-        enableKeywordRules: Bool = true,
-        fallbackToInbox: Bool = true
-    ) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "system",
-            iCloudWarn: true,
-            enableExtensionRules: enableExtensionRules,
-            enableKeywordRules: enableKeywordRules,
-            fallbackToInbox: fallbackToInbox,
-            allowReplaceDuringImport: false
-        )
     }
 }
 

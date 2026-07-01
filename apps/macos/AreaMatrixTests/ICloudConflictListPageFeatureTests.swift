@@ -316,23 +316,7 @@ private actor ICloudConflictLister: CoreICloudConflictListing {
     }
 }
 
-private actor ICloudConflictListRecordingPathValidator: CoreRepositoryPathValidating {
-    private let result: Result<RepoPathValidationSnapshot, Error>
-    private var requests: [String] = []
-
-    init(result: Result<RepoPathValidationSnapshot, Error>) {
-        self.result = result
-    }
-
-    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
-        requests.append(repoPath)
-        return try result.get()
-    }
-
-    func recordedRequests() -> [String] {
-        requests
-    }
-}
+private typealias ICloudConflictListRecordingPathValidator = RecordingRepositoryPathValidator
 
 private extension ICloudConflictPairSnapshot {
     static func iCloudConflictListFixture(

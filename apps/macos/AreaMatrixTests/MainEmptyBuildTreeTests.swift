@@ -69,7 +69,7 @@ final class MainEmptyBuildTreeTests: XCTestCase {
             onDropImport: { _, _ in },
             onOpenSettings: {},
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
         )
 
@@ -88,7 +88,7 @@ final class MainEmptyBuildTreeTests: XCTestCase {
         let model = MainFileListModel(
             opening: .commandPaletteCommandFixture(repoPath: "/tmp/repo", files: []),
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             commandIndexer: CommandPaletteCommandIndexStore(results: [.failure(CoreError.Db(message: "locked"))]),
             errorMapper: StaticCoreErrorMapper(mapping: mapping)
         )
@@ -183,31 +183,7 @@ private extension CommandPaletteSnapshot {
     }
 }
 
-private actor BuildTreeRecordingRepositoryOpener: CoreEmptyRepositoryOpening {
-    private let opening: RepositoryOpeningResult
-    private var configuredPaths: [String] = []
-
-    init(opening: RepositoryOpeningResult) {
-        self.opening = opening
-    }
-
-    func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        try await openConfiguredRepository(repoPath: repoPath)
-    }
-
-    func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        try await openConfiguredRepository(repoPath: repoPath)
-    }
-
-    func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        configuredPaths.append(repoPath)
-        return opening
-    }
-
-    func requestedConfiguredRepoPaths() -> [String] {
-        configuredPaths
-    }
-}
+private typealias BuildTreeRecordingRepositoryOpener = RecordingRepositoryOpener
 
 @MainActor
 private final class BuildTreeAnnouncer: AccessibilityAnnouncing {

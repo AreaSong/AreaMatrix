@@ -1,244 +1,21 @@
 @testable import AreaMatrix
 import XCTest
 
-struct ShellStaticSettingsReader: AppSettingsReading {
-    let repoPath: String?
-    var lastOpenedAtByRepoPath: [String: Int64] = [:]
+typealias ShellStaticSettingsReader = StaticSettingsReader
 
-    func configuredRepoPath() -> String? {
-        repoPath
-    }
+typealias ShellRecordingSettingsWriter = RecordingAppSettingsWriter
 
-    func lastSuccessfulRepoOpenAt(repoPath: String) -> Int64? {
-        lastOpenedAtByRepoPath[repoPath]
-    }
-}
+typealias ShellRecordingConfigLoader = RecordingConfigurationLoader
 
-final class ShellRecordingSettingsWriter: AppSettingsWriting {
-    private(set) var savedRepoPaths: [String] = []
-    private(set) var successfulRepoOpens: [(repoPath: String, openedAt: Int64)] = []
+typealias ShellRecordingRepositoryOpener = RecordingRepositoryOpener
 
-    func saveConfiguredRepoPath(_ repoPath: String) {
-        savedRepoPaths.append(repoPath)
-    }
+typealias ShellRecordingPathValidator = RecordingRepositoryPathValidator
 
-    func saveSuccessfulRepoOpen(repoPath: String, openedAt: Int64) {
-        successfulRepoOpens.append((repoPath: repoPath, openedAt: openedAt))
-    }
-}
+typealias ShellRecordingInitializedPathValidator = RecordingRepositoryPathValidator
 
-enum ShellRecordingResult {
-    case success(RepoConfigSnapshot)
-    case failure(Error)
-}
+typealias ShellRecordingExternalChangesSyncer = RecordingExternalChangesSyncer
 
-enum ShellRecordingRepositoryOpenResult {
-    case success(RepositoryOpeningResult)
-    case failure(Error)
-}
-
-actor ShellRecordingConfigLoader: CoreConfigurationLoading {
-    private let result: ShellRecordingResult
-    private var paths: [String] = []
-
-    init(result: ShellRecordingResult) {
-        self.result = result
-    }
-
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
-        paths.append(repoPath)
-        switch result {
-        case let .success(config):
-            return config
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func requestedRepoPaths() -> [String] {
-        paths
-    }
-}
-
-actor ShellRecordingRepositoryOpener: CoreEmptyRepositoryOpening {
-    private let result: ShellRecordingRepositoryOpenResult
-    private var configuredPaths: [String] = []
-
-    init(result: ShellRecordingRepositoryOpenResult) {
-        self.result = result
-    }
-
-    func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        try await openConfiguredRepository(repoPath: repoPath)
-    }
-
-    func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        try await openConfiguredRepository(repoPath: repoPath)
-    }
-
-    func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        configuredPaths.append(repoPath)
-        switch result {
-        case let .success(opening):
-            return opening
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func requestedConfiguredRepoPaths() -> [String] {
-        configuredPaths
-    }
-}
-
-enum ShellRecordingPathValidationResult {
-    case success(RepoPathValidationSnapshot)
-    case failure(Error)
-}
-
-actor ShellRecordingPathValidator: CoreRepositoryPathValidating {
-    private let result: ShellRecordingPathValidationResult
-    private var paths: [String] = []
-
-    init(result: ShellRecordingPathValidationResult) {
-        self.result = result
-    }
-
-    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
-        paths.append(repoPath)
-        switch result {
-        case let .success(validation):
-            return validation
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func requestedRepoPaths() -> [String] {
-        paths
-    }
-}
-
-actor ShellRecordingInitializedPathValidator: CoreInitializedRepositoryPathValidating {
-    private let result: ShellRecordingPathValidationResult
-    private var paths: [String] = []
-
-    init(result: ShellRecordingPathValidationResult) {
-        self.result = result
-    }
-
-    func validateInitializedRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
-        paths.append(repoPath)
-        switch result {
-        case let .success(validation):
-            return validation
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func requestedRepoPaths() -> [String] {
-        paths
-    }
-}
-
-struct ShellExternalRemovalRequest: Equatable {
-    var repoPath: String
-    var relativePath: String
-    var fsEventID: Int64
-}
-
-actor ShellRecordingExternalChangesSyncer: CoreExternalChangesSyncing {
-    private let result: Result<SyncResultSnapshot, Error>
-    private var requests: [ShellExternalRemovalRequest] = []
-    private var createdRequests: [ShellExternalRemovalRequest] = []
-    private var renamedRequests: [ShellExternalRemovalRequest] = []
-
-    init(result: Result<SyncResultSnapshot, Error>) {
-        self.result = result
-    }
-
-    func syncExternalCreated(repoPath: String, relativePath: String,
-                             fsEventID: Int64) async throws -> SyncResultSnapshot {
-        createdRequests.append(ShellExternalRemovalRequest(
-            repoPath: repoPath,
-            relativePath: relativePath,
-            fsEventID: fsEventID
-        ))
-        switch result {
-        case let .success(snapshot):
-            return snapshot
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func syncExternalRenamed(repoPath: String, relativePath: String,
-                             fsEventID: Int64) async throws -> SyncResultSnapshot {
-        renamedRequests.append(ShellExternalRemovalRequest(
-            repoPath: repoPath,
-            relativePath: relativePath,
-            fsEventID: fsEventID
-        ))
-        switch result {
-        case let .success(snapshot):
-            return snapshot
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func syncExternalRemoved(repoPath: String, relativePath: String,
-                             fsEventID: Int64) async throws -> SyncResultSnapshot {
-        requests.append(ShellExternalRemovalRequest(
-            repoPath: repoPath,
-            relativePath: relativePath,
-            fsEventID: fsEventID
-        ))
-        switch result {
-        case let .success(snapshot):
-            return snapshot
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func recordedRequests() -> [ShellExternalRemovalRequest] {
-        requests
-    }
-
-    func recordedCreatedRequests() -> [ShellExternalRemovalRequest] {
-        createdRequests
-    }
-
-    func recordedRenamedRequests() -> [ShellExternalRemovalRequest] {
-        renamedRequests
-    }
-
-    func getFSEventCursor(repoPath _: String) async throws -> Int64? {
-        nil
-    }
-
-    func setFSEventCursor(repoPath _: String, lastEventID _: Int64) async throws {}
-}
-
-actor ShellRecordingDiagnosticsCollector: CoreDiagnosticsCollecting {
-    private let result: Result<DiagnosticsSnapshotSnapshot, Error>
-    private var repoPaths: [String] = []
-
-    init(result: Result<DiagnosticsSnapshotSnapshot, Error>) {
-        self.result = result
-    }
-
-    func createDiagnosticsSnapshot(repoPath: String) async throws -> DiagnosticsSnapshotSnapshot {
-        repoPaths.append(repoPath)
-        return try result.get()
-    }
-
-    func requestedRepoPaths() -> [String] {
-        repoPaths
-    }
-}
+typealias ShellRecordingDiagnosticsCollector = RecordingDiagnosticsCollector
 
 struct ShellFailingWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {
@@ -260,19 +37,7 @@ final class ShellRecordingPathCopier: RepositoryPathCopying {
     }
 }
 
-struct ShellExistingRepoMetadataReader: ExistingRepositoryMetadataReading {
-    let schemaVersion: Int64
-    var lastOpenedAt: Int64?
-    var configuredRepoPath: String?
-
-    func metadata(repoPath _: String) async throws -> ExistingRepositoryMetadataSnapshot {
-        ExistingRepositoryMetadataSnapshot(
-            schemaVersion: schemaVersion,
-            lastOpenedAt: lastOpenedAt,
-            configuredRepoPath: configuredRepoPath
-        )
-    }
-}
+typealias ShellExistingRepoMetadataReader = StaticExistingRepositoryMetadataReader
 
 @MainActor
 final class ShellRecordingDirectoryPicker: RepositoryDirectoryPicking {

@@ -12,13 +12,13 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
             repoPath: "/tmp/aiPrivacyRules",
             loader: settingsStore,
             updater: settingsStore,
-            errorMapper: AIPrivacyRulesIntegrationErrorMapper()
+            errorMapper: aiPrivacyRulesIntegrationErrorMapper()
         )
         let providerBridge = RemoteProviderConfigBridge(initial: .aiPrivacyRulesIntegrationProviderReady())
         let providerModel = AIPrivacyRemoteProviderStateModel(
             repoPath: "/tmp/aiPrivacyRules",
             providerReader: providerBridge,
-            errorMapper: AIPrivacyRulesIntegrationErrorMapper()
+            errorMapper: aiPrivacyRulesIntegrationErrorMapper()
         )
         let privacyBridge = RemotePrivacyRulesBridge(
             snapshot: .aiPrivacyRulesIntegrationRules(privacyGateEnabled: true),
@@ -28,7 +28,7 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
             repoPath: "/tmp/aiPrivacyRules",
             rulesManager: privacyBridge,
             evaluator: privacyBridge,
-            errorMapper: AIPrivacyRulesIntegrationErrorMapper(),
+            errorMapper: aiPrivacyRulesIntegrationErrorMapper(),
             settingsSync: settingsModel
         )
 
@@ -132,7 +132,7 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
             repoPath: "/tmp/aiPrivacyRules",
             rulesManager: bridge,
             evaluator: bridge,
-            errorMapper: AIPrivacyRulesIntegrationErrorMapper()
+            errorMapper: aiPrivacyRulesIntegrationErrorMapper()
         )
 
         await model.load()
@@ -161,45 +161,17 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
     }
 }
 
-private actor AIPrivacyRulesIntegrationAISettingsStore: CoreAISettingsLoading, CoreAISettingsUpdating {
-    private var snapshot: AISettingsSnapshot
-    private var recorded: [AISettingsConfigSnapshot] = []
+private typealias AIPrivacyRulesIntegrationAISettingsStore = RecordingAISettingsStore
 
-    init(snapshot: AISettingsSnapshot) {
-        self.snapshot = snapshot
-    }
-
-    func loadAISettings(repoPath _: String) async throws -> AISettingsSnapshot {
-        snapshot
-    }
-
-    func updateAISettings(repoPath _: String, newConfig: AISettingsConfigSnapshot) async throws -> AISettingsSnapshot {
-        let normalized = newConfig.normalized()
-        recorded.append(normalized)
-        snapshot = AISettingsSnapshot(
-            config: normalized,
-            capabilities: AISettingsCapabilitySnapshot.derived(from: normalized),
-            updatedAt: 310
-        )
-        return snapshot
-    }
-
-    func requests() -> [AISettingsConfigSnapshot] {
-        recorded
-    }
-}
-
-private actor AIPrivacyRulesIntegrationErrorMapper: CoreErrorMapping {
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .db,
-            userMessage: "ai-privacy-rules integration bridge failed",
-            severity: .medium,
-            suggestedAction: "Retry",
-            recoverability: .retryable,
-            rawContext: "ai-privacy-rules page integration"
-        )
-    }
+private func aiPrivacyRulesIntegrationErrorMapper() -> StaticCoreErrorMapper {
+    StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot(
+        kind: .db,
+        userMessage: "ai-privacy-rules integration bridge failed",
+        severity: .medium,
+        suggestedAction: "Retry",
+        recoverability: .retryable,
+        rawContext: "ai-privacy-rules page integration"
+    ))
 }
 
 private struct AIPrivacyRulesAISettingsPrivacySummary {

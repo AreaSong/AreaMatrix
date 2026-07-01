@@ -2,17 +2,48 @@
 import Foundation
 import XCTest
 
+func importSingleFileContractURL() -> URL {
+    URL(fileURLWithPath: "/tmp/合同.pdf")
+}
+
+func importSingleFileSourceURL() -> URL {
+    URL(fileURLWithPath: importSingleFileSourcePath())
+}
+
+func importSingleFileSourcePath() -> String {
+    "/tmp/source.pdf"
+}
+
+func importSingleFileRepoPath() -> String {
+    "/tmp/repo"
+}
+
 extension ClassifyResultSnapshot {
-    static func importSingleFileFixture() -> ClassifyResultSnapshot {
-        makeImportSingleFileFixture()
+    static func importSingleFileFixture(
+        category: String = "docs",
+        suggestedName: String = "source.pdf",
+        reason: ClassifyReasonSnapshot = .extension,
+        confidence: Float = 0.7
+    ) -> ClassifyResultSnapshot {
+        makeImportSingleFileFixture(
+            category: category,
+            suggestedName: suggestedName,
+            reason: reason,
+            confidence: confidence
+        )
     }
 
-    private static func makeImportSingleFileFixture() -> ClassifyResultSnapshot {
+    private static func makeImportSingleFileFixture(
+        category: String,
+        suggestedName: String,
+        reason: ClassifyReasonSnapshot,
+        confidence: Float
+    ) -> ClassifyResultSnapshot {
         ClassifyResultSnapshot(
-            category: "docs",
-            suggestedName: "source.pdf",
-            reason: .extension,
-            confidence: 0.7
+            category: category,
+            suggestedName: suggestedName,
+            reason: reason,
+            confidence: confidence
         )
     }
 }
@@ -50,124 +81,188 @@ extension FileEntrySnapshot {
             hashSha256: hashSha256,
             storageMode: storageMode,
             origin: "Imported",
-            sourcePath: "/tmp/source.pdf",
+            sourcePath: importSingleFileSourcePath(),
             importedAt: 1_700_000_000,
             updatedAt: 1_700_000_000
+        )
+    }
+
+    static func importMoveFixture(currentName: String, category: String) -> FileEntrySnapshot {
+        importSingleFileFixture(currentName: currentName, category: category, storageMode: "Moved")
+    }
+
+    static func importIndexFixture(currentName: String, category: String) -> FileEntrySnapshot {
+        FileEntrySnapshot(
+            id: 43,
+            path: importSingleFileSourcePath(),
+            originalName: "source.pdf",
+            currentName: currentName,
+            category: category,
+            sizeBytes: 12,
+            hashSha256: "hash",
+            storageMode: "Indexed",
+            origin: "Imported",
+            sourcePath: importSingleFileSourcePath(),
+            importedAt: 1_700_000_000,
+            updatedAt: 1_700_000_000
+        )
+    }
+
+    static func importNameConflictReplaceFixture() -> FileEntrySnapshot {
+        importReplaceExistingFileFixture(path: "docs/reports/报告.pdf", hashSha256: "existing-hash", id: 125)
+    }
+
+    static func importDuplicateReplaceFixture() -> FileEntrySnapshot {
+        importReplaceExistingFileFixture(path: "docs/reports/报告.pdf", hashSha256: "duplicate-hash")
+    }
+
+    static func importReplaceExistingFileFixture(
+        path: String,
+        hashSha256: String,
+        id: Int64 = 124
+    ) -> FileEntrySnapshot {
+        let currentName = (path as NSString).lastPathComponent
+        return FileEntrySnapshot(
+            id: id,
+            path: path,
+            originalName: currentName,
+            currentName: currentName,
+            category: (path as NSString).deletingLastPathComponent,
+            sizeBytes: 860 * 1024,
+            hashSha256: hashSha256,
+            storageMode: "Copied",
+            origin: "Imported",
+            sourcePath: nil,
+            importedAt: 1_700_000_000,
+            updatedAt: 1_776_660_840
+        )
+    }
+}
+
+extension ImportSingleFilePreflightResult {
+    static func importSingleFileReadyFixture(
+        targetRelativePath: String = "docs/source.pdf"
+    ) -> ImportSingleFilePreflightResult {
+        ImportSingleFilePreflightResult(
+            sourceSizeBytes: 12,
+            hashSha256: "hash",
+            targetRelativePath: targetRelativePath,
+            conflict: .none
+        )
+    }
+
+    static func importICloudPlaceholderFixture(
+        path: String = importSingleFileSourcePath(),
+        targetRelativePath: String = "docs/source.pdf"
+    ) -> ImportSingleFilePreflightResult {
+        ImportSingleFilePreflightResult(
+            sourceSizeBytes: nil,
+            hashSha256: nil,
+            targetRelativePath: targetRelativePath,
+            conflict: .iCloudPlaceholder(path: path)
+        )
+    }
+
+    static func importHiddenDuplicateFixture() -> ImportSingleFilePreflightResult {
+        ImportSingleFilePreflightResult(
+            sourceSizeBytes: 12,
+            hashSha256: "hash",
+            targetRelativePath: "docs/source.pdf",
+            conflict: .duplicate(existingPath: "docs/source.pdf")
+        )
+    }
+
+    static func importDuplicateFixture() -> ImportSingleFilePreflightResult {
+        ImportSingleFilePreflightResult(
+            sourceSizeBytes: 12,
+            hashSha256: "duplicate-hash",
+            targetRelativePath: "docs/source.pdf",
+            conflict: .duplicate(existingPath: "docs/existing.pdf"),
+            keepBothTargetRelativePath: "docs/source_1.pdf"
+        )
+    }
+
+    static func importDuplicateReplaceFixture(
+        targetRelativePath: String? = nil,
+        existingPath: String? = nil,
+        keepBothTargetRelativePath: String = "docs/reports/报告_1.pdf",
+        existingFile: FileEntrySnapshot = .importDuplicateReplaceFixture()
+    ) -> ImportSingleFilePreflightResult {
+        let targetPath = targetRelativePath ?? existingFile.path
+        return ImportSingleFilePreflightResult(
+            sourceSizeBytes: 912 * 1024,
+            sourceModifiedAt: 1_777_445_400,
+            hashSha256: "duplicate-hash",
+            targetRelativePath: targetPath,
+            conflict: .duplicate(existingPath: existingPath ?? existingFile.path),
+            keepBothTargetRelativePath: keepBothTargetRelativePath,
+            existingFile: existingFile
+        )
+    }
+
+    static func importNameConflictFixture() -> ImportSingleFilePreflightResult {
+        ImportSingleFilePreflightResult(
+            sourceSizeBytes: 12,
+            hashSha256: "incoming-hash",
+            targetRelativePath: "docs/source.pdf",
+            conflict: .name(path: "docs/source.pdf"),
+            keepBothTargetRelativePath: "docs/source_1.pdf",
+            existingPaths: ["docs/source.pdf", "docs/source_1.pdf"]
+        )
+    }
+
+    static func importNameConflictReplaceFixture(
+        targetRelativePath: String? = nil,
+        existingPath: String? = nil,
+        keepBothTargetRelativePath: String = "docs/reports/报告_1.pdf",
+        existingPaths: Set<String>? = nil,
+        existingFile: FileEntrySnapshot = .importNameConflictReplaceFixture()
+    ) -> ImportSingleFilePreflightResult {
+        let targetPath = targetRelativePath ?? existingFile.path
+        return ImportSingleFilePreflightResult(
+            sourceSizeBytes: 912 * 1024,
+            sourceModifiedAt: 1_777_445_400,
+            hashSha256: "incoming-hash",
+            targetRelativePath: targetPath,
+            conflict: .name(path: existingPath ?? existingFile.path),
+            keepBothTargetRelativePath: keepBothTargetRelativePath,
+            existingPaths: existingPaths ?? [existingFile.path],
+            existingFile: existingFile
         )
     }
 }
 
 extension ImportEntryRequest {
-    static func importSingleFileImportRequest() -> ImportEntryRequest {
+    static func importSingleFileImportRequest(
+        repoPath: String = importSingleFileRepoPath(),
+        source: ImportEntrySource = .filePicker,
+        destination: ImportEntryDestination = .autoClassify,
+        sourcePath: String = importSingleFileSourcePath()
+    ) -> ImportEntryRequest {
         ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .filePicker,
-            destination: .autoClassify,
-            urls: [URL(fileURLWithPath: "/tmp/source.pdf")],
+            repoPath: repoPath,
+            source: source,
+            destination: destination,
+            urls: [URL(fileURLWithPath: sourcePath)],
             kind: .singleFile
         )
     }
 
     static func importSingleFileFixture(
+        repoPath: String = importSingleFileRepoPath(),
+        sourcePath: String = importSingleFileSourcePath(),
         allowReplaceDuringImport: Bool = true,
         isTrashAvailable: Bool = true
     ) -> ImportEntryRequest {
         ImportEntryRequest(
-            repoPath: "/tmp/repo",
+            repoPath: repoPath,
             source: .filePicker,
             destination: .autoClassify,
-            urls: [URL(fileURLWithPath: "/tmp/source.pdf")],
+            urls: [URL(fileURLWithPath: sourcePath)],
             kind: .singleFile,
             allowReplaceDuringImport: allowReplaceDuringImport,
             isTrashAvailable: isTrashAvailable
         )
-    }
-}
-
-extension CoreErrorMappingSnapshot {
-    static func importSingleFileError(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
-        makeImportSingleFileError(
-            kind: kind,
-            suggestedAction: "Resolve the conflict and retry.",
-            rawContext: "import-single import-single-sheet"
-        )
-    }
-
-    static func importCopyFixture(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
-        makeImportSingleFileError(
-            kind: kind,
-            suggestedAction: "Choose a different file or resolve the conflict.",
-            rawContext: "copy import"
-        )
-    }
-
-    private static func makeImportSingleFileError(
-        kind: CoreErrorKindSnapshot,
-        suggestedAction: String,
-        rawContext: String
-    ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: kind,
-            userMessage: importErrorMessage(for: kind),
-            severity: .high,
-            suggestedAction: suggestedAction,
-            recoverability: .userActionRequired,
-            rawContext: rawContext
-        )
-    }
-
-    // swiftlint:disable:next cyclomatic_complexity
-    private static func importErrorMessage(for kind: CoreErrorKindSnapshot) -> String {
-        switch kind {
-        case .duplicateFile:
-            "检测到重复文件"
-        case .invalidPath:
-            "路径无效"
-        case .permissionDenied:
-            "无访问权限"
-        case .iCloudPlaceholder:
-            "iCloud 文件尚未下载"
-        case .io:
-            "文件读写失败"
-        case .db:
-            "数据库错误"
-        case .fileNotFound:
-            "文件不存在"
-        case .expiredAction:
-            "操作已过期"
-        case .config:
-            "配置不可用"
-        case .validation:
-            "输入校验失败"
-        case .classify:
-            "分类失败"
-        case .conflict:
-            "命名冲突未解决"
-        case .repoNotInitialized:
-            "资料库尚未初始化"
-        case .stagingRecoveryRequired:
-            "需要先恢复未完成导入"
-        case .internal:
-            "内部错误"
-        }
-    }
-}
-
-extension RecordingCoreErrorMapper {
-    static func importSingleFile() -> RecordingCoreErrorMapper {
-        RecordingCoreErrorMapper { error in
-            CoreErrorMappingSnapshot.importSingleFileError(
-                kind: CoreErrorKindTestMapper.kind(for: error)
-            )
-        }
-    }
-
-    static func importCopy() -> RecordingCoreErrorMapper {
-        RecordingCoreErrorMapper { error in
-            CoreErrorMappingSnapshot.importCopyFixture(
-                kind: CoreErrorKindTestMapper.kind(for: error)
-            )
-        }
     }
 }
 
@@ -255,43 +350,4 @@ func importImportSingleFileMode(
     await waitForImportSingleFilePreflightToSettle(model)
     let imported = await model.importSelectedFile()
     XCTAssertEqual(imported?.storageMode, storageMode)
-}
-
-func importSingleFileCoreCapabilityRequest() -> ImportEntryRequest {
-    ImportEntryRequest(
-        repoPath: "/tmp/repo",
-        source: .filePicker,
-        destination: .autoClassify,
-        urls: [URL(fileURLWithPath: "/tmp/合同.pdf")],
-        kind: .singleFile
-    )
-}
-
-func importSingleFileCoreCapabilityPrediction() -> ClassifyResultSnapshot {
-    ClassifyResultSnapshot(
-        category: "docs",
-        suggestedName: "2026Q1_合同.pdf",
-        reason: .keyword,
-        confidence: 0.93
-    )
-}
-
-func importSingleFileCoreCapabilityImportRequests() -> [ImportSingleFileImportRequest] {
-    [
-        importSingleFileImportRequest(mode: .copy, filename: "copy.pdf"),
-        importSingleFileImportRequest(mode: .move, filename: "move.pdf"),
-        importSingleFileImportRequest(mode: .indexOnly, filename: "indexed.pdf")
-    ]
-}
-
-func importSingleFileImportRequest(
-    mode: ImportSingleFileStorageMode,
-    filename: String
-) -> ImportSingleFileImportRequest {
-    ImportSingleFileImportRequest(
-        mode: mode,
-        overrideCategory: "finance",
-        overrideFilename: filename,
-        duplicateStrategy: .ask
-    )
 }

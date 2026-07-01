@@ -4,7 +4,7 @@ import XCTest
 final class SettingsRecoveryIntegrationTests: XCTestCase {
     @MainActor
     func testSettingsErrorRecoveryClosureUsesRealCoreForBoundCapabilitiesAndSafeRoutes() async throws {
-        let context = try await Task31IntegrationContext.make()
+        let context = try await SettingsRecoveryIntegrationContext.make()
         defer { context.cleanup() }
 
         try await verifyGeneralSettingsAndImportDefaults(context)
@@ -14,7 +14,7 @@ final class SettingsRecoveryIntegrationTests: XCTestCase {
 }
 
 @MainActor
-private func verifyGeneralSettingsAndImportDefaults(_ context: Task31IntegrationContext) async throws {
+private func verifyGeneralSettingsAndImportDefaults(_ context: SettingsRecoveryIntegrationContext) async throws {
     let general = GeneralSettingsModel(
         repoPath: context.repoURL.path,
         loader: context.bridge,
@@ -49,7 +49,7 @@ private func verifyGeneralSettingsAndImportDefaults(_ context: Task31Integration
 }
 
 @MainActor
-private func verifyClassifierRepositoryAndOverview(_ context: Task31IntegrationContext) async throws {
+private func verifyClassifierRepositoryAndOverview(_ context: SettingsRecoveryIntegrationContext) async throws {
     let classifier = ClassifierSettingsModel(
         repoPath: context.repoURL.path,
         loader: context.bridge,
@@ -86,7 +86,7 @@ private func verifyClassifierRepositoryAndOverview(_ context: Task31IntegrationC
         scanSessionReader: context.bridge,
         existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
         generatedOverviewRevealer: generatedRevealer,
-        diagnosticsCollector: Task31RecordingDiagnosticsCollector(),
+        diagnosticsCollector: makeSettingsRecoveryDiagnosticsCollector(context),
         errorMapper: context.bridge
     )
     await repository.load()
@@ -107,7 +107,7 @@ private func verifyClassifierRepositoryAndOverview(_ context: Task31IntegrationC
 }
 
 @MainActor
-private func verifyIntegrationsAdvancedAboutAndRecovery(_ context: Task31IntegrationContext) async throws {
+private func verifyIntegrationsAdvancedAboutAndRecovery(_ context: SettingsRecoveryIntegrationContext) async throws {
     let integrations = IntegrationsSettingsModel(
         repoPath: context.repoURL.path,
         loader: context.bridge,
@@ -120,7 +120,7 @@ private func verifyIntegrationsAdvancedAboutAndRecovery(_ context: Task31Integra
     await integrations.load()
     await integrations.setICloudWarningsEnabled(false)
 
-    let advanced = makeTask31AdvancedModel(context)
+    let advanced = makeSettingsRecoveryAdvancedModel(context)
     await advanced.load()
     await advanced.requestAllowReplaceDuringImport(true)
     XCTAssertTrue(advanced.isReplaceConfirmationPending)
@@ -135,37 +135,43 @@ private func verifyIntegrationsAdvancedAboutAndRecovery(_ context: Task31Integra
 
     let report = try await context.bridge.recoverOnStartup(repoPath: context.repoURL.path)
     XCTAssertEqual(report.cleanedStagingFiles, 0)
-    try await verifyTask31AboutAndRecoveryRoute(context)
+    try await verifySettingsRecoveryAboutAndRepairRoute(context)
 }
 
 @MainActor
-private func makeTask31AdvancedModel(_ context: Task31IntegrationContext) -> AdvancedSettingsModel {
+private func makeSettingsRecoveryAdvancedModel(_ context: SettingsRecoveryIntegrationContext) -> AdvancedSettingsModel {
     AdvancedSettingsModel(
         repoPath: context.repoURL.path,
         loader: context.bridge,
         updater: context.bridge,
         rootOverviewInspector: LocalRootOverviewFileInspector(),
-        diagnosticsCollector: Task31RecordingDiagnosticsCollector(),
-        appVersionReader: StaticAppVersionReader(version: "2.3.31"),
+        diagnosticsCollector: makeSettingsRecoveryDiagnosticsCollector(context),
+        appVersionReader: StaticAppVersionReader(version: "2.3.0"),
         coreVersionReader: context.bridge,
         metadataReader: SQLiteExistingRepositoryMetadataReader(),
-        logsOpener: Task31RecordingAdvancedLogsOpener(),
-        summaryCopier: Task31RecordingAdvancedSummaryCopier(),
+        logsOpener: RecordingAdvancedSettingsLogsOpener(logsPath: "\(context.repoURL.path)/.areamatrix/logs"),
+        summaryCopier: RecordingAdvancedDiagnosticCopier(),
         errorMapper: context.bridge
     )
 }
 
+private func makeSettingsRecoveryDiagnosticsCollector(
+    _ context: SettingsRecoveryIntegrationContext
+) -> RecordingDiagnosticsCollector {
+    RecordingDiagnosticsCollector(snapshot: .settingsErrorRecoveryFixture(repoPath: context.repoURL.path))
+}
+
 @MainActor
-private func verifyTask31AboutAndRecoveryRoute(_ context: Task31IntegrationContext) async throws {
+private func verifySettingsRecoveryAboutAndRepairRoute(_ context: SettingsRecoveryIntegrationContext) async throws {
     let about = AboutSettingsModel(
         repoPath: context.repoURL.path,
-        appVersionReader: StaticAppVersionReader(version: "2.3.31"),
+        appVersionReader: StaticAppVersionReader(version: "2.3.0"),
         coreVersionReader: context.bridge,
         metadataReader: SQLiteExistingRepositoryMetadataReader(),
         diagnosticsExporter: LocalAboutDiagnosticsExporter(baseDirectory: context.diagnosticsURL),
         externalLinkOpener: NoopAboutExternalLinkOpener(),
-        logsOpener: Task31RecordingAboutLogsOpener(),
-        stringCopier: Task31RecordingStringCopier(),
+        logsOpener: RecordingAboutLogsOpener(),
+        stringCopier: RecordingAboutStringCopier(),
         diagnosticsRevealer: NoopAboutDiagnosticsRevealer(),
         errorMapper: context.bridge,
         accessibilityAnnouncer: NoopAccessibilityAnnouncer()
@@ -200,7 +206,7 @@ private func verifyTask31AboutAndRecoveryRoute(_ context: Task31IntegrationConte
     )
 }
 
-private struct Task31IntegrationContext {
+private struct SettingsRecoveryIntegrationContext {
     let repoURL: URL
     let sourceRootURL: URL
     let sourceURL: URL
@@ -210,12 +216,12 @@ private struct Task31IntegrationContext {
     let diagnosticsURL: URL
     let bridge: CoreBridge
 
-    static func make() async throws -> Task31IntegrationContext {
-        let repoURL = try temporaryDirectory(prefix: "AreaMatrixTask31Repo")
-        let sourceRootURL = try temporaryDirectory(prefix: "AreaMatrixTask31Source")
-        let diagnosticsURL = try temporaryDirectory(prefix: "AreaMatrixTask31Diagnostics")
+    static func make() async throws -> SettingsRecoveryIntegrationContext {
+        let repoURL = try temporaryDirectory(prefix: "AreaMatrixSettingsRecoveryRepo")
+        let sourceRootURL = try temporaryDirectory(prefix: "AreaMatrixSettingsRecoverySource")
+        let diagnosticsURL = try temporaryDirectory(prefix: "AreaMatrixSettingsRecoveryDiagnostics")
         let sourceURL = sourceRootURL.appendingPathComponent("Invoice_2026Q1.pdf")
-        try Data("task 31 invoice bytes".utf8).write(to: sourceURL)
+        try Data("settings recovery invoice bytes".utf8).write(to: sourceURL)
 
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
@@ -226,7 +232,7 @@ private struct Task31IntegrationContext {
         let readmeURL = repoURL.appendingPathComponent("README.md")
         try "user readme\n".write(to: readmeURL, atomically: true, encoding: .utf8)
 
-        return Task31IntegrationContext(
+        return SettingsRecoveryIntegrationContext(
             repoURL: repoURL,
             sourceRootURL: sourceRootURL,
             sourceURL: sourceURL,
@@ -244,55 +250,5 @@ private struct Task31IntegrationContext {
 
     private static func temporaryDirectory(prefix: String) throws -> URL {
         try makeTestTemporaryDirectory(named: prefix)
-    }
-}
-
-private actor Task31RecordingDiagnosticsCollector: CoreDiagnosticsCollecting {
-    private var repoPaths: [String] = []
-
-    func createDiagnosticsSnapshot(repoPath: String) async throws -> DiagnosticsSnapshotSnapshot {
-        repoPaths.append(repoPath)
-        return DiagnosticsSnapshotSnapshot(
-            snapshotPath: "\(repoPath)/.areamatrix/diagnostics/task-31.zip",
-            createdAt: 1_778_031_000,
-            warnings: []
-        )
-    }
-}
-
-private final class Task31RecordingAdvancedLogsOpener: AdvancedSettingsLogFolderOpening {
-    @MainActor
-    func openLogsFolder(repoPath: String) throws -> String {
-        "\(repoPath)/.areamatrix/logs"
-    }
-}
-
-private final class Task31RecordingAdvancedSummaryCopier: AdvancedSettingsDiagnosticSummaryCopying {
-    private(set) var summaries: [String] = []
-
-    @MainActor
-    func copyDiagnosticSummary(_ summary: String) throws {
-        summaries.append(summary)
-    }
-}
-
-private struct Task31RecordingAboutLogsOpener: AboutLogsOpening {
-    @MainActor
-    func logsPath(repoPath: String) -> String {
-        "\(repoPath)/.areamatrix/logs"
-    }
-
-    @MainActor
-    func openLogs(repoPath: String) throws -> String {
-        logsPath(repoPath: repoPath)
-    }
-}
-
-private final class Task31RecordingStringCopier: AboutStringCopying {
-    private(set) var values: [String] = []
-
-    @MainActor
-    func copy(_ value: String) throws {
-        values.append(value)
     }
 }

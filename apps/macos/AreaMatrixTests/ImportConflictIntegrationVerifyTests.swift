@@ -28,7 +28,7 @@ private extension ImportConflictIntegrationVerifyTests {
 
     @MainActor
     func verifyHoverAndEntryRouting() async throws {
-        let sourceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let sourceURL = importBatchInvoiceURL()
         let predictor = ImportSingleFileRecordingPredictor(result: ClassifyResultSnapshot(
             category: "finance",
             suggestedName: "Invoice_2026Q1.pdf",
@@ -163,7 +163,7 @@ private extension ImportConflictIntegrationVerifyTests {
 
     @MainActor
     func verifyBatchConflictImport() async throws {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let invoiceURL = importBatchInvoiceURL()
         let contractURL = URL(fileURLWithPath: "/tmp/contract.pdf")
         let importer = ImportBatchRecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
@@ -302,7 +302,7 @@ private extension ImportConflictIntegrationVerifyTests {
 
     @MainActor
     func verifyImportConflictBatchBlockedPreviewDoesNotApply() async throws {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let invoiceURL = importBatchInvoiceURL()
         let blockedBatcher =
             ImportConflictBatcher(previews: [.importConflictBatchPreview(canApply: false)])
         let blockedModel = importConflictBatchIntegrationModel(
@@ -327,7 +327,7 @@ private extension ImportConflictIntegrationVerifyTests {
     @MainActor
     // swiftlint:disable:next function_body_length
     func verifyImportConflictBatchSelectedScopeRefreshesBeforeApplyAndUndo() async throws {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let invoiceURL = importBatchInvoiceURL()
         let action = UndoActionRecordSnapshot.importConflictBatchIntegrationAction()
         let undoResult = UndoActionResultSnapshot.importConflictBatchIntegrationResult()
         let undoStore = ImportConflictBatchIntegrationUndoStore(

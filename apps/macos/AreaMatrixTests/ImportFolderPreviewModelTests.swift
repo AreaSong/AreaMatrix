@@ -12,16 +12,13 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         try Data("invoice".utf8).write(to: invoiceURL)
         try Data("contract".utf8).write(to: contractURL)
         let predictor = ImportFolderMappedPredictor(resultsByFilename: [
-            "Invoice_2026Q1.pdf": .success(ClassifyResultSnapshot(
+            "Invoice_2026Q1.pdf": .success(.importFolderPrediction(
                 category: "finance",
-                suggestedName: "Invoice_2026Q1.pdf",
-                reason: .keyword,
-                confidence: 0.9
+                suggestedName: "Invoice_2026Q1.pdf"
             )),
-            "合同.pdf": .success(ClassifyResultSnapshot(
+            "合同.pdf": .success(.importFolderPrediction(
                 category: "docs",
                 suggestedName: "2026Q1_合同.pdf",
-                reason: .keyword,
                 confidence: 0.82
             ))
         ])
@@ -62,8 +59,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         try Data("ignored".utf8).write(to: rootURL.appendingPathComponent(".DS_Store"))
         try Data("ready".utf8).write(to: rootURL.appendingPathComponent("Report.pdf"))
         let predictor = ImportFolderRecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
-                category: "docs",
+            .success(.importFolderPrediction(
                 suggestedName: "Report.pdf",
                 reason: .extension,
                 confidence: 0.7
@@ -154,7 +150,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
 final class ImportFolderPreviewImportTests: XCTestCase {
     @MainActor
     func testImportFolderFolderCopyImportUsesRealImporterForReadyRowsOnly() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let invoiceURL = importBatchInvoiceURL()
         let cloudURL = URL(fileURLWithPath: "/tmp/iCloudOnly.pdf.icloud")
         let errorURL = URL(fileURLWithPath: "/tmp/unreadable.mov")
         let scanner = ImportFolderStaticFolderScanner(result: importFolderFolderScanResult(rows: [
@@ -206,7 +202,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
 
     @MainActor
     func testImportFolderFolderResultSummaryKeepsPerRowStatusesForFailureAndPendingRows() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let invoiceURL = importBatchInvoiceURL()
         let cloudURL = URL(fileURLWithPath: "/tmp/iCloudOnly.pdf.icloud")
         let scanner = ImportFolderStaticFolderScanner(result: importFolderFolderScanResult(rows: [
             importFolderLoadingRow(invoiceURL),
@@ -259,7 +255,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
 
     @MainActor
     func testImportFolderFolderCopyImportMapsCoreFailureWithoutStaticSuccess() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let invoiceURL = importBatchInvoiceURL()
         let scanner = ImportFolderStaticFolderScanner(result: ImportFolderScanResult(
             rows: [ImportFolderPreviewRow.loading(
                 fileURL: invoiceURL,
@@ -270,11 +266,9 @@ final class ImportFolderPreviewImportTests: XCTestCase {
             errors: []
         ))
         let predictor = ImportFolderRecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
+            .success(.importFolderPrediction(
                 category: "finance",
-                suggestedName: "Invoice_2026Q1.pdf",
-                reason: .keyword,
-                confidence: 0.9
+                suggestedName: "Invoice_2026Q1.pdf"
             ))
         ])
         let importer = ImportBatchSequenceBatchImporter(results: [
@@ -303,7 +297,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
 
     @MainActor
     func testImportFolderFolderCopyImportHonorsDropDestinationCategory() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let invoiceURL = importBatchInvoiceURL()
         let scanner = ImportFolderStaticFolderScanner(result: ImportFolderScanResult(
             rows: [ImportFolderPreviewRow.loading(
                 fileURL: invoiceURL,
@@ -314,11 +308,9 @@ final class ImportFolderPreviewImportTests: XCTestCase {
             errors: []
         ))
         let predictor = ImportFolderRecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
+            .success(.importFolderPrediction(
                 category: "finance",
-                suggestedName: "Invoice_2026Q1.pdf",
-                reason: .keyword,
-                confidence: 0.9
+                suggestedName: "Invoice_2026Q1.pdf"
             ))
         ])
         let importer = ImportBatchRecordingBatchImporter()
@@ -361,11 +353,9 @@ final class ImportFolderPreviewImportTests: XCTestCase {
             errors: []
         ))
         let predictor = ImportFolderRecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
+            .success(.importFolderPrediction(
                 category: "finance",
-                suggestedName: "indexed-reference.pdf",
-                reason: .keyword,
-                confidence: 0.9
+                suggestedName: "indexed-reference.pdf"
             ))
         ])
         let importer = ImportBatchRecordingBatchImporter()
@@ -408,8 +398,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
             errors: []
         ))
         let predictor = ImportFolderRecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
-                category: "docs",
+            .success(.importFolderPrediction(
                 suggestedName: "move-later.pdf",
                 reason: .extension,
                 confidence: 0.7

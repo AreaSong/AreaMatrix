@@ -67,6 +67,29 @@ extension AiPrivacyEvaluationReport {
         )
     }
 
+    static func remoteProviderConfigAIPrivacyFinanceFolderBlocked() -> AiPrivacyEvaluationReport {
+        AiPrivacyEvaluationReport(
+            decision: .skipped,
+            skippedReason: .privacyRule,
+            providerGateReason: nil,
+            matchedRules: [
+                AiPrivacyRuleMatch(
+                    ruleId: "rule-finance-folder",
+                    name: "Private finance folders",
+                    kind: .folder,
+                    pattern: "finance/private/",
+                    appliesTo: .remoteAi,
+                    matchedField: .repoRelativePath
+                )
+            ],
+            matchedFieldType: .repoRelativePath,
+            allowedFields: [],
+            blockedFields: [.fileName, .repoRelativePath, .extension],
+            sentFields: [],
+            message: "Matched by Folder: finance/private/"
+        )
+    }
+
     static func aiTagSuggestionPrivacyRuleBlocked() -> AiPrivacyEvaluationReport {
         AiPrivacyEvaluationReport(
             decision: .skipped,
@@ -111,6 +134,38 @@ extension AiPrivacyRulesSnapshot {
                 featureScope: featureScope
             ),
             updatedAt: 901,
+            remoteBlockedByDefault: true
+        )
+    }
+
+    static func remoteProviderConfigAIPrivacyRules(privacyGateEnabled: Bool) -> AiPrivacyRulesSnapshot {
+        AiPrivacyRulesSnapshot(
+            privacyGateEnabled: privacyGateEnabled,
+            rules: [
+                AiPrivacyRuleRecord(
+                    ruleId: "rule-finance-folder",
+                    name: "Private finance folders",
+                    kind: .folder,
+                    pattern: "finance/private/",
+                    appliesTo: .remoteAi,
+                    enabled: true,
+                    description: "Blocks finance folders from remote AI.",
+                    matchCount: 42,
+                    lastMatchedAt: 309
+                )
+            ],
+            remoteAllowedFields: [
+                AiPrivacyFieldState(field: .fileName, allowRemote: true, lastMatchedCount: 0),
+                AiPrivacyFieldState(field: .repoRelativePath, allowRemote: true, lastMatchedCount: 1),
+                AiPrivacyFieldState(field: .extension, allowRemote: true, lastMatchedCount: 0)
+            ],
+            providerScope: AiPrivacyProviderScopeSnapshot(
+                providerConfigured: true,
+                providerVerified: true,
+                remoteProviderEnabled: true,
+                featureScope: [.autoSummaries]
+            ),
+            updatedAt: 309,
             remoteBlockedByDefault: true
         )
     }

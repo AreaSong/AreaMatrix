@@ -55,7 +55,7 @@ final class DetailBatchAddTagsPageFeatureTests: XCTestCase {
     func testBatchAddTagsBatchAddTagsLoadsCandidatesAndAppliesThroughBatchAddTagsCoreCoreTagCRUD() async {
         let store = BatchAddTagsRecordingBatchTagStore(results: [
             .tagSet(.success(.batchAddTagsTagCatalogFixture(fileID: 31))),
-            .success(.batchAddTagsFixture())
+            .batchAdd(.success(.batchAddTagsFixture()))
         ])
         let catalog = await BatchTagCatalogAction.load(
             repoPath: "/tmp/repo",
@@ -122,7 +122,7 @@ final class DetailBatchAddTagsPageFeatureTests: XCTestCase {
         let mapping = CoreErrorMappingSnapshot.batchAddTagsTagDb()
         let mapper = StaticCoreErrorMapper(mapping: mapping)
         let store = BatchAddTagsRecordingBatchTagStore(results: [
-            .failure(CoreError.Db(message: "tag metadata locked"))
+            .batchAdd(.failure(CoreError.Db(message: "tag metadata locked")))
         ])
         let result = await BatchAddTagsAction.apply(
             repoPath: "/tmp/repo",
@@ -142,17 +142,16 @@ final class DetailBatchAddTagsPageFeatureTests: XCTestCase {
 }
 
 private actor BatchAddTagsRecordingBatchTagStore: CoreTagCRUD {
-    enum Result {
+    enum Step {
         case tagSet(Swift.Result<TagSetSnapshot, Error>)
-        case success(BatchMutationReportSnapshot)
-        case failure(Error)
+        case batchAdd(Swift.Result<BatchMutationReportSnapshot, Error>)
     }
 
-    private var results: [Result]
+    private var results: [Step]
     private var recordedListRequests: [String] = []
     private var recordedBatchRequests: [String] = []
 
-    init(results: [Result]) {
+    init(results: [Step]) {
         self.results = results
     }
 
@@ -186,10 +185,8 @@ private actor BatchAddTagsRecordingBatchTagStore: CoreTagCRUD {
         switch results.removeFirst() {
         case .tagSet:
             throw CoreError.Internal(message: "expected batch_add_tags result after list_tags")
-        case let .success(report):
-            return report
-        case let .failure(error):
-            throw error
+        case let .batchAdd(result):
+            return try result.get()
         }
     }
 

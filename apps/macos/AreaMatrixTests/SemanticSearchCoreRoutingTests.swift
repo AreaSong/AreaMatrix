@@ -21,7 +21,7 @@ final class SemanticSearchCoreRoutingTests: XCTestCase {
             fileDetailer: SemanticSearchDetailer(file: semanticFile),
             searchQuerying: normal,
             semanticSearching: semantic,
-            errorMapper: SemanticSearchErrorMapper()
+            errorMapper: StaticCoreErrorMapper(mapping: .semanticSearchFailure)
         )
 
         await model.runSearch(
@@ -57,7 +57,7 @@ final class SemanticSearchCoreRoutingTests: XCTestCase {
             fileDetailer: SemanticSearchDetailer(file: .semanticSearchFixture(id: 672)),
             searchQuerying: SemanticSearchNormalSearcher(),
             semanticSearching: semantic,
-            errorMapper: SemanticSearchErrorMapper()
+            errorMapper: StaticCoreErrorMapper(mapping: .semanticSearchFailure)
         )
 
         await model.runSearch(

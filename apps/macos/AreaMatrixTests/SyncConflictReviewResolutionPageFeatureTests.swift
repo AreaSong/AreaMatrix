@@ -12,7 +12,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
             repoPath: "/tmp/syncConflictReview-repo",
             conflictDetector: SyncConflictReviewDetector(result: .success([conflict])),
             conflictResolver: resolver,
-            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.load()
@@ -238,7 +238,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
     @MainActor
     func testSyncConflictReviewSyncConflictResolveCorePreviewAndApplyFailuresUseCoreErrorMapping() async {
         let mapper =
-            SyncConflictReviewRecordingErrorMapper(
+            StaticCoreErrorMapper(
                 mapping: .syncConflictReviewMapping(rawContext: "sync conflict locked")
             )
         let resolver = SyncConflictReviewResolver(
@@ -298,7 +298,7 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
             conflictID: "conflict-report",
             conflictDetector: detector,
             conflictResolver: resolver,
-            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
         )
         var resolvedReports: [SyncConflictResolveReportSnapshot] = []
         let view = SyncConflictReviewView(
@@ -326,7 +326,7 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
     @MainActor
     func testSyncConflictReviewPageIntegrationResolveFailureKeepsSheetCallbackUnfired() async {
         let mapper =
-            SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping(rawContext: "apply failed"))
+            StaticCoreErrorMapper(mapping: .syncConflictReviewMapping(rawContext: "apply failed"))
         let resolver = SyncConflictReviewResolver(
             previewResults: [.keepBoth: .success(.syncConflictReviewPreviewFixture(previewToken: "preview-token-144"))],
             resolveResult: .failure(CoreError.Conflict(path: "stale sync conflict"))
@@ -365,7 +365,7 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
             onImport: {},
             onDropImport: { _, _ in },
             fileLister: lister,
-            fileDetailer: MainListRecordingFileDetailer(results: [.success(docsFile)]),
+            fileDetailer: RecordingFileDetailer(results: [.success(docsFile)]),
             errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
@@ -422,8 +422,8 @@ private func assertSyncConflictReviewConfirmedReplacePanel(_ panelBody: Any) {
 @MainActor
 private func makeSyncConflictReviewModel(
     resolver: SyncConflictReviewResolver,
-    errorMapper: SyncConflictReviewRecordingErrorMapper =
-        SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
+    errorMapper: any CoreErrorMapping =
+        StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
 ) -> SyncConflictReviewModel {
     SyncConflictReviewModel(
         repoPath: "/tmp/syncConflictReview-repo",

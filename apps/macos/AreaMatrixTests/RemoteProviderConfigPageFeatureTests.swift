@@ -4,11 +4,11 @@ import XCTest
 final class RemoteProviderConfigFeatureTests: XCTestCase {
     @MainActor
     func testAIPrivacyRulesLoadsRemoteProviderConfigCoreProviderStatusForPrivacyRulesGate() async {
-        let bridge = RemoteProviderConfigBridge(initial: .aiPrivacyRulesRemoteProviderConfigured())
+        let bridge = RemoteProviderConfigBridge(initial: .remoteProviderConfigAIPrivacyRemoteProviderConfigured())
         let model = AIPrivacyRemoteProviderStateModel(
             repoPath: "/tmp/aiPrivacyRules",
             providerReader: bridge,
-            errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
+            errorMapper: StaticCoreErrorMapper(mapping: .remoteProviderConfigAIPrivacyRemoteProviderUnavailable())
         )
 
         await model.load()
@@ -25,9 +25,9 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
 
     @MainActor
     func testAIPrivacyRulesProviderStatusExplainsMissingVerificationAndDisabledProvider() async {
-        var unverified = RemoteProviderConfigState.aiPrivacyRulesRemoteProviderConfigured()
+        var unverified = RemoteProviderConfigState.remoteProviderConfigAIPrivacyRemoteProviderConfigured()
         unverified.providerVerified = false
-        await assertProviderStatus(
+        await assertAIPrivacyRemoteProviderStatus(
             unverified,
             status: "Remote provider needs connection test.",
             verified: "Connection test required",
@@ -36,9 +36,9 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
             allowsGate: false
         )
 
-        var disabled = RemoteProviderConfigState.aiPrivacyRulesRemoteProviderConfigured()
+        var disabled = RemoteProviderConfigState.remoteProviderConfigAIPrivacyRemoteProviderConfigured()
         disabled.remoteProviderEnabled = false
-        await assertProviderStatus(
+        await assertAIPrivacyRemoteProviderStatus(
             disabled,
             status: "Remote provider is disabled in AI settings.",
             verified: "Connection tested",
@@ -50,12 +50,11 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
 
     @MainActor
     func testAIPrivacyRulesProviderLoadFailureMapsCoreErrorWithoutMockingReadyState() async {
-        let bridge = FailingRemoteProviderReader(error: CoreError
-            .PermissionDenied(path: "remote provider"))
+        let bridge = RemoteProviderConfigBridge(loadError: CoreError.PermissionDenied(path: "remote provider"))
         let model = AIPrivacyRemoteProviderStateModel(
             repoPath: "/tmp/aiPrivacyRules",
             providerReader: bridge,
-            errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
+            errorMapper: StaticCoreErrorMapper(mapping: .remoteProviderConfigAIPrivacyRemoteProviderUnavailable())
         )
 
         await model.load()
@@ -79,16 +78,18 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
         let model = AISettingsModel(
             repoPath: "/tmp/aiPrivacyRules",
             loader: StaticAISettingsLoader(
-                snapshot: .aiPrivacyRulesRemoteReady(repoPath: "/tmp/aiPrivacyRules")
+                snapshot: .remoteProviderConfigAIPrivacyRemoteReady(repoPath: "/tmp/aiPrivacyRules")
             ),
             updater: updater,
-            errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
+            errorMapper: StaticCoreErrorMapper(mapping: .remoteProviderConfigAIPrivacyRemoteProviderUnavailable())
         )
-        let providerBridge = RemoteProviderConfigBridge(initial: .aiPrivacyRulesRemoteProviderConfigured())
+        let providerBridge = RemoteProviderConfigBridge(
+            initial: .remoteProviderConfigAIPrivacyRemoteProviderConfigured()
+        )
         let providerModel = AIPrivacyRemoteProviderStateModel(
             repoPath: "/tmp/aiPrivacyRules",
             providerReader: providerBridge,
-            errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
+            errorMapper: StaticCoreErrorMapper(mapping: .remoteProviderConfigAIPrivacyRemoteProviderUnavailable())
         )
 
         await model.load()
@@ -108,12 +109,14 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
 
     @MainActor
     func testAIPrivacyRulesAIPrivacyRulesCoreLoadsPrivacyRulesSnapshotFromCoreBridge() async {
-        let bridge = RemotePrivacyRulesBridge(snapshot: .aiPrivacyRulesPrivacyRules(privacyGateEnabled: true))
+        let bridge = RemotePrivacyRulesBridge(
+            snapshot: .remoteProviderConfigAIPrivacyRules(privacyGateEnabled: true)
+        )
         let model = AIPrivacyRulesModel(
             repoPath: "/tmp/aiPrivacyRules",
             rulesManager: bridge,
             evaluator: bridge,
-            errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
+            errorMapper: StaticCoreErrorMapper(mapping: .remoteProviderConfigAIPrivacyRemoteProviderUnavailable())
         )
 
         await model.load()
@@ -127,12 +130,14 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
 
     @MainActor
     func testAIPrivacyRulesAIPrivacyRulesCoreUpdatesPrivacyGateAndFieldFiltersWithoutProviderDisable() async {
-        let bridge = RemotePrivacyRulesBridge(snapshot: .aiPrivacyRulesPrivacyRules(privacyGateEnabled: true))
+        let bridge = RemotePrivacyRulesBridge(
+            snapshot: .remoteProviderConfigAIPrivacyRules(privacyGateEnabled: true)
+        )
         let model = AIPrivacyRulesModel(
             repoPath: "/tmp/aiPrivacyRules",
             rulesManager: bridge,
             evaluator: bridge,
-            errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
+            errorMapper: StaticCoreErrorMapper(mapping: .remoteProviderConfigAIPrivacyRemoteProviderUnavailable())
         )
 
         await model.load()
@@ -150,14 +155,14 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
     @MainActor
     func testAIPrivacyRulesAIPrivacyRulesCoreEvaluatesTestRulesWithCurrentSnapshot() async {
         let bridge = RemotePrivacyRulesBridge(
-            snapshot: .aiPrivacyRulesPrivacyRules(privacyGateEnabled: true),
-            evaluationReport: .aiPrivacyRulesFinanceFolderBlocked()
+            snapshot: .remoteProviderConfigAIPrivacyRules(privacyGateEnabled: true),
+            evaluationReport: .remoteProviderConfigAIPrivacyFinanceFolderBlocked()
         )
         let model = AIPrivacyRulesModel(
             repoPath: "/tmp/aiPrivacyRules",
             rulesManager: bridge,
             evaluator: bridge,
-            errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
+            errorMapper: StaticCoreErrorMapper(mapping: .remoteProviderConfigAIPrivacyRemoteProviderUnavailable())
         )
 
         await model.load()
@@ -171,181 +176,5 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
         XCTAssertEqual(requests.evaluations[0].requestedFields, [.fileName, .repoRelativePath, .extension])
         XCTAssertEqual(model.evaluation?.decision, .skipped)
         XCTAssertEqual(model.evaluation?.matchedRules.first?.ruleId, "rule-finance-folder")
-    }
-
-    @MainActor
-    // swiftlint:disable:next function_parameter_count
-    private func assertProviderStatus(
-        _ snapshot: RemoteProviderConfigState,
-        status: String,
-        verified: String,
-        enabled: String,
-        scope: String,
-        allowsGate: Bool,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) async {
-        let model = AIPrivacyRemoteProviderStateModel(
-            repoPath: "/tmp/aiPrivacyRules",
-            providerReader: RemoteProviderConfigBridge(initial: snapshot),
-            errorMapper: AIPrivacyRulesRemoteProviderErrorMapper()
-        )
-
-        await model.load()
-
-        XCTAssertEqual(model.providerStatusText, status, file: file, line: line)
-        XCTAssertEqual(model.verifiedStatusText, verified, file: file, line: line)
-        XCTAssertEqual(model.enabledStatusText, enabled, file: file, line: line)
-        XCTAssertEqual(model.featureScopeText, scope, file: file, line: line)
-        XCTAssertEqual(model.allowsPrivacyGateEnable, allowsGate, file: file, line: line)
-    }
-}
-
-private actor FailingRemoteProviderReader: CoreRemoteProviderConfiguring {
-    let error: CoreError
-
-    init(error: CoreError) {
-        self.error = error
-    }
-
-    func loadRemoteProviderConfig(repoPath _: String) async throws -> RemoteProviderConfigState {
-        throw error
-    }
-
-    func testRemoteProvider(
-        repoPath _: String,
-        request _: RemoteProviderTestRequestState
-    ) async throws -> RemoteProviderTestResultState {
-        throw error
-    }
-
-    func enableRemoteProvider(
-        repoPath _: String,
-        request _: RemoteProviderEnableRequestState
-    ) async throws -> RemoteProviderConfigState {
-        throw error
-    }
-
-    func disableRemoteProvider(
-        repoPath _: String,
-        request _: RemoteProviderDisableRequestState
-    ) async throws -> RemoteProviderConfigState {
-        throw error
-    }
-}
-
-private actor AIPrivacyRulesRemoteProviderErrorMapper: CoreErrorMapping {
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .permissionDenied,
-            userMessage: "Remote provider unavailable",
-            severity: .medium,
-            suggestedAction: "Configure remote AI",
-            recoverability: .userActionRequired,
-            rawContext: "ai-privacy-rules remote-provider-config-core"
-        )
-    }
-}
-
-private extension RemoteProviderConfigState {
-    static func aiPrivacyRulesRemoteProviderConfigured() -> RemoteProviderConfigState {
-        RemoteProviderConfigState(
-            providerConfigured: true,
-            providerVerified: true,
-            remoteProviderEnabled: true,
-            provider: .openAi,
-            modelID: "gpt-4.1-mini",
-            endpointURL: nil,
-            credentialConfigured: true,
-            featureScope: [.autoSummaries, .semanticSearch],
-            updatedAt: 309,
-            disabledReason: nil
-        )
-    }
-}
-
-private extension AISettingsSnapshot {
-    static func aiPrivacyRulesRemoteReady(repoPath: String) -> AISettingsSnapshot {
-        aiPrivacyRulesSnapshot(config: AISettingsConfigSnapshot(
-            repoPath: repoPath,
-            aiEnabled: true,
-            providerPreference: .remoteFirst,
-            localAIEnabled: true,
-            remoteAIAllowed: true,
-            privacyGateEnabled: true,
-            privacyPolicyRef: "Default gate policy",
-            featureToggles: [
-                AISettingsFeatureConfigSnapshot(feature: .autoSummaries, enabled: true, allowRemote: true),
-                AISettingsFeatureConfigSnapshot(feature: .semanticSearch, enabled: true, allowRemote: true)
-            ]
-        ))
-    }
-
-    static func aiPrivacyRulesSnapshot(config: AISettingsConfigSnapshot) -> AISettingsSnapshot {
-        let normalized = config.normalized()
-        return AISettingsSnapshot(
-            config: normalized,
-            capabilities: AISettingsCapabilitySnapshot.derived(from: normalized),
-            updatedAt: 309
-        )
-    }
-}
-
-private extension AiPrivacyRulesSnapshot {
-    static func aiPrivacyRulesPrivacyRules(privacyGateEnabled: Bool) -> AiPrivacyRulesSnapshot {
-        AiPrivacyRulesSnapshot(
-            privacyGateEnabled: privacyGateEnabled,
-            rules: [
-                AiPrivacyRuleRecord(
-                    ruleId: "rule-finance-folder",
-                    name: "Private finance folders",
-                    kind: .folder,
-                    pattern: "finance/private/",
-                    appliesTo: .remoteAi,
-                    enabled: true,
-                    description: "Blocks finance folders from remote AI.",
-                    matchCount: 42,
-                    lastMatchedAt: 309
-                )
-            ],
-            remoteAllowedFields: [
-                AiPrivacyFieldState(field: .fileName, allowRemote: true, lastMatchedCount: 0),
-                AiPrivacyFieldState(field: .repoRelativePath, allowRemote: true, lastMatchedCount: 1),
-                AiPrivacyFieldState(field: .extension, allowRemote: true, lastMatchedCount: 0)
-            ],
-            providerScope: AiPrivacyProviderScopeSnapshot(
-                providerConfigured: true,
-                providerVerified: true,
-                remoteProviderEnabled: true,
-                featureScope: [.autoSummaries]
-            ),
-            updatedAt: 309,
-            remoteBlockedByDefault: true
-        )
-    }
-}
-
-private extension AiPrivacyEvaluationReport {
-    static func aiPrivacyRulesFinanceFolderBlocked() -> AiPrivacyEvaluationReport {
-        AiPrivacyEvaluationReport(
-            decision: .skipped,
-            skippedReason: .privacyRule,
-            providerGateReason: nil,
-            matchedRules: [
-                AiPrivacyRuleMatch(
-                    ruleId: "rule-finance-folder",
-                    name: "Private finance folders",
-                    kind: .folder,
-                    pattern: "finance/private/",
-                    appliesTo: .remoteAi,
-                    matchedField: .repoRelativePath
-                )
-            ],
-            matchedFieldType: .repoRelativePath,
-            allowedFields: [],
-            blockedFields: [.fileName, .repoRelativePath, .extension],
-            sentFields: [],
-            message: "Matched by Folder: finance/private/"
-        )
     }
 }

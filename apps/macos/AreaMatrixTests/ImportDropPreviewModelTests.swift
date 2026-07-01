@@ -4,15 +4,8 @@ import XCTest
 final class ImportDropPreviewModelTests: XCTestCase {
     @MainActor
     func testAutoClassifyHoverCallsInjectedCoreCategoryPredictor() async {
-        let sourceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let predictor = ImportDropRecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
-                category: "finance",
-                suggestedName: "Invoice_2026Q1.pdf",
-                reason: .keyword,
-                confidence: 0.9
-            ))
-        ])
+        let sourceURL = importBatchInvoiceURL()
+        let predictor = ImportDropRecordingPredictor(result: importDropInvoicePrediction())
         let model = ImportDropPreviewModel(repoPath: "/tmp/repo", predictor: predictor)
 
         await model.preview(target: .autoClassify, urls: [sourceURL])
@@ -45,15 +38,8 @@ final class ImportDropPreviewModelTests: XCTestCase {
 
     @MainActor
     func testExplicitSidebarCategoryDoesNotRunAutoClassifyPreview() async {
-        let sourceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let predictor = ImportDropRecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
-                category: "finance",
-                suggestedName: "Invoice_2026Q1.pdf",
-                reason: .keyword,
-                confidence: 0.9
-            ))
-        ])
+        let sourceURL = importBatchInvoiceURL()
+        let predictor = ImportDropRecordingPredictor(result: importDropInvoicePrediction())
         let model = ImportDropPreviewModel(repoPath: "/tmp/repo", predictor: predictor)
 
         await model.preview(target: .category("docs"), urls: [sourceURL])
@@ -126,4 +112,13 @@ final class ImportDropPreviewModelTests: XCTestCase {
         XCTAssertEqual(contracts.importDropTarget, .category("finance"))
         XCTAssertEqual(finance.importDropTarget.sidebarHelp, "Import into \"finance\"")
     }
+}
+
+private func importDropInvoicePrediction() -> ClassifyResultSnapshot {
+    .importSingleFileFixture(
+        category: "finance",
+        suggestedName: "Invoice_2026Q1.pdf",
+        reason: .keyword,
+        confidence: 0.9
+    )
 }

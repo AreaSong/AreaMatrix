@@ -59,7 +59,7 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
             fileDetailer: SemanticSearchPageDetailer(file: firstSemantic),
             searchQuerying: SemanticSearchPageNormalSearcher(),
             semanticSearching: searcher,
-            errorMapper: SemanticSearchPageErrorMapper()
+            errorMapper: StaticCoreErrorMapper(mapping: .semanticSearchPageFailure)
         )
 
         await model.runSearch(
@@ -95,7 +95,7 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
             fileDetailer: SemanticSearchPageDetailer(file: .semanticSearchPageFile(id: 8707)),
             searchQuerying: SemanticSearchPageNormalSearcher(),
             semanticSearching: searcher,
-            errorMapper: SemanticSearchPageErrorMapper()
+            errorMapper: StaticCoreErrorMapper(mapping: .semanticSearchPageFailure)
         )
 
         await model.runSearch(

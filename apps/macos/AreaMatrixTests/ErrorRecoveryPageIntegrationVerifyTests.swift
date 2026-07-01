@@ -10,7 +10,7 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
             recoverability: .retryable,
             rawContext: "database is locked"
         )
-        let recoverer = MainLoadingRecordingStartupRecoverer(results: [
+        let recoverer = RecordingCoreStartupRecoverer(results: [
             .failure(CoreError.Db(message: "database is locked")),
             .success(RecoveryReportSnapshot(cleanedStagingFiles: 1, revertedStagingDbRows: 1, warnings: []))
         ])
@@ -63,7 +63,7 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
             recoverability: .fatal,
             rawContext: "database corrupted"
         )
-        let recoverer = MainLoadingRecordingStartupRecoverer(
+        let recoverer = RecordingCoreStartupRecoverer(
             result: .failure(CoreError.Db(message: "database corrupted"))
         )
         let model = OnboardingModel(
@@ -103,7 +103,7 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
 private func assertStartupRecoveryRetryingState(
     model: OnboardingModel,
     opener: MainLoadingPausingRepositoryOpener,
-    recoverer: MainLoadingRecordingStartupRecoverer
+    recoverer: RecordingCoreStartupRecoverer
 ) async -> Task<Void, Never> {
     let retryTask = Task {
         await model.retryMainRepositoryFromError(repoPath: "/tmp/startupRecovery-repo")

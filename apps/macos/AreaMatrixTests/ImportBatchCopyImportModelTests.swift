@@ -109,10 +109,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
 
     @MainActor
     func testBatchCopyImportUsesRealImporterForEachPreviewedFile() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
-        let rows = importBatchReadyBatchRows(invoiceURL: invoiceURL, contractURL: contractURL)
-        let request = importBatchBatchRequest(urls: [invoiceURL, contractURL])
+        let fixture = importBatchStandardBatchFixture()
         let importer = ImportBatchRecordingBatchImporter()
         let importModel = ImportBatchCopyImportModel(
             importer: importer,
@@ -120,7 +117,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         )
         var progressSnapshots: [ImportBatchProgressSnapshot] = []
 
-        importModel.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
+        importModel.applyPreviewRows(fixture.rows, request: fixture.request, selectedDestination: .autoClassify)
         let outcome = await importModel.importReadyFiles(selectedDestination: .autoClassify) { progress in
             progressSnapshots.append(progress)
         }
@@ -159,10 +156,9 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
 
     @MainActor
     func testBatchCopyImportMapsPermissionDeniedWithoutStaticSuccess() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
+        let fixture = importBatchStandardBatchFixture(destination: .category("finance"))
         let importer = ImportBatchSequenceBatchImporter(results: [
-            .failure(CoreError.PermissionDenied(path: "/tmp/Invoice_2026Q1.pdf")),
+            .failure(CoreError.PermissionDenied(path: fixture.invoiceURL.path)),
             .success(.importSingleFileFixture(currentName: "2026Q1_合同.pdf", category: "docs"))
         ])
         let errorMapper = RecordingCoreErrorMapper.importSingleFile()
@@ -170,14 +166,9 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
             importer: importer,
             errorMapper: errorMapper
         )
-        let rows = importBatchReadyBatchRows(invoiceURL: invoiceURL, contractURL: contractURL)
-        let request = importBatchBatchRequest(
-            destination: .category("finance"),
-            urls: [invoiceURL, contractURL]
-        )
         var progressSnapshots: [ImportBatchProgressSnapshot] = []
 
-        model.applyPreviewRows(rows, request: request, selectedDestination: .category("finance"))
+        model.applyPreviewRows(fixture.rows, request: fixture.request, selectedDestination: .category("finance"))
         let outcome = await model.importReadyFiles(selectedDestination: .category("finance")) { progress in
             progressSnapshots.append(progress)
         }
@@ -208,10 +199,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
 
     @MainActor
     func testBatchCopyImportPersistsAndClearsUnfinishedSession() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
-        let rows = importBatchReadyBatchRows(invoiceURL: invoiceURL, contractURL: contractURL)
-        let request = importBatchBatchRequest(urls: [invoiceURL, contractURL])
+        let fixture = importBatchStandardBatchFixture()
         let store = RecordingImportBatchSessionStore()
         let importer = ImportBatchRecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
@@ -220,27 +208,26 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
             sessionStore: store
         )
 
-        model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
+        model.applyPreviewRows(fixture.rows, request: fixture.request, selectedDestination: .autoClassify)
         _ = await model.importReadyFiles(selectedDestination: .autoClassify)
         let savedSessions = await store.savedSessions()
         let clearedRepoPaths = await store.clearedRepoPaths()
 
-        XCTAssertEqual(savedSessions.first?.repoPath, "/tmp/repo")
+        XCTAssertEqual(savedSessions.first?.repoPath, importBatchRepoPath())
         XCTAssertEqual(savedSessions.first?.completed, 0)
         XCTAssertEqual(savedSessions.first?.total, 2)
         XCTAssertEqual(savedSessions.last?.completed, 2)
         XCTAssertEqual(savedSessions.last?.items.map(\.phase), [.done, .done])
-        XCTAssertEqual(clearedRepoPaths, ["/tmp/repo"])
+        XCTAssertEqual(clearedRepoPaths, [importBatchRepoPath()])
     }
 
     @MainActor
     func testBatchCopyImportKeepsUnfinishedSessionAfterFatalStop() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
+        let fixture = importBatchStandardBatchFixture()
         let pendingURL = URL(fileURLWithPath: "/tmp/Pending.pdf")
-        let rows = importBatchReadyBatchRows(invoiceURL: invoiceURL, contractURL: contractURL)
+        let rows = fixture.rows
             + [importBatchReadyBatchRow(url: pendingURL, suggestedName: "Pending.pdf")]
-        let request = importBatchBatchRequest(urls: [invoiceURL, contractURL, pendingURL])
+        let request = importBatchBatchRequest(urls: fixture.urls + [pendingURL])
         let store = RecordingImportBatchSessionStore()
         let importer = ImportBatchSequenceBatchImporter(results: [
             .success(.importSingleFileFixture(currentName: "Invoice_2026Q1.pdf", category: "finance")),
@@ -248,7 +235,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         ])
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportProgressImportSessionFatalMapper(),
+            errorMapper: importProgressImportSessionFatalMapper(),
             sessionStore: store
         )
 
@@ -257,7 +244,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         let savedSessions = await store.savedSessions()
         let clearedRepoPaths = await store.clearedRepoPaths()
 
-        XCTAssertEqual(outcome?.fatalRetryContext?.sourcePath, contractURL.path)
+        XCTAssertEqual(outcome?.fatalRetryContext?.sourcePath, fixture.contractURL.path)
         XCTAssertEqual(savedSessions.last?.completed, 1)
         XCTAssertEqual(savedSessions.last?.failed, 1)
         XCTAssertEqual(savedSessions.last?.total, 3)
@@ -267,7 +254,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
 
     @MainActor
     func testBatchCopyImportClearsSessionWhenFatalFailureConsumesQueue() async {
-        let sourceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let sourceURL = importBatchInvoiceURL()
         let row = importBatchReadyBatchRow(url: sourceURL)
         let request = importBatchBatchRequest(urls: [sourceURL])
         let store = RecordingImportBatchSessionStore()
@@ -276,7 +263,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         ])
         let model = ImportBatchCopyImportModel(
             importer: importer,
-            errorMapper: ImportProgressImportSessionFatalMapper(),
+            errorMapper: importProgressImportSessionFatalMapper(),
             sessionStore: store
         )
 
@@ -289,14 +276,14 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         XCTAssertEqual(savedSessions.last?.completed, 0)
         XCTAssertEqual(savedSessions.last?.failed, 1)
         XCTAssertEqual(savedSessions.last?.items.map(\.phase), [.failed])
-        XCTAssertEqual(clearedRepoPaths, ["/tmp/repo"])
+        XCTAssertEqual(clearedRepoPaths, [importBatchRepoPath()])
     }
 }
 
 final class ImportBatchStorageModeTests: XCTestCase {
     @MainActor
     func testBatchMoveAndIndexOnlyUseRealCoreImportModes() async {
-        let sourceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let sourceURL = importBatchInvoiceURL()
         let rows = [importBatchReadyBatchRow(url: sourceURL)]
         let request = importBatchBatchRequest(urls: [sourceURL])
         let importer = ImportBatchRecordingBatchImporter()
@@ -339,18 +326,15 @@ final class ImportBatchStorageModeTests: XCTestCase {
 
     @MainActor
     func testBatchCopyImportUsesPerRowCategoryOverrideForAutoClassify() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
-        let rows = importBatchReadyBatchRows(invoiceURL: invoiceURL, contractURL: contractURL)
-        let request = importBatchBatchRequest(urls: [invoiceURL, contractURL])
+        let fixture = importBatchStandardBatchFixture()
         let importer = ImportBatchRecordingBatchImporter()
         let model = ImportBatchCopyImportModel(
             importer: importer,
             errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
 
-        model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
-        model.updateCategoryOverride(for: rows[1].id, category: "media")
+        model.applyPreviewRows(fixture.rows, request: fixture.request, selectedDestination: .autoClassify)
+        model.updateCategoryOverride(for: fixture.rows[1].id, category: "media")
         XCTAssertEqual(model.rows[1].displayCategory(for: .autoClassify), "media")
         XCTAssertEqual(model.targetRelativePath(for: model.rows[1], destination: .autoClassify), "media/2026Q1_合同.pdf")
 
@@ -375,24 +359,10 @@ final class ImportBatchStorageModeTests: XCTestCase {
 
     @MainActor
     func testBatchCopyImportPreservesPerRowCategoryOverrideAcrossPreviewReapply() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let rows = [
-            ImportBatchPreviewRow.ready(
-                url: invoiceURL,
-                prediction: ClassifyResultSnapshot(
-                    category: "finance",
-                    suggestedName: "Invoice_2026Q1.pdf",
-                    reason: .keyword,
-                    confidence: 0.9
-                )
-            )
-        ]
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .dropZone,
-            destination: .autoClassify,
+        let invoiceURL = importBatchInvoiceURL()
+        let rows = [importBatchReadyBatchRow(url: invoiceURL)]
+        let request = importBatchBatchRequest(
             urls: [invoiceURL],
-            kind: .multipleItems(1),
             availableCategories: ["inbox", "finance", "docs"]
         )
         let importer = ImportBatchRecordingBatchImporter()
@@ -419,45 +389,15 @@ final class ImportBatchStorageModeTests: XCTestCase {
     }
 }
 
-private actor RecordingImportBatchSessionStore: ImportBatchSessionPersisting {
-    private var saved: [ImportBatchSessionSnapshot] = []
-    private var cleared: [String] = []
-    private var sessionsByRepoPath: [String: ImportBatchSessionSnapshot] = [:]
-
-    func saveSession(_ session: ImportBatchSessionSnapshot) async {
-        saved.append(session)
-        sessionsByRepoPath[session.repoPath] = session
-    }
-
-    func loadSession(repoPath: String) async -> ImportBatchSessionSnapshot? {
-        sessionsByRepoPath[repoPath]
-    }
-
-    func clearSession(repoPath: String) async {
-        cleared.append(repoPath)
-        sessionsByRepoPath[repoPath] = nil
-    }
-
-    func savedSessions() -> [ImportBatchSessionSnapshot] {
-        saved
-    }
-
-    func clearedRepoPaths() -> [String] {
-        cleared
-    }
-}
-
-private actor ImportProgressImportSessionFatalMapper: CoreErrorMapping {
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .io,
-            userMessage: "文件读写失败",
-            severity: .critical,
-            suggestedAction: "AreaMatrix 会保留已完成项并允许查看未完成结果。",
-            recoverability: .fatal,
-            rawContext: "import-progress import session fatal"
-        )
-    }
+private func importProgressImportSessionFatalMapper() -> StaticCoreErrorMapper {
+    StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot(
+        kind: .io,
+        userMessage: "文件读写失败",
+        severity: .critical,
+        suggestedAction: "AreaMatrix 会保留已完成项并允许查看未完成结果。",
+        recoverability: .fatal,
+        rawContext: "import-progress import session fatal"
+    ))
 }
 
 private func importProgressProgressItem(

@@ -9,7 +9,7 @@ func classifierSettingsRecoveryModel(
 ) async -> ClassifierSettingsModel {
     let model = ClassifierSettingsModel(
         repoPath: repoURL.path,
-        loader: ClassifierSettingsRecoveryLoader(config: .classifierRecoveryFixture(repoPath: repoURL.path)),
+        loader: StaticConfigurationLoader(config: .classifierRecoveryFixture(repoPath: repoURL.path)),
         updater: NoopConfigurationUpdater(),
         predictor: predictor,
         ruleEditor: editor,
@@ -20,33 +20,27 @@ func classifierSettingsRecoveryModel(
     return model
 }
 
-enum ClassifierSequencePredictorResult {
-    case success(ClassifyResultSnapshot)
-    case failure(Error)
-}
-
 actor ClassifierSettingsSequencePredictor: CoreCategoryPredicting {
     struct Request: Equatable {
         var repoPath: String
         var filename: String
     }
 
-    private var results: [ClassifierSequencePredictorResult]
+    private var results: [Swift.Result<ClassifyResultSnapshot, Error>]
     private var requestsStorage: [Request] = []
 
-    init(results: [ClassifierSequencePredictorResult] = [.success(classifierRecoveryProbeResult())]) {
+    init(
+        results: [Swift.Result<ClassifyResultSnapshot, Error>] = [
+            .success(classifierSettingsValidationProbeResult())
+        ]
+    ) {
         self.results = results
     }
 
     func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
         requestsStorage.append(Request(repoPath: repoPath, filename: filename))
-        let result = results.isEmpty ? .success(classifierRecoveryProbeResult()) : results.removeFirst()
-        switch result {
-        case let .success(value):
-            return value
-        case let .failure(error):
-            throw error
-        }
+        let result = results.isEmpty ? .success(classifierSettingsValidationProbeResult()) : results.removeFirst()
+        return try result.get()
     }
 
     func requests() -> [Request] {
@@ -54,26 +48,21 @@ actor ClassifierSettingsSequencePredictor: CoreCategoryPredicting {
     }
 }
 
-enum ClassifierRuleEditorResult {
-    case success(ClassifierRuleEditorSnapshotState)
-    case failure(Error)
-}
-
 actor ClassifierSettingsRecordingRuleEditor: CoreClassifierRuleEditing {
     typealias CreateRequest = (repoPath: String, request: ClassifierRuleCreateRequestSnapshot)
     typealias UpdateRequest = (repoPath: String, request: ClassifierRuleUpdateSnapshot)
     typealias DeleteRequest = (repoPath: String, request: ClassifierRuleDeleteRequestSnapshot)
 
-    private let listResult: ClassifierRuleEditorResult
-    private let mutationResult: ClassifierRuleEditorResult
+    private let listResult: Swift.Result<ClassifierRuleEditorSnapshotState, Error>
+    private let mutationResult: Swift.Result<ClassifierRuleEditorSnapshotState, Error>
     private var listRequestsStorage: [String] = []
     private var createRequestsStorage: [CreateRequest] = []
     private var updateRequestsStorage: [UpdateRequest] = []
     private var deleteRequestsStorage: [DeleteRequest] = []
 
     init(
-        listResult: ClassifierRuleEditorResult = .success(.classifierEditorFixture()),
-        mutationResult: ClassifierRuleEditorResult = .success(.classifierEditorFixture())
+        listResult: Swift.Result<ClassifierRuleEditorSnapshotState, Error> = .success(.classifierEditorFixture()),
+        mutationResult: Swift.Result<ClassifierRuleEditorSnapshotState, Error> = .success(.classifierEditorFixture())
     ) {
         self.listResult = listResult
         self.mutationResult = mutationResult
@@ -124,25 +113,9 @@ actor ClassifierSettingsRecordingRuleEditor: CoreClassifierRuleEditing {
         deleteRequestsStorage
     }
 
-    private func resolve(_ result: ClassifierRuleEditorResult) throws -> ClassifierRuleEditorSnapshotState {
-        switch result {
-        case let .success(snapshot):
-            return snapshot
-        case let .failure(error):
-            throw error
-        }
-    }
-}
-
-actor ClassifierSettingsRecoveryLoader: CoreConfigurationLoading {
-    private let config: RepoConfigSnapshot
-
-    init(config: RepoConfigSnapshot) {
-        self.config = config
-    }
-
-    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
-        config
+    private func resolve(_ result: Swift.Result<ClassifierRuleEditorSnapshotState, Error>)
+        throws -> ClassifierRuleEditorSnapshotState {
+        try result.get()
     }
 }
 
@@ -157,8 +130,76 @@ actor ClassifierSettingsRecoveryErrorMapper: CoreErrorMapping {
     }
 }
 
-extension CoreErrorMappingSnapshot {
-    static func classifierRecoveryMapping(
+final class ClassifierSettingsTestRulesManager: ClassifierRulesManaging {
+    private let fileManager = FileManager.default
+
+    func classifierFileExists(repoPath: String) -> Bool {
+        fileManager.fileExists(atPath: classifierFileURL(repoPath: repoPath).path)
+    }
+
+    func classifierCategorySlugs(repoPath: String) throws -> [String] {
+        let yaml = try String(contentsOf: classifierFileURL(repoPath: repoPath), encoding: .utf8)
+        return ClassifierRulesCategorySlugParser.slugs(in: yaml)
+    }
+
+    func lastValidBackupExists(repoPath: String) -> Bool {
+        fileManager.fileExists(atPath: lastValidBackupFileURL(repoPath: repoPath).path)
+    }
+
+    func createDefaultClassifier(repoPath _: String) throws {}
+
+    func storeLastValidBackup(repoPath: String) throws {
+        let yaml = try String(contentsOf: classifierFileURL(repoPath: repoPath), encoding: .utf8)
+        try yaml.write(to: lastValidBackupFileURL(repoPath: repoPath), atomically: true, encoding: .utf8)
+    }
+
+    func restoreLastValidBackup(repoPath: String) throws {
+        let yaml = try String(contentsOf: lastValidBackupFileURL(repoPath: repoPath), encoding: .utf8)
+        try yaml.write(to: classifierFileURL(repoPath: repoPath), atomically: true, encoding: .utf8)
+    }
+
+    func writeClassifier(repoURL: URL, slugs: [String]) throws {
+        let yaml = """
+        version: 1
+        default: inbox
+        categories:
+        \(slugs.map { "  - slug: \($0)" }.joined(separator: "\n"))
+        """
+        let metadataURL = repoURL.appendingPathComponent(".areamatrix", isDirectory: true)
+        try fileManager.createDirectory(at: metadataURL, withIntermediateDirectories: true)
+        try yaml.write(to: classifierFileURL(repoPath: repoURL.path), atomically: true, encoding: .utf8)
+    }
+
+    private func classifierFileURL(repoPath: String) -> URL {
+        classifierURL(repoURL: URL(fileURLWithPath: repoPath, isDirectory: true))
+    }
+
+    private func lastValidBackupFileURL(repoPath: String) -> URL {
+        lastValidBackupURL(repoURL: URL(fileURLWithPath: repoPath, isDirectory: true))
+    }
+}
+
+extension RecordingCoreErrorMapper {
+    static func classifierSettings() -> RecordingCoreErrorMapper {
+        RecordingCoreErrorMapper { error in
+            switch error {
+            case .Db:
+                .classifierSettingsMapping(kind: .db, userMessage: "数据库错误")
+            case let .Config(reason):
+                .classifierSettingsMapping(kind: .config, userMessage: "分类规则无效：\(reason)")
+            case let .Classify(reason):
+                .classifierSettingsMapping(kind: .classify, userMessage: "无法预览分类：\(reason)")
+            case .PermissionDenied:
+                .classifierSettingsMapping(kind: .permissionDenied, userMessage: "无访问权限")
+            default:
+                .classifierSettingsMapping(kind: .internal, userMessage: "保存失败")
+            }
+        }
+    }
+}
+
+private extension CoreErrorMappingSnapshot {
+    static func classifierSettingsMapping(
         kind: CoreErrorKindSnapshot,
         userMessage: String
     ) -> CoreErrorMappingSnapshot {
@@ -166,91 +207,9 @@ extension CoreErrorMappingSnapshot {
             kind: kind,
             userMessage: userMessage,
             severity: .medium,
-            suggestedAction: "Open classifier.yaml",
-            recoverability: .userActionRequired,
+            suggestedAction: "Retry save",
+            recoverability: .retryable,
             rawContext: kind.rawValue
         )
     }
-}
-
-extension RepoConfigSnapshot {
-    static func classifierRecoveryFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "system",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
-    }
-}
-
-extension ClassifierRuleEditorSnapshotState {
-    static func classifierEditorFixture(updatedRuleID: String? = nil) -> ClassifierRuleEditorSnapshotState {
-        ClassifierRuleEditorSnapshotState(
-            rules: [
-                ClassifierRuleRecordSnapshot(
-                    ruleID: "docs",
-                    slug: "docs",
-                    displayName: "Documents",
-                    description: "Docs",
-                    extensions: ["md"],
-                    keywords: ["report"],
-                    priority: 0,
-                    namingTemplate: nil,
-                    isDefault: true
-                ),
-                ClassifierRuleRecordSnapshot(
-                    ruleID: "finance",
-                    slug: "finance",
-                    displayName: "Finance",
-                    description: "Finance docs",
-                    extensions: ["pdf"],
-                    keywords: [],
-                    priority: 10,
-                    namingTemplate: nil,
-                    isDefault: false
-                )
-            ],
-            defaultRuleID: "docs",
-            updatedRuleID: updatedRuleID,
-            warning: nil
-        )
-    }
-}
-
-func classifierRecoveryProbeResult() -> ClassifyResultSnapshot {
-    ClassifyResultSnapshot(
-        category: "inbox",
-        suggestedName: "AreaMatrixValidationProbe.txt",
-        reason: .default,
-        confidence: 0
-    )
-}
-
-func temporaryClassifierRecoveryRepo() throws -> URL {
-    try makeTestTemporaryDirectory(named: "AreaMatrixClassifierRecovery")
-}
-
-func classifierURL(repoURL: URL) -> URL {
-    repoURL
-        .appendingPathComponent(".areamatrix", isDirectory: true)
-        .appendingPathComponent("classifier.yaml", isDirectory: false)
-}
-
-func lastValidBackupURL(repoURL: URL) -> URL {
-    repoURL
-        .appendingPathComponent(".areamatrix", isDirectory: true)
-        .appendingPathComponent("classifier.last-valid.yaml", isDirectory: false)
-}
-
-func writeClassifier(_ content: String, repoURL: URL) throws {
-    let metadataURL = repoURL.appendingPathComponent(".areamatrix", isDirectory: true)
-    try FileManager.default.createDirectory(at: metadataURL, withIntermediateDirectories: true)
-    try content.write(to: classifierURL(repoURL: repoURL), atomically: true, encoding: .utf8)
 }

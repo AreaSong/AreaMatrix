@@ -71,43 +71,7 @@ actor AITagSuggestionBatchAITagBridge: CoreAITagSuggestionManaging {
     }
 }
 
-actor AITagSuggestionAISettingsLoader: CoreAISettingsLoading {
-    private let snapshot: AISettingsSnapshot
-    private var recordedRepoPaths: [String] = []
-
-    init(aiEnabled: Bool = true, autoTagsEnabled: Bool = true) {
-        let config = AISettingsConfigSnapshot(
-            repoPath: "/tmp/repo",
-            aiEnabled: aiEnabled,
-            providerPreference: .localFirst,
-            localAIEnabled: true,
-            remoteAIAllowed: false,
-            privacyGateEnabled: true,
-            privacyPolicyRef: nil,
-            featureToggles: AISettingsFeatureKind.allCases.map { feature in
-                AISettingsFeatureConfigSnapshot(
-                    feature: feature,
-                    enabled: feature == .autoTags ? autoTagsEnabled : false,
-                    allowRemote: false
-                )
-            }
-        )
-        snapshot = AISettingsSnapshot(
-            config: config,
-            capabilities: AISettingsCapabilitySnapshot.derived(from: config.normalized()),
-            updatedAt: 1_700_000_410
-        )
-    }
-
-    func loadAISettings(repoPath: String) async throws -> AISettingsSnapshot {
-        recordedRepoPaths.append(repoPath)
-        return snapshot
-    }
-
-    func requests() -> [String] {
-        recordedRepoPaths
-    }
-}
+typealias AITagSuggestionAISettingsLoader = StaticAISettingsLoader
 
 extension AITagBatchPageFeatureTests {
     static func aiTagMergeBridge(

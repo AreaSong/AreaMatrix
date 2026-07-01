@@ -43,21 +43,21 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
         defer { removeTestTemporaryItems(repoURL) }
 
         let updater = GeneralSettingsIntegrationUpdater(results: [
-            .success,
-            .success,
+            .success(()),
+            .success(()),
             .failure(CoreError.Config(reason: "locked")),
-            .success
+            .success(())
         ])
-        let ignoreRulesManager = RecordingIgnoreRulesManager(openResult: .missingThenSuccess)
+        let ignoreRulesManager = RecordingRepositoryIgnoreRulesManager(openScenario: .missingThenSuccess)
         let model = GeneralSettingsModel(
             repoPath: repoURL.path,
             loader: StaticConfigurationLoader(config: RepoConfigSnapshot
-                .generalSettingsIntegrationFixture(repoPath: repoURL.path)),
+                .generalSettingsFixture(repoPath: repoURL.path)),
             updater: updater,
             rootOverviewInspector: LocalRootOverviewFileInspector(),
             rootOverviewRevealer: RecordingRepositoryFileRevealer(),
             ignoreRulesManager: ignoreRulesManager,
-            errorMapper: GeneralSettingsIntegrationErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.generalSettings()
         )
 
         await model.load()
@@ -73,7 +73,7 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
         XCTAssertEqual(model.pendingIgnoreRulesAlert, GeneralSettingsIgnoreRulesAlert.createDefault)
         model.createDefaultIgnoreRulesAndOpen()
 
-        let requestsAfterSuccess = await updater.requests()
+        let requestsAfterSuccess = await updater.requestedConfigs()
         XCTAssertEqual(requestsAfterSuccess.map(\.defaultMode), ["Moved", "Moved"])
         XCTAssertEqual(requestsAfterSuccess.map(\.overviewOutput), ["GeneratedOnly", "RootAreaMatrixFile"])
         XCTAssertEqual(model.draft?.defaultStorageMode, .move)
@@ -88,7 +88,7 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
         XCTAssertEqual(model.saveError?.message, "配置错误")
 
         await model.retrySave()
-        let requests = await updater.requests()
+        let requests = await updater.requestedConfigs()
 
         XCTAssertEqual(requests.map(\.locale), ["system", "system", "en", "en"])
         XCTAssertEqual(model.draft?.locale, .en)
@@ -184,21 +184,19 @@ func aiCategorySuggestionSuggestionModel(
         request: request,
         suggester: bridge,
         fallbackReader: fallbackBridge,
-        errorMapper: AICategorySuggestionErrorMapper()
+        errorMapper: aiCategorySuggestionErrorMapper()
     )
 }
 
-struct AICategorySuggestionErrorMapper: CoreErrorMapping {
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .config,
-            userMessage: "Mapped ai-classification-suggestion core error",
-            severity: .medium,
-            suggestedAction: "Open AI settings",
-            recoverability: .userActionRequired,
-            rawContext: "ai-category-suggestion ai-classification-suggestion"
-        )
-    }
+func aiCategorySuggestionErrorMapper() -> StaticCoreErrorMapper {
+    StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot(
+        kind: .config,
+        userMessage: "Mapped ai-classification-suggestion core error",
+        severity: .medium,
+        suggestedAction: "Open AI settings",
+        recoverability: .userActionRequired,
+        rawContext: "ai-category-suggestion ai-classification-suggestion"
+    ))
 }
 
 private func makeGeneralSettingsIntegrationRepositoryFixture() throws -> (repoURL: URL, sourceURL: URL) {
@@ -223,124 +221,8 @@ private func assertGeneralSettingsFileBoundaries(repoURL: URL, sourceURL: URL) t
     XCTAssertEqual(try String(contentsOf: repoURL.appendingPathComponent("README.md")), "readme")
 }
 
-private enum GeneralSettingsUpdateResult {
-    case success
-    case failure(Error)
-}
-
-private actor GeneralSettingsIntegrationUpdater: CoreConfigurationUpdating {
-    private let results: [GeneralSettingsUpdateResult]
-    private var index = 0
-    private var configs: [RepoConfigSnapshot] = []
-
-    init(results: [GeneralSettingsUpdateResult]) {
-        self.results = results
-    }
-
-    func updateConfig(repoPath _: String, newConfig: RepoConfigSnapshot) async throws {
-        configs.append(newConfig)
-        let result = index < results.count ? results[index] : .success
-        index += 1
-        if case let .failure(error) = result {
-            throw error
-        }
-    }
-
-    func requests() -> [RepoConfigSnapshot] {
-        configs
-    }
-}
-
-private enum GeneralSettingsIgnoreOpenResult {
-    case success
-    case missingThenSuccess
-}
-
-@MainActor
-private final class RecordingIgnoreRulesManager: RepositoryIgnoreRulesManaging {
-    private let openResult: GeneralSettingsIgnoreOpenResult
-    private var openAttempts = 0
-    private(set) var openedPaths: [String] = []
-    private(set) var createdPaths: [String] = []
-
-    init(openResult: GeneralSettingsIgnoreOpenResult = .success) {
-        self.openResult = openResult
-    }
-
-    func openIgnoreRules(repoPath: String) throws {
-        openedPaths.append(repoPath)
-        if openResult == .missingThenSuccess, openAttempts == 0 {
-            openAttempts += 1
-            throw RepositoryIgnoreRulesError.ignoreRulesMissing
-        }
-        openAttempts += 1
-    }
-
-    func createDefaultIgnoreRules(repoPath: String) throws {
-        createdPaths.append(repoPath)
-    }
-}
-
-private actor GeneralSettingsIntegrationErrorMapper: CoreErrorMapping {
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .config,
-            userMessage: "配置错误",
-            severity: .medium,
-            suggestedAction: "Retry save",
-            recoverability: .retryable,
-            rawContext: "general-settings"
-        )
-    }
-}
-
-private actor GeneralSettingsRecordingRepositoryOpener: CoreEmptyRepositoryOpening {
-    let opening: RepositoryOpeningResult
-    private var repoPaths: [String] = []
-
-    init(opening: RepositoryOpeningResult) {
-        self.opening = opening
-    }
-
-    func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        try await openConfiguredRepository(repoPath: repoPath)
-    }
-
-    func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        try await openConfiguredRepository(repoPath: repoPath)
-    }
-
-    func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        repoPaths.append(repoPath)
-        return opening
-    }
-
-    func requestedRepoPaths() -> [String] {
-        repoPaths
-    }
-}
-
-private extension RepoConfigSnapshot {
-    static func generalSettingsIntegrationFixture(
-        repoPath: String,
-        defaultMode: String = "Copied",
-        overviewOutput: String = "GeneratedOnly",
-        locale: String = "system"
-    ) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: defaultMode,
-            overviewOutput: overviewOutput,
-            aiEnabled: false,
-            locale: locale,
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
-    }
-}
+private typealias GeneralSettingsRecordingRepositoryOpener = RecordingRepositoryOpener
+private typealias GeneralSettingsIntegrationUpdater = RecordingConfigurationUpdater
 
 private extension RepositoryOpeningResult {
     static func generalSettingsIntegrationFixture(
@@ -348,7 +230,7 @@ private extension RepositoryOpeningResult {
         defaultMode: String
     ) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
-            config: .generalSettingsIntegrationFixture(repoPath: repoPath, defaultMode: defaultMode),
+            config: .generalSettingsFixture(repoPath: repoPath, defaultMode: defaultMode),
             tree: RepositoryTreeNodeSnapshot(
                 slug: "__root__",
                 displayName: "资料库",

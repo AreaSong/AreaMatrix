@@ -6,8 +6,8 @@ final class InitFailedErrorMappingTests: XCTestCase {
     func testInitializationFailureMapsCoreErrorAndRetryRerunsStoredDraft() async {
         let validation = RepoPathValidationSnapshot.initFailedAdoptExistingFixture(repoPath: "/tmp/adopt")
         let mapping = CoreErrorMappingSnapshot.initFailedPermissionDeniedFixture(rawContext: "/tmp/adopt")
-        let initializer = RetryingRepositoryInitializer(firstError: CoreError.PermissionDenied(path: "/tmp/adopt"))
-        let errorMapper = InitFailedRecordingErrorMapper(mapping: mapping)
+        let initializer = RecordingRepositoryInitializer(firstError: CoreError.PermissionDenied(path: "/tmp/adopt"))
+        let errorMapper = StaticCoreErrorMapper(mapping: mapping)
         let writer = InitFailedRecordingSettingsWriter()
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
@@ -32,7 +32,8 @@ final class InitFailedErrorMappingTests: XCTestCase {
         )
         let firstAdoptRequests = await initializer.adoptRequests()
         XCTAssertEqual(firstAdoptRequests, ["/tmp/adopt"])
-        XCTAssertEqual(errorMapper.mappedErrors, [CoreError.PermissionDenied(path: "/tmp/adopt")])
+        let mappedErrors = await errorMapper.recordedErrors()
+        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: "/tmp/adopt")])
         XCTAssertEqual(model.route, .initializationFailed("/tmp/adopt", mapping, retryDraft))
 
         await model.retryFailedInitialization()
@@ -61,14 +62,14 @@ final class InitFailedErrorMappingTests: XCTestCase {
 
     @MainActor
     func testAIPrivacyRulesBlocksRemoteAIWithAISettingsConfigCorePrivacyGateOnly() async {
-        let updater = RecordingAISettingsUpdater(result: .success)
+        let updater = RecordingAISettingsUpdater(result: .success(()))
         let model = AISettingsModel(
             repoPath: "/tmp/aiPrivacyRules",
             loader: StaticAISettingsLoader(
                 snapshot: .aiPrivacyRulesRemoteReady(repoPath: "/tmp/aiPrivacyRules")
             ),
             updater: updater,
-            errorMapper: AIPrivacyRulesStaticAIErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.aiPrivacyRulesSettingsConfig()
         )
 
         await model.load()
@@ -85,7 +86,7 @@ final class InitFailedErrorMappingTests: XCTestCase {
 
     @MainActor
     func testAIPrivacyRulesAllowRemoteGateRequiresRemoteProviderConfigProviderConsentBeforeSaving() async {
-        let updater = RecordingAISettingsUpdater(result: .success)
+        let updater = RecordingAISettingsUpdater(result: .success(()))
         let model = AISettingsModel(
             repoPath: "/tmp/aiPrivacyRules",
             loader: StaticAISettingsLoader(snapshot: .aiPrivacyRulesDefault(
@@ -93,7 +94,7 @@ final class InitFailedErrorMappingTests: XCTestCase {
                 privacyGateEnabled: false
             )),
             updater: updater,
-            errorMapper: AIPrivacyRulesStaticAIErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.aiPrivacyRulesSettingsConfig()
         )
 
         await model.load()
@@ -122,7 +123,7 @@ final class InitFailedErrorMappingTests: XCTestCase {
                 snapshot: .aiPrivacyRulesRemoteReady(repoPath: "/tmp/aiPrivacyRules")
             ),
             updater: updater,
-            errorMapper: AIPrivacyRulesStaticAIErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.aiPrivacyRulesSettingsConfig()
         )
 
         await model.load()
@@ -172,7 +173,7 @@ final class InitFailedErrorMappingTests: XCTestCase {
         let mapping = CoreErrorMappingSnapshot.initFailedPermissionDeniedFixture(rawContext: "/tmp/repo")
         let collector =
             InitFailedRecordingDiagnosticsCollector(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
-        let errorMapper = InitFailedRecordingErrorMapper(mapping: mapping)
+        let errorMapper = StaticCoreErrorMapper(mapping: mapping)
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             diagnosticsCollector: collector,
@@ -184,101 +185,15 @@ final class InitFailedErrorMappingTests: XCTestCase {
         await model.collectInitializationDiagnostics()
 
         XCTAssertEqual(model.initializationDiagnostics, .failed(mapping))
-        XCTAssertEqual(errorMapper.mappedErrors, [CoreError.PermissionDenied(path: "/tmp/repo")])
+        let mappedErrors = await errorMapper.recordedErrors()
+        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: "/tmp/repo")])
         XCTAssertEqual(model.route, .initializationFailed("/tmp/repo", nil, nil))
     }
 }
 
-private actor RetryingRepositoryInitializer: CoreRepositoryInitializing {
-    private let firstError: Error
-    private var createPaths: [String] = []
-    private var adoptPaths: [String] = []
+private typealias InitFailedRecordingSettingsWriter = RecordingAppSettingsWriter
 
-    init(firstError: Error) {
-        self.firstError = firstError
-    }
-
-    func initializeEmptyRepository(repoPath: String) async throws {
-        createPaths.append(repoPath)
-        if createPaths.count == 1 {
-            throw firstError
-        }
-    }
-
-    func adoptExistingRepository(repoPath: String) async throws {
-        adoptPaths.append(repoPath)
-        if adoptPaths.count == 1 {
-            throw firstError
-        }
-    }
-
-    func adoptRequests() -> [String] {
-        adoptPaths
-    }
-}
-
-private final class InitFailedRecordingSettingsWriter: AppSettingsWriting {
-    private(set) var savedRepoPaths: [String] = []
-
-    func saveConfiguredRepoPath(_ repoPath: String) {
-        savedRepoPaths.append(repoPath)
-    }
-}
-
-private enum InitFailedDiagnosticsResult {
-    case success(DiagnosticsSnapshotSnapshot)
-    case failure(Error)
-}
-
-private actor InitFailedRecordingDiagnosticsCollector: CoreDiagnosticsCollecting {
-    private let result: InitFailedDiagnosticsResult
-    private var repoPaths: [String] = []
-
-    init(result: InitFailedDiagnosticsResult) {
-        self.result = result
-    }
-
-    func createDiagnosticsSnapshot(repoPath: String) async throws -> DiagnosticsSnapshotSnapshot {
-        repoPaths.append(repoPath)
-        switch result {
-        case let .success(snapshot):
-            return snapshot
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func requestedRepoPaths() -> [String] {
-        repoPaths
-    }
-}
-
-private final class InitFailedRecordingErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-    private(set) var mappedErrors: [CoreError] = []
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        mappedErrors.append(error)
-        return mapping
-    }
-}
-
-private actor AIPrivacyRulesStaticAIErrorMapper: CoreErrorMapping {
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .io,
-            userMessage: String(describing: error),
-            severity: .medium,
-            suggestedAction: "Retry save",
-            recoverability: .retryable,
-            rawContext: "ai-privacy-rules ai-settings-config"
-        )
-    }
-}
+private typealias InitFailedRecordingDiagnosticsCollector = RecordingDiagnosticsCollector
 
 private extension RepoPathValidationSnapshot {
     static func initFailedAdoptExistingFixture(repoPath: String) -> RepoPathValidationSnapshot {

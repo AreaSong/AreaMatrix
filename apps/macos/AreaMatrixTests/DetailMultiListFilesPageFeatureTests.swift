@@ -72,7 +72,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         let second = FileEntrySnapshot.detailMultiFixture(id: 34, currentName: "second.pdf", sizeBytes: 100)
         let refreshedFirst = FileEntrySnapshot.detailMultiFixture(id: 33, currentName: "first.pdf", sizeBytes: 500)
         let refreshedSecond = FileEntrySnapshot.detailMultiFixture(id: 34, currentName: "second.pdf", sizeBytes: 700)
-        let detailer = DetailMultiRecordingDetailer(results: [
+        let detailer = RecordingFileDetailer(results: [
             .success(refreshedFirst),
             .success(refreshedSecond)
         ])
@@ -88,8 +88,8 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         let summary = MultiSelectionDetailSummary(selection: model.selection, files: model.files)
 
         XCTAssertEqual(requests, [
-            DetailMultiFileDetailRequest(repoPath: "/tmp/repo", fileID: first.id),
-            DetailMultiFileDetailRequest(repoPath: "/tmp/repo", fileID: second.id)
+            FileDetailRequest(repoPath: "/tmp/repo", fileID: first.id),
+            FileDetailRequest(repoPath: "/tmp/repo", fileID: second.id)
         ])
         XCTAssertEqual(model.selection, .multiple([first.id, second.id]))
         XCTAssertNil(model.selectedFileDetail)
@@ -107,7 +107,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         let second = FileEntrySnapshot.detailMultiFixture(id: 44, currentName: "missing.pdf")
         let mapping = CoreErrorMappingSnapshot.detailMultiFileNotFound()
         let mapper = StaticCoreErrorMapper(mapping: mapping)
-        let detailer = DetailMultiRecordingDetailer(results: [
+        let detailer = RecordingFileDetailer(results: [
             .success(first),
             .failure(CoreError.FileNotFound(path: second.path))
         ])
@@ -131,111 +131,8 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
     }
 }
 
-private struct DetailMultiFileDetailRequest: Equatable {
-    var repoPath: String
-    var fileID: Int64
-}
-
-private actor DetailMultiRecordingDetailer: CoreFileDetailing {
-    enum Result {
-        case success(FileEntrySnapshot)
-        case failure(Error)
-    }
-
-    private var results: [Result]
-    private var requests: [DetailMultiFileDetailRequest] = []
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
-        requests.append(DetailMultiFileDetailRequest(repoPath: repoPath, fileID: fileID))
-        guard !results.isEmpty else {
-            throw CoreError.FileNotFound(path: "\(fileID)")
-        }
-
-        switch results.removeFirst() {
-        case let .success(file):
-            return file
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func recordedRequests() -> [DetailMultiFileDetailRequest] {
-        requests
-    }
-}
-
-private extension RepositoryOpeningResult {
-    static func detailMultiFixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
-        RepositoryOpeningResult(
-            config: RepoConfigSnapshot(
-                repoPath: repoPath,
-                defaultMode: "Copied",
-                overviewOutput: "GeneratedOnly",
-                aiEnabled: false,
-                locale: "zh-Hans",
-                iCloudWarn: true,
-                enableExtensionRules: true,
-                enableKeywordRules: true,
-                fallbackToInbox: true,
-                allowReplaceDuringImport: false
-            ),
-            tree: RepositoryTreeNodeSnapshot(
-                slug: "__root__",
-                displayName: "Repository",
-                fileCount: Int64(files.count),
-                children: []
-            ),
-            currentCategoryFiles: files
-        )
-    }
-}
-
-private extension FileEntrySnapshot {
-    static func detailMultiFixture(
-        id: Int64,
-        currentName: String,
-        sizeBytes: Int64 = 256,
-        storageMode: String = "Copied",
-        importedAt: Int64 = 1_700_000_000,
-        availability: FileAvailabilitySnapshot = .available
-    ) -> FileEntrySnapshot {
-        FileEntrySnapshot(
-            id: id,
-            path: "docs/\(currentName)",
-            originalName: currentName,
-            currentName: currentName,
-            category: "docs",
-            sizeBytes: sizeBytes,
-            hashSha256: "detail-multi-\(id)",
-            storageMode: storageMode,
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: importedAt,
-            updatedAt: importedAt,
-            availability: availability
-        )
-    }
-}
-
 private extension [MultiSelectionSummaryRow] {
     func value(for label: String) -> String? {
         first { $0.label == label }?.value
-    }
-}
-
-private extension CoreErrorMappingSnapshot {
-    static func detailMultiFileNotFound() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .fileNotFound,
-            userMessage: "部分选中项无法读取元数据",
-            severity: .medium,
-            suggestedAction: "刷新当前选择，确认文件是否仍在资料库中。",
-            recoverability: .refreshRequired,
-            rawContext: "file-list file-detail-core get_file"
-        )
     }
 }

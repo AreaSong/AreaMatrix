@@ -15,7 +15,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
         )
 
         await model.selectFiles([docsFile.id, financeFile.id])
-        let detailRequests = await detailer.recordedRequests()
+        let detailRequests = await detailer.recordedFileIDs()
 
         XCTAssertEqual(model.selection, .multiple([docsFile.id, financeFile.id]))
         XCTAssertNil(model.selectedFileDetail)

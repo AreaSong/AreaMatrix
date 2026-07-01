@@ -10,8 +10,8 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
         let model = IntegrationsSettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
-            updater: RecordingConfigurationUpdater(results: [.success]),
-            errorMapper: IntegrationsSettingsStaticErrorMapper(),
+            updater: RecordingConfigurationUpdater(results: [.success(())]),
+            errorMapper: RecordingCoreErrorMapper.integrationsSettings(),
             statusDetector: StaticICloudStatusDetector(
                 snapshot: IntegrationsICloudSnapshot(repositoryLocation: .iCloudDrive, iCloudStatus: .available)
             )
@@ -30,7 +30,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testICloudWarningsSaveThroughUpdateConfigWithoutStaticState() async {
-        let updater = RecordingConfigurationUpdater(results: [.success])
+        let updater = RecordingConfigurationUpdater(results: [.success(())])
         let model = await loadedModel(updater: updater, iCloudWarn: true)
 
         await model.setICloudWarningsEnabled(false)
@@ -47,9 +47,9 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
     func testSaveFailureRollsBackAndRetryUsesSameCoreConfig() async {
         let updater = RecordingConfigurationUpdater(results: [
             .failure(CoreError.Db(message: "locked")),
-            .success
+            .success(())
         ])
-        let mapper = IntegrationsSettingsStaticErrorMapper()
+        let mapper = RecordingCoreErrorMapper.integrationsSettings()
         let model = await loadedModel(updater: updater, errorMapper: mapper, iCloudWarn: true)
 
         await model.setICloudWarningsEnabled(false)
@@ -60,7 +60,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
 
         await model.retrySave()
         let requests = await updater.requests()
-        let mappedErrors = await mapper.mappedErrors()
+        let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(requests.map(\.config.iCloudWarn), [false, false])
         XCTAssertEqual(mappedErrors, [CoreError.Db(message: "locked")])
@@ -73,11 +73,11 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
         let loader = RecordingConfigurationLoader(results: [
             .failure(CoreError.Config(reason: "invalid repo_config"))
         ])
-        let mapper = IntegrationsSettingsStaticErrorMapper()
+        let mapper = RecordingCoreErrorMapper.integrationsSettings()
         let model = IntegrationsSettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
-            updater: RecordingConfigurationUpdater(results: [.success]),
+            updater: RecordingConfigurationUpdater(results: [.success(())]),
             errorMapper: mapper,
             statusDetector: StaticICloudStatusDetector(
                 snapshot: IntegrationsICloudSnapshot(repositoryLocation: .unknown, iCloudStatus: .unknown)
@@ -85,7 +85,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
         )
 
         await model.load()
-        let mappedErrors = await mapper.mappedErrors()
+        let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(mappedErrors, [CoreError.Config(reason: "invalid repo_config")])
         XCTAssertEqual(model.loadState, .failed(IntegrationsSettingsError(
@@ -98,8 +98,8 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testPlatformActionsStayInMacLayerWithoutConfigWrites() async {
         let finderOpener = RecordingRepositoryFinderOpener()
-        let helpOpener = IntegrationsSettingsRecordingHelpOpener()
-        let updater = RecordingConfigurationUpdater(results: [.success])
+        let helpOpener = RecordingICloudHelpOpener()
+        let updater = RecordingConfigurationUpdater(results: [.success(())])
         let model = await loadedModel(
             updater: updater,
             finderOpener: finderOpener,
@@ -190,7 +190,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
     @MainActor
     private func loadedModel(
         updater: RecordingConfigurationUpdater,
-        errorMapper: any CoreErrorMapping = IntegrationsSettingsStaticErrorMapper(),
+        errorMapper: any CoreErrorMapping = RecordingCoreErrorMapper.integrationsSettings(),
         finderOpener: (any RepositoryFinderOpening)? = nil,
         helpOpener: (any ICloudHelpOpening)? = nil,
         iCloudWarn: Bool = true
@@ -206,7 +206,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
                 snapshot: IntegrationsICloudSnapshot(repositoryLocation: .localFolder, iCloudStatus: .unavailable)
             ),
             finderOpener: finderOpener ?? RecordingRepositoryFinderOpener(),
-            helpOpener: helpOpener ?? IntegrationsSettingsRecordingHelpOpener()
+            helpOpener: helpOpener ?? RecordingICloudHelpOpener()
         )
         await model.load()
         return model
@@ -276,15 +276,10 @@ extension AiFallbackStatus {
 }
 
 actor AICategorySuggestionSuggestionBridge: CoreAIClassificationSuggesting {
-    enum Result {
-        case success(AIClassificationSuggestionState)
-        case failure(CoreError)
-    }
-
-    private let result: Result
+    private let result: Swift.Result<AIClassificationSuggestionState, Error>
     private var requests: [AIClassificationSuggestionRequestState] = []
 
-    init(result: Result) {
+    init(result: Swift.Result<AIClassificationSuggestionState, Error>) {
         self.result = result
     }
 
@@ -293,12 +288,7 @@ actor AICategorySuggestionSuggestionBridge: CoreAIClassificationSuggesting {
         request: AIClassificationSuggestionRequestState
     ) async throws -> AIClassificationSuggestionState {
         requests.append(request)
-        switch result {
-        case let .success(suggestion):
-            return suggestion
-        case let .failure(error):
-            throw error
-        }
+        return try result.get()
     }
 
     func recordedRequests() -> [AIClassificationSuggestionRequestState] {
@@ -307,21 +297,21 @@ actor AICategorySuggestionSuggestionBridge: CoreAIClassificationSuggesting {
 }
 
 actor AICategorySuggestionFallbackBridge: CoreAIClassificationFallbackStatusReading {
-    enum Result {
+    enum Response {
         case success(AiFallbackStatus)
         case failure(CoreError)
         case unexpected
     }
 
-    private let result: Result
+    private let response: Response
     private var requests: [AiFallbackStatusRequest] = []
 
     init(status: AiFallbackStatus? = nil) {
-        result = status.map(Result.success) ?? .unexpected
+        response = status.map(Response.success) ?? .unexpected
     }
 
     init(error: CoreError) {
-        result = .failure(error)
+        response = .failure(error)
     }
 
     func classificationFallbackStatus(
@@ -329,7 +319,7 @@ actor AICategorySuggestionFallbackBridge: CoreAIClassificationFallbackStatusRead
         request: AiFallbackStatusRequest
     ) async throws -> AiFallbackStatus {
         requests.append(request)
-        switch result {
+        switch response {
         case let .success(status):
             return status
         case let .failure(error):
@@ -341,78 +331,6 @@ actor AICategorySuggestionFallbackBridge: CoreAIClassificationFallbackStatusRead
 
     func recordedRequests() -> [AiFallbackStatusRequest] {
         requests
-    }
-}
-
-private actor IntegrationsSettingsStaticErrorMapper: CoreErrorMapping {
-    private var errors: [CoreError] = []
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        errors.append(error)
-        let message: String
-        let kind: CoreErrorKindSnapshot
-        switch error {
-        case .Db:
-            message = "数据库错误"
-            kind = .db
-        case .PermissionDenied:
-            message = "权限错误"
-            kind = .permissionDenied
-        default:
-            message = "配置错误"
-            kind = .config
-        }
-
-        return CoreErrorMappingSnapshot(
-            kind: kind,
-            userMessage: message,
-            severity: .medium,
-            suggestedAction: kind == .db ? "Retry save" : "Retry status",
-            recoverability: .retryable,
-            rawContext: "integrations-settings repository-config"
-        )
-    }
-
-    func mappedErrors() -> [CoreError] {
-        errors
-    }
-}
-
-@MainActor
-private final class IntegrationsSettingsRecordingHelpOpener: ICloudHelpOpening {
-    private(set) var openCount = 0
-
-    func openICloudHelp() throws {
-        openCount += 1
-    }
-}
-
-private struct StaticICloudIdentityTokenReader: ICloudIdentityTokenReading {
-    var hasICloudIdentityToken: Bool
-}
-
-private struct StaticICloudResourceValueReader: ICloudResourceValueReading {
-    var isUbiquitousItem: Bool?
-
-    func isUbiquitousItem(at _: URL) throws -> Bool? {
-        isUbiquitousItem
-    }
-}
-
-private extension RepoConfigSnapshot {
-    static func integrationsFixture(repoPath: String, iCloudWarn: Bool = true) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "system",
-            iCloudWarn: iCloudWarn,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
     }
 }
 

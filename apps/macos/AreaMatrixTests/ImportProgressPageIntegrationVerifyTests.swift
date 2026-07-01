@@ -14,7 +14,7 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
 
     @MainActor
     func testImportProgressFatalImportExitMustRouteThroughImportResultResultSummary() {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
@@ -48,7 +48,7 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
             state: .list,
             onImport: {},
             onDropImport: { _, _ in },
-            errorMapper: UndoToastHistoryErrorMapper()
+            errorMapper: StaticCoreErrorMapper(mapping: .undoToastHistoryFailure)
         )
 
         assertTestMirrorDescription(
@@ -84,7 +84,7 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
             repoPath: "/tmp/repo",
             undoStore: undoStore,
             redoStore: redoStore,
-            errorMapper: UndoHistoryHistoryErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.undoHistory()
         )
 
         XCTAssertEqual(state.actions, [latest, older])
@@ -111,7 +111,7 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
             snapshot: UndoHistorySnapshot(undoActions: [latest, older], redoActions: []),
             undoStore: undoStore,
             redoStore: redoStore,
-            errorMapper: UndoHistoryHistoryErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.undoHistory()
         )
 
         XCTAssertEqual(state.actions, [.undoHistoryExecutedTrashMove(), older])
@@ -135,7 +135,7 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
             snapshot: UndoHistorySnapshot(undoActions: [latest], redoActions: []),
             undoStore: undoStore,
             redoStore: redoStore,
-            errorMapper: UndoHistoryHistoryErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.undoHistory()
         )
 
         guard case let .refreshFailed(mapping, previous) = state else {
@@ -157,7 +157,7 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
             snapshot: UndoHistorySnapshot(undoActions: [blocked], redoActions: []),
             undoStore: undoStore,
             redoStore: redoStore,
-            errorMapper: UndoHistoryHistoryErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.undoHistory()
         )
 
         XCTAssertEqual(state.actions, [blocked])
@@ -176,7 +176,7 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
             initialFailure: nil,
             undoStore: UndoHistoryRecordingUndoStore(results: [.list(.success([ready, blocked]))]),
             redoStore: RedoActionLogRecordingRedoStore(results: [.list(.success([.redoActionLogAvailableMoveRedo()]))]),
-            errorMapper: UndoHistoryHistoryErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.undoHistory(),
             onClose: {},
             onUndoCompleted: { _ in },
             onRedoCompleted: { _ in }
@@ -330,12 +330,6 @@ private extension UndoActionRecordSnapshot {
     }
 }
 
-private actor UndoToastHistoryErrorMapper: CoreErrorMapping {
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        .undoToastHistoryFailure
-    }
-}
-
 private extension UndoActionRecordSnapshot {
     static func undoHistoryMovedFilesToTrash() -> UndoActionRecordSnapshot {
         testMovedFilesToTrashUndoAction()
@@ -361,16 +355,3 @@ private extension UndoActionResultSnapshot {
 }
 
 private typealias UndoHistoryRecordingUndoStore = LenientUndoActionRecordingTestStore
-
-private actor UndoHistoryHistoryErrorMapper: CoreErrorMapping {
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: CoreErrorKindTestMapper.kind(for: error),
-            userMessage: "Undo failed",
-            severity: .medium,
-            suggestedAction: "View details in Undo history.",
-            recoverability: .refreshRequired,
-            rawContext: "undo-history undo-action-log undo-action-log"
-        )
-    }
-}

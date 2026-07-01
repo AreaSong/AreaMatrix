@@ -75,13 +75,11 @@ final class DetailMetaPageFeatureTests: XCTestCase {
 }
 
 private actor DetailMetaSuspendedDetailer: CoreFileDetailing {
-    typealias Result = DetailMetaImmediateDetailer.Result
-
-    private let result: Result
+    private let result: Swift.Result<FileEntrySnapshot, Error>
     private var continuation: CheckedContinuation<Void, Never>?
     private var didReceiveRequest = false
 
-    init(result: Result) {
+    init(result: Swift.Result<FileEntrySnapshot, Error>) {
         self.result = result
     }
 
@@ -90,12 +88,7 @@ private actor DetailMetaSuspendedDetailer: CoreFileDetailing {
         await withCheckedContinuation { continuation in
             self.continuation = continuation
         }
-        switch result {
-        case let .success(file):
-            return file
-        case let .failure(error):
-            throw error
-        }
+        return try result.get()
     }
 
     func waitForRequest() async {

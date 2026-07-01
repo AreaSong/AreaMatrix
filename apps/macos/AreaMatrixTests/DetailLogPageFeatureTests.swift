@@ -56,7 +56,7 @@ final class DetailLogPageFeatureTests: XCTestCase {
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [oldFile, newFile]),
             fileLister: NoopFileLister(),
-            fileDetailer: DetailMetaSequenceDetailer(results: [.success(oldFile), .success(newFile)]),
+            fileDetailer: RecordingFileDetailer(results: [.success(oldFile), .success(newFile)]),
             changeLogLister: lister,
             errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
         )
@@ -135,29 +135,6 @@ final class DetailLogPageFeatureTests: XCTestCase {
             CoreError.Db(message: "change log locked"),
             CoreError.PermissionDenied(path: "/tmp/repo")
         ])
-    }
-}
-
-private actor DetailMetaSequenceDetailer: CoreFileDetailing {
-    typealias Result = DetailMetaImmediateDetailer.Result
-
-    private var results: [Result]
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func getFile(repoPath _: String, fileID: Int64) async throws -> FileEntrySnapshot {
-        guard !results.isEmpty else {
-            throw CoreError.FileNotFound(path: "\(fileID)")
-        }
-
-        switch results.removeFirst() {
-        case let .success(file):
-            return file
-        case let .failure(error):
-            throw error
-        }
     }
 }
 

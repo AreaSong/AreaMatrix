@@ -86,55 +86,8 @@ extension CoreErrorMappingSnapshot {
     }
 }
 
-struct MainRepoSavedSearchRequestRecord: Equatable {
-    var repoPath: String
-    var request: CreateSavedSearchRequestSnapshot
-}
-
-actor MainRepoSavedSearchRecordingStore: CoreSavedSearchCRUD {
-    enum Result {
-        case listSuccess([SavedSearchSnapshot])
-        case createSuccess(SavedSearchSnapshot)
-        case createFailure(Error)
-    }
-
-    private var results: [Result]
-    private var createRecords: [MainRepoSavedSearchRequestRecord] = []
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func createSavedSearch(
-        repoPath: String,
-        request: CreateSavedSearchRequestSnapshot
-    ) async throws -> SavedSearchSnapshot {
-        createRecords.append(MainRepoSavedSearchRequestRecord(repoPath: repoPath, request: request))
-        guard !results.isEmpty else { throw CoreError.Db(message: "missing saved search result") }
-        switch results.removeFirst() {
-        case let .createSuccess(saved):
-            return saved
-        case let .createFailure(error):
-            throw error
-        case .listSuccess:
-            throw CoreError.Internal(message: "expected saved search create result")
-        }
-    }
-
-    func listSavedSearches(repoPath _: String) async throws -> [SavedSearchSnapshot] {
-        guard !results.isEmpty else { return [] }
-        switch results.removeFirst() {
-        case let .listSuccess(saved):
-            return saved
-        case .createSuccess, .createFailure:
-            throw CoreError.Internal(message: "expected saved search list result")
-        }
-    }
-
-    func createdRequests() -> [MainRepoSavedSearchRequestRecord] {
-        createRecords
-    }
-}
+typealias MainRepoSavedSearchRequestRecord = SavedSearchCreateRequestRecord
+typealias MainRepoSavedSearchRecordingStore = RecordingSavedSearchStore
 
 extension SavedSearchSnapshot {
     static func mainRepoSavedSearchFixture(

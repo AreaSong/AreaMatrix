@@ -5,11 +5,9 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
     @MainActor
     func testNameConflictNameConflictDefaultsToKeepBothAndUsesCoreKeepBothStrategy() async {
         let importer = ImportSingleFileRecordingImporter()
-        let model = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let model = makeImportSingleFilePreviewModel(
             importer: importer,
-            preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            preflight: ImportSingleFileStaticPreflight(result: .importNameConflictFixture())
         )
 
         await model.load(request: .importSingleFileFixture())
@@ -27,11 +25,9 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
     @MainActor
     func testNameConflictRenameIncomingValidatesConflictsAndUsesEditedName() async {
         let importer = ImportSingleFileRecordingImporter()
-        let model = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let model = makeImportSingleFilePreviewModel(
             importer: importer,
-            preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            preflight: ImportSingleFileStaticPreflight(result: .importNameConflictFixture())
         )
 
         await model.load(request: .importSingleFileFixture())
@@ -52,11 +48,9 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
     @MainActor
     func testNameConflictReplaceRequiresReplaceConfirmConfirmationBeforeCoreOverwrite() async throws {
         let importer = ImportSingleFileRecordingImporter()
-        let model = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let model = makeImportSingleFilePreviewModel(
             importer: importer,
-            preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            preflight: ImportSingleFileStaticPreflight(result: .importNameConflictFixture())
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -84,13 +78,13 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
     @MainActor
     func testReplaceConfirmNameConflictReplaceConfirmationMarksResolveNameConflictCoreReplaceWithoutImportSideEffect(
     ) async throws {
-        let existingFile = nameConflictReplaceExistingFile()
+        let existingFile = FileEntrySnapshot.importNameConflictReplaceFixture()
         let importer = ImportSingleFileRecordingImporter()
-        let model = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let model = makeImportSingleFilePreviewModel(
             importer: importer,
-            preflight: ImportSingleFileStaticPreflight(result: nameConflictReplaceResult(existingFile: existingFile)),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            preflight: ImportSingleFileStaticPreflight(result: .importNameConflictReplaceFixture(
+                existingFile: existingFile
+            ))
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -106,7 +100,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
         XCTAssertEqual(requestsBeforeConfirmation, [])
         XCTAssertEqual(context.existingPath, existingFile.path)
         XCTAssertEqual(context.existingSizeBytes, existingFile.sizeBytes)
-        XCTAssertEqual(context.incomingPath, "/tmp/source.pdf")
+        XCTAssertEqual(context.incomingPath, importSingleFileSourcePath())
         XCTAssertEqual(context.incomingSizeBytes, 912 * 1024)
         XCTAssertEqual(context.targetRelativePath, existingFile.path)
 
@@ -131,13 +125,13 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
 
     @MainActor
     func testReplaceConfirmNameConflictReplacePrimaryActionOpensConfirmationBeforeCoreOverwrite() async throws {
-        let existingFile = nameConflictReplaceExistingFile()
+        let existingFile = FileEntrySnapshot.importNameConflictReplaceFixture()
         let importer = ImportSingleFileRecordingImporter()
-        let model = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let model = makeImportSingleFilePreviewModel(
             importer: importer,
-            preflight: ImportSingleFileStaticPreflight(result: nameConflictReplaceResult(existingFile: existingFile)),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            preflight: ImportSingleFileStaticPreflight(result: .importNameConflictReplaceFixture(
+                existingFile: existingFile
+            ))
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -169,13 +163,9 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
     @MainActor
     func testReplaceConfirmNameConflictReplaceCannotBypassConfirmationThroughModelImport() async {
         let importer = ImportSingleFileRecordingImporter()
-        let model = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let model = makeImportSingleFilePreviewModel(
             importer: importer,
-            preflight: ImportSingleFileStaticPreflight(result: nameConflictReplaceResult(
-                existingFile: nameConflictReplaceExistingFile()
-            )),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            preflight: ImportSingleFileStaticPreflight(result: .importNameConflictReplaceFixture())
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -194,11 +184,9 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
 
     @MainActor
     func testNameConflictReplaceCannotBeSelectedWhenTrashUnavailableOrSettingHidden() async {
-        let trashUnavailableModel = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let trashUnavailableModel = makeImportSingleFilePreviewModel(
             importer: ImportSingleFileRecordingImporter(),
-            preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            preflight: ImportSingleFileStaticPreflight(result: .importNameConflictFixture())
         )
         await trashUnavailableModel.load(request: .importSingleFileFixture(
             allowReplaceDuringImport: true,
@@ -209,11 +197,9 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
         XCTAssertEqual(trashUnavailableModel.replaceOptionVisibility, .disabled)
         XCTAssertEqual(trashUnavailableModel.nameConflictResolution, .keepBoth)
 
-        let hiddenModel = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let hiddenModel = makeImportSingleFilePreviewModel(
             importer: ImportSingleFileRecordingImporter(),
-            preflight: ImportSingleFileStaticPreflight(result: nameConflictResult()),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            preflight: ImportSingleFileStaticPreflight(result: .importNameConflictFixture())
         )
         await hiddenModel.load(request: .importSingleFileFixture(
             allowReplaceDuringImport: false,
@@ -224,47 +210,4 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
         XCTAssertEqual(hiddenModel.replaceOptionVisibility, .hidden)
         XCTAssertEqual(hiddenModel.nameConflictResolution, .keepBoth)
     }
-}
-
-private func nameConflictResult() -> ImportSingleFilePreflightResult {
-    ImportSingleFilePreflightResult(
-        sourceSizeBytes: 12,
-        hashSha256: "incoming-hash",
-        targetRelativePath: "docs/source.pdf",
-        conflict: .name(path: "docs/source.pdf"),
-        keepBothTargetRelativePath: "docs/source_1.pdf",
-        existingPaths: ["docs/source.pdf", "docs/source_1.pdf"]
-    )
-}
-
-private func nameConflictReplaceExistingFile() -> FileEntrySnapshot {
-    FileEntrySnapshot(
-        id: 125,
-        path: "docs/reports/报告.pdf",
-        originalName: "报告.pdf",
-        currentName: "报告.pdf",
-        category: "docs",
-        sizeBytes: 860 * 1024,
-        hashSha256: "existing-hash",
-        storageMode: "Copied",
-        origin: "Imported",
-        sourcePath: nil,
-        importedAt: 1_700_000_000,
-        updatedAt: 1_776_660_840
-    )
-}
-
-private func nameConflictReplaceResult(
-    existingFile: FileEntrySnapshot
-) -> ImportSingleFilePreflightResult {
-    ImportSingleFilePreflightResult(
-        sourceSizeBytes: 912 * 1024,
-        sourceModifiedAt: 1_777_445_400,
-        hashSha256: "incoming-hash",
-        targetRelativePath: existingFile.path,
-        conflict: .name(path: existingFile.path),
-        keepBothTargetRelativePath: "docs/reports/报告_1.pdf",
-        existingPaths: [existingFile.path],
-        existingFile: existingFile
-    )
 }

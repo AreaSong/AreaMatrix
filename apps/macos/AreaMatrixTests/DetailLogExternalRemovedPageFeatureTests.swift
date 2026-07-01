@@ -82,11 +82,16 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         await model.selectFiles([removed.id])
         await model.syncExternalCreated(event)
         let syncRequests = await syncer.recordedRemovedRequests()
-        let listRequests = await fileLister.recordedRequests()
+        let listRequests = await fileLister.recordedListRequests()
         let logRequests = await lister.recordedRequests()
 
         XCTAssertEqual(syncRequests, [
-            DetailLogExternalRemovedRequest(repoPath: "/tmp/repo", relativePath: removed.path, fsEventID: 10001)
+            ExternalSyncRequest(
+                kind: .removed,
+                repoPath: "/tmp/repo",
+                relativePath: removed.path,
+                fsEventID: 10001
+            )
         ])
         XCTAssertEqual(listRequests, [DetailLogExternalRemovedListRequest(
             repoPath: "/tmp/repo",
@@ -283,73 +288,10 @@ private struct RealExternalRemovedFixture {
     var removedFile: FileEntrySnapshot
 }
 
-private struct DetailLogExternalRemovedRequest: Equatable {
-    var repoPath: String
-    var relativePath: String
-    var fsEventID: Int64
-}
+private typealias DetailLogExternalRemovedListRequest = FileListRequest
+private typealias DetailLogExternalRemovedSyncer = RecordingExternalChangesSyncer
 
-private struct DetailLogExternalRemovedListRequest: Equatable {
-    var repoPath: String
-    var filter: FileFilterSnapshot
-}
-
-private actor DetailLogExternalRemovedSyncer: CoreExternalChangesSyncing {
-    private let result: Result<SyncResultSnapshot, Error>
-    private var removedRequests: [DetailLogExternalRemovedRequest] = []
-
-    init(result: Result<SyncResultSnapshot, Error>) {
-        self.result = result
-    }
-
-    func syncExternalCreated(repoPath _: String, relativePath _: String,
-                             fsEventID _: Int64) async throws -> SyncResultSnapshot {
-        throw CoreError.Internal(message: "external created is outside detail-change-log sync-external-removed")
-    }
-
-    func syncExternalRenamed(repoPath _: String, relativePath _: String,
-                             fsEventID _: Int64) async throws -> SyncResultSnapshot {
-        throw CoreError.Internal(message: "external renamed is outside detail-change-log sync-external-removed")
-    }
-
-    func syncExternalRemoved(repoPath: String, relativePath: String,
-                             fsEventID: Int64) async throws -> SyncResultSnapshot {
-        removedRequests.append(DetailLogExternalRemovedRequest(
-            repoPath: repoPath,
-            relativePath: relativePath,
-            fsEventID: fsEventID
-        ))
-        return try result.get()
-    }
-
-    func getFSEventCursor(repoPath _: String) async throws -> Int64? {
-        nil
-    }
-
-    func setFSEventCursor(repoPath _: String, lastEventID _: Int64) async throws {}
-
-    func recordedRemovedRequests() -> [DetailLogExternalRemovedRequest] {
-        removedRequests
-    }
-}
-
-private actor DetailLogExternalRemovedLister: CoreFileListing {
-    private let files: [FileEntrySnapshot]
-    private var requests: [DetailLogExternalRemovedListRequest] = []
-
-    init(files: [FileEntrySnapshot]) {
-        self.files = files
-    }
-
-    func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
-        requests.append(DetailLogExternalRemovedListRequest(repoPath: repoPath, filter: filter))
-        return files
-    }
-
-    func recordedRequests() -> [DetailLogExternalRemovedListRequest] {
-        requests
-    }
-}
+private typealias DetailLogExternalRemovedLister = RecordingFileLister
 
 private extension FileFilterSnapshot {
     static func detailLogIncludingDeleted() -> FileFilterSnapshot {

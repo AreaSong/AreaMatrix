@@ -32,7 +32,7 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
             conflictResolver: SyncConflictReviewResolver(previewResults: [
                 .keepBoth: .success(.syncConflictReviewPreviewFixture(conflictID: "conflict-selected"))
             ]),
-            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.load()
@@ -58,7 +58,7 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
             conflictResolver: SyncConflictReviewResolver(previewResults: [
                 .keepBoth: .success(.syncConflictReviewPreviewFixture(conflictID: "conflict-matching-file"))
             ]),
-            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.load()
@@ -83,7 +83,7 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
             opening: opening,
             fileLister: NoopFileLister(),
             fileDetailer: SyncConflictReviewRecordingFileDetailer(result: .success(file)),
-            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
         )
         await model.selectFiles([file.id])
         let detailPane = makeSyncConflictReviewDetailPane(
@@ -114,7 +114,7 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
                 .syncConflictReviewFixture(conflictID: "resolved-conflict", status: .resolved)
             ])),
             conflictResolver: SyncConflictReviewResolver(previewResults: [:]),
-            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.load()
@@ -134,7 +134,7 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
 
     @MainActor
     func testSyncConflictReviewSyncConflictDetectCoreErrorStateMapsCoreErrorAndKeepsRetryVisible() async {
-        let mapper = SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping(
+        let mapper = StaticCoreErrorMapper(mapping: .syncConflictReviewMapping(
             kind: .conflict,
             rawContext: "stale conflict id"
         ))
@@ -227,6 +227,6 @@ private func makeSyncConflictReviewDetailNoteModel(repoPath: String) -> DetailNo
     DetailNoteModel(
         repoPath: repoPath,
         noteStore: NoopNoteStore(),
-        errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
+        errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
     )
 }

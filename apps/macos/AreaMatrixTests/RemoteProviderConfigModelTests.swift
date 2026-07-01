@@ -7,7 +7,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     func testEnableUsesKeychainReferenceAndVerifiedToken() async {
         let bridge = RemoteProviderConfigBridge()
         let store = RemoteProviderTestCredentialStore()
-        let model = makeModel(bridge: bridge, store: store)
+        let model = makeRemoteProviderConfigModel(bridge: bridge, store: store)
 
         await model.load()
         model.apiKey = "  dummy-api-key  "
@@ -35,21 +35,21 @@ final class RemoteProviderConfigModelTests: XCTestCase {
 
     @MainActor
     func testRequiresRetestAfterDraftChanges() async {
-        await assertRetestAfterChange { $0.modelID = "claude-3-haiku" }
-        await assertRetestAfterChange { $0.apiKey = "second-api-key" }
+        await assertRemoteProviderConfigRetestAfterChange { $0.modelID = "claude-3-haiku" }
+        await assertRemoteProviderConfigRetestAfterChange { $0.apiKey = "second-api-key" }
     }
 
     @MainActor
     func testRestoresCredentialWhenTestFails() async {
-        await assertFailedTestRestoresSavedCredential(testMode: .coreFailure)
-        await assertFailedTestRestoresSavedCredential(testMode: .rejected)
+        await assertRemoteProviderConfigFailedTestRestoresSavedCredential(testMode: .coreFailure)
+        await assertRemoteProviderConfigFailedTestRestoresSavedCredential(testMode: .rejected)
     }
 
     @MainActor
     func testRemovesNewCredentialWhenTestIsRejected() async {
         let bridge = RemoteProviderConfigBridge(testMode: .rejected)
         let store = RemoteProviderTestCredentialStore()
-        let model = makeModel(bridge: bridge, store: store)
+        let model = makeRemoteProviderConfigModel(bridge: bridge, store: store)
 
         model.apiKey = "dummy-api-key"
         await model.testConnection()
@@ -64,7 +64,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     func testCancelPreservesExistingSavedCredential() async {
         let store = RemoteProviderTestCredentialStore()
         let savedReference = store.seedCredential(apiKey: "saved-api-key")
-        let model = makeModel(bridge: RemoteProviderConfigBridge(), store: store)
+        let model = makeRemoteProviderConfigModel(bridge: RemoteProviderConfigBridge(), store: store)
 
         model.apiKey = "replacement-api-key"
         model.dataFlowConfirmed = true
@@ -80,7 +80,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     @MainActor
     func testTracksUnusedCredentialWhenEnableFails() async {
         let store = RemoteProviderTestCredentialStore()
-        let model = makeModel(
+        let model = makeRemoteProviderConfigModel(
             bridge: RemoteProviderConfigBridge(enableFails: true),
             store: store
         )
@@ -104,7 +104,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     func testRestoresSavedCredentialWhenEnableFails() async {
         let store = RemoteProviderTestCredentialStore()
         let savedReference = store.seedCredential(apiKey: "saved-api-key")
-        let model = makeModel(
+        let model = makeRemoteProviderConfigModel(
             bridge: RemoteProviderConfigBridge(enableFails: true),
             store: store
         )
@@ -124,14 +124,18 @@ final class RemoteProviderConfigModelTests: XCTestCase {
 
     @MainActor
     func testDisableHonorsStoredKeyConfirmation() async {
-        await assertDisable(removeStoredCredential: true, removed: ["keychain:openAi-managed"], credential: false)
-        await assertDisable(removeStoredCredential: false, removed: [], credential: true)
+        await assertRemoteProviderConfigDisable(
+            removeStoredCredential: true,
+            removed: ["keychain:openAi-managed"],
+            credential: false
+        )
+        await assertRemoteProviderConfigDisable(removeStoredCredential: false, removed: [], credential: true)
     }
 
     @MainActor
     func testRejectedProviderReportsCleanupFailureWithoutEnabling() async {
         let store = RemoteProviderTestCredentialStore(discardFailure: .oneShot)
-        let model = makeModel(
+        let model = makeRemoteProviderConfigModel(
             bridge: RemoteProviderConfigBridge(testMode: .rejected),
             store: store
         )
@@ -159,7 +163,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     func testCancelReportsDraftRestoreFailureAndKeepsSheetOpenState() async {
         let store = RemoteProviderTestCredentialStore(discardFailure: .always)
         let reference = store.seedCredential(apiKey: "saved-api-key")
-        let model = makeModel(bridge: RemoteProviderConfigBridge(), store: store)
+        let model = makeRemoteProviderConfigModel(bridge: RemoteProviderConfigBridge(), store: store)
 
         model.apiKey = "replacement-api-key"
         model.dataFlowConfirmed = true
@@ -176,7 +180,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     func testRetestReportsDraftCleanupFailureAndClearsVerifiedToken() async {
         let store = RemoteProviderTestCredentialStore(discardFailure: .always)
         let reference = store.seedCredential(apiKey: "saved-api-key")
-        let model = makeModel(bridge: RemoteProviderConfigBridge(), store: store)
+        let model = makeRemoteProviderConfigModel(bridge: RemoteProviderConfigBridge(), store: store)
 
         model.apiKey = "replacement-api-key"
         model.dataFlowConfirmed = true
@@ -197,7 +201,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     @MainActor
     func testRemoveUnusedCredentialReportsDeleteFailureAndKeepsRetryState() async {
         let store = RemoteProviderTestCredentialStore(discardFailure: .always)
-        let model = makeModel(
+        let model = makeRemoteProviderConfigModel(
             bridge: RemoteProviderConfigBridge(enableFails: true),
             store: store
         )
@@ -219,7 +223,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     func testEnableFailureReportsExistingCredentialRestoreFailure() async {
         let store = RemoteProviderTestCredentialStore(discardFailure: .always)
         let reference = store.seedCredential(apiKey: "saved-api-key")
-        let model = makeModel(
+        let model = makeRemoteProviderConfigModel(
             bridge: RemoteProviderConfigBridge(enableFails: true),
             store: store
         )
@@ -243,7 +247,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     @MainActor
     func testDisableWithKeyRemovalReportsKeychainFailure() async {
         let store = RemoteProviderTestCredentialStore(removeFailure: .always)
-        let model = makeModel(
+        let model = makeRemoteProviderConfigModel(
             bridge: RemoteProviderConfigBridge(initial: .remoteProviderConfigEnabled()),
             store: store
         )
@@ -265,7 +269,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
         let model = RemotePrivacyGateModel(
             repoPath: "/tmp/remoteProviderConfig",
             bridge: bridge,
-            errorMapper: RemoteProviderConfigErrorMapper()
+            errorMapper: remoteProviderConfigErrorMapper()
         )
 
         let didEnable = await model.enablePrivacyGate(providerConfig: .remoteProviderConfigEnabled())
@@ -289,7 +293,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
         let model = RemotePrivacyGateModel(
             repoPath: "/tmp/remoteProviderConfig",
             bridge: bridge,
-            errorMapper: RemoteProviderConfigErrorMapper()
+            errorMapper: remoteProviderConfigErrorMapper()
         )
         var disabledProvider = RemoteProviderConfigState.remoteProviderConfigEnabled()
         disabledProvider.remoteProviderEnabled = false
@@ -310,7 +314,7 @@ final class RemoteProviderConfigModelTests: XCTestCase {
         let model = RemotePrivacyGateModel(
             repoPath: "/tmp/remoteProviderConfig",
             bridge: bridge,
-            errorMapper: RemoteProviderConfigErrorMapper()
+            errorMapper: remoteProviderConfigErrorMapper()
         )
 
         let didEnable = await model.enablePrivacyGate(providerConfig: .remoteProviderConfigEnabled())
@@ -330,11 +334,11 @@ final class RemoteProviderConfigModelTests: XCTestCase {
         let privacyBridge =
             RemotePrivacyRulesBridge(snapshot: .remoteProviderConfigPrivacyRules(privacyGateEnabled: false))
         let store = RemoteProviderTestCredentialStore()
-        let remoteModel = makeModel(bridge: providerBridge, store: store)
+        let remoteModel = makeRemoteProviderConfigModel(bridge: providerBridge, store: store)
         let privacyModel = RemotePrivacyGateModel(
             repoPath: "/tmp/remoteProviderConfig",
             bridge: privacyBridge,
-            errorMapper: RemoteProviderConfigErrorMapper()
+            errorMapper: remoteProviderConfigErrorMapper()
         )
 
         await remoteModel.load()
@@ -378,11 +382,14 @@ final class RemoteProviderConfigModelTests: XCTestCase {
     func testRemoteProviderConfigKeepsProviderEnabledWhenPrivacyGateEnableFails() async {
         let providerBridge = RemoteProviderConfigBridge()
         let privacyBridge = RemotePrivacyRulesBridge(updateFails: true)
-        let remoteModel = makeModel(bridge: providerBridge, store: RemoteProviderTestCredentialStore())
+        let remoteModel = makeRemoteProviderConfigModel(
+            bridge: providerBridge,
+            store: RemoteProviderTestCredentialStore()
+        )
         let privacyModel = RemotePrivacyGateModel(
             repoPath: "/tmp/remoteProviderConfig",
             bridge: privacyBridge,
-            errorMapper: RemoteProviderConfigErrorMapper()
+            errorMapper: remoteProviderConfigErrorMapper()
         )
 
         await remoteModel.load()
@@ -402,69 +409,5 @@ final class RemoteProviderConfigModelTests: XCTestCase {
             privacyModel.failure?.message,
             "Remote provider was configured, but privacy gate could not be enabled."
         )
-    }
-
-    @MainActor
-    private func makeModel(
-        bridge: RemoteProviderConfigBridge,
-        store: RemoteProviderTestCredentialStore
-    ) -> RemoteProviderConfigModel {
-        RemoteProviderConfigModel(
-            repoPath: "/tmp/remoteProviderConfig",
-            bridge: bridge,
-            credentialStore: store,
-            errorMapper: RemoteProviderConfigErrorMapper()
-        )
-    }
-
-    @MainActor
-    private func assertRetestAfterChange(_ mutate: (RemoteProviderConfigModel) -> Void) async {
-        let bridge = RemoteProviderConfigBridge()
-        let store = RemoteProviderTestCredentialStore()
-        let model = makeModel(bridge: bridge, store: store)
-
-        model.apiKey = "dummy-api-key"
-        model.dataFlowConfirmed = true
-        await model.testConnection()
-        XCTAssertTrue(model.canEnable)
-        mutate(model)
-
-        XCTAssertFalse(model.canEnable)
-        XCTAssertEqual(store.removedReferences(), ["keychain:openAi-managed"])
-        let didEnable = await model.enableRemoteAI()
-        let requests = await bridge.requests()
-        XCTAssertFalse(didEnable)
-        XCTAssertNil(requests.enable)
-    }
-
-    @MainActor
-    private func assertFailedTestRestoresSavedCredential(testMode: RemoteProviderConfigBridge.TestMode) async {
-        let store = RemoteProviderTestCredentialStore()
-        let savedReference = store.seedCredential(apiKey: "saved-api-key")
-        let model = makeModel(bridge: RemoteProviderConfigBridge(testMode: testMode), store: store)
-
-        model.apiKey = "replacement-api-key"
-        await model.testConnection()
-
-        XCTAssertEqual(store.storedKeys(), [savedReference: "saved-api-key"])
-        XCTAssertEqual(store.removedReferences(), [])
-        XCTAssertFalse(model.canEnable)
-    }
-
-    @MainActor
-    private func assertDisable(removeStoredCredential: Bool, removed: [String], credential: Bool) async {
-        let bridge = RemoteProviderConfigBridge(initial: .remoteProviderConfigEnabled())
-        let store = RemoteProviderTestCredentialStore()
-        let model = makeModel(bridge: bridge, store: store)
-
-        await model.load()
-        let didDisable = await model.disableRemoteAI(removeStoredCredential: removeStoredCredential)
-        let requests = await bridge.requests()
-
-        XCTAssertTrue(didDisable)
-        XCTAssertEqual(requests.disable?.removeStoredCredential, removeStoredCredential)
-        XCTAssertEqual(store.removedReferences(), removed)
-        XCTAssertEqual(model.snapshot?.remoteProviderEnabled, false)
-        XCTAssertEqual(model.snapshot?.credentialConfigured, credential)
     }
 }

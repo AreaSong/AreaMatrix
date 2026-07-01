@@ -4,33 +4,22 @@ import XCTest
 final class ImportSingleFileIndexImportTests: XCTestCase {
     @MainActor
     func testIndexOnlyImportCallsImportIndexFileCoreImporterWithEditedCategoryAndFilename() async {
-        let sourceURL = URL(fileURLWithPath: "/tmp/source.pdf")
-        let predictor = IndexImportRecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
-                category: "docs",
-                suggestedName: "source.pdf",
-                reason: .extension,
-                confidence: 0.7
-            ))
+        let sourceURL = importSingleFileSourceURL()
+        let predictor = ImportSingleFileRecordingPredictor(results: [
+            .success(.importSingleFileFixture())
         ])
-        let indexedEntry = FileEntrySnapshot.indexImportFixture(
+        let indexedEntry = FileEntrySnapshot.importIndexFixture(
             currentName: "indexed.pdf",
             category: "docs"
         )
-        let importer = IndexImportRecordingImporter(results: [.success(indexedEntry)])
-        let model = ImportSingleFilePreviewModel(
+        let importer = ImportSingleFileRecordingImporter(results: [.success(indexedEntry)])
+        let model = makeImportSingleFilePreviewModel(
             predictor: predictor,
             importer: importer,
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: RecordingCoreErrorMapper.indexImport()
+            errorMapper: RecordingCoreErrorMapper.importIndex()
         )
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .filePicker,
-            destination: .autoClassify,
-            urls: [sourceURL],
-            kind: .singleFile
-        )
+        let request = ImportEntryRequest.importSingleFileImportRequest(sourcePath: sourceURL.path)
 
         await model.load(request: request)
         model.selectedStorageMode = .indexOnly
@@ -38,13 +27,13 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
         model.suggestedName = " indexed.pdf "
         await waitForImportSingleFilePreflightToSettle(model)
         await model.importSelectedFile()
-        let requests = await importer.recordedRequests()
+        let requests = await importer.recordedCoreRequests()
 
         XCTAssertEqual(requests, [
-            IndexImportRequest(
-                repoPath: "/tmp/repo",
+            ImportSingleFileCoreImportRequest(
+                repoPath: importSingleFileRepoPath(),
                 sourceURL: sourceURL,
-                storageMode: .indexOnly,
+                mode: .indexOnly,
                 overrideCategory: "docs",
                 overrideFilename: "indexed.pdf"
             )
@@ -54,47 +43,36 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
 
     @MainActor
     func testIndexOnlyImportMapsCoreFailureWithoutCreatingStaticSuccess() async {
-        let predictor = IndexImportRecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
-                category: "docs",
-                suggestedName: "source.pdf",
-                reason: .extension,
-                confidence: 0.7
-            ))
+        let predictor = ImportSingleFileRecordingPredictor(results: [
+            .success(.importSingleFileFixture())
         ])
-        let importer = IndexImportRecordingImporter(results: [
-            .failure(CoreError.ICloudPlaceholder(path: "/tmp/source.pdf"))
+        let importer = ImportSingleFileRecordingImporter(results: [
+            .failure(CoreError.ICloudPlaceholder(path: importSingleFileSourcePath()))
         ])
-        let errorMapper = RecordingCoreErrorMapper.indexImport()
-        let model = ImportSingleFilePreviewModel(
+        let errorMapper = RecordingCoreErrorMapper.importIndex()
+        let model = makeImportSingleFilePreviewModel(
             predictor: predictor,
             importer: importer,
             preflight: ImportSingleFileStaticPreflight.ready(),
             errorMapper: errorMapper
         )
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .filePicker,
-            destination: .autoClassify,
-            urls: [URL(fileURLWithPath: "/tmp/source.pdf")],
-            kind: .singleFile
-        )
+        let request = ImportEntryRequest.importSingleFileImportRequest()
 
         await model.load(request: request)
         model.selectedStorageMode = .indexOnly
         await model.importSelectedFile()
         let mappedErrors = await errorMapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [CoreError.ICloudPlaceholder(path: "/tmp/source.pdf")])
+        XCTAssertEqual(mappedErrors, [CoreError.ICloudPlaceholder(path: importSingleFileSourcePath())])
         XCTAssertEqual(
             model.importStatus,
-            .failed(CoreErrorMappingSnapshot.indexImportFixture(kind: .iCloudPlaceholder))
+            .failed(CoreErrorMappingSnapshot.importIndexFixture(kind: .iCloudPlaceholder))
         )
     }
 
     func testDefaultCoreBridgeImportsIndexedFileWithoutMovingOrCopyingSource() async throws {
-        let repoURL = try makeIndexImportTemporaryDirectory(prefix: "repo")
-        let sourceRoot = try makeIndexImportTemporaryDirectory(prefix: "source")
+        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "index-repo")
+        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "index-source")
         defer { removeTestTemporaryItems(repoURL, sourceRoot) }
         let sourceURL = sourceRoot.appendingPathComponent("indexed.pdf")
         try Data("indexed bytes".utf8).write(to: sourceURL)
@@ -116,157 +94,4 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
         XCTAssertEqual(entry.sourcePath, sourceURL.path)
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(entry.path).path))
     }
-}
-
-private struct IndexImportRequest: Equatable {
-    var repoPath: String
-    var sourceURL: URL
-    var storageMode: ImportSingleFileStorageMode
-    var overrideCategory: String
-    var overrideFilename: String
-    var duplicateStrategy: DuplicateStrategy = .ask
-}
-
-private actor IndexImportRecordingPredictor: CoreCategoryPredicting {
-    private var results: [Result<ClassifyResultSnapshot, Error>]
-
-    init(results: [Result<ClassifyResultSnapshot, Error>]) {
-        self.results = results
-    }
-
-    func predictCategory(repoPath _: String, filename _: String) async throws -> ClassifyResultSnapshot {
-        guard !results.isEmpty else {
-            throw CoreError.Classify(reason: "missing test result")
-        }
-
-        switch results.removeFirst() {
-        case let .success(snapshot):
-            return snapshot
-        case let .failure(error):
-            throw error
-        }
-    }
-}
-
-private actor IndexImportRecordingImporter: CoreFileImporting {
-    private var results: [Result<FileEntrySnapshot, Error>]
-    private var requests: [IndexImportRequest] = []
-
-    init(results: [Result<FileEntrySnapshot, Error>]) {
-        self.results = results
-    }
-
-    func importCopiedFile(
-        repoPath: String,
-        sourceURL: URL,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot {
-        try recordImport(IndexImportRequest(
-            repoPath: repoPath,
-            sourceURL: sourceURL,
-            storageMode: .copy,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
-        ))
-    }
-
-    func importMovedFile(
-        repoPath: String,
-        sourceURL: URL,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot {
-        try recordImport(IndexImportRequest(
-            repoPath: repoPath,
-            sourceURL: sourceURL,
-            storageMode: .move,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
-        ))
-    }
-
-    func importIndexedFile(
-        repoPath: String,
-        sourceURL: URL,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot {
-        try recordImport(IndexImportRequest(
-            repoPath: repoPath,
-            sourceURL: sourceURL,
-            storageMode: .indexOnly,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
-        ))
-    }
-
-    func recordedRequests() -> [IndexImportRequest] {
-        requests
-    }
-
-    private func recordImport(_ request: IndexImportRequest) throws -> FileEntrySnapshot {
-        requests.append(request)
-        guard !results.isEmpty else {
-            throw CoreError.Internal(message: "missing import test result")
-        }
-        switch results.removeFirst() {
-        case let .success(snapshot):
-            return snapshot
-        case let .failure(error):
-            throw error
-        }
-    }
-}
-
-private extension FileEntrySnapshot {
-    static func indexImportFixture(currentName: String, category: String) -> FileEntrySnapshot {
-        FileEntrySnapshot(
-            id: 43,
-            path: "/tmp/source.pdf",
-            originalName: "source.pdf",
-            currentName: currentName,
-            category: category,
-            sizeBytes: 12,
-            hashSha256: "hash",
-            storageMode: "Indexed",
-            origin: "Imported",
-            sourcePath: "/tmp/source.pdf",
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_000
-        )
-    }
-}
-
-private extension CoreErrorMappingSnapshot {
-    static func indexImportFixture(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: kind,
-            userMessage: kind == .iCloudPlaceholder ? "iCloud 文件尚未下载" : "导入失败",
-            severity: .high,
-            suggestedAction: "Choose a different file or resolve the conflict.",
-            recoverability: .userActionRequired,
-            rawContext: "index import"
-        )
-    }
-}
-
-private extension RecordingCoreErrorMapper {
-    static func indexImport() -> RecordingCoreErrorMapper {
-        RecordingCoreErrorMapper { error in
-            CoreErrorMappingSnapshot.indexImportFixture(
-                kind: CoreErrorKindTestMapper.kind(for: error)
-            )
-        }
-    }
-}
-
-private func makeIndexImportTemporaryDirectory(prefix: String) throws -> URL {
-    try makeTestTemporaryDirectory(prefix: prefix, named: "AreaMatrixImportIndex")
 }

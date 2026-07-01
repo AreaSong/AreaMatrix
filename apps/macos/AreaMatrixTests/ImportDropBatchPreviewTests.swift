@@ -4,33 +4,11 @@ import XCTest
 final class ImportDropBatchPreviewTests: XCTestCase {
     @MainActor
     func testBatchPreviewCallsPredictorForEachFileAndUsesRealPredictions() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
-        let predictor = ImportDropRecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
-                category: "finance",
-                suggestedName: "Invoice_2026Q1.pdf",
-                reason: .keyword,
-                confidence: 0.9
-            )),
-            .success(ClassifyResultSnapshot(
-                category: "docs",
-                suggestedName: "2026Q1_合同.pdf",
-                reason: .keyword,
-                confidence: 0.82
-            ))
-        ])
+        let fixture = importBatchStandardBatchFixture()
+        let predictor = ImportDropRecordingPredictor(results: importDropStandardBatchPredictions())
         let model = ImportBatchPreviewModel(predictor: predictor)
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .dropZone,
-            destination: .autoClassify,
-            urls: [invoiceURL, contractURL],
-            kind: .multipleItems(2),
-            availableCategories: ["inbox", "docs", "finance"]
-        )
 
-        await model.load(request: request)
+        await model.load(request: fixture.request)
         let requests = await predictor.recordedRequests()
 
         XCTAssertEqual(requests, [
@@ -49,7 +27,7 @@ final class ImportDropBatchPreviewTests: XCTestCase {
 
     @MainActor
     func testBatchPreviewMapsClassifyFailuresAndDuplicatePrecheckPerRow() async {
-        let goodURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let goodURL = importBatchInvoiceURL()
         let duplicateURL = URL(fileURLWithPath: "/tmp/Duplicate.pdf")
         let badURL = URL(fileURLWithPath: "/tmp/Bad.pdf")
         let predictor = ImportDropRecordingPredictor(results: importDropFailurePreviewPredictions())
@@ -92,24 +70,10 @@ final class ImportDropBatchPreviewTests: XCTestCase {
 
     @MainActor
     func testBatchPreviewDuplicatePrecheckFeedsImportBatchConflictRowsBeforeImport() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
-        let predictor = ImportDropRecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
-                category: "finance",
-                suggestedName: "Invoice_2026Q1.pdf",
-                reason: .keyword,
-                confidence: 0.9
-            )),
-            .success(ClassifyResultSnapshot(
-                category: "docs",
-                suggestedName: "2026Q1_合同.pdf",
-                reason: .keyword,
-                confidence: 0.82
-            ))
-        ])
+        let fixture = importBatchStandardBatchFixture()
+        let predictor = ImportDropRecordingPredictor(results: importDropStandardBatchPredictions())
         let duplicatePrechecker = ImportBatchStaticDuplicatePrechecker(results: [
-            invoiceURL.path: .duplicate(existingPath: "finance/existing-invoice.pdf")
+            fixture.invoiceURL.path: .duplicate(existingPath: "finance/existing-invoice.pdf")
         ])
         let previewModel = ImportBatchPreviewModel(
             predictor: predictor,
@@ -119,19 +83,11 @@ final class ImportDropBatchPreviewTests: XCTestCase {
             importer: ImportBatchRecordingBatchImporter(),
             errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .dropZone,
-            destination: .autoClassify,
-            urls: [invoiceURL, contractURL],
-            kind: .multipleItems(2),
-            availableCategories: ["inbox", "docs", "finance"]
-        )
 
-        await previewModel.load(request: request)
+        await previewModel.load(request: fixture.request)
         importModel.applyPreviewRows(
             previewModel.rows,
-            request: request,
+            request: fixture.request,
             selectedDestination: previewModel.selectedDestination
         )
 
@@ -274,6 +230,13 @@ private actor ImportBatchStaticDuplicatePrechecker: ImportBatchDuplicatePrecheck
     func recordedRequests() -> [ImportBatchDuplicatePrecheckRequest] {
         requests
     }
+}
+
+private func importDropStandardBatchPredictions() -> [Result<ClassifyResultSnapshot, Error>] {
+    [
+        .success(.importBatchPrediction(category: "finance", suggestedName: "Invoice_2026Q1.pdf")),
+        .success(.importBatchPrediction(category: "docs", suggestedName: "2026Q1_合同.pdf", confidence: 0.82))
+    ]
 }
 
 private func importDropFailurePreviewPredictions() -> [Result<ClassifyResultSnapshot, Error>] {

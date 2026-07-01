@@ -5,7 +5,7 @@ final class ValidatePathErrorMappingTests: XCTestCase {
     @MainActor
     func testValidatePathMapsCoreFailureThroughErrorMappingCoreErrorMapper() async {
         let mapping = CoreErrorMappingSnapshot.errorSmokePermissionDeniedFixture(rawContext: "/tmp/repo")
-        let errorMapper = ErrorSmokeRecordingErrorMapper(mapping: mapping)
+        let errorMapper = StaticCoreErrorMapper(mapping: mapping)
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
@@ -17,7 +17,8 @@ final class ValidatePathErrorMappingTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
 
-        XCTAssertEqual(errorMapper.mappedErrors, [CoreError.PermissionDenied(path: "/tmp/repo")])
+        let mappedErrors = await errorMapper.recordedErrors()
+        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: "/tmp/repo")])
         XCTAssertEqual(model.repositoryPathError, "无访问权限")
         XCTAssertEqual(model.repositoryPathErrorMapping, mapping)
         XCTAssertFalse(model.canContinueFromValidatePath)
@@ -41,7 +42,7 @@ final class ValidatePathErrorMappingTests: XCTestCase {
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
             pathValidator: ShellRecordingPathValidator(result: .failure(CoreError.Config(reason: "schema mismatch"))),
-            errorMapper: ErrorSmokeRecordingErrorMapper(mapping: mapping),
+            errorMapper: StaticCoreErrorMapper(mapping: mapping),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -325,20 +326,6 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.aiTagSuggestionState.report?.skippedReason, .featureDisabled)
         XCTAssertEqual(model.aiTagSuggestionState.report?.contentsRead, false)
         XCTAssertEqual(model.aiTagSuggestionState.report?.aiUsed, false)
-    }
-}
-
-private final class ErrorSmokeRecordingErrorMapper: CoreErrorMapping {
-    private let mapping: CoreErrorMappingSnapshot
-    private(set) var mappedErrors: [CoreError] = []
-
-    init(mapping: CoreErrorMappingSnapshot) {
-        self.mapping = mapping
-    }
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        mappedErrors.append(error)
-        return mapping
     }
 }
 

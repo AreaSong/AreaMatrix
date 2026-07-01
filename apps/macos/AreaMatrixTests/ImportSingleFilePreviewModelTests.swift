@@ -4,25 +4,19 @@ import XCTest
 final class ImportSingleFilePreviewModelTests: XCTestCase {
     @MainActor
     func testSingleFileSheetCallsCorePredictorAndPrefillsVisibleFields() async {
-        let sourceURL = URL(fileURLWithPath: "/tmp/合同.pdf")
-        let predictor = RecordingPreviewPredictor(results: [
-            .success(ClassifyResultSnapshot(
+        let sourceURL = importSingleFileContractURL()
+        let predictor = ImportSingleFileRecordingPredictor(results: [
+            .success(.importSingleFileFixture(
                 category: "docs",
                 suggestedName: "2026Q1_合同_客户A.pdf",
                 reason: .keyword,
                 confidence: 0.93
             ))
         ])
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .filePicker,
-            destination: .autoClassify,
-            urls: [sourceURL],
-            kind: .singleFile
-        )
-        let model = ImportSingleFilePreviewModel(
+        let request = ImportEntryRequest.importSingleFileImportRequest(sourcePath: sourceURL.path)
+        let model = makeImportSingleFilePreviewModel(
             predictor: predictor,
-            importer: ImportSingleFilePreviewRecordingImporter(results: []),
+            importer: ImportSingleFileRecordingImporter(results: []),
             preflight: ImportSingleFileStaticPreflight.ready(),
             errorMapper: RecordingCoreErrorMapper.importCopy()
         )
@@ -31,7 +25,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         let requests = await predictor.recordedRequests()
 
         XCTAssertEqual(requests, [
-            ImportSingleFilePreviewPredictRequest(repoPath: "/tmp/repo", filename: "合同.pdf")
+            ImportSingleFilePredictRequest(repoPath: importSingleFileRepoPath(), filename: "合同.pdf")
         ])
         XCTAssertEqual(model.source?.fileName, "合同.pdf")
         XCTAssertEqual(model.selectedCategory, "docs")
@@ -43,24 +37,22 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
 
     @MainActor
     func testExplicitCategoryKeepsUserSelectedDestinationWhileStillPreviewingName() async {
-        let predictor = RecordingPreviewPredictor(results: [
-            .success(ClassifyResultSnapshot(
+        let predictor = ImportSingleFileRecordingPredictor(results: [
+            .success(.importSingleFileFixture(
                 category: "docs",
                 suggestedName: "2026Q1_合同_客户A.pdf",
                 reason: .extension,
                 confidence: 0.8
             ))
         ])
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
+        let request = ImportEntryRequest.importSingleFileImportRequest(
             source: .dropZone,
             destination: .category("finance"),
-            urls: [URL(fileURLWithPath: "/tmp/合同.pdf")],
-            kind: .singleFile
+            sourcePath: importSingleFileContractURL().path
         )
-        let model = ImportSingleFilePreviewModel(
+        let model = makeImportSingleFilePreviewModel(
             predictor: predictor,
-            importer: ImportSingleFilePreviewRecordingImporter(results: []),
+            importer: ImportSingleFileRecordingImporter(results: []),
             preflight: ImportSingleFileStaticPreflight.ready(),
             errorMapper: RecordingCoreErrorMapper.importCopy()
         )
@@ -75,19 +67,13 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
 
     @MainActor
     func testClassificationFailureDoesNotCreateStaticPreviewSuccess() async {
-        let predictor = RecordingPreviewPredictor(results: [
+        let predictor = ImportSingleFileRecordingPredictor(results: [
             .failure(CoreError.Classify(reason: "classifier unavailable"))
         ])
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .filePicker,
-            destination: .autoClassify,
-            urls: [URL(fileURLWithPath: "/tmp/source.pdf")],
-            kind: .singleFile
-        )
-        let model = ImportSingleFilePreviewModel(
+        let request = ImportEntryRequest.importSingleFileImportRequest()
+        let model = makeImportSingleFilePreviewModel(
             predictor: predictor,
-            importer: ImportSingleFilePreviewRecordingImporter(results: []),
+            importer: ImportSingleFileRecordingImporter(results: []),
             preflight: ImportSingleFileStaticPreflight.ready(),
             errorMapper: RecordingCoreErrorMapper.importCopy()
         )
@@ -102,9 +88,9 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
 
     @MainActor
     func testNonSingleFileRequestSkipsClassifyPreviewCorePredictor() async {
-        let predictor = RecordingPreviewPredictor(results: [])
+        let predictor = ImportSingleFileRecordingPredictor(results: [])
         let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
+            repoPath: importSingleFileRepoPath(),
             source: .filePicker,
             destination: .autoClassify,
             urls: [
@@ -113,9 +99,9 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
             ],
             kind: .multipleItems(2)
         )
-        let model = ImportSingleFilePreviewModel(
+        let model = makeImportSingleFilePreviewModel(
             predictor: predictor,
-            importer: ImportSingleFilePreviewRecordingImporter(results: []),
+            importer: ImportSingleFileRecordingImporter(results: []),
             preflight: ImportSingleFileStaticPreflight.ready(),
             errorMapper: RecordingCoreErrorMapper.importCopy()
         )
@@ -130,46 +116,35 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
 
     @MainActor
     func testCopyImportCallsImportCopyFileCoreImporterWithEditedCategoryAndFilename() async {
-        let sourceURL = URL(fileURLWithPath: "/tmp/source.pdf")
-        let predictor = RecordingPreviewPredictor(results: [
-            .success(ClassifyResultSnapshot(
-                category: "docs",
-                suggestedName: "source.pdf",
-                reason: .extension,
-                confidence: 0.7
-            ))
+        let sourceURL = importSingleFileSourceURL()
+        let predictor = ImportSingleFileRecordingPredictor(results: [
+            .success(.importSingleFileFixture())
         ])
         let importedEntry = FileEntrySnapshot.importSingleFileFixture(
             currentName: "contract.pdf",
             category: "legal"
         )
-        let importer = ImportSingleFilePreviewRecordingImporter(results: [.success(importedEntry)])
-        let model = ImportSingleFilePreviewModel(
+        let importer = ImportSingleFileRecordingImporter(results: [.success(importedEntry)])
+        let model = makeImportSingleFilePreviewModel(
             predictor: predictor,
             importer: importer,
             preflight: ImportSingleFileStaticPreflight.ready(),
             errorMapper: RecordingCoreErrorMapper.importCopy()
         )
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .filePicker,
-            destination: .autoClassify,
-            urls: [sourceURL],
-            kind: .singleFile
-        )
+        let request = ImportEntryRequest.importSingleFileImportRequest(sourcePath: sourceURL.path)
 
         await model.load(request: request)
         model.selectedCategory = " legal "
         model.suggestedName = " contract.pdf "
         await waitForImportSingleFilePreflightToSettle(model)
         await model.importSelectedFile()
-        let requests = await importer.recordedRequests()
+        let requests = await importer.recordedCoreRequests()
 
         XCTAssertEqual(requests, [
-            ImportSingleFilePreviewImportRequest(
-                repoPath: "/tmp/repo",
+            ImportSingleFileCoreImportRequest(
+                repoPath: importSingleFileRepoPath(),
                 sourceURL: sourceURL,
-                storageMode: .copy,
+                mode: .copy,
                 overrideCategory: "legal",
                 overrideFilename: "contract.pdf",
                 duplicateStrategy: .ask
@@ -180,37 +155,26 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
 
     @MainActor
     func testCopyImportMapsNonDuplicateCoreFailureWithoutCreatingStaticSuccess() async {
-        let predictor = RecordingPreviewPredictor(results: [
-            .success(ClassifyResultSnapshot(
-                category: "docs",
-                suggestedName: "source.pdf",
-                reason: .extension,
-                confidence: 0.7
-            ))
+        let predictor = ImportSingleFileRecordingPredictor(results: [
+            .success(.importSingleFileFixture())
         ])
-        let importer = ImportSingleFilePreviewRecordingImporter(results: [
-            .failure(CoreError.PermissionDenied(path: "/tmp/source.pdf"))
+        let importer = ImportSingleFileRecordingImporter(results: [
+            .failure(CoreError.PermissionDenied(path: importSingleFileSourcePath()))
         ])
         let errorMapper = RecordingCoreErrorMapper.importCopy()
-        let model = ImportSingleFilePreviewModel(
+        let model = makeImportSingleFilePreviewModel(
             predictor: predictor,
             importer: importer,
             preflight: ImportSingleFileStaticPreflight.ready(),
             errorMapper: errorMapper
         )
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .filePicker,
-            destination: .autoClassify,
-            urls: [URL(fileURLWithPath: "/tmp/source.pdf")],
-            kind: .singleFile
-        )
+        let request = ImportEntryRequest.importSingleFileImportRequest()
 
         await model.load(request: request)
         await model.importSelectedFile()
         let mappedErrors = await errorMapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: "/tmp/source.pdf")])
+        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: importSingleFileSourcePath())])
         XCTAssertEqual(
             model.importStatus,
             .failed(CoreErrorMappingSnapshot.importCopyFixture(kind: .permissionDenied))
@@ -219,9 +183,9 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
 
     @MainActor
     func testImportRequiresCompletedPreview() async {
-        let importer = ImportSingleFilePreviewRecordingImporter(results: [])
-        let model = ImportSingleFilePreviewModel(
-            predictor: RecordingPreviewPredictor(results: []),
+        let importer = ImportSingleFileRecordingImporter(results: [])
+        let model = makeImportSingleFilePreviewModel(
+            predictor: ImportSingleFileRecordingPredictor(results: []),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight.ready(),
             errorMapper: RecordingCoreErrorMapper.importCopy()
@@ -236,9 +200,9 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
 
     @MainActor
     func testEditingImportFieldsImmediatelyInvalidatesExistingPreflight() async {
-        let model = ImportSingleFilePreviewModel(
-            predictor: RecordingPreviewPredictor(results: [.success(.importSingleFileFixture())]),
-            importer: ImportSingleFilePreviewRecordingImporter(results: []),
+        let model = makeImportSingleFilePreviewModel(
+            predictor: ImportSingleFileRecordingPredictor(results: [.success(.importSingleFileFixture())]),
+            importer: ImportSingleFileRecordingImporter(results: []),
             preflight: ImportSingleFileStaticPreflight.ready(),
             errorMapper: RecordingCoreErrorMapper.importCopy()
         )
@@ -253,15 +217,10 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
 
     @MainActor
     func testICloudPlaceholderRequiresDownloadAndRetryBeforeImport() async {
-        let result = ImportSingleFilePreflightResult(
-            sourceSizeBytes: nil,
-            hashSha256: nil,
-            targetRelativePath: "docs/source.pdf",
-            conflict: .iCloudPlaceholder(path: "/tmp/source.pdf")
-        )
-        let importer = ImportSingleFilePreviewRecordingImporter(results: [])
-        let model = ImportSingleFilePreviewModel(
-            predictor: RecordingPreviewPredictor(results: [.success(.importSingleFileFixture())]),
+        let result = ImportSingleFilePreflightResult.importICloudPlaceholderFixture()
+        let importer = ImportSingleFileRecordingImporter(results: [])
+        let model = makeImportSingleFilePreviewModel(
+            predictor: ImportSingleFileRecordingPredictor(results: [.success(.importSingleFileFixture())]),
             importer: importer,
             preflight: ImportSingleFileStaticPreflight(result: result),
             placeholderDownloader: ImportSingleFileStaticICloudDownloader(),
@@ -280,15 +239,10 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
 
     @MainActor
     func testICloudDownloadFailureKeepsRecoveryActionsVisibleOnSheet() async {
-        let result = ImportSingleFilePreflightResult(
-            sourceSizeBytes: nil,
-            hashSha256: nil,
-            targetRelativePath: "docs/source.pdf",
-            conflict: .iCloudPlaceholder(path: "/tmp/source.pdf")
-        )
-        let model = ImportSingleFilePreviewModel(
-            predictor: RecordingPreviewPredictor(results: [.success(.importSingleFileFixture())]),
-            importer: ImportSingleFilePreviewRecordingImporter(results: []),
+        let result = ImportSingleFilePreflightResult.importICloudPlaceholderFixture()
+        let model = makeImportSingleFilePreviewModel(
+            predictor: ImportSingleFileRecordingPredictor(results: [.success(.importSingleFileFixture())]),
+            importer: ImportSingleFileRecordingImporter(results: []),
             preflight: ImportSingleFileStaticPreflight(result: result),
             placeholderDownloader: ImportSingleFileStaticICloudDownloader(
                 error: ImportSingleFileStaticLocalizedError(message: "network offline")
@@ -306,125 +260,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         guard case let .iCloudDownloadFailed(path, reason) = model.currentPreflightResult?.conflict else {
             return XCTFail("Expected iCloud download failure to remain in iCloud recovery state")
         }
-        XCTAssertEqual(path, "/tmp/source.pdf")
+        XCTAssertEqual(path, importSingleFileSourcePath())
         XCTAssertEqual(reason, "network offline")
-    }
-}
-
-private struct ImportSingleFilePreviewPredictRequest: Equatable {
-    var repoPath: String
-    var filename: String
-}
-
-private struct ImportSingleFilePreviewImportRequest: Equatable {
-    var repoPath: String
-    var sourceURL: URL
-    var storageMode: ImportSingleFileStorageMode
-    var overrideCategory: String
-    var overrideFilename: String
-    var duplicateStrategy: DuplicateStrategy = .ask
-}
-
-private actor RecordingPreviewPredictor: CoreCategoryPredicting {
-    private var results: [Result<ClassifyResultSnapshot, Error>]
-    private var requests: [ImportSingleFilePreviewPredictRequest] = []
-
-    init(results: [Result<ClassifyResultSnapshot, Error>]) {
-        self.results = results
-    }
-
-    func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
-        requests.append(ImportSingleFilePreviewPredictRequest(repoPath: repoPath, filename: filename))
-        guard !results.isEmpty else {
-            throw CoreError.Classify(reason: "missing test result")
-        }
-
-        switch results.removeFirst() {
-        case let .success(snapshot):
-            return snapshot
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func recordedRequests() -> [ImportSingleFilePreviewPredictRequest] {
-        requests
-    }
-}
-
-private actor ImportSingleFilePreviewRecordingImporter: CoreFileImporting {
-    private var results: [Result<FileEntrySnapshot, Error>]
-    private var requests: [ImportSingleFilePreviewImportRequest] = []
-
-    init(results: [Result<FileEntrySnapshot, Error>]) {
-        self.results = results
-    }
-
-    func importCopiedFile(
-        repoPath: String,
-        sourceURL: URL,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot {
-        try recordImport(ImportSingleFilePreviewImportRequest(
-            repoPath: repoPath,
-            sourceURL: sourceURL,
-            storageMode: .copy,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
-        ))
-    }
-
-    func importMovedFile(
-        repoPath: String,
-        sourceURL: URL,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot {
-        try recordImport(ImportSingleFilePreviewImportRequest(
-            repoPath: repoPath,
-            sourceURL: sourceURL,
-            storageMode: .move,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
-        ))
-    }
-
-    func importIndexedFile(
-        repoPath: String,
-        sourceURL: URL,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot {
-        try recordImport(ImportSingleFilePreviewImportRequest(
-            repoPath: repoPath,
-            sourceURL: sourceURL,
-            storageMode: .indexOnly,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
-        ))
-    }
-
-    private func recordImport(_ request: ImportSingleFilePreviewImportRequest) throws -> FileEntrySnapshot {
-        requests.append(request)
-        guard !results.isEmpty else {
-            throw CoreError.Internal(message: "missing import test result")
-        }
-        switch results.removeFirst() {
-        case let .success(snapshot):
-            return snapshot
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func recordedRequests() -> [ImportSingleFilePreviewImportRequest] {
-        requests
     }
 }

@@ -80,20 +80,26 @@ actor RemoteProviderConfigBridge: CoreRemoteProviderConfiguring {
     private var initial: RemoteProviderConfigState
     private let testMode: TestMode
     private let enableFails: Bool
+    private let loadError: CoreError?
     private var recorded = Requests()
 
     init(
         initial: RemoteProviderConfigState = .remoteProviderConfigDisabled(),
         testMode: TestMode = .success,
-        enableFails: Bool = false
+        enableFails: Bool = false,
+        loadError: CoreError? = nil
     ) {
         self.initial = initial
         self.testMode = testMode
         self.enableFails = enableFails
+        self.loadError = loadError
     }
 
     func loadRemoteProviderConfig(repoPath _: String) async throws -> RemoteProviderConfigState {
         recorded.loadCount += 1
+        if let loadError {
+            throw loadError
+        }
         return initial
     }
 
@@ -206,15 +212,178 @@ extension RemoteProviderConfigState {
     }
 }
 
-actor RemoteProviderConfigErrorMapper: CoreErrorMapping {
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
+func remoteProviderConfigErrorMapper() -> StaticCoreErrorMapper {
+    StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot(
+        kind: .internal,
+        userMessage: "Remote provider save failed",
+        severity: .medium,
+        suggestedAction: "Retry",
+        recoverability: .retryable,
+        rawContext: "remote-provider-config remote provider"
+    ))
+}
+
+@MainActor
+func makeRemoteProviderConfigModel(
+    bridge: RemoteProviderConfigBridge,
+    store: RemoteProviderTestCredentialStore
+) -> RemoteProviderConfigModel {
+    RemoteProviderConfigModel(
+        repoPath: "/tmp/remoteProviderConfig",
+        bridge: bridge,
+        credentialStore: store,
+        errorMapper: remoteProviderConfigErrorMapper()
+    )
+}
+
+@MainActor
+func assertRemoteProviderConfigRetestAfterChange(
+    _ mutate: (RemoteProviderConfigModel) -> Void,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) async {
+    let bridge = RemoteProviderConfigBridge()
+    let store = RemoteProviderTestCredentialStore()
+    let model = makeRemoteProviderConfigModel(bridge: bridge, store: store)
+
+    model.apiKey = "dummy-api-key"
+    model.dataFlowConfirmed = true
+    await model.testConnection()
+    XCTAssertTrue(model.canEnable, file: file, line: line)
+    mutate(model)
+
+    XCTAssertFalse(model.canEnable, file: file, line: line)
+    XCTAssertEqual(store.removedReferences(), ["keychain:openAi-managed"], file: file, line: line)
+    let didEnable = await model.enableRemoteAI()
+    let requests = await bridge.requests()
+    XCTAssertFalse(didEnable, file: file, line: line)
+    XCTAssertNil(requests.enable, file: file, line: line)
+}
+
+@MainActor
+func assertRemoteProviderConfigFailedTestRestoresSavedCredential(
+    testMode: RemoteProviderConfigBridge.TestMode,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) async {
+    let store = RemoteProviderTestCredentialStore()
+    let savedReference = store.seedCredential(apiKey: "saved-api-key")
+    let model = makeRemoteProviderConfigModel(
+        bridge: RemoteProviderConfigBridge(testMode: testMode),
+        store: store
+    )
+
+    model.apiKey = "replacement-api-key"
+    await model.testConnection()
+
+    XCTAssertEqual(store.storedKeys(), [savedReference: "saved-api-key"], file: file, line: line)
+    XCTAssertEqual(store.removedReferences(), [], file: file, line: line)
+    XCTAssertFalse(model.canEnable, file: file, line: line)
+}
+
+@MainActor
+func assertRemoteProviderConfigDisable(
+    removeStoredCredential: Bool,
+    removed: [String],
+    credential: Bool,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) async {
+    let bridge = RemoteProviderConfigBridge(initial: .remoteProviderConfigEnabled())
+    let store = RemoteProviderTestCredentialStore()
+    let model = makeRemoteProviderConfigModel(bridge: bridge, store: store)
+
+    await model.load()
+    let didDisable = await model.disableRemoteAI(removeStoredCredential: removeStoredCredential)
+    let requests = await bridge.requests()
+
+    XCTAssertTrue(didDisable, file: file, line: line)
+    XCTAssertEqual(requests.disable?.removeStoredCredential, removeStoredCredential, file: file, line: line)
+    XCTAssertEqual(store.removedReferences(), removed, file: file, line: line)
+    XCTAssertEqual(model.snapshot?.remoteProviderEnabled, false, file: file, line: line)
+    XCTAssertEqual(model.snapshot?.credentialConfigured, credential, file: file, line: line)
+}
+
+@MainActor
+// swiftlint:disable:next function_parameter_count
+func assertAIPrivacyRemoteProviderStatus(
+    _ snapshot: RemoteProviderConfigState,
+    status: String,
+    verified: String,
+    enabled: String,
+    scope: String,
+    allowsGate: Bool,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) async {
+    let model = AIPrivacyRemoteProviderStateModel(
+        repoPath: "/tmp/aiPrivacyRules",
+        providerReader: RemoteProviderConfigBridge(initial: snapshot),
+        errorMapper: StaticCoreErrorMapper(mapping: .remoteProviderConfigAIPrivacyRemoteProviderUnavailable())
+    )
+
+    await model.load()
+
+    XCTAssertEqual(model.providerStatusText, status, file: file, line: line)
+    XCTAssertEqual(model.verifiedStatusText, verified, file: file, line: line)
+    XCTAssertEqual(model.enabledStatusText, enabled, file: file, line: line)
+    XCTAssertEqual(model.featureScopeText, scope, file: file, line: line)
+    XCTAssertEqual(model.allowsPrivacyGateEnable, allowsGate, file: file, line: line)
+}
+
+extension CoreErrorMappingSnapshot {
+    static func remoteProviderConfigAIPrivacyRemoteProviderUnavailable() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
-            kind: .internal,
-            userMessage: "Remote provider save failed",
+            kind: .permissionDenied,
+            userMessage: "Remote provider unavailable",
             severity: .medium,
-            suggestedAction: "Retry",
-            recoverability: .retryable,
-            rawContext: "remote-provider-config remote provider"
+            suggestedAction: "Configure remote AI",
+            recoverability: .userActionRequired,
+            rawContext: "ai-privacy-rules remote-provider-config-core"
+        )
+    }
+}
+
+extension RemoteProviderConfigState {
+    static func remoteProviderConfigAIPrivacyRemoteProviderConfigured() -> RemoteProviderConfigState {
+        RemoteProviderConfigState(
+            providerConfigured: true,
+            providerVerified: true,
+            remoteProviderEnabled: true,
+            provider: .openAi,
+            modelID: "gpt-4.1-mini",
+            endpointURL: nil,
+            credentialConfigured: true,
+            featureScope: [.autoSummaries, .semanticSearch],
+            updatedAt: 309,
+            disabledReason: nil
+        )
+    }
+}
+
+extension AISettingsSnapshot {
+    static func remoteProviderConfigAIPrivacyRemoteReady(repoPath: String) -> AISettingsSnapshot {
+        remoteProviderConfigAIPrivacySnapshot(config: AISettingsConfigSnapshot(
+            repoPath: repoPath,
+            aiEnabled: true,
+            providerPreference: .remoteFirst,
+            localAIEnabled: true,
+            remoteAIAllowed: true,
+            privacyGateEnabled: true,
+            privacyPolicyRef: "Default gate policy",
+            featureToggles: [
+                AISettingsFeatureConfigSnapshot(feature: .autoSummaries, enabled: true, allowRemote: true),
+                AISettingsFeatureConfigSnapshot(feature: .semanticSearch, enabled: true, allowRemote: true)
+            ]
+        ))
+    }
+
+    static func remoteProviderConfigAIPrivacySnapshot(config: AISettingsConfigSnapshot) -> AISettingsSnapshot {
+        let normalized = config.normalized()
+        return AISettingsSnapshot(
+            config: normalized,
+            capabilities: AISettingsCapabilitySnapshot.derived(from: normalized),
+            updatedAt: 309
         )
     }
 }

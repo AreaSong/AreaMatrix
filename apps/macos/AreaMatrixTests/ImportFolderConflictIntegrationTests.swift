@@ -94,7 +94,7 @@ final class ImportFolderConflictIntegrationTests: XCTestCase {
         }
         scenario.model.failImportEntry(
             progress: progress.progressSnapshot,
-            mapping: ImportProgressFatalFolderErrorMapper.mapping,
+            mapping: .importProgressFatalFolderError,
             retryContext: outcome?.fatalRetryContext,
             recoveryCheck: .checking
         )
@@ -261,7 +261,7 @@ private func makeImportFolderFatalFolderImportScenario() -> ImportFolderFatalFol
     let importModel = ImportFolderPreviewModel(
         predictor: importFolderFatalFolderPredictor(),
         importer: importer,
-        errorMapper: ImportProgressFatalFolderErrorMapper(),
+        errorMapper: StaticCoreErrorMapper(mapping: .importProgressFatalFolderError),
         conflictPrechecker: ImportFolderNoopConflictPrechecker(),
         scanner: importFolderStaticScanner(urls: urls)
     )
@@ -308,17 +308,15 @@ private func assertImportFolderFatalPause(_ pausedState: ImportProgressRouteStat
     XCTAssertEqual(pausedState.retryStatusText, "Checking recovery state...")
 }
 
-private struct ImportProgressFatalFolderErrorMapper: CoreErrorMapping {
-    static let mapping = CoreErrorMappingSnapshot(
-        kind: .io,
-        userMessage: "文件读写失败",
-        severity: .critical,
-        suggestedAction: "AreaMatrix 会先确认 staging 状态，再允许重试当前项。",
-        recoverability: .fatal,
-        rawContext: "import-progress folder fatal import progress"
-    )
-
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        Self.mapping
+private extension CoreErrorMappingSnapshot {
+    static var importProgressFatalFolderError: CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .io,
+            userMessage: "文件读写失败",
+            severity: .critical,
+            suggestedAction: "AreaMatrix 会先确认 staging 状态，再允许重试当前项。",
+            recoverability: .fatal,
+            rawContext: "import-progress folder fatal import progress"
+        )
     }
 }

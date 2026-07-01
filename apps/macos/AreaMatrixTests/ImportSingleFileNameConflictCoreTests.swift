@@ -4,7 +4,7 @@ import XCTest
 final class ImportSingleFileNameConflictCoreTests: XCTestCase {
     @MainActor
     func testImportConflictBatchLoadsCoreConflictBatchPreviewWithDefaultSafeStrategies() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let invoiceURL = importBatchInvoiceURL()
         let conflictBatcher = RecordingConflictBatcher()
         let model = ImportBatchCopyImportModel(
             importer: ImportBatchRecordingBatchImporter(),
@@ -23,7 +23,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         XCTAssertTrue(model.showsCoreConflictBatchReview)
         XCTAssertEqual(previewRequests, [
             ImportConflictBatchPreviewRequest(
-                repoPath: "/tmp/repo",
+                repoPath: importSingleFileRepoPath(),
                 request: ImportConflictBatchPreviewRequestSnapshot(
                     importSessionID: "session-221",
                     conflictIDs: ["dup-1", "name-1"],
@@ -39,7 +39,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
 
     @MainActor
     func testImportConflictBatchApplyRequiresReplaceConfirmationBeforeCallingCore() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let invoiceURL = importBatchInvoiceURL()
         let conflictBatcher = RecordingConflictBatcher(preview: .importConflictBatchReplacePreview)
         let model = ImportBatchCopyImportModel(
             importer: ImportBatchRecordingBatchImporter(),
@@ -62,7 +62,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         XCTAssertNil(blockedResult)
         XCTAssertEqual(applyRequests, [
             ImportConflictBatchApplyRequest(
-                repoPath: "/tmp/repo",
+                repoPath: importSingleFileRepoPath(),
                 request: ImportConflictBatchApplyRequestSnapshot(
                     importSessionID: "session-221",
                     conflictIDs: ["dup-1"],
@@ -79,7 +79,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
 
     @MainActor
     func testImportConflictBatchPartialBlockedRowsDoNotDisableActionableScope() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let invoiceURL = importBatchInvoiceURL()
         let blockedPreview = ImportConflictBatchPreviewReportSnapshot.importConflictBatchDefaultPreview
             .withBlockedSameNameRow()
         let conflictBatcher = RecordingConflictBatcher(preview: blockedPreview)
@@ -118,7 +118,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         try Data("existing bytes".utf8).write(to: existingURL)
         try Data("incoming bytes".utf8).write(to: incomingURL)
 
-        let model = try await makeNameConflictModel(
+        let model = try await makeImportSingleFileNameConflictCoreModel(
             repoURL: repoURL,
             existingURL: existingURL,
             incomingURL: incomingURL
@@ -149,7 +149,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         try Data("existing bytes".utf8).write(to: existingURL)
         try Data("incoming bytes".utf8).write(to: incomingURL)
 
-        let model = try await makeNameConflictModel(
+        let model = try await makeImportSingleFileNameConflictCoreModel(
             repoURL: repoURL,
             existingURL: existingURL,
             incomingURL: incomingURL
@@ -162,42 +162,11 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         XCTAssertEqual(imported?.path, "docs/renamed.pdf")
         XCTAssertEqual(imported?.currentName, "renamed.pdf")
     }
-
-    @MainActor
-    private func makeNameConflictModel(
-        repoURL: URL,
-        existingURL: URL,
-        incomingURL: URL
-    ) async throws -> ImportSingleFilePreviewModel {
-        let bridge = CoreBridge()
-        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        _ = try await bridge.importCopiedFile(
-            repoPath: repoURL.path,
-            sourceURL: existingURL,
-            overrideCategory: "docs",
-            overrideFilename: "source.pdf"
-        )
-
-        let model = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
-            importer: bridge,
-            preflight: CoreImportSingleFilePreflight(),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
-        )
-        await model.load(request: ImportEntryRequest(
-            repoPath: repoURL.path,
-            source: .filePicker,
-            destination: .autoClassify,
-            urls: [incomingURL],
-            kind: .singleFile
-        ))
-        return model
-    }
 }
 
 private func importConflictBatchBatchRequest(urls: [URL], conflictIDs: [String]) -> ImportEntryRequest {
     ImportEntryRequest(
-        repoPath: "/tmp/repo",
+        repoPath: importSingleFileRepoPath(),
         source: .dropZone,
         destination: .autoClassify,
         urls: urls,

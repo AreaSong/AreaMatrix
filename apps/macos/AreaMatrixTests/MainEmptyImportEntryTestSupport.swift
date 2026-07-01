@@ -1,15 +1,7 @@
 @testable import AreaMatrix
 import Foundation
 
-actor CommandPaletteNoopUndoStore: CoreUndoActionLogging {
-    func listUndoActions(repoPath _: String) async throws -> [UndoActionRecordSnapshot] {
-        []
-    }
-
-    func undoAction(repoPath _: String, actionID _: String) async throws -> UndoActionResultSnapshot {
-        throw CoreError.Internal(message: "command-palette/redo-action-log test does not execute undo actions")
-    }
-}
+typealias CommandPaletteNoopUndoStore = NoopUndoActionStore
 
 struct MainEmptyImportStaticImportPicker: RepositoryImportPicking {
     let urls: [URL]?

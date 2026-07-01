@@ -33,7 +33,7 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
         try await assertAdvancedSettingsDiagnosticsAndOverview(context)
 
         let opening = RepositoryOpeningResult.shellFixture(repoPath: context.repoURL.path, fileCount: 1)
-        let recoverer = RecordingStartupRecoverer()
+        let recoverer = RecordingCoreStartupRecoverer()
         let shell = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             startupRecoverer: recoverer,
@@ -56,7 +56,7 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
     func testAdvancedSettingsLoadFailureShowsRecoverableErrorStateWithoutMockingSuccess() async {
         let model = AdvancedSettingsModel(
             repoPath: "/tmp/advancedSettings-broken-repo",
-            loader: AdvancedSettingsFailingConfigLoader(error: CoreError.Config(reason: "invalid repo_config")),
+            loader: RecordingConfigurationLoader(result: .failure(CoreError.Config(reason: "invalid repo_config"))),
             updater: NoopConfigurationUpdater(),
             errorMapper: CoreBridge()
         )
@@ -76,7 +76,7 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
     @MainActor
     func testAdvancedSettingsLogFolderFailureKeepsPageLoadedWithRecoverableError() async {
         let model = await loadedAdvancedSettingsModel(
-            logsOpener: AdvancedSettingsRecordingLogsOpener(result: .failure(AdvancedSettingsLogFolderError.missing(
+            logsOpener: RecordingAdvancedSettingsLogsOpener(result: .failure(AdvancedSettingsLogFolderError.missing(
                 "/tmp/repo/.areamatrix/logs"
             )))
         )
@@ -176,8 +176,8 @@ private struct AdvancedSettingsIntegrationContext {
     let generatedOverviewURL: URL
     let diagnosticsSnapshot: DiagnosticsSnapshotSnapshot
     let diagnosticsCollector: ShellRecordingDiagnosticsCollector
-    let logsOpener: AdvancedSettingsRecordingLogsOpener
-    let summaryCopier: RecordingDiagnosticSummaryCopier
+    let logsOpener: RecordingAdvancedSettingsLogsOpener
+    let summaryCopier: RecordingAdvancedDiagnosticCopier
     let bridge: CoreBridge
     let model: AdvancedSettingsModel
 }
@@ -206,8 +206,8 @@ private func makeAdvancedSettingsIntegrationContext() async throws -> AdvancedSe
         warnings: ["paths redacted"]
     )
     let diagnosticsCollector = ShellRecordingDiagnosticsCollector(result: .success(diagnosticsSnapshot))
-    let logsOpener = AdvancedSettingsRecordingLogsOpener(result: .success(advancedSettingsLogsPath(repoURL: repoURL)))
-    let summaryCopier = RecordingDiagnosticSummaryCopier()
+    let logsOpener = RecordingAdvancedSettingsLogsOpener(logsPath: advancedSettingsLogsPath(repoURL: repoURL))
+    let summaryCopier = RecordingAdvancedDiagnosticCopier()
     let model = advancedSettingsIntegrationModel(
         repoURL: repoURL,
         bridge: bridge,
@@ -256,8 +256,8 @@ private func advancedSettingsIntegrationModel(
     repoURL: URL,
     bridge: CoreBridge,
     diagnosticsCollector: ShellRecordingDiagnosticsCollector,
-    logsOpener: AdvancedSettingsRecordingLogsOpener,
-    summaryCopier: RecordingDiagnosticSummaryCopier
+    logsOpener: RecordingAdvancedSettingsLogsOpener,
+    summaryCopier: RecordingAdvancedDiagnosticCopier
 ) -> AdvancedSettingsModel {
     AdvancedSettingsModel(
         repoPath: repoURL.path,
@@ -298,100 +298,24 @@ private func loadedAdvancedSettingsModel(
     )),
     logsOpener: (any AdvancedSettingsLogFolderOpening)? = nil
 ) async -> AdvancedSettingsModel {
-    let resolvedLogsOpener = logsOpener ?? AdvancedSettingsRecordingLogsOpener(result: .success(
-        "/tmp/repo/.areamatrix/logs"
-    ))
+    let resolvedLogsOpener = logsOpener ?? RecordingAdvancedSettingsLogsOpener(logsPath: "/tmp/repo/.areamatrix/logs")
     let model = AdvancedSettingsModel(
         repoPath: "/tmp/repo",
         loader: StaticConfigurationLoader(config: .advancedSettingsFixture(repoPath: "/tmp/repo")),
         updater: NoopConfigurationUpdater(),
-        rootOverviewInspector: StaticRootOverviewInspector(status: .missing),
+        rootOverviewInspector: StaticRootOverviewFileInspector(status: .missing),
         diagnosticsCollector: diagnosticsCollector,
         appVersionReader: StaticAppVersionReader(version: "1.0.0"),
         coreVersionReader: StaticCoreVersionReader(version: "0.1.0"),
         metadataReader: StaticExistingRepositoryMetadataReader(schemaVersion: 1),
         logsOpener: resolvedLogsOpener,
-        summaryCopier: RecordingDiagnosticSummaryCopier(),
+        summaryCopier: RecordingAdvancedDiagnosticCopier(),
         errorMapper: CoreBridge()
     )
     await model.load()
     return model
 }
 
-private actor AdvancedSettingsFailingConfigLoader: CoreConfigurationLoading {
-    private let error: Error
-
-    init(error: Error) {
-        self.error = error
-    }
-
-    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
-        throw error
-    }
-}
-
-private struct StaticRootOverviewInspector: RootOverviewFileInspecting {
-    let status: RootOverviewFileStatus
-
-    func status(repoPath _: String) -> RootOverviewFileStatus {
-        status
-    }
-}
-
-@MainActor
-private final class AdvancedSettingsRecordingLogsOpener: AdvancedSettingsLogFolderOpening {
-    private let result: Result<String, Error>
-    private(set) var openedRepoPaths: [String] = []
-
-    init(result: Result<String, Error>) {
-        self.result = result
-    }
-
-    func openLogsFolder(repoPath: String) throws -> String {
-        openedRepoPaths.append(repoPath)
-        return try result.get()
-    }
-}
-
-@MainActor
-private final class RecordingDiagnosticSummaryCopier: AdvancedSettingsDiagnosticSummaryCopying {
-    private(set) var copiedSummaries: [String] = []
-
-    func copyDiagnosticSummary(_ summary: String) throws {
-        copiedSummaries.append(summary)
-    }
-}
-
-private actor RecordingStartupRecoverer: CoreStartupRecovering {
-    private var repoPaths: [String] = []
-
-    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
-        repoPaths.append(repoPath)
-        return RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
-    }
-
-    func requestedRepoPaths() -> [String] {
-        repoPaths
-    }
-}
-
 private func advancedSettingsTemporaryDirectory() throws -> URL {
     try makeTestTemporaryDirectory(named: "AreaMatrixAdvancedSettings")
-}
-
-private extension RepoConfigSnapshot {
-    static func advancedSettingsFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "system",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
-    }
 }

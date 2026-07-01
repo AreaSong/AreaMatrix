@@ -4,13 +4,11 @@ import XCTest
 final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
     @MainActor
     func testDuplicateConflictDuplicateSkipDoesNotCallImporter() async {
-        let result = duplicateResult()
+        let result = ImportSingleFilePreflightResult.importDuplicateFixture()
         let importer = ImportSingleFileRecordingImporter()
-        let model = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let model = makeImportSingleFilePreviewModel(
             importer: importer,
-            preflight: ImportSingleFileStaticPreflight(result: result),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            preflight: ImportSingleFileStaticPreflight(result: result)
         )
 
         await model.load(request: .importSingleFileFixture())
@@ -27,11 +25,9 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
     @MainActor
     func testDuplicateConflictKeepBothUsesCoreKeepBothStrategyAndPreviewPath() async {
         let importer = ImportSingleFileRecordingImporter()
-        let model = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let model = makeImportSingleFilePreviewModel(
             importer: importer,
-            preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            preflight: ImportSingleFileStaticPreflight(result: .importDuplicateFixture())
         )
 
         await model.load(request: .importSingleFileFixture())
@@ -52,11 +48,9 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
     @MainActor
     func testDuplicateConflictReplaceRequiresSecondConfirmationBeforeCoreOverwrite() async throws {
         let importer = ImportSingleFileRecordingImporter()
-        let model = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let model = makeImportSingleFilePreviewModel(
             importer: importer,
-            preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            preflight: ImportSingleFileStaticPreflight(result: .importDuplicateFixture())
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -89,11 +83,9 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
     @MainActor
     func testReplaceConfirmDuplicateReplaceConfirmationFailureKeepsSheetRecoverable() async throws {
         let importer = ImportSingleFileRecordingImporter()
-        let model = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let model = makeImportSingleFilePreviewModel(
             importer: importer,
-            preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            preflight: ImportSingleFileStaticPreflight(result: .importDuplicateFixture())
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -136,34 +128,13 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
     @MainActor
     func testReplaceConfirmDuplicateReplaceConfirmationCarriesCoreDuplicateSummaryWithoutImportSideEffect(
     ) async throws {
-        let existingFile = FileEntrySnapshot(
-            id: 124,
-            path: "docs/reports/报告.pdf",
-            originalName: "报告.pdf",
-            currentName: "报告.pdf",
-            category: "docs",
-            sizeBytes: 860 * 1024,
-            hashSha256: "duplicate-hash",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_776_660_840
-        )
+        let existingFile = FileEntrySnapshot.importDuplicateReplaceFixture()
         let importer = ImportSingleFileRecordingImporter()
-        let model = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let model = makeImportSingleFilePreviewModel(
             importer: importer,
-            preflight: ImportSingleFileStaticPreflight(result: ImportSingleFilePreflightResult(
-                sourceSizeBytes: 912 * 1024,
-                sourceModifiedAt: 1_777_445_400,
-                hashSha256: "duplicate-hash",
-                targetRelativePath: "docs/reports/报告.pdf",
-                conflict: .duplicate(existingPath: existingFile.path),
-                keepBothTargetRelativePath: "docs/reports/报告_1.pdf",
+            preflight: ImportSingleFileStaticPreflight(result: .importDuplicateReplaceFixture(
                 existingFile: existingFile
-            )),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            ))
         )
 
         await model.load(request: .importSingleFileFixture(
@@ -179,7 +150,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
         XCTAssertEqual(context.existingPath, existingFile.path)
         XCTAssertEqual(context.existingSizeBytes, existingFile.sizeBytes)
         XCTAssertEqual(context.existingModifiedAt, existingFile.updatedAt)
-        XCTAssertEqual(context.incomingPath, "/tmp/source.pdf")
+        XCTAssertEqual(context.incomingPath, importSingleFileSourcePath())
         XCTAssertEqual(context.incomingSizeBytes, 912 * 1024)
         XCTAssertEqual(context.incomingModifiedAt, 1_777_445_400)
         XCTAssertEqual(context.targetRelativePath, "docs/reports/报告.pdf")
@@ -188,11 +159,9 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
 
     @MainActor
     func testDuplicateConflictReplaceDisabledWhenTrashUnavailableAndHiddenWhenSettingIsOff() async {
-        let trashUnavailableModel = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let trashUnavailableModel = makeImportSingleFilePreviewModel(
             importer: ImportSingleFileRecordingImporter(),
-            preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            preflight: ImportSingleFileStaticPreflight(result: .importDuplicateFixture())
         )
         await trashUnavailableModel.load(request: .importSingleFileFixture(
             allowReplaceDuringImport: true,
@@ -203,11 +172,9 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
         XCTAssertEqual(trashUnavailableModel.replaceOptionVisibility, .disabled)
         XCTAssertEqual(trashUnavailableModel.primaryActionDisabledReason, "Replace requires system Trash")
 
-        let hiddenModel = ImportSingleFilePreviewModel(
-            predictor: ImportSingleFileRecordingPredictor(result: .importSingleFileFixture()),
+        let hiddenModel = makeImportSingleFilePreviewModel(
             importer: ImportSingleFileRecordingImporter(),
-            preflight: ImportSingleFileStaticPreflight(result: duplicateResult()),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
+            preflight: ImportSingleFileStaticPreflight(result: .importDuplicateFixture())
         )
         await hiddenModel.load(request: .importSingleFileFixture(
             allowReplaceDuringImport: false,
@@ -218,14 +185,4 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
         XCTAssertEqual(hiddenModel.replaceOptionVisibility, .hidden)
         XCTAssertEqual(hiddenModel.duplicateResolution, .skip)
     }
-}
-
-private func duplicateResult() -> ImportSingleFilePreflightResult {
-    ImportSingleFilePreflightResult(
-        sourceSizeBytes: 12,
-        hashSha256: "duplicate-hash",
-        targetRelativePath: "docs/source.pdf",
-        conflict: .duplicate(existingPath: "docs/existing.pdf"),
-        keepBothTargetRelativePath: "docs/source_1.pdf"
-    )
 }

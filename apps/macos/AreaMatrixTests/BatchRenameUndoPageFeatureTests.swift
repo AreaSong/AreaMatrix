@@ -12,7 +12,7 @@ final class BatchRenameUndoPageFeatureTests: XCTestCase {
             report: .report(token: action.actionID),
             failure: nil,
             undoStore: undoStore,
-            errorMapper: BatchRenameErrorMapper(mapping: .batchRenameUndoUndoFailure())
+            errorMapper: StaticCoreErrorMapper(mapping: .batchRenameUndoUndoFailure())
         )
 
         XCTAssertEqual(state, .ready(action))
@@ -30,7 +30,7 @@ final class BatchRenameUndoPageFeatureTests: XCTestCase {
             report: .report(token: nil),
             failure: nil,
             undoStore: undoStore,
-            errorMapper: BatchRenameErrorMapper(mapping: .batchRenameUndoUndoFailure())
+            errorMapper: StaticCoreErrorMapper(mapping: .batchRenameUndoUndoFailure())
         )
 
         XCTAssertEqual(state, .unavailable(reason: "Undo is unavailable for this rename result."))
@@ -46,7 +46,7 @@ final class BatchRenameUndoPageFeatureTests: XCTestCase {
             report: nil,
             failure: .batchRenameUndoUndoFailure(),
             undoStore: undoStore,
-            errorMapper: BatchRenameErrorMapper(mapping: .batchRenameUndoUndoFailure())
+            errorMapper: StaticCoreErrorMapper(mapping: .batchRenameUndoUndoFailure())
         )
 
         XCTAssertNil(state)
@@ -69,7 +69,7 @@ final class BatchRenameUndoPageFeatureTests: XCTestCase {
             snapshot: UndoHistorySnapshot(undoActions: [undo], redoActions: [redo]),
             undoStore: undoStore,
             redoStore: redoStore,
-            errorMapper: BatchRenameErrorMapper(mapping: .batchRenameUndoUndoFailure())
+            errorMapper: StaticCoreErrorMapper(mapping: .batchRenameUndoUndoFailure())
         )
 
         guard case let .redone(result, refreshed) = state else {
@@ -90,7 +90,7 @@ final class BatchRenameUndoPageFeatureTests: XCTestCase {
             snapshot: UndoHistorySnapshot(undoActions: [], redoActions: [cleared]),
             undoStore: BatchRenameUndoStore(results: []),
             redoStore: redoStore,
-            errorMapper: BatchRenameErrorMapper(mapping: .batchRenameUndoUndoFailure())
+            errorMapper: StaticCoreErrorMapper(mapping: .batchRenameUndoUndoFailure())
         )
 
         XCTAssertEqual(state.failure?.kind, .conflict)
@@ -106,7 +106,7 @@ final class BatchRenameUndoPageFeatureTests: XCTestCase {
             .list(.success([action])),
             .redo(.success(.redoActionLogRedoneMove()))
         ])
-        let errorMapper = BatchRenameErrorMapper(mapping: .batchRenameUndoUndoFailure())
+        let errorMapper = StaticCoreErrorMapper(mapping: .batchRenameUndoUndoFailure())
 
         let loaded = await RedoActionFeedback.loadLatestAction(
             repoPath: "/tmp/repo",

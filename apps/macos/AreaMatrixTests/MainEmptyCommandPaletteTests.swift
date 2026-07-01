@@ -25,7 +25,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
         let model = MainFileListModel(
             opening: .mainEmptyImportFixture(repoPath: "/tmp/repo"),
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             searchQuerying: searcher,
             commandIndexer: indexer,
             errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
@@ -48,7 +48,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
         let model = MainFileListModel(
             opening: .mainEmptyImportFixture(repoPath: "/tmp/repo"),
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             commandIndexer: CommandPaletteCommandIndexStore(results: [.failure(CoreError
                     .Db(message: "command db locked"))]),
             errorMapper: mapper
@@ -195,7 +195,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
         let model = MainFileListModel(
             opening: .commandPaletteCommandFixture(repoPath: "/tmp/repo", files: []),
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             searchQuerying: smartListRunner,
             commandIndexer: indexer,
             errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
@@ -233,7 +233,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
         let model = MainFileListModel(
             opening: .commandPaletteCommandFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
         )
         let target = CommandTargetSnapshot.commandPaletteRouteFixture(
@@ -274,7 +274,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
         let model = MainFileListModel(
             opening: .commandPaletteCommandFixture(repoPath: "/tmp/repo", files: []),
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
         )
 

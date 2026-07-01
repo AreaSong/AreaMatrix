@@ -22,7 +22,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         let model = SyncConflictEntryModel(
             repoPath: "/tmp/syncConflictEntry-repo",
             conflictDetector: detector,
-            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.loadIfNeeded()
@@ -41,7 +41,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
             conflictDetector: SyncConflictReviewDetector(result: .success([
                 .syncConflictReviewFixture(conflictID: "entry-later")
             ])),
-            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.loadIfNeeded()
@@ -61,7 +61,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         let model = SyncConflictEntryModel(
             repoPath: "/tmp/syncConflictEntry-repo",
             conflictDetector: SyncConflictReviewDetector(result: .success([conflict])),
-            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.loadIfNeeded()
@@ -80,7 +80,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         let model = SyncConflictEntryModel(
             repoPath: "/tmp/syncConflictEntry-repo",
             conflictDetector: SyncConflictReviewDetector(result: .success([conflict])),
-            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await model.loadIfNeeded()
@@ -93,7 +93,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
 
     @MainActor
     func testSyncConflictEntryErrorStateMapsCoreErrorAndKeepsRetryVisible() async {
-        let mapper = SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping(
+        let mapper = StaticCoreErrorMapper(mapping: .syncConflictReviewMapping(
             kind: .db,
             rawContext: "conflict state locked"
         ))
@@ -125,7 +125,7 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         let model = SyncConflictEntryModel(
             repoPath: "/tmp/syncConflictEntry-repo",
             conflictDetector: SyncConflictReviewDetector(result: .success([conflict])),
-            errorMapper: SyncConflictReviewRecordingErrorMapper(mapping: .syncConflictReviewMapping())
+            errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
         )
         let file = FileEntrySnapshot.syncConflictReviewFixture(
             id: 42,

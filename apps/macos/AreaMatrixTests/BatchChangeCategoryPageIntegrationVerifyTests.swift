@@ -9,9 +9,7 @@ final class BatchChangeCategoryVerifyTests: XCTestCase {
         defer { context.cleanUp() }
 
         await context.model.loadCurrentCategory("docs")
-        let selected = context.model.files.filter { file in
-            [context.repoOwned.id, context.indexOnly.id].contains(file.id)
-        }
+        let selected = try context.selectedFilesInRouteOrder()
         XCTAssertEqual(Set(selected.map(\.id)), Set([context.repoOwned.id, context.indexOnly.id]))
         await context.model.selectFiles(Set(selected.map(\.id)))
 
@@ -136,17 +134,17 @@ final class BatchChangeCategoryVerifyTests: XCTestCase {
     func testBatchChangeCategoryClassifierSettingsValidatePublishesSavedCategoryForRealReturnEvent() async throws {
         let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "batchChangeCategory-classifier")
         defer { removeTestTemporaryItems(repoURL) }
-        let manager = BatchCategoryRulesManager()
+        let manager = ClassifierSettingsTestRulesManager()
         var savedCategories: [String] = []
         try manager.writeClassifier(repoURL: repoURL, slugs: ["docs", "inbox"])
         let model = ClassifierSettingsModel(
             repoPath: repoURL.path,
-            loader: StaticConfigurationLoader(config: .batchChangeCategoryClassifierFixture(repoPath: repoURL.path)),
+            loader: StaticConfigurationLoader(config: .classifierSettingsFixture(repoPath: repoURL.path)),
             updater: NoopConfigurationUpdater(),
-            predictor: BatchCategorySettingsPredictor(),
-            errorMapper: BatchCategorySettingsErrorMapper(),
+            predictor: ClassifierSettingsSequencePredictor(),
+            errorMapper: RecordingCoreErrorMapper.classifierSettings(),
             classifierRulesManager: manager,
-            accessibilityAnnouncer: BatchCategorySettingsAnnouncer(),
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer(),
             onSavedCategory: { savedCategories.append($0) }
         )
         await model.load()
@@ -181,6 +179,14 @@ private struct BatchChangeCategoryIntegrationContext {
 
     func cleanUp() {
         removeTestTemporaryItems(repoURL, sourceRootURL)
+    }
+
+    @MainActor
+    func selectedFilesInRouteOrder(file: StaticString = #filePath, line: UInt = #line) throws -> [FileEntrySnapshot] {
+        let filesByID = Dictionary(uniqueKeysWithValues: model.files.map { ($0.id, $0) })
+        return try [repoOwned.id, indexOnly.id].map { fileID in
+            try XCTUnwrap(filesByID[fileID], file: file, line: line)
+        }
     }
 }
 
@@ -239,150 +245,6 @@ private func makeBatchChangeCategoryOpening(repoURL: URL, bridge: CoreBridge) as
     return RepositoryOpeningResult(config: config, tree: tree, currentCategoryFiles: [])
 }
 
-private actor BatchCategorySettingsPredictor: CoreCategoryPredicting {
-    func predictCategory(repoPath _: String, filename: String) async throws -> ClassifyResultSnapshot {
-        ClassifyResultSnapshot(category: "inbox", suggestedName: filename, reason: .default, confidence: 0)
-    }
-}
-
-private actor BatchCategorySettingsErrorMapper: CoreErrorMapping {
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .config,
-            userMessage: "\(error)",
-            severity: .medium,
-            suggestedAction: "Retry",
-            recoverability: .retryable,
-            rawContext: "\(error)"
-        )
-    }
-}
-
-private struct BatchCategorySettingsAnnouncer: AccessibilityAnnouncing {
-    @MainActor
-    func announce(_: String) {}
-}
-
-private final class BatchCategoryRulesManager: ClassifierRulesManaging {
-    private let fileManager = FileManager.default
-
-    func classifierFileExists(repoPath: String) -> Bool {
-        fileManager.fileExists(atPath: classifierURL(repoPath: repoPath).path)
-    }
-
-    func classifierCategorySlugs(repoPath: String) throws -> [String] {
-        let yaml = try String(contentsOf: classifierURL(repoPath: repoPath), encoding: .utf8)
-        return ClassifierRulesCategorySlugParser.slugs(in: yaml)
-    }
-
-    func lastValidBackupExists(repoPath: String) -> Bool {
-        fileManager.fileExists(atPath: backupURL(repoPath: repoPath).path)
-    }
-
-    func createDefaultClassifier(repoPath _: String) throws {}
-
-    func storeLastValidBackup(repoPath: String) throws {
-        let yaml = try String(contentsOf: classifierURL(repoPath: repoPath), encoding: .utf8)
-        try yaml.write(to: backupURL(repoPath: repoPath), atomically: true, encoding: .utf8)
-    }
-
-    func restoreLastValidBackup(repoPath: String) throws {
-        let yaml = try String(contentsOf: backupURL(repoPath: repoPath), encoding: .utf8)
-        try yaml.write(to: classifierURL(repoPath: repoPath), atomically: true, encoding: .utf8)
-    }
-
-    func writeClassifier(repoURL: URL, slugs: [String]) throws {
-        let metadataURL = repoURL.appendingPathComponent(".areamatrix", isDirectory: true)
-        try fileManager.createDirectory(at: metadataURL, withIntermediateDirectories: true)
-        let yaml = """
-        version: 1
-        default: inbox
-        categories:
-        \(slugs.map { "  - slug: \($0)" }.joined(separator: "\n"))
-        """
-        try yaml.write(to: classifierURL(repoPath: repoURL.path), atomically: true, encoding: .utf8)
-    }
-
-    private func classifierURL(repoPath: String) -> URL {
-        URL(fileURLWithPath: repoPath, isDirectory: true)
-            .appendingPathComponent(".areamatrix", isDirectory: true)
-            .appendingPathComponent("classifier.yaml", isDirectory: false)
-    }
-
-    private func backupURL(repoPath: String) -> URL {
-        URL(fileURLWithPath: repoPath, isDirectory: true)
-            .appendingPathComponent(".areamatrix", isDirectory: true)
-            .appendingPathComponent("classifier.last-valid.yaml", isDirectory: false)
-    }
-}
-
-private extension RepoConfigSnapshot {
-    static func batchChangeCategoryClassifierFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "system",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
-    }
-}
-
-private extension BatchChangeCategoryReturnContext {
-    static func batchChangeCategoryFixture(
-        initialTargetCategory: String? = nil
-    ) -> BatchChangeCategoryReturnContext {
-        let route = BatchChangeCategoryRoute.batchChangeCategoryRoute(initialTargetCategory: initialTargetCategory)
-        return BatchChangeCategoryReturnContext(
-            route: route,
-            handoff: BatchChangeCategoryNewCategoryHandoff(
-                selectedFileIDs: route.fileIDs,
-                currentTargetCategory: "finance"
-            )
-        )
-    }
-}
-
-private extension BatchChangeCategoryRoute {
-    static func batchChangeCategoryRoute(initialTargetCategory: String? = nil) -> BatchChangeCategoryRoute {
-        BatchChangeCategoryRoute(
-            source: .commandPalette,
-            fileIDs: [1, 2],
-            selectedFiles: [
-                .batchChangeCategoryRouteFixture(id: 1, currentName: "a.pdf"),
-                .batchChangeCategoryRouteFixture(id: 2, currentName: "b.pdf")
-            ],
-            selectedCount: 2,
-            disabledReason: nil,
-            initialTargetCategory: initialTargetCategory
-        )
-    }
-}
-
-private extension FileEntrySnapshot {
-    static func batchChangeCategoryRouteFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
-        FileEntrySnapshot(
-            id: id,
-            path: "docs/\(currentName)",
-            originalName: currentName,
-            currentName: currentName,
-            category: "docs",
-            sizeBytes: 128,
-            hashSha256: "batchChangeCategory-route-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_100
-        )
-    }
-}
-
 private func assertBatchChangeCategoryPreview(
     _ preview: BatchCategoryPreviewReportSnapshot,
     context: BatchChangeCategoryIntegrationContext
@@ -422,20 +284,4 @@ private func assertBatchChangeCategoryApplied(
     XCTAssertEqual(Set(financeFiles.map(\.id)), Set([context.repoOwned.id, context.indexOnly.id]))
     let actions = try await context.bridge.listUndoActions(repoPath: context.repoURL.path)
     XCTAssertEqual(actions.first?.actionID, report.undoToken)
-}
-
-@MainActor
-private func waitForBatchChangeCategoryCategoryRefresh(
-    _ model: MainFileListModel,
-    expectedCategory: String,
-    file: StaticString = #filePath,
-    line: UInt = #line
-) async {
-    for _ in 0 ..< 100 {
-        if Set(model.files.map(\.category)) == [expectedCategory] {
-            return
-        }
-        await Task.yield()
-    }
-    XCTFail("Timed out waiting for batch-change-category category refresh", file: file, line: line)
 }

@@ -104,39 +104,8 @@ func importConflictProgressItems() -> [ImportBatchProgressSnapshot.Item] {
     ]
 }
 
-struct ImportConflictChangeLogRequest: Equatable {
-    var repoPath: String
-    var filter: ChangeFilterSnapshot
-}
-
-actor ImportConflictChangeLogLister: CoreChangeLogListing {
-    enum Result {
-        case success([ChangeLogEntrySnapshot])
-        case failure(Error)
-    }
-
-    private var results: [Result]
-    private var requests: [ImportConflictChangeLogRequest] = []
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func listChanges(repoPath: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
-        requests.append(ImportConflictChangeLogRequest(repoPath: repoPath, filter: filter))
-        guard !results.isEmpty else { return [] }
-        switch results.removeFirst() {
-        case let .success(entries):
-            return entries
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func recordedRequests() -> [ImportConflictChangeLogRequest] {
-        requests
-    }
-}
+typealias ImportConflictChangeLogRequest = ChangeLogListRequest
+typealias ImportConflictChangeLogLister = RecordingChangeLogLister
 
 extension ChangeLogEntrySnapshot {
     static func importConflictFixture(filename: String) -> ChangeLogEntrySnapshot {

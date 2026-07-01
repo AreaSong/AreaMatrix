@@ -4,13 +4,13 @@ import XCTest
 final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
     @MainActor
     func testRepositorySettingsCrossPlatformRepositorySettingsCoreSavesRepositoryConfigThroughUpdateConfig() async {
-        let current = RepoConfigSnapshot.repositorySettingsRepositorySettingsCoreFixture(repoPath: "/tmp/repo")
-        let updater = RecordingConfigurationUpdater(result: .success)
+        let current = RepoConfigSnapshot.repositorySettingsConfigFixture(repoPath: "/tmp/repo")
+        let updater = RecordingConfigurationUpdater(result: .success(()))
         let announcer = RecordingAccessibilityAnnouncer()
         let model = RepositorySettingsConfigModel(
             repoPath: "/tmp/repo",
             updater: updater,
-            errorMapper: RepositorySettingsStaticErrorMapper(),
+            errorMapper: RecordingCoreErrorMapper.repositorySettings(),
             accessibilityAnnouncer: announcer
         )
         var draft = RepositorySettingsConfigDraft(config: current)
@@ -38,10 +38,10 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
     @MainActor
     func testRepositorySettingsCrossPlatformRepositorySettingsCoreSaveFailureMapsCoreErrorAndKeepsPayloadObservable(
     ) async {
-        let current = RepoConfigSnapshot.repositorySettingsRepositorySettingsCoreFixture(repoPath: "/tmp/repo")
+        let current = RepoConfigSnapshot.repositorySettingsConfigFixture(repoPath: "/tmp/repo")
         let updater =
             RecordingConfigurationUpdater(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
-        let mapper = RepositorySettingsStaticErrorMapper()
+        let mapper = RecordingCoreErrorMapper.repositorySettings()
         let announcer = RecordingAccessibilityAnnouncer()
         let model = RepositorySettingsConfigModel(
             repoPath: "/tmp/repo",
@@ -54,7 +54,7 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
 
         let didSave = await model.save(draft: draft, currentConfig: current)
         let requests = await updater.requests()
-        let mappedErrors = await mapper.mappedErrors()
+        let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertFalse(didSave)
         XCTAssertEqual(requests.map(\.config.locale), ["zh-CN"])
@@ -68,21 +68,6 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
 }
 
 private extension RepoConfigSnapshot {
-    static func repositorySettingsRepositorySettingsCoreFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: true,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
-    }
-
     func withRepositorySettingsRepositorySettingsCoreOverviewOutput(_ value: String) -> RepoConfigSnapshot {
         var config = self
         config.overviewOutput = value

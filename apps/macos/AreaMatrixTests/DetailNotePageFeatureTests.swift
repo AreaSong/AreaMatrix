@@ -232,56 +232,6 @@ final class DetailNotePageFeatureTests: XCTestCase {
     }
 }
 
-private struct DetailNoteReadRequest: Equatable {
-    var repoPath: String
-    var fileID: Int64
-}
-
-private struct DetailNoteWriteRequest: Equatable {
-    var repoPath: String
-    var fileID: Int64
-    var contentMarkdown: String
-}
-
-private actor DetailNoteRecordingStore: CoreNoteReadingWriting {
-    typealias ReadResult = Result<String?, Error>
-    typealias WriteResult = Result<Void, Error>
-
-    private var readResults: [ReadResult]
-    private var writeResults: [WriteResult]
-    private var reads: [DetailNoteReadRequest] = []
-    private var writes: [DetailNoteWriteRequest] = []
-
-    init(readResults: [ReadResult] = [], writeResults: [WriteResult] = []) {
-        self.readResults = readResults
-        self.writeResults = writeResults
-    }
-
-    func readNote(repoPath: String, fileID: Int64) async throws -> String? {
-        reads.append(DetailNoteReadRequest(repoPath: repoPath, fileID: fileID))
-        guard !readResults.isEmpty else { return nil }
-        return try readResults.removeFirst().get()
-    }
-
-    func writeNote(repoPath: String, fileID: Int64, contentMarkdown: String) async throws {
-        writes.append(DetailNoteWriteRequest(
-            repoPath: repoPath,
-            fileID: fileID,
-            contentMarkdown: contentMarkdown
-        ))
-        guard !writeResults.isEmpty else { return }
-        try writeResults.removeFirst().get()
-    }
-
-    func recordedReadRequests() -> [DetailNoteReadRequest] {
-        reads
-    }
-
-    func recordedWriteRequests() -> [DetailNoteWriteRequest] {
-        writes
-    }
-}
-
 private struct DetailNoteInFlightRequest: Equatable {
     var repoPath: String
     var relativePath: String

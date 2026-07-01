@@ -5,51 +5,48 @@ struct NoopConfigurationUpdater: CoreConfigurationUpdating {
 }
 
 actor RecordingConfigurationUpdater: CoreConfigurationUpdating {
-    enum UpdateResult {
-        case success
-        case failure(Error)
-    }
-
     struct Request: Equatable {
         var repoPath: String
         var config: RepoConfigSnapshot
     }
 
-    private var results: [UpdateResult]
+    private var results: [Swift.Result<Void, Error>]
     private let repeatsSingleResult: Bool
     private var recordedRequests: [Request] = []
 
-    init(result: UpdateResult = .success) {
+    init(result: Swift.Result<Void, Error> = .success(())) {
         results = [result]
         repeatsSingleResult = true
     }
 
-    init(results: [UpdateResult]) {
+    init(results: [Swift.Result<Void, Error>]) {
         self.results = results
         repeatsSingleResult = false
     }
 
     init(failureThenSuccess error: Error) {
-        results = [.failure(error), .success]
+        results = [.failure(error), .success(())]
         repeatsSingleResult = false
     }
 
     func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {
         recordedRequests.append(Request(repoPath: repoPath, config: newConfig))
-        if case let .failure(error) = nextResult() {
-            throw error
-        }
+        try nextResult().get()
     }
 
     func requests() -> [Request] {
         recordedRequests
     }
 
-    private func nextResult() -> UpdateResult {
+    func requestedConfigs() -> [RepoConfigSnapshot] {
+        recordedRequests.map(\.config)
+    }
+
+    private func nextResult() -> Swift.Result<Void, Error> {
         if repeatsSingleResult {
-            return results.first ?? .success
+            return results.first ?? .success(())
         }
-        return results.isEmpty ? .success : results.removeFirst()
+        return results.isEmpty ? .success(()) : results.removeFirst()
     }
 }
 

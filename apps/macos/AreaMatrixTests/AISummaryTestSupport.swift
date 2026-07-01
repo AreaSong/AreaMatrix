@@ -11,7 +11,7 @@ func aiSummaryIntegrationModel(
         fileID: fileID,
         summaryStore: summary,
         privacyRules: privacy,
-        errorMapper: AISummaryIntegrationErrorMapper(),
+        errorMapper: RecordingCoreErrorMapper.aiSummaryIntegration(),
         summaryProviderScope: .remoteAllowed,
         privacyContext: AISummaryPrivacyContext(
             repoRelativePath: "docs/summary.pdf",
@@ -118,16 +118,18 @@ actor AISummaryIntegrationPrivacyBridge: CoreAIPrivacyEvaluating {
     }
 }
 
-private struct AISummaryIntegrationErrorMapper: CoreErrorMapping {
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .db,
-            userMessage: "\(error)",
-            severity: .medium,
-            suggestedAction: "Retry summary action.",
-            recoverability: .retryable,
-            rawContext: "ai-summary page integration"
-        )
+extension RecordingCoreErrorMapper {
+    static func aiSummaryIntegration() -> RecordingCoreErrorMapper {
+        RecordingCoreErrorMapper { error in
+            CoreErrorMappingSnapshot(
+                kind: .db,
+                userMessage: "\(error)",
+                severity: .medium,
+                suggestedAction: "Retry summary action.",
+                recoverability: .retryable,
+                rawContext: "ai-summary page integration"
+            )
+        }
     }
 }
 

@@ -4,33 +4,22 @@ import XCTest
 final class ImportSingleFileMoveImportTests: XCTestCase {
     @MainActor
     func testMoveImportCallsImportMoveFileCoreImporterWithEditedCategoryAndFilename() async {
-        let sourceURL = URL(fileURLWithPath: "/tmp/source.pdf")
-        let predictor = MoveImportRecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
-                category: "docs",
-                suggestedName: "source.pdf",
-                reason: .extension,
-                confidence: 0.7
-            ))
+        let sourceURL = importSingleFileSourceURL()
+        let predictor = ImportSingleFileRecordingPredictor(results: [
+            .success(.importSingleFileFixture())
         ])
-        let movedEntry = FileEntrySnapshot.moveImportFixture(
+        let movedEntry = FileEntrySnapshot.importMoveFixture(
             currentName: "moved.pdf",
             category: "docs"
         )
-        let importer = MoveImportRecordingImporter(results: [.success(movedEntry)])
-        let model = ImportSingleFilePreviewModel(
+        let importer = ImportSingleFileRecordingImporter(results: [.success(movedEntry)])
+        let model = makeImportSingleFilePreviewModel(
             predictor: predictor,
             importer: importer,
             preflight: ImportSingleFileStaticPreflight.ready(),
-            errorMapper: RecordingCoreErrorMapper.moveImport()
+            errorMapper: RecordingCoreErrorMapper.importMove()
         )
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .filePicker,
-            destination: .autoClassify,
-            urls: [sourceURL],
-            kind: .singleFile
-        )
+        let request = ImportEntryRequest.importSingleFileImportRequest(sourcePath: sourceURL.path)
 
         await model.load(request: request)
         model.selectedStorageMode = .move
@@ -38,13 +27,13 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
         model.suggestedName = " moved.pdf "
         await waitForImportSingleFilePreflightToSettle(model)
         await model.importSelectedFile()
-        let requests = await importer.recordedRequests()
+        let requests = await importer.recordedCoreRequests()
 
         XCTAssertEqual(requests, [
-            MoveImportRequest(
-                repoPath: "/tmp/repo",
+            ImportSingleFileCoreImportRequest(
+                repoPath: importSingleFileRepoPath(),
                 sourceURL: sourceURL,
-                storageMode: .move,
+                mode: .move,
                 overrideCategory: "docs",
                 overrideFilename: "moved.pdf"
             )
@@ -54,47 +43,36 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
 
     @MainActor
     func testMoveImportMapsCoreFailureWithoutCreatingStaticSuccess() async {
-        let predictor = MoveImportRecordingPredictor(results: [
-            .success(ClassifyResultSnapshot(
-                category: "docs",
-                suggestedName: "source.pdf",
-                reason: .extension,
-                confidence: 0.7
-            ))
+        let predictor = ImportSingleFileRecordingPredictor(results: [
+            .success(.importSingleFileFixture())
         ])
-        let importer = MoveImportRecordingImporter(results: [
-            .failure(CoreError.PermissionDenied(path: "/tmp/source.pdf"))
+        let importer = ImportSingleFileRecordingImporter(results: [
+            .failure(CoreError.PermissionDenied(path: importSingleFileSourcePath()))
         ])
-        let errorMapper = RecordingCoreErrorMapper.moveImport()
-        let model = ImportSingleFilePreviewModel(
+        let errorMapper = RecordingCoreErrorMapper.importMove()
+        let model = makeImportSingleFilePreviewModel(
             predictor: predictor,
             importer: importer,
             preflight: ImportSingleFileStaticPreflight.ready(),
             errorMapper: errorMapper
         )
-        let request = ImportEntryRequest(
-            repoPath: "/tmp/repo",
-            source: .filePicker,
-            destination: .autoClassify,
-            urls: [URL(fileURLWithPath: "/tmp/source.pdf")],
-            kind: .singleFile
-        )
+        let request = ImportEntryRequest.importSingleFileImportRequest()
 
         await model.load(request: request)
         model.selectedStorageMode = .move
         await model.importSelectedFile()
         let mappedErrors = await errorMapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: "/tmp/source.pdf")])
+        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: importSingleFileSourcePath())])
         XCTAssertEqual(
             model.importStatus,
-            .failed(CoreErrorMappingSnapshot.moveImportFixture(kind: .permissionDenied))
+            .failed(CoreErrorMappingSnapshot.importMoveFixture(kind: .permissionDenied))
         )
     }
 
     func testDefaultCoreBridgeImportsMovedFileAndRemovesSource() async throws {
-        let repoURL = try makeMoveImportTemporaryDirectory(prefix: "repo")
-        let sourceRoot = try makeMoveImportTemporaryDirectory(prefix: "source")
+        let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "move-repo")
+        let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "move-source")
         defer { removeTestTemporaryItems(repoURL, sourceRoot) }
         let sourceURL = sourceRoot.appendingPathComponent("move.pdf")
         try Data("move bytes".utf8).write(to: sourceURL)
@@ -115,157 +93,4 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
         XCTAssertEqual(entry.sourcePath, sourceURL.path)
         XCTAssertTrue(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(entry.path).path))
     }
-}
-
-private struct MoveImportRequest: Equatable {
-    var repoPath: String
-    var sourceURL: URL
-    var storageMode: ImportSingleFileStorageMode
-    var overrideCategory: String
-    var overrideFilename: String
-    var duplicateStrategy: DuplicateStrategy = .ask
-}
-
-private actor MoveImportRecordingPredictor: CoreCategoryPredicting {
-    private var results: [Result<ClassifyResultSnapshot, Error>]
-
-    init(results: [Result<ClassifyResultSnapshot, Error>]) {
-        self.results = results
-    }
-
-    func predictCategory(repoPath _: String, filename _: String) async throws -> ClassifyResultSnapshot {
-        guard !results.isEmpty else {
-            throw CoreError.Classify(reason: "missing test result")
-        }
-
-        switch results.removeFirst() {
-        case let .success(snapshot):
-            return snapshot
-        case let .failure(error):
-            throw error
-        }
-    }
-}
-
-private actor MoveImportRecordingImporter: CoreFileImporting {
-    private var results: [Result<FileEntrySnapshot, Error>]
-    private var requests: [MoveImportRequest] = []
-
-    init(results: [Result<FileEntrySnapshot, Error>]) {
-        self.results = results
-    }
-
-    func importCopiedFile(
-        repoPath: String,
-        sourceURL: URL,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot {
-        try recordImport(MoveImportRequest(
-            repoPath: repoPath,
-            sourceURL: sourceURL,
-            storageMode: .copy,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
-        ))
-    }
-
-    func importMovedFile(
-        repoPath: String,
-        sourceURL: URL,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot {
-        try recordImport(MoveImportRequest(
-            repoPath: repoPath,
-            sourceURL: sourceURL,
-            storageMode: .move,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
-        ))
-    }
-
-    func importIndexedFile(
-        repoPath: String,
-        sourceURL: URL,
-        overrideCategory: String,
-        overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
-    ) async throws -> FileEntrySnapshot {
-        try recordImport(MoveImportRequest(
-            repoPath: repoPath,
-            sourceURL: sourceURL,
-            storageMode: .indexOnly,
-            overrideCategory: overrideCategory,
-            overrideFilename: overrideFilename,
-            duplicateStrategy: duplicateStrategy
-        ))
-    }
-
-    func recordedRequests() -> [MoveImportRequest] {
-        requests
-    }
-
-    private func recordImport(_ request: MoveImportRequest) throws -> FileEntrySnapshot {
-        requests.append(request)
-        guard !results.isEmpty else {
-            throw CoreError.Internal(message: "missing import test result")
-        }
-        switch results.removeFirst() {
-        case let .success(snapshot):
-            return snapshot
-        case let .failure(error):
-            throw error
-        }
-    }
-}
-
-private extension FileEntrySnapshot {
-    static func moveImportFixture(currentName: String, category: String) -> FileEntrySnapshot {
-        FileEntrySnapshot(
-            id: 42,
-            path: "\(category)/\(currentName)",
-            originalName: "source.pdf",
-            currentName: currentName,
-            category: category,
-            sizeBytes: 12,
-            hashSha256: "hash",
-            storageMode: "Moved",
-            origin: "Imported",
-            sourcePath: "/tmp/source.pdf",
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_000
-        )
-    }
-}
-
-private extension CoreErrorMappingSnapshot {
-    static func moveImportFixture(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: kind,
-            userMessage: kind == .permissionDenied ? "无访问权限" : "导入失败",
-            severity: .high,
-            suggestedAction: "Choose a different file or resolve the conflict.",
-            recoverability: .userActionRequired,
-            rawContext: "move import"
-        )
-    }
-}
-
-private extension RecordingCoreErrorMapper {
-    static func moveImport() -> RecordingCoreErrorMapper {
-        RecordingCoreErrorMapper { error in
-            CoreErrorMappingSnapshot.moveImportFixture(
-                kind: CoreErrorKindTestMapper.kind(for: error)
-            )
-        }
-    }
-}
-
-private func makeMoveImportTemporaryDirectory(prefix: String) throws -> URL {
-    try makeTestTemporaryDirectory(prefix: prefix, named: "AreaMatrixImportMove")
 }

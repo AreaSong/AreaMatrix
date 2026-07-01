@@ -61,140 +61,63 @@ actor ChangeCategoryRecordingMover: CoreFileCategoryMoving {
     }
 }
 
-struct ChangeCategoryPredictionRequest: Equatable {
-    var repoPath: String
-    var filename: String
+typealias ChangeCategoryPredictionRequest = CategoryPredictionRequest
+typealias ChangeCategoryRecordingPredictor = RecordingCategoryPredictor
+typealias ChangeCategoryRecordingLister = RecordingFileLister
+
+@MainActor
+func changeCategoryModel(
+    file: FileEntrySnapshot,
+    fileLister: any CoreFileListing = NoopFileLister(),
+    fileCategoryMover: any CoreFileCategoryMoving,
+    categoryPredictor: any CoreCategoryPredicting = CoreBridge(),
+    changeLogLister: any CoreChangeLogListing = CoreBridge(),
+    errorMapper: any CoreErrorMapping = StaticCoreErrorMapper(mapping: .changeCategoryClassify())
+) -> MainFileListModel {
+    MainFileListModel(
+        opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
+        fileLister: fileLister,
+        fileDetailer: DetailMetaImmediateDetailer(result: .success(file)),
+        fileCategoryMover: fileCategoryMover,
+        categoryPredictor: categoryPredictor,
+        changeLogLister: changeLogLister,
+        errorMapper: errorMapper
+    )
 }
 
-actor ChangeCategoryRecordingPredictor: CoreCategoryPredicting {
-    private let result: Result<ClassifyResultSnapshot, Error>
-    private var requests: [ChangeCategoryPredictionRequest] = []
-
-    init(result: Result<ClassifyResultSnapshot, Error>) {
-        self.result = result
-    }
-
-    func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
-        requests.append(ChangeCategoryPredictionRequest(repoPath: repoPath, filename: filename))
-        return try result.get()
-    }
-
-    func recordedRequests() -> [ChangeCategoryPredictionRequest] {
-        requests
-    }
+func changeCategoryMovedFile(
+    from original: FileEntrySnapshot,
+    updatedAt: Int64 = 1_700_000_400
+) -> FileEntrySnapshot {
+    FileEntrySnapshot.changeCategoryFixture(
+        id: original.id,
+        path: "finance/\(original.currentName)",
+        category: "finance",
+        name: original.currentName,
+        updatedAt: updatedAt
+    )
 }
 
-actor ChangeCategoryRecordingLister: CoreFileListing {
-    enum Result {
-        case success([FileEntrySnapshot])
-        case failure(Error)
-    }
-
-    private var results: [Result]
-    private var requests: [FileFilterSnapshot] = []
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func listFiles(repoPath _: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
-        requests.append(filter)
-        guard !results.isEmpty else { return [] }
-
-        switch results.removeFirst() {
-        case let .success(files):
-            return files
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func recordedRequests() -> [FileFilterSnapshot] {
-        requests
-    }
+func changeCategoryPreview(
+    for file: FileEntrySnapshot,
+    targetPath: String? = nil,
+    targetName: String? = nil,
+    nameConflictResolved: Bool = false
+) -> MoveToCategoryPreviewSnapshot {
+    MoveToCategoryPreviewSnapshot.changeCategoryFixture(
+        fileID: file.id,
+        targetPath: targetPath ?? "finance/\(targetName ?? file.currentName)",
+        targetName: targetName ?? file.currentName,
+        nameConflictResolved: nameConflictResolved
+    )
 }
 
-extension FileEntrySnapshot {
-    static func changeCategoryFixture(
-        id: Int64,
-        path: String = "docs/contracts/contract.pdf",
-        category: String = "docs",
-        name: String,
-        updatedAt: Int64 = 1_700_000_100
-    ) -> FileEntrySnapshot {
-        FileEntrySnapshot(
-            id: id,
-            path: path,
-            originalName: name,
-            currentName: name,
-            category: category,
-            sizeBytes: 512,
-            hashSha256: "change-category-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: updatedAt
-        )
-    }
+func changeCategoryPreviewRequest(fileID: Int64, targetCategory: String = "finance") -> ChangeCategoryRequest {
+    .preview(repoPath: "/tmp/repo", fileID: fileID, targetCategory: targetCategory)
 }
 
-extension RepositoryTreeNodeSnapshot {
-    static func changeCategoryTree(docsCount: Int64, financeCount: Int64) -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
-            children: [
-                RepositoryTreeNodeSnapshot(slug: "docs", displayName: "docs", fileCount: docsCount, children: []),
-                RepositoryTreeNodeSnapshot(
-                    slug: "finance",
-                    displayName: "finance",
-                    fileCount: financeCount,
-                    children: []
-                )
-            ]
-        )
-    }
-}
-
-extension MoveToCategoryPreviewSnapshot {
-    static func changeCategoryFixture(
-        fileID: Int64,
-        targetPath: String,
-        targetName: String,
-        indexOnly: Bool = false,
-        nameConflictResolved: Bool = false
-    ) -> MoveToCategoryPreviewSnapshot {
-        MoveToCategoryPreviewSnapshot(
-            fileID: fileID,
-            fromCategory: "docs",
-            toCategory: "finance",
-            currentPath: "docs/contracts/\(targetName)",
-            targetPath: targetPath,
-            targetName: targetName,
-            storageMode: indexOnly ? "Indexed" : "Copied",
-            indexOnly: indexOnly,
-            nameConflictResolved: nameConflictResolved,
-            willMoveFile: !indexOnly
-        )
-    }
-}
-
-extension CoreErrorMappingSnapshot {
-    static func changeCategoryClassify() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .classify,
-            userMessage: "Target category is unavailable.",
-            severity: .medium,
-            suggestedAction: "Choose another category, then retry.",
-            recoverability: .userActionRequired,
-            rawContext: "change-category move-to-category preview_move_to_category"
-        )
-    }
+func changeCategoryMoveRequest(fileID: Int64, targetCategory: String = "finance") -> ChangeCategoryRequest {
+    .move(repoPath: "/tmp/repo", fileID: fileID, targetCategory: targetCategory)
 }
 
 func makeChangeCategoryFeatureTemporaryDirectory(prefix: String) throws -> URL {

@@ -9,7 +9,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             revertedStagingDbRows: 1,
             warnings: ["Kept recoverable staging file"]
         )
-        let recoverer = DatabaseRepairRecordingStartupRecoverer(result: .success(report))
+        let recoverer = RecordingCoreStartupRecoverer(result: .success(report))
         let repairer = DatabaseRepairRecordingMetadataRepairer(result: .success(.databaseRepairRepairReportFixture()))
         let model = DatabaseRepairConfirmModel(
             repoPath: "/tmp/repo",
@@ -36,7 +36,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
     @MainActor
     func testDatabaseRepairStartupRecoveryCoreStartupRecoveryFailureMapsErrorAndCanRetry() async {
         let mapping = CoreErrorMappingSnapshot.databaseRepairStartupRecoveryMapping(rawContext: "database locked")
-        let recoverer = DatabaseRepairRecordingStartupRecoverer(results: [
+        let recoverer = RecordingCoreStartupRecoverer(results: [
             .failure(CoreError.Db(message: "database locked")),
             .success(RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: []))
         ])
@@ -301,43 +301,6 @@ actor DatabaseRepairRecordingMetadataRepairer: CoreMetadataRepairing {
 
     func requests() -> [DatabaseRepairRepairRequest] {
         recordedRequests
-    }
-}
-
-private enum DatabaseRepairStartupRecoveryResult {
-    case success(RecoveryReportSnapshot)
-    case failure(Error)
-}
-
-private actor DatabaseRepairRecordingStartupRecoverer: CoreStartupRecovering {
-    private var results: [DatabaseRepairStartupRecoveryResult]
-    private var repoPaths: [String] = []
-
-    init(result: DatabaseRepairStartupRecoveryResult) {
-        results = [result]
-    }
-
-    init(results: [DatabaseRepairStartupRecoveryResult]) {
-        self.results = results
-    }
-
-    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
-        repoPaths.append(repoPath)
-        let result = results.isEmpty ? .success(RecoveryReportSnapshot(
-            cleanedStagingFiles: 0,
-            revertedStagingDbRows: 0,
-            warnings: []
-        )) : results.removeFirst()
-        switch result {
-        case let .success(report):
-            return report
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func requestedRepoPaths() -> [String] {
-        repoPaths
     }
 }
 

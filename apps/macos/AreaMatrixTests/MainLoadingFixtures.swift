@@ -1,6 +1,10 @@
 @testable import AreaMatrix
 import Foundation
 
+func mainLoadingRepoPath() -> String {
+    "/tmp/repo"
+}
+
 extension RepositoryOpeningResult {
     static func mainLoadingFixture(repoPath: String, fileCount: Int64) -> RepositoryOpeningResult {
         RepositoryOpeningResult(

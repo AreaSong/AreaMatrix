@@ -111,7 +111,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
     @MainActor
     func testStartupRecoveryStartupRecoveryCoreRecoveryFailureBlocksRepositoryOpenAndRetryRerunsCoreRecovery() async {
         let mapping = CoreErrorMappingSnapshot.startupRecoveryStartupRecoveryMapping(rawContext: "database is locked")
-        let recoverer = MainLoadingRecordingStartupRecoverer(results: [
+        let recoverer = RecordingCoreStartupRecoverer(results: [
             .failure(CoreError.Db(message: "database is locked")),
             .success(RecoveryReportSnapshot(cleanedStagingFiles: 1, revertedStagingDbRows: 2, warnings: []))
         ])

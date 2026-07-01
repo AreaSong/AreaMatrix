@@ -10,7 +10,9 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
             at: repoURL.appendingPathComponent(".areamatrix", isDirectory: true),
             withIntermediateDirectories: true
         )
-        let predictor = ClassifierSettingsSequencePredictor(results: [.success(classifierRecoveryProbeResult())])
+        let predictor = ClassifierSettingsSequencePredictor(results: [
+            .success(classifierSettingsValidationProbeResult())
+        ])
         let model = await classifierSettingsRecoveryModel(repoURL: repoURL, predictor: predictor)
 
         await model.createDefaultClassifierYaml()
@@ -37,7 +39,9 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
         defer { removeTestTemporaryItems(repoURL) }
         let existing = "version: 1\ndefault: inbox\ncategories: []\n"
         try writeClassifier(existing, repoURL: repoURL)
-        let predictor = ClassifierSettingsSequencePredictor(results: [.success(classifierRecoveryProbeResult())])
+        let predictor = ClassifierSettingsSequencePredictor(results: [
+            .success(classifierSettingsValidationProbeResult())
+        ])
         let model = await classifierSettingsRecoveryModel(repoURL: repoURL, predictor: predictor)
 
         await model.createDefaultClassifierYaml()
@@ -62,8 +66,8 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
         """
         try writeClassifier(original, repoURL: repoURL)
         let predictor = ClassifierSettingsSequencePredictor(results: [
-            .success(classifierRecoveryProbeResult()),
-            .success(classifierRecoveryProbeResult())
+            .success(classifierSettingsValidationProbeResult()),
+            .success(classifierSettingsValidationProbeResult())
         ])
         let model = await classifierSettingsRecoveryModel(repoURL: repoURL, predictor: predictor)
 

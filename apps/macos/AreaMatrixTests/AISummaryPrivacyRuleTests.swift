@@ -28,7 +28,7 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
 
     @MainActor
     func testAISummaryFailurePreservesDraftAndMapsCoreError() async {
-        let mapper = AISummarySummaryErrorMapper()
+        let mapper = StaticCoreErrorMapper(mapping: .aiSummarySaveFailure)
         let summary =
             AISummaryPrivacySummaryBridge(saveResult: .failure(CoreError.Db(message: "summary metadata locked")))
         let model = aiSummaryModel(
@@ -42,7 +42,7 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
         guard case let .failed(error) = model.operation else {
             return XCTFail("Expected save failure to stay visible.")
         }
-        let mappedErrors = await mapper.errors()
+        let mappedErrors = await mapper.recordedErrors()
         XCTAssertEqual(model.draftText, "Edited summary")
         XCTAssertEqual(error.message, "Summary could not be saved.")
         XCTAssertEqual(error.detail, "Summary metadata is unavailable.")
@@ -368,12 +368,9 @@ private extension AiPrivacyRulesSnapshot {
     }
 }
 
-private actor AISummarySummaryErrorMapper: CoreErrorMapping {
-    private var recordedErrors: [CoreError] = []
-
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        recordedErrors.append(error)
-        return CoreErrorMappingSnapshot(
+private extension CoreErrorMappingSnapshot {
+    static var aiSummarySaveFailure: CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
             kind: .db,
             userMessage: "Summary metadata is unavailable.",
             severity: .medium,
@@ -381,9 +378,5 @@ private actor AISummarySummaryErrorMapper: CoreErrorMapping {
             recoverability: .retryable,
             rawContext: "ai-summary ai-summary-core"
         )
-    }
-
-    func errors() -> [CoreError] {
-        recordedErrors
     }
 }

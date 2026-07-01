@@ -7,7 +7,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         var config = RepoConfigSnapshot.shellFixture(repoPath: "/tmp/AreaMatrixRepo")
         config.overviewOutput = "RootAreaMatrixFile"
         let loader = RecordingConfigurationLoader(results: [.success(config)])
-        let updater = RecordingConfigurationUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success(()))
         let metadataReader = RepoSettingsMetadataReader(results: [
             .success(ExistingRepositoryMetadataSnapshot(
                 schemaVersion: 1,
@@ -25,7 +25,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             repositoryOpener: opener,
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
-            errorMapper: RepositorySettingsStaticErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.repositorySettings()
         )
 
         await model.load()
@@ -51,7 +51,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         var second = RepoConfigSnapshot.shellFixture(repoPath: "/tmp/repo")
         second.overviewOutput = "RootAreaMatrixFile"
         let loader = RecordingConfigurationLoader(results: [.success(first), .success(second)])
-        let updater = RecordingConfigurationUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success(()))
         let metadataReader = RepoSettingsMetadataReader(results: [
             .success(ExistingRepositoryMetadataSnapshot(
                 schemaVersion: 1,
@@ -74,7 +74,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             repositoryOpener: opener,
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
-            errorMapper: RepositorySettingsStaticErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.repositorySettings()
         )
 
         await model.load()
@@ -94,17 +94,17 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let loader = RecordingConfigurationLoader(results: [
             .failure(CoreError.Config(reason: "invalid repo_config"))
         ])
-        let mapper = RepositorySettingsStaticErrorMapper()
+        let mapper = RecordingCoreErrorMapper.repositorySettings()
         let model = RepositorySettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
-            updater: RecordingConfigurationUpdater(result: .success),
+            updater: RecordingConfigurationUpdater(result: .success(())),
             errorMapper: mapper
         )
 
         await model.load()
 
-        let mappedErrors = await mapper.mappedErrors()
+        let mappedErrors = await mapper.recordedErrors()
         XCTAssertEqual(mappedErrors, [CoreError.Config(reason: "invalid repo_config")])
         XCTAssertEqual(model.loadError?.message, "配置错误")
         XCTAssertEqual(model.loadError?.recovery, "Retry status")
@@ -127,7 +127,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         var expected = config
         expected.repoPath = repoURL.path
         let loader = RecordingConfigurationLoader(results: [.success(config)])
-        let updater = RecordingConfigurationUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success(()))
         let metadataReader = RepoSettingsMetadataReader(results: [
             .success(ExistingRepositoryMetadataSnapshot(
                 schemaVersion: 1,
@@ -146,7 +146,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
             metadataPresenceChecker: metadataPresenceChecker,
-            errorMapper: RepositorySettingsStaticErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.repositorySettings()
         )
 
         await model.load()
@@ -175,7 +175,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             .success(.shellFixture(repoPath: "/tmp/stale-repo"))
         ])
         let updater = RecordingConfigurationUpdater(result: .failure(CoreError.Db(message: "locked")))
-        let mapper = RepositorySettingsStaticErrorMapper()
+        let mapper = RecordingCoreErrorMapper.repositorySettings()
         let metadataReader = RepoSettingsMetadataReader(results: [
             .success(ExistingRepositoryMetadataSnapshot(
                 schemaVersion: 1,
@@ -198,7 +198,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
 
         await model.load()
 
-        let mappedErrors = await mapper.mappedErrors()
+        let mappedErrors = await mapper.recordedErrors()
         let requests = await updater.requests()
         XCTAssertEqual(requests.count, 1)
         XCTAssertEqual(mappedErrors, [CoreError.Db(message: "locked")])
@@ -284,9 +284,9 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: "/tmp/repo",
             loader: RecordingConfigurationLoader(results: []),
-            updater: RecordingConfigurationUpdater(result: .success),
+            updater: RecordingConfigurationUpdater(result: .success(())),
             generatedOverviewRevealer: revealer,
-            errorMapper: RepositorySettingsStaticErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.repositorySettings()
         )
 
         model.revealGeneratedOverviewInFinder()

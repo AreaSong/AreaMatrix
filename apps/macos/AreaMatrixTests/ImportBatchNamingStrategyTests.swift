@@ -49,7 +49,7 @@ final class ImportBatchNamingStrategyTests: XCTestCase {
 
 private func importBatchNamingRequest(urls: [URL]) -> ImportEntryRequest {
     ImportEntryRequest(
-        repoPath: "/tmp/repo",
+        repoPath: importBatchRepoPath(),
         source: .dropZone,
         destination: .autoClassify,
         urls: urls,

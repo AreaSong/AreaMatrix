@@ -138,16 +138,3 @@ extension CoreErrorMappingSnapshot {
 }
 
 typealias UndoToastRecordingUndoStore = LenientUndoActionRecordingTestStore
-
-actor UndoToastErrorMapper: CoreErrorMapping {
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: CoreErrorKindTestMapper.kind(for: error),
-            userMessage: "Undo failed",
-            severity: .medium,
-            suggestedAction: "View details in Undo history.",
-            recoverability: .refreshRequired,
-            rawContext: "undo-toast undo-action-log undo-action-log"
-        )
-    }
-}

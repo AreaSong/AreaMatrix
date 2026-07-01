@@ -1,16 +1,31 @@
 @testable import AreaMatrix
 import Foundation
 
-actor AISettingsStaticAIErrorMapper: CoreErrorMapping {
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .io,
-            userMessage: String(describing: error),
-            severity: .medium,
-            suggestedAction: "Retry save",
-            recoverability: .retryable,
-            rawContext: "ai-settings"
-        )
+extension RecordingCoreErrorMapper {
+    static func aiSettings() -> RecordingCoreErrorMapper {
+        RecordingCoreErrorMapper { error in
+            CoreErrorMappingSnapshot(
+                kind: .io,
+                userMessage: String(describing: error),
+                severity: .medium,
+                suggestedAction: "Retry save",
+                recoverability: .retryable,
+                rawContext: "ai-settings"
+            )
+        }
+    }
+
+    static func localModelStatus() -> RecordingCoreErrorMapper {
+        RecordingCoreErrorMapper { error in
+            CoreErrorMappingSnapshot(
+                kind: .io,
+                userMessage: String(describing: error),
+                severity: .medium,
+                suggestedAction: "Retry status check",
+                recoverability: .retryable,
+                rawContext: "local-model-status"
+            )
+        }
     }
 }
 
@@ -57,19 +72,6 @@ actor RecordingLocalModelReader: CoreLocalModelStatusReading {
 
     func folderRequests() -> [FolderRequest] {
         recordedFolderRequests
-    }
-}
-
-struct LocalModelStatusStaticErrorMapper: CoreErrorMapping {
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .io,
-            userMessage: String(describing: error),
-            severity: .medium,
-            suggestedAction: "Retry status check",
-            recoverability: .retryable,
-            rawContext: "local-model-status"
-        )
     }
 }
 

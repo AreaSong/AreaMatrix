@@ -19,21 +19,21 @@ final class ImportBatchResultSummaryTests: XCTestCase {
                 moveRepoOwnedFiles: true
             ),
             changer: changer,
-            errorMapper: BatchChangeCategoryErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.batchChangeCategory()
         )
         let apply = await BatchChangeCategoryAction.apply(
             repoPath: "/tmp/repo",
             fileIDs: [2, 1],
             preview: preview,
             changer: changer,
-            errorMapper: BatchChangeCategoryErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.batchChangeCategory()
         )
         let undoState = await BatchChangeCategoryUndoAction.stateAfterBatchApply(
             repoPath: "/tmp/repo",
             report: report,
             failure: nil,
             undoStore: BatchChangeCategoryRecordingUndoStore(actions: [.batchChangeCategoryAction]),
-            errorMapper: BatchChangeCategoryErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.batchChangeCategory()
         )
         let createdCategories = BatchChangeCategoryCreatedCategoryReturn
             .updatedCategories(["finance"], savedCategory: "tax")
@@ -63,7 +63,7 @@ final class ImportBatchResultSummaryTests: XCTestCase {
                 moveRepoOwnedFiles: true
             ),
             changer: changer,
-            errorMapper: BatchChangeCategoryErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.batchChangeCategory()
         )
         let requests = await changer.recordedRequests()
 
@@ -123,25 +123,17 @@ final class ImportBatchResultSummaryTests: XCTestCase {
     @MainActor
     // swiftlint:disable:next function_body_length
     func testImportBatchPreviewErrorAndPartialSuccessSurfaceFailedItemInResultSummary() async {
-        let readyURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let readyURL = importBatchInvoiceURL()
         let failedPreviewURL = URL(fileURLWithPath: "/tmp/unreadable.mov")
         let rows = [
-            ImportBatchPreviewRow.ready(
-                url: readyURL,
-                prediction: ClassifyResultSnapshot(
-                    category: "finance",
-                    suggestedName: "Invoice_2026Q1.pdf",
-                    reason: .keyword,
-                    confidence: 0.9
-                )
-            ),
+            importBatchReadyBatchRow(url: readyURL),
             ImportBatchPreviewRow.failed(
                 url: failedPreviewURL,
                 message: "无法读取分类预览路径：/tmp/unreadable.mov"
             )
         ]
         let importer = ImportBatchRecordingBatchImporter()
-        let model = ImportBatchCopyImportModel(
+        let model = importBatchCopyImportModel(
             importer: importer,
             errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
@@ -177,7 +169,7 @@ final class ImportBatchResultSummaryTests: XCTestCase {
             items: [
                 ImportBatchProgressSnapshot.Item(
                     fileID: 42,
-                    sourcePath: "/tmp/source.pdf",
+                    sourcePath: importBatchSourcePath(),
                     targetPath: "finance/Invoice_2026Q1.pdf",
                     phase: .done,
                     errorMessage: nil
@@ -188,28 +180,16 @@ final class ImportBatchResultSummaryTests: XCTestCase {
 
     @MainActor
     func testImportBatchSkippedDuplicateAndPendingICloudSurfaceInProgressResultSummary() async {
-        let duplicateURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let duplicateURL = importBatchInvoiceURL()
         let cloudURL = URL(fileURLWithPath: "/tmp/iCloudOnly.pdf.icloud")
         let rows = [
-            ImportBatchPreviewRow.duplicate(
-                url: duplicateURL,
-                prediction: ClassifyResultSnapshot(
-                    category: "finance",
-                    suggestedName: "Invoice_2026Q1.pdf",
-                    reason: .keyword,
-                    confidence: 0.9
-                ),
-                existingPath: "finance/Invoice_2026Q1.pdf"
-            ),
+            importBatchDuplicateInvoiceRow(url: duplicateURL),
             ImportBatchPreviewRow.iCloudPlaceholder(
                 url: cloudURL,
                 message: "iCloud placeholder 需要下载后才能导入"
             )
         ]
-        let model = ImportBatchCopyImportModel(
-            importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile()
-        )
+        let model = importBatchCopyImportModel()
 
         model.applyPreviewRows(
             rows,

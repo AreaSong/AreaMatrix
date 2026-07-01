@@ -33,8 +33,8 @@ actor SemanticSearchPrivacySemanticSearcher: CoreSemanticSearching {
     }
 }
 
-struct SemanticSearchPrivacyErrorMapper: CoreErrorMapping {
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
+extension CoreErrorMappingSnapshot {
+    static var semanticSearchPrivacyFailure: CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .config,
             userMessage: "Semantic privacy rules could not be checked.",

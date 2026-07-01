@@ -14,8 +14,8 @@ const STARTUP_RECOVERY_VALIDATION: &str = include_str!("recover_on_startup_valid
 const STARTUP_RECOVERY_VERIFY: &str = include_str!("recover_on_startup_integration_verify.rs");
 const ICLOUD_FAILURE: &str = include_str!("list_icloud_conflicts_failure_recovery.rs");
 const REPAIR_FAILURE: &str = include_str!("repair_reindex_metadata_failure_recovery.rs");
-const SWIFT_IMPORT_FOLDER: &str =
-    include_str!("../../apps/macos/AreaMatrixTests/ImportFolderPageIntegrationVerifyTests.swift");
+const SWIFT_IMPORT_FOLDER_CONFLICT: &str =
+    include_str!("../../apps/macos/AreaMatrixTests/ImportFolderConflictIntegrationTests.swift");
 const SWIFT_QUEUE_RECOVERY: &str =
     include_str!("../../apps/macos/AreaMatrixTests/ImportProgressCopyQueueRecoveryTests.swift");
 
@@ -186,7 +186,10 @@ fn recovery_scenarios_staging_repair_icloud_and_permission_have_release_gates() 
         IMPORT_INDEX_FAILURE,
         "import_index_file_failure_recovery_rejects_icloud_marker_without_db_write",
     );
-    assert_contains(SWIFT_IMPORT_FOLDER, "downloadICloudPlaceholdersAndRetry");
+    assert_contains(
+        SWIFT_IMPORT_FOLDER_CONFLICT,
+        "downloadICloudPlaceholdersAndRetry",
+    );
     assert_contains(
         SWIFT_QUEUE_RECOVERY,
         "testImportProgressFatalCopyRetryContinuesRemainingQueue",

@@ -15,12 +15,12 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
             coreVersionReader: coreReader,
             metadataReader: metadataReader,
             diagnosticsExporter: AboutDiagnosticsExporter(result: .success(.fixture())),
-            externalLinkOpener: AboutSettingsRecordingExternalLinkOpener(result: .success),
-            logsOpener: AboutSettingsRecordingLogsOpener(result: .success),
-            stringCopier: AboutSettingsRecordingStringCopier(),
-            diagnosticsRevealer: AboutDiagnosticsRevealer(result: .success),
-            errorMapper: AboutSettingsStaticErrorMapper(),
-            accessibilityAnnouncer: AboutSettingsRecordingAnnouncer()
+            externalLinkOpener: RecordingAboutExternalLinkOpener(),
+            logsOpener: RecordingAboutLogsOpener(),
+            stringCopier: RecordingAboutStringCopier(),
+            diagnosticsRevealer: RecordingAboutDiagnosticsRevealer(),
+            errorMapper: RecordingCoreErrorMapper.aboutSettings(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer()
         )
 
         await model.load()
@@ -45,12 +45,12 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
             coreVersionReader: StaticCoreVersionReader(result: .success("0.1.0")),
             metadataReader: StaticExistingRepositoryMetadataReader(result: .failure(CoreError.Db(message: "missing"))),
             diagnosticsExporter: AboutDiagnosticsExporter(result: .success(.fixture())),
-            externalLinkOpener: AboutSettingsRecordingExternalLinkOpener(result: .success),
-            logsOpener: AboutSettingsRecordingLogsOpener(result: .success),
-            stringCopier: AboutSettingsRecordingStringCopier(),
-            diagnosticsRevealer: AboutDiagnosticsRevealer(result: .success),
-            errorMapper: AboutSettingsStaticErrorMapper(),
-            accessibilityAnnouncer: AboutSettingsRecordingAnnouncer()
+            externalLinkOpener: RecordingAboutExternalLinkOpener(),
+            logsOpener: RecordingAboutLogsOpener(),
+            stringCopier: RecordingAboutStringCopier(),
+            diagnosticsRevealer: RecordingAboutDiagnosticsRevealer(),
+            errorMapper: RecordingCoreErrorMapper.aboutSettings(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer()
         )
 
         await model.load()
@@ -116,11 +116,15 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testExternalLinksAndLogsStayInMacLayerWithCopyableRecovery() {
-        let copier = AboutSettingsRecordingStringCopier()
-        let announcer = AboutSettingsRecordingAnnouncer()
+        let copier = RecordingAboutStringCopier()
+        let announcer = RecordingAccessibilityAnnouncer()
         let model = aboutSettingsModel(
-            externalLinkOpener: AboutSettingsRecordingExternalLinkOpener(result: .failure),
-            logsOpener: AboutSettingsRecordingLogsOpener(result: .failure),
+            externalLinkOpener: RecordingAboutExternalLinkOpener { link in
+                throw AboutSettingsPlatformError.openRejected(link.urlString)
+            },
+            logsOpener: RecordingAboutLogsOpener { _, path in
+                throw AboutSettingsPlatformError.openRejected(path)
+            },
             stringCopier: copier,
             accessibilityAnnouncer: announcer
         )
@@ -153,11 +157,10 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
     private func aboutSettingsModel(
         diagnosticsExporter: any AboutDiagnosticsExporting =
             AboutDiagnosticsExporter(result: .success(.fixture())),
-        externalLinkOpener: any AboutExternalLinkOpening =
-            AboutSettingsRecordingExternalLinkOpener(result: .success),
-        logsOpener: any AboutLogsOpening = AboutSettingsRecordingLogsOpener(result: .success),
-        stringCopier: AboutSettingsRecordingStringCopier = AboutSettingsRecordingStringCopier(),
-        accessibilityAnnouncer: AboutSettingsRecordingAnnouncer = AboutSettingsRecordingAnnouncer()
+        externalLinkOpener: (any AboutExternalLinkOpening)? = nil,
+        logsOpener: (any AboutLogsOpening)? = nil,
+        stringCopier: RecordingAboutStringCopier? = nil,
+        accessibilityAnnouncer: RecordingAccessibilityAnnouncer? = nil
     ) -> AboutSettingsModel {
         AboutSettingsModel(
             repoPath: "/tmp/repo",
@@ -168,12 +171,12 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
                 lastOpenedAt: nil
             ))),
             diagnosticsExporter: diagnosticsExporter,
-            externalLinkOpener: externalLinkOpener,
-            logsOpener: logsOpener,
-            stringCopier: stringCopier,
-            diagnosticsRevealer: AboutDiagnosticsRevealer(result: .success),
-            errorMapper: AboutSettingsStaticErrorMapper(),
-            accessibilityAnnouncer: accessibilityAnnouncer
+            externalLinkOpener: externalLinkOpener ?? RecordingAboutExternalLinkOpener(),
+            logsOpener: logsOpener ?? RecordingAboutLogsOpener(),
+            stringCopier: stringCopier ?? RecordingAboutStringCopier(),
+            diagnosticsRevealer: RecordingAboutDiagnosticsRevealer(),
+            errorMapper: RecordingCoreErrorMapper.aboutSettings(),
+            accessibilityAnnouncer: accessibilityAnnouncer ?? RecordingAccessibilityAnnouncer()
         )
     }
 }
@@ -196,117 +199,6 @@ private actor AboutDiagnosticsExporter: AboutDiagnosticsExporting {
     }
 }
 
-private final class AboutSettingsRecordingExternalLinkOpener: AboutExternalLinkOpening {
-    enum ResultState {
-        case success
-        case failure
-    }
-
-    private let result: ResultState
-    private(set) var openedLinks: [AboutExternalLink] = []
-
-    init(result: ResultState) {
-        self.result = result
-    }
-
-    @MainActor
-    func open(link: AboutExternalLink) throws -> String {
-        openedLinks.append(link)
-        if result == .failure {
-            throw AboutSettingsPlatformError.openRejected(link.urlString)
-        }
-        return link.urlString
-    }
-}
-
-private final class AboutSettingsRecordingLogsOpener: AboutLogsOpening {
-    enum ResultState {
-        case success
-        case failure
-    }
-
-    private let result: ResultState
-    private(set) var openedRepoPaths: [String] = []
-
-    init(result: ResultState) {
-        self.result = result
-    }
-
-    @MainActor
-    func logsPath(repoPath: String) -> String {
-        "\(repoPath)/.areamatrix/logs"
-    }
-
-    @MainActor
-    func openLogs(repoPath: String) throws -> String {
-        openedRepoPaths.append(repoPath)
-        let path = logsPath(repoPath: repoPath)
-        if result == .failure {
-            throw AboutSettingsPlatformError.openRejected(path)
-        }
-        return path
-    }
-}
-
-private final class AboutSettingsRecordingStringCopier: AboutStringCopying {
-    private(set) var values: [String] = []
-
-    @MainActor
-    func copy(_ value: String) throws {
-        values.append(value)
-    }
-}
-
-private final class AboutDiagnosticsRevealer: AboutDiagnosticsRevealing {
-    enum ResultState {
-        case success
-        case failure
-    }
-
-    private let result: ResultState
-    private(set) var paths: [String] = []
-
-    init(result: ResultState) {
-        self.result = result
-    }
-
-    @MainActor
-    func revealDiagnostics(at path: String) throws {
-        paths.append(path)
-        if result == .failure {
-            throw AboutSettingsPlatformError.openRejected(path)
-        }
-    }
-}
-
-private actor AboutSettingsStaticErrorMapper: CoreErrorMapping {
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        let message = switch error {
-        case .Db:
-            "Collect diagnostics..."
-        default:
-            "Retry."
-        }
-        return CoreErrorMappingSnapshot(
-            kind: .db,
-            userMessage: message,
-            severity: .medium,
-            suggestedAction: message,
-            recoverability: .retryable,
-            rawContext: error.localizedDescription
-        )
-    }
-}
-
-private final class AboutSettingsRecordingAnnouncer: AccessibilityAnnouncing {
-    private(set) var messages: [String] = []
-
-    @MainActor
-    func announce(_ message: String) {
-        messages.append(message)
-    }
-}
-
 private extension AboutDiagnosticsExportSnapshot {
     static func fixture() -> AboutDiagnosticsExportSnapshot {
         AboutDiagnosticsExportSnapshot(
@@ -319,4 +211,25 @@ private extension AboutDiagnosticsExportSnapshot {
 
 private func makeAboutSettingsTemporaryDirectory() throws -> URL {
     try makeTestTemporaryDirectory(named: "areamatrix-about")
+}
+
+private extension RecordingCoreErrorMapper {
+    static func aboutSettings() -> RecordingCoreErrorMapper {
+        RecordingCoreErrorMapper { error in
+            let message = switch error {
+            case .Db:
+                "Collect diagnostics..."
+            default:
+                "Retry."
+            }
+            return CoreErrorMappingSnapshot(
+                kind: .db,
+                userMessage: message,
+                severity: .medium,
+                suggestedAction: message,
+                recoverability: .retryable,
+                rawContext: error.localizedDescription
+            )
+        }
+    }
 }

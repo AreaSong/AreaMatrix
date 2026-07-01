@@ -11,7 +11,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         )
         let startupRecoverer = MainLoadingPausingStartupRecoverer(result: .success(report))
         let opener = MainLoadingPausingRepositoryOpener(
-            opening: .mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 1)
+            opening: .mainLoadingFixture(repoPath: mainLoadingRepoPath(), fileCount: 1)
         )
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
@@ -21,7 +21,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             helpOpener: NoopWelcomeHelpOpener()
         )
 
-        let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")
+        let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: mainLoadingRepoPath())
         let openTask = Task {
             await model.openExistingRepository(validation)
         }
@@ -30,7 +30,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         let openRequestsBeforeRecoveryFinishes = await opener.requestedConfiguredRepoPaths()
         let recoveryRequests = await startupRecoverer.requestedRepoPaths()
         XCTAssertEqual(openRequestsBeforeRecoveryFinishes, [])
-        XCTAssertEqual(recoveryRequests, ["/tmp/repo"])
+        XCTAssertEqual(recoveryRequests, [mainLoadingRepoPath()])
 
         await startupRecoverer.finishRecovery()
         guard let recoveredState = await waitForMainLoadingState(model, matching: {
@@ -54,11 +54,11 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
     func testMainLoadingRecoveryFailureMapsRetryableDbErrorInlineAndDoesNotOpenOrSaveRepository() async {
         let writer = MainLoadingRecordingSettingsWriter()
         let mapping = CoreErrorMappingSnapshot.mainLoadingDbFixture(rawContext: "recovery db locked")
-        let startupRecoverer = MainLoadingRecordingStartupRecoverer(
+        let startupRecoverer = RecordingCoreStartupRecoverer(
             result: .failure(CoreError.Db(message: "recovery db locked"))
         )
         let opener = MainLoadingPausingRepositoryOpener(
-            opening: .mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 1)
+            opening: .mainLoadingFixture(repoPath: mainLoadingRepoPath(), fileCount: 1)
         )
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
@@ -70,14 +70,14 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             helpOpener: NoopWelcomeHelpOpener()
         )
 
-        let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")
+        let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: mainLoadingRepoPath())
         await model.openExistingRepository(validation)
 
         let openRequests = await opener.requestedConfiguredRepoPaths()
         let recoveryRequests = await startupRecoverer.requestedRepoPaths()
         XCTAssertEqual(openRequests, [])
         XCTAssertEqual(writer.savedRepoPaths, [])
-        XCTAssertEqual(recoveryRequests, ["/tmp/repo"])
+        XCTAssertEqual(recoveryRequests, [mainLoadingRepoPath()])
         guard case let .mainLoading(state) = model.route else {
             return XCTFail("expected inline main loading error, got \(model.route)")
         }
@@ -102,17 +102,17 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             helpOpener: NoopWelcomeHelpOpener()
         )
 
-        let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")
+        let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: mainLoadingRepoPath())
         await model.openExistingRepository(validation)
 
         let openRequests = await opener.requestedConfiguredRepoPaths()
-        XCTAssertEqual(openRequests, ["/tmp/repo"])
+        XCTAssertEqual(openRequests, [mainLoadingRepoPath()])
         XCTAssertEqual(writer.savedRepoPaths, [])
         XCTAssertEqual(model.mainRepoRecoveryErrorMapping, mapping)
         guard case let .mainLoading(state) = model.route else {
             return XCTFail("expected inline main loading error, got \(model.route)")
         }
-        XCTAssertEqual(state.repoPath, "/tmp/repo")
+        XCTAssertEqual(state.repoPath, mainLoadingRepoPath())
         XCTAssertEqual(state.treeLoading, .failed(mapping))
         XCTAssertEqual(state.repositoryOpeningErrorMapping, mapping)
     }
@@ -123,7 +123,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         let tree = RepositoryTreeNodeSnapshot.mainLoadingTreeFixture()
         let opener = MainLoadingFailingRepositoryOpener(error: CoreError.Db(message: "database is locked"))
         let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: "/tmp/repo"),
+            settingsReader: StaticSettingsReader(repoPath: mainLoadingRepoPath()),
             emptyRepositoryOpener: opener,
             mainLoadingTreeLister: MainLoadingRecordingTreeLister(result: .success(tree)),
             startupRecoverer: StaticStartupRecoverer(),
@@ -135,12 +135,12 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         await model.bootstrapIfNeeded()
 
         let openRequests = await opener.requestedConfiguredRepoPaths()
-        XCTAssertEqual(openRequests, ["/tmp/repo"])
+        XCTAssertEqual(openRequests, [mainLoadingRepoPath()])
         XCTAssertEqual(model.mainRepoRecoveryErrorMapping, mapping)
         guard case let .mainLoading(state) = model.route else {
             return XCTFail("expected inline main loading error, got \(model.route)")
         }
-        XCTAssertEqual(state.repoPath, "/tmp/repo")
+        XCTAssertEqual(state.repoPath, mainLoadingRepoPath())
         XCTAssertEqual(state.recoveryStatusText, "启动恢复检查完成")
         XCTAssertEqual(state.repositoryOpeningErrorMapping, mapping)
         XCTAssertEqual(state.treeRows.map(\.id), ["docs", "docs/contracts"])
@@ -151,7 +151,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
     func testMainLoadingUsesBuildTreeCoreTreeWhileRepositoryOpenIsStillRunning() async {
         let tree = RepositoryTreeNodeSnapshot.mainLoadingTreeFixture()
         let opener = MainLoadingPausingRepositoryOpener(
-            opening: .mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 2)
+            opening: .mainLoadingFixture(repoPath: mainLoadingRepoPath(), fileCount: 2)
         )
         let treeLister = MainLoadingRecordingTreeLister(result: .success(tree))
         let model = OnboardingModel(
@@ -163,7 +163,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             helpOpener: NoopWelcomeHelpOpener()
         )
 
-        let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")
+        let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: mainLoadingRepoPath())
         let openTask = Task {
             await model.openExistingRepository(validation)
         }
@@ -176,7 +176,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         }
 
         let treeRequests = await treeLister.requestedRepoPaths()
-        XCTAssertEqual(treeRequests, ["/tmp/repo"])
+        XCTAssertEqual(treeRequests, [mainLoadingRepoPath()])
         XCTAssertEqual(state.treeStatusText, "目录已加载：1 个文件")
         XCTAssertEqual(state.treeRows.map(\.id), ["docs", "docs/contracts"])
 
@@ -188,7 +188,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
     func testMainLoadingMapsBuildTreeCoreTreeFailureAndRetryReloadsTree() async {
         let mapping = CoreErrorMappingSnapshot.mainLoadingDbFixture(rawContext: "tree db locked")
         let opener = MainLoadingPausingRepositoryOpener(
-            opening: .mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 2)
+            opening: .mainLoadingFixture(repoPath: mainLoadingRepoPath(), fileCount: 2)
         )
         let treeLister = MainLoadingRecordingTreeLister(results: [
             .failure(CoreError.Db(message: "tree db locked")),
@@ -204,7 +204,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             helpOpener: NoopWelcomeHelpOpener()
         )
 
-        let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")
+        let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: mainLoadingRepoPath())
         let openTask = Task {
             await model.openExistingRepository(validation)
         }
@@ -230,7 +230,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         }
 
         let treeRequests = await treeLister.requestedRepoPaths()
-        XCTAssertEqual(treeRequests, ["/tmp/repo", "/tmp/repo"])
+        XCTAssertEqual(treeRequests, [mainLoadingRepoPath(), mainLoadingRepoPath()])
         XCTAssertEqual(retriedState.treeRows.map(\.id), ["docs", "docs/contracts"])
 
         await opener.finishOpen()
@@ -384,7 +384,7 @@ final class MainLoadingScanSessionTests: XCTestCase {
             errors: ["docs/contracts/customer.pdf could not be indexed"]
         )
 
-        var state = MainLoadingState(repoPath: "/tmp/repo", scanSession: runningSession)
+        var state = MainLoadingState(repoPath: mainLoadingRepoPath(), scanSession: runningSession)
         XCTAssertEqual(state.scanStatusText, "正在扫描资料库 324")
         XCTAssertEqual(state.scanProgressText, "新增 300，更新 20，跳过 4")
         XCTAssertEqual(state.scanCurrentPathText, "当前路径：docs/contracts/customer.pdf")
@@ -398,7 +398,7 @@ final class MainLoadingScanSessionTests: XCTestCase {
     @MainActor
     func testCancelMainOpeningDoesNotSaveConfiguredRepoOrApplyLateOpenResult() async {
         let writer = MainLoadingRecordingSettingsWriter()
-        let opening = RepositoryOpeningResult.mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 1)
+        let opening = RepositoryOpeningResult.mainLoadingFixture(repoPath: mainLoadingRepoPath(), fileCount: 1)
         let opener = MainLoadingPausingRepositoryOpener(opening: opening)
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
@@ -409,7 +409,7 @@ final class MainLoadingScanSessionTests: XCTestCase {
             helpOpener: NoopWelcomeHelpOpener()
         )
 
-        let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")
+        let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: mainLoadingRepoPath())
         let openTask = Task {
             await model.openExistingRepository(validation)
         }
@@ -421,7 +421,7 @@ final class MainLoadingScanSessionTests: XCTestCase {
 
         XCTAssertEqual(writer.savedRepoPaths, [])
         XCTAssertEqual(model.route, .validatePath)
-        XCTAssertEqual(model.repositoryPathText, "/tmp/repo")
+        XCTAssertEqual(model.repositoryPathText, mainLoadingRepoPath())
         XCTAssertEqual(
             model.toastMessage,
             "Opening was cancelled. Repository configuration and user files were not changed."

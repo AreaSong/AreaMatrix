@@ -1,10 +1,10 @@
 @testable import AreaMatrix
 import XCTest
 
-// swiftlint:disable:next type_body_length
 final class ImportBatchDuplicateResolutionTests: XCTestCase {
     @MainActor
     func testImportConflictBatchManualScopeWithoutSelectionShowsSelectAtLeastOneConflict() async {
+        let invoiceURL = importBatchInvoiceURL()
         let batcher = ImportConflictBatcher(previews: [.importConflictBatchMixedPreview()])
         let model = importConflictBatchIntegrationModel(
             conflictBatcher: batcher,
@@ -12,9 +12,9 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         )
 
         model.applyPreviewRows(
-            [importBatchReadyBatchRow(url: URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf"))],
+            [importBatchReadyBatchRow(url: invoiceURL)],
             request: importConflictBatchIntegrationRequest(
-                urls: [URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")],
+                urls: [invoiceURL],
                 conflictIDs: ["dup-1", "name-1"]
             ),
             selectedDestination: .autoClassify
@@ -39,6 +39,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
 
     @MainActor
     func testImportConflictBatchAskPerItemRoutesSelectedConflicts() async {
+        let invoiceURL = importBatchInvoiceURL()
         let batcher = ImportConflictBatcher(previews: [
             .importConflictBatchMixedPreview(),
             .importConflictBatchMixedPreview()
@@ -49,9 +50,9 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         )
 
         model.applyPreviewRows(
-            [importBatchReadyBatchRow(url: URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf"))],
+            [importBatchReadyBatchRow(url: invoiceURL)],
             request: importConflictBatchIntegrationRequest(
-                urls: [URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")],
+                urls: [invoiceURL],
                 conflictIDs: ["dup-1", "name-1"]
             ),
             selectedDestination: .autoClassify
@@ -74,8 +75,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
 
     @MainActor
     func testDuplicateFileErrorFromCoreImportBecomesVisibleConflictAndStopsBatch() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
+        let fixture = importBatchStandardBatchFixture()
         let importer = ImportBatchSequenceBatchImporter(results: [
             .failure(CoreError.DuplicateFile(existingPath: "finance/existing-invoice.pdf")),
             .success(.importSingleFileFixture(currentName: "2026Q1_合同.pdf", category: "docs"))
@@ -85,14 +85,9 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
             importer: importer,
             errorMapper: errorMapper
         )
-        let rows = [
-            importBatchPreviewRow(url: invoiceURL, category: "finance", suggestedName: "Invoice_2026Q1.pdf"),
-            importBatchPreviewRow(url: contractURL, category: "docs", suggestedName: "2026Q1_合同.pdf")
-        ]
-        let request = importBatchBatchRequest(urls: [invoiceURL, contractURL])
         var progressSnapshots: [ImportBatchProgressSnapshot] = []
 
-        model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
+        model.applyPreviewRows(fixture.rows, request: fixture.request, selectedDestination: .autoClassify)
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify) { progress in
             progressSnapshots.append(progress)
         }
@@ -126,7 +121,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
 
     @MainActor
     func testCoreDetectedDuplicateSurvivesPreviewReapplyAndCanRetryKeepBoth() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let invoiceURL = importBatchInvoiceURL()
         let importer = ImportBatchSequenceBatchImporter(results: [
             .failure(CoreError.DuplicateFile(existingPath: "finance/existing-invoice.pdf")),
             .success(.importSingleFileFixture(currentName: "Invoice_2026Q1 2.pdf", category: "finance"))
@@ -135,7 +130,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
             importer: importer,
             errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
-        let rows = [importBatchPreviewRow(url: invoiceURL, category: "finance", suggestedName: "Invoice_2026Q1.pdf")]
+        let rows = [importBatchReadyBatchRow(url: invoiceURL)]
         let request = importBatchBatchRequest(urls: [invoiceURL])
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
@@ -166,8 +161,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
 
     @MainActor
     func testCoreDetectedDuplicateDefaultsToSkipAfterUserRetriesImport() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
-        let contractURL = URL(fileURLWithPath: "/tmp/合同.pdf")
+        let fixture = importBatchStandardBatchFixture()
         let importer = ImportBatchSequenceBatchImporter(results: [
             .failure(CoreError.DuplicateFile(existingPath: "finance/existing-invoice.pdf")),
             .success(.importSingleFileFixture(currentName: "2026Q1_合同.pdf", category: "docs"))
@@ -176,13 +170,8 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
             importer: importer,
             errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
-        let rows = [
-            importBatchPreviewRow(url: invoiceURL, category: "finance", suggestedName: "Invoice_2026Q1.pdf"),
-            importBatchPreviewRow(url: contractURL, category: "docs", suggestedName: "2026Q1_合同.pdf")
-        ]
-        let request = importBatchBatchRequest(urls: [invoiceURL, contractURL])
 
-        model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
+        model.applyPreviewRows(fixture.rows, request: fixture.request, selectedDestination: .autoClassify)
         _ = await model.importReadyFiles(selectedDestination: .autoClassify)
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
         let recordedRequests = await importer.recordedRequests()
@@ -212,7 +201,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
 
     @MainActor
     func testCoreDetectedDuplicateCanImportKeepBothThroughCoreDuplicateStrategy() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let invoiceURL = importBatchInvoiceURL()
         let importer = ImportBatchSequenceBatchImporter(results: [
             .failure(CoreError.DuplicateFile(existingPath: "finance/existing-invoice.pdf")),
             .success(.importSingleFileFixture(currentName: "Invoice_2026Q1 2.pdf", category: "finance"))
@@ -221,7 +210,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
             importer: importer,
             errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
-        let rows = [importBatchPreviewRow(url: invoiceURL, category: "finance", suggestedName: "Invoice_2026Q1.pdf")]
+        let rows = [importBatchReadyBatchRow(url: invoiceURL)]
         let request = importBatchBatchRequest(urls: [invoiceURL])
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
@@ -252,25 +241,17 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
     @MainActor
     func testShowExistingFileRevealsDuplicatePathFromPendingBatchRequest() {
         let revealer = RecordingRepositoryFileRevealer()
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            fileRevealer: revealer,
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
+        let model = importBatchOnboardingModel(fileRevealer: revealer)
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importBatchRepoPath())
 
         model.startImportEntry(
             opening: opening,
             source: .dropZone,
-            urls: [
-                URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf"),
-                URL(fileURLWithPath: "/tmp/合同.pdf")
-            ]
+            urls: importBatchStandardBatchFixture().urls
         )
         model.showImportEntryExistingFile(relativePath: "finance/existing-invoice.pdf")
 
-        XCTAssertEqual(revealer.requests.map(\.repoPath), ["/tmp/repo"])
+        XCTAssertEqual(revealer.requests.map(\.repoPath), [importBatchRepoPath()])
         XCTAssertEqual(revealer.requests.map(\.relativePath), ["finance/existing-invoice.pdf"])
         XCTAssertNil(model.toastMessage)
     }
@@ -279,21 +260,13 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
     func testShowExistingFileFailureReportsActionError() {
         let revealer =
             RecordingRepositoryFileRevealer(result: .failure(RepositoryFileActionError.fileMissing("missing.pdf")))
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            fileRevealer: revealer,
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
+        let model = importBatchOnboardingModel(fileRevealer: revealer)
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importBatchRepoPath())
 
         model.startImportEntry(
             opening: opening,
             source: .dropZone,
-            urls: [
-                URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf"),
-                URL(fileURLWithPath: "/tmp/合同.pdf")
-            ]
+            urls: importBatchStandardBatchFixture().urls
         )
         model.showImportEntryExistingFile(relativePath: "finance/missing.pdf")
 
@@ -303,7 +276,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
 
     @MainActor
     func testCoreDetectedDuplicateKeepBothSurvivesFooterPreviewRowReapplyBeforeImport() async {
-        let invoiceURL = URL(fileURLWithPath: "/tmp/Invoice_2026Q1.pdf")
+        let invoiceURL = importBatchInvoiceURL()
         let importer = ImportBatchSequenceBatchImporter(results: [
             .failure(CoreError.DuplicateFile(existingPath: "finance/existing-invoice.pdf")),
             .success(.importSingleFileFixture(currentName: "Invoice_2026Q1 2.pdf", category: "finance"))
@@ -312,7 +285,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
             importer: importer,
             errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
-        let rows = [importBatchPreviewRow(url: invoiceURL, category: "finance", suggestedName: "Invoice_2026Q1.pdf")]
+        let rows = [importBatchReadyBatchRow(url: invoiceURL)]
         let request = importBatchBatchRequest(urls: [invoiceURL])
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
@@ -340,33 +313,6 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         XCTAssertEqual(outcome?.pendingDuplicateCount, 0)
         XCTAssertEqual(model.rows.map(\.status.tag), ["IMPORTED"])
     }
-}
-
-private func importBatchPreviewRow(
-    url: URL,
-    category: String,
-    suggestedName: String
-) -> ImportBatchPreviewRow {
-    ImportBatchPreviewRow.ready(
-        url: url,
-        prediction: ClassifyResultSnapshot(
-            category: category,
-            suggestedName: suggestedName,
-            reason: .keyword,
-            confidence: 0.9
-        )
-    )
-}
-
-private func importBatchBatchRequest(urls: [URL]) -> ImportEntryRequest {
-    ImportEntryRequest(
-        repoPath: "/tmp/repo",
-        source: .dropZone,
-        destination: .autoClassify,
-        urls: urls,
-        kind: .multipleItems(urls.count),
-        availableCategories: ["inbox", "docs", "finance"]
-    )
 }
 
 extension ImportConflictBatchPreviewReportSnapshot {

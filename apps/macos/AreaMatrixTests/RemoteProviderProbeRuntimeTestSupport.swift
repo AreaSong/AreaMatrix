@@ -14,7 +14,14 @@ func aiCategorySuggestionPrivacyRuleReferenceModel(
         repoPath: "/tmp/repo",
         ruleID: ruleID,
         bridge: bridge,
-        errorMapper: AIPrivacyRuleErrorMapper()
+        errorMapper: StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot(
+            kind: .db,
+            userMessage: "Mapped ai-privacy-rules-core core error",
+            severity: .medium,
+            suggestedAction: "Open privacy rules",
+            recoverability: .userActionRequired,
+            rawContext: "ai-category-suggestion ai-privacy-rules-core"
+        ))
     )
 }
 
@@ -114,19 +121,6 @@ actor AIPrivacyRulesFailingBridge: CoreAIPrivacyRulesManaging {
         request _: AiPrivacyRulesUpdateRequest
     ) async throws -> AiPrivacyRulesSnapshot {
         throw CoreError.Db(message: "privacy rules write failed")
-    }
-}
-
-struct AIPrivacyRuleErrorMapper: CoreErrorMapping {
-    func mapCoreError(_: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .db,
-            userMessage: "Mapped ai-privacy-rules-core core error",
-            severity: .medium,
-            suggestedAction: "Open privacy rules",
-            recoverability: .userActionRequired,
-            rawContext: "ai-category-suggestion ai-privacy-rules-core"
-        )
     }
 }
 

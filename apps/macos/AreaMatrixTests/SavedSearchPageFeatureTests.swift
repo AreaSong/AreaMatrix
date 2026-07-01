@@ -40,7 +40,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         let model = MainFileListModel(
             opening: .savedSearchSavedSearchFixture(repoPath: "/tmp/repo", tree: .savedSearchSavedSearchFixtureTree()),
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             searchQuerying: searcher,
             errorMapper: StaticCoreErrorMapper(mapping: .savedSearchSavedSearchDbFixture())
         )
@@ -87,7 +87,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
                 tree: .savedSearchSavedSearchFixtureTree().insertingSavedSearch(saved)
             ),
             fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: MainListRecordingFileDetailer(results: []),
+            fileDetailer: RecordingFileDetailer(results: []),
             searchQuerying: searcher,
             errorMapper: StaticCoreErrorMapper(mapping: .savedSearchSavedSearchDbFixture())
         )
@@ -159,7 +159,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         let pinnedOld = SavedSearchSnapshot.smartListFixture(id: 1, name: "Pinned Old", pinned: true, updatedAt: 10)
         let pinnedNew = SavedSearchSnapshot.smartListFixture(id: 2, name: "Pinned New", pinned: true, updatedAt: 20)
         let alpha = SavedSearchSnapshot.smartListFixture(id: 3, name: "Alpha", pinned: false, updatedAt: 30)
-        let store = SmartListRecordingSavedSearchStore(results: [.listSuccess([alpha, pinnedOld, pinnedNew])])
+        let store = SmartListRecordingSavedSearchStore(listResults: [.success([alpha, pinnedOld, pinnedNew])])
         let saved = try? await store.listSavedSearches(repoPath: "/tmp/repo")
         let rows = RepositoryTreeNodeSnapshot
             .savedSearchSavedSearchFixtureTree()
@@ -176,7 +176,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
     func testSmartListLoadSmartListsFailureKeepsNormalSidebarRecoverable() async {
         let mapping = CoreErrorMappingSnapshot.savedSearchSavedSearchDbFixture()
         let mapper = StaticCoreErrorMapper(mapping: mapping)
-        let store = SmartListRecordingSavedSearchStore(results: [.listFailure(CoreError.Db(message: "db locked"))])
+        let store = SmartListRecordingSavedSearchStore(listResults: [.failure(CoreError.Db(message: "db locked"))])
         let tree = RepositoryTreeNodeSnapshot.savedSearchSavedSearchFixtureTree()
         do {
             _ = try await store.listSavedSearches(repoPath: "/tmp/repo")
@@ -212,212 +212,5 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         XCTAssertNil(model.validationMessage)
         XCTAssertEqual(model.primaryActionTitle, "Delete Smart List")
         XCTAssertTrue(model.canSubmit)
-    }
-}
-
-private extension SearchQueryRequestSnapshot {
-    static func savedSearchSavedSearchFixture(query: String) -> SearchQueryRequestSnapshot {
-        SearchQueryRequestSnapshot(
-            query: query,
-            scope: .all,
-            currentPath: nil,
-            category: nil,
-            filters: SearchFilterStateSnapshot(
-                category: "docs",
-                fileKind: "pdf",
-                tags: ["finance"],
-                tagMatchMode: .all,
-                importedAfter: nil,
-                importedBefore: nil,
-                modifiedAfter: 1_700_000_000,
-                modifiedBefore: nil,
-                storageMode: .copied,
-                includeDeleted: false
-            ),
-            sort: .relevance,
-            limit: 50,
-            offset: 0
-        )
-    }
-}
-
-private extension SavedSearchSnapshot {
-    static func savedSearchFixture(id: Int64, request: CreateSavedSearchRequestSnapshot) -> SavedSearchSnapshot {
-        SavedSearchSnapshot(
-            id: id,
-            name: request.name,
-            query: request.query,
-            icon: request.icon,
-            color: request.color,
-            pinned: request.pinned,
-            createdAt: 1_700_000_000,
-            updatedAt: 1_700_000_000
-        )
-    }
-
-    static func smartListFixture(
-        id: Int64,
-        name: String,
-        pinned: Bool,
-        updatedAt: Int64
-    ) -> SavedSearchSnapshot {
-        let request = SearchQueryRequestSnapshot.savedSearchSavedSearchFixture(query: name)
-        return SavedSearchSnapshot(
-            id: id,
-            name: name,
-            query: SavedSearchQuerySnapshot(request: request),
-            icon: "magnifyingglass",
-            color: nil,
-            pinned: pinned,
-            createdAt: 1_700_000_000,
-            updatedAt: updatedAt
-        )
-    }
-}
-
-private actor SmartListRecordingSavedSearchStore: CoreSavedSearchCRUD {
-    enum Result {
-        case listSuccess([SavedSearchSnapshot])
-        case listFailure(Error)
-    }
-
-    private var results: [Result]
-    private var listRepoPaths: [String] = []
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func createSavedSearch(
-        repoPath _: String,
-        request _: CreateSavedSearchRequestSnapshot
-    ) async throws -> SavedSearchSnapshot {
-        throw CoreError.Internal(message: "create_saved_search is not used by smart-list-management list tests")
-    }
-
-    func listSavedSearches(repoPath: String) async throws -> [SavedSearchSnapshot] {
-        listRepoPaths.append(repoPath)
-        guard !results.isEmpty else { return [] }
-        switch results.removeFirst() {
-        case let .listSuccess(saved):
-            return saved
-        case let .listFailure(error):
-            throw error
-        }
-    }
-
-    func recordedListRepoPaths() -> [String] {
-        listRepoPaths
-    }
-}
-
-private extension SearchResultPageSnapshot {
-    static func savedSearchSavedSearchFixture(
-        request: SearchQueryRequestSnapshot,
-        files: [FileEntrySnapshot]
-    ) -> SearchResultPageSnapshot {
-        SearchResultPageSnapshot(
-            query: request.query,
-            totalCount: Int64(files.count),
-            results: files.map { file in
-                SearchFileResultSnapshot(file: file, score: 1, matches: [], noteSnippet: nil)
-            },
-            diagnostics: [],
-            indexStatus: .ready
-        )
-    }
-}
-
-private func sortedSavedSearches(_ savedSearches: [SavedSearchSnapshot]) -> [SavedSearchSnapshot] {
-    savedSearches.sorted { lhs, rhs in
-        if lhs.pinned != rhs.pinned { return lhs.pinned && !rhs.pinned }
-        if lhs.pinned { return lhs.updatedAt > rhs.updatedAt }
-        return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
-    }
-}
-
-private extension RepositoryTreeNodeSnapshot {
-    func appendingSortedSavedSearches(_ savedSearches: [SavedSearchSnapshot]) -> RepositoryTreeNodeSnapshot {
-        sortedSavedSearches(savedSearches).reduce(self) { tree, saved in
-            tree.insertingSavedSearch(saved)
-        }
-    }
-}
-
-private extension FileEntrySnapshot {
-    static func savedSearchSavedSearchFixture() -> FileEntrySnapshot {
-        FileEntrySnapshot(
-            id: 203,
-            path: "docs/finance/report.pdf",
-            originalName: "report.pdf",
-            currentName: "report.pdf",
-            category: "docs",
-            sizeBytes: 128,
-            hashSha256: "saved-search-hash",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_100,
-            availability: .available
-        )
-    }
-}
-
-private extension RepositoryOpeningResult {
-    static func savedSearchSavedSearchFixture(
-        repoPath: String,
-        tree: RepositoryTreeNodeSnapshot
-    ) -> RepositoryOpeningResult {
-        RepositoryOpeningResult(
-            config: RepoConfigSnapshot(
-                repoPath: repoPath,
-                defaultMode: "Copied",
-                overviewOutput: "GeneratedOnly",
-                aiEnabled: false,
-                locale: "zh-Hans",
-                iCloudWarn: true,
-                enableExtensionRules: true,
-                enableKeywordRules: true,
-                fallbackToInbox: true,
-                allowReplaceDuringImport: false
-            ),
-            tree: tree,
-            currentCategoryFiles: []
-        )
-    }
-}
-
-private extension RepositoryTreeNodeSnapshot {
-    static func savedSearchSavedSearchFixtureTree() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
-            children: [
-                RepositoryTreeNodeSnapshot(
-                    slug: "inbox",
-                    displayName: "inbox",
-                    fileCount: 0,
-                    children: []
-                )
-            ]
-        )
-    }
-}
-
-private extension CoreErrorMappingSnapshot {
-    static func savedSearchSavedSearchDbFixture() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .db,
-            userMessage: "Saved search is unavailable.",
-            severity: .high,
-            suggestedAction: "Retry",
-            recoverability: .retryable,
-            rawContext: "saved search db locked"
-        )
     }
 }

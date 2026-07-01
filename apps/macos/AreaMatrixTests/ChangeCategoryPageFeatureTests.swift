@@ -6,26 +6,16 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     @MainActor
     func testChangeCategoryMoveToCategoryCorePreviewUsesCoreBridgeWithoutMovingFile() async {
         let original = FileEntrySnapshot.changeCategoryFixture(id: 240, name: "contract.pdf")
-        let preview = MoveToCategoryPreviewSnapshot.changeCategoryFixture(
-            fileID: original.id,
-            targetPath: "finance/contract.pdf",
-            targetName: "contract.pdf"
-        )
+        let preview = changeCategoryPreview(for: original)
         let mover = ChangeCategoryRecordingMover(previewResult: .success(preview))
-        let model = MainFileListModel(
-            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: NoopFileLister(),
-            fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
-            fileCategoryMover: mover,
-            errorMapper: StaticCoreErrorMapper(mapping: .changeCategoryClassify())
-        )
+        let model = changeCategoryModel(file: original, fileCategoryMover: mover)
 
         await model.selectFiles([original.id])
         model.beginChangeCategory()
         await model.loadMoveToCategoryPreview(fileID: original.id, targetCategory: "finance")
         let requests = await mover.recordedRequests()
 
-        XCTAssertEqual(requests, [.preview(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance")])
+        XCTAssertEqual(requests, [changeCategoryPreviewRequest(fileID: original.id)])
         XCTAssertEqual(model.files, [original])
         XCTAssertEqual(model.selectedFileDetail, original)
         XCTAssertEqual(model.pendingActionDestination, .changeCategory(fileID: original.id))
@@ -38,29 +28,12 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     @MainActor
     func testChangeCategoryMoveToCategoryCoreSubmitMoveRefreshesListDetailAndChangeLog() async {
         let original = FileEntrySnapshot.changeCategoryFixture(id: 241, name: "contract.pdf")
-        let moved = FileEntrySnapshot.changeCategoryFixture(
-            id: 241,
-            path: "finance/contract.pdf",
-            category: "finance",
-            name: "contract.pdf",
-            updatedAt: 1_700_000_400
-        )
-        let preview = MoveToCategoryPreviewSnapshot.changeCategoryFixture(
-            fileID: original.id,
-            targetPath: moved.path,
-            targetName: moved.currentName
-        )
+        let moved = changeCategoryMovedFile(from: original)
+        let preview = changeCategoryPreview(for: original, targetPath: moved.path, targetName: moved.currentName)
         let mover = ChangeCategoryRecordingMover(previewResult: .success(preview), moveResult: .success(moved))
         let logEntry = ChangeLogEntrySnapshot.detailLogFixture(fileID: moved.id, action: "moved")
         let logLister = DetailLogRecordingLister(results: [.success([logEntry])])
-        let model = MainFileListModel(
-            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: NoopFileLister(),
-            fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
-            fileCategoryMover: mover,
-            changeLogLister: logLister,
-            errorMapper: StaticCoreErrorMapper(mapping: .changeCategoryClassify())
-        )
+        let model = changeCategoryModel(file: original, fileCategoryMover: mover, changeLogLister: logLister)
 
         await model.selectFiles([original.id])
         model.beginChangeCategory()
@@ -70,8 +43,8 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
 
         XCTAssertTrue(didMove)
         XCTAssertEqual(requests, [
-            .preview(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance"),
-            .move(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance")
+            changeCategoryPreviewRequest(fileID: original.id),
+            changeCategoryMoveRequest(fileID: original.id)
         ])
         XCTAssertEqual(model.files, [moved])
         XCTAssertEqual(model.selection, .single(moved.id))
@@ -86,27 +59,11 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     @MainActor
     func testChangeCategoryMoveToCategoryCoreSuccessfulMoveReloadsTargetCategoryAndKeepsFileHighlighted() async {
         let original = FileEntrySnapshot.changeCategoryFixture(id: 243, name: "contract.pdf")
-        let moved = FileEntrySnapshot.changeCategoryFixture(
-            id: 243,
-            path: "finance/contract.pdf",
-            category: "finance",
-            name: "contract.pdf",
-            updatedAt: 1_700_000_500
-        )
-        let preview = MoveToCategoryPreviewSnapshot.changeCategoryFixture(
-            fileID: original.id,
-            targetPath: moved.path,
-            targetName: moved.currentName
-        )
+        let moved = changeCategoryMovedFile(from: original, updatedAt: 1_700_000_500)
+        let preview = changeCategoryPreview(for: original, targetPath: moved.path, targetName: moved.currentName)
         let mover = ChangeCategoryRecordingMover(previewResult: .success(preview), moveResult: .success(moved))
         let lister = ChangeCategoryRecordingLister(results: [.success([original]), .success([moved])])
-        let model = MainFileListModel(
-            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: lister,
-            fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
-            fileCategoryMover: mover,
-            errorMapper: StaticCoreErrorMapper(mapping: .changeCategoryClassify())
-        )
+        let model = changeCategoryModel(file: original, fileLister: lister, fileCategoryMover: mover)
         var movedCallback: FileEntrySnapshot?
 
         await model.loadCurrentCategory("docs")
@@ -161,13 +118,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         let mover = ChangeCategoryRecordingMover(
             previewResult: .failure(CoreError.Classify(reason: "unknown category"))
         )
-        let model = MainFileListModel(
-            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: NoopFileLister(),
-            fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
-            fileCategoryMover: mover,
-            errorMapper: mapper
-        )
+        let model = changeCategoryModel(file: original, fileCategoryMover: mover, errorMapper: mapper)
 
         await model.selectFiles([original.id])
         model.beginChangeCategory()
@@ -187,27 +138,21 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     @MainActor
     func testChangeCategoryResolveNameConflictCorePreviewKeepsCoreAutoNumberedNameVisibleWithoutMovingFile() async {
         let original = FileEntrySnapshot.changeCategoryFixture(id: 245, name: "contract.pdf")
-        let preview = MoveToCategoryPreviewSnapshot.changeCategoryFixture(
-            fileID: original.id,
+        let preview = changeCategoryPreview(
+            for: original,
             targetPath: "finance/contract_1.pdf",
             targetName: "contract_1.pdf",
             nameConflictResolved: true
         )
         let mover = ChangeCategoryRecordingMover(previewResult: .success(preview))
-        let model = MainFileListModel(
-            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: NoopFileLister(),
-            fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
-            fileCategoryMover: mover,
-            errorMapper: StaticCoreErrorMapper(mapping: .changeCategoryClassify())
-        )
+        let model = changeCategoryModel(file: original, fileCategoryMover: mover)
 
         await model.selectFiles([original.id])
         model.beginChangeCategory()
         await model.loadMoveToCategoryPreview(fileID: original.id, targetCategory: "finance")
         let requests = await mover.recordedRequests()
 
-        XCTAssertEqual(requests, [.preview(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance")])
+        XCTAssertEqual(requests, [changeCategoryPreviewRequest(fileID: original.id)])
         XCTAssertEqual(model.files, [original])
         XCTAssertEqual(
             model.changeCategoryState.preview(for: .init(fileID: original.id, targetCategory: "finance")),
@@ -227,20 +172,13 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             reason: .extension,
             confidence: 0.93
         )
-        let preview = MoveToCategoryPreviewSnapshot.changeCategoryFixture(
-            fileID: original.id,
-            targetPath: "finance/contract.pdf",
-            targetName: "contract.pdf"
-        )
+        let preview = changeCategoryPreview(for: original)
         let predictor = ChangeCategoryRecordingPredictor(result: .success(reason))
         let mover = ChangeCategoryRecordingMover(previewResult: .success(preview))
-        let model = MainFileListModel(
-            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: NoopFileLister(),
-            fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
+        let model = changeCategoryModel(
+            file: original,
             fileCategoryMover: mover,
-            categoryPredictor: predictor,
-            errorMapper: StaticCoreErrorMapper(mapping: .changeCategoryClassify())
+            categoryPredictor: predictor
         )
 
         await model.selectFiles([original.id])
@@ -254,7 +192,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             ChangeCategoryPredictionRequest(repoPath: "/tmp/repo", filename: "contract.pdf")
         ])
         XCTAssertEqual(moveRequests, [
-            .preview(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance")
+            changeCategoryPreviewRequest(fileID: original.id)
         ])
         XCTAssertEqual(model.classifierCorrectionContextState.result(for: original.id), reason)
         let previewRequest = MainFileCategoryMovePreviewRequest(
@@ -268,15 +206,9 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     // swiftlint:disable:next function_body_length
     func testClassifierCorrectionApplyCorrectionUsesRealCoreBridgeAndReturnedRuleDraft() async {
         let original = FileEntrySnapshot.changeCategoryFixture(id: 247, name: "contract.pdf")
-        let corrected = FileEntrySnapshot.changeCategoryFixture(
-            id: original.id,
-            path: "finance/contract.pdf",
-            category: "finance",
-            name: "contract.pdf",
-            updatedAt: 1_700_000_800
-        )
-        let preview = MoveToCategoryPreviewSnapshot.changeCategoryFixture(
-            fileID: original.id,
+        let corrected = changeCategoryMovedFile(from: original, updatedAt: 1_700_000_800)
+        let preview = changeCategoryPreview(
+            for: original,
             targetPath: corrected.path,
             targetName: corrected.currentName
         )
@@ -298,13 +230,10 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             previewResult: .success(preview),
             correctionResult: .success(correction)
         )
-        let model = MainFileListModel(
-            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: NoopFileLister(),
-            fileDetailer: DetailMetaImmediateDetailer(result: .success(original)),
+        let model = changeCategoryModel(
+            file: original,
             fileCategoryMover: mover,
-            changeLogLister: DetailLogRecordingLister(results: [.success([])]),
-            errorMapper: StaticCoreErrorMapper(mapping: .changeCategoryClassify())
+            changeLogLister: DetailLogRecordingLister(results: [.success([])])
         )
 
         await model.selectFiles([original.id])
@@ -323,7 +252,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
 
         XCTAssertTrue(didCorrect)
         XCTAssertEqual(requests, [
-            .preview(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance"),
+            changeCategoryPreviewRequest(fileID: original.id),
             .correction(
                 repoPath: "/tmp/repo",
                 fileID: original.id,

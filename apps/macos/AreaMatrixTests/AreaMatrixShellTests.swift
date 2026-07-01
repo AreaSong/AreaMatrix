@@ -21,7 +21,7 @@ final class AreaMatrixShellTests: XCTestCase {
         )
 
         await model.bootstrapIfNeeded()
-        let requestedRepoPaths = await loader.requestedRepoPaths()
+        let requestedRepoPaths = await loader.requestedPaths()
 
         XCTAssertEqual(model.route, .welcome)
         XCTAssertEqual(requestedRepoPaths, [])

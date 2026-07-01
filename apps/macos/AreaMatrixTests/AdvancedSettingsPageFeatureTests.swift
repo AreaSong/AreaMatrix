@@ -12,8 +12,8 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         let model = AdvancedSettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
-            updater: RecordingConfigurationUpdater(result: .success),
-            errorMapper: AdvancedSettingsStaticErrorMapper()
+            updater: RecordingConfigurationUpdater(result: .success(())),
+            errorMapper: RecordingCoreErrorMapper.advancedSettings()
         )
 
         await model.load()
@@ -45,7 +45,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testAdvancedSettingsRecoveryToolsEntrypointRoutesToRepairConfirmationWithoutRunningRecovery() async {
         let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 1)
-        let recoverer = AdvancedSettingsStartupRecoverer()
+        let recoverer = RecordingCoreStartupRecoverer()
         let model = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
             startupRecoverer: recoverer,
@@ -103,7 +103,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
             atomically: true,
             encoding: .utf8
         )
-        let updater = RecordingConfigurationUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success(()))
         let model = await loadedAdvancedModel(
             updater: updater,
             config: .advancedSettingsFixture(repoPath: repoURL.path),
@@ -157,7 +157,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testAllowReplaceRequiresConfirmationAndDisableSavesDirectly() async {
-        let updater = RecordingConfigurationUpdater(result: .success)
+        let updater = RecordingConfigurationUpdater(result: .success(()))
         let model = await loadedAdvancedModel(updater: updater)
 
         await model.requestAllowReplaceDuringImport(true)
@@ -263,90 +263,17 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
     private func loadedAdvancedModel(
         updater: RecordingConfigurationUpdater,
         config: RepoConfigSnapshot = .advancedSettingsFixture(repoPath: "/tmp/repo"),
-        inspector: any RootOverviewFileInspecting = AdvancedSettingsRootInspector(status: .missing)
+        inspector: any RootOverviewFileInspecting = StaticRootOverviewFileInspector(status: .missing)
     ) async -> AdvancedSettingsModel {
         let model = AdvancedSettingsModel(
             repoPath: config.repoPath,
             loader: RecordingConfigurationLoader(result: .success(config)),
             updater: updater,
             rootOverviewInspector: inspector,
-            errorMapper: AdvancedSettingsStaticErrorMapper()
+            errorMapper: RecordingCoreErrorMapper.advancedSettings()
         )
         await model.load()
         return model
-    }
-}
-
-private struct AdvancedSettingsRootInspector: RootOverviewFileInspecting {
-    let status: RootOverviewFileStatus
-
-    func status(repoPath _: String) -> RootOverviewFileStatus {
-        status
-    }
-}
-
-private actor AdvancedSettingsStaticErrorMapper: CoreErrorMapping {
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        switch error {
-        case .Db:
-            .advancedSettingsMapping(kind: .db, userMessage: "Database error")
-        case .Config:
-            .advancedSettingsMapping(kind: .config, userMessage: "Configuration error")
-        case .PermissionDenied:
-            .advancedSettingsMapping(kind: .permissionDenied, userMessage: "Permission denied")
-        default:
-            .advancedSettingsMapping(kind: .internal, userMessage: "Save failed")
-        }
-    }
-}
-
-private actor AdvancedSettingsStartupRecoverer: CoreStartupRecovering {
-    private var paths: [String] = []
-
-    func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
-        paths.append(repoPath)
-        return RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: [])
-    }
-
-    func requestedRepoPaths() -> [String] {
-        paths
-    }
-}
-
-private extension RepoConfigSnapshot {
-    static func advancedSettingsFixture(
-        repoPath: String,
-        overviewOutput: String = "GeneratedOnly",
-        allowReplaceDuringImport: Bool = false
-    ) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: overviewOutput,
-            aiEnabled: false,
-            locale: "system",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: allowReplaceDuringImport
-        )
-    }
-}
-
-private extension CoreErrorMappingSnapshot {
-    static func advancedSettingsMapping(
-        kind: CoreErrorKindSnapshot,
-        userMessage: String
-    ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: kind,
-            userMessage: userMessage,
-            severity: .medium,
-            suggestedAction: "Retry save",
-            recoverability: .retryable,
-            rawContext: kind.rawValue
-        )
     }
 }
 

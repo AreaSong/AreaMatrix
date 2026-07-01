@@ -5,143 +5,19 @@ func makeRepairTemporaryAdoptRepoURL() throws -> URL {
     try makeTestTemporaryDirectory(named: "AreaMatrixAdoptExisting")
 }
 
-final class RepairRecordingSettingsWriter: AppSettingsWriting {
-    private(set) var savedRepoPaths: [String] = []
-    func saveConfiguredRepoPath(_ repoPath: String) {
-        savedRepoPaths.append(repoPath)
-    }
-}
+typealias RepairRecordingSettingsWriter = RecordingAppSettingsWriter
 
-actor RepairRecordingConfigLoader: CoreConfigurationLoading {
-    private let config: RepoConfigSnapshot
-    init(config: RepoConfigSnapshot) {
-        self.config = config
-    }
+typealias RepairRecordingRepositoryOpener = RecordingRepositoryOpener
 
-    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
-        config
-    }
-}
+typealias RepairRecordingPathValidator = RecordingRepositoryPathValidator
 
-enum RepairRecordingRepositoryOpenResult {
-    case success(RepositoryOpeningResult)
-    case failure(Error)
-}
+typealias RepairSequencePathValidator = RecordingRepositoryPathValidator
 
-actor RepairRecordingRepositoryOpener: CoreEmptyRepositoryOpening {
-    private let result: RepairRecordingRepositoryOpenResult
-    private var paths: [String] = []
+typealias RepairRecordingRepositoryInitializer = RecordingRepositoryInitializer
 
-    init(result: RepairRecordingRepositoryOpenResult) {
-        self.result = result
-    }
+typealias RepairPausingRepositoryInitializer = PausingRepositoryInitializer
 
-    func openEmptyRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        try await openConfiguredRepository(repoPath: repoPath)
-    }
-
-    func openAdoptedRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        try await openConfiguredRepository(repoPath: repoPath)
-    }
-
-    func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
-        paths.append(repoPath)
-        switch result {
-        case let .success(opening):
-            return opening
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func requestedRepoPaths() -> [String] {
-        paths
-    }
-}
-
-actor RepairRecordingPathValidator: CoreRepositoryPathValidating {
-    private let validation: RepoPathValidationSnapshot
-    init(validation: RepoPathValidationSnapshot) {
-        self.validation = validation
-    }
-
-    func validateRepoPath(repoPath _: String) async throws -> RepoPathValidationSnapshot {
-        validation
-    }
-}
-
-actor RepairSequencePathValidator: CoreRepositoryPathValidating {
-    private var validations: [RepoPathValidationSnapshot]
-
-    init(validations: [RepoPathValidationSnapshot]) {
-        self.validations = validations
-    }
-
-    func validateRepoPath(repoPath _: String) async throws -> RepoPathValidationSnapshot {
-        guard !validations.isEmpty else {
-            throw CoreError.Config(reason: "missing validation fixture")
-        }
-
-        return validations.removeFirst()
-    }
-}
-
-actor RepairRecordingRepositoryInitializer: CoreRepositoryInitializing {
-    private var createdPaths: [String] = []
-    private var adoptedPaths: [String] = []
-
-    func initializeEmptyRepository(repoPath: String) async throws {
-        createdPaths.append(repoPath)
-    }
-
-    func adoptExistingRepository(repoPath: String) async throws {
-        adoptedPaths.append(repoPath)
-    }
-
-    func createdRepoPaths() -> [String] {
-        createdPaths
-    }
-
-    func adoptedRepoPaths() -> [String] {
-        adoptedPaths
-    }
-}
-
-actor RepairPausingRepositoryInitializer: CoreRepositoryInitializing {
-    private var createdPaths: [String] = []
-    private var adoptedPaths: [String] = []
-    private var didStart = false
-
-    func initializeEmptyRepository(repoPath: String) async throws {
-        createdPaths.append(repoPath)
-        didStart = true
-        try await Task.sleep(nanoseconds: 100_000_000)
-    }
-
-    func adoptExistingRepository(repoPath: String) async throws {
-        adoptedPaths.append(repoPath)
-        didStart = true
-        try await Task.sleep(nanoseconds: 100_000_000)
-    }
-
-    func waitUntilStarted() async {
-        while !didStart {
-            await Task.yield()
-        }
-    }
-
-    func createdRepoPaths() -> [String] {
-        createdPaths
-    }
-}
-
-struct RepairExistingRepoMetadataReader: ExistingRepositoryMetadataReading {
-    let schemaVersion: Int64
-
-    func metadata(repoPath _: String) async throws -> ExistingRepositoryMetadataSnapshot {
-        ExistingRepositoryMetadataSnapshot(schemaVersion: schemaVersion, lastOpenedAt: nil)
-    }
-}
+typealias RepairExistingRepoMetadataReader = StaticExistingRepositoryMetadataReader
 
 extension RepoConfigSnapshot {
     static func repairFixture(repoPath: String) -> RepoConfigSnapshot {

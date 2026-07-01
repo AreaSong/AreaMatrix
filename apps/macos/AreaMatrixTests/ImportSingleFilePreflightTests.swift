@@ -14,7 +14,7 @@ final class ImportSingleFilePreflightTests: XCTestCase {
 
         let result = await CoreImportSingleFilePreflight(fileLoader: fileLoader)
             .preflightSingleFileImport(request: .fixture(
-                repoPath: "/tmp/repo",
+                repoPath: importSingleFileRepoPath(),
                 sourceURL: sourceURL,
                 category: "docs",
                 targetFilename: "source.pdf"
@@ -27,7 +27,10 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         XCTAssertEqual(result.conflict, .none)
         XCTAssertNil(result.keepBothTargetRelativePath)
         XCTAssertNil(result.importBlockingReason())
-        XCTAssertEqual(loadRequests, [ImportSingleFileFileLoadRequest(repoPath: "/tmp/repo", categories: [nil])])
+        XCTAssertEqual(loadRequests, [ImportSingleFileFileLoadRequest(
+            repoPath: importSingleFileRepoPath(),
+            categories: [nil]
+        )])
     }
 
     func testCorePreflightDetectsDuplicateHashAndComputesKeepBothPreviewFromCoreListFiles() async throws {
@@ -43,7 +46,7 @@ final class ImportSingleFilePreflightTests: XCTestCase {
 
         let actual = await CoreImportSingleFilePreflight(fileLoader: fileLoader)
             .preflightSingleFileImport(request: .fixture(
-                repoPath: "/tmp/repo",
+                repoPath: importSingleFileRepoPath(),
                 sourceURL: sourceURL,
                 category: "docs",
                 targetFilename: "source.pdf"
@@ -77,7 +80,7 @@ final class ImportSingleFilePreflightTests: XCTestCase {
 
         let actual = await CoreImportSingleFilePreflight(fileLoader: fileLoader)
             .preflightSingleFileImport(request: .fixture(
-                repoPath: "/tmp/repo",
+                repoPath: importSingleFileRepoPath(),
                 sourceURL: sourceURL,
                 category: "docs",
                 targetFilename: "source.pdf"
@@ -99,7 +102,7 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         let result = await CoreImportSingleFilePreflight(
             fileLoader: ImportSingleFileStaticFileLoader(files: [])
         ).preflightSingleFileImport(request: .fixture(
-            repoPath: "/tmp/repo",
+            repoPath: importSingleFileRepoPath(),
             sourceURL: sourceURL,
             category: "docs",
             targetFilename: "bad/name.pdf"
@@ -125,7 +128,7 @@ final class ImportSingleFilePreflightTests: XCTestCase {
 
         let result = await CoreImportSingleFilePreflight(fileLoader: fileLoader)
             .preflightSingleFileImport(request: .fixture(
-                repoPath: "/tmp/repo",
+                repoPath: importSingleFileRepoPath(),
                 sourceURL: sourceURL,
                 category: "docs",
                 targetFilename: "source.pdf"

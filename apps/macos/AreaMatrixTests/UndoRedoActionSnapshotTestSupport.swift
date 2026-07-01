@@ -1,16 +1,26 @@
 @testable import AreaMatrix
 
+actor NoopUndoActionStore: CoreUndoActionLogging {
+    func listUndoActions(repoPath _: String) async throws -> [UndoActionRecordSnapshot] {
+        []
+    }
+
+    func undoAction(repoPath _: String, actionID _: String) async throws -> UndoActionResultSnapshot {
+        throw CoreError.Internal(message: "noop undo action store does not execute undo actions")
+    }
+}
+
 actor UndoActionRecordingTestStore: CoreUndoActionLogging {
-    enum Result {
+    enum Step {
         case list(Swift.Result<[UndoActionRecordSnapshot], Error>)
         case undo(Swift.Result<UndoActionResultSnapshot, Error>)
     }
 
-    private var results: [Result]
+    private var results: [Step]
     private var recordedListRequests: [String] = []
     private var recordedUndoRequests: [String] = []
 
-    init(results: [Result]) {
+    init(results: [Step]) {
         self.results = results
     }
 
@@ -62,7 +72,7 @@ actor UndoActionRecordingTestStore: CoreUndoActionLogging {
         return try result.get()
     }
 
-    private func consumeResult() throws -> Result {
+    private func consumeResult() throws -> Step {
         guard !results.isEmpty else { throw UndoActionRecordingTestStoreError.missingResult }
         return results.removeFirst()
     }
@@ -75,7 +85,22 @@ private enum UndoActionRecordingTestStoreError: Error {
 actor LenientUndoActionRecordingTestStore: CoreUndoActionLogging {
     private let store: UndoActionRecordingTestStore
 
-    init(results: [UndoActionRecordingTestStore.Result]) {
+    init(results: [UndoActionRecordingTestStore.Step]) {
+        store = UndoActionRecordingTestStore(results: results)
+    }
+
+    init(actions: [UndoActionRecordSnapshot]) {
+        store = UndoActionRecordingTestStore(results: [.list(.success(actions))])
+    }
+
+    init(
+        actions: Swift.Result<[UndoActionRecordSnapshot], Error> = .success([]),
+        undoResult: Swift.Result<UndoActionResultSnapshot, Error>? = nil
+    ) {
+        var results: [UndoActionRecordingTestStore.Step] = [.list(actions)]
+        if let undoResult {
+            results.append(.undo(undoResult))
+        }
         store = UndoActionRecordingTestStore(results: results)
     }
 
@@ -105,16 +130,16 @@ actor LenientUndoActionRecordingTestStore: CoreUndoActionLogging {
 }
 
 actor RedoActionLogRecordingRedoStore: CoreRedoActionLogging {
-    enum Result {
+    enum Step {
         case list(Swift.Result<[RedoActionRecordSnapshot], Error>)
         case redo(Swift.Result<RedoActionResultSnapshot, Error>)
     }
 
-    private var results: [Result]
+    private var results: [Step]
     private var recordedListRequests: [String] = []
     private var recordedRedoRequests: [String] = []
 
-    init(results: [Result]) {
+    init(results: [Step]) {
         self.results = results
     }
 
@@ -144,141 +169,5 @@ actor RedoActionLogRecordingRedoStore: CoreRedoActionLogging {
 
     func redoRequests() -> [String] {
         recordedRedoRequests
-    }
-}
-
-extension UndoActionRecordSnapshot {
-    static func testMovedFilesToTrashUndoAction() -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
-            actionID: "undo-trash-3",
-            kind: "trash_delete",
-            summary: "Moved 3 files to Trash.",
-            affectedCount: 3,
-            affectedFileNames: ["a.pdf", "b.pdf", "c.pdf"],
-            status: .pending,
-            canUndo: true,
-            disabledReason: nil,
-            createdAt: 1_700_000_000,
-            updatedAt: 1_700_000_010
-        )
-    }
-
-    static func testRenamedFilesUndoAction() -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
-            actionID: "undo-rename-12",
-            kind: "rename_files",
-            summary: "Renamed 12 files.",
-            affectedCount: 12,
-            affectedFileNames: ["a.pdf", "b.pdf"],
-            status: .pending,
-            canUndo: true,
-            disabledReason: nil,
-            createdAt: 1_700_000_020,
-            updatedAt: 1_700_000_020
-        )
-    }
-
-    static func testBlockedRenameUndoAction() -> UndoActionRecordSnapshot {
-        var action = testRenamedFilesUndoAction()
-        action.actionID = "undo-rename-blocked"
-        action.status = .blocked
-        action.canUndo = false
-        action.disabledReason = "External change prevents undo."
-        return action
-    }
-
-    static func testExecutedTrashMoveUndoAction() -> UndoActionRecordSnapshot {
-        var action = testMovedFilesToTrashUndoAction()
-        action.status = .executed
-        action.canUndo = false
-        action.updatedAt = 1_700_000_030
-        return action
-    }
-
-    static func testImportConflictBatchUndoAction() -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
-            actionID: "undo-import-conflict-batch",
-            kind: "import_conflict_batch",
-            summary: "Replaced 1 import conflict.",
-            affectedCount: 1,
-            affectedFileNames: ["Invoice_2026Q1.pdf"],
-            status: .pending,
-            canUndo: true,
-            disabledReason: nil,
-            createdAt: 1_700_000_400,
-            updatedAt: 1_700_000_400
-        )
-    }
-}
-
-extension UndoActionResultSnapshot {
-    static func testUndoneTrashMoveUndoResult() -> UndoActionResultSnapshot {
-        UndoActionResultSnapshot(
-            actionID: "undo-trash-3",
-            status: .executed,
-            summary: "Undone: moved 3 files to Trash.",
-            affectedCount: 3,
-            refreshTargets: ["files", "undo_actions", "change_log"],
-            completedAt: 1_700_000_040
-        )
-    }
-
-    static func testExecutedImportConflictBatchUndoResult() -> UndoActionResultSnapshot {
-        UndoActionResultSnapshot(
-            actionID: "undo-import-conflict-batch",
-            status: .executed,
-            summary: "Undone: replaced 1 import conflict.",
-            affectedCount: 1,
-            refreshTargets: ["files", "change_log", "undo_actions"],
-            completedAt: 1_700_000_420
-        )
-    }
-}
-
-extension RedoActionRecordSnapshot {
-    static func redoActionLogAvailableMoveRedo() -> RedoActionRecordSnapshot {
-        RedoActionRecordSnapshot(
-            actionID: "redo-move-3",
-            kind: "move_files",
-            summary: "Redo: Move 3 files to Documents",
-            affectedCount: 3,
-            affectedFileNames: ["a.pdf", "b.pdf", "c.pdf"],
-            status: .available,
-            canRedo: true,
-            disabledReason: nil,
-            sourceUndoActionID: "undo-trash-3",
-            createdAt: 1_700_000_045,
-            updatedAt: 1_700_000_045
-        )
-    }
-
-    static func redoActionLogClearedMoveRedo() -> RedoActionRecordSnapshot {
-        var action = redoActionLogAvailableMoveRedo()
-        action.status = .cleared
-        action.canRedo = false
-        action.disabledReason = "Redo was cleared by the next file operation."
-        return action
-    }
-
-    static func redoActionLogExecutedMoveRedo() -> RedoActionRecordSnapshot {
-        var action = redoActionLogAvailableMoveRedo()
-        action.status = .executed
-        action.canRedo = false
-        action.updatedAt = 1_700_000_060
-        return action
-    }
-}
-
-extension RedoActionResultSnapshot {
-    static func redoActionLogRedoneMove() -> RedoActionResultSnapshot {
-        RedoActionResultSnapshot(
-            actionID: "redo-move-3",
-            status: .executed,
-            summary: "Redone: moved 3 files to Documents.",
-            affectedCount: 3,
-            refreshTargets: ["files", "undo_actions", "redo_actions", "change_log"],
-            undoToken: "undo-redone-move-3",
-            completedAt: 1_700_000_070
-        )
     }
 }

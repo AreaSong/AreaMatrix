@@ -20,7 +20,7 @@ final class SemanticSearchPrivacyRulesCoreTests: XCTestCase {
             ))),
             semanticSearching: semantic,
             aiPrivacyRules: privacy,
-            errorMapper: SemanticSearchPrivacyErrorMapper()
+            errorMapper: StaticCoreErrorMapper(mapping: .semanticSearchPrivacyFailure)
         )
         model.searchState = .loaded(request: request, page: .semanticSearchSemanticPrivacyPage(route: .remote))
 
@@ -58,7 +58,7 @@ final class SemanticSearchPrivacyRulesCoreTests: XCTestCase {
             ))),
             semanticSearching: semantic,
             aiPrivacyRules: privacy,
-            errorMapper: SemanticSearchPrivacyErrorMapper()
+            errorMapper: StaticCoreErrorMapper(mapping: .semanticSearchPrivacyFailure)
         )
         model.searchState = .loaded(request: request, page: .semanticSearchSemanticPrivacyPage(route: .remote))
 

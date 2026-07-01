@@ -6,24 +6,17 @@ struct CommandPaletteCommandIndexRequest: Equatable {
 }
 
 actor CommandPaletteCommandIndexStore: CoreCommandIndexing {
-    enum Result { case success(CommandIndex), failure(Error) }
-
-    private var results: [Result]
+    private var results: [Swift.Result<CommandIndex, Error>]
     private var requests: [CommandPaletteCommandIndexRequest] = []
 
-    init(results: [Result]) {
+    init(results: [Swift.Result<CommandIndex, Error>]) {
         self.results = results
     }
 
     func listCommandTargets(repoPath: String, context: CommandIndexContext) async throws -> CommandIndex {
         requests.append(.init(repoPath: repoPath, context: context))
         guard !results.isEmpty else { return .commandPaletteFixture() }
-        switch results.removeFirst() {
-        case let .success(index):
-            return index
-        case let .failure(error):
-            throw error
-        }
+        return try results.removeFirst().get()
     }
 
     func recordedRequests() -> [CommandPaletteCommandIndexRequest] {
@@ -31,57 +24,5 @@ actor CommandPaletteCommandIndexStore: CoreCommandIndexing {
     }
 }
 
-struct CommandPaletteSmartListRunRequest: Equatable {
-    var repoPath: String
-    var savedSearchID: Int64
-    var limit: Int64
-    var offset: Int64
-}
-
-actor CommandPaletteSmartListRunner: CoreSearchQuerying {
-    enum Result { case success(SearchResultPageSnapshot), failure(Error) }
-
-    private var results: [Result]
-    private var runRequests: [CommandPaletteSmartListRunRequest] = []
-    private var searchRequests: [SearchQueryRequestSnapshot] = []
-
-    init(results: [Result]) {
-        self.results = results
-    }
-
-    func searchFiles(repoPath _: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
-        searchRequests.append(request)
-        throw CoreError.Internal(message: "search_files must not run command-palette smart-list Smart List execution")
-    }
-
-    func runSmartList(
-        repoPath: String,
-        savedSearchID: Int64,
-        limit: Int64,
-        offset: Int64
-    ) async throws -> SearchResultPageSnapshot {
-        runRequests.append(CommandPaletteSmartListRunRequest(
-            repoPath: repoPath,
-            savedSearchID: savedSearchID,
-            limit: limit,
-            offset: offset
-        ))
-        guard !results.isEmpty else {
-            return SearchResultPageSnapshot(query: "", totalCount: 0, results: [], diagnostics: [], indexStatus: .ready)
-        }
-        switch results.removeFirst() {
-        case let .success(page):
-            return page
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func recordedRunRequests() -> [CommandPaletteSmartListRunRequest] {
-        runRequests
-    }
-
-    func recordedSearchRequests() -> [SearchQueryRequestSnapshot] {
-        searchRequests
-    }
-}
+typealias CommandPaletteSmartListRunRequest = SmartListRunRequestRecord
+typealias CommandPaletteSmartListRunner = SmartListOnlyRecordingSearchQuerying
