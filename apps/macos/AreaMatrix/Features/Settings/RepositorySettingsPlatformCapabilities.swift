@@ -33,7 +33,7 @@ final class RepoPlatformCapabilitiesModel: ObservableObject {
     init(
         hostPlatform: PlatformIdSnapshot = .macos,
         appVersion: String? = nil,
-        appVersionReader: any AppVersionReading = BundleAppVersionReader(),
+        appVersionReader: any AppVersionReading = RepositorySettingsPlatformServices.appVersionReader,
         capabilityLoader: any CorePlatformCapabilitiesLoading = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {

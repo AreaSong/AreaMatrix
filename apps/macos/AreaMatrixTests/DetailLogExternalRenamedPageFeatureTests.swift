@@ -152,10 +152,10 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
             relativePath: renamed.path,
             fsEventID: 9003
         ))
-        let mapping = CoreErrorMappingSnapshot.detailLogExternalRenamed(kind: .internal)
-        let mapper = StaticCoreErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: .detailLogExternalRenamed(kind: .internal))
         let lister = DetailLogRecordingLister(results: [.success([])])
-        let syncer = DetailLogExternalRenamedSyncer(result: .success(.detailRenamedWithErrorsFixture()))
+        let syncResult = SyncResultSnapshot.detailRenamedWithErrorsFixture()
+        let syncer = DetailLogExternalRenamedSyncer(result: .success(syncResult))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [renamed]),
             fileLister: DetailLogExternalRenamedLister(files: [renamed]),
@@ -168,13 +168,13 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         await model.syncExternalCreated(event)
         let mappedErrors = await mapper.recordedErrors()
         let logRequests = await lister.recordedRequests()
+        let rawContext = "renamed event 9003 returned sync errors: \(syncResult.errors.joined(separator: "; "))"
+        let mapping = CoreErrorMappingSnapshot.internalFailure(rawContext: rawContext)
 
         XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
+        XCTAssertEqual(mappedErrors, [])
         XCTAssertEqual(logRequests, [])
-        guard case let .Internal(message) = mappedErrors.first else {
-            return XCTFail("expected internal error for partial sync result")
-        }
-        XCTAssertTrue(message.contains("renamed event 9003 returned sync errors"))
+        XCTAssertTrue(mapping.rawContext.contains("renamed event 9003 returned sync errors"))
     }
 
     func testDetailLogSyncExternalRenamedCoreRejectsInvalidExternalRenamedEventsBeforeCoreBridge() {

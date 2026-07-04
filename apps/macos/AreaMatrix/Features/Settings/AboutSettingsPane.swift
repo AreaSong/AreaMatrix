@@ -7,16 +7,16 @@ struct AboutSettingsPane: View {
 
     init(
         repoPath: String,
-        appVersionReader: any AppVersionReading = BundleAppVersionReader(),
+        appVersionReader: any AppVersionReading = AboutSettingsPlatformServices.appVersionReader,
         coreVersionReader: any CoreVersionReading = CoreBridge(),
-        metadataReader: any ExistingRepositoryMetadataReading = SQLiteExistingRepositoryMetadataReader(),
-        diagnosticsExporter: any AboutDiagnosticsExporting = LocalAboutDiagnosticsExporter(),
-        externalLinkOpener: any AboutExternalLinkOpening = NSWorkspaceAboutExternalLinkOpener(),
-        logsOpener: any AboutLogsOpening = NSWorkspaceAboutLogsOpener(),
-        stringCopier: any AboutStringCopying = NSPasteboardAboutStringCopier(),
-        diagnosticsRevealer: any AboutDiagnosticsRevealing = NSWorkspaceAboutDiagnosticsRevealer(),
-        errorMapper: any CoreErrorMapping = LocalAboutCoreErrorMapper(),
-        accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer(),
+        metadataReader: any ExistingRepositoryMetadataReading = AboutSettingsPlatformServices.metadataReader,
+        diagnosticsExporter: any AboutDiagnosticsExporting = AboutSettingsPlatformServices.diagnosticsExporter,
+        externalLinkOpener: any AboutExternalLinkOpening = AboutSettingsPlatformServices.externalLinkOpener,
+        logsOpener: any AboutLogsOpening = AboutSettingsPlatformServices.logsOpener,
+        stringCopier: any AboutStringCopying = AboutSettingsPlatformServices.stringCopier,
+        diagnosticsRevealer: any AboutDiagnosticsRevealing = AboutSettingsPlatformServices.diagnosticsRevealer,
+        errorMapper: any CoreErrorMapping = CoreBridge(),
+        accessibilityAnnouncer: any AccessibilityAnnouncing = AboutSettingsPlatformServices.accessibilityAnnouncer,
         onOpenRepositorySettings: @escaping () -> Void = {},
         onClose: @escaping () -> Void = {}
     ) {

@@ -1,6 +1,76 @@
 @testable import AreaMatrix
 
+extension CoreErrorMappingSnapshot {
+    static var undoActionLogHistoryFailure: CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .db,
+            userMessage: "Undo history could not be loaded",
+            severity: .medium,
+            suggestedAction: "Retry from Undo history.",
+            recoverability: .refreshRequired,
+            rawContext: "undo-toast undo-action-log undo-action-log"
+        )
+    }
+
+    static func undoToastUndoFailure() -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .conflict,
+            userMessage: "Undo failed",
+            severity: .medium,
+            suggestedAction: "View details in Undo history.",
+            recoverability: .refreshRequired,
+            rawContext: "undo-toast undo-action-log undo-action-log"
+        )
+    }
+}
+
 extension UndoActionRecordSnapshot {
+    static func undoToastMovedFilesToTrash() -> UndoActionRecordSnapshot {
+        testMovedFilesToTrashUndoAction()
+    }
+
+    static func undoToastBlockedRename() -> UndoActionRecordSnapshot {
+        testBlockedRenameUndoAction()
+    }
+
+    static func undoToastRenamedFiles() -> UndoActionRecordSnapshot {
+        testRenamedFilesUndoAction()
+    }
+
+    static func undoToastMovedFilesToCategory() -> UndoActionRecordSnapshot {
+        UndoActionRecordSnapshot(
+            actionID: "undo-move-finance-5",
+            kind: "move_files",
+            summary: "Moved 5 files to finance.",
+            affectedCount: 5,
+            affectedFileNames: ["statement.pdf", "invoice.pdf"],
+            status: .pending,
+            canUndo: true,
+            disabledReason: nil,
+            createdAt: 1_700_000_030,
+            updatedAt: 1_700_000_030
+        )
+    }
+
+    static func undoToastAddedTags() -> UndoActionRecordSnapshot {
+        UndoActionRecordSnapshot(
+            actionID: "undo-tags-24",
+            kind: "batch_add_tags",
+            summary: #"Added tag "finance" to 24 files."#,
+            affectedCount: 24,
+            affectedFileNames: ["invoice.pdf", "receipt.pdf"],
+            status: .pending,
+            canUndo: true,
+            disabledReason: nil,
+            createdAt: 1_700_000_040,
+            updatedAt: 1_700_000_040
+        )
+    }
+
+    static func undoToastExecutedTrashMove() -> UndoActionRecordSnapshot {
+        testExecutedTrashMoveUndoAction()
+    }
+
     static func testMovedFilesToTrashUndoAction() -> UndoActionRecordSnapshot {
         UndoActionRecordSnapshot(
             actionID: "undo-trash-3",
@@ -47,24 +117,13 @@ extension UndoActionRecordSnapshot {
         action.updatedAt = 1_700_000_030
         return action
     }
-
-    static func testImportConflictBatchUndoAction() -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
-            actionID: "undo-import-conflict-batch",
-            kind: "import_conflict_batch",
-            summary: "Replaced 1 import conflict.",
-            affectedCount: 1,
-            affectedFileNames: ["Invoice_2026Q1.pdf"],
-            status: .pending,
-            canUndo: true,
-            disabledReason: nil,
-            createdAt: 1_700_000_400,
-            updatedAt: 1_700_000_400
-        )
-    }
 }
 
 extension UndoActionResultSnapshot {
+    static func undoToastUndoneTrashMove() -> UndoActionResultSnapshot {
+        testUndoneTrashMoveUndoResult()
+    }
+
     static func testUndoneTrashMoveUndoResult() -> UndoActionResultSnapshot {
         UndoActionResultSnapshot(
             actionID: "undo-trash-3",
@@ -73,17 +132,6 @@ extension UndoActionResultSnapshot {
             affectedCount: 3,
             refreshTargets: ["files", "undo_actions", "change_log"],
             completedAt: 1_700_000_040
-        )
-    }
-
-    static func testExecutedImportConflictBatchUndoResult() -> UndoActionResultSnapshot {
-        UndoActionResultSnapshot(
-            actionID: "undo-import-conflict-batch",
-            status: .executed,
-            summary: "Undone: replaced 1 import conflict.",
-            affectedCount: 1,
-            refreshTargets: ["files", "change_log", "undo_actions"],
-            completedAt: 1_700_000_420
         )
     }
 }

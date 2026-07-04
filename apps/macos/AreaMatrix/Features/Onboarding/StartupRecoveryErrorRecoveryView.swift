@@ -158,8 +158,7 @@ struct ErrorRecoveryMappedErrorView: View {
     }
 
     private var mappedActionText: String {
-        mapping.suggestedAction.isEmpty ? "Retry the failed action or collect diagnostics from the source page." :
-            mapping.suggestedAction
+        mapping.recoveryText(fallback: "Retry the failed action or collect diagnostics from the source page.")
     }
 
     private var rawContextText: String {

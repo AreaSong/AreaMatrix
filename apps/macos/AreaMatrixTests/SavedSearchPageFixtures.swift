@@ -60,8 +60,6 @@ extension SavedSearchSnapshot {
     }
 }
 
-typealias SmartListRecordingSavedSearchStore = RecordingSavedSearchStore
-
 extension SearchResultPageSnapshot {
     static func savedSearchSavedSearchFixture(
         request: SearchQueryRequestSnapshot,

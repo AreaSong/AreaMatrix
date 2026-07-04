@@ -135,12 +135,12 @@ extension ImportConflictBatchApplyReportSnapshot {
 
 extension UndoActionRecordSnapshot {
     static func importConflictBatchIntegrationAction() -> UndoActionRecordSnapshot {
-        testImportConflictBatchUndoAction()
+        importConflictBatchUndoAction()
     }
 }
 
 extension UndoActionResultSnapshot {
     static func importConflictBatchIntegrationResult() -> UndoActionResultSnapshot {
-        testExecutedImportConflictBatchUndoResult()
+        importConflictBatchUndoResult()
     }
 }

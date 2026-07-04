@@ -219,16 +219,21 @@ enum ImportSingleFileReplaceOptionVisibility: Equatable {
 
 struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
     private let fileLoader: any ImportBatchCoreFileLoading
+    private let sourceInspector: any SourcePreflightInspecting
 
-    init(fileLoader: any ImportBatchCoreFileLoading = CoreBridgeBatchFileLoader()) {
+    init(
+        fileLoader: any ImportBatchCoreFileLoading = CoreBridgeBatchFileLoader(),
+        sourceInspector: any SourcePreflightInspecting = ImportPlatformServices.sourcePreflightInspector
+    ) {
         self.fileLoader = fileLoader
+        self.sourceInspector = sourceInspector
     }
 
     func preflightSingleFileImport(
         request: ImportSingleFilePreflightRequest
     ) async -> ImportSingleFilePreflightResult {
         do {
-            let source = try SourcePreflightSnapshot.inspect(sourceURL: request.sourceURL)
+            let source = try sourceInspector.inspect(sourceURL: request.sourceURL)
             if let validationMessage = ImportSingleFileFilenameValidator
                 .validationMessage(for: request.targetFilename) {
                 return blockedResult(
@@ -349,19 +354,10 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
     }
 
     private static func readableMessage(for error: Error) -> String {
-        guard let coreError = error as? CoreError else {
+        guard let context = CoreErrorRawContextSnapshot(error) else {
             return error.localizedDescription
         }
 
-        switch coreError {
-        case let .Io(message), let .Db(message), let .Internal(message):
-            return message
-        case let .Config(reason), let .Validation(reason), let .Classify(reason):
-            return reason
-        case let .Conflict(path), let .DuplicateFile(path), let .FileNotFound(path),
-             let .ExpiredAction(path), let .RepoNotInitialized(path), let .InvalidPath(path),
-             let .ICloudPlaceholder(path), let .StagingRecoveryRequired(path), let .PermissionDenied(path):
-            return path
-        }
+        return context.rawContext
     }
 }

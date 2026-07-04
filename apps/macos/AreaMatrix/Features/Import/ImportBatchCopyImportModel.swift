@@ -353,9 +353,10 @@ extension ImportBatchCopyImportModel {
     }
 
     private func handleDuplicateFile(_ error: Error, at rowIndex: Int) -> Bool {
-        guard let coreError = error as? CoreError else { return false }
-        guard case let .DuplicateFile(existingPath) = coreError else { return false }
-        rows[rowIndex].status = .duplicate(existingPath: existingPath, strategy: .skip, isReplaceConfirmed: false)
+        guard let context = CoreErrorRawContextSnapshot(error), context.kind == .duplicateFile else {
+            return false
+        }
+        rows[rowIndex].status = .duplicate(existingPath: context.rawContext, strategy: .skip, isReplaceConfirmed: false)
         return true
     }
 

@@ -84,8 +84,8 @@ extension MainFileListModel {
 
         let loadedFiles = try await reloadFilesForExternalSync()
         guard let file = loadedFiles.first(where: { $0.path == event.relativePath }) else {
-            throw CoreError.Internal(
-                message: "\(event.kind.displayName) file was not visible after sync: \(event.relativePath)"
+            throw MainExternalSyncRefreshValidationError(
+                rawContext: "\(event.kind.displayName) file was not visible after sync: \(event.relativePath)"
             )
         }
 
@@ -96,8 +96,8 @@ extension MainFileListModel {
         isDetailLoading = true
         await loadDetail(id: file.id)
         guard selectedFileDetail?.id == file.id, detailErrorMapping == nil else {
-            throw CoreError.Internal(
-                message: "\(event.kind.displayName) file detail was not visible after sync: \(event.relativePath)"
+            throw MainExternalSyncRefreshValidationError(
+                rawContext: "\(event.kind.displayName) file detail was not visible after sync: \(event.relativePath)"
             )
         }
         if event.kind == .renamed { statusBanner = .renamedPreservedSelection(fileID: file.id) }
@@ -113,8 +113,8 @@ extension MainFileListModel {
         let loadedFiles = try await reloadFilesForExternalSync()
         guard let removedFileID else { return nil }
         guard result.detectedDeletes > 0 else {
-            throw CoreError.Internal(
-                message: "removed event \(event.fsEventID) did not report a detected delete: \(event.relativePath)"
+            throw MainExternalSyncRefreshValidationError(
+                rawContext: "removed event \(event.fsEventID) did not report a detected delete: \(event.relativePath)"
             )
         }
 

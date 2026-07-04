@@ -1,0 +1,4 @@
+@testable import AreaMatrix
+
+typealias MainRepoSavedSearchRequestRecord = SavedSearchCreateRequestRecord
+typealias MainRepoSavedSearchRecordingStore = RecordingSavedSearchStore

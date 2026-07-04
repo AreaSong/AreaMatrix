@@ -32,7 +32,7 @@ final class ImportProgressMovePageFeatureTests: XCTestCase {
     @MainActor
     func testImportProgressImportMoveFileCoreMoveFailureRequiresRecoveryCheckBeforeRetry() async {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
-        let context = ImportProgressTestFixtures.moveRetryContext(sourcePath: importProgressSourcePath())
+        let context = ImportProgressFixtures.moveRetryContext(sourcePath: importProgressSourcePath())
         let recoverer = RecordingCoreStartupRecoverer(result: .success(RecoveryReportSnapshot(
             cleanedStagingFiles: 1,
             revertedStagingDbRows: 1,
@@ -52,7 +52,7 @@ final class ImportProgressMovePageFeatureTests: XCTestCase {
             retryContext: context
         )
         model.failImportEntry(
-            progress: ImportProgressTestFixtures.moveFailedProgress,
+            progress: ImportProgressFixtures.moveFailedProgress,
             mapping: mapping
         )
 
@@ -93,12 +93,12 @@ final class ImportProgressMovePageFeatureTests: XCTestCase {
         model.route = .mainList(opening)
         model.beginImportEntryProgress(
             currentPath: "docs/moved.pdf",
-            retryContext: ImportProgressTestFixtures.moveRetryContext(sourcePath: importProgressSourcePath())
+            retryContext: ImportProgressFixtures.moveRetryContext(sourcePath: importProgressSourcePath())
         )
         model.failImportEntry(
-            progress: ImportProgressTestFixtures.moveFailedProgress,
+            progress: ImportProgressFixtures.moveFailedProgress,
             mapping: CoreErrorMappingSnapshot.importProgressFatalImportError(kind: .io),
-            retryContext: ImportProgressTestFixtures.moveRetryContext(sourcePath: importProgressSourcePath()),
+            retryContext: ImportProgressFixtures.moveRetryContext(sourcePath: importProgressSourcePath()),
             recoveryCheck: .retryAllowed(nil)
         )
 

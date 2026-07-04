@@ -111,7 +111,8 @@ struct ICloudConflictListView: View {
     init(
         model: ICloudConflictListModel,
         pageContext: ICloudConflictListPageContext = .iCloudConflictListList,
-        systemCapabilityChecker: any OnboardingSystemCapabilityChecking = LocalOnboardingCapabilities(),
+        systemCapabilityChecker: any OnboardingSystemCapabilityChecking =
+            OnboardingPlatformServices.systemCapabilityChecker,
         onClose: @escaping () -> Void,
         onResolve: @escaping (ICloudConflictPairSnapshot) -> Void,
         onCollectDiagnostics: @escaping () -> Void = {}

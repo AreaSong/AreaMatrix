@@ -1,6 +1,20 @@
 import AppKit
 import Foundation
 
+enum IntegrationsSettingsPlatformServices {
+    static var statusDetector: any ICloudStatusDetecting {
+        LocalICloudStatusDetector()
+    }
+
+    static var finderOpener: any RepositoryFinderOpening {
+        AppPlatformServices.finderOpener
+    }
+
+    static var helpOpener: any ICloudHelpOpening {
+        NSWorkspaceICloudHelpOpener()
+    }
+}
+
 protocol ICloudIdentityTokenReading: Sendable {
     var hasICloudIdentityToken: Bool { get }
 }

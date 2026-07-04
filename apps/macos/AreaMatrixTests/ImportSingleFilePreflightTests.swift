@@ -119,6 +119,18 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         )
     }
 
+    func testFilenameValidatorMapsInvalidFilenameWithoutCoreErrorLeak() async {
+        do {
+            try ImportSingleFileFilenameValidator.validate("bad/name.pdf")
+            XCTFail("expected invalid filename failure")
+        } catch {
+            XCTAssertNil(CoreErrorRawContextSnapshot(error))
+            let mapping = await CoreBridge().mapError(error)
+            XCTAssertEqual(mapping.kind, .invalidPath)
+            XCTAssertEqual(mapping.rawContext, "bad/name.pdf")
+        }
+    }
+
     func testCorePreflightBlocksICloudPlaceholderBeforeCorePreviewCall() async throws {
         let sourceRoot = try makeImportSingleFileTemporaryDirectory(prefix: "preflight-source")
         defer { removeTestTemporaryItems(sourceRoot) }

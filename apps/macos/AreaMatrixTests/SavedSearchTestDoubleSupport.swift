@@ -1,5 +1,7 @@
 @testable import AreaMatrix
 
+typealias SmartListRecordingSavedSearchStore = RecordingSavedSearchStore
+
 struct SavedSearchCreateRequestRecord: Equatable {
     var repoPath: String
     var request: CreateSavedSearchRequestSnapshot

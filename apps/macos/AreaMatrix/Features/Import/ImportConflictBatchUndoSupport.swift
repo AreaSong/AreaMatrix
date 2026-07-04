@@ -41,7 +41,7 @@ enum ImportConflictBatchUndoAction {
         if let failure = result.failure {
             return .failed(failure, previous: action)
         }
-        return await .failed(fallbackMapping(errorMapper: errorMapper), previous: action)
+        return .failed(fallbackMapping(), previous: action)
     }
 
     private static func normalizedToken(_ undoToken: String?) -> String? {
@@ -49,8 +49,8 @@ enum ImportConflictBatchUndoAction {
         return token.isEmpty ? nil : token
     }
 
-    private static func fallbackMapping(errorMapper: any CoreErrorMapping) async -> CoreErrorMappingSnapshot {
-        await errorMapper.mapCoreError(CoreError.Internal(message: "undo_action returned no result"))
+    private static func fallbackMapping() -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot.internalFailure(rawContext: "undo_action returned no result")
     }
 }
 

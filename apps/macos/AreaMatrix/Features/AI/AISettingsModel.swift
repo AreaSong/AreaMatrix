@@ -271,11 +271,10 @@ final class AISettingsModel: ObservableObject {
     }
 
     private func settingsError(for error: Error, message: String, fallbackRecovery: String) async -> AISettingsError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
+        if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(
                 message: message,
-                recovery: mapping.suggestedAction.isEmpty ? fallbackRecovery : mapping.suggestedAction,
+                recovery: mapping.recoveryText(fallback: fallbackRecovery),
                 detail: mapping.userMessage
             )
         }

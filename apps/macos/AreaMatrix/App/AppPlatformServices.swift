@@ -26,6 +26,52 @@ extension AppSettingsWriting {
     func saveSuccessfulRepoOpen(repoPath _: String, openedAt _: Int64) {}
 }
 
+enum AppPlatformServices {
+    static var settingsReader: any AppSettingsReading {
+        UserDefaultsAppSettingsReader()
+    }
+
+    static var settingsWriter: any AppSettingsWriting {
+        UserDefaultsAppSettingsReader()
+    }
+
+    static var finderOpener: any RepositoryFinderOpening {
+        NSWorkspaceRepositoryFinderOpener()
+    }
+
+    static var fileRevealer: any RepositoryFileRevealing {
+        NSWorkspaceRepositoryFileRevealer()
+    }
+
+    static var fileOpener: any RepositoryFileOpening {
+        NSWorkspaceRepositoryFileOpener()
+    }
+
+    static var pathCopier: any RepositoryPathCopying {
+        NSPasteboardRepositoryPathCopier()
+    }
+
+    static var importResultExporter: any ImportResultDetailsExporting {
+        NSSavePanelImportResultDetailsExporter()
+    }
+
+    static var importBatchSessionStore: any ImportBatchSessionPersisting {
+        FileImportBatchSessionStore()
+    }
+
+    static var helpOpener: any WelcomeHelpOpening {
+        LocalWelcomeHelpOpener()
+    }
+
+    static var directoryPicker: any RepositoryDirectoryPicking {
+        NSOpenPanelRepositoryDirectoryPicker()
+    }
+
+    static var importPicker: any RepositoryImportPicking {
+        NSOpenPanelRepositoryImportPicker()
+    }
+}
+
 struct UserDefaultsAppSettingsReader: AppSettingsReading {
     private let defaults: UserDefaults
     private let repoPathKey: String

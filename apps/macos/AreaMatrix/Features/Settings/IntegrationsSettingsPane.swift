@@ -9,9 +9,9 @@ struct IntegrationsSettingsPane: View {
         loader: any CoreConfigurationLoading = CoreBridge(),
         updater: any CoreConfigurationUpdating = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
-        statusDetector: any ICloudStatusDetecting = LocalICloudStatusDetector(),
-        finderOpener: any RepositoryFinderOpening = NSWorkspaceRepositoryFinderOpener(),
-        helpOpener: any ICloudHelpOpening = NSWorkspaceICloudHelpOpener()
+        statusDetector: any ICloudStatusDetecting = IntegrationsSettingsPlatformServices.statusDetector,
+        finderOpener: any RepositoryFinderOpening = IntegrationsSettingsPlatformServices.finderOpener,
+        helpOpener: any ICloudHelpOpening = IntegrationsSettingsPlatformServices.helpOpener
     ) {
         _model = StateObject(wrappedValue: IntegrationsSettingsModel(
             repoPath: repoPath,

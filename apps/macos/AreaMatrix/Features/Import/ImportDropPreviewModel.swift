@@ -189,15 +189,15 @@ final class ImportDropPreviewModel: ObservableObject {
     }
 
     private static func classifyWarning(for error: Error) -> String {
-        guard let coreError = error as? CoreError else {
+        guard let context = CoreErrorRawContextSnapshot(error) else {
             return "Cannot preview category"
         }
 
-        switch coreError {
-        case let .Config(reason):
-            return "Classifier settings are invalid: \(reason)"
-        case let .Classify(reason):
-            return "Cannot preview category: \(reason)"
+        switch context.kind {
+        case .config:
+            return "Classifier settings are invalid: \(context.rawContext)"
+        case .classify:
+            return "Cannot preview category: \(context.rawContext)"
         default:
             return "Cannot preview category"
         }

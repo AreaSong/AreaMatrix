@@ -1,0 +1,15 @@
+@testable import AreaMatrix
+
+typealias RepairRecordingSettingsWriter = RecordingAppSettingsWriter
+
+typealias RepairRecordingRepositoryOpener = RecordingRepositoryOpener
+
+typealias RepairRecordingPathValidator = RecordingRepositoryPathValidator
+
+typealias RepairSequencePathValidator = RecordingRepositoryPathValidator
+
+typealias RepairRecordingRepositoryInitializer = RecordingRepositoryInitializer
+
+typealias RepairPausingRepositoryInitializer = PausingRepositoryInitializer
+
+typealias RepairExistingRepoMetadataReader = StaticExistingRepositoryMetadataReader

@@ -71,119 +71,10 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    func testUndoToastUndoActionLogCoreLoadsLatestUndoActionFromCoreActionLog() async {
-        let action = UndoActionRecordSnapshot.undoToastMovedFilesToTrash()
-        let undoStore = UndoToastRecordingUndoStore(results: [.list(.success([action]))])
-        let result = await BatchTagUndoAction.loadLatestAction(
-            repoPath: "/tmp/repo",
-            undoStore: undoStore,
-            errorMapper: RecordingCoreErrorMapper.undoToast()
-        )
-
-        XCTAssertEqual(result.toastState, .ready(action))
-        let listRequests = await undoStore.listRequests()
-        XCTAssertEqual(listRequests, ["/tmp/repo"])
-        XCTAssertEqual(action.summary, "Moved 3 files to Trash.")
-    }
-
-    @MainActor
-    func testUndoToastUndoActionLogCoreRefreshLatestToastCoversUndoableWriteSummaries() async {
-        let actions: [UndoActionRecordSnapshot] = [
-            .undoToastRenamedFiles(),
-            .undoToastMovedFilesToCategory(),
-            .undoToastMovedFilesToTrash(),
-            .undoToastAddedTags()
-        ]
-
-        for action in actions {
-            let undoStore = UndoToastRecordingUndoStore(results: [.list(.success([action]))])
-            let state = await BatchTagUndoAction.refreshLatestToastState(
-                repoPath: "/tmp/repo",
-                undoStore: undoStore,
-                errorMapper: RecordingCoreErrorMapper.undoToast()
-            )
-
-            XCTAssertEqual(state, .ready(action))
-            let listRequests = await undoStore.listRequests()
-            XCTAssertEqual(listRequests, ["/tmp/repo"])
-        }
-    }
-
-    @MainActor
-    func testUndoToastUndoActionLogCoreExecutesUndoAndUsesRefreshTargets() async {
-        let action = UndoActionRecordSnapshot.undoToastMovedFilesToTrash()
-        let undoStore = UndoToastRecordingUndoStore(results: [
-            .undo(.success(.undoToastUndoneTrashMove())),
-            .list(.success([.undoToastExecutedTrashMove()]))
-        ])
-
-        let applied = await BatchTagUndoAction.undo(
-            repoPath: "/tmp/repo",
-            action: action,
-            undoStore: undoStore,
-            errorMapper: RecordingCoreErrorMapper.undoToast()
-        )
-        let plan = BatchTagUndoRefreshPlan(refreshTargets: applied.result?.refreshTargets ?? [])
-        let refreshed = await BatchTagUndoAction.refreshActionLog(
-            repoPath: "/tmp/repo",
-            actionID: action.actionID,
-            undoStore: undoStore,
-            errorMapper: RecordingCoreErrorMapper.undoToast()
-        )
-
-        XCTAssertEqual(applied.result, .undoToastUndoneTrashMove())
-        XCTAssertTrue(plan.refreshesCurrentList)
-        XCTAssertTrue(plan.refreshesUndoActions)
-        XCTAssertEqual(refreshed.action, .undoToastExecutedTrashMove())
-        let undoRequests = await undoStore.undoRequests()
-        let listRequests = await undoStore.listRequests()
-        XCTAssertEqual(undoRequests, ["/tmp/repo|\(action.actionID)"])
-        XCTAssertEqual(listRequests, ["/tmp/repo"])
-    }
-
-    @MainActor
-    func testUndoToastUndoActionLogCoreBlockedUndoKeepsVisibleReasonWithoutExecuting() async {
-        let action = UndoActionRecordSnapshot.undoToastBlockedRename()
-        let undoStore = UndoToastRecordingUndoStore(results: [.list(.success([action]))])
-        let result = await BatchTagUndoAction.loadLatestAction(
-            repoPath: "/tmp/repo",
-            undoStore: undoStore,
-            errorMapper: RecordingCoreErrorMapper.undoToast()
-        )
-
-        XCTAssertEqual(result.toastState, .disabled(action, reason: "External change prevents undo."))
-        let undoRequests = await undoStore.undoRequests()
-        XCTAssertEqual(undoRequests, [])
-    }
-
-    func testUndoToastUndoActionLogCoreViewHistoryCreatesToastScopedRequest() {
-        let action = UndoActionRecordSnapshot.undoToastMovedFilesToTrash()
-        let request = UndoToastHistoryRequest(source: .viewHistory, state: .ready(action), actionLogRefreshFailure: nil)
-
-        XCTAssertTrue(request.id.contains("viewHistory:\(action.actionID)"))
-        XCTAssertEqual(request.source, .viewHistory)
-        XCTAssertEqual(request.state, .ready(action))
-    }
-
-    func testUndoToastUndoActionLogCoreViewDetailsCreatesToastScopedFailureRequest() {
-        let action = UndoActionRecordSnapshot.undoToastMovedFilesToTrash()
-        let failure = CoreErrorMappingSnapshot.undoToastUndoFailure()
-        let request = UndoToastHistoryRequest(
-            source: .viewDetails,
-            state: .failed(failure, previous: action),
-            actionLogRefreshFailure: nil
-        )
-
-        XCTAssertTrue(request.id.contains("viewDetails:failed:\(action.actionID):\(failure.kind.rawValue)"))
-        XCTAssertEqual(request.source, .viewDetails)
-        XCTAssertEqual(request.state, .failed(failure, previous: action))
-    }
-
-    @MainActor
     // swiftlint:disable:next function_body_length
     func testImportBatchICloudPendingRowsDoNotSilentlyImportUnavailableRows() async {
         let localURL = importBatchInvoiceURL()
-        let cloudURL = URL(fileURLWithPath: "/tmp/iCloudOnly.pdf.icloud")
+        let cloudURL = importBatchICloudPlaceholderURL()
         let request = importBatchBatchRequest(urls: [localURL, cloudURL])
         let rows = [
             importBatchReadyBatchRow(url: localURL),
@@ -242,8 +133,8 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     @MainActor
     func testImportBatchAllICloudPendingStillBlocksImport() {
         let cloudURLs = [
-            URL(fileURLWithPath: "/tmp/iCloudOnlyA.pdf.icloud"),
-            URL(fileURLWithPath: "/tmp/iCloudOnlyB.pdf.icloud")
+            importBatchICloudPlaceholderURL(variant: "A"),
+            importBatchICloudPlaceholderURL(variant: "B")
         ]
         let request = ImportEntryRequest(
             repoPath: importBatchRepoPath(),

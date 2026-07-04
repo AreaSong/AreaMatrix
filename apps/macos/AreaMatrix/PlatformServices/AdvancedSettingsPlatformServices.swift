@@ -1,6 +1,28 @@
 import AppKit
 import Foundation
 
+enum AdvancedSettingsPlatformServices {
+    static var rootOverviewInspector: any RootOverviewFileInspecting {
+        LocalRootOverviewFileInspector()
+    }
+
+    static var appVersionReader: any AppVersionReading {
+        BundleAppVersionReader()
+    }
+
+    static var metadataReader: any ExistingRepositoryMetadataReading {
+        SQLiteExistingRepositoryMetadataReader()
+    }
+
+    static var logsOpener: any AdvancedSettingsLogFolderOpening {
+        AdvancedSettingsLogFolderOpener()
+    }
+
+    static var diagnosticSummaryCopier: any AdvancedSettingsDiagnosticSummaryCopying {
+        AdvancedSettingsDiagnosticCopier()
+    }
+}
+
 struct BundleAppVersionReader: AppVersionReading {
     func appVersion() -> String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String

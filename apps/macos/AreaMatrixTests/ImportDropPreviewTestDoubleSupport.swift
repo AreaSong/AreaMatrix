@@ -1,0 +1,4 @@
+@testable import AreaMatrix
+
+typealias ImportDropPredictRequest = CategoryPredictionRequest
+typealias ImportDropRecordingPredictor = RecordingCategoryPredictor

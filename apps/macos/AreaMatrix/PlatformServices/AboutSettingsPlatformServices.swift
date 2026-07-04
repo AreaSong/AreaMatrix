@@ -1,6 +1,46 @@
 import AppKit
 import Foundation
 
+enum AboutSettingsPlatformServices {
+    static var appVersionReader: any AppVersionReading {
+        BundleAppVersionReader()
+    }
+
+    static var metadataReader: any ExistingRepositoryMetadataReading {
+        SQLiteExistingRepositoryMetadataReader()
+    }
+
+    static var diagnosticsExporter: any AboutDiagnosticsExporting {
+        LocalAboutDiagnosticsExporter()
+    }
+
+    static var externalLinkOpener: any AboutExternalLinkOpening {
+        NSWorkspaceAboutExternalLinkOpener()
+    }
+
+    static var logsOpener: any AboutLogsOpening {
+        NSWorkspaceAboutLogsOpener()
+    }
+
+    static var stringCopier: any AboutStringCopying {
+        NSPasteboardAboutStringCopier()
+    }
+
+    static var diagnosticsRevealer: any AboutDiagnosticsRevealing {
+        NSWorkspaceAboutDiagnosticsRevealer()
+    }
+
+    static var accessibilityAnnouncer: any AccessibilityAnnouncing {
+        VoiceOverAccessibilityAnnouncer()
+    }
+}
+
+enum PlatformDifferencesPlatformServices {
+    static var appVersionReader: any AppVersionReading {
+        BundleAppVersionReader()
+    }
+}
+
 struct NSWorkspaceAboutExternalLinkOpener: AboutExternalLinkOpening {
     @MainActor
     func open(link: AboutExternalLink) throws -> String {

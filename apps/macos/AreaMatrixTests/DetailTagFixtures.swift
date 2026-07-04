@@ -35,22 +35,6 @@ extension RepositorySidebarRowSnapshot {
     ), depth: 0)
 }
 
-extension MainFileListModel {
-    @MainActor
-    static func tagSuggestionsFixture(
-        detail: FileEntrySnapshot,
-        tagStore: any CoreTagCRUD = DetailTagRecordingStore()
-    ) -> MainFileListModel {
-        MainFileListModel(
-            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [detail]),
-            fileLister: NoopFileLister(),
-            fileDetailer: DetailMetaImmediateDetailer(result: .success(detail)),
-            tagStore: tagStore,
-            errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
-        )
-    }
-}
-
 extension UndoActionRecordSnapshot {
     static func tagSuggestionsApplySuggestion(token: String) -> UndoActionRecordSnapshot {
         UndoActionRecordSnapshot(

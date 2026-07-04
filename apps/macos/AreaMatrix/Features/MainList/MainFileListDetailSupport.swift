@@ -1,5 +1,13 @@
 import Foundation
 
+struct MainExternalSyncRefreshValidationError: Error, LocalizedError {
+    let rawContext: String
+
+    var errorDescription: String? {
+        rawContext
+    }
+}
+
 struct MainRepositoryDetailPaneTagActions {
     let aiSuggestionState: AITagSuggestionState
     let aiBatchSuggestionState: AITagBatchSuggestionState
@@ -102,7 +110,7 @@ extension MainFileListModel {
     }
 
     func missingDetailSnapshotIfNeeded(_ error: Error, fileID: Int64) -> FileEntrySnapshot? {
-        guard case let .FileNotFound(path) = error as? CoreError else { return nil }
+        guard let path = CoreErrorRawContextSnapshot.fileNotFoundPath(from: error) else { return nil }
         return missingSnapshot(fileID: fileID, fallbackPath: path)
     }
 
@@ -126,12 +134,9 @@ extension MainFileListModel {
         event: MainExternalCreatedFileEvent
     ) throws {
         guard result.errors.isEmpty else {
-            throw CoreError.Internal(
-                message: """
-                \(event.kind.displayName) event \(event.fsEventID) returned sync errors: \(result.errors
-                    .joined(separator: "; "))
-                """
-            )
+            let errorSummary = result.errors.joined(separator: "; ")
+            let rawContext = "\(event.kind.displayName) event \(event.fsEventID) returned sync errors: \(errorSummary)"
+            throw AppSemanticError.internalFailure(rawContext: rawContext)
         }
     }
 }

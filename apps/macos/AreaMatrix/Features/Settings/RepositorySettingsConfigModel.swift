@@ -149,7 +149,7 @@ final class RepositorySettingsConfigModel: ObservableObject {
         repoPath: String,
         updater: any CoreConfigurationUpdating = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
-        accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer()
+        accessibilityAnnouncer: any AccessibilityAnnouncing = RepositorySettingsPlatformServices.accessibilityAnnouncer
     ) {
         self.repoPath = repoPath
         self.updater = updater

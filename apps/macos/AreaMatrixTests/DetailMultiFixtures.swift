@@ -209,9 +209,3 @@ extension BatchMutationReportSnapshot {
         )
     }
 }
-
-typealias BatchAddTagsRecordingUndoStore = UndoActionRecordingTestStore
-
-func makeDetailMultiSelectTemporaryRepositoryURL() throws -> URL {
-    try makeTestTemporaryDirectory(named: "AreaMatrixDetailMultiSelectIntegration")
-}

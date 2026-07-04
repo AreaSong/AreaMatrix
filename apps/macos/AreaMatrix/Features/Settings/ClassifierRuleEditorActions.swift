@@ -1,5 +1,16 @@
 import Foundation
 
+private enum ClassifierRuleEditorActionError: LocalizedError {
+    case missingRuleDraft
+
+    var errorDescription: String? {
+        switch self {
+        case .missingRuleDraft:
+            "No classifier rule draft is selected."
+        }
+    }
+}
+
 extension ClassifierSettingsModel {
     func loadClassifierRuleEditor() async {
         guard isLoaded else { return }
@@ -99,7 +110,7 @@ extension ClassifierSettingsModel {
         if let request = classifierRuleEditor.updateRequest {
             return try await ruleEditor.updateClassifierRule(repoPath: repoPath, request: request)
         }
-        throw CoreError.Config(reason: "No classifier rule draft is selected.")
+        throw ClassifierRuleEditorActionError.missingRuleDraft
     }
 
     private func mappedClassifierRuleEditorError(_ error: Error) async -> CoreErrorMappingSnapshot {

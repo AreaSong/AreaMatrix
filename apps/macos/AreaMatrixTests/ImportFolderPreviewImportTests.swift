@@ -1,0 +1,287 @@
+@testable import AreaMatrix
+import XCTest
+
+final class ImportFolderPreviewImportTests: XCTestCase {
+    @MainActor
+    func testImportFolderFolderCopyImportUsesRealImporterForReadyRowsOnly() async {
+        let invoiceURL = importBatchInvoiceURL()
+        let cloudURL = importBatchICloudPlaceholderURL()
+        let errorURL = importBatchUnreadablePreviewURL()
+        let scanner = ImportFolderStaticFolderScanner(result: importFolderFolderScanResult(rows: [
+            importFolderLoadingRow(invoiceURL),
+            importFolderLoadingRow(cloudURL).withStatus(.iCloudPlaceholder(path: cloudURL.path)),
+            importFolderLoadingRow(errorURL).withStatus(.error("无法读取文件属性"))
+        ]))
+        let predictor = ImportFolderRecordingPredictor(results: [.success(.importFolderPrediction(
+            category: "finance",
+            suggestedName: "Invoice_2026Q1.pdf"
+        ))])
+        let importer = ImportBatchRecordingBatchImporter()
+        let model = ImportFolderPreviewModel(
+            predictor: predictor,
+            importer: importer,
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
+            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
+            scanner: scanner
+        )
+        var progressSnapshots: [ImportBatchProgressSnapshot] = []
+
+        await model.load(request: importFolderFolderRequest(rootURL: importBatchFixtureRootURL()))
+        let outcome = await model.importReadyFiles { progress in
+            progressSnapshots.append(progress)
+        }
+        let recordedRequests = await importer.recordedRequests()
+
+        XCTAssertEqual(recordedRequests, [
+            ImportBatchBatchImportRequest(
+                destination: .autoClassify,
+                suggestedCategory: "finance",
+                overrideFilename: "Invoice_2026Q1.pdf",
+                duplicateStrategy: .ask
+            )
+        ])
+        XCTAssertEqual(outcome?.succeededEntries.count, 1)
+        XCTAssertEqual(outcome?.failedCount, 0)
+        XCTAssertEqual(outcome?.previewErrorCount, 1)
+        XCTAssertEqual(outcome?.pendingICloudCount, 1)
+        XCTAssertEqual(model.rows.map(\.status.tag), ["IMPORTED", "ICLOUD", "ERROR"])
+        XCTAssertEqual(progressSnapshots.last?.completed, 1)
+        XCTAssertEqual(progressSnapshots.last?.failed, 0)
+        XCTAssertEqual(progressSnapshots.last?.total, 1)
+        XCTAssertEqual(progressSnapshots.last?.remaining, 0)
+        XCTAssertEqual(progressSnapshots.last?.currentPath, "finance/Invoice_2026Q1.pdf")
+        XCTAssertEqual(progressSnapshots.last?.items.map(\.phase), [.done, .pending, .failed])
+        XCTAssertEqual(progressSnapshots.last?.items.last?.errorMessage, "无法预览分类：missing test result")
+    }
+
+    @MainActor
+    func testImportFolderFolderResultSummaryKeepsPerRowStatusesForFailureAndPendingRows() async {
+        let invoiceURL = importBatchInvoiceURL()
+        let cloudURL = importBatchICloudPlaceholderURL()
+        let scanner = ImportFolderStaticFolderScanner(result: importFolderFolderScanResult(rows: [
+            importFolderLoadingRow(invoiceURL),
+            importFolderLoadingRow(cloudURL).withStatus(.iCloudPlaceholder(path: cloudURL.path))
+        ]))
+        let predictor = ImportFolderRecordingPredictor(results: [.success(.importFolderPrediction(
+            category: "finance",
+            suggestedName: "Invoice_2026Q1.pdf"
+        ))])
+        let importer = ImportBatchSequenceBatchImporter(results: [
+            .failure(CoreError.PermissionDenied(path: invoiceURL.path))
+        ])
+        let model = ImportFolderPreviewModel(
+            predictor: predictor,
+            importer: importer,
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
+            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
+            scanner: scanner
+        )
+
+        await model.load(request: importFolderFolderRequest(rootURL: importBatchFixtureRootURL()))
+        let outcome = await model.importReadyFiles()
+        let summary = outcome?.progressSnapshot(currentPath: "finance/Invoice_2026Q1.pdf")
+            .withItems(model.progressItems())
+
+        XCTAssertEqual(summary, ImportBatchProgressSnapshot(
+            completed: 0,
+            failed: 1,
+            total: 2,
+            remaining: 0,
+            currentPath: "finance/Invoice_2026Q1.pdf",
+            skipped: 0,
+            pending: 1,
+            items: [
+                ImportBatchProgressSnapshot.Item(
+                    sourcePath: invoiceURL.path,
+                    targetPath: "finance/Invoice_2026Q1.pdf",
+                    phase: .failed,
+                    errorMessage: "无访问权限"
+                ),
+                ImportBatchProgressSnapshot.Item(
+                    sourcePath: cloudURL.path,
+                    targetPath: cloudURL.lastPathComponent,
+                    phase: .pending,
+                    errorMessage: nil
+                )
+            ]
+        ))
+    }
+
+    @MainActor
+    func testImportFolderFolderCopyImportMapsCoreFailureWithoutStaticSuccess() async {
+        let invoiceURL = importBatchInvoiceURL()
+        let scanner = ImportFolderStaticFolderScanner(result: ImportFolderScanResult(
+            rows: [ImportFolderPreviewRow.loading(
+                fileURL: invoiceURL,
+                rootURL: importBatchFixtureRootURL()
+            )],
+            folderCount: 0,
+            skippedRules: [],
+            errors: []
+        ))
+        let predictor = ImportFolderRecordingPredictor(results: [
+            .success(.importFolderPrediction(
+                category: "finance",
+                suggestedName: "Invoice_2026Q1.pdf"
+            ))
+        ])
+        let importer = ImportBatchSequenceBatchImporter(results: [
+            .failure(CoreError.PermissionDenied(path: invoiceURL.path))
+        ])
+        let errorMapper = RecordingCoreErrorMapper.importSingleFile()
+        let model = ImportFolderPreviewModel(
+            predictor: predictor,
+            importer: importer,
+            errorMapper: errorMapper,
+            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
+            scanner: scanner
+        )
+
+        await model.load(request: importFolderFolderRequest(rootURL: importBatchFixtureRootURL()))
+        let outcome = await model.importReadyFiles()
+        let mappedErrors = await errorMapper.recordedErrors()
+
+        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: invoiceURL.path)])
+        XCTAssertEqual(outcome?.succeededEntries, [])
+        XCTAssertEqual(outcome?.failedCount, 1)
+        XCTAssertEqual(model.rows.first?.status.tag, "ERROR")
+        XCTAssertEqual(model.rows.first?.status.detail, "无访问权限")
+        XCTAssertEqual(model.lastFailureMapping?.kind, .permissionDenied)
+    }
+
+    @MainActor
+    func testImportFolderFolderCopyImportHonorsDropDestinationCategory() async {
+        let invoiceURL = importBatchInvoiceURL()
+        let scanner = ImportFolderStaticFolderScanner(result: ImportFolderScanResult(
+            rows: [ImportFolderPreviewRow.loading(
+                fileURL: invoiceURL,
+                rootURL: importBatchFixtureRootURL()
+            )],
+            folderCount: 0,
+            skippedRules: [],
+            errors: []
+        ))
+        let predictor = ImportFolderRecordingPredictor(results: [
+            .success(.importFolderPrediction(
+                category: "finance",
+                suggestedName: "Invoice_2026Q1.pdf"
+            ))
+        ])
+        let importer = ImportBatchRecordingBatchImporter()
+        let model = ImportFolderPreviewModel(
+            predictor: predictor,
+            importer: importer,
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
+            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
+            scanner: scanner
+        )
+        let request = importFolderFolderRequest(
+            rootURL: importBatchFixtureRootURL(),
+            destination: .category("docs")
+        )
+
+        await model.load(request: request)
+        _ = await model.importReadyFiles()
+        let recordedRequests = await importer.recordedRequests()
+
+        XCTAssertEqual(recordedRequests, [
+            ImportBatchBatchImportRequest(
+                destination: .category("docs"),
+                suggestedCategory: "docs",
+                overrideFilename: "Invoice_2026Q1.pdf",
+                duplicateStrategy: .ask
+            )
+        ])
+    }
+
+    @MainActor
+    func testImportFolderFolderIndexOnlyImportCallsImportIndexFileCoreImporterForReadyRows() async {
+        let sourceURL = importBatchFixtureFileURL("reference.pdf")
+        let scanner = ImportFolderStaticFolderScanner(result: ImportFolderScanResult(
+            rows: [ImportFolderPreviewRow.loading(
+                fileURL: sourceURL,
+                rootURL: importBatchFixtureRootURL()
+            )],
+            folderCount: 0,
+            skippedRules: [],
+            errors: []
+        ))
+        let predictor = ImportFolderRecordingPredictor(results: [
+            .success(.importFolderPrediction(
+                category: "finance",
+                suggestedName: "indexed-reference.pdf"
+            ))
+        ])
+        let importer = ImportBatchRecordingBatchImporter()
+        let model = ImportFolderPreviewModel(
+            predictor: predictor,
+            importer: importer,
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
+            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
+            scanner: scanner
+        )
+
+        await model.load(request: importFolderFolderRequest(rootURL: importBatchFixtureRootURL()))
+        model.selectedStorageMode = .indexOnly
+        let outcome = await model.importReadyFiles()
+        let recordedRequests = await importer.recordedRequests()
+
+        XCTAssertEqual(recordedRequests, [
+            ImportBatchBatchImportRequest(
+                storageMode: .indexOnly,
+                destination: .autoClassify,
+                suggestedCategory: "finance",
+                overrideFilename: "indexed-reference.pdf",
+                duplicateStrategy: .ask
+            )
+        ])
+        XCTAssertEqual(outcome?.succeededEntries.first?.storageMode, "Indexed")
+        XCTAssertEqual(model.rows.first?.status.detail, "已写入索引")
+    }
+
+    @MainActor
+    func testImportFolderFolderMoveUsesRealCoreImportMode() async {
+        let sourceURL = importBatchFixtureFileURL("move-later.pdf")
+        let scanner = ImportFolderStaticFolderScanner(result: ImportFolderScanResult(
+            rows: [ImportFolderPreviewRow.loading(
+                fileURL: sourceURL,
+                rootURL: importBatchFixtureRootURL()
+            )],
+            folderCount: 0,
+            skippedRules: [],
+            errors: []
+        ))
+        let predictor = ImportFolderRecordingPredictor(results: [
+            .success(.importFolderPrediction(
+                suggestedName: "move-later.pdf",
+                reason: .extension,
+                confidence: 0.7
+            ))
+        ])
+        let importer = ImportBatchRecordingBatchImporter()
+        let model = ImportFolderPreviewModel(
+            predictor: predictor,
+            importer: importer,
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
+            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
+            scanner: scanner
+        )
+
+        await model.load(request: importFolderFolderRequest(rootURL: importBatchFixtureRootURL()))
+        model.selectedStorageMode = .move
+        XCTAssertNil(model.importDisabledReason)
+        let outcome = await model.importReadyFiles()
+        let recordedRequests = await importer.recordedRequests()
+
+        XCTAssertEqual(outcome?.succeededEntries.count, 1)
+        XCTAssertEqual(recordedRequests, [
+            ImportBatchBatchImportRequest(
+                storageMode: .move,
+                destination: .autoClassify,
+                suggestedCategory: "docs",
+                overrideFilename: "move-later.pdf",
+                duplicateStrategy: .ask
+            )
+        ])
+    }
+}

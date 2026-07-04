@@ -17,12 +17,7 @@ extension OnboardingModel {
             nil
         }
 
-        guard let coreError = error as? CoreError else {
-            route = .initializationFailed(repoPath, nil, retryDraft)
-            return
-        }
-
-        let mapping = await errorMapper.mapCoreError(coreError)
+        let mapping = await errorMapper.mapCoreErrorIfPresent(error)
         route = .initializationFailed(repoPath, mapping, retryDraft)
     }
 

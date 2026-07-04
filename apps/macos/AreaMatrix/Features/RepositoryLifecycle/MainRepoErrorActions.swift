@@ -171,10 +171,10 @@ extension OnboardingModel {
 
         let metadata = try await existingRepositoryMetadataReader.metadata(repoPath: validation.repoPath)
         guard let configuredRepoPath = metadata.configuredRepoPath else {
-            throw CoreError.InvalidPath(path: validation.repoPath)
+            throw AppSemanticError.invalidPath(rawContext: validation.repoPath)
         }
         guard Self.normalizedRepositoryPath(configuredRepoPath) == original else {
-            throw CoreError.InvalidPath(path: validation.repoPath)
+            throw AppSemanticError.invalidPath(rawContext: validation.repoPath)
         }
     }
 }

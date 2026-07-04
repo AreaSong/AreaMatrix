@@ -79,11 +79,12 @@ final class LocalModelStatusModel: ObservableObject {
         repoPath: String,
         modelID: String = LocalModelStatusModel.defaultModelID,
         storageLocation: String? = nil,
-        storageLocationProvider: any LocalModelStorageLocationProviding = LocalModelStorageProvider(),
+        storageLocationProvider: any LocalModelStorageLocationProviding =
+            LocalModelStatusPlatformServices.storageLocationProvider,
         statusReader: any CoreLocalModelStatusReading = CoreBridge(),
-        installHelpOpener: any LocalModelInstallHelpOpening = NSWorkspaceLocalModelInstallHelpOpener(),
-        folderOpener: any LocalModelFolderOpening = NSWorkspaceLocalModelFolderOpener(),
-        diagnosticsCopier: any LocalModelDiagnosticsCopying = NSPasteboardLocalModelDiagnosticsCopier(),
+        installHelpOpener: any LocalModelInstallHelpOpening = LocalModelStatusPlatformServices.installHelpOpener,
+        folderOpener: any LocalModelFolderOpening = LocalModelStatusPlatformServices.folderOpener,
+        diagnosticsCopier: any LocalModelDiagnosticsCopying = LocalModelStatusPlatformServices.diagnosticsCopier,
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         self.repoPath = repoPath
@@ -249,7 +250,7 @@ final class LocalModelStatusModel: ObservableObject {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return LocalModelStatusError(
                 message: message,
-                recovery: mapping.suggestedAction.isEmpty ? fallbackRecovery : mapping.suggestedAction,
+                recovery: mapping.recoveryText(fallback: fallbackRecovery),
                 detail: mapping.userMessage
             )
         }

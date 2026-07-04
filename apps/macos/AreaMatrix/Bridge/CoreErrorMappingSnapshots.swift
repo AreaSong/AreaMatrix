@@ -4,8 +4,23 @@ protocol CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot
 }
 
+protocol AppErrorMappingProviding {
+    var appErrorMapping: CoreErrorMappingSnapshot { get }
+}
+
+struct AppSemanticError: Error, LocalizedError, AppErrorMappingProviding {
+    let appErrorMapping: CoreErrorMappingSnapshot
+
+    var errorDescription: String? {
+        appErrorMapping.rawContext.isEmpty ? appErrorMapping.userMessage : appErrorMapping.rawContext
+    }
+}
+
 extension CoreErrorMapping {
     func mapError(_ error: Error) async -> CoreErrorMappingSnapshot {
+        if let appError = error as? AppErrorMappingProviding {
+            return appError.appErrorMapping
+        }
         if let coreError = error as? CoreError {
             return await mapCoreError(coreError)
         }
@@ -15,6 +30,19 @@ extension CoreErrorMapping {
     func mapCoreErrorIfPresent(_ error: Error) async -> CoreErrorMappingSnapshot? {
         guard let coreError = error as? CoreError else { return nil }
         return await mapCoreError(coreError)
+    }
+
+    func mapKnownErrorIfPresent(_ error: Error) async -> CoreErrorMappingSnapshot? {
+        if let appError = error as? AppErrorMappingProviding {
+            return appError.appErrorMapping
+        }
+        return await mapCoreErrorIfPresent(error)
+    }
+
+    func mapCoreErrorContextIfPresent(_ error: Error) async -> CoreErrorContextSnapshot? {
+        guard let coreError = error as? CoreError else { return nil }
+        let mapping = await mapCoreError(coreError)
+        return CoreErrorContextSnapshot(mapping: mapping, rawContext: coreError.rawContextSnapshot)
     }
 
     func mapCoreErrorDisplayIfPresent(_ error: Error) async -> CoreErrorDisplaySnapshot? {
@@ -27,6 +55,40 @@ extension CoreErrorMapping {
     }
 }
 
+struct CoreErrorRawContextSnapshot: Equatable {
+    var kind: CoreErrorKindSnapshot
+    var rawContext: String
+
+    init?(_ error: Error) {
+        guard let coreError = error as? CoreError else { return nil }
+        kind = coreError.kindSnapshot
+        rawContext = coreError.rawContextSnapshot
+    }
+
+    static func fileNotFoundPath(from error: Error) -> String? {
+        guard let context = CoreErrorRawContextSnapshot(error), context.kind == .fileNotFound else {
+            return nil
+        }
+        return context.rawContext
+    }
+
+    static func repoNotInitializedPath(from error: Error) -> String? {
+        guard let context = CoreErrorRawContextSnapshot(error), context.kind == .repoNotInitialized else {
+            return nil
+        }
+        return context.rawContext
+    }
+}
+
+struct CoreErrorContextSnapshot: Equatable {
+    var mapping: CoreErrorMappingSnapshot
+    var rawContext: String
+
+    var kind: CoreErrorKindSnapshot {
+        mapping.kind
+    }
+}
+
 struct CoreErrorDisplaySnapshot: Equatable {
     var mapping: CoreErrorMappingSnapshot
     var recovery: String
@@ -34,7 +96,7 @@ struct CoreErrorDisplaySnapshot: Equatable {
 
     init(mapping: CoreErrorMappingSnapshot, fallbackDetail: String) {
         self.mapping = mapping
-        recovery = mapping.suggestedAction.isEmpty ? mapping.userMessage : mapping.suggestedAction
+        recovery = mapping.recoveryText
         detail = mapping.rawContext.isEmpty ? fallbackDetail : mapping.rawContext
     }
 }
@@ -89,10 +151,134 @@ extension CoreErrorMappingSnapshot {
         recoverability = CoreErrorRecoverabilitySnapshot(coreRecoverability: coreMapping.recoverability)
         rawContext = coreMapping.rawContext
     }
+
+    static func internalFailure(rawContext: String) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .internal,
+            userMessage: "应用内部错误",
+            severity: .critical,
+            suggestedAction: "请记录错误信息并重启应用",
+            recoverability: .fatal,
+            rawContext: rawContext
+        )
+    }
+
+    static func invalidPath(rawContext: String) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(coreMapping: mapCoreError(input: ErrorMappingInput(
+            kind: .invalidPath,
+            path: rawContext,
+            reason: nil,
+            message: nil
+        )))
+    }
+
+    static func database(rawContext: String) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(coreMapping: mapCoreError(input: ErrorMappingInput(
+            kind: .db,
+            path: nil,
+            reason: nil,
+            message: rawContext
+        )))
+    }
+
+    static func conflict(rawContext: String) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(coreMapping: mapCoreError(input: ErrorMappingInput(
+            kind: .conflict,
+            path: rawContext,
+            reason: nil,
+            message: nil
+        )))
+    }
+
+    var recoveryText: String {
+        recoveryText(fallback: userMessage)
+    }
+
+    func recoveryText(fallback: String) -> String {
+        suggestedAction.isEmpty ? fallback : suggestedAction
+    }
+}
+
+extension AppSemanticError {
+    static func database(rawContext: String) -> AppSemanticError {
+        AppSemanticError(appErrorMapping: .database(rawContext: rawContext))
+    }
+
+    static func invalidPath(rawContext: String) -> AppSemanticError {
+        AppSemanticError(appErrorMapping: .invalidPath(rawContext: rawContext))
+    }
+
+    static func conflict(rawContext: String) -> AppSemanticError {
+        AppSemanticError(appErrorMapping: .conflict(rawContext: rawContext))
+    }
+
+    static func internalFailure(rawContext: String) -> AppSemanticError {
+        AppSemanticError(appErrorMapping: .internalFailure(rawContext: rawContext))
+    }
 }
 
 func mapCoreErrorFromCore(_ error: CoreError) -> ErrorMapping {
     mapCoreError(input: ErrorMappingInput(coreError: error))
+}
+
+private extension CoreError {
+    var kindSnapshot: CoreErrorKindSnapshot {
+        switch self {
+        case .Io:
+            .io
+        case .Db:
+            .db
+        case .Config:
+            .config
+        case .Validation:
+            .validation
+        case .Classify:
+            .classify
+        case .Conflict:
+            .conflict
+        case .DuplicateFile:
+            .duplicateFile
+        case .FileNotFound:
+            .fileNotFound
+        case .ExpiredAction:
+            .expiredAction
+        case .RepoNotInitialized:
+            .repoNotInitialized
+        case .InvalidPath:
+            .invalidPath
+        case .ICloudPlaceholder:
+            .iCloudPlaceholder
+        case .StagingRecoveryRequired:
+            .stagingRecoveryRequired
+        case .PermissionDenied:
+            .permissionDenied
+        case .Internal:
+            .internal
+        }
+    }
+
+    var rawContextSnapshot: String {
+        switch self {
+        case let .Io(message),
+             let .Db(message),
+             let .Internal(message):
+            message
+        case let .Config(reason),
+             let .Validation(reason),
+             let .Classify(reason):
+            reason
+        case let .Conflict(path),
+             let .DuplicateFile(path),
+             let .FileNotFound(path),
+             let .ExpiredAction(path),
+             let .RepoNotInitialized(path),
+             let .InvalidPath(path),
+             let .ICloudPlaceholder(path),
+             let .StagingRecoveryRequired(path),
+             let .PermissionDenied(path):
+            path
+        }
+    }
 }
 
 private extension ErrorMappingInput {

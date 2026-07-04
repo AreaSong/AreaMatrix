@@ -64,11 +64,10 @@ final class AIClassificationCallLogDetailModel: ObservableObject {
     }
 
     private func callLogError(for error: Error) async -> AISettingsError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
+        if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(
                 message: "AI call log could not be loaded.",
-                recovery: mapping.suggestedAction.isEmpty ? "Retry" : mapping.suggestedAction,
+                recovery: mapping.recoveryText(fallback: "Retry"),
                 detail: mapping.userMessage
             )
         }

@@ -94,8 +94,8 @@ final class OnboardingModel: ObservableObject {
     var validatePathReturnRoute: Route = .choosePath
     var initializationProgressTask: Task<Void, Never>?
     init(
-        settingsReader: any AppSettingsReading = UserDefaultsAppSettingsReader(),
-        settingsWriter: any AppSettingsWriting = UserDefaultsAppSettingsReader(),
+        settingsReader: any AppSettingsReading = AppPlatformServices.settingsReader,
+        settingsWriter: any AppSettingsWriting = AppPlatformServices.settingsWriter,
         configLoader _: any CoreConfigurationLoading = CoreBridge(),
         pathValidator: any CoreRepositoryPathValidating = CoreBridge(),
         initializedPathValidator: any CoreInitializedRepositoryPathValidating = CoreBridge(),
@@ -107,22 +107,23 @@ final class OnboardingModel: ObservableObject {
         startupRecoverer: any CoreStartupRecovering = CoreBridge(),
         externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
-            SQLiteExistingRepositoryMetadataReader(),
+            OnboardingPlatformServices.metadataReader,
         scanSessionReader: any CoreScanSessionReading = CoreBridge(),
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
-        finderOpener: any RepositoryFinderOpening = NSWorkspaceRepositoryFinderOpener(),
-        fileRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
-        fileOpener: any RepositoryFileOpening = NSWorkspaceRepositoryFileOpener(),
-        pathCopier: any RepositoryPathCopying = NSPasteboardRepositoryPathCopier(),
-        importResultExporter: any ImportResultDetailsExporting = NSSavePanelImportResultDetailsExporter(),
-        importBatchSessionStore: any ImportBatchSessionPersisting = FileImportBatchSessionStore(),
-        systemCapabilityChecker: any OnboardingSystemCapabilityChecking = LocalOnboardingCapabilities(),
+        finderOpener: any RepositoryFinderOpening = AppPlatformServices.finderOpener,
+        fileRevealer: any RepositoryFileRevealing = AppPlatformServices.fileRevealer,
+        fileOpener: any RepositoryFileOpening = AppPlatformServices.fileOpener,
+        pathCopier: any RepositoryPathCopying = AppPlatformServices.pathCopier,
+        importResultExporter: any ImportResultDetailsExporting = AppPlatformServices.importResultExporter,
+        importBatchSessionStore: any ImportBatchSessionPersisting = AppPlatformServices.importBatchSessionStore,
+        systemCapabilityChecker: any OnboardingSystemCapabilityChecking =
+            OnboardingPlatformServices.systemCapabilityChecker,
         importProgressControlState: ImportProgressControlState = ImportProgressControlState(),
-        accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer(),
-        helpOpener: any WelcomeHelpOpening = LocalWelcomeHelpOpener(),
-        directoryPicker: any RepositoryDirectoryPicking = NSOpenPanelRepositoryDirectoryPicker(),
-        importPicker: any RepositoryImportPicking = NSOpenPanelRepositoryImportPicker()
+        accessibilityAnnouncer: any AccessibilityAnnouncing = OnboardingPlatformServices.accessibilityAnnouncer,
+        helpOpener: any WelcomeHelpOpening = AppPlatformServices.helpOpener,
+        directoryPicker: any RepositoryDirectoryPicking = AppPlatformServices.directoryPicker,
+        importPicker: any RepositoryImportPicking = AppPlatformServices.importPicker
     ) {
         self.settingsReader = settingsReader
         self.settingsWriter = settingsWriter

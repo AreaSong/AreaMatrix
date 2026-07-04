@@ -112,11 +112,10 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
     }
 
     private func suggestionError(for error: Error) async -> AISettingsError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
+        if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(
                 message: "AI category suggestion could not be loaded.",
-                recovery: mapping.suggestedAction.isEmpty ? "Retry or classify manually." : mapping.suggestedAction,
+                recovery: mapping.recoveryText(fallback: "Retry or classify manually."),
                 detail: mapping.userMessage
             )
         }
@@ -164,12 +163,12 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
         do {
             return try await fallbackReader.classificationFallbackStatus(repoPath: repoPath, request: request)
         } catch {
-            return fallbackReaderFailureStatus(for: error, request: request)
+            return await fallbackReaderFailureStatus(for: error, request: request)
         }
     }
 
     private func loadFallbackStatus(for error: Error) async -> AiFallbackStatus? {
-        let providerError = providerErrorSnapshot(for: error)
+        let providerError = await providerErrorSnapshot(for: error)
         let request = AiFallbackStatusRequest(
             operation: .classificationSuggestion,
             route: nil,
@@ -187,16 +186,18 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
         do {
             return try await fallbackReader.classificationFallbackStatus(repoPath: repoPath, request: request)
         } catch {
-            return fallbackReaderFailureStatus(for: error, request: request)
+            return await fallbackReaderFailureStatus(for: error, request: request)
         }
     }
 
-    private func providerErrorSnapshot(for error: Error) -> (kind: AiFallbackProviderErrorKind, code: String) {
-        guard let coreError = error as? CoreError else { return (.internalFailure, "SwiftError") }
-        switch coreError {
-        case .Config:
+    private func providerErrorSnapshot(for error: Error) async -> (kind: AiFallbackProviderErrorKind, code: String) {
+        guard let mapping = await errorMapper.mapCoreErrorIfPresent(error) else {
+            return (.internalFailure, "SwiftError")
+        }
+        switch mapping.kind {
+        case .config:
             return (.providerUnavailable, "Config")
-        case .PermissionDenied:
+        case .permissionDenied:
             return (.remoteFailed, "PermissionDenied")
         default:
             return (.internalFailure, "Internal")
@@ -206,13 +207,14 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
     private func fallbackReaderFailureStatus(
         for error: Error,
         request: AiFallbackStatusRequest
-    ) -> AiFallbackStatus {
-        AiFallbackStatus(
+    ) async -> AiFallbackStatus {
+        let message = await fallbackReaderFailureMessage(for: error)
+        return AiFallbackStatus(
             operation: .classificationSuggestion,
             kind: .internalFailure,
             category: .error,
             title: "AI fallback status could not be loaded.",
-            message: fallbackReaderFailureMessage(for: error),
+            message: message,
             retryable: false,
             retryDisabledReason: "Classify manually or retry after the fallback status is available.",
             primaryAction: .classifyManually,
@@ -225,14 +227,14 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
         )
     }
 
-    private func fallbackReaderFailureMessage(for error: Error) -> String {
-        guard let coreError = error as? CoreError else {
+    private func fallbackReaderFailureMessage(for error: Error) async -> String {
+        guard let mapping = await errorMapper.mapCoreErrorIfPresent(error) else {
             return "AreaMatrix could not read the standardized AI category fallback state."
         }
-        switch coreError {
-        case .Config:
+        switch mapping.kind {
+        case .config:
             return "AreaMatrix could not read the AI category fallback state because fallback metadata is invalid."
-        case .PermissionDenied:
+        case .permissionDenied:
             return "AreaMatrix does not have permission to read the AI category fallback metadata."
         default:
             return "AreaMatrix could not read the standardized AI category fallback state."

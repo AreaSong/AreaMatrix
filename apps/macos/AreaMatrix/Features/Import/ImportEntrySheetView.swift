@@ -58,7 +58,7 @@ struct ImportEntrySheetView: View {
         batchConflictBatcher: any CoreImportConflictBatching = CoreBridge(),
         batchDuplicatePrechecker: any ImportBatchDuplicatePrechecking = CoreImportBatchDuplicatePrechecker(),
         batchNameConflictPrechecker: any ImportBatchNameConflictPrechecking = CoreImportBatchNameConflictPrechecker(),
-        folderScanner: any ImportFolderScanning = LocalImportFolderScanner(),
+        folderScanner: any ImportFolderScanning = ImportPlatformServices.folderScanner,
         preflight: any ImportSingleFilePreflighting = CoreImportSingleFilePreflight(),
         placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader(),
         errorMapper: any CoreErrorMapping = CoreBridge(),

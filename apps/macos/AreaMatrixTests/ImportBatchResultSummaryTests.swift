@@ -3,133 +3,15 @@ import XCTest
 
 final class ImportBatchResultSummaryTests: XCTestCase {
     @MainActor
-    func testBatchChangeCategoryBatchChangeCategoryCorePreviewApplyUndoAndRouteStayWithinControlMap() async {
-        let preview = BatchCategoryPreviewReportSnapshot.batchChangeCategoryPreview()
-        let report = BatchCategoryChangeReportSnapshot.batchChangeCategorySuccessReport()
-        let changer = BatchCategoryChanger(results: [
-            .preview(.success(preview)),
-            .apply(.success(report))
-        ])
-
-        let previewState = await BatchChangeCategoryAction.preview(
-            request: BatchChangeCategoryPreviewRequest(
-                repoPath: "/tmp/repo",
-                fileIDs: [2, 1],
-                targetCategory: "finance",
-                moveRepoOwnedFiles: true
-            ),
-            changer: changer,
-            errorMapper: RecordingCoreErrorMapper.batchChangeCategory()
-        )
-        let apply = await BatchChangeCategoryAction.apply(
-            repoPath: "/tmp/repo",
-            fileIDs: [2, 1],
-            preview: preview,
-            changer: changer,
-            errorMapper: RecordingCoreErrorMapper.batchChangeCategory()
-        )
-        let undoState = await BatchChangeCategoryUndoAction.stateAfterBatchApply(
-            repoPath: "/tmp/repo",
-            report: report,
-            failure: nil,
-            undoStore: BatchChangeCategoryRecordingUndoStore(actions: [.batchChangeCategoryAction]),
-            errorMapper: RecordingCoreErrorMapper.batchChangeCategory()
-        )
-        let createdCategories = BatchChangeCategoryCreatedCategoryReturn
-            .updatedCategories(["finance"], savedCategory: "tax")
-        let requests = await changer.recordedRequests()
-
-        XCTAssertEqual(requests, [
-            "preview|/tmp/repo|2,1|finance|true",
-            "apply|/tmp/repo|2,1|finance|true|preview-current"
-        ])
-        XCTAssertEqual(previewState.report, preview)
-        XCTAssertEqual(apply.report, report)
-        XCTAssertEqual(undoState, .ready(.batchChangeCategoryAction))
-        XCTAssertEqual(createdCategories, ["finance", "tax"])
-        XCTAssertEqual(MainSearchDestination.classifierRuleEditor(context: nil).pageID, "classifier-rule-editor")
-    }
-
-    @MainActor
-    func testBatchChangeCategoryBatchChangeCategoryCorePreviewFailureKeepsApplyClosedAndDoesNotExpandDetails() async {
-        let changer = BatchCategoryChanger(results: [
-            .preview(.failure(CoreError.PermissionDenied(path: "/tmp/repo/finance")))
-        ])
-        let previewState = await BatchChangeCategoryAction.preview(
-            request: BatchChangeCategoryPreviewRequest(
-                repoPath: "/tmp/repo",
-                fileIDs: [1, 2],
-                targetCategory: "finance",
-                moveRepoOwnedFiles: true
-            ),
-            changer: changer,
-            errorMapper: RecordingCoreErrorMapper.batchChangeCategory()
-        )
-        let requests = await changer.recordedRequests()
-
-        XCTAssertEqual(requests, ["preview|/tmp/repo|1,2|finance|true"])
-        XCTAssertEqual(previewState.failure?.kind, .permissionDenied)
-        XCTAssertNil(previewState.report)
-        XCTAssertFalse(BatchChangeCategoryPreviewDisclosure.shouldShowDetails(
-            after: previewState,
-            expandDetails: true
-        ))
-        XCTAssertFalse(BatchChangeCategoryValidation.canApply(BatchChangeCategoryApplyGate(
-            targetCategory: "finance",
-            moveRepoOwnedFiles: true,
-            fileIDs: [1, 2],
-            preview: previewState.report,
-            disabledReason: nil,
-            isApplying: false
-        )))
-    }
-
-    func testBatchChangeCategoryBatchChangeCategoryCoreApplyRequiresLatestUnblockedDryRunAndPartialFailureRefresh() {
-        let preview = BatchCategoryPreviewReportSnapshot.batchChangeCategoryPreview()
-        let partial = BatchCategoryChangeReportSnapshot.batchChangeCategoryPartialFailureReport()
-        var blockedPreview = preview
-        blockedPreview.canApply = false
-
-        XCTAssertTrue(BatchChangeCategoryValidation.canApply(BatchChangeCategoryApplyGate(
-            targetCategory: "finance",
-            moveRepoOwnedFiles: true,
-            fileIDs: [1, 2],
-            preview: preview,
-            disabledReason: nil,
-            isApplying: false
-        )))
-        XCTAssertFalse(BatchChangeCategoryValidation.canApply(BatchChangeCategoryApplyGate(
-            targetCategory: "archive",
-            moveRepoOwnedFiles: true,
-            fileIDs: [1, 2],
-            preview: preview,
-            disabledReason: nil,
-            isApplying: false
-        )))
-        XCTAssertFalse(BatchChangeCategoryValidation.canApply(BatchChangeCategoryApplyGate(
-            targetCategory: "finance",
-            moveRepoOwnedFiles: true,
-            fileIDs: [1, 2],
-            preview: blockedPreview,
-            disabledReason: nil,
-            isApplying: false
-        )))
-        XCTAssertTrue(partial.shouldRefreshConsumerAfterApply)
-        XCTAssertFalse(partial.shouldCloseSheetAfterApply)
-        XCTAssertFalse(BatchCategoryChangeReportSnapshot.batchChangeCategoryAllFailedReport()
-            .shouldRefreshConsumerAfterApply)
-    }
-
-    @MainActor
     // swiftlint:disable:next function_body_length
     func testImportBatchPreviewErrorAndPartialSuccessSurfaceFailedItemInResultSummary() async {
         let readyURL = importBatchInvoiceURL()
-        let failedPreviewURL = URL(fileURLWithPath: "/tmp/unreadable.mov")
+        let failedPreviewURL = importBatchUnreadablePreviewURL()
         let rows = [
             importBatchReadyBatchRow(url: readyURL),
             ImportBatchPreviewRow.failed(
                 url: failedPreviewURL,
-                message: "无法读取分类预览路径：/tmp/unreadable.mov"
+                message: importBatchUnreadablePreviewMessage(url: failedPreviewURL)
             )
         ]
         let importer = ImportBatchRecordingBatchImporter()
@@ -181,7 +63,7 @@ final class ImportBatchResultSummaryTests: XCTestCase {
     @MainActor
     func testImportBatchSkippedDuplicateAndPendingICloudSurfaceInProgressResultSummary() async {
         let duplicateURL = importBatchInvoiceURL()
-        let cloudURL = URL(fileURLWithPath: "/tmp/iCloudOnly.pdf.icloud")
+        let cloudURL = importBatchICloudPlaceholderURL()
         let rows = [
             importBatchDuplicateInvoiceRow(url: duplicateURL),
             ImportBatchPreviewRow.iCloudPlaceholder(

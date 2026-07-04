@@ -35,6 +35,22 @@ final class ValidatePathErrorMappingTests: XCTestCase {
         XCTAssertFalse(mapping.suggestedAction.isEmpty)
     }
 
+    func testAppSemanticErrorMappingBypassesCoreErrorRecording() async {
+        let mapping = CoreErrorMappingSnapshot.invalidPath(rawContext: "app-semantic-path")
+        let errorMapper = StaticCoreErrorMapper(mapping: .errorSmokePermissionDeniedFixture(rawContext: "unexpected"))
+        let error = AppSemanticError(appErrorMapping: mapping)
+
+        let mappedError = await errorMapper.mapError(error)
+        let knownMapping = await errorMapper.mapKnownErrorIfPresent(error)
+        let recordedErrors = await errorMapper.recordedErrors()
+
+        XCTAssertEqual(mappedError, mapping)
+        XCTAssertEqual(knownMapping, mapping)
+        XCTAssertEqual(error.localizedDescription, "app-semantic-path")
+        XCTAssertEqual(recordedErrors, [])
+        XCTAssertNil(CoreErrorRawContextSnapshot(error))
+    }
+
     @MainActor
     func testConfigValidationFailureRoutesToMainRepoError() async {
         let mapping = CoreErrorMappingSnapshot.errorSmokeConfigFixture(rawContext: "schema mismatch")

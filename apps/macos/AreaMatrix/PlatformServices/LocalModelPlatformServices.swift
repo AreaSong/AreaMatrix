@@ -1,6 +1,24 @@
 import AppKit
 import Foundation
 
+enum LocalModelStatusPlatformServices {
+    static var storageLocationProvider: any LocalModelStorageLocationProviding {
+        LocalModelStorageProvider()
+    }
+
+    static var installHelpOpener: any LocalModelInstallHelpOpening {
+        NSWorkspaceLocalModelInstallHelpOpener()
+    }
+
+    static var folderOpener: any LocalModelFolderOpening {
+        NSWorkspaceLocalModelFolderOpener()
+    }
+
+    static var diagnosticsCopier: any LocalModelDiagnosticsCopying {
+        NSPasteboardLocalModelDiagnosticsCopier()
+    }
+}
+
 struct LocalModelStorageProvider: LocalModelStorageLocationProviding {
     func defaultStorageLocation() -> String {
         if let supportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {

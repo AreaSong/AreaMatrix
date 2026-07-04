@@ -1,41 +1,17 @@
 @testable import AreaMatrix
-import Foundation
+import XCTest
 
-struct ImportSingleFileFileLoadRequest: Equatable {
-    var repoPath: String
-    var categories: Set<String?>
-}
-
-actor ImportSingleFileStaticFileLoader: ImportBatchCoreFileLoading {
-    private let files: [FileEntrySnapshot]
-    private var requests: [ImportSingleFileFileLoadRequest] = []
-
-    init(files: [FileEntrySnapshot]) {
-        self.files = files
+@MainActor
+func waitForImportSingleFilePreflightToSettle(
+    _ model: ImportSingleFilePreviewModel,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) async {
+    for _ in 0 ..< 100 {
+        if !model.preflightStatus.isChecking {
+            return
+        }
+        await Task.yield()
     }
-
-    func loadImportPreviewFiles(repoPath: String, categories: Set<String?>) async throws -> [FileEntrySnapshot] {
-        requests.append(ImportSingleFileFileLoadRequest(repoPath: repoPath, categories: categories))
-        return files
-    }
-
-    func recordedRequests() -> [ImportSingleFileFileLoadRequest] {
-        requests
-    }
-}
-
-extension ImportSingleFilePreflightRequest {
-    static func fixture(
-        repoPath: String,
-        sourceURL: URL,
-        category: String,
-        targetFilename: String
-    ) -> ImportSingleFilePreflightRequest {
-        ImportSingleFilePreflightRequest(
-            repoPath: repoPath,
-            sourceURL: sourceURL,
-            category: category,
-            targetFilename: targetFilename
-        )
-    }
+    XCTFail("Timed out waiting for import preflight to settle", file: file, line: line)
 }

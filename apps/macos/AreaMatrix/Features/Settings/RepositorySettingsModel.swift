@@ -43,15 +43,17 @@ final class RepositorySettingsModel: ObservableObject {
         fileLister: (any CoreFileListing)? = nil,
         scanSessionReader: any CoreScanSessionReading = CoreBridge(),
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
-            SQLiteExistingRepositoryMetadataReader(),
-        metadataPresenceChecker: any RepoMetadataPresenceChecking = FileSystemRepoMetadataPresenceChecker(),
-        finderOpener: any RepositoryFinderOpening = NSWorkspaceRepositoryFinderOpener(),
-        pathCopier: any RepositoryPathCopying = NSPasteboardRepositoryPathCopier(),
-        generatedOverviewRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
+            RepositorySettingsPlatformServices.metadataReader,
+        metadataPresenceChecker: any RepoMetadataPresenceChecking =
+            RepositorySettingsPlatformServices.metadataPresenceChecker,
+        finderOpener: any RepositoryFinderOpening = RepositorySettingsPlatformServices.finderOpener,
+        pathCopier: any RepositoryPathCopying = RepositorySettingsPlatformServices.pathCopier,
+        generatedOverviewRevealer: any RepositoryFileRevealing =
+            RepositorySettingsPlatformServices.generatedOverviewRevealer,
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
         coreVersionLoader: any CoreVersionLoading = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
-        accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer()
+        accessibilityAnnouncer: any AccessibilityAnnouncing = RepositorySettingsPlatformServices.accessibilityAnnouncer
     ) {
         self.repoPath = repoPath
         self.loader = loader

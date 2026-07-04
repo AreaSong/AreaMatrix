@@ -44,7 +44,7 @@ final class PlatformDifferencesModel: ObservableObject {
     init(
         hostPlatform: PlatformIdSnapshot = .macos,
         appVersion: String? = nil,
-        appVersionReader: any AppVersionReading = BundleAppVersionReader(),
+        appVersionReader: any AppVersionReading = PlatformDifferencesPlatformServices.appVersionReader,
         repositoryText: String = "Not connected",
         selectedTargetPlatform: BindingTargetPlatformSnapshot = .swift,
         bindingVersion: Int64 = 1,

@@ -281,8 +281,7 @@ extension OnboardingModel {
     private func recordInitializationProgressWarning(_ error: Error, repoPath: String) async {
         guard isInitializingAdoptExisting(repoPath: repoPath) else { return }
 
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
+        if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             guard isInitializingAdoptExisting(repoPath: repoPath) else { return }
             initializationProgressWarning = "无法读取接管进度：\(mapping.userMessage)"
         } else {
@@ -300,7 +299,8 @@ extension OnboardingModel {
         do {
             let report = try await startupRecoverer.recoverOnStartup(repoPath: repoPath)
             initializationRecoveryReport = report.hasVisibleDetails ? report : nil
-        } catch CoreError.RepoNotInitialized(_) {
+        } catch {
+            guard CoreErrorRawContextSnapshot.repoNotInitializedPath(from: error) != nil else { throw error }
             initializationRecoveryReport = nil
         }
     }

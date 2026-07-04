@@ -1,7 +1,7 @@
 @testable import AreaMatrix
 
 extension SyncResultSnapshot {
-    static func iCloudConflictMinimalNoopSyncResult() -> SyncResultSnapshot {
+    static func iCloudConflictMinimalEmptySyncResult() -> SyncResultSnapshot {
         SyncResultSnapshot(
             detectedCreates: 0,
             detectedRenames: 0,

@@ -12,14 +12,15 @@ extension AdvancedSettingsPane {
         onOpenRecoveryTools: @escaping () -> Void = {},
         loader: any CoreConfigurationLoading = CoreBridge(),
         updater: any CoreConfigurationUpdating = CoreBridge(),
-        rootOverviewInspector: any RootOverviewFileInspecting = LocalRootOverviewFileInspector(),
+        rootOverviewInspector: any RootOverviewFileInspecting =
+            AdvancedSettingsPlatformServices.rootOverviewInspector,
         diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
-        appVersionReader: any AppVersionReading = BundleAppVersionReader(),
+        appVersionReader: any AppVersionReading = AdvancedSettingsPlatformServices.appVersionReader,
         coreVersionReader: any CoreVersionReading = CoreBridge(),
-        metadataReader: any ExistingRepositoryMetadataReading = SQLiteExistingRepositoryMetadataReader(),
-        logsOpener: any AdvancedSettingsLogFolderOpening = AdvancedSettingsLogFolderOpener(),
+        metadataReader: any ExistingRepositoryMetadataReading = AdvancedSettingsPlatformServices.metadataReader,
+        logsOpener: any AdvancedSettingsLogFolderOpening = AdvancedSettingsPlatformServices.logsOpener,
         summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying =
-            AdvancedSettingsDiagnosticCopier(),
+            AdvancedSettingsPlatformServices.diagnosticSummaryCopier,
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         _model = StateObject(wrappedValue: AdvancedSettingsModel(

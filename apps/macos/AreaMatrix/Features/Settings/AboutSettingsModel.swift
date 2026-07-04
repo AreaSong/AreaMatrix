@@ -119,21 +119,10 @@ protocol AboutDiagnosticsExporting: Sendable {
     func exportDiagnostics(context: AboutDiagnosticsExportContext) async throws -> AboutDiagnosticsExportSnapshot
 }
 
-struct LocalAboutCoreErrorMapper: CoreErrorMapping {
-    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
-            kind: .db,
-            userMessage: error.localizedDescription,
-            severity: .medium,
-            suggestedAction: "Collect diagnostics...",
-            recoverability: .retryable,
-            rawContext: error.localizedDescription
-        )
-    }
-}
-
 @MainActor
 final class AboutSettingsModel: ObservableObject {
+    private static let coreErrorRecoveryAction = "Collect diagnostics..."
+
     @Published private(set) var isLoadingVersionInfo = false
     @Published private(set) var versionInfo = AboutSettingsVersionInfo.unknown
     @Published private(set) var versionError: AboutSettingsError?
@@ -154,16 +143,16 @@ final class AboutSettingsModel: ObservableObject {
 
     init(
         repoPath: String,
-        appVersionReader: any AppVersionReading = BundleAppVersionReader(),
+        appVersionReader: any AppVersionReading = AboutSettingsPlatformServices.appVersionReader,
         coreVersionReader: any CoreVersionReading = CoreBridge(),
-        metadataReader: any ExistingRepositoryMetadataReading = SQLiteExistingRepositoryMetadataReader(),
-        diagnosticsExporter: any AboutDiagnosticsExporting = LocalAboutDiagnosticsExporter(),
-        externalLinkOpener: any AboutExternalLinkOpening = NSWorkspaceAboutExternalLinkOpener(),
-        logsOpener: any AboutLogsOpening = NSWorkspaceAboutLogsOpener(),
-        stringCopier: any AboutStringCopying = NSPasteboardAboutStringCopier(),
-        diagnosticsRevealer: any AboutDiagnosticsRevealing = NSWorkspaceAboutDiagnosticsRevealer(),
-        errorMapper: any CoreErrorMapping = LocalAboutCoreErrorMapper(),
-        accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer()
+        metadataReader: any ExistingRepositoryMetadataReading = AboutSettingsPlatformServices.metadataReader,
+        diagnosticsExporter: any AboutDiagnosticsExporting = AboutSettingsPlatformServices.diagnosticsExporter,
+        externalLinkOpener: any AboutExternalLinkOpening = AboutSettingsPlatformServices.externalLinkOpener,
+        logsOpener: any AboutLogsOpening = AboutSettingsPlatformServices.logsOpener,
+        stringCopier: any AboutStringCopying = AboutSettingsPlatformServices.stringCopier,
+        diagnosticsRevealer: any AboutDiagnosticsRevealing = AboutSettingsPlatformServices.diagnosticsRevealer,
+        errorMapper: any CoreErrorMapping = CoreBridge(),
+        accessibilityAnnouncer: any AccessibilityAnnouncing = AboutSettingsPlatformServices.accessibilityAnnouncer
     ) {
         self.repoPath = repoPath
         self.appVersionReader = appVersionReader
@@ -337,7 +326,7 @@ final class AboutSettingsModel: ObservableObject {
         if let display = await errorMapper.mapCoreErrorDisplayIfPresent(error) {
             return AboutSettingsError(
                 message: fallbackMessage,
-                recovery: display.recovery,
+                recovery: Self.coreErrorRecoveryAction,
                 copyableDetail: display.detail
             )
         }

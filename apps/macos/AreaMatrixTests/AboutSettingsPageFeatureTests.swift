@@ -61,6 +61,28 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testSchemaFailureDefaultsToBridgeErrorMappingAndKeepsAboutRecovery() async {
+        let model = AboutSettingsModel(
+            repoPath: "/tmp/repo",
+            appVersionReader: StaticAppVersionReader(version: "1.0"),
+            coreVersionReader: StaticCoreVersionReader(result: .success("0.1.0")),
+            metadataReader: StaticExistingRepositoryMetadataReader(result: .failure(CoreError.Db(message: "missing"))),
+            diagnosticsExporter: AboutDiagnosticsExporter(result: .success(.fixture())),
+            externalLinkOpener: RecordingAboutExternalLinkOpener(),
+            logsOpener: RecordingAboutLogsOpener(),
+            stringCopier: RecordingAboutStringCopier(),
+            diagnosticsRevealer: RecordingAboutDiagnosticsRevealer(),
+            accessibilityAnnouncer: RecordingAccessibilityAnnouncer()
+        )
+
+        await model.load()
+
+        XCTAssertEqual(model.versionInfo.schemaVersion, "Unknown")
+        XCTAssertEqual(model.versionError?.message, "Schema version unavailable")
+        XCTAssertEqual(model.versionError?.recovery, "Collect diagnostics...")
+    }
+
+    @MainActor
     func testDiagnosticsRequiresPrivacyConfirmationAndUsesAboutOnlyExporter() async {
         let exporter = AboutDiagnosticsExporter(result: .success(.fixture()))
         let model = aboutSettingsModel(diagnosticsExporter: exporter)

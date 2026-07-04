@@ -208,11 +208,10 @@ final class RemotePrivacyGateModel: ObservableObject {
     }
 
     private func privacyError(for error: Error, message: String, recovery: String) async -> AISettingsError {
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
+        if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(
                 message: message,
-                recovery: mapping.suggestedAction.isEmpty ? recovery : mapping.suggestedAction,
+                recovery: mapping.recoveryText(fallback: recovery),
                 detail: mapping.userMessage
             )
         }

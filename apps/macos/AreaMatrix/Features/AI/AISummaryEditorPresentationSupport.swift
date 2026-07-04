@@ -69,17 +69,16 @@ enum AISummaryEditorPresentationSupport {
         message: String,
         errorMapper: any CoreErrorMapping
     ) async -> AISettingsError {
-        guard let coreError = error as? CoreError else {
+        guard let mapping = await errorMapper.mapCoreErrorIfPresent(error) else {
             return AISettingsError(
                 message: message,
                 recovery: "Retry or return to detail.",
                 detail: error.localizedDescription
             )
         }
-        let mapping = await errorMapper.mapCoreError(coreError)
         return AISettingsError(
             message: message,
-            recovery: mapping.suggestedAction.isEmpty ? "Retry or return to detail." : mapping.suggestedAction,
+            recovery: mapping.recoveryText(fallback: "Retry or return to detail."),
             detail: mapping.userMessage
         )
     }

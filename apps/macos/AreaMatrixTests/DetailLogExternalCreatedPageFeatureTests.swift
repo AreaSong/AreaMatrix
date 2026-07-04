@@ -170,10 +170,10 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
     func testDetailLogSyncExternalCreatedCoreTreatsSyncResultErrorsAsFailure() async throws {
         let created = FileEntrySnapshot.detailMetaFixture(id: 25, currentName: "partial.pdf", origin: "External")
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(relativePath: created.path, fsEventID: 7003))
-        let mapping = CoreErrorMappingSnapshot.detailLogExternalCreated(kind: .internal)
-        let mapper = StaticCoreErrorMapper(mapping: mapping)
+        let mapper = StaticCoreErrorMapper(mapping: .detailLogExternalCreated(kind: .internal))
         let lister = DetailLogRecordingLister(results: [.success([])])
-        let syncer = DetailLogExternalCreatedSyncer(result: .success(.detailCreatedWithErrorsFixture()))
+        let syncResult = SyncResultSnapshot.detailCreatedWithErrorsFixture()
+        let syncer = DetailLogExternalCreatedSyncer(result: .success(syncResult))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
             fileLister: DetailLogExternalCreatedLister(files: [created]),
@@ -186,13 +186,13 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         await model.syncExternalCreated(event)
         let mappedErrors = await mapper.recordedErrors()
         let logRequests = await lister.recordedRequests()
+        let rawContext = "created event 7003 returned sync errors: \(syncResult.errors.joined(separator: "; "))"
+        let mapping = CoreErrorMappingSnapshot.internalFailure(rawContext: rawContext)
 
         XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
+        XCTAssertEqual(mappedErrors, [])
         XCTAssertEqual(logRequests, [])
-        guard case let .Internal(message) = mappedErrors.first else {
-            return XCTFail("expected internal error for partial sync result")
-        }
-        XCTAssertTrue(message.contains("created event 7003 returned sync errors"))
+        XCTAssertTrue(mapping.rawContext.contains("created event 7003 returned sync errors"))
     }
 
     func testDetailLogSyncExternalCreatedCoreRejectsInvalidExternalCreatedEventsBeforeCoreBridge() {

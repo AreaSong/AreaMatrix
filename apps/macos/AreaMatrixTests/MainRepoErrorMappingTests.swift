@@ -73,6 +73,30 @@ final class MainRepoErrorMappingTests: XCTestCase {
         XCTAssertEqual(corrupted.recoverability, .fatal)
         XCTAssertEqual(RepositoryErrorPresentation.mainRepo(mapping: corrupted).primaryAction, .openRepair)
     }
+
+    func testCoreErrorMappingRecoveryTextUsesSuggestedActionBeforeFallbacks() {
+        let mapped = CoreErrorMappingSnapshot(
+            kind: .db,
+            userMessage: "数据库错误",
+            severity: .medium,
+            suggestedAction: "请稍后重试",
+            recoverability: .retryable,
+            rawContext: "database is locked"
+        )
+        let fallbackOnly = CoreErrorMappingSnapshot(
+            kind: .internal,
+            userMessage: "应用内部错误",
+            severity: .critical,
+            suggestedAction: "",
+            recoverability: .fatal,
+            rawContext: "missing action"
+        )
+
+        XCTAssertEqual(mapped.recoveryText, "请稍后重试")
+        XCTAssertEqual(mapped.recoveryText(fallback: "Retry"), "请稍后重试")
+        XCTAssertEqual(fallbackOnly.recoveryText, "应用内部错误")
+        XCTAssertEqual(fallbackOnly.recoveryText(fallback: "Retry"), "Retry")
+    }
 }
 
 final class MainRepoErrorRouteTests: XCTestCase {
@@ -332,9 +356,52 @@ final class MainRepoReconnectFolderTests: XCTestCase {
 
         await model.reconnectMainRepositoryFolder(from: "/tmp/repo")
         let openedPaths = await opener.requestedConfiguredRepoPaths()
+        let expectedMapping = CoreErrorMappingSnapshot.invalidPath(rawContext: selectedPath)
 
         XCTAssertEqual(openedPaths, [])
-        XCTAssertEqual(model.mainRepoRecoveryErrorMapping?.kind, .invalidPath)
+        XCTAssertEqual(model.mainRepoRecoveryErrorMapping, expectedMapping)
+        XCTAssertEqual(
+            model.route,
+            OnboardingModel.Route.mainRepoError("/tmp/repo", model.mainRepoRecoveryErrorMapping)
+        )
+        XCTAssertFalse(model.isRetryingMainRepository)
+    }
+
+    @MainActor
+    func testMainRepoErrorReconnectFolderRejectsInitializedRepoWithoutConfiguredPath() async {
+        let selectedPath = "/tmp/repo-without-configured-path"
+        let validation = RepoPathValidationSnapshot.shellFixture(
+            repoPath: selectedPath,
+            isEmpty: false,
+            isInitialized: true,
+            issues: [.alreadyInitialized],
+            recommendedMode: nil
+        )
+        let picker = ShellRecordingDirectoryPicker(selectedURL: URL(fileURLWithPath: selectedPath, isDirectory: true))
+        let initializedValidator = ShellRecordingInitializedPathValidator(result: .success(validation))
+        let opener = ShellRecordingRepositoryOpener(result: .success(.shellFixture(
+            repoPath: selectedPath,
+            fileCount: 1
+        )))
+        let model = OnboardingModel(
+            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+            initializedPathValidator: initializedValidator,
+            emptyRepositoryOpener: opener,
+            startupRecoverer: StaticStartupRecoverer(),
+            existingRepositoryMetadataReader: ShellExistingRepoMetadataReader(schemaVersion: 1),
+            helpOpener: NoopWelcomeHelpOpener(),
+            directoryPicker: picker
+        )
+        model.route = OnboardingModel.Route.mainRepoError(
+            "/tmp/repo",
+            CoreErrorMappingSnapshot.mainRepoFixture(kind: .invalidPath, rawContext: "/tmp/repo")
+        )
+
+        await model.reconnectMainRepositoryFolder(from: "/tmp/repo")
+        let openedPaths = await opener.requestedConfiguredRepoPaths()
+
+        XCTAssertEqual(openedPaths, [])
+        XCTAssertEqual(model.mainRepoRecoveryErrorMapping, .invalidPath(rawContext: selectedPath))
         XCTAssertEqual(
             model.route,
             OnboardingModel.Route.mainRepoError("/tmp/repo", model.mainRepoRecoveryErrorMapping)

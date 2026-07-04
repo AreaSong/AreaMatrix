@@ -37,11 +37,13 @@ final class ClassifierSettingsModel: ObservableObject {
         predictor: any CoreCategoryPredicting = CoreBridge(),
         ruleEditor: any CoreClassifierRuleEditing = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
-        classifierRulesManager: any ClassifierRulesManaging = FileSystemClassifierRulesManager(),
-        fileOpener: any RepositoryFileOpening = NSWorkspaceRepositoryFileOpener(),
-        fileRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
-        finderOpener: any RepositoryFinderOpening = NSWorkspaceRepositoryFinderOpener(),
-        accessibilityAnnouncer: any AccessibilityAnnouncing = VoiceOverAccessibilityAnnouncer(),
+        classifierRulesManager: any ClassifierRulesManaging =
+            ClassifierSettingsPlatformServices.classifierRulesManager,
+        fileOpener: any RepositoryFileOpening = ClassifierSettingsPlatformServices.fileOpener,
+        fileRevealer: any RepositoryFileRevealing = ClassifierSettingsPlatformServices.fileRevealer,
+        finderOpener: any RepositoryFinderOpening = ClassifierSettingsPlatformServices.finderOpener,
+        accessibilityAnnouncer: any AccessibilityAnnouncing =
+            ClassifierSettingsPlatformServices.accessibilityAnnouncer,
         onSavedCategory: ((String) -> Void)? = nil
     ) {
         self.repoPath = repoPath

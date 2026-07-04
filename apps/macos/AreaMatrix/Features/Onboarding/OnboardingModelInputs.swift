@@ -62,25 +62,24 @@ extension OnboardingModel {
 
     @MainActor
     func routeValidationFailure(_ error: Error, repoPath: String) async {
-        guard let coreError = error as? CoreError else {
+        guard let mapping = await errorMapper.mapKnownErrorIfPresent(error) else {
             repositoryPathErrorMapping = nil
             repositoryPathError = "路径字符串无法解析"
             return
         }
 
-        let mapping = await errorMapper.mapCoreError(coreError)
         repositoryPathErrorMapping = mapping
         repositoryPathError = mapping.userMessage
 
-        switch coreError {
-        case .Db:
+        switch mapping.kind {
+        case .db:
             route = .dbRepairConfirm(DatabaseRepairRouteState(
                 repoPath: repoPath,
                 scanSession: latestScanSession,
                 mapping: mapping,
                 returnRoute: .validatePath
             ))
-        case .Config, .Internal, .RepoNotInitialized:
+        case .config, .internal, .repoNotInitialized:
             routeMainRepositoryError(repoPath: repoPath, mapping: mapping)
         default:
             route = .validatePath

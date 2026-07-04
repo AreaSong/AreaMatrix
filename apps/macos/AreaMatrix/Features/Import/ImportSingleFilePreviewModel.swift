@@ -154,10 +154,10 @@ extension ImportSingleFilePreviewModel {
             )
             importStatus = .imported(entry)
             return entry
-        } catch let CoreError.DuplicateFile(existingPath) {
-            applyDuplicateConflict(existingPath: existingPath)
-            return nil
         } catch {
+            if applyDuplicateConflictIfPresent(error) {
+                return nil
+            }
             importStatus = await .failed(mapImportError(error))
             return nil
         }
@@ -281,18 +281,26 @@ private extension ImportSingleFilePreviewModel {
     }
 
     private static func classifyMessage(for error: Error) -> String {
-        guard let coreError = error as? CoreError else {
+        guard let context = CoreErrorRawContextSnapshot(error) else {
             return "无法预览分类"
         }
 
-        switch coreError {
-        case let .Config(reason):
-            return "分类规则无效：\(reason)"
-        case let .Classify(reason):
-            return "无法预览分类：\(reason)"
+        switch context.kind {
+        case .config:
+            return "分类规则无效：\(context.rawContext)"
+        case .classify:
+            return "无法预览分类：\(context.rawContext)"
         default:
             return "无法预览分类"
         }
+    }
+
+    private func applyDuplicateConflictIfPresent(_ error: Error) -> Bool {
+        guard let context = CoreErrorRawContextSnapshot(error), context.kind == .duplicateFile else {
+            return false
+        }
+        applyDuplicateConflict(existingPath: context.rawContext)
+        return true
     }
 
     private func beginLoading(request: ImportEntryRequest) {

@@ -115,6 +115,43 @@ final class InitializingStepIntegrationTests: XCTestCase {
     }
 
     @MainActor
+    func testInitializingIgnoresRepoNotInitializedStartupRecoveryBeforeRepositoryWrite() async {
+        let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
+        let startupRecoverer = RecordingCoreStartupRecoverer(
+            result: .failure(CoreError.RepoNotInitialized(path: "/tmp/adopt"))
+        )
+        let initializer = RecordingRepositoryInitializer()
+        let writer = InitializingRecordingSettingsWriter()
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsWriter: writer,
+            configLoader: StaticConfigurationLoader(config: .initializingFixture(repoPath: "/tmp/adopt")),
+            pathValidator: InitializingRecordingPathValidator(validation: validation),
+            repositoryInitializer: initializer,
+            startupRecoverer: startupRecoverer,
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+        model.updateRepositoryPath("/tmp/adopt")
+        await model.continueFromChoosePath()
+        await model.continueFromValidatePath()
+
+        await model.adoptExistingRepositoryFromConfirmInit()
+        let recoveredPaths = await startupRecoverer.requestedRepoPaths()
+        let adoptedPaths = await initializer.adoptedRepoPaths()
+
+        XCTAssertEqual(recoveredPaths, ["/tmp/adopt"])
+        XCTAssertEqual(adoptedPaths, ["/tmp/adopt"])
+        XCTAssertNil(model.initializationRecoveryReport)
+        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/adopt"])
+        XCTAssertEqual(model.route, .initializationDone(RepositoryInitializationResult(
+            repoPath: "/tmp/adopt",
+            mode: .adoptExisting,
+            scanSession: nil,
+            recoveryReport: nil
+        )))
+    }
+
+    @MainActor
     func testStartupRecoveryErrorRoutesToInitFailedBeforeRepositoryWrite() async {
         let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
         let mapping = CoreErrorMappingSnapshot.initializingDbFixture(rawContext: "recovery db")

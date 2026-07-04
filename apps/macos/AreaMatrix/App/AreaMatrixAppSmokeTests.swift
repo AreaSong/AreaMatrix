@@ -200,7 +200,9 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
             settingsReader: SmokeStaticSettingsReader(repoPath: nil),
             configLoader: SmokeRecordingConfigLoader(result: .success(.smokeFixture(repoPath: "/tmp/repo"))),
             pathValidator: SmokeRecordingPathValidator(result: .success(validation)),
-            scanSessionReader: SmokeRecordingScanSessionReader(result: .failure(CoreError.Db(message: "db"))),
+            scanSessionReader: SmokeRecordingScanSessionReader(
+                result: .failure(AppSemanticError.database(rawContext: "db"))
+            ),
             helpOpener: SmokeNoopWelcomeHelpOpener()
         )
 

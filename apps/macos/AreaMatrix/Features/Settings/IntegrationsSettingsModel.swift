@@ -120,9 +120,9 @@ final class IntegrationsSettingsModel: ObservableObject {
         loader: any CoreConfigurationLoading = CoreBridge(),
         updater: any CoreConfigurationUpdating = CoreBridge(),
         errorMapper: any CoreErrorMapping = CoreBridge(),
-        statusDetector: any ICloudStatusDetecting = LocalICloudStatusDetector(),
-        finderOpener: any RepositoryFinderOpening = NSWorkspaceRepositoryFinderOpener(),
-        helpOpener: any ICloudHelpOpening = NSWorkspaceICloudHelpOpener()
+        statusDetector: any ICloudStatusDetecting = IntegrationsSettingsPlatformServices.statusDetector,
+        finderOpener: any RepositoryFinderOpening = IntegrationsSettingsPlatformServices.finderOpener,
+        helpOpener: any ICloudHelpOpening = IntegrationsSettingsPlatformServices.helpOpener
     ) {
         self.repoPath = repoPath
         self.loader = loader
@@ -243,7 +243,7 @@ final class IntegrationsSettingsModel: ObservableObject {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return IntegrationsSettingsError(
                 message: mapping.userMessage,
-                recovery: mapping.suggestedAction.isEmpty ? fallbackRecovery : mapping.suggestedAction
+                recovery: mapping.recoveryText(fallback: fallbackRecovery)
             )
         }
 

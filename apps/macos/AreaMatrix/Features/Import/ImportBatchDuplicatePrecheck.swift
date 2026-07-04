@@ -100,7 +100,7 @@ struct CoreImportBatchDuplicatePrechecker: ImportBatchDuplicatePrechecking {
         let placeholderResults = sourceURLs.reduce(
             into: [String: ImportBatchDuplicatePrecheckResult]()
         ) { results, sourceURL in
-            if ImportSingleFilePreflightTarget.isICloudPlaceholder(sourceURL) {
+            if ImportPlatformServices.isICloudPlaceholder(sourceURL) {
                 results[sourceURL.path] = .iCloudPlaceholder(path: sourceURL.path)
             }
         }

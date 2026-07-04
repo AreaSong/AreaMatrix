@@ -12,7 +12,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         )
 
         model.route = .mainList(opening)
-        model.updateImportEntryProgress(ImportProgressTestFixtures.runningCopyProgress)
+        model.updateImportEntryProgress(ImportProgressFixtures.runningCopyProgress)
 
         guard case let .importProgress(state) = model.route else {
             return XCTFail("Expected import-progress import progress route")
@@ -33,8 +33,8 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
         let mapping = CoreErrorMappingSnapshot.importSingleFileError(kind: .permissionDenied)
 
         model.route = .mainList(opening)
-        model.updateImportEntryProgress(ImportProgressTestFixtures.failedCopyResultProgress)
-        model.failImportEntry(progress: ImportProgressTestFixtures.failedCopyResultProgress, mapping: mapping)
+        model.updateImportEntryProgress(ImportProgressFixtures.failedCopyResultProgress)
+        model.failImportEntry(progress: ImportProgressFixtures.failedCopyResultProgress, mapping: mapping)
 
         guard case let .importResult(result) = model.route else {
             return XCTFail("Expected import-result import result route")
@@ -48,7 +48,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
     @MainActor
     func testImportProgressImportCopyFileCoreCopyFailureRequiresRecoveryCheckBeforeRetry() async {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
-        let context = ImportProgressTestFixtures.copyRetryContext(sourcePath: importProgressSourcePath())
+        let context = ImportProgressFixtures.copyRetryContext(sourcePath: importProgressSourcePath())
         let recoverer = RecordingCoreStartupRecoverer(result: .success(RecoveryReportSnapshot(
             cleanedStagingFiles: 1,
             revertedStagingDbRows: 0,
@@ -67,7 +67,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
             retryContext: context
         )
         model.failImportEntry(
-            progress: ImportProgressTestFixtures.copyFailedProgress,
+            progress: ImportProgressFixtures.copyFailedProgress,
             mapping: CoreErrorMappingSnapshot.importProgressFatalImportError(kind: .io)
         )
 

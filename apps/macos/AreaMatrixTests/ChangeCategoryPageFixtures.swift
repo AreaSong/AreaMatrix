@@ -70,6 +70,15 @@ extension MoveToCategoryPreviewSnapshot {
     }
 }
 
+func changeCategoryPredictionFixture() -> ClassifyResultSnapshot {
+    ClassifyResultSnapshot(
+        category: "docs",
+        suggestedName: "contract.pdf",
+        reason: .extension,
+        confidence: 0.93
+    )
+}
+
 extension CoreErrorMappingSnapshot {
     static func changeCategoryClassify() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
@@ -79,6 +88,28 @@ extension CoreErrorMappingSnapshot {
             suggestedAction: "Choose another category, then retry.",
             recoverability: .userActionRequired,
             rawContext: "change-category move-to-category preview_move_to_category"
+        )
+    }
+
+    static func changeCategoryConflict() -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .conflict,
+            userMessage: "Path conflict.",
+            severity: .medium,
+            suggestedAction: "Rename the file first, then retry.",
+            recoverability: .userActionRequired,
+            rawContext: "change-category resolve-name-conflict safe target name"
+        )
+    }
+
+    static func changeCategoryPermissionDenied() -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .permissionDenied,
+            userMessage: "Target category is not writable.",
+            severity: .high,
+            suggestedAction: "Grant folder access in Finder, then retry.",
+            recoverability: .userActionRequired,
+            rawContext: "change-category move-to-category preview_move_to_category permission"
         )
     }
 }

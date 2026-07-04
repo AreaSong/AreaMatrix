@@ -79,6 +79,49 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         XCTAssertEqual(undoRequests, ["/tmp/repo|undo-import-conflict-batch"])
     }
 
+    func testImportConflictBatchUndoActionLogCoreFallbackUsesAppSemanticFailureSnapshot() {
+        XCTAssertEqual(
+            CoreErrorMappingSnapshot.internalFailure(rawContext: "undo_action returned no result"),
+            CoreErrorMappingSnapshot(
+                kind: .internal,
+                userMessage: "应用内部错误",
+                severity: .critical,
+                suggestedAction: "请记录错误信息并重启应用",
+                recoverability: .fatal,
+                rawContext: "undo_action returned no result"
+            )
+        )
+    }
+
+    @MainActor
+    func testImportConflictBatchBlockedApplyMapsAppConflictWithoutCallingCoreApply() async {
+        var preview = ImportConflictBatchPreviewReportSnapshot.importConflictBatchDefaultUndoPreview
+        preview.canApply = false
+        preview.applyBlockedReason = "Select at least one conflict."
+        let batcher = ImportConflictBatcher(previews: [])
+        let request = ImportConflictBatchApplyRequestSnapshot(
+            importSessionID: preview.importSessionID,
+            conflictIDs: ["dup-1"],
+            duplicateStrategy: .skip,
+            sameNameStrategy: .skip,
+            applyToAllSimilarConflicts: true,
+            replaceConfirmed: false
+        )
+
+        let result = await ImportConflictBatchAction.apply(
+            repoPath: "/tmp/repo",
+            request: request,
+            preview: preview,
+            batcher: batcher,
+            errorMapper: CoreBridge()
+        )
+        let applyRequests = await batcher.applyRequests()
+
+        XCTAssertNil(result.report)
+        XCTAssertEqual(result.failure, .conflict(rawContext: "Select at least one conflict."))
+        XCTAssertEqual(applyRequests, [])
+    }
+
     @MainActor
     func testImportFolderFolderConflictPrecheckMapsDuplicateNameAndBlockedRows() async {
         let fixture = ImportFolderFolderConflictFixture.make()
@@ -392,12 +435,12 @@ private extension ImportConflictBatchApplyReportSnapshot {
 
 private extension UndoActionRecordSnapshot {
     static func importConflictBatchPendingImportConflictBatch() -> UndoActionRecordSnapshot {
-        testImportConflictBatchUndoAction()
+        importConflictBatchUndoAction()
     }
 }
 
 private extension UndoActionResultSnapshot {
     static func importConflictBatchExecutedImportConflictBatch() -> UndoActionResultSnapshot {
-        testExecutedImportConflictBatchUndoResult()
+        importConflictBatchUndoResult()
     }
 }

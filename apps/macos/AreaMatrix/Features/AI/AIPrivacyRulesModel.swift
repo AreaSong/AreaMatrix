@@ -290,8 +290,7 @@ final class AIPrivacyRulesModel: ObservableObject {
         if let syncError = error as? AIPrivacyRulesSettingsSyncError {
             return syncError.error
         }
-        if let coreError = error as? CoreError {
-            let mapping = await errorMapper.mapCoreError(coreError)
+        if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(message: message, recovery: mapping.suggestedAction, detail: mapping.userMessage)
         }
         return AISettingsError(message: message, recovery: "Retry", detail: error.localizedDescription)

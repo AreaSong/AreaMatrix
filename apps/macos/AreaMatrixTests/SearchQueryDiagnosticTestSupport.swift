@@ -1,4 +1,0 @@
-@testable import AreaMatrix
-
-typealias SmartListSmartListRunRequest = SmartListRunRequestRecord
-typealias SmartListRecordingSmartListRunner = SmartListOnlyRecordingSearchQuerying

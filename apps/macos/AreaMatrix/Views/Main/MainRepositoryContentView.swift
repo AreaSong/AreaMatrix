@@ -103,7 +103,8 @@ struct MainRepositoryContentView: View {
         batchDeleter: any CoreBatchDeleting = CoreBridge(),
         batchCategoryChanger: any CoreBatchCategoryChanging = CoreBridge(),
         batchRenamer: any CoreBatchRenaming = CoreBridge(),
-        systemCapabilityChecker: any OnboardingSystemCapabilityChecking = LocalOnboardingCapabilities(),
+        systemCapabilityChecker: any OnboardingSystemCapabilityChecking =
+            OnboardingPlatformServices.systemCapabilityChecker,
         syncConflictDetector: any CoreSyncConflictDetecting = CoreBridge(),
         iCloudConflictResolver: any ICloudConflictResolving = CoreBridge(),
         tagStore: any CoreTagCRUD = CoreBridge(),

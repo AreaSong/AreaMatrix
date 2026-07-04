@@ -63,6 +63,49 @@ func importConflictBatchIntegrationModel(
     )
 }
 
+actor ImportConflictBatcher: CoreImportConflictBatching {
+    private var previews: [ImportConflictBatchPreviewReportSnapshot]
+    private var recordedPreviewRequests: [ImportConflictPreviewRequest] = []
+    private var recordedApplyRequests: [ImportConflictApplyRequest] = []
+
+    init(previews: [ImportConflictBatchPreviewReportSnapshot]) {
+        self.previews = previews
+    }
+
+    func previewImportConflictBatch(
+        repoPath: String,
+        request: ImportConflictBatchPreviewRequestSnapshot
+    ) async throws -> ImportConflictBatchPreviewReportSnapshot {
+        recordedPreviewRequests.append(ImportConflictPreviewRequest(
+            repoPath: repoPath,
+            request: request
+        ))
+        guard !previews.isEmpty else { throw CoreError.Conflict(path: "missing import-conflict-batch preview") }
+        return previews.removeFirst().withImportConflictBatchRequest(request)
+    }
+
+    func applyImportConflictBatch(
+        repoPath: String,
+        request: ImportConflictBatchApplyRequestSnapshot,
+        previewToken: String
+    ) async throws -> ImportConflictBatchApplyReportSnapshot {
+        recordedApplyRequests.append(ImportConflictApplyRequest(
+            repoPath: repoPath,
+            request: request,
+            previewToken: previewToken
+        ))
+        return .importConflictBatchIntegrationReport(for: request)
+    }
+
+    func previewRequests() -> [ImportConflictPreviewRequest] {
+        recordedPreviewRequests
+    }
+
+    func applyRequests() -> [ImportConflictApplyRequest] {
+        recordedApplyRequests
+    }
+}
+
 func importConflictExpectedBatchRequests() -> [ImportBatchBatchImportRequest] {
     [
         ImportBatchBatchImportRequest(
@@ -102,21 +145,4 @@ func importConflictProgressItems() -> [ImportBatchProgressSnapshot.Item] {
             existingRelativePath: "finance/Invoice_2026Q1.pdf"
         )
     ]
-}
-
-typealias ImportConflictChangeLogRequest = ChangeLogListRequest
-typealias ImportConflictChangeLogLister = RecordingChangeLogLister
-
-extension ChangeLogEntrySnapshot {
-    static func importConflictFixture(filename: String) -> ChangeLogEntrySnapshot {
-        ChangeLogEntrySnapshot(
-            id: 27,
-            fileID: 117,
-            filename: filename,
-            category: "finance",
-            action: "imported",
-            detailJSON: #"{"source":"/tmp/\#(filename)","mode":"copy","category":"finance"}"#,
-            occurredAt: 1_700_000_000
-        )
-    }
 }

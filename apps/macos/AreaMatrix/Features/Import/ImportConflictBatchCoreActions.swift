@@ -28,7 +28,7 @@ enum ImportConflictBatchAction {
             request: request,
             isApplying: false
         ) else {
-            let failure = CoreError.Conflict(path: preview.applyBlockedReason ?? "Import conflict batch")
+            let failure = AppSemanticError.conflict(rawContext: preview.applyBlockedReason ?? "Import conflict batch")
             return await ImportConflictBatchApplyResult(
                 report: nil,
                 failure: errorMapper.mapError(failure)

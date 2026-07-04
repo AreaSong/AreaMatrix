@@ -3,126 +3,6 @@ import XCTest
 
 final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
     @MainActor
-    func testInterruptedCopySessionRoutesToImportResultAfterRepositoryOpen() async {
-        let opening = RepositoryOpeningResult.mainLoadingFixture(repoPath: importProgressRepoPath(), fileCount: 1)
-        let store = StaticImportBatchSessionStore(session: ImportBatchSessionSnapshot(
-            repoPath: importProgressRepoPath(),
-            storageMode: .copy,
-            completed: 1,
-            failed: 0,
-            total: 3,
-            currentPath: "finance/first.pdf",
-            items: [
-                ImportBatchProgressSnapshot.Item(
-                    sourcePath: "/tmp/source/first.pdf",
-                    targetPath: "finance/first.pdf",
-                    phase: .done,
-                    errorMessage: nil
-                ),
-                ImportBatchProgressSnapshot.Item(
-                    sourcePath: "/tmp/source/second.pdf",
-                    targetPath: "docs/second.pdf",
-                    phase: .copying,
-                    errorMessage: nil
-                ),
-                ImportBatchProgressSnapshot.Item(
-                    sourcePath: "/tmp/source/third.pdf",
-                    targetPath: "docs/third.pdf",
-                    phase: .pending,
-                    errorMessage: nil
-                )
-            ]
-        ))
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            startupRecoverer: StaticStartupRecoverer(),
-            importBatchSessionStore: store,
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
-
-        model.finishSuccessfulRepositoryOpen(opening)
-        guard let result = await waitForImportResultRoute(model) else { return }
-
-        XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 0, stopped 0, pending 2.")
-        XCTAssertEqual(result.items.map(\.status), [
-            ImportResultRouteState.ItemStatus.imported,
-            .pending,
-            .pending
-        ])
-        XCTAssertEqual(result.items.dropFirst().map(\.reason), [
-            "Import not completed before AreaMatrix quit",
-            "Import not completed before AreaMatrix quit"
-        ])
-        XCTAssertEqual(model.toastMessage, "检测到上次未完成的批量导入。")
-    }
-
-    @MainActor
-    func testInterruptedCopySessionIsClearedWhenUserAcknowledgesResults() async {
-        let opening = RepositoryOpeningResult.mainLoadingFixture(repoPath: importProgressRepoPath(), fileCount: 1)
-        let store = StaticImportBatchSessionStore(session: ImportBatchSessionSnapshot(
-            repoPath: importProgressRepoPath(),
-            storageMode: .copy,
-            completed: 1,
-            failed: 0,
-            total: 2,
-            currentPath: "finance/first.pdf",
-            items: [
-                ImportBatchProgressSnapshot.Item(
-                    sourcePath: "/tmp/source/first.pdf",
-                    targetPath: "finance/first.pdf",
-                    phase: .done,
-                    errorMessage: nil
-                ),
-                ImportBatchProgressSnapshot.Item(
-                    sourcePath: "/tmp/source/second.pdf",
-                    targetPath: "docs/second.pdf",
-                    phase: .pending,
-                    errorMessage: nil
-                )
-            ]
-        ))
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            startupRecoverer: StaticStartupRecoverer(),
-            importBatchSessionStore: store,
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
-
-        model.finishSuccessfulRepositoryOpen(opening)
-        guard await waitForImportResultRoute(model) != nil else { return }
-        model.finishImportResult()
-        for _ in 0 ..< 20 {
-            await Task.yield()
-        }
-
-        let clearedRepoPaths = await store.clearedRepoPaths()
-        XCTAssertEqual(clearedRepoPaths, [importProgressRepoPath()])
-        XCTAssertEqual(model.route, OnboardingModel.Route.mainList(opening))
-    }
-
-    @MainActor
-    func testCorruptedOrMissingInterruptedCopySessionDoesNotBlockMainRoute() async {
-        let opening = RepositoryOpeningResult.mainLoadingFixture(repoPath: importProgressRepoPath(), fileCount: 1)
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            startupRecoverer: StaticStartupRecoverer(),
-            importBatchSessionStore: StaticImportBatchSessionStore(session: nil),
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
-
-        model.finishSuccessfulRepositoryOpen(opening)
-        for _ in 0 ..< 20 {
-            await Task.yield()
-        }
-
-        XCTAssertEqual(model.route, OnboardingModel.Route.mainList(opening))
-        XCTAssertNil(model.toastMessage)
-    }
-
-    @MainActor
     func testImportProgressImportMoveFileCoreDiagnosticsAndStopActionsStayOnSafeUiPaths() async {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
         let snapshot = DiagnosticsSnapshotSnapshot(
@@ -143,12 +23,12 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         model.route = .mainList(opening)
         model.beginImportEntryProgress(
             currentPath: "docs/moved.pdf",
-            retryContext: ImportProgressTestFixtures.moveRetryContext(sourcePath: importProgressSourcePath())
+            retryContext: ImportProgressFixtures.moveRetryContext(sourcePath: importProgressSourcePath())
         )
         model.failImportEntry(
-            progress: ImportProgressTestFixtures.moveFailedProgress,
+            progress: ImportProgressFixtures.moveFailedProgress,
             mapping: CoreErrorMappingSnapshot.importProgressFatalCopyError,
-            retryContext: ImportProgressTestFixtures.moveRetryContext(sourcePath: importProgressSourcePath()),
+            retryContext: ImportProgressFixtures.moveRetryContext(sourcePath: importProgressSourcePath()),
             recoveryCheck: .retryAllowed(nil)
         )
         model.requestImportProgressDiagnosticsPrivacyConfirmation()
@@ -184,8 +64,8 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
             importer: importer,
             errorMapper: RecordingCoreErrorMapper.importSingleFile()
         )
-        let firstURL = URL(fileURLWithPath: "/tmp/first.pdf")
-        let secondURL = URL(fileURLWithPath: "/tmp/second.pdf")
+        let firstURL = importProgressBatchSourceURL("first.pdf")
+        let secondURL = importProgressBatchSourceURL("second.pdf")
 
         importModel.applyPreviewRows(
             [Self.readyRow(firstURL, "first.pdf"), Self.readyRow(secondURL, "second.pdf")],
@@ -223,8 +103,8 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         )
 
         model.route = .mainList(opening)
-        model.updateImportEntryProgress(ImportProgressTestFixtures.partialResultProgress)
-        model.showImportEntryResults(ImportProgressTestFixtures.partialResultProgress)
+        model.updateImportEntryProgress(ImportProgressFixtures.partialResultProgress)
+        model.showImportEntryResults(ImportProgressFixtures.partialResultProgress)
 
         guard case let .importResult(result) = model.route else {
             return XCTFail("Expected import-result import result route")
@@ -250,7 +130,10 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         }
         XCTAssertEqual(
             outcome?.fatalRetryContext,
-            ImportProgressTestFixtures.copyRetryContext(sourcePath: "/tmp/second.pdf", overrideFilename: "second.pdf")
+            ImportProgressFixtures.copyRetryContext(
+                sourcePath: importProgressBatchSourcePath("second.pdf"),
+                overrideFilename: "second.pdf"
+            )
         )
         XCTAssertFalse(progress.canRetryCurrentItem)
 
@@ -311,6 +194,8 @@ private extension OnboardingModel {
 }
 
 extension ImportProgressCopyQueueRecoveryTests {
+    static let fatalCopyRetryFilenames = ["first.pdf", "second.pdf", "third.pdf"]
+
     @MainActor
     static func fatalCopyRetryScenario() -> ImportProgressFatalCopyRetryScenario {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
@@ -351,15 +236,11 @@ extension ImportProgressCopyQueueRecoveryTests {
     }
 
     static var fatalCopyRetryURLs: [URL] {
-        [
-            URL(fileURLWithPath: "/tmp/first.pdf"),
-            URL(fileURLWithPath: "/tmp/second.pdf"),
-            URL(fileURLWithPath: "/tmp/third.pdf")
-        ]
+        fatalCopyRetryFilenames.map(importProgressBatchSourceURL)
     }
 
     static func fatalCopyRetryRows() -> [ImportBatchPreviewRow] {
-        zip(fatalCopyRetryURLs, ["first.pdf", "second.pdf", "third.pdf"]).map(readyRow)
+        zip(fatalCopyRetryURLs, fatalCopyRetryFilenames).map(readyRow)
     }
 
     @MainActor
@@ -375,7 +256,7 @@ extension ImportProgressCopyQueueRecoveryTests {
                 duplicateStrategy: .ask
             )
         ])
-        XCTAssertEqual(batchRequests.map(\.overrideFilename), ["first.pdf", "second.pdf", "third.pdf"])
+        XCTAssertEqual(batchRequests.map(\.overrideFilename), fatalCopyRetryFilenames)
         XCTAssertEqual(scenario.model.route, .mainEmpty(scenario.opening))
         XCTAssertEqual(scenario.model.toastMessage, "已导入：third.pdf")
     }

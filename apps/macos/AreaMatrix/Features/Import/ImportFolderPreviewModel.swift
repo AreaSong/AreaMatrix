@@ -32,7 +32,7 @@ final class ImportFolderPreviewModel: ObservableObject {
         importer: any CoreBatchCopyImporting,
         errorMapper: any CoreErrorMapping,
         conflictPrechecker: any ImportFolderConflictPrechecking = CoreImportFolderConflictPrechecker(),
-        scanner: any ImportFolderScanning = LocalImportFolderScanner(),
+        scanner: any ImportFolderScanning = ImportPlatformServices.folderScanner,
         placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader()
     ) {
         self.predictor = predictor
@@ -332,19 +332,19 @@ final class ImportFolderPreviewModel: ObservableObject {
     }
 
     private static func previewMessage(for error: Error) -> String {
-        guard let coreError = error as? CoreError else {
+        guard let context = CoreErrorRawContextSnapshot(error) else {
             return "无法完成分类预览"
         }
 
-        switch coreError {
-        case let .Config(reason):
-            return "分类规则无效：\(reason)"
-        case let .Classify(reason):
-            return "无法预览分类：\(reason)"
-        case let .PermissionDenied(path):
-            return "无法读取分类预览路径：\(path)"
-        case let .Io(message):
-            return "分类预览文件读取失败：\(message)"
+        switch context.kind {
+        case .config:
+            return "分类规则无效：\(context.rawContext)"
+        case .classify:
+            return "无法预览分类：\(context.rawContext)"
+        case .permissionDenied:
+            return "无法读取分类预览路径：\(context.rawContext)"
+        case .io:
+            return "分类预览文件读取失败：\(context.rawContext)"
         default:
             return "无法完成分类预览"
         }

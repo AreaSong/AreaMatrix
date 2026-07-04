@@ -55,7 +55,7 @@ extension OnboardingModel {
     }
 
     private static func removedRelativePath(from error: Error, repoPath: String) -> String? {
-        guard case let .FileNotFound(path) = error as? CoreError else { return nil }
+        guard let path = CoreErrorRawContextSnapshot.fileNotFoundPath(from: error) else { return nil }
 
         let trimmed = path.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !trimmed.hasSuffix("/") else { return nil }

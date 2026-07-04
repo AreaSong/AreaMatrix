@@ -19,7 +19,7 @@ enum ImportSingleFileFilenameValidator {
 
     static func validate(_ filename: String) throws {
         if validationMessage(for: filename) != nil {
-            throw CoreError.InvalidPath(path: filename)
+            throw AppSemanticError.invalidPath(rawContext: filename)
         }
     }
 }
@@ -30,45 +30,13 @@ struct LocalICloudPlaceholderDownloader: ICloudPlaceholderDownloading {
     }
 }
 
+protocol SourcePreflightInspecting: Sendable {
+    func inspect(sourceURL: URL) throws -> SourcePreflightSnapshot
+}
+
 struct SourcePreflightSnapshot {
     var sizeBytes: Int64
     var modifiedAt: Int64?
-
-    static func inspect(sourceURL: URL) throws -> SourcePreflightSnapshot {
-        if ImportSingleFilePreflightTarget.isICloudPlaceholder(sourceURL) {
-            throw ImportSingleFilePreflightError(
-                .iCloudPlaceholder(path: sourceURL.path),
-                sourceSizeBytes: nil
-            )
-        }
-        guard FileManager.default.fileExists(atPath: sourceURL.path) else {
-            throw ImportSingleFilePreflightError(
-                .sourceUnavailable("来源文件已消失，请重试 preview"),
-                sourceSizeBytes: nil
-            )
-        }
-        guard FileManager.default.isReadableFile(atPath: sourceURL.path) else {
-            throw ImportSingleFilePreflightError(
-                .sourceUnavailable("来源文件不可读，请检查权限"),
-                sourceSizeBytes: nil
-            )
-        }
-        let values = try sourceURL.resourceValues(forKeys: [
-            .fileSizeKey,
-            .isRegularFileKey,
-            .contentModificationDateKey
-        ])
-        guard values.isRegularFile == true else {
-            throw ImportSingleFilePreflightError(
-                .sourceUnavailable("只支持单文件导入"),
-                sourceSizeBytes: nil
-            )
-        }
-        return SourcePreflightSnapshot(
-            sizeBytes: Int64(values.fileSize ?? 0),
-            modifiedAt: values.contentModificationDate.map { Int64($0.timeIntervalSince1970) }
-        )
-    }
 }
 
 struct ImportSingleFilePreflightError: Error {
@@ -86,17 +54,5 @@ enum ImportSingleFilePreflightTarget {
         let cleanCategory = category.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanName = filename.trimmingCharacters(in: .whitespacesAndNewlines)
         return "\(cleanCategory.isEmpty ? "inbox" : cleanCategory)/\(cleanName.isEmpty ? "untitled" : cleanName)"
-    }
-
-    static func isICloudPlaceholder(_ url: URL) -> Bool {
-        if url.path.hasSuffix(".icloud") || url.path.contains(".icloud/") {
-            return true
-        }
-        guard let values = try? url.resourceValues(forKeys: [
-            .isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey
-        ]) else {
-            return false
-        }
-        return values.isUbiquitousItem == true && values.ubiquitousItemDownloadingStatus == .notDownloaded
     }
 }

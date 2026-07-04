@@ -109,7 +109,10 @@ struct ImportEntryRequest: Equatable, Identifiable {
 }
 
 extension ImportEntryKind {
-    static func resolved(for urls: [URL]) -> ImportEntryKind {
+    static func resolved(
+        for urls: [URL],
+        isDirectory: (URL) -> Bool = ImportPlatformServices.isDirectory
+    ) -> ImportEntryKind {
         if urls.contains(where: isDirectory) {
             return .folder
         }
@@ -130,11 +133,6 @@ extension ImportEntryKind {
         case let .multipleItems(count):
             "Drop \(count) files to import"
         }
-    }
-
-    private static func isDirectory(_ url: URL) -> Bool {
-        var isDirectory: ObjCBool = false
-        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
     }
 }
 

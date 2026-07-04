@@ -32,7 +32,7 @@ final class ImportProgressIndexPageFeatureTests: XCTestCase {
     @MainActor
     func testImportProgressImportIndexFileCoreIndexFailureRequiresRecoveryCheckBeforeRetry() async {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
-        let context = ImportProgressTestFixtures.indexRetryContext(sourcePath: "/tmp/external.pdf")
+        let context = ImportProgressFixtures.indexRetryContext(sourcePath: importProgressIndexSourcePath())
         let recoverer = RecordingCoreStartupRecoverer(result: .success(RecoveryReportSnapshot(
             cleanedStagingFiles: 0,
             revertedStagingDbRows: 0,
@@ -51,7 +51,7 @@ final class ImportProgressIndexPageFeatureTests: XCTestCase {
             retryContext: context
         )
         model.failImportEntry(
-            progress: ImportProgressTestFixtures.indexFailedProgress,
+            progress: ImportProgressFixtures.indexFailedProgress,
             mapping: CoreErrorMappingSnapshot.importProgressFatalImportError(kind: .fileNotFound)
         )
 
@@ -91,12 +91,12 @@ final class ImportProgressIndexPageFeatureTests: XCTestCase {
         model.route = .mainList(opening)
         model.beginImportEntryProgress(
             currentPath: "docs/indexed.pdf",
-            retryContext: ImportProgressTestFixtures.indexRetryContext(sourcePath: "/tmp/external.pdf")
+            retryContext: ImportProgressFixtures.indexRetryContext(sourcePath: importProgressIndexSourcePath())
         )
         model.failImportEntry(
-            progress: ImportProgressTestFixtures.indexFailedProgress,
+            progress: ImportProgressFixtures.indexFailedProgress,
             mapping: CoreErrorMappingSnapshot.importProgressFatalImportError(kind: .fileNotFound),
-            retryContext: ImportProgressTestFixtures.indexRetryContext(sourcePath: "/tmp/external.pdf"),
+            retryContext: ImportProgressFixtures.indexRetryContext(sourcePath: importProgressIndexSourcePath()),
             recoveryCheck: .retryAllowed(nil)
         )
 

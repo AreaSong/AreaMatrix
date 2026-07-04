@@ -33,7 +33,7 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
     @MainActor
     func testTagSuggestionsTagSuggestionsCoreCommandPalettePresentationTargetsSelectedFile() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 228, currentName: "command.pdf")
-        let model = MainFileListModel.tagSuggestionsFixture(detail: detail)
+        let model = MainFileListModel.makeTagSuggestionsModel(detail: detail)
 
         await model.selectFiles([detail.id])
         model.presentSelectedFileTagSuggestions(source: .commandPalette)
@@ -61,7 +61,7 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
                 listResults: [.success(.tagAddFixture(fileID: detail.id, values: [scenario.2]))],
                 suggestionResults: [scenario.3]
             )
-            let model = MainFileListModel.tagSuggestionsFixture(detail: detail, tagStore: tagStore)
+            let model = MainFileListModel.makeTagSuggestionsModel(detail: detail, tagStore: tagStore)
 
             await model.selectFiles([detail.id])
             await model.loadSelectedFileTagSuggestions()
@@ -194,7 +194,7 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
             suggestionResults: [.success(report)],
             applySuggestionResults: [.success(applyReport), .failure(CoreError.Db(message: "tag write failed"))]
         )
-        let model = MainFileListModel.tagSuggestionsFixture(detail: detail, tagStore: tagStore)
+        let model = MainFileListModel.makeTagSuggestionsModel(detail: detail, tagStore: tagStore)
 
         await model.selectFiles([detail.id])
         await model.loadSelectedFileTagSuggestions()
@@ -219,5 +219,53 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["tax-review"])
         XCTAssertNotNil(model.detailTagSuggestionState.editSession)
         XCTAssertNotNil(model.detailTagEditorState.failure)
+    }
+
+    @MainActor
+    func testTagSuggestionsTagSuggestionsCorePartialApplyFailureCanRetryFailedSuggestionOnly() async {
+        let detail = FileEntrySnapshot.detailMetaFixture(id: 231, currentName: "invoice_2026.pdf")
+        let report = TagSuggestionReportSnapshot.tagSuggestionsFixture(fileID: detail.id)
+        let partialFailure = TagSuggestionApplyReportSnapshot.tagSuggestionsPartialFailure(fileID: detail.id)
+        let retrySuccess = TagSuggestionApplyReportSnapshot.tagSuggestionsApplied(
+            fileID: detail.id,
+            suggestionID: "tagSuggestions-tax",
+            slug: "tax-review",
+            displayName: "Tax Review"
+        )
+        let tagStore = DetailTagRecordingStore(
+            suggestionResults: [.success(report)],
+            applySuggestionResults: [.success(partialFailure), .success(retrySuccess)]
+        )
+        let model = MainFileListModel.makeTagSuggestionsModel(detail: detail, tagStore: tagStore)
+
+        await model.selectFiles([detail.id])
+        await model.loadSelectedFileTagSuggestions()
+        model.toggleSelectedFileTagSuggestion("tagSuggestions-tax")
+        model.startEditingSelectedFileTagSuggestions()
+        model.updateSelectedFileTagSuggestionSlug(suggestionID: "tagSuggestions-tax", slug: "tax-review")
+        _ = await model.applyEditedSelectedFileTagSuggestions()
+
+        XCTAssertEqual(model.detailTagSuggestionState.appliedReport?.failedCount, 1)
+        XCTAssertEqual(model.detailTagSuggestionState.editSession?.drafts.map(\.status.label), ["Applied", "Failed"])
+        XCTAssertEqual(DetailTagSuggestionAction.retryFailedItems(in: model.detailTagSuggestionState), [
+            ApplyTagSuggestionItemSnapshot(
+                suggestionID: "tagSuggestions-tax",
+                slug: "tax-review",
+                displayName: "Tax"
+            )
+        ])
+
+        _ = await model.retryFailedSelectedFileTagSuggestions()
+        let applyRequests = await tagStore.applySuggestionRequests()
+
+        XCTAssertEqual(applyRequests.last?.request.suggestions, [
+            ApplyTagSuggestionItemSnapshot(
+                suggestionID: "tagSuggestions-tax",
+                slug: "tax-review",
+                displayName: "Tax"
+            )
+        ])
+        XCTAssertEqual(model.detailTagSuggestionState.appliedReport?.failedCount, 0)
+        XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["tax-review"])
     }
 }

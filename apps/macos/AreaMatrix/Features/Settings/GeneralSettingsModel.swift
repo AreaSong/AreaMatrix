@@ -31,9 +31,12 @@ final class GeneralSettingsModel: ObservableObject {
         repoPath: String,
         loader: any CoreConfigurationLoading = CoreBridge(),
         updater: any CoreConfigurationUpdating = CoreBridge(),
-        rootOverviewInspector: any RootOverviewFileInspecting = LocalRootOverviewFileInspector(),
-        rootOverviewRevealer: any RepositoryFileRevealing = NSWorkspaceRepositoryFileRevealer(),
-        ignoreRulesManager: any RepositoryIgnoreRulesManaging = NSWorkspaceRepositoryIgnoreRulesManager(),
+        rootOverviewInspector: any RootOverviewFileInspecting =
+            GeneralSettingsPlatformServices.rootOverviewInspector,
+        rootOverviewRevealer: any RepositoryFileRevealing =
+            GeneralSettingsPlatformServices.rootOverviewRevealer,
+        ignoreRulesManager: any RepositoryIgnoreRulesManaging =
+            GeneralSettingsPlatformServices.ignoreRulesManager,
         errorMapper: any CoreErrorMapping = CoreBridge()
     ) {
         self.repoPath = repoPath

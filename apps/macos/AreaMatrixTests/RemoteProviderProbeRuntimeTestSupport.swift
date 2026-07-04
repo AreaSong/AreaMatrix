@@ -110,35 +110,3 @@ func environmentString(_ key: String) -> String? {
     guard let pointer = getenv(key) else { return nil }
     return String(cString: pointer)
 }
-
-actor AIPrivacyRulesFailingBridge: CoreAIPrivacyRulesManaging {
-    func loadAIPrivacyRules(repoPath _: String) async throws -> AiPrivacyRulesSnapshot {
-        throw CoreError.Db(message: "privacy rules read failed")
-    }
-
-    func updateAIPrivacyRules(
-        repoPath _: String,
-        request _: AiPrivacyRulesUpdateRequest
-    ) async throws -> AiPrivacyRulesSnapshot {
-        throw CoreError.Db(message: "privacy rules write failed")
-    }
-}
-
-extension AIClassificationSuggestionState {
-    static func aiCategorySuggestionPrivacySkipped(fileID: Int64) -> AIClassificationSuggestionState {
-        AIClassificationSuggestionState(
-            fileID: fileID,
-            status: .skipped,
-            currentCategory: "inbox",
-            suggestedCategory: nil,
-            confidence: 0,
-            reason: nil,
-            route: nil,
-            usedContext: [],
-            skippedReason: .privacyRule,
-            privacyRuleID: "rule-confidential",
-            callLogID: 305,
-            requiresUserConfirmation: true
-        )
-    }
-}
