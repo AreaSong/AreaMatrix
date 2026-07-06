@@ -87,17 +87,13 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
         guard let row = tree.sidebarRow(id: "docs/contracts") else {
             return XCTFail("expected docs/contracts sidebar row")
         }
-        let filters = SearchFilterStateSnapshot(
+        let filters = SearchFilterStateSnapshot.testFixture(
             category: "docs",
             fileKind: "pdf",
             tags: ["finance"],
             tagMatchMode: .all,
-            importedAfter: nil,
-            importedBefore: nil,
             modifiedAfter: 1_700_000_000,
-            modifiedBefore: nil,
-            storageMode: .copied,
-            includeDeleted: false
+            storageMode: .copied
         )
         let searcher = MainListRecordingSearchQuerying(results: [.success(.searchFiltersSearchFixture(query: "合同"))])
         let facetLoader = MainListRecordingSearchFiltering(results: [.success(.searchFiltersFixture(active: 4))])
@@ -137,7 +133,6 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    // swiftlint:disable:next function_body_length
     func testSearchFiltersSearchFiltersUserControlsProduceNonEmptySearchFiltersCoreRequest() async {
         let tree = RepositoryTreeNodeSnapshot.searchFiltersFixtureTree()
         guard let row = tree.sidebarRow(id: "docs/contracts") else {
@@ -153,17 +148,9 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
                     field: .modified,
                     in: SearchFilterEditing.settingSingleTag(
                         "finance",
-                        in: SearchFilterStateSnapshot(
+                        in: SearchFilterStateSnapshot.testFixture(
                             category: SearchFilterEditing.optionalFacetValue("docs"),
-                            fileKind: SearchFilterEditing.optionalFacetValue("pdf"),
-                            tags: [],
-                            tagMatchMode: .any,
-                            importedAfter: nil,
-                            importedBefore: nil,
-                            modifiedAfter: nil,
-                            modifiedBefore: nil,
-                            storageMode: nil,
-                            includeDeleted: false
+                            fileKind: SearchFilterEditing.optionalFacetValue("pdf")
                         )
                     ),
                     now: now

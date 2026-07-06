@@ -149,7 +149,7 @@ final class UndoToastActionLogTests: XCTestCase {
 
 private extension UndoActionRecordSnapshot {
     static func undoToastHistoryFixture() -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
+        UndoActionRecordSnapshot.testFixture(
             actionID: "undo-history-1",
             kind: "batch_add_tags",
             summary: #"Added tag "finance" to 3 files."#,

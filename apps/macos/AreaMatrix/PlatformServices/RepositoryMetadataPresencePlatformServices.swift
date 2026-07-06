@@ -2,11 +2,11 @@ import Foundation
 
 enum RepositorySettingsPlatformServices {
     static var appVersionReader: any AppVersionReading {
-        BundleAppVersionReader()
+        AppPlatformServices.appVersionReader
     }
 
     static var metadataReader: any ExistingRepositoryMetadataReading {
-        SQLiteExistingRepositoryMetadataReader()
+        AppPlatformServices.existingRepositoryMetadataReader
     }
 
     static var metadataPresenceChecker: any RepoMetadataPresenceChecking {
@@ -26,19 +26,30 @@ enum RepositorySettingsPlatformServices {
     }
 
     static var accessibilityAnnouncer: any AccessibilityAnnouncing {
-        VoiceOverAccessibilityAnnouncer()
+        AppPlatformServices.accessibilityAnnouncer
     }
 }
 
 struct FileSystemRepoMetadataPresenceChecker: RepoMetadataPresenceChecking {
     func metadataPresence(repoPath: String) -> RepoMetadataPresence {
-        let metadataURL = URL(fileURLWithPath: repoPath, isDirectory: true)
-            .appendingPathComponent(".areamatrix", isDirectory: true)
+        let metadataURL = RepositoryMetadataPath.metadataURL(repoPath: repoPath)
         let databaseURL = metadataURL.appendingPathComponent("index.db", isDirectory: false)
 
         return RepoMetadataPresence(
             hasMetadataDirectory: FileManager.default.fileExists(atPath: metadataURL.path),
             hasMetadataDatabase: FileManager.default.fileExists(atPath: databaseURL.path)
         )
+    }
+}
+
+enum RepositoryMetadataPath {
+    static func metadataURL(repoPath: String) -> URL {
+        URL(fileURLWithPath: repoPath, isDirectory: true)
+            .appendingPathComponent(".areamatrix", isDirectory: true)
+    }
+
+    static func logsURL(repoPath: String) -> URL {
+        metadataURL(repoPath: repoPath)
+            .appendingPathComponent("logs", isDirectory: true)
     }
 }

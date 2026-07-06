@@ -347,7 +347,7 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
 
 private extension CoreErrorMappingSnapshot {
     static func errorSmokePermissionDeniedFixture(rawContext: String) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .permissionDenied,
             userMessage: "无访问权限",
             severity: .high,
@@ -358,7 +358,7 @@ private extension CoreErrorMappingSnapshot {
     }
 
     static func errorSmokeConfigFixture(rawContext: String) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .config,
             userMessage: "资料库 schema 不兼容",
             severity: .critical,

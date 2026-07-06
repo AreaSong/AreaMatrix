@@ -172,42 +172,27 @@ extension ChangeLogEntrySnapshot {
 
 extension SearchResultPageSnapshot {
     static func tagFilterSearchPage(filters: SearchFilterStateSnapshot) -> SearchResultPageSnapshot {
-        SearchResultPageSnapshot(
+        .testFixture(
             query: "",
-            totalCount: filters.tags.isEmpty ? 0 : 1,
-            results: [],
-            diagnostics: [],
-            indexStatus: .ready
+            totalCount: filters.tags.isEmpty ? 0 : 1
         )
     }
 }
 
 extension SearchFacetsSnapshot {
     static func tagFilterFacets() -> SearchFacetsSnapshot {
-        SearchFacetsSnapshot(
-            query: "",
-            totalCount: 42,
-            categories: [],
-            fileKinds: [],
-            tags: [
-                SearchFacetCountSnapshot(
+        SearchFacetsSnapshot.testFixture(totalCount: 42) {
+            $0.tags = [
+                .testFixture(
                     value: "finance",
                     label: "Finance",
                     count: 24,
-                    selected: true,
-                    disabled: false
+                    selected: true
                 ),
-                SearchFacetCountSnapshot(value: "tax", label: "Tax", count: 8, selected: true, disabled: false),
-                SearchFacetCountSnapshot(value: "archive", label: "Archive", count: 0, selected: false, disabled: true)
-            ],
-            storageModes: [],
-            dateBounds: SearchDateFacetBoundsSnapshot(
-                oldestImportedAt: nil,
-                newestImportedAt: nil,
-                oldestModifiedAt: nil,
-                newestModifiedAt: nil
-            ),
-            activeFilterCount: 1
-        )
+                .testFixture(value: "tax", label: "Tax", count: 8, selected: true),
+                .testFixture(value: "archive", label: "Archive", disabled: true)
+            ]
+            $0.activeFilterCount = 1
+        }
     }
 }

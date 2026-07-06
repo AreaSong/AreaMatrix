@@ -395,7 +395,7 @@ final class MainEmptyCommandPaletteRedoTests: XCTestCase {
             failure: RedoLatestEntryPoint.noRedoMapping
         )
 
-        XCTAssertEqual(state, .loaded(UndoHistorySnapshot(undoActions: [], redoActions: [])))
+        XCTAssertEqual(state, .loaded(.empty))
         XCTAssertEqual(request.source, .viewHistory)
         XCTAssertEqual(request.failureMapping?.rawContext, "redo-action-log redo-action-log-core redo-action-log")
         let redoRequests = await redoStore.redoRequests()

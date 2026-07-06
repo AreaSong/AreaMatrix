@@ -82,26 +82,24 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         let summary = outcome?.progressSnapshot(currentPath: "finance/Invoice_2026Q1.pdf")
             .withItems(model.progressItems())
 
-        XCTAssertEqual(summary, ImportBatchProgressSnapshot(
+        XCTAssertEqual(summary, importBatchProgress(
             completed: 0,
             failed: 1,
             total: 2,
             remaining: 0,
             currentPath: "finance/Invoice_2026Q1.pdf",
-            skipped: 0,
             pending: 1,
             items: [
-                ImportBatchProgressSnapshot.Item(
+                importBatchProgressItem(
                     sourcePath: invoiceURL.path,
                     targetPath: "finance/Invoice_2026Q1.pdf",
                     phase: .failed,
                     errorMessage: "无访问权限"
                 ),
-                ImportBatchProgressSnapshot.Item(
+                importBatchProgressItem(
                     sourcePath: cloudURL.path,
                     targetPath: cloudURL.lastPathComponent,
-                    phase: .pending,
-                    errorMessage: nil
+                    phase: .pending
                 )
             ]
         ))

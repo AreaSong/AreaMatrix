@@ -146,12 +146,11 @@ private extension RepositoryOpeningResult {
     ) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
             config: .generalSettingsFixture(repoPath: repoPath, defaultMode: defaultMode),
-            tree: RepositoryTreeNodeSnapshot(
-                slug: "__root__",
+            tree: .testRoot(
                 displayName: "资料库",
                 fileCount: 1,
                 children: [
-                    RepositoryTreeNodeSnapshot(slug: "docs", displayName: "docs", fileCount: 1, children: [])
+                    .testCategory("docs", fileCount: 1)
                 ]
             ),
             currentCategoryFiles: [
@@ -163,20 +162,17 @@ private extension RepositoryOpeningResult {
 
 private extension FileEntrySnapshot {
     static func generalSettingsIntegrationFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: "docs/\(currentName)",
-            originalName: currentName,
             currentName: currentName,
-            category: "docs",
-            sizeBytes: 12,
-            hashSha256: "hash-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1,
-            updatedAt: 1
-        )
+            category: "docs"
+        ) {
+            $0.sizeBytes = 12
+            $0.hashSha256 = "hash-\(id)"
+            $0.importedAt = 1
+            $0.updatedAt = 1
+        }
     }
 }
 

@@ -273,6 +273,42 @@ fn recovery_scenarios_manual_evidence_schema_blocks_release_without_claiming_pas
 }
 
 #[test]
+fn recovery_scenarios_lock_m02_icloud_placeholder_to_real_environment() {
+    assert_contains(SCENARIOS, "manual_evidence_id: M-02");
+    assert_contains(SCENARIOS, "manual_evidence_status: blocked");
+    assert_contains(
+        SCENARIOS,
+        "blocked_reason: no iCloud placeholder environment available",
+    );
+    assert_contains(SCENARIOS, "保留 release gate blocked");
+    assert_contains(SCENARIOS, "自动化 iCloud placeholder 覆盖");
+    assert_contains(SCENARIOS, "合成 `.icloud` marker");
+    assert_contains(SCENARIOS, "local QA");
+    assert_contains(
+        SCENARIOS,
+        "非 iCloud Drive 路径不能替代真实 iCloud 手工冒烟",
+    );
+    assert_contains(SCENARIOS, "environment.icloud_drive: enabled");
+    assert_contains(
+        SCENARIOS,
+        "environment.icloud_account: signed in on the test Mac",
+    );
+    assert_contains(SCENARIOS, "source_placeholder_status.before");
+    assert_contains(SCENARIOS, "source_placeholder_status.after");
+    assert_contains(SCENARIOS, "source_placeholder_marker");
+    assert_contains(SCENARIOS, "ui_action: Download & retry");
+    assert_contains(SCENARIOS, "retry_result: pass | fail");
+    assert_contains(
+        SCENARIOS,
+        "placeholder marker、原文件和 conflicted copy 不被删除、不被静默合并、不被覆盖",
+    );
+    assert_contains(
+        SCENARIOS,
+        "result: pass` 只有在真实 iCloud Drive placeholder 环境完成下载与 retry 后才能填写",
+    );
+}
+
+#[test]
 fn recovery_scenarios_rollback_scope_stays_inside_task_expected_paths() {
     assert_contains(
         SCENARIOS,

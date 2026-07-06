@@ -69,6 +69,31 @@ Swift 调用 Rust Core 的手写入口是 `Bridge/`。
 
 受控例外必须明确：例如短期存在的 SQLite metadata reader，应记录原因、风险和退出条件。
 
+## 默认 Core 服务装配
+
+macOS 默认 Core 服务由 `App/AppCoreServices.swift` 集中装配。Feature model 或 view
+通过协议注入接收默认能力，测试代码继续显式注入 test double。
+
+- 新增低风险 Core 默认能力优先进入 `AppCoreServices`，避免各 feature 自行构造
+  `CoreBridge()`。
+- 初始化、导入、DB 修复、同步冲突、iCloud conflict、AI 隐私 / 远程 provider
+  等高风险专项路径允许受控保留直接 `CoreBridge()` 默认构造。
+- 保留的直接 `CoreBridge()` 默认构造必须由治理测试登记；登记项变化时说明风险归属和收口条件。
+- 不为了集中化把高风险写操作伪装成通用服务；先保持风险边界可见，再按专项收口。
+
+### 受控例外治理地图
+
+`MacOSDefaultCoreServicesGovernanceTests` 是直接 `CoreBridge()` 默认构造的代码级
+inventory。保留项必须落入下列专项之一，并在收口时补充对应验证。
+
+| 专项 | 入口文件 | 保留原因 | 收口条件 | 最小验证 |
+|---|---|---|---|---|
+| App shell 仓库生命周期 | `App/AppShellModel.swift` | 初始化、真实导入、startup recovery、外部变化同步会触碰用户文件、`.areamatrix/` 或 DB / FS 一致性 | 读校验、写初始化、导入、恢复、外部同步的默认能力分开装配；写路径仍能清楚暴露风险边界 | `AreaMatrixShellTests`、`AreaMatrixShellValidatePathTests`、`InitializingStepIntegrationTests`、相关 file-safety 测试 |
+| Import 执行与预检 | `Features/Import/ImportEntrySheetView.swift`、`ImportBatchCopyImportModel.swift` | copy / move / index、duplicate / name conflict、iCloud placeholder 与导入 session 可能影响源文件、最终目录和 DB | 只读预览能力可集中；写入导入、冲突批处理、duplicate 预检必须由导入专项验证覆盖后再收口 | Import page / integration tests、duplicate / iCloud / storage-mode tests、file-safety acceptance evidence |
+| DB repair 与 recovery | `Features/Onboarding/DatabaseRepairConfirmModel.swift`、`DatabaseRepairConfirmView.swift` | metadata repair、startup recovery 和 diagnostics 关系到 DB、`.areamatrix/` 与恢复语义 | repair、recovery、diagnostics 的默认能力分别声明；收口不改变确认、重试、诊断隐私门槛 | `DatabaseRepairConfirmPageFeatureTests`、startup recovery tests、DB / recovery file-safety evidence |
+| AI 隐私与远程 provider | `Features/AI/AIPrivacyRulesModel.swift`、`RemoteProviderConfigModel.swift`、`RemoteProviderConfigState.swift` | 隐私规则写入、provider 启停、credential lifecycle 和远程能力涉及用户数据离开本机的边界 | 只读状态读取可集中；隐私规则写入、provider 修改、credential 操作保持单独边界和同意路径 | `AIPrivacyRulesPageIntegrationVerifyTests`、`RemoteProviderConfigFeatureTests`、credential lifecycle tests |
+| Sync / iCloud conflict | `Features/SyncConflicts/ICloudConflictMinimalValidation.swift`、`SyncConflictReviewModel.swift` | conflict detect / preview / resolve / apply 可能影响外部变化回流、iCloud 副本和用户文件选择 | list / read-only 状态可集中；preview、resolve、apply 继续分离，并保留 replace / confirmation 防线 | SyncConflict / ICloudConflict page tests、replace confirmation tests、file-action integration tests |
+
 ## Platform Services 边界
 
 以下能力属于平台服务，不应藏入 SwiftUI View：

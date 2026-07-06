@@ -24,9 +24,9 @@ final class AISummaryEditorModel: ObservableObject {
     init(
         repoPath: String,
         fileID: Int64,
-        summaryStore: any CoreAISummaryManaging = CoreBridge(),
-        privacyRules: any CoreAIPrivacyEvaluating = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge(),
+        summaryStore: any CoreAISummaryManaging = AppCoreServices.aiSummaryStore,
+        privacyRules: any CoreAIPrivacyEvaluating = AppCoreServices.aiPrivacyRules,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         summaryProviderScope: AiSummaryProviderScope = .localPreferred,
         privacyContext: AISummaryPrivacyContext = AISummaryPrivacyContext()
     ) {

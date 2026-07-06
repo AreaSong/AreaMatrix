@@ -2,18 +2,7 @@
 
 extension RepoConfigSnapshot {
     static func smokeFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
+        RepoConfigSnapshot.testFixture(repoPath: repoPath)
     }
 }
 
@@ -21,12 +10,7 @@ extension RepositoryOpeningResult {
     static func smokeFixture(repoPath: String, fileCount: Int64) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
             config: .smokeFixture(repoPath: repoPath),
-            tree: RepositoryTreeNodeSnapshot(
-                slug: "__root__",
-                displayName: "资料库",
-                fileCount: fileCount,
-                children: []
-            ),
+            tree: .testRoot(displayName: "资料库", fileCount: fileCount),
             currentCategoryFiles: []
         )
     }
@@ -52,39 +36,25 @@ extension RepoPathValidationSnapshot {
         issues: [RepoPathIssueSnapshot] = [],
         recommendedMode: RepoInitModeSnapshot? = .createEmpty
     ) -> RepoPathValidationSnapshot {
-        RepoPathValidationSnapshot(
-            repoPath: repoPath,
-            exists: true,
-            isDirectory: true,
-            isReadable: true,
-            isWritable: true,
-            isEmpty: isEmpty,
-            isInitialized: isInitialized,
-            isInsideAreaMatrix: false,
-            isICloudPath: false,
-            hasUnfinishedScanSession: hasUnfinishedScanSession,
-            availableCapacityBytes: availableCapacityBytes,
-            isExternalVolume: isExternalVolume,
-            recommendedMode: recommendedMode,
-            issues: issues
-        )
+        RepoPathValidationSnapshot.testFixture(repoPath: repoPath) {
+            $0.isEmpty = isEmpty
+            $0.isInitialized = isInitialized
+            $0.hasUnfinishedScanSession = hasUnfinishedScanSession
+            $0.availableCapacityBytes = availableCapacityBytes
+            $0.isExternalVolume = isExternalVolume
+            $0.recommendedMode = recommendedMode
+            $0.issues = issues
+        }
     }
 }
 
 extension ScanSessionSnapshot {
     static func adoptFixture() -> ScanSessionSnapshot {
-        ScanSessionSnapshot(
-            id: 7,
-            kind: .adopt,
-            status: .interrupted,
-            lastPath: "docs/report.pdf",
-            inserted: 12,
-            updated: 1,
-            skipped: 3,
-            startedAt: 1_700_000_000,
-            updatedAt: 1_700_000_120,
-            finishedAt: nil,
-            errors: []
-        )
+        ScanSessionSnapshot.testFixture(id: 7, status: .interrupted) {
+            $0.lastPath = "docs/report.pdf"
+            $0.updated = 1
+            $0.skipped = 3
+            $0.updatedAt = 1_700_000_120
+        }
     }
 }

@@ -88,9 +88,9 @@ final class ICloudConflictMinimalModel: ObservableObject {
         conflictID: String? = nil,
         originalVersion: ICloudConflictVersionSnapshot,
         conflictedCopyVersion: ICloudConflictVersionSnapshot,
-        pathValidator: any CoreRepositoryPathValidating = CoreBridge(),
-        conflictReviewer: (any CoreICloudConflictReviewing)? = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        pathValidator: any CoreRepositoryPathValidating = AppCoreServices.repositoryPathValidator,
+        conflictReviewer: (any CoreICloudConflictReviewing)? = AppCoreServices.iCloudConflictReviewer,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
     ) {
         self.repoPath = repoPath
         self.conflictID = conflictID

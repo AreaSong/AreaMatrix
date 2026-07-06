@@ -54,8 +54,7 @@ final class SearchResultsPageIntegrationVerifyTests: XCTestCase {
         guard let row = tree.sidebarRow(id: "docs/contracts") else {
             return XCTFail("expected docs/contracts sidebar row")
         }
-        let diagnostic = SearchQueryDiagnosticSnapshot(
-            severityDisplayName: "Error",
+        let diagnostic = SearchQueryDiagnosticSnapshot.testFixture(
             message: "Unknown field: owner",
             suggestion: "Use category:"
         )

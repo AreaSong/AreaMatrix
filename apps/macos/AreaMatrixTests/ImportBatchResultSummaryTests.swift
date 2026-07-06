@@ -3,7 +3,6 @@ import XCTest
 
 final class ImportBatchResultSummaryTests: XCTestCase {
     @MainActor
-    // swiftlint:disable:next function_body_length
     func testImportBatchPreviewErrorAndPartialSuccessSurfaceFailedItemInResultSummary() async {
         let readyURL = importBatchInvoiceURL()
         let failedPreviewURL = importBatchUnreadablePreviewURL()
@@ -40,21 +39,17 @@ final class ImportBatchResultSummaryTests: XCTestCase {
         XCTAssertEqual(outcome?.failedCount, 0)
         XCTAssertEqual(outcome?.previewErrorCount, 1)
         XCTAssertTrue(outcome?.needsResultSummary == true)
-        XCTAssertEqual(outcome?.progressSnapshot(currentPath: "Import ready only"), ImportBatchProgressSnapshot(
+        XCTAssertEqual(outcome?.progressSnapshot(currentPath: "Import ready only"), importBatchProgress(
             completed: 1,
             failed: 1,
             total: 2,
-            remaining: 0,
             currentPath: "finance/Invoice_2026Q1.pdf",
-            skipped: 0,
-            pending: 0,
             items: [
-                ImportBatchProgressSnapshot.Item(
+                importBatchProgressItem(
                     fileID: 42,
                     sourcePath: importBatchSourcePath(),
                     targetPath: "finance/Invoice_2026Q1.pdf",
-                    phase: .done,
-                    errorMessage: nil
+                    phase: .done
                 )
             ]
         ))
@@ -85,9 +80,8 @@ final class ImportBatchResultSummaryTests: XCTestCase {
         XCTAssertEqual(outcome?.skippedDuplicateCount, 1)
         XCTAssertEqual(outcome?.pendingICloudCount, 1)
         XCTAssertTrue(outcome?.needsResultSummary == true)
-        XCTAssertEqual(outcome?.progressSnapshot(currentPath: "Import ready only"), ImportBatchProgressSnapshot(
+        XCTAssertEqual(outcome?.progressSnapshot(currentPath: "Import ready only"), importBatchProgress(
             completed: 0,
-            failed: 0,
             total: 2,
             remaining: 0,
             currentPath: "Import ready only",

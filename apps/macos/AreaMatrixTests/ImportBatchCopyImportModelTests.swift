@@ -145,11 +145,9 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         XCTAssertEqual(result.failedCount, 0)
         XCTAssertEqual(importModel.rows.map(\.status.tag), ["IMPORTED", "IMPORTED"])
         XCTAssertEqual(importModel.status.message, "批量导入完成：成功 2，失败 0")
-        XCTAssertEqual(progressSnapshots.last, ImportBatchProgressSnapshot(
+        XCTAssertEqual(progressSnapshots.last, importBatchProgress(
             completed: 2,
-            failed: 0,
             total: 2,
-            remaining: 0,
             currentPath: "docs/2026Q1_合同.pdf"
         ))
     }
@@ -188,11 +186,10 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         XCTAssertEqual(model.rows.map(\.status.tag), ["ERROR", "IMPORTED"])
         XCTAssertEqual(model.rows.first?.status.detail, "无访问权限")
         XCTAssertEqual(model.status.message, "批量导入完成：成功 1，失败 1")
-        XCTAssertEqual(progressSnapshots.last, ImportBatchProgressSnapshot(
+        XCTAssertEqual(progressSnapshots.last, importBatchProgress(
             completed: 1,
             failed: 1,
             total: 2,
-            remaining: 0,
             currentPath: "finance/2026Q1_合同.pdf"
         ))
     }
@@ -390,7 +387,7 @@ final class ImportBatchStorageModeTests: XCTestCase {
 }
 
 private func importProgressImportSessionFatalMapper() -> StaticCoreErrorMapper {
-    StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot(
+    StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot.testFixture(
         kind: .io,
         userMessage: "文件读写失败",
         severity: .critical,

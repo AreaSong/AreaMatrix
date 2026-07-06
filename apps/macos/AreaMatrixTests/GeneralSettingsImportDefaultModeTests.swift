@@ -261,7 +261,7 @@ private final class GeneralSettingsImportDefaultAnnouncer: AccessibilityAnnounci
 }
 
 private func generalSettingsImportDefaultErrorMapper() -> StaticCoreErrorMapper {
-    StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot(
+    StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot.testFixture(
         kind: .internal,
         userMessage: "保存失败",
         severity: .medium,
@@ -314,23 +314,13 @@ private func aiCallLogRecord(
 private extension RepositoryOpeningResult {
     static func generalSettingsImportFixture(defaultMode: String) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
-            config: RepoConfigSnapshot(
-                repoPath: "/tmp/repo",
-                defaultMode: defaultMode,
-                overviewOutput: "GeneratedOnly",
-                aiEnabled: false,
-                locale: "system",
-                iCloudWarn: true,
-                enableExtensionRules: true,
-                enableKeywordRules: true,
-                fallbackToInbox: true,
-                allowReplaceDuringImport: false
-            ),
-            tree: RepositoryTreeNodeSnapshot(
-                slug: "__root__",
+            config: .testFixture(repoPath: "/tmp/repo") {
+                $0.defaultMode = defaultMode
+                $0.locale = "system"
+            },
+            tree: .testRoot(
                 displayName: "资料库",
-                fileCount: 0,
-                children: []
+                fileCount: 0
             ),
             currentCategoryFiles: []
         )

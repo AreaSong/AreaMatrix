@@ -5,12 +5,10 @@ extension CoreErrorMappingSnapshot {
         kind: CoreErrorKindSnapshot,
         userMessage: String
     ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: userMessage,
-            severity: .medium,
             suggestedAction: "Retry save",
-            recoverability: .retryable,
             rawContext: kind.rawValue
         )
     }
@@ -19,10 +17,9 @@ extension CoreErrorMappingSnapshot {
         kind: CoreErrorKindSnapshot,
         userMessage: String
     ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: userMessage,
-            severity: .medium,
             suggestedAction: "Open classifier.yaml",
             recoverability: .userActionRequired,
             rawContext: kind.rawValue
@@ -37,33 +34,18 @@ extension RepoConfigSnapshot {
         enableKeywordRules: Bool = true,
         fallbackToInbox: Bool = true
     ) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "system",
-            iCloudWarn: true,
-            enableExtensionRules: enableExtensionRules,
-            enableKeywordRules: enableKeywordRules,
-            fallbackToInbox: fallbackToInbox,
-            allowReplaceDuringImport: false
-        )
+        RepoConfigSnapshot.testFixture(repoPath: repoPath) {
+            $0.locale = "system"
+            $0.enableExtensionRules = enableExtensionRules
+            $0.enableKeywordRules = enableKeywordRules
+            $0.fallbackToInbox = fallbackToInbox
+        }
     }
 
     static func classifierRecoveryFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "system",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
+        RepoConfigSnapshot.testFixture(repoPath: repoPath) {
+            $0.locale = "system"
+        }
     }
 }
 
@@ -102,7 +84,7 @@ extension ClassifierRuleEditorSnapshotState {
 }
 
 func classifierSettingsValidationProbeResult() -> ClassifyResultSnapshot {
-    ClassifyResultSnapshot(
+    .testFixture(
         category: "inbox",
         suggestedName: "AreaMatrixValidationProbe.txt",
         reason: .default,

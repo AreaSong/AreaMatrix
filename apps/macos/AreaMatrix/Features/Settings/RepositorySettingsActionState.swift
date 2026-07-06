@@ -81,11 +81,11 @@ final class LocalModelStatusModel: ObservableObject {
         storageLocation: String? = nil,
         storageLocationProvider: any LocalModelStorageLocationProviding =
             LocalModelStatusPlatformServices.storageLocationProvider,
-        statusReader: any CoreLocalModelStatusReading = CoreBridge(),
+        statusReader: any CoreLocalModelStatusReading = AppCoreServices.localModelStatusReader,
         installHelpOpener: any LocalModelInstallHelpOpening = LocalModelStatusPlatformServices.installHelpOpener,
         folderOpener: any LocalModelFolderOpening = LocalModelStatusPlatformServices.folderOpener,
         diagnosticsCopier: any LocalModelDiagnosticsCopying = LocalModelStatusPlatformServices.diagnosticsCopier,
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
     ) {
         self.repoPath = repoPath
         self.modelID = modelID

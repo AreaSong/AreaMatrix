@@ -3,7 +3,7 @@
 extension RecordingCoreErrorMapper {
     static func aiSettings() -> RecordingCoreErrorMapper {
         RecordingCoreErrorMapper { error in
-            CoreErrorMappingSnapshot(
+            CoreErrorMappingSnapshot.testFixture(
                 kind: .io,
                 userMessage: String(describing: error),
                 severity: .medium,
@@ -16,7 +16,7 @@ extension RecordingCoreErrorMapper {
 
     static func localModelStatus() -> RecordingCoreErrorMapper {
         RecordingCoreErrorMapper { error in
-            CoreErrorMappingSnapshot(
+            CoreErrorMappingSnapshot.testFixture(
                 kind: .io,
                 userMessage: String(describing: error),
                 severity: .medium,

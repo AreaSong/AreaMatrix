@@ -126,9 +126,9 @@ final class AICallLogModel: ObservableObject {
 
     init(
         repoPath: String,
-        lister: any CoreAICallLogListing = CoreBridge(),
-        clearer: any CoreAICallLogClearing = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        lister: any CoreAICallLogListing = AppCoreServices.aiCallLogLister,
+        clearer: any CoreAICallLogClearing = AppCoreServices.aiCallLogClearer,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
     ) {
         self.repoPath = repoPath
         self.lister = lister

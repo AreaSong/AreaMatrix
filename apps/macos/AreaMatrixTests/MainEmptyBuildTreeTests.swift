@@ -209,41 +209,15 @@ private extension RepositoryOpeningResult {
 
 private extension RepoConfigSnapshot {
     static func mainEmptyBuildTreeFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
+        RepoConfigSnapshot.testFixture(repoPath: repoPath)
     }
 }
 
 private extension RepositoryTreeNodeSnapshot {
     static func mainEmptyFixtureTree() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
+        .testRoot(
             displayName: "资料库",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
-            children: ["inbox", "docs", "code", "design", "finance", "media"].map { slug in
-                RepositoryTreeNodeSnapshot(
-                    slug: slug,
-                    displayName: slug,
-                    kind: "SystemCategory",
-                    relativePath: slug,
-                    fileCount: 0,
-                    depth: 1,
-                    children: []
-                )
-            }
+            children: ["inbox", "docs", "code", "design", "finance", "media"].map { .testCategory($0) }
         )
     }
 }

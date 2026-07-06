@@ -2,20 +2,17 @@
 
 extension FileEntrySnapshot {
     static func renameFixture(id: Int64, name: String, updatedAt: Int64 = 1_700_000_100) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: "docs/contracts/\(name)",
-            originalName: "old.pdf",
             currentName: name,
-            category: "docs",
-            sizeBytes: 512,
-            hashSha256: "rename-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: updatedAt
-        )
+            category: "docs"
+        ) {
+            $0.originalName = "old.pdf"
+            $0.sizeBytes = 512
+            $0.hashSha256 = "rename-\(id)"
+            $0.updatedAt = updatedAt
+        }
     }
 }
 
@@ -33,10 +30,9 @@ extension RepositoryOpeningResult {
 
 extension CoreErrorMappingSnapshot {
     static func renameConflict() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .conflict,
             userMessage: "A file with this name already exists.",
-            severity: .medium,
             suggestedAction: "Choose a different name, then retry.",
             recoverability: .userActionRequired,
             rawContext: "rename-file rename-file-core rename_file"
@@ -44,10 +40,9 @@ extension CoreErrorMappingSnapshot {
     }
 
     static var batchRenameConflict: CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .conflict,
             userMessage: "Could not preview rename",
-            severity: .medium,
             suggestedAction: "Refresh preview, then retry.",
             recoverability: .refreshRequired,
             rawContext: "batch-rename batch-rename-preview batch_rename"

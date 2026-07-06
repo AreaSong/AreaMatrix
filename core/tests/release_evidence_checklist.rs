@@ -12,8 +12,25 @@ const RELEASE_NOTES_010: &str =
     include_str!("../../workflow/versions/v1-mvp/evidence/release-notes/release-notes-0.1.0.md");
 const RELEASE_NOTES_PREVIEW_010: &str =
     include_str!("../../workflow/versions/v1-mvp/evidence/release-notes/release-notes-v0.1.0-unnotarized-preview.2.md");
+const ALPHA_FEEDBACK_ROUTE: &str =
+    include_str!("../../workflow/versions/v1-mvp/evidence/alpha-feedback-route.md");
+const ALPHA_FEEDBACK_TEMPLATE: &str =
+    include_str!("../../.github/ISSUE_TEMPLATE/alpha_feedback.md");
 const CARGO_TOML: &str = include_str!("../Cargo.toml");
 const XCODE_PROJECT: &str = include_str!("../../apps/macos/AreaMatrix.xcodeproj/project.pbxproj");
+const CHECKPOINT_GAPS: &str =
+    include_str!("../../workflow/versions/v1-mvp/closeout/checkpoint-gaps.md");
+const CHECKPOINT_ACCEPTED_EXCEPTIONS: &str =
+    include_str!("../../workflow/versions/v1-mvp/closeout/checkpoint-accepted-exceptions.md");
+const CLOSEOUT_YAML: &str = include_str!("../../workflow/versions/v1-mvp/closeout/closeout.yaml");
+const V1_RESIDUALS: &str = include_str!("../../workflow/versions/v1-mvp/residuals/residuals.yaml");
+const V1_RELEASE_RESIDUALS: &str =
+    include_str!("../../workflow/versions/v1-mvp/residuals/release-evidence.md");
+const GLOBAL_RESIDUALS_README: &str = include_str!("../../workflow/residuals/README.md");
+const TASK_RESIDUAL_INDEX: &str = include_str!("../../tasks/indexes/residuals.md");
+const TASK05_RUNNING_SUMMARY: &str = include_str!(
+    "../../workflow/versions/v1-mvp/evidence/task-loop-runs/20260510_223424/summary.json"
+);
 
 // Archived v1 evidence strings intentionally preserve old distribution-track
 // wording. Current long-lived docs are checked below to keep those terms out.
@@ -133,11 +150,16 @@ fn release_checklist_records_current_macos_xctest_evidence_without_release_claim
 
 #[test]
 fn release_checklist_records_distribution_preflight_blocker_without_release_claim() {
-    assert_contains(CHECKLIST, "2026-05-10 18:30 CST");
+    assert_contains(CHECKLIST, "2026-07-06 `./dev release preflight`");
     assert_contains(CHECKLIST, "`./dev release preflight`");
     assert_contains(RELEASE, "`./dev release preflight` 通过");
+    assert_contains(RELEASE, "`./dev release preflight --json`");
+    assert_contains(RELEASE, "`required_distribution_evidence`");
+    assert_contains(RELEASE, "`evidence_record_template`");
     assert_contains(BUILD, "release distribution");
     assert_contains(BUILD, "preflight: BLOCKED");
+    assert_contains(BUILD, "./dev release preflight --json");
+    assert_contains(BUILD, "`blocked_by`");
     assert_contains(
         CHECKLIST,
         "no valid Developer ID Application signing identity found",
@@ -289,6 +311,26 @@ fn release_checklist_cites_existing_blocker_evidence() {
         CHECKLIST,
         "M-02 因当前没有 iCloud placeholder 环境而 blocked",
     );
+    assert_contains(CHECKLIST, "./dev release icloud-placeholder-evidence");
+    assert_contains(CHECKLIST, "不能触发 download 或替代真实 UI retry");
+    assert_contains(
+        RECOVERY_SCENARIOS,
+        "mode: icloud_placeholder_metadata_probe",
+    );
+    assert_contains(RECOVERY_SCENARIOS, "residual_id: v1-rl-002");
+    assert_contains(RECOVERY_SCENARIOS, "closes_residual: false");
+    assert_contains(
+        RECOVERY_SCENARIOS,
+        "blocked_until_real_icloud_download_retry_and_db_evidence_pass",
+    );
+    assert_contains(RECOVERY_SCENARIOS, "`download_attempted`");
+    assert_contains(RECOVERY_SCENARIOS, "`file_content_read_attempted`");
+    assert_contains(RECOVERY_SCENARIOS, "`db_write_attempted`");
+    assert_contains(
+        RECOVERY_SCENARIOS,
+        "对 symlink 只做 `lstat`，不跟随目标执行 `mdls`",
+    );
+    assert_contains(RECOVERY_SCENARIOS, "不能替代 UI\n    `Download & retry`");
     assert_contains(CHECKLIST, "M-03 权限恢复手工证据已通过");
     assert_contains(CHECKLIST, "Repository needs permission");
     assert_contains(CHECKLIST, "PermissionDenied");
@@ -323,6 +365,125 @@ fn release_checklist_records_changelog_and_version_state_without_claiming_releas
     assert_contains(CHECKLIST, "build `202606161707`");
     assert_contains(CHECKLIST, "正式 `v0.1.0` tag 尚未创建");
     assert_contains(CHECKLIST, "不得把它当作正式 `v0.1.0` release tag");
+}
+
+#[test]
+fn alpha_feedback_template_collects_release_review_fields_without_closing_decision() {
+    assert_contains(ALPHA_FEEDBACK_TEMPLATE, "name: Alpha Feedback");
+    assert_contains(
+        ALPHA_FEEDBACK_TEMPLATE,
+        "labels: [\"alpha-feedback\", \"needs-triage\"]",
+    );
+    assert_contains(ALPHA_FEEDBACK_TEMPLATE, "## 测试版本 / Build");
+    assert_contains(ALPHA_FEEDBACK_TEMPLATE, "AreaMatrix 版本 / Version");
+    assert_contains(ALPHA_FEEDBACK_TEMPLATE, "构建号 / Build");
+    assert_contains(ALPHA_FEEDBACK_TEMPLATE, "DMG SHA-256");
+    assert_contains(ALPHA_FEEDBACK_TEMPLATE, "## 测试环境 / Environment");
+    assert_contains(ALPHA_FEEDBACK_TEMPLATE, "macOS 版本 / macOS version");
+    assert_contains(
+        ALPHA_FEEDBACK_TEMPLATE,
+        "是否为干净用户或干净 Mac / Clean user or clean Mac",
+    );
+    assert_contains(
+        ALPHA_FEEDBACK_TEMPLATE,
+        "是否在 iCloud Drive / In iCloud Drive",
+    );
+    assert_contains(ALPHA_FEEDBACK_TEMPLATE, "iCloud placeholder");
+    assert_contains(
+        ALPHA_FEEDBACK_TEMPLATE,
+        "## 数据安全确认 / Data Safety Check",
+    );
+    assert_contains(ALPHA_FEEDBACK_TEMPLATE, "用户文件");
+    assert_contains(ALPHA_FEEDBACK_TEMPLATE, ".areamatrix/");
+    assert_contains(ALPHA_FEEDBACK_TEMPLATE, "DB、staging 或索引损坏");
+
+    assert_contains(CHECKLIST, "Alpha feedback issue template 已存在");
+    assert_contains(CHECKLIST, "alpha-feedback-route.md");
+    assert_contains(
+        CHECKLIST,
+        "trusted tester list、release announcement / Discussion 链接、feedback route 和 triage owner",
+    );
+    assert_contains(
+        CHECKLIST,
+        "可信测试者名单、正式公告或 Discussion 链接、最终反馈分流和 owner 决策仍未记录",
+    );
+
+    assert_contains(ALPHA_FEEDBACK_ROUTE, "当前结论：**不关闭 `v1-rl-006`**");
+    assert_contains(ALPHA_FEEDBACK_ROUTE, "alpha_feedback_release_decision");
+    assert_contains(ALPHA_FEEDBACK_ROUTE, "status: \"pending | ready\"");
+    assert_contains(ALPHA_FEEDBACK_ROUTE, "trusted_tester_list");
+    assert_contains(ALPHA_FEEDBACK_ROUTE, "announcement");
+    assert_contains(ALPHA_FEEDBACK_ROUTE, "feedback_route");
+    assert_contains(ALPHA_FEEDBACK_ROUTE, "triage_owner");
+    assert_contains(
+        ALPHA_FEEDBACK_ROUTE,
+        "release_gate: \"block_if_any_pending\"",
+    );
+    assert_contains(ALPHA_FEEDBACK_ROUTE, "trusted_tester_list.status: pending");
+    assert_contains(ALPHA_FEEDBACK_ROUTE, "announcement.status: pending");
+    assert_contains(ALPHA_FEEDBACK_ROUTE, "feedback_route.status: pending");
+    assert_contains(ALPHA_FEEDBACK_ROUTE, "triage_owner.status: pending");
+    assert_contains(
+        ALPHA_FEEDBACK_ROUTE,
+        "不能由 local QA、未公证预览 DMG、issue template、自动化测试或同机",
+    );
+
+    assert_contains(
+        V1_RESIDUALS,
+        "workflow/versions/v1-mvp/evidence/alpha-feedback-route.md",
+    );
+    assert_contains(V1_RESIDUALS, "formal announcement route, or triage owner");
+    assert_contains(V1_RELEASE_RESIDUALS, "alpha-feedback-route.md");
+    assert_contains(
+        GLOBAL_RESIDUALS_README,
+        "Alpha feedback issue template 和 route evidence 已存在",
+    );
+    assert_contains(
+        TASK_RESIDUAL_INDEX,
+        "Alpha feedback issue template 和 route evidence 已存在",
+    );
+}
+
+#[test]
+fn task05_incomplete_summary_is_not_release_evidence_pass() {
+    assert_contains(TASK05_RUNNING_SUMMARY, "\"run_id\": \"20260510_223424\"");
+    assert_contains(TASK05_RUNNING_SUMMARY, "\"status\": \"running\"");
+    assert_contains(TASK05_RUNNING_SUMMARY, "\"3-1/task-05\"");
+    assert_contains(TASK05_RUNNING_SUMMARY, "\"status\": \"in_progress\"");
+    assert_contains(
+        TASK05_RUNNING_SUMMARY,
+        ".codex/task-loop-logs/20260510_223424/phase-3/3-1-task-05-copy-attempt-2.log",
+    );
+    assert_contains(
+        TASK05_RUNNING_SUMMARY,
+        ".codex/task-loop-logs/20260510_223424/phase-3/3-1-task-05-verify-attempt-2.log",
+    );
+    assert_not_contains(TASK05_RUNNING_SUMMARY, "VERIFY_RESULT: PASS");
+
+    assert_contains(
+        CHECKPOINT_GAPS,
+        "must not be counted as `VERIFY_RESULT: PASS` evidence",
+    );
+    assert_contains(
+        CHECKPOINT_ACCEPTED_EXCEPTIONS,
+        "does not count as `VERIFY_RESULT: PASS`",
+    );
+    assert_contains(
+        CHECKPOINT_ACCEPTED_EXCEPTIONS,
+        "must not close a release evidence blocker",
+    );
+    assert_contains(
+        CLOSEOUT_YAML,
+        "task05_tracked_incomplete_summaries_excluded_from_pass: 5",
+    );
+    assert_contains(
+        CLOSEOUT_YAML,
+        "do not count running/in_progress task-loop summaries",
+    );
+    assert_contains(
+        V1_RESIDUALS,
+        "cannot count as VERIFY_RESULT PASS and cannot close release evidence blockers",
+    );
 }
 
 #[test]

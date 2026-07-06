@@ -99,15 +99,9 @@ final class MainListIntegrationFilterTests: XCTestCase {
         let requests = await searcher.recordedRequests()
 
         XCTAssertEqual(requests.map(\.request), [
-            SearchQueryRequestSnapshot(
+            .testFixture(
                 query: "合同",
-                scope: .all,
-                currentPath: nil,
-                category: nil,
-                filters: .empty,
-                sort: .newestImported,
-                limit: 50,
-                offset: 0
+                sort: .newestImported
             )
         ])
         XCTAssertEqual(model.files, [resultFile])

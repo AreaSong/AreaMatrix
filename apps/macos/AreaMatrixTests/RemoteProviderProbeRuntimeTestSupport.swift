@@ -14,7 +14,7 @@ func aiCategorySuggestionPrivacyRuleReferenceModel(
         repoPath: "/tmp/repo",
         ruleID: ruleID,
         bridge: bridge,
-        errorMapper: StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot(
+        errorMapper: StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "Mapped ai-privacy-rules-core core error",
             severity: .medium,

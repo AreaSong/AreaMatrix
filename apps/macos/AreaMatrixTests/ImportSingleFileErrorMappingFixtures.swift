@@ -18,7 +18,7 @@ extension CoreErrorMappingSnapshot {
     }
 
     static func importMoveFixture(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: kind == .permissionDenied ? "无访问权限" : "导入失败",
             severity: .high,
@@ -29,7 +29,7 @@ extension CoreErrorMappingSnapshot {
     }
 
     static func importIndexFixture(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: kind == .iCloudPlaceholder ? "iCloud 文件尚未下载" : "导入失败",
             severity: .high,
@@ -44,7 +44,7 @@ extension CoreErrorMappingSnapshot {
         suggestedAction: String,
         rawContext: String
     ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: importErrorMessage(for: kind),
             severity: .high,

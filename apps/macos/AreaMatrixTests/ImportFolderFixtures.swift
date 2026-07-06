@@ -67,7 +67,7 @@ extension ClassifyResultSnapshot {
         reason: ClassifyReasonSnapshot = .keyword,
         confidence: Float = 0.9
     ) -> ClassifyResultSnapshot {
-        ClassifyResultSnapshot(
+        .testFixture(
             category: category,
             suggestedName: suggestedName,
             reason: reason,

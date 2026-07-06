@@ -8,10 +8,10 @@ struct ClassifierSettingsPane: View {
 extension ClassifierSettingsPane {
     init(
         repoPath: String,
-        loader: any CoreConfigurationLoading = CoreBridge(),
-        updater: any CoreConfigurationUpdating = CoreBridge(),
-        predictor: any CoreCategoryPredicting = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge(),
+        loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
+        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
+        predictor: any CoreCategoryPredicting = AppCoreServices.categoryPredictor,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         onSavedCategory: ((String) -> Void)? = nil
     ) {
         let settingsModel = ClassifierSettingsModel(

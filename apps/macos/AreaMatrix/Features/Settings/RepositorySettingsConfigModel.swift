@@ -147,8 +147,8 @@ final class RepositorySettingsConfigModel: ObservableObject {
 
     init(
         repoPath: String,
-        updater: any CoreConfigurationUpdating = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge(),
+        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         accessibilityAnnouncer: any AccessibilityAnnouncing = RepositorySettingsPlatformServices.accessibilityAnnouncer
     ) {
         self.repoPath = repoPath

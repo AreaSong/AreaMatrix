@@ -337,19 +337,13 @@ private struct BatchActionEligibilityScenario {
 
 private extension FileEntrySnapshot {
     static func batchActionEligibilityFixture(id: Int64, name: String) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: "docs/\(name)",
-            originalName: name,
             currentName: name,
-            category: "docs",
-            sizeBytes: 128,
-            hashSha256: "batch-action-eligibility-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_100
-        )
+            category: "docs"
+        ) {
+            $0.hashSha256 = "batch-action-eligibility-\(id)"
+        }
     }
 }

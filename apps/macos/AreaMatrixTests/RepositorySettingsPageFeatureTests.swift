@@ -9,7 +9,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let loader = RecordingConfigurationLoader(results: [.success(config)])
         let updater = RecordingConfigurationUpdater(result: .success(()))
         let metadataReader = RepoSettingsMetadataReader(results: [
-            .success(ExistingRepositoryMetadataSnapshot(
+            .success(.testFixture(
                 schemaVersion: 1,
                 lastOpenedAt: 1_778_000_000,
                 configuredRepoPath: "/tmp/AreaMatrixRepo"
@@ -53,12 +53,12 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let loader = RecordingConfigurationLoader(results: [.success(first), .success(second)])
         let updater = RecordingConfigurationUpdater(result: .success(()))
         let metadataReader = RepoSettingsMetadataReader(results: [
-            .success(ExistingRepositoryMetadataSnapshot(
+            .success(.testFixture(
                 schemaVersion: 1,
                 lastOpenedAt: 1_778_000_000,
                 configuredRepoPath: "/tmp/repo"
             )),
-            .success(ExistingRepositoryMetadataSnapshot(
+            .success(.testFixture(
                 schemaVersion: 1,
                 lastOpenedAt: 1_778_000_000,
                 configuredRepoPath: "/tmp/repo"
@@ -129,7 +129,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let loader = RecordingConfigurationLoader(results: [.success(config)])
         let updater = RecordingConfigurationUpdater(result: .success(()))
         let metadataReader = RepoSettingsMetadataReader(results: [
-            .success(ExistingRepositoryMetadataSnapshot(
+            .success(.testFixture(
                 schemaVersion: 1,
                 lastOpenedAt: 1_778_000_000,
                 configuredRepoPath: repoURL.path
@@ -177,7 +177,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let updater = RecordingConfigurationUpdater(result: .failure(CoreError.Db(message: "locked")))
         let mapper = RecordingCoreErrorMapper.repositorySettings()
         let metadataReader = RepoSettingsMetadataReader(results: [
-            .success(ExistingRepositoryMetadataSnapshot(
+            .success(.testFixture(
                 schemaVersion: 1,
                 lastOpenedAt: 1_778_000_000,
                 configuredRepoPath: repoURL.path

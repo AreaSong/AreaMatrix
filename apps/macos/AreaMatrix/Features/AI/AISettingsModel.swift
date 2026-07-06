@@ -50,9 +50,9 @@ final class AISettingsModel: ObservableObject {
 
     init(
         repoPath: String,
-        loader: any CoreAISettingsLoading = CoreBridge(),
-        updater: any CoreAISettingsUpdating = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        loader: any CoreAISettingsLoading = AppCoreServices.aiSettingsLoader,
+        updater: any CoreAISettingsUpdating = AppCoreServices.aiSettingsUpdater,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
     ) {
         self.repoPath = repoPath
         self.loader = loader

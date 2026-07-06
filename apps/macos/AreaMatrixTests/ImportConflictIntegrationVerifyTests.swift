@@ -29,7 +29,7 @@ private extension ImportConflictIntegrationVerifyTests {
     @MainActor
     func verifyHoverAndEntryRouting() async throws {
         let sourceURL = importBatchInvoiceURL()
-        let predictor = ImportSingleFileRecordingPredictor(result: ClassifyResultSnapshot(
+        let predictor = ImportSingleFileRecordingPredictor(result: .testFixture(
             category: "finance",
             suggestedName: "Invoice_2026Q1.pdf",
             reason: .keyword,
@@ -261,7 +261,7 @@ private extension ImportConflictIntegrationVerifyTests {
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: NoopWelcomeHelpOpener()
         )
-        let progress = ImportBatchProgressSnapshot(
+        let progress = importBatchProgress(
             completed: 1,
             failed: 1,
             total: 3,

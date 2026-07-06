@@ -3,11 +3,11 @@ import Foundation
 
 enum AboutSettingsPlatformServices {
     static var appVersionReader: any AppVersionReading {
-        BundleAppVersionReader()
+        AppPlatformServices.appVersionReader
     }
 
     static var metadataReader: any ExistingRepositoryMetadataReading {
-        SQLiteExistingRepositoryMetadataReader()
+        AppPlatformServices.existingRepositoryMetadataReader
     }
 
     static var diagnosticsExporter: any AboutDiagnosticsExporting {
@@ -31,75 +31,97 @@ enum AboutSettingsPlatformServices {
     }
 
     static var accessibilityAnnouncer: any AccessibilityAnnouncing {
-        VoiceOverAccessibilityAnnouncer()
+        AppPlatformServices.accessibilityAnnouncer
     }
 }
 
 enum PlatformDifferencesPlatformServices {
     static var appVersionReader: any AppVersionReading {
-        BundleAppVersionReader()
+        AppPlatformServices.appVersionReader
     }
 }
 
 struct NSWorkspaceAboutExternalLinkOpener: AboutExternalLinkOpening {
+    private let externalURLOpener: any ExternalURLStringOpening
+
+    init(externalURLOpener: any ExternalURLStringOpening = AppPlatformServices.externalURLStringOpener) {
+        self.externalURLOpener = externalURLOpener
+    }
+
     @MainActor
     func open(link: AboutExternalLink) throws -> String {
-        guard let url = URL(string: link.urlString) else {
+        do {
+            try externalURLOpener.openHTTPSURLString(link.urlString)
+        } catch let error as ExternalURLOpenError {
+            switch error {
+            case .invalidURL:
+                throw AboutSettingsPlatformError.invalidURL(link.urlString)
+            case .openRejected:
+                throw AboutSettingsPlatformError.openRejected(link.urlString)
+            }
+        } catch {
             throw AboutSettingsPlatformError.invalidURL(link.urlString)
-        }
-        guard NSWorkspace.shared.open(url) else {
-            throw AboutSettingsPlatformError.openRejected(link.urlString)
         }
         return link.urlString
     }
 }
 
 struct NSWorkspaceAboutLogsOpener: AboutLogsOpening {
+    private let localURLOpener: any LocalFileURLOpening
+
+    init(localURLOpener: any LocalFileURLOpening = AppPlatformServices.localFileURLOpener) {
+        self.localURLOpener = localURLOpener
+    }
+
     @MainActor
     func logsPath(repoPath: String) -> String {
-        Self.logsURL(repoPath: repoPath).path
+        RepositoryMetadataPath.logsURL(repoPath: repoPath).path
     }
 
     @MainActor
     func openLogs(repoPath: String) throws -> String {
-        let url = Self.logsURL(repoPath: repoPath)
-        var isDirectory: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
-              isDirectory.boolValue
-        else {
+        let url = RepositoryMetadataPath.logsURL(repoPath: repoPath)
+        do {
+            try localURLOpener.openExisting(url, requiresDirectory: true)
+        } catch LocalFileURLOpenError.openRejected(_) {
+            throw AboutSettingsPlatformError.openRejected(url.path)
+        } catch {
             throw AboutSettingsPlatformError.missingPath(url.path)
         }
-        guard NSWorkspace.shared.open(url) else {
-            throw AboutSettingsPlatformError.openRejected(url.path)
-        }
         return url.path
-    }
-
-    static func logsURL(repoPath: String) -> URL {
-        URL(fileURLWithPath: repoPath, isDirectory: true)
-            .appendingPathComponent(".areamatrix", isDirectory: true)
-            .appendingPathComponent("logs", isDirectory: true)
     }
 }
 
 struct NSPasteboardAboutStringCopier: AboutStringCopying {
+    private let writer: any PasteboardStringWriting
+
+    init(writer: any PasteboardStringWriting = AppPlatformServices.pasteboardStringWriter) {
+        self.writer = writer
+    }
+
     @MainActor
     func copy(_ value: String) throws {
-        NSPasteboard.general.clearContents()
-        guard NSPasteboard.general.setString(value, forType: .string) else {
+        guard writer.write(value) else {
             throw AboutSettingsPlatformError.copyRejected
         }
     }
 }
 
 struct NSWorkspaceAboutDiagnosticsRevealer: AboutDiagnosticsRevealing {
+    private let localURLOpener: any LocalFileURLOpening
+
+    init(localURLOpener: any LocalFileURLOpening = AppPlatformServices.localFileURLOpener) {
+        self.localURLOpener = localURLOpener
+    }
+
     @MainActor
     func revealDiagnostics(at path: String) throws {
         let url = URL(fileURLWithPath: path)
-        guard FileManager.default.fileExists(atPath: url.path) else {
+        do {
+            try localURLOpener.revealExisting(url)
+        } catch {
             throw AboutSettingsPlatformError.missingPath(path)
         }
-        NSWorkspace.shared.activateFileViewerSelecting([url])
     }
 }
 

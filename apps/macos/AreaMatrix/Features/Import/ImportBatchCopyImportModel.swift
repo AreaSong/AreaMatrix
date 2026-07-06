@@ -35,8 +35,8 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
         importer: any CoreBatchCopyImporting,
         errorMapper: any CoreErrorMapping,
         conflictBatcher: any CoreImportConflictBatching = CoreBridge(),
-        undoActionStore: any CoreUndoActionLogging = CoreBridge(),
-        sessionStore: any ImportBatchSessionPersisting = FileImportBatchSessionStore(),
+        undoActionStore: any CoreUndoActionLogging = AppCoreServices.undoActionStore,
+        sessionStore: any ImportBatchSessionPersisting = AppPlatformServices.importBatchSessionStore,
         placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader()
     ) {
         self.importer = importer

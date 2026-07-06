@@ -10,6 +10,7 @@
 
 - [release-checklist.md](../evidence/release-checklist.md)
 - [recovery-scenarios.md](../evidence/recovery-scenarios.md)
+- [alpha-feedback-route.md](../evidence/alpha-feedback-route.md)
 - [release.md](../../../../docs/development/release.md)
 - [build.md](../../../../docs/development/build.md)
 
@@ -17,10 +18,10 @@
 
 | ID | 状态 | 源文件 | 当前影响 | 关闭条件 |
 |---|---|---|---|---|
-| `v1-rl-002` | `blocked-external` | [release-checklist.md](../evidence/release-checklist.md) / [recovery-scenarios.md](../evidence/recovery-scenarios.md) | formal alpha blocked | 真实 iCloud placeholder 环境手工冒烟证据写入 release checklist。 |
+| `v1-rl-002` | `blocked-external` | [release-checklist.md](../evidence/release-checklist.md) / [recovery-scenarios.md](../evidence/recovery-scenarios.md) | formal alpha blocked | 真实 iCloud placeholder 环境手工冒烟证据写入 release checklist；`./dev release icloud-placeholder-evidence` 只能生成只读 metadata draft，不能关闭 blocker。 |
 | `v1-rl-003` | `blocked-external` | [release-checklist.md](../evidence/release-checklist.md) | formal alpha blocked | Developer ID signed app、notarytool accepted log、stapled DMG、正式 checksum、干净 Mac 首启证据齐全。 |
 | `v1-rl-004` | `blocked-decision` | [release-checklist.md](../evidence/release-checklist.md) | formal alpha blocked | 正式 release candidate commit 和全部发布门禁关闭后创建并推送 `v0.1.0` tag。 |
-| `v1-rl-006` | `blocked-decision` | [release-checklist.md](../evidence/release-checklist.md) | formal alpha blocked | alpha tester 名单、GitHub Discussions 或 issue template 入口、反馈路径写入证据。 |
+| `v1-rl-006` | `blocked-decision` | [release-checklist.md](../evidence/release-checklist.md) / [alpha-feedback-route.md](../evidence/alpha-feedback-route.md) | formal alpha blocked | alpha feedback issue template 和 route evidence 已存在；仍需 alpha tester 名单、正式 announcement Discussion / 反馈分流决策、反馈路径和 triage owner 证据。 |
 
 ## 非 release blocker
 

@@ -2,31 +2,23 @@
 
 extension FileEntrySnapshot {
     static func batchAddTagsRouteFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: "docs/\(currentName)",
-            originalName: currentName,
             currentName: currentName,
-            category: "docs",
-            sizeBytes: 128,
-            hashSha256: "batchAddTags-route-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_100
-        )
+            category: "docs"
+        ) {
+            $0.hashSha256 = "batchAddTags-route-\(id)"
+        }
     }
 }
 
 extension CoreErrorMappingSnapshot {
     static func batchAddTagsTagDb() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "无法批量添加标签",
-            severity: .medium,
             suggestedAction: "请保留待添加标签并重试。",
-            recoverability: .retryable,
             rawContext: "batch-add-tags batch-add-tags-core batch_add_tags"
         )
     }

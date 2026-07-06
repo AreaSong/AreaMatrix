@@ -200,7 +200,7 @@ private func makeAdvancedSettingsIntegrationContext() async throws -> AdvancedSe
     try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
     let readmeURL = try makeAdvancedSettingsRepositoryFiles(repoURL: repoURL)
 
-    let diagnosticsSnapshot = DiagnosticsSnapshotSnapshot(
+    let diagnosticsSnapshot = DiagnosticsSnapshotSnapshot.testFixture(
         snapshotPath: advancedSettingsDiagnosticsPath(repoURL: repoURL),
         createdAt: 1_778_000_000,
         warnings: ["paths redacted"]
@@ -275,10 +275,7 @@ private func advancedSettingsIntegrationModel(
 }
 
 private func advancedSettingsLogsPath(repoURL: URL) -> String {
-    repoURL
-        .appendingPathComponent(".areamatrix", isDirectory: true)
-        .appendingPathComponent("logs", isDirectory: true)
-        .path
+    RepositoryMetadataPath.logsURL(repoPath: repoURL.path).path
 }
 
 private func advancedSettingsDiagnosticsPath(repoURL: URL) -> String {
@@ -292,9 +289,10 @@ private func advancedSettingsDiagnosticsPath(repoURL: URL) -> String {
 @MainActor
 private func loadedAdvancedSettingsModel(
     diagnosticsCollector: any CoreDiagnosticsCollecting = ShellRecordingDiagnosticsCollector(result: .success(
-        DiagnosticsSnapshotSnapshot(snapshotPath: "/tmp/repo/.areamatrix/diagnostics/advanced-settings-diagnostics.zip",
-                                    createdAt: 1_778_000_000,
-                                    warnings: [])
+        DiagnosticsSnapshotSnapshot.testFixture(
+            snapshotPath: "/tmp/repo/.areamatrix/diagnostics/advanced-settings-diagnostics.zip",
+            createdAt: 1_778_000_000
+        )
     )),
     logsOpener: (any AdvancedSettingsLogFolderOpening)? = nil
 ) async -> AdvancedSettingsModel {

@@ -16,7 +16,7 @@ func aiCategorySuggestionSuggestionModel(
 }
 
 func aiCategorySuggestionErrorMapper() -> StaticCoreErrorMapper {
-    StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot(
+    StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot.testFixture(
         kind: .config,
         userMessage: "Mapped ai-classification-suggestion core error",
         severity: .medium,

@@ -309,20 +309,15 @@ private func assertClassifierCorrectionHandoff(
 }
 
 private func classifierCorrectionFile(id: Int64, name: String) -> FileEntrySnapshot {
-    FileEntrySnapshot(
+    FileEntrySnapshot.testFixture(
         id: id,
         path: "docs/contracts/\(name)",
-        originalName: name,
         currentName: name,
-        category: "docs",
-        sizeBytes: 512,
-        hashSha256: "classifierCorrection-\(id)",
-        storageMode: "Copied",
-        origin: "Imported",
-        sourcePath: nil,
-        importedAt: 1_700_000_000,
-        updatedAt: 1_700_000_100
-    )
+        category: "docs"
+    ) {
+        $0.sizeBytes = 512
+        $0.hashSha256 = "classifierCorrection-\(id)"
+    }
 }
 
 private func classifierCorrectionHandoff(file: FileEntrySnapshot, targetCategory: String) -> ClassifierRuleHandoff {
@@ -364,7 +359,7 @@ private func classifierCorrectionHandoff(
 }
 
 private func classifierCorrectionClassifierCorrectionClassifyMapping() -> CoreErrorMappingSnapshot {
-    CoreErrorMappingSnapshot(
+    CoreErrorMappingSnapshot.testFixture(
         kind: .classify,
         userMessage: "Target category is unavailable.",
         severity: .medium,

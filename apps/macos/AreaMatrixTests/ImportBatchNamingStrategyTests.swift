@@ -13,7 +13,7 @@ final class ImportBatchNamingStrategyTests: XCTestCase {
         let rows = [
             ImportBatchPreviewRow.ready(
                 url: unsafeURL,
-                prediction: ClassifyResultSnapshot(
+                prediction: .testFixture(
                     category: "docs",
                     suggestedName: "Suggested.pdf",
                     reason: .keyword,

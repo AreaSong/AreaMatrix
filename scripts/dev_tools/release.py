@@ -6,10 +6,12 @@ import os
 import re
 import shutil
 import subprocess
+import json
+import stat
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 from .common import command_text, fail, require_command, run_step
 
@@ -18,6 +20,13 @@ DEFAULT_NOTARY_PROFILE = "AC_PASSWORD"
 DEFAULT_READINESS_BUILD_DERIVED_DATA = "build/ReleaseReadiness"
 DEFAULT_READINESS_BUILD_DESTINATION = "platform=macOS,arch=arm64"
 DEFAULT_APPLICATIONS_DIR = "/Applications"
+ICLOUD_MDLS_FIELDS = [
+    "kMDItemUbiquitousItemDownloadingStatus",
+    "kMDItemUbiquitousItemIsDownloaded",
+    "kMDItemUbiquitousItemIsUploaded",
+    "kMDItemUbiquitousItemHasUnresolvedConflicts",
+    "kMDItemFSName",
+]
 
 
 @dataclass(frozen=True)
@@ -99,23 +108,257 @@ def check_notary_profile(profile: str) -> PreflightCheck:
     )
 
 
-def run_release_preflight(root: Path, *, notary_profile: str = DEFAULT_NOTARY_PROFILE) -> int:
+def release_preflight_result(checks: Sequence[PreflightCheck], *, notary_profile: str) -> dict[str, Any]:
+    blocked_by = [check.name for check in checks if not check.passed]
+    status = "PASS" if not blocked_by else "BLOCKED"
+    return {
+        "mode": "release_distribution_preflight",
+        "status": status,
+        "release_gate": "block_if_any_check_blocked",
+        "notary_profile": notary_profile,
+        "checks": [
+            {
+                "name": check.name,
+                "status": check.status,
+                "detail": check.detail,
+            }
+            for check in checks
+        ],
+        "blocked_by": blocked_by,
+        "required_distribution_evidence": [
+            "Developer ID Application signing identity",
+            "codesign -dv --verbose=4 shows Developer ID team",
+            "xcrun notarytool submit returns accepted submission",
+            "stapler staple and stapler validate pass for app and DMG",
+            "formal DMG checksum is recorded",
+            "clean Mac first launch passes Gatekeeper",
+        ],
+        "evidence_record_template": {
+            "developer_id_identity": "pending | pass | blocked",
+            "codesign_developer_id_team": "pending | pass | blocked",
+            "notarytool_submission": "pending | accepted | blocked",
+            "stapler_validation": "pending | pass | blocked",
+            "formal_dmg_sha256": "<sha256>",
+            "clean_mac_first_launch": "pending | pass | blocked",
+            "release_gate": "block_if_any_pending_or_blocked",
+        },
+        "does_not_prove": [
+            "Developer ID signed app",
+            "notarized or stapled app",
+            "formal notarized DMG",
+            "clean Mac first launch",
+            "formal v0.1.0 release readiness",
+        ],
+    }
+
+
+def run_release_preflight(
+    root: Path,
+    *,
+    notary_profile: str = DEFAULT_NOTARY_PROFILE,
+    json_output: bool = False,
+) -> int:
     del root
     checks = [
         check_developer_id_identity(),
         check_notary_profile(notary_profile),
     ]
+    result = release_preflight_result(checks, notary_profile=notary_profile)
+
+    if json_output:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0 if result["status"] == "PASS" else 1
 
     print("release distribution preflight")
     for check in checks:
         print(f"- {check.status}: {check.name} - {check.detail}")
 
-    if all(check.passed for check in checks):
+    if result["status"] == "PASS":
         print("release distribution preflight: PASS")
         return 0
 
     print("release distribution preflight: BLOCKED")
     return 1
+
+
+def _absolute_input_path(path: Path) -> Path:
+    expanded = path.expanduser()
+    if expanded.is_absolute():
+        return expanded
+    return Path.cwd() / expanded
+
+
+def _file_type_from_mode(mode: int) -> str:
+    if stat.S_ISLNK(mode):
+        return "symlink"
+    if stat.S_ISREG(mode):
+        return "file"
+    if stat.S_ISDIR(mode):
+        return "directory"
+    return "other"
+
+
+def _summarize_mdls_output(output: str) -> str:
+    summary = " ".join(output.split())
+    if len(summary) > 240:
+        return f"{summary[:237]}..."
+    return summary
+
+
+def _parse_mdls_values(output: str) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for line in output.splitlines():
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if value.startswith('"') and value.endswith('"') and len(value) >= 2:
+            value = value[1:-1]
+        values[key] = value
+    return values
+
+
+def _mdls_icloud_metadata(path: Path) -> dict[str, Any]:
+    if shutil.which("mdls") is None:
+        return {
+            "mdls_attempted": False,
+            "mdls_available": False,
+            "mdls_exit_code": None,
+            "values": {},
+            "error_summary": "mdls command not found",
+        }
+    argv = ["mdls", "-nullMarker", "__AREAMATRIX_NULL__"]
+    for field in ICLOUD_MDLS_FIELDS:
+        argv.extend(["-name", field])
+    argv.append(str(path))
+    proc = _run_capture(argv)
+    values = _parse_mdls_values(proc.stdout or "")
+    return {
+        "mdls_attempted": True,
+        "mdls_available": True,
+        "mdls_exit_code": proc.returncode,
+        "values": values if proc.returncode == 0 else {},
+        "error_summary": "" if proc.returncode == 0 else _summarize_mdls_output(proc.stdout or ""),
+        "command": command_text(argv),
+    }
+
+
+def _skipped_icloud_metadata(reason: str) -> dict[str, Any]:
+    return {
+        "mdls_attempted": False,
+        "mdls_available": shutil.which("mdls") is not None,
+        "mdls_exit_code": None,
+        "values": {},
+        "error_summary": reason,
+    }
+
+
+def collect_icloud_placeholder_evidence(path: Path) -> dict[str, Any]:
+    absolute_path = _absolute_input_path(path)
+    path_lexists = os.path.lexists(absolute_path)
+    target: dict[str, Any] = {
+        "input_path": str(path),
+        "absolute_path": str(absolute_path),
+        "exists": absolute_path.exists(),
+        "lexists": path_lexists,
+        "icloud_marker_filename": absolute_path.name.endswith(".icloud"),
+    }
+    status = "captured"
+    mdls: dict[str, Any]
+    if path_lexists:
+        try:
+            metadata = absolute_path.lstat()
+            is_symlink = stat.S_ISLNK(metadata.st_mode)
+            target.update(
+                {
+                    "file_type": _file_type_from_mode(metadata.st_mode),
+                    "is_symlink": is_symlink,
+                    "lstat_size_bytes": metadata.st_size,
+                    "lstat_mtime_ns": metadata.st_mtime_ns,
+                }
+            )
+            if is_symlink:
+                status = "metadata_blocked"
+                mdls = _skipped_icloud_metadata("symlink target not inspected")
+            else:
+                mdls = _mdls_icloud_metadata(absolute_path)
+                if not mdls["mdls_available"]:
+                    status = "unsupported_platform"
+                elif mdls["mdls_exit_code"] != 0:
+                    status = "metadata_blocked"
+        except OSError as exc:
+            status = "metadata_blocked"
+            target["lstat_error"] = str(exc)
+            mdls = _skipped_icloud_metadata("lstat failed")
+    else:
+        status = "path_missing"
+        target.update({"file_type": "missing", "is_symlink": False})
+        mdls = _skipped_icloud_metadata("path does not exist")
+
+    return {
+        "schema_version": 1,
+        "mode": "icloud_placeholder_metadata_probe",
+        "residual_id": "v1-rl-002",
+        "manual_evidence_id": "M-02",
+        "status": status,
+        "closes_residual": False,
+        "release_gate": "blocked_until_real_icloud_download_retry_and_db_evidence_pass",
+        "target": target,
+        "icloud_metadata": mdls,
+        "side_effects": {
+            "download_attempted": False,
+            "file_content_read_attempted": False,
+            "file_write_attempted": False,
+            "db_write_attempted": False,
+            "project_write_attempted": False,
+            "areamatrix_metadata_write_attempted": False,
+        },
+        "manual_smoke_required": [
+            "mdls downloading status before Download & retry",
+            "UI action: Download & retry",
+            "retry result",
+            "DB row evidence",
+            "user-file invariants after retry",
+            "mdls downloading status after retry",
+        ],
+        "required_follow_up": [
+            "Run on a real iCloud Drive placeholder environment.",
+            "Record Finder or mdls before/after downloading status.",
+            "Perform Download & retry in the app UI.",
+            "Record retry result, DB row evidence, and user-file invariants.",
+            "Update recovery-scenarios.md and release-checklist.md only after real manual evidence passes.",
+        ],
+        "does_not_prove": [
+            "Download & retry succeeded",
+            "DB rows match the retried import or conflict flow",
+            "User files, conflicted copies, or placeholder markers were preserved after retry",
+            "v1-rl-002 is closed",
+            "Stage 1 alpha is release-ready",
+        ],
+    }
+
+
+def run_icloud_placeholder_evidence(path: Path, *, json_output: bool = False) -> int:
+    evidence = collect_icloud_placeholder_evidence(path)
+    if json_output:
+        print(json.dumps(evidence, ensure_ascii=False, indent=2))
+    else:
+        print("iCloud placeholder evidence probe")
+        print(f"- status: {evidence['status']}")
+        print(f"- release gate: {evidence['release_gate']}")
+        target = evidence["target"]
+        print(f"- path: {target['absolute_path']}")
+        print(f"- exists: {target['exists']}")
+        print(f"- file type: {target.get('file_type', 'unknown')}")
+        print(f"- icloud marker filename: {target['icloud_marker_filename']}")
+        print(f"- download attempted: {evidence['side_effects']['download_attempted']}")
+        print(f"- file content read attempted: {evidence['side_effects']['file_content_read_attempted']}")
+        mdls = evidence["icloud_metadata"]
+        print(f"- mdls attempted: {mdls['mdls_attempted']}")
+        if mdls.get("error_summary"):
+            print(f"- mdls note: {mdls['error_summary']}")
+    return 0 if evidence["status"] == "captured" else 1
 
 
 def default_readiness_build_number(now: datetime | None = None) -> str:

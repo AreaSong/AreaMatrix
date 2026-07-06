@@ -36,15 +36,33 @@ actor RecordingCoreErrorMapper: CoreErrorMapping {
     }
 }
 
+extension CoreErrorMappingSnapshot {
+    static func testFixture(
+        kind: CoreErrorKindSnapshot,
+        userMessage: String,
+        severity: CoreErrorSeveritySnapshot = .medium,
+        suggestedAction: String = "Retry",
+        recoverability: CoreErrorRecoverabilitySnapshot = .retryable,
+        rawContext: String? = nil
+    ) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: kind,
+            userMessage: userMessage,
+            severity: severity,
+            suggestedAction: suggestedAction,
+            recoverability: recoverability,
+            rawContext: rawContext ?? kind.rawValue
+        )
+    }
+}
+
 extension RecordingCoreErrorMapper {
     static func aiPrivacyRulesSettingsConfig() -> RecordingCoreErrorMapper {
         RecordingCoreErrorMapper { error in
-            CoreErrorMappingSnapshot(
+            CoreErrorMappingSnapshot.testFixture(
                 kind: .io,
                 userMessage: String(describing: error),
-                severity: .medium,
                 suggestedAction: "Retry save",
-                recoverability: .retryable,
                 rawContext: "ai-privacy-rules ai-settings-config"
             )
         }
@@ -52,10 +70,9 @@ extension RecordingCoreErrorMapper {
 
     static func batchChangeCategory() -> RecordingCoreErrorMapper {
         RecordingCoreErrorMapper { error in
-            CoreErrorMappingSnapshot(
+            CoreErrorMappingSnapshot.testFixture(
                 kind: CoreErrorKindTestMapper.kind(for: error),
                 userMessage: "Batch category update failed",
-                severity: .medium,
                 suggestedAction: "Review failed items and refresh the preview.",
                 recoverability: .refreshRequired,
                 rawContext: "batch-change-category batch-change-category-core batch-change-category"
@@ -65,10 +82,9 @@ extension RecordingCoreErrorMapper {
 
     static func undoToast() -> RecordingCoreErrorMapper {
         RecordingCoreErrorMapper { error in
-            CoreErrorMappingSnapshot(
+            CoreErrorMappingSnapshot.testFixture(
                 kind: CoreErrorKindTestMapper.kind(for: error),
                 userMessage: "Undo failed",
-                severity: .medium,
                 suggestedAction: "View details in Undo history.",
                 recoverability: .refreshRequired,
                 rawContext: "undo-toast undo-action-log undo-action-log"
@@ -78,10 +94,9 @@ extension RecordingCoreErrorMapper {
 
     static func undoHistory() -> RecordingCoreErrorMapper {
         RecordingCoreErrorMapper { error in
-            CoreErrorMappingSnapshot(
+            CoreErrorMappingSnapshot.testFixture(
                 kind: CoreErrorKindTestMapper.kind(for: error),
                 userMessage: "Undo failed",
-                severity: .medium,
                 suggestedAction: "View details in Undo history.",
                 recoverability: .refreshRequired,
                 rawContext: "undo-history undo-action-log undo-action-log"

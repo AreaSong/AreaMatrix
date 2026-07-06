@@ -2,15 +2,12 @@
 
 extension SearchQueryRequestSnapshot {
     static func mainRepoSearchResultsRouteFixture(query: String) -> SearchQueryRequestSnapshot {
-        SearchQueryRequestSnapshot(
+        .testFixture(
             query: query,
             scope: .current,
             currentPath: "docs/contracts",
             category: "docs",
-            filters: .mainRepoSearchResultsRouteFilters,
-            sort: .relevance,
-            limit: 50,
-            offset: 0
+            filters: .mainRepoSearchResultsRouteFilters
         )
     }
 }
@@ -30,51 +27,34 @@ extension RepositoryOpeningResult {
 
 extension RepositoryTreeNodeSnapshot {
     static func mainRepoSearchFiltersFixtureTree() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
-            children: []
-        )
+        .testRoot()
     }
 }
 
 extension SearchFilterStateSnapshot {
     static func mainRepoSearchFiltersFixture(tag: String = "finance") -> SearchFilterStateSnapshot {
-        SearchFilterStateSnapshot(
+        .testFixture(
             category: "docs",
             fileKind: "pdf",
             tags: [tag],
             tagMatchMode: .all,
-            importedAfter: nil,
-            importedBefore: nil,
             modifiedAfter: 1_700_000_000,
-            modifiedBefore: nil,
             storageMode: .copied,
             includeDeleted: true
         )
     }
 
-    static let mainRepoSearchResultsRouteFilters = SearchFilterStateSnapshot(
+    static let mainRepoSearchResultsRouteFilters = SearchFilterStateSnapshot.testFixture(
         category: "docs",
         fileKind: "pdf",
         tags: ["contract"],
-        tagMatchMode: .any,
-        importedAfter: nil,
-        importedBefore: nil,
-        modifiedAfter: nil,
-        modifiedBefore: nil,
-        storageMode: .copied,
-        includeDeleted: false
+        storageMode: .copied
     )
 }
 
 extension CoreErrorMappingSnapshot {
     static func mainRepoSearchFiltersDbFixture() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "过滤器不可用",
             severity: .high,

@@ -295,42 +295,23 @@ private typealias DetailLogExternalRemovedLister = RecordingFileLister
 
 private extension FileFilterSnapshot {
     static func detailLogIncludingDeleted() -> FileFilterSnapshot {
-        FileFilterSnapshot(
-            category: nil,
-            includeDeleted: true,
-            importedAfter: nil,
-            importedBefore: nil,
-            limit: 50,
-            offset: 0
-        )
+        .testFixture(includeDeleted: true)
     }
 }
 
 private extension SyncResultSnapshot {
     static func detailRemovedFixture() -> SyncResultSnapshot {
-        SyncResultSnapshot(
-            detectedCreates: 0,
-            detectedRenames: 0,
-            detectedDeletes: 1,
-            detectedModifies: 0,
-            errors: []
-        )
+        .deletedFixture()
     }
 
     static func detailRemovedMissingDeleteFixture() -> SyncResultSnapshot {
-        SyncResultSnapshot(
-            detectedCreates: 0,
-            detectedRenames: 0,
-            detectedDeletes: 0,
-            detectedModifies: 0,
-            errors: []
-        )
+        .testFixture()
     }
 }
 
 private extension CoreErrorMappingSnapshot {
     static func detailLogExternalRemoved(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: "外部删除同步失败",
             severity: .medium,

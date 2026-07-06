@@ -83,7 +83,7 @@ final class RemotePrivacyGateModel: ObservableObject {
     init(
         repoPath: String,
         bridge: any CoreAIPrivacyRulesManaging = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
     ) {
         self.repoPath = repoPath
         self.bridge = bridge

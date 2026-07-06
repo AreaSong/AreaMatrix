@@ -46,8 +46,8 @@ final class AIClassificationPrivacyRuleReferenceModel: ObservableObject {
     init(
         repoPath: String,
         ruleID: String,
-        bridge: any CoreAIPrivacyRulesManaging = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        bridge: any CoreAIPrivacyRulesManaging = AppCoreServices.aiPrivacyRulesManager,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
     ) {
         self.repoPath = repoPath
         self.ruleID = ruleID
@@ -99,8 +99,8 @@ struct AIClassificationPrivacyRuleReferenceSheet: View {
     init(
         repoPath: String,
         ruleID: String,
-        bridge: any CoreAIPrivacyRulesManaging = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge(),
+        bridge: any CoreAIPrivacyRulesManaging = AppCoreServices.aiPrivacyRulesManager,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         onClose: @escaping () -> Void = {}
     ) {
         _model = StateObject(wrappedValue: AIClassificationPrivacyRuleReferenceModel(

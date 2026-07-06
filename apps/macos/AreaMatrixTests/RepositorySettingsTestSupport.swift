@@ -17,7 +17,7 @@ extension RecordingCoreErrorMapper {
                 userMessage = "配置错误"
             }
 
-            return CoreErrorMappingSnapshot(
+            return CoreErrorMappingSnapshot.testFixture(
                 kind: kind,
                 userMessage: userMessage,
                 severity: .medium,

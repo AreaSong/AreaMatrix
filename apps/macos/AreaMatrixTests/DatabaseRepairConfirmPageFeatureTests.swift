@@ -4,7 +4,7 @@ import XCTest
 final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
     @MainActor
     func testDatabaseRepairStartupRecoveryCoreStartupRecoveryRunsRealCoreBridgeBoundaryBeforeRepair() async {
-        let report = RecoveryReportSnapshot(
+        let report = RecoveryReportSnapshot.testFixture(
             cleanedStagingFiles: 2,
             revertedStagingDbRows: 1,
             warnings: ["Kept recoverable staging file"]
@@ -38,7 +38,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
         let mapping = CoreErrorMappingSnapshot.databaseRepairStartupRecoveryMapping(rawContext: "database locked")
         let recoverer = RecordingCoreStartupRecoverer(results: [
             .failure(CoreError.Db(message: "database locked")),
-            .success(RecoveryReportSnapshot(cleanedStagingFiles: 0, revertedStagingDbRows: 0, warnings: []))
+            .success(.testFixture())
         ])
         let model = DatabaseRepairConfirmModel(
             repoPath: "/tmp/repo",
@@ -85,6 +85,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             mapping: nil,
             lastOpenedAt: nil,
             metadataRepairer: repairer,
+            startupRecoverer: StaticStartupRecoverer(),
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
             ),
@@ -124,6 +125,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             mapping: nil,
             lastOpenedAt: nil,
             metadataRepairer: repairer,
+            startupRecoverer: StaticStartupRecoverer(),
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
             ),
@@ -151,6 +153,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             metadataRepairer: DatabaseRepairRecordingMetadataRepairer(
                 result: .success(.databaseRepairRepairReportFixture())
             ),
+            startupRecoverer: StaticStartupRecoverer(),
             diagnosticsCollector: diagnosticsCollector,
             errorMapper: StaticCoreErrorMapper(mapping: .databaseRepairRepairMapping(kind: .permissionDenied))
         )
@@ -211,7 +214,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             onRetry: {}
         )
         let completedView = StartupRecoveryCheckStatusView(
-            state: .completed(RecoveryReportSnapshot(
+            state: .completed(.testFixture(
                 cleanedStagingFiles: 1,
                 revertedStagingDbRows: 2,
                 warnings: ["Kept active staging file"]
@@ -319,7 +322,7 @@ private extension RepairReportSnapshot {
 
 private extension DiagnosticsSnapshotSnapshot {
     static func databaseRepairDiagnosticsFixture() -> DiagnosticsSnapshotSnapshot {
-        DiagnosticsSnapshotSnapshot(
+        .testFixture(
             snapshotPath: ".areamatrix/diagnostics/database-repair-diagnostics.zip",
             createdAt: 1_778_000_000,
             warnings: ["paths redacted"]
@@ -332,7 +335,7 @@ private extension CoreErrorMappingSnapshot {
         kind: CoreErrorKindSnapshot,
         rawContext: String = "db corrupt"
     ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: "Repository metadata needs repair",
             severity: .critical,
@@ -343,7 +346,7 @@ private extension CoreErrorMappingSnapshot {
     }
 
     static func databaseRepairStartupRecoveryMapping(rawContext: String) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "Startup recovery could not finish",
             severity: .medium,

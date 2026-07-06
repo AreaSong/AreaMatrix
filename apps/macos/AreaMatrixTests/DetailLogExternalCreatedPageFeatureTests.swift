@@ -246,29 +246,17 @@ private typealias DetailLogExternalCreatedLister = RecordingFileLister
 
 private extension SyncResultSnapshot {
     static func detailCreatedFixture() -> SyncResultSnapshot {
-        SyncResultSnapshot(
-            detectedCreates: 1,
-            detectedRenames: 0,
-            detectedDeletes: 0,
-            detectedModifies: 0,
-            errors: []
-        )
+        .createdFixture()
     }
 
     static func detailCreatedWithErrorsFixture() -> SyncResultSnapshot {
-        SyncResultSnapshot(
-            detectedCreates: 0,
-            detectedRenames: 0,
-            detectedDeletes: 0,
-            detectedModifies: 0,
-            errors: ["metadata read failed"]
-        )
+        .errorFixture("metadata read failed")
     }
 }
 
 private extension CoreErrorMappingSnapshot {
     static func detailLogExternalCreated(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: "外部新增文件同步失败",
             severity: .medium,
@@ -287,20 +275,18 @@ private extension FileEntrySnapshot {
         sourcePath: String? = "~/Downloads/source.pdf",
         origin: String
     ) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: "docs/contracts/\(currentName)",
-            originalName: currentName,
             currentName: currentName,
-            category: "docs",
-            sizeBytes: 256,
-            hashSha256: "detail-meta-\(id)",
-            storageMode: storageMode,
-            origin: origin,
-            sourcePath: sourcePath,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_100
-        )
+            category: "docs"
+        ) {
+            $0.sizeBytes = 256
+            $0.hashSha256 = "detail-meta-\(id)"
+            $0.storageMode = storageMode
+            $0.origin = origin
+            $0.sourcePath = sourcePath
+        }
     }
 }
 

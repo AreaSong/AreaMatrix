@@ -221,26 +221,23 @@ extension FileEntrySnapshot {
         storageMode: String,
         origin: String = "Imported"
     ) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: "docs/contracts/\(name)",
-            originalName: name,
             currentName: name,
-            category: "docs",
-            sizeBytes: 512,
-            hashSha256: "delete-\(id)",
-            storageMode: storageMode,
-            origin: origin,
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_100
-        )
+            category: "docs"
+        ) {
+            $0.sizeBytes = 512
+            $0.hashSha256 = "delete-\(id)"
+            $0.storageMode = storageMode
+            $0.origin = origin
+        }
     }
 }
 
 private extension CoreErrorMappingSnapshot {
     static func deleteIo() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .io,
             userMessage: "Delete failed.",
             severity: .high,
@@ -251,7 +248,7 @@ private extension CoreErrorMappingSnapshot {
     }
 
     static func deletePermissionDenied() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .permissionDenied,
             userMessage: "AreaMatrix cannot move this file to Trash.",
             severity: .high,

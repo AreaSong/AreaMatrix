@@ -32,11 +32,11 @@ final class ClassifierSettingsModel: ObservableObject {
 
     init(
         repoPath: String,
-        loader: any CoreConfigurationLoading = CoreBridge(),
-        updater: any CoreConfigurationUpdating = CoreBridge(),
-        predictor: any CoreCategoryPredicting = CoreBridge(),
-        ruleEditor: any CoreClassifierRuleEditing = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge(),
+        loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
+        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
+        predictor: any CoreCategoryPredicting = AppCoreServices.categoryPredictor,
+        ruleEditor: any CoreClassifierRuleEditing = AppCoreServices.classifierRuleEditor,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         classifierRulesManager: any ClassifierRulesManaging =
             ClassifierSettingsPlatformServices.classifierRulesManager,
         fileOpener: any RepositoryFileOpening = ClassifierSettingsPlatformServices.fileOpener,

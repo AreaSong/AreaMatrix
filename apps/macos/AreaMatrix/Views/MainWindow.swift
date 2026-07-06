@@ -1,21 +1,25 @@
-import AppKit
 import SwiftUI
 
 struct MainWindow: View {
     @StateObject private var model: OnboardingModel
     @StateObject private var externalCreatedFileWatcher = MainExternalCreatedFileWatcher()
     private let importProgressControlState: ImportProgressControlState
+    private let windowCloser: any WindowClosing
 
-    init(model: OnboardingModel = OnboardingModel()) {
+    init(
+        model: OnboardingModel = OnboardingModel(),
+        windowCloser: any WindowClosing = AppPlatformServices.windowCloser
+    ) {
         _model = StateObject(wrappedValue: model)
         importProgressControlState = model.importProgressControlState
+        self.windowCloser = windowCloser
     }
 }
 
 extension MainWindow {
     var body: some View {
         ZStack(alignment: .top) {
-            MainWindowRouteContent(model: model)
+            MainWindowRouteContent(model: model, windowCloser: windowCloser)
 
             if let toastMessage = model.toastMessage {
                 Text(toastMessage)
@@ -62,7 +66,7 @@ extension MainWindow {
         ) {
             Button(setupQuitConfirmationActionTitle, role: .destructive) {
                 if model.confirmSetupQuit() {
-                    NSApplication.shared.keyWindow?.close()
+                    windowCloser.closeKeyWindow()
                 }
             }
             Button("Cancel", role: .cancel, action: model.cancelSetupQuit)

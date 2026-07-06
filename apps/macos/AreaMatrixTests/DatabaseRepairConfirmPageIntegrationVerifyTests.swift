@@ -324,18 +324,11 @@ private enum DatabaseRepairIntegrationFailure: Error {
 }
 
 private extension FileFilterSnapshot {
-    static let databaseRepairIntegrationAllFiles = FileFilterSnapshot(
-        category: nil,
-        includeDeleted: false,
-        importedAfter: nil,
-        importedBefore: nil,
-        limit: 100,
-        offset: 0
-    )
+    static let databaseRepairIntegrationAllFiles = FileFilterSnapshot.testFixture(limit: 100)
 }
 
 private extension DiagnosticsSnapshotSnapshot {
-    static let databaseRepairIntegrationDiagnostics = DiagnosticsSnapshotSnapshot(
+    static let databaseRepairIntegrationDiagnostics = DiagnosticsSnapshotSnapshot.testFixture(
         snapshotPath: ".areamatrix/diagnostics/database-repair-diagnostics.zip",
         createdAt: 1_778_000_000,
         warnings: ["paths redacted"]
@@ -349,7 +342,7 @@ private extension CoreErrorMappingSnapshot {
         recoverability: CoreErrorRecoverabilitySnapshot,
         rawContext: String
     ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: "Repository metadata needs repair",
             severity: severity,

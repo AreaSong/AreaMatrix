@@ -108,7 +108,7 @@ actor ICloudConflictMinimalRecordingMainCore: CoreFileListing,
 
     func createDiagnosticsSnapshot(repoPath _: String) async throws -> DiagnosticsSnapshotSnapshot {
         outOfScopeActions.append(.diagnostics)
-        return DiagnosticsSnapshotSnapshot(snapshotPath: "", createdAt: 0, warnings: [])
+        return .testFixture(snapshotPath: "", createdAt: 0)
     }
 
     func recordedOutOfScopeActions() -> [ICloudConflictMinimalOutOfScopeAction] {

@@ -12,58 +12,83 @@ extension RepositoryOpeningResult {
 
 extension RepoConfigSnapshot {
     static func searchFiltersFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
+        RepoConfigSnapshot.testFixture(repoPath: repoPath)
     }
 }
 
 extension SearchResultPageSnapshot {
     static func searchFiltersSearchFixture(query: String) -> SearchResultPageSnapshot {
-        SearchResultPageSnapshot(
+        .testFixture(query: query)
+    }
+}
+
+struct SearchFacetsTestFixtureOptions {
+    var categories: [SearchFacetCountSnapshot] = []
+    var fileKinds: [SearchFacetCountSnapshot] = []
+    var tags: [SearchFacetCountSnapshot] = []
+    var storageModes: [SearchStorageModeFacetCountSnapshot] = []
+    var dateBounds: SearchDateFacetBoundsSnapshot = .testEmpty
+    var activeFilterCount: Int64 = 0
+}
+
+extension SearchDateFacetBoundsSnapshot {
+    static var testEmpty: SearchDateFacetBoundsSnapshot {
+        SearchDateFacetBoundsSnapshot(
+            oldestImportedAt: nil,
+            newestImportedAt: nil,
+            oldestModifiedAt: nil,
+            newestModifiedAt: nil
+        )
+    }
+}
+
+extension SearchFacetCountSnapshot {
+    static func testFixture(
+        value: String,
+        label: String? = nil,
+        count: Int64 = 0,
+        selected: Bool = false,
+        disabled: Bool = false
+    ) -> SearchFacetCountSnapshot {
+        SearchFacetCountSnapshot(
+            value: value,
+            label: label ?? value,
+            count: count,
+            selected: selected,
+            disabled: disabled
+        )
+    }
+}
+
+extension SearchFacetsSnapshot {
+    static func testFixture(
+        query: String = "",
+        totalCount: Int64 = 0,
+        options configure: (inout SearchFacetsTestFixtureOptions) -> Void = { _ in }
+    ) -> SearchFacetsSnapshot {
+        var options = SearchFacetsTestFixtureOptions()
+        configure(&options)
+
+        return SearchFacetsSnapshot(
             query: query,
-            totalCount: 0,
-            results: [],
-            diagnostics: [],
-            indexStatus: .ready
+            totalCount: totalCount,
+            categories: options.categories,
+            fileKinds: options.fileKinds,
+            tags: options.tags,
+            storageModes: options.storageModes,
+            dateBounds: options.dateBounds,
+            activeFilterCount: options.activeFilterCount
         )
     }
 }
 
 extension RepositoryTreeNodeSnapshot {
     static func searchFiltersFixtureTree() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
+        .testRoot(
             children: [
-                RepositoryTreeNodeSnapshot(
-                    slug: "docs",
-                    displayName: "docs",
-                    fileCount: 0,
-                    children: [
-                        RepositoryTreeNodeSnapshot(
-                            slug: "contracts",
-                            displayName: "contracts",
-                            kind: "Subdir",
-                            relativePath: "docs/contracts",
-                            fileCount: 2,
-                            depth: 2,
-                            children: []
-                        )
-                    ]
+                .testCategory(
+                    "docs",
+                    children: [.testSubdirectory("contracts", relativePath: "docs/contracts", fileCount: 2)]
                 )
             ]
         )
@@ -72,27 +97,15 @@ extension RepositoryTreeNodeSnapshot {
 
 extension SearchFacetsSnapshot {
     static func searchFiltersFixture(active: Int64) -> SearchFacetsSnapshot {
-        SearchFacetsSnapshot(
-            query: "合同",
-            totalCount: 7,
-            categories: [],
-            fileKinds: [],
-            tags: [],
-            storageModes: [],
-            dateBounds: SearchDateFacetBoundsSnapshot(
-                oldestImportedAt: nil,
-                newestImportedAt: nil,
-                oldestModifiedAt: nil,
-                newestModifiedAt: nil
-            ),
-            activeFilterCount: active
-        )
+        SearchFacetsSnapshot.testFixture(query: "合同", totalCount: 7) {
+            $0.activeFilterCount = active
+        }
     }
 }
 
 extension CoreErrorMappingSnapshot {
     static func searchFiltersDbFixture() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "过滤器不可用",
             severity: .high,

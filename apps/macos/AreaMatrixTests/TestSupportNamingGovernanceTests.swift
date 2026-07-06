@@ -263,6 +263,30 @@ final class TestSupportNamingGovernanceTests: XCTestCase {
         )
     }
 
+    func testRawTemporaryFilesystemOperationsStayInSharedSupport() throws {
+        let temporaryDirectoryTerm = "FileManager.default." + "temporaryDirectory"
+        let instanceTemporaryDirectoryTerm = ".temporary" + "Directory"
+        let nsTemporaryDirectoryTerm = "NSTemporary" + "Directory("
+        let removeItemTerm = "remove" + "Item(at:"
+        let guardedTerms = [
+            temporaryDirectoryTerm,
+            instanceTemporaryDirectoryTerm,
+            nsTemporaryDirectoryTerm,
+            removeItemTerm
+        ]
+        let violations = try testSupportSwiftFiles()
+            .filter { $0.lastPathComponent != "TestTemporaryDirectoryFileSystemTestSupport.swift" }
+            .flatMap { try sourceTermViolations(in: $0, terms: guardedTerms) }
+            .sorted()
+
+        XCTAssertEqual(
+            violations,
+            [],
+            "Raw temporary-directory creation and cleanup should stay behind " +
+                "TestTemporaryDirectoryFileSystemTestSupport so tests share one filesystem safety boundary."
+        )
+    }
+
     func testActionRecordingSupportUsesTestDoubleSuffix() throws {
         let violations = try supportSwiftFiles()
             .map(\.lastPathComponent)
@@ -344,6 +368,17 @@ final class TestSupportNamingGovernanceTests: XCTestCase {
         )
     }
 
+    func testSnapshotDirectConstructorsStayInventoried() throws {
+        for (term, inventory) in snapshotConstructorInventories {
+            let actual = try countedTermMatches(in: testSupportSwiftFiles(), term: term)
+            XCTAssertEqual(
+                actual,
+                inventory,
+                "Snapshot test data should use shared testFixture helpers, except for inventoried roots."
+            )
+        }
+    }
+
     private func testSupportSwiftFiles() throws -> [URL] {
         let testsDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
 
@@ -372,6 +407,20 @@ final class TestSupportNamingGovernanceTests: XCTestCase {
                 return "\(fileURL.lastPathComponent):\(lineOffset + 1): \(term)"
             }
         }
+    }
+
+    private func countedTermMatches(in files: [URL], term: String) throws -> [String] {
+        try files.compactMap { fileURL in
+            let contents = try String(contentsOf: fileURL, encoding: .utf8)
+            let count = exactTermCount(in: contents, term: term)
+
+            guard count > 0 else {
+                return nil
+            }
+
+            return "\(fileURL.lastPathComponent):\(term):\(count)"
+        }
+        .sorted()
     }
 
     private func isNamedCoreBridgeBoundarySupport(_ fileName: String) -> Bool {

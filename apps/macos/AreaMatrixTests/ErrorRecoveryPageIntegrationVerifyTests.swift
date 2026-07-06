@@ -12,7 +12,7 @@ final class ErrorRecoveryPageIntegrationVerifyTests: XCTestCase {
         )
         let recoverer = RecordingCoreStartupRecoverer(results: [
             .failure(CoreError.Db(message: "database is locked")),
-            .success(RecoveryReportSnapshot(cleanedStagingFiles: 1, revertedStagingDbRows: 1, warnings: []))
+            .success(.testFixture(cleanedStagingFiles: 1, revertedStagingDbRows: 1))
         ])
         let opener = MainLoadingPausingRepositoryOpener(
             opening: .mainLoadingFixture(repoPath: "/tmp/startupRecovery-repo", fileCount: 1)
@@ -109,7 +109,7 @@ private func assertStartupRecoveryRetryingState(
         await model.retryMainRepositoryFromError(repoPath: "/tmp/startupRecovery-repo")
     }
     await opener.waitUntilStarted()
-    let expectedRecoveryReport = RecoveryReportSnapshot(
+    let expectedRecoveryReport = RecoveryReportSnapshot.testFixture(
         cleanedStagingFiles: 1,
         revertedStagingDbRows: 1,
         warnings: []
@@ -182,7 +182,7 @@ private extension CoreErrorMappingSnapshot {
         recoverability: CoreErrorRecoverabilitySnapshot,
         rawContext: String
     ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: userMessage,
             severity: severity,

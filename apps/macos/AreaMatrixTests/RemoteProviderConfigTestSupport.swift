@@ -11,7 +11,7 @@ extension RemoteProviderOutcome {
 }
 
 func remoteProviderConfigErrorMapper() -> StaticCoreErrorMapper {
-    StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot(
+    StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot.testFixture(
         kind: .internal,
         userMessage: "Remote provider save failed",
         severity: .medium,

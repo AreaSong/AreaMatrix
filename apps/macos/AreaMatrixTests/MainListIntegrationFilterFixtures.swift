@@ -15,54 +15,19 @@ extension RepositoryOpeningResult {
 
 extension RepoConfigSnapshot {
     static func integrationFilterFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
+        RepoConfigSnapshot.testFixture(repoPath: repoPath)
     }
 }
 
 extension RepositoryTreeNodeSnapshot {
     static func integrationFilterFixtureTree() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
+        .testRoot(
             children: [
-                RepositoryTreeNodeSnapshot(
-                    slug: "docs",
-                    displayName: "docs",
-                    fileCount: 0,
+                .testCategory(
+                    "docs",
                     children: [
-                        RepositoryTreeNodeSnapshot(
-                            slug: "contracts",
-                            displayName: "contracts",
-                            kind: "Subdir",
-                            relativePath: "docs/contracts",
-                            fileCount: 2,
-                            depth: 2,
-                            children: []
-                        ),
-                        RepositoryTreeNodeSnapshot(
-                            slug: "references",
-                            displayName: "references",
-                            kind: "Subdir",
-                            relativePath: "docs/references",
-                            fileCount: 1,
-                            depth: 2,
-                            children: []
-                        )
+                        .testSubdirectory("contracts", relativePath: "docs/contracts", fileCount: 2),
+                        .testSubdirectory("references", relativePath: "docs/references", fileCount: 1)
                     ]
                 )
             ]
@@ -72,7 +37,7 @@ extension RepositoryTreeNodeSnapshot {
 
 extension CoreErrorMappingSnapshot {
     static func integrationFilterDbFixture(rawContext: String) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "当前列表不可用",
             severity: .high,
@@ -89,49 +54,28 @@ extension SearchResultPageSnapshot {
         files: [FileEntrySnapshot],
         indexStatus: SearchIndexStatusSnapshot = .ready
     ) -> SearchResultPageSnapshot {
-        SearchResultPageSnapshot(
+        .testFixture(
             query: query,
-            totalCount: Int64(files.count),
             results: files.map {
-                SearchFileResultSnapshot(
-                    file: $0,
-                    score: 1,
-                    matches: [
-                        SearchMatchSnapshot(
-                            fieldDisplayName: "Name",
-                            kindDisplayName: "Exact match",
-                            snippet: $0.currentName
-                        )
-                    ],
-                    noteSnippet: nil
-                )
+                .nameMatchFixture(file: $0)
             },
-            diagnostics: [],
             indexStatus: indexStatus
         )
     }
 
     static func semanticSearchSemanticFallbackFixture() -> SearchResultPageSnapshot {
-        SearchResultPageSnapshot(
+        .testFixture(
             query: "客户合同",
             totalCount: 0,
-            results: [],
-            diagnostics: [],
             indexStatus: .unavailable,
-            semanticPage: SemanticSearchResultPageSnapshot(
+            semanticPage: SemanticSearchResultPageSnapshot.testFixture(
                 query: "客户合同",
                 semanticTotalCount: 0,
                 normalTotalCount: 0,
-                semanticMatches: [],
-                normalMatches: [],
-                dedupedNormalCount: 0,
                 indexStatus: .notReady,
                 route: .remote,
                 fallbackReason: .semanticIndexNotReady,
-                fallbackMessage: "Semantic index is not ready",
-                callLogID: 308,
-                privacyRuleID: nil,
-                lowConfidence: false
+                fallbackMessage: "Semantic index is not ready"
             )
         )
     }
@@ -165,19 +109,15 @@ extension FileEntrySnapshot {
         category: String,
         currentName: String
     ) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: path,
-            originalName: currentName,
             currentName: currentName,
-            category: category,
-            sizeBytes: 128,
-            hashSha256: "integration-filter-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000 - id,
-            updatedAt: 1_700_000_000
-        )
+            category: category
+        ) {
+            $0.hashSha256 = "integration-filter-\(id)"
+            $0.importedAt = 1_700_000_000 - id
+            $0.updatedAt = 1_700_000_000
+        }
     }
 }

@@ -1,6 +1,8 @@
 import XCTest
 
-final class MacOSArchitectureBoundaryGovernanceTests: XCTestCase {
+class MacOSGovernanceTestCase: XCTestCase {}
+
+final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
     private let featurePlatformCapabilityPatterns = [
         #"FileManager\.default"#,
         "startDownloadingUbiquitousItem",
@@ -48,6 +50,7 @@ final class MacOSArchitectureBoundaryGovernanceTests: XCTestCase {
     func testSwiftUIViewFilesDoNotOwnPlatformIO() throws {
         let platformIOTerms = [
             "FileManager.default",
+            "NSApplication.shared",
             "startDownloadingUbiquitousItem",
             "NSFileCoordinator",
             "FSEventStream",
@@ -190,7 +193,191 @@ final class MacOSArchitectureBoundaryGovernanceTests: XCTestCase {
     }
 }
 
-private extension MacOSArchitectureBoundaryGovernanceTests {
+final class MacOSPlatformAdapterGovernanceTests: MacOSGovernanceTestCase {
+    private let nsWorkspaceOpenInventory = [
+        "App/AppPlatformServiceAdapters.swift:NSWorkspace.shared.activateFileViewerSelecting:1",
+        "App/AppPlatformServiceAdapters.swift:NSWorkspace.shared.open:1",
+        "PlatformServices/ExternalURLPolicy.swift:NSWorkspace.shared.open:1"
+    ]
+
+    func testAppPlatformDefaultAdaptersStayCentralized() throws {
+        let violations = try productionSwiftFiles()
+            .filter { !appPlatformServiceFiles.contains(relativeProductionPath(for: $0)) }
+            .flatMap {
+                try sourceRegexViolations(
+                    in: $0,
+                    pattern: [
+                        #"\bBundleAppVersionReader\s*\("#,
+                        #"\bFileImportBatchSessionStore\s*\("#,
+                        #"\bLocalWelcomeHelpOpener\s*\("#,
+                        #"\bLocalRootOverviewFileInspector\s*\("#,
+                        #"\bLocalSystemCapabilities\s*\("#,
+                        #"\bNSApplicationKeyWindowCloser\s*\("#,
+                        #"\bNSOpenPanelRepositoryDirectoryPicker\s*\("#,
+                        #"\bNSOpenPanelRepositoryImportPicker\s*\("#,
+                        #"\bNSPasteboardRepositoryPathCopier\s*\("#,
+                        #"\bNSPasteboardStringWriter\s*\("#,
+                        #"\bNSSavePanelImportResultDetailsExporter\s*\("#,
+                        #"\bSQLiteExistingRepositoryMetadataReader\s*\("#,
+                        #"\bVoiceOverAccessibilityAnnouncer\s*\("#,
+                        #"\bNSWorkspaceRepositoryFileOpener\s*\("#,
+                        #"\bNSWorkspaceRepositoryFileRevealer\s*\("#,
+                        #"\bNSWorkspaceRepositoryFinderOpener\s*\("#
+                    ].joined(separator: "|")
+                )
+            }
+            .sorted()
+
+        XCTAssertEqual(
+            violations,
+            [],
+            "App-wide platform default adapters should be constructed through AppPlatformServices."
+        )
+    }
+
+    func testFeaturePlatformDefaultAdaptersStayInPlatformServices() throws {
+        let violations = try productionSwiftFiles()
+            .filter { fileURL in
+                let path = relativeProductionPath(for: fileURL)
+                return !path.hasPrefix("PlatformServices/")
+            }
+            .flatMap {
+                try sourceRegexViolations(
+                    in: $0,
+                    pattern: [
+                        #"\bLocalAboutDiagnosticsExporter\s*\("#,
+                        #"\bLocalICloudStatusDetector\s*\("#,
+                        #"\bLocalImportFolderScanner\s*\("#,
+                        #"\bLocalModelStorageProvider\s*\("#,
+                        #"\bLocalSourcePreflightInspector\s*\("#,
+                        #"\bNSPasteboardLocalModelDiagnosticsCopier\s*\("#,
+                        #"\bNSWorkspaceLocalModelFolderOpener\s*\("#,
+                        #"\bNSWorkspaceLocalModelInstallHelpOpener\s*\("#,
+                        #"\bNSWorkspaceRepositoryIgnoreRulesManager\s*\("#
+                    ].joined(separator: "|")
+                )
+            }
+            .sorted()
+
+        XCTAssertEqual(
+            violations,
+            [],
+            "Feature platform default adapters should be constructed through PlatformServices."
+        )
+    }
+
+    func testNSWorkspaceOpeningSideEffectsStayBehindPlatformAdapters() throws {
+        let violations = try productionSwiftFiles()
+            .filter { fileURL in
+                let path = relativeProductionPath(for: fileURL)
+                return !path.hasPrefix("App/") && !path.hasPrefix("PlatformServices/")
+            }
+            .flatMap {
+                try sourceRegexViolations(
+                    in: $0,
+                    pattern: #"\bNSWorkspace\.shared\.(?:open|activateFileViewerSelecting)\s*\("#
+                )
+            }
+            .sorted()
+
+        XCTAssertEqual(
+            violations,
+            [],
+            "Opening URLs, files, folders, or Finder selections through NSWorkspace should stay " +
+                "behind App or PlatformServices adapters."
+        )
+    }
+
+    func testNSWorkspaceOpeningSideEffectsStayInventoried() throws {
+        let actual = try countedRegexMatches(
+            in: productionSwiftFiles(),
+            pattern: #"\bNSWorkspace\.shared\.(?:open|activateFileViewerSelecting)\b"#
+        )
+
+        XCTAssertEqual(
+            actual,
+            nsWorkspaceOpenInventory,
+            "Direct NSWorkspace open/reveal calls should stay behind reviewed shared adapters; " +
+                "new call sites must either reuse LocalFileURLOpening or be explicitly inventoried."
+        )
+    }
+
+    func testExternalURLStringParsingStaysCentralizedInPolicy() throws {
+        let expected = [
+            "PlatformServices/ExternalURLPolicy.swift:URL(string::1"
+        ]
+        let actual = try countedRegexMatches(
+            in: productionSwiftFiles(),
+            pattern: #"\bURL\s*\(\s*string\s*:"#
+        )
+
+        XCTAssertEqual(
+            actual,
+            expected,
+            "External URL string parsing should stay behind ExternalURLPolicy so app and feature code " +
+                "reuse the same HTTPS-only guard before opening remote links."
+        )
+    }
+
+    func testExternalURLPolicyUseStaysBehindSharedOpener() throws {
+        let expected = [
+            "PlatformServices/ExternalURLPolicy.swift:ExternalURLPolicy.validatedHTTPSURL:1"
+        ]
+        let actual = try countedRegexMatches(
+            in: productionSwiftFiles(),
+            pattern: #"\bExternalURLPolicy\.validatedHTTPSURL\b"#
+        )
+
+        XCTAssertEqual(
+            actual,
+            expected,
+            "Remote link validation should stay behind the shared ExternalURLStringOpening adapter " +
+                "instead of being repeated in feature-specific platform services."
+        )
+    }
+
+    func testRepositoryLogsPathConstructionStaysCentralized() throws {
+        let expectedLogsComponentConstruction = [
+            "PlatformServices/RepositoryMetadataPresencePlatformServices.swift:" +
+                #".appendingPathComponent("logs", isDirectory: true):1"#
+        ]
+        let actualLogsComponentConstruction = try countedRegexMatches(
+            in: productionSwiftFiles(),
+            pattern: #"\.appendingPathComponent\(\s*"logs"\s*,\s*isDirectory:\s*true\s*\)"#
+        )
+
+        XCTAssertEqual(
+            actualLogsComponentConstruction,
+            expectedLogsComponentConstruction,
+            ".areamatrix/logs URL construction should stay behind RepositoryMetadataPath.logsURL " +
+                "instead of being repeated in settings platform adapters."
+        )
+
+        let expectedHelperUse = [
+            "PlatformServices/AboutSettingsPlatformServices.swift:RepositoryMetadataPath.logsURL:2",
+            "PlatformServices/AdvancedSettingsPlatformServices.swift:RepositoryMetadataPath.logsURL:1"
+        ]
+        let actualHelperUse = try countedRegexMatches(
+            in: productionSwiftFiles(),
+            pattern: #"\bRepositoryMetadataPath\.logsURL\b"#
+        )
+
+        XCTAssertEqual(
+            actualHelperUse,
+            expectedHelperUse,
+            "Settings log folder openers should reuse the shared repository metadata logs URL helper."
+        )
+    }
+}
+
+extension MacOSGovernanceTestCase {
+    var appPlatformServiceFiles: Set<String> {
+        [
+            "App/AppPlatformServices.swift",
+            "App/AppPlatformServiceAdapters.swift"
+        ]
+    }
+
     func productionSwiftFiles() throws -> [URL] {
         let enumerator = FileManager.default.enumerator(
             at: productionDirectory(),

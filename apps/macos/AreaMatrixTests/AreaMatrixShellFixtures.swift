@@ -2,18 +2,7 @@
 
 extension RepoConfigSnapshot {
     static func shellFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
+        RepoConfigSnapshot.testFixture(repoPath: repoPath)
     }
 }
 
@@ -21,12 +10,7 @@ extension RepositoryOpeningResult {
     static func shellFixture(repoPath: String, fileCount: Int64) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
             config: .shellFixture(repoPath: repoPath),
-            tree: RepositoryTreeNodeSnapshot(
-                slug: "__root__",
-                displayName: "资料库",
-                fileCount: fileCount,
-                children: []
-            ),
+            tree: .testRoot(displayName: "资料库", fileCount: fileCount),
             currentCategoryFiles: []
         )
     }
@@ -34,23 +18,11 @@ extension RepositoryOpeningResult {
 
 extension SyncResultSnapshot {
     static func shellDeletedFixture() -> SyncResultSnapshot {
-        SyncResultSnapshot(
-            detectedCreates: 0,
-            detectedRenames: 0,
-            detectedDeletes: 1,
-            detectedModifies: 0,
-            errors: []
-        )
+        .deletedFixture()
     }
 
     static func shellRenamedFixture() -> SyncResultSnapshot {
-        SyncResultSnapshot(
-            detectedCreates: 0,
-            detectedRenames: 1,
-            detectedDeletes: 0,
-            detectedModifies: 0,
-            errors: []
-        )
+        .renamedFixture()
     }
 }
 
@@ -70,21 +42,19 @@ extension RepoPathValidationSnapshot {
         issues: [RepoPathIssueSnapshot] = [],
         recommendedMode: RepoInitModeSnapshot? = .createEmpty
     ) -> RepoPathValidationSnapshot {
-        RepoPathValidationSnapshot(
-            repoPath: repoPath,
-            exists: exists,
-            isDirectory: isDirectory,
-            isReadable: isReadable,
-            isWritable: isWritable,
-            isEmpty: isEmpty,
-            isInitialized: isInitialized,
-            isInsideAreaMatrix: false,
-            isICloudPath: isICloudPath,
-            hasUnfinishedScanSession: hasUnfinishedScanSession,
-            availableCapacityBytes: availableCapacityBytes,
-            isExternalVolume: isExternalVolume,
-            recommendedMode: recommendedMode,
-            issues: issues
-        )
+        RepoPathValidationSnapshot.testFixture(repoPath: repoPath) {
+            $0.exists = exists
+            $0.isDirectory = isDirectory
+            $0.isReadable = isReadable
+            $0.isWritable = isWritable
+            $0.isEmpty = isEmpty
+            $0.isInitialized = isInitialized
+            $0.isICloudPath = isICloudPath
+            $0.hasUnfinishedScanSession = hasUnfinishedScanSession
+            $0.availableCapacityBytes = availableCapacityBytes
+            $0.isExternalVolume = isExternalVolume
+            $0.recommendedMode = recommendedMode
+            $0.issues = issues
+        }
     }
 }

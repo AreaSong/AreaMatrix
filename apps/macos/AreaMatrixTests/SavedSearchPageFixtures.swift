@@ -2,42 +2,62 @@
 
 extension SearchQueryRequestSnapshot {
     static func savedSearchSavedSearchFixture(query: String) -> SearchQueryRequestSnapshot {
-        SearchQueryRequestSnapshot(
+        .testFixture(
             query: query,
-            scope: .all,
-            currentPath: nil,
-            category: nil,
-            filters: SearchFilterStateSnapshot(
+            filters: .testFixture(
                 category: "docs",
                 fileKind: "pdf",
                 tags: ["finance"],
                 tagMatchMode: .all,
-                importedAfter: nil,
-                importedBefore: nil,
                 modifiedAfter: 1_700_000_000,
-                modifiedBefore: nil,
-                storageMode: .copied,
-                includeDeleted: false
-            ),
-            sort: .relevance,
-            limit: 50,
-            offset: 0
+                storageMode: .copied
+            )
         )
     }
 }
 
+extension SavedSearchQuerySnapshot {
+    static func testFixture(request: SearchQueryRequestSnapshot) -> SavedSearchQuerySnapshot {
+        SavedSearchQuerySnapshot(request: request)
+    }
+}
+
 extension SavedSearchSnapshot {
-    static func savedSearchFixture(id: Int64, request: CreateSavedSearchRequestSnapshot) -> SavedSearchSnapshot {
+    static func testFixture(
+        id: Int64,
+        name: String,
+        query: SavedSearchQuerySnapshot,
+        icon: String? = "magnifyingglass",
+        color: String? = nil,
+        pinned: Bool = true,
+        createdAt: Int64 = 1_700_000_000,
+        updatedAt: Int64 = 1_700_000_000
+    ) -> SavedSearchSnapshot {
         SavedSearchSnapshot(
+            id: id,
+            name: name,
+            query: query,
+            icon: icon,
+            color: color,
+            pinned: pinned,
+            createdAt: createdAt,
+            updatedAt: updatedAt
+        )
+    }
+
+    static func testFixture(id: Int64, request: CreateSavedSearchRequestSnapshot) -> SavedSearchSnapshot {
+        .testFixture(
             id: id,
             name: request.name,
             query: request.query,
             icon: request.icon,
             color: request.color,
-            pinned: request.pinned,
-            createdAt: 1_700_000_000,
-            updatedAt: 1_700_000_000
+            pinned: request.pinned
         )
+    }
+
+    static func savedSearchFixture(id: Int64, request: CreateSavedSearchRequestSnapshot) -> SavedSearchSnapshot {
+        .testFixture(id: id, request: request)
     }
 
     static func smartListFixture(
@@ -47,14 +67,11 @@ extension SavedSearchSnapshot {
         updatedAt: Int64
     ) -> SavedSearchSnapshot {
         let request = SearchQueryRequestSnapshot.savedSearchSavedSearchFixture(query: name)
-        return SavedSearchSnapshot(
+        return .testFixture(
             id: id,
             name: name,
-            query: SavedSearchQuerySnapshot(request: request),
-            icon: "magnifyingglass",
-            color: nil,
+            query: .testFixture(request: request),
             pinned: pinned,
-            createdAt: 1_700_000_000,
             updatedAt: updatedAt
         )
     }
@@ -65,14 +82,11 @@ extension SearchResultPageSnapshot {
         request: SearchQueryRequestSnapshot,
         files: [FileEntrySnapshot]
     ) -> SearchResultPageSnapshot {
-        SearchResultPageSnapshot(
+        .testFixture(
             query: request.query,
-            totalCount: Int64(files.count),
             results: files.map { file in
-                SearchFileResultSnapshot(file: file, score: 1, matches: [], noteSnippet: nil)
-            },
-            diagnostics: [],
-            indexStatus: .ready
+                SearchFileResultSnapshot.testFixture(file: file)
+            }
         )
     }
 }
@@ -95,21 +109,14 @@ extension RepositoryTreeNodeSnapshot {
 
 extension FileEntrySnapshot {
     static func savedSearchSavedSearchFixture() -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: 203,
             path: "docs/finance/report.pdf",
-            originalName: "report.pdf",
             currentName: "report.pdf",
-            category: "docs",
-            sizeBytes: 128,
-            hashSha256: "saved-search-hash",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_100,
-            availability: .available
-        )
+            category: "docs"
+        ) {
+            $0.hashSha256 = "saved-search-hash"
+        }
     }
 }
 
@@ -119,18 +126,7 @@ extension RepositoryOpeningResult {
         tree: RepositoryTreeNodeSnapshot
     ) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
-            config: RepoConfigSnapshot(
-                repoPath: repoPath,
-                defaultMode: "Copied",
-                overviewOutput: "GeneratedOnly",
-                aiEnabled: false,
-                locale: "zh-Hans",
-                iCloudWarn: true,
-                enableExtensionRules: true,
-                enableKeywordRules: true,
-                fallbackToInbox: true,
-                allowReplaceDuringImport: false
-            ),
+            config: .testFixture(repoPath: repoPath),
             tree: tree,
             currentCategoryFiles: []
         )
@@ -139,28 +135,13 @@ extension RepositoryOpeningResult {
 
 extension RepositoryTreeNodeSnapshot {
     static func savedSearchSavedSearchFixtureTree() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
-            children: [
-                RepositoryTreeNodeSnapshot(
-                    slug: "inbox",
-                    displayName: "inbox",
-                    fileCount: 0,
-                    children: []
-                )
-            ]
-        )
+        .testRoot(children: [.testCategory("inbox")])
     }
 }
 
 extension CoreErrorMappingSnapshot {
     static func savedSearchSavedSearchDbFixture() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "Saved search is unavailable.",
             severity: .high,

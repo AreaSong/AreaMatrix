@@ -237,20 +237,14 @@ private func aiCategorySuggestionFile(
     path: String = "inbox/invoice.pdf",
     category: String = "inbox"
 ) -> FileEntrySnapshot {
-    FileEntrySnapshot(
+    FileEntrySnapshot.testFixture(
         id: id,
         path: path,
-        originalName: "invoice.pdf",
         currentName: "invoice.pdf",
-        category: category,
-        sizeBytes: 128,
-        hashSha256: "aiCategorySuggestion-\(id)",
-        storageMode: "Copied",
-        origin: "Imported",
-        sourcePath: nil,
-        importedAt: 1_700_000_000,
-        updatedAt: 1_700_000_100
-    )
+        category: category
+    ) {
+        $0.hashSha256 = "aiCategorySuggestion-\(id)"
+    }
 }
 
 private func aiCategorySuggestionPreview(fileID: Int64) -> MoveToCategoryPreviewSnapshot {
@@ -314,7 +308,7 @@ private typealias AICategorySuggestionChangeLogLister = RecordingChangeLogLister
 
 private extension CoreErrorMappingSnapshot {
     static var aiCategorySuggestionPageFailure: CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .classify,
             userMessage: "ai-category-suggestion apply failed",
             severity: .medium,
@@ -328,27 +322,10 @@ private extension CoreErrorMappingSnapshot {
 private extension RepositoryOpeningResult {
     static func aiCategorySuggestionFixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
-            config: RepoConfigSnapshot(
-                repoPath: repoPath,
-                defaultMode: "Copied",
-                overviewOutput: "GeneratedOnly",
-                aiEnabled: true,
-                locale: "zh-Hans",
-                iCloudWarn: true,
-                enableExtensionRules: true,
-                enableKeywordRules: true,
-                fallbackToInbox: true,
-                allowReplaceDuringImport: false
-            ),
-            tree: RepositoryTreeNodeSnapshot(
-                slug: "__root__",
-                displayName: "Repository",
-                kind: "RepositoryRoot",
-                relativePath: "",
-                fileCount: 1,
-                depth: 0,
-                children: []
-            ),
+            config: .testFixture(repoPath: repoPath) {
+                $0.aiEnabled = true
+            },
+            tree: .testRoot(fileCount: 1),
             currentCategoryFiles: files,
             isReadOnly: false,
             writeLockedFileIDs: []

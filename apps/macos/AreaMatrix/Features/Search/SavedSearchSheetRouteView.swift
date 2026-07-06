@@ -35,8 +35,8 @@ struct SavedSearchSheetRouteView: View {
         request: SearchQueryRequestSnapshot,
         repoPath: String = "",
         resultCountState: SavedSearchResultCountState = .loading,
-        savedSearchStore: any CoreSavedSearchCRUD = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge(),
+        savedSearchStore: any CoreSavedSearchCRUD = AppCoreServices.savedSearchStore,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         onCancel: @escaping () -> Void,
         onSaved: @escaping (SavedSearchSnapshot) -> Void = { _ in },
         onEditFilters: @escaping () -> Void = {}

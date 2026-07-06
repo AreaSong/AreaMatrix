@@ -37,11 +37,11 @@ final class RepositorySettingsModel: ObservableObject {
 
     init(
         repoPath: String,
-        loader: any CoreConfigurationLoading = CoreBridge(),
-        updater: any CoreConfigurationUpdating = CoreBridge(),
-        repositoryOpener: any CoreEmptyRepositoryOpening = CoreBridge(),
+        loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
+        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
+        repositoryOpener: any CoreEmptyRepositoryOpening = AppCoreServices.emptyRepositoryOpener,
         fileLister: (any CoreFileListing)? = nil,
-        scanSessionReader: any CoreScanSessionReading = CoreBridge(),
+        scanSessionReader: any CoreScanSessionReading = AppCoreServices.scanSessionReader,
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
             RepositorySettingsPlatformServices.metadataReader,
         metadataPresenceChecker: any RepoMetadataPresenceChecking =
@@ -50,9 +50,9 @@ final class RepositorySettingsModel: ObservableObject {
         pathCopier: any RepositoryPathCopying = RepositorySettingsPlatformServices.pathCopier,
         generatedOverviewRevealer: any RepositoryFileRevealing =
             RepositorySettingsPlatformServices.generatedOverviewRevealer,
-        diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
-        coreVersionLoader: any CoreVersionLoading = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge(),
+        diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices.diagnosticsCollector,
+        coreVersionLoader: any CoreVersionLoading = AppCoreServices.coreVersionLoader,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         accessibilityAnnouncer: any AccessibilityAnnouncing = RepositorySettingsPlatformServices.accessibilityAnnouncer
     ) {
         self.repoPath = repoPath

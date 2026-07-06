@@ -5,11 +5,16 @@ protocol ImportBatchCoreFileLoading: Sendable {
 }
 
 struct CoreBridgeBatchFileLoader: ImportBatchCoreFileLoading {
+    private let fileLister: any CoreFileListing
+
+    init(fileLister: any CoreFileListing = AppCoreServices.fileLister) {
+        self.fileLister = fileLister
+    }
+
     func loadImportPreviewFiles(repoPath: String, categories: Set<String?>) async throws -> [FileEntrySnapshot] {
-        let bridge = CoreBridge()
-        return try await ImportBatchCoreFileLoader
+        try await ImportBatchCoreFileLoader
             .load(repoPath: repoPath, categories: categories) { repoPath, filter in
-                try await bridge.listFiles(repoPath: repoPath, filter: filter)
+                try await fileLister.listFiles(repoPath: repoPath, filter: filter)
             }
     }
 }

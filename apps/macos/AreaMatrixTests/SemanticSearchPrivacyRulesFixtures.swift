@@ -2,7 +2,7 @@
 
 extension CoreErrorMappingSnapshot {
     static var semanticSearchPrivacyFailure: CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .config,
             userMessage: "Semantic privacy rules could not be checked.",
             severity: .high,
@@ -19,15 +19,12 @@ extension SearchQueryRequestSnapshot {
         filters.category = "finance"
         filters.fileKind = ".pdf"
         filters.tags = [" confidential ", ""]
-        return SearchQueryRequestSnapshot(
+        return .testFixture(
             query: "客户合同",
             scope: .current,
             currentPath: "finance/invoices",
             category: nil,
             filters: filters,
-            sort: .relevance,
-            limit: 50,
-            offset: 0,
             mode: .semantic
         )
     }
@@ -35,26 +32,19 @@ extension SearchQueryRequestSnapshot {
 
 extension SearchResultPageSnapshot {
     static func semanticSearchSemanticPrivacyPage(route: SemanticSearchRouteSnapshot) -> SearchResultPageSnapshot {
-        let semanticPage = SemanticSearchResultPageSnapshot(
+        let semanticPage = SemanticSearchResultPageSnapshot.testFixture(
             query: "客户合同",
             semanticTotalCount: 0,
             normalTotalCount: 0,
-            semanticMatches: [],
-            normalMatches: [],
-            dedupedNormalCount: 0,
             indexStatus: .notReady,
             route: route,
             fallbackReason: .semanticIndexNotReady,
-            fallbackMessage: nil,
             callLogID: nil,
-            privacyRuleID: nil,
             lowConfidence: false
         )
-        return SearchResultPageSnapshot(
+        return .testFixture(
             query: "客户合同",
             totalCount: 0,
-            results: [],
-            diagnostics: [],
             indexStatus: .unavailable,
             semanticPage: semanticPage
         )

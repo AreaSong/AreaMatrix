@@ -82,7 +82,7 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
     func testImportConflictBatchUndoActionLogCoreFallbackUsesAppSemanticFailureSnapshot() {
         XCTAssertEqual(
             CoreErrorMappingSnapshot.internalFailure(rawContext: "undo_action returned no result"),
-            CoreErrorMappingSnapshot(
+            CoreErrorMappingSnapshot.testFixture(
                 kind: .internal,
                 userMessage: "应用内部错误",
                 severity: .critical,

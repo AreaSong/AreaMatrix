@@ -167,14 +167,13 @@ private func makeRepositorySettingsIntegrationURLs() throws -> RepositorySetting
 }
 
 private func makeRepositorySettingsDiagnosticsSnapshot(repoURL: URL) -> DiagnosticsSnapshotSnapshot {
-    DiagnosticsSnapshotSnapshot(
+    DiagnosticsSnapshotSnapshot.testFixture(
         snapshotPath: repoURL
             .appendingPathComponent(".areamatrix", isDirectory: true)
             .appendingPathComponent("diagnostics", isDirectory: true)
             .appendingPathComponent("repository-settings-diagnostics.zip")
             .path,
-        createdAt: 1_778_000_000,
-        warnings: []
+        createdAt: 1_778_000_000
     )
 }
 

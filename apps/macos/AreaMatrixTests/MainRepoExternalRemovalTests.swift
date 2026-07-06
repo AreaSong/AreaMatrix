@@ -15,8 +15,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         )
         let errorBody = QueryErrorRouteView(
             request: request,
-            diagnostic: SearchQueryDiagnosticSnapshot(
-                severityDisplayName: "Error",
+            diagnostic: .testFixture(
                 message: "Unknown field: owner",
                 suggestion: "Use category:"
             ),
@@ -225,17 +224,11 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             searchFiltering: MainListRecordingSearchFiltering(results: []),
             errorMapper: StaticCoreErrorMapper(mapping: .mainRepoSearchFiltersDbFixture())
         )
-        var searchFilters = SearchFilterStateSnapshot(
+        var searchFilters = SearchFilterStateSnapshot.testFixture(
             category: "docs",
             fileKind: "pdf",
             tags: ["ordinary"],
-            tagMatchMode: .any,
-            importedAfter: nil,
-            importedBefore: nil,
-            modifiedAfter: nil,
-            modifiedBefore: nil,
-            storageMode: .copied,
-            includeDeleted: false
+            storageMode: .copied
         )
         let draftFilters = SearchFilterStateSnapshot.mainRepoSearchFiltersFixture(tag: "draft")
 

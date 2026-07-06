@@ -6,7 +6,7 @@ func batchChangeCategoryRepoPath() -> String {
 
 extension UndoActionRecordSnapshot {
     static var batchChangeCategoryAction: UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
+        UndoActionRecordSnapshot.testFixture(
             actionID: "undo-batch-category",
             kind: "batch_move_to_category",
             summary: "Changed category for 2 files.",
@@ -23,37 +23,25 @@ extension UndoActionRecordSnapshot {
 
 extension FileEntrySnapshot {
     static func batchChangeCategoryCategoryFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: "docs/\(currentName)",
-            originalName: currentName,
             currentName: currentName,
-            category: "docs",
-            sizeBytes: 128,
-            hashSha256: "batchChangeCategory-category-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_100
-        )
+            category: "docs"
+        ) {
+            $0.hashSha256 = "batchChangeCategory-category-\(id)"
+        }
     }
 
     static func batchChangeCategoryRouteFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: "docs/\(currentName)",
-            originalName: currentName,
             currentName: currentName,
-            category: "docs",
-            sizeBytes: 128,
-            hashSha256: "batchChangeCategory-route-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_100
-        )
+            category: "docs"
+        ) {
+            $0.hashSha256 = "batchChangeCategory-route-\(id)"
+        }
     }
 }
 

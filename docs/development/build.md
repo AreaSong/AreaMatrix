@@ -237,11 +237,15 @@ PR 要全绿才能合并。
 
 ```bash
 ./dev release preflight
+./dev release preflight --json
 ```
 
 该命令只读取本机 keychain / signing identity 状态。若输出 `release distribution
 preflight: BLOCKED`，说明当前机器不能完成 Developer ID 签名或 notarytool 公证；可以把
-输出写入 release checklist 作为阻断证据，但不能把产物标记为可分发。
+输出写入 release checklist 作为阻断证据，但不能把产物标记为可分发。`--json` 输出会包含
+`checks`、`blocked_by`、`required_distribution_evidence` 和 `evidence_record_template`，用于后续
+补证归档；它同样不能替代 codesign、notarytool accepted log、stapler、正式 DMG checksum 或干净
+Mac 首启。
 
 本机工程验证可以使用 Xcode Release 构建、`codesign --verify` 和 `otool -L` 检查包结构与静态链接。
 若没有 Developer ID signing identity 或 notarytool profile，只能记录为工程验证，不能写成可分发证据。

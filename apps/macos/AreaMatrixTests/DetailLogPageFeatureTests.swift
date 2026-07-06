@@ -76,7 +76,7 @@ final class DetailLogPageFeatureTests: XCTestCase {
     func testDetailLogDetailLogDiagnosticsRequiresPrivacyConfirmationAndCollectsCoreSnapshot() async {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 20, currentName: "diagnostics.pdf")
         let mapping = CoreErrorMappingSnapshot.detailLogDb()
-        let snapshot = DiagnosticsSnapshotSnapshot(
+        let snapshot = DiagnosticsSnapshotSnapshot.testFixture(
             snapshotPath: "/tmp/repo/.areamatrix/diagnostics/detail-log.zip",
             createdAt: 1_700_000_300,
             warnings: ["paths redacted", "usernames redacted"]

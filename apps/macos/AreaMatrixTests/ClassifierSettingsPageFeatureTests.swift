@@ -73,7 +73,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testPreviewCallsInjectedCoreCategoryPredictorAndClearsStaleResultWhenFilenameChanges() async {
         let predictor = ClassifierSettingsSequencePredictor(results: [
-            .success(ClassifyResultSnapshot(
+            .success(.testFixture(
                 category: "finance",
                 suggestedName: "Invoice_2026Q1.pdf",
                 reason: .keyword,

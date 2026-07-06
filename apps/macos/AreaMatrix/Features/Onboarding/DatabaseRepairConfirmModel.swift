@@ -64,7 +64,7 @@ final class DatabaseRepairConfirmModel: ObservableObject {
         mapping: CoreErrorMappingSnapshot?,
         lastOpenedAt: Int64?,
         metadataRepairer: any CoreMetadataRepairing,
-        startupRecoverer: any CoreStartupRecovering = CoreBridge(),
+        startupRecoverer: any CoreStartupRecovering,
         diagnosticsCollector: any CoreDiagnosticsCollecting,
         errorMapper: any CoreErrorMapping
     ) {

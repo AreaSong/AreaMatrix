@@ -26,8 +26,8 @@ final class AIPrivacyRulesModel: ObservableObject {
     init(
         repoPath: String,
         rulesManager: any CoreAIPrivacyRulesManaging = CoreBridge(),
-        evaluator: any CoreAIPrivacyEvaluating = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge(),
+        evaluator: any CoreAIPrivacyEvaluating = AppCoreServices.aiPrivacyRules,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         settingsSync: (any AIPrivacyGateSettingsSynchronizing)? = nil
     ) {
         self.repoPath = repoPath

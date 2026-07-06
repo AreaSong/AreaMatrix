@@ -33,10 +33,10 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 
 | ID | 状态 | 类型 | 当前影响 | 说明 |
 |---|---|---|---|---|
-| `v1-rl-002` | `blocked-external` | `release-evidence` | v1 distribution not cleared | 真实 iCloud placeholder 环境冒烟证据缺失。 |
+| `v1-rl-002` | `blocked-external` | `release-evidence` | v1 distribution not cleared | 真实 iCloud placeholder 环境冒烟证据缺失；只读 metadata helper 已存在但不能关闭 blocker。 |
 | `v1-rl-003` | `blocked-external` | `release-evidence` | v1 distribution not cleared | Developer ID signing / notarization / stapled DMG / clean Mac 首启证据缺失。 |
 | `v1-rl-004` | `blocked-decision` | `release-evidence` | v1 distribution not cleared | final `v0.1.0` tag 依赖分发证据和分发决策关闭。 |
-| `v1-rl-006` | `blocked-decision` | `release-evidence` | v1 distribution not cleared | 可信测试者名单和反馈入口未记录。 |
+| `v1-rl-006` | `blocked-decision` | `release-evidence` | v1 distribution not cleared | Alpha feedback issue template 和 route evidence 已存在；可信测试者名单、正式公告 / Discussion 链接、反馈分流和 triage owner 决策未记录。 |
 | `v1-ref-003-1-task-05` | `deferred` | `release-evidence` | v1 distribution not cleared | 分发 review item 走分发证据 review，不补造 task-loop verify evidence。 |
 | `v1-ex-001` | `accepted-exception` | `closeout-exception` | none | 35 个历史 checkpoint gaps 已接受为 closeout exceptions。 |
 | `global-ref-areaflow` | `reference-only` | `historical-reference` | none | AreaFlow 历史愿景材料，不是当前 AreaMatrix 产品范围或 active task。 |

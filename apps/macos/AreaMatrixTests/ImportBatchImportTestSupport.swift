@@ -17,14 +17,40 @@ func importBatchProgress(
     failed: Int = 0,
     total: Int = 2,
     remaining: Int? = nil,
-    currentPath: String
+    currentPath: String,
+    skipped: Int = 0,
+    pending: Int = 0,
+    items: [ImportBatchProgressSnapshot.Item] = []
 ) -> ImportBatchProgressSnapshot {
     ImportBatchProgressSnapshot(
         completed: completed,
         failed: failed,
         total: total,
         remaining: remaining ?? max(total - completed - failed, 0),
-        currentPath: currentPath
+        currentPath: currentPath,
+        skipped: skipped,
+        pending: pending,
+        items: items
+    )
+}
+
+func importBatchProgressItem(
+    fileID: Int64? = nil,
+    sourcePath: String,
+    targetPath: String,
+    phase: ImportBatchProgressSnapshot.Phase,
+    errorMessage: String? = nil,
+    existingRelativePath: String? = nil,
+    importConflictBatch: ImportConflictBatchProgressMetadata? = nil
+) -> ImportBatchProgressSnapshot.Item {
+    ImportBatchProgressSnapshot.Item(
+        fileID: fileID,
+        sourcePath: sourcePath,
+        targetPath: targetPath,
+        phase: phase,
+        errorMessage: errorMessage,
+        existingRelativePath: existingRelativePath,
+        importConflictBatch: importConflictBatch
     )
 }
 

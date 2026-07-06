@@ -355,22 +355,21 @@ private extension ICloudConflictVersionSnapshot {
 
 private extension RepoPathValidationSnapshot {
     func with(repoPath: String) -> RepoPathValidationSnapshot {
-        RepoPathValidationSnapshot(
-            repoPath: repoPath,
-            exists: exists,
-            isDirectory: isDirectory,
-            isReadable: isReadable,
-            isWritable: isWritable,
-            isEmpty: isEmpty,
-            isInitialized: isInitialized,
-            isInsideAreaMatrix: isInsideAreaMatrix,
-            isICloudPath: isICloudPath,
-            hasUnfinishedScanSession: hasUnfinishedScanSession,
-            availableCapacityBytes: availableCapacityBytes,
-            isExternalVolume: isExternalVolume,
-            recommendedMode: recommendedMode,
-            issues: issues
-        )
+        RepoPathValidationSnapshot.testFixture(repoPath: repoPath) {
+            $0.exists = exists
+            $0.isDirectory = isDirectory
+            $0.isReadable = isReadable
+            $0.isWritable = isWritable
+            $0.isEmpty = isEmpty
+            $0.isInitialized = isInitialized
+            $0.isInsideAreaMatrix = isInsideAreaMatrix
+            $0.isICloudPath = isICloudPath
+            $0.hasUnfinishedScanSession = hasUnfinishedScanSession
+            $0.availableCapacityBytes = availableCapacityBytes
+            $0.isExternalVolume = isExternalVolume
+            $0.recommendedMode = recommendedMode
+            $0.issues = issues
+        }
     }
 }
 
@@ -391,7 +390,7 @@ private extension CoreErrorMappingSnapshot {
         kind: CoreErrorKindSnapshot = .iCloudPlaceholder,
         rawContext: String = "/tmp/repo/docs/report.pdf.icloud"
     ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: "AreaMatrix cannot inspect this conflict source.",
             severity: .high,

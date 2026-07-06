@@ -105,5 +105,5 @@ actor SmartListOnlyRecordingSearchQuerying: CoreSearchQuerying {
 }
 
 private func emptySearchResultPage(query: String) -> SearchResultPageSnapshot {
-    SearchResultPageSnapshot(query: query, totalCount: 0, results: [], diagnostics: [], indexStatus: .ready)
+    .testFixture(query: query)
 }

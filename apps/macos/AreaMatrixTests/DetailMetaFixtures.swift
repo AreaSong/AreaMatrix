@@ -3,24 +3,8 @@
 extension RepositoryOpeningResult {
     static func detailMetaFixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
-            config: RepoConfigSnapshot(
-                repoPath: repoPath,
-                defaultMode: "Copied",
-                overviewOutput: "GeneratedOnly",
-                aiEnabled: false,
-                locale: "zh-Hans",
-                iCloudWarn: true,
-                enableExtensionRules: true,
-                enableKeywordRules: true,
-                fallbackToInbox: true,
-                allowReplaceDuringImport: false
-            ),
-            tree: RepositoryTreeNodeSnapshot(
-                slug: "__root__",
-                displayName: "Repository",
-                fileCount: Int64(files.count),
-                children: []
-            ),
+            config: .testFixture(repoPath: repoPath),
+            tree: .testRoot(fileCount: Int64(files.count)),
             currentCategoryFiles: files
         )
     }
@@ -33,20 +17,17 @@ extension FileEntrySnapshot {
         storageMode: String = "Copied",
         sourcePath: String? = "~/Downloads/source.pdf"
     ) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: "docs/contracts/\(currentName)",
-            originalName: currentName,
             currentName: currentName,
-            category: "docs",
-            sizeBytes: 256,
-            hashSha256: "detail-meta-\(id)",
-            storageMode: storageMode,
-            origin: "Imported",
-            sourcePath: sourcePath,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_100
-        )
+            category: "docs"
+        ) {
+            $0.sizeBytes = 256
+            $0.hashSha256 = "detail-meta-\(id)"
+            $0.storageMode = storageMode
+            $0.sourcePath = sourcePath
+        }
     }
 }
 
@@ -66,7 +47,7 @@ extension ChangeLogEntrySnapshot {
 
 extension CoreErrorMappingSnapshot {
     static func detailMetaFileNotFound() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .fileNotFound,
             userMessage: "文件不存在",
             severity: .medium,
@@ -77,7 +58,7 @@ extension CoreErrorMappingSnapshot {
     }
 
     static func detailLogDb() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "无法加载改动记录",
             severity: .medium,

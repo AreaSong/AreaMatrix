@@ -5,7 +5,7 @@ actor StaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading 
     private var paths: [String] = []
 
     init(schemaVersion: Int64, lastOpenedAt: Int64? = nil, configuredRepoPath: String? = nil) {
-        result = .success(ExistingRepositoryMetadataSnapshot(
+        result = .success(.testFixture(
             schemaVersion: schemaVersion,
             lastOpenedAt: lastOpenedAt,
             configuredRepoPath: configuredRepoPath

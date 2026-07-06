@@ -12,23 +12,15 @@ extension RepositoryOpeningResult {
 
 extension RepositoryTreeNodeSnapshot {
     static func commandPaletteCommandFixtureTree() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
-            children: [
-                RepositoryTreeNodeSnapshot(slug: "docs", displayName: "docs", fileCount: 1, children: [])
-            ]
-        )
+        RepositoryTreeNodeSnapshot.testRoot(children: [
+            .testCategory("docs", fileCount: 1)
+        ])
     }
 }
 
 extension CoreErrorMappingSnapshot {
     static func commandPaletteCommandDb(rawContext: String) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "Some commands are unavailable",
             severity: .medium,
@@ -41,43 +33,26 @@ extension CoreErrorMappingSnapshot {
 
 extension FileEntrySnapshot {
     static func commandPaletteCommandFileFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: "docs/\(currentName)",
-            originalName: currentName,
             currentName: currentName,
-            category: "docs",
-            sizeBytes: 256,
-            hashSha256: "commandPalette-command-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_100
-        )
+            category: "docs"
+        ) {
+            $0.sizeBytes = 256
+            $0.hashSha256 = "commandPalette-command-\(id)"
+        }
     }
 }
 
 extension SavedSearchSnapshot {
     static func commandPaletteCommandPaletteFixture() -> SavedSearchSnapshot {
-        let request = SearchQueryRequestSnapshot(
-            query: "Finance",
-            scope: .all,
-            currentPath: nil,
-            category: nil,
-            filters: .empty,
-            sort: .relevance,
-            limit: 50,
-            offset: 0
-        )
-        return SavedSearchSnapshot(
+        let request = SearchQueryRequestSnapshot.testFixture(query: "Finance")
+        return .testFixture(
             id: 77,
             name: "Finance",
-            query: SavedSearchQuerySnapshot(request: request),
-            icon: "magnifyingglass",
-            color: nil,
+            query: .testFixture(request: request),
             pinned: true,
-            createdAt: 1_700_000_000,
             updatedAt: 1_700_000_100
         )
     }
@@ -85,38 +60,18 @@ extension SavedSearchSnapshot {
 
 extension SearchResultPageSnapshot {
     static func commandPaletteCommandSmartListPage(saved: SavedSearchSnapshot) -> SearchResultPageSnapshot {
-        SearchResultPageSnapshot(
-            query: saved.query.query,
-            totalCount: 0,
-            results: [],
-            diagnostics: [],
-            indexStatus: .ready
-        )
+        .testFixture(query: saved.query.query)
     }
 
     static func commandPaletteCommandSmartListPage(
         saved: SavedSearchSnapshot,
         files: [FileEntrySnapshot]
     ) -> SearchResultPageSnapshot {
-        SearchResultPageSnapshot(
+        .testFixture(
             query: saved.query.query,
-            totalCount: Int64(files.count),
             results: files.map {
-                SearchFileResultSnapshot(
-                    file: $0,
-                    score: 1,
-                    matches: [
-                        SearchMatchSnapshot(
-                            fieldDisplayName: "Name",
-                            kindDisplayName: "Smart List match",
-                            snippet: $0.currentName
-                        )
-                    ],
-                    noteSnippet: nil
-                )
-            },
-            diagnostics: [],
-            indexStatus: .ready
+                .nameMatchFixture(file: $0, kindDisplayName: "Smart List match")
+            }
         )
     }
 }

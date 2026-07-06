@@ -192,57 +192,46 @@ private struct BatchChangeCategoryIntegrationContext {
 
 @MainActor
 private func makeBatchChangeCategoryIntegrationContext() async throws -> BatchChangeCategoryIntegrationContext {
-    let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "batchChangeCategory-repo")
-    let sourceRootURL = try makeImportSingleFileTemporaryDirectory(prefix: "batchChangeCategory-source")
-    let repoOwnedSourceURL = sourceRootURL.appendingPathComponent("batch-owned.pdf")
-    let indexedSourceURL = sourceRootURL.appendingPathComponent("batch-indexed.pdf")
-    try Data("repo owned bytes".utf8).write(to: repoOwnedSourceURL)
-    try Data("indexed bytes".utf8).write(to: indexedSourceURL)
+    let context = try await makeRealCoreRepositoryTestContext(named: "AreaMatrixBatchChangeCategory")
+    let repoOwnedSourceURL = try context.writeSourceFile(named: "batch-owned.pdf", contents: "repo owned bytes")
+    let indexedSourceURL = try context.writeSourceFile(named: "batch-indexed.pdf", contents: "indexed bytes")
 
-    let bridge = CoreBridge()
-    try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-    let repoOwned = try await bridge.importCopiedFile(
-        repoPath: repoURL.path,
+    let repoOwned = try await context.bridge.importCopiedFile(
+        repoPath: context.repoURL.path,
         sourceURL: repoOwnedSourceURL,
         overrideCategory: "docs",
         overrideFilename: "batch-owned.pdf",
         duplicateStrategy: .skip
     )
-    let indexOnly = try await bridge.importIndexedFile(
-        repoPath: repoURL.path,
+    let indexOnly = try await context.bridge.importIndexedFile(
+        repoPath: context.repoURL.path,
         sourceURL: indexedSourceURL,
         overrideCategory: "docs",
         overrideFilename: "batch-indexed.pdf",
         duplicateStrategy: .skip
     )
-    let opening = try await makeBatchChangeCategoryOpening(repoURL: repoURL, bridge: bridge)
+    let opening = try await makeRealCoreRepositoryOpening(context)
     let model = MainFileListModel(
         opening: opening,
-        fileLister: bridge,
-        fileDetailer: bridge,
-        batchCategoryChanger: bridge,
-        undoActionStore: bridge,
-        changeLogLister: bridge,
-        errorMapper: bridge
+        fileLister: context.bridge,
+        fileDetailer: context.bridge,
+        batchCategoryChanger: context.bridge,
+        undoActionStore: context.bridge,
+        changeLogLister: context.bridge,
+        errorMapper: context.bridge
     )
     return BatchChangeCategoryIntegrationContext(
-        repoURL: repoURL,
-        sourceRootURL: sourceRootURL,
+        repoURL: context.repoURL,
+        sourceRootURL: context.sourceRootURL,
         externalSourceURL: indexedSourceURL,
-        repoOwnedDocsURL: repoURL.appendingPathComponent(repoOwned.path),
-        repoOwnedFinanceURL: repoURL.appendingPathComponent("finance/batch-owned.pdf"),
+        repoOwnedDocsURL: context.repositoryFileURL(for: repoOwned),
+        repoOwnedFinanceURL: context.repoURL.appendingPathComponent("finance/batch-owned.pdf"),
         opening: opening,
-        bridge: bridge,
+        bridge: context.bridge,
         model: model,
         repoOwned: repoOwned,
         indexOnly: indexOnly
     )
-}
-
-private func makeBatchChangeCategoryOpening(repoURL: URL, bridge: CoreBridge) async throws -> RepositoryOpeningResult {
-    let config = try await bridge.loadConfig(repoPath: repoURL.path)
-    let tree = try await bridge.listTree(repoPath: repoURL.path, locale: "zh-Hans")
-    return RepositoryOpeningResult(config: config, tree: tree, currentCategoryFiles: [])
 }
 
 private func assertBatchChangeCategoryPreview(

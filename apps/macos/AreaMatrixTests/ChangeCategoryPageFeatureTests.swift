@@ -166,7 +166,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
     @MainActor
     func testClassifierCorrectionClassifierCorrectionLoadsRealReasonAndCorePreviewBeforeApply() async {
         let original = FileEntrySnapshot.changeCategoryFixture(id: 246, name: "contract.pdf")
-        let reason = ClassifyResultSnapshot(
+        let reason = ClassifyResultSnapshot.testFixture(
             category: "docs",
             suggestedName: "contract.pdf",
             reason: .extension,

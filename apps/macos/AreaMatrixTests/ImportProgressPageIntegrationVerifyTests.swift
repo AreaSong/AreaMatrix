@@ -41,7 +41,7 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
 }
 
 private extension ImportProgressPageIntegrationVerifyTests {
-    static let fatalProgress = ImportBatchProgressSnapshot(
+    static let fatalProgress = importBatchProgress(
         completed: 1,
         failed: 1,
         total: 5,
@@ -50,35 +50,31 @@ private extension ImportProgressPageIntegrationVerifyTests {
         skipped: 2,
         pending: 0,
         items: [
-            ImportBatchProgressSnapshot.Item(
+            importBatchProgressItem(
                 sourcePath: importProgressBatchSourcePath("invoice.pdf"),
                 targetPath: "finance/invoice.pdf",
-                phase: .done,
-                errorMessage: nil
+                phase: .done
             ),
-            ImportBatchProgressSnapshot.Item(
+            importBatchProgressItem(
                 sourcePath: importProgressBatchSourcePath("合同.pdf"),
                 targetPath: "docs/contracts/合同.pdf",
                 phase: .failed,
                 errorMessage: "Storage write failed"
             ),
-            ImportBatchProgressSnapshot.Item(
+            importBatchProgressItem(
                 sourcePath: importProgressBatchSourcePath("skipped-a.pdf"),
                 targetPath: "docs/skipped-a.pdf",
-                phase: .pending,
-                errorMessage: nil
+                phase: .pending
             ),
-            ImportBatchProgressSnapshot.Item(
+            importBatchProgressItem(
                 sourcePath: importProgressBatchSourcePath("skipped-b.pdf"),
                 targetPath: "docs/skipped-b.pdf",
-                phase: .pending,
-                errorMessage: nil
+                phase: .pending
             ),
-            ImportBatchProgressSnapshot.Item(
+            importBatchProgressItem(
                 sourcePath: importProgressBatchSourcePath("pending.pdf"),
                 targetPath: "docs/pending.pdf",
-                phase: .writingIndex,
-                errorMessage: nil
+                phase: .writingIndex
             )
         ]
     )
@@ -86,7 +82,7 @@ private extension ImportProgressPageIntegrationVerifyTests {
 
 private extension CoreErrorMappingSnapshot {
     static var importProgressFatalProgressError: CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .io,
             userMessage: "文件读写失败",
             severity: .critical,

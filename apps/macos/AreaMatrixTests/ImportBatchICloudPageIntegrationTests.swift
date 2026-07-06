@@ -71,7 +71,6 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
     }
 
     @MainActor
-    // swiftlint:disable:next function_body_length
     func testImportBatchICloudPendingRowsDoNotSilentlyImportUnavailableRows() async {
         let localURL = importBatchInvoiceURL()
         let cloudURL = importBatchICloudPlaceholderURL()
@@ -102,21 +101,18 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
         XCTAssertEqual(outcome?.succeededEntries.first?.storageMode, "Copied")
         XCTAssertEqual(outcome?.pendingICloudCount, 1)
         XCTAssertTrue(outcome?.needsResultSummary == true)
-        XCTAssertEqual(outcome?.progressSnapshot(currentPath: "Import ready only"), ImportBatchProgressSnapshot(
+        XCTAssertEqual(outcome?.progressSnapshot(currentPath: "Import ready only"), importBatchProgress(
             completed: 1,
-            failed: 0,
             total: 2,
             remaining: 0,
             currentPath: "finance/Invoice_2026Q1.pdf",
-            skipped: 0,
             pending: 1,
             items: [
-                ImportBatchProgressSnapshot.Item(
+                importBatchProgressItem(
                     fileID: 42,
                     sourcePath: importBatchSourcePath(),
                     targetPath: "finance/Invoice_2026Q1.pdf",
-                    phase: .done,
-                    errorMessage: nil
+                    phase: .done
                 )
             ]
         ))

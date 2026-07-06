@@ -33,7 +33,7 @@ final class ImportProgressMovePageFeatureTests: XCTestCase {
     func testImportProgressImportMoveFileCoreMoveFailureRequiresRecoveryCheckBeforeRetry() async {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
         let context = ImportProgressFixtures.moveRetryContext(sourcePath: importProgressSourcePath())
-        let recoverer = RecordingCoreStartupRecoverer(result: .success(RecoveryReportSnapshot(
+        let recoverer = RecordingCoreStartupRecoverer(result: .success(.testFixture(
             cleanedStagingFiles: 1,
             revertedStagingDbRows: 1,
             warnings: []

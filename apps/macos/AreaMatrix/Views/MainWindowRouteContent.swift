@@ -1,8 +1,13 @@
-import AppKit
 import SwiftUI
 
 struct MainWindowRouteContent: View {
     @ObservedObject var model: OnboardingModel
+    private let windowCloser: any WindowClosing
+
+    init(model: OnboardingModel, windowCloser: any WindowClosing = AppPlatformServices.windowCloser) {
+        self.model = model
+        self.windowCloser = windowCloser
+    }
 
     var body: some View {
         switch model.route {
@@ -105,7 +110,7 @@ private extension MainWindowRouteContent {
             },
             onCancelSetup: {
                 if model.confirmSetupQuit() {
-                    NSApplication.shared.keyWindow?.close()
+                    windowCloser.closeKeyWindow()
                 }
             }
         )
@@ -136,7 +141,7 @@ private extension MainWindowRouteContent {
                 await model.collectInitializationDiagnostics()
             },
             onQuit: {
-                NSApplication.shared.keyWindow?.close()
+                windowCloser.closeKeyWindow()
             }
         )
     }

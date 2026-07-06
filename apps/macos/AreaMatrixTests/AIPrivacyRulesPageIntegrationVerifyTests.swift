@@ -164,7 +164,7 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
 private typealias AIPrivacyRulesIntegrationAISettingsStore = RecordingAISettingsStore
 
 private func aiPrivacyRulesIntegrationErrorMapper() -> StaticCoreErrorMapper {
-    StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot(
+    StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot.testFixture(
         kind: .db,
         userMessage: "ai-privacy-rules integration bridge failed",
         severity: .medium,
@@ -249,30 +249,12 @@ private actor AIPrivacyRulesFacetRegistryBridge: CoreSearchFiltering {
     ) async throws -> SearchFacetsSnapshot {
         XCTAssertEqual(request.query, "")
         XCTAssertEqual(request.scope, .all)
-        return SearchFacetsSnapshot(
-            query: "",
-            totalCount: 2,
-            categories: [],
-            fileKinds: [],
-            tags: [
-                SearchFacetCountSnapshot(value: "legal", label: "Legal", count: 3, selected: false, disabled: false),
-                SearchFacetCountSnapshot(
-                    value: "client-private",
-                    label: "Client Private",
-                    count: 5,
-                    selected: false,
-                    disabled: false
-                )
-            ],
-            storageModes: [],
-            dateBounds: SearchDateFacetBoundsSnapshot(
-                oldestImportedAt: nil,
-                newestImportedAt: nil,
-                oldestModifiedAt: nil,
-                newestModifiedAt: nil
-            ),
-            activeFilterCount: 0
-        )
+        return SearchFacetsSnapshot.testFixture(totalCount: 2) {
+            $0.tags = [
+                .testFixture(value: "legal", label: "Legal", count: 3),
+                .testFixture(value: "client-private", label: "Client Private", count: 5)
+            ]
+        }
     }
 }
 

@@ -110,11 +110,9 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         XCTAssertEqual(model.rows.map(\.status.tag), ["DUP", "OK"])
         XCTAssertEqual(model.rows.first?.status.detail, "Skip: finance/existing-invoice.pdf")
         XCTAssertEqual(model.status, .idle)
-        XCTAssertEqual(progressSnapshots.last, ImportBatchProgressSnapshot(
+        XCTAssertEqual(progressSnapshots.last, importBatchProgress(
             completed: 0,
-            failed: 0,
             total: 2,
-            remaining: 2,
             currentPath: "finance/Invoice_2026Q1.pdf"
         ))
     }

@@ -133,24 +133,10 @@ final class ImportDropBatchPreviewTests: XCTestCase {
         XCTAssertEqual(model.successfulPreviewCount, 2)
         XCTAssertEqual(model.failedPreviewCount, 0)
         XCTAssertEqual(duplicateRequests, [
-            FileFilterSnapshot(
-                category: nil,
-                includeDeleted: false,
-                importedAfter: nil,
-                importedBefore: nil,
-                limit: 200,
-                offset: 0
-            )
+            .testFixture(limit: 200)
         ])
         XCTAssertEqual(nameConflictRequests, [
-            FileFilterSnapshot(
-                category: "docs",
-                includeDeleted: false,
-                importedAfter: nil,
-                importedBefore: nil,
-                limit: 200,
-                offset: 0
-            )
+            .testFixture(category: "docs", limit: 200)
         ])
     }
 

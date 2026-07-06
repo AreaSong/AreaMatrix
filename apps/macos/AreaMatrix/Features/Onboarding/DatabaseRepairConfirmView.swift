@@ -29,8 +29,8 @@ struct DBRepairConfirmView: View {
         lastOpenedAt: Int64? = nil,
         metadataRepairer: any CoreMetadataRepairing = CoreBridge(),
         startupRecoverer: any CoreStartupRecovering = CoreBridge(),
-        diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge(),
+        diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices.diagnosticsCollector,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         onCancel: @escaping () -> Void,
         onRepairSucceeded: @escaping () async -> Void,
         onOpenRepositoryInFinder: @escaping () -> Void

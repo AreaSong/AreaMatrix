@@ -39,6 +39,8 @@
       signing identity，且 `AC_PASSWORD` notarytool keychain profile 可用；该预检
       只证明发布凭据可用，不能替代最终 codesign、notarytool submit、stapler、DMG
       和干净 Mac 首启证据。
+      需要留存机器可读阻断或放行证据时使用 `./dev release preflight --json`；该 JSON
+      仍只是凭据预检和补证模板，不是最终分发证据。
 - [ ] 若当前未加入付费 Apple Developer Program，则不得继续执行 Developer ID 分发。
 - [ ] `main` 分支所有 PR 已合并
 - [ ] 全部 CI 绿
@@ -58,7 +60,8 @@ notarytool 公证；这种环境只能做本机工程验证，不能产生用户
 
 Developer ID / notarization 后续补证必须至少包含：
 
-- `./dev release preflight` 通过。
+- `./dev release preflight` 通过；可同时保存 `./dev release preflight --json` 输出中的
+  `checks`、`blocked_by`、`required_distribution_evidence` 和 `evidence_record_template`。
 - `security find-identity -v -p codesigning` 中存在 valid Developer ID Application identity。
 - `codesign -dv --verbose=4 "$APP_PATH"` 显示 Developer ID team，而不是 `Signature=adhoc`。
 - `xcrun notarytool submit ... --wait` 返回 accepted，并保存 submission id / log URL。

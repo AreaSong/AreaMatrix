@@ -96,7 +96,7 @@ actor FileActionsRecordingCore: CoreFileListing,
     }
 
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .internal,
             userMessage: "\(error)",
             severity: .high,

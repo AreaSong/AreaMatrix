@@ -185,7 +185,7 @@ private typealias PlatformDifferencesStaticErrorMapper = RecordingCoreErrorMappe
 
 private func platformDifferencesStaticErrorMapper() -> PlatformDifferencesStaticErrorMapper {
     RecordingCoreErrorMapper { error in
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .config,
             userMessage: "Binding version is unsupported.",
             severity: .medium,
@@ -239,20 +239,9 @@ private extension BindingContractReportSnapshot {
 
 private extension PlatformCapabilitiesSnapshot {
     static func fixture() -> PlatformCapabilitiesSnapshot {
-        let available = PlatformCapabilitySupportSnapshot(
-            status: .available,
-            uiEnabled: true,
-            requiresPermission: false,
-            reason: nil
-        )
-        let limited = PlatformCapabilitySupportSnapshot(
-            status: .limited,
-            uiEnabled: false,
-            requiresPermission: true,
-            reason: "Requires platform permission."
-        )
-        return PlatformCapabilitiesSnapshot(
-            platform: .macos,
+        let available = PlatformCapabilitySupportSnapshot.testFixture()
+        let limited = PlatformCapabilitySupportSnapshot.limitedFixture()
+        return PlatformCapabilitiesSnapshot.testFixture(
             appVersion: PlatformDifferencesModel.defaultTestAppVersion,
             watcher: available,
             trash: available,

@@ -185,7 +185,7 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
     @MainActor
     func testSmartListSearchBannerUsesSavedSmartListContextText() {
         let saved = SavedSearchSnapshot.smartListFixture(query: "Finance")
-        let request = SearchQueryRequestSnapshot(savedSearchQuery: saved.query)
+        let request = SearchQueryRequestSnapshot.testFixture(savedSearchQuery: saved.query)
         let model = MainFileListModel(
             opening: .queryErrorOpening(
                 repoPath: "/tmp/repo",
@@ -204,17 +204,13 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
     @MainActor
     func testSmartListEditFiltersDraftReopensEditorAndFeedsUpdateRequest() {
         let saved = SavedSearchSnapshot.smartListFixture(query: "Finance")
-        let draftFilters = SearchFilterStateSnapshot(
+        let draftFilters = SearchFilterStateSnapshot.testFixture(
             category: "docs",
             fileKind: "spreadsheet",
             tags: ["tax"],
             tagMatchMode: .all,
-            importedAfter: nil,
-            importedBefore: nil,
             modifiedAfter: 1_700_000_000,
-            modifiedBefore: nil,
-            storageMode: .copied,
-            includeDeleted: false
+            storageMode: .copied
         )
         let route = SmartListManagementRoute(mode: .editQuery, savedSearch: saved, draftFilters: draftFilters)
         var model = SmartListEditorModel(

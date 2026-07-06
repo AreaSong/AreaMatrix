@@ -18,66 +18,46 @@ struct FileActionsRealCoreContext {
     }
 }
 
-func makeFileActionsTemporaryDirectory(prefix: String) throws -> URL {
-    try makeTestTemporaryDirectory(prefix: prefix, named: "AreaMatrixFileActions")
-}
-
-func makeFileActionsOpening(
-    repoURL: URL,
-    bridge: CoreBridge,
-    category: String
-) async throws -> RepositoryOpeningResult {
-    let config = try await bridge.loadConfig(repoPath: repoURL.path)
-    let tree = try await bridge.listTree(repoPath: repoURL.path, locale: "zh-Hans")
-    let files = try await bridge.listFiles(repoPath: repoURL.path, filter: .currentCategory(category))
-    return RepositoryOpeningResult(config: config, tree: tree, currentCategoryFiles: files)
-}
-
 @MainActor
 func makeFileActionsRealCoreContext() async throws -> FileActionsRealCoreContext {
-    let repoURL = try makeFileActionsTemporaryDirectory(prefix: "repo")
-    let sourceRootURL = try makeFileActionsTemporaryDirectory(prefix: "source")
-    let ownedSourceURL = sourceRootURL.appendingPathComponent("contract.pdf")
-    let indexedSourceURL = sourceRootURL.appendingPathComponent("external.pdf")
-    try Data("owned bytes".utf8).write(to: ownedSourceURL)
-    try Data("indexed bytes".utf8).write(to: indexedSourceURL)
+    let context = try await makeRealCoreRepositoryTestContext(named: "AreaMatrixFileActions")
+    let ownedSourceURL = try context.writeSourceFile(named: "contract.pdf", contents: "owned bytes")
+    let indexedSourceURL = try context.writeSourceFile(named: "external.pdf", contents: "indexed bytes")
     let indexedSourceBefore = try Data(contentsOf: indexedSourceURL)
 
-    let bridge = CoreBridge()
-    try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-    let owned = try await bridge.importCopiedFile(
-        repoPath: repoURL.path,
+    let owned = try await context.bridge.importCopiedFile(
+        repoPath: context.repoURL.path,
         sourceURL: ownedSourceURL,
         overrideCategory: "docs",
         overrideFilename: "contract.pdf",
         duplicateStrategy: .skip
     )
-    let indexed = try await bridge.importIndexedFile(
-        repoPath: repoURL.path,
+    let indexed = try await context.bridge.importIndexedFile(
+        repoPath: context.repoURL.path,
         sourceURL: indexedSourceURL,
         overrideCategory: "docs",
         overrideFilename: "external.pdf",
         duplicateStrategy: .skip
     )
 
-    let opening = try await makeFileActionsOpening(repoURL: repoURL, bridge: bridge, category: "docs")
+    let opening = try await makeRealCoreRepositoryOpening(context, currentCategory: "docs")
     let model = MainFileListModel(
         opening: opening,
-        fileLister: bridge,
-        fileDetailer: bridge,
-        fileRenamer: bridge,
-        fileDeleter: bridge,
-        fileCategoryMover: bridge,
-        changeLogLister: bridge,
-        errorMapper: bridge
+        fileLister: context.bridge,
+        fileDetailer: context.bridge,
+        fileRenamer: context.bridge,
+        fileDeleter: context.bridge,
+        fileCategoryMover: context.bridge,
+        changeLogLister: context.bridge,
+        errorMapper: context.bridge
     )
 
     return FileActionsRealCoreContext(
-        repoURL: repoURL,
-        sourceRootURL: sourceRootURL,
+        repoURL: context.repoURL,
+        sourceRootURL: context.sourceRootURL,
         indexedSourceURL: indexedSourceURL,
         indexedSourceBefore: indexedSourceBefore,
-        bridge: bridge,
+        bridge: context.bridge,
         opening: opening,
         model: model,
         ownedFile: owned,

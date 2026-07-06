@@ -288,7 +288,7 @@ private extension FileEntrySnapshot {
 
 extension CoreErrorMappingSnapshot {
     static func detailNoteIo() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .io,
             userMessage: "无法保存笔记",
             severity: .medium,

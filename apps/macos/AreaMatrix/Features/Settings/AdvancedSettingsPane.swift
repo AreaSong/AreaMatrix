@@ -10,18 +10,18 @@ extension AdvancedSettingsPane {
     init(
         repoPath: String,
         onOpenRecoveryTools: @escaping () -> Void = {},
-        loader: any CoreConfigurationLoading = CoreBridge(),
-        updater: any CoreConfigurationUpdating = CoreBridge(),
+        loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
+        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
         rootOverviewInspector: any RootOverviewFileInspecting =
             AdvancedSettingsPlatformServices.rootOverviewInspector,
-        diagnosticsCollector: any CoreDiagnosticsCollecting = CoreBridge(),
+        diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices.diagnosticsCollector,
         appVersionReader: any AppVersionReading = AdvancedSettingsPlatformServices.appVersionReader,
-        coreVersionReader: any CoreVersionReading = CoreBridge(),
+        coreVersionReader: any CoreVersionReading = AppCoreServices.coreVersionReader,
         metadataReader: any ExistingRepositoryMetadataReading = AdvancedSettingsPlatformServices.metadataReader,
         logsOpener: any AdvancedSettingsLogFolderOpening = AdvancedSettingsPlatformServices.logsOpener,
         summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying =
             AdvancedSettingsPlatformServices.diagnosticSummaryCopier,
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
     ) {
         _model = StateObject(wrappedValue: AdvancedSettingsModel(
             repoPath: repoPath,

@@ -12,29 +12,11 @@ extension RepositoryOpeningResult {
 
 extension RepositoryTreeNodeSnapshot {
     static func searchResultsFixtureTree() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
+        .testRoot(
             children: [
-                RepositoryTreeNodeSnapshot(
-                    slug: "docs",
-                    displayName: "docs",
-                    fileCount: 0,
-                    children: [
-                        RepositoryTreeNodeSnapshot(
-                            slug: "contracts",
-                            displayName: "contracts",
-                            kind: "Subdir",
-                            relativePath: "docs/contracts",
-                            fileCount: 1,
-                            depth: 2,
-                            children: []
-                        )
-                    ]
+                .testCategory(
+                    "docs",
+                    children: [.testSubdirectory("contracts", relativePath: "docs/contracts", fileCount: 1)]
                 )
             ]
         )
@@ -43,44 +25,88 @@ extension RepositoryTreeNodeSnapshot {
 
 extension SearchFilterStateSnapshot {
     static func searchResultsContractFilters() -> SearchFilterStateSnapshot {
-        SearchFilterStateSnapshot(
+        .testFixture(
             category: "docs",
             fileKind: "pdf",
             tags: ["contract"],
-            tagMatchMode: .any,
-            importedAfter: nil,
-            importedBefore: nil,
-            modifiedAfter: nil,
-            modifiedBefore: nil,
-            storageMode: .copied,
-            includeDeleted: false
+            storageMode: .copied
+        )
+    }
+}
+
+extension SearchMatchSnapshot {
+    static func testFixture(
+        fieldDisplayName: String = "Name",
+        kindDisplayName: String = "Exact match",
+        snippet: String = "match"
+    ) -> SearchMatchSnapshot {
+        SearchMatchSnapshot(
+            fieldDisplayName: fieldDisplayName,
+            kindDisplayName: kindDisplayName,
+            snippet: snippet
+        )
+    }
+}
+
+extension SearchFileResultSnapshot {
+    static func testFixture(
+        file: FileEntrySnapshot,
+        score: Float = 1,
+        matches: [SearchMatchSnapshot] = [],
+        noteSnippet: String? = nil
+    ) -> SearchFileResultSnapshot {
+        SearchFileResultSnapshot(
+            file: file,
+            score: score,
+            matches: matches,
+            noteSnippet: noteSnippet
+        )
+    }
+
+    static func nameMatchFixture(
+        file: FileEntrySnapshot,
+        score: Float = 1,
+        kindDisplayName: String = "Exact match",
+        noteSnippet: String? = nil
+    ) -> SearchFileResultSnapshot {
+        .testFixture(
+            file: file,
+            score: score,
+            matches: [.testFixture(kindDisplayName: kindDisplayName, snippet: file.currentName)],
+            noteSnippet: noteSnippet
         )
     }
 }
 
 extension SearchResultPageSnapshot {
+    static func testFixture(
+        query: String = "",
+        totalCount: Int64? = nil,
+        results: [SearchFileResultSnapshot] = [],
+        diagnostics: [SearchQueryDiagnosticSnapshot] = [],
+        indexStatus: SearchIndexStatusSnapshot = .ready,
+        semanticPage: SemanticSearchResultPageSnapshot? = nil
+    ) -> SearchResultPageSnapshot {
+        SearchResultPageSnapshot(
+            query: query,
+            totalCount: totalCount ?? Int64(results.count),
+            results: results,
+            diagnostics: diagnostics,
+            indexStatus: indexStatus,
+            semanticPage: semanticPage
+        )
+    }
+
     static func searchResultsPage(
         query: String,
         files: [FileEntrySnapshot] = [],
         diagnostics: [SearchQueryDiagnosticSnapshot] = [],
         indexStatus: SearchIndexStatusSnapshot = .ready
     ) -> SearchResultPageSnapshot {
-        SearchResultPageSnapshot(
+        .testFixture(
             query: query,
-            totalCount: Int64(files.count),
             results: files.map {
-                SearchFileResultSnapshot(
-                    file: $0,
-                    score: 1,
-                    matches: [
-                        SearchMatchSnapshot(
-                            fieldDisplayName: "Name",
-                            kindDisplayName: "Exact match",
-                            snippet: $0.currentName
-                        )
-                    ],
-                    noteSnippet: nil
-                )
+                .nameMatchFixture(file: $0)
             },
             diagnostics: diagnostics,
             indexStatus: indexStatus
@@ -94,21 +120,9 @@ extension SearchFacetsSnapshot {
         totalCount: Int64,
         activeFilters: Int64
     ) -> SearchFacetsSnapshot {
-        SearchFacetsSnapshot(
-            query: query,
-            totalCount: totalCount,
-            categories: [],
-            fileKinds: [],
-            tags: [],
-            storageModes: [],
-            dateBounds: SearchDateFacetBoundsSnapshot(
-                oldestImportedAt: nil,
-                newestImportedAt: nil,
-                oldestModifiedAt: nil,
-                newestModifiedAt: nil
-            ),
-            activeFilterCount: activeFilters
-        )
+        SearchFacetsSnapshot.testFixture(query: query, totalCount: totalCount) {
+            $0.activeFilterCount = activeFilters
+        }
     }
 }
 
@@ -119,26 +133,22 @@ extension FileEntrySnapshot {
         category: String,
         currentName: String
     ) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: path,
-            originalName: currentName,
             currentName: currentName,
-            category: category,
-            sizeBytes: 128,
-            hashSha256: "search-results-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000 - id,
-            updatedAt: 1_700_000_000
-        )
+            category: category
+        ) {
+            $0.hashSha256 = "search-results-\(id)"
+            $0.importedAt = 1_700_000_000 - id
+            $0.updatedAt = 1_700_000_000
+        }
     }
 }
 
 extension CoreErrorMappingSnapshot {
     static func searchResultsMapping(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: "mapped \(kind.rawValue)",
             severity: .high,

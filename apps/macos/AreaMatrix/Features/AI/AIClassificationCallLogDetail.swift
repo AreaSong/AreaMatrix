@@ -20,9 +20,9 @@ struct AICallLogView: View {
 
     init(
         repoPath: String,
-        lister: any CoreAICallLogListing = CoreBridge(),
-        clearer: any CoreAICallLogClearing = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge(),
+        lister: any CoreAICallLogListing = AppCoreServices.aiCallLogLister,
+        clearer: any CoreAICallLogClearing = AppCoreServices.aiCallLogClearer,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         onClose: @escaping () -> Void = {}
     ) {
         _model = StateObject(wrappedValue: AICallLogModel(

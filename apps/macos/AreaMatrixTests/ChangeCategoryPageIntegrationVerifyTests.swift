@@ -323,55 +323,47 @@ private actor ChangeCategoryRecordingRenamer: CoreFileRenaming {
 
 @MainActor
 private func makeChangeCategoryIntegrationContext() async throws -> ChangeCategoryIntegrationContext {
-    let repoURL = try makeChangeCategoryTemporaryDirectory(prefix: "repo")
-    let sourceRootURL = try makeChangeCategoryTemporaryDirectory(prefix: "source")
-    let existingSourceURL = sourceRootURL.appendingPathComponent("finance-contract.pdf")
-    let movingSourceURL = sourceRootURL.appendingPathComponent("docs-contract.pdf")
-    try Data("existing finance bytes".utf8).write(to: existingSourceURL)
-    try Data("moving docs bytes".utf8).write(to: movingSourceURL)
+    let context = try await makeRealCoreRepositoryTestContext(named: "AreaMatrixChangeCategoryIntegration")
+    let existingSourceURL = try context.writeSourceFile(
+        named: "finance-contract.pdf",
+        contents: "existing finance bytes"
+    )
+    let movingSourceURL = try context.writeSourceFile(named: "docs-contract.pdf", contents: "moving docs bytes")
 
-    let bridge = CoreBridge()
-    try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-    let existing = try await bridge.importCopiedFile(
-        repoPath: repoURL.path,
+    let existing = try await context.bridge.importCopiedFile(
+        repoPath: context.repoURL.path,
         sourceURL: existingSourceURL,
         overrideCategory: "finance",
         overrideFilename: "contract.pdf",
         duplicateStrategy: .skip
     )
-    let moving = try await bridge.importCopiedFile(
-        repoPath: repoURL.path,
+    let moving = try await context.bridge.importCopiedFile(
+        repoPath: context.repoURL.path,
         sourceURL: movingSourceURL,
         overrideCategory: "docs",
         overrideFilename: "contract.pdf",
         duplicateStrategy: .skip
     )
-    let opening = try await makeChangeCategoryOpening(repoURL: repoURL, bridge: bridge)
+    let opening = try await makeRealCoreRepositoryOpening(context)
     let model = MainFileListModel(
         opening: opening,
-        fileLister: bridge,
-        fileDetailer: bridge,
-        fileCategoryMover: bridge,
-        changeLogLister: bridge,
-        errorMapper: bridge
+        fileLister: context.bridge,
+        fileDetailer: context.bridge,
+        fileCategoryMover: context.bridge,
+        changeLogLister: context.bridge,
+        errorMapper: context.bridge
     )
     return ChangeCategoryIntegrationContext(
-        repoURL: repoURL,
-        sourceRootURL: sourceRootURL,
-        existingFinanceURL: repoURL.appendingPathComponent(existing.path),
-        movingDocsURL: repoURL.appendingPathComponent(moving.path),
+        repoURL: context.repoURL,
+        sourceRootURL: context.sourceRootURL,
+        existingFinanceURL: context.repositoryFileURL(for: existing),
+        movingDocsURL: context.repositoryFileURL(for: moving),
         opening: opening,
-        bridge: bridge,
+        bridge: context.bridge,
         model: model,
         existingFile: existing,
         movingFile: moving
     )
-}
-
-private func makeChangeCategoryOpening(repoURL: URL, bridge: CoreBridge) async throws -> RepositoryOpeningResult {
-    let config = try await bridge.loadConfig(repoPath: repoURL.path)
-    let tree = try await bridge.listTree(repoPath: repoURL.path, locale: "zh-Hans")
-    return RepositoryOpeningResult(config: config, tree: tree, currentCategoryFiles: [])
 }
 
 private func assertChangeCategoryPreview(

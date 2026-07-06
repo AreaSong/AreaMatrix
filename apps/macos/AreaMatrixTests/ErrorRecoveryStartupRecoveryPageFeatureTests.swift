@@ -4,7 +4,7 @@ import XCTest
 final class StartupRecoveryPageFeatureTests: XCTestCase {
     @MainActor
     func testStartupRecoveryStartupRecoveryCoreStartupRecoveryViewExposesReportRetryAndTechnicalDetails() {
-        let report = RecoveryReportSnapshot(
+        let report = RecoveryReportSnapshot.testFixture(
             cleanedStagingFiles: 2,
             revertedStagingDbRows: 1,
             warnings: ["Kept active staging file"]
@@ -70,7 +70,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
 
     @MainActor
     func testStartupRecoveryErrorMappingCoreMappedErrorViewFallsBackWhenCoreMappingOmitsOptionalText() {
-        let mapping = CoreErrorMappingSnapshot(
+        let mapping = CoreErrorMappingSnapshot.testFixture(
             kind: .internal,
             userMessage: "AreaMatrix hit an internal error.",
             severity: .critical,
@@ -113,7 +113,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
         let mapping = CoreErrorMappingSnapshot.startupRecoveryStartupRecoveryMapping(rawContext: "database is locked")
         let recoverer = RecordingCoreStartupRecoverer(results: [
             .failure(CoreError.Db(message: "database is locked")),
-            .success(RecoveryReportSnapshot(cleanedStagingFiles: 1, revertedStagingDbRows: 2, warnings: []))
+            .success(.testFixture(cleanedStagingFiles: 1, revertedStagingDbRows: 2))
         ])
         let opener = MainLoadingPausingRepositoryOpener(
             opening: .mainLoadingFixture(repoPath: "/tmp/repo", fileCount: 1)
@@ -173,7 +173,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
 
 private extension CoreErrorMappingSnapshot {
     static func startupRecoveryStartupRecoveryMapping(rawContext: String) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "Startup recovery could not finish",
             severity: .medium,

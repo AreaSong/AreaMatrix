@@ -52,7 +52,7 @@ struct ImportEntrySheetView: View {
         importProgressControlState: ImportProgressControlState = ImportProgressControlState(),
         onImported: @escaping (String, FileEntrySnapshot) -> Void = { _, _ in },
         onShowExistingFile: @escaping (String) -> Void = { _ in },
-        categoryPredictor: any CoreCategoryPredicting = CoreBridge(),
+        categoryPredictor: any CoreCategoryPredicting = AppCoreServices.categoryPredictor,
         fileImporter: any CoreFileImporting = CoreBridge(),
         batchFileImporter: any CoreBatchCopyImporting = CoreBridge(),
         batchConflictBatcher: any CoreImportConflictBatching = CoreBridge(),
@@ -61,8 +61,8 @@ struct ImportEntrySheetView: View {
         folderScanner: any ImportFolderScanning = ImportPlatformServices.folderScanner,
         preflight: any ImportSingleFilePreflighting = CoreImportSingleFilePreflight(),
         placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader(),
-        errorMapper: any CoreErrorMapping = CoreBridge(),
-        batchSessionStore: any ImportBatchSessionPersisting = FileImportBatchSessionStore()
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
+        batchSessionStore: any ImportBatchSessionPersisting = AppPlatformServices.importBatchSessionStore
     ) {
         self.request = request
         self.onCancel = onCancel

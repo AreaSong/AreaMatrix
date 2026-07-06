@@ -124,13 +124,27 @@ release_gate: "block_if_missing_or_fail"
   - `executed_at: 2026-05-10 21:27 CST`
   - `result: blocked`
   - `blocked_reason: no iCloud placeholder environment available`
-  - 阻断处理：保留 release gate blocked；自动化 iCloud placeholder 覆盖不能替代真实 iCloud 手工冒烟。
+  - 阻断处理：保留 release gate blocked；自动化 iCloud placeholder 覆盖、合成 `.icloud` marker、local QA
+    同机测试或非 iCloud Drive 路径不能替代真实 iCloud 手工冒烟。
+- 只读采证 helper：
+  - `./dev release icloud-placeholder-evidence --path <iCloud placeholder path> --json`
+  - 输出 `schema_version: 1`、`mode: icloud_placeholder_metadata_probe`、
+    `residual_id: v1-rl-002`、`manual_evidence_id: M-02`、`closes_residual: false`、
+    `release_gate: blocked_until_real_icloud_download_retry_and_db_evidence_pass`。
+  - 该 helper 只做 `lstat` 与 `mdls` metadata 读取；`download_attempted`、
+    `file_content_read_attempted`、`file_write_attempted`、`db_write_attempted` 和
+    `areamatrix_metadata_write_attempted` 必须保持 `false`。
+  - 对 symlink 只做 `lstat`，不跟随目标执行 `mdls` 或更深检查。
+  - helper 输出只能作为真实 iCloud 手工冒烟的 evidence draft；不能替代 UI
+    `Download & retry`、DB row、用户文件不变量和 retry 结果。
 - 后续补证模板：
   - `environment.macos_version: <macOS version>`
   - `environment.icloud_drive: enabled`
+  - `environment.icloud_account: signed in on the test Mac`
   - `app_build: <Developer ID notarized app 或明确 local QA app>`
   - `repo_path: <iCloud Drive 内测试 repo 或源文件路径>`
   - `source_placeholder_status.before: mdls -name kMDItemUbiquitousItemDownloadingStatus <path>`
+  - `source_placeholder_status.after: mdls -name kMDItemUbiquitousItemDownloadingStatus <path>`
   - `source_placeholder_marker: <.icloud marker 或 Finder 未下载状态截图>`
   - `ui_action: Download & retry`
   - `retry_result: pass | fail`

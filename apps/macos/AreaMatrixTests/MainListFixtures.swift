@@ -15,85 +15,31 @@ extension RepositoryOpeningResult {
 
 extension RepoConfigSnapshot {
     static func mainListFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
+        RepoConfigSnapshot.testFixture(repoPath: repoPath)
     }
 }
 
 extension RepositoryTreeNodeSnapshot {
     static func mainListFixtureTree() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
+        .testRoot(
             displayName: "资料库",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
             children: [
-                RepositoryTreeNodeSnapshot(
-                    slug: "inbox",
-                    displayName: "inbox",
-                    fileCount: 1,
-                    children: []
-                ),
-                RepositoryTreeNodeSnapshot(
-                    slug: "docs",
-                    displayName: "docs",
-                    fileCount: 42,
-                    children: []
-                )
+                .testCategory("inbox", fileCount: 1),
+                .testCategory("docs", fileCount: 42)
             ]
         )
     }
 
     static func mainListNestedFixtureTree() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
+        .testRoot(
             displayName: "资料库",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
             children: [
-                RepositoryTreeNodeSnapshot(
-                    slug: "inbox",
-                    displayName: "inbox",
-                    fileCount: 1,
-                    children: []
-                ),
-                RepositoryTreeNodeSnapshot(
-                    slug: "docs",
-                    displayName: "docs",
-                    fileCount: 0,
+                .testCategory("inbox", fileCount: 1),
+                .testCategory(
+                    "docs",
                     children: [
-                        RepositoryTreeNodeSnapshot(
-                            slug: "contracts",
-                            displayName: "contracts",
-                            kind: "Subdir",
-                            relativePath: "docs/contracts",
-                            fileCount: 1,
-                            depth: 2,
-                            children: []
-                        ),
-                        RepositoryTreeNodeSnapshot(
-                            slug: "references",
-                            displayName: "references",
-                            kind: "Subdir",
-                            relativePath: "docs/references",
-                            fileCount: 1,
-                            depth: 2,
-                            children: []
-                        )
+                        .testSubdirectory("contracts", relativePath: "docs/contracts", fileCount: 1),
+                        .testSubdirectory("references", relativePath: "docs/references", fileCount: 1)
                     ]
                 )
             ]
@@ -108,40 +54,32 @@ extension FileEntrySnapshot {
         category: String,
         currentName: String
     ) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: path,
-            originalName: currentName,
             currentName: currentName,
-            category: category,
-            sizeBytes: 128,
-            hashSha256: "fixture-hash-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_100
-        )
+            category: category
+        ) {
+            $0.hashSha256 = "fixture-hash-\(id)"
+        }
     }
 }
 
 extension CoreErrorMappingSnapshot {
     static func mainListDbFixture(rawContext: String) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "当前列表不可用",
             severity: .high,
             suggestedAction: "请重试当前列表。",
-            recoverability: .retryable,
             rawContext: rawContext
         )
     }
 
     static func mainListFileNotFoundFixture(rawContext: String) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .fileNotFound,
             userMessage: "文件不存在",
-            severity: .medium,
             suggestedAction: "刷新当前列表，确认文件是否已被移动或删除。",
             recoverability: .refreshRequired,
             rawContext: rawContext

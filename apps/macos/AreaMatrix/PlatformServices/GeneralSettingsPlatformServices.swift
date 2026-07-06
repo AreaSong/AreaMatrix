@@ -2,7 +2,7 @@ import Foundation
 
 enum GeneralSettingsPlatformServices {
     static var rootOverviewInspector: any RootOverviewFileInspecting {
-        LocalRootOverviewFileInspector()
+        AppPlatformServices.rootOverviewInspector
     }
 
     static var rootOverviewRevealer: any RepositoryFileRevealing {

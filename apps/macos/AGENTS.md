@@ -19,6 +19,15 @@
 - `Resources/`：静态资源。
 - `AreaMatrixTests/Support` 或 feature-local test support：后续新增 fixture、mock bridge、临时 repo 构造、重复断言 helper 优先收敛到明确支撑目录；不要继续散落成大号测试工具文件。
 
+## 默认依赖装配
+
+- 新增 macOS 默认 Core 服务优先集中到 `App/AppCoreServices.swift`，feature model / view
+  通过协议注入接收默认能力；测试继续显式注入 test double。
+- 初始化、导入、DB 修复、同步冲突、iCloud conflict、AI 隐私 / 远程 provider
+  等高风险专项路径允许受控保留直接 `CoreBridge()` 默认构造。
+- 保留的直接 `CoreBridge()` 默认构造必须有治理测试登记；新增或删除登记项时，要说明风险归属和收口条件。
+- 不要为了集中化把高风险写操作伪装成通用服务；先保持边界可见，再按专项收口。
+
 ## 渐进治理
 
 - 新功能先判断 feature owner，再写代码；没有 owner 时先补规则或创建 feature 目录。

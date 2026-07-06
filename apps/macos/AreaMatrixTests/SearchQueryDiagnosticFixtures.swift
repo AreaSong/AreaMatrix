@@ -12,46 +12,17 @@ extension RepositoryOpeningResult {
 
 extension RepoConfigSnapshot {
     static func queryErrorConfig(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
+        RepoConfigSnapshot.testFixture(repoPath: repoPath)
     }
 }
 
 extension RepositoryTreeNodeSnapshot {
     static func queryErrorFixtureTree() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
+        .testRoot(
             children: [
-                RepositoryTreeNodeSnapshot(
-                    slug: "docs",
-                    displayName: "docs",
-                    fileCount: 0,
-                    children: [
-                        RepositoryTreeNodeSnapshot(
-                            slug: "contracts",
-                            displayName: "contracts",
-                            kind: "Subdir",
-                            relativePath: "docs/contracts",
-                            fileCount: 1,
-                            depth: 2,
-                            children: []
-                        )
-                    ]
+                .testCategory(
+                    "docs",
+                    children: [.testSubdirectory("contracts", relativePath: "docs/contracts", fileCount: 1)]
                 )
             ]
         )
@@ -59,10 +30,29 @@ extension RepositoryTreeNodeSnapshot {
 }
 
 extension SearchQueryDiagnosticSnapshot {
-    static func queryErrorUnknownField() -> SearchQueryDiagnosticSnapshot {
+    static func testFixture(
+        kindDisplayName: String = "unknown",
+        severityDisplayName: String = "Error",
+        message: String = "Unknown field: owner",
+        token: String? = nil,
+        start: Int64? = nil,
+        end: Int64? = nil,
+        suggestion: String? = "Use category:"
+    ) -> SearchQueryDiagnosticSnapshot {
         SearchQueryDiagnosticSnapshot(
+            kindDisplayName: kindDisplayName,
+            severityDisplayName: severityDisplayName,
+            message: message,
+            token: token,
+            start: start,
+            end: end,
+            suggestion: suggestion
+        )
+    }
+
+    static func queryErrorUnknownField() -> SearchQueryDiagnosticSnapshot {
+        .testFixture(
             kindDisplayName: "Unknown field",
-            severityDisplayName: "Error",
             message: "Unknown field `kindd`",
             token: "kindd",
             start: 0,
@@ -74,14 +64,11 @@ extension SearchQueryDiagnosticSnapshot {
 
 extension SavedSearchSnapshot {
     static func smartListFixture(query: String) -> SavedSearchSnapshot {
-        SavedSearchSnapshot(
+        .testFixture(
             id: 77,
             name: "Finance",
-            query: SavedSearchQuerySnapshot(request: .queryErrorQueryFixture(query: query)),
-            icon: "magnifyingglass",
-            color: nil,
+            query: .testFixture(request: .queryErrorQueryFixture(query: query)),
             pinned: true,
-            createdAt: 1_700_000_000,
             updatedAt: 1_700_000_100
         )
     }
@@ -89,15 +76,12 @@ extension SavedSearchSnapshot {
 
 extension SearchQueryRequestSnapshot {
     static func queryErrorQueryFixture(query: String) -> SearchQueryRequestSnapshot {
-        SearchQueryRequestSnapshot(
+        .testFixture(
             query: query,
             scope: .current,
             currentPath: "docs/contracts",
             category: "docs",
-            filters: .empty,
-            sort: .relevance,
-            limit: 50,
-            offset: 0
+            filters: .empty
         )
     }
 }
@@ -107,29 +91,23 @@ extension SearchResultPageSnapshot {
         query: String,
         diagnostic: SearchQueryDiagnosticSnapshot
     ) -> SearchResultPageSnapshot {
-        SearchResultPageSnapshot(
+        .testFixture(
             query: query,
-            totalCount: 0,
-            results: [],
-            diagnostics: [diagnostic],
-            indexStatus: .ready
+            diagnostics: [diagnostic]
         )
     }
 
     static func smartListValidQueryPage(query: String, totalCount: Int64) -> SearchResultPageSnapshot {
-        SearchResultPageSnapshot(
+        .testFixture(
             query: query,
-            totalCount: totalCount,
-            results: [],
-            diagnostics: [],
-            indexStatus: .ready
+            totalCount: totalCount
         )
     }
 }
 
 extension CoreErrorMappingSnapshot {
     static func queryErrorConfigMapping() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .config,
             userMessage: "Query syntax is invalid.",
             severity: .medium,

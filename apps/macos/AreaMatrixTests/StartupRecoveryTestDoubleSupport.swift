@@ -1,13 +1,23 @@
 @testable import AreaMatrix
 
+extension RecoveryReportSnapshot {
+    static func testFixture(
+        cleanedStagingFiles: Int64 = 0,
+        revertedStagingDbRows: Int64 = 0,
+        warnings: [String] = []
+    ) -> RecoveryReportSnapshot {
+        RecoveryReportSnapshot(
+            cleanedStagingFiles: cleanedStagingFiles,
+            revertedStagingDbRows: revertedStagingDbRows,
+            warnings: warnings
+        )
+    }
+}
+
 actor StaticStartupRecoverer: CoreStartupRecovering {
     private let report: RecoveryReportSnapshot
 
-    init(report: RecoveryReportSnapshot = RecoveryReportSnapshot(
-        cleanedStagingFiles: 0,
-        revertedStagingDbRows: 0,
-        warnings: []
-    )) {
+    init(report: RecoveryReportSnapshot = .testFixture()) {
         self.report = report
     }
 
@@ -21,11 +31,7 @@ actor RecordingCoreStartupRecoverer: CoreStartupRecovering {
     private var paths: [String] = []
     private var didRecover = false
 
-    init(report: RecoveryReportSnapshot = RecoveryReportSnapshot(
-        cleanedStagingFiles: 0,
-        revertedStagingDbRows: 0,
-        warnings: []
-    )) {
+    init(report: RecoveryReportSnapshot = .testFixture()) {
         results = [.success(report)]
     }
 
@@ -40,11 +46,7 @@ actor RecordingCoreStartupRecoverer: CoreStartupRecovering {
     func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
         paths.append(repoPath)
         didRecover = true
-        let result = results.isEmpty ? Result.success(RecoveryReportSnapshot(
-            cleanedStagingFiles: 0,
-            revertedStagingDbRows: 0,
-            warnings: []
-        )) : results.removeFirst()
+        let result = results.isEmpty ? Result.success(.testFixture()) : results.removeFirst()
         return try result.get()
     }
 

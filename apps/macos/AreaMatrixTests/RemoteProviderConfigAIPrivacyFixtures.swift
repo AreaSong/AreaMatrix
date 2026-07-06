@@ -2,7 +2,7 @@
 
 extension CoreErrorMappingSnapshot {
     static func remoteProviderConfigAIPrivacyRemoteProviderUnavailable() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .permissionDenied,
             userMessage: "Remote provider unavailable",
             severity: .medium,

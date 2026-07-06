@@ -49,7 +49,7 @@ final class ImportProgressCopyPageFeatureTests: XCTestCase {
     func testImportProgressImportCopyFileCoreCopyFailureRequiresRecoveryCheckBeforeRetry() async {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
         let context = ImportProgressFixtures.copyRetryContext(sourcePath: importProgressSourcePath())
-        let recoverer = RecordingCoreStartupRecoverer(result: .success(RecoveryReportSnapshot(
+        let recoverer = RecordingCoreStartupRecoverer(result: .success(.testFixture(
             cleanedStagingFiles: 1,
             revertedStagingDbRows: 0,
             warnings: []

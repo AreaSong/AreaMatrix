@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
+import io
+import json
+import tempfile
 import unittest
 from datetime import datetime
 from pathlib import Path
@@ -68,6 +72,135 @@ class ReleaseToolsTest(unittest.TestCase):
             patch("scripts.dev_tools.release.check_notary_profile", return_value=checks[1]),
         ):
             self.assertEqual(release.run_release_preflight(__import__("pathlib").Path("/tmp")), 1)
+
+    def test_release_preflight_json_keeps_blocked_evidence_machine_readable(self) -> None:
+        checks = [
+            release.PreflightCheck("Developer ID Application identity", "BLOCKED", "missing identity"),
+            release.PreflightCheck("notarytool keychain profile", "BLOCKED", "missing profile"),
+        ]
+
+        stdout = io.StringIO()
+        with (
+            patch("scripts.dev_tools.release.check_developer_id_identity", return_value=checks[0]),
+            patch("scripts.dev_tools.release.check_notary_profile", return_value=checks[1]),
+            contextlib.redirect_stdout(stdout),
+        ):
+            exit_code = release.run_release_preflight(Path("/tmp"), notary_profile="AC_PASSWORD", json_output=True)
+
+        self.assertEqual(exit_code, 1)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["mode"], "release_distribution_preflight")
+        self.assertEqual(payload["status"], "BLOCKED")
+        self.assertEqual(payload["release_gate"], "block_if_any_check_blocked")
+        self.assertEqual(payload["blocked_by"], ["Developer ID Application identity", "notarytool keychain profile"])
+        self.assertIn("Developer ID Application signing identity", payload["required_distribution_evidence"])
+        self.assertIn("notarized or stapled app", payload["does_not_prove"])
+        self.assertEqual(payload["evidence_record_template"]["release_gate"], "block_if_any_pending_or_blocked")
+
+    def test_release_preflight_result_pass_has_no_blockers(self) -> None:
+        checks = [
+            release.PreflightCheck("Developer ID Application identity", "PASS", "ok"),
+            release.PreflightCheck("notarytool keychain profile", "PASS", "ok"),
+        ]
+
+        payload = release.release_preflight_result(checks, notary_profile="AC_PASSWORD")
+
+        self.assertEqual(payload["status"], "PASS")
+        self.assertEqual(payload["blocked_by"], [])
+        self.assertEqual(len(payload["checks"]), 2)
+
+    def test_icloud_placeholder_evidence_collects_metadata_without_side_effects(self) -> None:
+        mdls_output = "\n".join(
+            [
+                'kMDItemUbiquitousItemDownloadingStatus = "NotDownloaded"',
+                "kMDItemUbiquitousItemIsDownloaded = 0",
+                "kMDItemUbiquitousItemIsUploaded = 1",
+                "kMDItemUbiquitousItemHasUnresolvedConflicts = 0",
+                'kMDItemFSName = "Report.pdf.icloud"',
+            ]
+        )
+        completed = type("Completed", (), {"returncode": 0, "stdout": mdls_output})()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            placeholder = Path(temp_dir) / "Report.pdf.icloud"
+            placeholder.write_text("fixture marker", encoding="utf-8")
+            with (
+                patch("scripts.dev_tools.release.shutil.which", return_value="/usr/bin/mdls"),
+                patch("scripts.dev_tools.release._run_capture", return_value=completed) as run_capture,
+            ):
+                evidence = release.collect_icloud_placeholder_evidence(placeholder)
+
+        self.assertEqual(evidence["schema_version"], 1)
+        self.assertEqual(evidence["mode"], "icloud_placeholder_metadata_probe")
+        self.assertEqual(evidence["residual_id"], "v1-rl-002")
+        self.assertEqual(evidence["manual_evidence_id"], "M-02")
+        self.assertEqual(evidence["status"], "captured")
+        self.assertFalse(evidence["closes_residual"])
+        self.assertEqual(
+            evidence["release_gate"],
+            "blocked_until_real_icloud_download_retry_and_db_evidence_pass",
+        )
+        self.assertTrue(evidence["target"]["icloud_marker_filename"])
+        self.assertEqual(evidence["icloud_metadata"]["values"]["kMDItemUbiquitousItemDownloadingStatus"], "NotDownloaded")
+        self.assertFalse(evidence["side_effects"]["download_attempted"])
+        self.assertFalse(evidence["side_effects"]["file_content_read_attempted"])
+        self.assertFalse(evidence["side_effects"]["db_write_attempted"])
+        self.assertIn("DB row evidence", evidence["manual_smoke_required"])
+        self.assertIn("v1-rl-002 is closed", evidence["does_not_prove"])
+        run_capture.assert_called_once()
+        self.assertEqual(run_capture.call_args.args[0][0], "mdls")
+
+    def test_icloud_placeholder_evidence_does_not_follow_symlink(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            target = Path(temp_dir) / "target.pdf"
+            target.write_text("fixture target", encoding="utf-8")
+            symlink = Path(temp_dir) / "target.pdf.icloud"
+            symlink.symlink_to(target)
+            with (
+                patch("scripts.dev_tools.release.shutil.which", return_value="/usr/bin/mdls"),
+                patch("scripts.dev_tools.release._run_capture") as run_capture,
+            ):
+                evidence = release.collect_icloud_placeholder_evidence(symlink)
+
+        self.assertEqual(evidence["status"], "metadata_blocked")
+        self.assertTrue(evidence["target"]["is_symlink"])
+        self.assertEqual(evidence["target"]["file_type"], "symlink")
+        self.assertEqual(evidence["icloud_metadata"]["error_summary"], "symlink target not inspected")
+        self.assertFalse(evidence["icloud_metadata"]["mdls_attempted"])
+        run_capture.assert_not_called()
+
+    def test_icloud_placeholder_evidence_marks_missing_mdls_as_unsupported_platform(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            placeholder = Path(temp_dir) / "Report.pdf.icloud"
+            placeholder.write_text("fixture marker", encoding="utf-8")
+            with patch("scripts.dev_tools.release.shutil.which", return_value=None):
+                evidence = release.collect_icloud_placeholder_evidence(placeholder)
+
+        self.assertEqual(evidence["status"], "unsupported_platform")
+        self.assertFalse(evidence["icloud_metadata"]["mdls_available"])
+        self.assertFalse(evidence["icloud_metadata"]["mdls_attempted"])
+        self.assertEqual(evidence["icloud_metadata"]["error_summary"], "mdls command not found")
+        self.assertFalse(evidence["closes_residual"])
+
+    def test_icloud_placeholder_evidence_json_returns_nonzero_for_missing_path(self) -> None:
+        stdout = io.StringIO()
+        missing_path = Path("/tmp/areamatrix-missing-placeholder.icloud")
+
+        with (
+            patch("scripts.dev_tools.release.shutil.which", return_value="/usr/bin/mdls"),
+            contextlib.redirect_stdout(stdout),
+        ):
+            exit_code = release.run_icloud_placeholder_evidence(missing_path, json_output=True)
+
+        self.assertEqual(exit_code, 1)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["status"], "path_missing")
+        self.assertEqual(payload["mode"], "icloud_placeholder_metadata_probe")
+        self.assertEqual(payload["residual_id"], "v1-rl-002")
+        self.assertFalse(payload["closes_residual"])
+        self.assertFalse(payload["target"]["lexists"])
+        self.assertFalse(payload["side_effects"]["download_attempted"])
+        self.assertEqual(payload["icloud_metadata"]["error_summary"], "path does not exist")
 
     def test_default_readiness_build_number_uses_timestamp_format(self) -> None:
         build_number = release.default_readiness_build_number(datetime(2026, 6, 12, 12, 34))

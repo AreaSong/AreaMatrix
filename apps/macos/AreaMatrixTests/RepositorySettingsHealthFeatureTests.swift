@@ -102,7 +102,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         ])
         let updater = RecordingConfigurationUpdater(result: .success(()))
         let metadataReader = RepoSettingsMetadataReader(results: [
-            .success(ExistingRepositoryMetadataSnapshot(
+            .success(.testFixture(
                 schemaVersion: 1,
                 lastOpenedAt: 1_778_000_000,
                 configuredRepoPath: "/tmp/repo"

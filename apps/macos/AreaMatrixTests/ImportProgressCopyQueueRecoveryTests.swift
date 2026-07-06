@@ -5,7 +5,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
     @MainActor
     func testImportProgressImportMoveFileCoreDiagnosticsAndStopActionsStayOnSafeUiPaths() async {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
-        let snapshot = DiagnosticsSnapshotSnapshot(
+        let snapshot = DiagnosticsSnapshotSnapshot.testFixture(
             snapshotPath: ".areamatrix/diagnostics/import-fatal.zip",
             createdAt: 1_700_000_100,
             warnings: ["paths redacted"]
@@ -182,11 +182,9 @@ struct ImportProgressFatalCopyRetryScenario {
 private extension OnboardingModel {
     @MainActor
     func showInitialStopAfterCurrentProgress(importModel: ImportBatchCopyImportModel) {
-        updateImportEntryProgress(ImportBatchProgressSnapshot(
+        updateImportEntryProgress(importBatchProgress(
             completed: 0,
-            failed: 0,
             total: 2,
-            remaining: 2,
             currentPath: "docs/first.pdf",
             items: importModel.progressItems()
         ))

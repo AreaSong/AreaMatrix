@@ -117,11 +117,10 @@ final class ImportFolderConflictIntegrationTests: XCTestCase {
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
             helpOpener: NoopWelcomeHelpOpener()
         )
-        let progress = ImportBatchProgressSnapshot(
+        let progress = importBatchProgress(
             completed: 1,
             failed: 1,
             total: 2,
-            remaining: 0,
             currentPath: "docs/private.pdf"
         )
         let mapping = CoreErrorMappingSnapshot.importSingleFileError(kind: .permissionDenied)
@@ -310,7 +309,7 @@ private func assertImportFolderFatalPause(_ pausedState: ImportProgressRouteStat
 
 private extension CoreErrorMappingSnapshot {
     static var importProgressFatalFolderError: CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .io,
             userMessage: "文件读写失败",
             severity: .critical,

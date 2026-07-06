@@ -222,10 +222,9 @@ final class MainListIntegrationClosureTests: XCTestCase {
 
     @MainActor
     func testListDbErrorDiagnosticsCollectsCoreSnapshot() async {
-        let snapshot = DiagnosticsSnapshotSnapshot(
+        let snapshot = DiagnosticsSnapshotSnapshot.testFixture(
             snapshotPath: ".areamatrix/diagnostics/main-list.zip",
-            createdAt: 1_700_000_200,
-            warnings: []
+            createdAt: 1_700_000_200
         )
         let collector = MainListIntegrationDiagnosticsCollector(result: .success(snapshot))
         let model = MainFileListModel(

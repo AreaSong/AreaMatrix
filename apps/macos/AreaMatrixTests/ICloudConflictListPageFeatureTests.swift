@@ -337,39 +337,22 @@ private extension ICloudConflictPairSnapshot {
 
 private extension RepoConfigSnapshot {
     static func iCloudConflictListIntegrationsFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "system",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
+        RepoConfigSnapshot.testFixture(repoPath: repoPath) {
+            $0.locale = "system"
+        }
     }
 }
 
 private extension RepoPathValidationSnapshot {
     static func iCloudConflictListValidationFixture(repoPath: String) -> RepoPathValidationSnapshot {
-        RepoPathValidationSnapshot(
-            repoPath: repoPath,
-            exists: true,
-            isDirectory: true,
-            isReadable: true,
-            isWritable: true,
-            isEmpty: false,
-            isInitialized: true,
-            isInsideAreaMatrix: false,
-            isICloudPath: true,
-            hasUnfinishedScanSession: false,
-            availableCapacityBytes: 1_000_000_000,
-            isExternalVolume: false,
-            recommendedMode: .adoptExisting,
-            issues: [.iCloudPath]
-        )
+        RepoPathValidationSnapshot.testFixture(repoPath: repoPath) {
+            $0.isEmpty = false
+            $0.isInitialized = true
+            $0.isICloudPath = true
+            $0.availableCapacityBytes = 1_000_000_000
+            $0.recommendedMode = .adoptExisting
+            $0.issues = [.iCloudPath]
+        }
     }
 }
 
@@ -378,7 +361,7 @@ private extension CoreErrorMappingSnapshot {
         kind: CoreErrorKindSnapshot = .iCloudPlaceholder,
         rawContext: String = "/tmp/iCloudConflictList-repo/docs/report.pdf.icloud"
     ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: "AreaMatrix cannot inspect this iCloud conflict.",
             severity: .high,

@@ -5,10 +5,7 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testLoadShowsAppCoreAndSchemaVersionsThroughDeclaredReaders() async {
         let coreReader = StaticCoreVersionReader(result: .success("0.1.0"))
-        let metadataReader = StaticExistingRepositoryMetadataReader(result: .success(ExistingRepositoryMetadataSnapshot(
-            schemaVersion: 1,
-            lastOpenedAt: nil
-        )))
+        let metadataReader = StaticExistingRepositoryMetadataReader(schemaVersion: 1)
         let model = AboutSettingsModel(
             repoPath: "/tmp/repo",
             appVersionReader: StaticAppVersionReader(version: "1.2.3 (45)"),
@@ -188,10 +185,7 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             appVersionReader: StaticAppVersionReader(version: "1.0"),
             coreVersionReader: StaticCoreVersionReader(result: .success("0.1.0")),
-            metadataReader: StaticExistingRepositoryMetadataReader(result: .success(ExistingRepositoryMetadataSnapshot(
-                schemaVersion: 1,
-                lastOpenedAt: nil
-            ))),
+            metadataReader: StaticExistingRepositoryMetadataReader(schemaVersion: 1),
             diagnosticsExporter: diagnosticsExporter,
             externalLinkOpener: externalLinkOpener ?? RecordingAboutExternalLinkOpener(),
             logsOpener: logsOpener ?? RecordingAboutLogsOpener(),
@@ -244,7 +238,7 @@ private extension RecordingCoreErrorMapper {
             default:
                 "Retry."
             }
-            return CoreErrorMappingSnapshot(
+            return CoreErrorMappingSnapshot.testFixture(
                 kind: .db,
                 userMessage: message,
                 severity: .medium,

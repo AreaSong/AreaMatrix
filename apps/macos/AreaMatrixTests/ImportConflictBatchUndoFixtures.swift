@@ -16,7 +16,7 @@ extension ChangeLogEntrySnapshot {
 
 extension UndoActionRecordSnapshot {
     static func importConflictBatchUndoAction() -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
+        UndoActionRecordSnapshot.testFixture(
             actionID: "undo-import-conflict-batch",
             kind: "import_conflict_batch",
             summary: "Replaced 1 import conflict.",
@@ -33,7 +33,7 @@ extension UndoActionRecordSnapshot {
 
 extension UndoActionResultSnapshot {
     static func importConflictBatchUndoResult() -> UndoActionResultSnapshot {
-        UndoActionResultSnapshot(
+        UndoActionResultSnapshot.testFixture(
             actionID: "undo-import-conflict-batch",
             status: .executed,
             summary: "Undone: replaced 1 import conflict.",

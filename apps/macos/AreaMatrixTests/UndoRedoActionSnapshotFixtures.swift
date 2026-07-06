@@ -2,7 +2,7 @@
 
 extension CoreErrorMappingSnapshot {
     static var undoActionLogHistoryFailure: CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "Undo history could not be loaded",
             severity: .medium,
@@ -13,7 +13,7 @@ extension CoreErrorMappingSnapshot {
     }
 
     static func undoToastUndoFailure() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .conflict,
             userMessage: "Undo failed",
             severity: .medium,
@@ -25,6 +25,32 @@ extension CoreErrorMappingSnapshot {
 }
 
 extension UndoActionRecordSnapshot {
+    static func testFixture(
+        actionID: String = "undo-action",
+        kind: String = "test_action",
+        summary: String = "Test undo action.",
+        affectedCount: Int64 = 1,
+        affectedFileNames: [String] = ["fixture.pdf"],
+        status: UndoActionStatusSnapshot = .pending,
+        canUndo: Bool = true,
+        disabledReason: String? = nil,
+        createdAt: Int64 = 1_700_000_000,
+        updatedAt: Int64 = 1_700_000_000
+    ) -> UndoActionRecordSnapshot {
+        UndoActionRecordSnapshot(
+            actionID: actionID,
+            kind: kind,
+            summary: summary,
+            affectedCount: affectedCount,
+            affectedFileNames: affectedFileNames,
+            status: status,
+            canUndo: canUndo,
+            disabledReason: disabledReason,
+            createdAt: createdAt,
+            updatedAt: updatedAt
+        )
+    }
+
     static func undoToastMovedFilesToTrash() -> UndoActionRecordSnapshot {
         testMovedFilesToTrashUndoAction()
     }
@@ -38,7 +64,7 @@ extension UndoActionRecordSnapshot {
     }
 
     static func undoToastMovedFilesToCategory() -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
+        UndoActionRecordSnapshot.testFixture(
             actionID: "undo-move-finance-5",
             kind: "move_files",
             summary: "Moved 5 files to finance.",
@@ -53,7 +79,7 @@ extension UndoActionRecordSnapshot {
     }
 
     static func undoToastAddedTags() -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
+        UndoActionRecordSnapshot.testFixture(
             actionID: "undo-tags-24",
             kind: "batch_add_tags",
             summary: #"Added tag "finance" to 24 files."#,
@@ -72,7 +98,7 @@ extension UndoActionRecordSnapshot {
     }
 
     static func testMovedFilesToTrashUndoAction() -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
+        UndoActionRecordSnapshot.testFixture(
             actionID: "undo-trash-3",
             kind: "trash_delete",
             summary: "Moved 3 files to Trash.",
@@ -87,7 +113,7 @@ extension UndoActionRecordSnapshot {
     }
 
     static func testRenamedFilesUndoAction() -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
+        UndoActionRecordSnapshot.testFixture(
             actionID: "undo-rename-12",
             kind: "rename_files",
             summary: "Renamed 12 files.",
@@ -120,12 +146,30 @@ extension UndoActionRecordSnapshot {
 }
 
 extension UndoActionResultSnapshot {
+    static func testFixture(
+        actionID: String = "undo-action",
+        status: UndoActionStatusSnapshot = .executed,
+        summary: String = "Undone test action.",
+        affectedCount: Int64 = 1,
+        refreshTargets: [String] = ["files", "undo_actions"],
+        completedAt: Int64 = 1_700_000_010
+    ) -> UndoActionResultSnapshot {
+        UndoActionResultSnapshot(
+            actionID: actionID,
+            status: status,
+            summary: summary,
+            affectedCount: affectedCount,
+            refreshTargets: refreshTargets,
+            completedAt: completedAt
+        )
+    }
+
     static func undoToastUndoneTrashMove() -> UndoActionResultSnapshot {
         testUndoneTrashMoveUndoResult()
     }
 
     static func testUndoneTrashMoveUndoResult() -> UndoActionResultSnapshot {
-        UndoActionResultSnapshot(
+        UndoActionResultSnapshot.testFixture(
             actionID: "undo-trash-3",
             status: .executed,
             summary: "Undone: moved 3 files to Trash.",
@@ -137,8 +181,36 @@ extension UndoActionResultSnapshot {
 }
 
 extension RedoActionRecordSnapshot {
-    static func redoActionLogAvailableMoveRedo() -> RedoActionRecordSnapshot {
+    static func testFixture(
+        actionID: String = "redo-action",
+        kind: String = "test_action",
+        summary: String = "Test redo action.",
+        affectedCount: Int64 = 1,
+        affectedFileNames: [String] = ["fixture.pdf"],
+        status: RedoActionStatusSnapshot = .available,
+        canRedo: Bool = true,
+        disabledReason: String? = nil,
+        sourceUndoActionID: String = "undo-action",
+        createdAt: Int64 = 1_700_000_000,
+        updatedAt: Int64 = 1_700_000_000
+    ) -> RedoActionRecordSnapshot {
         RedoActionRecordSnapshot(
+            actionID: actionID,
+            kind: kind,
+            summary: summary,
+            affectedCount: affectedCount,
+            affectedFileNames: affectedFileNames,
+            status: status,
+            canRedo: canRedo,
+            disabledReason: disabledReason,
+            sourceUndoActionID: sourceUndoActionID,
+            createdAt: createdAt,
+            updatedAt: updatedAt
+        )
+    }
+
+    static func redoActionLogAvailableMoveRedo() -> RedoActionRecordSnapshot {
+        RedoActionRecordSnapshot.testFixture(
             actionID: "redo-move-3",
             kind: "move_files",
             summary: "Redo: Move 3 files to Documents",
@@ -171,8 +243,28 @@ extension RedoActionRecordSnapshot {
 }
 
 extension RedoActionResultSnapshot {
-    static func redoActionLogRedoneMove() -> RedoActionResultSnapshot {
+    static func testFixture(
+        actionID: String = "redo-action",
+        status: RedoActionStatusSnapshot = .executed,
+        summary: String = "Redone test action.",
+        affectedCount: Int64 = 1,
+        refreshTargets: [String] = ["files", "redo_actions"],
+        undoToken: String? = "undo-action",
+        completedAt: Int64 = 1_700_000_010
+    ) -> RedoActionResultSnapshot {
         RedoActionResultSnapshot(
+            actionID: actionID,
+            status: status,
+            summary: summary,
+            affectedCount: affectedCount,
+            refreshTargets: refreshTargets,
+            undoToken: undoToken,
+            completedAt: completedAt
+        )
+    }
+
+    static func redoActionLogRedoneMove() -> RedoActionResultSnapshot {
+        RedoActionResultSnapshot.testFixture(
             actionID: "redo-move-3",
             status: .executed,
             summary: "Redone: moved 3 files to Documents.",
@@ -181,5 +273,14 @@ extension RedoActionResultSnapshot {
             undoToken: "undo-redone-move-3",
             completedAt: 1_700_000_070
         )
+    }
+}
+
+extension UndoHistorySnapshot {
+    static func testFixture(
+        undoActions: [UndoActionRecordSnapshot] = [],
+        redoActions: [RedoActionRecordSnapshot] = []
+    ) -> UndoHistorySnapshot {
+        UndoHistorySnapshot(undoActions: undoActions, redoActions: redoActions)
     }
 }

@@ -28,9 +28,9 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
     init(
         repoPath: String,
         request: AIClassificationSuggestionRequestState,
-        suggester: any CoreAIClassificationSuggesting = CoreBridge(),
-        fallbackReader: any CoreAIClassificationFallbackStatusReading = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        suggester: any CoreAIClassificationSuggesting = AppCoreServices.aiClassificationSuggester,
+        fallbackReader: any CoreAIClassificationFallbackStatusReading = AppCoreServices.aiClassificationFallbackReader,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
     ) {
         self.repoPath = repoPath
         self.request = request

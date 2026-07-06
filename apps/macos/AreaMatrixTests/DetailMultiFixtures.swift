@@ -4,24 +4,8 @@ import Foundation
 extension RepositoryOpeningResult {
     static func detailMultiFixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
-            config: RepoConfigSnapshot(
-                repoPath: repoPath,
-                defaultMode: "Copied",
-                overviewOutput: "GeneratedOnly",
-                aiEnabled: false,
-                locale: "zh-Hans",
-                iCloudWarn: true,
-                enableExtensionRules: true,
-                enableKeywordRules: true,
-                fallbackToInbox: true,
-                allowReplaceDuringImport: false
-            ),
-            tree: RepositoryTreeNodeSnapshot(
-                slug: "__root__",
-                displayName: "Repository",
-                fileCount: Int64(files.count),
-                children: []
-            ),
+            config: .testFixture(repoPath: repoPath),
+            tree: .testRoot(fileCount: Int64(files.count)),
             currentCategoryFiles: files
         )
     }
@@ -37,31 +21,15 @@ extension RepositoryOpeningResult {
 
 extension RepoConfigSnapshot {
     static func detailMultiSelectFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
+        RepoConfigSnapshot.testFixture(repoPath: repoPath)
     }
 }
 
 extension RepositoryTreeNodeSnapshot {
     static func detailMultiSelectTreeFixture(fileCount: Int64) -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            fileCount: fileCount,
-            children: [
-                RepositoryTreeNodeSnapshot(slug: "docs", displayName: "docs", fileCount: fileCount, children: [])
-            ]
-        )
+        RepositoryTreeNodeSnapshot.testRoot(fileCount: fileCount, children: [
+            .testCategory("docs", fileCount: fileCount)
+        ])
     }
 }
 
@@ -74,44 +42,36 @@ extension FileEntrySnapshot {
         importedAt: Int64 = 1_700_000_000,
         availability: FileAvailabilitySnapshot = .available
     ) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: "docs/\(currentName)",
-            originalName: currentName,
             currentName: currentName,
-            category: "docs",
-            sizeBytes: sizeBytes,
-            hashSha256: "detail-multi-\(id)",
-            storageMode: storageMode,
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: importedAt,
-            updatedAt: importedAt,
-            availability: availability
-        )
+            category: "docs"
+        ) {
+            $0.sizeBytes = sizeBytes
+            $0.hashSha256 = "detail-multi-\(id)"
+            $0.storageMode = storageMode
+            $0.importedAt = importedAt
+            $0.updatedAt = importedAt
+            $0.availability = availability
+        }
     }
 
     static func detailMultiSelectFixture(id: Int64, currentName: String) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: "docs/\(currentName)",
-            originalName: currentName,
             currentName: currentName,
-            category: "docs",
-            sizeBytes: 128,
-            hashSha256: "detailMultiSelect-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_100
-        )
+            category: "docs"
+        ) {
+            $0.hashSha256 = "detailMultiSelect-\(id)"
+        }
     }
 }
 
 extension CoreErrorMappingSnapshot {
     static func detailMultiFileNotFound() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .fileNotFound,
             userMessage: "部分选中项无法读取元数据",
             severity: .medium,
@@ -122,7 +82,7 @@ extension CoreErrorMappingSnapshot {
     }
 
     static func batchAddTagsUndoFailure() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .conflict,
             userMessage: "无法撤销批量标签操作",
             severity: .medium,
@@ -133,7 +93,7 @@ extension CoreErrorMappingSnapshot {
     }
 
     static func detailMultiSelectDbMapping() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "当前列表不可用",
             severity: .high,
@@ -144,7 +104,7 @@ extension CoreErrorMappingSnapshot {
     }
 
     static func detailMultiSelectFileNotFoundMapping() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .fileNotFound,
             userMessage: "部分选中项无法读取元数据",
             severity: .medium,
@@ -157,7 +117,7 @@ extension CoreErrorMappingSnapshot {
 
 extension UndoActionRecordSnapshot {
     static func batchAddTagsPendingBatchAddTags() -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
+        UndoActionRecordSnapshot.testFixture(
             actionID: "undo-action-log",
             kind: "batch_add_tags",
             summary: "Added urgent to 2 files.",
@@ -182,7 +142,7 @@ extension UndoActionRecordSnapshot {
 
 extension UndoActionResultSnapshot {
     static func batchAddTagsExecutedBatchAddTags() -> UndoActionResultSnapshot {
-        UndoActionResultSnapshot(
+        UndoActionResultSnapshot.testFixture(
             actionID: "undo-action-log",
             status: .executed,
             summary: "Undone: added urgent to 2 files.",

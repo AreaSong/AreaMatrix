@@ -19,39 +19,13 @@ extension RepositoryOpeningResult {
 
 extension RepoConfigSnapshot {
     static func integrationClosureFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
+        RepoConfigSnapshot.testFixture(repoPath: repoPath)
     }
 }
 
 extension RepositoryTreeNodeSnapshot {
     static func integrationClosureFixtureTree() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
-            children: [
-                RepositoryTreeNodeSnapshot(
-                    slug: "docs",
-                    displayName: "docs",
-                    fileCount: 2,
-                    children: []
-                )
-            ]
-        )
+        .testRoot(children: [.testCategory("docs", fileCount: 2)])
     }
 }
 
@@ -64,27 +38,22 @@ extension FileEntrySnapshot {
         storageMode: String = "Copied",
         availability: FileAvailabilitySnapshot = .available
     ) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: path,
-            originalName: currentName,
             currentName: currentName,
-            category: category,
-            sizeBytes: 128,
-            hashSha256: "integration-closure-\(id)",
-            storageMode: storageMode,
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_100,
-            availability: availability
-        )
+            category: category
+        ) {
+            $0.hashSha256 = "integration-closure-\(id)"
+            $0.storageMode = storageMode
+            $0.availability = availability
+        }
     }
 }
 
 extension CoreErrorMappingSnapshot {
     static func integrationClosureDbFixture() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "当前列表不可用",
             severity: .high,

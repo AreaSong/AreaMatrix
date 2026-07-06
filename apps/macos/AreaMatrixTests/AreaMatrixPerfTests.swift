@@ -287,14 +287,7 @@ private func terminateLaunchedApplication(_ application: NSRunningApplication) {
 
 private extension FileFilterSnapshot {
     static func perfCategory(_ category: String, limit: Int64) -> FileFilterSnapshot {
-        FileFilterSnapshot(
-            category: category,
-            includeDeleted: false,
-            importedAfter: nil,
-            importedBefore: nil,
-            limit: limit,
-            offset: 0
-        )
+        .testFixture(category: category, limit: limit)
     }
 }
 

@@ -36,7 +36,7 @@ final class UndoHistoryActionLogTests: XCTestCase {
         let redoStore = RedoActionLogRecordingRedoStore(results: [.list(.success([redo]))])
         let state = await UndoHistoryActionLog.undoLatest(
             repoPath: importProgressRepoPath(),
-            snapshot: UndoHistorySnapshot(undoActions: [latest, older], redoActions: []),
+            snapshot: .testFixture(undoActions: [latest, older]),
             undoStore: undoStore,
             redoStore: redoStore,
             errorMapper: RecordingCoreErrorMapper.undoHistory()
@@ -60,7 +60,7 @@ final class UndoHistoryActionLogTests: XCTestCase {
         let redoStore = RedoActionLogRecordingRedoStore(results: [])
         let state = await UndoHistoryActionLog.undoLatest(
             repoPath: importProgressRepoPath(),
-            snapshot: UndoHistorySnapshot(undoActions: [latest], redoActions: []),
+            snapshot: .testFixture(undoActions: [latest]),
             undoStore: undoStore,
             redoStore: redoStore,
             errorMapper: RecordingCoreErrorMapper.undoHistory()
@@ -82,7 +82,7 @@ final class UndoHistoryActionLogTests: XCTestCase {
         let redoStore = RedoActionLogRecordingRedoStore(results: [])
         let state = await UndoHistoryActionLog.undoLatest(
             repoPath: importProgressRepoPath(),
-            snapshot: UndoHistorySnapshot(undoActions: [blocked], redoActions: []),
+            snapshot: .testFixture(undoActions: [blocked]),
             undoStore: undoStore,
             redoStore: redoStore,
             errorMapper: RecordingCoreErrorMapper.undoHistory()
@@ -141,7 +141,8 @@ final class UndoHistoryActionLogTests: XCTestCase {
 
         XCTAssertEqual(presentation.sourceText, "Source undo: Moved 3 files to Trash.")
         XCTAssertEqual(presentation.statusText, "Available until the next file operation")
-        XCTAssertEqual(UndoHistorySnapshot(undoActions: [undo], redoActions: [redo]).sourceUndoAction(for: redo), undo)
+        let history = UndoHistorySnapshot.testFixture(undoActions: [undo], redoActions: [redo])
+        XCTAssertEqual(history.sourceUndoAction(for: redo), undo)
     }
 }
 

@@ -33,11 +33,7 @@ final class ImportProgressIndexPageFeatureTests: XCTestCase {
     func testImportProgressImportIndexFileCoreIndexFailureRequiresRecoveryCheckBeforeRetry() async {
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
         let context = ImportProgressFixtures.indexRetryContext(sourcePath: importProgressIndexSourcePath())
-        let recoverer = RecordingCoreStartupRecoverer(result: .success(RecoveryReportSnapshot(
-            cleanedStagingFiles: 0,
-            revertedStagingDbRows: 0,
-            warnings: []
-        )))
+        let recoverer = RecordingCoreStartupRecoverer(result: .success(.testFixture()))
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             startupRecoverer: recoverer,

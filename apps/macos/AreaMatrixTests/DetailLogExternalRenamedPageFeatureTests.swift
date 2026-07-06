@@ -236,29 +236,17 @@ private typealias DetailLogExternalRenamedLister = RecordingFileLister
 
 private extension SyncResultSnapshot {
     static func detailRenamedFixture() -> SyncResultSnapshot {
-        SyncResultSnapshot(
-            detectedCreates: 0,
-            detectedRenames: 1,
-            detectedDeletes: 0,
-            detectedModifies: 0,
-            errors: []
-        )
+        .renamedFixture()
     }
 
     static func detailRenamedWithErrorsFixture() -> SyncResultSnapshot {
-        SyncResultSnapshot(
-            detectedCreates: 0,
-            detectedRenames: 0,
-            detectedDeletes: 0,
-            detectedModifies: 0,
-            errors: ["rename pairing failed"]
-        )
+        .errorFixture("rename pairing failed")
     }
 }
 
 private extension CoreErrorMappingSnapshot {
     static func detailLogExternalRenamed(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: "外部重命名同步失败",
             severity: .medium,

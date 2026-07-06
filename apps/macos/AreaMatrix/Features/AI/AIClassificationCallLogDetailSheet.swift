@@ -22,8 +22,8 @@ final class AIClassificationCallLogDetailModel: ObservableObject {
         repoPath: String,
         callLogID: Int64,
         feature: AiCallLogFeature = .classification,
-        lister: any CoreAICallLogListing = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        lister: any CoreAICallLogListing = AppCoreServices.aiCallLogLister,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
     ) {
         self.repoPath = repoPath
         self.callLogID = callLogID
@@ -87,8 +87,8 @@ struct AIClassificationCallLogDetailSheet: View {
         repoPath: String,
         callLogID: Int64,
         feature: AiCallLogFeature = .classification,
-        lister: any CoreAICallLogListing = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge(),
+        lister: any CoreAICallLogListing = AppCoreServices.aiCallLogLister,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         onClose: @escaping () -> Void = {}
     ) {
         _model = StateObject(wrappedValue: AIClassificationCallLogDetailModel(

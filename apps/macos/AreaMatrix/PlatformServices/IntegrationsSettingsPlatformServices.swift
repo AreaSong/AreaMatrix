@@ -86,15 +86,27 @@ enum ICloudHelpOpenError: Error, Equatable, LocalizedError {
 }
 
 struct NSWorkspaceICloudHelpOpener: ICloudHelpOpening {
+    private static let helpURLString = "https://support.apple.com/guide/mac-help/use-icloud-drive-mchl1a02d711/mac"
+
+    private let externalURLOpener: any ExternalURLStringOpening
+
+    init(externalURLOpener: any ExternalURLStringOpening = AppPlatformServices.externalURLStringOpener) {
+        self.externalURLOpener = externalURLOpener
+    }
+
     @MainActor
     func openICloudHelp() throws {
-        guard let url = URL(string: "https://support.apple.com/guide/mac-help/use-icloud-drive-mchl1a02d711/mac")
-        else {
+        do {
+            try externalURLOpener.openHTTPSURLString(Self.helpURLString)
+        } catch let error as ExternalURLOpenError {
+            switch error {
+            case .invalidURL:
+                throw ICloudHelpOpenError.helpURLUnavailable
+            case .openRejected:
+                throw ICloudHelpOpenError.openRejected
+            }
+        } catch {
             throw ICloudHelpOpenError.helpURLUnavailable
-        }
-
-        guard NSWorkspace.shared.open(url) else {
-            throw ICloudHelpOpenError.openRejected
         }
     }
 }

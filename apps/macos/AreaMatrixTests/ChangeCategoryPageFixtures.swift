@@ -8,40 +8,25 @@ extension FileEntrySnapshot {
         name: String,
         updatedAt: Int64 = 1_700_000_100
     ) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: path,
-            originalName: name,
             currentName: name,
-            category: category,
-            sizeBytes: 512,
-            hashSha256: "change-category-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: updatedAt
-        )
+            category: category
+        ) {
+            $0.sizeBytes = 512
+            $0.hashSha256 = "change-category-\(id)"
+            $0.updatedAt = updatedAt
+        }
     }
 }
 
 extension RepositoryTreeNodeSnapshot {
     static func changeCategoryTree(docsCount: Int64, financeCount: Int64) -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
+        .testRoot(
             children: [
-                RepositoryTreeNodeSnapshot(slug: "docs", displayName: "docs", fileCount: docsCount, children: []),
-                RepositoryTreeNodeSnapshot(
-                    slug: "finance",
-                    displayName: "finance",
-                    fileCount: financeCount,
-                    children: []
-                )
+                .testCategory("docs", fileCount: docsCount),
+                .testCategory("finance", fileCount: financeCount)
             ]
         )
     }
@@ -71,7 +56,7 @@ extension MoveToCategoryPreviewSnapshot {
 }
 
 func changeCategoryPredictionFixture() -> ClassifyResultSnapshot {
-    ClassifyResultSnapshot(
+    .testFixture(
         category: "docs",
         suggestedName: "contract.pdf",
         reason: .extension,
@@ -81,7 +66,7 @@ func changeCategoryPredictionFixture() -> ClassifyResultSnapshot {
 
 extension CoreErrorMappingSnapshot {
     static func changeCategoryClassify() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .classify,
             userMessage: "Target category is unavailable.",
             severity: .medium,
@@ -92,7 +77,7 @@ extension CoreErrorMappingSnapshot {
     }
 
     static func changeCategoryConflict() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .conflict,
             userMessage: "Path conflict.",
             severity: .medium,
@@ -103,7 +88,7 @@ extension CoreErrorMappingSnapshot {
     }
 
     static func changeCategoryPermissionDenied() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .permissionDenied,
             userMessage: "Target category is not writable.",
             severity: .high,

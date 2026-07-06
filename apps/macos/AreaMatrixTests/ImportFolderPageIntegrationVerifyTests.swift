@@ -29,11 +29,9 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         XCTAssertNil(model.pendingImportEntry)
 
         model.startImportEntry(opening: opening, source: .dropZone, urls: [folderURL])
-        model.updateImportEntryProgress(ImportBatchProgressSnapshot(
+        model.updateImportEntryProgress(importBatchProgress(
             completed: 0,
-            failed: 0,
             total: 2,
-            remaining: 2,
             currentPath: "finance/invoice.pdf"
         ))
 
@@ -133,21 +131,18 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.pendingICloudCount, 1)
         XCTAssertTrue(outcome?.needsResultSummary == true)
-        XCTAssertEqual(outcome?.progressSnapshot(currentPath: "folder summary"), ImportBatchProgressSnapshot(
+        XCTAssertEqual(outcome?.progressSnapshot(currentPath: "folder summary"), importBatchProgress(
             completed: 1,
-            failed: 0,
             total: 2,
             remaining: 0,
             currentPath: "docs/ready.pdf",
-            skipped: 0,
             pending: 1,
             items: [
-                ImportBatchProgressSnapshot.Item(
+                importBatchProgressItem(
                     fileID: 42,
                     sourcePath: "/tmp/source.pdf",
                     targetPath: "docs/ready.pdf",
-                    phase: .done,
-                    errorMessage: nil
+                    phase: .done
                 )
             ]
         ))

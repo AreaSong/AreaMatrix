@@ -1,5 +1,5 @@
 version: 1
-updated: "2026-06-23"
+updated: "2026-07-06"
 scope: v1-mvp
 authority: index-only
 version_status:
@@ -30,6 +30,7 @@ items:
     validation:
       - Manual smoke on a real iCloud placeholder environment.
       - Record mdls downloading status, UI action, retry result, repo file state, and DB row evidence.
+    notes: ./dev release icloud-placeholder-evidence can collect read-only lstat/mdls evidence drafts, but it cannot download placeholders, run UI retry, prove DB rows, or close this blocker.
   - id: v1-rl-003
     status: blocked-external
     type: release-evidence
@@ -65,12 +66,16 @@ items:
     type: release-evidence
     title: Alpha tester feedback channel
     source: workflow/versions/v1-mvp/evidence/release-checklist.md
+    supporting_sources:
+      - workflow/versions/v1-mvp/evidence/alpha-feedback-route.md
+      - .github/ISSUE_TEMPLATE/alpha_feedback.md
     owner: release
     current_impact: formal-alpha-blocked
     executable_task: false
     promotion_required: false
-    blocker: no-alpha-tester-list-or-feedback-entry-recorded
-    close_condition: Alpha tester list, GitHub Discussions or issue template entry, and feedback route are recorded.
+    blocker: no-alpha-tester-list-or-final-feedback-route-decision
+    close_condition: Alpha tester list, release announcement or Discussion link, final feedback triage route, and feedback owner are recorded.
+    notes: .github/ISSUE_TEMPLATE/alpha_feedback.md provides a local feedback entry template and alpha-feedback-route.md records the required release decision fields, but neither decides the tester list, formal announcement route, or triage owner.
   - id: v1-ex-001
     status: accepted-exception
     type: closeout-exception
@@ -96,4 +101,5 @@ items:
     current_impact: formal-alpha-blocked
     executable_task: false
     promotion_required: false
-    close_condition: Handle through release evidence review; do not fabricate task-loop verify evidence.
+    close_condition: Handle through release evidence review with fresh release evidence; do not fabricate task-loop verify evidence.
+    notes: Tracked task-loop summary.json entries for 3-1/task-05 are incomplete attempts. A summary with status=running, task in_progress, and missing copy/verify logs cannot count as VERIFY_RESULT PASS and cannot close release evidence blockers.

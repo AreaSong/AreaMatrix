@@ -76,9 +76,9 @@ final class SyncConflictReviewModel: ObservableObject {
         repoPath: String,
         conflictID: String? = nil,
         primaryPath: String? = nil,
-        conflictDetector: any CoreSyncConflictDetecting = CoreBridge(),
+        conflictDetector: any CoreSyncConflictDetecting = AppCoreServices.syncConflictDetector,
         conflictResolver: any CoreSyncConflictResolving = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
     ) {
         self.repoPath = repoPath
         self.conflictID = conflictID

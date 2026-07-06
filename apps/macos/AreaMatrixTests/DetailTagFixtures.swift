@@ -2,7 +2,7 @@
 
 extension CoreErrorMappingSnapshot {
     static func tagAddTagDb() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "无法更新标签",
             severity: .medium,
@@ -24,20 +24,12 @@ extension TagSuggestionRequestSnapshot {
 }
 
 extension RepositorySidebarRowSnapshot {
-    static let tagFilterRoot = RepositorySidebarRowSnapshot(node: RepositoryTreeNodeSnapshot(
-        slug: "__root__",
-        displayName: "Repository",
-        kind: "RepositoryRoot",
-        relativePath: "",
-        fileCount: 0,
-        depth: 0,
-        children: []
-    ), depth: 0)
+    static let tagFilterRoot = RepositorySidebarRowSnapshot(node: .testRoot(), depth: 0)
 }
 
 extension UndoActionRecordSnapshot {
     static func tagSuggestionsApplySuggestion(token: String) -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
+        UndoActionRecordSnapshot.testFixture(
             actionID: token,
             kind: "tag_suggestion_apply",
             summary: "Applied 1 suggested tag.",

@@ -75,7 +75,7 @@ final class MainRepoErrorMappingTests: XCTestCase {
     }
 
     func testCoreErrorMappingRecoveryTextUsesSuggestedActionBeforeFallbacks() {
-        let mapped = CoreErrorMappingSnapshot(
+        let mapped = CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "数据库错误",
             severity: .medium,
@@ -83,7 +83,7 @@ final class MainRepoErrorMappingTests: XCTestCase {
             recoverability: .retryable,
             rawContext: "database is locked"
         )
-        let fallbackOnly = CoreErrorMappingSnapshot(
+        let fallbackOnly = CoreErrorMappingSnapshot.testFixture(
             kind: .internal,
             userMessage: "应用内部错误",
             severity: .critical,
@@ -211,7 +211,7 @@ final class MainRepoErrorRouteTests: XCTestCase {
 final class MainRepoErrorDiagnosticsTests: XCTestCase {
     @MainActor
     func testMainRepoErrorDiagnosticsRequirePrivacyConfirmationAndUseCoreSnapshot() async {
-        let snapshot = DiagnosticsSnapshotSnapshot(
+        let snapshot = DiagnosticsSnapshotSnapshot.testFixture(
             snapshotPath: "/tmp/repo/.areamatrix/diagnostics/main-repo.zip",
             createdAt: 1_778_000_000,
             warnings: ["paths redacted"]
@@ -417,7 +417,7 @@ private extension CoreErrorMappingSnapshot {
         recoverability: CoreErrorRecoverabilitySnapshot = .userActionRequired,
         rawContext: String
     ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: "mapped \(kind.rawValue)",
             severity: severity,

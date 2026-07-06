@@ -14,7 +14,7 @@ blockers:
   - Formal Stage 1 alpha release is not approved; 0.1.0-local-qa is internal QA only, and v0.1.0-unnotarized-preview.2 is prerelease-only for trusted testers.
   - iCloud placeholder real-environment smoke evidence is deferred to the formal distribution track.
   - Developer ID signing, notarization, stapling, clean-Mac first launch, and formal v0.1.0 tag evidence are deferred to the formal distribution track.
-  - 3-1/task-05 remains a release-gate review item without task-loop verify evidence; it is deferred to release evidence review and must not be papered over.
+  - 3-1/task-05 remains a release-gate review item without task-loop VERIFY_RESULT PASS evidence; tracked running/in_progress summaries and missing copy/verify logs are deferred to release evidence review and must not be papered over.
 evidence:
   live_queue: workflow/versions/v1-mvp/execution
   progress: workflow/versions/v1-mvp/execution/_shared/progress.json
@@ -37,6 +37,7 @@ checkpoint_gap_summary:
   recoverable_verify_pass_evidence: 35
   tracked_run_summaries: 35
   run_summaries_with_git_checkpoint_off: 35
+  task05_tracked_incomplete_summaries_excluded_from_pass: 5
   tracked_copy_verify_logs: 0
   local_qa_gate_sync_without_verify_log: 1
   by_phase:
@@ -53,8 +54,8 @@ checkpoint_gap_summary:
 release_gate_review:
   entry: 3-1/task-05
   disposition: deferred-to-formal-release-evidence-review
-  reason: local QA / release gate sync entry without task-loop run id, copy log, verify log, or run summary
-  guardrail: do not fabricate task-loop verify evidence or checkpoint metadata
+  reason: local QA / release gate sync entry plus tracked task-loop summaries whose runs are failed or running, whose task remains in_progress, and whose referenced copy/verify logs are unavailable as archive evidence
+  guardrail: do not count running/in_progress task-loop summaries or missing copy/verify logs as VERIFY_RESULT PASS; do not fabricate task-loop verify evidence or checkpoint metadata
 dirty_worktree_summary:
   generated_xcode_log_removed_from_git_tracking: apps/macos/.derived-data-log-0CA5RPJ1
   ignore_rule: apps/macos/.derived-data-log-*
@@ -71,5 +72,6 @@ remaining_risks:
   - Formal alpha release remains blocked until deferred release blockers are closed with fresh evidence.
   - Do not promote new live workflow/versions/v1-mvp/execution work without explicit approval and live mapping.
   - Do not treat local QA, unnotarized preview, ad-hoc signing, or same-machine launch smoke as formal alpha distribution evidence.
+  - Do not treat tracked task-loop summary.json entries with status=running, task in_progress, and missing copy/verify logs as VERIFY_RESULT PASS or as release evidence blocker closure.
   - Do not rewrite progress.json or task-loop logs to paper over checkpoint evidence gaps; accepted exceptions are recorded, and optional evidence bundling remains a closeout archive decision.
 archive_readiness: evidence-bundle-ready

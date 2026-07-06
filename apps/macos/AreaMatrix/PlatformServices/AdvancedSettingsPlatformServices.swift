@@ -3,15 +3,15 @@ import Foundation
 
 enum AdvancedSettingsPlatformServices {
     static var rootOverviewInspector: any RootOverviewFileInspecting {
-        LocalRootOverviewFileInspector()
+        AppPlatformServices.rootOverviewInspector
     }
 
     static var appVersionReader: any AppVersionReading {
-        BundleAppVersionReader()
+        AppPlatformServices.appVersionReader
     }
 
     static var metadataReader: any ExistingRepositoryMetadataReading {
-        SQLiteExistingRepositoryMetadataReader()
+        AppPlatformServices.existingRepositoryMetadataReader
     }
 
     static var logsOpener: any AdvancedSettingsLogFolderOpening {
@@ -37,33 +37,36 @@ struct BundleAppVersionReader: AppVersionReading {
 }
 
 struct AdvancedSettingsLogFolderOpener: AdvancedSettingsLogFolderOpening {
-    @MainActor
-    func openLogsFolder(repoPath: String) throws -> String {
-        let logsURL = Self.logsURL(repoPath: repoPath)
-        var isDirectory: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: logsURL.path, isDirectory: &isDirectory),
-              isDirectory.boolValue
-        else {
-            throw AdvancedSettingsLogFolderError.missing(logsURL.path)
-        }
-        guard NSWorkspace.shared.open(logsURL) else {
-            throw AdvancedSettingsLogFolderError.openRejected(logsURL.path)
-        }
-        return logsURL.path
+    private let localURLOpener: any LocalFileURLOpening
+
+    init(localURLOpener: any LocalFileURLOpening = AppPlatformServices.localFileURLOpener) {
+        self.localURLOpener = localURLOpener
     }
 
-    static func logsURL(repoPath: String) -> URL {
-        URL(fileURLWithPath: repoPath, isDirectory: true)
-            .appendingPathComponent(".areamatrix", isDirectory: true)
-            .appendingPathComponent("logs", isDirectory: true)
+    @MainActor
+    func openLogsFolder(repoPath: String) throws -> String {
+        let logsURL = RepositoryMetadataPath.logsURL(repoPath: repoPath)
+        do {
+            try localURLOpener.openExisting(logsURL, requiresDirectory: true)
+        } catch LocalFileURLOpenError.openRejected(_) {
+            throw AdvancedSettingsLogFolderError.openRejected(logsURL.path)
+        } catch {
+            throw AdvancedSettingsLogFolderError.missing(logsURL.path)
+        }
+        return logsURL.path
     }
 }
 
 struct AdvancedSettingsDiagnosticCopier: AdvancedSettingsDiagnosticSummaryCopying {
+    private let writer: any PasteboardStringWriting
+
+    init(writer: any PasteboardStringWriting = AppPlatformServices.pasteboardStringWriter) {
+        self.writer = writer
+    }
+
     @MainActor
     func copyDiagnosticSummary(_ summary: String) throws {
-        NSPasteboard.general.clearContents()
-        guard NSPasteboard.general.setString(summary, forType: .string) else {
+        guard writer.write(summary) else {
             throw AdvancedSettingsDiagnosticSummaryError.copyRejected
         }
     }

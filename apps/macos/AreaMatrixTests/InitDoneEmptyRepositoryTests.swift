@@ -227,15 +227,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
     }
 
     func testOpeningResultIsNotEmptyWhenTreeCountAndCurrentCategoryListDisagree() {
-        let staleTree = RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "资料库",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
-            children: []
-        )
+        let staleTree = RepositoryTreeNodeSnapshot.testRoot(displayName: "资料库")
         let opening = RepositoryOpeningResult(
             config: .initDoneFixture(repoPath: "/tmp/repo"),
             tree: staleTree,
@@ -246,15 +238,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
     }
 
     func testCurrentCategoryListFailureStaysInlineInsteadOfFailingRepositoryOpen() {
-        let tree = RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "资料库",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
-            children: []
-        )
+        let tree = RepositoryTreeNodeSnapshot.testRoot(displayName: "资料库")
         let mapping = CoreErrorMappingSnapshot.initDoneDbFixture(rawContext: "list db locked")
 
         let result = loadOpeningCurrentCategoryFiles(

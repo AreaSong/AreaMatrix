@@ -2,7 +2,7 @@
 
 extension CoreErrorMappingSnapshot {
     static func batchRenameUndoUndoFailure() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .conflict,
             userMessage: "Could not load rename undo action.",
             severity: .medium,
@@ -15,7 +15,7 @@ extension CoreErrorMappingSnapshot {
 
 extension UndoActionRecordSnapshot {
     static func batchRenameUndoPendingBatchRename() -> UndoActionRecordSnapshot {
-        UndoActionRecordSnapshot(
+        UndoActionRecordSnapshot.testFixture(
             actionID: "undo-rename-files",
             kind: "rename_files",
             summary: "Renamed 2 files.",

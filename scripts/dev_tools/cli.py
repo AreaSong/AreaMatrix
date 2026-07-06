@@ -30,6 +30,7 @@ from .middle_layer import run_workflow_middle
 from .release import (
     DEFAULT_READINESS_BUILD_DERIVED_DATA,
     DEFAULT_NOTARY_PROFILE,
+    run_icloud_placeholder_evidence,
     run_release_readiness_build,
     run_release_preflight,
 )
@@ -154,6 +155,13 @@ def _build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_NOTARY_PROFILE,
         help=f"notarytool keychain profile to check; defaults to {DEFAULT_NOTARY_PROFILE}",
     )
+    release_preflight.add_argument("--json", action="store_true", help="Print machine-readable preflight evidence")
+    release_icloud = release_sub.add_parser(
+        "icloud-placeholder-evidence",
+        help="Collect read-only M-02 iCloud placeholder evidence metadata",
+    )
+    release_icloud.add_argument("--path", required=True, help="iCloud placeholder or source path to inspect")
+    release_icloud.add_argument("--json", action="store_true", help="Print machine-readable evidence metadata")
     release_readiness_build = release_sub.add_parser(
         "readiness-build",
         help="Build a timestamped ad-hoc signed Release app for local readiness validation",
@@ -723,7 +731,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "bindings" and args.bindings_command == "update":
             return run_bindings_update(root, args.udl, args.out_dir)
         if args.command == "release" and args.release_command == "preflight":
-            return run_release_preflight(root, notary_profile=args.notary_profile)
+            return run_release_preflight(root, notary_profile=args.notary_profile, json_output=args.json)
+        if args.command == "release" and args.release_command == "icloud-placeholder-evidence":
+            return run_icloud_placeholder_evidence(Path(args.path), json_output=args.json)
         if args.command == "release" and args.release_command == "readiness-build":
             return run_release_readiness_build(
                 root,

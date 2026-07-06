@@ -4,7 +4,7 @@ import XCTest
 final class MainLoadingAdoptExistingTests: XCTestCase {
     @MainActor
     func testMainLoadingRunsStartupRecoveryCoreRecoveryBeforeConfiguredRepositoryOpen() async {
-        let report = RecoveryReportSnapshot(
+        let report = RecoveryReportSnapshot.testFixture(
             cleanedStagingFiles: 2,
             revertedStagingDbRows: 1,
             warnings: ["Kept recoverable staging file"]

@@ -188,29 +188,11 @@ private enum DetailLogIntegrationSyncScenario {
     var snapshot: SyncResultSnapshot {
         switch self {
         case .created:
-            SyncResultSnapshot(
-                detectedCreates: 1,
-                detectedRenames: 0,
-                detectedDeletes: 0,
-                detectedModifies: 0,
-                errors: []
-            )
+            .createdFixture()
         case .renamed:
-            SyncResultSnapshot(
-                detectedCreates: 0,
-                detectedRenames: 1,
-                detectedDeletes: 0,
-                detectedModifies: 0,
-                errors: []
-            )
+            .renamedFixture()
         case .removed:
-            SyncResultSnapshot(
-                detectedCreates: 0,
-                detectedRenames: 0,
-                detectedDeletes: 1,
-                detectedModifies: 0,
-                errors: []
-            )
+            .deletedFixture()
         }
     }
 }

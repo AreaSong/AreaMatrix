@@ -18,7 +18,7 @@ final class BatchRenameRedoActionLogTests: XCTestCase {
 
         let state = await UndoHistoryActionLog.redoLatest(
             repoPath: batchRenameRedoRepoPath(),
-            snapshot: UndoHistorySnapshot(undoActions: [undo], redoActions: [redo]),
+            snapshot: .testFixture(undoActions: [undo], redoActions: [redo]),
             undoStore: undoStore,
             redoStore: redoStore,
             errorMapper: StaticCoreErrorMapper(mapping: .batchRenameUndoUndoFailure())
@@ -39,7 +39,7 @@ final class BatchRenameRedoActionLogTests: XCTestCase {
         let redoStore = RedoActionLogRecordingRedoStore(results: [])
         let state = await UndoHistoryActionLog.redoLatest(
             repoPath: batchRenameRedoRepoPath(),
-            snapshot: UndoHistorySnapshot(undoActions: [], redoActions: [cleared]),
+            snapshot: .testFixture(redoActions: [cleared]),
             undoStore: BatchRenameRedoUndoStore(results: []),
             redoStore: redoStore,
             errorMapper: StaticCoreErrorMapper(mapping: .batchRenameUndoUndoFailure())

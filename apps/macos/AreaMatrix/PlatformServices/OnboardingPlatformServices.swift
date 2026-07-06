@@ -2,19 +2,19 @@ import Foundation
 
 enum OnboardingPlatformServices {
     static var systemCapabilityChecker: any OnboardingSystemCapabilityChecking {
-        LocalOnboardingCapabilities()
+        AppPlatformServices.systemCapabilityChecker
     }
 
     static var metadataReader: any ExistingRepositoryMetadataReading {
-        SQLiteExistingRepositoryMetadataReader()
+        AppPlatformServices.existingRepositoryMetadataReader
     }
 
     static var accessibilityAnnouncer: any AccessibilityAnnouncing {
-        VoiceOverAccessibilityAnnouncer()
+        AppPlatformServices.accessibilityAnnouncer
     }
 }
 
-struct LocalOnboardingCapabilities: OnboardingSystemCapabilityChecking {
+struct LocalSystemCapabilities: OnboardingSystemCapabilityChecking {
     func isTrashAvailable() -> Bool {
         FileManager.default.urls(for: .trashDirectory, in: .userDomainMask).isEmpty == false
     }

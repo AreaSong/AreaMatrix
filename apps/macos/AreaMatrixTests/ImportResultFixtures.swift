@@ -45,37 +45,32 @@ func importResultSourceDetailJSON(sourcePath: String = importResultImportedSourc
 }
 
 enum ImportResultFixtures {
-    static let importedProgress = ImportBatchProgressSnapshot(
+    static let importedProgress = importBatchProgress(
         completed: 1,
-        failed: 0,
         total: 1,
-        remaining: 0,
         currentPath: importResultTargetPath(importResultImportedFilename()),
         items: [
-            ImportBatchProgressSnapshot.Item(
+            importBatchProgressItem(
                 fileID: 117,
                 sourcePath: importResultImportedSourcePath(),
                 targetPath: importResultTargetPath(importResultImportedFilename()),
-                phase: .done,
-                errorMessage: nil
+                phase: .done
             )
         ]
     )
 
-    static let failedCopyProgress = ImportBatchProgressSnapshot(
+    static let failedCopyProgress = importBatchProgress(
         completed: 1,
         failed: 1,
         total: 2,
-        remaining: 0,
         currentPath: importResultTargetPath(importResultFailedFilename()),
         items: [
-            ImportBatchProgressSnapshot.Item(
+            importBatchProgressItem(
                 sourcePath: importResultImportedSourcePath(),
                 targetPath: importResultTargetPath(importResultImportedFilename()),
-                phase: .done,
-                errorMessage: nil
+                phase: .done
             ),
-            ImportBatchProgressSnapshot.Item(
+            importBatchProgressItem(
                 sourcePath: importResultFailedSourcePath(),
                 targetPath: importResultTargetPath(importResultFailedFilename()),
                 phase: .failed,
@@ -84,21 +79,19 @@ enum ImportResultFixtures {
         ]
     )
 
-    static let skippedDuplicateProgress = ImportBatchProgressSnapshot(
+    static let skippedDuplicateProgress = importBatchProgress(
         completed: 1,
-        failed: 0,
         total: 2,
         remaining: 0,
         currentPath: importResultTargetPath(importResultImportedFilename()),
         skipped: 1,
         items: [
-            ImportBatchProgressSnapshot.Item(
+            importBatchProgressItem(
                 sourcePath: importResultPrivateSourcePath(importResultImportedFilename()),
                 targetPath: importResultTargetPath(importResultImportedFilename()),
-                phase: .done,
-                errorMessage: nil
+                phase: .done
             ),
-            ImportBatchProgressSnapshot.Item(
+            importBatchProgressItem(
                 sourcePath: importResultPrivateSourcePath(importResultExistingFilename()),
                 targetPath: importResultTargetPath(importResultExistingFilename()),
                 phase: .pending,

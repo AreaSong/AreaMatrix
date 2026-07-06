@@ -12,6 +12,7 @@
 | Recoverable local `VERIFY_RESULT: PASS` evidence | 35 |
 | Tracked run summary exists | 35 |
 | Run summary shows `git.checkpoint=off` | 35 |
+| Tracked `3-1/task-05` incomplete summaries excluded from PASS evidence | 5 |
 | Copy / verify logs tracked in Git | 0 |
 | Local QA / release gate sync without verify log | 1 |
 | High risk | 28 |
@@ -28,7 +29,10 @@
   - The run summary records `git.checkpoint=off`, so the missing per-task checkpoint fields are a historical runner mode / evidence-policy gap, not evidence that the task failed.
   - The copy / verify logs themselves are not tracked in Git, so these entries still need an archive evidence bundle or an explicitly accepted closeout exception before v1 archive can be considered complete.
 - `release-gate-review`: 1 entry.
-  - `3-1/task-05` has a completed local QA / release gate sync note but no task-loop run id, copy log, verify log, or run summary. It must be handled through `workflow/versions/v1-mvp/evidence/release-checklist.md` and `workflow/versions/v1-mvp/evidence/release-notes/release-notes-0.1.0.md`.
+  - `3-1/task-05` has a completed local QA / release gate sync note but no completed task-loop run id, copy log, verify log, or completed run summary.
+  - Existing tracked task-loop summaries for `3-1/task-05` are incomplete attempts: the run status is `failed` or `running`, the task remains `in_progress`, and the referenced `.codex/task-loop-logs/**` copy / verify logs are not available as archived evidence.
+  - A tracked `summary.json` with `status=running`, task `in_progress`, and missing copy / verify logs must not be counted as `VERIFY_RESULT: PASS` evidence and must not close any release evidence blocker.
+  - `3-1/task-05` must be handled through `workflow/versions/v1-mvp/evidence/release-checklist.md` and `workflow/versions/v1-mvp/evidence/release-notes/release-notes-0.1.0.md`.
 - `accepted-exception`: 35 entries, recorded in `workflow/versions/v1-mvp/closeout/checkpoint-accepted-exceptions.md`.
 - `unrecoverable`: 0 entries found during this review.
 
@@ -36,6 +40,7 @@
 
 - 不手写或回填 `git_checkpoint_status` / `git_commit`，避免伪造 evidence。
 - 不把本地未跟踪 copy / verify logs 描述成 committed checkpoint evidence。
+- 不把 tracked 但仍为 `status=running` / task `in_progress` 且 copy / verify logs 缺失的 `summary.json` 描述成 `VERIFY_RESULT: PASS`。
 - 35 个 `recoverable-evidence` 条目已作为 accepted closeout exceptions 处置，详见 `checkpoint-accepted-exceptions.md` 和 `checkpoint-evidence-index.md`。
 - `3-1/task-05` 不进入 task-loop checkpoint exception；它属于 release gate evidence 处置。
 - `archive_readiness` 现已在 `version.yaml` 和 `closeout.yaml` 记录为 `evidence-bundle-ready`；formal alpha release 仍由 release blockers 单独阻断。
@@ -55,7 +60,7 @@
 | `2-2/task-21` | High | `20260507_203441` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
 | `2-3/task-34` | High | `20260509_025922` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
 | `3-1/task-02` | Mission-Critical | `20260509_124002` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
-| `3-1/task-05` | Unspecified | none | completed local QA / release gate sync note only | not a task-loop run | release-gate-review |
+| `3-1/task-05` | Unspecified | tracked incomplete summaries only | local QA / release gate sync note; tracked summaries are `failed` / `running` with task `in_progress` | no completed task-loop PASS evidence; referenced logs unavailable | release-gate-review |
 | `4-1/task-16` | High | `20260515_171239` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
 | `4-1/task-17` | High | `20260516_123504` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
 | `4-1/task-117` | High | `20260524_190717` | local PASS log + tracked run summary | `git.checkpoint=off`; logs untracked | accepted-exception / runner-checkpoint-off |
@@ -83,6 +88,6 @@
 
 ## Next Review
 
-1. 对 `3-1/task-05` 回到 `workflow/versions/v1-mvp/evidence/release-checklist.md` 和 `workflow/versions/v1-mvp/evidence/release-notes/release-notes-0.1.0.md` 决定是否作为 release evidence exception。
+1. `3-1/task-05` 已确定走 release evidence review：以 `workflow/versions/v1-mvp/evidence/release-checklist.md` 和 `workflow/versions/v1-mvp/evidence/release-notes/release-notes-0.1.0.md` 为处置来源；tracked 但 `status=running` / task `in_progress` 且 copy / verify logs 缺失的 `summary.json` 不算 `VERIFY_RESULT: PASS`，也不能关闭 release evidence blocker。
 2. 决定是否复制本地 copy / verify logs 到长期 archive evidence bundle；当前索引已列出全部路径。
 3. 不因 evidence bundle ready 而放行 formal alpha；release gate review 和 release blockers 仍属于 formal distribution track。

@@ -9,8 +9,8 @@ struct CoreAIPrivacyRuleRegistryReader: AIPrivacyRuleRegistryReading {
     private let facetReader: any CoreSearchFiltering
 
     init(
-        classifierReader: any CoreClassifierRuleEditing = CoreBridge(),
-        facetReader: any CoreSearchFiltering = CoreBridge()
+        classifierReader: any CoreClassifierRuleEditing = AppCoreServices.classifierRuleEditor,
+        facetReader: any CoreSearchFiltering = AppCoreServices.searchFiltering
     ) {
         self.classifierReader = classifierReader
         self.facetReader = facetReader

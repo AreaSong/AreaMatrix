@@ -12,7 +12,7 @@ func importSingleFileCoreCapabilityRequest() -> ImportEntryRequest {
 }
 
 func importSingleFileCoreCapabilityPrediction() -> ClassifyResultSnapshot {
-    ClassifyResultSnapshot(
+    .testFixture(
         category: "docs",
         suggestedName: "2026Q1_合同.pdf",
         reason: .keyword,

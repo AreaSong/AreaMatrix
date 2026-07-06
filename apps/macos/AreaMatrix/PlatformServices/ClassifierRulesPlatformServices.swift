@@ -18,7 +18,7 @@ enum ClassifierSettingsPlatformServices {
     }
 
     static var accessibilityAnnouncer: any AccessibilityAnnouncing {
-        VoiceOverAccessibilityAnnouncer()
+        AppPlatformServices.accessibilityAnnouncer
     }
 }
 

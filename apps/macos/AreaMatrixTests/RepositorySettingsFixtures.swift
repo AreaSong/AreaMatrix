@@ -2,17 +2,22 @@
 
 extension RepoConfigSnapshot {
     static func repositorySettingsConfigFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: true,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
+        RepoConfigSnapshot.testFixture(repoPath: repoPath) {
+            $0.aiEnabled = true
+        }
+    }
+}
+
+extension ExistingRepositoryMetadataSnapshot {
+    static func testFixture(
+        schemaVersion: Int64 = 1,
+        lastOpenedAt: Int64? = nil,
+        configuredRepoPath: String? = nil
+    ) -> ExistingRepositoryMetadataSnapshot {
+        ExistingRepositoryMetadataSnapshot(
+            schemaVersion: schemaVersion,
+            lastOpenedAt: lastOpenedAt,
+            configuredRepoPath: configuredRepoPath
         )
     }
 }
@@ -23,7 +28,7 @@ func repositorySettingsCapabilitySupport(
     requiresPermission: Bool = false,
     reason: String? = nil
 ) -> PlatformCapabilitySupportSnapshot {
-    PlatformCapabilitySupportSnapshot(
+    PlatformCapabilitySupportSnapshot.testFixture(
         status: status,
         uiEnabled: uiEnabled,
         requiresPermission: requiresPermission,
@@ -37,12 +42,11 @@ func repositorySettingsCapabilitiesFixture(
     cloudPlaceholder: PlatformCapabilitySupportSnapshot = repositorySettingsCapabilitySupport(),
     securityBookmark: PlatformCapabilitySupportSnapshot = repositorySettingsCapabilitySupport()
 ) -> PlatformCapabilitiesSnapshot {
-    PlatformCapabilitiesSnapshot(
-        platform: .macos,
+    PlatformCapabilitiesSnapshot.testFixture(
         appVersion: "1",
         watcher: watcher,
         trash: trash,
-        shareExtension: repositorySettingsCapabilitySupport(status: .notAvailable, uiEnabled: false),
+        shareExtension: .unavailableFixture(),
         cloudPlaceholder: cloudPlaceholder,
         securityBookmark: securityBookmark
     )

@@ -32,39 +32,64 @@ struct LocalModelStorageProvider: LocalModelStorageLocationProviding {
 }
 
 struct NSWorkspaceLocalModelInstallHelpOpener: LocalModelInstallHelpOpening {
+    private static let installHelpURLString = "https://github.com/AreaSong/AreaMatrix"
+
+    private let externalURLOpener: any ExternalURLStringOpening
+
+    init(externalURLOpener: any ExternalURLStringOpening = AppPlatformServices.externalURLStringOpener) {
+        self.externalURLOpener = externalURLOpener
+    }
+
     @MainActor
     func openLocalModelInstallHelp() throws {
-        guard let url = URL(string: "https://github.com/AreaSong/AreaMatrix") else {
+        do {
+            try externalURLOpener.openHTTPSURLString(Self.installHelpURLString)
+        } catch let error as ExternalURLOpenError {
+            switch error {
+            case .invalidURL:
+                throw LocalModelStatusActionError.unavailable
+            case .openRejected:
+                throw LocalModelStatusActionError.openRejected
+            }
+        } catch {
             throw LocalModelStatusActionError.unavailable
         }
-        try openURL(url)
     }
 }
 
 struct NSWorkspaceLocalModelFolderOpener: LocalModelFolderOpening {
+    private let localURLOpener: any LocalFileURLOpening
+
+    init(localURLOpener: any LocalFileURLOpening = AppPlatformServices.localFileURLOpener) {
+        self.localURLOpener = localURLOpener
+    }
+
     @MainActor
     func openLocalModelFolder(_ location: LocalModelFolderLocationState) throws {
         guard location.openable else {
             throw LocalModelStatusActionError.unavailable
         }
-        try openURL(URL(fileURLWithPath: location.folderPath, isDirectory: true))
-    }
-}
-
-struct NSPasteboardLocalModelDiagnosticsCopier: LocalModelDiagnosticsCopying {
-    @MainActor
-    func copyLocalModelDiagnostics(_ summary: String) throws {
-        NSPasteboard.general.clearContents()
-        guard NSPasteboard.general.setString(summary, forType: .string) else {
-            throw LocalModelStatusActionError.copyRejected
+        do {
+            let folderURL = URL(fileURLWithPath: location.folderPath, isDirectory: true)
+            try localURLOpener.openExisting(folderURL, requiresDirectory: true)
+        } catch {
+            throw LocalModelStatusActionError.openRejected
         }
     }
 }
 
-@MainActor
-private func openURL(_ url: URL) throws {
-    guard NSWorkspace.shared.open(url) else {
-        throw LocalModelStatusActionError.openRejected
+struct NSPasteboardLocalModelDiagnosticsCopier: LocalModelDiagnosticsCopying {
+    private let writer: any PasteboardStringWriting
+
+    init(writer: any PasteboardStringWriting = AppPlatformServices.pasteboardStringWriter) {
+        self.writer = writer
+    }
+
+    @MainActor
+    func copyLocalModelDiagnostics(_ summary: String) throws {
+        guard writer.write(summary) else {
+            throw LocalModelStatusActionError.copyRejected
+        }
     }
 }
 

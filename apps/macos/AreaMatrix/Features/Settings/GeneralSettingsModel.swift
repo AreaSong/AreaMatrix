@@ -29,15 +29,15 @@ final class GeneralSettingsModel: ObservableObject {
 
     init(
         repoPath: String,
-        loader: any CoreConfigurationLoading = CoreBridge(),
-        updater: any CoreConfigurationUpdating = CoreBridge(),
+        loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
+        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
         rootOverviewInspector: any RootOverviewFileInspecting =
             GeneralSettingsPlatformServices.rootOverviewInspector,
         rootOverviewRevealer: any RepositoryFileRevealing =
             GeneralSettingsPlatformServices.rootOverviewRevealer,
         ignoreRulesManager: any RepositoryIgnoreRulesManaging =
             GeneralSettingsPlatformServices.ignoreRulesManager,
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
     ) {
         self.repoPath = repoPath
         self.loader = loader

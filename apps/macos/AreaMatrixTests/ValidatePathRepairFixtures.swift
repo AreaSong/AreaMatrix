@@ -2,18 +2,7 @@
 
 extension RepoConfigSnapshot {
     static func repairFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
+        RepoConfigSnapshot.testFixture(repoPath: repoPath)
     }
 }
 
@@ -21,12 +10,7 @@ extension RepositoryOpeningResult {
     static func repairFixture(repoPath: String, fileCount: Int64) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
             config: .repairFixture(repoPath: repoPath),
-            tree: RepositoryTreeNodeSnapshot(
-                slug: "__root__",
-                displayName: "资料库",
-                fileCount: fileCount,
-                children: []
-            ),
+            tree: .testRoot(displayName: "资料库", fileCount: fileCount),
             currentCategoryFiles: []
         )
     }
@@ -42,21 +26,13 @@ extension RepoPathValidationSnapshot {
         issues: [RepoPathIssueSnapshot] = [],
         recommendedMode: RepoInitModeSnapshot? = .createEmpty
     ) -> RepoPathValidationSnapshot {
-        RepoPathValidationSnapshot(
-            repoPath: repoPath,
-            exists: true,
-            isDirectory: true,
-            isReadable: true,
-            isWritable: true,
-            isEmpty: isEmpty,
-            isInitialized: isInitialized,
-            isInsideAreaMatrix: false,
-            isICloudPath: false,
-            hasUnfinishedScanSession: false,
-            availableCapacityBytes: availableCapacityBytes,
-            isExternalVolume: isExternalVolume,
-            recommendedMode: recommendedMode,
-            issues: issues
-        )
+        RepoPathValidationSnapshot.testFixture(repoPath: repoPath) {
+            $0.isEmpty = isEmpty
+            $0.isInitialized = isInitialized
+            $0.availableCapacityBytes = availableCapacityBytes
+            $0.isExternalVolume = isExternalVolume
+            $0.recommendedMode = recommendedMode
+            $0.issues = issues
+        }
     }
 }

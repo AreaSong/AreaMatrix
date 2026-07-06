@@ -144,7 +144,7 @@ final class InitFailedErrorMappingTests: XCTestCase {
 
     @MainActor
     func testInitializationFailureCollectsDiagnosticsWithoutSavingRepositorySelection() async {
-        let snapshot = DiagnosticsSnapshotSnapshot(
+        let snapshot = DiagnosticsSnapshotSnapshot.testFixture(
             snapshotPath: "/tmp/diagnostics/redacted.zip",
             createdAt: 1_700_000_000,
             warnings: ["paths redacted"]
@@ -197,22 +197,11 @@ private typealias InitFailedRecordingDiagnosticsCollector = RecordingDiagnostics
 
 private extension RepoPathValidationSnapshot {
     static func initFailedAdoptExistingFixture(repoPath: String) -> RepoPathValidationSnapshot {
-        RepoPathValidationSnapshot(
-            repoPath: repoPath,
-            exists: true,
-            isDirectory: true,
-            isReadable: true,
-            isWritable: true,
-            isEmpty: false,
-            isInitialized: false,
-            isInsideAreaMatrix: false,
-            isICloudPath: false,
-            hasUnfinishedScanSession: false,
-            availableCapacityBytes: 1_073_741_824,
-            isExternalVolume: false,
-            recommendedMode: .adoptExisting,
-            issues: [.nonEmptyDirectory]
-        )
+        RepoPathValidationSnapshot.testFixture(repoPath: repoPath) {
+            $0.isEmpty = false
+            $0.recommendedMode = .adoptExisting
+            $0.issues = [.nonEmptyDirectory]
+        }
     }
 }
 
@@ -263,7 +252,7 @@ private extension AISettingsSnapshot {
 
 private extension CoreErrorMappingSnapshot {
     static func initFailedPermissionDeniedFixture(rawContext: String) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .permissionDenied,
             userMessage: "无访问权限",
             severity: .high,

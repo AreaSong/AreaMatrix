@@ -3,19 +3,8 @@
 extension RepositoryOpeningResult {
     static func mainEmptyImportFixture(repoPath: String) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
-            config: RepoConfigSnapshot(
-                repoPath: repoPath,
-                defaultMode: "Copied",
-                overviewOutput: "GeneratedOnly",
-                aiEnabled: false,
-                locale: "zh-Hans",
-                iCloudWarn: true,
-                enableExtensionRules: true,
-                enableKeywordRules: true,
-                fallbackToInbox: true,
-                allowReplaceDuringImport: false
-            ),
-            tree: RepositoryTreeNodeSnapshot(slug: "__root__", displayName: "资料库", fileCount: 0, children: []),
+            config: .testFixture(repoPath: repoPath),
+            tree: .testRoot(displayName: "资料库"),
             currentCategoryFiles: []
         )
     }

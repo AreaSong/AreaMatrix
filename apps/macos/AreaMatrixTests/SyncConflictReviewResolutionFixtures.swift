@@ -149,27 +149,8 @@ extension SyncConflictSnapshot {
 extension RepositoryOpeningResult {
     static func syncConflictReviewFixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
-            config: RepoConfigSnapshot(
-                repoPath: repoPath,
-                defaultMode: "Copied",
-                overviewOutput: "GeneratedOnly",
-                aiEnabled: false,
-                locale: "zh-Hans",
-                iCloudWarn: true,
-                enableExtensionRules: true,
-                enableKeywordRules: true,
-                fallbackToInbox: true,
-                allowReplaceDuringImport: false
-            ),
-            tree: RepositoryTreeNodeSnapshot(
-                slug: "__root__",
-                displayName: "Repository",
-                kind: "RepositoryRoot",
-                relativePath: "",
-                fileCount: Int64(files.count),
-                depth: 0,
-                children: []
-            ),
+            config: .testFixture(repoPath: repoPath),
+            tree: .testRoot(fileCount: Int64(files.count)),
             currentCategoryFiles: files
         )
     }
@@ -177,20 +158,17 @@ extension RepositoryOpeningResult {
 
 extension FileEntrySnapshot {
     static func syncConflictReviewFixture(id: Int64, path: String, currentName: String) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: path,
-            originalName: currentName,
             currentName: currentName,
-            category: "docs",
-            sizeBytes: 2048,
-            hashSha256: "syncConflictReview-file-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_778_738_300,
-            updatedAt: 1_778_738_400
-        )
+            category: "docs"
+        ) {
+            $0.sizeBytes = 2048
+            $0.hashSha256 = "syncConflictReview-file-\(id)"
+            $0.importedAt = 1_778_738_300
+            $0.updatedAt = 1_778_738_400
+        }
     }
 }
 
@@ -219,7 +197,7 @@ extension CoreErrorMappingSnapshot {
         kind: CoreErrorKindSnapshot = .conflict,
         rawContext: String = "/tmp/syncConflictReview-repo"
     ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: "AreaMatrix cannot inspect this sync conflict.",
             severity: .high,

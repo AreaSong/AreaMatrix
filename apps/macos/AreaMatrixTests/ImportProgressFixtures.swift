@@ -26,48 +26,41 @@ func importProgressBatchSourceURL(_ filename: String) -> URL {
 }
 
 enum ImportProgressFixtures {
-    static let runningCopyProgress = ImportBatchProgressSnapshot(
+    static let runningCopyProgress = importBatchProgress(
         completed: 1,
-        failed: 0,
         total: 3,
-        remaining: 2,
         currentPath: "docs/contract.pdf",
         items: [
-            .init(
+            importBatchProgressItem(
                 sourcePath: importProgressBatchSourcePath("invoice.pdf"),
                 targetPath: "finance/invoice.pdf",
-                phase: .done,
-                errorMessage: nil
+                phase: .done
             ),
-            .init(
+            importBatchProgressItem(
                 sourcePath: importProgressBatchSourcePath("contract.pdf"),
                 targetPath: "docs/contract.pdf",
-                phase: .copying,
-                errorMessage: nil
+                phase: .copying
             ),
-            .init(
+            importBatchProgressItem(
                 sourcePath: importProgressBatchSourcePath("later.pdf"),
                 targetPath: "docs/later.pdf",
-                phase: .pending,
-                errorMessage: nil
+                phase: .pending
             )
         ]
     )
 
-    static let failedCopyResultProgress = ImportBatchProgressSnapshot(
+    static let failedCopyResultProgress = importBatchProgress(
         completed: 1,
         failed: 1,
         total: 2,
-        remaining: 0,
         currentPath: "docs/contract.pdf",
         items: [
-            .init(
+            importBatchProgressItem(
                 sourcePath: importProgressBatchSourcePath("invoice.pdf"),
                 targetPath: "finance/invoice.pdf",
-                phase: .done,
-                errorMessage: nil
+                phase: .done
             ),
-            .init(
+            importBatchProgressItem(
                 sourcePath: importProgressBatchSourcePath("contract.pdf"),
                 targetPath: "docs/contract.pdf",
                 phase: .failed,
@@ -94,20 +87,18 @@ enum ImportProgressFixtures {
         errorMessage: "文件不存在"
     )
 
-    static let partialResultProgress = ImportBatchProgressSnapshot(
+    static let partialResultProgress = importBatchProgress(
         completed: 1,
         failed: 1,
         total: 2,
-        remaining: 0,
         currentPath: "finance/合同.pdf",
         items: [
-            .init(
+            importBatchProgressItem(
                 sourcePath: importProgressBatchSourcePath("invoice.pdf"),
                 targetPath: "finance/invoice.pdf",
-                phase: .done,
-                errorMessage: nil
+                phase: .done
             ),
-            .init(
+            importBatchProgressItem(
                 sourcePath: importProgressBatchSourcePath("合同.pdf"),
                 targetPath: "finance/合同.pdf",
                 phase: .failed,
@@ -141,14 +132,13 @@ enum ImportProgressFixtures {
         targetPath: String,
         errorMessage: String
     ) -> ImportBatchProgressSnapshot {
-        ImportBatchProgressSnapshot(
+        importBatchProgress(
             completed: 0,
             failed: 1,
             total: 1,
-            remaining: 0,
             currentPath: targetPath,
             items: [
-                .init(
+                importBatchProgressItem(
                     sourcePath: sourcePath,
                     targetPath: targetPath,
                     phase: .failed,
@@ -177,7 +167,7 @@ enum ImportProgressFixtures {
 
 extension CoreErrorMappingSnapshot {
     static var importProgressFatalCopyError: CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .io,
             userMessage: "文件读写失败",
             severity: .critical,
@@ -188,7 +178,7 @@ extension CoreErrorMappingSnapshot {
     }
 
     static func importProgressFatalImportError(kind: CoreErrorKindSnapshot) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: importProgressFatalMessage(for: kind),
             severity: .critical,

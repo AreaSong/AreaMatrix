@@ -15,15 +15,15 @@ extension GeneralSettingsView {
         onClose: @escaping () -> Void,
         onChangeRepository: @escaping () -> Void = {},
         onOpenRepositoryRecovery: @escaping () -> Void = {},
-        loader: any CoreConfigurationLoading = CoreBridge(),
-        updater: any CoreConfigurationUpdating = CoreBridge(),
+        loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
+        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
         rootOverviewInspector: any RootOverviewFileInspecting =
             GeneralSettingsPlatformServices.rootOverviewInspector,
         rootOverviewRevealer: any RepositoryFileRevealing =
             GeneralSettingsPlatformServices.rootOverviewRevealer,
         ignoreRulesManager: any RepositoryIgnoreRulesManaging =
             GeneralSettingsPlatformServices.ignoreRulesManager,
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
     ) {
         _model = StateObject(wrappedValue: GeneralSettingsModel(
             repoPath: repoPath,

@@ -370,7 +370,7 @@ private extension AiPrivacyRulesSnapshot {
 
 private extension CoreErrorMappingSnapshot {
     static var aiSummarySaveFailure: CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .db,
             userMessage: "Summary metadata is unavailable.",
             severity: .medium,

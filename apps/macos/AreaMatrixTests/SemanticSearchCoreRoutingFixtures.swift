@@ -2,7 +2,7 @@
 
 extension CoreErrorMappingSnapshot {
     static var semanticSearchFailure: CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .internal,
             userMessage: "semantic-search semantic search failed",
             severity: .medium,
@@ -21,70 +21,35 @@ extension RepositoryOpeningResult {
 
 extension RepoConfigSnapshot {
     static func semanticSearchConfig(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: repoPath,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: true,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
+        RepoConfigSnapshot.testFixture(repoPath: repoPath) {
+            $0.aiEnabled = true
+        }
     }
 }
 
 extension RepositoryTreeNodeSnapshot {
     static func semanticSearchTree() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
-            children: [.semanticSearchFinanceNode()]
-        )
+        .testRoot(children: [.semanticSearchFinanceNode()])
     }
 
     static func semanticSearchFinanceNode() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "finance",
-            displayName: "finance",
-            fileCount: 0,
-            children: [
-                RepositoryTreeNodeSnapshot(
-                    slug: "invoices",
-                    displayName: "invoices",
-                    kind: "Subdir",
-                    relativePath: "finance/invoices",
-                    fileCount: 2,
-                    depth: 2,
-                    children: []
-                )
-            ]
+        .testCategory(
+            "finance",
+            children: [.testSubdirectory("invoices", relativePath: "finance/invoices", fileCount: 2)]
         )
     }
 }
 
 extension FileEntrySnapshot {
     static func semanticSearchFixture(id: Int64, name: String = "invoice.pdf") -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: "finance/invoices/\(name)",
-            originalName: name,
             currentName: name,
-            category: "finance",
-            sizeBytes: 128,
-            hashSha256: "semanticSearch-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_100
-        )
+            category: "finance"
+        ) {
+            $0.hashSha256 = "semanticSearch-\(id)"
+        }
     }
 }
 
@@ -93,27 +58,16 @@ extension SearchResultPageSnapshot {
         semanticFile: FileEntrySnapshot,
         normalFile: FileEntrySnapshot
     ) -> SearchResultPageSnapshot {
-        let semanticResult = SearchFileResultSnapshot(file: semanticFile, score: 0.91, matches: [], noteSnippet: nil)
-        let normalResult = SearchFileResultSnapshot(
-            file: normalFile,
-            score: 1,
-            matches: [SearchMatchSnapshot(
-                fieldDisplayName: "Name",
-                kindDisplayName: "Exact",
-                snippet: normalFile.currentName
-            )],
-            noteSnippet: nil
-        )
+        let semanticResult = SearchFileResultSnapshot.testFixture(file: semanticFile, score: 0.91)
+        let normalResult = SearchFileResultSnapshot.nameMatchFixture(file: normalFile, kindDisplayName: "Exact")
         let semanticPage = SemanticSearchResultPageSnapshot.semanticSearchFixture(
             semanticMatches: [.semanticSearchFixture(result: semanticResult)],
             normalMatches: [SemanticNormalSearchMatchSnapshot(result: normalResult, dedupedBySemantic: false)]
         )
-        return SearchResultPageSnapshot(
+        return .testFixture(
             query: "上个月的发票",
             totalCount: semanticPage.visibleTotalCount,
             results: semanticPage.visibleResults,
-            diagnostics: [],
-            indexStatus: .ready,
             semanticPage: semanticPage
         )
     }
@@ -125,11 +79,9 @@ extension SearchResultPageSnapshot {
             indexStatus: .notReady,
             fallbackReason: .semanticIndexNotReady
         )
-        return SearchResultPageSnapshot(
+        return .testFixture(
             query: "客户合同",
             totalCount: 0,
-            results: [],
-            diagnostics: [],
             indexStatus: .unavailable,
             semanticPage: semanticPage
         )
@@ -143,20 +95,12 @@ extension SemanticSearchResultPageSnapshot {
         indexStatus: SemanticIndexStatusSnapshot = .ready,
         fallbackReason: SemanticSearchFallbackReasonSnapshot? = nil
     ) -> SemanticSearchResultPageSnapshot {
-        SemanticSearchResultPageSnapshot(
+        .testFixture(
             query: "上个月的发票",
-            semanticTotalCount: Int64(semanticMatches.count),
-            normalTotalCount: Int64(normalMatches.count),
             semanticMatches: semanticMatches,
             normalMatches: normalMatches,
-            dedupedNormalCount: 0,
             indexStatus: indexStatus,
-            route: .local,
-            fallbackReason: fallbackReason,
-            fallbackMessage: nil,
-            callLogID: 308,
-            privacyRuleID: nil,
-            lowConfidence: false
+            fallbackReason: fallbackReason
         )
     }
 }

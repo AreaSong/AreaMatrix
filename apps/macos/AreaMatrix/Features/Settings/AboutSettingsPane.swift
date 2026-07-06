@@ -8,14 +8,14 @@ struct AboutSettingsPane: View {
     init(
         repoPath: String,
         appVersionReader: any AppVersionReading = AboutSettingsPlatformServices.appVersionReader,
-        coreVersionReader: any CoreVersionReading = CoreBridge(),
+        coreVersionReader: any CoreVersionReading = AppCoreServices.coreVersionReader,
         metadataReader: any ExistingRepositoryMetadataReading = AboutSettingsPlatformServices.metadataReader,
         diagnosticsExporter: any AboutDiagnosticsExporting = AboutSettingsPlatformServices.diagnosticsExporter,
         externalLinkOpener: any AboutExternalLinkOpening = AboutSettingsPlatformServices.externalLinkOpener,
         logsOpener: any AboutLogsOpening = AboutSettingsPlatformServices.logsOpener,
         stringCopier: any AboutStringCopying = AboutSettingsPlatformServices.stringCopier,
         diagnosticsRevealer: any AboutDiagnosticsRevealing = AboutSettingsPlatformServices.diagnosticsRevealer,
-        errorMapper: any CoreErrorMapping = CoreBridge(),
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         accessibilityAnnouncer: any AccessibilityAnnouncing = AboutSettingsPlatformServices.accessibilityAnnouncer,
         onOpenRepositorySettings: @escaping () -> Void = {},
         onClose: @escaping () -> Void = {}

@@ -24,7 +24,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
             id: 77,
             request: CreateSavedSearchRequestSnapshot(
                 name: "Finance",
-                query: SavedSearchQuerySnapshot(request: request),
+                query: .testFixture(request: request),
                 icon: "magnifyingglass",
                 color: nil,
                 pinned: true
@@ -33,7 +33,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         let resultFile = FileEntrySnapshot.savedSearchSavedSearchFixture()
         let searcher = MainListRecordingSearchQuerying(results: [
             .success(.savedSearchSavedSearchFixture(
-                request: SearchQueryRequestSnapshot(savedSearchQuery: saved.query),
+                request: .testFixture(savedSearchQuery: saved.query),
                 files: [resultFile]
             ))
         ])
@@ -53,7 +53,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
             "Finance"
         )
         XCTAssertEqual(model.lastSearchExitContext, .smartList(id: 77, name: "Finance"))
-        XCTAssertEqual(model.searchState.request, SearchQueryRequestSnapshot(savedSearchQuery: saved.query))
+        XCTAssertEqual(model.searchState.request, .testFixture(savedSearchQuery: saved.query))
         let recordedRequests = await searcher.recordedSmartListRequests()
         XCTAssertEqual(recordedRequests, [
             MainListSmartListRequestRecord(repoPath: "/tmp/repo", savedSearchID: 77, limit: 50, offset: 0)
@@ -68,7 +68,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
             id: 77,
             request: CreateSavedSearchRequestSnapshot(
                 name: "Finance",
-                query: SavedSearchQuerySnapshot(request: request),
+                query: .testFixture(request: request),
                 icon: "magnifyingglass",
                 color: nil,
                 pinned: true
@@ -77,7 +77,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         let resultFile = FileEntrySnapshot.savedSearchSavedSearchFixture()
         let searcher = MainListRecordingSearchQuerying(results: [
             .success(.savedSearchSavedSearchFixture(
-                request: SearchQueryRequestSnapshot(savedSearchQuery: saved.query),
+                request: .testFixture(savedSearchQuery: saved.query),
                 files: [resultFile]
             ))
         ])
@@ -97,7 +97,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.lastSearchExitContext, .smartList(id: 77, name: "Finance"))
         XCTAssertEqual(
             model.searchState.request,
-            SearchQueryRequestSnapshot(savedSearchQuery: saved.query)
+            .testFixture(savedSearchQuery: saved.query)
         )
         XCTAssertEqual(model.files, [resultFile])
         let recordedRequests = await searcher.recordedSmartListRequests()

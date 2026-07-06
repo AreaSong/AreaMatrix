@@ -6,7 +6,7 @@ extension ClassifyResultSnapshot {
         suggestedName: String,
         confidence: Float = 0.9
     ) -> ClassifyResultSnapshot {
-        ClassifyResultSnapshot(
+        .testFixture(
             category: category,
             suggestedName: suggestedName,
             reason: .keyword,

@@ -11,6 +11,7 @@ Reviewed at: `2026-06-16T08:54:09Z`
 - Reason: these runs were interrupted / resumed or otherwise executed with `git.checkpoint=off`; task completion evidence exists locally and in tracked run summaries, but per-task Git checkpoint metadata was not produced.
 - Scope: checkpoint evidence only. This does not release Stage 1 alpha, does not close release blockers, and does not apply to `3-1/task-05`.
 - Guardrail: do not rewrite `workflow/versions/v1-mvp/execution/_shared/progress.json`, task-loop logs, run summaries, or Git history to fabricate checkpoint metadata.
+- Guardrail: a tracked `summary.json` whose run is `status=running`, whose task is `in_progress`, and whose referenced copy / verify logs are missing does not count as `VERIFY_RESULT: PASS` and must not close a release evidence blocker.
 
 ## Acceptance Criteria Used
 
@@ -22,6 +23,11 @@ Each accepted exception below satisfied all of these checks:
 - The matching `workflow/versions/v1-mvp/evidence/task-loop-runs/<run_id>/summary.json` exists and is tracked in Git.
 - The tracked run summary records the task as `completed`.
 - The tracked run summary records `git.checkpoint=off`, explaining why per-task checkpoint metadata is absent.
+
+Tracked summaries that still record run `status=running` or task `in_progress`
+were excluded even when they contain copy / verify log path strings. Those path
+strings are not evidence unless the logs are available and the verify log
+contains `VERIFY_RESULT: PASS`.
 
 ## Summary
 
@@ -73,7 +79,7 @@ Each accepted exception below satisfied all of these checks:
 
 ## Excluded Release Gate Entry
 
-- `3-1/task-05` remains a release-gate review item. It has no task-loop run id, copy log, verify log, or run summary, and must be handled through the Stage 1 release checklist and local QA notes.
+- `3-1/task-05` remains a release-gate review item. Its tracked task-loop summaries are incomplete attempts, with run `status=failed` / `status=running`, task `in_progress`, and referenced copy / verify logs missing from archived evidence; they must not be treated as `VERIFY_RESULT: PASS` or used to close release evidence blockers.
 
 ## Remaining Closeout Work
 

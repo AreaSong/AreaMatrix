@@ -2,13 +2,7 @@
 
 extension SyncResultSnapshot {
     static func iCloudConflictMinimalEmptySyncResult() -> SyncResultSnapshot {
-        SyncResultSnapshot(
-            detectedCreates: 0,
-            detectedRenames: 0,
-            detectedDeletes: 0,
-            detectedModifies: 0,
-            errors: []
-        )
+        .testFixture()
     }
 }
 
@@ -38,17 +32,11 @@ extension RepositoryOpeningResult {
     static func iCloudConflictMinimalFixture(repoPath: String, files: [FileEntrySnapshot]) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
             config: .shellFixture(repoPath: repoPath),
-            tree: RepositoryTreeNodeSnapshot(
-                slug: "__root__",
+            tree: .testRoot(
                 displayName: "资料库",
                 fileCount: Int64(files.count),
                 children: [
-                    RepositoryTreeNodeSnapshot(
-                        slug: "docs",
-                        displayName: "docs",
-                        fileCount: Int64(files.count),
-                        children: []
-                    )
+                    .testCategory("docs", fileCount: Int64(files.count))
                 ]
             ),
             currentCategoryFiles: files
@@ -58,20 +46,16 @@ extension RepositoryOpeningResult {
 
 extension FileEntrySnapshot {
     static func iCloudConflictMinimalConflictFixture(id: Int64) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: "docs/report (Conflicted Copy).pdf",
-            originalName: "report (Conflicted Copy).pdf",
             currentName: "report (Conflicted Copy).pdf",
-            category: "docs",
-            sizeBytes: 512,
-            hashSha256: "iCloudConflictMinimal-conflict-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_775_020_860
-        )
+            category: "docs"
+        ) {
+            $0.sizeBytes = 512
+            $0.hashSha256 = "iCloudConflictMinimal-conflict-\(id)"
+            $0.updatedAt = 1_775_020_860
+        }
     }
 }
 
@@ -113,7 +97,7 @@ extension CoreErrorMappingSnapshot {
         kind: CoreErrorKindSnapshot = .iCloudPlaceholder,
         rawContext: String = "/tmp/iCloudConflictMinimal-repo/docs/report.pdf.icloud"
     ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: "AreaMatrix cannot inspect this conflict source.",
             severity: .high,

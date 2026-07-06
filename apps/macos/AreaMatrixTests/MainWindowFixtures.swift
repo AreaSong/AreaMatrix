@@ -7,7 +7,7 @@ extension CoreErrorMappingSnapshot {
         recoverability: CoreErrorRecoverabilitySnapshot = .userActionRequired,
         rawContext: String = "main-window"
     ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: kind,
             userMessage: "mapped \(kind.rawValue)",
             severity: severity,

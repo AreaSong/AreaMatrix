@@ -79,7 +79,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
     @MainActor
     func testInitializingRunsStartupRecoveryBeforeRepositoryWriteAndShowsReport() async {
         let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
-        let report = RecoveryReportSnapshot(
+        let report = RecoveryReportSnapshot.testFixture(
             cleanedStagingFiles: 2,
             revertedStagingDbRows: 1,
             warnings: ["Kept recoverable moved staging file"]
@@ -262,19 +262,10 @@ final class InterruptedInitializationRecoveryTests: XCTestCase {
         XCTAssertEqual(model.route, .initializationDone(RepositoryInitializationResult(
             repoPath: "/tmp/adopt",
             mode: .adoptExisting,
-            scanSession: ScanSessionSnapshot(
-                id: 42,
-                kind: .adopt,
-                status: .completed,
-                lastPath: "docs/plan.md",
-                inserted: 12,
-                updated: 2,
-                skipped: 1,
-                startedAt: 1_700_000_000,
-                updatedAt: model.initializationScanSession?.updatedAt ?? 0,
-                finishedAt: model.initializationScanSession?.finishedAt,
-                errors: []
-            ),
+            scanSession: .testFixture(status: .completed) {
+                $0.updatedAt = model.initializationScanSession?.updatedAt ?? 0
+                $0.finishedAt = model.initializationScanSession?.finishedAt
+            },
             recoveryReport: nil
         )))
     }
@@ -282,7 +273,7 @@ final class InterruptedInitializationRecoveryTests: XCTestCase {
     @MainActor
     func testCleanUpInterruptedInitializationRunsRecoveryAndReturnsToConfirmInit() async {
         let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
-        let startupRecoverer = RecordingCoreStartupRecoverer(result: .success(RecoveryReportSnapshot(
+        let startupRecoverer = RecordingCoreStartupRecoverer(result: .success(.testFixture(
             cleanedStagingFiles: 1,
             revertedStagingDbRows: 1,
             warnings: []
@@ -298,7 +289,7 @@ final class InterruptedInitializationRecoveryTests: XCTestCase {
         await model.cleanUpInterruptedInitialization(repoPath: "/tmp/adopt")
         let recoveredPaths = await startupRecoverer.requestedRepoPaths()
         XCTAssertEqual(recoveredPaths, ["/tmp/adopt"])
-        XCTAssertEqual(model.initializationRecoveryReport, RecoveryReportSnapshot(
+        XCTAssertEqual(model.initializationRecoveryReport, .testFixture(
             cleanedStagingFiles: 1,
             revertedStagingDbRows: 1,
             warnings: []

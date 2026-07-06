@@ -2,7 +2,7 @@
 
 extension CoreErrorMappingSnapshot {
     static var semanticSearchPageFailure: CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        CoreErrorMappingSnapshot.testFixture(
             kind: .internal,
             userMessage: "semantic-search semantic page failed",
             severity: .medium,
@@ -15,20 +15,14 @@ extension CoreErrorMappingSnapshot {
 
 extension FileEntrySnapshot {
     static func semanticSearchPageFile(id: Int64, name: String = "invoice.pdf") -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: "finance/invoices/\(name)",
-            originalName: name,
             currentName: name,
-            category: "finance",
-            sizeBytes: 128,
-            hashSha256: "semanticSearch-\(id)",
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_100
-        )
+            category: "finance"
+        ) {
+            $0.hashSha256 = "semanticSearch-\(id)"
+        }
     }
 }
 
@@ -37,11 +31,9 @@ extension SearchFileResultSnapshot {
         file: FileEntrySnapshot,
         snippet: String = "filename contains invoice"
     ) -> SearchFileResultSnapshot {
-        SearchFileResultSnapshot(
+        .testFixture(
             file: file,
-            score: 1,
-            matches: [SearchMatchSnapshot(fieldDisplayName: "Name", kindDisplayName: "Exact", snippet: snippet)],
-            noteSnippet: nil
+            matches: [.testFixture(kindDisplayName: "Exact", snippet: snippet)]
         )
     }
 }
@@ -54,50 +46,21 @@ extension RepositoryOpeningResult {
 
 extension RepoConfigSnapshot {
     static func semanticSearchPageConfig() -> RepoConfigSnapshot {
-        RepoConfigSnapshot(
-            repoPath: "/tmp/repo",
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: true,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
+        RepoConfigSnapshot.testFixture(repoPath: "/tmp/repo") {
+            $0.aiEnabled = true
+        }
     }
 }
 
 extension RepositoryTreeNodeSnapshot {
     static func semanticSearchPageTree() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
-            children: [.semanticSearchPageFinanceNode()]
-        )
+        .testRoot(children: [.semanticSearchPageFinanceNode()])
     }
 
     static func semanticSearchPageFinanceNode() -> RepositoryTreeNodeSnapshot {
-        RepositoryTreeNodeSnapshot(
-            slug: "finance",
-            displayName: "finance",
-            fileCount: 0,
-            children: [
-                RepositoryTreeNodeSnapshot(
-                    slug: "invoices",
-                    displayName: "invoices",
-                    kind: "Subdir",
-                    relativePath: "finance/invoices",
-                    fileCount: 2,
-                    depth: 2,
-                    children: []
-                )
-            ]
+        .testCategory(
+            "finance",
+            children: [.testSubdirectory("invoices", relativePath: "finance/invoices", fileCount: 2)]
         )
     }
 }
@@ -121,6 +84,38 @@ extension SemanticSearchMatchSnapshot {
 }
 
 extension SemanticSearchResultPageSnapshot {
+    static func testFixture(
+        query: String = "invoice",
+        semanticMatches: [SemanticSearchMatchSnapshot] = [],
+        normalMatches: [SemanticNormalSearchMatchSnapshot] = [],
+        dedupedNormalCount: Int64 = 0,
+        semanticTotalCount: Int64? = nil,
+        normalTotalCount: Int64? = nil,
+        indexStatus: SemanticIndexStatusSnapshot = .ready,
+        route: SemanticSearchRouteSnapshot? = .local,
+        fallbackReason: SemanticSearchFallbackReasonSnapshot? = nil,
+        fallbackMessage: String? = nil,
+        callLogID: Int64? = 308,
+        privacyRuleID: String? = nil,
+        lowConfidence: Bool = false
+    ) -> SemanticSearchResultPageSnapshot {
+        SemanticSearchResultPageSnapshot(
+            query: query,
+            semanticTotalCount: semanticTotalCount ?? Int64(semanticMatches.count),
+            normalTotalCount: normalTotalCount ?? Int64(normalMatches.count),
+            semanticMatches: semanticMatches,
+            normalMatches: normalMatches,
+            dedupedNormalCount: dedupedNormalCount,
+            indexStatus: indexStatus,
+            route: route,
+            fallbackReason: fallbackReason,
+            fallbackMessage: fallbackMessage,
+            callLogID: callLogID,
+            privacyRuleID: privacyRuleID,
+            lowConfidence: lowConfidence
+        )
+    }
+
     static func semanticSearchPage(
         semanticMatches: [SemanticSearchMatchSnapshot],
         normalMatches: [SemanticNormalSearchMatchSnapshot],
@@ -130,20 +125,14 @@ extension SemanticSearchResultPageSnapshot {
         fallbackReason: SemanticSearchFallbackReasonSnapshot? = nil,
         fallbackMessage: String? = nil
     ) -> SemanticSearchResultPageSnapshot {
-        SemanticSearchResultPageSnapshot(
-            query: "invoice",
-            semanticTotalCount: semanticTotalCount ?? Int64(semanticMatches.count),
-            normalTotalCount: Int64(normalMatches.count),
+        .testFixture(
             semanticMatches: semanticMatches,
             normalMatches: normalMatches,
             dedupedNormalCount: dedupedNormalCount,
+            semanticTotalCount: semanticTotalCount,
             indexStatus: indexStatus,
-            route: .local,
             fallbackReason: fallbackReason,
-            fallbackMessage: fallbackMessage,
-            callLogID: 308,
-            privacyRuleID: nil,
-            lowConfidence: false
+            fallbackMessage: fallbackMessage
         )
     }
 }
@@ -163,11 +152,10 @@ extension SearchResultPageSnapshot {
             semanticTotalCount: semanticTotalCount,
             indexStatus: indexStatus
         )
-        return SearchResultPageSnapshot(
+        return .testFixture(
             query: semanticPage.query,
             totalCount: semanticPage.visibleTotalCount,
             results: semanticPage.visibleResults,
-            diagnostics: [],
             indexStatus: SearchIndexStatusSnapshot(semanticStatus: indexStatus),
             semanticPage: semanticPage
         )

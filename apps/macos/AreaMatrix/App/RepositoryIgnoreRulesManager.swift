@@ -1,4 +1,3 @@
-import AppKit
 import Darwin
 import Foundation
 
@@ -11,6 +10,12 @@ protocol RepositoryIgnoreRulesManaging: Sendable {
 }
 
 struct NSWorkspaceRepositoryIgnoreRulesManager: RepositoryIgnoreRulesManaging {
+    private let localURLOpener: any LocalFileURLOpening
+
+    init(localURLOpener: any LocalFileURLOpening = AppPlatformServices.localFileURLOpener) {
+        self.localURLOpener = localURLOpener
+    }
+
     func openIgnoreRules(repoPath: String) throws {
         let url = ignoreRulesURL(repoPath: repoPath)
         guard fileExists(url) else {
@@ -19,7 +24,10 @@ struct NSWorkspaceRepositoryIgnoreRulesManager: RepositoryIgnoreRulesManaging {
         guard isRegularFile(url) else {
             throw RepositoryIgnoreRulesError.ignoreRulesNotRegularFile
         }
-        guard NSWorkspace.shared.open(url) else {
+
+        do {
+            try localURLOpener.open(url)
+        } catch {
             throw RepositoryIgnoreRulesError.openRejected
         }
     }

@@ -48,9 +48,9 @@ final class PlatformDifferencesModel: ObservableObject {
         repositoryText: String = "Not connected",
         selectedTargetPlatform: BindingTargetPlatformSnapshot = .swift,
         bindingVersion: Int64 = 1,
-        contractInspector: any CoreBindingContractInspecting = CoreBridge(),
-        capabilityLoader: any CorePlatformCapabilitiesLoading = CoreBridge(),
-        errorMapper: any CoreErrorMapping = CoreBridge()
+        contractInspector: any CoreBindingContractInspecting = AppCoreServices.bindingContractInspector,
+        capabilityLoader: any CorePlatformCapabilitiesLoading = AppCoreServices.platformCapabilityLoader,
+        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
     ) {
         self.hostPlatform = hostPlatform
         self.appVersion = appVersion ?? appVersionReader.appVersion()

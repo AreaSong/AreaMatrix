@@ -82,30 +82,12 @@ final class ImportDropPreviewModelTests: XCTestCase {
     }
 
     func testSidebarRowsExposeDragHoverDropTargets() {
-        let root = RepositorySidebarRowSnapshot(node: RepositoryTreeNodeSnapshot(
-            slug: "__root__",
-            displayName: "Repository",
-            kind: "RepositoryRoot",
-            relativePath: "",
-            fileCount: 0,
-            depth: 0,
-            children: []
-        ), depth: 0)
-        let finance = RepositorySidebarRowSnapshot(node: RepositoryTreeNodeSnapshot(
-            slug: "finance",
-            displayName: "finance",
-            fileCount: 2,
-            children: []
-        ), depth: 0)
-        let contracts = RepositorySidebarRowSnapshot(node: RepositoryTreeNodeSnapshot(
-            slug: "contracts",
-            displayName: "contracts",
-            kind: "Subdir",
-            relativePath: "finance/contracts",
-            fileCount: 1,
-            depth: 2,
-            children: []
-        ), depth: 1)
+        let root = RepositorySidebarRowSnapshot(node: .testRoot(), depth: 0)
+        let finance = RepositorySidebarRowSnapshot(node: .testCategory("finance", fileCount: 2), depth: 0)
+        let contracts = RepositorySidebarRowSnapshot(
+            node: .testSubdirectory("contracts", relativePath: "finance/contracts", fileCount: 1),
+            depth: 1
+        )
 
         XCTAssertEqual(root.importDropTarget, .repositoryRoot)
         XCTAssertEqual(finance.importDropTarget, .category("finance"))

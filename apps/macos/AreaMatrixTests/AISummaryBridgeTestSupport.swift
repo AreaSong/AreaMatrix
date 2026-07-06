@@ -98,7 +98,7 @@ actor AISummaryIntegrationPrivacyBridge: CoreAIPrivacyEvaluating {
 extension RecordingCoreErrorMapper {
     static func aiSummaryIntegration() -> RecordingCoreErrorMapper {
         RecordingCoreErrorMapper { error in
-            CoreErrorMappingSnapshot(
+            CoreErrorMappingSnapshot.testFixture(
                 kind: .db,
                 userMessage: "\(error)",
                 severity: .medium,

@@ -38,7 +38,7 @@ extension ClassifyResultSnapshot {
         reason: ClassifyReasonSnapshot,
         confidence: Float
     ) -> ClassifyResultSnapshot {
-        ClassifyResultSnapshot(
+        .testFixture(
             category: category,
             suggestedName: suggestedName,
             reason: reason,
@@ -70,20 +70,19 @@ extension FileEntrySnapshot {
         hashSha256: String,
         storageMode: String
     ) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: id,
             path: "\(category)/\(currentName)",
-            originalName: "source.pdf",
             currentName: currentName,
-            category: category,
-            sizeBytes: 12,
-            hashSha256: hashSha256,
-            storageMode: storageMode,
-            origin: "Imported",
-            sourcePath: importSingleFileSourcePath(),
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_000
-        )
+            category: category
+        ) {
+            $0.originalName = "source.pdf"
+            $0.sizeBytes = 12
+            $0.hashSha256 = hashSha256
+            $0.storageMode = storageMode
+            $0.sourcePath = importSingleFileSourcePath()
+            $0.updatedAt = 1_700_000_000
+        }
     }
 
     static func importMoveFixture(currentName: String, category: String) -> FileEntrySnapshot {
@@ -91,20 +90,19 @@ extension FileEntrySnapshot {
     }
 
     static func importIndexFixture(currentName: String, category: String) -> FileEntrySnapshot {
-        FileEntrySnapshot(
+        FileEntrySnapshot.testFixture(
             id: 43,
             path: importSingleFileSourcePath(),
-            originalName: "source.pdf",
             currentName: currentName,
-            category: category,
-            sizeBytes: 12,
-            hashSha256: "hash",
-            storageMode: "Indexed",
-            origin: "Imported",
-            sourcePath: importSingleFileSourcePath(),
-            importedAt: 1_700_000_000,
-            updatedAt: 1_700_000_000
-        )
+            category: category
+        ) {
+            $0.originalName = "source.pdf"
+            $0.sizeBytes = 12
+            $0.hashSha256 = "hash"
+            $0.storageMode = "Indexed"
+            $0.sourcePath = importSingleFileSourcePath()
+            $0.updatedAt = 1_700_000_000
+        }
     }
 
     static func importNameConflictReplaceFixture() -> FileEntrySnapshot {
@@ -121,20 +119,16 @@ extension FileEntrySnapshot {
         id: Int64 = 124
     ) -> FileEntrySnapshot {
         let currentName = (path as NSString).lastPathComponent
-        return FileEntrySnapshot(
+        return FileEntrySnapshot.testFixture(
             id: id,
             path: path,
-            originalName: currentName,
             currentName: currentName,
-            category: (path as NSString).deletingLastPathComponent,
-            sizeBytes: 860 * 1024,
-            hashSha256: hashSha256,
-            storageMode: "Copied",
-            origin: "Imported",
-            sourcePath: nil,
-            importedAt: 1_700_000_000,
-            updatedAt: 1_776_660_840
-        )
+            category: (path as NSString).deletingLastPathComponent
+        ) {
+            $0.sizeBytes = 860 * 1024
+            $0.hashSha256 = hashSha256
+            $0.updatedAt = 1_776_660_840
+        }
     }
 }
 
@@ -188,31 +182,13 @@ extension ImportSingleFileStorageMode {
 extension RepositoryOpeningResult {
     static func importSingleFileFixture(repoPath: String) -> RepositoryOpeningResult {
         RepositoryOpeningResult(
-            config: RepoConfigSnapshot(
-                repoPath: repoPath,
-                defaultMode: "Copied",
-                overviewOutput: "GeneratedOnly",
-                aiEnabled: false,
-                locale: "zh-Hans",
-                iCloudWarn: true,
-                enableExtensionRules: true,
-                enableKeywordRules: true,
-                fallbackToInbox: true,
-                allowReplaceDuringImport: false
-            ),
-            tree: RepositoryTreeNodeSnapshot(
-                slug: "__root__",
+            config: .testFixture(repoPath: repoPath),
+            tree: .testRoot(
                 displayName: "资料库",
-                fileCount: 0,
                 children: [
-                    RepositoryTreeNodeSnapshot(slug: "inbox", displayName: "inbox", fileCount: 0, children: []),
-                    RepositoryTreeNodeSnapshot(slug: "docs", displayName: "docs", fileCount: 0, children: []),
-                    RepositoryTreeNodeSnapshot(
-                        slug: "finance",
-                        displayName: "finance",
-                        fileCount: 0,
-                        children: []
-                    )
+                    .testCategory("inbox"),
+                    .testCategory("docs"),
+                    .testCategory("finance")
                 ]
             ),
             currentCategoryFiles: []
