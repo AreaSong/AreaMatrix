@@ -28,9 +28,8 @@ extension TagSetSnapshot {
     static func batchAddTagsTagCatalogFixture(fileID: Int64) -> TagSetSnapshot {
         let urgent = TagRecordSnapshot.batchAddTagsTag(value: "urgent", fileCount: 3)
         let client = TagRecordSnapshot.batchAddTagsTag(value: "clienta", fileCount: 1)
-        return TagSetSnapshot(
+        return TagSetSnapshot.testFixture(
             fileID: fileID,
-            fileTags: [],
             availableTags: [urgent, client, .batchAddTagsTag(value: "blocked", fileCount: 0, disabled: true)],
             recentTags: [urgent, client],
             updatedAt: 1_700_000_000
@@ -40,30 +39,64 @@ extension TagSetSnapshot {
 
 private extension TagRecordSnapshot {
     static func batchAddTagsTag(value: String, fileCount: Int64, disabled: Bool = false) -> TagRecordSnapshot {
-        TagRecordSnapshot(
+        TagRecordSnapshot.testFixture(
             value: value,
-            label: value,
             fileCount: fileCount,
-            selected: false,
             disabled: disabled,
             updatedAt: 1_700_000_000
         )
     }
 }
 
+extension BatchMutationItemResultSnapshot {
+    static func testFixture(
+        fileID: Int64,
+        tag: String,
+        status: BatchMutationStatusSnapshot = .added,
+        error: String? = nil
+    ) -> BatchMutationItemResultSnapshot {
+        BatchMutationItemResultSnapshot(
+            fileID: fileID,
+            tag: tag,
+            status: status,
+            error: error
+        )
+    }
+}
+
 extension BatchMutationReportSnapshot {
-    static func batchAddTagsFixture() -> BatchMutationReportSnapshot {
+    static func testFixture(
+        requestedFileCount: Int64,
+        requestedTagCount: Int64,
+        addedCount: Int64,
+        skippedCount: Int64 = 0,
+        failedCount: Int64 = 0,
+        itemResults: [BatchMutationItemResultSnapshot] = [],
+        undoToken: String? = nil
+    ) -> BatchMutationReportSnapshot {
         BatchMutationReportSnapshot(
+            requestedFileCount: requestedFileCount,
+            requestedTagCount: requestedTagCount,
+            addedCount: addedCount,
+            skippedCount: skippedCount,
+            failedCount: failedCount,
+            itemResults: itemResults,
+            undoToken: undoToken
+        )
+    }
+
+    static func batchAddTagsFixture() -> BatchMutationReportSnapshot {
+        testFixture(
             requestedFileCount: 2,
             requestedTagCount: 2,
             addedCount: 3,
             skippedCount: 1,
             failedCount: 0,
             itemResults: [
-                BatchMutationItemResultSnapshot(fileID: 31, tag: "urgent", status: .added, error: nil),
-                BatchMutationItemResultSnapshot(fileID: 31, tag: "clienta", status: .added, error: nil),
-                BatchMutationItemResultSnapshot(fileID: 32, tag: "urgent", status: .added, error: nil),
-                BatchMutationItemResultSnapshot(fileID: 32, tag: "clienta", status: .alreadyHadTag, error: nil)
+                .testFixture(fileID: 31, tag: "urgent"),
+                .testFixture(fileID: 31, tag: "clienta"),
+                .testFixture(fileID: 32, tag: "urgent"),
+                .testFixture(fileID: 32, tag: "clienta", status: .alreadyHadTag)
             ],
             undoToken: "undo-batch-tags"
         )

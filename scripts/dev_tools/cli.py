@@ -30,9 +30,18 @@ from .middle_layer import run_workflow_middle
 from .release import (
     DEFAULT_READINESS_BUILD_DERIVED_DATA,
     DEFAULT_NOTARY_PROFILE,
+    run_distribution_artifact_probe,
     run_icloud_placeholder_evidence,
     run_release_readiness_build,
     run_release_preflight,
+)
+from .release_status import (
+    run_alpha_feedback_decision_audit,
+    run_final_tag_readiness_audit,
+    run_icloud_placeholder_smoke_audit,
+    run_release_evidence_audit,
+    run_release_status,
+    run_task05_release_review_audit,
 )
 from .tasks import TASK_KINDS, TASK_LAYERS, TASK_PRIORITIES, TASK_RISKS, run_tasks_command
 from .workflow_baseline import run_workflow_baseline
@@ -156,17 +165,106 @@ def _build_parser() -> argparse.ArgumentParser:
         help=f"notarytool keychain profile to check; defaults to {DEFAULT_NOTARY_PROFILE}",
     )
     release_preflight.add_argument("--json", action="store_true", help="Print machine-readable preflight evidence")
+    release_status = release_sub.add_parser("status", help="Show read-only formal release gate status")
+    release_status.add_argument("--json", action="store_true", help="Print machine-readable release status")
+    release_status.add_argument(
+        "--remote",
+        action="store_true",
+        help="Also check origin tags without writing release state",
+    )
+    release_evidence_audit = release_sub.add_parser(
+        "evidence-audit",
+        help="Audit release evidence records against residual indexes without closing them",
+    )
+    release_evidence_audit.add_argument("--json", action="store_true", help="Print machine-readable audit evidence")
+    release_alpha_feedback_audit = release_sub.add_parser(
+        "alpha-feedback-decision-audit",
+        help="Audit v1 alpha feedback decision fields without publishing or closing v1-rl-006",
+    )
+    release_alpha_feedback_audit.add_argument(
+        "--json",
+        action="store_true",
+        help="Print machine-readable alpha feedback decision audit",
+    )
+    release_final_tag_audit = release_sub.add_parser(
+        "final-tag-readiness-audit",
+        help="Audit formal v0.1.0 tag prerequisites without creating or pushing tags",
+    )
+    release_final_tag_audit.add_argument("--json", action="store_true", help="Print machine-readable tag readiness audit")
+    release_final_tag_audit.add_argument(
+        "--remote",
+        action="store_true",
+        help="Also check origin tags without writing release state",
+    )
+    release_icloud_smoke_audit = release_sub.add_parser(
+        "icloud-placeholder-smoke-audit",
+        help="Audit v1 iCloud placeholder smoke evidence fields without downloading or closing v1-rl-002",
+    )
+    release_icloud_smoke_audit.add_argument(
+        "--json",
+        action="store_true",
+        help="Print machine-readable iCloud placeholder smoke audit",
+    )
+    release_task05_review_audit = release_sub.add_parser(
+        "task05-release-review-audit",
+        help="Audit deferred 3-1/task-05 release review evidence without backfilling task-loop state",
+    )
+    release_task05_review_audit.add_argument(
+        "--json",
+        action="store_true",
+        help="Print machine-readable task05 release review audit",
+    )
+    release_distribution_probe = release_sub.add_parser(
+        "distribution-artifact-probe",
+        help="Collect read-only Developer ID distribution artifact probe data without closing v1-rl-003",
+    )
+    release_distribution_probe.add_argument("--app-path", required=True, help="AreaMatrix.app path to inspect")
+    release_distribution_probe.add_argument("--dmg-path", required=True, help="DMG artifact path to inspect")
+    release_distribution_probe.add_argument("--json", action="store_true", help="Print machine-readable probe evidence")
+    release_distribution_probe.add_argument(
+        "--hash-dmg",
+        action="store_true",
+        help="Read the DMG bytes to compute SHA-256; skipped by default",
+    )
+    release_distribution_probe.add_argument(
+        "--spctl",
+        action="store_true",
+        help="Run local Gatekeeper spctl assessments for app and DMG",
+    )
+    release_distribution_probe.add_argument(
+        "--stapler-validate",
+        action="store_true",
+        help="Run xcrun stapler validate for app and DMG without stapling",
+    )
+    release_distribution_probe.add_argument(
+        "--include-sensitive-paths",
+        action="store_true",
+        help="Include raw local paths in helper output; default output redacts shareable evidence paths",
+    )
     release_icloud = release_sub.add_parser(
         "icloud-placeholder-evidence",
         help="Collect read-only M-02 iCloud placeholder evidence metadata",
     )
     release_icloud.add_argument("--path", required=True, help="iCloud placeholder or source path to inspect")
     release_icloud.add_argument("--json", action="store_true", help="Print machine-readable evidence metadata")
+    release_icloud.add_argument(
+        "--include-sensitive-paths",
+        action="store_true",
+        help="Include raw local paths in helper output; default output redacts shareable evidence paths",
+    )
     release_readiness_build = release_sub.add_parser(
         "readiness-build",
         help="Build a timestamped ad-hoc signed Release app for local readiness validation",
     )
-    release_readiness_build.add_argument("--install", action="store_true", help="Install the built app to /Applications/AreaMatrix.app")
+    release_readiness_build.add_argument(
+        "--install",
+        action="store_true",
+        help="Install the built app to /Applications/AreaMatrix.app after --install-confirm matches the target path",
+    )
+    release_readiness_build.add_argument(
+        "--install-confirm",
+        help="Required with --install; must exactly match the target app path, for example /Applications/AreaMatrix.app",
+    )
     release_readiness_build.add_argument(
         "--build-number",
         help="Override the generated YYYYMMDDHHMM build number; defaults to the current local time",
@@ -732,8 +830,34 @@ def main(argv: Sequence[str] | None = None) -> int:
             return run_bindings_update(root, args.udl, args.out_dir)
         if args.command == "release" and args.release_command == "preflight":
             return run_release_preflight(root, notary_profile=args.notary_profile, json_output=args.json)
+        if args.command == "release" and args.release_command == "status":
+            return run_release_status(root, json_output=args.json, include_remote=args.remote)
+        if args.command == "release" and args.release_command == "evidence-audit":
+            return run_release_evidence_audit(root, json_output=args.json)
+        if args.command == "release" and args.release_command == "alpha-feedback-decision-audit":
+            return run_alpha_feedback_decision_audit(root, json_output=args.json)
+        if args.command == "release" and args.release_command == "final-tag-readiness-audit":
+            return run_final_tag_readiness_audit(root, json_output=args.json, include_remote=args.remote)
+        if args.command == "release" and args.release_command == "icloud-placeholder-smoke-audit":
+            return run_icloud_placeholder_smoke_audit(root, json_output=args.json)
+        if args.command == "release" and args.release_command == "task05-release-review-audit":
+            return run_task05_release_review_audit(root, json_output=args.json)
+        if args.command == "release" and args.release_command == "distribution-artifact-probe":
+            return run_distribution_artifact_probe(
+                Path(args.app_path),
+                Path(args.dmg_path),
+                json_output=args.json,
+                hash_dmg=args.hash_dmg,
+                spctl=args.spctl,
+                stapler_validate=args.stapler_validate,
+                include_sensitive_paths=args.include_sensitive_paths,
+            )
         if args.command == "release" and args.release_command == "icloud-placeholder-evidence":
-            return run_icloud_placeholder_evidence(Path(args.path), json_output=args.json)
+            return run_icloud_placeholder_evidence(
+                Path(args.path),
+                json_output=args.json,
+                include_sensitive_paths=args.include_sensitive_paths,
+            )
         if args.command == "release" and args.release_command == "readiness-build":
             return run_release_readiness_build(
                 root,
@@ -742,6 +866,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 derived_data_path=args.derived_data_path,
                 destination=args.destination,
                 applications_dir=args.applications_dir,
+                install_confirm=args.install_confirm,
             )
         if args.command == "changes" and args.changes_command == "doctor":
             return run_changes_doctor(root, args)

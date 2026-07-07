@@ -1,5 +1,21 @@
 @testable import AreaMatrix
 
+extension SyncConflictResolutionRequestSnapshot {
+    static func testFixture(
+        strategy: SyncConflictResolutionStrategySnapshot = .keepBoth,
+        previewToken: String = "preview-token-keep-both",
+        replaceConfirmed: Bool = false,
+        replaceConfirmationID: String? = nil
+    ) -> SyncConflictResolutionRequestSnapshot {
+        SyncConflictResolutionRequestSnapshot(
+            strategy: strategy,
+            previewToken: previewToken,
+            replaceConfirmed: replaceConfirmed,
+            replaceConfirmationID: replaceConfirmationID
+        )
+    }
+}
+
 extension SyncConflictResolutionPreviewSnapshot {
     static func syncConflictReviewPreviewFixture(
         conflictID: String = "conflict-report",

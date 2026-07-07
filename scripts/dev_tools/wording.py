@@ -33,6 +33,7 @@ TEST_PATHS = ("core/tests",)
 
 ARCHIVED_EVIDENCE_TESTS = {
     "core/tests/release_evidence_checklist.rs",
+    "core/tests/release_evidence_residual_records.rs",
     "core/tests/recovery_scenarios.rs",
 }
 
@@ -206,6 +207,15 @@ def _is_allowed_technical(rel_path: str, term: str, line: str) -> tuple[bool, st
         return True, "文件安全或系统临时文件技术语义"
     if term == "历史归档" and ("归档" in line and "不代表" in line):
         return True, "中性历史归档导航语义"
+    if lower_term == "alpha" and any(
+        marker in lower_line
+        for marker in (
+            "alpha-feedback-decision-audit",
+            "alpha-feedback-route.md",
+            "alpha_feedback.md",
+        )
+    ):
+        return True, "发布辅助命令或文件名中的技术标识"
     if lower_term in {"alpha", "beta"} and _is_test_path(rel_path):
         return True, "测试 fixture 示例数据"
     return False, ""

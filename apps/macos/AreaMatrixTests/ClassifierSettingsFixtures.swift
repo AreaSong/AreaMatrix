@@ -53,32 +53,87 @@ extension ClassifierRuleEditorSnapshotState {
     static func classifierEditorFixture(updatedRuleID: String? = nil) -> ClassifierRuleEditorSnapshotState {
         ClassifierRuleEditorSnapshotState(
             rules: [
-                ClassifierRuleRecordSnapshot(
+                ClassifierRuleRecordSnapshot.testFixture(
                     ruleID: "docs",
-                    slug: "docs",
                     displayName: "Documents",
-                    description: "Docs",
-                    extensions: ["md"],
-                    keywords: ["report"],
-                    priority: 0,
-                    namingTemplate: nil,
                     isDefault: true
-                ),
-                ClassifierRuleRecordSnapshot(
+                ) {
+                    $0.description = "Docs"
+                    $0.extensions = ["md"]
+                    $0.keywords = ["report"]
+                },
+                ClassifierRuleRecordSnapshot.testFixture(
                     ruleID: "finance",
-                    slug: "finance",
-                    displayName: "Finance",
-                    description: "Finance docs",
-                    extensions: ["pdf"],
-                    keywords: [],
-                    priority: 10,
-                    namingTemplate: nil,
-                    isDefault: false
-                )
+                    displayName: "Finance"
+                ) {
+                    $0.description = "Finance docs"
+                    $0.extensions = ["pdf"]
+                    $0.priority = 10
+                }
             ],
             defaultRuleID: "docs",
             updatedRuleID: updatedRuleID,
             warning: nil
+        )
+    }
+}
+
+extension ClassifierRuleRecordSnapshot {
+    static func testFixture(
+        ruleID: String,
+        slug: String? = nil,
+        displayName: String? = nil,
+        isDefault: Bool = false,
+        configure: (inout ClassifierRuleRecordSnapshot) -> Void = { _ in }
+    ) -> ClassifierRuleRecordSnapshot {
+        var snapshot = ClassifierRuleRecordSnapshot(
+            ruleID: ruleID,
+            slug: slug ?? ruleID,
+            displayName: displayName ?? ruleID,
+            description: "",
+            extensions: [],
+            keywords: [],
+            priority: 0,
+            namingTemplate: nil,
+            isDefault: isDefault
+        )
+        configure(&snapshot)
+        return snapshot
+    }
+}
+
+extension ClassifierRuleDraftSnapshot {
+    static func testFixture(
+        sourceFileID: Int64 = 260,
+        targetCategory: String = "finance",
+        keywordCandidates: [String] = ["client-a", "contract"],
+        extensionCandidates: [String] = ["pdf"],
+        priority: Int64 = 42
+    ) -> ClassifierRuleDraftSnapshot {
+        ClassifierRuleDraftSnapshot(
+            sourceFileID: sourceFileID,
+            targetCategory: targetCategory,
+            keywordCandidates: keywordCandidates,
+            extensionCandidates: extensionCandidates,
+            priority: priority
+        )
+    }
+}
+
+extension ClassifierRuleSnapshot {
+    static func testFixture(
+        targetCategory: String = "finance",
+        keywords: [String] = ["contract"],
+        extensions: [String] = [],
+        priority: Int64 = 0,
+        previewConfirmed: Bool = false
+    ) -> ClassifierRuleSnapshot {
+        ClassifierRuleSnapshot(
+            targetCategory: targetCategory,
+            keywords: keywords,
+            extensions: extensions,
+            priority: priority,
+            previewConfirmed: previewConfirmed
         )
     }
 }

@@ -335,16 +335,15 @@ private extension ICloudConflictMinimalModel {
 
 private extension ICloudConflictVersionSnapshot {
     static func original(path: String) -> ICloudConflictVersionSnapshot {
-        ICloudConflictVersionSnapshot(
+        ICloudConflictVersionSnapshot.testFixture(
             role: .original,
             path: path,
-            modifiedAt: 1_775_020_800,
             sizeBytes: 512
         )
     }
 
     static func conflictedCopy(path: String) -> ICloudConflictVersionSnapshot {
-        ICloudConflictVersionSnapshot(
+        ICloudConflictVersionSnapshot.testFixture(
             role: .conflictedCopy,
             path: path,
             modifiedAt: 1_775_020_860,

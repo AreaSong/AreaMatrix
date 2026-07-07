@@ -24,7 +24,7 @@ extension TagSuggestionRequestSnapshot {
 }
 
 extension RepositorySidebarRowSnapshot {
-    static let tagFilterRoot = RepositorySidebarRowSnapshot(node: .testRoot(), depth: 0)
+    static let tagFilterRoot = RepositorySidebarRowSnapshot.testFixture()
 }
 
 extension UndoActionRecordSnapshot {

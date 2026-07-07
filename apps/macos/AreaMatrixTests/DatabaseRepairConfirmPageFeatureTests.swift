@@ -70,13 +70,11 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
 
     @MainActor
     func testDatabaseRepairRepairReindexMetadataCoreRepairRequiresConfirmationAndUsesCoreMetadataRepair() async {
-        let report = RepairReportSnapshot(
+        let report = RepairReportSnapshot.testFixture(
             scanSessionId: 9,
-            diagnosticsSnapshotPath: ".areamatrix/diagnostics/repair.zip",
             inserted: 3,
             updated: 2,
-            skipped: 1,
-            errors: []
+            skipped: 1
         )
         let repairer = DatabaseRepairRecordingMetadataRepairer(result: .success(report))
         let model = DatabaseRepairConfirmModel(
@@ -104,7 +102,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
         XCTAssertEqual(requestsAfterConfirmation, [
             DatabaseRepairRepairRequest(
                 repoPath: "/tmp/repo",
-                options: RepairOptionsSnapshot(fullRescan: true, preserveDiagnosticsSnapshot: true)
+                options: .databaseRepairFullRescanFixture()
             )
         ])
         XCTAssertEqual(model.repairState, .succeeded(report))
@@ -304,55 +302,5 @@ actor DatabaseRepairRecordingMetadataRepairer: CoreMetadataRepairing {
 
     func requests() -> [DatabaseRepairRepairRequest] {
         recordedRequests
-    }
-}
-
-private extension RepairReportSnapshot {
-    static func databaseRepairRepairReportFixture() -> RepairReportSnapshot {
-        RepairReportSnapshot(
-            scanSessionId: 7,
-            diagnosticsSnapshotPath: ".areamatrix/diagnostics/repair.zip",
-            inserted: 1,
-            updated: 2,
-            skipped: 3,
-            errors: []
-        )
-    }
-}
-
-private extension DiagnosticsSnapshotSnapshot {
-    static func databaseRepairDiagnosticsFixture() -> DiagnosticsSnapshotSnapshot {
-        .testFixture(
-            snapshotPath: ".areamatrix/diagnostics/database-repair-diagnostics.zip",
-            createdAt: 1_778_000_000,
-            warnings: ["paths redacted"]
-        )
-    }
-}
-
-private extension CoreErrorMappingSnapshot {
-    static func databaseRepairRepairMapping(
-        kind: CoreErrorKindSnapshot,
-        rawContext: String = "db corrupt"
-    ) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot.testFixture(
-            kind: kind,
-            userMessage: "Repository metadata needs repair",
-            severity: .critical,
-            suggestedAction: "Run a full metadata rescan after preserving diagnostics.",
-            recoverability: .userActionRequired,
-            rawContext: rawContext
-        )
-    }
-
-    static func databaseRepairStartupRecoveryMapping(rawContext: String) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot.testFixture(
-            kind: .db,
-            userMessage: "Startup recovery could not finish",
-            severity: .medium,
-            suggestedAction: "Retry startup recovery before running metadata repair.",
-            recoverability: .retryable,
-            rawContext: rawContext
-        )
     }
 }

@@ -29,7 +29,7 @@ System Settings > Privacy & Security > Open Anyway. Do not disable Gatekeeper gl
 
 ## Validation Snapshot
 
-- `./dev release local-qa --build-number 202606161707 --derived-data-path build/UnnotarizedPreview-0.1.0-preview.2-cli`
+- `./dev release readiness-build --build-number 202606161707 --derived-data-path build/UnnotarizedPreview-0.1.0-preview.2-cli`
   completed successfully.
 - DMG creation completed with `hdiutil create -format UDZO`.
 - `hdiutil attach workflow/versions/v1-mvp/evidence/artifacts/AreaMatrix-v0.1.0-unnotarized-preview.2.dmg -nobrowse`

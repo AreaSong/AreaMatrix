@@ -21,12 +21,12 @@
 
 | ID | 状态 | 类型 | 标题 | 影响 |
 |---|---|---|---|---|
-| `v1-rl-002` | `blocked-external` | `release-evidence` | iCloud placeholder 真实环境冒烟 | formal alpha blocked |
-| `v1-rl-003` | `blocked-external` | `release-evidence` | Developer ID signing / notarization / formal DMG / clean Mac | formal alpha blocked |
-| `v1-rl-004` | `blocked-decision` | `release-evidence` | final `v0.1.0` tag | formal alpha blocked |
-| `v1-rl-006` | `blocked-decision` | `release-evidence` | feedback route structured; tester list, announcement and owner pending | formal alpha blocked |
+| `v1-rl-002` | `blocked-external` | `release-evidence` | iCloud placeholder smoke record structured; real environment pending | formal alpha blocked |
+| `v1-rl-003` | `blocked-external` | `release-evidence` | Developer ID signing / notarization record structured; real evidence pending | formal alpha blocked |
+| `v1-rl-004` | `blocked-decision` | `release-evidence` | final tag record structured; release gates and tag pending | formal alpha blocked |
+| `v1-rl-006` | `blocked-decision` | `release-evidence` | feedback route record structured with `closes_residual: false`; tester list, announcement and owner pending | formal alpha blocked |
 | `v1-ex-001` | `accepted-exception` | `closeout-exception` | 35 historical checkpoint gaps | no active task |
-| `v1-ref-003-1-task-05` | `deferred` | `release-evidence` | release-gate review item without task-loop verify evidence | handled by release evidence |
+| `v1-ref-003-1-task-05` | `deferred` | `release-evidence` | release-gate review record structured; no task-loop verify PASS evidence | handled by release evidence |
 
 机器可读索引见 [residuals.yaml](residuals.yaml)。
 

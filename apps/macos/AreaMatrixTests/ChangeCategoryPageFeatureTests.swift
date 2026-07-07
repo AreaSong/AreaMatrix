@@ -212,14 +212,14 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             targetPath: corrected.path,
             targetName: corrected.currentName
         )
-        let draft = ClassifierRuleDraftSnapshot(
+        let draft = ClassifierRuleDraftSnapshot.testFixture(
             sourceFileID: original.id,
             targetCategory: "finance",
             keywordCandidates: ["client-a", "contract"],
             extensionCandidates: ["pdf"],
             priority: 42
         )
-        let correction = ClassifierCorrectionResultSnapshot(
+        let correction = ClassifierCorrectionResultSnapshot.testFixture(
             updatedFile: corrected,
             ruleDraft: draft,
             moveFileRequested: true,

@@ -63,14 +63,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         XCTAssertEqual(applyRequests, [
             ImportConflictBatchApplyRequest(
                 repoPath: importSingleFileRepoPath(),
-                request: ImportConflictBatchApplyRequestSnapshot(
-                    importSessionID: "session-221",
-                    conflictIDs: ["dup-1"],
-                    duplicateStrategy: .replace,
-                    sameNameStrategy: .keepBoth,
-                    applyToAllSimilarConflicts: true,
-                    replaceConfirmed: true
-                ),
+                request: .testFixture(),
                 previewToken: "token-replace"
             )
         ])
@@ -231,24 +224,14 @@ private actor RecordingConflictBatcher: CoreImportConflictBatching {
 
 private extension ImportConflictBatchPreviewReportSnapshot {
     static var importConflictBatchDefaultPreview: ImportConflictBatchPreviewReportSnapshot {
-        ImportConflictBatchPreviewReportSnapshot(
-            importSessionID: "session-221",
+        .testFixture(
             previewToken: "token-default",
-            applyToAllSimilarConflicts: true,
             requestedConflictCount: 2,
-            duplicateConflictCount: 1,
             sameNameConflictCount: 1,
             includedCount: 2,
-            pendingCount: 0,
-            blockedCount: 0,
             replaceCount: 0,
             skipCount: 1,
             keepBothCount: 1,
-            askPerItemCount: 0,
-            trashAvailable: true,
-            undoAvailable: true,
-            canApply: true,
-            applyBlockedReason: nil,
             replaceConfirmationRequired: false,
             replaceConfirmationSummary: nil,
             items: [.importConflictBatchDuplicate(strategy: .skip), .importConflictBatchSameName(strategy: .keepBoth)]
@@ -256,25 +239,7 @@ private extension ImportConflictBatchPreviewReportSnapshot {
     }
 
     static var importConflictBatchReplacePreview: ImportConflictBatchPreviewReportSnapshot {
-        ImportConflictBatchPreviewReportSnapshot(
-            importSessionID: "session-221",
-            previewToken: "token-replace",
-            applyToAllSimilarConflicts: true,
-            requestedConflictCount: 1,
-            duplicateConflictCount: 1,
-            sameNameConflictCount: 0,
-            includedCount: 1,
-            pendingCount: 0,
-            blockedCount: 0,
-            replaceCount: 1,
-            skipCount: 0,
-            keepBothCount: 0,
-            askPerItemCount: 0,
-            trashAvailable: true,
-            undoAvailable: true,
-            canApply: true,
-            applyBlockedReason: nil,
-            replaceConfirmationRequired: true,
+        .testFixture(
             replaceConfirmationSummary: "1 duplicate conflict",
             items: [.importConflictBatchDuplicate(strategy: .replace)]
         )
@@ -319,22 +284,9 @@ private extension ImportConflictBatchPreviewItemSnapshot {
         conflictID: String = "dup-1",
         strategy: ImportConflictBatchStrategySnapshot = .skip
     ) -> ImportConflictBatchPreviewItemSnapshot {
-        ImportConflictBatchPreviewItemSnapshot(
+        .testFixture(
             conflictID: conflictID,
-            conflictType: .duplicateHash,
-            existingFileID: 42,
-            existingPath: "finance/existing-invoice.pdf",
-            incomingPath: "/tmp/Invoice_2026Q1.pdf",
-            targetPath: "finance/Invoice_2026Q1.pdf",
-            selectedStrategy: strategy,
-            status: strategy == .replace ? .needsConfirmation : .ready,
-            willReplace: strategy == .replace,
-            willKeepBoth: strategy == .keepBoth,
-            willSkip: strategy == .skip,
-            willAskPerItem: strategy == .askPerItem,
-            indexOnly: false,
-            riskSummary: "Existing file remains unless Replace is confirmed.",
-            reason: nil
+            selectedStrategy: strategy
         )
     }
 
@@ -342,12 +294,14 @@ private extension ImportConflictBatchPreviewItemSnapshot {
         conflictID: String = "name-1",
         strategy: ImportConflictBatchStrategySnapshot = .keepBoth
     ) -> ImportConflictBatchPreviewItemSnapshot {
-        var item = importConflictBatchDuplicate(conflictID: conflictID, strategy: strategy)
-        item.conflictType = .sameNameDifferentContent
-        item.existingPath = "docs/合同.pdf"
-        item.incomingPath = "/tmp/合同.pdf"
-        item.targetPath = "docs/合同 2.pdf"
-        return item
+        .testFixture(
+            conflictID: conflictID,
+            conflictType: .sameNameDifferentContent,
+            existingPath: "docs/合同.pdf",
+            incomingPath: "/tmp/合同.pdf",
+            targetPath: "docs/合同 2.pdf",
+            selectedStrategy: strategy
+        )
     }
 
     static func importConflictBatchBlockedSameName(conflictID: String) -> ImportConflictBatchPreviewItemSnapshot {
@@ -378,7 +332,7 @@ private extension ImportConflictBatchApplyReportSnapshot {
         let isAskPerItem = request.duplicateStrategy == .askPerItem && request.sameNameStrategy == .askPerItem
         let isReplace = request.duplicateStrategy == .replace || request.sameNameStrategy == .replace
         let count = Int64(request.conflictIDs.count)
-        return ImportConflictBatchApplyReportSnapshot(
+        return .testFixture(
             importSessionID: request.importSessionID,
             requestedConflictCount: count,
             resolvedCount: count,
@@ -386,15 +340,12 @@ private extension ImportConflictBatchApplyReportSnapshot {
             keptBothCount: request.sameNameStrategy == .keepBoth ? count : 0,
             replacedCount: isReplace ? count : 0,
             queuedForPerItemCount: isAskPerItem ? count : 0,
-            pendingCount: 0,
-            failedCount: 0,
             itemResults: request.conflictIDs.map { conflictID in
                 .importConflictBatchResult(conflictID: conflictID, request: request)
             },
             affectedFileIDs: isAskPerItem ? [] : [42],
             undoToken: isReplace ? "undo-replace" : nil,
-            changeLogActions: isAskPerItem ? [] : ["import_conflict_batch"],
-            failureSummary: nil
+            changeLogActions: isAskPerItem ? [] : ["import_conflict_batch"]
         )
     }
 }
@@ -405,14 +356,13 @@ private extension ImportConflictBatchItemResultSnapshot {
         request: ImportConflictBatchApplyRequestSnapshot
     ) -> ImportConflictBatchItemResultSnapshot {
         let strategy = conflictID.hasPrefix("dup") ? request.duplicateStrategy : request.sameNameStrategy
-        return ImportConflictBatchItemResultSnapshot(
+        return .testFixture(
             conflictID: conflictID,
             conflictType: conflictID.hasPrefix("dup") ? .duplicateHash : .sameNameDifferentContent,
             appliedStrategy: strategy,
             status: resultStatus(for: strategy),
             fileID: strategy == .askPerItem ? nil : 42,
-            finalPath: "finance/Invoice_2026Q1.pdf",
-            error: nil
+            finalPath: "finance/Invoice_2026Q1.pdf"
         )
     }
 

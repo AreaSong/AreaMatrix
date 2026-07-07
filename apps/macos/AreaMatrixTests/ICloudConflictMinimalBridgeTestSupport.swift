@@ -58,18 +58,19 @@ actor ICloudConflictMinimalRecordingMainCore: CoreFileListing,
     ) async throws -> MoveToCategoryPreviewSnapshot {
         outOfScopeActions.append(.previewMove)
         let file = try await getFile(repoPath: repoPath, fileID: fileID)
-        return MoveToCategoryPreviewSnapshot(
+        return MoveToCategoryPreviewSnapshot.testFixture(
             fileID: file.id,
             fromCategory: file.category,
             toCategory: newCategory,
-            currentPath: file.path,
-            targetPath: "\(newCategory)/\(file.currentName)",
-            targetName: file.currentName,
-            storageMode: file.storageMode,
-            indexOnly: false,
-            nameConflictResolved: false,
-            willMoveFile: false
-        )
+            targetName: file.currentName
+        ) {
+            $0.currentPath = file.path
+            $0.targetPath = "\(newCategory)/\(file.currentName)"
+            $0.storageMode = file.storageMode
+            $0.indexOnly = false
+            $0.nameConflictResolved = false
+            $0.willMoveFile = false
+        }
     }
 
     func moveToCategory(repoPath: String, fileID: Int64, newCategory _: String) async throws -> FileEntrySnapshot {

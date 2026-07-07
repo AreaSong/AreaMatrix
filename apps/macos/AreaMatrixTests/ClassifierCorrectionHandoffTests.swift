@@ -51,7 +51,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
 
     @MainActor
     func testClassifierCorrectionHandoffSummaryDisplaysCoreRuleDraftWithoutSyntheticCandidates() {
-        let draft = ClassifierRuleDraftSnapshot(
+        let draft = ClassifierRuleDraftSnapshot.testFixture(
             sourceFileID: 260,
             targetCategory: "finance",
             keywordCandidates: ["client-a", "contract"],
@@ -119,13 +119,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
             moveFile: true,
             destination: .saveRule
         )
-        model.completeClassifierRuleSave(ClassifierRuleSnapshot(
-            targetCategory: "finance",
-            keywords: ["contract"],
-            extensions: ["pdf"],
-            priority: 0,
-            previewConfirmed: false
-        ))
+        model.completeClassifierRuleSave(.testFixture(extensions: ["pdf"]))
 
         XCTAssertNil(model.pendingActionDestination)
         XCTAssertEqual(model.statusBanner, .savedClassifierRule(category: "finance"))
@@ -156,13 +150,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
         let classifierURL = repoURL.appendingPathComponent(".areamatrix/classifier.yaml")
         let saved = try await bridge.saveClassifierRule(
             repoPath: repoURL.path,
-            rule: ClassifierRuleSnapshot(
-                targetCategory: "finance",
-                keywords: ["contract-classifierRuleSave"],
-                extensions: [],
-                priority: 0,
-                previewConfirmed: false
-            )
+            rule: .testFixture(keywords: ["contract-classifierRuleSave"])
         )
         let classifierText = try String(contentsOf: classifierURL)
         let detail = try await bridge.getFile(repoPath: repoURL.path, fileID: imported.id)
@@ -230,13 +218,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
             repoPath: repoURL.path,
             request: ClassifierImpactPreviewRequestSnapshot(
                 mode: .ruleDraft,
-                rule: ClassifierRuleSnapshot(
-                    targetCategory: "finance",
-                    keywords: ["contract"],
-                    extensions: [],
-                    priority: 100,
-                    previewConfirmed: false
-                ),
+                rule: .testFixture(priority: 100),
                 moveFiles: false,
                 replacementCategory: nil
             )
@@ -345,7 +327,7 @@ private func classifierCorrectionHandoff(
         currentCategory: file.category,
         targetCategory: targetCategory,
         moveFile: true,
-        draft: ClassifierRuleDraftSnapshot(
+        draft: .testFixture(
             sourceFileID: file.id,
             targetCategory: targetCategory,
             keywordCandidates: ["client-a", "contract"],

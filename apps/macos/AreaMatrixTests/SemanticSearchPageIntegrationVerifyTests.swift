@@ -15,14 +15,11 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
                 )
             ],
             normalMatches: [
-                SemanticNormalSearchMatchSnapshot(
+                .testFixture(
                     result: .semanticSearchPageResult(file: duplicateFile, snippet: "filename contains invoice"),
                     dedupedBySemantic: true
                 ),
-                SemanticNormalSearchMatchSnapshot(
-                    result: .semanticSearchPageResult(file: normalOnlyFile, snippet: "note mentions payment"),
-                    dedupedBySemantic: false
-                )
+                .testFixture(result: .semanticSearchPageResult(file: normalOnlyFile, snippet: "note mentions payment"))
             ],
             dedupedNormalCount: 1
         )

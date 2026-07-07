@@ -379,6 +379,7 @@ def run_quality_check(root: Path | None = None) -> int:
         "docs/architecture/migration.md",
         "docs/development/release.md",
         "scripts/dev_tools/release.py",
+        "scripts/dev_tools/release_status.py",
         ".codex/skills-src/README.md",
         ".codex/references/index.md",
         ".codex/references/codex-workflow-and-tools.md",
@@ -415,7 +416,56 @@ def run_quality_check(root: Path | None = None) -> int:
     _require_text(root, failures, "apps/macos/AGENTS.md", "CoreBridge", "macOS CoreBridge boundary")
     _require_text(root, failures, "apps/macos/AGENTS.md", "SwiftUI 视图只做展示", "SwiftUI view boundary")
     _require_text(root, failures, "docs/architecture/migration.md", "rollback|回滚", "DB migration rollback boundary")
-    _require_text(root, failures, "docs/development/release.md", "notarization|notary|公证", "release notarization boundary")
+    _require_text(
+        root,
+        failures,
+        "docs/development/release.md",
+        "notarization|notary|公证",
+        "release notarization boundary",
+    )
+    _require_text(root, failures, "docs/development/release.md", r"\./dev release status", "release status boundary")
+    _require_text(
+        root,
+        failures,
+        "docs/development/release.md",
+        r"\./dev release evidence-audit",
+        "release evidence audit boundary",
+    )
+    _require_text(
+        root,
+        failures,
+        "scripts/dev_tools/release_status.py",
+        "closes_residual",
+        "release status residual gate",
+    )
+    _require_text(
+        root,
+        failures,
+        "scripts/dev_tools/release_status.py",
+        "release_gate",
+        "release status release gate",
+    )
+    _require_text(
+        root,
+        failures,
+        "scripts/dev_tools/release_status.py",
+        "residual_evidence_gate",
+        "release status residual evidence gate",
+    )
+    _require_text(
+        root,
+        failures,
+        "scripts/dev_tools/release_status.py",
+        "release_evidence_audit",
+        "release evidence audit gate",
+    )
+    _require_text(
+        root,
+        failures,
+        "scripts/dev_tools/release_status.py",
+        "any residual is closed",
+        "release status read-only proof boundary",
+    )
 
     _require_text(
         root,

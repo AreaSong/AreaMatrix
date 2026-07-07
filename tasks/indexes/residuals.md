@@ -19,11 +19,11 @@
 
 | ID | 状态 | 原因 | 来源 |
 |---|---|---|---|
-| `v1-rl-002` | `blocked-external` | 需要真实 iCloud placeholder 环境；只读 metadata helper 不能替代手工 Download & retry。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
-| `v1-rl-003` | `blocked-external` | 需要 Apple Developer Program、Developer ID、notarization、clean Mac。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
-| `v1-rl-004` | `blocked-decision` | 正式 tag 依赖 release decision。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
-| `v1-rl-006` | `blocked-decision` | Alpha feedback issue template 和 route evidence 已存在；可信测试者名单、正式公告 / Discussion 链接、反馈分流和 triage owner 仍需要 release decision。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
-| `v1-ref-003-1-task-05` | `deferred` | 走分发证据 review，不补造 task-loop verify evidence。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
+| `v1-rl-002` | `blocked-external` | iCloud smoke record 已结构化；仍需要真实 iCloud placeholder 环境，且只读 metadata helper 不能替代手工 Download & retry、DB row 和用户文件不变量。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
+| `v1-rl-003` | `blocked-external` | 分发签名 / 公证 record 已结构化；仍需要 Apple Developer Program、Developer ID、notarytool accepted log、stapled DMG、spctl assess 和 clean Mac。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
+| `v1-rl-004` | `blocked-decision` | final tag record 已结构化；正式 tag 仍依赖 release gates 全部关闭、release candidate commit、annotated `v0.1.0` tag 创建和 push 决策。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
+| `v1-rl-006` | `blocked-decision` | Alpha feedback issue template 和 route evidence 已存在，且 `closes_residual: false`；可信测试者名单、tester invitation side effect、正式公告 / Discussion 链接、反馈分流和 triage owner 仍需要 release decision。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
+| `v1-ref-003-1-task-05` | `deferred` | release-gate review record 已结构化，当前 `closes_residual: false`；走 fresh release evidence review，不补造 task-loop verify evidence。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
 | `v1-ex-001` | `accepted-exception` | 已接受 checkpoint gaps，不补造历史。 | [accepted exceptions](../../workflow/versions/v1-mvp/residuals/accepted-exceptions.md) |
 | `global-ref-areaflow` | `reference-only` | 历史愿景，不是 AreaMatrix 当前任务。 | [non-current references](../../workflow/residuals/non-current-references.md) |
 | `global-template-vtemplate` | `template-only` | 模板参考实例，blocked-by-design。 | [non-current references](../../workflow/residuals/non-current-references.md) |

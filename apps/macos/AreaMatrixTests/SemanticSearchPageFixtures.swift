@@ -66,20 +66,45 @@ extension RepositoryTreeNodeSnapshot {
 }
 
 extension SemanticSearchMatchSnapshot {
+    static func testFixture(
+        result: SearchFileResultSnapshot,
+        relevance: Float = 0.91,
+        matchedReason: String = "filename and summary match invoice",
+        usedFields: [SemanticSearchInputFieldSnapshot] = [.fileName, .aiSummary],
+        route: SemanticSearchRouteSnapshot = .local,
+        alsoMatchedNormalSearch: Bool = false,
+        callLogID: Int64? = 308,
+        privacyRuleID: String? = nil
+    ) -> SemanticSearchMatchSnapshot {
+        SemanticSearchMatchSnapshot(
+            result: result,
+            relevance: relevance,
+            matchedReason: matchedReason,
+            usedFields: usedFields,
+            route: route,
+            alsoMatchedNormalSearch: alsoMatchedNormalSearch,
+            callLogID: callLogID,
+            privacyRuleID: privacyRuleID
+        )
+    }
+
     static func semanticSearchPage(
         result: SearchFileResultSnapshot,
         alsoMatchedNormalSearch: Bool = false
     ) -> SemanticSearchMatchSnapshot {
-        SemanticSearchMatchSnapshot(
+        .testFixture(
             result: result,
-            relevance: 0.91,
-            matchedReason: "filename and summary match invoice",
-            usedFields: [.fileName, .aiSummary],
-            route: .local,
-            alsoMatchedNormalSearch: alsoMatchedNormalSearch,
-            callLogID: 308,
-            privacyRuleID: nil
+            alsoMatchedNormalSearch: alsoMatchedNormalSearch
         )
+    }
+}
+
+extension SemanticNormalSearchMatchSnapshot {
+    static func testFixture(
+        result: SearchFileResultSnapshot,
+        dedupedBySemantic: Bool = false
+    ) -> SemanticNormalSearchMatchSnapshot {
+        SemanticNormalSearchMatchSnapshot(result: result, dedupedBySemantic: dedupedBySemantic)
     }
 }
 
@@ -147,7 +172,7 @@ extension SearchResultPageSnapshot {
         let semanticPage = SemanticSearchResultPageSnapshot.semanticSearchPage(
             semanticMatches: semantic.map { .semanticSearchPage(result: .semanticSearchPageResult(file: $0)) },
             normalMatches: normal.map {
-                SemanticNormalSearchMatchSnapshot(result: .semanticSearchPageResult(file: $0), dedupedBySemantic: false)
+                .testFixture(result: .semanticSearchPageResult(file: $0))
             },
             semanticTotalCount: semanticTotalCount,
             indexStatus: indexStatus
@@ -167,19 +192,35 @@ extension SearchResultPageSnapshot {
 }
 
 extension SemanticIndexBuildReportSnapshot {
-    static func semanticSearchReadyReport() -> SemanticIndexBuildReportSnapshot {
+    static func testFixture(
+        status: SemanticIndexStatusSnapshot = .ready,
+        route: SemanticSearchRouteSnapshot? = .local,
+        totalCount: Int64 = 1,
+        processedCount: Int64 = 1,
+        skippedCount: Int64 = 0,
+        failedCount: Int64 = 0,
+        privacySkippedCount: Int64 = 0,
+        providerName: String? = "Local",
+        callLogID: Int64? = 308,
+        fallbackReason: SemanticSearchFallbackReasonSnapshot? = nil,
+        message: String? = nil
+    ) -> SemanticIndexBuildReportSnapshot {
         SemanticIndexBuildReportSnapshot(
-            status: .ready,
-            route: .local,
-            totalCount: 1,
-            processedCount: 1,
-            skippedCount: 0,
-            failedCount: 0,
-            privacySkippedCount: 0,
-            providerName: "Local",
-            callLogID: 308,
-            fallbackReason: nil,
-            message: nil
+            status: status,
+            route: route,
+            totalCount: totalCount,
+            processedCount: processedCount,
+            skippedCount: skippedCount,
+            failedCount: failedCount,
+            privacySkippedCount: privacySkippedCount,
+            providerName: providerName,
+            callLogID: callLogID,
+            fallbackReason: fallbackReason,
+            message: message
         )
+    }
+
+    static func semanticSearchReadyReport() -> SemanticIndexBuildReportSnapshot {
+        .testFixture()
     }
 }

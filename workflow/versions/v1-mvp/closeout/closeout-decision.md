@@ -32,7 +32,7 @@ Decision date: 2026-06-17 CST
 | Notarization and stapling | deferred | release owner | Developer ID signing 可用后，提交 notarytool，记录 accepted log 和 stapler evidence。 |
 | Clean-Mac first launch / Gatekeeper validation | deferred | release owner | 有干净 Mac 或等价可信测试机，使用目标分发产物补首次启动证据。 |
 | Formal `v0.1.0` tag and GitHub Release | deferred | release owner | 正式 alpha 门禁全部关闭后再创建；preview tag 不等于正式 release tag。 |
-| `3-1/task-05` release-gate review item | deferred | closeout / release reviewer | 回到 release checklist 与 local QA notes，决定是否记录为 release evidence exception 或拆成后续 release task。 |
+| `3-1/task-05` release-gate review item | deferred | closeout / release reviewer | 回到 release checklist 与 local QA notes 进行 fresh release evidence review；不得记录为 task-loop PASS、不得补造历史 verify evidence，也不得据此关闭 release blocker。 |
 
 ## Accepted Evidence
 

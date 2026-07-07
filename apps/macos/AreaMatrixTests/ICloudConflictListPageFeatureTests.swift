@@ -156,7 +156,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
             updater: NoopConfigurationUpdater(),
             errorMapper: StaticCoreErrorMapper(mapping: .iCloudConflictListMapping()),
             statusDetector: StaticICloudStatusDetector(
-                snapshot: IntegrationsICloudSnapshot(repositoryLocation: .iCloudDrive, iCloudStatus: .available)
+                snapshot: .testFixture(repositoryLocation: .iCloudDrive, iCloudStatus: .available)
             ),
             finderOpener: opener,
             helpOpener: NoopICloudHelpOpener()

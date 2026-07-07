@@ -97,11 +97,11 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
         category.pattern = "finance"
         XCTAssertEqual(category.validationMessage(registry: .unavailable), "Category registry is unavailable.")
         XCTAssertEqual(
-            category.validationMessage(registry: AIPrivacyRuleRegistrySnapshot(categories: ["docs"], tags: [])),
+            category.validationMessage(registry: .testFixture(categories: ["docs"])),
             "Choose an existing category from the registry."
         )
         XCTAssertEqual(
-            category.validationMessage(registry: AIPrivacyRuleRegistrySnapshot(categories: ["finance"], tags: [])),
+            category.validationMessage(registry: .testFixture(categories: ["finance"])),
             "Ready to save."
         )
 
@@ -110,7 +110,7 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
         tag.pattern = "client-private"
         XCTAssertEqual(tag.validationMessage(registry: .unavailable), "Tag registry is unavailable.")
         XCTAssertEqual(
-            tag.validationMessage(registry: AIPrivacyRuleRegistrySnapshot(categories: [], tags: ["client-private"])),
+            tag.validationMessage(registry: .testFixture(tags: ["client-private"])),
             "Ready to save."
         )
 
@@ -191,28 +191,17 @@ private actor AIPrivacyRulesClassifierRegistryBridge: CoreClassifierRuleEditing 
     func listClassifierRules(repoPath _: String) async throws -> ClassifierRuleEditorSnapshotState {
         ClassifierRuleEditorSnapshotState(
             rules: [
-                ClassifierRuleRecordSnapshot(
+                ClassifierRuleRecordSnapshot.testFixture(
                     ruleID: "inbox",
-                    slug: "inbox",
                     displayName: "Inbox",
-                    description: "",
-                    extensions: [],
-                    keywords: [],
-                    priority: 0,
-                    namingTemplate: nil,
                     isDefault: true
                 ),
-                ClassifierRuleRecordSnapshot(
+                ClassifierRuleRecordSnapshot.testFixture(
                     ruleID: "finance",
-                    slug: "finance",
-                    displayName: "Finance",
-                    description: "",
-                    extensions: [],
-                    keywords: [],
-                    priority: 10,
-                    namingTemplate: nil,
-                    isDefault: false
-                )
+                    displayName: "Finance"
+                ) {
+                    $0.priority = 10
+                }
             ],
             defaultRuleID: "inbox",
             updatedRuleID: nil,
@@ -260,7 +249,7 @@ private actor AIPrivacyRulesFacetRegistryBridge: CoreSearchFiltering {
 
 private extension AISettingsSnapshot {
     static func aiPrivacyRulesIntegrationReady(repoPath: String) -> AISettingsSnapshot {
-        let config = AISettingsConfigSnapshot(
+        let config = AISettingsConfigSnapshot.aiSettingsConfig(
             repoPath: repoPath,
             aiEnabled: true,
             providerPreference: .remoteFirst,
@@ -268,14 +257,11 @@ private extension AISettingsSnapshot {
             remoteAIAllowed: true,
             privacyGateEnabled: true,
             privacyPolicyRef: "Default gate policy",
-            featureToggles: [
-                AISettingsFeatureConfigSnapshot(feature: .autoSummaries, enabled: true, allowRemote: true),
-                AISettingsFeatureConfigSnapshot(feature: .semanticSearch, enabled: true, allowRemote: true)
-            ]
-        ).normalized()
-        return AISettingsSnapshot(
+            enabledFeatures: [.autoSummaries, .semanticSearch],
+            remoteAllowedFeatures: [.autoSummaries, .semanticSearch]
+        )
+        return AISettingsSnapshot.aiSettingsSnapshot(
             config: config,
-            capabilities: AISettingsCapabilitySnapshot.derived(from: config),
             updatedAt: 309
         )
     }
@@ -300,26 +286,22 @@ private extension RemoteProviderConfigState {
 
 private extension AiPrivacyRulesSnapshot {
     static func aiPrivacyRulesIntegrationRules(privacyGateEnabled: Bool) -> AiPrivacyRulesSnapshot {
-        AiPrivacyRulesSnapshot(
+        testFixture(
             privacyGateEnabled: privacyGateEnabled,
             rules: [.aiPrivacyRulesIntegrationRule()],
             remoteAllowedFields: [
-                AiPrivacyFieldState(field: .fileName, allowRemote: true, lastMatchedCount: 0),
-                AiPrivacyFieldState(field: .repoRelativePath, allowRemote: true, lastMatchedCount: 1),
-                AiPrivacyFieldState(field: .extension, allowRemote: true, lastMatchedCount: 0),
-                AiPrivacyFieldState(field: .extractedTextExcerpt, allowRemote: false, lastMatchedCount: 2),
-                AiPrivacyFieldState(field: .aiSummary, allowRemote: true, lastMatchedCount: 0),
-                AiPrivacyFieldState(field: .noteSummary, allowRemote: true, lastMatchedCount: 3),
-                AiPrivacyFieldState(field: .tagCategoryContext, allowRemote: false, lastMatchedCount: 4)
+                .testFixture(field: .fileName),
+                .testFixture(field: .repoRelativePath, lastMatchedCount: 1),
+                .testFixture(field: .extension),
+                .testFixture(field: .extractedTextExcerpt, allowRemote: false, lastMatchedCount: 2),
+                .testFixture(field: .aiSummary),
+                .testFixture(field: .noteSummary, lastMatchedCount: 3),
+                .testFixture(field: .tagCategoryContext, allowRemote: false, lastMatchedCount: 4)
             ],
-            providerScope: AiPrivacyProviderScopeSnapshot(
-                providerConfigured: true,
-                providerVerified: true,
-                remoteProviderEnabled: true,
+            providerScope: .testFixture(
                 featureScope: [.autoSummaries, .semanticSearch]
             ),
-            updatedAt: 309,
-            remoteBlockedByDefault: true
+            updatedAt: 309
         )
     }
 }

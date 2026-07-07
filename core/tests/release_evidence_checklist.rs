@@ -2,6 +2,7 @@ const CHECKLIST: &str =
     include_str!("../../workflow/versions/v1-mvp/evidence/release-checklist.md");
 const RELEASE: &str = include_str!("../../docs/development/release.md");
 const BUILD: &str = include_str!("../../docs/development/build.md");
+const CI_GOVERNANCE: &str = include_str!("../../docs/development/ci-governance.md");
 const CHANGELOG: &str = include_str!("../../CHANGELOG.md");
 const PERFORMANCE_BASELINE: &str =
     include_str!("../../workflow/versions/v1-mvp/evidence/performance-baseline.md");
@@ -24,10 +25,6 @@ const CHECKPOINT_ACCEPTED_EXCEPTIONS: &str =
     include_str!("../../workflow/versions/v1-mvp/closeout/checkpoint-accepted-exceptions.md");
 const CLOSEOUT_YAML: &str = include_str!("../../workflow/versions/v1-mvp/closeout/closeout.yaml");
 const V1_RESIDUALS: &str = include_str!("../../workflow/versions/v1-mvp/residuals/residuals.yaml");
-const V1_RELEASE_RESIDUALS: &str =
-    include_str!("../../workflow/versions/v1-mvp/residuals/release-evidence.md");
-const GLOBAL_RESIDUALS_README: &str = include_str!("../../workflow/residuals/README.md");
-const TASK_RESIDUAL_INDEX: &str = include_str!("../../tasks/indexes/residuals.md");
 const TASK05_RUNNING_SUMMARY: &str = include_str!(
     "../../workflow/versions/v1-mvp/evidence/task-loop-runs/20260510_223424/summary.json"
 );
@@ -156,10 +153,49 @@ fn release_checklist_records_distribution_preflight_blocker_without_release_clai
     assert_contains(RELEASE, "`./dev release preflight --json`");
     assert_contains(RELEASE, "`required_distribution_evidence`");
     assert_contains(RELEASE, "`evidence_record_template`");
+    assert_contains(RELEASE, "`./dev release final-tag-readiness-audit --json --remote`");
+    assert_contains(RELEASE, "`ready_to_create_formal_tag: true`");
+    assert_contains(RELEASE, "不创建 tag、不推送 tag、不创建 GitHub Release");
+    assert_contains(RELEASE, "`./dev release icloud-placeholder-smoke-audit --json`");
+    assert_contains(RELEASE, "`smoke_evidence_gate: BLOCKED`");
+    assert_contains(RELEASE, "不能关闭 `v1-rl-002`");
+    assert_contains(RELEASE, "`./dev release task05-release-review-audit --json`");
+    assert_contains(RELEASE, "`release_evidence_review_gate: BLOCKED`");
+    assert_contains(RELEASE, "不能关闭 `v1-ref-003-1-task-05`");
+    assert_contains(RELEASE, "`./dev release alpha-feedback-decision-audit --json`");
+    assert_contains(RELEASE, "`decision_gate.status: BLOCKED`");
+    assert_contains(RELEASE, "不能关闭 `v1-rl-006`");
+    assert_contains(RELEASE, "`./dev release distribution-artifact-probe");
+    assert_contains(RELEASE, "`probe.status` 表示采集是否成功");
+    assert_contains(RELEASE, "`distribution_requirements.status` 才表达正式分发要求");
     assert_contains(BUILD, "release distribution");
     assert_contains(BUILD, "preflight: BLOCKED");
     assert_contains(BUILD, "./dev release preflight --json");
     assert_contains(BUILD, "`blocked_by`");
+    assert_contains(BUILD, "./dev release final-tag-readiness-audit --json --remote");
+    assert_contains(BUILD, "`ready_to_create_formal_tag: true`");
+    assert_contains(BUILD, "不会创建 tag");
+    assert_contains(BUILD, "./dev release icloud-placeholder-smoke-audit --json");
+    assert_contains(BUILD, "`smoke_evidence_gate: BLOCKED`");
+    assert_contains(BUILD, "不接收路径、\n不运行 `mdls`");
+    assert_contains(BUILD, "不写 `.areamatrix/` metadata");
+    assert_contains(BUILD, "./dev release task05-release-review-audit --json");
+    assert_contains(BUILD, "`release_evidence_review_gate: BLOCKED`");
+    assert_contains(BUILD, "不读取 `.codex/task-loop-logs/**`");
+    assert_contains(BUILD, "./dev release alpha-feedback-decision-audit --json");
+    assert_contains(BUILD, "当前决策缺失时返回 `BLOCKED` 是预期状态");
+    assert_contains(BUILD, "不会创建");
+    assert_contains(CI_GOVERNANCE, "./dev release alpha-feedback-decision-audit --json");
+    assert_contains(CI_GOVERNANCE, "./dev release final-tag-readiness-audit --json --remote");
+    assert_contains(CI_GOVERNANCE, "./dev release icloud-placeholder-smoke-audit --json");
+    assert_contains(CI_GOVERNANCE, "`smoke_evidence_gate: BLOCKED`");
+    assert_contains(CI_GOVERNANCE, "./dev release task05-release-review-audit --json");
+    assert_contains(CI_GOVERNANCE, "`release_evidence_review_gate: BLOCKED`");
+    assert_contains(CI_GOVERNANCE, "不属于普通 PR 或 CI 必跑项");
+    assert_contains(CI_GOVERNANCE, "不应记为普通 CI failure");
+    assert_contains(BUILD, "./dev release distribution-artifact-probe");
+    assert_contains(BUILD, "`probe.status: captured` 只表示采集成功");
+    assert_contains(BUILD, "`distribution_requirements.status` 在正式证据不足时仍为 `blocked`");
     assert_contains(
         CHECKLIST,
         "no valid Developer ID Application signing identity found",
@@ -174,6 +210,8 @@ fn release_checklist_records_distribution_preflight_blocker_without_release_clai
     assert_contains(CHECKLIST, "Developer ID codesign");
     assert_contains(CHECKLIST, "notarytool accepted log");
     assert_contains(CHECKLIST, "DMG checksum");
+    assert_contains(CHECKLIST, "`distribution_requirements.status` 在正式证据不足时仍为 `blocked`");
+    assert_contains(CHECKLIST, "默认不执行完整 DMG SHA-256 读取");
     assert_contains(RELEASE, "Developer ID / notarization 后续补证");
     assert_contains(RELEASE, "`./dev release preflight` 通过");
     assert_contains(RELEASE, "xcrun notarytool submit");
@@ -181,6 +219,9 @@ fn release_checklist_records_distribution_preflight_blocker_without_release_clai
     assert_contains(RELEASE, "干净 Mac 上首次打开通过 Gatekeeper");
     assert_contains(RELEASE, "Signature=adhoc");
     assert_contains(RELEASE, "Developer ID team");
+    assert_contains(RELEASE, "--install-confirm /Applications/AreaMatrix.app");
+    assert_contains(BUILD, "`./dev release readiness-build --install`");
+    assert_contains(BUILD, "`--install-confirm /Applications/AreaMatrix.app`");
     assert_contains(
         RELEASE_NOTES_010,
         "`./dev release preflight` 已补为可复现预检",
@@ -312,7 +353,14 @@ fn release_checklist_cites_existing_blocker_evidence() {
         "M-02 因当前没有 iCloud placeholder 环境而 blocked",
     );
     assert_contains(CHECKLIST, "./dev release icloud-placeholder-evidence");
+    assert_contains(CHECKLIST, "默认脱敏的 `lstat` / `mdls` metadata draft");
     assert_contains(CHECKLIST, "不能触发 download 或替代真实 UI retry");
+    assert_contains(
+        CHECKLIST,
+        "./dev release icloud-placeholder-smoke-audit --json",
+    );
+    assert_contains(CHECKLIST, "`smoke_evidence_gate: BLOCKED`");
+    assert_contains(CHECKLIST, "不触发下载 / 读内容 / 写 DB / 写 `.areamatrix/`");
     assert_contains(
         RECOVERY_SCENARIOS,
         "mode: icloud_placeholder_metadata_probe",
@@ -323,6 +371,8 @@ fn release_checklist_cites_existing_blocker_evidence() {
         RECOVERY_SCENARIOS,
         "blocked_until_real_icloud_download_retry_and_db_evidence_pass",
     );
+    assert_contains(RECOVERY_SCENARIOS, "privacy.path_redaction: true");
+    assert_contains(RECOVERY_SCENARIOS, "`--include-sensitive-paths`");
     assert_contains(RECOVERY_SCENARIOS, "`download_attempted`");
     assert_contains(RECOVERY_SCENARIOS, "`file_content_read_attempted`");
     assert_contains(RECOVERY_SCENARIOS, "`db_write_attempted`");
@@ -331,6 +381,12 @@ fn release_checklist_cites_existing_blocker_evidence() {
         "对 symlink 只做 `lstat`，不跟随目标执行 `mdls`",
     );
     assert_contains(RECOVERY_SCENARIOS, "不能替代 UI\n    `Download & retry`");
+    assert_contains(
+        RECOVERY_SCENARIOS,
+        "./dev release icloud-placeholder-smoke-audit --json",
+    );
+    assert_contains(RECOVERY_SCENARIOS, "`smoke_evidence_gate: BLOCKED`");
+    assert_contains(RECOVERY_SCENARIOS, "不接收路径、不运行 `mdls`、不触发");
     assert_contains(CHECKLIST, "M-03 权限恢复手工证据已通过");
     assert_contains(CHECKLIST, "Repository needs permission");
     assert_contains(CHECKLIST, "PermissionDenied");
@@ -364,6 +420,8 @@ fn release_checklist_records_changelog_and_version_state_without_claiming_releas
     assert_contains(XCODE_PROJECT, "CURRENT_PROJECT_VERSION = 202605101812");
     assert_contains(CHECKLIST, "build `202606161707`");
     assert_contains(CHECKLIST, "正式 `v0.1.0` tag 尚未创建");
+    assert_contains(CHECKLIST, "`ready_to_create_formal_tag: false`");
+    assert_contains(CHECKLIST, "`./dev release final-tag-readiness-audit --json --remote`");
     assert_contains(CHECKLIST, "不得把它当作正式 `v0.1.0` release tag");
 }
 
@@ -401,46 +459,35 @@ fn alpha_feedback_template_collects_release_review_fields_without_closing_decisi
     assert_contains(CHECKLIST, "alpha-feedback-route.md");
     assert_contains(
         CHECKLIST,
-        "trusted tester list、release announcement / Discussion 链接、feedback route 和 triage owner",
+        "`./dev release alpha-feedback-decision-audit --json` 已提供只读决策审计",
+    );
+    assert_contains(CHECKLIST, "`decision_audit.decision_gate: BLOCKED`");
+    assert_contains(
+        CHECKLIST,
+        "trusted tester list、tester invitation、release announcement / Discussion 链接、feedback route 和 triage owner",
     );
     assert_contains(
         CHECKLIST,
-        "可信测试者名单、正式公告或 Discussion 链接、最终反馈分流和 owner 决策仍未记录",
+        "可信测试者名单来源、tester invitation side effect、正式公告或 Discussion 链接、备用反馈路线、triage owner 和响应 SLO 决策仍未记录",
     );
 
     assert_contains(ALPHA_FEEDBACK_ROUTE, "当前结论：**不关闭 `v1-rl-006`**");
-    assert_contains(ALPHA_FEEDBACK_ROUTE, "alpha_feedback_release_decision");
-    assert_contains(ALPHA_FEEDBACK_ROUTE, "status: \"pending | ready\"");
-    assert_contains(ALPHA_FEEDBACK_ROUTE, "trusted_tester_list");
-    assert_contains(ALPHA_FEEDBACK_ROUTE, "announcement");
-    assert_contains(ALPHA_FEEDBACK_ROUTE, "feedback_route");
-    assert_contains(ALPHA_FEEDBACK_ROUTE, "triage_owner");
     assert_contains(
         ALPHA_FEEDBACK_ROUTE,
-        "release_gate: \"block_if_any_pending\"",
+        "./dev release alpha-feedback-decision-audit --json",
     );
+    assert_contains(ALPHA_FEEDBACK_ROUTE, "decision_audit:");
+    assert_contains(ALPHA_FEEDBACK_ROUTE, "decision_gate: BLOCKED");
+    assert_contains(ALPHA_FEEDBACK_ROUTE, "alpha_feedback_release_decision");
+    assert_contains(ALPHA_FEEDBACK_ROUTE, "closes_residual: false");
     assert_contains(ALPHA_FEEDBACK_ROUTE, "trusted_tester_list.status: pending");
+    assert_contains(ALPHA_FEEDBACK_ROUTE, "decision_side_effects.testers_invited: false");
     assert_contains(ALPHA_FEEDBACK_ROUTE, "announcement.status: pending");
     assert_contains(ALPHA_FEEDBACK_ROUTE, "feedback_route.status: pending");
     assert_contains(ALPHA_FEEDBACK_ROUTE, "triage_owner.status: pending");
     assert_contains(
         ALPHA_FEEDBACK_ROUTE,
         "不能由 local QA、未公证预览 DMG、issue template、自动化测试或同机",
-    );
-
-    assert_contains(
-        V1_RESIDUALS,
-        "workflow/versions/v1-mvp/evidence/alpha-feedback-route.md",
-    );
-    assert_contains(V1_RESIDUALS, "formal announcement route, or triage owner");
-    assert_contains(V1_RELEASE_RESIDUALS, "alpha-feedback-route.md");
-    assert_contains(
-        GLOBAL_RESIDUALS_README,
-        "Alpha feedback issue template 和 route evidence 已存在",
-    );
-    assert_contains(
-        TASK_RESIDUAL_INDEX,
-        "Alpha feedback issue template 和 route evidence 已存在",
     );
 }
 
@@ -490,9 +537,21 @@ fn task05_incomplete_summary_is_not_release_evidence_pass() {
 fn release_checklist_rollback_scope_stays_inside_task_expected_paths() {
     for path in [
         "`workflow/versions/v1-mvp/evidence/release-checklist.md`",
+        "`workflow/versions/v1-mvp/evidence/icloud-placeholder-smoke-evidence.md`",
+        "`workflow/versions/v1-mvp/evidence/release-gate-review-task05.md`",
+        "`workflow/versions/v1-mvp/evidence/distribution-signing-notarization.md`",
+        "`workflow/versions/v1-mvp/evidence/final-tag-release-evidence.md`",
+        "`workflow/versions/v1-mvp/evidence/alpha-feedback-route.md`",
+        "`workflow/versions/v1-mvp/residuals/README.md`",
+        "`workflow/versions/v1-mvp/residuals/release-evidence.md`",
+        "`workflow/versions/v1-mvp/residuals/residuals.yaml`",
+        "`workflow/residuals/README.md`",
+        "`tasks/indexes/residuals.md`",
         "`core/tests/release_evidence_checklist.rs`",
+        "`core/tests/release_evidence_residual_records.rs`",
         "`docs/development/release.md`",
         "`docs/development/build.md`",
+        "`docs/development/ci-governance.md`",
     ] {
         assert_contains(CHECKLIST, path);
     }

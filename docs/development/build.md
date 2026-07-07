@@ -233,14 +233,78 @@ PR 要全绿才能合并。
 面向用户分发的构建必须走 Developer ID 签名、公证、DMG 和干净 Mac 首启验证。历史发布放行状态只通过
 [workflow versions](../../workflow/versions/README.md) 追溯；归档清单不作为后续版本的发布命名模板。
 
-发布凭据预检：
+发布状态与凭据预检：
 
 ```bash
+./dev release status
+./dev release status --json --remote
+./dev release evidence-audit
+./dev release evidence-audit --json
+./dev release icloud-placeholder-smoke-audit --json
+./dev release task05-release-review-audit --json
+./dev release final-tag-readiness-audit --json --remote
+./dev release alpha-feedback-decision-audit --json
+./dev release distribution-artifact-probe --app-path <APP_PATH> --dmg-path <DMG_PATH> --json
 ./dev release preflight
 ./dev release preflight --json
 ```
 
-该命令只读取本机 keychain / signing identity 状态。若输出 `release distribution
+`./dev release status` 是只读发布状态聚合，会核对 residual 发布阻断、正式 tag 和 release workflow
+状态；它不创建 tag、不发布 GitHub Release、不写 evidence。若
+`residual_evidence_gate.status` 为 `BLOCKED`，只能继续补齐真实发布证据，不能把工程产物
+标记为可分发。若 residual 证据门禁已 `PASS` 但 `formal_tag_gate` 因正式 tag 缺失而
+`BLOCKED`，只能进入正式 tag 补证；tag 推送后仍需整体 `status: PASS` 才能用户分发。
+`closes_residual: false` 只说明该命令本身不关闭 residual，不是 release evidence。
+
+`./dev release evidence-audit` 是只读记录一致性检查，确认结构化 release evidence record 与
+residual 索引没有冲突；当 residual 已标 `closed` 时，它还会检查关键关闭字段是否仍停在
+`pending` / `blocked` / `null` / `false`。它不会创建、关闭或修改任何 evidence，也不能替代真实签名、
+公证、iCloud UI retry、DB row、干净 Mac 或反馈路线证据。
+
+`./dev release icloud-placeholder-smoke-audit --json` 是 M-02 iCloud placeholder smoke record
+的只读记录审计。它只读取 `icloud-placeholder-smoke-evidence.md` 和 residual 索引；不接收路径、
+不运行 `mdls`、不触发 iCloud 下载、不读取文件内容、不写用户文件、不写 DB、不写项目文件、
+不写 `.areamatrix/` metadata，也不访问网络。当前真实 metadata probe、UI retry、DB row 或用户文件
+不变量证据缺失时，`smoke_evidence_gate: BLOCKED` 是发布阻断，不是普通 PR / CI failure。
+即使该审计返回 `PASS`，也只表示 record 字段齐备，不能替代真实 UI `Download & retry` 或关闭
+`v1-rl-002`。
+
+`./dev release task05-release-review-audit --json` 是 `3-1/task-05` release evidence review 的只读记录审计。
+它只读取对应的 v1 evidence record 和 residual 索引；不读取 `.codex/task-loop-logs/**`、
+不回填 `progress.json`、task-loop logs、run summaries、checkpoint metadata、commit 或 tag，
+也不访问网络。当前 fresh formal release evidence review 未完成时，
+`release_evidence_review_gate: BLOCKED` 是发布阻断，不是普通 PR / CI failure。即使该审计返回
+`PASS`，也只表示 review 字段齐备，不能替代 task-loop `VERIFY_RESULT: PASS` 或关闭
+`v1-ref-003-1-task-05`。
+
+`./dev release final-tag-readiness-audit --json --remote` 是正式 tag 前的只读门禁审计。它会把
+`v1-rl-004` 这个 tag 动作本身与其他发布证据阻断分开：只有其他 release evidence 全部通过、
+`final-tag-release-evidence.md` 中 tag 前置字段为真实通过值，且本地 / 远端 tag 查询可读时，
+才会给出 `ready_to_create_formal_tag: true`。该命令不会创建 tag、不会推送 tag、不会创建
+GitHub Release，也不会关闭 `v1-rl-004`。
+
+`./dev release alpha-feedback-decision-audit --json` 是反馈路线的只读决策审计。它只读取
+issue template、Discussion links 和 `alpha-feedback-route.md` 中的 release decision record，
+核对可信测试者名单来源、正整数数量、tester invitation side effect、GitHub HTTPS announcement /
+Discussion URL、主备反馈路线、triage owner 和响应 SLO 是否
+已由 release owner 真实记录。当前决策缺失时返回 `BLOCKED` 是预期状态；该命令不会创建
+Discussion、邀请 tester、发布公告、分配 owner、写 evidence 或关闭 `v1-rl-006`。即使
+`decision_gate.status: PASS`，也只表示本地记录字段具备最低结构质量，不证明外部 side effects
+真实发生。
+
+`./dev release icloud-placeholder-evidence --path <path> --json` 只读取 `lstat` 和 `mdls`
+metadata，默认会脱敏本机路径、文件名和输出中的 `mdls` 路径片段。只有本机私下排障需要完整路径时，
+才使用 `--include-sensitive-paths`；该选项输出不应直接放进可共享 evidence。
+
+`./dev release distribution-artifact-probe --app-path <APP_PATH> --dmg-path <DMG_PATH> --json`
+只读取 app / DMG 的 `lstat`、`codesign -dv` 和 `codesign --verify` 输出，默认会脱敏路径和文件名。
+它不会 mount DMG、不会 staple、不会提交 notarytool、不会安装 app，也不会写 DB 或 `.areamatrix/`
+metadata。默认跳过 DMG SHA-256，因为该操作会读取整个 DMG；需要时显式加 `--hash-dmg`。
+`--spctl` 和 `--stapler-validate` 也必须显式开启。JSON 中 `probe.status: captured` 只表示采集成功；
+`distribution_requirements.status` 在正式证据不足时仍为 `blocked`，不能替代 Developer ID、公证、
+stapled DMG、正式 checksum 或干净 Mac 首启。
+
+`./dev release preflight` 只读取本机 keychain / signing identity 状态。若输出 `release distribution
 preflight: BLOCKED`，说明当前机器不能完成 Developer ID 签名或 notarytool 公证；可以把
 输出写入 release checklist 作为阻断证据，但不能把产物标记为可分发。`--json` 输出会包含
 `checks`、`blocked_by`、`required_distribution_evidence` 和 `evidence_record_template`，用于后续
@@ -249,6 +313,9 @@ Mac 首启。
 
 本机工程验证可以使用 Xcode Release 构建、`codesign --verify` 和 `otool -L` 检查包结构与静态链接。
 若没有 Developer ID signing identity 或 notarytool profile，只能记录为工程验证，不能写成可分发证据。
+`./dev release readiness-build --install` 会替换目标 `AreaMatrix.app`，因此必须同时传入
+`--install-confirm /Applications/AreaMatrix.app` 或与 `--applications-dir` 对应的完整目标路径；
+该命令仍是 ad-hoc 本机验证，不构成 Developer ID、公证、DMG 或干净 Mac 证据。
 v1 的受控环境构建、未公证下载和交互 smoke 细节保留在 v1 evidence 归档中；当前构建指南不复用这些历史命名。
 
 ### 版本号

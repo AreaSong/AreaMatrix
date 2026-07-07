@@ -36,6 +36,8 @@ No formal `v0.1.0` tag or GitHub Release has been created for this local QA arti
 - M-01 Copy 中断恢复、M-03 权限恢复和 M-04 DB repair 已在 local QA Release build 手工通过；
   M-02 iCloud placeholder 因当前没有 iCloud placeholder 环境仍 blocked。M-03 本轮使用 local QA repo
   的可逆 POSIX 权限阻断模拟失去访问权限，未修改系统 TCC 数据库。
+- `v1-ref-003-1-task-05` 仍 deferred 到 fresh formal release evidence review；当前没有
+  task-loop `VERIFY_RESULT: PASS`，5 个 tracked incomplete summaries 均不得计入发布放行证据。
 - Developer ID 签名、公证、DMG 和干净 Mac 首启仍需真实分发环境证据；当前本机 release
   preflight 只能证明环境 blocked，自签名、ad-hoc signed `.app` 或 local QA DMG 不能替代可分发产物。
 - 同机 local QA 首启交互 smoke 不能替代干净 Mac 首启、Gatekeeper 或 notarized app 验证。

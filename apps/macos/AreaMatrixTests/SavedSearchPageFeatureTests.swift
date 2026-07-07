@@ -22,12 +22,9 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         let request = SearchQueryRequestSnapshot.savedSearchSavedSearchFixture(query: "Finance")
         let saved = SavedSearchSnapshot.savedSearchFixture(
             id: 77,
-            request: CreateSavedSearchRequestSnapshot(
+            request: CreateSavedSearchRequestSnapshot.testFixture(
                 name: "Finance",
-                query: .testFixture(request: request),
-                icon: "magnifyingglass",
-                color: nil,
-                pinned: true
+                request: request
             )
         )
         let resultFile = FileEntrySnapshot.savedSearchSavedSearchFixture()
@@ -66,12 +63,9 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         let request = SearchQueryRequestSnapshot.savedSearchSavedSearchFixture(query: "Finance")
         let saved = SavedSearchSnapshot.savedSearchFixture(
             id: 77,
-            request: CreateSavedSearchRequestSnapshot(
+            request: CreateSavedSearchRequestSnapshot.testFixture(
                 name: "Finance",
-                query: .testFixture(request: request),
-                icon: "magnifyingglass",
-                color: nil,
-                pinned: true
+                request: request
             )
         )
         let resultFile = FileEntrySnapshot.savedSearchSavedSearchFixture()

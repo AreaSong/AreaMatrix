@@ -32,7 +32,7 @@ extension RemoteProviderConfigState {
 
 extension AISettingsSnapshot {
     static func remoteProviderConfigAIPrivacyRemoteReady(repoPath: String) -> AISettingsSnapshot {
-        remoteProviderConfigAIPrivacySnapshot(config: AISettingsConfigSnapshot(
+        remoteProviderConfigAIPrivacySnapshot(config: .aiSettingsConfig(
             repoPath: repoPath,
             aiEnabled: true,
             providerPreference: .remoteFirst,
@@ -40,18 +40,14 @@ extension AISettingsSnapshot {
             remoteAIAllowed: true,
             privacyGateEnabled: true,
             privacyPolicyRef: "Default gate policy",
-            featureToggles: [
-                AISettingsFeatureConfigSnapshot(feature: .autoSummaries, enabled: true, allowRemote: true),
-                AISettingsFeatureConfigSnapshot(feature: .semanticSearch, enabled: true, allowRemote: true)
-            ]
+            enabledFeatures: [.autoSummaries, .semanticSearch],
+            remoteAllowedFeatures: [.autoSummaries, .semanticSearch]
         ))
     }
 
     static func remoteProviderConfigAIPrivacySnapshot(config: AISettingsConfigSnapshot) -> AISettingsSnapshot {
-        let normalized = config.normalized()
-        return AISettingsSnapshot(
-            config: normalized,
-            capabilities: AISettingsCapabilitySnapshot.derived(from: normalized),
+        AISettingsSnapshot.aiSettingsSnapshot(
+            config: config,
             updatedAt: 309
         )
     }

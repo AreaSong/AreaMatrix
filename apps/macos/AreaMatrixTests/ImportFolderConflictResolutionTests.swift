@@ -99,12 +99,10 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         preview.canApply = false
         preview.applyBlockedReason = "Select at least one conflict."
         let batcher = ImportConflictBatcher(previews: [])
-        let request = ImportConflictBatchApplyRequestSnapshot(
+        let request = ImportConflictBatchApplyRequestSnapshot.testFixture(
             importSessionID: preview.importSessionID,
-            conflictIDs: ["dup-1"],
             duplicateStrategy: .skip,
             sameNameStrategy: .skip,
-            applyToAllSimilarConflicts: true,
             replaceConfirmed: false
         )
 
@@ -335,24 +333,10 @@ private typealias ImportConflictBatchUndoStore = UndoActionRecordingTestStore
 
 private extension ImportConflictBatchPreviewReportSnapshot {
     static var importConflictBatchDefaultUndoPreview: ImportConflictBatchPreviewReportSnapshot {
-        ImportConflictBatchPreviewReportSnapshot(
-            importSessionID: "session-221",
+        .testFixture(
             previewToken: "token-default",
-            applyToAllSimilarConflicts: true,
-            requestedConflictCount: 1,
-            duplicateConflictCount: 1,
-            sameNameConflictCount: 0,
-            includedCount: 1,
-            pendingCount: 0,
-            blockedCount: 0,
             replaceCount: 0,
             skipCount: 1,
-            keepBothCount: 0,
-            askPerItemCount: 0,
-            trashAvailable: true,
-            undoAvailable: true,
-            canApply: true,
-            applyBlockedReason: nil,
             replaceConfirmationRequired: false,
             replaceConfirmationSummary: nil,
             items: [.importConflictBatchUndoDuplicate(strategy: .skip)]
@@ -389,23 +373,14 @@ private extension ImportConflictBatchPreviewItemSnapshot {
         conflictID: String = "dup-1",
         strategy: ImportConflictBatchStrategySnapshot
     ) -> ImportConflictBatchPreviewItemSnapshot {
-        ImportConflictBatchPreviewItemSnapshot(
+        var item = ImportConflictBatchPreviewItemSnapshot.testFixture(
             conflictID: conflictID,
-            conflictType: .duplicateHash,
-            existingFileID: 42,
-            existingPath: "finance/existing-invoice.pdf",
-            incomingPath: "/tmp/Invoice_2026Q1.pdf",
-            targetPath: "finance/Invoice_2026Q1.pdf",
             selectedStrategy: strategy,
-            status: strategy == .replace ? .needsConfirmation : .ready,
-            willReplace: strategy == .replace,
-            willKeepBoth: false,
-            willSkip: strategy == .skip,
-            willAskPerItem: false,
-            indexOnly: false,
-            riskSummary: "Existing file remains unless Replace is confirmed.",
-            reason: nil
+            status: strategy == .replace ? .needsConfirmation : .ready
         )
+        item.willKeepBoth = false
+        item.willAskPerItem = false
+        return item
     }
 }
 
@@ -414,21 +389,15 @@ private extension ImportConflictBatchApplyReportSnapshot {
         for request: ImportConflictBatchApplyRequestSnapshot
     ) -> ImportConflictBatchApplyReportSnapshot {
         let isReplace = request.duplicateStrategy == .replace || request.sameNameStrategy == .replace
-        return ImportConflictBatchApplyReportSnapshot(
+        return .testFixture(
             importSessionID: request.importSessionID,
             requestedConflictCount: Int64(request.conflictIDs.count),
             resolvedCount: Int64(request.conflictIDs.count),
             skippedCount: isReplace ? 0 : Int64(request.conflictIDs.count),
-            keptBothCount: 0,
             replacedCount: isReplace ? Int64(request.conflictIDs.count) : 0,
-            queuedForPerItemCount: 0,
-            pendingCount: 0,
-            failedCount: 0,
             itemResults: [],
-            affectedFileIDs: [42],
             undoToken: isReplace ? "undo-import-conflict-batch" : nil,
-            changeLogActions: ["import_conflict_batch"],
-            failureSummary: nil
+            changeLogActions: ["import_conflict_batch"]
         )
     }
 }

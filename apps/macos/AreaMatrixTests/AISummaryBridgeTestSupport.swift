@@ -67,18 +67,11 @@ actor AISummaryIntegrationPrivacyBridge: CoreAIPrivacyEvaluating {
     }
 
     func loadAIPrivacyRules(repoPath _: String) async throws -> AiPrivacyRulesSnapshot {
-        AiPrivacyRulesSnapshot(
+        AiPrivacyRulesSnapshot.testFixture(
             privacyGateEnabled: true,
-            rules: [],
-            remoteAllowedFields: [],
-            providerScope: AiPrivacyProviderScopeSnapshot(
-                providerConfigured: true,
-                providerVerified: true,
-                remoteProviderEnabled: true,
+            providerScope: .testFixture(
                 featureScope: [.autoSummaries]
-            ),
-            updatedAt: nil,
-            remoteBlockedByDefault: true
+            )
         )
     }
 

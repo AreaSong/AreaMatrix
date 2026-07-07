@@ -124,50 +124,56 @@ extension BatchCategoryPreviewItemSnapshot {
 }
 
 extension BatchCategoryChangeReportSnapshot {
-    static func batchChangeCategorySuccessReport() -> BatchCategoryChangeReportSnapshot {
+    static func testFixture(
+        requestedFileCount: Int64 = 2,
+        targetCategory: String = "finance",
+        movedCount: Int64 = 1,
+        metadataOnlyCount: Int64 = 1,
+        unchangedCount: Int64 = 0,
+        skippedCount: Int64 = 0,
+        failedCount: Int64 = 0,
+        itemResults: [BatchCategoryChangeItemResultSnapshot] = [
+            .batchChangeCategoryResult(fileID: 1, status: .moved),
+            .batchChangeCategoryResult(fileID: 2, status: .metadataUpdated)
+        ],
+        updatedFiles: [FileEntrySnapshot] = [.batchChangeCategoryCategoryFixture(id: 1, currentName: "a.pdf")],
+        undoToken: String? = "undo-batch-category"
+    ) -> BatchCategoryChangeReportSnapshot {
         BatchCategoryChangeReportSnapshot(
-            requestedFileCount: 2,
-            targetCategory: "finance",
-            movedCount: 1,
-            metadataOnlyCount: 1,
-            unchangedCount: 0,
-            skippedCount: 0,
-            failedCount: 0,
-            itemResults: [
-                .batchChangeCategoryResult(fileID: 1, status: .moved),
-                .batchChangeCategoryResult(fileID: 2, status: .metadataUpdated)
-            ],
-            updatedFiles: [.batchChangeCategoryCategoryFixture(id: 1, currentName: "a.pdf")],
-            undoToken: "undo-batch-category"
+            requestedFileCount: requestedFileCount,
+            targetCategory: targetCategory,
+            movedCount: movedCount,
+            metadataOnlyCount: metadataOnlyCount,
+            unchangedCount: unchangedCount,
+            skippedCount: skippedCount,
+            failedCount: failedCount,
+            itemResults: itemResults,
+            updatedFiles: updatedFiles,
+            undoToken: undoToken
         )
     }
 
+    static func batchChangeCategorySuccessReport() -> BatchCategoryChangeReportSnapshot {
+        testFixture()
+    }
+
     static func batchChangeCategoryPartialFailureReport() -> BatchCategoryChangeReportSnapshot {
-        BatchCategoryChangeReportSnapshot(
-            requestedFileCount: 2,
-            targetCategory: "finance",
-            movedCount: 1,
+        testFixture(
             metadataOnlyCount: 0,
-            unchangedCount: 0,
-            skippedCount: 0,
             failedCount: 1,
             itemResults: [
                 .batchChangeCategoryResult(fileID: 1, status: .moved),
                 .batchChangeCategoryResult(fileID: 2, status: .failed, error: "Permission denied")
             ],
-            updatedFiles: [.batchChangeCategoryCategoryFixture(id: 1, currentName: "a.pdf")],
             undoToken: "undo-partial-batch-category"
         )
     }
 
     static func batchChangeCategoryAllFailedReport() -> BatchCategoryChangeReportSnapshot {
-        BatchCategoryChangeReportSnapshot(
+        testFixture(
             requestedFileCount: 1,
-            targetCategory: "finance",
             movedCount: 0,
             metadataOnlyCount: 0,
-            unchangedCount: 0,
-            skippedCount: 0,
             failedCount: 1,
             itemResults: [
                 .batchChangeCategoryResult(fileID: 2, status: .failed, error: "Permission denied")

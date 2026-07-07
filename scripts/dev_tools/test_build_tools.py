@@ -192,12 +192,18 @@ class BuildToolsTest(unittest.TestCase):
                 "apps/macos/AGENTS.md": "SwiftUI 视图只做展示\nCoreBridge\n",
                 "docs/architecture/data-model.md": "# Data model\n",
                 "docs/architecture/migration.md": "migration rollback 回滚\n",
-                "docs/development/release.md": "Developer ID notarization 公证\n",
+                "docs/development/release.md": (
+                    "Developer ID notarization 公证\n./dev release status\n./dev release evidence-audit\n"
+                ),
                 "scripts/dev_tools/release.py": "# release helper\n",
-                ".codex/skills-src/README.md": "areamatrix-residual-ledger\n",
+                "scripts/dev_tools/release_status.py": (
+                    "closes_residual\nrelease_gate\nresidual_evidence_gate\nrelease_evidence_audit\n"
+                    "any residual is closed\n"
+                ),
+                ".codex/skills-src/README.md": "areamatrix-residual-ledger\nareamatrix-codex-os\n",
                 ".codex/references/index.md": "./dev check quality\n./dev check wording\n",
-                ".codex/references/codex-workflow-and-tools.md": "已有 8 个 AreaMatrix skills\n",
-                "tasks/backlog/codex-operating-layer-boundary-regression.md": "现有 8 个 repo-local skills\n",
+                ".codex/references/codex-workflow-and-tools.md": "已有 9 个 AreaMatrix skills\n",
+                "tasks/backlog/codex-operating-layer-boundary-regression.md": "现有 9 个 repo-local skills\n",
                 "docs/development/ci-governance.md": "./dev check quality\n./dev check wording\n",
                 ".github/workflows/governance-ci.yml": "./dev check quality\n./dev check wording\n",
                 ".codex/skills-src/areamatrix-validation-driver/SKILL.md": "macOS app\n",
@@ -207,6 +213,7 @@ class BuildToolsTest(unittest.TestCase):
                 ".codex/skills-src/areamatrix-residual-ledger/SKILL.md": "release blockers\n",
                 ".codex/skills-src/areamatrix-workflow-planning/SKILL.md": "v* workflow\n",
                 ".codex/skills-src/areamatrix-git-checkpoint/SKILL.md": "checkpoint\n",
+                ".codex/skills-src/areamatrix-codex-os/SKILL.md": "Codex Operating System\n",
             }
             for relative, text in files.items():
                 path = root / relative
@@ -229,8 +236,12 @@ class BuildToolsTest(unittest.TestCase):
                 "apps/macos/AGENTS.md": "SwiftUI 视图只做展示\nCoreBridge\n",
                 "docs/architecture/data-model.md": "",
                 "docs/architecture/migration.md": "rollback\n",
-                "docs/development/release.md": "notarization\n",
+                "docs/development/release.md": "notarization\n./dev release status\n./dev release evidence-audit\n",
                 "scripts/dev_tools/release.py": "",
+                "scripts/dev_tools/release_status.py": (
+                    "closes_residual\nrelease_gate\nresidual_evidence_gate\nrelease_evidence_audit\n"
+                    "any residual is closed\n"
+                ),
                 ".codex/skills-src/README.md": "areamatrix-residual-ledger\n",
                 ".codex/references/index.md": "./dev check quality\n./dev check wording\n",
                 ".codex/references/codex-workflow-and-tools.md": "已有 " + "7 个 " + "AreaMatrix skills\n",
@@ -307,6 +318,22 @@ class BuildToolsTest(unittest.TestCase):
             self.assertTrue(any(hit.term == "area-matrix:C2-" for hit in hits))
             self.assertTrue(any(hit.term == "AREA-MATRIX:c4-" for hit in hits))
 
+    def test_wording_audit_allows_release_residual_record_archive_test(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "core/tests/release_evidence_residual_records.rs"
+            path.parent.mkdir(parents=True)
+            path.write_text(
+                'const EVIDENCE: &str = include_str!("../../workflow/versions/v1-mvp/evidence/example.md");\n',
+                encoding="utf-8",
+            )
+
+            hits, file_count = audit_wording(root)
+
+            self.assertEqual(file_count, 1)
+            self.assertTrue(hits)
+            self.assertTrue(all(hit.category == "allowed-archive-test" for hit in hits))
+
     def test_wording_audit_blocks_skill_body_track_terms(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -368,6 +395,28 @@ class BuildToolsTest(unittest.TestCase):
             path = root / "docs/development/build.md"
             path.parent.mkdir(parents=True)
             path.write_text("Xcode Build Phase order matters.\n", encoding="utf-8")
+
+            hits, file_count = audit_wording(root)
+
+            self.assertEqual(file_count, 1)
+            self.assertTrue(hits)
+            self.assertTrue(all(hit.category == "allowed-technical" for hit in hits))
+
+    def test_wording_audit_allows_release_helper_literal_names(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "docs/development/build.md"
+            path.parent.mkdir(parents=True)
+            path.write_text(
+                "\n".join(
+                    [
+                        "./dev release alpha-feedback-decision-audit --json",
+                        "`alpha-feedback-route.md` stores the decision record.",
+                        "Use `.github/ISSUE_TEMPLATE/alpha_feedback.md` for feedback issues.",
+                    ]
+                ),
+                encoding="utf-8",
+            )
 
             hits, file_count = audit_wording(root)
 

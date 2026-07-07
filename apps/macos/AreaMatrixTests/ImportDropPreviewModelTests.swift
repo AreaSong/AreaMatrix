@@ -82,9 +82,9 @@ final class ImportDropPreviewModelTests: XCTestCase {
     }
 
     func testSidebarRowsExposeDragHoverDropTargets() {
-        let root = RepositorySidebarRowSnapshot(node: .testRoot(), depth: 0)
-        let finance = RepositorySidebarRowSnapshot(node: .testCategory("finance", fileCount: 2), depth: 0)
-        let contracts = RepositorySidebarRowSnapshot(
+        let root = RepositorySidebarRowSnapshot.testFixture()
+        let finance = RepositorySidebarRowSnapshot.testFixture(node: .testCategory("finance", fileCount: 2))
+        let contracts = RepositorySidebarRowSnapshot.testFixture(
             node: .testSubdirectory("contracts", relativePath: "finance/contracts", fileCount: 1),
             depth: 1
         )

@@ -13,7 +13,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
             updater: RecordingConfigurationUpdater(results: [.success(())]),
             errorMapper: RecordingCoreErrorMapper.integrationsSettings(),
             statusDetector: StaticICloudStatusDetector(
-                snapshot: IntegrationsICloudSnapshot(repositoryLocation: .iCloudDrive, iCloudStatus: .available)
+                snapshot: .testFixture(repositoryLocation: .iCloudDrive, iCloudStatus: .available)
             )
         )
 
@@ -80,7 +80,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
             updater: RecordingConfigurationUpdater(results: [.success(())]),
             errorMapper: mapper,
             statusDetector: StaticICloudStatusDetector(
-                snapshot: IntegrationsICloudSnapshot(repositoryLocation: .unknown, iCloudStatus: .unknown)
+                snapshot: .testFixture(repositoryLocation: .unknown, iCloudStatus: .unknown)
             )
         )
 
@@ -171,7 +171,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
             updater: bridge,
             errorMapper: bridge,
             statusDetector: StaticICloudStatusDetector(
-                snapshot: IntegrationsICloudSnapshot(repositoryLocation: .localFolder, iCloudStatus: .unavailable)
+                snapshot: .testFixture()
             )
         )
 
@@ -203,7 +203,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
             updater: updater,
             errorMapper: errorMapper,
             statusDetector: StaticICloudStatusDetector(
-                snapshot: IntegrationsICloudSnapshot(repositoryLocation: .localFolder, iCloudStatus: .unavailable)
+                snapshot: .testFixture()
             ),
             finderOpener: finderOpener ?? RecordingRepositoryFinderOpener(),
             helpOpener: helpOpener ?? RecordingICloudHelpOpener()

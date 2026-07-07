@@ -325,7 +325,6 @@ private extension ImportConflictIntegrationVerifyTests {
     }
 
     @MainActor
-    // swiftlint:disable:next function_body_length
     func verifyImportConflictBatchSelectedScopeRefreshesBeforeApplyAndUndo() async throws {
         let invoiceURL = importBatchInvoiceURL()
         let action = UndoActionRecordSnapshot.importConflictBatchIntegrationAction()
@@ -374,14 +373,7 @@ private extension ImportConflictIntegrationVerifyTests {
         XCTAssertEqual(applyRequests, [
             ImportConflictApplyRequest(
                 repoPath: "/tmp/repo",
-                request: ImportConflictBatchApplyRequestSnapshot(
-                    importSessionID: "session-221",
-                    conflictIDs: ["dup-1"],
-                    duplicateStrategy: .replace,
-                    sameNameStrategy: .keepBoth,
-                    applyToAllSimilarConflicts: false,
-                    replaceConfirmed: true
-                ),
+                request: .testFixture(applyToAllSimilarConflicts: false),
                 previewToken: "token-replace"
             )
         ])

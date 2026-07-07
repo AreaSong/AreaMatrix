@@ -16,18 +16,7 @@ final class CoreBridgeRepositoryTests: XCTestCase {
 
         await model.bootstrapIfNeeded()
 
-        let expectedConfig = RepoConfigSnapshot(
-            repoPath: repoURL.path,
-            defaultMode: "Copied",
-            overviewOutput: "GeneratedOnly",
-            aiEnabled: false,
-            locale: "zh-Hans",
-            iCloudWarn: true,
-            enableExtensionRules: true,
-            enableKeywordRules: true,
-            fallbackToInbox: true,
-            allowReplaceDuringImport: false
-        )
+        let expectedConfig = RepoConfigSnapshot.testFixture(repoPath: repoURL.path)
 
         guard case let .mainEmpty(opening) = model.route else {
             return XCTFail("expected main empty route, got \(model.route)")

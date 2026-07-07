@@ -62,7 +62,7 @@ extension SearchResultPageSnapshot {
         let normalResult = SearchFileResultSnapshot.nameMatchFixture(file: normalFile, kindDisplayName: "Exact")
         let semanticPage = SemanticSearchResultPageSnapshot.semanticSearchFixture(
             semanticMatches: [.semanticSearchFixture(result: semanticResult)],
-            normalMatches: [SemanticNormalSearchMatchSnapshot(result: normalResult, dedupedBySemantic: false)]
+            normalMatches: [.testFixture(result: normalResult)]
         )
         return .testFixture(
             query: "上个月的发票",
@@ -107,33 +107,12 @@ extension SemanticSearchResultPageSnapshot {
 
 extension SemanticSearchMatchSnapshot {
     static func semanticSearchFixture(result: SearchFileResultSnapshot) -> SemanticSearchMatchSnapshot {
-        SemanticSearchMatchSnapshot(
-            result: result,
-            relevance: 0.91,
-            matchedReason: "filename and summary match invoice",
-            usedFields: [.fileName, .aiSummary],
-            route: .local,
-            alsoMatchedNormalSearch: false,
-            callLogID: 308,
-            privacyRuleID: nil
-        )
+        .testFixture(result: result)
     }
 }
 
 extension SemanticIndexBuildReportSnapshot {
     static func semanticSearchReport() -> SemanticIndexBuildReportSnapshot {
-        SemanticIndexBuildReportSnapshot(
-            status: .ready,
-            route: .local,
-            totalCount: 1,
-            processedCount: 1,
-            skippedCount: 0,
-            failedCount: 0,
-            privacySkippedCount: 0,
-            providerName: "Local",
-            callLogID: 308,
-            fallbackReason: nil,
-            message: nil
-        )
+        .testFixture()
     }
 }

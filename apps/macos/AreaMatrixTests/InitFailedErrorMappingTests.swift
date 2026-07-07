@@ -207,22 +207,14 @@ private extension RepoPathValidationSnapshot {
 
 private extension AISettingsSnapshot {
     static func aiPrivacyRulesDefault(repoPath: String, privacyGateEnabled: Bool = true) -> AISettingsSnapshot {
-        aiPrivacyRulesSnapshot(config: AISettingsConfigSnapshot(
+        aiPrivacyRulesSnapshot(config: .aiSettingsConfig(
             repoPath: repoPath,
-            aiEnabled: false,
-            providerPreference: .localFirst,
-            localAIEnabled: false,
-            remoteAIAllowed: false,
-            privacyGateEnabled: privacyGateEnabled,
-            privacyPolicyRef: nil,
-            featureToggles: AISettingsFeatureKind.allCases.map {
-                AISettingsFeatureConfigSnapshot(feature: $0, enabled: false, allowRemote: false)
-            }
+            privacyGateEnabled: privacyGateEnabled
         ))
     }
 
     static func aiPrivacyRulesRemoteReady(repoPath: String) -> AISettingsSnapshot {
-        aiPrivacyRulesSnapshot(config: AISettingsConfigSnapshot(
+        aiPrivacyRulesSnapshot(config: .aiSettingsConfig(
             repoPath: repoPath,
             aiEnabled: true,
             providerPreference: .remoteFirst,
@@ -230,21 +222,14 @@ private extension AISettingsSnapshot {
             remoteAIAllowed: true,
             privacyGateEnabled: true,
             privacyPolicyRef: "strict-default",
-            featureToggles: AISettingsFeatureKind.allCases.map {
-                AISettingsFeatureConfigSnapshot(
-                    feature: $0,
-                    enabled: true,
-                    allowRemote: $0 == .autoSummaries || $0 == .autoTags
-                )
-            }
+            enabledFeatures: Array(AISettingsFeatureKind.allCases),
+            remoteAllowedFeatures: [.autoSummaries, .autoTags]
         ))
     }
 
     static func aiPrivacyRulesSnapshot(config: AISettingsConfigSnapshot) -> AISettingsSnapshot {
-        let normalized = config.normalized()
-        return AISettingsSnapshot(
-            config: normalized,
-            capabilities: AISettingsCapabilitySnapshot.derived(from: normalized),
+        AISettingsSnapshot.aiSettingsSnapshot(
+            config: config,
             updatedAt: 1_778_000_309
         )
     }

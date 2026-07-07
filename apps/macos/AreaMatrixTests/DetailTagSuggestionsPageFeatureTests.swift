@@ -110,7 +110,7 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
                 request: ApplyTagSuggestionsRequestSnapshot(
                     fileID: detail.id,
                     suggestions: [
-                        ApplyTagSuggestionItemSnapshot(
+                        .testFixture(
                             suggestionID: "tagSuggestions-finance",
                             slug: "finance",
                             displayName: "Finance"
@@ -210,7 +210,7 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
         _ = await model.applyEditedSelectedFileTagSuggestions()
 
         XCTAssertEqual(firstApply.last?.request.suggestions, [
-            ApplyTagSuggestionItemSnapshot(
+            .testFixture(
                 suggestionID: "tagSuggestions-tax",
                 slug: "tax-review",
                 displayName: "tax-review"
@@ -248,7 +248,7 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.detailTagSuggestionState.appliedReport?.failedCount, 1)
         XCTAssertEqual(model.detailTagSuggestionState.editSession?.drafts.map(\.status.label), ["Applied", "Failed"])
         XCTAssertEqual(DetailTagSuggestionAction.retryFailedItems(in: model.detailTagSuggestionState), [
-            ApplyTagSuggestionItemSnapshot(
+            .testFixture(
                 suggestionID: "tagSuggestions-tax",
                 slug: "tax-review",
                 displayName: "Tax"
@@ -259,7 +259,7 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
         let applyRequests = await tagStore.applySuggestionRequests()
 
         XCTAssertEqual(applyRequests.last?.request.suggestions, [
-            ApplyTagSuggestionItemSnapshot(
+            .testFixture(
                 suggestionID: "tagSuggestions-tax",
                 slug: "tax-review",
                 displayName: "Tax"

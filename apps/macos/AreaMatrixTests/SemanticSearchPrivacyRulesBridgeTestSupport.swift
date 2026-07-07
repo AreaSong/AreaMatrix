@@ -15,18 +15,10 @@ actor SemanticSearchPrivacySemanticSearcher: CoreSemanticSearching {
         request: SearchQueryRequestSnapshot
     ) async throws -> SemanticIndexBuildReportSnapshot {
         recordedIndexRequests.append(request)
-        return SemanticIndexBuildReportSnapshot(
-            status: .ready,
+        return .testFixture(
             route: .remote,
-            totalCount: 1,
-            processedCount: 1,
-            skippedCount: 0,
-            failedCount: 0,
-            privacySkippedCount: 0,
             providerName: "OpenAI",
-            callLogID: 680,
-            fallbackReason: nil,
-            message: nil
+            callLogID: 680
         )
     }
 

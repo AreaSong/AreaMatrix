@@ -110,7 +110,7 @@ final class DetailTagFilterIntegrationTests: XCTestCase {
 }
 
 private extension RepositorySidebarRowSnapshot {
-    static let tagFilterIntegrationRoot = RepositorySidebarRowSnapshot(node: .testRoot(), depth: 0)
+    static let tagFilterIntegrationRoot = RepositorySidebarRowSnapshot.testFixture()
 }
 
 private extension SearchResultPageSnapshot {

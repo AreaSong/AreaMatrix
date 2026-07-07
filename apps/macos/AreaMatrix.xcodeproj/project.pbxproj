@@ -278,6 +278,7 @@
 		0A00000000000000000002F1 /* DatabaseRepairConfirmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F2 /* DatabaseRepairConfirmView.swift */; };
 		0A0000000000000000000F5E /* DatabaseRepairConfirmSupportViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F5F /* DatabaseRepairConfirmSupportViews.swift */; };
 		0A00000000000000000002F3 /* DatabaseRepairConfirmPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F4 /* DatabaseRepairConfirmPageFeatureTests.swift */; };
+		0A00000000000000000002F9 /* DatabaseRepairConfirmPageFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002FA /* DatabaseRepairConfirmPageFixtures.swift */; };
 		0A00000000000000000002F7 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F8 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift */; };
 		0A00000000000000000008A2 /* TestTemporaryDirectoryFileSystemTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008A3 /* TestTemporaryDirectoryFileSystemTestSupport.swift */; };
 		0A00000000000000000008BC /* TestMirrorDescriptionSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008BD /* TestMirrorDescriptionSupport.swift */; };
@@ -1238,6 +1239,7 @@
 		0A00000000000000000002F2 /* DatabaseRepairConfirmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Onboarding/DatabaseRepairConfirmView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000F5F /* DatabaseRepairConfirmSupportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Onboarding/DatabaseRepairConfirmSupportViews.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002F4 /* DatabaseRepairConfirmPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DatabaseRepairConfirmPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000002FA /* DatabaseRepairConfirmPageFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DatabaseRepairConfirmPageFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002F8 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DatabaseRepairConfirmPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000014F /* OnboardingRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Onboarding/OnboardingRoute.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002F6 /* OnboardingDatabaseRepairRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Onboarding/OnboardingDatabaseRepairRouting.swift; sourceTree = SOURCE_ROOT; };
@@ -2078,6 +2080,7 @@
 				0A00000000000000000002B9 /* SettingsErrorRecoveryIntegrationVerifyTests.swift */,
 				0A00000000000000000010AD /* SettingsErrorRecoveryFixtures.swift */,
 				0A00000000000000000002F4 /* DatabaseRepairConfirmPageFeatureTests.swift */,
+				0A00000000000000000002FA /* DatabaseRepairConfirmPageFixtures.swift */,
 				0A00000000000000000002F8 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift */,
 				0A0000000000000000000020 /* ValidatePathIntegrationTests.swift */,
 				0A00000000000000000000A1 /* InitializingStepIntegrationTests.swift */,
@@ -3089,6 +3092,7 @@
 						0A000000000000000000076C /* SyncConflictReviewResolutionPageFeatureTests.swift in Sources */,
 					0A000000000000000000077C /* SyncConflictEntryPageFeatureTests.swift in Sources */,
 					0A00000000000000000002F3 /* DatabaseRepairConfirmPageFeatureTests.swift in Sources */,
+					0A00000000000000000002F9 /* DatabaseRepairConfirmPageFixtures.swift in Sources */,
 					0A00000000000000000002F7 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000200 /* DetailMetaPageFeatureTests.swift in Sources */,
 					0A0000000000000000000920 /* DetailLogPageFeatureTests.swift in Sources */,

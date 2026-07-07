@@ -2,7 +2,7 @@
 
 extension ChangeLogEntrySnapshot {
     static func importConflictFixture(filename: String) -> ChangeLogEntrySnapshot {
-        ChangeLogEntrySnapshot(
+        ChangeLogEntrySnapshot.testFixture(
             id: 27,
             fileID: 117,
             filename: filename,

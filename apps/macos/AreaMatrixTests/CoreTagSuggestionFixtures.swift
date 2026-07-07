@@ -1,18 +1,52 @@
 @testable import AreaMatrix
 
+extension TagRecordSnapshot {
+    static func testFixture(
+        value: String,
+        label: String? = nil,
+        fileCount: Int64 = 1,
+        selected: Bool = false,
+        disabled: Bool = false,
+        updatedAt: Int64 = 1_700_000_300
+    ) -> TagRecordSnapshot {
+        TagRecordSnapshot(
+            value: value,
+            label: label ?? value,
+            fileCount: fileCount,
+            selected: selected,
+            disabled: disabled,
+            updatedAt: updatedAt
+        )
+    }
+}
+
 extension TagSetSnapshot {
+    static func testFixture(
+        fileID: Int64,
+        fileTags: [TagRecordSnapshot] = [],
+        availableTags: [TagRecordSnapshot] = [],
+        recentTags: [TagRecordSnapshot] = [],
+        updatedAt: Int64 = 1_700_000_300
+    ) -> TagSetSnapshot {
+        TagSetSnapshot(
+            fileID: fileID,
+            fileTags: fileTags,
+            availableTags: availableTags,
+            recentTags: recentTags,
+            updatedAt: updatedAt
+        )
+    }
+
     static func tagAddFixture(fileID: Int64, values: [String]) -> TagSetSnapshot {
         let tags = values.map { value in
-            TagRecordSnapshot(
+            TagRecordSnapshot.testFixture(
                 value: value,
-                label: value,
                 fileCount: 1,
                 selected: true,
-                disabled: false,
                 updatedAt: 1_700_000_300
             )
         }
-        return TagSetSnapshot(
+        return TagSetSnapshot.testFixture(
             fileID: fileID,
             fileTags: tags,
             availableTags: tags,
@@ -22,39 +56,51 @@ extension TagSetSnapshot {
     }
 
     static func tagFilterRegistryFixture(fileID: Int64) -> TagSetSnapshot {
-        TagSetSnapshot(
+        TagSetSnapshot.testFixture(
             fileID: fileID,
-            fileTags: [],
             availableTags: [
-                TagRecordSnapshot(
+                .testFixture(
                     value: "finance",
                     label: "Finance",
                     fileCount: 24,
-                    selected: false,
-                    disabled: false,
                     updatedAt: 1_700_000_300
                 ),
-                TagRecordSnapshot(
+                .testFixture(
                     value: "legal",
                     label: "Legal",
                     fileCount: 5,
-                    selected: false,
-                    disabled: false,
                     updatedAt: 1_700_000_301
                 )
             ],
-            recentTags: [],
             updatedAt: 1_700_000_301
         )
     }
 }
 
 extension TagSuggestionReportSnapshot {
-    static func tagSuggestionsFixture(fileID: Int64, existingValues: [String] = []) -> TagSuggestionReportSnapshot {
+    static func testFixture(
+        fileID: Int64,
+        suggestions: [TagSuggestionSnapshot] = [],
+        tagSet: TagSetSnapshot? = nil,
+        contentsRead: Bool = false,
+        aiUsed: Bool = false,
+        networkUsed: Bool = false
+    ) -> TagSuggestionReportSnapshot {
         TagSuggestionReportSnapshot(
             fileID: fileID,
+            suggestions: suggestions,
+            tagSet: tagSet ?? .tagAddFixture(fileID: fileID, values: []),
+            contentsRead: contentsRead,
+            aiUsed: aiUsed,
+            networkUsed: networkUsed
+        )
+    }
+
+    static func tagSuggestionsFixture(fileID: Int64, existingValues: [String] = []) -> TagSuggestionReportSnapshot {
+        testFixture(
+            fileID: fileID,
             suggestions: [
-                TagSuggestionSnapshot(
+                .testFixture(
                     suggestionID: "tagSuggestions-finance",
                     slug: "finance",
                     displayName: "Finance",
@@ -67,7 +113,7 @@ extension TagSuggestionReportSnapshot {
                     selectedByDefault: true,
                     disabledReason: nil
                 ),
-                TagSuggestionSnapshot(
+                .testFixture(
                     suggestionID: "tagSuggestions-tax",
                     slug: "tax",
                     displayName: "Tax",
@@ -81,45 +127,120 @@ extension TagSuggestionReportSnapshot {
                     disabledReason: nil
                 )
             ],
-            tagSet: .tagAddFixture(fileID: fileID, values: existingValues),
-            contentsRead: false,
-            aiUsed: false,
-            networkUsed: false
+            tagSet: .tagAddFixture(fileID: fileID, values: existingValues)
         )
     }
 
     static func tagSuggestionsEmptyFixture(fileID: Int64,
                                            existingValues: [String] = []) -> TagSuggestionReportSnapshot {
-        TagSuggestionReportSnapshot(
+        testFixture(
             fileID: fileID,
-            suggestions: [],
-            tagSet: .tagAddFixture(fileID: fileID, values: existingValues),
-            contentsRead: false,
-            aiUsed: false,
-            networkUsed: false
+            tagSet: .tagAddFixture(fileID: fileID, values: existingValues)
+        )
+    }
+}
+
+extension TagSuggestionSnapshot {
+    static func testFixture(
+        suggestionID: String = "tagSuggestions-finance",
+        slug: String = "finance",
+        displayName: String = "Finance",
+        reason: String = "Matched file name: invoice_2026.pdf",
+        source: TagSuggestionSourceSnapshot = .fileName,
+        matchStrength: TagSuggestionMatchSnapshot = .strong,
+        alreadyExists: Bool = false,
+        needsCreate: Bool = false,
+        status: TagSuggestionStatusSnapshot = .newTag,
+        selectedByDefault: Bool = true,
+        disabledReason: String? = nil
+    ) -> TagSuggestionSnapshot {
+        TagSuggestionSnapshot(
+            suggestionID: suggestionID,
+            slug: slug,
+            displayName: displayName,
+            reason: reason,
+            source: source,
+            matchStrength: matchStrength,
+            alreadyExists: alreadyExists,
+            needsCreate: needsCreate,
+            status: status,
+            selectedByDefault: selectedByDefault,
+            disabledReason: disabledReason
+        )
+    }
+}
+
+extension ApplyTagSuggestionItemSnapshot {
+    static func testFixture(
+        suggestionID: String,
+        slug: String,
+        displayName: String
+    ) -> ApplyTagSuggestionItemSnapshot {
+        ApplyTagSuggestionItemSnapshot(
+            suggestionID: suggestionID,
+            slug: slug,
+            displayName: displayName
+        )
+    }
+}
+
+extension TagSuggestionApplyItemResultSnapshot {
+    static func testFixture(
+        suggestionID: String,
+        slug: String,
+        status: TagSuggestionApplyStatusSnapshot = .applied,
+        error: String? = nil
+    ) -> TagSuggestionApplyItemResultSnapshot {
+        TagSuggestionApplyItemResultSnapshot(
+            suggestionID: suggestionID,
+            slug: slug,
+            status: status,
+            error: error
         )
     }
 }
 
 extension TagSuggestionApplyReportSnapshot {
+    static func testFixture(
+        fileID: Int64,
+        requestedCount: Int64,
+        appliedCount: Int64,
+        skippedCount: Int64 = 0,
+        failedCount: Int64 = 0,
+        itemResults: [TagSuggestionApplyItemResultSnapshot] = [],
+        tagSet: TagSetSnapshot? = nil,
+        undoToken: String? = nil,
+        refreshTargets: [String] = []
+    ) -> TagSuggestionApplyReportSnapshot {
+        TagSuggestionApplyReportSnapshot(
+            fileID: fileID,
+            requestedCount: requestedCount,
+            appliedCount: appliedCount,
+            skippedCount: skippedCount,
+            failedCount: failedCount,
+            itemResults: itemResults,
+            tagSet: tagSet ?? .tagAddFixture(fileID: fileID, values: []),
+            undoToken: undoToken,
+            refreshTargets: refreshTargets
+        )
+    }
+
     static func tagSuggestionsApplied(
         fileID: Int64,
         suggestionID: String = "tagSuggestions-finance",
         slug: String = "finance",
         displayName _: String = "Finance"
     ) -> TagSuggestionApplyReportSnapshot {
-        TagSuggestionApplyReportSnapshot(
+        testFixture(
             fileID: fileID,
             requestedCount: 1,
             appliedCount: 1,
             skippedCount: 0,
             failedCount: 0,
             itemResults: [
-                TagSuggestionApplyItemResultSnapshot(
+                .testFixture(
                     suggestionID: suggestionID,
-                    slug: slug,
-                    status: .applied,
-                    error: nil
+                    slug: slug
                 )
             ],
             tagSet: .tagAddFixture(fileID: fileID, values: [slug]),
@@ -129,20 +250,18 @@ extension TagSuggestionApplyReportSnapshot {
     }
 
     static func tagSuggestionsPartialFailure(fileID: Int64) -> TagSuggestionApplyReportSnapshot {
-        TagSuggestionApplyReportSnapshot(
+        testFixture(
             fileID: fileID,
             requestedCount: 2,
             appliedCount: 1,
             skippedCount: 0,
             failedCount: 1,
             itemResults: [
-                TagSuggestionApplyItemResultSnapshot(
+                .testFixture(
                     suggestionID: "tagSuggestions-finance",
-                    slug: "finance",
-                    status: .applied,
-                    error: nil
+                    slug: "finance"
                 ),
-                TagSuggestionApplyItemResultSnapshot(
+                .testFixture(
                     suggestionID: "tagSuggestions-tax",
                     slug: "tax-review",
                     status: .failed,
@@ -158,7 +277,7 @@ extension TagSuggestionApplyReportSnapshot {
 
 extension ChangeLogEntrySnapshot {
     static func tagSuggestionsApplied() -> ChangeLogEntrySnapshot {
-        ChangeLogEntrySnapshot(
+        ChangeLogEntrySnapshot.testFixture(
             id: 223,
             fileID: 224,
             filename: "invoice_2026.pdf",

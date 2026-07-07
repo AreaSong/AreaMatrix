@@ -22,6 +22,24 @@ extension SavedSearchQuerySnapshot {
     }
 }
 
+extension CreateSavedSearchRequestSnapshot {
+    static func testFixture(
+        name: String,
+        request: SearchQueryRequestSnapshot,
+        icon: String? = "magnifyingglass",
+        color: String? = nil,
+        pinned: Bool = true
+    ) -> CreateSavedSearchRequestSnapshot {
+        CreateSavedSearchRequestSnapshot(
+            name: name,
+            query: .testFixture(request: request),
+            icon: icon,
+            color: color,
+            pinned: pinned
+        )
+    }
+}
+
 extension SavedSearchSnapshot {
     static func testFixture(
         id: Int64,

@@ -352,18 +352,11 @@ private func aiSummaryReport(
 
 private extension AiPrivacyRulesSnapshot {
     static func aiSummaryPrivacyRules() -> AiPrivacyRulesSnapshot {
-        AiPrivacyRulesSnapshot(
-            privacyGateEnabled: true,
-            rules: [],
-            remoteAllowedFields: [],
-            providerScope: AiPrivacyProviderScopeSnapshot(
-                providerConfigured: true,
-                providerVerified: true,
-                remoteProviderEnabled: true,
+        testFixture(
+            providerScope: .testFixture(
                 featureScope: [.autoSummaries]
             ),
-            updatedAt: 1_700_000_250,
-            remoteBlockedByDefault: true
+            updatedAt: 1_700_000_250
         )
     }
 }

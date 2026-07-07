@@ -21,6 +21,7 @@ items:
     source: workflow/versions/v1-mvp/evidence/release-checklist.md
     supporting_sources:
       - workflow/versions/v1-mvp/evidence/recovery-scenarios.md
+      - workflow/versions/v1-mvp/evidence/icloud-placeholder-smoke-evidence.md
     owner: release
     current_impact: formal-alpha-blocked
     executable_task: false
@@ -30,13 +31,14 @@ items:
     validation:
       - Manual smoke on a real iCloud placeholder environment.
       - Record mdls downloading status, UI action, retry result, repo file state, and DB row evidence.
-    notes: ./dev release icloud-placeholder-evidence can collect read-only lstat/mdls evidence drafts, but it cannot download placeholders, run UI retry, prove DB rows, or close this blocker.
+    notes: icloud-placeholder-smoke-evidence.md defines the required structured fields and currently keeps closes_residual=false while metadata_probe, UI retry, DB row evidence, and user-file invariants remain pending.
   - id: v1-rl-003
     status: blocked-external
     type: release-evidence
     title: Developer ID signing, notarization, stapling, formal DMG, and clean Mac first launch
     source: workflow/versions/v1-mvp/evidence/release-checklist.md
     supporting_sources:
+      - workflow/versions/v1-mvp/evidence/distribution-signing-notarization.md
       - docs/development/release.md
       - docs/development/build.md
     owner: release
@@ -50,17 +52,21 @@ items:
       - xcrun notarytool submit
       - stapler validation
       - clean Mac first-launch smoke
+    notes: distribution-signing-notarization.md defines the required structured fields and currently keeps closes_residual=false while preflight_json.status is BLOCKED.
   - id: v1-rl-004
     status: blocked-decision
     type: release-evidence
     title: Final v0.1.0 tag
     source: workflow/versions/v1-mvp/evidence/release-checklist.md
+    supporting_sources:
+      - workflow/versions/v1-mvp/evidence/final-tag-release-evidence.md
     owner: release
     current_impact: formal-alpha-blocked
     executable_task: false
     promotion_required: false
     blocker: formal-alpha-gates-not-closed
     close_condition: Formal release candidate commit exists, release gates are closed, and final v0.1.0 tag is created and pushed.
+    notes: final-tag-release-evidence.md defines the required structured fields and currently keeps closes_residual=false while release gates remain blocked and final_tag.created/pushed are false.
   - id: v1-rl-006
     status: blocked-decision
     type: release-evidence
@@ -74,8 +80,8 @@ items:
     executable_task: false
     promotion_required: false
     blocker: no-alpha-tester-list-or-final-feedback-route-decision
-    close_condition: Alpha tester list, release announcement or Discussion link, final feedback triage route, and feedback owner are recorded.
-    notes: .github/ISSUE_TEMPLATE/alpha_feedback.md provides a local feedback entry template and alpha-feedback-route.md records the required release decision fields, but neither decides the tester list, formal announcement route, or triage owner.
+    close_condition: Alpha tester list, tester invitation side effect, release announcement or Discussion link, final feedback triage route, and feedback owner are recorded.
+    notes: .github/ISSUE_TEMPLATE/alpha_feedback.md provides a local feedback entry template and alpha-feedback-route.md records the required release decision fields while keeping closes_residual=false and release_gate=block_if_any_pending; neither decides the tester list, tester invitations, formal announcement route, or triage owner.
   - id: v1-ex-001
     status: accepted-exception
     type: closeout-exception
@@ -96,10 +102,11 @@ items:
     source: workflow/versions/v1-mvp/closeout/checkpoint-gaps.md
     supporting_sources:
       - workflow/versions/v1-mvp/evidence/release-checklist.md
+      - workflow/versions/v1-mvp/evidence/release-gate-review-task05.md
       - workflow/versions/v1-mvp/evidence/release-notes/release-notes-0.1.0.md
     owner: release
     current_impact: formal-alpha-blocked
     executable_task: false
     promotion_required: false
     close_condition: Handle through release evidence review with fresh release evidence; do not fabricate task-loop verify evidence.
-    notes: Tracked task-loop summary.json entries for 3-1/task-05 are incomplete attempts. A summary with status=running, task in_progress, and missing copy/verify logs cannot count as VERIFY_RESULT PASS and cannot close release evidence blockers.
+    notes: release-gate-review-task05.md defines the structured deferred review record. Tracked task-loop summary.json entries for 3-1/task-05 are incomplete attempts. A summary with status=running, task in_progress, and missing copy/verify logs cannot count as VERIFY_RESULT PASS and cannot close release evidence blockers.

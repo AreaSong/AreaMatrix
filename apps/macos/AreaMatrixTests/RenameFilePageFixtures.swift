@@ -51,6 +51,26 @@ extension CoreErrorMappingSnapshot {
 }
 
 extension BatchRenameRuleSnapshot {
+    static func testFixture(
+        _ mode: BatchRenameModeSnapshot = .prefix,
+        configure: (inout BatchRenameRuleSnapshot) -> Void = { _ in }
+    ) -> BatchRenameRuleSnapshot {
+        var snapshot = BatchRenameRuleSnapshot(
+            mode: mode,
+            prefix: nil,
+            dateSource: nil,
+            dateFormat: nil,
+            separator: nil,
+            startNumber: nil,
+            padding: nil,
+            find: nil,
+            replacement: nil,
+            caseSensitive: false
+        )
+        configure(&snapshot)
+        return snapshot
+    }
+
     static func batchRenameRule(
         _ mode: BatchRenameModeSnapshot,
         prefix: String? = nil,
@@ -63,18 +83,17 @@ extension BatchRenameRuleSnapshot {
         replacement: String? = nil,
         caseSensitive: Bool = false
     ) -> BatchRenameRuleSnapshot {
-        BatchRenameRuleSnapshot(
-            mode: mode,
-            prefix: prefix,
-            dateSource: dateSource,
-            dateFormat: dateFormat,
-            separator: separator,
-            startNumber: startNumber,
-            padding: padding,
-            find: find,
-            replacement: replacement,
-            caseSensitive: caseSensitive
-        )
+        .testFixture(mode) {
+            $0.prefix = prefix
+            $0.dateSource = dateSource
+            $0.dateFormat = dateFormat
+            $0.separator = separator
+            $0.startNumber = startNumber
+            $0.padding = padding
+            $0.find = find
+            $0.replacement = replacement
+            $0.caseSensitive = caseSensitive
+        }
     }
 }
 

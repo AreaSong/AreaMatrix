@@ -69,7 +69,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
             route: "batch-delete",
             requiresConfirmation: true
         )
-        let snapshot = CommandPaletteSnapshot(
+        let snapshot = CommandPaletteSnapshot.testFixture(
             sections: [.init(title: "Current Selection", targets: [target])],
             generatedAt: 1
         )
@@ -211,8 +211,9 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
         let indexRequests = await indexer.recordedRequests()
         let runRequests = await smartListRunner.recordedRunRequests()
         let searchRequests = await smartListRunner.recordedSearchRequests()
+        let indexSnapshot = CommandTargetSnapshot.testFixture(coreTarget: indexTarget)
 
-        XCTAssertEqual(CommandTargetSnapshot(coreTarget: indexTarget).executionRoute, .runSmartList(saved.id))
+        XCTAssertEqual(indexSnapshot.executionRoute, .runSmartList(saved.id))
         XCTAssertNil(model.pendingSearchDestination)
         XCTAssertEqual(indexRequests.map(\.context.selectedFileIds), [[10, 20]])
         XCTAssertEqual(indexRequests.map(\.context.currentPath), ["docs"])
@@ -251,7 +252,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
         )
         let route = BatchFileActionRouteBuilder.commandPaletteBatchDeleteRoute(context: context)
 
-        model.commandPaletteState = .loaded(CommandPaletteSnapshot(coreIndex: .commandPaletteFixture()))
+        model.commandPaletteState = .loaded(.testFixture(coreIndex: .commandPaletteFixture()))
         model.commandPaletteQuery = "delete"
         model.pendingSearchDestination = .commandPalette
         model.clearCommandPaletteState()

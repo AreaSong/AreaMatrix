@@ -248,24 +248,18 @@ private func aiCategorySuggestionFile(
 }
 
 private func aiCategorySuggestionPreview(fileID: Int64) -> MoveToCategoryPreviewSnapshot {
-    MoveToCategoryPreviewSnapshot(
+    MoveToCategoryPreviewSnapshot.testFixture(
         fileID: fileID,
         fromCategory: "inbox",
         toCategory: "finance/invoices",
-        currentPath: "inbox/invoice.pdf",
-        targetPath: "finance/invoices/invoice.pdf",
-        targetName: "invoice.pdf",
-        storageMode: "Copied",
-        indexOnly: false,
-        nameConflictResolved: false,
-        willMoveFile: true
+        targetName: "invoice.pdf"
     )
 }
 
 private func aiCategorySuggestionCorrection(updatedFile: FileEntrySnapshot) -> ClassifierCorrectionResultSnapshot {
-    ClassifierCorrectionResultSnapshot(
+    ClassifierCorrectionResultSnapshot.testFixture(
         updatedFile: updatedFile,
-        ruleDraft: ClassifierRuleDraftSnapshot(
+        ruleDraft: .testFixture(
             sourceFileID: updatedFile.id,
             targetCategory: updatedFile.category,
             keywordCandidates: ["invoice"],

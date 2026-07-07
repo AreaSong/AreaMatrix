@@ -108,7 +108,7 @@ extension ChangeLogEntrySnapshot {
         filename: String = importResultImportedFilename(),
         detailJSON: String = importResultSourceDetailJSON()
     ) -> ChangeLogEntrySnapshot {
-        ChangeLogEntrySnapshot(
+        ChangeLogEntrySnapshot.testFixture(
             id: id,
             fileID: 10,
             filename: filename,

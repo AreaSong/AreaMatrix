@@ -143,7 +143,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
             SyncConflictResolveRequest(
                 repoPath: "/tmp/syncConflictReview-repo",
                 conflictID: "conflict-report",
-                request: SyncConflictResolutionRequestSnapshot(
+                request: .testFixture(
                     strategy: .useIncoming,
                     previewToken: "preview-token-use-incoming",
                     replaceConfirmed: true,
@@ -205,11 +205,8 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
             SyncConflictResolveRequest(
                 repoPath: "/tmp/syncConflictReview-repo",
                 conflictID: "conflict-report",
-                request: SyncConflictResolutionRequestSnapshot(
-                    strategy: .keepBoth,
-                    previewToken: "preview-token-142",
-                    replaceConfirmed: false,
-                    replaceConfirmationID: nil
+                request: .testFixture(
+                    previewToken: "preview-token-142"
                 )
             )
         ])

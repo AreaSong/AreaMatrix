@@ -33,6 +33,29 @@ extension RepositoryTreeNodeSnapshot {
 }
 
 extension MoveToCategoryPreviewSnapshot {
+    static func testFixture(
+        fileID: Int64,
+        fromCategory: String = "docs",
+        toCategory: String = "finance",
+        targetName: String = "contract.pdf",
+        configure: (inout MoveToCategoryPreviewSnapshot) -> Void = { _ in }
+    ) -> MoveToCategoryPreviewSnapshot {
+        var snapshot = MoveToCategoryPreviewSnapshot(
+            fileID: fileID,
+            fromCategory: fromCategory,
+            toCategory: toCategory,
+            currentPath: "\(fromCategory)/\(targetName)",
+            targetPath: "\(toCategory)/\(targetName)",
+            targetName: targetName,
+            storageMode: "Copied",
+            indexOnly: false,
+            nameConflictResolved: false,
+            willMoveFile: true
+        )
+        configure(&snapshot)
+        return snapshot
+    }
+
     static func changeCategoryFixture(
         fileID: Int64,
         targetPath: String,
@@ -40,17 +63,34 @@ extension MoveToCategoryPreviewSnapshot {
         indexOnly: Bool = false,
         nameConflictResolved: Bool = false
     ) -> MoveToCategoryPreviewSnapshot {
-        MoveToCategoryPreviewSnapshot(
+        MoveToCategoryPreviewSnapshot.testFixture(
             fileID: fileID,
-            fromCategory: "docs",
-            toCategory: "finance",
-            currentPath: "docs/contracts/\(targetName)",
-            targetPath: targetPath,
-            targetName: targetName,
-            storageMode: indexOnly ? "Indexed" : "Copied",
-            indexOnly: indexOnly,
-            nameConflictResolved: nameConflictResolved,
-            willMoveFile: !indexOnly
+            targetName: targetName
+        ) {
+            $0.currentPath = "docs/contracts/\(targetName)"
+            $0.targetPath = targetPath
+            $0.storageMode = indexOnly ? "Indexed" : "Copied"
+            $0.indexOnly = indexOnly
+            $0.nameConflictResolved = nameConflictResolved
+            $0.willMoveFile = !indexOnly
+        }
+    }
+}
+
+extension ClassifierCorrectionResultSnapshot {
+    static func testFixture(
+        updatedFile: FileEntrySnapshot,
+        ruleDraft: ClassifierRuleDraftSnapshot? = .testFixture(),
+        moveFileRequested: Bool = true,
+        rememberRequested: Bool = true,
+        ruleConfirmationRequired: Bool = true
+    ) -> ClassifierCorrectionResultSnapshot {
+        ClassifierCorrectionResultSnapshot(
+            updatedFile: updatedFile,
+            ruleDraft: ruleDraft,
+            moveFileRequested: moveFileRequested,
+            rememberRequested: rememberRequested,
+            ruleConfirmationRequired: ruleConfirmationRequired
         )
     }
 }

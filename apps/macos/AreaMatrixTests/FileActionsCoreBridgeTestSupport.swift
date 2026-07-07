@@ -68,18 +68,19 @@ actor FileActionsRecordingCore: CoreFileListing,
     ) async throws -> MoveToCategoryPreviewSnapshot {
         calls.append(.previewMove(fileID: fileID, targetCategory: newCategory))
         let file = try await getFile(repoPath: repoPath, fileID: fileID)
-        return MoveToCategoryPreviewSnapshot(
+        return MoveToCategoryPreviewSnapshot.testFixture(
             fileID: file.id,
             fromCategory: file.category,
             toCategory: newCategory,
-            currentPath: file.path,
-            targetPath: "\(newCategory)/\(file.currentName)",
-            targetName: file.currentName,
-            storageMode: file.storageMode,
-            indexOnly: file.storageMode == "Indexed",
-            nameConflictResolved: false,
-            willMoveFile: file.storageMode != "Indexed"
-        )
+            targetName: file.currentName
+        ) {
+            $0.currentPath = file.path
+            $0.targetPath = "\(newCategory)/\(file.currentName)"
+            $0.storageMode = file.storageMode
+            $0.indexOnly = file.storageMode == "Indexed"
+            $0.nameConflictResolved = false
+            $0.willMoveFile = file.storageMode != "Indexed"
+        }
     }
 
     func moveToCategory(repoPath: String, fileID: Int64, newCategory: String) async throws -> FileEntrySnapshot {

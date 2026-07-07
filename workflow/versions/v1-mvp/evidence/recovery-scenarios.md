@@ -131,12 +131,23 @@ release_gate: "block_if_missing_or_fail"
   - 输出 `schema_version: 1`、`mode: icloud_placeholder_metadata_probe`、
     `residual_id: v1-rl-002`、`manual_evidence_id: M-02`、`closes_residual: false`、
     `release_gate: blocked_until_real_icloud_download_retry_and_db_evidence_pass`。
+  - 默认输出必须带 `privacy.path_redaction: true`，并脱敏本机路径、文件名和 `mdls` 命令里的路径；
+    `--include-sensitive-paths` 只用于本机私下排障，不进入可共享 release evidence。
   - 该 helper 只做 `lstat` 与 `mdls` metadata 读取；`download_attempted`、
     `file_content_read_attempted`、`file_write_attempted`、`db_write_attempted` 和
     `areamatrix_metadata_write_attempted` 必须保持 `false`。
   - 对 symlink 只做 `lstat`，不跟随目标执行 `mdls` 或更深检查。
   - helper 输出只能作为真实 iCloud 手工冒烟的 evidence draft；不能替代 UI
     `Download & retry`、DB row、用户文件不变量和 retry 结果。
+- 只读记录审计 helper：
+  - `./dev release icloud-placeholder-smoke-audit --json`
+  - 只读取 `icloud-placeholder-smoke-evidence.md` 的结构化记录和 residual 索引，核对 metadata
+    probe、真实 UI retry、DB row、用户文件不变量字段是否已经是可关闭前的真实通过状态。
+  - 当前 `smoke_evidence_gate: BLOCKED` 是预期发布阻断；它不接收路径、不运行 `mdls`、不触发
+    iCloud 下载、不读取文件内容、不写用户文件、不写 DB、不写项目文件、不写 `.areamatrix/`
+    元数据，也不关闭 `v1-rl-002`。
+  - 审计返回 `PASS` 只表示记录字段齐备；仍不能替代真实 UI `Download & retry` 或 release owner
+    对 evidence 的关闭判断。
 - 后续补证模板：
   - `environment.macos_version: <macOS version>`
   - `environment.icloud_drive: enabled`

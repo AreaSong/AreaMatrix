@@ -38,6 +38,18 @@ extension CoreErrorMappingSnapshot {
     }
 }
 
+extension IntegrationsICloudSnapshot {
+    static func testFixture(
+        repositoryLocation: IntegrationsRepositoryLocation = .localFolder,
+        iCloudStatus: IntegrationsICloudStatus = .unavailable
+    ) -> IntegrationsICloudSnapshot {
+        IntegrationsICloudSnapshot(
+            repositoryLocation: repositoryLocation,
+            iCloudStatus: iCloudStatus
+        )
+    }
+}
+
 struct RepoConfigTestFixtureOptions {
     var defaultMode = "Copied"
     var overviewOutput = "GeneratedOnly"
@@ -193,6 +205,28 @@ extension FileFilterSnapshot {
     }
 }
 
+extension ChangeLogEntrySnapshot {
+    static func testFixture(
+        id: Int64 = 1,
+        fileID: Int64? = 10,
+        filename: String = "document.pdf",
+        category: String = "docs",
+        action: String = "imported",
+        detailJSON: String = "{}",
+        occurredAt: Int64 = 1_700_000_000
+    ) -> ChangeLogEntrySnapshot {
+        ChangeLogEntrySnapshot(
+            id: id,
+            fileID: fileID,
+            filename: filename,
+            category: category,
+            action: action,
+            detailJSON: detailJSON,
+            occurredAt: occurredAt
+        )
+    }
+}
+
 extension RepositoryTreeNodeSnapshot {
     static func testFixture(
         slug: String,
@@ -249,6 +283,15 @@ extension RepositoryTreeNodeSnapshot {
             $0.depth = Int64(relativePath.split(separator: "/").count)
             $0.children = children
         }
+    }
+}
+
+extension RepositorySidebarRowSnapshot {
+    static func testFixture(
+        node: RepositoryTreeNodeSnapshot = .testRoot(),
+        depth: Int = 0
+    ) -> RepositorySidebarRowSnapshot {
+        RepositorySidebarRowSnapshot(node: node, depth: depth)
     }
 }
 

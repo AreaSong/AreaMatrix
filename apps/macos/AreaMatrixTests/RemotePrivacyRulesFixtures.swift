@@ -62,32 +62,63 @@ extension AiPrivacyEvaluationReport {
     }
 }
 
+extension AiPrivacyProviderScopeSnapshot {
+    static func testFixture(
+        providerConfigured: Bool = true,
+        providerVerified: Bool = true,
+        remoteProviderEnabled: Bool = true,
+        featureScope: [AiFeatureKind] = [.autoSummaries]
+    ) -> AiPrivacyProviderScopeSnapshot {
+        AiPrivacyProviderScopeSnapshot(
+            providerConfigured: providerConfigured,
+            providerVerified: providerVerified,
+            remoteProviderEnabled: remoteProviderEnabled,
+            featureScope: featureScope
+        )
+    }
+}
+
 extension AiPrivacyRulesSnapshot {
+    static func testFixture(
+        privacyGateEnabled: Bool = true,
+        rules: [AiPrivacyRuleRecord] = [],
+        remoteAllowedFields: [AiPrivacyFieldState] = [],
+        providerScope: AiPrivacyProviderScopeSnapshot = .testFixture(),
+        updatedAt: Int64? = nil,
+        remoteBlockedByDefault: Bool = true
+    ) -> AiPrivacyRulesSnapshot {
+        AiPrivacyRulesSnapshot(
+            privacyGateEnabled: privacyGateEnabled,
+            rules: rules,
+            remoteAllowedFields: remoteAllowedFields,
+            providerScope: providerScope,
+            updatedAt: updatedAt,
+            remoteBlockedByDefault: remoteBlockedByDefault
+        )
+    }
+
     static func remoteProviderConfigPrivacyRules(
         privacyGateEnabled: Bool = false,
         featureScope: [AiFeatureKind] = [.autoSummaries]
     ) -> AiPrivacyRulesSnapshot {
-        AiPrivacyRulesSnapshot(
+        testFixture(
             privacyGateEnabled: privacyGateEnabled,
             rules: [.remoteProviderConfigRuleRecord()],
             remoteAllowedFields: [
-                AiPrivacyFieldState(field: .fileName, allowRemote: true, lastMatchedCount: 0),
-                AiPrivacyFieldState(field: .extractedTextExcerpt, allowRemote: false, lastMatchedCount: 2),
-                AiPrivacyFieldState(field: .noteSummary, allowRemote: true, lastMatchedCount: 0)
+                .testFixture(field: .fileName),
+                .testFixture(field: .extractedTextExcerpt, allowRemote: false, lastMatchedCount: 2),
+                .testFixture(field: .noteSummary)
             ],
-            providerScope: AiPrivacyProviderScopeSnapshot(
-                providerConfigured: true,
-                providerVerified: true,
+            providerScope: .testFixture(
                 remoteProviderEnabled: false,
                 featureScope: featureScope
             ),
-            updatedAt: 901,
-            remoteBlockedByDefault: true
+            updatedAt: 901
         )
     }
 
     static func remoteProviderConfigAIPrivacyRules(privacyGateEnabled: Bool) -> AiPrivacyRulesSnapshot {
-        AiPrivacyRulesSnapshot(
+        testFixture(
             privacyGateEnabled: privacyGateEnabled,
             rules: [
                 AiPrivacyRuleRecord(
@@ -103,23 +134,19 @@ extension AiPrivacyRulesSnapshot {
                 )
             ],
             remoteAllowedFields: [
-                AiPrivacyFieldState(field: .fileName, allowRemote: true, lastMatchedCount: 0),
-                AiPrivacyFieldState(field: .repoRelativePath, allowRemote: true, lastMatchedCount: 1),
-                AiPrivacyFieldState(field: .extension, allowRemote: true, lastMatchedCount: 0)
+                .testFixture(field: .fileName),
+                .testFixture(field: .repoRelativePath, lastMatchedCount: 1),
+                .testFixture(field: .extension)
             ],
-            providerScope: AiPrivacyProviderScopeSnapshot(
-                providerConfigured: true,
-                providerVerified: true,
-                remoteProviderEnabled: true,
+            providerScope: .testFixture(
                 featureScope: [.autoSummaries]
             ),
-            updatedAt: 309,
-            remoteBlockedByDefault: true
+            updatedAt: 309
         )
     }
 
     func applyingPrivacyGateRequest(_ request: AiPrivacyRulesUpdateRequest) -> AiPrivacyRulesSnapshot {
-        AiPrivacyRulesSnapshot(
+        AiPrivacyRulesSnapshot.testFixture(
             privacyGateEnabled: request.privacyGateEnabled,
             rules: request.rules.map(AiPrivacyRuleRecord.init(input:)),
             remoteAllowedFields: request.remoteAllowedFields.map(AiPrivacyFieldState.init(rule:)),
@@ -161,7 +188,28 @@ extension AiPrivacyRuleRecord {
 }
 
 extension AiPrivacyFieldState {
+    static func testFixture(
+        field: AiPrivacyInputField,
+        allowRemote: Bool = true,
+        lastMatchedCount: Int64 = 0
+    ) -> AiPrivacyFieldState {
+        AiPrivacyFieldState(
+            field: field,
+            allowRemote: allowRemote,
+            lastMatchedCount: lastMatchedCount
+        )
+    }
+
     init(rule: AiPrivacyFieldRule) {
         self.init(field: rule.field, allowRemote: rule.allowRemote, lastMatchedCount: 0)
+    }
+}
+
+extension AIPrivacyRuleRegistrySnapshot {
+    static func testFixture(
+        categories: [String] = [],
+        tags: [String] = []
+    ) -> AIPrivacyRuleRegistrySnapshot {
+        AIPrivacyRuleRegistrySnapshot(categories: categories, tags: tags)
     }
 }

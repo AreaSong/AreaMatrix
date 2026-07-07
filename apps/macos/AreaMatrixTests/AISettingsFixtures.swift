@@ -1,27 +1,63 @@
 @testable import AreaMatrix
 
-extension AISettingsSnapshot {
-    static func aiSettingsDefault(repoPath: String, aiEnabled: Bool = false) -> AISettingsSnapshot {
-        aiSettingsSnapshot(config: AISettingsConfigSnapshot(
+extension AISettingsConfigSnapshot {
+    static func aiSettingsConfig(
+        repoPath: String,
+        aiEnabled: Bool = false,
+        providerPreference: AISettingsProviderPreference = .localFirst,
+        localAIEnabled: Bool = false,
+        remoteAIAllowed: Bool = false,
+        privacyGateEnabled: Bool = true,
+        privacyPolicyRef: String? = nil,
+        enabledFeatures: [AISettingsFeatureKind] = [],
+        remoteAllowedFeatures: [AISettingsFeatureKind] = []
+    ) -> AISettingsConfigSnapshot {
+        AISettingsConfigSnapshot(
             repoPath: repoPath,
             aiEnabled: aiEnabled,
-            providerPreference: .localFirst,
-            localAIEnabled: false,
-            remoteAIAllowed: false,
-            privacyGateEnabled: true,
-            privacyPolicyRef: nil,
-            featureToggles: AISettingsFeatureKind.allCases.map {
-                AISettingsFeatureConfigSnapshot(feature: $0, enabled: false, allowRemote: false)
-            }
+            providerPreference: providerPreference,
+            localAIEnabled: localAIEnabled,
+            remoteAIAllowed: remoteAIAllowed,
+            privacyGateEnabled: privacyGateEnabled,
+            privacyPolicyRef: privacyPolicyRef,
+            featureToggles: aiSettingsFeatureToggles(
+                enabledFeatures: enabledFeatures,
+                remoteAllowedFeatures: remoteAllowedFeatures
+            )
+        )
+    }
+
+    static func aiSettingsFeatureToggles(
+        enabledFeatures: [AISettingsFeatureKind] = [],
+        remoteAllowedFeatures: [AISettingsFeatureKind] = []
+    ) -> [AISettingsFeatureConfigSnapshot] {
+        AISettingsFeatureKind.allCases.map { feature in
+            AISettingsFeatureConfigSnapshot(
+                feature: feature,
+                enabled: enabledFeatures.contains(feature),
+                allowRemote: remoteAllowedFeatures.contains(feature)
+            )
+        }
+    }
+}
+
+extension AISettingsSnapshot {
+    static func aiSettingsDefault(repoPath: String, aiEnabled: Bool = false) -> AISettingsSnapshot {
+        aiSettingsSnapshot(config: .aiSettingsConfig(
+            repoPath: repoPath,
+            aiEnabled: aiEnabled
         ))
     }
 
-    static func aiSettingsSnapshot(config: AISettingsConfigSnapshot) -> AISettingsSnapshot {
+    static func aiSettingsSnapshot(
+        config: AISettingsConfigSnapshot,
+        updatedAt: Int64? = 1_778_000_000
+    ) -> AISettingsSnapshot {
         let normalized = config.normalized()
         return AISettingsSnapshot(
             config: normalized,
             capabilities: AISettingsCapabilitySnapshot.derived(from: normalized),
-            updatedAt: 1_778_000_000
+            updatedAt: updatedAt
         )
     }
 }

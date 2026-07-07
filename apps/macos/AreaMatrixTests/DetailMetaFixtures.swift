@@ -33,7 +33,7 @@ extension FileEntrySnapshot {
 
 extension ChangeLogEntrySnapshot {
     static func detailLogFixture(fileID: Int64, action: String) -> ChangeLogEntrySnapshot {
-        ChangeLogEntrySnapshot(
+        ChangeLogEntrySnapshot.testFixture(
             id: fileID + 100,
             fileID: fileID,
             filename: "logged.pdf",

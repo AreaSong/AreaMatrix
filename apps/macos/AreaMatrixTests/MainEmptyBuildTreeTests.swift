@@ -80,7 +80,7 @@ final class MainEmptyBuildTreeTests: XCTestCase {
 
     @MainActor
     func testCommandPaletteCommandPaletteIndexFailureKeepsAvailableCommands() async {
-        let previous = CommandPaletteSnapshot(
+        let previous = CommandPaletteSnapshot.testFixture(
             sections: [.init(title: "Commands", targets: [.importFiles])],
             generatedAt: 1
         )

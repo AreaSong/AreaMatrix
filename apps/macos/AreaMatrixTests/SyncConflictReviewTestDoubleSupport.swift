@@ -16,7 +16,7 @@ struct SyncConflictResolveRequest: Equatable {
     static let useIncomingConfirmedRequest = SyncConflictResolveRequest(
         repoPath: "/tmp/syncConflictReview-repo",
         conflictID: "conflict-report",
-        request: SyncConflictResolutionRequestSnapshot(
+        request: .testFixture(
             strategy: .useIncoming,
             previewToken: "preview-token-use-incoming",
             replaceConfirmed: true,

@@ -43,18 +43,11 @@ final class BatchRenameUndoIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(route.fileIDs, [context.indexOnly.id, context.repoOwned.id])
         XCTAssertNil(route.disabledReason)
 
-        let rule = BatchRenameRuleSnapshot(
-            mode: .keepBaseSequence,
-            prefix: nil,
-            dateSource: nil,
-            dateFormat: nil,
-            separator: "_",
-            startNumber: 1,
-            padding: 2,
-            find: nil,
-            replacement: nil,
-            caseSensitive: false
-        )
+        let rule = BatchRenameRuleSnapshot.testFixture(.keepBaseSequence) {
+            $0.separator = "_"
+            $0.startNumber = 1
+            $0.padding = 2
+        }
         let preview = try await context.bridge.previewBatchRename(
             repoPath: context.repoURL.path,
             fileIDs: route.fileIDs,

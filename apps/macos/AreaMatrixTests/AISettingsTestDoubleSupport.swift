@@ -9,25 +9,14 @@ actor StaticAISettingsLoader: CoreAISettingsLoading {
     }
 
     init(aiEnabled: Bool = true, autoTagsEnabled: Bool = true) {
-        let config = AISettingsConfigSnapshot(
+        let config = AISettingsConfigSnapshot.aiSettingsConfig(
             repoPath: "/tmp/repo",
             aiEnabled: aiEnabled,
-            providerPreference: .localFirst,
             localAIEnabled: true,
-            remoteAIAllowed: false,
-            privacyGateEnabled: true,
-            privacyPolicyRef: nil,
-            featureToggles: AISettingsFeatureKind.allCases.map { feature in
-                AISettingsFeatureConfigSnapshot(
-                    feature: feature,
-                    enabled: feature == .autoTags ? autoTagsEnabled : false,
-                    allowRemote: false
-                )
-            }
+            enabledFeatures: autoTagsEnabled ? [.autoTags] : []
         )
-        snapshot = AISettingsSnapshot(
+        snapshot = AISettingsSnapshot.aiSettingsSnapshot(
             config: config,
-            capabilities: AISettingsCapabilitySnapshot.derived(from: config.normalized()),
             updatedAt: 1_700_000_410
         )
     }
@@ -75,9 +64,8 @@ actor RecordingAISettingsUpdater: CoreAISettingsUpdating {
         let normalized = newConfig.normalized()
         recordedRequests.append(Request(repoPath: repoPath, config: normalized))
         try nextResult().get()
-        return AISettingsSnapshot(
+        return AISettingsSnapshot.aiSettingsSnapshot(
             config: normalized,
-            capabilities: AISettingsCapabilitySnapshot.derived(from: normalized),
             updatedAt: updatedAt
         )
     }
@@ -117,9 +105,8 @@ actor RecordingAISettingsStore: CoreAISettingsLoading, CoreAISettingsUpdating {
     func updateAISettings(repoPath _: String, newConfig: AISettingsConfigSnapshot) async throws -> AISettingsSnapshot {
         let normalized = newConfig.normalized()
         recordedRequests.append(normalized)
-        snapshot = AISettingsSnapshot(
+        snapshot = AISettingsSnapshot.aiSettingsSnapshot(
             config: normalized,
-            capabilities: AISettingsCapabilitySnapshot.derived(from: normalized),
             updatedAt: updatedAt
         )
         return snapshot

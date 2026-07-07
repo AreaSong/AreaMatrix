@@ -155,15 +155,15 @@ extension UndoActionResultSnapshot {
 
 extension BatchMutationReportSnapshot {
     static func batchAddTagsBatchAddTagsReport() -> BatchMutationReportSnapshot {
-        BatchMutationReportSnapshot(
+        testFixture(
             requestedFileCount: 2,
             requestedTagCount: 1,
             addedCount: 2,
             skippedCount: 0,
             failedCount: 0,
             itemResults: [
-                BatchMutationItemResultSnapshot(fileID: 1, tag: "urgent", status: .added, error: nil),
-                BatchMutationItemResultSnapshot(fileID: 2, tag: "urgent", status: .added, error: nil)
+                .testFixture(fileID: 1, tag: "urgent"),
+                .testFixture(fileID: 2, tag: "urgent")
             ],
             undoToken: "undo-action-log"
         )

@@ -58,7 +58,7 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
         XCTAssertEqual(requests, [
             DatabaseRepairIntegrationRepairRequest(
                 repoPath: "/tmp/repo",
-                options: RepairOptionsSnapshot(fullRescan: true, preserveDiagnosticsSnapshot: true)
+                options: .databaseRepairFullRescanFixture()
             )
         ])
         XCTAssertEqual(repairModel.repairState, .failed(mapping))

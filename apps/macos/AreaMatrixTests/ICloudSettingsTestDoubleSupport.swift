@@ -4,10 +4,7 @@ import Foundation
 struct StaticICloudStatusDetector: ICloudStatusDetecting {
     let snapshot: IntegrationsICloudSnapshot
 
-    init(snapshot: IntegrationsICloudSnapshot = IntegrationsICloudSnapshot(
-        repositoryLocation: .localFolder,
-        iCloudStatus: .unavailable
-    )) {
+    init(snapshot: IntegrationsICloudSnapshot = .testFixture()) {
         self.snapshot = snapshot
     }
 

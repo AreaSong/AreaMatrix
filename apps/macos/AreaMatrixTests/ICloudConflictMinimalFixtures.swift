@@ -15,7 +15,7 @@ extension MainDetailLogState {
 
 extension ChangeLogEntrySnapshot {
     static func iCloudConflictMinimalConflictResolved(fileID: Int64?) -> ChangeLogEntrySnapshot {
-        ChangeLogEntrySnapshot(
+        ChangeLogEntrySnapshot.testFixture(
             id: 1,
             fileID: fileID,
             filename: "report (Conflicted Copy).pdf",
@@ -73,17 +73,30 @@ extension RepoPathValidationSnapshot {
 }
 
 extension ICloudConflictVersionSnapshot {
-    static func iCloudConflictMinimalOriginal(repoPath: String) -> ICloudConflictVersionSnapshot {
+    static func testFixture(
+        role: ICloudConflictVersionSnapshot.Role,
+        path: String,
+        modifiedAt: Int64 = 1_775_020_800,
+        sizeBytes: Int64 = 512
+    ) -> ICloudConflictVersionSnapshot {
         ICloudConflictVersionSnapshot(
+            role: role,
+            path: path,
+            modifiedAt: modifiedAt,
+            sizeBytes: sizeBytes
+        )
+    }
+
+    static func iCloudConflictMinimalOriginal(repoPath: String) -> ICloudConflictVersionSnapshot {
+        ICloudConflictVersionSnapshot.testFixture(
             role: .original,
             path: "\(repoPath)/docs/report.pdf",
-            modifiedAt: 1_775_020_800,
             sizeBytes: 512
         )
     }
 
     static func iCloudConflictMinimalConflictedCopy(repoPath: String) -> ICloudConflictVersionSnapshot {
-        ICloudConflictVersionSnapshot(
+        ICloudConflictVersionSnapshot.testFixture(
             role: .conflictedCopy,
             path: "\(repoPath)/docs/report (Conflicted Copy).pdf",
             modifiedAt: 1_775_020_860,

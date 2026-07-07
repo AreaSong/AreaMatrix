@@ -53,22 +53,16 @@ extension SearchResultPageSnapshot {
 
 extension AiPrivacyRulesSnapshot {
     static func semanticSearchPrivacyRules() -> AiPrivacyRulesSnapshot {
-        AiPrivacyRulesSnapshot(
-            privacyGateEnabled: true,
-            rules: [],
+        testFixture(
             remoteAllowedFields: [
-                AiPrivacyFieldState(field: .fileName, allowRemote: true, lastMatchedCount: 0),
-                AiPrivacyFieldState(field: .repoRelativePath, allowRemote: true, lastMatchedCount: 0),
-                AiPrivacyFieldState(field: .extension, allowRemote: true, lastMatchedCount: 0)
+                .testFixture(field: .fileName),
+                .testFixture(field: .repoRelativePath),
+                .testFixture(field: .extension)
             ],
-            providerScope: AiPrivacyProviderScopeSnapshot(
-                providerConfigured: true,
-                providerVerified: true,
-                remoteProviderEnabled: true,
+            providerScope: .testFixture(
                 featureScope: [.semanticSearch]
             ),
-            updatedAt: 1_700_000_300,
-            remoteBlockedByDefault: true
+            updatedAt: 1_700_000_300
         )
     }
 }

@@ -76,7 +76,27 @@ extension SearchResultPageSnapshot {
     }
 }
 
+extension CommandPaletteSnapshot {
+    static func testFixture(
+        sections: [CommandPaletteSectionSnapshot] = [],
+        generatedAt: Int64 = 1
+    ) -> CommandPaletteSnapshot {
+        CommandPaletteSnapshot(
+            sections: sections,
+            generatedAt: generatedAt
+        )
+    }
+
+    static func testFixture(coreIndex: CommandIndex) -> CommandPaletteSnapshot {
+        CommandPaletteSnapshot(coreIndex: coreIndex)
+    }
+}
+
 extension CommandTargetSnapshot {
+    static func testFixture(coreTarget: CommandTarget) -> CommandTargetSnapshot {
+        CommandTargetSnapshot(coreTarget: coreTarget)
+    }
+
     static func commandPaletteRouteFixture(
         id: String,
         title: String = "Delete selected files...",
